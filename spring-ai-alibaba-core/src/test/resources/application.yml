@@ -1,0 +1,10 @@
+spring:
+  ai:
+    dashscope:
+      api-key:
+      chat:
+        options:
+          model: qwen-max
+        api-key:
+      agent:
+        app-id: dae******abc7
