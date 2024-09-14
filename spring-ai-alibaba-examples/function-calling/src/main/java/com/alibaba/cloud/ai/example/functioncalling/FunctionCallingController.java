@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.functioncalling;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,15 +33,21 @@ public class FunctionCallingController {
 		this.chatClient = chatClientBuilder.build();
 	}
 
+	@GetMapping("/weather-service")
+	public String weatherService(@RequestParam("subject") String subject) {
+		return chatClient.prompt()
+				.function("getWeather", "根据城市查询天气", new MockWeatherService())
+				.user(subject)
+				.call()
+				.content();
+	}
+
 	@GetMapping("/order-detail")
-	public String orderDetail(@RequestParam("subject") String subject) {
-//		return chatClient.prompt()
-//				.user(userSpec -> userSpec
-//						.text(jokeTemplate)
-//						.param("subject", subject))
-//				.functions("getOrderFunction")
-//				.call()
-//				.entity(JokeResponse.class);
-		return null;
+	public String orderDetail() {
+		return chatClient.prompt()
+				.functions("getOrderFunction")
+				.user("帮我一下订单, 用户编号为1001, 订单编号为2001")
+				.call()
+				.content();
 	}
 }

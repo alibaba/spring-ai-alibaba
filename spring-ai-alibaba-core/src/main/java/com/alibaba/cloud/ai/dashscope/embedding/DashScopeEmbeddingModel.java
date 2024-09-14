@@ -108,7 +108,14 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 						DashScopeApi.EmbeddingRequest.class);
 			}
 
-			DashScopeApi.EmbeddingList apiEmbeddingResponse = this.dashScopeApi.embeddings(apiRequest).getBody();
+			DashScopeApi.EmbeddingList apiEmbeddingResponse = null;
+			try {
+				apiEmbeddingResponse = this.dashScopeApi.embeddings(apiRequest).getBody();
+			}
+			catch (Exception e) {
+				logger.error("Error embedding request: {}", request.getInstructions(), e);
+				throw e;
+			}
 
 			if (apiEmbeddingResponse == null) {
 				logger.warn("No embeddings returned for request: {}", request);

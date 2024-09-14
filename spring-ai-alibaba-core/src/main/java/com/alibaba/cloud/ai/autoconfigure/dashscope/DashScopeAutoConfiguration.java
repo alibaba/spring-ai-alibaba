@@ -17,20 +17,23 @@
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.dashscope.aigc.generation.Generation;
-import com.alibaba.dashscope.aigc.imagesynthesis.ImageSynthesis;
+import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
 import com.alibaba.dashscope.audio.asr.transcription.Transcription;
 import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
 import com.alibaba.dashscope.exception.NoApiKeyException;
 import com.alibaba.dashscope.utils.ApiKey;
 import com.alibaba.dashscope.utils.Constants;
+import org.jetbrains.annotations.NotNull;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.function.FunctionCallback;
@@ -52,6 +55,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -76,13 +80,6 @@ public class DashScopeAutoConfiguration {
 	@Bean
 	@Scope("prototype")
 	@ConditionalOnMissingBean
-	public ImageSynthesis imageSynthesis() {
-		return new ImageSynthesis();
-	}
-
-	@Bean
-	@Scope("prototype")
-	@ConditionalOnMissingBean
 	public SpeechSynthesizer speechSynthesizer() {
 		return new SpeechSynthesizer();
 	}
@@ -97,49 +94,59 @@ public class DashScopeAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = DashScopeChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public DashScopeChatModel dashscopeChatModel(DashScopeApi dashscopeApi, DashScopeChatProperties chatProperties,
-			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackContext functionCallbackContext,
-			RetryTemplate retryTemplate) {
+	public DashScopeChatModel dashscopeChatModel(DashScopeConnectionProperties commonProperties,
+			DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, List<FunctionCallback> toolFunctionCallbacks,
+			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler) {
 
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
 		}
 
+		var dashscopeApi = dashscopeChatApi(commonProperties, chatProperties, restClientBuilder, webClientBuilder,
+				responseErrorHandler);
+
 		return new DashScopeChatModel(dashscopeApi, chatProperties.getOptions(), functionCallbackContext,
 				retryTemplate);
 	}
 
-	@Bean
-	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = DashScopeEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-			matchIfMissing = true)
-	public DashScopeEmbeddingModel dashscopeEmbeddingModel(DashScopeApi dashscopeApi,
-			DashScopeEmbeddingProperties embeddingProperties, RetryTemplate retryTemplate) {
+	public DashScopeApi dashscopeChatApi(DashScopeConnectionProperties commonProperties,
+			DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
-		return new DashScopeEmbeddingModel(dashscopeApi, embeddingProperties.getMetadataMode(),
-				embeddingProperties.getOptions(), retryTemplate);
+		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
+				chatProperties, "chat");
+
+		return new DashScopeApi(resolved.baseUrl(), resolved.apiKey(), resolved.workspaceId(), restClientBuilder,
+				webClientBuilder, responseErrorHandler);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = DashScopeEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
-	public DashScopeApi dashscopeApi(DashScopeConnectionProperties commonProperties,
-			DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
+	public DashScopeEmbeddingModel dashscopeEmbeddingModel(DashScopeConnectionProperties commonProperties,
+			DashScopeEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler) {
+
+		var dashScopeApi = dashscopeEmbeddingApi(commonProperties, embeddingProperties, restClientBuilder,
+				webClientBuilder, responseErrorHandler);
+
+		return new DashScopeEmbeddingModel(dashScopeApi, embeddingProperties.getMetadataMode(),
+				embeddingProperties.getOptions(), retryTemplate);
+	}
+
+	public DashScopeApi dashscopeEmbeddingApi(DashScopeConnectionProperties commonProperties,
+			DashScopeEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
-		String baseUrl = chatProperties.getBaseUrl();
-		String commonBaseUrl = commonProperties.getBaseUrl();
-		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
-		Assert.hasText(resolvedBaseUrl, "DashScope base URL must be set");
+		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
+				embeddingProperties, "embedding");
 
-		String apiKey = chatProperties.getApiKey();
-		String commonApiKey = commonProperties.getApiKey();
-		String resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
-		Assert.hasText(resolvedApiKey, "DashScope API key must be set");
-
-		return new DashScopeApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder, webClientBuilder,
-				responseErrorHandler);
+		return new DashScopeApi(resolved.baseUrl(), resolved.apiKey(), resolved.workspaceId(), restClientBuilder,
+				webClientBuilder, responseErrorHandler);
 	}
 
 	@Bean
@@ -150,18 +157,11 @@ public class DashScopeAutoConfiguration {
 			DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
-		String baseUrl = chatProperties.getBaseUrl();
-		String commonBaseUrl = commonProperties.getBaseUrl();
-		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
-		Assert.hasText(resolvedBaseUrl, "DashScope base URL must be set");
+		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
+				chatProperties, "chat");
 
-		String apiKey = chatProperties.getApiKey();
-		String commonApiKey = commonProperties.getApiKey();
-		String resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
-		Assert.hasText(resolvedApiKey, "DashScope API key must be set");
-
-		return new DashScopeAgentApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder, webClientBuilder,
-				responseErrorHandler);
+		return new DashScopeAgentApi(resolved.baseUrl(), resolved.apiKey(), resolved.workspaceId(), restClientBuilder,
+				webClientBuilder, responseErrorHandler);
 	}
 
 	@Bean
@@ -170,107 +170,24 @@ public class DashScopeAutoConfiguration {
 			.requestFactory(ClientHttpRequestFactories.get(ClientHttpRequestFactorySettings.DEFAULTS
 				.withReadTimeout(Duration.ofSeconds(commonProperties.getReadTimeout()))));
 	}
-	//
-	// @Bean
-	// @ConditionalOnMissingBean
-	// @ConditionalOnProperty(prefix = OpenAiImageProperties.CONFIG_PREFIX, name =
-	// "enabled", havingValue = "true",
-	// matchIfMissing = true)
-	// public DashScopeImageModel openAiImageModel(OpenAiConnectionProperties
-	// commonProperties,
-	// OpenAiImageProperties imageProperties, RestClient.Builder restClientBuilder,
-	// RetryTemplate retryTemplate,
-	// ResponseErrorHandler responseErrorHandler) {
-	//
-	// String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ?
-	// imageProperties.getApiKey()
-	// : commonProperties.getApiKey();
-	//
-	// String baseUrl = StringUtils.hasText(imageProperties.getBaseUrl()) ?
-	// imageProperties.getBaseUrl()
-	// : commonProperties.getBaseUrl();
-	//
-	// Assert.hasText(apiKey,
-	// "OpenAI API key must be set. Use the property: spring.ai.openai.api-key or
-	// spring.ai.openai.image.api-key property.");
-	// Assert.hasText(baseUrl,
-	// "OpenAI base URL must be set. Use the property: spring.ai.openai.base-url or
-	// spring.ai.openai.image.base-url property.");
-	//
-	// var openAiImageApi = new OpenAiImageApi(baseUrl, apiKey, restClientBuilder,
-	// responseErrorHandler);
-	//
-	// return new DashScopeImageModel(openAiImageApi, imageProperties.getOptions(),
-	// retryTemplate);
-	// }
-	//
-	// @Bean
-	// @ConditionalOnMissingBean
-	// @ConditionalOnProperty(prefix = OpenAiAudioTranscriptionProperties.CONFIG_PREFIX,
-	// name = "enabled",
-	// havingValue = "true", matchIfMissing = true)
-	// public DashScopeAudioTranscriptionModel
-	// openAiAudioTranscriptionModel(OpenAiConnectionProperties commonProperties,
-	// OpenAiAudioTranscriptionProperties transcriptionProperties, RetryTemplate
-	// retryTemplate,
-	// RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-	// ResponseErrorHandler responseErrorHandler) {
-	//
-	// String apiKey = StringUtils.hasText(transcriptionProperties.getApiKey()) ?
-	// transcriptionProperties.getApiKey()
-	// : commonProperties.getApiKey();
-	//
-	// String baseUrl = StringUtils.hasText(transcriptionProperties.getBaseUrl())
-	// ? transcriptionProperties.getBaseUrl() : commonProperties.getBaseUrl();
-	//
-	// Assert.hasText(apiKey,
-	// "OpenAI API key must be set. Use the property: spring.ai.openai.api-key or
-	// spring.ai.openai.audio.transcription.api-key property.");
-	// Assert.hasText(baseUrl,
-	// "OpenAI base URL must be set. Use the property: spring.ai.openai.base-url or
-	// spring.ai.openai.audio.transcription.base-url property.");
-	//
-	// var openAiAudioApi = new OpenAiAudioApi(baseUrl, apiKey, restClientBuilder,
-	// webClientBuilder,
-	// responseErrorHandler);
-	//
-	// return new OpenAiAudioTranscriptionModel(openAiAudioApi,
-	// transcriptionProperties.getOptions(), retryTemplate);
-	//
-	// }
-	//
-	// @Bean
-	// @ConditionalOnMissingBean
-	// @ConditionalOnProperty(prefix = OpenAiAudioSpeechProperties.CONFIG_PREFIX, name =
-	// "enabled", havingValue = "true",
-	// matchIfMissing = true)
-	// public OpenAiAudioSpeechModel openAiAudioSpeechClient(OpenAiConnectionProperties
-	// commonProperties,
-	// OpenAiAudioSpeechProperties speechProperties, RetryTemplate retryTemplate,
-	// RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-	// ResponseErrorHandler responseErrorHandler) {
-	//
-	// String apiKey = StringUtils.hasText(speechProperties.getApiKey()) ?
-	// speechProperties.getApiKey()
-	// : commonProperties.getApiKey();
-	//
-	// String baseUrl = StringUtils.hasText(speechProperties.getBaseUrl()) ?
-	// speechProperties.getBaseUrl()
-	// : commonProperties.getBaseUrl();
-	//
-	// Assert.hasText(apiKey,
-	// "OpenAI API key must be set. Use the property: spring.ai.openai.api-key or
-	// spring.ai.openai.audio.speech.api-key property.");
-	// Assert.hasText(baseUrl,
-	// "OpenAI base URL must be set. Use the property: spring.ai.openai.base-url or
-	// spring.ai.openai.audio.speech.base-url property.");
-	//
-	// var openAiAudioApi = new OpenAiAudioApi(baseUrl, apiKey, restClientBuilder,
-	// webClientBuilder,
-	// responseErrorHandler);
-	//
-	// return new OpenAiAudioSpeechModel(openAiAudioApi, speechProperties.getOptions());
-	// }
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = DashScopeImageProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
+	public DashScopeImageModel dashScopeImageModel(DashScopeConnectionProperties commonProperties,
+			DashScopeImageProperties imageProperties, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler) {
+
+		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
+				imageProperties, "image");
+
+		var dashScopeImageApi = new DashScopeImageApi(resolved.baseUrl(), resolved.apiKey(), resolved.workspaceId(),
+				restClientBuilder, webClientBuilder, responseErrorHandler);
+
+		return new DashScopeImageModel(dashScopeImageApi, imageProperties.getOptions(), retryTemplate);
+	}
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -278,6 +195,36 @@ public class DashScopeAutoConfiguration {
 		FunctionCallbackContext manager = new FunctionCallbackContext();
 		manager.setApplicationContext(context);
 		return manager;
+	}
+
+	private record ResolvedConnectionProperties(String baseUrl, String apiKey, String workspaceId,
+			MultiValueMap<String, String> headers) {
+	}
+
+	private static @NotNull DashScopeAutoConfiguration.ResolvedConnectionProperties resolveConnectionProperties(
+			DashScopeParentProperties commonProperties, DashScopeParentProperties modelProperties, String modelType) {
+
+		String baseUrl = StringUtils.hasText(modelProperties.getBaseUrl()) ? modelProperties.getBaseUrl()
+				: commonProperties.getBaseUrl();
+		String apiKey = StringUtils.hasText(modelProperties.getApiKey()) ? modelProperties.getApiKey()
+				: commonProperties.getApiKey();
+		String workspaceId = StringUtils.hasText(modelProperties.getWorkspaceId()) ? modelProperties.getWorkspaceId()
+				: commonProperties.getWorkspaceId();
+
+		Map<String, List<String>> connectionHeaders = new HashMap<>();
+		if (StringUtils.hasText(workspaceId)) {
+			connectionHeaders.put("DashScope-Workspace", List.of(workspaceId));
+		}
+
+		Assert.hasText(baseUrl,
+				"DashScope base URL must be set.  Use the connection property: spring.ai.dashscope.base-url or spring.ai.dashscope."
+						+ modelType + ".base-url property.");
+		Assert.hasText(apiKey,
+				"DashScope API key must be set. Use the connection property: spring.ai.dashscope.api-key or spring.ai.dashscope."
+						+ modelType + ".api-key property.");
+
+		return new DashScopeAutoConfiguration.ResolvedConnectionProperties(baseUrl, apiKey, workspaceId,
+				CollectionUtils.toMultiValueMap(connectionHeaders));
 	}
 
 	/**
