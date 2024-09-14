@@ -15,8 +15,9 @@
 		<module>models</module>
 		<module>prompt</module>
 		<module>function-calling</module>
-		<module>structured-output</module>
-		<module>streaming</module>
+		<module>rag</module>
+		<module>outputparser</module>
+		<module>playground-flight-booking</module>
 	</modules>
 
 </project>

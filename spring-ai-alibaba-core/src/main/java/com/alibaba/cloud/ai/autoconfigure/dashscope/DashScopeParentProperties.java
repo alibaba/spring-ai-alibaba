@@ -23,6 +23,8 @@ class DashScopeParentProperties {
 
 	private String baseUrl;
 
+	private String workspaceId;
+
 	public String getApiKey() {
 		return apiKey;
 	}
@@ -45,6 +47,14 @@ class DashScopeParentProperties {
 
 	public void setBaseUrl(String baseUrl) {
 		this.baseUrl = baseUrl;
+	}
+
+	String getWorkspaceId() {
+		return workspaceId;
+	}
+
+	void setWorkspaceId(String workspaceId) {
+		this.workspaceId = workspaceId;
 	}
 
 }

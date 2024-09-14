@@ -93,7 +93,7 @@ public class DashScopeChatClientIT {
 					new DocumentRetrievalAdvisor(retriever, systemResource.getContentAsString(StandardCharsets.UTF_8)))
 			.build();
 
-		ChatResponse response = chatClient.prompt().user("如何快速开始百炼?").call().chatResponse();
+		ChatResponse response = chatClient.prompt().user("spring ai alibaba 是什么?").call().chatResponse();
 		String content = response.getResult().getOutput().getContent();
 		Assertions.assertNotNull(content);
 
@@ -145,7 +145,11 @@ public class DashScopeChatClientIT {
 	void callWithFunctionBeanTest() {
 		ChatClient chatClient = ChatClient.builder(dashscopeChatModel).defaultFunctions("getOrderFunction").build();
 
-		ChatResponse response = chatClient.prompt().user("帮我一下订单, 用户编号为1001, 订单编号为2001").call().chatResponse();
+		ChatResponse response = chatClient.prompt()
+			.functions("getCurrentWeather")
+			.user("帮我一下订单, 用户编号为1001, 订单编号为2001")
+			.call()
+			.chatResponse();
 
 		String content = response.getResult().getOutput().getContent();
 		Assertions.assertNotNull(content);

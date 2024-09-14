@@ -1,10 +1,9 @@
 spring:
   ai:
     dashscope:
-      api-key:
+      api-key: ${AI_DASHSCOPE_API_KEY}
       chat:
         options:
           model: qwen-max
-        api-key:
       agent:
-        app-id: dae******abc7
+        app-id: ${DASHSCOPE_AGENT_APP_ID}

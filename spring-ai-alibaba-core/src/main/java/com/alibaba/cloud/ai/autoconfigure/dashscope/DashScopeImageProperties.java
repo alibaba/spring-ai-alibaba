@@ -36,7 +36,7 @@ public class DashScopeImageProperties extends DashScopeParentProperties {
 	/**
 	 * Spring Cloud Alibaba AI configuration prefix.
 	 */
-	public static final String CONFIG_PREFIX = "spring.ai.dashscope.images";
+	public static final String CONFIG_PREFIX = "spring.ai.dashscope.image";
 
 	/**
 	 * Default TongYi Chat model.
