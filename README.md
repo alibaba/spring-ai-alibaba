@@ -49,11 +49,9 @@ public class ChatController {
 
 ## Roadmap
 
-![Spring AI Alibaba](./imgs/spring-ai-alibaba.png)
-
 基于 Spring AI Alibaba 以及阿里巴巴整体开源生态，可以构建原生 AI 架构的应用。
 
-![ai-native-architecture](./imgs/spring-ai-alibaba-arch.png)
+![ai-native-architecture](./docs/imgs/spring-ai-alibaba-arch.png)
 
 ## 参考资料
 * [spring-ai 官方文档](https://docs.spring.io/spring-ai/reference/index.html)
