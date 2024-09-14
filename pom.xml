@@ -120,6 +120,13 @@
 			<organizationUrl>https://aliyun.com</organizationUrl>
 		</developer>
 	</developers>
+	<distributionManagement>
+		<snapshotRepository>
+			<id>sonatype-nexus-snapshots</id>
+			<name>Sonatype Nexus Snapshots</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
 
 	<build>
 		<plugins>

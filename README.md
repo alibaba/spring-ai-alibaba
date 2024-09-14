@@ -1,11 +1,15 @@
 # Spring AI Alibaba
 
-[Spring AI Alibaba](https://sca.aliyun.com/ai/) 是一款 Java 语言实现的 AI 应用开发框架，旨在简化 Java AI 应用程序开发，让 Java 开发者像使用 Spring 开发普通应用一样开发 AI 应用。Spring AI Alibaba 基于 Spring AI 开源项目构建，默认提供阿里云基础模型服务、开源及商业生态组件的集成与最佳实践。
+[中文版本](./README-zh.md)
 
-## 快速开始
-请参考 [官网文档快速开始](https://sca.aliyun.com/ai/get-started/) 了解如何使用 Spring AI Alibaba 快速开发生成式 AI 应用。
+[Spring AI Alibaba](https://sca.aliyun.com/ai/) is an AI application framework for Java developers built on top of Spring AI that provides seamless integration with Alibaba Cloud QWen LLM services and cloud native infrastructures.
 
-总的来说，使用 Spring AI Alibaba 开发应用与使用普通 Spring Boot 没有什么区别，只需要增加 `spring-ai-alibaba-starter` 依赖，将 `ChatClient` Bean 注入就可以实现与模型聊天了。
+## Get Started
+Please refer to [quick start](https://sca.aliyun.com/ai/get-started/) for how to quickly add generative AI to your Spring Boot applications.
+
+Overall, it takes only two steps to turn your Spring Boot application into an intelligent agent:
+
+1. Add 'spring-ai-alibaba-starter' dependency to your project.
 
 ```xml
 <dependency>
@@ -14,6 +18,8 @@
 	<version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
+
+2. Inject the default 'ChatClient' Bean to regular Controller beans.
 
 ```java
 @RestController
@@ -35,28 +41,41 @@ public class ChatController {
 }
 ```
 
-## 特性
-以下是 Spring AI Alibaba 支持的核心能力，未来更多高级功能将以这些核心能力为基础。请参考官网文档学习每个[功能详细说明](https://sca.aliyun.com/docs/2023/user-guide/ai/quick-start/)以及 [AI 应用开发最佳实践](https://sca.aliyun.com/docs/2023/user-guide/ai/quick-start/)。
+## Core Features
 
-* 提供多种大模型服务对接能力，包括主流开源与阿里云通义大模型服务（百炼）等
-* 支持的模型交互类型包括：聊天、文生图、音频转录、文生语音等
-* 支持同步和流式 API，在保持应用层 API 不变的情况下支持灵活切换底层模型服务，支持特定模型的定制化能力（参数传递）
-* 支持 Structured Output，即将 AI 模型输出映射到 POJOs
-* 支持矢量数据库存储与检索
-* 支持函数调用 Function Calling
-* 支持构建 AI Agent 所需要的工具调用和对话内存记忆能力
-* 支持 RAG 开发模式，包括离线文档处理如 DocumentReader、Splitter、Embedding、VectorStore 等，支持 Retrieve 检索
+Spring AI Alibaba provides the following features, read the [documentation](https://sca.aliyun.com/ai) on our website for more details of how to use these features.
+
+* Support for Alibaba Cloud QWen Model and Dashscope Model service.
+* Support high-level AI agent abstraction -- ChatClient.
+* Support various Model types like Chat, Text to Image, Audio Transcription, Text to Speech.
+* Both synchronous and stream API options are supported.
+* Mapping of AI Model output to POJOs.
+* Portable API across Vector Store providers.
+* Function calling.
+* Spring Boot Auto Configuration and Starters.
+* RAG (Retrieval-Augmented Generation) support: DocumentReader, Splitter, Embedding, VectorStore, and Retriever.
+* Support conversation with ChatMemory
 
 ## Roadmap
 
-基于 Spring AI Alibaba 以及阿里巴巴整体开源生态，可以构建原生 AI 架构的应用。
+Spring AI Alibaba aims to reduce the complexity of building ai native java applications, from development, evaluation to deployment and observability. In order to achieve that, we provide both open-source framework and ecosystem integrations around it, below are the features that we plan to support in the near future:
+* Prompt Template Management
+* Event Driven AI Application
+* Support of more Vector Databases
+* Function Deployment
+* Observability
+* AI proxy support: prompt filtering, rate limit, multiple Model, etc.
+* Development Tools
 
 ![ai-native-architecture](./docs/imgs/spring-ai-alibaba-arch.png)
 
-## 参考资料
-* [spring-ai 官方文档](https://docs.spring.io/spring-ai/reference/index.html)
-* [阿里云百炼大模型应用开发平台](https://help.aliyun.com/zh/model-studio/getting-started/what-is-model-studio/)
-* [阿里云灵积模型服务与接入说明](https://help.aliyun.com/zh/dashscope/)
-* [LangChain 官方文档](https://langchain.com)
+## References
+* [Spring AI](https://docs.spring.io/spring-ai/reference/index.html)
+* [Alibaba Cloud Dashscope Model Service Platform (阿里云百炼模型服务及应用开发平台)](https://help.aliyun.com/zh/model-studio/getting-started/what-is-model-studio/)
 
+## Contact Us
+* Dingtalk Group (钉钉群), search `64485010179` and join.
+* Wechat Group (微信公众号), scan the QR code below and follow us.
+
+<img src="./docs/imgs/wechat-account.jpg" style="max-width:200px;"/>
 
