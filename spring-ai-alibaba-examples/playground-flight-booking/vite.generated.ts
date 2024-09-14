@@ -763,7 +763,7 @@ export const vaadinConfig: UserConfigFn = (env) => {
       devMode && showRecompileReason(),
       settings.offlineEnabled && buildSWPlugin({ devMode }),
       !devMode && statsExtracterPlugin(),
-      devBundle && preserveUsageStats(),
+      !productionMode && preserveUsageStats(),
       themePlugin({ devMode }),
       postcssLit({
         include: ['**/*.css', /.*\/.*\.css\?.*/],
@@ -832,7 +832,7 @@ export const vaadinConfig: UserConfigFn = (env) => {
             if (devMode) {
               scripts.push({
                 tag: 'script',
-                attrs: { type: 'module', src: `/generated/vite-devmode.ts` },
+                attrs: { type: 'module', src: `/generated/vite-devmode.ts`, onerror: "document.location.reload()" },
                 injectTo: 'head'
               });
             }

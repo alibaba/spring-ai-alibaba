@@ -18,7 +18,8 @@
 
 	<properties>
 		<java.version>17</java.version>
-		<vaadin.version>24.4.0.beta3</vaadin.version>
+		<vaadin.version>24.4.7</vaadin.version>
+		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
 	</properties>
 
 	<dependencyManagement>
@@ -83,7 +84,14 @@
 					<maxAttempts>240</maxAttempts>
 				</configuration>
 			</plugin>
-
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<version>${maven-deploy-plugin.version}</version>
+				<configuration>
+					<skip>true</skip>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>com.vaadin</groupId>
 				<artifactId>vaadin-maven-plugin</artifactId>
@@ -100,8 +108,8 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<source>21</source>
-					<target>21</target>
+					<source>17</source>
+					<target>17</target>
 				</configuration>
 			</plugin>
 		</plugins>
@@ -132,6 +140,16 @@
 	</profiles>
 
 	<repositories>
+		<repository>
+			<id>snapshots-repo</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
 		<repository>
 			<id>spring-milestones</id>
 			<name>Spring Milestones</name>
