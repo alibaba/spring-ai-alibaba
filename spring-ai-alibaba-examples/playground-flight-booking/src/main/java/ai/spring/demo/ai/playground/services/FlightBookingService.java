@@ -22,7 +22,7 @@ public class FlightBookingService {
     }
 
     private void initDemoData() {
-        List<String> names = List.of("云小包", "李千问", "张百炼", "王通义", "刘魔搭");
+        List<String> names = List.of("云小宝", "李千问", "张百炼", "王通义", "刘魔搭");
         List<String> airportCodes = List.of("北京", "上海", "广州", "深圳", "杭州", "南京", "青岛", "成都", "武汉", "西安", "重庆", "大连", "天津");
         Random random = new Random();
 
@@ -37,7 +37,7 @@ public class FlightBookingService {
             Customer customer = new Customer();
             customer.setName(name);
 
-            LocalDate date = LocalDate.now().plusDays(2*i);
+            LocalDate date = LocalDate.now().plusDays(2*(i+1));
 
             Booking booking = new Booking("10" + (i + 1), date, customer, BookingStatus.CONFIRMED, from, to, bookingClass);
             customer.getBookings().add(booking);
