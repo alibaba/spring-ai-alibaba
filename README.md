@@ -1,8 +1,8 @@
-# Spring AI Alibaba
+# [Spring AI Alibaba](https://sca.aliyun.com/ai/)
 
 [中文版本](./README-zh.md)
 
-[Spring AI Alibaba](https://sca.aliyun.com/ai/) is an AI application framework for Java developers built on top of Spring AI that provides seamless integration with Alibaba Cloud QWen LLM services and cloud native infrastructures.
+An AI application framework for Java developers built on top of Spring AI that provides seamless integration with Alibaba Cloud QWen LLM services and cloud-native infrastructures.
 
 ## Get Started
 Please refer to [quick start](https://sca.aliyun.com/ai/get-started/) for how to quickly add generative AI to your Spring Boot applications.
@@ -77,5 +77,5 @@ Spring AI Alibaba aims to reduce the complexity of building ai native java appli
 * Dingtalk Group (钉钉群), search `64485010179` and join.
 * Wechat Group (微信公众号), scan the QR code below and follow us.
 
-<img src="./docs/imgs/wechat-account.jpg" style="max-width:200px;"/>
+<img src="./docs/imgs/wechat-account.jpg" style="max-width:100px;"/>
 
