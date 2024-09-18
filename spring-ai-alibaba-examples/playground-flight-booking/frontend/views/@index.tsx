@@ -15,7 +15,7 @@ export default function Index() {
   const [bookings, setBookings] = useState<BookingDetails[]>([]);
   const [messages, setMessages] = useState<MessageItem[]>([{
     role: 'assistant',
-    content: 'Welcome to Funnair! How can I help you?'
+    content: '欢迎来到 Funnair! 请问有什么可以帮您的?'
   }]);
 
   useEffect(() => {
@@ -69,11 +69,10 @@ export default function Index() {
         <MessageInput onSubmit={e => sendMessage(e.detail.value)} className="px-0" disabled={working}/>
       </div>
       <div className="flex flex-col gap-m p-m box-border" style={{width: '70%'}}>
-        <h3>Bookings database</h3>
+        <h3>机票预定信息</h3>
         <Grid items={bookings} className="flex-shrink-0">
           <GridColumn path="bookingNumber" autoWidth header="#"/>
-          <GridColumn path="firstName" autoWidth/>
-          <GridColumn path="lastName" autoWidth/>
+          <GridColumn path="name" autoWidth/>
           <GridColumn path="date" autoWidth/>
           <GridColumn path="from" autoWidth/>
           <GridColumn path="to" autoWidth/>
