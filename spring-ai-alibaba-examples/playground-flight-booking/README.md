@@ -2,7 +2,7 @@
 
 Spring AI re-implementation of https://github.com/marcushellberg/java-ai-playground
 
-This app shows how you can use [Spring AI](https://github.com/spring-projects/spring-ai) to build an AI-powered system that:
+This app shows how you can use Spring AI Alibaba to build an AI-powered system that:
 
 - Has access to terms and conditions (retrieval augmented generation, RAG)
 - Can access tools (Java methods) to perform actions (Function Calling)
@@ -13,14 +13,14 @@ This app shows how you can use [Spring AI](https://github.com/spring-projects/sp
 ## Requirements
 
 - Java 17+
-- OpenAI API key in `OPENAI_API_KEY` environment variable
+- Dashscope API key in `AI_DASHSCOPE_API_KEY` environment variable
 
 ## Running
 
 Run the app by running `Application.java` in your IDE or `mvn` in the command line.
 
 
-Add to the POM the Spring AI Open AI boot starter:
+Add to the POM the Spring AI Alibaba boot starter:
 
 ```xml
 <dependency>
