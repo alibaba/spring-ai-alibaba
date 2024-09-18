@@ -65,7 +65,7 @@ public class DashScopeDocumentCloudReader implements DocumentReader {
 
 	@Override
 	public List<Document> get() {
-		String fileMD5 = null;
+		String fileMD5;
 		FileInputStream fileInputStream;
 		try {
 			fileInputStream = new FileInputStream(file);
@@ -73,9 +73,9 @@ public class DashScopeDocumentCloudReader implements DocumentReader {
 			DashScopeApi.UploadRequest uploadRequest = new DashScopeApi.UploadRequest(readerConfig.getCategoryId(),
 					file.getName(), file.length(), fileMD5);
 			String fileId = dashScopeApi.upload(file, uploadRequest);
-			// 轮询获取结果
+			// Polling for results
 			int tryCount = 0;
-			while (true && tryCount < MAX_TRY_COUNT) {
+			while (tryCount < MAX_TRY_COUNT) {
 				ResponseEntity<DashScopeApi.CommonResponse<DashScopeApi.QueryFileResponseData>> response = dashScopeApi
 					.queryFileInfo(readerConfig.getCategoryId(),
 							new DashScopeApi.UploadRequest.QueryFileRequest(fileId));
@@ -83,7 +83,7 @@ public class DashScopeDocumentCloudReader implements DocumentReader {
 					DashScopeApi.QueryFileResponseData queryFileResponseData = response.getBody().data();
 					String fileStatus = queryFileResponseData.status();
 					if ("PARSE_SUCCESS".equals(fileStatus)) {
-						// 下载文件
+						// downloadn files
 						String parseResult = dashScopeApi.getFileParseResult(readerConfig.getCategoryId(),
 								new DashScopeApi.UploadRequest.QueryFileRequest(fileId));
 						return List.of(toDocument(fileId, parseResult));
@@ -95,7 +95,7 @@ public class DashScopeDocumentCloudReader implements DocumentReader {
 					}
 				}
 				tryCount++;
-				Thread.sleep(30000l);
+				Thread.sleep(30000L);
 			}
 			return null;
 		}
@@ -108,8 +108,7 @@ public class DashScopeDocumentCloudReader implements DocumentReader {
 	private Document toDocument(String fileId, String parseResultText) {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("parse_fmt_type", "DASHSCOPE_DOCMIND");
-		Document document = new Document(fileId, parseResultText, metaData);
-		return document;
+        return new Document(fileId, parseResultText, metaData);
 	}
 
 }

@@ -16,8 +16,6 @@
 
 package com.alibaba.cloud.ai.dashscope.metadata.audio;
 
-import java.util.HashMap;
-
 import com.alibaba.dashscope.audio.tts.SpeechSynthesisResult;
 import com.alibaba.dashscope.audio.tts.SpeechSynthesisUsage;
 import com.alibaba.dashscope.audio.tts.timestamp.Sentence;
@@ -25,7 +23,6 @@ import com.alibaba.dashscope.audio.tts.timestamp.Sentence;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.model.MutableResponseMetadata;
-import org.springframework.ai.model.ResponseMetadata;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
