@@ -19,8 +19,8 @@ package com.alibaba.cloud.ai.example.model;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -31,8 +31,8 @@ public class ChatModelController {
 		this.chatModel = chatModel;
 	}
 
-	@PostMapping("/chat")
-	public String chat(@RequestBody String input) {
+	@GetMapping("/chat")
+	public String chat(@RequestParam String input) {
 		ChatResponse response = chatModel.call(new Prompt(input));
 		return response.getResult().getOutput().getContent();
 	}
