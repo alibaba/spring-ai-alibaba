@@ -15,12 +15,12 @@
 	</properties>
 
 	<modules>
-		<module>helloworld</module>
-		<module>models</module>
-		<module>prompt</module>
-		<module>function-calling</module>
-		<module>rag</module>
-		<module>outputparser</module>
+		<module>helloworld-example</module>
+		<module>chatmodel-example</module>
+		<module>prompt-example</module>
+		<module>function-calling-example</module>
+		<module>rag-example</module>
+		<module>output-parser-example</module>
 		<module>playground-flight-booking</module>
 	</modules>
 
