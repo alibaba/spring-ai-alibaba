@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.dashscope.audio;
 
+import java.nio.ByteBuffer;
+
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioApi;
 import com.alibaba.cloud.ai.dashscope.audio.speech.Speech;
 import com.alibaba.cloud.ai.dashscope.audio.speech.SpeechModel;
@@ -27,6 +29,7 @@ import com.alibaba.cloud.ai.dashscope.audio.speech.StreamingSpeechModel;
 import com.alibaba.cloud.ai.dashscope.metadata.audio.DashScopeAudioSpeechResponseMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -34,6 +37,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 import reactor.core.publisher.Flux;
+
+import static org.springframework.util.ObjectUtils.isEmpty;
 
 /**
  * OpenAI audio speech client implementation for backed by {@link DashScopeAudioApi}.

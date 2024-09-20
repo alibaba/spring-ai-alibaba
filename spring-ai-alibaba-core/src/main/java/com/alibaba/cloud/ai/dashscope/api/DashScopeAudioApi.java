@@ -180,7 +180,7 @@ public class DashScopeAudioApi {
 		 */
 		public enum Voice {
 
-			// @formatter:off
+		// @formatter:off
 			@JsonProperty("alloy") ALLOY("alloy"),
 			@JsonProperty("echo") ECHO("echo"),
 			@JsonProperty("fable") FABLE("fable"),
@@ -191,7 +191,7 @@ public class DashScopeAudioApi {
 
 			public final String value;
 
-			Voice(String value) {
+			private Voice(String value) {
 				this.value = value;
 			}
 
@@ -481,7 +481,7 @@ public class DashScopeAudioApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record TranslationRequest(
-		// @formatter:off
+	// @formatter:off
 		@JsonProperty("file") byte[] file,
 		@JsonProperty("model") String model,
 		@JsonProperty("prompt") String prompt,
@@ -557,7 +557,7 @@ public class DashScopeAudioApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record StructuredResponse(
-		// @formatter:off
+	// @formatter:off
 		@JsonProperty("language") String language,
 		@JsonProperty("duration") Float duration,
 		@JsonProperty("text") String text,
@@ -566,7 +566,7 @@ public class DashScopeAudioApi {
 		// @formatter:on
 
 		/**
-		 * Extracted word and it's corresponding timestamps.
+		 * Extracted word and it corresponding timestamps.
 		 *
 		 * @param word The text content of the word.
 		 * @param start The start time of the word in seconds.
@@ -600,7 +600,7 @@ public class DashScopeAudioApi {
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record Segment(
-			// @formatter:off
+		// @formatter:off
 			@JsonProperty("id") Integer id,
 			@JsonProperty("seek") Integer seek,
 			@JsonProperty("start") Float start,

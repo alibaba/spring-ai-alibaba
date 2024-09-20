@@ -65,7 +65,6 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DASHSC
 
 /**
  * @author nuocheng.lxm
- * @author yuluo
  * @date 2024/8/16 11:45
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
@@ -226,6 +225,35 @@ public class DashScopeAutoConfiguration {
 
 		return new DashScopeAutoConfiguration.ResolvedConnectionProperties(baseUrl, apiKey, workspaceId,
 				CollectionUtils.toMultiValueMap(connectionHeaders));
+	}
+
+	/**
+	 * Setting the API key.
+	 * @param connectionProperties {@link DashScopeConnectionProperties}
+	 */
+	private void settingApiKey(DashScopeConnectionProperties connectionProperties) {
+		String apiKey;
+		try {
+			// It is recommended to set the key by defining the api-key in an environment
+			// variable.
+			var envKey = System.getenv(DASHSCOPE_API_KEY);
+			if (Objects.nonNull(envKey)) {
+				Constants.apiKey = envKey;
+				return;
+			}
+			if (Objects.nonNull(connectionProperties.getApiKey())) {
+				apiKey = connectionProperties.getApiKey();
+			}
+			else {
+				apiKey = ApiKey.getApiKey(null);
+			}
+
+			Constants.apiKey = apiKey;
+		}
+		catch (NoApiKeyException e) {
+			throw new RuntimeException(e.getMessage());
+		}
+
 	}
 
 }

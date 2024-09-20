@@ -34,17 +34,17 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 public class DashScopeImageProperties extends DashScopeParentProperties {
 
 	/**
-	 * Spring AI Alibaba configuration prefix.
+	 * Spring Cloud Alibaba AI configuration prefix.
 	 */
 	public static final String CONFIG_PREFIX = "spring.ai.dashscope.image";
 
 	/**
-	 * Default DashScope Chat model.
+	 * Default TongYi Chat model.
 	 */
 	public static final String DEFAULT_IMAGES_MODEL_NAME = ImageSynthesis.Models.WANX_V1;
 
 	/**
-	 * Enable DashScope ai images client.
+	 * Enable TongYiQWEN ai images client.
 	 */
 	private boolean enabled = true;
 

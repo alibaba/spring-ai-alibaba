@@ -49,11 +49,11 @@ class DashScopeParentProperties {
 		this.baseUrl = baseUrl;
 	}
 
-	public String getWorkspaceId() {
+	String getWorkspaceId() {
 		return workspaceId;
 	}
 
-	public void setWorkspaceId(String workspaceId) {
+	void setWorkspaceId(String workspaceId) {
 		this.workspaceId = workspaceId;
 	}
 

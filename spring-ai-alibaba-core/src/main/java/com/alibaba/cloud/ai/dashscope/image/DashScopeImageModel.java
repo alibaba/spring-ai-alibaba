@@ -14,12 +14,11 @@ import java.util.List;
 
 /**
  * @author nuocheng.lxm
- * @author yuluo
  * @date 2024/8/16 11:29
  */
 public class DashScopeImageModel implements ImageModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(DashScopeImageModel.class);
+	private static Logger logger = LoggerFactory.getLogger(DashScopeImageModel.class);
 
 	/**
 	 * Low-level access to the DashScope Image API.
@@ -127,7 +126,7 @@ public class DashScopeImageModel implements ImageModel {
 			DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput output) {
 		List<DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseResult> genImageList = output
 			.results();
-		if (genImageList == null || genImageList.isEmpty()) {
+		if (genImageList == null || genImageList.size() == 0) {
 			return new ImageResponse(List.of());
 		}
 		List<ImageGeneration> imageGenerationList = genImageList.stream()
