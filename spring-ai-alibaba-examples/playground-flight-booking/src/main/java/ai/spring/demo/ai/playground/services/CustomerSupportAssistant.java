@@ -75,11 +75,11 @@ public class CustomerSupportAssistant {
 	public Flux<String> chat(String chatId, String userMessageContent) {
 
 		return this.chatClient.prompt()
-				.system(s -> s.param("current_date", LocalDate.now().toString()))
-				.user(userMessageContent)
-				.advisors(a -> a
-						.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
-						.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
-				.stream().content();
+			.system(s -> s.param("current_date", LocalDate.now().toString()))
+			.user(userMessageContent)
+			.advisors(a -> a.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId).param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
+			.stream()
+			.content();
 	}
+
 }

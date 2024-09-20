@@ -95,7 +95,7 @@ public class DashScopeCloudStore implements VectorStore {
 			searchOption = new DashScopeDocumentRetrieverOptions();
 		}
 		searchOption.setRerankTopN(request.getTopK());
-        return dashScopeApi.retriever(pipelineId, request.query, searchOption);
+		return dashScopeApi.retriever(pipelineId, request.query, searchOption);
 	}
 
 }

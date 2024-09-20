@@ -36,18 +36,19 @@ public class FunctionCallingController {
 	@GetMapping("/weather-service")
 	public String weatherService(String subject) {
 		return chatClient.prompt()
-				.function("getWeather", "根据城市查询天气", new MockWeatherService())
-				.user(subject)
-				.call()
-				.content();
+			.function("getWeather", "根据城市查询天气", new MockWeatherService())
+			.user(subject)
+			.call()
+			.content();
 	}
 
 	@GetMapping("/order-detail")
 	public String orderDetail() {
 		return chatClient.prompt()
-				.functions("getOrderFunction")
-				.user("帮我查询一下订单, 用户编号为1001, 订单编号为2001")
-				.call()
-				.content();
+			.functions("getOrderFunction")
+			.user("帮我查询一下订单, 用户编号为1001, 订单编号为2001")
+			.call()
+			.content();
 	}
+
 }

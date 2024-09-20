@@ -10,13 +10,14 @@ import reactor.core.publisher.Flux;
 @AnonymousAllowed
 public class AssistantService {
 
-    private final CustomerSupportAssistant agent;
+	private final CustomerSupportAssistant agent;
 
-    public AssistantService(CustomerSupportAssistant agent) {
-        this.agent = agent;
-    }
+	public AssistantService(CustomerSupportAssistant agent) {
+		this.agent = agent;
+	}
 
-    public Flux<String> chat(String chatId, String userMessage) {
-        return agent.chat(chatId, userMessage);
-    }
+	public Flux<String> chat(String chatId, String userMessage) {
+		return agent.chat(chatId, userMessage);
+	}
+
 }

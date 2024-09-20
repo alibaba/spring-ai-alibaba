@@ -42,8 +42,8 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 
 /**
- * {@link ChatModel} implementation for {@literal Alibaba DashScope}
- * backed by {@link Generation}.
+ * {@link ChatModel} implementation for {@literal Alibaba DashScope} backed by
+ * {@link Generation}.
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
@@ -150,7 +150,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 					@SuppressWarnings("null")
 					String requestId = chatCompletion2.requestId();
 
-						// @formatter:off
+			// @formatter:off
 						List<Generation> generations = chatCompletion2.output().choices().stream().map(choice -> {
 							if (choice.message().role() != null) {
 								roleMap.putIfAbsent(requestId, choice.message().role().name());
