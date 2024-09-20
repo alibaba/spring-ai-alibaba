@@ -3,8 +3,9 @@
  * Copyright: Copyright(C) 1999-2024
  * Company  : Alibaba Group Inc.
  */
-package com.alibaba.cloud.ai.example.functioncalling;
+package com.alibaba.cloud.ai.example.functioncalling.function;
 
+import com.alibaba.cloud.ai.example.functioncalling.entity.Response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -35,9 +36,6 @@ public class MockOrderService {
 					value = "orderId") @JsonPropertyDescription("订单编号, 比如1001***") String orderId,
 			@JsonProperty(required = true,
 					value = "userId") @JsonPropertyDescription("用户编号, 比如2001***") String userId) {
-	}
-
-	public record Response(String description) {
 	}
 
 }

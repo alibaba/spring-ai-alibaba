@@ -16,15 +16,14 @@
  */
 package com.alibaba.cloud.ai.example.functioncalling;
 
+import com.alibaba.cloud.ai.example.functioncalling.function.MockWeatherService;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequestMapping("/ai/func")
 public class FunctionCallingController {
 
 	private final ChatClient chatClient;
