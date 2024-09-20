@@ -37,8 +37,6 @@ import org.springframework.util.CollectionUtils;
  */
 public class DashScopeCloudStore implements VectorStore {
 
-	private static final Logger logger = LoggerFactory.getLogger(DashScopeCloudStore.class);
-
 	private final DashScopeStoreOptions options;
 
 	private final DashScopeApi dashScopeApi;
@@ -64,7 +62,7 @@ public class DashScopeCloudStore implements VectorStore {
 			.filter(e -> e.getId() != null)
 			.map(Document::getId)
 			.collect(Collectors.toList());
-		if (documentIdList == null || documentIdList.size() == 0) {
+		if (documentIdList == null || documentIdList.isEmpty()) {
 			throw new DashScopeException("document's id must not be null");
 		}
 		dashScopeApi.upsertPipeline(documents, options);
@@ -97,8 +95,7 @@ public class DashScopeCloudStore implements VectorStore {
 			searchOption = new DashScopeDocumentRetrieverOptions();
 		}
 		searchOption.setRerankTopN(request.getTopK());
-		List<Document> documentList = dashScopeApi.retriever(pipelineId, request.query, searchOption);
-		return documentList;
+        return dashScopeApi.retriever(pipelineId, request.query, searchOption);
 	}
 
 }
