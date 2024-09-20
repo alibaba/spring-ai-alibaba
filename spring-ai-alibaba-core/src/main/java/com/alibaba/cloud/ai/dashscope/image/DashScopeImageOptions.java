@@ -23,7 +23,6 @@ import org.springframework.ai.image.ImageOptions;
 
 /**
  * @author nuocheng.lxm
- * @author yuluo
  * @date 2024/8/16 11:29
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)

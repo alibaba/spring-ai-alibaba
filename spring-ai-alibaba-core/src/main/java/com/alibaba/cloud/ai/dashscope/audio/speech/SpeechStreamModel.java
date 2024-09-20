@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.dashscope.audio.speech;
 
+import java.nio.ByteBuffer;
+
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.model.StreamingModel;
