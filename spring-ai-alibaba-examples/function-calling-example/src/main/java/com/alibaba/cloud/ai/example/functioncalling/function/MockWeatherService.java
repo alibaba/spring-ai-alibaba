@@ -3,10 +3,11 @@
  * Copyright: Copyright(C) 1999-2024
  * Company  : Alibaba Group Inc.
  */
-package com.alibaba.cloud.ai.example.functioncalling;
+package com.alibaba.cloud.ai.example.functioncalling.function;
 
 import java.util.function.Function;
 
+import com.alibaba.cloud.ai.example.functioncalling.entity.Response;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -22,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
  * @since jdk8
  */
 
-public class MockWeatherService implements Function<MockWeatherService.Request, MockWeatherService.Response> {
+public class MockWeatherService implements Function<MockWeatherService.Request, Response> {
 
 	@Override
 	public Response apply(Request request) {
@@ -42,9 +43,6 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 	public record Request(
 			@JsonProperty(required = true, value = "city") @JsonPropertyDescription("城市, 比如杭州") String city,
 			@JsonProperty(required = true, value = "date") @JsonPropertyDescription("日期, 比如2024-08-22") String date) {
-	}
-
-	public record Response(String description) {
 	}
 
 }
