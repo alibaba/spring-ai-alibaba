@@ -11,13 +11,15 @@ import ai.spring.demo.ai.playground.services.FlightBookingService;
 @BrowserCallable
 @AnonymousAllowed
 public class BookingService {
-    private final FlightBookingService flightBookingService;
 
-    public BookingService(FlightBookingService flightBookingService) {
-        this.flightBookingService = flightBookingService;
-    }
+	private final FlightBookingService flightBookingService;
 
-    public List<BookingDetails> getBookings() {
-        return flightBookingService.getBookings();
-    }
+	public BookingService(FlightBookingService flightBookingService) {
+		this.flightBookingService = flightBookingService;
+	}
+
+	public List<BookingDetails> getBookings() {
+		return flightBookingService.getBookings();
+	}
+
 }

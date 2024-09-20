@@ -39,7 +39,6 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAUL
 /**
  * @author nuocheng.lxm
  * @author yuluo
- *
  * @date 2024/7/31 14:15
  */
 public class DashScopeApi {
@@ -359,7 +358,7 @@ public class DashScopeApi {
 					uploadLeaseResponse.message()));
 		}
 		uploadFile(file, uploadLeaseResponse);
-        return addFile(uploadLeaseResponse.data.leaseId(), request);
+		return addFile(uploadLeaseResponse.data.leaseId(), request);
 	}
 
 	public ResponseEntity<CommonResponse<QueryFileResponseData>> queryFileInfo(String categoryId,
@@ -690,8 +689,7 @@ public class DashScopeApi {
 			.body(upsertPipelineRequest)
 			.retrieve()
 			.toEntity(StartPipelineResponse.class);
-		if (startPipelineResponse.getBody() == null
-				|| !"SUCCESS".equalsIgnoreCase(startPipelineResponse.getBody().code)
+		if (startPipelineResponse.getBody() == null || !"SUCCESS".equalsIgnoreCase(startPipelineResponse.getBody().code)
 				|| startPipelineResponse.getBody().ingestionId == null) {
 			throw new DashScopeException(ErrorCodeEnum.INDEX_ADD_DOCUMENT_ERROR);
 		}

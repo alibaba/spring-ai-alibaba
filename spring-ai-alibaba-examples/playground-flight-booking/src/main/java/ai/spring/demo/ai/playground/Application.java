@@ -32,15 +32,12 @@ public class Application implements AppShellConfigurator {
 	// In the real world, ingesting documents would often happen separately, on a CI
 	// server or similar.
 	@Bean
-	CommandLineRunner ingestTermOfServiceToVectorStore(
-			EmbeddingModel embeddingModel, VectorStore vectorStore,
+	CommandLineRunner ingestTermOfServiceToVectorStore(EmbeddingModel embeddingModel, VectorStore vectorStore,
 			@Value("classpath:rag/terms-of-service.txt") Resource termsOfServiceDocs) {
 
 		return args -> {
 			// Ingest the document into the vector store
-			vectorStore.write(
-					new TokenTextSplitter().transform(
-							new TextReader(termsOfServiceDocs).read()));
+			vectorStore.write(new TokenTextSplitter().transform(new TextReader(termsOfServiceDocs).read()));
 
 			vectorStore.similaritySearch("Cancelling Bookings").forEach(doc -> {
 				logger.info("Similar Document: {}", doc.getContent());
@@ -57,4 +54,5 @@ public class Application implements AppShellConfigurator {
 	public ChatMemory chatMemory() {
 		return new InMemoryChatMemory();
 	}
+
 }

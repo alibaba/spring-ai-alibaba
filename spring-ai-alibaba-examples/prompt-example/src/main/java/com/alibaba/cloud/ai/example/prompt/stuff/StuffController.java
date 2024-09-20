@@ -28,6 +28,7 @@ public class StuffController {
 	public StuffController(ChatClient.Builder builder) {
 		this.chatClient = builder.build();
 	}
+
 	@GetMapping("/ai/stuff")
 	public Completion completion(@RequestParam(value = "message",
 			defaultValue = "Which athletes won the mixed doubles gold medal in curling at the 2022 Winter Olympics?'") String message,
@@ -37,7 +38,8 @@ public class StuffController {
 		map.put("question", message);
 		if (stuffit) {
 			map.put("context", docsToStuffResource);
-		} else {
+		}
+		else {
 			map.put("context", "");
 		}
 		Prompt prompt = promptTemplate.create(map);

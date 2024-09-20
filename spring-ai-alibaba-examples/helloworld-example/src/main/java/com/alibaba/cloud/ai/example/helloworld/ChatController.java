@@ -31,9 +31,7 @@ public class ChatController {
 
 	@GetMapping("/chat")
 	public String chat(String input) {
-		return this.chatClient.prompt()
-				.user(input)
-				.call()
-				.content();
+		return this.chatClient.prompt().user(input).call().content();
 	}
+
 }

@@ -77,8 +77,8 @@ public class JsonReader implements DocumentReader {
 
 			if (rootNode.isArray()) {
 				return StreamSupport.stream(rootNode.spliterator(), true)
-						.map(jsonNode -> parseJsonNode(jsonNode, objectMapper))
-						.toList();
+					.map(jsonNode -> parseJsonNode(jsonNode, objectMapper))
+					.toList();
 			}
 			else {
 				return Collections.singletonList(parseJsonNode(rootNode, objectMapper));

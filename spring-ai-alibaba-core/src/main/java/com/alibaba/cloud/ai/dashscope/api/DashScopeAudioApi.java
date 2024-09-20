@@ -481,7 +481,7 @@ public class DashScopeAudioApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record TranslationRequest(
-		// @formatter:off
+	// @formatter:off
 		@JsonProperty("file") byte[] file,
 		@JsonProperty("model") String model,
 		@JsonProperty("prompt") String prompt,
@@ -557,7 +557,7 @@ public class DashScopeAudioApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record StructuredResponse(
-		// @formatter:off
+	// @formatter:off
 		@JsonProperty("language") String language,
 		@JsonProperty("duration") Float duration,
 		@JsonProperty("text") String text,
@@ -600,7 +600,7 @@ public class DashScopeAudioApi {
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record Segment(
-			// @formatter:off
+		// @formatter:off
 			@JsonProperty("id") Integer id,
 			@JsonProperty("seek") Integer seek,
 			@JsonProperty("start") Float start,

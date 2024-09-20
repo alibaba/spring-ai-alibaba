@@ -108,7 +108,7 @@ public class DashScopeDocumentCloudReader implements DocumentReader {
 	private Document toDocument(String fileId, String parseResultText) {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("parse_fmt_type", "DASHSCOPE_DOCMIND");
-        return new Document(fileId, parseResultText, metaData);
+		return new Document(fileId, parseResultText, metaData);
 	}
 
 }
