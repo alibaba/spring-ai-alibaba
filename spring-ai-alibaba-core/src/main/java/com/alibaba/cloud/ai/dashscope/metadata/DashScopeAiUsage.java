@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.dashscope.metadata;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.TokenUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.util.Assert;

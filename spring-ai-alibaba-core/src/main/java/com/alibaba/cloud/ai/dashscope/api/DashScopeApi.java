@@ -38,6 +38,7 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAUL
 
 /**
  * @author nuocheng.lxm
+ * @author yuluo
  * @date 2024/7/31 14:15
  */
 public class DashScopeApi {
@@ -345,12 +346,6 @@ public class DashScopeApi {
 		}
 	}
 
-	/**
-	 * 上传文件 返回文件ID
-	 * @param file
-	 * @param request
-	 * @return
-	 */
 	public String upload(File file, UploadRequest request) {
 		// 申请上传
 		ResponseEntity<UploadLeaseResponse> responseEntity = uploadLease(request);
@@ -358,15 +353,12 @@ public class DashScopeApi {
 		if (uploadLeaseResponse == null) {
 			throw new DashScopeException(ErrorCodeEnum.READER_APPLY_LEASE_ERROR);
 		}
-		if (!"SUCCESS".equals(uploadLeaseResponse.code().toUpperCase())) {
+		if (!"SUCCESS".equalsIgnoreCase(uploadLeaseResponse.code())) {
 			throw new DashScopeException("ApplyLease Failed,code:%s,message:%s".formatted(uploadLeaseResponse.code(),
 					uploadLeaseResponse.message()));
 		}
-		// 上传文件
 		uploadFile(file, uploadLeaseResponse);
-		// 开始解析
-		String fileId = addFile(uploadLeaseResponse.data.leaseId(), request);
-		return fileId;
+		return addFile(uploadLeaseResponse.data.leaseId(), request);
 	}
 
 	public ResponseEntity<CommonResponse<QueryFileResponseData>> queryFileInfo(String categoryId,
@@ -451,8 +443,7 @@ public class DashScopeApi {
 				}
 			};
 			HttpEntity<InputStreamResource> requestEntity = new HttpEntity<>(resource, headers);
-			ResponseEntity<Void> response = restTemplate.exchange(new URI(uploadParam.url), HttpMethod.PUT,
-					requestEntity, Void.class);
+			restTemplate.exchange(new URI(uploadParam.url), HttpMethod.PUT, requestEntity, Void.class);
 		}
 		catch (Exception ex) {
 			throw new DashScopeException("Upload File Failed", ex);
@@ -672,8 +663,8 @@ public class DashScopeApi {
 								retrieverOptions.getRerankModelName())),
 						retrieverOptions.getRerankMinScore(), retrieverOptions.getRerankTopN()));
 		List<String> documentIdList = documents.stream()
-			.filter(e -> e.getId() != null)
 			.map(Document::getId)
+			.filter(Objects::nonNull)
 			.collect(Collectors.toList());
 		UpsertPipelineRequest upsertPipelineRequest = new UpsertPipelineRequest(storeOptions.getIndexName(),
 				"MANAGED_SHARED", null, "unstructured", "recommend",
@@ -689,7 +680,7 @@ public class DashScopeApi {
 			.retrieve()
 			.toEntity(UpsertPipelineResponse.class);
 		if (upsertPipelineResponse.getBody() == null
-				|| !"SUCCESS".equals(upsertPipelineResponse.getBody().status.toUpperCase())) {
+				|| !"SUCCESS".equalsIgnoreCase(upsertPipelineResponse.getBody().status)) {
 			throw new DashScopeException(ErrorCodeEnum.CREATE_INDEX_ERROR);
 		}
 		String pipelineId = upsertPipelineResponse.getBody().id;
@@ -698,8 +689,7 @@ public class DashScopeApi {
 			.body(upsertPipelineRequest)
 			.retrieve()
 			.toEntity(StartPipelineResponse.class);
-		if (startPipelineResponse.getBody() == null
-				|| !"SUCCESS".equals(startPipelineResponse.getBody().code.toUpperCase())
+		if (startPipelineResponse.getBody() == null || !"SUCCESS".equalsIgnoreCase(startPipelineResponse.getBody().code)
 				|| startPipelineResponse.getBody().ingestionId == null) {
 			throw new DashScopeException(ErrorCodeEnum.INDEX_ADD_DOCUMENT_ERROR);
 		}
@@ -715,7 +705,7 @@ public class DashScopeApi {
 			.retrieve()
 			.toEntity(DelePipelineDocumentResponse.class);
 		if (deleDocumentResponse == null || deleDocumentResponse.getBody() == null
-				|| !"SUCCESS".equals(deleDocumentResponse.getBody().code.toUpperCase())) {
+				|| !"SUCCESS".equalsIgnoreCase(deleDocumentResponse.getBody().code)) {
 			return false;
 		}
 		return true;
@@ -736,11 +726,11 @@ public class DashScopeApi {
 			.retrieve()
 			.toEntity(DocumentRetrieveResponse.class);
 		if (deleDocumentResponse == null || deleDocumentResponse.getBody() == null
-				|| !"SUCCESS".equals(deleDocumentResponse.getBody().code.toUpperCase())) {
+				|| !"SUCCESS".equalsIgnoreCase(deleDocumentResponse.getBody().code)) {
 			throw new DashScopeException(ErrorCodeEnum.RETRIEVER_DOCUMENT_ERROR);
 		}
 		List<DocumentRetrieveResponse.DocumentRetrieveResponseNode> nodeList = deleDocumentResponse.getBody().nodes;
-		if (nodeList == null || nodeList.size() == 0) {
+		if (nodeList == null || nodeList.isEmpty()) {
 			return new ArrayList<>();
 		}
 		List<Document> documents = new ArrayList<>();

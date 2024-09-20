@@ -17,4 +17,5 @@
 package com.alibaba.cloud.ai.example.model;
 
 public class AudioModelController {
+
 }

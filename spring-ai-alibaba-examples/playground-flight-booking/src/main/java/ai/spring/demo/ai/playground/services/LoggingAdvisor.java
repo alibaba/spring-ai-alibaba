@@ -12,4 +12,5 @@ public class LoggingAdvisor implements RequestResponseAdvisor {
 		System.out.println("Request: " + request);
 		return request;
 	}
+
 }

@@ -180,7 +180,7 @@ public class DashScopeAudioApi {
 		 */
 		public enum Voice {
 
-		// @formatter:off
+			// @formatter:off
 			@JsonProperty("alloy") ALLOY("alloy"),
 			@JsonProperty("echo") ECHO("echo"),
 			@JsonProperty("fable") FABLE("fable"),
@@ -191,7 +191,7 @@ public class DashScopeAudioApi {
 
 			public final String value;
 
-			private Voice(String value) {
+			Voice(String value) {
 				this.value = value;
 			}
 
@@ -566,7 +566,7 @@ public class DashScopeAudioApi {
 		// @formatter:on
 
 		/**
-		 * Extracted word and it corresponding timestamps.
+		 * Extracted word and it's corresponding timestamps.
 		 *
 		 * @param word The text content of the word.
 		 * @param start The start time of the word in seconds.

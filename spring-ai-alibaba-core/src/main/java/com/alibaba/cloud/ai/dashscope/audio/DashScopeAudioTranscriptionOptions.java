@@ -24,7 +24,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionOptions;
-import org.springframework.ai.model.ModelOptions;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
