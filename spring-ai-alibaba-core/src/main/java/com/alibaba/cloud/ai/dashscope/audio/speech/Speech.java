@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.dashscope.audio.speech;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 

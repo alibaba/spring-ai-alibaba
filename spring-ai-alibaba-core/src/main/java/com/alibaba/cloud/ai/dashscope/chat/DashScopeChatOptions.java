@@ -22,7 +22,7 @@ import org.springframework.util.Assert;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions {
 
-  // @formatter:off
+	// @formatter:off
   /** ID of the model to use. */
   @JsonProperty("model")
   private String model;
@@ -51,6 +51,8 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   private @JsonProperty("top_k") Integer topK;
 
   /**
+   *
+   *
    * <ul>
    *   <li>stop参数用于实现内容生成过程的精确控制，在生成内容即将包含指定的字符串或token_ids时自动停止，生成内容不包含指定的内容。
    *       <p>例如，如果指定stop为"你好"，表示将要生成"你好"时停止；如果指定stop为[37763, 367]，表示将要生成"Observation"时停止。

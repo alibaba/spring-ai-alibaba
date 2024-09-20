@@ -33,12 +33,12 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAUL
 public class DashScopeChatProperties extends DashScopeParentProperties {
 
 	/**
-	 * Spring AI Alibaba configuration prefix.
+	 * Spring Cloud Alibaba AI configuration prefix.
 	 */
 	public static final String CONFIG_PREFIX = "spring.ai.dashscope.chat";
 
 	/**
-	 * Default DashScope Chat model.
+	 * Default DashScope Qwen Chat model.
 	 */
 	public static final String DEFAULT_DEPLOYMENT_NAME = Generation.Models.QWEN_TURBO;
 
@@ -48,7 +48,7 @@ public class DashScopeChatProperties extends DashScopeParentProperties {
 	private static final Float DEFAULT_TEMPERATURE = 0.8f;
 
 	/**
-	 * Enable Dashscope ai chat client.
+	 * Enable qwen ai chat client.
 	 */
 	private boolean enabled = true;
 
