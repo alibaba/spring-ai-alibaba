@@ -37,4 +37,5 @@ public class ChatModelController {
 		ChatResponse response = chatModel.call(new Prompt(input));
 		return response.getResult().getOutput().getContent();
 	}
+
 }

@@ -41,6 +41,15 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 
+/**
+ * {@link ChatModel} implementation for {@literal Alibaba DashScope} backed by
+ * {@link Generation}.
+ *
+ * @author yuluo
+ * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
+ * @see ChatModel
+ * @see com.alibaba.dashscope.aigc.generation
+ */
 public class DashScopeChatModel extends AbstractToolCallSupport implements ChatModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeChatModel.class);

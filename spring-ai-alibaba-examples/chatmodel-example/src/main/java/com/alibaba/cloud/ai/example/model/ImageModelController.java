@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class ImageModelController {
+
 	private final ImageModel imageModel;
 
 	ImageModelController(ImageModel imageModel) {
@@ -34,9 +35,7 @@ public class ImageModelController {
 
 	@RequestMapping("/image")
 	public String image(String input) {
-		ImageOptions options = ImageOptionsBuilder.builder()
-				.withModel("wanx-v1")
-				.build();
+		ImageOptions options = ImageOptionsBuilder.builder().withModel("wanx-v1").build();
 
 		ImagePrompt imagePrompt = new ImagePrompt(input, options);
 
@@ -46,4 +45,5 @@ public class ImageModelController {
 
 		return "redirect:" + imageUrl;
 	}
+
 }
