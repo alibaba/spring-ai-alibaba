@@ -22,7 +22,7 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAUL
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_READ_TIMEOUT;
 
 /**
- * Spring Cloud Alibaba AI TongYi LLM connection properties.
+ * Spring AI Alibaba TongYi LLM connection properties.
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
