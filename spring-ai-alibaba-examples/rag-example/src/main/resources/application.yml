@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: prompt-example
+
+  ai:
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY}
+      # workspace-id: ${AI_DASHSCOPE_WORKSPACE_ID}
