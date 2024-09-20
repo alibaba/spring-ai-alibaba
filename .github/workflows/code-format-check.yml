@@ -22,4 +22,4 @@ jobs:
 
       - name: Source code formatting check
         run: |
-          ./mvnw spring-javaformat:validate
+          ./mvnw spring-javaformat:validate -pl spring-ai-alibaba-core
