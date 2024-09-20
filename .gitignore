@@ -30,3 +30,6 @@ target/
 
 # Maven ignore
 .flattened-pom.xml
+
+# node_modules
+**/node_modules
