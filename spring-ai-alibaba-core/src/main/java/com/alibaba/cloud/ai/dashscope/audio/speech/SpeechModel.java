@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.dashscope.audio.speech;
 
+import java.nio.ByteBuffer;
+
 import org.springframework.ai.model.Model;
 
 /**

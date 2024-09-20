@@ -23,9 +23,6 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
  * @author nuocheng.lxm
- * @author why_ohh
- * @author yuluo
- * @author <a href="mailto:550588941@qq.com">why_ohh</a>
  * @date 2024/8/1 11:14
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
