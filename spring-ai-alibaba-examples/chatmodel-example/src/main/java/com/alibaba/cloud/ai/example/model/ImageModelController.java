@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequestMapping("/ai")
 public class ImageModelController {
 
 	private final ImageModel imageModel;
@@ -35,12 +36,13 @@ public class ImageModelController {
 
 	@RequestMapping("/image")
 	public String image(String input) {
-		ImageOptions options = ImageOptionsBuilder.builder().withModel("wanx-v1").build();
+
+		ImageOptions options = ImageOptionsBuilder.builder()
+				.withModel("wanx-v1")
+				.build();
 
 		ImagePrompt imagePrompt = new ImagePrompt(input, options);
-
 		ImageResponse response = imageModel.call(imagePrompt);
-
 		String imageUrl = response.getResult().getOutput().getUrl();
 
 		return "redirect:" + imageUrl;
