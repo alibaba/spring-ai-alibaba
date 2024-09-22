@@ -16,8 +16,8 @@
  */
 package com.alibaba.cloud.ai.example.model;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -28,8 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/ai")
 public class ChatModelController {
-
-	private static final Logger logger = LoggerFactory.getLogger(ChatModelController.class);
 
 	private final ChatModel chatModel;
 
@@ -47,9 +45,13 @@ public class ChatModelController {
 	@GetMapping("/stream")
 	public String stream(String input) {
 
-		logger.warn("unimplement");
+		StringBuilder res = new StringBuilder();
+		Flux<ChatResponse> stream = chatModel.stream(new Prompt(input));
+		stream.toStream().toList().forEach(resp -> {
+			 res.append(resp.getResult().getOutput().getContent());
+		});
 
-		return "unimplement";
+		return res.toString();
 	}
 
 }
