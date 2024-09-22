@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.alibaba.cloud.ai</groupId>
 	<artifactId>prompt-example</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.0.0-M2</version>
 	<name>prompt-example</name>
 	<description>Demo project for Spring AI Alibaba</description>
 
@@ -22,7 +22,7 @@
 		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
 
 		<!-- Spring AI -->
-		<spring-ai-alibaba.version>1.0.0-SNAPSHOT</spring-ai-alibaba.version>
+		<spring-ai-alibaba.version>1.0.0-M2</spring-ai-alibaba.version>
 	</properties>
 
 	<dependencies>
