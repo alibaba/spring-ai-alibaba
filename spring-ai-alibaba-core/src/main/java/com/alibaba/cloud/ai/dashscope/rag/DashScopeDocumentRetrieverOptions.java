@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author nuocheng.lxm
- * @date 2024/8/6 11:04
+ * @since 2024/8/6 11:04
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DashScopeDocumentRetrieverOptions {

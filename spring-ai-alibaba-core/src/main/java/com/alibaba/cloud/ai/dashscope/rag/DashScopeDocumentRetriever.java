@@ -27,7 +27,7 @@ import org.springframework.util.Assert;
 
 /**
  * @author nuocheng.lxm
- * @date 2024/8/5 14:42
+ * @since 2024/8/5 14:42
  */
 public class DashScopeDocumentRetriever implements DocumentRetriever {
 

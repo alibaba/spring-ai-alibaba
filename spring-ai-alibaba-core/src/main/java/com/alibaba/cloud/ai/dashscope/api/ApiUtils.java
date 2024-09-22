@@ -28,7 +28,7 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.SOURCE
 
 /**
  * @author nuocheng.lxm
- * @date 2024/7/23 17:53
+ * @since 2024/7/23 17:53
  */
 public class ApiUtils {
 

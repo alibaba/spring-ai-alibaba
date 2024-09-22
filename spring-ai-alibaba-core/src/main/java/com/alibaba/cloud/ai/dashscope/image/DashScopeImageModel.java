@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * @author nuocheng.lxm
  * @author yuluo
- * @date 2024/8/16 11:29
+ * @since 2024/8/16 11:29
  */
 public class DashScopeImageModel implements ImageModel {
 

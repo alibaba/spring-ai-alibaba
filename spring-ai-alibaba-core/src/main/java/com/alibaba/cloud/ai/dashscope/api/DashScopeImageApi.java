@@ -31,7 +31,7 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAUL
 
 /**
  * @author nuocheng.lxm
- * @date 2024/7/31 14:15
+ * @since 2024/7/31 14:15
  */
 public class DashScopeImageApi {
 

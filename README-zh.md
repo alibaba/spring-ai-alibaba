@@ -11,7 +11,7 @@
 <dependency>
 	<groupId>com.alibaba.ai</groupId>
 	<artifactId>spring-ai-alibaba-starter</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.0.0-M2</version>
 </dependency>
 ```
 

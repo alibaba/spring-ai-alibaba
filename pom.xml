@@ -20,7 +20,7 @@
 	</modules>
 
 	<properties>
-		<revision>1.0.0-SNAPSHOT</revision>
+		<revision>1.0.0-M2</revision>
 
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -120,13 +120,6 @@
 			<organizationUrl>https://aliyun.com</organizationUrl>
 		</developer>
 	</developers>
-	<distributionManagement>
-		<snapshotRepository>
-			<id>sonatype-nexus-snapshots</id>
-			<name>Sonatype Nexus Snapshots</name>
-			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-		</snapshotRepository>
-	</distributionManagement>
 
 	<build>
 		<plugins>
@@ -180,20 +173,6 @@
 						</manifestEntries>
 					</archive>
 				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-				<version>${maven-source-plugin.version}</version>
-				<executions>
-					<execution>
-						<id>generate-sources</id>
-						<phase>package</phase>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
@@ -266,7 +245,7 @@
 								<licenseSet>
 									<inlineHeader>
 										<!-- @formatter:off -->
-										Copyright 2023 - ${year} the original author or authors.
+										Copyright 2024 - ${year} the original author or authors.
 
 										Licensed under the Apache License, Version 2.0 (the "License");
 										you may not use this file except in compliance with the License.
@@ -425,6 +404,9 @@
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
 						<version>${maven-javadoc-plugin.version}</version>
+						<configuration>
+							<doclint>all,-missing</doclint>
+						</configuration>
 						<executions>
 							<execution>
 								<phase>package</phase>
