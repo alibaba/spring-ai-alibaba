@@ -29,7 +29,8 @@ package com.alibaba.cloud.ai.dashscope.audio.speech;
 public final class AudioSpeechModels {
 
 	/**
-	 * Male Voice of the Tongue(舌尖男声). zh & en. Default sample rate: 48 Hz.
+	 * Male Voice of the Tongue(舌尖男声), support for both zh and en. Default sample rate: 48
+	 * Hz.
 	 */
 	public static final String SAMBERT_ZHICHU_V1 = "sambert-zhichu-v1";
 

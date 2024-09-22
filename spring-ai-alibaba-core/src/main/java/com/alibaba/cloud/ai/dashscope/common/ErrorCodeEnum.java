@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.dashscope.common;
 
 /**
  * @author nuocheng.lxm
- * @date 2024/7/24 11:39
+ * @since 2024/7/24 11:39
  */
 public enum ErrorCodeEnum {
 

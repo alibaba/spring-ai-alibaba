@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author nuocheng.lxm
- * @date 2024/7/22 15:14 百炼文档解析相关配置项
+ * @since 2024/7/22 15:14 百炼文档解析相关配置项
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DashScopeDocumentCloudReaderOptions {
