@@ -41,6 +41,17 @@ public class ChatController {
 }
 ```
 
+## Examples
+More examples can be found at [spring-ai-alibaba-examples](./spring-ai-alibaba-examples).
+
+* Hello World
+* Chat Model
+* Function Calling
+* Structured Output
+* Prompt
+* RAG
+* Flight Booking Playground, an advanced example showcasing usage of prompt template, function calling, chat memory and rag at the same time.
+
 ## Core Features
 
 Spring AI Alibaba provides the following features, read the [documentation](https://sca.aliyun.com/ai) on our website for more details of how to use these features.
