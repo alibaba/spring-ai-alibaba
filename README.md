@@ -13,7 +13,7 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 
 ```xml
 <dependency>
-	<groupId>com.alibaba.ai</groupId>
+	<groupId>com.alibaba.cloud.ai</groupId>
 	<artifactId>spring-ai-alibaba-starter</artifactId>
 	<version>1.0.0-M2</version>
 </dependency>
