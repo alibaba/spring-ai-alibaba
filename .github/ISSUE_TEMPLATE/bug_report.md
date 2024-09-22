@@ -35,4 +35,4 @@ If applicable, add screenshots to help explain your problem.
 
 **Additional context**
 Add any other context about the problem here.
-e.g.  MacOS  、Java17 、 Version 1.0.0-SNAPSHOT
+e.g.  MacOS  、Java17 、 Version 1.0.0-M2

@@ -15,7 +15,7 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 <dependency>
 	<groupId>com.alibaba.ai</groupId>
 	<artifactId>spring-ai-alibaba-starter</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.0.0-M2</version>
 </dependency>
 ```
 
@@ -40,6 +40,17 @@ public class ChatController {
 	}
 }
 ```
+
+## Examples
+More examples can be found at [spring-ai-alibaba-examples](./spring-ai-alibaba-examples).
+
+* Hello World
+* Chat Model
+* Function Calling
+* Structured Output
+* Prompt
+* RAG
+* Flight Booking Playground, an advanced example showcasing usage of prompt template, function calling, chat memory and rag at the same time.
 
 ## Core Features
 

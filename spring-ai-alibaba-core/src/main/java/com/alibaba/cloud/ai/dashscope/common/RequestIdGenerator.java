@@ -20,7 +20,7 @@ import java.util.UUID;
 
 /**
  * @author nuocheng.lxm
- * @date 2024/8/6 10:47
+ * @since 2024/8/6 10:47
  */
 public class RequestIdGenerator implements IdGenerator {
 
