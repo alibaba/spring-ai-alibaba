@@ -312,7 +312,9 @@
 						<artifactId>maven-javadoc-plugin</artifactId>
 						<version>${maven-javadoc-plugin.version}</version>
 						<configuration>
-							<excludePackageNames>org.springframework.ai.sample.*,org.springframework.ai.testcontainers.service.connection.*</excludePackageNames>
+							<excludePackageNames>
+								org.springframework.ai.sample.*,org.springframework.ai.testcontainers.service.connection.*
+							</excludePackageNames>
 							<overview>${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
 							<detectJavaApiLink>false</detectJavaApiLink>
 							<doclint>none</doclint>
@@ -481,6 +483,13 @@
 
 	<repositories>
 		<repository>
+			<id>sonatype-snapshots</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+		<repository>
 			<id>maven-central</id>
 			<url>https://repo.maven.apache.org/maven2/</url>
 			<snapshots>
@@ -507,4 +516,5 @@
 			</releases>
 		</repository>
 	</repositories>
+
 </project>
