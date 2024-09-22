@@ -182,20 +182,6 @@
 				</configuration>
 			</plugin>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-				<version>${maven-source-plugin.version}</version>
-				<executions>
-					<execution>
-						<id>generate-sources</id>
-						<phase>package</phase>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>flatten-maven-plugin</artifactId>
 				<version>${flatten-maven-plugin.version}</version>
@@ -423,6 +409,9 @@
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
 						<version>${maven-javadoc-plugin.version}</version>
+						<configuration>
+							<doclint>all,-missing</doclint>
+						</configuration>
 						<executions>
 							<execution>
 								<phase>package</phase>

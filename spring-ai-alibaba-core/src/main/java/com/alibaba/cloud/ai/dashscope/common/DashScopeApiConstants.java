@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.dashscope.common;
 
 /**
  * @author nuocheng.lxm
- * @date 2024/7/23 16:01
+ * @since 2024/7/23 16:01
  */
 public final class DashScopeApiConstants {
 

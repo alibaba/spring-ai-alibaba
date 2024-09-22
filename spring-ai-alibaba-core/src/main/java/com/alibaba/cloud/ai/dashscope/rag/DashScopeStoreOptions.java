@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author nuocheng.lxm
- * @date 2024/8/9 10:00
+ * @since 2024/8/9 10:00
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DashScopeStoreOptions {
