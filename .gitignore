@@ -33,3 +33,10 @@ target/
 
 # node_modules
 **/node_modules
+
+# example
+node_modules/
+frontend/generated/
+.npmrc
+vite.generated.ts
+src/main/bundles
