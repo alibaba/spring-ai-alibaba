@@ -16,6 +16,10 @@
  */
 package com.alibaba.cloud.ai.example.helloworld;
 
+import java.util.Objects;
+
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +38,13 @@ public class ChatController {
 	@GetMapping("/chat")
 	public String chat(String input) {
 		return this.chatClient.prompt().user(input).call().content();
+	}
+
+	@GetMapping("/stream")
+	public String stream(String input) {
+
+		Flux<String> content = this.chatClient.prompt().user(input).stream().content();
+		return Objects.requireNonNull(content.collectList().block()).stream().reduce((a, b) -> a + b).get();
 	}
 
 }
