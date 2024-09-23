@@ -34,7 +34,7 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 > </repositories>
 > ```
 
-2. Inject the default 'ChatClient' Bean to regular Controller beans.
+2. Inject the default `ChatClient` Bean to regular Controller beans.
 
 ```java
 @RestController
