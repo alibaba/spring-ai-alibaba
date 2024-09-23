@@ -19,6 +19,21 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 </dependency>
 ```
 
+> NOTICE! Since spring-ai related packages haven't been published to the central repo yet, it's needed to add the following maven repository to your project in order to successfully resolve artifacts like  spring-ai-core.
+>
+> ```xml
+> <repositories>
+> 	<repository>
+> 		<id>spring-milestones</id>
+> 		<name>Spring Milestones</name>
+> 		<url>https://repo.spring.io/milestone</url>
+> 		<snapshots>
+> 			<enabled>false</enabled>
+> 		</snapshots>
+> 	</repository>
+> </repositories>
+> ```
+
 2. Inject the default 'ChatClient' Bean to regular Controller beans.
 
 ```java
