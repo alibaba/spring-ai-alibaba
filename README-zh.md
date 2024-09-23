@@ -35,6 +35,32 @@ public class ChatController {
 }
 ```
 
+> 注意：由于 spring-ai 相关依赖包还没有发布到中央仓库，如出现 spring-ai-core 等相关依赖解析问题，请在您项目的 pom.xml 依赖中加入如下仓库配置。
+>
+> ```xml
+> <repositories>
+> 	<repository>
+> 		<id>spring-milestones</id>
+> 		<name>Spring Milestones</name>
+> 		<url>https://repo.spring.io/milestone</url>
+> 		<snapshots>
+> 			<enabled>false</enabled>
+> 		</snapshots>
+> 	</repository>
+> </repositories>
+> ```
+
+## 示例
+请在 [spring-ai-alibaba-examples](./spring-ai-alibaba-examples) 查看更多开发示例。
+
+* Hello World
+* Chat Model
+* Function Calling
+* Structured Output
+* Prompt
+* RAG
+* Flight Booking Playground，一个贴近实际使用场景，综合运用了 prompt template、function calling、chat memory 和 rag 等的智能机票助手应用。
+
 ## 特性
 以下是 Spring AI Alibaba 支持的核心能力，未来更多高级功能将以这些核心能力为基础。请参考官网文档学习每个[功能详细说明](https://sca.aliyun.com/docs/2023/user-guide/ai/quick-start/)以及 [AI 应用开发最佳实践](https://sca.aliyun.com/docs/2023/user-guide/ai/quick-start/)。
 
