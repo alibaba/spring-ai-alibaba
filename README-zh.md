@@ -7,6 +7,8 @@
 
 总的来说，使用 Spring AI Alibaba 开发应用与使用普通 Spring Boot 没有什么区别，只需要增加 `spring-ai-alibaba-starter` 依赖，将 `ChatClient` Bean 注入就可以实现与模型聊天了。
 
+1. 在项目中加入 `spring-ai-alibaba-starter` 依赖。
+
 ```xml
 <dependency>
 	<groupId>com.alibaba.ai</groupId>
@@ -14,6 +16,23 @@
 	<version>1.0.0-M2</version>
 </dependency>
 ```
+
+> 注意：由于 spring-ai 相关依赖包还没有发布到中央仓库，如出现 spring-ai-core 等相关依赖解析问题，请在您项目的 pom.xml 依赖中加入如下仓库配置。
+>
+> ```xml
+> <repositories>
+> 	<repository>
+> 		<id>spring-milestones</id>
+> 		<name>Spring Milestones</name>
+> 		<url>https://repo.spring.io/milestone</url>
+> 		<snapshots>
+> 			<enabled>false</enabled>
+> 		</snapshots>
+> 	</repository>
+> </repositories>
+> ```
+
+2. 为你的 Spring Bean 注入 `ChatClient`。
 
 ```java
 @RestController
@@ -34,21 +53,6 @@ public class ChatController {
 	}
 }
 ```
-
-> 注意：由于 spring-ai 相关依赖包还没有发布到中央仓库，如出现 spring-ai-core 等相关依赖解析问题，请在您项目的 pom.xml 依赖中加入如下仓库配置。
->
-> ```xml
-> <repositories>
-> 	<repository>
-> 		<id>spring-milestones</id>
-> 		<name>Spring Milestones</name>
-> 		<url>https://repo.spring.io/milestone</url>
-> 		<snapshots>
-> 			<enabled>false</enabled>
-> 		</snapshots>
-> 	</repository>
-> </repositories>
-> ```
 
 ## 示例
 请在 [spring-ai-alibaba-examples](./spring-ai-alibaba-examples) 查看更多开发示例。
