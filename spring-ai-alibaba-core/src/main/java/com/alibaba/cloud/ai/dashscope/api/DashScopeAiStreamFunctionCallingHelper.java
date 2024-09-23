@@ -38,6 +38,14 @@ import org.springframework.util.StringUtils;
  * @author Ken
  */
 public class DashScopeAiStreamFunctionCallingHelper {
+	private Boolean incrementalOutput = false;
+
+	public DashScopeAiStreamFunctionCallingHelper() {
+	}
+
+	public DashScopeAiStreamFunctionCallingHelper(Boolean incrementalOutput) {
+		this.incrementalOutput = incrementalOutput;
+	}
 
 	/**
 	 * Merge the previous and current ChatCompletionChunk into a single one.
@@ -46,7 +54,6 @@ public class DashScopeAiStreamFunctionCallingHelper {
 	 * @return the merged ChatCompletionChunk
 	 */
 	public ChatCompletionChunk merge(ChatCompletionChunk previous, ChatCompletionChunk current) {
-
 		if (previous == null) {
 			return current;
 		}
@@ -57,9 +64,18 @@ public class DashScopeAiStreamFunctionCallingHelper {
 		Choice previousChoice0 = previous.output() == null ? null : previous.output().choices().get(0);
 		Choice currentChoice0 = current.output() == null ? null : current.output().choices().get(0);
 
+		//compatibility of incremental_output false for streaming function call
+		if (!incrementalOutput && isStreamingToolFunctionCall(current)) {
+			if (!isStreamingToolFunctionCallFinish(current)) {
+				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, List.of(new Choice(null, null))), usage);
+			} else {
+				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, List.of(currentChoice0)), usage);
+			}
+		}
+
 		Choice choice = merge(previousChoice0, currentChoice0);
 		List<Choice> chunkChoices = choice == null ? List.of() : List.of(choice);
-		return new ChatCompletionChunk(id, new ChatCompletionOutput(null, chunkChoices), usage);
+        return new ChatCompletionChunk(id, new ChatCompletionOutput(null, chunkChoices), usage);
 	}
 
 	private Choice merge(Choice previous, Choice current) {
