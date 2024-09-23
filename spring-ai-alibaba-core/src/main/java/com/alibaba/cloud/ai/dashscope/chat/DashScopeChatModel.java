@@ -248,9 +248,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 		options = ModelOptionsUtils.merge(options, this.defaultOptions, DashScopeChatOptions.class);
 
 		if (!CollectionUtils.isEmpty(enabledToolsToUse)) {
-			options = ModelOptionsUtils.merge(
-					DashScopeChatOptions.builder().withTools(this.getFunctionTools(enabledToolsToUse)).build(), options,
-					DashScopeChatOptions.class);
+			options.setTools(this.getFunctionTools(enabledToolsToUse));
 		}
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
@@ -338,7 +336,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 			return new ChatCompletionRequestParameter();
 		}
 
-		Boolean incrementalOutput = stream || options.getIncrementalOutput();
+		Boolean incrementalOutput = options.getIncrementalOutput();
 		return new ChatCompletionRequestParameter("message", options.getSeed(), options.getMaxTokens(),
 				options.getTopP(), options.getTopK(), options.getRepetitionPenalty(), options.getPresencePenalty(),
 				options.getTemperature(), options.getStop(), options.getEnableSearch(), incrementalOutput,

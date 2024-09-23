@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAutoConfiguration;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.dashscope.tool.DashScopeFunctionTestConfiguration;
 import com.alibaba.cloud.ai.dashscope.chat.tool.MockOrderService;
 import com.alibaba.cloud.ai.dashscope.chat.tool.MockWeatherService;
@@ -75,7 +76,7 @@ public class DashScopeChatClientIT {
 	private DashScopeChatModel dashscopeChatModel;
 
 	@Autowired
-	private DashScopeApi dashscopeApi;
+	private DashScopeApi dashscopeChatApi;
 
 	@Value("classpath:/prompts/rag/system-qa.st")
 	private Resource systemResource;
@@ -85,7 +86,7 @@ public class DashScopeChatClientIT {
 
 	@Test
 	void callTest() throws IOException {
-		DocumentRetriever retriever = new DashScopeDocumentRetriever(dashscopeApi,
+		DocumentRetriever retriever = new DashScopeDocumentRetriever(dashscopeChatApi,
 				DashScopeDocumentRetrieverOptions.builder().withIndexName("spring-ai知识库").build());
 
 		ChatClient chatClient = ChatClient.builder(dashscopeChatModel)
@@ -102,14 +103,20 @@ public class DashScopeChatClientIT {
 
 	@Test
 	void streamTest() throws InterruptedException, IOException {
-		DocumentRetriever retriever = new DashScopeDocumentRetriever(dashscopeApi,
+		DocumentRetriever retriever = new DashScopeDocumentRetriever(dashscopeChatApi,
 				DashScopeDocumentRetrieverOptions.builder().withIndexName("spring-ai知识库").build());
 		ChatClient chatClient = ChatClient.builder(dashscopeChatModel)
 			.defaultAdvisors(
 					new DocumentRetrievalAdvisor(retriever, systemResource.getContentAsString(StandardCharsets.UTF_8)))
 			.build();
 
-		Flux<ChatResponse> response = chatClient.prompt().user("如何快速开始百炼?").stream().chatResponse();
+		Flux<ChatResponse> response = chatClient.prompt()
+				.user("如何快速开始百炼?")
+				.options(DashScopeChatOptions.builder()
+						.withIncrementalOutput(true)
+						.build())
+				.stream()
+				.chatResponse();
 
 		CountDownLatch cdl = new CountDownLatch(1);
 		response.subscribe(data -> {
@@ -159,7 +166,7 @@ public class DashScopeChatClientIT {
 
 	@Test
 	void callWithFunctionAndRagTest() throws IOException {
-		DocumentRetriever retriever = new DashScopeDocumentRetriever(dashscopeApi,
+		DocumentRetriever retriever = new DashScopeDocumentRetriever(dashscopeChatApi,
 				DashScopeDocumentRetrieverOptions.builder().withIndexName("spring-ai知识库").build());
 
 		ChatClient chatClient = ChatClient.builder(dashscopeChatModel)
@@ -178,7 +185,7 @@ public class DashScopeChatClientIT {
 
 	@Test
 	void streamCallWithFunctionAndRagTest() throws InterruptedException, IOException {
-		DocumentRetriever retriever = new DashScopeDocumentRetriever(dashscopeApi,
+		DocumentRetriever retriever = new DashScopeDocumentRetriever(dashscopeChatApi,
 				DashScopeDocumentRetrieverOptions.builder().withIndexName("spring-ai知识库").build());
 
 		ChatClient chatClient = ChatClient.builder(dashscopeChatModel)
@@ -187,7 +194,13 @@ public class DashScopeChatClientIT {
 			.defaultFunctions("weatherFunction")
 			.build();
 
-		Flux<ChatResponse> response = chatClient.prompt().user("上海今天的天气如何?").stream().chatResponse();
+		Flux<ChatResponse> response = chatClient.prompt()
+				.user("上海今天的天气如何?")
+				.options(DashScopeChatOptions.builder()
+						.withIncrementalOutput(true)
+						.build())
+				.stream()
+				.chatResponse();
 
 		CountDownLatch cdl = new CountDownLatch(1);
 		response.subscribe(data -> {
@@ -206,7 +219,7 @@ public class DashScopeChatClientIT {
 
 	@Test
 	void callWithReferencedRagTest() throws IOException {
-		DocumentRetriever retriever = new DashScopeDocumentRetriever(dashscopeApi,
+		DocumentRetriever retriever = new DashScopeDocumentRetriever(dashscopeChatApi,
 				DashScopeDocumentRetrieverOptions.builder().withIndexName("spring-ai知识库").build());
 
 		ChatClient chatClient = ChatClient.builder(dashscopeChatModel)
@@ -232,7 +245,7 @@ public class DashScopeChatClientIT {
 
 	@Test
 	void streamCallWithReferencedRagTest() throws IOException, InterruptedException {
-		DocumentRetriever retriever = new DashScopeDocumentRetriever(dashscopeApi,
+		DocumentRetriever retriever = new DashScopeDocumentRetriever(dashscopeChatApi,
 				DashScopeDocumentRetrieverOptions.builder().withIndexName("spring-ai知识库").build());
 
 		ChatClient chatClient = ChatClient.builder(dashscopeChatModel)
@@ -272,7 +285,7 @@ public class DashScopeChatClientIT {
 
 	@Test
 	void callWithMemory() throws IOException {
-		DocumentRetriever retriever = new DashScopeDocumentRetriever(dashscopeApi,
+		DocumentRetriever retriever = new DashScopeDocumentRetriever(dashscopeChatApi,
 				DashScopeDocumentRetrieverOptions.builder().withIndexName("spring-ai知识库").build());
 
 		ChatClient chatClient = ChatClient.builder(dashscopeChatModel)
@@ -309,16 +322,16 @@ public class DashScopeChatClientIT {
 	@Test
 	void reader() {
 		String filePath = "/Users/nuocheng.lxm/Desktop/新能源产业有哪些-36氪.pdf";
-		DashScopeDocumentCloudReader reader = new DashScopeDocumentCloudReader(filePath, dashscopeApi, null);
+		DashScopeDocumentCloudReader reader = new DashScopeDocumentCloudReader(filePath, dashscopeChatApi, null);
 		List<Document> documentList = reader.get();
-		DashScopeDocumentTransformer transformer = new DashScopeDocumentTransformer(dashscopeApi);
+		DashScopeDocumentTransformer transformer = new DashScopeDocumentTransformer(dashscopeChatApi);
 		List<Document> transformerList = transformer.apply(documentList);
 		System.out.println(transformerList.size());
 	}
 
 	@Test
 	void embed() {
-		DashScopeEmbeddingModel embeddingModel = new DashScopeEmbeddingModel(dashscopeApi);
+		DashScopeEmbeddingModel embeddingModel = new DashScopeEmbeddingModel(dashscopeChatApi);
 		Document document = new Document("你好阿里云");
 		float[] vectorList = embeddingModel.embed(document);
 		System.out.println(vectorList.length);
@@ -326,7 +339,7 @@ public class DashScopeChatClientIT {
 
 	@Test
 	void vectorStore() {
-		DashScopeCloudStore cloudStore = new DashScopeCloudStore(dashscopeApi, new DashScopeStoreOptions("诺成SpringAI"));
+		DashScopeCloudStore cloudStore = new DashScopeCloudStore(dashscopeChatApi, new DashScopeStoreOptions("诺成SpringAI"));
 		List<Document> documentList = Arrays.asList(
 				new Document("file_f0b6b18b14994ed8a0b45648ce5d0da5_10001", "abc", new HashMap<>()),
 				new Document("file_d3083d64026d4864b4558d18f9ca2a6d_10001", "abc", new HashMap<>()),
