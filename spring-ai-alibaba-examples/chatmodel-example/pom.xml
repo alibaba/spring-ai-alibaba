@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.alibaba.cloud.ai</groupId>
 	<artifactId>chatmodel-example</artifactId>
-	<version>1.0.0-M2</version>
+	<version>0.0.1-SNAPSHOT</version>
 	<name>chatmodel-example</name>
 	<description>Demo project for Spring AI Alibaba</description>
 
@@ -57,37 +57,12 @@
 
 	<repositories>
 		<repository>
-			<id>sonatype-snapshots</id>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
-		<repository>
-			<id>maven-central</id>
-			<url>https://repo.maven.apache.org/maven2/</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-		</repository>
-		<repository>
 			<id>spring-milestones</id>
 			<name>Spring Milestones</name>
 			<url>https://repo.spring.io/milestone</url>
 			<snapshots>
 				<enabled>false</enabled>
 			</snapshots>
-		</repository>
-		<repository>
-			<id>spring-snapshots</id>
-			<name>Spring Snapshots</name>
-			<url>https://repo.spring.io/snapshot</url>
-			<releases>
-				<enabled>false</enabled>
-			</releases>
 		</repository>
 	</repositories>
 
