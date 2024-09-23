@@ -1237,8 +1237,6 @@ public class DashScopeApi {
 			.toEntity(ChatCompletion.class);
 	}
 
-	private final DashScopeAiStreamFunctionCallingHelper chunkMerger = new DashScopeAiStreamFunctionCallingHelper();
-
 	/**
 	 * Creates a streaming chat response for the given chat conversation.
 	 * @param chatRequest The chat completion request. Must have the stream property set
@@ -1251,6 +1249,8 @@ public class DashScopeApi {
 		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
+		boolean incrementalOutput = chatRequest.parameters() != null && chatRequest.parameters().incrementalOutput != null && chatRequest.parameters().incrementalOutput;
+		DashScopeAiStreamFunctionCallingHelper chunkMerger = new DashScopeAiStreamFunctionCallingHelper(incrementalOutput);
 
 		return this.webClient.post()
 			.uri("/api/v1/services/aigc/text-generation/generation")
@@ -1262,13 +1262,13 @@ public class DashScopeApi {
 			.filter(SSE_DONE_PREDICATE.negate())
 			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
 			.map(chunk -> {
-				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
+				if (chunkMerger.isStreamingToolFunctionCall(chunk)) {
 					isInsideTool.set(true);
 				}
 				return chunk;
 			})
 			.windowUntil(chunk -> {
-				if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
+				if (isInsideTool.get() && chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
 					isInsideTool.set(false);
 					return true;
 				}
@@ -1276,7 +1276,7 @@ public class DashScopeApi {
 			})
 			.concatMapIterable(window -> {
 				Mono<ChatCompletionChunk> monoChunk = window.reduce(new ChatCompletionChunk(null, null, null),
-						this.chunkMerger::merge);
+						chunkMerger::merge);
 				return List.of(monoChunk);
 			})
 			.flatMap(mono -> mono);
