@@ -111,12 +111,10 @@ public class DashScopeChatClientIT {
 			.build();
 
 		Flux<ChatResponse> response = chatClient.prompt()
-				.user("如何快速开始百炼?")
-				.options(DashScopeChatOptions.builder()
-						.withIncrementalOutput(true)
-						.build())
-				.stream()
-				.chatResponse();
+			.user("如何快速开始百炼?")
+			.options(DashScopeChatOptions.builder().withIncrementalOutput(true).build())
+			.stream()
+			.chatResponse();
 
 		CountDownLatch cdl = new CountDownLatch(1);
 		response.subscribe(data -> {
@@ -195,12 +193,10 @@ public class DashScopeChatClientIT {
 			.build();
 
 		Flux<ChatResponse> response = chatClient.prompt()
-				.user("上海今天的天气如何?")
-				.options(DashScopeChatOptions.builder()
-						.withIncrementalOutput(true)
-						.build())
-				.stream()
-				.chatResponse();
+			.user("上海今天的天气如何?")
+			.options(DashScopeChatOptions.builder().withIncrementalOutput(true).build())
+			.stream()
+			.chatResponse();
 
 		CountDownLatch cdl = new CountDownLatch(1);
 		response.subscribe(data -> {
@@ -339,7 +335,8 @@ public class DashScopeChatClientIT {
 
 	@Test
 	void vectorStore() {
-		DashScopeCloudStore cloudStore = new DashScopeCloudStore(dashscopeChatApi, new DashScopeStoreOptions("诺成SpringAI"));
+		DashScopeCloudStore cloudStore = new DashScopeCloudStore(dashscopeChatApi,
+				new DashScopeStoreOptions("诺成SpringAI"));
 		List<Document> documentList = Arrays.asList(
 				new Document("file_f0b6b18b14994ed8a0b45648ce5d0da5_10001", "abc", new HashMap<>()),
 				new Document("file_d3083d64026d4864b4558d18f9ca2a6d_10001", "abc", new HashMap<>()),
