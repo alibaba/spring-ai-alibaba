@@ -1249,8 +1249,10 @@ public class DashScopeApi {
 		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
-		boolean incrementalOutput = chatRequest.parameters() != null && chatRequest.parameters().incrementalOutput != null && chatRequest.parameters().incrementalOutput;
-		DashScopeAiStreamFunctionCallingHelper chunkMerger = new DashScopeAiStreamFunctionCallingHelper(incrementalOutput);
+		boolean incrementalOutput = chatRequest.parameters() != null
+				&& chatRequest.parameters().incrementalOutput != null && chatRequest.parameters().incrementalOutput;
+		DashScopeAiStreamFunctionCallingHelper chunkMerger = new DashScopeAiStreamFunctionCallingHelper(
+				incrementalOutput);
 
 		return this.webClient.post()
 			.uri("/api/v1/services/aigc/text-generation/generation")
