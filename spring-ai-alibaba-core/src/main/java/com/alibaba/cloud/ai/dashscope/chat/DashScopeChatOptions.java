@@ -328,6 +328,9 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
     }
 
     public DashScopeChatOptions build() {
+      if ((this.options.getStream() == null || !this.options.getStream()) && this.options.getIncrementalOutput()) {
+        this.options.setIncrementalOutput(false);
+      }
       return this.options;
     }
   }
