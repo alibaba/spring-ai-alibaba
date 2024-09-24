@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.alibaba.cloud.ai.constant.AIConstants;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
@@ -32,9 +31,6 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
 import com.alibaba.dashscope.audio.asr.transcription.Transcription;
 import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
-import com.alibaba.dashscope.exception.NoApiKeyException;
-import com.alibaba.dashscope.utils.ApiKey;
-import com.alibaba.dashscope.utils.Constants;
 import org.jetbrains.annotations.NotNull;
 
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
@@ -62,8 +58,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DASHSCOPE_API_KEY;
 
 /**
  * @author nuocheng.lxm
