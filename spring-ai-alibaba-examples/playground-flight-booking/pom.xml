@@ -38,7 +38,7 @@
 		<dependency>
 			<groupId>com.alibaba.cloud.ai</groupId>
 			<artifactId>spring-ai-alibaba-starter</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>1.0.0-M2</version>
 		</dependency>
 
 		<!-- Vaadin -->
