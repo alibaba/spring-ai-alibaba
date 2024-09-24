@@ -65,23 +65,13 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @since 2024/8/16 11:45
  */
 @ConditionalOnClass(DashScopeApi.class)
-@AutoConfiguration(after = {
-		RestClientAutoConfiguration.class,
-		WebClientAutoConfiguration.class,
-		SpringAiRetryAutoConfiguration.class
-})
-@EnableConfigurationProperties({
-		DashScopeConnectionProperties.class,
-		DashScopeChatProperties.class,
-		DashScopeImageProperties.class,
-		DashScopeAudioTranscriptionProperties.class,
-		DashScopeAudioSpeechProperties.class,
-		DashScopeEmbeddingProperties.class })
-@ImportAutoConfiguration(classes = {
-		SpringAiRetryAutoConfiguration.class,
-		RestClientAutoConfiguration.class,
-		WebClientAutoConfiguration.class
-})
+@AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
+		SpringAiRetryAutoConfiguration.class })
+@EnableConfigurationProperties({ DashScopeConnectionProperties.class, DashScopeChatProperties.class,
+		DashScopeImageProperties.class, DashScopeAudioTranscriptionProperties.class,
+		DashScopeAudioSpeechProperties.class, DashScopeEmbeddingProperties.class })
+@ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
+		WebClientAutoConfiguration.class })
 public class DashScopeAutoConfiguration {
 
 	@Bean
@@ -99,12 +89,8 @@ public class DashScopeAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(
-			prefix = DashScopeChatProperties.CONFIG_PREFIX,
-			name = "enabled",
-			havingValue = "true",
-			matchIfMissing = true
-	)
+	@ConditionalOnProperty(prefix = DashScopeChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
 	public DashScopeChatModel dashscopeChatModel(DashScopeConnectionProperties commonProperties,
 			DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, List<FunctionCallback> toolFunctionCallbacks,
@@ -124,12 +110,8 @@ public class DashScopeAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(
-			prefix = DashScopeEmbeddingProperties.CONFIG_PREFIX,
-			name = "enabled",
-			havingValue = "true",
-			matchIfMissing = true
-	)
+	@ConditionalOnProperty(prefix = DashScopeEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
 	public DashScopeApi dashscopeChatApi(DashScopeConnectionProperties commonProperties,
 			DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
@@ -143,12 +125,8 @@ public class DashScopeAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(
-			prefix = DashScopeEmbeddingProperties.CONFIG_PREFIX,
-			name = "enabled",
-			havingValue = "true",
-			matchIfMissing = true
-	)
+	@ConditionalOnProperty(prefix = DashScopeEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
 	public DashScopeEmbeddingModel dashscopeEmbeddingModel(DashScopeConnectionProperties commonProperties,
 			DashScopeEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate,
@@ -161,13 +139,9 @@ public class DashScopeAutoConfiguration {
 				embeddingProperties.getOptions(), retryTemplate);
 	}
 
-	public DashScopeApi dashscopeEmbeddingApi(
-			DashScopeConnectionProperties commonProperties,
-			DashScopeEmbeddingProperties embeddingProperties,
-			RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler
-	) {
+	public DashScopeApi dashscopeEmbeddingApi(DashScopeConnectionProperties commonProperties,
+			DashScopeEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
 				embeddingProperties, "embedding");
 
@@ -177,12 +151,8 @@ public class DashScopeAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(
-			prefix = DashScopeEmbeddingProperties.CONFIG_PREFIX,
-			name = "enabled",
-			havingValue = "true",
-			matchIfMissing = true
-	)
+	@ConditionalOnProperty(prefix = DashScopeEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
 	public DashScopeAgentApi dashscopeAgentApi(DashScopeConnectionProperties commonProperties,
 			DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
@@ -203,12 +173,8 @@ public class DashScopeAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(
-			prefix = DashScopeImageProperties.CONFIG_PREFIX,
-			name = "enabled",
-			havingValue = "true",
-			matchIfMissing = true
-	)
+	@ConditionalOnProperty(prefix = DashScopeImageProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
 	public DashScopeImageModel dashScopeImageModel(DashScopeConnectionProperties commonProperties,
 			DashScopeImageProperties imageProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate,
@@ -232,12 +198,9 @@ public class DashScopeAutoConfiguration {
 		return manager;
 	}
 
-	private record ResolvedConnectionProperties(
-			String baseUrl,
-			String apiKey,
-			String workspaceId,
-			MultiValueMap<String, String> headers
-	) { }
+	private record ResolvedConnectionProperties(String baseUrl, String apiKey, String workspaceId,
+			MultiValueMap<String, String> headers) {
+	}
 
 	private static @NotNull DashScopeAutoConfiguration.ResolvedConnectionProperties resolveConnectionProperties(
 			DashScopeParentProperties commonProperties, DashScopeParentProperties modelProperties, String modelType) {
