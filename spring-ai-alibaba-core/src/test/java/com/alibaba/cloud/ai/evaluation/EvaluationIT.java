@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,11 +51,9 @@ import java.util.stream.Collectors;
 /**
  * Title React agent test cases.<br/>
  * Description React agent test cases.<br/>
- * Created at 2024-08-19 10:15
  *
  * @author yuanci.ytb
- * @version 1.0.0
- * @since jdk8
+ * @since 1.0.0-M2
  */
 
 @TestPropertySource("classpath:application.yml")
