@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.dashscope.tool;
+package com.alibaba.cloud.ai.dashscope.chat.tool;
 
-import com.alibaba.cloud.ai.dashscope.chat.tool.MockOrderService;
-import com.alibaba.cloud.ai.dashscope.chat.tool.MockWeatherService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
@@ -29,7 +27,7 @@ import java.util.function.Function;
  * Description Function Test configuration.<br>
  *
  * @author yuanci.ytb
- * @since 2024/8/16 11:29
+ * @since 1.0.0-M2
  */
 @Configuration
 public class DashScopeFunctionTestConfiguration {

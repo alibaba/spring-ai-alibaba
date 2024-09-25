@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,19 +20,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
-import org.springframework.ai.evaluation.Evaluator;
-import org.springframework.ai.model.Content;
 
 import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Title Answer correctness evaluator.<br>
  * Description Answer correctness evaluator.<br>
  *
  * @author yuanci.ytb
- * @since 2024/8/16 11:29
+ * @since 1.0.0-M2
  */
 
 public class AnswerCorrectnessEvaluator extends LaajEvaluator {

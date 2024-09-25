@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
-import com.alibaba.cloud.ai.dashscope.tool.DashScopeFunctionTestConfiguration;
+import com.alibaba.cloud.ai.dashscope.chat.tool.DashScopeFunctionTestConfiguration;
 import com.alibaba.cloud.ai.dashscope.chat.tool.MockOrderService;
 import com.alibaba.cloud.ai.dashscope.chat.tool.MockWeatherService;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
@@ -60,7 +60,7 @@ import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvis
  * Description React agent test cases.<br/>
  *
  * @author yuanci.ytb
- * @since 2024/8/16 11:29
+ * @since 1.0.0-M2
  */
 
 @TestPropertySource("classpath:application.yml")
