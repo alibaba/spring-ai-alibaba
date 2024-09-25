@@ -51,11 +51,9 @@ import java.util.stream.Collectors;
 /**
  * Title React agent test cases.<br/>
  * Description React agent test cases.<br/>
- * Created at 2024-08-19 10:15
  *
  * @author yuanci.ytb
- * @version 1.0.0
- * @since jdk8
+ * @since 2024/8/16 11:29
  */
 
 @TestPropertySource("classpath:application.yml")

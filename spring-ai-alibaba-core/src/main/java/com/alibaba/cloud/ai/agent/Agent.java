@@ -24,11 +24,9 @@ import reactor.core.publisher.Flux;
 /**
  * Title base agent.<br>
  * Description base agent.<br>
- * Created at 2024-08-13 16:58
  *
  * @author yuanci.ytb
- * @version 1.0.0
- * @since jdk8
+ * @since 2024/8/16 11:29
  */
 
 public abstract class Agent {

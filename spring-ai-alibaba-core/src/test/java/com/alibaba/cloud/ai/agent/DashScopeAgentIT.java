@@ -45,11 +45,9 @@ import java.util.concurrent.CountDownLatch;
 /**
  * Title Dashscope Agent test cases.<br>
  * Description Dashscope Agent test cases.<br>
- * Created at 2024-08-14 10:02
  *
  * @author linkesheng.lks
- * @version 1.0.0
- * @since jdk8
+ * @since 2024/8/16 11:29
  */
 
 @TestPropertySource("classpath:application.yml")
