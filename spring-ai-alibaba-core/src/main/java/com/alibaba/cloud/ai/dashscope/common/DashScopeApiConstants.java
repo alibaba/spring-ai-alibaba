@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.dashscope.common;
 
 /**
  * @author nuocheng.lxm
- * @since 2024/7/23 16:01
+ * @since 1.0.0-M2
  */
 public final class DashScopeApiConstants {
 

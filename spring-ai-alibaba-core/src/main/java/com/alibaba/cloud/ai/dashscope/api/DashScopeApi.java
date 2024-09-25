@@ -39,7 +39,7 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAUL
 /**
  * @author nuocheng.lxm
  * @author yuluo
- * @since 2024/7/31 14:15
+ * @since 1.0.0-M2
  */
 public class DashScopeApi {
 

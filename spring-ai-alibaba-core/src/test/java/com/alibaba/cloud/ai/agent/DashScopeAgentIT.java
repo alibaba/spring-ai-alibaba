@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,11 +45,9 @@ import java.util.concurrent.CountDownLatch;
 /**
  * Title Dashscope Agent test cases.<br>
  * Description Dashscope Agent test cases.<br>
- * Created at 2024-08-14 10:02
  *
  * @author linkesheng.lks
- * @version 1.0.0
- * @since jdk8
+ * @since 1.0.0-M2
  */
 
 @TestPropertySource("classpath:application.yml")
