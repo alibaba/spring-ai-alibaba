@@ -73,6 +73,7 @@ public class DashScopeImageApi {
 	public ResponseEntity<DashScopeImageAsyncReponse> submitImageGenTask(DashScopeImageRequest request) {
 		return this.restClient.post()
 			.uri("/api/v1/services/aigc/text2image/image-synthesis")
+			// isseue: https://github.com/alibaba/spring-ai-alibaba/issues/29
 			.header("X-DashScope-Async","enable")
 			.body(request)
 			.retrieve()
