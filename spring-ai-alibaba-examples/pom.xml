@@ -15,13 +15,14 @@
 	</properties>
 
 	<modules>
-		<module>helloworld-example</module>
-		<module>chatmodel-example</module>
+		<module>client-api-example</module>
+		<module>module-api-example</module>
 		<module>prompt-example</module>
 		<module>function-calling-example</module>
 		<module>rag-example</module>
 		<module>output-parser-example</module>
 		<module>playground-flight-booking</module>
+		<module>usercase-example</module>
 	</modules>
 
 	<build>

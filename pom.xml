@@ -16,6 +16,8 @@
 	<modules>
 		<module>spring-ai-alibaba-core</module>
 		<module>spring-ai-alibaba-starter</module>
+		<module>spring-ai-alibaba-examples</module>
+		<module>spring-ai-alibaba-examples/usercase-example/generate-sql-queries</module>
 	</modules>
 
 	<properties>

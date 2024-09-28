@@ -1,0 +1,10 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: text-classifier
+
+  ai:
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY}
