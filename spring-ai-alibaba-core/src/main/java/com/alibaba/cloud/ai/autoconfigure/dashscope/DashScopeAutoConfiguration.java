@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
