@@ -1,6 +1,7 @@
 package com.alibaba.cloud.ai.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechModelOpenAPI;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechOptions;
@@ -37,6 +38,11 @@ public class DashscopeAiTestConfiguration {
 	}
 
 	@Bean
+	public DashScopeAudioApi dashScopeAudioApi() {
+		return newDashScopeAudioApi(getApiKey());
+	}
+
+	@Bean
 	public DashScopeApi dashscopeChatApi() {
 		return newDashScopeChatApi(getApiKey());
 	}
@@ -47,6 +53,10 @@ public class DashscopeAiTestConfiguration {
 
 	private DashScopeApi newDashScopeApi(String apiKey) {
 		return new DashScopeApi(apiKey);
+	}
+
+	private DashScopeAudioApi newDashScopeAudioApi(String apiKey) {
+		return new DashScopeAudioApi(apiKey);
 	}
 
 	private DashScopeImageApi newDashScopeImageApi(String apiKey) {
@@ -79,14 +89,16 @@ public class DashscopeAiTestConfiguration {
 	}
 
 	@Bean
-	public DashScopeAudioSpeechModelOpenAPI dashscopeAudioSpeechModel(SpeechSynthesizer speechSynthesizer) {
-		return new DashScopeAudioSpeechModelOpenAPI(null,
+	public DashScopeAudioSpeechModelOpenAPI dashscopeAudioSpeechModel(DashScopeAudioApi dashScopeAudioApi,
+			SpeechSynthesizer speechSynthesizer) {
+		return new DashScopeAudioSpeechModelOpenAPI(dashScopeAudioApi,
 				DashScopeAudioSpeechOptions.builder().withModel("sambert-zhichu-v1").build());
 	}
 
 	@Bean
-	public DashScopeAudioTranscriptionModelOpenAPI dashscopeAudioTranscriptionModel(Transcription transcription) {
-		return new DashScopeAudioTranscriptionModelOpenAPI(null,
+	public DashScopeAudioTranscriptionModelOpenAPI dashscopeAudioTranscriptionModel(DashScopeAudioApi dashScopeAudioApi,
+			Transcription transcription) {
+		return new DashScopeAudioTranscriptionModelOpenAPI(dashScopeAudioApi,
 				DashScopeAudioTranscriptionOptions.builder().withModel("paraformer-v2").build());
 	}
 
