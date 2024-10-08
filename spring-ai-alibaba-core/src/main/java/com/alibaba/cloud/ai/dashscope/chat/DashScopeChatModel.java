@@ -336,11 +336,11 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 			return new ChatCompletionRequestParameter();
 		}
 
-		Boolean incrementalOutput = options.getIncrementalOutput();
+		Boolean incrementalOutput = stream && options.getIncrementalOutput();
 		return new ChatCompletionRequestParameter("message", options.getSeed(), options.getMaxTokens(),
 				options.getTopP(), options.getTopK(), options.getRepetitionPenalty(), options.getPresencePenalty(),
 				options.getTemperature(), options.getStop(), options.getEnableSearch(), incrementalOutput,
-				options.getTools(), options.getToolChoice());
+				options.getTools(), options.getToolChoice(), stream);
 	}
 
 }

@@ -860,13 +860,14 @@ public class DashScopeApi {
 			@JsonProperty("presence_penalty") Float presencePenalty, @JsonProperty("temperature") Float temperature,
 			@JsonProperty("stop") List<Object> stop, @JsonProperty("enable_search") Boolean enableSearch,
 			@JsonProperty("incremental_output") Boolean incrementalOutput,
-			@JsonProperty("tools") List<FunctionTool> tools, @JsonProperty("tool_choice") Object toolChoice) {
+			@JsonProperty("tools") List<FunctionTool> tools, @JsonProperty("tool_choice") Object toolChoice,
+			@JsonProperty("stream") Boolean stream) {
 
 		/**
 		 * shortcut constructor for chat request parameter
 		 */
 		public ChatCompletionRequestParameter() {
-			this(null, null, null, null, null, null, null, null, null, null, null, null, null);
+			this(null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
