@@ -16,11 +16,20 @@
  */
 package com.alibaba.cloud.ai.example.model;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
