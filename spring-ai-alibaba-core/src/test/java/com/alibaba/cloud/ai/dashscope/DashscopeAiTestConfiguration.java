@@ -3,6 +3,9 @@ package com.alibaba.cloud.ai.dashscope;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
+import com.alibaba.cloud.ai.dashscope.audio.synthesis.DashScopeSpeechSynthesisModel;
+import com.alibaba.cloud.ai.dashscope.audio.synthesis.DashScopeSpeechSynthesisOptions;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechModelOpenAPI;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechOptions;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionModelOpenAPI;
@@ -45,6 +48,11 @@ public class DashscopeAiTestConfiguration {
 	}
 
 	@Bean
+	public DashScopeSpeechSynthesisApi dashScopeSpeechSynthesisApi() {
+		return newDashScopeSpeechSynthesisApi(getApiKey());
+	}
+
+	@Bean
 	public DashScopeApi dashscopeChatApi() {
 		return newDashScopeChatApi(getApiKey());
 	}
@@ -59,6 +67,10 @@ public class DashscopeAiTestConfiguration {
 
 	private DashScopeAudioApi newDashScopeAudioApi(String apiKey) {
 		return new DashScopeAudioApi(apiKey);
+	}
+
+	private DashScopeSpeechSynthesisApi newDashScopeSpeechSynthesisApi(String apiKey) {
+		return new DashScopeSpeechSynthesisApi(apiKey);
 	}
 
 	private DashScopeImageApi newDashScopeImageApi(String apiKey) {
@@ -95,6 +107,13 @@ public class DashscopeAiTestConfiguration {
 			SpeechSynthesizer speechSynthesizer) {
 		return new DashScopeAudioSpeechModelOpenAPI(dashScopeAudioApi,
 				DashScopeAudioSpeechOptions.builder().withModel("sambert-zhichu-v1").build());
+	}
+
+	@Bean
+	public DashScopeSpeechSynthesisModel dashscopeAudioSpeechModel(
+			DashScopeSpeechSynthesisApi dashScopeSpeechSynthesisApi) {
+		return new DashScopeSpeechSynthesisModel(dashScopeSpeechSynthesisApi,
+				DashScopeSpeechSynthesisOptions.builder().withModel("cosyvoice-v1").withVoice("longhua").build());
 	}
 
 	@Bean
