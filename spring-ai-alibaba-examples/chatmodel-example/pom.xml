@@ -22,7 +22,7 @@
 		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
 
 		<!-- Spring AI -->
-		<spring-ai-alibaba.version>1.0.0-M2</spring-ai-alibaba.version>
+		<spring-ai-alibaba.version>1.0.0-M2.1</spring-ai-alibaba.version>
 	</properties>
 
 	<dependencies>
