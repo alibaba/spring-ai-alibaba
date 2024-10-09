@@ -57,7 +57,7 @@ public class ChatController {
 ```
 
 ## 示例
-请在 [spring-ai-alibaba-examples](./spring-ai-alibaba-examples) 查看更多开发示例。
+请在 [spring-ai-alibaba-examples](./spring-ai-alibaba-examples) 查看更多 Example 示例。
 
 * Hello World
 * Chat Model
@@ -68,6 +68,7 @@ public class ChatController {
 * Flight Booking Playground，一个贴近实际使用场景，综合运用了 prompt template、function calling、chat memory 和 rag 等的智能机票助手应用。
 
 ## 特性
+
 以下是 Spring AI Alibaba 支持的核心能力，未来更多高级功能将以这些核心能力为基础。请参考官网文档学习每个[功能详细说明](https://sca.aliyun.com/docs/2023/user-guide/ai/quick-start/)以及 [AI 应用开发最佳实践](https://sca.aliyun.com/docs/2023/user-guide/ai/quick-start/)。
 
 * 开发复杂 AI 应用的高阶抽象 Fluent API -- ChatClient
@@ -94,10 +95,12 @@ Spring AI Alibaba 提供 AI 开源框架以及与阿里巴巴整体开源生态�
 ![ai-native-architecture](./docs/imgs/spring-ai-alibaba-arch.png)
 
 ## 参考资料
+
 * [Spring AI](https://docs.spring.io/spring-ai/reference/index.html)
 * [阿里云百炼大模型应用开发平台](https://help.aliyun.com/zh/model-studio/getting-started/what-is-model-studio/)
 
 ## 联系我们
+
 * 钉钉群：请通过群号 `64485010179` 搜索入群
 * 微信公众号：请扫描一下二维码关注公众号
 

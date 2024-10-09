@@ -106,4 +106,3 @@ Spring AI Alibaba aims to reduce the complexity of building ai native java appli
 * Wechat Group (微信公众号), scan the QR code below and follow us.
 
 <img src="./docs/imgs/wechat-account.jpg" style="max-width:100px;"/>
-
