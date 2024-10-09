@@ -34,18 +34,27 @@ public class ImageModelController {
 		this.imageModel = imageModel;
 	}
 
-	@RequestMapping("/image")
-	public String image(String input) {
+	@GetMapping("/image/{input}")
+	public void image(@PathVariable("input") String input, HttpServletResponse response) {
 
 		ImageOptions options = ImageOptionsBuilder.builder()
 				.withModel("wanx-v1")
 				.build();
 
 		ImagePrompt imagePrompt = new ImagePrompt(input, options);
-		ImageResponse response = imageModel.call(imagePrompt);
-		String imageUrl = response.getResult().getOutput().getUrl();
+		ImageResponse imageResponse = imageModel.call(imagePrompt);
+		String imageUrl = imageResponse.getResult().getOutput().getUrl();
 
-		return "redirect:" + imageUrl;
+		try {
+			URL url = new URL(imageUrl);
+			InputStream in = url.openStream();
+
+			response.setHeader("Content-Type", MediaType.IMAGE_PNG_VALUE);
+			response.getOutputStream().write(in.readAllBytes());
+			response.getOutputStream().flush();
+		} catch (IOException e) {
+			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+		}
 	}
 
 }
