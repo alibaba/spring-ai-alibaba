@@ -40,6 +40,9 @@
 
 		<!-- Spring AI -->
 		<spring-ai-alibaba.version>1.0.0-M2.1</spring-ai-alibaba.version>
+
+		<!-- skip module build -->
+		<skip.module>true</skip.module>
 	</properties>
 
 	<dependencies>
