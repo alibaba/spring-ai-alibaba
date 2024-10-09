@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.alibaba.cloud.ai</groupId>
-	<artifactId>chatmodel-example</artifactId>
+	<artifactId>client-api-example</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>chatmodel-example</name>
+	<name>helloworld-example</name>
 	<description>Demo project for Spring AI Alibaba</description>
 
 	<properties>
