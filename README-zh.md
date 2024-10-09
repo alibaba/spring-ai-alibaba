@@ -7,6 +7,8 @@
 
 总的来说，使用 Spring AI Alibaba 开发应用与使用普通 Spring Boot 没有什么区别，只需要增加 `spring-ai-alibaba-starter` 依赖，将 `ChatClient` Bean 注入就可以实现与模型聊天了。
 
+> 因为 Spring AI Alibaba 基于 Spring Boot 3.x 开发，因此对 JDK 要求 17 及以上版本。
+
 1. 在项目中加入 `spring-ai-alibaba-starter` 依赖。
 
 ```xml
