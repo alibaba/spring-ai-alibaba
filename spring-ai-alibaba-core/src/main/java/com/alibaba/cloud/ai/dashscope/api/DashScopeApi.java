@@ -2,17 +2,13 @@ package com.alibaba.cloud.ai.dashscope.api;
 
 import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
 import com.alibaba.cloud.ai.dashscope.common.ErrorCodeEnum;
-import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentTransformerOptions;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetrieverOptions;
+import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentTransformerOptions;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeStoreOptions;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
@@ -25,6 +21,8 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -1221,6 +1219,75 @@ public class DashScopeApi {
 	}
 
 	/**
+	 * Represents dashscope rerank request input
+	 *
+	 * @param query query string for rerank.
+	 * @param documents list of documents for rerank.
+	 */
+	public record RerankRequestInput(@JsonProperty("query") String query,
+			@JsonProperty("documents") List<String> documents) {
+	}
+
+	/**
+	 * Represents rerank request parameters.
+	 *
+	 * @param topN return top n documents, it will return all the documents if top n not
+	 * pass.
+	 * @param returnDocuments if need to return original documents
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record RerankRequestParameter(@JsonProperty("top_n") Integer topN,
+			@JsonProperty("return_documents") Boolean returnDocuments) {
+	}
+
+	/**
+	 * Represents rerank request information.
+	 *
+	 * @param model ID of the model to use.
+	 * @param input dashscope rerank input.
+	 * @param parameters rerank parameters.
+	 *
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record RerankRequest(@JsonProperty("model") String model, @JsonProperty("input") RerankRequestInput input,
+			@JsonProperty("parameters") RerankRequestParameter parameters) {
+	}
+
+	/**
+	 * Represents rerank output result
+	 *
+	 * @param index index of input document list
+	 * @param relevanceScore relevance score between query and document
+	 * @param document original document
+	 */
+	public record RerankResponseOutputResult(@JsonProperty("index") Integer index,
+			@JsonProperty("relevance_score") Double relevanceScore,
+			@JsonProperty("document") Map<String, Object> document) {
+	}
+
+	/**
+	 * Represents rerank response output
+	 *
+	 * @param results rerank output results
+	 */
+	public record RerankResponseOutput(@JsonProperty("results") List<RerankResponseOutputResult> results) {
+
+	}
+
+	/**
+	 * Represents rerank response
+	 *
+	 * @param output rerank response output
+	 * @param usage rerank token usage
+	 * @param requestId rerank request id
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record RerankResponse(@JsonProperty("output") RerankResponseOutput output,
+			@JsonProperty("usage") TokenUsage usage, @JsonProperty("request_id") String requestId) {
+
+	}
+
+	/**
 	 * Creates a model response for the given chat conversation.
 	 * @param chatRequest The chat completion request.
 	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code
@@ -1283,6 +1350,22 @@ public class DashScopeApi {
 				return List.of(monoChunk);
 			})
 			.flatMap(mono -> mono);
+	}
+
+	/**
+	 * Creates rerank request for dashscope rerank model.
+	 * @param rerankRequest The chat completion request.
+	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code
+	 * and headers.
+	 */
+	public ResponseEntity<RerankResponse> rerankEntity(RerankRequest rerankRequest) {
+		Assert.notNull(rerankRequest, "The request body can not be null.");
+
+		return this.restClient.post()
+			.uri("/api/v1/services/rerank/text-rerank/text-rerank")
+			.body(rerankRequest)
+			.retrieve()
+			.toEntity(RerankResponse.class);
 	}
 
 }
