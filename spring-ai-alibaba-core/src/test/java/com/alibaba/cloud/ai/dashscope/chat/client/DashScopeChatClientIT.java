@@ -17,16 +17,17 @@
 package com.alibaba.cloud.ai.dashscope.chat.client;
 
 import com.alibaba.cloud.ai.advisor.DocumentRetrievalAdvisor;
+import com.alibaba.cloud.ai.advisor.RetrievalRerankAdvisor;
 import com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAutoConfiguration;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.dashscope.chat.tool.DashScopeFunctionTestConfiguration;
 import com.alibaba.cloud.ai.dashscope.chat.tool.MockOrderService;
 import com.alibaba.cloud.ai.dashscope.chat.tool.MockWeatherService;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.rag.*;
+import com.alibaba.cloud.ai.model.RerankModel;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -34,9 +35,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.document.DocumentRetriever;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.reader.JsonReader;
+import org.springframework.ai.vectorstore.SimpleVectorStore;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -71,16 +81,25 @@ public class DashScopeChatClientIT {
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeChatClientIT.class);
 
 	@Autowired
-	private DashScopeChatModel dashscopeChatModel;
+	private ChatModel dashscopeChatModel;
 
 	@Autowired
 	private DashScopeApi dashscopeChatApi;
+
+	@Autowired
+	private EmbeddingModel dashscopeEmbeddingModel;
+
+	@Autowired
+	private RerankModel dashscopeRerankModel;
 
 	@Value("classpath:/prompts/rag/system-qa.st")
 	private Resource systemResource;
 
 	@Value("classpath:/prompts/rag/system-qa-ref.st")
 	private Resource systemResourceRef;
+
+	@Value("classpath:/data/acme/bikes.json")
+	private Resource bikesResource;
 
 	@Test
 	void callTest() throws IOException {
@@ -314,6 +333,18 @@ public class DashScopeChatClientIT {
 	}
 
 	@Test
+	void addDocument() {
+		String filePath = "/Users/yuanci/Downloads/安装阿里云百炼SDK_大模型服务平台百炼(BAILIAN)-阿里云帮助中心.pdf";
+		DocumentReader reader = new DashScopeDocumentCloudReader(filePath, dashscopeChatApi, null);
+		List<Document> documentList = reader.get();
+
+		Assertions.assertNotNull(documentList);
+
+		VectorStore cloudStore = new DashScopeCloudStore(dashscopeChatApi, new DashScopeStoreOptions("test-index"));
+		cloudStore.add(documentList);
+	}
+
+	@Test
 	void reader() {
 		String filePath = "/Users/nuocheng.lxm/Desktop/新能源产业有哪些-36氪.pdf";
 		DashScopeDocumentCloudReader reader = new DashScopeDocumentCloudReader(filePath, dashscopeChatApi, null);
@@ -343,6 +374,31 @@ public class DashScopeChatClientIT {
 		cloudStore.delete(Arrays.asList("file_d3083d64026d4864b4558d18f9ca2a6d_10001"));
 		List<Document> documents = cloudStore.similaritySearch("南方电网");
 		System.out.println(documents.size());
+	}
+
+	@Test
+	void callRagWithRerank() {
+		// Step 1 - Load JSON document as Documents
+
+		logger.info("Loading JSON as Documents");
+		JsonReader jsonReader = new JsonReader(bikesResource, "name", "price", "shortDescription", "description");
+		List<Document> documents = jsonReader.get();
+
+		// Step 2 - Create embeddings and save to vector store
+		logger.info("Creating Embeddings...");
+		VectorStore vectorStore = new SimpleVectorStore(dashscopeEmbeddingModel);
+		vectorStore.add(documents);
+
+		// Step3 - Retrieve and llm generate
+		ChatClient chatClient = ChatClient.builder(dashscopeChatModel)
+			.defaultAdvisors(new RetrievalRerankAdvisor(vectorStore, dashscopeRerankModel))
+			.build();
+
+		ChatResponse response = chatClient.prompt().user("which bike has best performance?").call().chatResponse();
+		String content = response.getResult().getOutput().getContent();
+		Assertions.assertNotNull(content);
+
+		logger.info("content: {}", content);
 	}
 
 }

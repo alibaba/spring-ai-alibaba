@@ -16,24 +16,17 @@
 
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
+import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
 import com.alibaba.dashscope.audio.asr.transcription.Transcription;
 import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
 import org.jetbrains.annotations.NotNull;
-
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -60,6 +53,12 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
 /**
  * @author nuocheng.lxm
  * @author yuluo
@@ -70,7 +69,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 		SpringAiRetryAutoConfiguration.class })
 @EnableConfigurationProperties({ DashScopeConnectionProperties.class, DashScopeChatProperties.class,
 		DashScopeImageProperties.class, DashScopeAudioTranscriptionProperties.class,
-		DashScopeAudioSpeechProperties.class, DashScopeEmbeddingProperties.class })
+		DashScopeAudioSpeechProperties.class, DashScopeEmbeddingProperties.class, DashScopeRerankProperties.class })
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
 		WebClientAutoConfiguration.class })
 public class DashScopeAutoConfiguration {
@@ -188,6 +187,23 @@ public class DashScopeAutoConfiguration {
 				restClientBuilder, webClientBuilder, responseErrorHandler);
 
 		return new DashScopeImageModel(dashScopeImageApi, imageProperties.getOptions(), retryTemplate);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = DashScopeRerankProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
+	public DashScopeRerankModel dashscopeRerankModel(DashScopeConnectionProperties commonProperties,
+			DashScopeRerankProperties rerankProperties, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler) {
+		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
+				rerankProperties, "rerank");
+
+		var dashscopeApi = new DashScopeApi(resolved.baseUrl(), resolved.apiKey(), resolved.workspaceId(),
+				restClientBuilder, webClientBuilder, responseErrorHandler);
+
+		return new DashScopeRerankModel(dashscopeApi, rerankProperties.getOptions(), retryTemplate);
 	}
 
 	@Bean

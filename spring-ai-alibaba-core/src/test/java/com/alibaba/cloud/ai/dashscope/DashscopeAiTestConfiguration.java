@@ -11,6 +11,8 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
+import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
+import com.alibaba.cloud.ai.model.RerankModel;
 import com.alibaba.dashscope.audio.asr.transcription.Transcription;
 import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
 
@@ -113,6 +115,12 @@ public class DashscopeAiTestConfiguration {
 	@ConditionalOnMissingBean
 	public Transcription transcription() {
 		return new Transcription();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public RerankModel dashscopeRerankModel(DashScopeApi dashscopeApi) {
+		return new DashScopeRerankModel(dashscopeApi);
 	}
 
 }
