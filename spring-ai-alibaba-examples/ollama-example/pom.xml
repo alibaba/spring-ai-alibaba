@@ -21,8 +21,6 @@
         <maven.compiler.target>17</maven.compiler.target>
         <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
 
-        <!-- Spring AI -->
-        <spring-ai-alibaba.version>1.0.0-M2</spring-ai-alibaba.version>
     </properties>
 
     <dependencyManagement>
@@ -43,14 +41,9 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-ollama-spring-boot-starter</artifactId>
-            <version>${spring-ai-alibaba.version}</version>
+            <version>1.0.0-M2</version>
         </dependency>
     </dependencies>
 
