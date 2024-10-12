@@ -853,9 +853,9 @@ public class DashScopeApi {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record ChatCompletionRequestParameter(@JsonProperty("result_format") String resultFormat,
 			@JsonProperty("seed") Integer seed, @JsonProperty("max_tokens") Integer maxTokens,
-			@JsonProperty("top_p") Float topP, @JsonProperty("top_k") Integer topK,
-			@JsonProperty("repetition_penalty") Float repetitionPenalty,
-			@JsonProperty("presence_penalty") Float presencePenalty, @JsonProperty("temperature") Float temperature,
+			@JsonProperty("top_p") Double topP, @JsonProperty("top_k") Integer topK,
+			@JsonProperty("repetition_penalty") Double repetitionPenalty,
+			@JsonProperty("presence_penalty") Double presencePenalty, @JsonProperty("temperature") Double temperature,
 			@JsonProperty("stop") List<Object> stop, @JsonProperty("enable_search") Boolean enableSearch,
 			@JsonProperty("incremental_output") Boolean incrementalOutput,
 			@JsonProperty("tools") List<FunctionTool> tools, @JsonProperty("tool_choice") Object toolChoice,

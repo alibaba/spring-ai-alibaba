@@ -67,7 +67,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 		this(dashscopeApi,
 				DashScopeChatOptions.builder()
 					.withModel(DashScopeApi.DEFAULT_CHAT_MODEL)
-					.withTemperature(0.7f)
+					.withTemperature(0.7d)
 					.build());
 	}
 

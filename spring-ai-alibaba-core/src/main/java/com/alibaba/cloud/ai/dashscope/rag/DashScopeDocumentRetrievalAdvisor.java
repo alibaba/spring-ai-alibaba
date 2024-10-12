@@ -17,21 +17,22 @@
 package com.alibaba.cloud.ai.dashscope.rag;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
-import org.springframework.ai.chat.client.AdvisedRequest;
-import org.springframework.ai.chat.client.RequestResponseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.*;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentRetriever;
-import org.springframework.ai.model.Content;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Title Document retrieval advisor.<br>
@@ -41,7 +42,7 @@ import java.util.stream.Collectors;
  * @since 2024/8/16 11:29
  */
 
-public class DashScopeDocumentRetrievalAdvisor implements RequestResponseAdvisor {
+public class DashScopeDocumentRetrievalAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
 
 	private static final Pattern RAG_REFERENCE_PATTERN = Pattern.compile("<ref>(.*?)</ref>");
 
@@ -74,6 +75,8 @@ public class DashScopeDocumentRetrievalAdvisor implements RequestResponseAdvisor
 			{documents}
 			""";
 
+	private static final int DEFAULT_ORDER = 0;
+
 	public static String RETRIEVED_DOCUMENTS = "documents";
 
 	private final DocumentRetriever retriever;
@@ -82,21 +85,80 @@ public class DashScopeDocumentRetrievalAdvisor implements RequestResponseAdvisor
 
 	private final boolean enableReference;
 
+	private final boolean protectFromBlocking;
+
+	private final int order;
+
 	public DashScopeDocumentRetrievalAdvisor(DocumentRetriever retriever, boolean enableReference) {
-		this.retriever = retriever;
-		this.enableReference = enableReference;
-		this.userTextAdvise = DEFAULT_USER_TEXT_ADVISE;
+		this(retriever, DEFAULT_USER_TEXT_ADVISE, enableReference);
 	}
 
 	public DashScopeDocumentRetrievalAdvisor(DocumentRetriever retriever, String userTextAdvise,
 			boolean enableReference) {
+		this(retriever, userTextAdvise, enableReference, true);
+	}
+
+	public DashScopeDocumentRetrievalAdvisor(DocumentRetriever retriever, String userTextAdvise,
+			boolean enableReference, boolean protectFromBlocking) {
+		this(retriever, userTextAdvise, enableReference, protectFromBlocking, DEFAULT_ORDER);
+	}
+
+	public DashScopeDocumentRetrievalAdvisor(DocumentRetriever retriever, String userTextAdvise,
+			boolean enableReference, boolean protectFromBlocking, int order) {
 		this.retriever = retriever;
 		this.userTextAdvise = userTextAdvise;
 		this.enableReference = enableReference;
+		this.protectFromBlocking = protectFromBlocking;
+		this.order = order;
 	}
 
 	@Override
-	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
+	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
+
+		advisedRequest = this.before(advisedRequest);
+
+		AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
+
+		return this.after(advisedResponse);
+	}
+
+	@Override
+	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
+
+		// This can be executed by both blocking and non-blocking Threads
+		// E.g. a command line or Tomcat blocking Thread implementation
+		// or by a WebFlux dispatch in a non-blocking manner.
+		Flux<AdvisedResponse> advisedResponses = (this.protectFromBlocking) ?
+		// @formatter:off
+				Mono.just(advisedRequest)
+						.publishOn(Schedulers.boundedElastic())
+						.map(this::before)
+						.flatMapMany(request -> chain.nextAroundStream(request))
+				: chain.nextAroundStream(this.before(advisedRequest));
+		// @formatter:on
+
+		return advisedResponses.map(ar -> {
+			if (onFinishReason().test(ar)) {
+				ar = after(ar);
+			}
+			return ar;
+		});
+	}
+
+	@Override
+	public String getName() {
+		return this.getClass().getSimpleName();
+	}
+
+	@Override
+	public int getOrder() {
+		return this.order;
+	}
+
+	private AdvisedRequest before(AdvisedRequest request) {
+
+		var context = new HashMap<>(request.adviseContext());
+
 		List<Document> documents = retriever.retrieve(request.userText());
 
 		Map<String, Document> documentMap = new HashMap<>();
@@ -127,31 +189,24 @@ public class DashScopeDocumentRetrievalAdvisor implements RequestResponseAdvisor
 			.withSystemText(this.userTextAdvise)
 			.withSystemParams(advisedUserParams)
 			.withUserText(request.userText())
+			.withAdviseContext(context)
 			.build();
 	}
 
-	@Override
-	public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> context) {
-		return handleReferencedDocuments(response, context);
-	}
-
-	@Override
-	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> context) {
-		return fluxResponse.map(cr -> handleReferencedDocuments(cr, context));
-	}
-
-	private ChatResponse handleReferencedDocuments(ChatResponse response, Map<String, Object> context) {
+	private AdvisedResponse after(AdvisedResponse advisedResponse) {
 		if (!enableReference) {
-			return response;
+			return advisedResponse;
 		}
 
+		var response = advisedResponse.response();
+		var context = advisedResponse.adviseContext();
 		ChatCompletionFinishReason finishReason = ChatCompletionFinishReason
 			.valueOf(response.getResult().getMetadata().getFinishReason());
 		if (finishReason == ChatCompletionFinishReason.NULL) {
 			String fullContent = context.getOrDefault("full_content", "").toString()
 					+ response.getResult().getOutput().getContent();
 			context.put("full_content", fullContent);
-			return response;
+			return advisedResponse;
 		}
 
 		String content = context.getOrDefault("full_content", "").toString();
@@ -178,8 +233,30 @@ public class DashScopeDocumentRetrievalAdvisor implements RequestResponseAdvisor
 			}
 		}
 
-		ChatResponse.Builder chatResponseBuilder = ChatResponse.builder().from(response);
-		return chatResponseBuilder.withMetadata(RETRIEVED_DOCUMENTS, referencedDocuments).build();
+		ChatResponse.Builder chatResponseBuilder = ChatResponse.builder()
+			.from(response)
+			.withMetadata(RETRIEVED_DOCUMENTS, referencedDocuments);
+		return new AdvisedResponse(chatResponseBuilder.build(), context);
+	}
+
+	/**
+	 * Controls whether {@link DashScopeDocumentRetrievalAdvisor#after(AdvisedResponse)}
+	 * should be executed.<br />
+	 * Called only on Flux elements that contain a finish reason. Usually the last element
+	 * in the Flux. The response advisor can modify the elements before they are returned
+	 * to the client.<br />
+	 * Inspired by
+	 * {@link org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor}.
+	 */
+	private Predicate<AdvisedResponse> onFinishReason() {
+
+		return (advisedResponse) -> advisedResponse.response()
+			.getResults()
+			.stream()
+			.filter(result -> result != null && result.getMetadata() != null
+					&& StringUtils.hasText(result.getMetadata().getFinishReason()))
+			.findFirst()
+			.isPresent();
 	}
 
 }

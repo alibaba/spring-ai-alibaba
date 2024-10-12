@@ -45,7 +45,7 @@ public class DashScopeChatProperties extends DashScopeParentProperties {
 	/**
 	 * Default temperature speed.
 	 */
-	private static final Float DEFAULT_TEMPERATURE = 0.8f;
+	private static final Double DEFAULT_TEMPERATURE = 0.8d;
 
 	/**
 	 * Enable Dashscope ai chat client.
