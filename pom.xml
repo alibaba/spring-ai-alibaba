@@ -47,7 +47,7 @@
 		<spring-boot.version>3.3.3</spring-boot.version>
 
 		<!-- Spring AI -->
-		<spring-ai.version>1.0.0-M2</spring-ai.version>
+		<spring-ai.version>1.0.0-M3</spring-ai.version>
 		<dashscope-sdk-java.version>2.15.1</dashscope-sdk-java.version>
 
 		<!-- plugin versions -->
