@@ -1,9 +1,6 @@
 package com.alibaba.cloud.ai.dashscope.chat;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -33,7 +30,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    * 用于控制随机性和多样性的程度。具体来说，temperature值控制了生成文本时对每个候选词的概率分布进行平滑的程度。较高的temperature值会降低概率分布的峰值，使得更多的低概率词被选择，生成结果更加多样化；而较低的temperature值则会增强概率分布的峰值，使得高概率词更容易被选择，生成结果更加确定。
    * 取值范围：[0, 2)，系统默认值0.85。不建议取值为0，无意义。
    */
-  private @JsonProperty("temperature") Float temperature;
+  private @JsonProperty("temperature") Double temperature;
 
   /**
    * 生成时使用的随机数种子，用户控制模型生成内容的随机性。seed支持无符号64位整数。在使用seed时，模型将尽可能生成相同或相似的结果，但目前不保证每次生成的结果完全相同。
@@ -43,7 +40,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   /**
    * 生成时，核采样方法的概率阈值。例如，取值为0.8时，仅保留累计概率之和大于等于0.8的概率分布中的token，作为随机采样的候选集。取值范围为（0,1.0)，取值越大，生成的随机性越高；取值越低，生成的随机性越低。默认值为0.8。注意，取值不要大于等于1
    */
-  private @JsonProperty("top_p") Float topP;
+  private @JsonProperty("top_p") Double topP;
 
   /**
    * 生成时，采样候选集的大小。例如，取值为50时，仅将单次生成中得分最高的50个token组成随机采样的候选集。取值越大，生成的随机性越高；取值越小，生成的确定性越高。注意：如果top_k参数为空或者top_k的值大于100，表示不启用top_k策略，此时仅有top_p策略生效，默认是空。
@@ -77,7 +74,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   private @JsonProperty("incremental_output") Boolean incrementalOutput = true;
 
   /** 用于控制模型生成时的重复度。提高repetition_penalty时可以降低模型生成的重复度。1.0表示不做惩罚。默认为1.1。 */
-  private @JsonProperty("repetition_penalty") Float repetitionPenalty;
+  private @JsonProperty("repetition_penalty") Double repetitionPenalty;
 
   /** 模型可选调用的工具列表。目前仅支持function，并且即使输入多个function，模型仅会选择其中一个生成结果。模型根据tools参数内容可以生产函数调用的参数 */
   private @JsonProperty("tools") List<DashScopeApi.FunctionTool> tools;
@@ -113,13 +110,17 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    */
   @NestedConfigurationProperty @JsonIgnore private Set<String> functions = new HashSet<>();
 
+  @NestedConfigurationProperty
+  @JsonIgnore
+  private Map<String, Object> toolContext;
+
   public String getModel() {
     return model;
-  }@Override public Float getFrequencyPenalty() {
+  }@Override public Double getFrequencyPenalty() {
     return null;
     }@Override public Integer getMaxTokens() {
     return null;
-    }@Override public Float getPresencePenalty() {
+    }@Override public Double getPresencePenalty() {
     return null;
     }@Override public List<String> getStopSequences() {
     return null;
@@ -138,22 +139,22 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   }
 
   @Override
-  public Float getTemperature() {
+  public Double getTemperature() {
     return this.temperature;
   }
 
-  public void setTemperature(Float temperature) {
+  public void setTemperature(Double temperature) {
     this.temperature = temperature;
   }
 
   @Override
-  public Float getTopP() {
+  public Double getTopP() {
     return this.topP;
   }@Override public ChatOptions copy() {
     return DashScopeChatOptions.fromOptions(this);
     }
 
-  public void setTopP(Float topP) {
+  public void setTopP(Double topP) {
     this.topP = topP;
   }
 
@@ -182,11 +183,11 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
     this.enableSearch = enableSearch;
   }
 
-  public Float getRepetitionPenalty() {
+  public Double getRepetitionPenalty() {
     return repetitionPenalty;
   }
 
-  public void setRepetitionPenalty(Float repetitionPenalty) {
+  public void setRepetitionPenalty(Double repetitionPenalty) {
     this.repetitionPenalty = repetitionPenalty;
   }
 
@@ -234,11 +235,25 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
     this.functions = functions;
   }
 
+  @Override
+  public Map<String,Object> getToolContext() {
+    return this.toolContext;
+  }
+
+  @Override
+  public void setToolContext(Map<String,Object> toolContext) {
+    this.toolContext = toolContext;
+  }
+
   public Boolean getIncrementalOutput() {
     return incrementalOutput;
-}public void setIncrementalOutput(Boolean incrementalOutput) {
+  }
+
+  public void setIncrementalOutput(Boolean incrementalOutput) {
     this.incrementalOutput = incrementalOutput;
-}public static DashscopeChatOptionsBuilder builder() {
+  }
+
+  public static DashscopeChatOptionsBuilder builder() {
     return new DashscopeChatOptionsBuilder();
   }
 
@@ -254,12 +269,12 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
       return this;
     }
 
-    public DashscopeChatOptionsBuilder withTemperature(Float temperature) {
+    public DashscopeChatOptionsBuilder withTemperature(Double temperature) {
       this.options.temperature = temperature;
       return this;
     }
 
-    public DashscopeChatOptionsBuilder withTopP(Float topP) {
+    public DashscopeChatOptionsBuilder withTopP(Double topP) {
       this.options.topP = topP;
       return this;
     }
@@ -279,7 +294,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
       return this;
     }
 
-    public DashscopeChatOptionsBuilder withRepetitionPenalty(Float repetitionPenalty) {
+    public DashscopeChatOptionsBuilder withRepetitionPenalty(Double repetitionPenalty) {
       this.options.repetitionPenalty = repetitionPenalty;
       return this;
     }
@@ -327,6 +342,16 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
       return this;
     }
 
+    public DashscopeChatOptionsBuilder withToolContext(Map<String, Object> toolContext) {
+      if (this.options.toolContext == null) {
+        this.options.toolContext = toolContext;
+      }
+      else {
+        this.options.toolContext.putAll(toolContext);
+      }
+      return this;
+    }
+
     public DashScopeChatOptions build() {
       return this.options;
     }
@@ -346,6 +371,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
         .withFunctions(fromOptions.getFunctions())
         .withRepetitionPenalty(fromOptions.getRepetitionPenalty())
         .withTools(fromOptions.getTools())
+        .withToolContext(fromOptions.getToolContext())
         .build();
   }
 }

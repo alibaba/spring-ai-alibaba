@@ -21,8 +21,7 @@ import com.alibaba.cloud.ai.model.RerankModel;
 import com.alibaba.cloud.ai.model.RerankResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.AdvisedRequest;
-import org.springframework.ai.chat.client.RequestResponseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.*;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Content;
@@ -34,8 +33,11 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -48,7 +50,7 @@ import static java.util.stream.Collectors.toList;
  * @since 1.0.0-M2
  */
 
-public class RetrievalRerankAdvisor implements RequestResponseAdvisor {
+public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
 
 	private static final Logger logger = LoggerFactory.getLogger(RetrievalRerankAdvisor.class);
 
@@ -64,6 +66,8 @@ public class RetrievalRerankAdvisor implements RequestResponseAdvisor {
 
 	private static final Double DEFAULT_MIN_SCORE = 0.1;
 
+	private static final int DEFAULT_ORDER = 0;
+
 	private final VectorStore vectorStore;
 
 	private final RerankModel rerankModel;
@@ -73,6 +77,10 @@ public class RetrievalRerankAdvisor implements RequestResponseAdvisor {
 	private final SearchRequest searchRequest;
 
 	private final Double minScore;
+
+	private final boolean protectFromBlocking;
+
+	private final int order;
 
 	public static final String RETRIEVED_DOCUMENTS = "qa_retrieved_documents";
 
@@ -94,6 +102,16 @@ public class RetrievalRerankAdvisor implements RequestResponseAdvisor {
 
 	public RetrievalRerankAdvisor(VectorStore vectorStore, RerankModel rerankModel, SearchRequest searchRequest,
 			String userTextAdvise, Double minScore) {
+		this(vectorStore, rerankModel, searchRequest, userTextAdvise, minScore, true);
+	}
+
+	public RetrievalRerankAdvisor(VectorStore vectorStore, RerankModel rerankModel, SearchRequest searchRequest,
+			String userTextAdvise, Double minScore, boolean protectFromBlocking) {
+		this(vectorStore, rerankModel, searchRequest, userTextAdvise, minScore, protectFromBlocking, DEFAULT_ORDER);
+	}
+
+	public RetrievalRerankAdvisor(VectorStore vectorStore, RerankModel rerankModel, SearchRequest searchRequest,
+			String userTextAdvise, Double minScore, boolean protectFromBlocking, int order) {
 		Assert.notNull(vectorStore, "The vectorStore must not be null!");
 		Assert.notNull(rerankModel, "The rerankModel must not be null!");
 		Assert.notNull(searchRequest, "The searchRequest must not be null!");
@@ -104,53 +122,51 @@ public class RetrievalRerankAdvisor implements RequestResponseAdvisor {
 		this.userTextAdvise = userTextAdvise;
 		this.searchRequest = searchRequest;
 		this.minScore = minScore;
+		this.protectFromBlocking = protectFromBlocking;
+		this.order = order;
 	}
 
 	@Override
-	public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
-		// 1. Advise the system text.
-		String advisedUserText = request.userText() + System.lineSeparator() + this.userTextAdvise;
+	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
 
-		var searchRequestToUse = SearchRequest.from(this.searchRequest)
-			.withQuery(request.userText())
-			.withFilterExpression(doGetFilterExpression(context));
+		advisedRequest = this.before(advisedRequest);
 
-		// 2. Search for similar documents in the vector store.
-		logger.debug("searchRequestToUse: {}", searchRequestToUse);
-		List<Document> documents = this.vectorStore.similaritySearch(searchRequestToUse);
-		logger.debug("retrieved documents: {}", documents);
+		AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
 
-		// 3. Rerank documents for query
-		documents = doRerank(request, documents);
-
-		context.put(RETRIEVED_DOCUMENTS, documents);
-
-		// 4. Create the context from the documents.
-		String documentContext = documents.stream()
-			.map(Content::getContent)
-			.collect(Collectors.joining(System.lineSeparator()));
-
-		// 5. Advise the user parameters.
-		Map<String, Object> advisedUserParams = new HashMap<>(request.userParams());
-		advisedUserParams.put("question_answer_context", documentContext);
-
-		return AdvisedRequest.from(request).withUserText(advisedUserText).withUserParams(advisedUserParams).build();
+		return this.after(advisedResponse);
 	}
 
 	@Override
-	public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> context) {
-		ChatResponse.Builder chatResponseBuilder = ChatResponse.builder().from(response);
-		chatResponseBuilder.withMetadata(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
-		return chatResponseBuilder.build();
-	}
+	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
 
-	@Override
-	public Flux<ChatResponse> adviseResponse(Flux<ChatResponse> fluxResponse, Map<String, Object> context) {
-		return fluxResponse.map(cr -> {
-			ChatResponse.Builder chatResponseBuilder = ChatResponse.builder().from(cr);
-			chatResponseBuilder.withMetadata(RETRIEVED_DOCUMENTS, context.get(RETRIEVED_DOCUMENTS));
-			return chatResponseBuilder.build();
+		// This can be executed by both blocking and non-blocking Threads
+		// E.g. a command line or Tomcat blocking Thread implementation
+		// or by a WebFlux dispatch in a non-blocking manner.
+		Flux<AdvisedResponse> advisedResponses = (this.protectFromBlocking) ?
+		// @formatter:off
+				Mono.just(advisedRequest)
+						.publishOn(Schedulers.boundedElastic())
+						.map(this::before)
+						.flatMapMany(request -> chain.nextAroundStream(request))
+				: chain.nextAroundStream(this.before(advisedRequest));
+		// @formatter:on
+
+		return advisedResponses.map(ar -> {
+			if (onFinishReason().test(ar)) {
+				ar = after(ar);
+			}
+			return ar;
 		});
+	}
+
+	@Override
+	public String getName() {
+		return this.getClass().getSimpleName();
+	}
+
+	@Override
+	public int getOrder() {
+		return this.order;
 	}
 
 	protected Filter.Expression doGetFilterExpression(Map<String, Object> context) {
@@ -180,6 +196,70 @@ public class RetrievalRerankAdvisor implements RequestResponseAdvisor {
 			.sorted(Comparator.comparingDouble(DocumentWithScore::getScore).reversed())
 			.map(DocumentWithScore::getDocument)
 			.collect(toList());
+	}
+
+	private AdvisedRequest before(AdvisedRequest request) {
+
+		var context = new HashMap<>(request.adviseContext());
+
+		// 1. Advise the system text.
+		String advisedUserText = request.userText() + System.lineSeparator() + this.userTextAdvise;
+
+		var searchRequestToUse = SearchRequest.from(this.searchRequest)
+			.withQuery(request.userText())
+			.withFilterExpression(doGetFilterExpression(context));
+
+		// 2. Search for similar documents in the vector store.
+		logger.debug("searchRequestToUse: {}", searchRequestToUse);
+		List<Document> documents = this.vectorStore.similaritySearch(searchRequestToUse);
+		logger.debug("retrieved documents: {}", documents);
+
+		// 3. Rerank documents for query
+		documents = doRerank(request, documents);
+
+		context.put(RETRIEVED_DOCUMENTS, documents);
+
+		// 4. Create the context from the documents.
+		String documentContext = documents.stream()
+			.map(Content::getContent)
+			.collect(Collectors.joining(System.lineSeparator()));
+
+		// 5. Advise the user parameters.
+		Map<String, Object> advisedUserParams = new HashMap<>(request.userParams());
+		advisedUserParams.put("question_answer_context", documentContext);
+
+		return AdvisedRequest.from(request)
+			.withUserText(advisedUserText)
+			.withUserParams(advisedUserParams)
+			.withAdviseContext(context)
+			.build();
+	}
+
+	private AdvisedResponse after(AdvisedResponse advisedResponse) {
+		ChatResponse.Builder chatResponseBuilder = ChatResponse.builder()
+			.from(advisedResponse.response())
+			.withMetadata(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
+		return new AdvisedResponse(chatResponseBuilder.build(), advisedResponse.adviseContext());
+	}
+
+	/**
+	 * Controls whether {@link RetrievalRerankAdvisor#after(AdvisedResponse)} should be
+	 * executed.<br />
+	 * Called only on Flux elements that contain a finish reason. Usually the last element
+	 * in the Flux. The response advisor can modify the elements before they are returned
+	 * to the client.<br />
+	 * Inspired by
+	 * {@link org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor}.
+	 */
+	private Predicate<AdvisedResponse> onFinishReason() {
+
+		return (advisedResponse) -> advisedResponse.response()
+			.getResults()
+			.stream()
+			.filter(result -> result != null && result.getMetadata() != null
+					&& StringUtils.hasText(result.getMetadata().getFinishReason()))
+			.findFirst()
+			.isPresent();
 	}
 
 }
