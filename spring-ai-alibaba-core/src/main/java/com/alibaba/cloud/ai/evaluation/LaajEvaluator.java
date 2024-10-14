@@ -67,7 +67,7 @@ public abstract class LaajEvaluator implements Evaluator {
 		return evaluationRequest.getResponseContent();
 	}
 
-	protected String doGetSupportingData(EvaluationRequest evaluationRequest) {
+	public String doGetSupportingData(EvaluationRequest evaluationRequest) {
 		List<Content> data = evaluationRequest.getDataList();
 		return data.stream()
 			.filter(node -> node != null && node.getContent() != null)
