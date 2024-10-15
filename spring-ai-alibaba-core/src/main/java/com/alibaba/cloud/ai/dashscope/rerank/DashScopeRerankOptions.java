@@ -28,12 +28,20 @@ import com.alibaba.cloud.ai.model.RerankOptions;
 
 public class DashScopeRerankOptions implements RerankOptions {
 
-	/** ID of the model to use. */
+	/**
+	 * ID of the model to use.
+	 */
 	private String model = "gte-rerank";
 
+	/**
+	 * return top n best relevant docs for query
+	 */
 	private Integer topN = 3;
 
-	private Boolean returnDocuments = true;
+	/**
+	 * if need to return original document
+	 */
+	private Boolean returnDocuments = false;
 
 	@Override
 	public String getModel() {

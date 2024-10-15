@@ -21,4 +21,4 @@ $$材料：
 【正文】光合作用是利用阳光将CO2和H2O转化为氧气和葡萄糖的过程。
 
 $$材料:
-{documents}
+{question_answer_context}

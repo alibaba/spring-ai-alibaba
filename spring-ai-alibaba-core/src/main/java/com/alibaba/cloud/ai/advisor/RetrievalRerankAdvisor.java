@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.advisor;
 
 import com.alibaba.cloud.ai.document.DocumentWithScore;
 import com.alibaba.cloud.ai.model.RerankModel;
+import com.alibaba.cloud.ai.model.RerankRequest;
 import com.alibaba.cloud.ai.model.RerankResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -184,17 +185,18 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 			return documents;
 		}
 
-		RerankResponse response = rerankModel.rerank(request.userText(), documents);
+		var rerankRequest = new RerankRequest(request.userText(), documents);
+		RerankResponse response = rerankModel.call(rerankRequest);
 		logger.debug("reranked documents: {}", response);
-		if (response == null || response.getDocuments() == null) {
+		if (response == null || response.getResults() == null) {
 			return documents;
 		}
 
-		return response.getDocuments()
+		return response.getResults()
 			.stream()
 			.filter(doc -> doc != null && doc.getScore() >= minScore)
 			.sorted(Comparator.comparingDouble(DocumentWithScore::getScore).reversed())
-			.map(DocumentWithScore::getDocument)
+			.map(DocumentWithScore::getOutput)
 			.collect(toList());
 	}
 

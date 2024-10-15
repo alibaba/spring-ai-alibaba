@@ -4,4 +4,4 @@ The the answer involves referring to the price or the dimension of the bicycle, 
 If unsure, simply state that you don't know.
 
 DOCUMENTS:
-{documents}
+{question_answer_context}
