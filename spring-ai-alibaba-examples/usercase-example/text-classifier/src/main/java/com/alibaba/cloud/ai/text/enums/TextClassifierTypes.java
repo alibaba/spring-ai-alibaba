@@ -16,4 +16,5 @@ public enum TextClassifierTypes {
      * 中性
      */
     NEUTRAL
+
 }
