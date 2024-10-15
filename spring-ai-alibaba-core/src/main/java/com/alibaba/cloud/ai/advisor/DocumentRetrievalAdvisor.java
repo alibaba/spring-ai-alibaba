@@ -43,15 +43,18 @@ import java.util.stream.Collectors;
 public class DocumentRetrievalAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
 
 	private static final String DEFAULT_USER_TEXT_ADVISE = """
-			请记住以下材料，他们可能对回答问题有帮助。
+			Context information is below.
 			---------------------
-			{documents}
+			{question_answer_context}
 			---------------------
+			Given the context and provided history information and not prior knowledge,
+			reply to the user comment. If the answer is not in the context, inform
+			the user that you can't answer the question.
 			""";
 
 	private static final int DEFAULT_ORDER = 0;
 
-	public static String RETRIEVED_DOCUMENTS = "documents";
+	public static String RETRIEVED_DOCUMENTS = "qa_retrieved_documents";
 
 	private final DocumentRetriever retriever;
 
@@ -137,7 +140,7 @@ public class DocumentRetrievalAdvisor implements CallAroundAdvisor, StreamAround
 			.collect(Collectors.joining(System.lineSeparator()));
 
 		Map<String, Object> advisedUserParams = new HashMap<>(request.userParams());
-		advisedUserParams.put(RETRIEVED_DOCUMENTS, documentContext);
+		advisedUserParams.put("question_answer_context", documentContext);
 
 		return AdvisedRequest.from(request)
 			.withSystemText(this.userTextAdvise)
