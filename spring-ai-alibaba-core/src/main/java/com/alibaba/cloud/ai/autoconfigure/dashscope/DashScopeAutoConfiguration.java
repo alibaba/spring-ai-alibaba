@@ -16,25 +16,17 @@
 
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
-import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
+import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
+import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
 import com.alibaba.dashscope.audio.asr.transcription.Transcription;
 import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
-import com.alibaba.dashscope.exception.NoApiKeyException;
-import com.alibaba.dashscope.utils.ApiKey;
-import com.alibaba.dashscope.utils.Constants;
 import org.jetbrains.annotations.NotNull;
-
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
@@ -61,19 +53,23 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DASHSCOPE_API_KEY;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author nuocheng.lxm
  * @author yuluo
  * @since 2024/8/16 11:45
  */
+@ConditionalOnClass(DashScopeApi.class)
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
 		SpringAiRetryAutoConfiguration.class })
-@ConditionalOnClass(DashScopeApi.class)
 @EnableConfigurationProperties({ DashScopeConnectionProperties.class, DashScopeChatProperties.class,
 		DashScopeImageProperties.class, DashScopeAudioTranscriptionProperties.class,
-		DashScopeAudioSpeechProperties.class, DashScopeEmbeddingProperties.class })
+		DashScopeAudioSpeechProperties.class, DashScopeEmbeddingProperties.class, DashScopeRerankProperties.class })
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
 		WebClientAutoConfiguration.class })
 public class DashScopeAutoConfiguration {
@@ -146,7 +142,6 @@ public class DashScopeAutoConfiguration {
 	public DashScopeApi dashscopeEmbeddingApi(DashScopeConnectionProperties commonProperties,
 			DashScopeEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
-
 		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
 				embeddingProperties, "embedding");
 
@@ -196,7 +191,25 @@ public class DashScopeAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = DashScopeRerankProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
+	public DashScopeRerankModel dashscopeRerankModel(DashScopeConnectionProperties commonProperties,
+			DashScopeRerankProperties rerankProperties, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler) {
+		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
+				rerankProperties, "rerank");
+
+		var dashscopeApi = new DashScopeApi(resolved.baseUrl(), resolved.apiKey(), resolved.workspaceId(),
+				restClientBuilder, webClientBuilder, responseErrorHandler);
+
+		return new DashScopeRerankModel(dashscopeApi, rerankProperties.getOptions(), retryTemplate);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
 	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
+
 		FunctionCallbackContext manager = new FunctionCallbackContext();
 		manager.setApplicationContext(context);
 		return manager;
@@ -219,6 +232,13 @@ public class DashScopeAutoConfiguration {
 		Map<String, List<String>> connectionHeaders = new HashMap<>();
 		if (StringUtils.hasText(workspaceId)) {
 			connectionHeaders.put("DashScope-Workspace", List.of(workspaceId));
+		}
+
+		// get apikey from system env.
+		if (Objects.isNull(apiKey)) {
+			if (Objects.nonNull(System.getenv(DashScopeApiConstants.DASHSCOPE_API_KEY))) {
+				apiKey = System.getenv(DashScopeApiConstants.DASHSCOPE_API_KEY);
+			}
 		}
 
 		Assert.hasText(baseUrl,

@@ -100,7 +100,7 @@ public class DashScopeDocumentCloudReader implements DocumentReader {
 			return null;
 		}
 		catch (Exception exception) {
-			throw new RuntimeException("ReadFile Exception");
+			throw new RuntimeException("ReadFile Exception", exception);
 		}
 
 	}

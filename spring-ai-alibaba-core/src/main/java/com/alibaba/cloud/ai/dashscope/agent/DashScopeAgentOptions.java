@@ -48,7 +48,7 @@ public class DashScopeAgentOptions implements ChatOptions {
 	}
 
 	@Override
-	public Float getFrequencyPenalty() {
+	public Double getFrequencyPenalty() {
 		return null;
 	}
 
@@ -58,7 +58,7 @@ public class DashScopeAgentOptions implements ChatOptions {
 	}
 
 	@Override
-	public Float getPresencePenalty() {
+	public Double getPresencePenalty() {
 		return null;
 	}
 
@@ -68,13 +68,13 @@ public class DashScopeAgentOptions implements ChatOptions {
 	}
 
 	@Override
-	public Float getTemperature() {
-		return 0f;
+	public Double getTemperature() {
+		return 0d;
 	}
 
 	@Override
-	public Float getTopP() {
-		return 0f;
+	public Double getTopP() {
+		return 0d;
 	}
 
 	@Override

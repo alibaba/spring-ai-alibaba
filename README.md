@@ -9,13 +9,15 @@ Please refer to [quick start](https://sca.aliyun.com/ai/get-started/) for how to
 
 Overall, it takes only two steps to turn your Spring Boot application into an intelligent agent:
 
+> Because Spring AI Alibaba is developed based on Spring Boot 3.x, it requires JDK version 17 and above.
+
 1. Add 'spring-ai-alibaba-starter' dependency to your project.
 
 ```xml
 <dependency>
 	<groupId>com.alibaba.cloud.ai</groupId>
 	<artifactId>spring-ai-alibaba-starter</artifactId>
-	<version>1.0.0-M2</version>
+	<version>1.0.0-M2.1</version>
 </dependency>
 ```
 
@@ -104,4 +106,3 @@ Spring AI Alibaba aims to reduce the complexity of building ai native java appli
 * Wechat Group (微信公众号), scan the QR code below and follow us.
 
 <img src="./docs/imgs/wechat-account.jpg" style="max-width:100px;"/>
-
