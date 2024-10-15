@@ -56,7 +56,7 @@ public class AnswerFaithfulnessEvaluator extends LaajEvaluator {
 			最终答案按照标准的json格式输出,不要使用markdown的格式, 比如:
 			{"score": 0.7, "feedback": "STUDENT ANSWER的内容超出了FACTS的事实内容。"}
 
-			FACTS: {documents}
+			FACTS: {context}
 			STUDENT ANSWER: {student_answer}
 			""";
 
@@ -85,7 +85,7 @@ public class AnswerFaithfulnessEvaluator extends LaajEvaluator {
 		String llmEvaluationResponse = getChatClientBuilder().build()
 			.prompt()
 			.user(userSpec -> userSpec.text(getEvaluationPromptText())
-				.param("documents", context)
+				.param("context", context)
 				.param("student_answer", response))
 			.call()
 			.content();

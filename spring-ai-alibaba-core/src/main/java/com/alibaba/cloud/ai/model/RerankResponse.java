@@ -17,10 +17,10 @@
 package com.alibaba.cloud.ai.model;
 
 import com.alibaba.cloud.ai.document.DocumentWithScore;
-import org.springframework.ai.chat.metadata.EmptyUsage;
-import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.model.ModelResponse;
+import org.springframework.ai.model.ResponseMetadata;
+import org.springframework.util.CollectionUtils;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -31,46 +31,38 @@ import java.util.List;
  * @since 1.0.0-M2
  */
 
-public class RerankResponse {
+public class RerankResponse implements ModelResponse<DocumentWithScore> {
 
-	private Usage usage = new EmptyUsage();
+	private final List<DocumentWithScore> documents;
 
-	private List<DocumentWithScore> documents = Collections.emptyList();
+	private final RerankResponseMetadata metadata;
 
-	public Usage getUsage() {
-		return usage;
+	public RerankResponse(List<DocumentWithScore> documents) {
+		this(documents, new RerankResponseMetadata());
 	}
 
-	public List<DocumentWithScore> getDocuments() {
-		return documents;
+	public RerankResponse(List<DocumentWithScore> documents, RerankResponseMetadata metadata) {
+		this.documents = documents;
+		this.metadata = metadata;
 	}
 
-	public static RerankResponse.Builder builder() {
-		return new RerankResponse.Builder();
+	@Override
+	public DocumentWithScore getResult() {
+		if (CollectionUtils.isEmpty(this.documents)) {
+			return null;
+		}
+
+		return this.documents.get(0);
 	}
 
-	public static class Builder {
+	@Override
+	public List<DocumentWithScore> getResults() {
+		return this.documents;
+	}
 
-		private final RerankResponse rerankResponse;
-
-		public Builder() {
-			this.rerankResponse = new RerankResponse();
-		}
-
-		public RerankResponse.Builder withUsage(Usage usage) {
-			this.rerankResponse.usage = usage;
-			return this;
-		}
-
-		public RerankResponse.Builder withDocuments(List<DocumentWithScore> documents) {
-			this.rerankResponse.documents = documents;
-			return this;
-		}
-
-		public RerankResponse build() {
-			return this.rerankResponse;
-		}
-
+	@Override
+	public RerankResponseMetadata getMetadata() {
+		return this.metadata;
 	}
 
 }

@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.dashscope.rerank;
 import com.alibaba.cloud.ai.dashscope.DashscopeAiTestConfiguration;
 import com.alibaba.cloud.ai.document.DocumentWithScore;
 import com.alibaba.cloud.ai.model.RerankModel;
+import com.alibaba.cloud.ai.model.RerankRequest;
 import com.alibaba.cloud.ai.model.RerankResponse;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -59,15 +60,16 @@ public class DashScopeRerankModelTest {
 		documents.add(Document.builder().withContent("预训练语言模型的发展给文本排序模型带来了新的进展").build());
 		documents.add(Document.builder().withContent("文本排序模型能够帮助检索增强生成提升效果").build());
 
-		RerankResponse response = dashscopeRerankModel.rerank(query, documents);
+		RerankRequest request = new RerankRequest(query, documents);
+		RerankResponse response = dashscopeRerankModel.call(request);
 		Assertions.assertNotNull(response);
 
-		for (int i = 0; i < response.getDocuments().size(); i++) {
-			DocumentWithScore document = response.getDocuments().get(i);
-			logger.info("content: {}, score: {}", document.getDocument().getContent(), document.getScore());
+		for (int i = 0; i < response.getResults().size(); i++) {
+			DocumentWithScore document = response.getResults().get(i);
+			logger.info("content: {}, score: {}", document.getOutput().getContent(), document.getScore());
 		}
 
-		logger.info("usage: {}", response.getUsage().getTotalTokens());
+		logger.info("usage: {}", response.getMetadata().getUsage().getTotalTokens());
 	}
 
 }
