@@ -240,16 +240,16 @@ public class DashScopeChatModelIT {
 	@Test
 	void callMultiModelWithImages() throws MalformedURLException {
 		List<Media> mediaList = new ArrayList<>();
-		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg")));
-		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/tiger.png")));
-		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/rabbit.png")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"),
+				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"),
+				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/tiger.png")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"),
+				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/rabbit.png")));
 
 		UserMessage message = new UserMessage("这些是什么?", mediaList);
 		ChatResponse response = dashscopeChatModel.call(new Prompt(message,
-				DashScopeChatOptions.builder()
-					.withModel("qwen-vl-max-latest")
-					.withMultiModel(true)
-					.build()));
+				DashScopeChatOptions.builder().withModel("qwen-vl-max-latest").withMultiModel(true).build()));
 		String content = response.getResult().getOutput().getContent();
 		Assertions.assertNotNull(content);
 
@@ -259,19 +259,20 @@ public class DashScopeChatModelIT {
 	@Test
 	void callMultiModelWithVideo() throws MalformedURLException {
 		List<Media> mediaList = new ArrayList<>();
-		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL("https://img.alicdn.com/imgextra/i3/O1CN01K3SgGo1eqmlUgeE9b_!!6000000003923-0-tps-3840-2160.jpg")));
-		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL("https://img.alicdn.com/imgextra/i4/O1CN01BjZvwg1Y23CF5qIRB_!!6000000003000-0-tps-3840-2160.jpg")));
-		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL("https://img.alicdn.com/imgextra/i4/O1CN01Ib0clU27vTgBdbVLQ_!!6000000007859-0-tps-3840-2160.jpg")));
-		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL("https://img.alicdn.com/imgextra/i1/O1CN01aygPLW1s3EXCdSN4X_!!6000000005710-0-tps-3840-2160.jpg")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL(
+				"https://img.alicdn.com/imgextra/i3/O1CN01K3SgGo1eqmlUgeE9b_!!6000000003923-0-tps-3840-2160.jpg")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL(
+				"https://img.alicdn.com/imgextra/i4/O1CN01BjZvwg1Y23CF5qIRB_!!6000000003000-0-tps-3840-2160.jpg")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL(
+				"https://img.alicdn.com/imgextra/i4/O1CN01Ib0clU27vTgBdbVLQ_!!6000000007859-0-tps-3840-2160.jpg")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL(
+				"https://img.alicdn.com/imgextra/i1/O1CN01aygPLW1s3EXCdSN4X_!!6000000005710-0-tps-3840-2160.jpg")));
 
 		UserMessage message = new UserMessage("描述这个视频的具体过程", mediaList);
 		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.VIDEO);
 
 		ChatResponse response = dashscopeChatModel.call(new Prompt(message,
-				DashScopeChatOptions.builder()
-						.withModel("qwen-vl-max-latest")
-						.withMultiModel(true)
-						.build()));
+				DashScopeChatOptions.builder().withModel("qwen-vl-max-latest").withMultiModel(true).build()));
 		String content = response.getResult().getOutput().getContent();
 		Assertions.assertNotNull(content);
 
@@ -279,17 +280,14 @@ public class DashScopeChatModelIT {
 	}
 
 	@Test
-	void callMultiModelWithImageBinary(){
+	void callMultiModelWithImageBinary() {
 		List<Media> mediaList = new ArrayList<>();
 		var imageResource = new ClassPathResource("/multimodel/dog_and_girl.jpeg");
 		mediaList.add(new Media(MimeType.valueOf("image/png"), imageResource));
 
 		UserMessage message = new UserMessage("这是什么?", mediaList);
 		ChatResponse response = dashscopeChatModel.call(new Prompt(message,
-				DashScopeChatOptions.builder()
-						.withModel("qwen-vl-max-latest")
-						.withMultiModel(true)
-						.build()));
+				DashScopeChatOptions.builder().withModel("qwen-vl-max-latest").withMultiModel(true).build()));
 		String content = response.getResult().getOutput().getContent();
 		Assertions.assertNotNull(content);
 
@@ -299,16 +297,16 @@ public class DashScopeChatModelIT {
 	@Test
 	void streamCallMultiModel() throws MalformedURLException, InterruptedException {
 		List<Media> mediaList = new ArrayList<>();
-		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg")));
-		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/tiger.png")));
-		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/rabbit.png")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"),
+				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"),
+				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/tiger.png")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"),
+				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/rabbit.png")));
 
 		UserMessage message = new UserMessage("这些是什么?", mediaList);
 		Flux<ChatResponse> response = dashscopeChatModel.stream(new Prompt(message,
-				DashScopeChatOptions.builder()
-						.withModel("qwen-vl-max-latest")
-						.withMultiModel(true)
-						.build()));
+				DashScopeChatOptions.builder().withModel("qwen-vl-max-latest").withMultiModel(true).build()));
 
 		CountDownLatch cdl = new CountDownLatch(1);
 		response.subscribe(data -> {
@@ -322,4 +320,5 @@ public class DashScopeChatModelIT {
 
 		cdl.await();
 	}
+
 }

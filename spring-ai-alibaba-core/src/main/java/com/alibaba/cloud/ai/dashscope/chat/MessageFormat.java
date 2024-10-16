@@ -25,6 +25,7 @@ package com.alibaba.cloud.ai.dashscope.chat;
  */
 
 public enum MessageFormat {
+
 	/**
 	 * image format
 	 */
@@ -34,4 +35,5 @@ public enum MessageFormat {
 	 * video format
 	 */
 	VIDEO
+
 }
