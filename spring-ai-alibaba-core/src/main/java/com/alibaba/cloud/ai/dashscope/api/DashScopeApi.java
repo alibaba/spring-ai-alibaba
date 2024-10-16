@@ -5,6 +5,7 @@ import com.alibaba.cloud.ai.dashscope.common.ErrorCodeEnum;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetrieverOptions;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentTransformerOptions;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeStoreOptions;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.metadata.Usage;
@@ -810,7 +811,7 @@ public class DashScopeApi {
 	public record ChatCompletionRequest(@JsonProperty("model") String model,
 			@JsonProperty("input") ChatCompletionRequestInput input,
 			@JsonProperty("parameters") ChatCompletionRequestParameter parameters,
-			@JsonProperty("stream") Boolean stream) {
+			@JsonProperty("stream") Boolean stream, @JsonIgnore Boolean multiModel) {
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages and
@@ -819,7 +820,7 @@ public class DashScopeApi {
 		 * @param input request input of chat.
 		 */
 		public ChatCompletionRequest(String model, ChatCompletionRequestInput input, Boolean stream) {
-			this(model, input, null, stream);
+			this(model, input, null, stream, false);
 		}
 	}
 
@@ -859,13 +860,14 @@ public class DashScopeApi {
 			@JsonProperty("stop") List<Object> stop, @JsonProperty("enable_search") Boolean enableSearch,
 			@JsonProperty("incremental_output") Boolean incrementalOutput,
 			@JsonProperty("tools") List<FunctionTool> tools, @JsonProperty("tool_choice") Object toolChoice,
-			@JsonProperty("stream") Boolean stream) {
+			@JsonProperty("stream") Boolean stream,
+			@JsonProperty("vl_high_resolution_images") Boolean vlHighResolutionImages) {
 
 		/**
 		 * shortcut constructor for chat request parameter
 		 */
 		public ChatCompletionRequestParameter() {
-			this(null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+			this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -937,12 +939,28 @@ public class DashScopeApi {
 		 */
 		public String content() {
 			if (this.rawContent == null) {
-				return null;
+				return "";
 			}
+
 			if (this.rawContent instanceof String text) {
 				return text;
 			}
-			throw new IllegalStateException("The content is not a string!");
+
+			if (this.rawContent instanceof List list) {
+				if (list.isEmpty()) {
+					return "";
+				}
+
+				Object object = list.get(0);
+				if (object instanceof Map map) {
+					if (map.isEmpty() || map.get("text") == null) {
+						return "";
+					}
+
+					return map.get("text").toString();
+				}
+			}
+			throw new IllegalStateException("The content is not valid!");
 		}
 
 		/**
@@ -987,44 +1005,20 @@ public class DashScopeApi {
 		 * An array of content parts with a defined type. Each MediaContent can be of
 		 * either "text" or "image_url" type. Not both.
 		 *
-		 * @param type Content type, each can be of type text or image_url.
 		 * @param text The text content of the message.
-		 * @param imageUrl The image content of the message. You can pass multiple images
-		 * by adding multiple image_url content parts. Image input is only supported when
-		 * using the glm-4v model.
+		 * @param image The image content of the message. You can pass multiple images
+		 * @param video The image list of video. by adding multiple image_url content
+		 * parts. Image input is only supported when using the glm-4v model.
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record MediaContent(@JsonProperty("type") String type, @JsonProperty("text") String text,
-				@JsonProperty("image_url") ImageUrl imageUrl) {
-
-			/**
-			 * @param url Either a URL of the image or the base64 encoded image data. The
-			 * base64 encoded image data must have a special prefix in the following
-			 * format: "data:{mimetype};base64,{base64-encoded-image-data}".
-			 * @param detail Specifies the detail level of the image.
-			 */
-			@JsonInclude(JsonInclude.Include.NON_NULL)
-			public record ImageUrl(@JsonProperty("url") String url, @JsonProperty("detail") String detail) {
-
-				public ImageUrl(String url) {
-					this(url, null);
-				}
-			}
-
+				@JsonProperty("image") String image, @JsonProperty("video") List<String> video) {
 			/**
 			 * Shortcut constructor for a text content.
 			 * @param text The text content of the message.
 			 */
 			public MediaContent(String text) {
-				this("text", text, null);
-			}
-
-			/**
-			 * Shortcut constructor for an image content.
-			 * @param imageUrl The image content of the message.
-			 */
-			public MediaContent(ImageUrl imageUrl) {
-				this("image_url", null, imageUrl);
+				this("text", text, null, null);
 			}
 		}
 
@@ -1298,11 +1292,12 @@ public class DashScopeApi {
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 
-		return this.restClient.post()
-			.uri("/api/v1/services/aigc/text-generation/generation")
-			.body(chatRequest)
-			.retrieve()
-			.toEntity(ChatCompletion.class);
+		String uri = "/api/v1/services/aigc/text-generation/generation";
+		if (chatRequest.multiModel()) {
+			uri = "/api/v1/services/aigc/multimodal-generation/generation";
+		}
+
+		return this.restClient.post().uri(uri).body(chatRequest).retrieve().toEntity(ChatCompletion.class);
 	}
 
 	/**
@@ -1322,8 +1317,13 @@ public class DashScopeApi {
 		DashScopeAiStreamFunctionCallingHelper chunkMerger = new DashScopeAiStreamFunctionCallingHelper(
 				incrementalOutput);
 
+		String uri = "/api/v1/services/aigc/text-generation/generation";
+		if (chatRequest.multiModel()) {
+			uri = "/api/v1/services/aigc/multimodal-generation/generation";
+		}
+
 		return this.webClient.post()
-			.uri("/api/v1/services/aigc/text-generation/generation")
+			.uri(uri)
 			.header("X-DashScope-SSE", "enable")
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
