@@ -10,10 +10,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.ai.parser.BeanOutputParser;
 import org.springframework.ai.parser.ListOutputParser;
@@ -22,9 +24,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.util.MimeType;
 import reactor.core.publisher.Flux;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -42,14 +48,14 @@ public class DashScopeChatModelIT {
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeChatModelIT.class);
 
 	@Autowired
-	private DashScopeChatModel chatModel;
+	private ChatModel dashscopeChatModel;
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
 
 	@Test
 	void call() {
-		ChatResponse response = chatModel.call(new Prompt("杭州有哪些美食?"));
+		ChatResponse response = dashscopeChatModel.call(new Prompt("杭州有哪些美食?"));
 		String content = response.getResult().getOutput().getContent();
 		Assertions.assertNotNull(content);
 
@@ -58,7 +64,7 @@ public class DashScopeChatModelIT {
 
 	@Test
 	void stream() throws InterruptedException {
-		Flux<ChatResponse> response = chatModel.stream(new Prompt("杭州有哪些美食?"));
+		Flux<ChatResponse> response = dashscopeChatModel.stream(new Prompt("杭州有哪些美食?"));
 
 		CountDownLatch cdl = new CountDownLatch(1);
 		response.subscribe(data -> {
@@ -80,7 +86,7 @@ public class DashScopeChatModelIT {
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
-		ChatResponse response = chatModel.call(prompt);
+		ChatResponse response = dashscopeChatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
 	}
@@ -98,7 +104,7 @@ public class DashScopeChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "ice cream flavors", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		org.springframework.ai.chat.model.Generation generation = this.chatModel.call(prompt).getResult();
+		org.springframework.ai.chat.model.Generation generation = this.dashscopeChatModel.call(prompt).getResult();
 
 		List<String> list = outputParser.parse(generation.getOutput().getContent());
 		assertThat(list).hasSize(5);
@@ -117,7 +123,7 @@ public class DashScopeChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		org.springframework.ai.chat.model.Generation generation = chatModel.call(prompt).getResult();
+		org.springframework.ai.chat.model.Generation generation = dashscopeChatModel.call(prompt).getResult();
 		String generationText = generation.getOutput().getContent().replace("```json", "").replace("```", "");
 
 		Map<String, Object> result = outputParser.parse(generationText);
@@ -138,7 +144,7 @@ public class DashScopeChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = chatModel.stream(prompt)
+		String generationTextFromStream = dashscopeChatModel.stream(prompt)
 			.collectList()
 			.block()
 			.stream()
@@ -166,7 +172,7 @@ public class DashScopeChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = DashScopeChatOptions.builder()
-			// .withModel(DashScopeApi.ChatModel.QWEN_MAX.getModel())
+			// .withModel(DashScopeApi.dashscopeChatModel.QWEN_MAX.getModel())
 			.withFunctionCallbacks(List.of(FunctionCallbackWrapper.builder(new MockWeatherService())
 				.withName("getCurrentWeather")
 				.withDescription("Get the weather in location")
@@ -174,7 +180,7 @@ public class DashScopeChatModelIT {
 				.build()))
 			.build();
 
-		ChatResponse response = chatModel.call(new Prompt(messages, promptOptions));
+		ChatResponse response = dashscopeChatModel.call(new Prompt(messages, promptOptions));
 
 		logger.info("Response: {}", response);
 
@@ -226,9 +232,93 @@ public class DashScopeChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "ice cream flavors", "format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		List<ChatResponse> responses = this.chatModel.stream(prompt).collectList().block();
+		List<ChatResponse> responses = this.dashscopeChatModel.stream(prompt).collectList().block();
 		ChatResponse response = responses.get(responses.size() - 1);
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isEqualTo(48);
+	}
+
+	@Test
+	void callMultiModelWithImages() throws MalformedURLException {
+		List<Media> mediaList = new ArrayList<>();
+		mediaList.add(new Media(MimeType.valueOf("image/png"),
+				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"),
+				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/tiger.png")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"),
+				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/rabbit.png")));
+
+		UserMessage message = new UserMessage("这些是什么?", mediaList);
+		ChatResponse response = dashscopeChatModel.call(new Prompt(message,
+				DashScopeChatOptions.builder().withModel("qwen-vl-max-latest").withMultiModel(true).build()));
+		String content = response.getResult().getOutput().getContent();
+		Assertions.assertNotNull(content);
+
+		System.out.printf("content: %s\n", content);
+	}
+
+	@Test
+	void callMultiModelWithVideo() throws MalformedURLException {
+		List<Media> mediaList = new ArrayList<>();
+		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL(
+				"https://img.alicdn.com/imgextra/i3/O1CN01K3SgGo1eqmlUgeE9b_!!6000000003923-0-tps-3840-2160.jpg")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL(
+				"https://img.alicdn.com/imgextra/i4/O1CN01BjZvwg1Y23CF5qIRB_!!6000000003000-0-tps-3840-2160.jpg")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL(
+				"https://img.alicdn.com/imgextra/i4/O1CN01Ib0clU27vTgBdbVLQ_!!6000000007859-0-tps-3840-2160.jpg")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL(
+				"https://img.alicdn.com/imgextra/i1/O1CN01aygPLW1s3EXCdSN4X_!!6000000005710-0-tps-3840-2160.jpg")));
+
+		UserMessage message = new UserMessage("描述这个视频的具体过程", mediaList);
+		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.VIDEO);
+
+		ChatResponse response = dashscopeChatModel.call(new Prompt(message,
+				DashScopeChatOptions.builder().withModel("qwen-vl-max-latest").withMultiModel(true).build()));
+		String content = response.getResult().getOutput().getContent();
+		Assertions.assertNotNull(content);
+
+		System.out.printf("content: %s\n", content);
+	}
+
+	@Test
+	void callMultiModelWithImageBinary() {
+		List<Media> mediaList = new ArrayList<>();
+		var imageResource = new ClassPathResource("/multimodel/dog_and_girl.jpeg");
+		mediaList.add(new Media(MimeType.valueOf("image/png"), imageResource));
+
+		UserMessage message = new UserMessage("这是什么?", mediaList);
+		ChatResponse response = dashscopeChatModel.call(new Prompt(message,
+				DashScopeChatOptions.builder().withModel("qwen-vl-max-latest").withMultiModel(true).build()));
+		String content = response.getResult().getOutput().getContent();
+		Assertions.assertNotNull(content);
+
+		System.out.printf("content: %s\n", content);
+	}
+
+	@Test
+	void streamCallMultiModel() throws MalformedURLException, InterruptedException {
+		List<Media> mediaList = new ArrayList<>();
+		mediaList.add(new Media(MimeType.valueOf("image/png"),
+				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"),
+				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/tiger.png")));
+		mediaList.add(new Media(MimeType.valueOf("image/png"),
+				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/rabbit.png")));
+
+		UserMessage message = new UserMessage("这些是什么?", mediaList);
+		Flux<ChatResponse> response = dashscopeChatModel.stream(new Prompt(message,
+				DashScopeChatOptions.builder().withModel("qwen-vl-max-latest").withMultiModel(true).build()));
+
+		CountDownLatch cdl = new CountDownLatch(1);
+		response.subscribe(data -> {
+			System.out.printf("%s", data.getResult().getOutput().getContent());
+		}, err -> {
+			System.out.printf("err: %s\n", err);
+		}, () -> {
+			System.out.println("\ndone");
+			cdl.countDown();
+		});
+
+		cdl.await();
 	}
 
 }

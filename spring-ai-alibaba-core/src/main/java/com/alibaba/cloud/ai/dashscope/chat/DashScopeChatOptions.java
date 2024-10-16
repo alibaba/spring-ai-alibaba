@@ -88,7 +88,13 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   private @JsonProperty("tool_choice") Object toolChoice;
 
   /**
-   * OpenAI Tool Function Callbacks to register with the ChatClient. For Prompt Options the
+   * this is to change token limitation to 16384 for vl model, only support for vl models
+   * including qwen-vl-max、qwen-vl-max-0809、qwen-vl-plus-0809.
+   */
+  private @JsonProperty("vl_high_resolution_images") Boolean vlHighResolutionImages;
+
+  /**
+   * Tool Function Callbacks to register with the ChatClient. For Prompt Options the
    * functionCallbacks are automatically enabled for the duration of the prompt execution. For
    * Default Options the functionCallbacks are registered but disabled by default. Use the
    * enableFunctions to set the functions from the registry to be used by the ChatClient chat
@@ -109,6 +115,11 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    * execution.
    */
   @NestedConfigurationProperty @JsonIgnore private Set<String> functions = new HashSet<>();
+
+  /**
+   * Indicate if the request is multi model
+   */
+  private @JsonProperty("multi_model") Boolean multiModel = false;
 
   @NestedConfigurationProperty
   @JsonIgnore
@@ -253,6 +264,22 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
     this.incrementalOutput = incrementalOutput;
   }
 
+  public Boolean   getVlHighResolutionImages() {
+    return vlHighResolutionImages;
+  }
+
+  public void setVlHighResolutionImages(Boolean vlHighResolutionImages) {
+      this.vlHighResolutionImages = vlHighResolutionImages;
+  }
+
+  public Boolean getMultiModel() {
+    return multiModel;
+  }
+
+  public void setMultiModel(Boolean multiModel) {
+      this.  multiModel = multiModel;
+  }
+
   public static DashscopeChatOptionsBuilder builder() {
     return new DashscopeChatOptionsBuilder();
   }
@@ -352,6 +379,16 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
       return this;
     }
 
+    public DashscopeChatOptionsBuilder withVlHighResolutionImages(Boolean vlHighResolutionImages) {
+      this.options.vlHighResolutionImages = vlHighResolutionImages;
+      return this;
+    }
+
+    public DashscopeChatOptionsBuilder withMultiModel(Boolean multiModel) {
+      this.options.multiModel = multiModel;
+      return this;
+    }
+
     public DashScopeChatOptions build() {
       return this.options;
     }
@@ -363,6 +400,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
         .withTemperature(fromOptions.getTemperature())
         .withTopP(fromOptions.getTopP())
         .withTopK(fromOptions.getTopK())
+        .withSeed(fromOptions.getSeed())
         .withStop(fromOptions.getStop())
         .withStream(fromOptions.getStream())
         .withEnableSearch(fromOptions.enableSearch)
@@ -372,6 +410,8 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
         .withRepetitionPenalty(fromOptions.getRepetitionPenalty())
         .withTools(fromOptions.getTools())
         .withToolContext(fromOptions.getToolContext())
+        .withMultiModel(fromOptions.getMultiModel())
+        .withVlHighResolutionImages(fromOptions.getVlHighResolutionImages())
         .build();
   }
 }
