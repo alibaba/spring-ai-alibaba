@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.metadata.DashScopeAiUsage;
+import com.alibaba.cloud.nacos.annotation.NacosConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -51,6 +52,7 @@ import org.springframework.util.MimeType;
  * @see com.alibaba.dashscope.aigc.generation
  */
 public class DashScopeChatModel extends AbstractToolCallSupport implements ChatModel {
+<<<<<<< Updated upstream
     
     private static final Logger logger = LoggerFactory.getLogger(DashScopeChatModel.class);
     
@@ -110,6 +112,65 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
         
         List<Generation> generations = choices.stream().map(choice -> {
             // @formatter:off
+=======
+
+	public static final String MESSAGE_FORMAT = "messageFormat";
+
+	private static final Logger logger = LoggerFactory.getLogger(DashScopeChatModel.class);
+
+	/** Low-level access to the DashScope API */
+	private final DashScopeApi dashscopeApi;
+
+	/** The retry template used to retry the OpenAI API calls. */
+	public final RetryTemplate retryTemplate;
+
+	/** The default options used for the chat completion requests. */
+	@NacosConfig(group = "DEFAULT_GROUP", dataId = "spring.ai.alibaba.dashscope.chat.options")
+	private DashScopeChatOptions defaultOptions;
+
+	public DashScopeChatModel(DashScopeApi dashscopeApi) {
+		this(dashscopeApi,
+				DashScopeChatOptions.builder()
+					.withModel(DashScopeApi.DEFAULT_CHAT_MODEL)
+					.withTemperature(0.7d)
+					.build());
+	}
+
+	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions options) {
+		this(dashscopeApi, options, null, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	}
+
+	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions options,
+			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
+		super(functionCallbackContext);
+		Assert.notNull(dashscopeApi, "DashScopeApi must not be null");
+		Assert.notNull(options, "Options must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+
+		this.dashscopeApi = dashscopeApi;
+		this.defaultOptions = options;
+		this.retryTemplate = retryTemplate;
+	}
+
+	@Override
+	public ChatResponse call(Prompt prompt) {
+		DashScopeApi.ChatCompletionRequest request = createRequest(prompt, false);
+
+		ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
+			.execute(ctx -> this.dashscopeApi.chatCompletionEntity(request));
+
+		var chatCompletion = completionEntity.getBody();
+
+		if (chatCompletion == null) {
+			logger.warn("No chat completion returned for prompt: {}", prompt);
+			return new ChatResponse(List.of());
+		}
+
+		List<ChatCompletionOutput.Choice> choices = chatCompletion.output().choices();
+
+		List<Generation> generations = choices.stream().map(choice -> {
+			// @formatter:off
+>>>>>>> Stashed changes
 			Map<String, Object> metadata = Map.of(
 					"id", chatCompletion.requestId(),
 					"role", choice.message().role() != null ? choice.message().role().name() : "",

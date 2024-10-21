@@ -13,6 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 package com.alibaba.cloud.ai.autoconfigure.prompt;
 
 import com.alibaba.cloud.ai.prompt.ConfigurablePromptTemplateFactory;
@@ -29,11 +33,19 @@ import org.springframework.context.annotation.Bean;
  **/
 
 public class PromptTemplateAutoConfiguration {
+<<<<<<< Updated upstream
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "spring.ai.nacos.prompt.template", name = "enabled", havingValue = "true",
             matchIfMissing = true)
     public ConfigurablePromptTemplateFactory configurablePromptTemplateFactory(){
+=======
+    
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "spring.ai.nacos.prompt.template", name = "enabled", havingValue = "true", matchIfMissing = true)
+    public ConfigurablePromptTemplateFactory configurablePromptTemplateFactory() {
+>>>>>>> Stashed changes
         return new ConfigurablePromptTemplateFactory();
     }
 }

@@ -61,8 +61,13 @@
         
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
+<<<<<<< Updated upstream
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
             <version>2023.0.1.2-nacos-annotation-SNAPSHOT</version>
+=======
+            <artifactId>spring-alibaba-nacos-config</artifactId>
+            <version>2023.0.1.2-SNAPSHOT</version>
+>>>>>>> Stashed changes
         </dependency>
         
         <dependency>
