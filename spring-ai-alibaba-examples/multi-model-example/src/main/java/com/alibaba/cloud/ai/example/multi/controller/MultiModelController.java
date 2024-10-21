@@ -22,6 +22,7 @@ import java.util.List;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.dashscope.chat.MessageFormat;
+import com.alibaba.cloud.ai.example.multi.helper.FrameExtraHelper;
 import jakarta.annotation.Resource;
 
 import org.springframework.ai.chat.messages.UserMessage;
@@ -86,26 +87,9 @@ public class MultiModelController {
 	public String video(
 			@RequestParam(value = "prompt", required = false, defaultValue = DEFAULT_PROMPT)
 			String prompt
-	) throws Exception {
+	) {
 
-		List<Media> mediaList = List.of(
-
-				new Media(
-						MimeType.valueOf("image/png"),
-						new URI("https://img.alicdn.com/imgextra/i3/O1CN01K3SgGo1eqmlUgeE9b_!!6000000003923-0-tps-3840-2160.jpg").toURL()
-				),
-				new Media(
-						MimeType.valueOf("image/png"),
-						new URI("https://img.alicdn.com/imgextra/i4/O1CN01BjZvwg1Y23CF5qIRB_!!6000000003000-0-tps-3840-2160.jpg").toURL()
-				),
-				new Media(
-						MimeType.valueOf("image/png"),
-						new URI("https://img.alicdn.com/imgextra/i4/O1CN01Ib0clU27vTgBdbVLQ_!!6000000007859-0-tps-3840-2160.jpg").toURL()
-				),
-				new Media(
-						MimeType.valueOf("image/png"),
-						new URI("https://img.alicdn.com/imgextra/i1/O1CN01aygPLW1s3EXCdSN4X_!!6000000005710-0-tps-3840-2160.jpg").toURL()
-				));
+		List<Media> mediaList = FrameExtraHelper.createMediaList(10);
 
 		UserMessage message = new UserMessage(prompt, mediaList);
 		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.VIDEO);
