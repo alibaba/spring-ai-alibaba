@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.metadata.DashScopeAiUsage;
+import com.alibaba.cloud.nacos.annotation.NacosConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -62,6 +63,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 	public final RetryTemplate retryTemplate;
 
 	/** The default options used for the chat completion requests. */
+	@NacosConfig(group = "DEFAULT_GROUP", dataId = "spring.ai.alibaba.dashscope.chat.options")
 	private DashScopeChatOptions defaultOptions;
 
 	public DashScopeChatModel(DashScopeApi dashscopeApi) {
