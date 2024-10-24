@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.dashscope.rag;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
 import org.springframework.ai.chat.client.advisor.api.*;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentRetriever;
@@ -26,10 +27,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -133,7 +131,7 @@ public class DashScopeDocumentRetrievalAdvisor implements CallAroundAdvisor, Str
 				Mono.just(advisedRequest)
 						.publishOn(Schedulers.boundedElastic())
 						.map(this::before)
-						.flatMapMany(request -> chain.nextAroundStream(request))
+						.flatMapMany(chain::nextAroundStream)
 				: chain.nextAroundStream(this.before(advisedRequest));
 		// @formatter:on
 
@@ -233,10 +231,28 @@ public class DashScopeDocumentRetrievalAdvisor implements CallAroundAdvisor, Str
 			}
 		}
 
-		ChatResponse.Builder chatResponseBuilder = ChatResponse.builder()
-			.from(response)
-			.withMetadata(RETRIEVED_DOCUMENTS, referencedDocuments);
-		return new AdvisedResponse(chatResponseBuilder.build(), context);
+		// fix meta data loss issue since ChatResponse.from won't copy meta info like id,
+		// model, usage, etc. This will
+		// be changed once new version of spring ai core is updated.
+		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder();
+		metadataBuilder.withKeyValue(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
+
+		ChatResponseMetadata metadata = advisedResponse.response().getMetadata();
+		if (metadata != null) {
+			metadataBuilder.withId(metadata.getId());
+			metadataBuilder.withModel(metadata.getModel());
+			metadataBuilder.withUsage(metadata.getUsage());
+			metadataBuilder.withPromptMetadata(metadata.getPromptMetadata());
+			metadataBuilder.withRateLimit(metadata.getRateLimit());
+
+			Set<Map.Entry<String, Object>> entries = metadata.entrySet();
+			for (Map.Entry<String, Object> entry : entries) {
+				metadataBuilder.withKeyValue(entry.getKey(), entry.getValue());
+			}
+		}
+
+		ChatResponse chatResponse = new ChatResponse(advisedResponse.response().getResults(), metadataBuilder.build());
+		return new AdvisedResponse(chatResponse, context);
 	}
 
 	/**
@@ -253,10 +269,8 @@ public class DashScopeDocumentRetrievalAdvisor implements CallAroundAdvisor, Str
 		return (advisedResponse) -> advisedResponse.response()
 			.getResults()
 			.stream()
-			.filter(result -> result != null && result.getMetadata() != null
-					&& StringUtils.hasText(result.getMetadata().getFinishReason()))
-			.findFirst()
-			.isPresent();
+			.anyMatch(result -> result != null && result.getMetadata() != null
+					&& StringUtils.hasText(result.getMetadata().getFinishReason()));
 	}
 
 }

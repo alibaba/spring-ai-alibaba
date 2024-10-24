@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.advisor;
 
 import org.springframework.ai.chat.client.advisor.api.*;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentRetriever;
@@ -29,6 +30,7 @@ import reactor.core.scheduler.Schedulers;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -105,7 +107,7 @@ public class DocumentRetrievalAdvisor implements CallAroundAdvisor, StreamAround
 				Mono.just(advisedRequest)
 						.publishOn(Schedulers.boundedElastic())
 						.map(this::before)
-						.flatMapMany(request -> chain.nextAroundStream(request))
+						.flatMapMany(chain::nextAroundStream)
 				: chain.nextAroundStream(this.before(advisedRequest));
 		// @formatter:on
 
@@ -151,10 +153,25 @@ public class DocumentRetrievalAdvisor implements CallAroundAdvisor, StreamAround
 	}
 
 	private AdvisedResponse after(AdvisedResponse advisedResponse) {
-		ChatResponse.Builder chatResponseBuilder = ChatResponse.builder()
-			.from(advisedResponse.response())
-			.withMetadata(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
-		return new AdvisedResponse(chatResponseBuilder.build(), advisedResponse.adviseContext());
+		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder();
+		metadataBuilder.withKeyValue(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
+
+		ChatResponseMetadata metadata = advisedResponse.response().getMetadata();
+		if (metadata != null) {
+			metadataBuilder.withId(metadata.getId());
+			metadataBuilder.withModel(metadata.getModel());
+			metadataBuilder.withUsage(metadata.getUsage());
+			metadataBuilder.withPromptMetadata(metadata.getPromptMetadata());
+			metadataBuilder.withRateLimit(metadata.getRateLimit());
+
+			Set<Map.Entry<String, Object>> entries = metadata.entrySet();
+			for (Map.Entry<String, Object> entry : entries) {
+				metadataBuilder.withKeyValue(entry.getKey(), entry.getValue());
+			}
+		}
+
+		ChatResponse chatResponse = new ChatResponse(advisedResponse.response().getResults(), metadataBuilder.build());
+		return new AdvisedResponse(chatResponse, advisedResponse.adviseContext());
 	}
 
 	/**
@@ -171,10 +188,8 @@ public class DocumentRetrievalAdvisor implements CallAroundAdvisor, StreamAround
 		return (advisedResponse) -> advisedResponse.response()
 			.getResults()
 			.stream()
-			.filter(result -> result != null && result.getMetadata() != null
-					&& StringUtils.hasText(result.getMetadata().getFinishReason()))
-			.findFirst()
-			.isPresent();
+			.anyMatch(result -> result != null && result.getMetadata() != null
+					&& StringUtils.hasText(result.getMetadata().getFinishReason()));
 	}
 
 }
