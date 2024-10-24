@@ -239,8 +239,9 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 	}
 
 	private AdvisedResponse after(AdvisedResponse advisedResponse) {
-		//fix meta data loss issue since ChatResponse.from won't copy meta info like id, model, usage, etc. This will
-		//be changed once new version of spring ai core is updated.
+		// fix meta data loss issue since ChatResponse.from won't copy meta info like id,
+		// model, usage, etc. This will
+		// be changed once new version of spring ai core is updated.
 		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder();
 		metadataBuilder.withKeyValue(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
 
