@@ -21,7 +21,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
-import com.alibaba.cloud.ai.dashscope.audio.synthesis.DashScopeSpeechSynthesisModel;
+import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;

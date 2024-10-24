@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
-import com.alibaba.cloud.ai.dashscope.audio.synthesis.DashScopeSpeechSynthesisOptions;
+import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 

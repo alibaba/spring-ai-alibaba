@@ -1,15 +1,9 @@
 package com.alibaba.cloud.ai.dashscope.audio;
 
 import com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAutoConfiguration;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
-import com.alibaba.cloud.ai.dashscope.audio.synthesis.DashScopeSpeechSynthesisModel;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisPrompt;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisResponse;
-import com.alibaba.cloud.ai.dashscope.protocol.DashScopeWebSocketClient;
-import com.alibaba.cloud.ai.dashscope.protocol.DashScopeWebSocketClientOptions;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
