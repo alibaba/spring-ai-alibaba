@@ -35,6 +35,15 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 > 	</repository>
 > </repositories>
 > ```
+> Addendum: If the mirrorOf tag in your local Maven settings. xml is configured with the wildcard *, please modify it according to the following example.
+> ```xml
+> <mirror>
+>   <id>xxxx</id>
+>   <mirrorOf>*,!spring-milestones</mirrorOf>
+>   <name>xxxx</name>
+>   <url>xxxx</url>
+> </mirror>
+> ```
 
 2. Inject the default `ChatClient` Bean to regular Controller beans.
 
