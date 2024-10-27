@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.dashscope.api;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -52,6 +53,28 @@ public class ApiUtils {
 				headers.set("X-DashScope-SSE", "enable");
 			}
 		};
+	}
+
+	public static String userAgent() {
+		return String.format("dashscope/%s; java/%s; platform/%s; processor/%s", "\"2.15.1\"",
+				System.getProperty("java.version"), System.getProperty("os.name"), System.getProperty("os.arch"));
+	}
+
+	public static Map<String, String> getMapContentHeaders(String apiKey, boolean isSecurityCheck, String workspace,
+			Map<String, String> customHeaders) {
+		Map<String, String> headers = new HashMap<>();
+		headers.put("Authorization", "bearer " + apiKey);
+		headers.put("user-agent", userAgent());
+		if (workspace != null && !workspace.isEmpty()) {
+			headers.put("X-DashScope-WorkSpace", workspace);
+		}
+		if (isSecurityCheck) {
+			headers.put("X-DashScope-DataInspection", "enable");
+		}
+		if (customHeaders != null && !customHeaders.isEmpty()) {
+			headers.putAll(customHeaders);
+		}
+		return headers;
 	}
 
 	public static Consumer<HttpHeaders> getFileUploadHeaders(Map<String, String> input) {

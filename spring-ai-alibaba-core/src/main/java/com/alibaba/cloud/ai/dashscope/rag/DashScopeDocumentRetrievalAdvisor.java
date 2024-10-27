@@ -72,12 +72,12 @@ public class DashScopeDocumentRetrievalAdvisor implements CallAroundAdvisor, Str
 			【正文】光合作用是利用阳光将CO2和H2O转化为氧气和葡萄糖的过程。
 
 			$$材料:
-			{documents}
+			{question_answer_context}
 			""";
 
 	private static final int DEFAULT_ORDER = 0;
 
-	public static String RETRIEVED_DOCUMENTS = "documents";
+	public static String RETRIEVED_DOCUMENTS = "qa_retrieved_documents";
 
 	private final DocumentRetriever retriever;
 
