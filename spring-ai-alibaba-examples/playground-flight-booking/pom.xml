@@ -17,8 +17,8 @@
 -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -28,9 +28,9 @@
 		<!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.alibaba.cloud.ai</groupId>
-	<artifactId>playground-flight-booking</artifactId>
+	<artifactId>playground-flight-booking-example</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>playground-flight-booking</name>
+	<name>playground-flight-booking-example</name>
 	<description>Spring AI Alibaba - Flight Booking Demo</description>
 
 	<properties>
@@ -41,13 +41,7 @@
 
 	<dependencyManagement>
 		<dependencies>
-			<dependency>
-				<groupId>com.vaadin</groupId>
-				<artifactId>vaadin-bom</artifactId>
-				<version>${vaadin.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
+
 		</dependencies>
 	</dependencyManagement>
 
@@ -58,12 +52,11 @@
 			<version>1.0.0-M3.1</version>
 		</dependency>
 
-		<!-- Vaadin -->
-		<dependency>
-			<groupId>com.vaadin</groupId>
-			<artifactId>vaadin-spring-boot-starter</artifactId>
-		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
@@ -104,14 +97,66 @@
 				</configuration>
 			</plugin>
 			<plugin>
-				<groupId>com.vaadin</groupId>
-				<artifactId>vaadin-maven-plugin</artifactId>
-				<version>${vaadin.version}</version>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>1.6.0</version>
 				<executions>
 					<execution>
+						<id>exec-npm-run-build</id>
+						<phase>compile</phase>
 						<goals>
-							<goal>prepare-frontend</goal>
+							<goal>exec</goal>
 						</goals>
+						<configuration>
+							<executable>npm</executable>
+							<arguments>
+								<argument>run</argument>
+								<argument>build</argument>
+							</arguments>
+							<workingDirectory>${basedir}/frontend</workingDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-resource-index</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>src/main/resources/templates</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${basedir}/frontend/dist</directory>
+									<includes>
+										<include>index.html</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+					<execution>
+						<id>copy-resource-static</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>src/main/resources/static</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${basedir}/frontend/dist</directory>
+									<excludes>
+										<exclude>index.html</exclude>
+									</excludes>
+								</resource>
+							</resources>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
@@ -126,38 +171,9 @@
 		</plugins>
 	</build>
 
-	<profiles>
-		<profile>
-			<!-- Production mode is activated using -Pproduction -->
-			<id>production</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>com.vaadin</groupId>
-						<artifactId>vaadin-maven-plugin</artifactId>
-						<version>${vaadin.version}</version>
-						<executions>
-							<execution>
-								<goals>
-									<goal>build-frontend</goal>
-								</goals>
-								<phase>compile</phase>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
+
 
 	<repositories>
-		<repository>
-			<id>vaadin-prereleases</id>
-			<url>https://maven.vaadin.com/vaadin-prereleases</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
 
 		<repository>
 			<id>spring-milestones</id>
@@ -170,12 +186,6 @@
 	</repositories>
 
 	<pluginRepositories>
-		<pluginRepository>
-			<id>vaadin-prereleases</id>
-			<url>https://maven.vaadin.com/vaadin-prereleases</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</pluginRepository>
+
 	</pluginRepositories>
 </project>
