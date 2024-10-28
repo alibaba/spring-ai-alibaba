@@ -35,11 +35,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.document.DocumentRetriever;
@@ -61,6 +58,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
@@ -115,7 +113,7 @@ public class DashScopeChatClientIT {
 		String content = response.getResult().getOutput().getContent();
 		Assertions.assertNotNull(content);
 
-		logger.info("content: {}", content);
+		logger.info("content: {}, request_id: {}", content, response.getMetadata().getId());
 	}
 
 	@Test
@@ -134,8 +132,12 @@ public class DashScopeChatClientIT {
 			.chatResponse();
 
 		CountDownLatch cdl = new CountDownLatch(1);
+		AtomicReference<String> requestId = new AtomicReference<>();
 		response.subscribe(data -> {
 			System.out.printf("%s", data.getResult().getOutput().getContent());
+			if (requestId.get() == null) {
+				requestId.set(data.getMetadata().getId());
+			}
 		}, err -> {
 			logger.error("err: {}", err.getMessage(), err);
 			cdl.countDown();
@@ -145,6 +147,7 @@ public class DashScopeChatClientIT {
 		});
 
 		cdl.await();
+		logger.info("requestId: {}", requestId.get());
 	}
 
 	@Test

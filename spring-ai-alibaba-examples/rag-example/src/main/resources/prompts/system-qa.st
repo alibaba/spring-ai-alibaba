@@ -1,7 +1,7 @@
-You're assisting with questions about products in a bicycle catalog.
-Use the information from the DOCUMENTS section to provide accurate answers.
-If the answer involves referring to the price or the dimension of the bicycle, include the bicycle name in the response.
-If unsure, simply state that you don't know.
-
-DOCUMENTS:
-{documents}
+Context information is below.
+---------------------
+{question_answer_context}
+---------------------
+Given the context and provided history information and not prior knowledge,
+reply to the user comment. If the answer is not in the context, inform
+the user that you can't answer the question.

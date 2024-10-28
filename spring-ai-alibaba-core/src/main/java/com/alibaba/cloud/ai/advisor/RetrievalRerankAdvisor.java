@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.model.RerankResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.advisor.api.*;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Content;
@@ -238,10 +239,28 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 	}
 
 	private AdvisedResponse after(AdvisedResponse advisedResponse) {
-		ChatResponse.Builder chatResponseBuilder = ChatResponse.builder()
-			.from(advisedResponse.response())
-			.withMetadata(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
-		return new AdvisedResponse(chatResponseBuilder.build(), advisedResponse.adviseContext());
+		// fix meta data loss issue since ChatResponse.from won't copy meta info like id,
+		// model, usage, etc. This will
+		// be changed once new version of spring ai core is updated.
+		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder();
+		metadataBuilder.withKeyValue(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
+
+		ChatResponseMetadata metadata = advisedResponse.response().getMetadata();
+		if (metadata != null) {
+			metadataBuilder.withId(metadata.getId());
+			metadataBuilder.withModel(metadata.getModel());
+			metadataBuilder.withUsage(metadata.getUsage());
+			metadataBuilder.withPromptMetadata(metadata.getPromptMetadata());
+			metadataBuilder.withRateLimit(metadata.getRateLimit());
+
+			Set<Map.Entry<String, Object>> entries = metadata.entrySet();
+			for (Map.Entry<String, Object> entry : entries) {
+				metadataBuilder.withKeyValue(entry.getKey(), entry.getValue());
+			}
+		}
+
+		ChatResponse chatResponse = new ChatResponse(advisedResponse.response().getResults(), metadataBuilder.build());
+		return new AdvisedResponse(chatResponse, advisedResponse.adviseContext());
 	}
 
 	/**
@@ -258,10 +277,8 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 		return (advisedResponse) -> advisedResponse.response()
 			.getResults()
 			.stream()
-			.filter(result -> result != null && result.getMetadata() != null
-					&& StringUtils.hasText(result.getMetadata().getFinishReason()))
-			.findFirst()
-			.isPresent();
+			.anyMatch(result -> result != null && result.getMetadata() != null
+					&& StringUtils.hasText(result.getMetadata().getFinishReason()));
 	}
 
 }

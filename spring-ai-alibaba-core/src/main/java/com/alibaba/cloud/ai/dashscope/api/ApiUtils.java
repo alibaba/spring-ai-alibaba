@@ -45,6 +45,10 @@ public class ApiUtils {
 		return (headers) -> {
 			headers.setBearerAuth(apiKey);
 			headers.set(HEADER_OPENAPI_SOURCE, SOURCE_FLAG);
+
+			String userAgent = String.format("%s/%s; java/%s; platform/%s; processor/%s", SOURCE_FLAG, "1.0.0",
+					System.getProperty("java.version"), System.getProperty("os.name"), System.getProperty("os.arch"));
+			headers.set("user-agent", userAgent);
 			if (workspaceId != null) {
 				headers.set(HEADER_WORK_SPACE_ID, workspaceId);
 			}

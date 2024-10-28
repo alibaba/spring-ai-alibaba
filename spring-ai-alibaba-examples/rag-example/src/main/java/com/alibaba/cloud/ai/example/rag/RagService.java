@@ -16,22 +16,20 @@
 
 package com.alibaba.cloud.ai.example.rag;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.ai.chat.model.ChatResponse;
+import reactor.core.publisher.Flux;
 
 /**
- * Title Rag example application.<br>
- * Description Rag example application.<br>
+ * Title Rag service.<br>
+ * Description Rag service.<br>
  *
  * @author yuanci.ytb
  * @since 1.0.0-M2
  */
 
-@SpringBootApplication
-public class RagExampleApplication {
+public interface RagService {
 
-	public static void main(String[] args) {
-		SpringApplication.run(com.alibaba.cloud.ai.example.rag.RagExampleApplication.class, args);
-	}
+	void importDocuments();
 
+	Flux<ChatResponse> retrieve(String message);
 }
