@@ -49,7 +49,7 @@ import java.util.List;
  * @since 1.0.0-M2
  */
 
-@Service("cloudRagService")
+@Service()
 public class CloudRagService implements RagService {
 
 	private static final Logger logger = LoggerFactory.getLogger(CloudRagService.class);
