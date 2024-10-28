@@ -1,20 +1,3 @@
-# dubbo-kube-ui
-
-## Feature
-
-`Vue3` `Vite` `TypeScript` `Ant Design Vue` `AntV|echarts` `lodash` `i18n` `colorful theme`
-
-## Introduction
-
-This project is the front-end of dubbo-kube.
-
-1. home
-2. services
-3. traffic
-4. test tools
-5. metrics
-6. kubernetes
-
 ## Startup
 
 ```shell
@@ -74,7 +57,7 @@ function globalQuestion() {
 
 3. provide and inject
 
-   > must define in `ui-vue3/src/base/enums/ProvideInject.ts`
+  
 
 4. icon: https://icones.js.org/
 
@@ -156,96 +139,6 @@ function globalQuestion() {
       })
       ```
 
-## i18n
-
-1. In html template
-
-   ```html
-   <div>
-     {{$t(stringVar)}}
-   </div>
-   ```
-
-2. In ts 
-
-   > if you want to make your var to i18n, make sure your var is a computed
-
-   ```ts
-   let label = 'foo'
-   let labelWithI18n = computed(() => globalProperties.$t(label))
-   ```
-
-   
-
-## Router
-
-1. Define a router
-
-   ```ts
-   // router/defaultRoutes
-   {
-     path: '/home',
-     name: 'homePage',
-     component: () => import('../views/home/index.vue'),
-     meta: {
-       icon: 'carbon:web-services-cluster'
-     }
-   }
-   ```
-
-   
-
-2. Config route meta
-
-   ```ts
-   // you can config your route with this struct
-   export interface RouterMeta extends RouteMeta {
-     icon?: string
-     hidden?: boolean
-     skip?: boolean
-   
-   
-   // icon:  Show as your menu prefix
-   // hidden:  Do not show as a menu include its children routes
-   // skip: Do not show this route as a menu, but display its child routes.
-   
-   ```
-
-3. Config a tab route
-
-   > Note:  /tab is a middle layer for left-menu-item: must use LayoutTab as component; meta.tab must be true
-
-   ```ts
-   {
-       path: '/tab',
-       name: 'tabDemo',
-       component: LayoutTab,
-       redirect: 'index',
-       meta: {
-           tab_parent: true
-       },
-       children: [
-           {
-               path: '/index',
-               name: 'applications_index',
-               component: () => import('../views/resources/applications/index.vue'),
-               meta: {
-                   // hidden: true,
-               }
-           },
-           {
-               path: '/tab1',
-               name: 'tab1',
-               component: () => import('../views/common/tab_demo/tab1.vue'),
-               meta: {
-                   icon: 'simple-icons:podman',
-                   tab: true,
-               }
-           },
-   
-       ]
-   },
-   ```
 
 ## Build and Deploy
 
@@ -257,10 +150,6 @@ function globalQuestion() {
 
 2. Deploy
 
-   Copy the `dist` folder to the path `app/dubbo-ui/dist/`
+   Copy the `dist/assets` folder to the path `src/main/resources/static`
+   Copy the `dist/index.html` file to the path `src/main/resources/templates`
 
-   ```shell
-   # run the following command in the root path of the project
-   rm -rf app/dubbo-ui/dist
-   cp -r dist/ app/dubbo-ui/
-   ```
