@@ -37,6 +37,10 @@ spring.ai.dashscope.api-key=${AI_DASHSCOPE_API_KEY}
 spring.ai.dashscope.chat.options.model=qwen-max
 ```
 
+## Build Frontend (as needed)
+```shell
+mvn clean compile -Denable-frontend-plugin=true  -Pbuild-frontend
+```
 
 ## Build Jar
 
