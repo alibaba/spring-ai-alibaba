@@ -16,12 +16,9 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.Resource;
 
-import com.vaadin.flow.component.page.AppShellConfigurator;
-import com.vaadin.flow.theme.Theme;
 
 @SpringBootApplication
-@Theme(value = "customer-support-agent")
-public class Application implements AppShellConfigurator {
+public class Application  {
 
 	private static final Logger logger = LoggerFactory.getLogger(Application.class);
 

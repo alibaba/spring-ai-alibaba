@@ -37,3 +37,4 @@ target/
 # Generated Files
 spring-ai-alibaba-examples/playground-flight-booking/frontend/generated/
 spring-ai-alibaba-examples/playground-flight-booking/src/main/bundles/
+/spring-ai-alibaba-examples/playground-flight-booking-example/
