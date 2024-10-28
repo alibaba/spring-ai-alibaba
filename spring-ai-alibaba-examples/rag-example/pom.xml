@@ -40,6 +40,10 @@
 
 		<!-- Spring AI -->
 		<spring-ai-alibaba.version>1.0.0-M2.1</spring-ai-alibaba.version>
+		<spring-ai.version>1.0.0-M3</spring-ai.version>
+
+		<!-- utils -->
+		<commons-lang3.version>3.14.0</commons-lang3.version>
 	</properties>
 
 	<dependencies>
@@ -52,6 +56,23 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-pdf-document-reader</artifactId>
+			<version>${spring-ai.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-elasticsearch-store-spring-boot-starter</artifactId>
+			<version>${spring-ai.version}</version>
 		</dependency>
 	</dependencies>
 

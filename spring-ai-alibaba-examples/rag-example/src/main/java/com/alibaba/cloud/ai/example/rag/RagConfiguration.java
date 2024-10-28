@@ -16,22 +16,22 @@
 
 package com.alibaba.cloud.ai.example.rag;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import org.springframework.ai.transformer.splitter.TextSplitter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
- * Title Rag example application.<br>
- * Description Rag example application.<br>
- *
- * @author yuanci.ytb
- * @since 1.0.0-M2
- */
+* Title Rag configuration.<br>
+* Description Rag configuration.<br>
+*
+* @author yuanci.ytb
+* @since 1.0.0-M2
+*/
 
-@SpringBootApplication
-public class RagExampleApplication {
+@Configuration
+public class RagConfiguration {
 
-	public static void main(String[] args) {
-		SpringApplication.run(com.alibaba.cloud.ai.example.rag.RagExampleApplication.class, args);
-	}
 
 }
