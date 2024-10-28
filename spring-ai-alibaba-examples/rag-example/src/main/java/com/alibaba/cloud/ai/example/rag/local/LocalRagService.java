@@ -56,7 +56,7 @@ import java.util.Map;
 * @since 1.0.0-M2
 */
 
-@Service("localRagService")
+@Service()
 public class LocalRagService implements RagService {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalRagService.class);
