@@ -79,12 +79,6 @@ import java.util.Objects;
 public class DashScopeAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean
-	public RestClient.Builder restClientBuilder() {
-		return RestClient.builder();
-	}
-
-	@Bean
 	@Scope("prototype")
 	@ConditionalOnMissingBean
 	public SpeechSynthesizer speechSynthesizer() {
