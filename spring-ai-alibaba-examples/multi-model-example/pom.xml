@@ -17,19 +17,21 @@
 -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>3.3.3</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath/>
 	</parent>
+
 	<groupId>com.alibaba.cloud.ai</groupId>
-	<artifactId>rag-example</artifactId>
+	<artifactId>multi-model-example</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>rag-example</name>
-	<description>Demo project for Spring AI Alibaba</description>
+	<name>multi-model-example</name>
+	<description>Multi Model Example project for Spring AI Alibaba</description>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -40,10 +42,6 @@
 
 		<!-- Spring AI -->
 		<spring-ai-alibaba.version>1.0.0-M2.1</spring-ai-alibaba.version>
-		<spring-ai.version>1.0.0-M3</spring-ai.version>
-
-		<!-- utils -->
-		<commons-lang3.version>3.14.0</commons-lang3.version>
 	</properties>
 
 	<dependencies>
@@ -59,21 +57,11 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
+			<groupId>org.bytedeco</groupId>
+			<artifactId>javacv-platform</artifactId>
+			<version>1.5.9</version>
 		</dependency>
 
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-pdf-document-reader</artifactId>
-			<version>${spring-ai.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-elasticsearch-store-spring-boot-starter</artifactId>
-			<version>${spring-ai.version}</version>
-		</dependency>
 	</dependencies>
 
 	<build>
