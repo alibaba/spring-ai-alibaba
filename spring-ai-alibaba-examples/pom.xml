@@ -31,9 +31,12 @@
 		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
 	</properties>
 
-	<modules>
-		<module>client-api-example</module>
+	<modules>		
+    <module>client-api-example</module>
 		<module>module-api-example</module>
+		<module>helloworld-example</module>
+		<module>chatmodel-example</module>
+		<module>multi-model-example</module>
 		<module>prompt-example</module>
 		<module>function-calling-example</module>
 		<module>rag-example</module>

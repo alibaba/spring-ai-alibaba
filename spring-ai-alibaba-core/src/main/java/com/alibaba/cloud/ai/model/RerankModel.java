@@ -16,9 +16,7 @@
 
 package com.alibaba.cloud.ai.model;
 
-import org.springframework.ai.document.Document;
-
-import java.util.List;
+import org.springframework.ai.model.Model;
 
 /**
  * Title rerank model interface.<br>
@@ -29,8 +27,9 @@ import java.util.List;
  * @since 1.0.0-M2
  */
 
-public interface RerankModel {
+public interface RerankModel extends Model<RerankRequest, RerankResponse> {
 
-	RerankResponse rerank(String query, List<Document> documents);
+	@Override
+	RerankResponse call(RerankRequest request);
 
 }
