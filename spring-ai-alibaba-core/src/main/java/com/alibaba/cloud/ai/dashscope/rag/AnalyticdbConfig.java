@@ -3,8 +3,7 @@ package com.alibaba.cloud.ai.dashscope.rag;
 /**
  * @author HeYQ
  * @version 1.0
- * @date 2024-10-23 20:22
- * @describe
+ * @since 2024-10-23 20:22
  */
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.HashMap;
@@ -13,145 +12,167 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AnalyticdbConfig {
 
-    private String accessKeyId;
+	private String accessKeyId;
 
-    private String accessKeySecret;
+	private String accessKeySecret;
 
-    private String regionId;
+	private String regionId;
 
-    private String DBInstanceId;
+	private String DBInstanceId;
 
-    private String managerAccount;
+	private String managerAccount;
 
-    private String managerAccountPassword;
+	private String managerAccountPassword;
 
-    private String namespace;
+	private String namespace;
 
-    private String namespacePassword;
+	private String namespacePassword;
 
-    private String metrics = "cosine";
+	private String metrics = "cosine";
 
-    private Integer readTimeout = 60000;
+	private Integer readTimeout = 60000;
 
-    private Long embeddingDimension = 1536L;
+	private Long embeddingDimension = 1536L;
 
-    public AnalyticdbConfig() {
+	private String userAgent = "index";
 
-    }
+	public AnalyticdbConfig() {
 
+	}
 
-    public AnalyticdbConfig(String accessKeyId, String accessKeySecret, String regionId, String DBInstanceId,
-                            String managerAccount, String managerAccountPassword,
-                            String namespace, String namespacePassword,
-                            String metrics, Integer readTimeout, Long embeddingDimension) {
-        this.accessKeyId = accessKeyId;
-        this.accessKeySecret = accessKeySecret;
-        this.regionId = regionId;
-        this.DBInstanceId = DBInstanceId;
-        this.managerAccount = managerAccount;
-        this.managerAccountPassword = managerAccountPassword;
-        this.namespace = namespace;
-        this.namespacePassword = namespacePassword;
-        this.metrics = metrics;
-        this.readTimeout = readTimeout;
-        this.embeddingDimension = embeddingDimension;
-    }
+	public AnalyticdbConfig(String accessKeyId, String accessKeySecret, String regionId, String DBInstanceId,
+			String managerAccount, String managerAccountPassword, String namespace, String namespacePassword,
+			String metrics, Integer readTimeout, Long embeddingDimension, String userAgent) {
+		this.accessKeyId = accessKeyId;
+		this.accessKeySecret = accessKeySecret;
+		this.regionId = regionId;
+		this.DBInstanceId = DBInstanceId;
+		this.managerAccount = managerAccount;
+		this.managerAccountPassword = managerAccountPassword;
+		this.namespace = namespace;
+		this.namespacePassword = namespacePassword;
+		this.metrics = metrics;
+		this.readTimeout = readTimeout;
+		this.embeddingDimension = embeddingDimension;
+		this.userAgent = userAgent;
+	}
 
+	public Map<String, Object> toAnalyticdbClientParams() {
+		Map<String, Object> params = new HashMap<>();
+		params.put("accessKeyId", this.accessKeyId);
+		params.put("accessKeySecret", this.accessKeySecret);
+		params.put("regionId", this.regionId);
+		params.put("readTimeout", this.readTimeout);
+		params.put("userAgent", this.userAgent);
+		return params;
+	}
 
-    public Map<String, Object> toAnalyticdbClientParams() {
-        Map<String, Object> params = new HashMap<>();
-        params.put("accessKeyId", this.accessKeyId);
-        params.put("accessKeySecret", this.accessKeySecret);
-        params.put("regionId", this.regionId);
-        params.put("readTimeout", this.readTimeout);
-        return params;
-    }
+	public String getAccessKeyId() {
+		return accessKeyId;
+	}
 
-    public String getAccessKeyId() {
-        return accessKeyId;
-    }
+	public AnalyticdbConfig setAccessKeyId(String accessKeyId) {
+		this.accessKeyId = accessKeyId;
+		return this;
+	}
 
-    public void setAccessKeyId(String accessKeyId) {
-        this.accessKeyId = accessKeyId;
-    }
+	public String getAccessKeySecret() {
+		return accessKeySecret;
+	}
 
-    public String getAccessKeySecret() {
-        return accessKeySecret;
-    }
+	public AnalyticdbConfig setAccessKeySecret(String accessKeySecret) {
+		this.accessKeySecret = accessKeySecret;
+		return this;
+	}
 
-    public void setAccessKeySecret(String accessKeySecret) {
-        this.accessKeySecret = accessKeySecret;
-    }
+	public String getRegionId() {
+		return regionId;
+	}
 
-    public String getRegionId() {
-        return regionId;
-    }
+	public AnalyticdbConfig setRegionId(String regionId) {
+		this.regionId = regionId;
+		return this;
+	}
 
-    public void setRegionId(String regionId) {
-        this.regionId = regionId;
-    }
+	public String getDBInstanceId() {
+		return DBInstanceId;
+	}
 
-    public String getDBInstanceId() {
-        return DBInstanceId;
-    }
+	public AnalyticdbConfig setDBInstanceId(String DBInstanceId) {
+		this.DBInstanceId = DBInstanceId;
+		return this;
+	}
 
-    public void setDBInstanceId(String DBInstanceId) {
-        this.DBInstanceId = DBInstanceId;
-    }
+	public String getManagerAccount() {
+		return managerAccount;
+	}
 
-    public String getManagerAccount() {
-        return managerAccount;
-    }
+	public AnalyticdbConfig setManagerAccount(String managerAccount) {
+		this.managerAccount = managerAccount;
+		return this;
+	}
 
-    public void setManagerAccount(String managerAccount) {
-        this.managerAccount = managerAccount;
-    }
+	public String getManagerAccountPassword() {
+		return managerAccountPassword;
+	}
 
-    public String getManagerAccountPassword() {
-        return managerAccountPassword;
-    }
+	public AnalyticdbConfig setManagerAccountPassword(String managerAccountPassword) {
+		this.managerAccountPassword = managerAccountPassword;
+		return this;
+	}
 
-    public void setManagerAccountPassword(String managerAccountPassword) {
-        this.managerAccountPassword = managerAccountPassword;
-    }
+	public String getNamespace() {
+		return namespace;
+	}
 
-    public String getNamespace() {
-        return namespace;
-    }
+	public AnalyticdbConfig setNamespace(String namespace) {
+		this.namespace = namespace;
+		return this;
+	}
 
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
-    }
+	public String getNamespacePassword() {
+		return namespacePassword;
+	}
 
-    public String getNamespacePassword() {
-        return namespacePassword;
-    }
+	public AnalyticdbConfig setNamespacePassword(String namespacePassword) {
+		this.namespacePassword = namespacePassword;
+		return this;
+	}
 
-    public void setNamespacePassword(String namespacePassword) {
-        this.namespacePassword = namespacePassword;
-    }
+	public String getMetrics() {
+		return metrics;
+	}
 
-    public String getMetrics() {
-        return metrics;
-    }
+	public AnalyticdbConfig setMetrics(String metrics) {
+		this.metrics = metrics;
+		return this;
+	}
 
-    public void setMetrics(String metrics) {
-        this.metrics = metrics;
-    }
+	public Integer getReadTimeout() {
+		return readTimeout;
+	}
 
-    public Integer getReadTimeout() {
-        return readTimeout;
-    }
+	public AnalyticdbConfig setReadTimeout(Integer readTimeout) {
+		this.readTimeout = readTimeout;
+		return this;
+	}
 
-    public void setReadTimeout(Integer readTimeout) {
-        this.readTimeout = readTimeout;
-    }
+	public Long getEmbeddingDimension() {
+		return embeddingDimension;
+	}
 
-    public Long getEmbeddingDimension() {
-        return embeddingDimension;
-    }
+	public AnalyticdbConfig setEmbeddingDimension(Long embeddingDimension) {
+		this.embeddingDimension = embeddingDimension;
+		return this;
+	}
 
-    public void setEmbeddingDimension(Long embeddingDimension) {
-        this.embeddingDimension = embeddingDimension;
-    }
+	public String getUserAgent() {
+		return userAgent;
+	}
+
+	public AnalyticdbConfig setUserAgent(String userAgent) {
+		this.userAgent = userAgent;
+		return this;
+	}
+
 }
