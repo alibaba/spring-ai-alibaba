@@ -87,12 +87,6 @@
 			<version>1.2.75</version>
 		</dependency>
 
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-redis</artifactId>
-		</dependency>
-
-
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
