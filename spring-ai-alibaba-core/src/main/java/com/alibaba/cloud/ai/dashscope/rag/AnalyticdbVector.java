@@ -40,8 +40,6 @@ public class AnalyticdbVector implements VectorStore {
 
 	private static final Logger logger = LoggerFactory.getLogger(AnalyticdbVector.class);
 
-	private Boolean initialized = false;
-
 	private final String collectionName;
 
 	private AnalyticdbConfig config;
@@ -54,6 +52,7 @@ public class AnalyticdbVector implements VectorStore {
 		this.config = config;
 		Config clientConfig = Config.build(this.config.toAnalyticdbClientParams());
 		this.client = new Client(clientConfig);
+		initialize();
 		logger.debug("created AnalyticdbVector client success");
 	}
 
@@ -61,12 +60,9 @@ public class AnalyticdbVector implements VectorStore {
 	 * initialize vector db
 	 */
 	private void initialize() throws Exception {
-		if (!this.initialized) {
-			initializeVectorDataBase();
-			createNameSpaceIfNotExists();
-			createCollectionIfNotExists(this.config.getEmbeddingDimension());
-			this.initialized = true;
-		}
+		initializeVectorDataBase();
+		createNameSpaceIfNotExists();
+		createCollectionIfNotExists(this.config.getEmbeddingDimension());
 	}
 
 	private void initializeVectorDataBase() throws Exception {
@@ -147,17 +143,7 @@ public class AnalyticdbVector implements VectorStore {
 	}
 
 	@Override
-	public void add(List<Document> texts) {
-		try {
-			initialize();
-			addTexts(texts);
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	public void addTexts(List<Document> documents) throws Exception {
+	public void add(List<Document> documents) {
 		List<UpsertCollectionDataRequest.UpsertCollectionDataRequestRows> rows = new ArrayList<>(10);
 		for (Document doc : documents) {
 			float[] floatEmbeddings = doc.getEmbedding();
@@ -179,21 +165,16 @@ public class AnalyticdbVector implements VectorStore {
 			.setNamespacePassword(this.config.getNamespacePassword())
 			.setCollection(this.collectionName)
 			.setRows(rows);
-		this.client.upsertCollectionData(request);
+		try {
+			this.client.upsertCollectionData(request);
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Failed to add collection data by IDs: " + e.getMessage(), e);
+		}
 	}
 
 	@Override
 	public Optional<Boolean> delete(List<String> ids) {
-		try {
-			initialize();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		return deleteByIds(ids);
-	}
-
-	public Optional<Boolean> deleteByIds(List<String> ids) {
 		if (ids.isEmpty()) {
 			return Optional.of(false);
 		}
@@ -218,12 +199,7 @@ public class AnalyticdbVector implements VectorStore {
 
 	@Override
 	public List<Document> similaritySearch(String query) {
-		try {
-			initialize();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+
 		return similaritySearch(SearchRequest.query(query));
 
 	}
