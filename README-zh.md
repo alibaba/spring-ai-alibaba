@@ -33,6 +33,15 @@
 > 	</repository>
 > </repositories>
 > ```
+> 补充：如果您的本地 maven settings.xml 中的 mirrorOf 标签配置了通配符 * ，请根据以下示例修改。
+> ```xml
+> <mirror>
+>   <id>xxxx</id>
+>   <mirrorOf>*,!spring-milestones</mirrorOf>
+>   <name>xxxx</name>
+>   <url>xxxx</url>
+> </mirror>
+> ```
 
 2. 为你的 Spring Bean 注入 `ChatClient`。
 
