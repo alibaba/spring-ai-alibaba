@@ -6,7 +6,7 @@ This app shows how you can use Spring AI Alibaba to build an AI-powered system t
 - Can access tools (Java methods) to perform actions (Function Calling)
 - Uses an LLM to interact with the user
 
-![alt text](diagram.jpg)
+![spring-ai-alibaba-flight-booking](diagram.png)
 
 ## Requirements
 
