@@ -115,4 +115,4 @@ Spring AI Alibaba aims to reduce the complexity of building ai native java appli
 * Dingtalk Group (钉钉群), search `64485010179` and join.
 * Wechat Group (微信公众号), scan the QR code below and follow us.
 
-<img src="./docs/imgs/wechat-account.png" style="max-width:100px;"/>
+<img src="./docs/imgs/wechat-account.png" style="width:260px;"/>
