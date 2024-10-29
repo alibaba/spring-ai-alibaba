@@ -262,13 +262,17 @@ public class DashScopeChatModelIT {
 	void callMultiModelWithVideo() throws MalformedURLException, URISyntaxException {
 		List<Media> mediaList = new ArrayList<>();
 		mediaList.add(new Media(MimeTypeUtils.IMAGE_PNG, new URI(
-				"https://img.alicdn.com/imgextra/i3/O1CN01K3SgGo1eqmlUgeE9b_!!6000000003923-0-tps-3840-2160.jpg").toURL()));
+				"https://img.alicdn.com/imgextra/i3/O1CN01K3SgGo1eqmlUgeE9b_!!6000000003923-0-tps-3840-2160.jpg")
+			.toURL()));
 		mediaList.add(new Media(MimeTypeUtils.IMAGE_PNG, new URI(
-				"https://img.alicdn.com/imgextra/i4/O1CN01BjZvwg1Y23CF5qIRB_!!6000000003000-0-tps-3840-2160.jpg").toURL()));
+				"https://img.alicdn.com/imgextra/i4/O1CN01BjZvwg1Y23CF5qIRB_!!6000000003000-0-tps-3840-2160.jpg")
+			.toURL()));
 		mediaList.add(new Media(MimeTypeUtils.IMAGE_PNG, new URI(
-				"https://img.alicdn.com/imgextra/i4/O1CN01Ib0clU27vTgBdbVLQ_!!6000000007859-0-tps-3840-2160.jpg").toURL()));
+				"https://img.alicdn.com/imgextra/i4/O1CN01Ib0clU27vTgBdbVLQ_!!6000000007859-0-tps-3840-2160.jpg")
+			.toURL()));
 		mediaList.add(new Media(MimeTypeUtils.IMAGE_PNG, new URI(
-				"https://img.alicdn.com/imgextra/i1/O1CN01aygPLW1s3EXCdSN4X_!!6000000005710-0-tps-3840-2160.jpg").toURL()));
+				"https://img.alicdn.com/imgextra/i1/O1CN01aygPLW1s3EXCdSN4X_!!6000000005710-0-tps-3840-2160.jpg")
+			.toURL()));
 
 		UserMessage message = new UserMessage("描述这个视频的具体过程", mediaList);
 		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.VIDEO);
@@ -311,11 +315,12 @@ public class DashScopeChatModelIT {
 				DashScopeChatOptions.builder().withModel("qwen-vl-max-latest").withMultiModel(true).build()));
 
 		CountDownLatch cdl = new CountDownLatch(1);
-		response.subscribe(data ->
-				System.out.printf("%s", data.getResult().getOutput().getContent()),
-				err -> System.out.printf("err: %s\n", err),
-				() -> { System.out.println("\ndone");
-
+		response.subscribe(data -> {
+			System.out.printf("%s", data.getResult().getOutput().getContent());
+		}, err -> {
+			System.out.printf("err: %s\n", err);
+		}, () -> {
+			System.out.println("\ndone");
 			cdl.countDown();
 		});
 
