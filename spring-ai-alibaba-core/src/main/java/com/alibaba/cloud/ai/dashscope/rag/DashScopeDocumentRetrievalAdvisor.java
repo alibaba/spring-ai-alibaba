@@ -75,7 +75,7 @@ public class DashScopeDocumentRetrievalAdvisor implements CallAroundAdvisor, Str
 
 	private static final int DEFAULT_ORDER = 0;
 
-	public static String RETRIEVED_DOCUMENTS = "qa_retrieved_documents";
+	public static String RETRIEVED_DOCUMENTS = "question_answer_context";
 
 	private final DocumentRetriever retriever;
 
