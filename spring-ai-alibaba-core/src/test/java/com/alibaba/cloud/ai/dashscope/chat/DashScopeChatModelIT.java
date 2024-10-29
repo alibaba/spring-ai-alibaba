@@ -1,5 +1,15 @@
 package com.alibaba.cloud.ai.dashscope.chat;
 
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
+
 import com.alibaba.cloud.ai.dashscope.DashscopeAiTestConfiguration;
 import com.alibaba.cloud.ai.dashscope.chat.tool.MockWeatherService;
 import org.junit.jupiter.api.Assertions;
@@ -7,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -26,17 +38,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.util.MimeType;
-import reactor.core.publisher.Flux;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.stream.Collectors;
+import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -238,14 +240,14 @@ public class DashScopeChatModelIT {
 	}
 
 	@Test
-	void callMultiModelWithImages() throws MalformedURLException {
+	void callMultiModelWithImages() throws MalformedURLException, URISyntaxException {
 		List<Media> mediaList = new ArrayList<>();
-		mediaList.add(new Media(MimeType.valueOf("image/png"),
-				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg")));
-		mediaList.add(new Media(MimeType.valueOf("image/png"),
-				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/tiger.png")));
-		mediaList.add(new Media(MimeType.valueOf("image/png"),
-				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/rabbit.png")));
+		mediaList.add(new Media(MimeTypeUtils.IMAGE_PNG,
+				new URI("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg").toURL()));
+		mediaList.add(new Media(MimeTypeUtils.IMAGE_PNG,
+				new URI("https://dashscope.oss-cn-beijing.aliyuncs.com/images/tiger.png").toURL()));
+		mediaList.add(new Media(MimeTypeUtils.IMAGE_PNG,
+				new URI("https://dashscope.oss-cn-beijing.aliyuncs.com/images/rabbit.png").toURL()));
 
 		UserMessage message = new UserMessage("这些是什么?", mediaList);
 		ChatResponse response = dashscopeChatModel.call(new Prompt(message,
@@ -257,16 +259,16 @@ public class DashScopeChatModelIT {
 	}
 
 	@Test
-	void callMultiModelWithVideo() throws MalformedURLException {
+	void callMultiModelWithVideo() throws MalformedURLException, URISyntaxException {
 		List<Media> mediaList = new ArrayList<>();
-		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL(
-				"https://img.alicdn.com/imgextra/i3/O1CN01K3SgGo1eqmlUgeE9b_!!6000000003923-0-tps-3840-2160.jpg")));
-		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL(
-				"https://img.alicdn.com/imgextra/i4/O1CN01BjZvwg1Y23CF5qIRB_!!6000000003000-0-tps-3840-2160.jpg")));
-		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL(
-				"https://img.alicdn.com/imgextra/i4/O1CN01Ib0clU27vTgBdbVLQ_!!6000000007859-0-tps-3840-2160.jpg")));
-		mediaList.add(new Media(MimeType.valueOf("image/png"), new URL(
-				"https://img.alicdn.com/imgextra/i1/O1CN01aygPLW1s3EXCdSN4X_!!6000000005710-0-tps-3840-2160.jpg")));
+		mediaList.add(new Media(MimeTypeUtils.IMAGE_PNG, new URI(
+				"https://img.alicdn.com/imgextra/i3/O1CN01K3SgGo1eqmlUgeE9b_!!6000000003923-0-tps-3840-2160.jpg").toURL()));
+		mediaList.add(new Media(MimeTypeUtils.IMAGE_PNG, new URI(
+				"https://img.alicdn.com/imgextra/i4/O1CN01BjZvwg1Y23CF5qIRB_!!6000000003000-0-tps-3840-2160.jpg").toURL()));
+		mediaList.add(new Media(MimeTypeUtils.IMAGE_PNG, new URI(
+				"https://img.alicdn.com/imgextra/i4/O1CN01Ib0clU27vTgBdbVLQ_!!6000000007859-0-tps-3840-2160.jpg").toURL()));
+		mediaList.add(new Media(MimeTypeUtils.IMAGE_PNG, new URI(
+				"https://img.alicdn.com/imgextra/i1/O1CN01aygPLW1s3EXCdSN4X_!!6000000005710-0-tps-3840-2160.jpg").toURL()));
 
 		UserMessage message = new UserMessage("描述这个视频的具体过程", mediaList);
 		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.VIDEO);
@@ -283,7 +285,7 @@ public class DashScopeChatModelIT {
 	void callMultiModelWithImageBinary() {
 		List<Media> mediaList = new ArrayList<>();
 		var imageResource = new ClassPathResource("/multimodel/dog_and_girl.jpeg");
-		mediaList.add(new Media(MimeType.valueOf("image/png"), imageResource));
+		mediaList.add(new Media(MimeTypeUtils.IMAGE_PNG, imageResource));
 
 		UserMessage message = new UserMessage("这是什么?", mediaList);
 		ChatResponse response = dashscopeChatModel.call(new Prompt(message,
@@ -295,26 +297,25 @@ public class DashScopeChatModelIT {
 	}
 
 	@Test
-	void streamCallMultiModel() throws MalformedURLException, InterruptedException {
+	void streamCallMultiModel() throws MalformedURLException, InterruptedException, URISyntaxException {
 		List<Media> mediaList = new ArrayList<>();
-		mediaList.add(new Media(MimeType.valueOf("image/png"),
-				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg")));
-		mediaList.add(new Media(MimeType.valueOf("image/png"),
-				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/tiger.png")));
-		mediaList.add(new Media(MimeType.valueOf("image/png"),
-				new URL("https://dashscope.oss-cn-beijing.aliyuncs.com/images/rabbit.png")));
+		mediaList.add(new Media(MimeTypeUtils.IMAGE_PNG,
+				new URI("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg").toURL()));
+		mediaList.add(new Media(MimeTypeUtils.IMAGE_PNG,
+				new URI("https://dashscope.oss-cn-beijing.aliyuncs.com/images/tiger.png").toURL()));
+		mediaList.add(new Media(MimeTypeUtils.IMAGE_PNG,
+				new URI("https://dashscope.oss-cn-beijing.aliyuncs.com/images/rabbit.png").toURL()));
 
 		UserMessage message = new UserMessage("这些是什么?", mediaList);
 		Flux<ChatResponse> response = dashscopeChatModel.stream(new Prompt(message,
 				DashScopeChatOptions.builder().withModel("qwen-vl-max-latest").withMultiModel(true).build()));
 
 		CountDownLatch cdl = new CountDownLatch(1);
-		response.subscribe(data -> {
-			System.out.printf("%s", data.getResult().getOutput().getContent());
-		}, err -> {
-			System.out.printf("err: %s\n", err);
-		}, () -> {
-			System.out.println("\ndone");
+		response.subscribe(data ->
+				System.out.printf("%s", data.getResult().getOutput().getContent()),
+				err -> System.out.printf("err: %s\n", err),
+				() -> { System.out.println("\ndone");
+
 			cdl.countDown();
 		});
 
