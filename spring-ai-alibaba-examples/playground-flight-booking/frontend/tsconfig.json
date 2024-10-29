@@ -1,0 +1,19 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./tsconfig.app.json"
+    }
+
+  ],
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "ESNext"
+  },
+  "include": ["src/base/i18n/*"],
+  "esm": true
+
+}
