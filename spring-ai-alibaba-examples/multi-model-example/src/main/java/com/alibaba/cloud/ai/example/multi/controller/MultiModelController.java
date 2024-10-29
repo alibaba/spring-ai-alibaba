@@ -31,7 +31,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Media;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.util.MimeType;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -64,12 +64,14 @@ public class MultiModelController {
 
 		List<Media> mediaList = List.of(
 				new Media(
-						MimeType.valueOf("image/png"),
+						MimeTypeUtils.IMAGE_PNG,
 						new URI("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg").toURL()
 				)
 		);
 
 		UserMessage message = new UserMessage(prompt, mediaList);
+		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.IMAGE);
+
 		ChatResponse response = chatModel.call(
 				new Prompt(
 						message,
@@ -116,10 +118,10 @@ public class MultiModelController {
 		UserMessage message = new UserMessage(
 				prompt,
 				new Media(
-						MimeType.valueOf("image/jpeg"),
+						MimeTypeUtils.IMAGE_PNG,
 						resourceLoader.getResource("classpath:/multimodel/dog_and_girl.jpeg")
 				));
-		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.VIDEO);
+		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		ChatResponse response = chatModel.call(
 				new Prompt(
@@ -143,11 +145,11 @@ public class MultiModelController {
 		UserMessage message = new UserMessage(
 				prompt,
 				new Media(
-						MimeType.valueOf("image/jpeg"),
+						MimeTypeUtils.IMAGE_PNG,
 						resourceLoader.getResource("classpath:/multimodel/dog_and_girl.jpeg")
 				));
+		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.IMAGE);
 
-		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.VIDEO);
 		List<ChatResponse> response = chatModel.stream(
 				new Prompt(
 						message,
