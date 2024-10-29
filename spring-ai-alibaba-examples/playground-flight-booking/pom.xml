@@ -129,12 +129,6 @@
 	<profiles>
 		<profile>
 			<id>build-frontend</id>
-			<activation>
-				<property>
-					<name>enable-frontend-plugin</name>
-					<value>true</value>
-				</property>
-			</activation>
 			<build>
 				<plugins>
 
