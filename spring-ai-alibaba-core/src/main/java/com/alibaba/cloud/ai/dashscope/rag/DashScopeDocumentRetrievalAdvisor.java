@@ -167,9 +167,8 @@ public class DashScopeDocumentRetrievalAdvisor implements CallAroundAdvisor, Str
 		advisedUserParams.put(RETRIEVED_DOCUMENTS, documentContext);
 
 		return AdvisedRequest.from(request)
-			.withSystemText(this.userTextAdvise)
-			.withSystemParams(advisedUserParams)
-			.withUserText(request.userText())
+			.withUserText(request.userText() + System.lineSeparator() + this.userTextAdvise)
+			.withUserParams(advisedUserParams)
 			.withAdviseContext(context)
 			.build();
 	}
