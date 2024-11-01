@@ -1,0 +1,53 @@
+server:
+  port: 8090
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  application:
+    name: memory
+
+  datasource:
+    username:
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3308/memory?useUnicode=true&characterEncoding=utf-8&useSSL=false&nullCatalogMeansCurrent=true&serverTimezone=Asia/Shanghai
+
+  data:
+    redis:
+      database: 0
+      host:
+      port:
+      password:
+
+  elasticsearch:
+    password:
+    uris:
+    username:
+
+
+
+
+  ai:
+    dashscope:
+      api-key: sk-******
+    openai:
+      api-key: sk-******
+
+chat:
+  memory:
+    api_key: sk-******
+    model_name: qwen-plus
+    memory_type: bufferwindow
+    storage_type: mysql
+    temperature: 0.8
+    window_size: 2
+    include_system_prompt: true
+    prompt: "你是一位诗人，根据题目说出诗句"
+    # openai中专地址
+    transit_url: https://api.chatanywhere.tech
+
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
