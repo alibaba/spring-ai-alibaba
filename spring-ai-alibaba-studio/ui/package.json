@@ -1,0 +1,45 @@
+{
+  "name": "@icedesign/ice-antd-scaffold",
+  "version": "2.1.4",
+  "description": "Ant Design and icejs scaffold, use TypeScript.",
+  "dependencies": {
+    "@ant-design/icons": "^4.0.2",
+    "@ant-design/pro-layout": "^6.5.1",
+    "antd": "^4.0.0",
+    "moment": "^2.24.0",
+    "prop-types": "^15.5.8",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
+  },
+  "devDependencies": {
+    "@iceworks/spec": "^1.0.1",
+    "@types/react": "^17.0.14",
+    "@types/react-dom": "^17.0.9",
+    "build-plugin-antd": "^0.1.2",
+    "build-plugin-ignore-style": "^0.1.0",
+    "eslint": "^7.30.0",
+    "ice.js": "^2.0.0",
+    "stylelint": "^13.1.0"
+  },
+  "scripts": {
+    "start": "icejs start",
+    "build": "icejs build",
+    "prepublishOnly": "npm run build",
+    "lint": "npm run eslint && npm run stylelint",
+    "eslint": "eslint --cache --ext .js,.jsx ./",
+    "stylelint": "stylelint ./**/*.scss"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scaffoldConfig": {
+    "name": "Ant Design Scaffold",
+    "title": "Ant Design Scaffold",
+    "category": "Basic",
+    "screenshot": "https://img.alicdn.com/imgextra/i1/O1CN01I3NPfJ1zvSR4cSVws_!!6000000006776-2-tps-3580-2074.png"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ice-lab/react-materials/tree/master/scaffolds/antd-lite"
+  }
+}
