@@ -13,7 +13,7 @@ const loopMenuItem = (menus) =>
 export default function BasicLayout({ children, location }) {
   return (
     <ProLayout
-      title="icejs & antd"
+      title="alibaba-studio"
       style={{
         minHeight: '100vh',
       }}
@@ -41,7 +41,7 @@ export default function BasicLayout({ children, location }) {
               href: 'https://github.com/ant-design/ant-design',
             },
           ]}
-          copyright="by icejs & antd"
+          copyright="by alibaba-studio"
         />
       )}
     >
