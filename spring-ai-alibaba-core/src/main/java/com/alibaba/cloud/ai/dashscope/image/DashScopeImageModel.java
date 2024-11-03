@@ -3,12 +3,16 @@ package com.alibaba.cloud.ai.dashscope.image;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.image.*;
+import org.springframework.ai.image.Image;
+import org.springframework.ai.image.ImageGeneration;
+import org.springframework.ai.image.ImageModel;
+import org.springframework.ai.image.ImageOptions;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -121,6 +125,10 @@ public class DashScopeImageModel implements ImageModel {
 			return null;
 		}
 		return getImageGenResponse.getBody();
+	}
+
+	public DashScopeImageOptions getOptions() {
+		return this.options;
 	}
 
 	private ImageResponse toImageResponse(
