@@ -31,7 +31,7 @@ public interface ChatModelAPI {
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", description = "successful operation",
 			content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
 					array = @ArraySchema(schema = @Schema(implementation = ChatModel.class)))), })
-	@GetMapping(value = "", consumes = { "application/json", "application/x-www-form-urlencoded" })
+	@GetMapping(value = "", consumes = { "*/*" })
 	default List<ChatModel> list() {
 		return getDelegate().list();
 	}
@@ -42,7 +42,7 @@ public interface ChatModelAPI {
 					content = { @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
 							schema = @Schema(implementation = ChatModel.class)) }),
 			@ApiResponse(responseCode = "404", description = "model not found") })
-	@GetMapping(value = "/{modelName}", consumes = { "application/json", "application/x-www-form-urlencoded" })
+	@GetMapping(value = "/{modelName}", consumes = { "application/json" }, produces = { "application/json" })
 	default ChatModel get(@PathVariable String modelName) {
 		return getDelegate().getByModelName(modelName);
 	}
