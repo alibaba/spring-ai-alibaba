@@ -38,16 +38,16 @@ paths:
         schema:
           $ref: "#/components/schemas/RunActionParam"
       responses:
-        "200":
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ChatModelRunResult"
         "404":
           description: model not found
           content:
             '*/*':
+              schema:
+                $ref: "#/components/schemas/ChatModelRunResult"
+        "200":
+          description: successful operation
+          content:
+            application/json:
               schema:
                 $ref: "#/components/schemas/ChatModelRunResult"
   /studio/api/chat-models/{modelName}:
@@ -72,7 +72,7 @@ paths:
         "404":
           description: model not found
           content:
-            '*/*':
+            application/json:
               schema:
                 $ref: "#/components/schemas/ChatModel"
   /studio/api/chat-clients:
@@ -133,11 +133,47 @@ paths:
             '*/*':
               schema:
                 type: string
+  /ai/streamByModel:
+    get:
+      tags:
+      - chat-controller
+      operationId: streamByModel
+      parameters:
+      - name: input
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
   /ai/chat:
     get:
       tags:
       - chat-controller
       operationId: chat
+      parameters:
+      - name: input
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /ai/chatByModel:
+    get:
+      tags:
+      - chat-controller
+      operationId: chatByModel
       parameters:
       - name: input
         in: query
@@ -211,6 +247,12 @@ components:
     DashScopeChatOptions:
       type: object
       properties:
+        maxTokens:
+          type: integer
+          format: int32
+        presencePenalty:
+          type: number
+          format: double
         frequencyPenalty:
           type: number
           format: double
@@ -218,12 +260,6 @@ components:
           type: array
           items:
             type: string
-        maxTokens:
-          type: integer
-          format: int32
-        presencePenalty:
-          type: number
-          format: double
         proxyToolCalls:
           type: boolean
         model:

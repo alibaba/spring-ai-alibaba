@@ -17,6 +17,9 @@
 package com.alibaba.cloud.ai.example.cli.clidebugexample;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,8 +33,11 @@ public class ChatController {
 
     private final ChatClient chatClient;
 
-    public ChatController(ChatClient.Builder builder) {
+    private final ChatModel chatModel;
+
+    public ChatController(ChatClient.Builder builder, ChatModel chatModel) {
         this.chatClient = builder.build();
+        this.chatModel = chatModel;
     }
 
     @GetMapping("/chat")
@@ -44,6 +50,23 @@ public class ChatController {
 
         Flux<String> content = this.chatClient.prompt().user(input).stream().content();
         return Objects.requireNonNull(content.collectList().block()).stream().reduce((a, b) -> a + b).get();
+    }
+
+    @GetMapping("/chatByModel")
+    public String chatByModel(String input) {
+        ChatResponse response = chatModel.call(new Prompt(input));
+        return response.getResult().getOutput().getContent();
+    }
+
+    @GetMapping("/streamByModel")
+    public String streamByModel(String input) {
+        StringBuilder res = new StringBuilder();
+        Flux<ChatResponse> stream = chatModel.stream(new Prompt(input));
+        stream.toStream().toList().forEach(resp -> {
+            res.append(resp.getResult().getOutput().getContent());
+        });
+
+        return res.toString();
     }
 
 }
