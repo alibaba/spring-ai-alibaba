@@ -50,10 +50,7 @@ paths:
       operationId: runImageGenTask
       requestBody:
         content:
-          image/png:
-            schema:
-              $ref: "#/components/schemas/RunActionParam"
-          application/json:
+          '*/*':
             schema:
               $ref: "#/components/schemas/RunActionParam"
         required: true
@@ -188,6 +185,12 @@ components:
     DashScopeChatOptions:
       type: object
       properties:
+        maxTokens:
+          type: integer
+          format: int32
+        presencePenalty:
+          type: number
+          format: double
         frequencyPenalty:
           type: number
           format: double
@@ -195,12 +198,6 @@ components:
           type: array
           items:
             type: string
-        maxTokens:
-          type: integer
-          format: int32
-        presencePenalty:
-          type: number
-          format: double
         proxyToolCalls:
           type: boolean
         model:
