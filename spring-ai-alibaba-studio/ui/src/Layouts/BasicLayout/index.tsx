@@ -31,9 +31,9 @@ export default function BasicLayout({ children, location }) {
         <DefaultFooter
           links={[
             {
-              key: 'icejs',
-              title: 'icejs',
-              href: 'https://github.com/ice-lab/icejs',
+              key: 'spring-ai-alibaba',
+              title: 'spring-ai-alibaba',
+              href: 'https://github.com/alibaba/spring-ai-alibaba',
             },
             {
               key: 'antd',
@@ -41,7 +41,7 @@ export default function BasicLayout({ children, location }) {
               href: 'https://github.com/ant-design/ant-design',
             },
           ]}
-          copyright="by alibaba-studio"
+          copyright="by spring-ai-alibaba"
         />
       )}
     >
