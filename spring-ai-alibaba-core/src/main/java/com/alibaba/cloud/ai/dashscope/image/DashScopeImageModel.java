@@ -33,7 +33,7 @@ public class DashScopeImageModel implements ImageModel {
 	/**
 	 * The default options used for the image completion requests.
 	 */
-	private final DashScopeImageOptions options;
+	private DashScopeImageOptions options;
 
 	/**
 	 * The retry template used to retry the OpenAI Image API calls.
@@ -129,6 +129,10 @@ public class DashScopeImageModel implements ImageModel {
 
 	public DashScopeImageOptions getOptions() {
 		return this.options;
+	}
+
+	public void setOptions(DashScopeImageOptions options) {
+		this.options = options;
 	}
 
 	private ImageResponse toImageResponse(
