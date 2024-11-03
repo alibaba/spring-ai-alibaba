@@ -205,6 +205,10 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 		return this.defaultOptions;
 	}
 
+	public void setDashScopeChatOptions(DashScopeChatOptions options) {
+		this.defaultOptions = options;
+	}
+
 	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
 		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
 				: choice.message()

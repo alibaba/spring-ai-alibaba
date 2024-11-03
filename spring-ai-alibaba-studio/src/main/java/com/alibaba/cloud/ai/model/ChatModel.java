@@ -20,8 +20,10 @@ public class ChatModel {
 
 	private ModelType modelType;
 
+	@Schema(nullable = true)
 	private DashScopeChatOptions chatOptions;
 
+	@Schema(nullable = true)
 	private DashScopeImageOptions imageOptions;
 
 }

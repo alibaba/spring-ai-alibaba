@@ -21,4 +21,8 @@ public interface ChatModelDelegate {
 		return null;
 	}
 
+	default String runImageGenTask(RunActionParam runActionParam) {
+		return null;
+	}
+
 }

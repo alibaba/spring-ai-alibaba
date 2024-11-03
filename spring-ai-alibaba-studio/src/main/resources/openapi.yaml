@@ -19,37 +19,47 @@ paths:
       operationId: list
       responses:
         "200":
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ChatModel"
-    post:
-      tags:
-      - chat-model
-      summary: run model by input
-      operationId: run
-      parameters:
-      - name: runActionParam
-        in: query
-        required: true
-        schema:
-          $ref: "#/components/schemas/RunActionParam"
-      responses:
-        "404":
-          description: model not found
+          description: OK
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/ChatModelRunResult"
+                $ref: "#/components/schemas/RListChatModel"
+    post:
+      tags:
+      - chat-model
+      summary: run chat model by input
+      operationId: run
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunActionParam"
+        required: true
+      responses:
         "200":
-          description: successful operation
+          description: OK
           content:
-            application/json:
+            '*/*':
               schema:
-                $ref: "#/components/schemas/ChatModelRunResult"
+                $ref: "#/components/schemas/RChatModelRunResult"
+  /studio/api/chat-models/run/image-gen:
+    post:
+      tags:
+      - chat-model
+      summary: run image model by input
+      operationId: runImageGenTask
+      requestBody:
+        content:
+          image/png:
+            schema:
+              $ref: "#/components/schemas/RunActionParam"
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RunActionParam"
+        required: true
+      responses:
+        "200":
+          description: OK
   /studio/api/chat-models/{modelName}:
     get:
       tags:
@@ -64,17 +74,11 @@ paths:
           type: string
       responses:
         "200":
-          description: successful operation
+          description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ChatModel"
-        "404":
-          description: model not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ChatModel"
+                $ref: "#/components/schemas/RChatModel"
   /studio/api/chat-clients:
     get:
       tags:
@@ -83,13 +87,11 @@ paths:
       operationId: list_1
       responses:
         "200":
-          description: successful operation
+          description: OK
           content:
-            application/json:
+            '*/*':
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ChatClient"
+                $ref: "#/components/schemas/RListChatClient"
   /studio/api/chat-clients/{clientName}:
     get:
       tags:
@@ -104,17 +106,11 @@ paths:
           type: string
       responses:
         "200":
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ChatClient"
-        "404":
-          description: chat client not found
+          description: OK
           content:
             '*/*':
               schema:
-                $ref: "#/components/schemas/ChatClient"
+                $ref: "#/components/schemas/RChatClient"
   /ai/stream:
     get:
       tags:
@@ -189,70 +185,9 @@ paths:
                 type: string
 components:
   schemas:
-    RunActionParam:
-      type: object
-      properties:
-        key:
-          type: string
-          description: "action key, bean name"
-        input:
-          type: string
-          description: user input
-        stream:
-          type: boolean
-          description: use stream response
-          default: false
-    ActionResult:
-      type: object
-      properties:
-        streamResponse:
-          type: array
-          items:
-            type: string
-        response:
-          type: string
-    ChatModelRunResult:
-      type: object
-      properties:
-        input:
-          $ref: "#/components/schemas/RunActionParam"
-        result:
-          $ref: "#/components/schemas/ActionResult"
-        telemetry:
-          $ref: "#/components/schemas/TelemetryResult"
-    TelemetryResult:
-      type: object
-      properties:
-        traceId:
-          type: string
-    ChatModel:
-      type: object
-      properties:
-        name:
-          type: string
-          description: ChatModel bean name
-        model:
-          type: string
-          description: dashscope model name
-        modelType:
-          type: string
-          enum:
-          - CHAT
-          - IMAGE
-          - AUDIO
-        chatOptions:
-          $ref: "#/components/schemas/DashScopeChatOptions"
-        imageOptions:
-          $ref: "#/components/schemas/DashScopeImageOptions"
     DashScopeChatOptions:
       type: object
       properties:
-        maxTokens:
-          type: integer
-          format: int32
-        presencePenalty:
-          type: number
-          format: double
         frequencyPenalty:
           type: number
           format: double
@@ -260,6 +195,12 @@ components:
           type: array
           items:
             type: string
+        maxTokens:
+          type: integer
+          format: int32
+        presencePenalty:
+          type: number
+          format: double
         proxyToolCalls:
           type: boolean
         model:
@@ -297,6 +238,8 @@ components:
           type: boolean
         multi_model:
           type: boolean
+      description: chat model config
+      nullable: true
     DashScopeImageOptions:
       type: object
       properties:
@@ -329,6 +272,8 @@ components:
           type: string
         negative_prompt:
           type: string
+      description: image model config
+      nullable: true
     Function:
       type: object
       properties:
@@ -349,5 +294,144 @@ components:
           - function
         function:
           $ref: "#/components/schemas/Function"
+    RunActionParam:
+      type: object
+      properties:
+        key:
+          type: string
+          description: "action key, bean name"
+        input:
+          type: string
+          description: user input
+        prompt:
+          type: string
+          description: system prompt
+        useChatModel:
+          type: boolean
+          description: "use chat model, is use, will be enable chat memory"
+          default: false
+        stream:
+          type: boolean
+          description: use stream response
+          default: false
+        chatOptions:
+          $ref: "#/components/schemas/DashScopeChatOptions"
+        imageOptions:
+          $ref: "#/components/schemas/DashScopeImageOptions"
+    ActionResult:
+      type: object
+      properties:
+        streamResponse:
+          type: array
+          description: stream response
+          nullable: true
+          items:
+            type: string
+            description: stream response
+            nullable: true
+        response:
+          type: string
+    ChatModelRunResult:
+      type: object
+      properties:
+        input:
+          $ref: "#/components/schemas/RunActionParam"
+        result:
+          $ref: "#/components/schemas/ActionResult"
+        telemetry:
+          $ref: "#/components/schemas/TelemetryResult"
+    RChatModelRunResult:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/ChatModelRunResult"
+        timestamp:
+          type: integer
+          format: int64
+    TelemetryResult:
+      type: object
+      properties:
+        traceId:
+          type: string
+    ChatModel:
+      type: object
+      properties:
+        name:
+          type: string
+          description: ChatModel bean name
+        model:
+          type: string
+          description: dashscope model name
+        modelType:
+          type: string
+          enum:
+          - CHAT
+          - IMAGE
+          - AUDIO
+        chatOptions:
+          $ref: "#/components/schemas/DashScopeChatOptions"
+        imageOptions:
+          $ref: "#/components/schemas/DashScopeImageOptions"
+    RListChatModel:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        msg:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatModel"
+        timestamp:
+          type: integer
+          format: int64
+    RChatModel:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/ChatModel"
+        timestamp:
+          type: integer
+          format: int64
     ChatClient:
       type: object
+    RListChatClient:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        msg:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatClient"
+        timestamp:
+          type: integer
+          format: int64
+    RChatClient:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/ChatClient"
+        timestamp:
+          type: integer
+          format: int64
