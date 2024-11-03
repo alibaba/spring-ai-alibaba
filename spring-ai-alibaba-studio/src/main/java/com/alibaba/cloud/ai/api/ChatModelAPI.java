@@ -49,7 +49,8 @@ public interface ChatModelAPI {
 	}
 
 	@Operation(summary = "run image model by input", description = "", tags = { "chat-model" })
-	@PostMapping(value = "/run/image-gen", consumes = { MediaType.IMAGE_PNG_VALUE, MediaType.APPLICATION_JSON_VALUE })
+	@PostMapping(value = "/run/image-gen", consumes = { MediaType.APPLICATION_JSON_VALUE },
+			produces = { MediaType.ALL_VALUE })
 	default void runImageGenTask(@RequestBody RunActionParam runActionParam, HttpServletResponse response) {
 		String imageUrl = getDelegate().runImageGenTask(runActionParam);
 		try {
