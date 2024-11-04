@@ -79,6 +79,36 @@ public class ApiUtils {
 		return headers;
 	}
 
+	public static Consumer<HttpHeaders> getAudioTranscriptionHeaders(String apiKey, String workspace,
+			Boolean isAsyncTask, Boolean isSecurityCheck, Boolean isSSE) {
+		return (headers) -> {
+			headers.setBearerAuth(apiKey);
+			headers.set("user-agent", userAgent());
+			if (isSecurityCheck) {
+				headers.set("X-DashScope-DataInspection", "enable");
+			}
+
+			if (workspace != null && !workspace.isEmpty()) {
+				headers.set("X-DashScope-WorkSpace", workspace);
+			}
+
+			if (isAsyncTask) {
+				headers.set("X-DashScope-Async", "enable");
+			}
+
+			headers.set("Content-Type", "application/json");
+			if (isSSE) {
+				headers.set("Cache-Control", "no-cache");
+				headers.set("Accept", "text/event-stream");
+				headers.set("X-Accel-Buffering", "no");
+				headers.set("X-DashScope-SSE", "enable");
+			}
+			else {
+				headers.set("Accept", "application/json; charset=utf-8");
+			}
+		};
+	}
+
 	public static Consumer<HttpHeaders> getFileUploadHeaders(Map<String, String> input) {
 		return (headers) -> {
 			String contentType = input.remove("Content-Type");
