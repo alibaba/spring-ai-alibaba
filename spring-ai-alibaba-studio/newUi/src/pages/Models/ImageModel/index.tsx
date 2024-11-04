@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRequest } from 'ice';
-import { Card, Input, Divider, Tabs, Form, Button, Select, Slider } from 'antd';
+import { Card, Input, Divider, Tabs, Form, Button, Select, Slider, Flex } from 'antd';
 import styles from './index.module.css';
 
 export default function ImageModel() {
