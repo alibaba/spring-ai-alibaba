@@ -1,0 +1,36 @@
+{
+  "name": "@ice/lite-scaffold",
+  "version": "1.3.0",
+  "description": "A new ice.js project.",
+  "dependencies": {
+    "@ice/runtime": "^1.4.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@ant-design/pro-layout": "^7.0.0",
+    "antd": "^5.0.0"
+  },
+  "devDependencies": {
+    "@applint/spec": "^1.2.3",
+    "@ice/app": "^3.4.0",
+    "@ice/plugin-antd": "^1.0.2",
+    "@ice/plugin-request": "^1.0.3",
+    "@types/node": "^18.11.17",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "eslint": "^8.35.0",
+    "stylelint": "^15.2.0",
+    "typescript": "^4.9.5"
+  },
+  "scripts": {
+    "start": "ice start --speedup",
+    "build": "ice build",
+    "eslint": "eslint ./src --cache --ext .js,.jsx,.ts,.tsx",
+    "eslint:fix": "npm run eslint -- --fix",
+    "stylelint": "stylelint \"src/**/*.{css,scss,less}\" --cache",
+    "stylelint:fix": "npm run stylelint -- --fix"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": "git@github.com:ice-lab/react-materials.git"
+}
