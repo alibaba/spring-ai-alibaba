@@ -1,20 +1,17 @@
 import { useEffect, useState } from 'react';
-import { useRequest } from 'ice';
+import {request, useRequest} from 'ice';
 import { Card, Input, Divider, Tabs, Form, Button, Select, Slider } from 'antd';
 import styles from './index.module.css';
 
+import chatModelsService from '@/services/chat-models';
+
 export default function ChatModel() {
-  const { data, error, loading, request: fetchModels } = useRequest({ url: 'studio/api/chat-models' });
   const [dataSource, setDataSource] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const res = await fetchModels();
-        setDataSource(res);
-      } catch (err) {
-        console.error('Error fetching models:', err);
-      }
+      const data = await chatModelsService.getChatModels();
+      setDataSource(data.data);
     };
 
     fetchData();
