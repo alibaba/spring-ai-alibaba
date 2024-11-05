@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
-import {request, useRequest} from 'ice';
+import { request, useRequest } from 'ice';
 import { Card, Input, Divider, Tabs, Form, Button, Select, Slider } from 'antd';
 import styles from './index.module.css';
+import { ChatModel } from "@/types/chat_model";
 
 import chatModelsService from '@/services/chat-models';
 
 export default function ChatModel() {
-  const [dataSource, setDataSource] = useState([]);
+  const [modelList, setModelList] = useState<ChatModel[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       const data = await chatModelsService.getChatModels();
-      setDataSource(data);
+      setModelList(data);
     };
 
     fetchData();
@@ -24,8 +25,8 @@ export default function ChatModel() {
   return (
     <div className={styles.container}>
       <div className={styles.left}>
-        {dataSource.length > 0 ? (
-          dataSource.map((model, index) => (
+        {modelList.length > 0 ? (
+          modelList.map((model, index) => (
             <>
               <Card title="Model" extra={<a href="#">More</a>} style={{ width: '100%' }}>
                 <p>{model.name}</p>
@@ -42,7 +43,7 @@ export default function ChatModel() {
         <Divider type="vertical" className="full-height-divider" />
       </div>
       <div className={styles.right}>
-        {dataSource.length > 0 ? (
+        {modelList.length > 0 ? (
           <>
             <Card style={{ width: '100%' }}>
               <Tabs
