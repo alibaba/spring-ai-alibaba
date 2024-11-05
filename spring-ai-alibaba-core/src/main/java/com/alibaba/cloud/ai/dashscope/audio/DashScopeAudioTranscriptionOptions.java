@@ -23,6 +23,8 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import java.util.List;
 
 /**
+ * @author xYLiu
+ * @author yuluo
  * @author kevinlin09
  */
 public class DashScopeAudioTranscriptionOptions implements AudioTranscriptionOptions {
