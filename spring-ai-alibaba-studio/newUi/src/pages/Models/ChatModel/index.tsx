@@ -11,7 +11,7 @@ export default function ChatModel() {
   useEffect(() => {
     const fetchData = async () => {
       const data = await chatModelsService.getChatModels();
-      setDataSource(data.data);
+      setDataSource(data);
     };
 
     fetchData();
