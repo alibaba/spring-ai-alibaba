@@ -18,10 +18,11 @@ package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioTranscriptionApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
+import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
@@ -71,9 +72,9 @@ import java.util.Objects;
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
 		SpringAiRetryAutoConfiguration.class })
 @EnableConfigurationProperties({ DashScopeConnectionProperties.class, DashScopeChatProperties.class,
-		DashScopeImageProperties.class, DashScopeAudioTranscriptionProperties.class,
-		DashScopeAudioSpeechProperties.class, DashScopeSpeechSynthesisProperties.class,
-		DashScopeEmbeddingProperties.class, DashScopeRerankProperties.class })
+		DashScopeImageProperties.class, DashScopeSpeechSynthesisProperties.class,
+		DashScopeAudioTranscriptionProperties.class, DashScopeEmbeddingProperties.class,
+		DashScopeRerankProperties.class })
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
 		WebClientAutoConfiguration.class })
 public class DashScopeAutoConfiguration {
@@ -155,14 +156,6 @@ public class DashScopeAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = DashScopeConnectionProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-			matchIfMissing = true)
-	public DashScopeAudioApi dashScopeAudioApi(DashScopeConnectionProperties commonProperties) {
-		return new DashScopeAudioApi(commonProperties.getApiKey());
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = DashScopeSpeechSynthesisProperties.CONFIG_PREFIX, name = "enabled",
 			havingValue = "true", matchIfMissing = true)
 	public DashScopeSpeechSynthesisApi dashScopeSpeechSynthesisApi(DashScopeConnectionProperties commonProperties,
@@ -172,6 +165,19 @@ public class DashScopeAutoConfiguration {
 				speechSynthesisProperties, "speechsynthesis");
 
 		return new DashScopeSpeechSynthesisApi(resolved.apiKey());
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = DashScopeAudioTranscriptionProperties.CONFIG_PREFIX, name = "enabled",
+			havingValue = "true", matchIfMissing = true)
+	public DashScopeAudioTranscriptionApi dashScopeAudioTranscriptionApi(DashScopeConnectionProperties commonProperties,
+			DashScopeAudioTranscriptionProperties audioTranscriptionProperties) {
+
+		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
+				audioTranscriptionProperties, "audiotranscription");
+
+		return new DashScopeAudioTranscriptionApi(resolved.apiKey());
 	}
 
 	@Bean
@@ -245,6 +251,24 @@ public class DashScopeAutoConfiguration {
 
 		return new DashScopeSpeechSynthesisModel(dashScopeSpeechSynthesisApi, speechSynthesisProperties.getOptions(),
 				retryTemplate);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = DashScopeAudioTranscriptionProperties.CONFIG_PREFIX, name = "enabled",
+			havingValue = "true", matchIfMissing = true)
+	public DashScopeAudioTranscriptionModel dashScopeAudioTranscriptionModel(
+			DashScopeConnectionProperties commonProperties,
+			DashScopeAudioTranscriptionProperties audioTranscriptionProperties, RetryTemplate retryTemplate) {
+
+		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
+				audioTranscriptionProperties, "audiotranscription");
+
+		var dashScopeSpeechSynthesisApi = dashScopeAudioTranscriptionApi(commonProperties,
+				audioTranscriptionProperties);
+
+		return new DashScopeAudioTranscriptionModel(dashScopeSpeechSynthesisApi,
+				audioTranscriptionProperties.getOptions(), retryTemplate);
 	}
 
 	@Bean
