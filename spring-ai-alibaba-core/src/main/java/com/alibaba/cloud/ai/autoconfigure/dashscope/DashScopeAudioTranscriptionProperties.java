@@ -23,6 +23,8 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
 
 /**
+ * @author xYLiu
+ * @author yuluo
  * @author kevinlin09
  */
 
