@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react"
 import { request  } from 'ice';
 import { Card, Input, Divider, Tabs, Form, Button, Select, Slider } from 'antd';
 import styles from './index.module.css';
-
+React.useLayoutEffect = useEffect;
 export default function Model() {
   const [dataSource, setDataSource] = useState([]);
 
