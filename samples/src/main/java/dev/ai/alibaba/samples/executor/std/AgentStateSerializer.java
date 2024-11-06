@@ -30,14 +30,14 @@ public class AgentStateSerializer extends ObjectStreamStateSerializer<AgentExecu
         @Override
         public void write(AgentExecutor.Finish object, ObjectOutput out) throws IOException {
             out.writeObject(object.returnValues());
-            //out.writeUTF(object.log());
+            out.writeUTF(object.log());
         }
 
         @Override
         public AgentExecutor.Finish read(ObjectInput in) throws IOException, ClassNotFoundException {
             Map<String, Object> returnValues = (Map<String, Object>)in.readObject();
-            // String log = in.readUTF();
-            return new AgentExecutor.Finish(returnValues);
+             String log = in.readUTF();
+            return new AgentExecutor.Finish(returnValues,log);
         }
 
     }
