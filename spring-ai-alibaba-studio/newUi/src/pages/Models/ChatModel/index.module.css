@@ -1,0 +1,14 @@
+.container {
+  width: 100%;
+  padding: 20px;
+  display: inline-flex;
+}
+.left {
+  flex: 1.5;
+}
+.right {
+  flex: 1;
+}
+.full-height-divider {
+  height: 100%;
+}
