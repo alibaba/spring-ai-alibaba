@@ -44,9 +44,7 @@ public class ApiUtils {
 			headers.setBearerAuth(apiKey);
 			headers.set(HEADER_OPENAPI_SOURCE, SOURCE_FLAG);
 
-			String userAgent = String.format("%s/%s; java/%s; platform/%s; processor/%s", SDK_FLAG, "1.0.0",
-					System.getProperty("java.version"), System.getProperty("os.name"), System.getProperty("os.arch"));
-			headers.set("user-agent", userAgent);
+			headers.set("user-agent", userAgent());
 			if (workspaceId != null) {
 				headers.set(HEADER_WORK_SPACE_ID, workspaceId);
 			}
@@ -55,11 +53,6 @@ public class ApiUtils {
 				headers.set("X-DashScope-SSE", "enable");
 			}
 		};
-	}
-
-	public static String userAgent() {
-		return String.format("dashscope/%s; java/%s; platform/%s; processor/%s", "\"2.15.1\"",
-				System.getProperty("java.version"), System.getProperty("os.name"), System.getProperty("os.arch"));
 	}
 
 	public static Map<String, String> getMapContentHeaders(String apiKey, boolean isSecurityCheck, String workspace,
@@ -117,6 +110,11 @@ public class ApiUtils {
 			}
 			headers.setContentType(MediaType.parseMediaType((contentType)));
 		};
+	}
+
+	private static String userAgent() {
+		return String.format("%s/%s; java/%s; platform/%s; processor/%s", SDK_FLAG, "1.0.0",
+				System.getProperty("java.version"), System.getProperty("os.name"), System.getProperty("os.arch"));
 	}
 
 }
