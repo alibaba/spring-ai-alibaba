@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: rag-pgvector-example
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_ADDR}:5432/${POSTGRES_DATABASE}
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
+
+  ai:
+    dashscope:
+      api-key:  ${AI_DASHSCOPE_API_KEY}
+      # workspace-id: ${AI_DASHSCOPE_WORKSPACE_ID}
+
+    vectorstore:
+      pgvector:
+        dimensions: 1536
+        index-type: hnsw
+        distance-type: cosine_distance
