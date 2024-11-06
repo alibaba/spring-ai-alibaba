@@ -105,6 +105,7 @@ public class LangGraphStreamingServerJetty implements LangGraphStreamingServer {
             ServerConnector connector = new ServerConnector(server);
             connector.setPort(port);
             server.addConnector(connector);
+            server.setAttribute("org.eclipse.jetty.server.asyncTimeout", 60000);
 
             var resourceHandler = new ResourceHandler();
 

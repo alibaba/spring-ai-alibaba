@@ -18,19 +18,68 @@ import org.springframework.context.annotation.Import;
 public class AgentExecutorStreamingServer {
 
     public static void main(String[] args) throws Exception {
-        System.setProperty("server.port","8090");
+        //因为studio的jetty占用了8080端口，修改springboot端口避免冲突
+        System.setProperty("server.port", "8090");
         ConfigurableApplicationContext context = SpringApplication.run(AgentExecutorStreamingServer.class, args);
+        //AgentService注入了spring-ai的ChatClient，引入dashscope包后，默认注入百炼大模型
         AgentService agentService = context.getBean(AgentService.class);
+        //没有使用springmvc，所以手动用jackson进行参数映射
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
+        //核心步骤：构建graph对象
+        //1、注入llm
+        //2、注入序列化对象
+        //3、组装工作流流程
+        //AgentExecutor
         var graph = new AgentExecutor(agentService).graphBuilder()
-                .stateSerializer(AgentExecutor.Serializers.JSON.object() )
+                .stateSerializer(AgentExecutor.Serializers.JSON.object())
                 .build();
 
-        GraphRepresentation plantUml = graph.getGraph(GraphRepresentation.Type.PLANTUML, "Adaptive RAG");
+        /*
+        build(){
+           return new StateGraph<>(State.SCHEMA, stateSerializer)
+                    .addEdge(START,"agent")
+                    .addNode( "agent", node_async(AgentExecutor.this::callAgent) )
+                    .addNode( "action", AgentExecutor.this::executeTools )
+                    .addConditionalEdges(
+                            "agent",
+                            edge_async(AgentExecutor.this::shouldContinue),
+                            Map.of("continue", "action", "end", END)
+                    )
+                    .addEdge("action", "agent")
+                    ;
+          }
+        */
 
+        //打印工作流内容，非json格式
+        GraphRepresentation plantUml = graph.getGraph(GraphRepresentation.Type.PLANTUML, "Adaptive RAG");
         System.out.println(plantUml.getContent());
+        /*
+         @startuml unnamed.puml
+         skinparam usecaseFontSize 14
+         skinparam usecaseStereotypeFontSize 12
+         skinparam hexagonFontSize 14
+         skinparam hexagonStereotypeFontSize 12
+         title "Adaptive RAG"
+         footer
+
+         powered by langgraph4j
+         end footer
+         circle start<<input>>
+         circle stop as __END__
+         usecase "agent"<<Node>>
+         usecase "action"<<Node>>
+         hexagon "check state" as condition1<<Condition>>
+         start -down-> "agent"
+         "agent" -down-> "condition1"
+         "condition1" --> "action": "continue"
+         '"agent" --> "action": "continue"
+         "condition1" -down-> stop: "end"
+         '"agent" -down-> stop: "end"
+         "action" -down-> "agent"
+        @enduml
+        */
 
         var server = LangGraphStreamingServerJetty.builder()
                 .port(8080)
@@ -40,8 +89,8 @@ public class AgentExecutorStreamingServer {
                 .stateGraph(graph)
                 .build();
 
+        //启动jetty，访问studio: http://127.0.0.1:8080
         server.start().join();
-
     }
 
 }

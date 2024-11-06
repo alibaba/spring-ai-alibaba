@@ -82,7 +82,7 @@ public class AgentExecutor {
 
     public record Action(AssistantMessage.ToolCall toolCall, String log ) {}
 
-    public record Finish ( Map<String, Object> returnValues) {}
+    public record Finish ( Map<String, Object> returnValues,String log) {}
 
 
     public static class State extends AgentState {
@@ -136,7 +136,7 @@ public class AgentExecutor {
 
         }
         else  {
-            var finish = new Finish( Map.of("returnValues", output.getContent()) );
+            var finish = new Finish( Map.of("returnValues", output.getContent()),output.getContent() );
 
             return Map.of(State.AGENT_OUTCOME, new Outcome( null, finish ) );
         }
