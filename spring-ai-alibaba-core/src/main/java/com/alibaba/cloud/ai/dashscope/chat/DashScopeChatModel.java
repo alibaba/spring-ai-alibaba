@@ -150,7 +150,11 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 						return buildGeneration(choice, metadata);
 					}).toList();
 
-					return new ChatResponse(generations, from(completionEntity.getBody()));
+					ChatResponse response = new ChatResponse(generations, from(completionEntity.getBody()));
+
+					observationContext.setResponse(response);
+
+					return response;
 				});
 
 		if (isToolCall(chatResponse,
