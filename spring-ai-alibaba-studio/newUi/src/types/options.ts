@@ -29,7 +29,7 @@ export type ChatOptions = {
   incremental_output: boolean;
   repetition_penalty: number;
   tools: {
-    type: "function";
+    type: 'function';
     function: {
       description: string;
       name: string;

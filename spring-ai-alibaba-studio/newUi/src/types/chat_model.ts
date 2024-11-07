@@ -1,4 +1,4 @@
-import { ChatOptions, ImageOptions } from "./options";
+import { ChatOptions, ImageOptions } from './options';
 
 
 export type ChatModel = {
