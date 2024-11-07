@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.observation.DashScopeChatModelObservationConvention;
 import com.alibaba.cloud.ai.dashscope.metadata.DashScopeAiUsage;
 import com.alibaba.cloud.ai.observation.conventions.AiProvider;
 import io.micrometer.observation.Observation;
@@ -21,7 +22,6 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
-import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import reactor.core.publisher.Flux;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.*;
@@ -61,7 +61,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeChatModel.class);
 
-	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
+	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DashScopeChatModelObservationConvention();
 
 	/** Low-level access to the DashScope API */
 	private final DashScopeApi dashscopeApi;
