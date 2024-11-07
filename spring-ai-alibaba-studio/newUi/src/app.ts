@@ -1,5 +1,5 @@
-import { defineAppConfig } from "ice";
-import { defineRequestConfig } from "@ice/plugin-request/types";
+import { defineAppConfig } from 'ice';
+import { defineRequestConfig } from '@ice/plugin-request/types';
 import { message } from 'antd';
 
 // App config, see https://v3.ice.work/docs/guide/basic/app
