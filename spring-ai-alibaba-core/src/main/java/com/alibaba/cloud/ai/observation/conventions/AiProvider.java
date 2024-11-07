@@ -13,7 +13,7 @@ package com.alibaba.cloud.ai.observation.conventions;
  */
 public enum AiProvider {
 
-    // @formatter:off
+	// @formatter:off
 
     // Please, keep the alphabetical sorting.
     DASHSCOPE("dashscope");

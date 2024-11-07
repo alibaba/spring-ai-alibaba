@@ -95,13 +95,13 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 	}
 
 	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions options,
-							  FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
+			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
 		this(dashscopeApi, options, functionCallbackContext, retryTemplate, ObservationRegistry.NOOP);
 	}
 
 	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions options,
 			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
-							  ObservationRegistry observationRegistry) {
+			ObservationRegistry observationRegistry) {
 		super(functionCallbackContext);
 		Assert.notNull(dashscopeApi, "DashScopeApi must not be null");
 		Assert.notNull(options, "Options must not be null");
@@ -117,45 +117,45 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 	public ChatResponse call(Prompt prompt) {
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-				.prompt(prompt)
-				.provider(AiProvider.DASHSCOPE.value())
-				.requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions)
-				.build();
+			.prompt(prompt)
+			.provider(AiProvider.DASHSCOPE.value())
+			.requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions)
+			.build();
 
 		ChatResponse chatResponse = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
-				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-						this.observationRegistry)
-				.observe(() -> {
-					DashScopeApi.ChatCompletionRequest request = createRequest(prompt, false);
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				DashScopeApi.ChatCompletionRequest request = createRequest(prompt, false);
 
-					ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
-							.execute(ctx -> this.dashscopeApi.chatCompletionEntity(request));
+				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
+					.execute(ctx -> this.dashscopeApi.chatCompletionEntity(request));
 
-					var chatCompletion = completionEntity.getBody();
+				var chatCompletion = completionEntity.getBody();
 
-					if (chatCompletion == null) {
-						logger.warn("No chat completion returned for prompt: {}", prompt);
-						return new ChatResponse(List.of());
-					}
+				if (chatCompletion == null) {
+					logger.warn("No chat completion returned for prompt: {}", prompt);
+					return new ChatResponse(List.of());
+				}
 
-					List<ChatCompletionOutput.Choice> choices = chatCompletion.output().choices();
+				List<ChatCompletionOutput.Choice> choices = chatCompletion.output().choices();
 
-					List<Generation> generations = choices.stream().map(choice -> {
-						// @formatter:off
+				List<Generation> generations = choices.stream().map(choice -> {
+			// @formatter:off
 						Map<String, Object> metadata = Map.of(
 								"id", chatCompletion.requestId(),
 								"role", choice.message().role() != null ? choice.message().role().name() : "",
 								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
 						// @formatter:on
-						return buildGeneration(choice, metadata);
-					}).toList();
+					return buildGeneration(choice, metadata);
+				}).toList();
 
-					ChatResponse response = new ChatResponse(generations, from(completionEntity.getBody()));
+				ChatResponse response = new ChatResponse(generations, from(completionEntity.getBody()));
 
-					observationContext.setResponse(response);
+				observationContext.setResponse(response);
 
-					return response;
-				});
+				return response;
+			});
 
 		if (isToolCall(chatResponse,
 				Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
@@ -180,17 +180,17 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 			ChatCompletionRequest request = createRequest(prompt, true);
 
 			Flux<ChatCompletionChunk> completionChunks = this.retryTemplate
-					.execute(ctx -> this.dashscopeApi.chatCompletionStream(request));
+				.execute(ctx -> this.dashscopeApi.chatCompletionStream(request));
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-					.prompt(prompt)
-					.provider(AiProvider.DASHSCOPE.value())
-					.requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions)
-					.build();
+				.prompt(prompt)
+				.provider(AiProvider.DASHSCOPE.value())
+				.requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions)
+				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
 					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
@@ -201,12 +201,12 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
 			// the function call handling logic.
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
-					.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
-						try {
-							@SuppressWarnings("null")
-							String requestId = chatCompletion2.requestId();
+				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
+					try {
+						@SuppressWarnings("null")
+						String requestId = chatCompletion2.requestId();
 
-							// @formatter:off
+				// @formatter:off
 							List<Generation> generations = chatCompletion2.output().choices().stream().map(choice -> {
 								if (choice.message().role() != null) {
 									roleMap.putIfAbsent(requestId, choice.message().role().name());
@@ -219,17 +219,19 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 							}).toList();
 							// @formatter:on
 
-							if (chatCompletion2.usage() != null) {
-								return new ChatResponse(generations, from(chatCompletion2));
-							} else {
-								return new ChatResponse(generations);
-							}
-						} catch (Exception e) {
-							logger.error("Error processing chat completion", e);
-							return new ChatResponse(List.of());
+						if (chatCompletion2.usage() != null) {
+							return new ChatResponse(generations, from(chatCompletion2));
 						}
+						else {
+							return new ChatResponse(generations);
+						}
+					}
+					catch (Exception e) {
+						logger.error("Error processing chat completion", e);
+						return new ChatResponse(List.of());
+					}
 
-					}));
+				}));
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
