@@ -51,13 +51,14 @@ public class DashScopeChatModelObservationConvention extends DefaultChatModelObs
 			if (CollectionUtils.isEmpty(stop)) {
 				return keyValues;
 			}
-			KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES,
-					stop, Objects::nonNull);
+			KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES, stop,
+					Objects::nonNull);
 
 			String stopSequences;
 			try {
 				stopSequences = JSON.toJSONString(stop);
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				stopSequences = ILLEGAL_STOP_CONTENT;
 			}
 			return keyValues.and(
