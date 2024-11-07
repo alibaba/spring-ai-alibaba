@@ -125,17 +125,30 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   @JsonIgnore
   private Map<String, Object> toolContext;
 
+  @Override
   public String getModel() {
     return model;
-  }@Override public Double getFrequencyPenalty() {
+  }
+
+  @Override
+  public Double getFrequencyPenalty() {
     return null;
-    }@Override public Integer getMaxTokens() {
+  }
+
+  @Override
+  public Integer getMaxTokens() {
     return null;
-    }@Override public Double getPresencePenalty() {
+  }
+
+  @Override
+  public Double getPresencePenalty() {
     return null;
-    }@Override public List<String> getStopSequences() {
+  }
+
+  @Override
+  public List<String> getStopSequences() {
     return null;
-    }
+  }
 
   public void setModel(String model) {
     this.model = model;
@@ -161,9 +174,12 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   @Override
   public Double getTopP() {
     return this.topP;
-  }@Override public ChatOptions copy() {
+  }
+
+  @Override
+  public ChatOptions copy() {
     return DashScopeChatOptions.fromOptions(this);
-    }
+  }
 
   public void setTopP(Double topP) {
     this.topP = topP;
@@ -264,7 +280,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
     this.incrementalOutput = incrementalOutput;
   }
 
-  public Boolean   getVlHighResolutionImages() {
+  public Boolean getVlHighResolutionImages() {
     return vlHighResolutionImages;
   }
 

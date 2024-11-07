@@ -111,16 +111,13 @@ public class DashScopeChatModelObservationIT {
                 .hasLowCardinalityKeyValue(ChatModelObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.DASHSCOPE.value())
                 .hasLowCardinalityKeyValue(ChatModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL.asString(),
                         DashScopeApi.ChatModel.QWEN_MAX.getModel())
-                // TODO cannot parse response model from chat response metadata
+                // TODO Dashscope api is not supported currently
                 .hasLowCardinalityKeyValue(ChatModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL.asString(), KeyValue.NONE_VALUE)
-                // TODO not support in dashscope yet
                 .doesNotHaveHighCardinalityKeyValueWithKey(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString())
                 .doesNotHaveHighCardinalityKeyValueWithKey(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString())
                 .doesNotHaveHighCardinalityKeyValueWithKey(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString())
-                // FIXME stop sequences return null in options
-                // .hasHighCardinalityKeyValue(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
-                //        "[\"this-is-the-end\"]")
-                .doesNotHaveHighCardinalityKeyValueWithKey(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString())
+                .hasHighCardinalityKeyValue(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
+                        "[\"this-is-the-end\"]")
                 .hasHighCardinalityKeyValue(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.75")
                 .doesNotHaveHighCardinalityKeyValueWithKey(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOP_K.asString())
                 .hasHighCardinalityKeyValue(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "0.95")
