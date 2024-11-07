@@ -16,8 +16,11 @@ import com.alibaba.cloud.ai.model.RerankModel;
 import com.alibaba.dashscope.audio.asr.transcription.Transcription;
 import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
 
+import io.micrometer.observation.tck.TestObservationRegistry;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -84,9 +87,10 @@ public class DashscopeAiTestConfiguration {
 	}
 
 	@Bean
-	public ChatModel dashscopeChatModel(DashScopeApi dashscopeChatApi) {
+	public ChatModel dashscopeChatModel(DashScopeApi dashscopeChatApi, TestObservationRegistry observationRegistry) {
 		return new DashScopeChatModel(dashscopeChatApi,
-				DashScopeChatOptions.builder().withModel(DashScopeApi.DEFAULT_CHAT_MODEL).build());
+				DashScopeChatOptions.builder().withModel(DashScopeApi.DEFAULT_CHAT_MODEL).build(),
+				null, RetryUtils.DEFAULT_RETRY_TEMPLATE, observationRegistry);
 	}
 
 	@Bean
@@ -110,6 +114,11 @@ public class DashscopeAiTestConfiguration {
 	public DashScopeAudioTranscriptionModel dashScopeAudioTranscriptionModel(
 			DashScopeAudioTranscriptionApi dashScopeAudioTranscriptionApi) {
 		return new DashScopeAudioTranscriptionModel(dashScopeAudioTranscriptionApi);
+	}
+
+	@Bean
+	public TestObservationRegistry observationRegistry() {
+		return TestObservationRegistry.create();
 	}
 
 	@Bean
