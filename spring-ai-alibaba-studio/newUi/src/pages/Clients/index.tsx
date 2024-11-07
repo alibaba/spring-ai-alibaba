@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react"
-import { request  } from 'ice';
+import React, { useEffect, useState } from 'react';
+import { request } from 'ice';
 import { Card, Input, Divider, Tabs, Form, Button, Select, Slider } from 'antd';
 import styles from './index.module.css';
 React.useLayoutEffect = useEffect;
@@ -24,15 +24,15 @@ export default function Model() {
   return (
     <div className={styles.container}>
       <div className={styles.left}>
-      {dataSource.length > 0 ? (
+        {dataSource.length > 0 ? (
         dataSource.map((model, index) => (
           <>
-          <Card title="Model" extra={<a href="#">More</a>} style={{ width: '100%' }}>
-            <p>{model.name}</p>
+            <Card title="Model" extra={<a href="#">More</a>} style={{ width: '100%' }}>
+              <p>{model.name}</p>
 
-            <Input placeholder="Basic usage" />
-          </Card>
-          </> 
+              <Input placeholder="Basic usage" />
+            </Card>
+          </>
         ))
       ) : (
         <h2>No Models Available</h2>
@@ -42,35 +42,35 @@ export default function Model() {
         <Divider type="vertical" className="full-height-divider" />
       </div>
       <div className={styles.right}>
-      {dataSource.length > 0 ? (
+        {dataSource.length > 0 ? (
           <>
-          <Card  style={{ width: '100%' }}>
-            <Tabs
-              defaultActiveKey="1"
-              onChange={onChange}
-              items={[
+            <Card style={{ width: '100%' }}>
+              <Tabs
+                defaultActiveKey="1"
+                onChange={onChange}
+                items={[
                 {
-                  label: `Config`,
+                  label: 'Config',
                   key: '1',
                   children: (
-                    <Form  layout="vertical">
+                    <Form layout="vertical">
                       <Form.Item label="Model" name="name">
                         <Select placeholder="Select Model" />
                       </Form.Item>
                       <Form.Item label="Temperature" name="temperature">
-                      <Slider defaultValue={30} disabled={false} />
+                        <Slider defaultValue={30} disabled={false} />
                       </Form.Item>
                       <Form.Item label="Top_p" name="top_p">
-                      <Slider defaultValue={30} disabled={false} />
+                        <Slider defaultValue={30} disabled={false} />
                       </Form.Item>
                       <Form.Item label="Top_k" name="top_k">
-                      <Slider defaultValue={30} disabled={false} />
+                        <Slider defaultValue={30} disabled={false} />
                       </Form.Item>
                       <Form.Item label="Max output tokens" name="Top_k">
-                      <Input  placeholder="input tokens" />
+                        <Input placeholder="input tokens" />
                       </Form.Item>
                       <Form.Item label="Stop sequences" name="Top_k">
-                      <Input  placeholder="input sequences" />
+                        <Input placeholder="input sequences" />
                       </Form.Item>
                       <Form.Item label="Model version" name="name">
                         <Select placeholder="Select Model version" />
@@ -84,14 +84,14 @@ export default function Model() {
                   ),
                 },
                 {
-                  label: `Tools`,
+                  label: 'Tools',
                   key: '2',
-                  children: `Content of Tools`,
+                  children: 'Content of Tools',
                 },
               ]}
-            />
-          </Card>
-          </> 
+              />
+            </Card>
+          </>
       ) : (
         <h2>No Models Available</h2>
       )}

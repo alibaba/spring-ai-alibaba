@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { request, useRequest } from 'ice';
 import { Card, Input, Divider, Tabs, Form, Button, Select, Slider } from 'antd';
 import styles from './index.module.css';
-import { ChatModel } from "@/types/chat_model";
+import { ChatModel } from '@/types/chat_model';
 
 import chatModelsService from '@/services/chat-models';
 
@@ -51,7 +51,7 @@ export default function ChatModel() {
                 onChange={onChange}
                 items={[
                   {
-                    label: `Config`,
+                    label: 'Config',
                     key: '1',
                     children: (
                       <Form layout="vertical">
@@ -85,9 +85,9 @@ export default function ChatModel() {
                     ),
                   },
                   {
-                    label: `Tools`,
+                    label: 'Tools',
                     key: '2',
-                    children: `Content of Tools`,
+                    children: 'Content of Tools',
                   },
                 ]}
               />
