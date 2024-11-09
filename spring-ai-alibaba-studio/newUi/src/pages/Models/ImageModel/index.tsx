@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Card, Flex, Button, Checkbox } from 'antd';
+import { Card, Flex, Button, Checkbox, Input, Image } from 'antd';
 import Setup from '../Setup';
 
 export default function ImageModel() {
@@ -31,19 +31,23 @@ export default function ImageModel() {
     initialTool: {},
   };
 
+  const { TextArea } = Input;
+
   return (
     <Flex justify="space-between">
-      <Flex vertical justify="space-between">
+      <Flex vertical justify="space-between" style={{ width: 500 }}>
         <div>
-          <Card title="{{ 模型 Bean 名称 }}" style={{ width: 300 }}>
-            <p>Card content</p>
-            <p>Card content</p>
-            <p>Card content</p>
+          <Card title="模型 Bean 名称">
+            <TextArea autoSize={{ minRows: 3 }} />
           </Card>
-          <Card title="图片生成结果" style={{ width: 300 }}>
-            <p>Card content</p>
-            <p>Card content</p>
-            <p>Card content</p>
+          <Card title="图片生成结果" style={{ marginTop: 20 }}>
+            <Flex align="flex-end">
+              <Image
+                width={200}
+                src="https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png"
+              />
+              <Button style={{ marginLeft: 20 }}>下载</Button>
+            </Flex>
           </Card>
         </div>
         <Flex align="center" justify="space-around">
