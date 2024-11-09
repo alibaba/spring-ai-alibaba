@@ -18,6 +18,19 @@ import { Card, Flex, Button, Checkbox } from 'antd';
 import Setup from '../Setup';
 
 export default function ImageModel() {
+  const initialValues = {
+    initialConfig: {
+      model: 'ollama/llama3.2',
+      temperature: 50,
+      topP: 50,
+      topK: 50,
+      maxTokens: 10,
+      sequences: '',
+      version: 1,
+    },
+    initialTool: {},
+  };
+
   return (
     <Flex justify="space-between">
       <Flex vertical justify="space-between">
@@ -39,7 +52,7 @@ export default function ImageModel() {
           <Button>运行</Button>
         </Flex>
       </Flex>
-      <Setup />
+      <Setup initialValues={initialValues} />
     </Flex>
   );
 }

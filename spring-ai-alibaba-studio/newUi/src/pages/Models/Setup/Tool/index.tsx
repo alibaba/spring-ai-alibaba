@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-import { useEffect, useState } from 'react';
-import { request, useRequest } from 'ice';
-import { Button, Tabs, Flex } from 'antd';
-import styles from './index.module.css';
+import { InitialTool } from '../types';
 
-export default function ConfigAndTool() {
+type Props = {
+  initialTool: InitialTool;
+};
+
+export default function ConfigAndTool(props: Props) {
+  const { initialTool } = props;
   return <></>;
 }
