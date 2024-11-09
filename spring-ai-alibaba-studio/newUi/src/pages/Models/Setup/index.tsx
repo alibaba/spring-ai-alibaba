@@ -19,18 +19,28 @@ import Config from './Config';
 import Tool from './Tool';
 import type { TabsProps } from 'antd';
 import styles from './index.module.css';
+import { InitialConfig, InitialTool } from './types';
 
-export default function Setup() {
+type Props = {
+  initialValues: {
+    initialConfig: InitialConfig;
+    initialTool: InitialTool;
+  };
+};
+
+export default function Setup(props: Props) {
+  const { initialConfig, initialTool } = props.initialValues;
+
   const items: TabsProps['items'] = [
     {
       key: 'config',
       label: '配置',
-      children: <Config />,
+      children: <Config initialConfig={initialConfig} />,
     },
     {
       key: '2',
       label: '工具',
-      children: <Tool />,
+      children: <Tool initialTool={initialTool} />,
     },
   ];
   return (
