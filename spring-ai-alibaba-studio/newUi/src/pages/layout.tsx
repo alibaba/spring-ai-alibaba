@@ -20,6 +20,8 @@ import { Link } from 'ice'; // 用于实现路由跳转
 import { Outlet } from 'ice'; // 用于渲染子路由组件
 import { useLocation } from 'ice';
 import { asideMenuConfig } from './menuConfig';
+import React, { useEffect } from "react"
+React.useLayoutEffect = useEffect;
 
 // 菜单递归处理
 const loopMenuItem = (menus) =>
