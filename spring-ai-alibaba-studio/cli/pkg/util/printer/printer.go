@@ -14,6 +14,10 @@ const (
 	JsonPrinterKind  PrinterKind = "json"
 )
 
+func PrinterKindsAsString() []string {
+	return []string{string(TablePrinterKind), string(JsonPrinterKind)}
+}
+
 func PrintSlice[T any](data []T, kind PrinterKind) error {
 	switch kind {
 	case TablePrinterKind:

@@ -3,8 +3,9 @@ package api
 import "fmt"
 
 const (
-	CommonPrefix = "/studio/api"
-	successCode  = 200
+	DefaultBaseURL = "http://localhost:8080"
+	CommonPrefix   = "/studio/api"
+	successCode    = 200
 )
 
 type Resp[T any] struct {

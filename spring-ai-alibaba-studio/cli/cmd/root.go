@@ -18,10 +18,13 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/alibaba/spring-ai-alibaba/cmd/chatmodel"
+	"github.com/alibaba/spring-ai-alibaba/pkg/api"
 	"github.com/alibaba/spring-ai-alibaba/pkg/config"
 	"github.com/alibaba/spring-ai-alibaba/pkg/constant"
+	"github.com/alibaba/spring-ai-alibaba/pkg/util/printer"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -54,11 +57,12 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", fmt.Sprintf("config file (default $HOME/%s.%s)", config.DefaultConfigFileName, config.DefaultConfigFileExt))
-	rootCmd.PersistentFlags().StringP("baseURL", "u", "http://localhost:8080", "Base URL for the Spring AI Alibaba Studio server")
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, constant.ConfigFlagName, "c", "", fmt.Sprintf("config file (default $HOME/%s.%s)", config.DefaultConfigFileName, config.DefaultConfigFileExt))
+	rootCmd.PersistentFlags().StringP(constant.BaseURLFlagName, "u", api.DefaultBaseURL, "Base URL for the Spring AI Alibaba Studio server")
+	rootCmd.PersistentFlags().StringP(constant.OutputFlagName, "o", string(printer.TablePrinterKind), fmt.Sprintf("Output format. Supported values: %v", strings.Join(printer.PrinterKindsAsString(), ", ")))
 
 	// bind flags to viper
-	viper.BindPFlag("baseURL", rootCmd.PersistentFlags().Lookup("baseURL"))
+	viper.BindPFlag(constant.BaseURLFlagName, rootCmd.PersistentFlags().Lookup(constant.BaseURLFlagName))
 
 	// add subcommands
 	rootCmd.AddCommand(chatmodel.GetChatModelCmd())
