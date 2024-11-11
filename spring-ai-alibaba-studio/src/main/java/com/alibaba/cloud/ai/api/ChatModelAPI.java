@@ -51,7 +51,7 @@ public interface ChatModelAPI {
 	}
 
 	@Operation(summary = "get chat model by model name", description = "", tags = { "chat-model" })
-	@GetMapping(value = "/{modelName}", consumes = { "application/json" }, produces = { "application/json" })
+	@GetMapping(value = "/{modelName}", produces = { "application/json" })
 	default R<ChatModel> get(@PathVariable String modelName) {
 		ChatModel res = getDelegate().getByModelName(modelName);
 		return R.success(res);
