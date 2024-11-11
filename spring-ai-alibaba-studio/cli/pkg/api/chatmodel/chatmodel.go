@@ -21,9 +21,23 @@ func NewChatModelAPI(baseURL string) ChatModelAPI {
 }
 
 type ChatModel struct {
-	Name      string `json:"name"`
-	Model     string `json:"model"`
-	ModelType string `json:"modelType"`
+	Name      string `json:"name" yaml:"name"`
+	Model     string `json:"model" yaml:"model"`
+	ModelType string `json:"modelType" yaml:"modelType"`
+}
+
+type ChatOptions struct {
+	Model             string  `json:"model" yaml:"model"`
+	ProxyToolCalls    bool    `json:"proxyToolCalls" yaml:"proxyToolCalls"`
+	Temperature       float32 `json:"temperature" yaml:"temperature"`
+	EnableSearch      bool    `json:"enable_search" yaml:"enableSearch"`
+	IncrementalOutput bool    `json:"incremental_output" yaml:"incrementalOutput"`
+	MultiModel        bool    `json:"multi_model" yaml:"multiModel"`
+}
+
+type ImageOptions struct {
+	Model string `json:"model"`
+	N     int    `json:"n"`
 }
 
 type ListChatModelsReq struct{}
@@ -47,7 +61,11 @@ type GetChatModelReq struct {
 	ModelName string
 }
 
-type GetChatModelRsp ChatModel
+type GetChatModelRsp struct {
+	*ChatModel
+	ChatOptions  *ChatOptions  `json:"chatOptions" yaml:"chatOptions"`
+	ImageOptions *ImageOptions `json:"imageOptions" yaml:"imageOptions"`
+}
 
 func (c *ChatModelAPIImpl) GetChatModel(req *GetChatModelReq) (*GetChatModelRsp, error) {
 	path := "/chat-models/" + req.ModelName

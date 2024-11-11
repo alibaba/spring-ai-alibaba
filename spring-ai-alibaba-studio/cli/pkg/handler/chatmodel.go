@@ -16,15 +16,17 @@ func ChatModelListHandler(cmd *cobra.Command, args []string) {
 	apis := chatmodel.NewChatModelAPI(config.GetConfigInstance().BaseURL)
 	models, err := apis.ListChatModels(&chatmodel.ListChatModelsReq{})
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		handleError(cmd, err)
 	}
 	// format output
 	outputKind, err := cmd.Flags().GetString(constant.OutputFlag)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		handleError(cmd, err)
 	}
 	// print result
-	printer.PrintSlice(models, printer.PrinterKind(outputKind))
+	if err := printer.PrintSlice(models, printer.PrinterKind(outputKind)); err != nil {
+		handleError(cmd, err)
+	}
 }
 
 func ChatModelGetHandler(cmd *cobra.Command, args []string) {
@@ -34,20 +36,21 @@ func ChatModelGetHandler(cmd *cobra.Command, args []string) {
 		fmt.Fprintln(os.Stderr, err)
 	}
 	if modelName == "" {
-		fmt.Fprintln(os.Stderr, `required flag "modelName" should not be empty`)
-		os.Exit(1)
+		handleError(cmd, fmt.Errorf("required flag \"modelName\" should not be empty"))
 	}
 	// send http request
 	apis := chatmodel.NewChatModelAPI(config.GetConfigInstance().BaseURL)
 	model, err := apis.GetChatModel(&chatmodel.GetChatModelReq{ModelName: modelName})
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		handleError(cmd, err)
 	}
 	// format output
 	outputKind, err := cmd.Flags().GetString(constant.OutputFlag)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		handleError(cmd, err)
 	}
 	// print result
-	printer.PrintOne(model, printer.PrinterKind(outputKind))
+	if err := printer.PrintOne(model, printer.PrinterKind(outputKind)); err != nil {
+		handleError(cmd, err)
+	}
 }

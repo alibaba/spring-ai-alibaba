@@ -16,7 +16,7 @@ func NewJsonPrinter[T any]() *JsonPrinter[T] {
 	}
 }
 
-func (p *JsonPrinter[T]) print(data interface{}) error {
+func (p *JsonPrinter[T]) print(data any) error {
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return err

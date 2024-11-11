@@ -1,8 +1,12 @@
 package chatmodel
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/alibaba/spring-ai-alibaba/pkg/constant"
 	"github.com/alibaba/spring-ai-alibaba/pkg/handler"
+	"github.com/alibaba/spring-ai-alibaba/pkg/util/printer"
 	"github.com/spf13/cobra"
 )
 
@@ -32,4 +36,5 @@ func init() {
 
 	getCmd.Flags().StringP(constant.ModelNameFlag, "n", "", "get model by spec model name")
 	getCmd.MarkFlagRequired(constant.ModelNameFlag)
+	getCmd.Flags().StringP(constant.OutputFlag, "o", string(printer.YamlPrinterKind), fmt.Sprintf("Output format supported values: %s", strings.Join(printer.PrinterDetailKindsAsString(), ", ")))
 }

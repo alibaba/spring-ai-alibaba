@@ -68,6 +68,12 @@ func (p *TablePrinter[T]) PrintSlice(data []T) error {
 func (p *TablePrinter[T]) PrintOne(data T) error {
 	// use reflection to get the fields of data
 	val := reflect.ValueOf(data)
+	if val.Kind() == reflect.Pointer {
+		if val.IsNil() {
+			return fmt.Errorf("data is nil")
+		}
+		val = val.Elem()
+	}
 	if val.Kind() != reflect.Struct {
 		return fmt.Errorf("data is not a struct")
 	}
