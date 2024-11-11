@@ -1,18 +1,3 @@
-/*
-Copyright © 2024 ev1lQuark
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-	http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package cmd
 
 import (
@@ -34,7 +19,7 @@ var cfgFile string
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "spring-ai-alibaba-cli",
-	Short: "A brief description of your application",
+	Short: "Command line interface for Spring AI Alibaba Studio",
 	Long:  constant.ASCIILOGO,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
@@ -57,12 +42,12 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVarP(&cfgFile, constant.ConfigFlagName, "c", "", fmt.Sprintf("config file (default $HOME/%s.%s)", config.DefaultConfigFileName, config.DefaultConfigFileExt))
-	rootCmd.PersistentFlags().StringP(constant.BaseURLFlagName, "u", api.DefaultBaseURL, "Base URL for the Spring AI Alibaba Studio server")
-	rootCmd.PersistentFlags().StringP(constant.OutputFlagName, "o", string(printer.TablePrinterKind), fmt.Sprintf("Output format. Supported values: %v", strings.Join(printer.PrinterKindsAsString(), ", ")))
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, constant.ConfigFlag, "c", "", fmt.Sprintf("Config file path (default $HOME/%s.%s)", config.DefaultConfigFileName, config.DefaultConfigFileExt))
+	rootCmd.PersistentFlags().StringP(constant.BaseURLFlag, "u", api.DefaultBaseURL, "Base URL for the Spring AI Alibaba Studio server")
+	rootCmd.PersistentFlags().StringP(constant.OutputFlag, "o", string(printer.TablePrinterKind), fmt.Sprintf("Output format supported values: %v", strings.Join(printer.PrinterKindsAsString(), ", ")))
 
 	// bind flags to viper
-	viper.BindPFlag(constant.BaseURLFlagName, rootCmd.PersistentFlags().Lookup(constant.BaseURLFlagName))
+	viper.BindPFlag(constant.BaseURLFlag, rootCmd.PersistentFlags().Lookup(constant.BaseURLFlag))
 
 	// add subcommands
 	rootCmd.AddCommand(chatmodel.GetChatModelCmd())

@@ -1,7 +1,11 @@
 package constant
 
 const (
-	OutputFlagName  = "output"
-	ConfigFlagName  = "config"
-	BaseURLFlagName = "baseURL"
+	OutputFlag  = "output"
+	ConfigFlag  = "config"
+	BaseURLFlag = "baseURL"
+)
+
+const (
+	ModelNameFlag = "modelName"
 )
