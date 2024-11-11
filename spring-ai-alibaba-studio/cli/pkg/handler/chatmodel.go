@@ -1,9 +1,6 @@
 package handler
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/alibaba/spring-ai-alibaba/pkg/api/chatmodel"
 	"github.com/alibaba/spring-ai-alibaba/pkg/config"
 	"github.com/alibaba/spring-ai-alibaba/pkg/constant"
@@ -30,19 +27,17 @@ func ChatModelListHandler(cmd *cobra.Command, args []string) {
 }
 
 func ChatModelGetHandler(cmd *cobra.Command, args []string) {
-	// param validation
-	modelName, err := cmd.Flags().GetString(constant.ModelNameFlag)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	}
-	if modelName == "" {
-		handleError(cmd, fmt.Errorf("required flag \"modelName\" should not be empty"))
-	}
+	// args validation
+	modelNames := args
+	result := make([]*chatmodel.GetChatModelRsp, 0, len(modelNames))
 	// send http request
 	apis := chatmodel.NewChatModelAPI(config.GetConfigInstance().BaseURL)
-	model, err := apis.GetChatModel(&chatmodel.GetChatModelReq{ModelName: modelName})
-	if err != nil {
-		handleError(cmd, err)
+	for _, modelName := range modelNames {
+		model, err := apis.GetChatModel(&chatmodel.GetChatModelReq{ModelName: modelName})
+		if err != nil {
+			handleError(cmd, err)
+		}
+		result = append(result, model)
 	}
 	// format output
 	outputKind, err := cmd.Flags().GetString(constant.OutputFlag)
@@ -50,7 +45,7 @@ func ChatModelGetHandler(cmd *cobra.Command, args []string) {
 		handleError(cmd, err)
 	}
 	// print result
-	if err := printer.PrintOne(model, printer.PrinterKind(outputKind)); err != nil {
+	if err := printer.PrintSlice(result, printer.PrinterKind(outputKind)); err != nil {
 		handleError(cmd, err)
 	}
 }

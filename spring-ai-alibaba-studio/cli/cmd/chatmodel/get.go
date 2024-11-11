@@ -20,7 +20,8 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: handler.ChatModelGetHandler,
+	Args: cobra.MinimumNArgs(1),
+	Run:  handler.ChatModelGetHandler,
 }
 
 func init() {
@@ -33,8 +34,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
-	getCmd.Flags().StringP(constant.ModelNameFlag, "n", "", "get model by spec model name")
-	getCmd.MarkFlagRequired(constant.ModelNameFlag)
 	getCmd.Flags().StringP(constant.OutputFlag, "o", string(printer.YamlPrinterKind), fmt.Sprintf("Output format supported values: %s", strings.Join(printer.PrinterDetailKindsAsString(), ", ")))
 }
