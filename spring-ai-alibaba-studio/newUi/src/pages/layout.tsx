@@ -14,63 +14,60 @@
  * limitations under the License.
  */
 
-import { createElement } from 'react';
-import ProLayout, { DefaultFooter } from '@ant-design/pro-layout';
-import { Link } from 'ice'; // 用于实现路由跳转
-import { Outlet } from 'ice'; // 用于渲染子路由组件
-import { useLocation } from 'ice';
-import { asideMenuConfig } from './menuConfig';
-import React, { useEffect } from "react"
-React.useLayoutEffect = useEffect;
+import { Layout, Menu, Flex, Button } from "antd";
+import { Outlet, useNavigate } from "ice";
+import styles from "./layout.module.css";
 
-// 菜单递归处理
-const loopMenuItem = (menus) =>
-  menus.map(({ icon, children, ...item }) => ({
-    ...item,
-    icon: createElement(icon), // 动态渲染图标
-    children: children && loopMenuItem(children),
-  }));
+export default function PageLayout() {
+  const { Header } = Layout;
+  const navigate = useNavigate();
 
+  const headerMenu = [
+    {
+      key: "run",
+      label: "运行"
+    },
+    {
+      key: "history",
+      label: "历史"
+    },
+    {
+      key: "evaluate",
+      label: "评估"
+    }
+  ];
 
-export default function Layout() {
-  const location = useLocation();
+  const onMenuClick = (e) => {
+    navigate(e.key);
+  };
+
   return (
-    <ProLayout
-      title="alibaba-studio"
-      style={{
-        minHeight: '100vh', // 设置最小高度为 100vh
-      }}
-      location={{
-        pathname: location.pathname, // 当前路径
-      }}
-      menuDataRender={() => loopMenuItem(asideMenuConfig)} // 渲染菜单项
-      menuItemRender={(item, defaultDom) => {
-        if (!item.path) {
-          return defaultDom; // 如果菜单项没有 path，直接渲染默认的 DOM
-        }
-        return <Link to={item.path}>{defaultDom}</Link>; // 使用 Link 实现路由跳转
-      }}
-      footerRender={() => (
-        <DefaultFooter
-          links={[
-            {
-              key: 'spring-ai-alibaba',
-              title: 'spring-ai-alibaba',
-              href: 'https://github.com/alibaba/spring-ai-alibaba',
-            },
-            {
-              key: 'antd',
-              title: 'antd',
-              href: 'https://github.com/ant-design/ant-design',
-            },
-          ]}
-          copyright="by spring-ai-alibaba"
-        />
-      )}
-    >
-      <div style={{ minHeight: '60vh' }}>
-        <Outlet /> {/* 渲染当前路由对应的子组件 */}
+    <Layout>
+      <Header className={styles.header}>
+        <Flex>
+          <span>alibaba-studio</span>
+          <Menu
+            mode="horizontal"
+            defaultSelectedKeys={[headerMenu[0].key]}
+            items={headerMenu}
+            onClick={onMenuClick}
+          />
+        </Flex>
+        <Flex>
+          <Button color="default" variant="link">
+            Github
+          </Button>
+          <Button color="default" variant="link">
+            官方文档
+          </Button>
+          <Button color="default" variant="link">
+            切换语言
+          </Button>
+        </Flex>
+      </Header>
+      <div className={styles.body}>
+        <Outlet />
       </div>
-    </ProLayout>
+    </Layout>
   );
 }

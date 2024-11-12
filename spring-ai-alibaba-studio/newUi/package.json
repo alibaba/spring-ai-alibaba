@@ -3,7 +3,6 @@
   "version": "1.3.0",
   "description": "A new ice.js project.",
   "dependencies": {
-    "@ant-design/pro-layout": "^7.0.0",
     "@ice/runtime": "^1.4.0",
     "antd": "^5.0.0",
     "react": "^18.2.0",
@@ -24,7 +23,7 @@
   "scripts": {
     "start": "ice start --speedup",
     "build": "ice build",
-    "eslint": "eslint ./src --cache --ext .js,.jsx,.ts,.tsx",
+    "eslint": "eslint ./ --cache --ext .js,.jsx,.ts,.tsx,.mts",
     "eslint:fix": "npm run eslint -- --fix",
     "stylelint": "stylelint \"src/**/*.{css,scss,less}\" --cache",
     "stylelint:fix": "npm run stylelint -- --fix"
