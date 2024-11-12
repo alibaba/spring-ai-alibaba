@@ -14,31 +14,19 @@
  * limitations under the License.
  */
 
-import { SmileOutlined, HeartOutlined } from '@ant-design/icons';
+/*
+ * Style in CSS Modules.
+ */
 
-const asideMenuConfig = [
-  {
-    name: 'ChatClient',
-    path: '/Clients',
-    icon: SmileOutlined,
-  },
-  {
-    name: 'Chat Model',
-    icon: SmileOutlined,
-    path: '/Models',
-    children: [
-      {
-        name: 'Chat Model',
-        path: '/Models/ChatModel',
-        icon: SmileOutlined,
-      },
-      {
-        name: 'Image Model',
-        path: '/Models/ImageModel',
-        icon: SmileOutlined,
-      },
-    ],
-  },
-];
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  height: 60px;
+  margin-bottom: 10px;
+}
 
-export { asideMenuConfig };
+.body {
+  height: calc(100vh - 70px);
+}
