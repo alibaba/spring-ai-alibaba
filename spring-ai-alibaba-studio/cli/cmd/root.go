@@ -24,6 +24,15 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
+	Run: func(cmd *cobra.Command, args []string) {
+		// Check if the version flag is set
+		if version, _ := cmd.Flags().GetBool(constant.VersionFlag); version {
+			fmt.Println(constant.Version)
+			return
+		}
+		// if not
+		cmd.Help()
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -45,6 +54,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, constant.ConfigFlag, "c", "", fmt.Sprintf("Config file path (default $HOME/%s.%s)", config.DefaultConfigFileName, config.DefaultConfigFileExt))
 	rootCmd.PersistentFlags().StringP(constant.BaseURLFlag, "u", api.DefaultBaseURL, "Base URL for the Spring AI Alibaba Studio server")
 	rootCmd.PersistentFlags().StringP(constant.OutputFlag, "o", string(printer.TablePrinterKind), fmt.Sprintf("Output format supported values: %v", strings.Join(printer.PrinterKindsAsString(), ", ")))
+
+	rootCmd.Flags().BoolP(constant.VersionFlag, "v", false, "Print the version number of Spring AI Alibaba Studio")
 
 	// bind flags to viper
 	viper.BindPFlag(constant.BaseURLFlag, rootCmd.PersistentFlags().Lookup(constant.BaseURLFlag))
