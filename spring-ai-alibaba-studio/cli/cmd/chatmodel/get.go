@@ -12,14 +12,18 @@ import (
 
 // getCmd represents the list command
 var getCmd = &cobra.Command{
-	Use:   "get",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Use:   "get modelName...",
+	Short: "Get chat model detail by model name",
+	Long: `Get chat model detail by model name.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Arguments:
+[modelName]  Name of the chat models to get details for (required)
+`,
+	Example: fmt.Sprintf(`  # Get details of the chat model named "model1"
+  %s %s get model1
+  # Get details of the chat model named "model1" and "model2"
+  %s %s get model1 model2
+		`, constant.RootCmdName, chatModelCmdName, constant.RootCmdName, chatModelCmdName),
 	Args: cobra.MinimumNArgs(1),
 	Run:  handler.ChatModelGetHandler,
 }

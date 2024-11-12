@@ -18,9 +18,9 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "spring-ai-alibaba-cli",
+	Use:   constant.RootCmdName,
 	Short: "Command line interface for Spring AI Alibaba Studio",
-	Long:  constant.ASCIILOGO,
+	Long:  "\nCommand line interface for Spring AI Alibaba Studio\n" + constant.ASCIILOGO,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
