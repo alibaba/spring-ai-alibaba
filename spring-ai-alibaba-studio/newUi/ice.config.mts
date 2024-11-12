@@ -17,10 +17,5 @@ export default defineConfig(() => ({
     }),
     request(),
   ],
-  // routes: {
-  //   defineRoutes: (route) => {
-  //     // 将 /hello 路由访问内容指定为 about.tsx
-  //     route('/', 'Clients/index.tsx');
-  //   },
-  // },
+  routes: {},
 }));
