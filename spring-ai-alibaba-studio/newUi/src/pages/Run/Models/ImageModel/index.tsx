@@ -16,8 +16,13 @@
 
 import { Card, Flex, Button, Checkbox, Input, Image } from 'antd';
 import Setup from '../Setup';
+import { ChatModelData } from '@/types/chat_model';
 
-export default function ImageModel() {
+type ImageModelProps = {
+  modelData: ChatModelData;
+};
+
+const ImageModel: React.FC<ImageModelProps> = ({ modelData }) => {
   const initialValues = {
     initialConfig: {
       model: 'ollama/llama3.2',
@@ -37,7 +42,7 @@ export default function ImageModel() {
     <Flex justify="space-between">
       <Flex vertical justify="space-between" style={{ width: 500 }}>
         <div>
-          <Card title="模型 Bean 名称">
+          <Card title={modelData.name}>
             <TextArea autoSize={{ minRows: 3 }} />
           </Card>
           <Card title="图片生成结果" style={{ marginTop: 20 }}>
@@ -60,3 +65,6 @@ export default function ImageModel() {
     </Flex>
   );
 }
+
+
+export default ImageModel;

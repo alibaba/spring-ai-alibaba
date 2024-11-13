@@ -17,7 +17,7 @@
 import { ChatOptions, ImageOptions } from './options';
 
 
-export type ChatModel = {
+export type ChatModelData = {
   name: string;
   model: string;
   modelType: string;
