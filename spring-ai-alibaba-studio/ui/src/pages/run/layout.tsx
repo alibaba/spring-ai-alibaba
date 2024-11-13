@@ -21,7 +21,7 @@ import styles from "./layout.module.css";
 
 import { ChatModelData } from '@/types/chat_model';
 import { SubMenuItem } from "@/types/menu";
-import chatModelsService from '@/services/chat-models';
+import chatModelsService from '@/services/chat_models';
 
 export default function PageLayout() {
   const { Content, Sider } = Layout;
