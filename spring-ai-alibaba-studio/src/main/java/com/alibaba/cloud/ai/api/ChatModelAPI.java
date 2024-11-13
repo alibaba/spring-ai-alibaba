@@ -44,7 +44,7 @@ public interface ChatModelAPI {
 	}
 
 	@Operation(summary = "list chat models", description = "", tags = { "chat-model" })
-	@GetMapping(value = "", consumes = { "*/*" })
+	@GetMapping(value = "", produces = { "application/json" })
 	default R<List<ChatModel>> list() {
 		List<ChatModel> res = getDelegate().list();
 		return R.success(res);

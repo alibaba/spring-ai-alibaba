@@ -35,14 +35,14 @@ public interface ChatClientAPI {
 	}
 
 	@Operation(summary = "list chat clients", description = "", tags = { "chat-client" })
-	@GetMapping(value = "", consumes = { "application/json", "application/x-www-form-urlencoded" })
+	@GetMapping(value = "", produces = { "application/json" })
 	default R<List<ChatClient>> list() {
 		List<ChatClient> res = getDelegate().list();
 		return R.success(res);
 	}
 
 	@Operation(summary = "get chat client by name", description = "", tags = { "chat-client" })
-	@GetMapping(value = "/{clientName}", consumes = { "application/json", "application/x-www-form-urlencoded" })
+	@GetMapping(value = "/{clientName}", produces = { "application/json" })
 	default R<ChatClient> get(@PathVariable String clientName) {
 		ChatClient chatClient = getDelegate().get(clientName);
 		return R.success(chatClient);

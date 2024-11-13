@@ -22,13 +22,13 @@ import styles from "./layout.module.css";
 import { ChatModelData } from '@/types/chat_model';
 import { SubMenuItem } from "@/types/menu";
 import chatModelsService from '@/services/chat_models';
+import chatClientsService from '@/services/chat_clients'
 
 export default function PageLayout() {
   const { Content, Sider } = Layout;
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [modelList, setModelList] = useState<ChatModelData[]>([]);
   const [runMenu, setRunMenu] = useState<SubMenuItem[]>([
     {
       key: "/run/clients",
@@ -47,11 +47,19 @@ export default function PageLayout() {
       try {
         // 获取ChatModel List
         const chatModelList = await chatModelsService.getChatModels();
-        setModelList(chatModelList);
+        const chatClientList = await chatClientsService.getChatClients();
 
         // 更新runMenu的children
         setRunMenu((prevRunMenu) => {
           const updatedRunMenu = [...prevRunMenu];
+
+          // 组装 ChatClient 目录
+          updatedRunMenu[0].children = chatClientList.map((client) => ({
+            key: `/run/clients/${client.name}`,
+            label: client.name
+          }));
+
+          // 组装 ChatModel 目录
           updatedRunMenu[1].children = chatModelList.map((model) => ({
             key: `/run/models/${model.name}`,
             label: model.name
