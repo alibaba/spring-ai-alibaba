@@ -99,6 +99,7 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 			ChatModel model = ChatModel.builder()
 				.name(modelName)
 				.model(chatModel.getDefaultOptions().getModel())
+				.modelType(ModelType.CHAT)
 				.build();
 			if (chatModel.getClass() == DashScopeChatModel.class) {
 				DashScopeChatModel dashScopeChatModel = (DashScopeChatModel) chatModel;

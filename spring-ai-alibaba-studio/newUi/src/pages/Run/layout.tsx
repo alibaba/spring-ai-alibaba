@@ -19,45 +19,65 @@ import { Layout, Menu } from "antd";
 import { Outlet, useNavigate, useLocation } from "ice";
 import styles from "./layout.module.css";
 
+import { ChatModelData } from '@/types/chat_model';
+import { SubMenuItem } from "@/types/menu";
+import chatModelsService from '@/services/chat-models';
+
 export default function PageLayout() {
   const { Content, Sider } = Layout;
   const navigate = useNavigate();
   const location = useLocation();
 
-  const runMenu = [
+  const [modelList, setModelList] = useState<ChatModelData[]>([]);
+  const [runMenu, setRunMenu] = useState<SubMenuItem[]>([
     {
       key: "/run/clients",
-      label: "ChatClient"
+      label: "Chat Client",
+      children: []
     },
     {
       key: "/run/models",
       label: "Chat Model",
-      children: [
-        {
-          key: "/run/models/chatModel",
-          label: "Chat Model 1"
-        },
-        {
-          key: "/run/models/imageModel",
-          label: "Image Model 2"
-        }
-      ]
+      children: []
     }
-  ];
+  ]);
 
-  const [selectedKey, setSelectKey] = useState(runMenu[0].key);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // 获取ChatModel List
+        const chatModelList = await chatModelsService.getChatModels();
+        setModelList(chatModelList);
+
+        // 更新runMenu的children
+        setRunMenu((prevRunMenu) => {
+          const updatedRunMenu = [...prevRunMenu];
+          updatedRunMenu[1].children = chatModelList.map((model) => ({
+            key: `/run/models/${model.name}`,
+            label: model.name
+          }));
+          return updatedRunMenu;
+        });
+      } catch (error) {
+        console.error("Failed to fetch chat models: ", error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const [selectedKey, setSelectedKey] = useState(runMenu[0].key);
 
   const onMenuClick = (e) => {
     navigate(e.key);
-    setSelectKey(e.key);
+    setSelectedKey(e.key);
   };
 
   useEffect(() => {
     if (location.pathname === "/run") {
       navigate("/run/clients");
-      setSelectKey(runMenu[0].key);
+      setSelectedKey(runMenu[0].key);
     }
-  }, [location]);
+  }, [location, runMenu]);
 
   return (
     <Layout className={styles.container}>
