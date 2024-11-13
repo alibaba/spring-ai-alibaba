@@ -15,29 +15,42 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Layout, Menu, Flex, Button } from 'antd';
+import { Layout, Menu, Flex, Button, Radio } from 'antd';
+import type { RadioChangeEvent } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'ice';
 import styles from './layout.module.css';
+import i18n from './Public/config/i18n';
+
+const headerMenu = [
+  {
+    key: '/run',
+    label: '运行',
+  },
+  {
+    key: '/history',
+    label: '历史',
+  },
+  {
+    key: '/evaluate',
+    label: '评估',
+  },
+];
+
+const languageOptions = [
+  {
+    value: 'zh',
+    label: '中文',
+  },
+  {
+    value: 'en',
+    label: '英文',
+  },
+];
 
 export default function PageLayout() {
   const { Header } = Layout;
   const navigate = useNavigate();
   const location = useLocation();
-
-  const headerMenu = [
-    {
-      key: '/run',
-      label: '运行',
-    },
-    {
-      key: '/history',
-      label: '历史',
-    },
-    {
-      key: '/evaluate',
-      label: '评估',
-    },
-  ];
 
   const onMenuClick = (e) => {
     navigate(e.key);
@@ -50,7 +63,14 @@ export default function PageLayout() {
       navigate(headerMenu[0].key);
       setSelectedKey(headerMenu[0].key);
     }
-  }, [location, headerMenu]);
+  }, [location, navigate]);
+
+  const [language, setLanguage] = useState('zh');
+
+  const onLanguageChange = ({ target: { value } }: RadioChangeEvent) => {
+    setLanguage(value);
+    i18n.changeLanguage(value);
+  };
 
   return (
     <Layout>
@@ -71,9 +91,13 @@ export default function PageLayout() {
           <Button color="default" variant="link">
             官方文档
           </Button>
-          <Button color="default" variant="link">
-            切换语言
-          </Button>
+          <Radio.Group
+            options={languageOptions}
+            onChange={onLanguageChange}
+            value={language}
+            optionType="button"
+            buttonStyle="solid"
+          />
         </Flex>
       </Header>
       <div className={styles.body}>
