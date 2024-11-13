@@ -50,7 +50,7 @@ public class TTSController implements ApplicationRunner {
 
 	private static final String TEXT = "白日依山尽，黄河入海流。";
 
-	private static final String FILE_PATH = "spring-ai-alibaba-examples/audio-example/src/main/resources/gen/";
+	private static final String FILE_PATH = "spring-ai-alibaba-examples/audio-example/src/main/resources/gen/tts/";
 
 	@GetMapping
 	public void tts() throws IOException {

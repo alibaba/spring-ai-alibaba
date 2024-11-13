@@ -14,27 +14,9 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.dashscope.audio.speech;
+@NonNullApi
+@NonNullFields
+package com.alibaba.cloud.ai.dashscope.chat.observation;
 
-/**
- * More models see:
- * https://help.aliyun.com/zh/dashscope/model-list?spm=a2c4g.11186623.0.i5 Support all
- * models in list.
- *
- * @author yuluo
- * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
- * @since 2023.0.1.0
- */
-
-public final class AudioSpeechModels {
-
-	/**
-	 * Male Voice of the Tongue(舌尖男声), support for both zh and en. Default sample rate: 48
-	 * Hz.
-	 */
-	public static final String SAMBERT_ZHICHU_V1 = "sambert-zhichu-v1";
-
-	private AudioSpeechModels() {
-	}
-
-}
+import org.springframework.lang.NonNullApi;
+import org.springframework.lang.NonNullFields;
