@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import { useParams } from 'ice';
-import chatClientsService from '@/services/chat_clients'
+import chatClientsService from '@/services/chat_clients';
 import styles from './index.module.css';
 import { Card, Input, Divider, Tabs, Form, Button, Select, Slider } from 'antd';
 
@@ -36,7 +36,7 @@ export default function ChatClient() {
         const chatClientData = await chatClientsService.getChatClientByName(params.model_name);
         setChatClientData(chatClientData);
       } catch (error) {
-        console.error("Failed to fetch chat models: ", error);
+        console.error('Failed to fetch chat models: ', error);
       }
     };
     fetchData();

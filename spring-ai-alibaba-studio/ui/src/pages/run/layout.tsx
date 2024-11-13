@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-import { useEffect, useState } from "react";
-import { Layout, Menu } from "antd";
-import { Outlet, useNavigate, useLocation } from "ice";
-import styles from "./layout.module.css";
+import { useEffect, useState } from 'react';
+import { Layout, Menu } from 'antd';
+import { Outlet, useNavigate, useLocation } from 'ice';
+import styles from './layout.module.css';
 
 import { ChatModelData } from '@/types/chat_model';
-import { SubMenuItem } from "@/types/menu";
+import { SubMenuItem } from '@/types/menu';
 import chatModelsService from '@/services/chat_models';
-import chatClientsService from '@/services/chat_clients'
+import chatClientsService from '@/services/chat_clients';
 
 export default function PageLayout() {
   const { Content, Sider } = Layout;
@@ -31,15 +31,15 @@ export default function PageLayout() {
 
   const [runMenu, setRunMenu] = useState<SubMenuItem[]>([
     {
-      key: "/run/clients",
-      label: "Chat Client",
-      children: []
+      key: '/run/clients',
+      label: 'Chat Client',
+      children: [],
     },
     {
-      key: "/run/models",
-      label: "Chat Model",
-      children: []
-    }
+      key: '/run/models',
+      label: 'Chat Model',
+      children: [],
+    },
   ]);
 
   useEffect(() => {
@@ -56,18 +56,18 @@ export default function PageLayout() {
           // 组装 ChatClient 目录
           updatedRunMenu[0].children = chatClientList.map((client) => ({
             key: `/run/clients/${client.name}`,
-            label: client.name
+            label: client.name,
           }));
 
           // 组装 ChatModel 目录
           updatedRunMenu[1].children = chatModelList.map((model) => ({
             key: `/run/models/${model.name}`,
-            label: model.name
+            label: model.name,
           }));
           return updatedRunMenu;
         });
       } catch (error) {
-        console.error("Failed to fetch chat models: ", error);
+        console.error('Failed to fetch chat models: ', error);
       }
     };
     fetchData();
@@ -81,8 +81,8 @@ export default function PageLayout() {
   };
 
   useEffect(() => {
-    if (location.pathname === "/run") {
-      navigate("/run/clients");
+    if (location.pathname === '/run') {
+      navigate(runMenu[0].key);
       setSelectedKey(runMenu[0].key);
     }
   }, [location, runMenu]);
@@ -92,7 +92,7 @@ export default function PageLayout() {
       <Sider width={200}>
         <Menu
           mode="inline"
-          style={{ height: "100%", borderRight: 0 }}
+          style={{ height: '100%', borderRight: 0 }}
           items={runMenu}
           onClick={onMenuClick}
           selectedKeys={[selectedKey]}
