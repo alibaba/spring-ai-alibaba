@@ -16,7 +16,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from 'ice';
-import chatModelsService from '@/services/chat-models';
+import chatModelsService from '@/services/chat_models';
 import { ChatModelData } from '@/types/chat_model';
 import ImageModel from "./ImageModel";
 import ChatModel from "./ChatModel";
