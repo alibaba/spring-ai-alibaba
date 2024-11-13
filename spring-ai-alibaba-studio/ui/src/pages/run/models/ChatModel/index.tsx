@@ -59,7 +59,7 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
       <Setup initialValues={initialValues} />
     </Flex>
   );
-}
+};
 
 
 export default ChatModel;

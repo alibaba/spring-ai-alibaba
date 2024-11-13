@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-import { request } from "ice";
+import { request } from 'ice';
 
 export default {
   // 获取ChatClients列表
   async getChatClients(): Promise<any[]> {
     return await request({
-      url: "/studio/api/chat-clients",
-      method: "get",
+      url: '/studio/api/chat-clients',
+      method: 'get',
     });
   },
 
@@ -29,7 +29,7 @@ export default {
   async getChatClientByName(name: string): Promise<any> {
     return await request({
       url: `/studio/api/chat-clients/${name}`,
-      method: "get",
+      method: 'get',
     });
   },
 };

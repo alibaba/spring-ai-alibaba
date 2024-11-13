@@ -64,7 +64,7 @@ const ImageModel: React.FC<ImageModelProps> = ({ modelData }) => {
       <Setup initialValues={initialValues} />
     </Flex>
   );
-}
+};
 
 
 export default ImageModel;
