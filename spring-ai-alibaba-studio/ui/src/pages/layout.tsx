@@ -14,32 +14,43 @@
  * limitations under the License.
  */
 
-import { Layout, Menu, Flex, Button } from "antd";
-import { Outlet, useNavigate } from "ice";
-import styles from "./layout.module.css";
+import { useEffect, useState } from 'react';
+import { Layout, Menu, Flex, Button } from 'antd';
+import { Outlet, useNavigate, useLocation } from 'ice';
+import styles from './layout.module.css';
 
 export default function PageLayout() {
   const { Header } = Layout;
   const navigate = useNavigate();
+  const location = useLocation();
 
   const headerMenu = [
     {
-      key: "run",
-      label: "运行"
+      key: '/run',
+      label: '运行',
     },
     {
-      key: "history",
-      label: "历史"
+      key: '/history',
+      label: '历史',
     },
     {
-      key: "evaluate",
-      label: "评估"
-    }
+      key: '/evaluate',
+      label: '评估',
+    },
   ];
 
   const onMenuClick = (e) => {
     navigate(e.key);
   };
+
+  const [selectedKey, setSelectedKey] = useState(headerMenu[0].key);
+
+  useEffect(() => {
+    if (location.pathname === '/') {
+      navigate(headerMenu[0].key);
+      setSelectedKey(headerMenu[0].key);
+    }
+  }, [location, headerMenu]);
 
   return (
     <Layout>
@@ -48,7 +59,7 @@ export default function PageLayout() {
           <span>alibaba-studio</span>
           <Menu
             mode="horizontal"
-            defaultSelectedKeys={[headerMenu[0].key]}
+            selectedKeys={[selectedKey]}
             items={headerMenu}
             onClick={onMenuClick}
           />

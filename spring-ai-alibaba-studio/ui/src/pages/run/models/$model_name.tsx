@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import { useParams } from 'ice';
 import chatModelsService from '@/services/chat_models';
 import { ChatModelData } from '@/types/chat_model';
-import ImageModel from "./ImageModel";
-import ChatModel from "./ChatModel";
+import ImageModel from './ImageModel';
+import ChatModel from './ChatModel';
 
 type Params = {
   model_name: string;
@@ -37,7 +37,7 @@ export default function Model() {
         const chatModeData = await chatModelsService.getChatModelByName(params.model_name);
         setModelData(chatModeData);
       } catch (error) {
-        console.error("Failed to fetch chat models: ", error);
+        console.error('Failed to fetch chat models: ', error);
       }
     };
     fetchData();

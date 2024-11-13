@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-import { ChatModelData } from "@/types/chat_model";
-import { request } from "ice";
+import { ChatModelData } from '@/types/chat_model';
+import { request } from 'ice';
 
 export default {
   // 获取ChatModels列表
   async getChatModels(): Promise<ChatModelData[]> {
     return await request({
-      url: "studio/api/chat-models",
-      method: "get",
+      url: 'studio/api/chat-models',
+      method: 'get',
     });
   },
 
@@ -30,7 +30,7 @@ export default {
   async getChatModelByName(name: string): Promise<ChatModelData> {
     return await request({
       url: `studio/api/chat-models/${name}`,
-      method: "get",
+      method: 'get',
     });
   },
 };
