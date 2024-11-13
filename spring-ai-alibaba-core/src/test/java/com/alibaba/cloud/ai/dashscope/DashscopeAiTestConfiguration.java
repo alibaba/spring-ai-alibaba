@@ -1,15 +1,12 @@
 package com.alibaba.cloud.ai.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioTranscriptionApi;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisOptions;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechModelOpenAPI;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechOptions;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionModelOpenAPI;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionOptions;
+import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
@@ -19,8 +16,11 @@ import com.alibaba.cloud.ai.model.RerankModel;
 import com.alibaba.dashscope.audio.asr.transcription.Transcription;
 import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
 
+import io.micrometer.observation.tck.TestObservationRegistry;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -43,13 +43,13 @@ public class DashscopeAiTestConfiguration {
 	}
 
 	@Bean
-	public DashScopeAudioApi dashScopeAudioApi() {
-		return newDashScopeAudioApi(getApiKey());
+	public DashScopeSpeechSynthesisApi dashScopeSpeechSynthesisApi() {
+		return newDashScopeSpeechSynthesisApi(getApiKey());
 	}
 
 	@Bean
-	public DashScopeSpeechSynthesisApi dashScopeSpeechSynthesisApi() {
-		return newDashScopeSpeechSynthesisApi(getApiKey());
+	public DashScopeAudioTranscriptionApi dashScopeAudioTranscriptionApi() {
+		return newDashScopeAudioTranscriptionApi(getApiKey());
 	}
 
 	@Bean
@@ -65,12 +65,12 @@ public class DashscopeAiTestConfiguration {
 		return new DashScopeApi(apiKey);
 	}
 
-	private DashScopeAudioApi newDashScopeAudioApi(String apiKey) {
-		return new DashScopeAudioApi(apiKey);
-	}
-
 	private DashScopeSpeechSynthesisApi newDashScopeSpeechSynthesisApi(String apiKey) {
 		return new DashScopeSpeechSynthesisApi(apiKey);
+	}
+
+	private DashScopeAudioTranscriptionApi newDashScopeAudioTranscriptionApi(String apiKey) {
+		return new DashScopeAudioTranscriptionApi(apiKey);
 	}
 
 	private DashScopeImageApi newDashScopeImageApi(String apiKey) {
@@ -87,9 +87,10 @@ public class DashscopeAiTestConfiguration {
 	}
 
 	@Bean
-	public ChatModel dashscopeChatModel(DashScopeApi dashscopeChatApi) {
+	public ChatModel dashscopeChatModel(DashScopeApi dashscopeChatApi, TestObservationRegistry observationRegistry) {
 		return new DashScopeChatModel(dashscopeChatApi,
-				DashScopeChatOptions.builder().withModel(DashScopeApi.DEFAULT_CHAT_MODEL).build());
+				DashScopeChatOptions.builder().withModel(DashScopeApi.DEFAULT_CHAT_MODEL).build(), null,
+				RetryUtils.DEFAULT_RETRY_TEMPLATE, observationRegistry);
 	}
 
 	@Bean
@@ -103,24 +104,21 @@ public class DashscopeAiTestConfiguration {
 	}
 
 	@Bean
-	public DashScopeAudioSpeechModelOpenAPI dashscopeAudioSpeechModel(DashScopeAudioApi dashScopeAudioApi,
-			SpeechSynthesizer speechSynthesizer) {
-		return new DashScopeAudioSpeechModelOpenAPI(dashScopeAudioApi,
-				DashScopeAudioSpeechOptions.builder().withModel("sambert-zhichu-v1").build());
-	}
-
-	@Bean
-	public DashScopeSpeechSynthesisModel dashscopeAudioSpeechModel(
+	public DashScopeSpeechSynthesisModel dashScopeSpeechSynthesisModel(
 			DashScopeSpeechSynthesisApi dashScopeSpeechSynthesisApi) {
 		return new DashScopeSpeechSynthesisModel(dashScopeSpeechSynthesisApi,
 				DashScopeSpeechSynthesisOptions.builder().withModel("cosyvoice-v1").withVoice("longhua").build());
 	}
 
 	@Bean
-	public DashScopeAudioTranscriptionModelOpenAPI dashscopeAudioTranscriptionModel(DashScopeAudioApi dashScopeAudioApi,
-			Transcription transcription) {
-		return new DashScopeAudioTranscriptionModelOpenAPI(dashScopeAudioApi,
-				DashScopeAudioTranscriptionOptions.builder().withModel("paraformer-v2").build());
+	public DashScopeAudioTranscriptionModel dashScopeAudioTranscriptionModel(
+			DashScopeAudioTranscriptionApi dashScopeAudioTranscriptionApi) {
+		return new DashScopeAudioTranscriptionModel(dashScopeAudioTranscriptionApi);
+	}
+
+	@Bean
+	public TestObservationRegistry observationRegistry() {
+		return TestObservationRegistry.create();
 	}
 
 	@Bean
