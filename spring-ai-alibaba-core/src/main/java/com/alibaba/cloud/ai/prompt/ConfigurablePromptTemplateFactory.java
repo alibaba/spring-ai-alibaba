@@ -16,20 +16,19 @@
 
 package com.alibaba.cloud.ai.prompt;
 
-import com.alibaba.cloud.nacos.annotation.NacosConfig;
-import com.alibaba.cloud.nacos.annotation.NacosConfigListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.core.io.Resource;
-import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.alibaba.cloud.nacos.annotation.NacosConfigListener;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.springframework.core.io.Resource;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 public class ConfigurablePromptTemplateFactory {
 

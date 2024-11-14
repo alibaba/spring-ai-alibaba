@@ -16,6 +16,9 @@
 
 package com.alibaba.cloud.ai.prompt;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -24,9 +27,6 @@ import org.springframework.ai.chat.prompt.PromptTemplateActions;
 import org.springframework.ai.chat.prompt.PromptTemplateMessageActions;
 import org.springframework.ai.model.Media;
 import org.springframework.core.io.Resource;
-
-import java.util.List;
-import java.util.Map;
 
 public class ConfigurablePromptTemplate implements PromptTemplateActions, PromptTemplateMessageActions {
 
