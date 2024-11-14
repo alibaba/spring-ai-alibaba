@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,30 +14,22 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.dashscope.audio.speech;
+package com.alibaba.cloud.ai.example.audio;
 
-import org.springframework.ai.model.ResultMetadata;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
- * @since 2023.0.1.0
  */
 
-public interface SpeechMetadata extends ResultMetadata {
+@SpringBootApplication
+public class AudioExampleApplication {
 
-	/**
-	 * Null Object.
-	 */
-	SpeechMetadata NULL = SpeechMetadata.create();
+	public static void main(String[] args) {
 
-	/**
-	 * Factory method used to construct a new {@link SpeechMetadata}.
-	 * @return a new {@link SpeechMetadata}
-	 */
-	static SpeechMetadata create() {
-		return new SpeechMetadata() {
-		};
+		SpringApplication.run(AudioExampleApplication.class, args);
 	}
 
 }
