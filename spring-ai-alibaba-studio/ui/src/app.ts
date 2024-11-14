@@ -17,6 +17,7 @@
 import { defineAppConfig } from 'ice';
 import { defineRequestConfig } from '@ice/plugin-request/types';
 import { message } from 'antd';
+import './i18n/i18n';
 
 // App config, see https://v3.ice.work/docs/guide/basic/app
 export default defineAppConfig(() => ({}));
