@@ -2,7 +2,7 @@ package ai.spring.demo.ai.playground.services;
 
 import java.util.Map;
 
-import org.springframework.ai.chat.client.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.RequestResponseAdvisor;
 
 public class LoggingAdvisor implements RequestResponseAdvisor {
@@ -13,4 +13,8 @@ public class LoggingAdvisor implements RequestResponseAdvisor {
 		return request;
 	}
 
+    @Override
+    public int getOrder() {
+        return 0;
+    }
 }

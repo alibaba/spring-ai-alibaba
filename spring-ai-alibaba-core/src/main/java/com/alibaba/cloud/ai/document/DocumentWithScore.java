@@ -16,7 +16,10 @@
 
 package com.alibaba.cloud.ai.document;
 
+import com.alibaba.cloud.ai.model.RerankResultMetadata;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.model.ModelResult;
+import org.springframework.ai.model.ResultMetadata;
 
 import java.util.Objects;
 
@@ -28,7 +31,7 @@ import java.util.Objects;
  * @since 1.0.0-M2
  */
 
-public class DocumentWithScore {
+public class DocumentWithScore implements ModelResult<Document> {
 
 	/**
 	 * Score of document
@@ -40,6 +43,8 @@ public class DocumentWithScore {
 	 */
 	private Document document;
 
+	private RerankResultMetadata metadata;
+
 	public Double getScore() {
 		return score;
 	}
@@ -48,16 +53,26 @@ public class DocumentWithScore {
 		this.score = score;
 	}
 
-	public Document getDocument() {
-		return document;
-	}
-
 	public void setDocument(Document document) {
 		this.document = document;
 	}
 
+	public void setMetadata(RerankResultMetadata metadata) {
+		this.metadata = metadata;
+	}
+
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	@Override
+	public Document getOutput() {
+		return this.document;
+	}
+
+	@Override
+	public ResultMetadata getMetadata() {
+		return this.metadata;
 	}
 
 	public static final class Builder {
@@ -75,6 +90,11 @@ public class DocumentWithScore {
 
 		public Builder withDocument(Document document) {
 			this.documentWithScore.setDocument(document);
+			return this;
+		}
+
+		public Builder withMetadata(RerankResultMetadata metadata) {
+			this.documentWithScore.setMetadata(metadata);
 			return this;
 		}
 

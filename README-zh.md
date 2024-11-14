@@ -15,7 +15,7 @@
 <dependency>
 	<groupId>com.alibaba.cloud.ai</groupId>
 	<artifactId>spring-ai-alibaba-starter</artifactId>
-	<version>1.0.0-M2.1</version>
+	<version>1.0.0-M3.1</version>
 </dependency>
 ```
 
@@ -32,6 +32,15 @@
 > 		</snapshots>
 > 	</repository>
 > </repositories>
+> ```
+> 补充：如果您的本地 maven settings.xml 中的 mirrorOf 标签配置了通配符 * ，请根据以下示例修改。
+> ```xml
+> <mirror>
+>   <id>xxxx</id>
+>   <mirrorOf>*,!spring-milestones</mirrorOf>
+>   <name>xxxx</name>
+>   <url>xxxx</url>
+> </mirror>
 > ```
 
 2. 为你的 Spring Bean 注入 `ChatClient`。
@@ -61,6 +70,7 @@ public class ChatController {
 
 * Hello World
 * Chat Model
+* Multi Model
 * Function Calling
 * Structured Output
 * Prompt
@@ -104,4 +114,4 @@ Spring AI Alibaba 提供 AI 开源框架以及与阿里巴巴整体开源生态�
 * 钉钉群：请通过群号 `64485010179` 搜索入群
 * 微信公众号：请扫描一下二维码关注公众号
 
-<img src="./docs/imgs/wechat-account.jpg" style="max-width:200px;"/>
+<img src="./docs/imgs/wechat-account.png" style="max-width:200px;"/>

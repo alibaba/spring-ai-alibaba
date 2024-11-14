@@ -17,7 +17,7 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 <dependency>
 	<groupId>com.alibaba.cloud.ai</groupId>
 	<artifactId>spring-ai-alibaba-starter</artifactId>
-	<version>1.0.0-M2.1</version>
+	<version>1.0.0-M3.1</version>
 </dependency>
 ```
 
@@ -34,6 +34,15 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 > 		</snapshots>
 > 	</repository>
 > </repositories>
+> ```
+> Addendum: If the mirrorOf tag in your local Maven settings. xml is configured with the wildcard *, please modify it according to the following example.
+> ```xml
+> <mirror>
+>   <id>xxxx</id>
+>   <mirrorOf>*,!spring-milestones</mirrorOf>
+>   <name>xxxx</name>
+>   <url>xxxx</url>
+> </mirror>
 > ```
 
 2. Inject the default `ChatClient` Bean to regular Controller beans.
@@ -63,6 +72,7 @@ More examples can be found at [spring-ai-alibaba-examples](./spring-ai-alibaba-e
 
 * Hello World
 * Chat Model
+* Multi Model
 * Function Calling
 * Structured Output
 * Prompt
@@ -105,4 +115,4 @@ Spring AI Alibaba aims to reduce the complexity of building ai native java appli
 * Dingtalk Group (钉钉群), search `64485010179` and join.
 * Wechat Group (微信公众号), scan the QR code below and follow us.
 
-<img src="./docs/imgs/wechat-account.jpg" style="max-width:100px;"/>
+<img src="./docs/imgs/wechat-account.png" style="width:260px;"/>
