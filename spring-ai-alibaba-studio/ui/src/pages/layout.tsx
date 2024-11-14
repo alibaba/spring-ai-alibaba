@@ -19,44 +19,52 @@ import { Layout, Menu, Flex, Button, Radio } from 'antd';
 import type { RadioChangeEvent } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'ice';
 import styles from './layout.module.css';
-import i18n from './Public/config/i18n';
-
-const headerMenu = [
-  {
-    key: '/run',
-    label: '运行',
-  },
-  {
-    key: '/history',
-    label: '历史',
-  },
-  {
-    key: '/evaluate',
-    label: '评估',
-  },
-];
-
-const languageOptions = [
-  {
-    value: 'zh',
-    label: '中文',
-  },
-  {
-    value: 'en',
-    label: '英文',
-  },
-];
+import { useTranslation } from 'react-i18next';
 
 export default function PageLayout() {
+  const { t, i18n } = useTranslation();
   const { Header } = Layout;
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [language, setLanguage] = useState('');
+
+  const languageOptions = [
+    {
+      value: 'zh',
+      label: t('chinese'),
+    },
+    {
+      value: 'en',
+      label: t('english'),
+    },
+  ];
+
+  const headerMenu = [
+    {
+      key: '/run',
+      label: t('run'),
+    },
+    {
+      key: '/history',
+      label: t('history'),
+    },
+    {
+      key: '/evaluate',
+      label: t('evaluate'),
+    },
+  ];
+
+  const [selectedKey, setSelectedKey] = useState(headerMenu[0].key);
 
   const onMenuClick = (e) => {
     navigate(e.key);
   };
 
-  const [selectedKey, setSelectedKey] = useState(headerMenu[0].key);
+  const onLanguageChange = ({ target: { value } }: RadioChangeEvent) => {
+    setLanguage(value);
+    i18n.changeLanguage(value);
+  };
 
   useEffect(() => {
     if (location.pathname === '/') {
@@ -65,12 +73,9 @@ export default function PageLayout() {
     }
   }, [location, navigate]);
 
-  const [language, setLanguage] = useState('zh');
-
-  const onLanguageChange = ({ target: { value } }: RadioChangeEvent) => {
-    setLanguage(value);
-    i18n.changeLanguage(value);
-  };
+  useEffect(() => {
+    setLanguage(i18n.language);
+  }, [i18n.language]);
 
   return (
     <Layout>
@@ -86,10 +91,10 @@ export default function PageLayout() {
         </Flex>
         <Flex>
           <Button color="default" variant="link">
-            Github
+            {t('github')}
           </Button>
           <Button color="default" variant="link">
-            官方文档
+            {t('document')}
           </Button>
           <Radio.Group
             options={languageOptions}
