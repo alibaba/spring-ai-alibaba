@@ -2,8 +2,12 @@ package com.alibaba.cloud.ai.example.prompt;
 
 import java.util.Map;
 
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.prompt.ConfigurablePromptTemplate;
 import com.alibaba.cloud.ai.prompt.ConfigurablePromptTemplateFactory;
+import com.alibaba.cloud.nacos.annotation.NacosConfig;
+import com.alibaba.cloud.nacos.annotation.NacosConfigListener;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -50,8 +54,11 @@ public class PromptTemplateController {
 	
 	@GetMapping("/prompt-template")
 	public AssistantMessage generate(@RequestParam(value = "author") String author) {
-		ConfigurablePromptTemplate template = configurablePromptTemplateFactory.create("test-template",
-				"please list the three most famous books by this {author}.");
+		ConfigurablePromptTemplate template = configurablePromptTemplateFactory.getTemplate("test-template");
+		if (template == null) {
+			template = configurablePromptTemplateFactory.create("test-template",
+					"please list the three most famous books by {author}.");
+		}
 		Prompt prompt;
 		if (StringUtils.hasText(author)) {
 			prompt = template.create(Map.of("author", author));
