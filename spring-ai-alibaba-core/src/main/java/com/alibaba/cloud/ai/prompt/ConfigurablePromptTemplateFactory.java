@@ -33,9 +33,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ConfigurablePromptTemplateFactory {
 
-	private static final Logger logger = LoggerFactory.getLogger(ConfigurablePromptTemplate.class);
+	private static final Logger logger = LoggerFactory.getLogger(ConfigurablePromptTemplateFactory.class);
 
-	private Map<String, ConfigurablePromptTemplate> templates = new ConcurrentHashMap<>();
+	private final Map<String, ConfigurablePromptTemplate> templates = new ConcurrentHashMap<>();
 
 	public ConfigurablePromptTemplate create(String name, Resource resource) {
 		return templates.computeIfAbsent(name, k -> new ConfigurablePromptTemplate(name, resource));
