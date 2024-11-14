@@ -63,7 +63,6 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 	public final RetryTemplate retryTemplate;
 
 	/** The default options used for the chat completion requests. */
-	@NacosConfig(group = "DEFAULT_GROUP", dataId = "spring.ai.alibaba.dashscope.chat.options")
 	private DashScopeChatOptions defaultOptions;
 
 	public DashScopeChatModel(DashScopeApi dashscopeApi) {
