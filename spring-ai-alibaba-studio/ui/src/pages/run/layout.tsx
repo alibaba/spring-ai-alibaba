@@ -45,9 +45,11 @@ export default function PageLayout() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 获取ChatModel List
-        const chatModelList = await chatModelsService.getChatModels();
-        const chatClientList = await chatClientsService.getChatClients();
+        const results = await Promise.all([
+          chatModelsService.getChatModels(),
+          chatClientsService.getChatClients()
+        ]);
+        const [chatModelList, chatClientList] = results;
 
         // 更新runMenu的children
         setRunMenu((prevRunMenu) => {
@@ -64,6 +66,8 @@ export default function PageLayout() {
             key: `/run/models/${model.name}`,
             label: model.name,
           }));
+
+          // todo 组装xxx目录
           return updatedRunMenu;
         });
       } catch (error) {
