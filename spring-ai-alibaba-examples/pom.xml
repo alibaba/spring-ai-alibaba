@@ -35,6 +35,7 @@
 		<module>helloworld-example</module>
 		<module>chatmodel-example</module>
 		<module>multi-model-example</module>
+		<module>audio-example</module>
 		<module>prompt-example</module>
 		<module>function-calling-example</module>
 		<module>rag-example</module>

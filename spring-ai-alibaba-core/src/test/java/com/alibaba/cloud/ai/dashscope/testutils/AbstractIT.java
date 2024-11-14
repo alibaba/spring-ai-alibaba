@@ -18,8 +18,6 @@ package com.alibaba.cloud.ai.dashscope.testutils;
 import java.util.List;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechModelOpenAPI;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionModelOpenAPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,12 +42,6 @@ public abstract class AbstractIT {
 
 	@Autowired
 	protected ChatModel chatModel;
-
-	@Autowired
-	protected DashScopeAudioTranscriptionModelOpenAPI transcriptionModel;
-
-	@Autowired
-	protected DashScopeAudioSpeechModelOpenAPI speechModel;
 
 	@Autowired
 	protected StreamingChatModel streamingChatModel;
