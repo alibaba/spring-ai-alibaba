@@ -19,7 +19,7 @@ import { Layout, Menu, Flex, Button, Radio } from 'antd';
 import type { RadioChangeEvent } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'ice';
 import styles from './layout.module.css';
-import i18n from './Public/config/i18n';
+import i18n from '@/i18n/i18n';
 
 const headerMenu = [
   {
