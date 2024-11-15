@@ -1,24 +1,22 @@
 package com.alibaba.cloud.ai.dashscope.chat;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletion;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionChunk;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.ChatCompletionFunction;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.MediaContent;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.ToolCall;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput.Choice;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequest;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequestInput;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequestParameter;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.FunctionTool;
 import com.alibaba.cloud.ai.dashscope.metadata.DashScopeAiUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.*;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.*;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput.Choice;
-import reactor.core.publisher.Mono;
-
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -39,6 +37,16 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link ChatModel} implementation for {@literal Alibaba DashScope} backed by
@@ -191,6 +199,14 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 				return Flux.just(response);
 			}
 		});
+	}
+
+	public DashScopeChatOptions getDashScopeChatOptions() {
+		return this.defaultOptions;
+	}
+
+	public void setDashScopeChatOptions(DashScopeChatOptions options) {
+		this.defaultOptions = options;
 	}
 
 	private static Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
