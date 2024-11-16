@@ -24,9 +24,8 @@ import org.springframework.context.annotation.Bean;
 /**
  * .
  *
- * @since: 2024-09-20
- * @version: 1.0
- * @author: KrakenZJC
+ * @since 2024-09-20
+ * @author KrakenZJC
  **/
 
 public class PromptTemplateAutoConfiguration {
