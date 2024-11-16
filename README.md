@@ -95,7 +95,6 @@ Spring AI Alibaba provides the following features, read the [documentation](http
 * Support conversation with ChatMemory
 
 ## Roadmap
-
 Spring AI Alibaba aims to reduce the complexity of building ai native java applications, from development, evaluation to deployment and observability. In order to achieve that, we provide both open-source framework and ecosystem integrations around it, below are the features that we plan to support in the near future:
 * Prompt Template Management
 * Event Driven AI Application
