@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Layout, Menu, Flex, Button, Radio } from 'antd';
 import type { RadioChangeEvent } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'ice';
 import styles from './layout.module.css';
 import { useTranslation } from 'react-i18next';
+import { CloudTwoTone, CodeTwoTone, ExperimentTwoTone } from '@ant-design/icons';
+import { getCurrentPath } from '@/utils/locationUtil';
 
 export default function PageLayout() {
   const { t, i18n } = useTranslation();
@@ -42,22 +44,26 @@ export default function PageLayout() {
 
   const headerMenu = [
     {
-      key: '/run',
+      key: '/run/clients',
+      icon: <CodeTwoTone />,
       label: t('run'),
     },
     {
       key: '/history',
+      icon: <CloudTwoTone />,
       label: t('history'),
     },
     {
       key: '/evaluate',
+      icon: <ExperimentTwoTone />,
       label: t('evaluate'),
     },
   ];
 
-  const [selectedKey, setSelectedKey] = useState(headerMenu[0].key);
+  const [selectedKey, setSelectedKey] = useState(getCurrentPath() || headerMenu[0].key);
 
   const onMenuClick = (e) => {
+    setSelectedKey(e.key);
     navigate(e.key);
   };
 
@@ -80,9 +86,10 @@ export default function PageLayout() {
   return (
     <Layout>
       <Header className={styles.header}>
-        <Flex>
-          <span>alibaba-studio</span>
+        <span>alibaba-ai-studio</span>
+        <Flex justify={'center'}>
           <Menu
+            style={{ minWidth: 300 }}
             mode="horizontal"
             selectedKeys={[selectedKey]}
             items={headerMenu}
