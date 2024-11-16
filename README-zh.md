@@ -3,6 +3,7 @@
 [Spring AI Alibaba](https://sca.aliyun.com/ai/) 是一款 Java 语言实现的 AI 应用开发框架，旨在简化 Java AI 应用程序开发，让 Java 开发者像使用 Spring 开发普通应用一样开发 AI 应用。Spring AI Alibaba 基于 Spring AI 开源项目构建，默认提供阿里云基础模型服务、开源及商业生态组件的集成与最佳实践。
 
 ## 快速开始
+
 请参考[快速开始](https://sca.aliyun.com/ai/get-started/) 了解如何使用 Spring AI Alibaba 快速开发生成式 AI 应用。
 
 总的来说，使用 Spring AI Alibaba 开发应用与使用普通 Spring Boot 没有什么区别，只需要增加 `spring-ai-alibaba-starter` 依赖，将 `ChatClient` Bean 注入就可以实现与模型聊天了。
@@ -66,6 +67,7 @@
 	```
 
 ## 示例
+
 请在 [spring-ai-alibaba-examples](./spring-ai-alibaba-examples) 查看更多 Example 示例。
 
 * Hello World
