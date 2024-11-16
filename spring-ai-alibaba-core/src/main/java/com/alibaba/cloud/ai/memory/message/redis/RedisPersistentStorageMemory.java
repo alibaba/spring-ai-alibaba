@@ -1,0 +1,28 @@
+package com.alibaba.cloud.ai.memory.message.redis;
+
+import com.alibaba.cloud.ai.memory.message.AbstractPersistentStorageMemory;
+
+import java.sql.SQLException;
+
+public class RedisPersistentStorageMemory implements AbstractPersistentStorageMemory {
+    @Override
+    public String get(String id) throws SQLException {
+        return null;
+    }
+
+    @Override
+    public int add(String id, String Messages) throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public int delete(String id) throws SQLException {
+        return 0;
+    }
+
+    @Override
+    public int set(String id, String Messages) throws SQLException {
+        return 0;
+    }
+
+}
