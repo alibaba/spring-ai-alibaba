@@ -5,6 +5,7 @@
 An AI application framework for Java developers built on top of Spring AI that provides seamless integration with Alibaba Cloud QWen LLM services and cloud-native infrastructures.
 
 ## Get Started
+
 Please refer to [quick start](https://sca.aliyun.com/ai/get-started/) for how to quickly add generative AI to your Spring Boot applications.
 
 Overall, it takes only two steps to turn your Spring Boot application into an intelligent agent:
@@ -68,6 +69,7 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 	```
 
 ## Examples
+
 More examples can be found at [spring-ai-alibaba-examples](./spring-ai-alibaba-examples).
 
 * Hello World
@@ -95,6 +97,7 @@ Spring AI Alibaba provides the following features, read the [documentation](http
 * Support conversation with ChatMemory
 
 ## Roadmap
+
 Spring AI Alibaba aims to reduce the complexity of building ai native java applications, from development, evaluation to deployment and observability. In order to achieve that, we provide both open-source framework and ecosystem integrations around it, below are the features that we plan to support in the near future:
 * Prompt Template Management
 * Event Driven AI Application
