@@ -5,7 +5,10 @@ import com.alibaba.cloud.ai.memory.message.AbstractPersistentStorageMemory;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
-
+/**
+ * @author wudihaoke214
+ * @author <a href="mailto:2897718178@qq.com">wudihaoke214</a>
+ */
 
 public class MySQLPersistentStorageMemory implements AbstractPersistentStorageMemory {
 

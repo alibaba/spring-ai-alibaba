@@ -1,17 +1,17 @@
 package com.alibaba.cloud.ai.memory.message.redis;
 
 import com.alibaba.cloud.ai.memory.message.msql.MySQLChatMemory;
-import com.alibaba.cloud.ai.memory.message.msql.MySQLPersistentStorageMemory;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
-
-import java.util.ArrayList;
 import java.util.List;
-
+/**
+ * @author wudihaoke214
+ * @author <a href="mailto:2897718178@qq.com">wudihaoke214</a>
+ */
 public class RedisChatMemory implements ChatMemory {
     private static final Logger logger = LoggerFactory.getLogger(MySQLChatMemory.class);
     private final RedisPersistentStorageMemory redisPersistentStorageMemory;
@@ -30,6 +30,7 @@ public class RedisChatMemory implements ChatMemory {
             all.addAll(messages);
             redisPersistentStorageMemory.add(conversationId, objectMapper.writeValueAsString(all));
         } catch (Exception e) {
+            logger.error("Error adding messages to Redis chat memory", e);
             throw new RuntimeException(e);
         }
     }
@@ -43,6 +44,7 @@ public class RedisChatMemory implements ChatMemory {
             });
             return all != null ? all.stream().skip(Math.max(0, all.size() - lastN)).toList() : List.of();
         } catch (Exception e) {
+            logger.error("Error getting messages from Redis chat memory", e);
             throw new RuntimeException(e);
         }
     }
@@ -67,6 +69,7 @@ public class RedisChatMemory implements ChatMemory {
             }
             redisPersistentStorageMemory.set(conversationId, objectMapper.writeValueAsString(all));
         } catch (Exception e) {
+            logger.error("Error clearing over limit messages from Redis chat memory", e);
             throw new RuntimeException(e);
         }
     }

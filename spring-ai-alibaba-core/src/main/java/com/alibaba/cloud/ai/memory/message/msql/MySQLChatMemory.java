@@ -1,15 +1,17 @@
 package com.alibaba.cloud.ai.memory.message.msql;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import com.fasterxml.jackson.core.type.TypeReference;
-
 import java.util.List;
+/**
+ * @author wudihaoke214
+ * @author <a href="mailto:2897718178@qq.com">wudihaoke214</a>
+ */
 
 public class MySQLChatMemory implements ChatMemory {
     private static final Logger logger = LoggerFactory.getLogger(MySQLChatMemory.class);
@@ -29,6 +31,7 @@ public class MySQLChatMemory implements ChatMemory {
             all.addAll(messages);
             mySQLPersistentStorageMemory.add(conversationId, objectMapper.writeValueAsString(all));
         } catch (Exception e) {
+            logger.error("Error adding messages to MySQL chat memory", e);
             throw new RuntimeException(e);
         }
     }
@@ -42,6 +45,7 @@ public class MySQLChatMemory implements ChatMemory {
             });
             return all != null ? all.stream().skip(Math.max(0, all.size() - lastN)).toList() : List.of();
         } catch (Exception e) {
+            logger.error("Error getting messages from MySQL chat memory", e);
             throw new RuntimeException(e);
         }
     }
@@ -66,6 +70,7 @@ public class MySQLChatMemory implements ChatMemory {
             }
             mySQLPersistentStorageMemory.set(conversationId, objectMapper.writeValueAsString(all));
         } catch (Exception e) {
+            logger.error("Error clearing messages from MySQL chat memory", e);
             throw new RuntimeException(e);
         }
     }

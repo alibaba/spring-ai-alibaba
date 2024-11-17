@@ -3,7 +3,10 @@ package com.alibaba.cloud.ai.memory.message.redis;
 import com.alibaba.cloud.ai.memory.message.AbstractPersistentStorageMemory;
 
 import java.sql.SQLException;
-
+/**
+ * @author wudihaoke214
+ * @author <a href="mailto:2897718178@qq.com">wudihaoke214</a>
+ */
 public class RedisPersistentStorageMemory implements AbstractPersistentStorageMemory {
     @Override
     public String get(String id) throws SQLException {
