@@ -1,7 +1,11 @@
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.action.llm.LLMNodeAction;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.graph.state.AppendableValue;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
@@ -10,6 +14,7 @@ import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -205,5 +210,22 @@ public class StateGraphTest {
 				result.get().messages().values());
 
 	}
+
+	@Test
+	void testWithLLMNodeAction() throws Exception {
+		NodeAction<MessagesState> llmNode = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("sk-ec5a3fdc7796473a8c96e87b00b03453")))
+				.systemMessage("You're a code writer with strong language skills and coding skills")
+				.build();
+		StateGraph<MessagesState> workflow = new StateGraph<>(MessagesState.SCHEMA, MessagesState::new)
+				.addNode("code-writer", AsyncNodeAction.node_async(llmNode))
+				.addEdge(StateGraph.START, "code-writer")
+				.addEdge("code-writer", StateGraph.END);
+
+		CompiledGraph<MessagesState> compiledGraph = workflow.compile();
+		//FIXME message serialize error
+		Optional<MessagesState> result = compiledGraph.invoke(Map.of("messages", List.of(new UserMessage("请你给我一个使用spring ai的最佳实践"))));
+		System.out.println(result);
+	}
+
 
 }
