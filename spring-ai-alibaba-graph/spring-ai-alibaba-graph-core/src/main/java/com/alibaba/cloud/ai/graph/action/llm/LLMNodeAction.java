@@ -2,7 +2,6 @@ package com.alibaba.cloud.ai.graph.action.llm;
 
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.state.AgentState;
-import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
@@ -12,7 +11,6 @@ import org.springframework.core.io.Resource;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,7 +23,7 @@ import java.util.stream.Collectors;
 public class LLMNodeAction<State extends AgentState> implements NodeAction<State> {
 
     public static final String DEFAULT_SYSTEM_MESSAGE = "You're a helpful assistant";
-    public static final String MESSAGE_KEY = "message";
+    public static final String MESSAGES_KEY = "messages";
     private final ChatClient chatClient;
 
     public LLMNodeAction(ChatClient chatClient){
@@ -34,14 +32,15 @@ public class LLMNodeAction<State extends AgentState> implements NodeAction<State
 
     @Override
     public Map<String, Object> apply(State state) throws Exception {
-        List<Message> messages = state.value(MESSAGE_KEY, new ArrayList<>());
+        List<Message> messages = state.value(MESSAGES_KEY, new ArrayList<>());
         List<Generation> generations = chatClient.prompt()
                 .system(s->s.params(state.data()))
                 .messages(messages)
                 .call()
                 .chatResponse().getResults();
         List<Message> output = generations.stream().map(Generation::getOutput).collect(Collectors.toList());
-        return Map.of(MESSAGE_KEY, output);
+        // FIXME serialization issue with messages in spring
+        return Map.of(MESSAGES_KEY, output);
     }
 
     public static Builder builder(ChatModel chatModel){

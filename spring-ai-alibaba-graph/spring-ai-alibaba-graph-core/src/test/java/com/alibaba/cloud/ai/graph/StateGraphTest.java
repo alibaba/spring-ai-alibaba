@@ -14,11 +14,13 @@ import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.alibaba.cloud.ai.graph.action.llm.LLMNodeAction.MESSAGES_KEY;
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.listOf;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -213,18 +215,13 @@ public class StateGraphTest {
 
 	@Test
 	void testWithLLMNodeAction() throws Exception {
-		NodeAction<MessagesState> llmNode = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("sk-ec5a3fdc7796473a8c96e87b00b03453")))
+		NodeAction<MessagesState> llmNode = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("${DASHSCOPE_API_KEY}")))
 				.systemMessage("You're a code writer with strong language skills and coding skills")
 				.build();
-		StateGraph<MessagesState> workflow = new StateGraph<>(MessagesState.SCHEMA, MessagesState::new)
-				.addNode("code-writer", AsyncNodeAction.node_async(llmNode))
-				.addEdge(StateGraph.START, "code-writer")
-				.addEdge("code-writer", StateGraph.END);
+		Map<String,Object> stateData = llmNode.apply(new MessagesState(Map.of(MESSAGES_KEY, List.of(new UserMessage("can you provide a best practice using spring ai?")))));
+		assertEquals(1, stateData.size());
+		System.out.println(stateData);
 
-		CompiledGraph<MessagesState> compiledGraph = workflow.compile();
-		//FIXME message serialize error
-		Optional<MessagesState> result = compiledGraph.invoke(Map.of("messages", List.of(new UserMessage("请你给我一个使用spring ai的最佳实践"))));
-		System.out.println(result);
 	}
 
 
