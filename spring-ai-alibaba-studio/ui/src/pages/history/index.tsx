@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Card, Space, Table, Tag } from 'antd';
+import { useEffect, useState } from 'react';
+import { Card, Table, Tag } from 'antd';
 import type { TableProps } from 'antd';
 import { tableList } from '@/mock/tracemock';
 import { createStyles } from 'antd-style';
@@ -35,14 +35,27 @@ const columns: TableProps<DataType>['columns'] = [
     fixed: 'left',
     width: 100,
     ellipsis: true,
-    render: (text) => <div style={{ width: 100 }}><a style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{text}</a>...</div>,
+    render: (text) => (
+      <div style={{ width: 100 }}>
+        <a
+          style={{
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {text}
+        </a>
+        ...
+      </div>
+    ),
   },
   {
     title: 'timestamp',
     dataIndex: 'timestamp',
     key: 'timestamp',
     ellipsis: true,
-   // sorter: (a, b) => a.timestamp - b.timestamp,
+    // sorter: (a, b) => a.timestamp - b.timestamp,
     width: 100,
   },
   {
@@ -76,7 +89,9 @@ const columns: TableProps<DataType>['columns'] = [
     title: 'usageDetails',
     dataIndex: 'usageDetails',
     key: 'usageDetails',
-    render: (_, { usageDetails }) => <span>{`${usageDetails?.input} → ${usageDetails?.output} (∑ ${usageDetails?.total})`}</span>,
+    render: (_, { usageDetails }) => (
+      <span>{`${usageDetails?.input} → ${usageDetails?.output} (∑ ${usageDetails?.total})`}</span>
+    ),
   },
   {
     title: 'Total Cost',
@@ -91,16 +106,16 @@ const columns: TableProps<DataType>['columns'] = [
     render: (_, { tags }) => (
       <>
         {tags.map((tag) => {
-            let color = tag.length > 5 ? 'geekblue' : 'green';
-            if (tag === 'loser') {
-              color = 'volcano';
-            }
-            return (
-              <Tag color={color} key={tag}>
-                {tag.toUpperCase()}
-              </Tag>
-            );
-          })}
+          let color = tag.length > 5 ? 'geekblue' : 'green';
+          if (tag === 'loser') {
+            color = 'volcano';
+          }
+          return (
+            <Tag color={color} key={tag}>
+              {tag.toUpperCase()}
+            </Tag>
+          );
+        })}
       </>
     ),
   },
@@ -153,7 +168,7 @@ export default function History() {
   const { styles } = useStyle();
   const handleGetTraceData = async () => {
     const temp = tableList.result.data.json.traces;
-    temp.forEach(trace => {
+    temp.forEach((trace) => {
       // @ts-ignore
       trace.model = Math.random() > 0.5 ? 'gpt-4o' : 'claude-3-5-sonnet';
     });
@@ -172,6 +187,7 @@ export default function History() {
           columns={columns}
           dataSource={data}
           scroll={{ x: 'max-content' }}
+          rowKey={(recode) => recode.id}
         />
       </Card>
     </div>
