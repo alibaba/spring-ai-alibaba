@@ -18,6 +18,9 @@ package ai.spring.demo.ai.playground.services;
 
 import java.time.LocalDate;
 
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -57,7 +60,7 @@ public class CustomerSupportAssistant {
 					   今天的日期是 {current_date}.
 					""")
 				.defaultAdvisors(
-						new PromptChatMemoryAdvisor(chatMemory), // Chat Memory
+						new MessageChatMemoryAdvisor(chatMemory), // Chat Memory
 						// new VectorStoreChatMemoryAdvisor(vectorStore)),
 					
 						new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()), // RAG
@@ -76,6 +79,9 @@ public class CustomerSupportAssistant {
 
 		return this.chatClient.prompt()
 			.system(s -> s.param("current_date", LocalDate.now().toString()))
+//			.messages(new UserMessage("你好，我想知道去上海的票还有没有"),
+//					new AssistantMessage("您好！很高兴为您服务。为了查询去上海的机票是否有余票，我需要先了解一些您的信息。请问您可以提供一下预订号和您的姓名吗？如果您还没有预订，也没有关系，请告诉我您打算出发的具体日期，我可以帮您查一下当天的航班情况。"),
+//					new UserMessage("预定号：101，云小宝"))
 			.user(userMessageContent)
 			.advisors(a -> a.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId).param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
 			.stream()
