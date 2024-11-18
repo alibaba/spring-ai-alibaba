@@ -19,6 +19,7 @@ func GetChatModelCmd() *cobra.Command {
 func init() {
 	chatmodelCmd.AddCommand(getCmd)
 	chatmodelCmd.AddCommand(listCmd)
+	chatmodelCmd.AddCommand(runCmd)
 
 	// Here you will define your flags and configuration settings.
 

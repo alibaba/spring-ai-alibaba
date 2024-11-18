@@ -10,3 +10,8 @@ const (
 const (
 	ModelNameFlag = "modelName"
 )
+
+const (
+	PromptFlag  = "prompt"
+	VerboseFlag = "verbose"
+)

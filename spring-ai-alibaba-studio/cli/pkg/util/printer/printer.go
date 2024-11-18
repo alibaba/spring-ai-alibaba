@@ -48,3 +48,7 @@ func PrintOne[T any](data T, kind PrinterKind) error {
 		return fmt.Errorf("unsupported printer kind: %s", kind)
 	}
 }
+
+func PrintText(text string) {
+	fmt.Println(text)
+}
