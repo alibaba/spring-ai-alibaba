@@ -2,7 +2,7 @@
   "github": "Github",
   "document": "Document",
   "run": "Run",
-  "history": "Traces",
+  "traces": "Traces",
   "evaluate": "Evaluate",
   "chinese": "zh",
   "english": "en"
