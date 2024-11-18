@@ -53,9 +53,9 @@ export default function PageLayout() {
       label: t('run'),
     },
     {
-      key: '/history',
+      key: '/traces',
       icon: <CloudTwoTone />,
-      label: t('history'),
+      label: t('traces'),
     },
     {
       key: '/evaluate',
