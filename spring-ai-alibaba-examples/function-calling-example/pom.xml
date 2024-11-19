@@ -58,7 +58,11 @@
 			<artifactId>spring-ai-alibaba-starter-time</artifactId>
 			<version>1.0.0-M3.2</version>
 		</dependency>
-
+		<dependency>
+			<groupId>com.alibaba.cloud.ai</groupId>
+			<artifactId>baidu-search-plugin-starter</artifactId>
+			<version>0.0.1</version>
+		</dependency>
 	</dependencies>
 
 	<build>
