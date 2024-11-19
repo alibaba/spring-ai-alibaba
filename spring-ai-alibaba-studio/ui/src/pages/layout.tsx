@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Layout, Menu, Flex, Button, Radio } from 'antd';
 import type { RadioChangeEvent } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'ice';
 import styles from './layout.module.css';
 import { useTranslation } from 'react-i18next';
-import { CloudTwoTone, CodeTwoTone, ExperimentTwoTone } from '@ant-design/icons';
+import {
+  CloudTwoTone,
+  CodeTwoTone,
+  ExperimentTwoTone,
+} from '@ant-design/icons';
 import { getCurrentPath } from '@/utils/locationUtil';
 
 export default function PageLayout() {
@@ -44,14 +48,14 @@ export default function PageLayout() {
 
   const headerMenu = [
     {
-      key: '/run/clients',
+      key: '/run',
       icon: <CodeTwoTone />,
       label: t('run'),
     },
     {
-      key: '/history',
+      key: '/traces',
       icon: <CloudTwoTone />,
-      label: t('history'),
+      label: t('traces'),
     },
     {
       key: '/evaluate',
@@ -60,7 +64,9 @@ export default function PageLayout() {
     },
   ];
 
-  const [selectedKey, setSelectedKey] = useState(getCurrentPath() || headerMenu[0].key);
+  const [selectedKey, setSelectedKey] = useState(
+    `/${getCurrentPath().split('/')[1]}` || headerMenu[0].key,
+  );
 
   const onMenuClick = (e) => {
     setSelectedKey(e.key);
