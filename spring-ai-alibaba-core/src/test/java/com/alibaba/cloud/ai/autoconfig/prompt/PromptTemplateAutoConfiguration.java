@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.autoconfigure.prompt;
+package com.alibaba.cloud.ai.autoconfig.prompt;
 
 import com.alibaba.cloud.ai.prompt.ConfigurablePromptTemplateFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -30,10 +30,11 @@ import org.springframework.context.annotation.Bean;
 
 public class PromptTemplateAutoConfiguration {
 
+	private final static String TEMPLATE_PREFIX = "spring.ai.nacos.prompt.template";
+
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = "spring.ai.nacos.prompt.template", name = "enabled", havingValue = "true",
-			matchIfMissing = true)
+	@ConditionalOnProperty(prefix = TEMPLATE_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
 	public ConfigurablePromptTemplateFactory configurablePromptTemplateFactory() {
 		return new ConfigurablePromptTemplateFactory();
 	}
