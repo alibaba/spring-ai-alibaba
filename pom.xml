@@ -33,7 +33,8 @@
 	<modules>
 		<module>spring-ai-alibaba-core</module>
 		<module>spring-ai-alibaba-starter</module>
-	</modules>
+        <module>spring-ai-alibaba-autoconfig</module>
+    </modules>
 
 	<properties>
 		<revision>1.0.0-M3.2</revision>

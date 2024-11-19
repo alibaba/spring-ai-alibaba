@@ -2,7 +2,7 @@ package com.alibaba.cloud.ai.dashscope.embedding;
 
 import java.util.List;
 
-import com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAutoConfiguration;
+import com.alibaba.cloud.ai.autoconfig.dashscope.DashScopeAutoConfiguration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
