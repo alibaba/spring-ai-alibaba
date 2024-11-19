@@ -7,9 +7,9 @@
         <version>1.0.0-M3.2</version>
         <relativePath>../../../pom.xml</relativePath>
     </parent>
-    <artifactId>time-plugin-starter</artifactId>
+    <artifactId>spring-ai-alibaba-starter-time</artifactId>
     <packaging>war</packaging>
-    <name>time-plugin-starter</name>
+    <name>spring-ai-alibaba-starter-time</name>
     <url>http://maven.apache.org</url>
     <dependencies>
         <dependency>
