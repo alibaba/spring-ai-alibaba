@@ -11,7 +11,7 @@ public class Config {
 
     @Bean
     @ConditionalOnMissingBean
-    @Description("获取当前地区时间")
+    @Description("Get the current local time")
     public GetCurrentLocalTimeService getCurrentLocalTimeFunction() {
         return new GetCurrentLocalTimeService();
     }

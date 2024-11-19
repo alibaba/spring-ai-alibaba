@@ -7,16 +7,16 @@ import java.time.format.DateTimeFormatter;
 public class ZoneUtils {
     public static String getTimeByZoneId(String zoneId) {
 
-        // 使用ZoneId获取时区
+        // Get the time zone using ZoneId
         ZoneId zid = ZoneId.of(zoneId);
 
-        // 获取该时区的当前时间
+        // Get the current time in this time zone
         ZonedDateTime zonedDateTime = ZonedDateTime.now(zid);
 
-        // 定义格式化器
+        // Defining a formatter
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
 
-        // 将ZonedDateTime格式化为字符串
+        // Format ZonedDateTime as a string
         String formattedDateTime = zonedDateTime.format(formatter);
 
         return formattedDateTime;

@@ -11,11 +11,11 @@ public class GetCurrentLocalTimeService implements Function<GetCurrentLocalTimeS
     @Override
     public Response apply(Request request) {
         TimeZone timeZone = TimeZone.getDefault();
-        return new Response(String.format("当前地区时间为%s", ZoneUtils.getTimeByZoneId(timeZone.getID())));
+        return new Response(String.format("The current local time is %s", ZoneUtils.getTimeByZoneId(timeZone.getID())));
     }
 
 
-    @JsonClassDescription("获取当前地区时间的请求")
+    @JsonClassDescription("Request to obtain the current local time")
     public record Request() {
     }
 
