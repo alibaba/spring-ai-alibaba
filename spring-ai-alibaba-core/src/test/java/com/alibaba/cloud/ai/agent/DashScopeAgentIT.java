@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.agent;
 
-import com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAutoConfiguration;
+import com.alibaba.cloud.ai.autoconfig.dashscope.DashScopeAutoConfiguration;
 import com.alibaba.cloud.ai.dashscope.agent.DashScopeAgent;
 import com.alibaba.cloud.ai.dashscope.agent.DashScopeAgentOptions;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi;

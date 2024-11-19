@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.dashscope.chat.client;
 
 import com.alibaba.cloud.ai.advisor.DocumentRetrievalAdvisor;
 import com.alibaba.cloud.ai.advisor.RetrievalRerankAdvisor;
-import com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAutoConfiguration;
+import com.alibaba.cloud.ai.autoconfig.dashscope.DashScopeAutoConfiguration;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
