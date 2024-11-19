@@ -50,4 +50,13 @@ public class FunctionCallingController {
 			.content();
 	}
 
+	@GetMapping("/getTime")
+	public String getTime(String text) {
+		return chatClient.prompt()
+				.functions("getCurrentLocalTimeFunction")
+				.user(text)
+				.call()
+				.content();
+	}
+
 }
