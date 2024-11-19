@@ -25,7 +25,9 @@ Arguments:
   %s %s get model1 model2
 		`, constant.RootCmdName, chatModelCmdName, constant.RootCmdName, chatModelCmdName),
 	Args: cobra.MinimumNArgs(1),
-	Run:  handler.ChatModelGetHandler,
+	Run: func(cmd *cobra.Command, args []string) {
+		handler.NewChatModelHandlerManager().ChatModelGetHandler(cmd, args)
+	},
 }
 
 func init() {

@@ -2,7 +2,7 @@ package printer
 
 import (
 	"fmt"
-	"os"
+	"io"
 	"reflect"
 	"text/tabwriter"
 )
@@ -11,9 +11,9 @@ type TablePrinter[T any] struct {
 	writer *tabwriter.Writer
 }
 
-func NewTablePrinter[T any]() Printer[T] {
+func NewTablePrinter[T any](output io.Writer) Printer[T] {
 	return &TablePrinter[T]{
-		writer: tabwriter.NewWriter(os.Stdout, 0, 8, 0, '\t', 0),
+		writer: tabwriter.NewWriter(output, 0, 8, 0, '\t', 0),
 	}
 }
 

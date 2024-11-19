@@ -3,16 +3,15 @@ package printer
 import (
 	"encoding/json"
 	"io"
-	"os"
 )
 
 type JsonPrinter[T any] struct {
 	writer io.Writer
 }
 
-func NewJsonPrinter[T any]() *JsonPrinter[T] {
+func NewJsonPrinter[T any](output io.Writer) *JsonPrinter[T] {
 	return &JsonPrinter[T]{
-		writer: os.Stdout,
+		writer: output,
 	}
 }
 

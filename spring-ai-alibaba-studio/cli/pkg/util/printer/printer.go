@@ -1,6 +1,11 @@
 package printer
 
-import "fmt"
+import (
+	"fmt"
+	"io"
+
+	"github.com/spf13/cobra"
+)
 
 type Printer[T any] interface {
 	PrintOne(data T) error
@@ -23,32 +28,39 @@ func PrinterDetailKindsAsString() []string {
 	return []string{string(JsonPrinterKind), string(YamlPrinterKind)}
 }
 
-func PrintSlice[T any](data []T, kind PrinterKind) error {
+func PrintSlice[T any](data []T, kind PrinterKind, output io.Writer) error {
 	switch kind {
 	case TablePrinterKind:
-		return NewTablePrinter[T]().PrintSlice(data)
+		return NewTablePrinter[T](output).PrintSlice(data)
 	case JsonPrinterKind:
-		return NewJsonPrinter[T]().PrintSlice(data)
+		return NewJsonPrinter[T](output).PrintSlice(data)
 	case YamlPrinterKind:
-		return NewYamlPrinter[T]().PrintSlice(data)
+		return NewYamlPrinter[T](output).PrintSlice(data)
 	default:
-		return fmt.Errorf("unsupported printer kind: %s", kind)
+		return fmt.Errorf("unsupported output kind: %s", kind)
 	}
 }
 
-func PrintOne[T any](data T, kind PrinterKind) error {
+func PrintOne[T any](data T, kind PrinterKind, output io.Writer) error {
 	switch kind {
 	case TablePrinterKind:
-		return NewTablePrinter[T]().PrintOne(data)
+		return NewTablePrinter[T](output).PrintOne(data)
 	case JsonPrinterKind:
-		return NewJsonPrinter[T]().PrintOne(data)
+		return NewJsonPrinter[T](output).PrintOne(data)
 	case YamlPrinterKind:
-		return NewYamlPrinter[T]().PrintOne(data)
+		return NewYamlPrinter[T](output).PrintOne(data)
 	default:
-		return fmt.Errorf("unsupported printer kind: %s", kind)
+		return fmt.Errorf("unsupported output kind: %s", kind)
 	}
 }
 
-func PrintText(text string) {
-	fmt.Println(text)
+func PrintText(text string, output io.Writer) {
+	fmt.Fprintln(output, text)
+}
+
+func PrintError(err error, cmd *cobra.Command, output io.Writer, isMock bool) {
+	fmt.Fprintln(output, err)
+	if !isMock {
+		cmd.Usage()
+	}
 }

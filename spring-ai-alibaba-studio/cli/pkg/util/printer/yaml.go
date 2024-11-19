@@ -2,7 +2,6 @@ package printer
 
 import (
 	"io"
-	"os"
 
 	"gopkg.in/yaml.v3"
 )
@@ -11,9 +10,9 @@ type YamlPrinter[T any] struct {
 	writer io.Writer
 }
 
-func NewYamlPrinter[T any]() *YamlPrinter[T] {
+func NewYamlPrinter[T any](output io.Writer) *YamlPrinter[T] {
 	return &YamlPrinter[T]{
-		writer: os.Stdout,
+		writer: output,
 	}
 }
 

@@ -18,7 +18,9 @@ var listCmd = &cobra.Command{
   # List all available chat models in JSON format
   %s %s list -o json
   	`, constant.RootCmdName, chatModelCmdName, constant.RootCmdName, chatModelCmdName),
-	Run: handler.ChatModelListHandler,
+	Run: func(cmd *cobra.Command, args []string) {
+		handler.NewChatModelHandlerManager().ChatModelListHandler(cmd, args)
+	},
 }
 
 func init() {
