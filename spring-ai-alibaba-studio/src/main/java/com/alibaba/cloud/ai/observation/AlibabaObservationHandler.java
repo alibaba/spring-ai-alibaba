@@ -4,7 +4,6 @@ import com.alibaba.cloud.ai.entity.ModelObservationDetailEntity;
 import com.alibaba.cloud.ai.entity.ModelObservationEntity;
 import com.alibaba.cloud.ai.mapper.ModelObservationDetailMapper;
 import com.alibaba.cloud.ai.mapper.ModelObservationMapper;
-import com.alibaba.fastjson.JSON;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
@@ -14,11 +13,14 @@ import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
+import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 
 /**
  * @Description: AlibabaObservationHandler
@@ -44,7 +46,7 @@ public class AlibabaObservationHandler implements ObservationHandler<Observation
 
     @Override
     public void onStart(Observation.Context context) {
-        long startTime = clock.monotonicTime() / 1000000;
+        long startTime = getCurrentTimeMillis();
         context.put("startTime", startTime);
 
         SpanBuilder spanBuilder = tracer.spanBuilder(context.getName())
@@ -59,7 +61,7 @@ public class AlibabaObservationHandler implements ObservationHandler<Observation
     @Override
     public void onStop(Observation.Context context) {
         long startTime = context.getOrDefault("startTime", 0L);
-        long endTime = clock.monotonicTime() / 1000000;
+        long endTime = getCurrentTimeMillis();
         long duration = endTime - startTime;
 
         Span span = context.getOrDefault("span", null);
@@ -68,13 +70,19 @@ public class AlibabaObservationHandler implements ObservationHandler<Observation
             span.end();
         }
 
-        if (context instanceof ChatModelObservationContext modelContext) {
+        if (context instanceof AdvisorObservationContext advisorObservationContext) {
+            LOGGER.warn("Unknown Observation.Context type: {}, context: {}", context.getClass(), advisorObservationContext);
+        }else if (context instanceof ChatModelObservationContext modelContext) {
             saveChatModelObservationContext(modelContext, duration);
+        } else if(context instanceof ChatClientObservationContext chatClientObservationContext) {
+            LOGGER.warn("Unknown Observation.Context type: {}, context: {}", context.getClass(), chatClientObservationContext);
+        } else if(context instanceof EmbeddingModelObservationContext) {
+            LOGGER.warn("Unknown Observation.Context type: {}", context.getClass());
+        } else if(context instanceof VectorStoreObservationContext) {
+            LOGGER.warn("Unknown Observation.Context type: {}", context.getClass());
         } else {
             LOGGER.warn("Unknown Observation.Context type: {}", context.getClass());
         }
-
-        LOGGER.info("onStop: Operation '{}' completed. Duration: {} ns", context.getName(), duration);
     }
 
     @Override
@@ -93,6 +101,9 @@ public class AlibabaObservationHandler implements ObservationHandler<Observation
         return true;
     }
 
+    private long getCurrentTimeMillis() {
+        return clock.monotonicTime() / 1_000_000;
+    }
 
     /**
      * 保存 ChatModelObservationContext 的数据到数据库
