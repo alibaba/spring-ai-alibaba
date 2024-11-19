@@ -40,13 +40,8 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
-		</dependency>
-
-		<dependency>
 			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>spring-ai-alibaba-core</artifactId>
+			<artifactId>spring-ai-alibaba-autoconfigure</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 
