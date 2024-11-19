@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.dashscope.audio;
 
-import com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAutoConfiguration;
+import com.alibaba.cloud.ai.autoconfig.dashscope.DashScopeAutoConfiguration;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisPrompt;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisResponse;
 
