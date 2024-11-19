@@ -1,10 +1,20 @@
 spring:
   application:
     name: cli-debug-example
-
   ai:
     dashscope:
       api-key: ${AI_DASHSCOPE_API_KEY}
+  datasource:
+    url: jdbc:sqlite:spring-ai-alibaba-studio/db/studio.db
+    driver-class-name: org.sqlite.JDBC
+
+
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    cache-enabled: false
+    map-underscore-to-camel-case: true
 
 server:
   port: 8080

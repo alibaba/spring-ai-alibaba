@@ -54,6 +54,19 @@
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-api</artifactId>
         </dependency>
+
+
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+        </dependency>
+
+        <!--mybatis-plus插件-->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+            <version>3.5.9</version>
+        </dependency>
     </dependencies>
 
     <build>
