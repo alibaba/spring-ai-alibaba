@@ -26,7 +26,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-autoconfig</artifactId>
+    <artifactId>spring-ai-alibaba-autoconfigure</artifactId>
     <packaging>jar</packaging>
 
     <name>spring-ai-autoconfig</name>

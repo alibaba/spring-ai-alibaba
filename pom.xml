@@ -33,7 +33,7 @@
 	<modules>
 		<module>spring-ai-alibaba-core</module>
 		<module>spring-ai-alibaba-starter</module>
-        <module>spring-ai-alibaba-autoconfig</module>
+        <module>spring-ai-alibaba-autoconfigure</module>
     </modules>
 
 	<properties>
