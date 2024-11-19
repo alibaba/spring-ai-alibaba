@@ -19,7 +19,7 @@ public class Config {
 
     @Bean
     @ConditionalOnMissingBean
-    @Description("Get the current time based on time zone id")
+    @Description("Get the time of a specified city")
     public GetCurrentTimeByTimeZoneIdService getCityTimeFunction() {
         return new GetCurrentTimeByTimeZoneIdService();
     }
