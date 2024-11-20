@@ -49,13 +49,21 @@ public class FunctionCallingController {
 			.call()
 			.content();
 	}
+  
+  @GetMapping("/getTime")
+	public String getTime(String text) {
+		return chatClient.prompt()
+				.functions("getCityTimeFunction")
+				.user(text)
+				.call()
+				.content();
 
 	@GetMapping("/dingTalk-custom-robot-send")
 	public String dingTalkCustomRobotSend(String input) {
 		return chatClient.prompt()
 				.functions("CustomRobotSendMessageFunction")
 				.user(String.format("帮我用自定义机器人发送'%s'", input))
-				.call()
+        .call()
 				.content();
 	}
 
