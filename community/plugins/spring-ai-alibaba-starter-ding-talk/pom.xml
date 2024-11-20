@@ -1,0 +1,61 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.alibaba.cloud.ai</groupId>
+        <artifactId>spring-ai-alibaba</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../../pom.xml</relativePath>
+    </parent>
+    <artifactId>spring-ai-alibaba-starter-ding-talk</artifactId>
+    <packaging>jar</packaging>
+    <name>Spring Ai Alibaba Starter Ding Talk</name>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+
+    <properties>
+        <dingtalk-sdk-version>2.1.68</dingtalk-sdk-version>
+        <old-dingtalk-sdk-version>2.0.0</old-dingtalk-sdk-version>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+        </dependency>
+
+        <!--New version of DingTalk SDK-->
+        <dependency>
+            <groupId>com.aliyun</groupId>
+            <artifactId>dingtalk</artifactId>
+            <version>${dingtalk-sdk-version}</version>
+        </dependency>
+
+        <!--The old version of DingTalk SDK. Some interfaces have not been fully replaced yet-->
+        <dependency>
+            <groupId>com.aliyun</groupId>
+            <artifactId>alibaba-dingtalk-service-sdk</artifactId>
+            <version>${old-dingtalk-sdk-version}</version>
+        </dependency>
+
+    </dependencies>
+    <build>
+        <finalName>ding-talk-plugin-starter</finalName>
+    </build>
+</project>
