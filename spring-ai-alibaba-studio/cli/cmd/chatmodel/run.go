@@ -13,13 +13,16 @@ import (
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Run a chat model with the given input",
+	Long: `Run a chat model with the given input
+Arguments:
+[modelName]  Name of the chat model to run (required)
+[input]      Input text to run the chat model with (required)
+	`,
+	Example: fmt.Sprintf(`  # Run the chat model named "model1" with input "hello"
+  %s %s run model1 hello
+  # Run the chat model named "model1" with input "a longer input" and additional prompt message
+  %s %s run model1 "a longer input" -p "additional prompt message"`, constant.RootCmdName, chatModelCmdName, constant.RootCmdName, chatModelCmdName),
 	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		handler.NewChatModelHandlerManager().ChatModelRunHandler(cmd, args)

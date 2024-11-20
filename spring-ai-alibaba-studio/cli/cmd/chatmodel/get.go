@@ -14,7 +14,7 @@ import (
 var getCmd = &cobra.Command{
 	Use:   "get modelName...",
 	Short: "Get chat model detail by model name",
-	Long: `Get chat model detail by model name.
+	Long: `Get chat model detail by model name
 
 Arguments:
 [modelName]  Name of the chat models to get details for (required)

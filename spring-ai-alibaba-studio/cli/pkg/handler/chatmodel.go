@@ -84,7 +84,7 @@ func (m *chatModelHandlerManager) ChatModelRunHandler(cmd *cobra.Command, args [
 		return
 	}
 	// send http request
-	result, err := m.apis.RunChatModel(&chatmodel.RunChatModelReq{Key: modelName, Input: input, Prompt: prompt})
+	result, err := loadingWrapper(m.apis.RunChatModel, &chatmodel.RunChatModelReq{Key: modelName, Input: input, Prompt: prompt}, m.output)
 	if err != nil {
 		printer.PrintError(err, cmd, m.output, m.isMock)
 		return
