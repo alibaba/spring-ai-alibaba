@@ -120,7 +120,7 @@ public class AlibabaObservationHandler implements ObservationHandler<Observation
         modelObservationEntity.setAddTime(timestampInMillis);
         modelObservationEntity.setDuration(duration);
         modelObservationEntity.setModel(getSafeValue(
-                () -> modelContext.getLowCardinalityKeyValue("gen_ai.response.model").getValue(), "unknown_model"));
+                () -> modelContext.getRequestOptions().getModel(), "unknown_model"));
         modelObservationEntity.setTotalTokens(getSafeValue(
                 () -> Math.toIntExact(modelContext.getResponse().getMetadata().getUsage().getTotalTokens()), 0));
         modelObservationEntity.setError(getSafeValue(() -> modelContext.getError().toString(), "No Error"));
