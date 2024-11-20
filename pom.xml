@@ -33,9 +33,9 @@
 	<modules>
 		<module>spring-ai-alibaba-core</module>
 		<module>spring-ai-alibaba-starter</module>
-    <module>spring-ai-alibaba-autoconfigure</module>
+    	<module>spring-ai-alibaba-autoconfigure</module>
 		<module>community/plugins/spring-ai-alibaba-starter-time</module>
-    <module>community/plugins/spring-ai-alibaba-starter-ding-talk</module>
+    	<module>community/plugins/spring-ai-alibaba-starter-ding-talk</module>
   </modules>
 
 	<properties>
