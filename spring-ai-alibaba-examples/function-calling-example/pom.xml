@@ -54,6 +54,13 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
+		<!--DingTalk-related plugins-->
+		<dependency>
+			<groupId>com.alibaba.cloud.ai</groupId>
+			<artifactId>spring-ai-alibaba-starter-ding-talk</artifactId>
+			<version>1.0.0-M3.2</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>
