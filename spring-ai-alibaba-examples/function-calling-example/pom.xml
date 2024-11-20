@@ -53,6 +53,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>com.alibaba.cloud.ai</groupId>
+			<artifactId>spring-ai-alibaba-starter-time</artifactId>
+			<version>1.0.0-M3.2</version>
+		</dependency>
 
 	</dependencies>
 
