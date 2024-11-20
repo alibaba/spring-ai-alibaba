@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.functioncalling.function.MockWeatherService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -41,14 +42,23 @@ public class FunctionCallingController {
                 .content();
     }
 
-    @GetMapping("/order-detail")
-    public String orderDetail() {
-        return chatClient.prompt()
-                .functions("getOrderFunction")
-                .user("帮我查询一下订单, 用户编号为1001, 订单编号为2001")
-                .call()
-                .content();
-    }
+	@GetMapping("/order-detail")
+	public String orderDetail() {
+		return chatClient.prompt()
+			.functions("getOrderFunction")
+			.user("帮我查询一下订单, 用户编号为1001, 订单编号为2001")
+			.call()
+			.content();
+	}
+
+	@GetMapping("/baidu-search")
+	public String baiduSearch(@RequestParam String query) {
+		return chatClient.prompt()
+			.functions("baiduSearchService")
+			.user(query)
+			.call()
+			.content();
+	}
 
     @GetMapping("/getTime")
     public String getTime(String text) {
