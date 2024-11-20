@@ -17,13 +17,11 @@
 
 package com.alibaba.cloud.plugin;
 
-import jdk.jfr.Description;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.function.Function;
+import org.springframework.context.annotation.Description;
 
 /**
  * .
@@ -35,13 +33,13 @@ import java.util.function.Function;
 @Configuration
 @ConditionalOnClass(BaiduSearchService.class)
 public class BaiduSearchPluginConfiguration {
-
-	@Bean
-	@ConditionalOnMissingBean
-	@Description("Use baidu search engine to query for the latest news.") // function
-																			// description
-	public BaiduSearchService baiduSearchService() {
-		return new BaiduSearchService();
-	}
-
+    
+    @Bean
+    @ConditionalOnMissingBean
+    @Description("Use baidu search engine to query for the latest news.") // function
+    // description
+    public BaiduSearchService baiduSearchService() {
+        return new BaiduSearchService();
+    }
+    
 }
