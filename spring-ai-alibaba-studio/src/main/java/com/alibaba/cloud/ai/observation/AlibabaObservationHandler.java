@@ -18,9 +18,9 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationConte
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.function.Supplier;
 
 /**
  * @Description: AlibabaObservationHandler
@@ -112,27 +112,53 @@ public class AlibabaObservationHandler implements ObservationHandler<Observation
      * @param duration 操作耗时
      */
     private void saveChatModelObservationContext(ChatModelObservationContext modelContext, long duration) {
-
         long timestampInMillis = Instant.now().toEpochMilli();
-        // 保存 ModelObservationEntity
+
+        // 创建并保存 ModelObservationEntity
         ModelObservationEntity modelObservationEntity = new ModelObservationEntity();
         modelObservationEntity.setName(modelContext.getName());
         modelObservationEntity.setAddTime(timestampInMillis);
         modelObservationEntity.setDuration(duration);
-        modelObservationEntity.setModel(modelContext.getLowCardinalityKeyValue("gen_ai.response.model").getValue());
-        modelObservationEntity.setTotalTokens(Math.toIntExact(modelContext.getResponse().getMetadata().getUsage().getTotalTokens()));
+        modelObservationEntity.setModel(getSafeValue(
+                () -> modelContext.getLowCardinalityKeyValue("gen_ai.response.model").getValue(), "unknown_model"));
+        modelObservationEntity.setTotalTokens(getSafeValue(
+                () -> Math.toIntExact(modelContext.getResponse().getMetadata().getUsage().getTotalTokens()), 0));
+        modelObservationEntity.setError(getSafeValue(() -> modelContext.getError().toString(), "No Error"));
         modelObservationMapper.insert(modelObservationEntity);
 
-        // 保存 ModelObservationDetailEntity
+        // 创建并保存 ModelObservationDetailEntity
         ModelObservationDetailEntity modelObservationDetailEntity = new ModelObservationDetailEntity();
         modelObservationDetailEntity.setModelObservationId(modelObservationEntity.getId());
-        modelObservationDetailEntity.setHighCardinalityKeyValues(modelContext.getHighCardinalityKeyValues().toString());
-        modelObservationDetailEntity.setLowCardinalityKeyValues(modelContext.getLowCardinalityKeyValues().toString());
-        modelObservationDetailEntity.setOperationMetadata(modelContext.getOperationMetadata().toString());
-        modelObservationDetailEntity.setRequest(modelContext.getRequest().toString());
-        modelObservationDetailEntity.setResponse(modelContext.getResponse().toString());
-        modelObservationDetailEntity.setContextualName(modelContext.getContextualName());
+        modelObservationDetailEntity.setHighCardinalityKeyValues(getSafeValue(
+                () -> modelContext.getHighCardinalityKeyValues().toString(), "[]"));
+        modelObservationDetailEntity.setLowCardinalityKeyValues(getSafeValue(
+                () -> modelContext.getLowCardinalityKeyValues().toString(), "[]"));
+        modelObservationDetailEntity.setOperationMetadata(getSafeValue(
+                () -> modelContext.getOperationMetadata().toString(), "{}"));
+        modelObservationDetailEntity.setRequest(getSafeValue(
+                () -> modelContext.getRequest().toString(), "{}"));
+        modelObservationDetailEntity.setResponse(getSafeValue(
+                () -> modelContext.getResponse().toString(), "{}"));
+        modelObservationDetailEntity.setContextualName(getSafeValue(modelContext::getContextualName, "Unknown Context"));
         modelObservationDetailEntity.setAddTime(timestampInMillis);
         modelObservationDetailMapper.insert(modelObservationDetailEntity);
     }
+
+    /**
+     * 安全获取值的方法，用于处理可能抛出异常的情况。
+     *
+     * @param supplier 值的提供者
+     * @param defaultValue 默认值
+     * @param <T> 值的类型
+     * @return 提供的值或默认值
+     */
+    private <T> T getSafeValue(Supplier<T> supplier, T defaultValue) {
+        try {
+            T value = supplier.get();
+            return value != null ? value : defaultValue;
+        } catch (Exception e) {
+            return defaultValue;
+        }
+    }
+
 }
