@@ -1,6 +1,10 @@
 package chatmodel
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/alibaba/spring-ai-alibaba/pkg/api"
 	"github.com/alibaba/spring-ai-alibaba/pkg/constant"
 	"github.com/go-resty/resty/v2"
@@ -79,12 +83,13 @@ func (c *ChatModelAPIImpl) GetChatModel(req *GetChatModelReq) (*GetChatModelRsp,
 }
 
 type RunChatModelReq struct {
-	Key          string       `json:"key"`
-	Input        string       `json:"input"`
-	Prompt       string       `json:"prompt"`
-	UseChatModel bool         `json:"useChatModel"`
-	Stream       bool         `json:"stream"`
-	ChatOptions  *ChatOptions `json:"chatOptions"`
+	Key          string        `json:"key"`
+	Input        string        `json:"input"`
+	Prompt       string        `json:"prompt"`
+	UseChatModel bool          `json:"useChatModel"`
+	Stream       bool          `json:"stream"`
+	ChatOptions  *ChatOptions  `json:"chatOptions"`
+	ImageOptions *ImageOptions `json:"imageOptions"`
 }
 
 // RunChatModelRsp
@@ -189,4 +194,38 @@ func (c *ChatModelAPIImpl) RunChatModel(req *RunChatModelReq) (*RunChatModelRsp,
 		return nil, err
 	}
 	return rsp.Data, nil
+}
+
+type RunImageModelReq struct {
+	Key          string        `json:"key"`
+	Input        string        `json:"input"`
+	Prompt       string        `json:"prompt"`
+	UseChatModel bool          `json:"useChatModel"`
+	Stream       bool          `json:"stream"`
+	ChatOptions  *ChatOptions  `json:"chatOptions"`
+	ImageOptions *ImageOptions `json:"imageOptions"`
+}
+
+type RunImageModelRsp struct{}
+
+// RunImageModel
+//
+// use hyper function and return the standard API function type
+func (c *ChatModelAPIImpl) RunImageModelFunc(outputFileName string) func(req *RunImageModelReq) (*RunImageModelRsp, error) {
+	return func(req *RunImageModelReq) (*RunImageModelRsp, error) {
+		path := "/chat-models/run/image-gen"
+		r := c.restClient.R()
+		// Ensure the output directory exists
+		outputDir := filepath.Dir(outputFileName)
+		if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
+			return nil, fmt.Errorf("failed to create output directory: %w", err)
+		}
+		// Set the output file
+		r.SetOutput(outputFileName)
+		// Send the request
+		if _, err := r.SetBody(req).Post(path); err != nil {
+			return nil, fmt.Errorf("failed to send request: %w", err)
+		}
+		return nil, nil
+	}
 }

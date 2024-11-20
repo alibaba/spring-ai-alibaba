@@ -42,4 +42,5 @@ func init() {
 	runCmd.Flags().StringP(constant.PromptFlag, "p", "", "additional prompt message for chat model running")
 	runCmd.Flags().CountP(constant.VerboseFlag, "v", "verbose output level (use -v, -vv for higher verbosity)")
 	runCmd.Flags().StringP(constant.OutputFlag, "o", string(printer.JsonPrinterKind), fmt.Sprintf("Output format supported values: %s", strings.Join(printer.PrinterDetailKindsAsString(), ", ")))
+	runCmd.Flags().StringP(constant.FileFlag, "f", "./test.jpg", "file name to save the image generate output")
 }

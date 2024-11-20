@@ -77,12 +77,29 @@ func (m *chatModelHandlerManager) ChatModelRunHandler(cmd *cobra.Command, args [
 		return
 	}
 	modelName := args[0]
+	// check model type
+	model, err := loadingWrapper(m.apis.GetChatModel, &chatmodel.GetChatModelReq{ModelName: modelName}, m.output)
+	if err != nil {
+		printer.PrintError(err, cmd, m.output, m.isMock)
+		return
+	}
+	switch model.ModelType {
+	case string(constant.ChatModelType):
+		m.runChatModel(cmd, args)
+	case string(constant.ImageModelType):
+		m.runImageModel(cmd, args)
+	}
+}
+
+func (m *chatModelHandlerManager) runChatModel(cmd *cobra.Command, args []string) {
+	modelName := args[0]
 	input := args[1]
 	prompt, err := cmd.Flags().GetString(constant.PromptFlag)
 	if err != nil {
 		printer.PrintError(err, cmd, m.output, m.isMock)
 		return
 	}
+
 	// send http request
 	result, err := loadingWrapper(m.apis.RunChatModel, &chatmodel.RunChatModelReq{Key: modelName, Input: input, Prompt: prompt}, m.output)
 	if err != nil {
@@ -118,4 +135,28 @@ func (m *chatModelHandlerManager) ChatModelRunHandler(cmd *cobra.Command, args [
 	if err := printer.PrintOne(printResult, printer.PrinterKind(outputKind), m.output); err != nil {
 		printer.PrintError(err, cmd, m.output, m.isMock)
 	}
+}
+
+func (m *chatModelHandlerManager) runImageModel(cmd *cobra.Command, args []string) {
+	modelName := args[0]
+	input := args[1]
+	prompt, err := cmd.Flags().GetString(constant.PromptFlag)
+	if err != nil {
+		printer.PrintError(err, cmd, m.output, m.isMock)
+		return
+	}
+	// format output
+	f, err := cmd.Flags().GetString(constant.FileFlag)
+	if err != nil {
+		printer.PrintError(err, cmd, m.output, m.isMock)
+		return
+	}
+
+	// send http request
+	_, err = loadingWrapper(m.apis.RunImageModelFunc(f), &chatmodel.RunImageModelReq{Key: modelName, Input: input, Prompt: prompt}, m.output)
+	if err != nil {
+		printer.PrintError(err, cmd, m.output, m.isMock)
+		return
+	}
+	printer.PrintText(fmt.Sprintf("Image model running successfully, output file path: %s", f), m.output)
 }

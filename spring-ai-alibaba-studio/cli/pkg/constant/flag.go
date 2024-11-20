@@ -14,4 +14,5 @@ const (
 const (
 	PromptFlag  = "prompt"
 	VerboseFlag = "verbose"
+	FileFlag    = "file"
 )

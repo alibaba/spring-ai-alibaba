@@ -20,3 +20,8 @@ func (m *MockChatModelAPI) RunChatModel(req *RunChatModelReq) (*RunChatModelRsp,
 	args := m.Called(req)
 	return args.Get(0).(*RunChatModelRsp), args.Error(1)
 }
+
+func (m *MockChatModelAPI) RunImageModelFunc(outputFileName string) func(req *RunImageModelReq) (*RunImageModelRsp, error) {
+	args := m.Called(outputFileName)
+	return args.Get(0).(func(req *RunImageModelReq) (*RunImageModelRsp, error))
+}
