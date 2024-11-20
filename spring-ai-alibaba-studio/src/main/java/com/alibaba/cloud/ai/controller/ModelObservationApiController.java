@@ -1,21 +1,14 @@
 package com.alibaba.cloud.ai.controller;
 
 import com.alibaba.cloud.ai.common.R;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.entity.ChatDTO;
 import com.alibaba.cloud.ai.entity.ModelObservationDetailEntity;
 import com.alibaba.cloud.ai.entity.ModelObservationEntity;
-import com.alibaba.cloud.ai.observation.AlibabaObservationHandler;
 import com.alibaba.cloud.ai.service.impl.ModelObservationDetailServiceImpl;
 import com.alibaba.cloud.ai.service.impl.ModelObservationServiceImpl;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -49,13 +42,13 @@ public class ModelObservationApiController {
         this.chatClient = chatClientBuilder.build();
     }
 
-    @GetMapping(value = "list", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "list", produces = MediaType.APPLICATION_JSON_VALUE)
     public R<List<ModelObservationEntity>> list() {
         List<ModelObservationEntity> list = modelObservationServiceImpl.list();
         return R.success(list);
     }
 
-    @GetMapping(value = "detail/list", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "detail/list", produces = MediaType.APPLICATION_JSON_VALUE)
     public R<List<ModelObservationDetailEntity>> detailList() {
         List<ModelObservationDetailEntity> list = modelObservationDetailServiceImpl.list();
         return R.success(list);
