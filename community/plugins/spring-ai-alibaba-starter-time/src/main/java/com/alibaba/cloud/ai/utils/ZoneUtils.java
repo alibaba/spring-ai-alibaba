@@ -5,20 +5,22 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class ZoneUtils {
-    public static String getTimeByZoneId(String zoneId) {
 
-        // Get the time zone using ZoneId
-        ZoneId zid = ZoneId.of(zoneId);
+	public static String getTimeByZoneId(String zoneId) {
 
-        // Get the current time in this time zone
-        ZonedDateTime zonedDateTime = ZonedDateTime.now(zid);
+		// Get the time zone using ZoneId
+		ZoneId zid = ZoneId.of(zoneId);
 
-        // Defining a formatter
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
+		// Get the current time in this time zone
+		ZonedDateTime zonedDateTime = ZonedDateTime.now(zid);
 
-        // Format ZonedDateTime as a string
-        String formattedDateTime = zonedDateTime.format(formatter);
+		// Defining a formatter
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
 
-        return formattedDateTime;
-    }
+		// Format ZonedDateTime as a string
+		String formattedDateTime = zonedDateTime.format(formatter);
+
+		return formattedDateTime;
+	}
+
 }

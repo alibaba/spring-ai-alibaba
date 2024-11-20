@@ -10,17 +10,18 @@ import org.springframework.context.annotation.Description;
 @AutoConfiguration
 public class Config {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Get the current local time")
-    public GetCurrentLocalTimeService getCurrentLocalTimeFunction() {
-        return new GetCurrentLocalTimeService();
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Get the current local time")
+	public GetCurrentLocalTimeService getCurrentLocalTimeFunction() {
+		return new GetCurrentLocalTimeService();
+	}
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Get the time of a specified city")
-    public GetCurrentTimeByTimeZoneIdService getCityTimeFunction() {
-        return new GetCurrentTimeByTimeZoneIdService();
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Get the time of a specified city")
+	public GetCurrentTimeByTimeZoneIdService getCityTimeFunction() {
+		return new GetCurrentTimeByTimeZoneIdService();
+	}
+
 }
