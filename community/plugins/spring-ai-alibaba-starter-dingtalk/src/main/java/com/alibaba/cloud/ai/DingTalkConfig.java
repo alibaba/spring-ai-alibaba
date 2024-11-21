@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Description;
  * @author YunLong
  */
 @EnableConfigurationProperties(DingTalkProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.ding-talk", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.dingtalk", name = "enabled", havingValue = "true")
 public class DingTalkConfig {
 
     @Bean

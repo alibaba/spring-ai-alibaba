@@ -62,15 +62,15 @@
 		<!--DingTalk-related plugins-->
 		<dependency>
 			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>spring-ai-alibaba-starter-ding-talk</artifactId>
+			<artifactId>spring-ai-alibaba-starter-dingtalk</artifactId>
 			<version>1.0.0-M3.2</version>
 		</dependency>
 
-		<dependency>
-			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>baidu-search-plugin-starter</artifactId>
-			<version>0.0.1</version>
-		</dependency>
+		<!--<dependency>-->
+		<!--	<groupId>com.alibaba.cloud.ai</groupId>-->
+		<!--	<artifactId>baidu-search-plugin-starter</artifactId>-->
+		<!--	<version>0.0.1</version>-->
+		<!--</dependency>-->
 	</dependencies>
 
 	<build>
