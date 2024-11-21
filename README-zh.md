@@ -3,7 +3,8 @@
 [Spring AI Alibaba](https://sca.aliyun.com/ai/) 是一款 Java 语言实现的 AI 应用开发框架，旨在简化 Java AI 应用程序开发，让 Java 开发者像使用 Spring 开发普通应用一样开发 AI 应用。Spring AI Alibaba 基于 Spring AI 开源项目构建，默认提供阿里云基础模型服务、开源及商业生态组件的集成与最佳实践。
 
 ## 快速开始
-请参考 [官网文档快速开始](https://sca.aliyun.com/ai/get-started/) 了解如何使用 Spring AI Alibaba 快速开发生成式 AI 应用。
+
+请参考[快速开始](https://sca.aliyun.com/ai/get-started/) 了解如何使用 Spring AI Alibaba 快速开发生成式 AI 应用。
 
 总的来说，使用 Spring AI Alibaba 开发应用与使用普通 Spring Boot 没有什么区别，只需要增加 `spring-ai-alibaba-starter` 依赖，将 `ChatClient` Bean 注入就可以实现与模型聊天了。
 
@@ -11,61 +12,62 @@
 
 1. 在项目中加入 `spring-ai-alibaba-starter` 依赖。
 
-```xml
-<dependency>
-	<groupId>com.alibaba.cloud.ai</groupId>
-	<artifactId>spring-ai-alibaba-starter</artifactId>
-	<version>1.0.0-M3.1</version>
-</dependency>
-```
+	```xml
+	<dependency>
+		<groupId>com.alibaba.cloud.ai</groupId>
+		<artifactId>spring-ai-alibaba-starter</artifactId>
+		<version>1.0.0-M3.2</version>
+	</dependency>
+	```
 
-> 注意：由于 spring-ai 相关依赖包还没有发布到中央仓库，如出现 spring-ai-core 等相关依赖解析问题，请在您项目的 pom.xml 依赖中加入如下仓库配置。
->
-> ```xml
-> <repositories>
-> 	<repository>
-> 		<id>spring-milestones</id>
-> 		<name>Spring Milestones</name>
-> 		<url>https://repo.spring.io/milestone</url>
-> 		<snapshots>
-> 			<enabled>false</enabled>
-> 		</snapshots>
-> 	</repository>
-> </repositories>
-> ```
-> 补充：如果您的本地 maven settings.xml 中的 mirrorOf 标签配置了通配符 * ，请根据以下示例修改。
-> ```xml
-> <mirror>
->   <id>xxxx</id>
->   <mirrorOf>*,!spring-milestones</mirrorOf>
->   <name>xxxx</name>
->   <url>xxxx</url>
-> </mirror>
-> ```
+	> 注意：由于 spring-ai 相关依赖包还没有发布到中央仓库，如出现 spring-ai-core 等相关依赖解析问题，请在您项目的 pom.xml 依赖中加入如下仓库配置。
+	>
+	> ```xml
+	> <repositories>
+	> 	<repository>
+	> 		<id>spring-milestones</id>
+	> 		<name>Spring Milestones</name>
+	> 		<url>https://repo.spring.io/milestone</url>
+	> 		<snapshots>
+	> 			<enabled>false</enabled>
+	> 		</snapshots>
+	> 	</repository>
+	> </repositories>
+	> ```
+	> 补充：如果您的本地 maven settings.xml 中的 mirrorOf 标签配置了通配符 * ，请根据以下示例修改。
+	> ```xml
+	> <mirror>
+	>   <id>xxxx</id>
+	>   <mirrorOf>*,!spring-milestones</mirrorOf>
+	>   <name>xxxx</name>
+	>   <url>xxxx</url>
+	> </mirror>
+	> ```
 
-2. 为你的 Spring Bean 注入 `ChatClient`。
+2. 注入 `ChatClient`。
 
-```java
-@RestController
-public class ChatController {
+	```java
+	@RestController
+	public class ChatController {
 
-	private final ChatClient chatClient;
+		private final ChatClient chatClient;
 
-	public ChatController(ChatClient.Builder builder) {
-		this.chatClient = builder.build();
+		public ChatController(ChatClient.Builder builder) {
+			this.chatClient = builder.build();
+		}
+
+		@GetMapping("/chat")
+		public String chat(String input) {
+			return this.chatClient.prompt()
+					.user(input)
+					.call()
+					.content();
+		}
 	}
-
-	@GetMapping("/chat")
-	public String chat(String input) {
-		return this.chatClient.prompt()
-				.user(input)
-				.call()
-				.content();
-	}
-}
-```
+	```
 
 ## 示例
+
 请在 [spring-ai-alibaba-examples](./spring-ai-alibaba-examples) 查看更多 Example 示例。
 
 * Hello World
@@ -79,7 +81,7 @@ public class ChatController {
 
 ## 特性
 
-以下是 Spring AI Alibaba 支持的核心能力，未来更多高级功能将以这些核心能力为基础。请参考官网文档学习每个[功能详细说明](https://sca.aliyun.com/docs/2023/user-guide/ai/quick-start/)以及 [AI 应用开发最佳实践](https://sca.aliyun.com/docs/2023/user-guide/ai/quick-start/)。
+以下是 Spring AI Alibaba 支持的核心能力，未来更多高级功能将以这些核心能力为基础。请参考官网文档 [Spring AI Alibaba 核心概念](https://sca.aliyun.com/docs/ai/concepts/)以及 [AI 应用开发最佳实践](https://sca.aliyun.com/docs/ai/practices/playground-flight-booking)。
 
 * 开发复杂 AI 应用的高阶抽象 Fluent API -- ChatClient
 * 提供多种大模型服务对接能力，包括主流开源与阿里云通义大模型服务（百炼）等
@@ -99,7 +101,7 @@ Spring AI Alibaba 提供 AI 开源框架以及与阿里巴巴整体开源生态�
 * 更多 Vector Database 支持
 * 函数计算等部署模式
 * 可观测性建设
-* AI代理节点开发能力，如绿网、限流、多模型切换等
+* AI 代理节点开发能力，如绿网、限流、多模型切换等
 * 开发者工具集
 
 ![ai-native-architecture](./docs/imgs/spring-ai-alibaba-arch.png)
@@ -107,6 +109,7 @@ Spring AI Alibaba 提供 AI 开源框架以及与阿里巴巴整体开源生态�
 ## 参考资料
 
 * [Spring AI](https://docs.spring.io/spring-ai/reference/index.html)
+* [Spring AI Alibaba](https://sca.aliyun.com/docs/ai/overview/)
 * [阿里云百炼大模型应用开发平台](https://help.aliyun.com/zh/model-studio/getting-started/what-is-model-studio/)
 
 ## 联系我们
