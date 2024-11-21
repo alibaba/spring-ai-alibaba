@@ -13,7 +13,7 @@ public class PluginToolAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    @Description("it calls the document business's to invoke a method to create a document")
+    @Description("it calls the document api to invoke a method to create a larksuite document")
     @ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.larksuite", name = "enabled", havingValue = "true")
     public LarkSuiteService larkSuiteBuild() {
         return new LarkSuiteService();
