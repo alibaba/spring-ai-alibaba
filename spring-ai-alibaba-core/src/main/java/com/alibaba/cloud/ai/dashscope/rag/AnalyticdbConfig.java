@@ -2,7 +2,6 @@ package com.alibaba.cloud.ai.dashscope.rag;
 
 /**
  * @author HeYQ
- * @version 1.0
  * @since 2024-10-23 20:22
  */
 import com.fasterxml.jackson.annotation.JsonInclude;
