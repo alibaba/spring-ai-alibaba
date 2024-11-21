@@ -3,7 +3,9 @@ package com.alibaba.cloud.ai.graph;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
-import com.alibaba.cloud.ai.graph.checkpoint.MemorySaver;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.Channel;
@@ -70,8 +72,11 @@ public class StateGraphPersistenceTest {
 			.addEdge("agent_1", StateGraph.END);
 
 		MemorySaver saver = new MemorySaver();
-
-		CompileConfig compileConfig = CompileConfig.builder().checkpointSaver(saver).build();
+		SaverConfig saverConfig = SaverConfig.builder()
+				.type(SaverConstant.MEMORY)
+				.register(SaverConstant.MEMORY,saver)
+				.build();
+		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 
 		RunnableConfig runnableConfig = RunnableConfig.builder().build();
 		CompiledGraph<AgentState> app = workflow.compile(compileConfig);
@@ -145,8 +150,12 @@ public class StateGraphPersistenceTest {
 		StateGraph<MessagesState> workflow = workflow01(expectedSteps);
 
 		MemorySaver saver = new MemorySaver();
+		SaverConfig saverConfig = SaverConfig.builder()
+				.type(SaverConstant.MEMORY)
+				.register(SaverConstant.MEMORY,saver)
+				.build();
 
-		CompileConfig compileConfig = CompileConfig.builder().checkpointSaver(saver).build();
+		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 
 		CompiledGraph<MessagesState> app = workflow.compile(compileConfig);
 
@@ -239,8 +248,11 @@ public class StateGraphPersistenceTest {
 			.addEdge("tools", "agent");
 
 		MemorySaver saver = new MemorySaver();
-
-		CompileConfig compileConfig = CompileConfig.builder().checkpointSaver(saver).build();
+		SaverConfig saverConfig = SaverConfig.builder()
+				.type(SaverConstant.MEMORY)
+				.register(SaverConstant.MEMORY, saver)
+				.build();
+		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 
 		CompiledGraph<MessagesState> app = workflow.compile(compileConfig);
 
@@ -342,8 +354,12 @@ public class StateGraphPersistenceTest {
 			.addEdge("tools", "agent");
 
 		MemorySaver saver = new MemorySaver();
+		SaverConfig saverConfig = SaverConfig.builder()
+				.type(SaverConstant.MEMORY)
+				.register(SaverConstant.MEMORY,saver)
+				.build();
 
-		CompileConfig compileConfig = CompileConfig.builder().checkpointSaver(saver).interruptBefore("tools").build();
+		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).interruptBefore("tools").build();
 
 		CompiledGraph<MessagesState> app = workflow.compile(compileConfig);
 
