@@ -1,3 +1,3 @@
 export const getCurrentPath = () => {
-    return window.location.pathname;
+  return window.location.pathname;
 };
