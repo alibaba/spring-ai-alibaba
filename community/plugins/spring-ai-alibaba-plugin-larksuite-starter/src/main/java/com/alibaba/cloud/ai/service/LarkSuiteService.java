@@ -21,8 +21,9 @@ public class LarkSuiteService implements Function<LarkSuiteService.Request, Obje
 
     private static final Logger logger = LoggerFactory.getLogger(LarkSuiteService.class);
 
-    @Resource
-    LarkSuiteProperties larkSuiteProperties;
+    public LarkSuiteService(LarkSuiteProperties larkSuiteProperties) {
+        this.larkSuiteProperties = larkSuiteProperties;
+    }
 
     @Override
     public Object apply(Request request) {
@@ -38,7 +39,7 @@ public class LarkSuiteService implements Function<LarkSuiteService.Request, Obje
         CreateDocumentResp resp = null;
 
         try {
-            resp = client.docx().document().create(CreateDocumentReq.newBuilder().createDocumentReqBody(CreateDocumentReqBody.newBuilder().title("title").folderToken("fldcniHf40Vcv1DoEc8SXeuA0Zd").build()).build());
+            resp = client.docx().document().create(CreateDocumentReq.newBuilder().createDocumentReqBody(CreateDocumentReqBody.newBuilder().title(request.title()).folderToken(request.folderToken()).build()).build());
         } catch (Exception e) {
             logger.error("failed to invoke baidu search caused by:{}", e.getMessage());
             throw new RuntimeException(e);
