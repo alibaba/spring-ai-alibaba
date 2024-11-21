@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.autoconfigure.dashscope;
+package com.alibaba.cloud.ai.autoconfig.dashscope;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioTranscriptionApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
+import com.alibaba.cloud.ai.dashscope.api.*;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionModel;
+import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
@@ -121,8 +117,7 @@ public class DashScopeAutoConfiguration {
 			DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
-		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
-				chatProperties, "chat");
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, chatProperties, "chat");
 
 		return new DashScopeApi(resolved.baseUrl(), resolved.apiKey(), resolved.workspaceId(), restClientBuilder,
 				webClientBuilder, responseErrorHandler);
@@ -147,8 +142,8 @@ public class DashScopeAutoConfiguration {
 	public DashScopeApi dashscopeEmbeddingApi(DashScopeConnectionProperties commonProperties,
 			DashScopeEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
-		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
-				embeddingProperties, "embedding");
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, embeddingProperties,
+				"embedding");
 
 		return new DashScopeApi(resolved.baseUrl(), resolved.apiKey(), resolved.workspaceId(), restClientBuilder,
 				webClientBuilder, responseErrorHandler);
@@ -161,8 +156,8 @@ public class DashScopeAutoConfiguration {
 	public DashScopeSpeechSynthesisApi dashScopeSpeechSynthesisApi(DashScopeConnectionProperties commonProperties,
 			DashScopeSpeechSynthesisProperties speechSynthesisProperties) {
 
-		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
-				speechSynthesisProperties, "speechsynthesis");
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, speechSynthesisProperties,
+				"speechsynthesis");
 
 		return new DashScopeSpeechSynthesisApi(resolved.apiKey());
 	}
@@ -174,7 +169,7 @@ public class DashScopeAutoConfiguration {
 	public DashScopeAudioTranscriptionApi dashScopeAudioTranscriptionApi(DashScopeConnectionProperties commonProperties,
 			DashScopeAudioTranscriptionProperties audioTranscriptionProperties) {
 
-		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
 				audioTranscriptionProperties, "audiotranscription");
 
 		return new DashScopeAudioTranscriptionApi(resolved.apiKey());
@@ -188,8 +183,7 @@ public class DashScopeAutoConfiguration {
 			DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
-		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
-				chatProperties, "chat");
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, chatProperties, "chat");
 
 		return new DashScopeAgentApi(resolved.baseUrl(), resolved.apiKey(), resolved.workspaceId(), restClientBuilder,
 				webClientBuilder, responseErrorHandler);
@@ -211,8 +205,7 @@ public class DashScopeAutoConfiguration {
 			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate,
 			ResponseErrorHandler responseErrorHandler) {
 
-		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
-				imageProperties, "image");
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, imageProperties, "image");
 
 		var dashScopeImageApi = new DashScopeImageApi(resolved.baseUrl(), resolved.apiKey(), resolved.workspaceId(),
 				restClientBuilder, webClientBuilder, responseErrorHandler);
@@ -228,8 +221,8 @@ public class DashScopeAutoConfiguration {
 			DashScopeRerankProperties rerankProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate,
 			ResponseErrorHandler responseErrorHandler) {
-		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
-				rerankProperties, "rerank");
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, rerankProperties,
+				"rerank");
 
 		var dashscopeApi = new DashScopeApi(resolved.baseUrl(), resolved.apiKey(), resolved.workspaceId(),
 				restClientBuilder, webClientBuilder, responseErrorHandler);
@@ -244,8 +237,8 @@ public class DashScopeAutoConfiguration {
 	public DashScopeSpeechSynthesisModel dashScopeSpeechSynthesisModel(DashScopeConnectionProperties commonProperties,
 			DashScopeSpeechSynthesisProperties speechSynthesisProperties, RetryTemplate retryTemplate) {
 
-		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
-				speechSynthesisProperties, "speechsynthesis");
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, speechSynthesisProperties,
+				"speechsynthesis");
 
 		var dashScopeSpeechSynthesisApi = dashScopeSpeechSynthesisApi(commonProperties, speechSynthesisProperties);
 
@@ -261,7 +254,7 @@ public class DashScopeAutoConfiguration {
 			DashScopeConnectionProperties commonProperties,
 			DashScopeAudioTranscriptionProperties audioTranscriptionProperties, RetryTemplate retryTemplate) {
 
-		DashScopeAutoConfiguration.ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
 				audioTranscriptionProperties, "audiotranscription");
 
 		var dashScopeSpeechSynthesisApi = dashScopeAudioTranscriptionApi(commonProperties,
@@ -284,7 +277,7 @@ public class DashScopeAutoConfiguration {
 			MultiValueMap<String, String> headers) {
 	}
 
-	private static @NotNull DashScopeAutoConfiguration.ResolvedConnectionProperties resolveConnectionProperties(
+	private static @NotNull ResolvedConnectionProperties resolveConnectionProperties(
 			DashScopeParentProperties commonProperties, DashScopeParentProperties modelProperties, String modelType) {
 
 		String baseUrl = StringUtils.hasText(modelProperties.getBaseUrl()) ? modelProperties.getBaseUrl()
@@ -313,7 +306,7 @@ public class DashScopeAutoConfiguration {
 				"DashScope API key must be set. Use the connection property: spring.ai.dashscope.api-key or spring.ai.dashscope."
 						+ modelType + ".api-key property.");
 
-		return new DashScopeAutoConfiguration.ResolvedConnectionProperties(baseUrl, apiKey, workspaceId,
+		return new ResolvedConnectionProperties(baseUrl, apiKey, workspaceId,
 				CollectionUtils.toMultiValueMap(connectionHeaders));
 	}
 

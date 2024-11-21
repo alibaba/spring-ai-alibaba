@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.autoconfigure.dashscope;
+package com.alibaba.cloud.ai.autoconfig.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageOptions;
 import com.alibaba.dashscope.aigc.imagesynthesis.ImageSynthesis;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
