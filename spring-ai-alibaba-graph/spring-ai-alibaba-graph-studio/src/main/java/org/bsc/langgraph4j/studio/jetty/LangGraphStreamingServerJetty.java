@@ -2,7 +2,7 @@ package org.bsc.langgraph4j.studio.jetty;
 
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
-import com.alibaba.cloud.ai.graph.checkpoint.MemorySaver;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bsc.langgraph4j.studio.LangGraphStreamingServer;
