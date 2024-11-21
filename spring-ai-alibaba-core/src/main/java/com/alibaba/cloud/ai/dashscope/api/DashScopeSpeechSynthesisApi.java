@@ -53,7 +53,6 @@ public class DashScopeSpeechSynthesisApi {
 	}
 
 	// @formatter:off
-	// TODO
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record Request(
 			@JsonProperty("header") RequestHeader header,
@@ -100,7 +99,7 @@ public class DashScopeSpeechSynthesisApi {
 	public Flux<ByteBuffer> streamOut(Request request) {
 		try {
 			String message = (new ObjectMapper()).writeValueAsString(request);
-			return this.webSocketClient.streamOut(message);
+			return this.webSocketClient.streamBinaryOut(message);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
