@@ -29,7 +29,7 @@ import (
 
 const (
 	defaultConfigFileName = ".spring-ai-alibaba"
-	defaultConfigFileExt  = "yaml"
+	defaultConfigFileExt  = "json"
 )
 
 var cfgFile string
@@ -70,7 +70,7 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, constant.ConfigFlag, "c", "", fmt.Sprintf("Config file path (default $HOME/%s.%s)", defaultConfigFileName, defaultConfigFileExt))
-	rootCmd.PersistentFlags().StringP(constant.BaseURLFlag, "u", api.DefaultBaseURL, "Base URL for the Spring AI Alibaba Studio server")
+	rootCmd.PersistentFlags().StringP(constant.BaseURLFlag, "u", api.DefaultBaseURL, "Base URL for the Spring AI Alibaba Studio server") // order: command flag > env var > config file
 	rootCmd.PersistentFlags().StringP(constant.OutputFlag, "o", string(printer.TablePrinterKind), fmt.Sprintf("Output format supported values: %v", strings.Join(printer.PrinterKindsAsString(), ", ")))
 
 	rootCmd.Flags().BoolP(constant.VersionFlag, "v", false, "Print the version number of Spring AI Alibaba Studio")
@@ -99,7 +99,8 @@ func initConfig() {
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+	if err := viper.ReadInConfig(); err != nil {
+		fmt.Fprintln(os.Stdout, "Failed loading config file:", viper.ConfigFileUsed())
+		panic(err)
 	}
 }
