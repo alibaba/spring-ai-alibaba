@@ -1,5 +1,6 @@
 package com.alibaba.cloud.ai.service;
 
+import com.alibaba.cloud.ai.properties.DingTalkProperties;
 import com.alibaba.cloud.ai.utils.SignUtils;
 import com.dingtalk.api.DefaultDingTalkClient;
 import com.dingtalk.api.DingTalkClient;
@@ -8,7 +9,8 @@ import com.dingtalk.api.response.OapiRobotSendResponse;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.ObjectUtils;
 
 import java.util.function.Function;
 
@@ -17,11 +19,11 @@ import java.util.function.Function;
  */
 public class CustomRobotSendMessageService implements Function<CustomRobotSendMessageService.Request, CustomRobotSendMessageService.Response> {
 
-    @Value("${plugins.dingTalk.customRobot.accessToken}")
-    private String accessToken;
+    private final DingTalkProperties dingTalkProperties;
 
-    @Value("${plugins.dingTalk.customRobot.signature}")
-    private String signature;
+    public CustomRobotSendMessageService(DingTalkProperties dingTalkProperties) {
+        this.dingTalkProperties = dingTalkProperties;
+    }
 
     /**
      * The old version of DingTalk SDK. Some interfaces have not been fully replaced yet.
@@ -29,6 +31,13 @@ public class CustomRobotSendMessageService implements Function<CustomRobotSendMe
      */
     @Override
     public Response apply(Request request) {
+
+        if (ObjectUtils.isEmpty(dingTalkProperties.getCustomRobot().getAccessToken()) || ObjectUtils.isEmpty(dingTalkProperties.getCustomRobot().getSignature())) {
+            throw new IllegalArgumentException("current spring.ai.community.plugin.dingTalk.customRobot must not be null.");
+        }
+
+        String accessToken = dingTalkProperties.getCustomRobot().getAccessToken();
+        String signature = dingTalkProperties.getCustomRobot().getSignature();
 
         // Request Body, please see the official document for more parameters.
         OapiRobotSendRequest req = new OapiRobotSendRequest();
