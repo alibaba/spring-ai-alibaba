@@ -4,11 +4,12 @@ spring:
 
   ai:
     dashscope:
-      api-key: ${AI_DASHSCOPE_API_KEY}
+      api-key:  ${AI_DASHSCOPE_API_KEY}
+    alibaba:
+      plugin:
+        ding-talk:
+          enabled: true
+          custom-robot:
+            access-token: ${spring.ai.alibaba.plugin.ding-talk.custom-robot.access-token} # accessToken of custom robot
+            signature: ${spring.ai.alibaba.plugin.ding-talk.custom-robot.signature}     # sign of custom robot
 
-
-plugins:
-  dingTalk:
-    customRobot:
-      accessToken: ${plugins.dingTalk.customRobot.customRobot.accessToken} # accessToken of custom robot
-      signature: ${plugins.dingTalk.customRobot.customRobot.signature}     # sign of custom robot
