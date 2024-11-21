@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-import { Card, Flex, Button, Checkbox, Input, Image } from 'antd';
+import { useState } from 'react';
+import { Card, Flex, Button, Checkbox, Input } from 'antd';
 import Setup from '../Setup';
-import { ChatModelData } from '@/types/chat_model';
+import { ChatModelData, ChatModelResultData } from '@/types/chat_model';
+import chatModelsService from '@/services/chat_models';
 
 type ChatModelProps = {
   modelData: ChatModelData;
@@ -36,30 +38,93 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
     initialTool: {},
   };
 
+  const [inputValue, setInputValue] = useState('');
+  const [isStream, setIsStream] = useState(false);
+
+  const handleInputChange = (e) => {
+    setInputValue(e.target.value);
+  };
+
+  const handleStremChange = (e) => {
+    setIsStream(e.target.value);
+  };
+
+  const [messages, setMessages] = useState(
+    [] as Array<{ type: string; content: string }>,
+  );
+
+  const runModel = async () => {
+    try {
+      const res = (await chatModelsService.postChatModel({
+        input: inputValue,
+        chatOptions: initialValues.initialConfig,
+        stream: isStream,
+      })) as ChatModelResultData;
+      setMessages([
+        ...messages,
+        {
+          type: 'user',
+          content: inputValue,
+        },
+        {
+          type: 'model',
+          content: res.result.response,
+        },
+      ]);
+      setInputValue('');
+    } catch (error) {
+      console.error('Failed to fetch chat models: ', error);
+    }
+  };
+
   const { TextArea } = Input;
 
   return (
-    <Flex justify="space-between">
-      <Flex vertical justify="space-between" style={{ width: 500 }}>
+    <Flex justify="space-between" style={{ height: '100%' }}>
+      <Flex
+        vertical
+        justify="space-between"
+        style={{ marginRight: 20, flexGrow: 1 }}
+      >
         <div>
-          <Card title={modelData.name}>
-            <span>系统提示词</span>
-            <TextArea autoSize={{ minRows: 3 }} style={{ marginTop: 10 }} />
-          </Card>
-          <Card style={{ marginTop: 20 }}>
-            <p>请帮我介绍北京</p>
-          </Card>
+          <Flex vertical>
+            {messages.map((message: any, index) => {
+              return (
+                <Card
+                  key={index}
+                  style={{
+                    marginTop: 20,
+                    marginLeft: message.type === 'user' ? 50 : 0,
+                    marginRight: message.type === 'user' ? 0 : 50,
+                  }}
+                >
+                  <p>{message.content}</p>
+                </Card>
+              );
+            })}
+          </Flex>
         </div>
-        <Flex align="center" justify="space-around">
-          <Button>清空</Button>
-          <Checkbox>聊天模式</Checkbox>
-          <Button>运行</Button>
+        <Flex vertical>
+          <TextArea
+            autoSize={{ minRows: 3 }}
+            style={{ marginBottom: 20 }}
+            value={inputValue}
+            onChange={handleInputChange}
+          />
+          <Flex style={{ flexDirection: 'row-reverse' }}>
+            <Flex style={{ width: 300 }} align="center" justify="space-around">
+              <Button>清空</Button>
+              <Checkbox checked={isStream} onChange={handleStremChange}>
+                聊天模式
+              </Checkbox>
+              <Button onClick={runModel}>运行</Button>
+            </Flex>
+          </Flex>
         </Flex>
       </Flex>
       <Setup initialValues={initialValues} />
     </Flex>
   );
 };
-
 
 export default ChatModel;
