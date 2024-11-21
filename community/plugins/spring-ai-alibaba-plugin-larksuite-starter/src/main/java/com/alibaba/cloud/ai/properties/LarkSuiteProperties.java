@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author 北极星
  */
 
-@ConfigurationProperties("spring.ai.dashscope.plugin.dingtalk")
+@ConfigurationProperties("spring.ai.alibaba.plugin.larksuite")
 public class LarkSuiteProperties {
 
     /**
