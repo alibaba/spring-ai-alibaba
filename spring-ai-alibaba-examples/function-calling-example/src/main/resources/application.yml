@@ -7,7 +7,7 @@ spring:
       api-key:  ${AI_DASHSCOPE_API_KEY}
     alibaba:
       plugin:
-        ding-talk:
+        dingtalk:
           enabled: true
           custom-robot:
             access-token: ${spring.ai.alibaba.plugin.ding-talk.custom-robot.access-token} # accessToken of custom robot

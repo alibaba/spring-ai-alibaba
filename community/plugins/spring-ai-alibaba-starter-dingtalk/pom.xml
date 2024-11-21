@@ -7,9 +7,9 @@
         <version>${revision}</version>
         <relativePath>../../../pom.xml</relativePath>
     </parent>
-    <artifactId>spring-ai-alibaba-starter-ding-talk</artifactId>
+    <artifactId>spring-ai-alibaba-starter-dingtalk</artifactId>
     <packaging>jar</packaging>
-    <name>Spring Ai Alibaba Starter Ding Talk</name>
+    <name>Spring Ai Alibaba Starter DingTalk</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
 
     <properties>
@@ -56,6 +56,6 @@
 
     </dependencies>
     <build>
-        <finalName>ding-talk-plugin-starter</finalName>
+        <finalName>dingtalk-plugin-starter</finalName>
     </build>
 </project>

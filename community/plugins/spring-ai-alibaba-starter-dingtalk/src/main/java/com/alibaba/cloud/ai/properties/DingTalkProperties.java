@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * @author YunLong
  */
-@ConfigurationProperties("spring.ai.alibaba.plugin.ding-talk")
+@ConfigurationProperties("spring.ai.alibaba.plugin.dingtalk")
 public class DingTalkProperties {
 
     private CustomRobot customRobot;
