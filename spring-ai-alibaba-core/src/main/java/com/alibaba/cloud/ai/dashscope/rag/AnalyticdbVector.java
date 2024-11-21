@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 
 /**
  * @author HeYQ
- * @version 1.0
  * @since 2024-10-23 20:29
  */
 public class AnalyticdbVector implements VectorStore {

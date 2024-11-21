@@ -19,7 +19,6 @@ import { Layout, Menu } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'ice';
 import styles from './layout.module.css';
 
-import { ChatModelData } from '@/types/chat_model';
 import { SubMenuItem } from '@/types/menu';
 import chatModelsService from '@/services/chat_models';
 import chatClientsService from '@/services/chat_clients';

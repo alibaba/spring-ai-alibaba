@@ -33,12 +33,13 @@
 	<modules>
 		<module>spring-ai-alibaba-core</module>
 		<module>spring-ai-alibaba-starter</module>
+        <module>spring-ai-alibaba-autoconfigure</module>
 		<module>spring-ai-alibaba-studio</module>
 		<module>spring-ai-alibaba-graph</module>
 	</modules>
 
 	<properties>
-		<revision>1.0.0-M3.2</revision>
+		<revision>1.0.0-M3.workflow-SNAPSHOT</revision>
 
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
