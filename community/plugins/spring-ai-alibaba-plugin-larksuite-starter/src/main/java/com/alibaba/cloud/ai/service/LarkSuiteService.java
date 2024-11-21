@@ -28,11 +28,11 @@ public class LarkSuiteService implements Function<LarkSuiteService.Request, Obje
     @Override
     public Object apply(Request request) {
         if (ObjectUtils.isEmpty(larkSuiteProperties.getAppId()) || ObjectUtils.isEmpty(larkSuiteProperties.getAppSecret())) {
-            logger.error("current spring.ai.community.plugin.tool.larksuite must not be null.");
+            logger.error("current spring.ai.alibaba.community.plugin.tool.larksuite must not be null.");
             throw new IllegalArgumentException("current spring.ai.community.plugin.tool.larksuite must not be null.");
         }
 
-        logger.debug("current spring.ai.community.plugin.tool.larksuite.appId is {},appSecret is {}", larkSuiteProperties.getAppId(), larkSuiteProperties.getAppSecret());
+        logger.debug("current spring.ai.alibaba.community.plugin.tool.larksuite.appId is {},appSecret is {}", larkSuiteProperties.getAppId(), larkSuiteProperties.getAppSecret());
 
         Client client = Client.newBuilder(larkSuiteProperties.getAppId(), larkSuiteProperties.getAppSecret()).build();
 
