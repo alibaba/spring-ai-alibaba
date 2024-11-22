@@ -40,16 +40,15 @@ public class LarkSuiteService implements Function<LarkSuiteService.Request, Obje
 
         try {
             resp = client.docx().document().create(CreateDocumentReq.newBuilder().createDocumentReqBody(CreateDocumentReqBody.newBuilder().title(request.title()).folderToken(request.folderToken()).build()).build());
+            if (!resp.success()) {
+                logger.error("code:{},msg:{},reqId:{}", resp.getCode(), resp.getMsg(), resp.getRequestId());
+                return resp.getError();
+            }
+            return resp.getData();
         } catch (Exception e) {
             logger.error("failed to invoke baidu search caused by:{}", e.getMessage());
-            throw new RuntimeException(e);
         }
-
-        if (!resp.success()) {
-            logger.error("code:{},msg:{},reqId:{}", resp.getCode(), resp.getMsg(), resp.getRequestId());
-            return resp.getError();
-        }
-        return resp.getData();
+        return null;
     }
 
     public record Request(
