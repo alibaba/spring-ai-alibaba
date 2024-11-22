@@ -10,22 +10,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class LarkSuiteProperties {
 
     /**
-     * AccessToken
+     * AppId
      */
     private String appId;
 
     /**
-     * AccessToken
+     * AppSecret
      */
     private String appSecret;
-
-    public LarkSuiteProperties() {
-    }
-
-    public LarkSuiteProperties(String appId, String appSecret) {
-        this.appId = appId;
-        this.appSecret = appSecret;
-    }
 
     public String getAppId() {
         return appId;
