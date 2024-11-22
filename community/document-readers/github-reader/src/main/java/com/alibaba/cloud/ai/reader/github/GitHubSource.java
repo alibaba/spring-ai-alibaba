@@ -22,8 +22,6 @@ public class GitHubSource implements Resource {
 
 	private final GHContent content;
 
-	private final GitHub gitHub;
-
 	public GitHubSource(String gitHubToken, String gitHubTokenOrganization, String owner, String repo, String branch,
 			String path) {
 		this(null, gitHubToken, gitHubTokenOrganization, owner, repo, branch, path);
@@ -48,21 +46,10 @@ public class GitHubSource implements Resource {
 			}
 		}
 		try {
-			gitHub = gitHubBuilder.build();
+			GitHub gitHub = gitHubBuilder.build();
 			content = gitHub.getRepository(owner + "/" + repo).getFileContent(path, branch);
 			Assert.isTrue(content.isFile(), "Path must be a file");
 			inputStream = content.read();
-		}
-		catch (IOException ioException) {
-			throw new RuntimeException(ioException);
-		}
-	}
-
-	public GitHubSource(InputStream inputStream, GHContent content) {
-		this.inputStream = inputStream;
-		this.content = content;
-		try {
-			gitHub = new GitHubBuilder().build();
 		}
 		catch (IOException ioException) {
 			throw new RuntimeException(ioException);
