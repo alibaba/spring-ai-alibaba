@@ -1,4 +1,3 @@
-package com.alibaba.cloud.ai.service;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,6 +14,7 @@ package com.alibaba.cloud.ai.service;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.alibaba.cloud.ai.service;
 
 import com.alibaba.cloud.ai.properties.LarkSuiteProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

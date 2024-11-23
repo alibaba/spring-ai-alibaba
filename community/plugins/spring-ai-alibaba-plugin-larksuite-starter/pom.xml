@@ -1,6 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
     <!--
     Copyright 2023-2024 the original author or authors.
 
@@ -27,28 +28,30 @@
 
     <artifactId>spring-ai-alibaba-plugin-larksuite-starter</artifactId>
     <version>1.0.0-M3.2</version>
-    <packaging>jar</packaging>
-    <name>Spring Ai Alibaba Starter Time</name>
+
+    <name>Spring Ai Alibaba Starter LarkSuite</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
 
+    <properties>
+        <larksiute.open.api>2.4.0</larksiute.open.api>
+    </properties>
+
     <dependencies>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
         </dependency>
+
         <dependency>
             <groupId>com.larksuite.oapi</groupId>
             <artifactId>oapi-sdk</artifactId>
-            <version>2.4.0</version>
+            <version>${larksuite.open.api}</version>
         </dependency>
     </dependencies>
 
