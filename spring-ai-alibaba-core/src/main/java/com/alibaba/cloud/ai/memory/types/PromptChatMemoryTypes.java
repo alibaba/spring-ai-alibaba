@@ -1,4 +1,5 @@
-package com.alibaba.cloud.ai.memory.types;//package com.alibaba.cloud.ai.memory.types;
+// package com.alibaba.cloud.ai.memory.types;
+
 //
 //import java.util.List;
 //

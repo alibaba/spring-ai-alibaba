@@ -1,12 +1,16 @@
 package com.alibaba.cloud.ai.advisor;
 
+import java.util.Objects;
+
 import com.alibaba.cloud.ai.memory.types.ChatMemoryType;
-import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.api.*;
-import org.springframework.ai.chat.memory.ChatMemory;
 import reactor.core.publisher.Flux;
 
-import java.util.Objects;
+import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 
 /**
  * Message 消息类型的 Advisor
@@ -30,7 +34,7 @@ public class ChatMemoryTypesAdvisor extends AbstractChatMemoryAdvisor<ChatMemory
 	}
 
 	public ChatMemoryTypesAdvisor(ChatMemory chatMemory, ChatMemoryType chatMemoryTypes, String defaultConversationId, int chatHistoryWindowSize,
-                                  int order) {
+			int order) {
 		super(chatMemory, defaultConversationId, chatHistoryWindowSize, true, order);
 		this.chatMemoryTypes = chatMemoryTypes;
 	}
