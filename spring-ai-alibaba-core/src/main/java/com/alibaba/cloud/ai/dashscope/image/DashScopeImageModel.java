@@ -138,43 +138,51 @@ public class DashScopeImageModel implements ImageModel {
 	}
 
 	private DashScopeImageOptions toQianFanImageOptions(ImageOptions runtimeImageOptions) {
-		DashScopeImageOptions.Builder dashScopeImageOptionsBuilder = DashScopeImageOptions.builder();
-		if (runtimeImageOptions != null) {
-			if (runtimeImageOptions.getN() != null) {
-				dashScopeImageOptionsBuilder.withN(runtimeImageOptions.getN());
-			}
-			if (runtimeImageOptions.getModel() != null) {
-				dashScopeImageOptionsBuilder.withModel(runtimeImageOptions.getModel());
-			}
-			if (runtimeImageOptions.getWidth() != null) {
-				dashScopeImageOptionsBuilder.withWidth(runtimeImageOptions.getWidth());
-			}
-			if (runtimeImageOptions.getHeight() != null) {
-				dashScopeImageOptionsBuilder.withHeight(runtimeImageOptions.getHeight());
-			}
-			if (runtimeImageOptions instanceof DashScopeImageOptions) {
-				DashScopeImageOptions dashScopeImageOptions = (DashScopeImageOptions) runtimeImageOptions;
-				if (dashScopeImageOptions.getStyle() != null) {
-					dashScopeImageOptionsBuilder.withStyle(dashScopeImageOptions.getStyle());
-				}
-				if (dashScopeImageOptions.getSeed() != null) {
-					dashScopeImageOptionsBuilder.withSeed(dashScopeImageOptions.getSeed());
-				}
-				if (dashScopeImageOptions.getRefImg() != null) {
-					dashScopeImageOptionsBuilder.withRefImg(dashScopeImageOptions.getRefImg());
-				}
-				if (dashScopeImageOptions.getRefMode() != null) {
-					dashScopeImageOptionsBuilder.withRefMode(dashScopeImageOptions.getRefMode());
-				}
-				if (dashScopeImageOptions.getRefStrength() != null) {
-					dashScopeImageOptionsBuilder.withRefStrength(dashScopeImageOptions.getRefStrength());
-				}
-				if (dashScopeImageOptions.getNegativePrompt() != null) {
-					dashScopeImageOptionsBuilder.withNegativePrompt(dashScopeImageOptions.getNegativePrompt());
-				}
-			}
+		DashScopeImageOptions.Builder builder = DashScopeImageOptions.builder();
+		if (runtimeImageOptions == null) {
+			return builder.build();
 		}
-		return dashScopeImageOptionsBuilder.build();
+		commonImageOptions(runtimeImageOptions, builder);
+		if (runtimeImageOptions instanceof DashScopeImageOptions dashScopeImageOptions) {
+			dashScopeSpecificOptions(dashScopeImageOptions, builder);
+		}
+		return builder.build();
+	}
+
+	private void commonImageOptions(ImageOptions runtimeImageOptions, DashScopeImageOptions.Builder builder) {
+		if (runtimeImageOptions.getN() != null) {
+			builder.withN(options.getN());
+		}
+		if (runtimeImageOptions.getModel() != null) {
+			builder.withModel(options.getModel());
+		}
+		if (runtimeImageOptions.getWidth() != null) {
+			builder.withWidth(options.getWidth());
+		}
+		if (runtimeImageOptions.getHeight() != null) {
+			builder.withHeight(options.getHeight());
+		}
+	}
+
+	private void dashScopeSpecificOptions(DashScopeImageOptions options, DashScopeImageOptions.Builder builder) {
+		if (options.getStyle() != null) {
+			builder.withStyle(options.getStyle());
+		}
+		if (options.getSeed() != null) {
+			builder.withSeed(options.getSeed());
+		}
+		if (options.getRefImg() != null) {
+			builder.withRefImg(options.getRefImg());
+		}
+		if (options.getRefMode() != null) {
+			builder.withRefMode(options.getRefMode());
+		}
+		if (options.getRefStrength() != null) {
+			builder.withRefStrength(options.getRefStrength());
+		}
+		if (options.getNegativePrompt() != null) {
+			builder.withNegativePrompt(options.getNegativePrompt());
+		}
 	}
 
 }

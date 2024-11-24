@@ -52,6 +52,9 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
     private static final int MAX_RESULTS = 20;
     
     private final WebClient webClient;
+    private static final int Memory_Size = 5;
+    private static final int Memory_Unit = 1024;
+    private static final int Max_Memory_In_MB = Memory_Size * Memory_Unit * Memory_Unit;
     
     public BaiduSearchService() {
         this.webClient = WebClient.builder().defaultHeader(HttpHeaders.USER_AGENT,
@@ -62,7 +65,7 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
                 .defaultHeader(HttpHeaders.REFERER, "https://www.baidu.com/")
                 .defaultHeader(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9,ja;q=0.8")
-                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024)).build();
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(Max_Memory_In_MB)).build();
     }
     
     @Override
