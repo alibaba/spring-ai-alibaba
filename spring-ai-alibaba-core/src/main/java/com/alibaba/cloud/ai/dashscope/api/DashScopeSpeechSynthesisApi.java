@@ -133,14 +133,14 @@ public class DashScopeSpeechSynthesisApi {
 		@JsonProperty("mp3") MP3("mp3");
 		// @formatter:on
 
-		public final String value;
+		public final String formatType;
 
 		ResponseFormat(String value) {
-			this.value = value;
+			this.formatType = value;
 		}
 
 		public String getValue() {
-			return this.value;
+			return this.formatType;
 		}
 
 	}
