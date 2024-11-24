@@ -3,7 +3,6 @@ package com.alibaba.cloud.ai.service.impl;
 import com.alibaba.cloud.ai.entity.ModelObservationEntity;
 import com.alibaba.cloud.ai.mapper.ModelObservationMapper;
 import com.alibaba.cloud.ai.service.ModelObservationService;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
@@ -26,5 +25,8 @@ public class ModelObservationServiceImpl implements ModelObservationService {
         return modelObservationMapper.selectList(null);
     }
 
-
+    @Override
+    public Integer insert(ModelObservationEntity modelObservationEntity){
+        return modelObservationMapper.insert(modelObservationEntity);
+    }
 }

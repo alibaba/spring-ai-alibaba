@@ -2,8 +2,8 @@ package com.alibaba.cloud.ai.observation;
 
 import com.alibaba.cloud.ai.entity.ModelObservationDetailEntity;
 import com.alibaba.cloud.ai.entity.ModelObservationEntity;
-import com.alibaba.cloud.ai.mapper.ModelObservationDetailMapper;
-import com.alibaba.cloud.ai.mapper.ModelObservationMapper;
+import com.alibaba.cloud.ai.service.impl.ModelObservationDetailServiceImpl;
+import com.alibaba.cloud.ai.service.impl.ModelObservationServiceImpl;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
@@ -33,15 +33,15 @@ public class AlibabaObservationHandler implements ObservationHandler<Observation
     private final Clock clock;
     private final Tracer tracer;
 
-    private final ModelObservationMapper modelObservationMapper;
+    private final ModelObservationDetailServiceImpl modelObservationDetailService;
 
-    private final ModelObservationDetailMapper modelObservationDetailMapper;
+    private final ModelObservationServiceImpl modelObservationService;
 
-    public AlibabaObservationHandler(ModelObservationMapper modelObservationMapper, ModelObservationDetailMapper modelObservationDetailMapper) {
+    public AlibabaObservationHandler(ModelObservationServiceImpl modelObservationService, ModelObservationDetailServiceImpl modelObservationDetailService) {
         this.clock = Clock.SYSTEM;
         this.tracer = GlobalOpenTelemetry.getTracer("com.alibaba.cloud.ai");
-        this.modelObservationMapper = modelObservationMapper;
-        this.modelObservationDetailMapper = modelObservationDetailMapper;
+        this.modelObservationDetailService = modelObservationDetailService;
+        this.modelObservationService = modelObservationService;
     }
 
     @Override
@@ -124,7 +124,7 @@ public class AlibabaObservationHandler implements ObservationHandler<Observation
         modelObservationEntity.setTotalTokens(getSafeValue(
                 () -> Math.toIntExact(modelContext.getResponse().getMetadata().getUsage().getTotalTokens()), 0));
         modelObservationEntity.setError(getSafeValue(() -> modelContext.getError().toString(), "No Error"));
-        modelObservationMapper.insert(modelObservationEntity);
+        modelObservationService.insert(modelObservationEntity);
 
         // 创建并保存 ModelObservationDetailEntity
         ModelObservationDetailEntity modelObservationDetailEntity = new ModelObservationDetailEntity();
@@ -141,7 +141,7 @@ public class AlibabaObservationHandler implements ObservationHandler<Observation
                 () -> modelContext.getResponse().toString(), "{}"));
         modelObservationDetailEntity.setContextualName(getSafeValue(modelContext::getContextualName, "Unknown Context"));
         modelObservationDetailEntity.setAddTime(timestampInMillis);
-        modelObservationDetailMapper.insert(modelObservationDetailEntity);
+        modelObservationDetailService.insert(modelObservationDetailEntity);
     }
 
     /**

@@ -25,5 +25,8 @@ public class ModelObservationDetailServiceImpl implements ModelObservationDetail
         return modelObservationDetailMapper.selectList(null);
     }
 
-
+    @Override
+    public Integer insert(ModelObservationDetailEntity modelObservationDetailEntity) {
+        return modelObservationDetailMapper.insert(modelObservationDetailEntity);
+    }
 }

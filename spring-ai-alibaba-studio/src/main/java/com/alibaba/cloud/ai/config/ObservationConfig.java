@@ -1,8 +1,8 @@
 package com.alibaba.cloud.ai.config;
 
-import com.alibaba.cloud.ai.mapper.ModelObservationDetailMapper;
-import com.alibaba.cloud.ai.mapper.ModelObservationMapper;
 import com.alibaba.cloud.ai.observation.AlibabaObservationHandler;
+import com.alibaba.cloud.ai.service.impl.ModelObservationDetailServiceImpl;
+import com.alibaba.cloud.ai.service.impl.ModelObservationServiceImpl;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,9 +16,9 @@ import org.springframework.context.annotation.Configuration;
 public class ObservationConfig {
 
     @Bean
-    public ObservationRegistry observationRegistry(ModelObservationMapper modelObservationMapper, ModelObservationDetailMapper modelObservationDetailMapper) {
+    public ObservationRegistry observationRegistry(ModelObservationServiceImpl modelObservationService, ModelObservationDetailServiceImpl modelObservationDetailService) {
         ObservationRegistry observationRegistry = ObservationRegistry.create();
-        observationRegistry.observationConfig().observationHandler(new AlibabaObservationHandler(modelObservationMapper, modelObservationDetailMapper));
+        observationRegistry.observationConfig().observationHandler(new AlibabaObservationHandler(modelObservationService, modelObservationDetailService));
         return observationRegistry;
     }
 

@@ -12,4 +12,6 @@ import java.util.List;
 public interface ModelObservationDetailService {
 
     List<ModelObservationDetailEntity> list();
+
+    Integer insert(ModelObservationDetailEntity modelObservationDetailEntity);
 }
