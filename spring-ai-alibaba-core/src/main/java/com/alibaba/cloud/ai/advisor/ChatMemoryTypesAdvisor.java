@@ -11,7 +11,6 @@ import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
-import org.springframework.ai.chat.memory.ChatMemory;
 
 /**
  * Message 消息类型的 Advisor
