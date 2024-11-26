@@ -1,5 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <!--
@@ -26,17 +26,23 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-plugin-larksuite-starter</artifactId>
+    <artifactId>spring-ai-alibaba-starter-plugin-larksuite</artifactId>
     <version>1.0.0-M3.2</version>
 
     <name>Spring Ai Alibaba Starter LarkSuite</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
 
     <properties>
-        <larksiute.open.api>2.4.0</larksiute.open.api>
+        <larksiute-open-api.version>2.4.0</larksiute-open-api.version>
     </properties>
 
     <dependencies>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
@@ -51,11 +57,11 @@
         <dependency>
             <groupId>com.larksuite.oapi</groupId>
             <artifactId>oapi-sdk</artifactId>
-            <version>${larksuite.open.api}</version>
+            <version>${larksiute-open-api.version}</version>
         </dependency>
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-plugin-larksuite-starter</finalName>
+        <finalName>spring-ai-alibaba-starter-plugin-larksuite</finalName>
     </build>
 </project>
