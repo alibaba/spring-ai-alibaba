@@ -13,14 +13,14 @@ public class TimeAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Get the current local time")
-	public GetCurrentLocalTimeService getCurrentLocalTimeFunction() {
+	public GetCurrentLocalTimeService getCurrentLocalTime() {
 		return new GetCurrentLocalTimeService();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Get the time of a specified city")
-	public GetCurrentTimeByTimeZoneIdService getCityTimeFunction() {
+	public GetCurrentTimeByTimeZoneIdService getCityTime() {
 		return new GetCurrentTimeByTimeZoneIdService();
 	}
 
