@@ -37,6 +37,7 @@
 		<module>community/plugins/spring-ai-alibaba-starter-plugin-time</module>
 		<module>community/plugins/spring-ai-alibaba-starter-plugin-baidusearch</module>
 		<module>community/plugins/spring-ai-alibaba-starter-plugin-bingsearch</module>
+		<module>community/plugins/spring-ai-alibaba-starter-plugin-dingtalk</module>
     </modules>
 
 	<properties>

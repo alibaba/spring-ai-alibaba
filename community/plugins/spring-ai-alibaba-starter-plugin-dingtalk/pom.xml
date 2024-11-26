@@ -25,10 +25,9 @@
         <version>${revision}</version>
         <relativePath>../../../pom.xml</relativePath>
     </parent>
-    <artifactId>spring-ai-alibaba-starter-dingtalk</artifactId>
-    <packaging>jar</packaging>
-    <name>Spring Ai Alibaba Starter DingTalk</name>
-    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <artifactId>spring-ai-alibaba-starter-plugin-dingtalk</artifactId>
+    <name>spring-ai-alibaba-starter-plugin-dingtalk</name>
+    <description>Ding Talk tool for Spring AI Alibaba</description>
 
     <properties>
         <dingtalk-sdk-version>2.1.68</dingtalk-sdk-version>
@@ -36,44 +35,63 @@
     </properties>
 
     <dependencies>
-
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
         </dependency>
-
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
         </dependency>
-
         <!--New version of DingTalk SDK-->
         <dependency>
             <groupId>com.aliyun</groupId>
             <artifactId>dingtalk</artifactId>
             <version>${dingtalk-sdk-version}</version>
         </dependency>
-
         <!--The old version of DingTalk SDK. Some interfaces have not been fully replaced yet-->
         <dependency>
             <groupId>com.aliyun</groupId>
             <artifactId>alibaba-dingtalk-service-sdk</artifactId>
             <version>${old-dingtalk-sdk-version}</version>
         </dependency>
-
     </dependencies>
+
     <build>
-        <finalName>dingtalk-plugin-starter</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>${maven-deploy-plugin.version}</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
+
+    <repositories>
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
 </project>

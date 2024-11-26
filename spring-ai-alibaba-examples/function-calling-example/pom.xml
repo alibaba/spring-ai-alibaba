@@ -55,21 +55,21 @@
 		</dependency>
 		<dependency>
 			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>spring-ai-alibaba-starter-time</artifactId>
-			<version>1.0.0-M3.2</version>
+			<artifactId>spring-ai-alibaba-starter-plugin-baidusearch</artifactId>
+			<version>${spring-ai-alibaba.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>baidu-search-plugin-starter</artifactId>
-			<version>0.0.1</version>
+			<artifactId>spring-ai-alibaba-starter-plugin-bingsearch</artifactId>
+			<version>${spring-ai-alibaba.version}</version>
 		</dependency>
 
 		<!--DingTalk-related plugins-->
 		<dependency>
 			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>spring-ai-alibaba-starter-dingtalk</artifactId>
-			<version>1.0.0-M3.2</version>
+			<artifactId>spring-ai-alibaba-starter-plugin-dingtalk</artifactId>
+			<version>${spring-ai-alibaba.version}</version>
 		</dependency>
 
 	</dependencies>

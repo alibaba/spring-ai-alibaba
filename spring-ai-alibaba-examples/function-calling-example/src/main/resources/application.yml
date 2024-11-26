@@ -9,7 +9,6 @@ spring:
       plugin:
         dingtalk:
           enabled: true
-          custom-robot:
-            access-token: ${spring.ai.alibaba.plugin.ding-talk.custom-robot.access-token} # accessToken of custom robot
-            signature: ${spring.ai.alibaba.plugin.ding-talk.custom-robot.signature}     # sign of custom robot
+          custom-robot-access-token: ${spring.ai.alibaba.plugin.dingtalk.custom-robot-access-token} # accessToken of custom robot
+          custom-robot-signature: ${spring.ai.alibaba.plugin.dingtalk.custom-robot-signature}     # sign of custom robot
 
