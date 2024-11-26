@@ -8,9 +8,12 @@ spring:
     alibaba:
       plugin:
         dingtalk:
-          enabled: true
+          enabled: false
           custom-robot-access-token: ${spring.ai.alibaba.plugin.dingtalk.custom-robot-access-token} # accessToken of custom robot
           custom-robot-signature: ${spring.ai.alibaba.plugin.dingtalk.custom-robot-signature}     # sign of custom robot
         bing:
-          enabled: true
+          enabled: false
           token: ${AI_BING_TOKEN}
+        gaode:
+          enabled: false
+          web-api-key: ${spring.ai.alibaba.plugin.gaode.web-api-key}
