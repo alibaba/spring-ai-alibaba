@@ -1,7 +1,11 @@
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.action.llm.LLMNodeAction;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.graph.state.AppendableValue;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
@@ -10,10 +14,13 @@ import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.alibaba.cloud.ai.graph.action.llm.LLMNodeAction.MESSAGES_KEY;
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.listOf;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -205,5 +212,17 @@ public class StateGraphTest {
 				result.get().messages().values());
 
 	}
+
+	@Test
+	void testWithLLMNodeAction() throws Exception {
+		NodeAction<MessagesState> llmNode = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("${DASHSCOPE_API_KEY}")))
+				.systemMessage("You're a code writer with strong language skills and coding skills")
+				.build();
+		Map<String,Object> stateData = llmNode.apply(new MessagesState(Map.of(MESSAGES_KEY, List.of(new UserMessage("can you provide a best practice using spring ai?")))));
+		assertEquals(1, stateData.size());
+		System.out.println(stateData);
+
+	}
+
 
 }
