@@ -11,4 +11,6 @@ spring:
           enabled: true
           custom-robot-access-token: ${spring.ai.alibaba.plugin.dingtalk.custom-robot-access-token} # accessToken of custom robot
           custom-robot-signature: ${spring.ai.alibaba.plugin.dingtalk.custom-robot-signature}     # sign of custom robot
-
+        bing:
+          enabled: true
+          token: ${AI_BING_TOKEN}
