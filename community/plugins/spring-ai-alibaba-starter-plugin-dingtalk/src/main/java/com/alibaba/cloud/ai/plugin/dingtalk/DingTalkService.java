@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.service;
+package com.alibaba.cloud.ai.plugin.dingtalk;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,8 +15,7 @@ package com.alibaba.cloud.ai.service;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import com.alibaba.cloud.ai.properties.DingTalkProperties;
-import com.alibaba.cloud.ai.utils.SignUtils;
+import com.alibaba.cloud.ai.plugin.dingtalk.utils.SignUtils;
 import com.dingtalk.api.DefaultDingTalkClient;
 import com.dingtalk.api.DingTalkClient;
 import com.dingtalk.api.request.OapiRobotSendRequest;
@@ -31,11 +30,11 @@ import java.util.function.Function;
 /**
  * @author YunLong
  */
-public class CustomRobotSendMessageService implements Function<CustomRobotSendMessageService.Request, CustomRobotSendMessageService.Response> {
+public class DingTalkService implements Function<DingTalkService.Request, DingTalkService.Response> {
 
     private final DingTalkProperties dingTalkProperties;
 
-    public CustomRobotSendMessageService(DingTalkProperties dingTalkProperties) {
+    public DingTalkService(DingTalkProperties dingTalkProperties) {
         this.dingTalkProperties = dingTalkProperties;
     }
 
@@ -47,7 +46,7 @@ public class CustomRobotSendMessageService implements Function<CustomRobotSendMe
     public Response apply(Request request) {
 
         if (ObjectUtils.isEmpty(dingTalkProperties.getCustomRobotAccessToken()) || ObjectUtils.isEmpty(dingTalkProperties.getCustomRobotSignature())) {
-            throw new IllegalArgumentException("current spring.ai.community.plugin.dingTalk.customRobot must not be null.");
+            throw new IllegalArgumentException("spring.ai.alibaba.plugin.dingtalk.custom-robot must not be null.");
         }
 
         String accessToken = dingTalkProperties.getCustomRobotAccessToken();
