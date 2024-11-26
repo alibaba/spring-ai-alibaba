@@ -25,7 +25,6 @@ import {
   CodeTwoTone,
   ExperimentTwoTone,
 } from '@ant-design/icons';
-import { getCurrentPath } from '@/utils/locationUtil';
 
 export default function PageLayout() {
   const { t, i18n } = useTranslation();
@@ -65,7 +64,7 @@ export default function PageLayout() {
   ];
 
   const [selectedKey, setSelectedKey] = useState(
-    `/${getCurrentPath().split('/')[1]}` || headerMenu[0].key,
+    `/${location.pathname.split('/')[1]}` || headerMenu[0].key,
   );
 
   const onMenuClick = (e) => {
