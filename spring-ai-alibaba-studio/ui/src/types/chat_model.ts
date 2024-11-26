@@ -16,11 +16,16 @@
 
 import { ChatOptions, ImageOptions } from './options';
 
-
 export type ChatModelData = {
   name: string;
   model: string;
   modelType: string;
   chatOptions: ChatOptions;
   imageOptions: ImageOptions;
+};
+
+export type ChatModelResultData = {
+  input: any;
+  result: any;
+  telemetry: any;
 };

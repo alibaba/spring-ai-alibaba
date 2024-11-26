@@ -34,8 +34,10 @@ export default function Model() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const chatModeData = await chatModelsService.getChatModelByName(params.model_name);
-        setModelData(chatModeData);
+        const modelData = await chatModelsService.getChatModelByName(
+          params.model_name as string,
+        );
+        setModelData(modelData);
       } catch (error) {
         console.error('Failed to fetch chat models: ', error);
       }
@@ -43,16 +45,12 @@ export default function Model() {
     fetchData();
   }, [params]);
 
-  return (
-    <div>
-      {modelData ? (
-        <>
-          {modelData.modelType === 'CHAT' && <ChatModel modelData={modelData} />}
-          {modelData.modelType === 'IMAGE' && <ImageModel modelData={modelData} />}
-        </>
-      ) : (
-        <p>加载中...</p>
-      )}
+  return modelData ? (
+    <div style={{ padding: 20, height: '100%' }}>
+      {modelData.modelType === 'CHAT' && <ChatModel modelData={modelData} />}
+      {modelData.modelType === 'IMAGE' && <ImageModel modelData={modelData} />}
     </div>
+  ) : (
+    <p>加载中...</p>
   );
 }
