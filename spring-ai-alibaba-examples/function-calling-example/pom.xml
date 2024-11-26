@@ -55,13 +55,18 @@
 		</dependency>
 		<dependency>
 			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>spring-ai-alibaba-starter-time</artifactId>
+			<artifactId>spring-ai-alibaba-starter-plugin-time</artifactId>
 			<version>1.0.0-M3.2</version>
 		</dependency>
 		<dependency>
 			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>baidu-search-plugin-starter</artifactId>
-			<version>0.0.1</version>
+			<artifactId>spring-ai-alibaba-starter-plugin-baidusearch</artifactId>
+			<version>1.0.0-M3.2</version>
+		</dependency>
+		<dependency>
+			<groupId>com.alibaba.cloud.ai</groupId>
+			<artifactId>spring-ai-alibaba-starter-plugin-bingsearch</artifactId>
+			<version>1.0.0-M3.2</version>
 		</dependency>
 	</dependencies>
 
