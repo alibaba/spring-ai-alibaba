@@ -14,16 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.service;
+package com.alibaba.cloud.ai.plugin.service;
 
-import com.alibaba.cloud.ai.properties.LarkSuiteProperties;
+import com.alibaba.cloud.ai.plugin.properties.LarkSuiteProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.lark.oapi.Client;
 import com.lark.oapi.service.docx.v1.model.CreateDocumentReq;
 import com.lark.oapi.service.docx.v1.model.CreateDocumentReqBody;
 import com.lark.oapi.service.docx.v1.model.CreateDocumentResp;
-import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.ObjectUtils;
@@ -37,18 +36,20 @@ public class LarkSuiteService implements Function<LarkSuiteService.Request, Obje
 
     private static final Logger logger = LoggerFactory.getLogger(LarkSuiteService.class);
 
-    public LarkSuiteService(LarkSuiteProperties larkSuiteProperties) {
-        this.larkSuiteProperties = larkSuiteProperties;
+    LarkSuiteProperties larkSuiteProperties;
+
+    public LarkSuiteService(LarkSuiteProperties properties) {
+        this.larkSuiteProperties = properties;
     }
 
     @Override
     public Object apply(Request request) {
         if (ObjectUtils.isEmpty(larkSuiteProperties.getAppId()) || ObjectUtils.isEmpty(larkSuiteProperties.getAppSecret())) {
-            logger.error("current spring.ai.alibaba.community.plugin.tool.larksuite must not be null.");
-            throw new IllegalArgumentException("current spring.ai.community.plugin.tool.larksuite must not be null.");
+            logger.error("current spring.ai.alibaba.plugin.tool.larksuite must not be null.");
+            throw new IllegalArgumentException("current spring.ai.plugin.tool.larksuite must not be null.");
         }
 
-        logger.debug("current spring.ai.alibaba.community.plugin.tool.larksuite.appId is {},appSecret is {}", larkSuiteProperties.getAppId(), larkSuiteProperties.getAppSecret());
+        logger.debug("current spring.ai.alibaba.plugin.tool.larksuite.appId is {},appSecret is {}", larkSuiteProperties.getAppId(), larkSuiteProperties.getAppSecret());
 
         Client client = Client.newBuilder(larkSuiteProperties.getAppId(), larkSuiteProperties.getAppSecret()).build();
 
@@ -72,3 +73,4 @@ public class LarkSuiteService implements Function<LarkSuiteService.Request, Obje
             @JsonProperty(required = true, value = "folderToken") @JsonPropertyDescription("the larksuite folderToken") String folderToken) {
     }
 }
+
