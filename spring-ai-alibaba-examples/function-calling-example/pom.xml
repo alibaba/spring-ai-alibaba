@@ -53,21 +53,31 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>spring-ai-alibaba-starter-plugin-time</artifactId>
-			<version>1.0.0-M3.2</version>
-		</dependency>
+
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-plugin-time</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
+        </dependency>
+
 		<dependency>
 			<groupId>com.alibaba.cloud.ai</groupId>
 			<artifactId>spring-ai-alibaba-starter-plugin-baidusearch</artifactId>
-			<version>1.0.0-M3.2</version>
+			<version>${spring-ai-alibaba.version}</version>
 		</dependency>
+
 		<dependency>
 			<groupId>com.alibaba.cloud.ai</groupId>
 			<artifactId>spring-ai-alibaba-starter-plugin-bingsearch</artifactId>
-			<version>1.0.0-M3.2</version>
+			<version>${spring-ai-alibaba.version}</version>
 		</dependency>
+
+		<dependency>
+			<groupId>com.alibaba.cloud.ai</groupId>
+			<artifactId>spring-ai-alibaba-starter-plugin-dingtalk</artifactId>
+			<version>${spring-ai-alibaba.version}</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>

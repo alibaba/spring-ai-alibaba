@@ -27,7 +27,7 @@
   </parent>
   <artifactId>spring-ai-alibaba-starter-plugin-bingsearch</artifactId>
   <name>spring-ai-alibaba-starter-plugin-bingsearch</name>
-  <description>Bing seartch tool for Spring AI Alibaba</description>
+  <description>Bing search tool for Spring AI Alibaba</description>
   
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
