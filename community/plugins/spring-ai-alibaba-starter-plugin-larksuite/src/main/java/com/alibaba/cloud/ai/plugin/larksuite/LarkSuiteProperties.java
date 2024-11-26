@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.plugin.properties;
+package com.alibaba.cloud.ai.plugin.larksuite;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.plugin.config;
+package com.alibaba.cloud.ai.plugin.larksuite;
 
 import com.alibaba.cloud.ai.plugin.properties.LarkSuiteProperties;
 import com.alibaba.cloud.ai.plugin.service.LarkSuiteService;
@@ -26,8 +26,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
 
 /**
- * TODO 填写类含义及用途描述
- *
  * @author 北极星
  */
 @EnableConfigurationProperties({LarkSuiteProperties.class})
@@ -38,7 +36,7 @@ public class LarkSuiteAutoConfiguration {
     @ConditionalOnMissingBean
     @Description("it calls the document api to invoke a method to create a larksuite document")
     @ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.larksuite", name = "enabled", havingValue = "true")
-    public LarkSuiteService larkSuiteBuild(LarkSuiteProperties properties) {
+    public LarkSuiteService larksuiteCreateDocFunction(LarkSuiteProperties properties) {
         return new LarkSuiteService(properties);
     }
 }
