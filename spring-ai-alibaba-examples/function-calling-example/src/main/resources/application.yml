@@ -5,3 +5,8 @@ spring:
   ai:
     dashscope:
       api-key: ${AI_DASHSCOPE_API_KEY}
+    alibaba:
+      plugin:
+        bing:
+          enabled: true
+          token: ${AI_BING_TOKEN}
