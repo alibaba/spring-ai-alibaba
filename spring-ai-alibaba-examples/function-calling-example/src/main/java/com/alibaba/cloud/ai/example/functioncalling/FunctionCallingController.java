@@ -59,6 +59,15 @@ public class FunctionCallingController {
 			.call()
 			.content();
 	}
+	
+	@GetMapping("/bing-search")
+	public String bingSearch(@RequestParam String query) {
+		return chatClient.prompt()
+				.functions("bingSearchService")
+				.user(query)
+				.call()
+				.content();
+	}
 
 	@GetMapping("/getTime")
 	public String getTime(String text) {
