@@ -72,7 +72,7 @@ public class FunctionCallingController {
     @GetMapping("/dingTalk-custom-robot-send")
     public String dingTalkCustomRobotSend(String input) {
         return chatClient.prompt()
-                .functions("CustomRobotSendMessageFunction")
+                .functions("customRobotSendMessageFunction")
                 .user(String.format("帮我用自定义机器人发送'%s'", input))
                 .call()
                 .content();
