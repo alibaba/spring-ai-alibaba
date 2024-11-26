@@ -27,7 +27,7 @@
     </parent>
     <artifactId>spring-ai-alibaba-starter-plugin-baidusearch</artifactId>
     <name>spring-ai-alibaba-starter-plugin-baidusearch</name>
-    <description>Baidu seartch tool for Spring AI Alibaba</description>
+    <description>Baidu search tool for Spring AI Alibaba</description>
     
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

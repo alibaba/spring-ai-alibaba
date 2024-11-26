@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.properties;
+package com.alibaba.cloud.ai.plugin.dingtalk;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,9 +20,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * @author YunLong
  */
-@ConfigurationProperties("spring.ai.alibaba.plugin.dingtalk")
+@ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.dingtalk")
 public class DingTalkProperties {
 
+    // Official Document Address：https://open.dingtalk.com/document/orgapp/custom-robots-send-group-messages
     private String customRobotAccessToken;
 
     private String customRobotSignature;
