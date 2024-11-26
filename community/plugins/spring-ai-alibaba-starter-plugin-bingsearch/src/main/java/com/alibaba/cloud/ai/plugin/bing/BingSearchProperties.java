@@ -27,18 +27,19 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.bing")
 public class BingSearchProperties {
-    
-    public static final String OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";
-    
-    // bing api key for Ocp-Apim-Subscription-Key
-    // https://learn.microsoft.com/en-us/bing/search-apis/bing-web-search/quickstarts/rest/java
-    private String token;
-    
-    public String getToken() {
-        return token;
-    }
-    
-    public void setToken(String token) {
-        this.token = token;
-    }
+
+	public static final String OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";
+
+	// bing api key for Ocp-Apim-Subscription-Key
+	// https://learn.microsoft.com/en-us/bing/search-apis/bing-web-search/quickstarts/rest/java
+	private String token;
+
+	public String getToken() {
+		return token;
+	}
+
+	public void setToken(String token) {
+		this.token = token;
+	}
+
 }
