@@ -36,13 +36,13 @@ import org.springframework.context.annotation.Description;
 @ConditionalOnClass(BingSearchService.class)
 @EnableConfigurationProperties(BingSearchProperties.class)
 public class BingSearchPluginConfiguration {
-    
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Use bing search engine to query for the latest news.") // function
-    @ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.bing", name = "enabled", havingValue = "true")
-    public BingSearchService bingSearchService(BingSearchProperties properties) {
-        return new BingSearchService(properties);
-    }
-    
+
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Use bing search engine to query for the latest news.") // function
+	@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.bing", name = "enabled", havingValue = "true")
+	public BingSearchService bingSearchService(BingSearchProperties properties) {
+		return new BingSearchService(properties);
+	}
+
 }
