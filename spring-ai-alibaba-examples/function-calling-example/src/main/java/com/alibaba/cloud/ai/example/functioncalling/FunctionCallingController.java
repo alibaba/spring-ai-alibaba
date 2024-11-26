@@ -27,20 +27,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/ai/func")
 public class FunctionCallingController {
 
-	private final ChatClient chatClient;
+    private final ChatClient chatClient;
 
-	public FunctionCallingController(ChatClient.Builder chatClientBuilder) {
-		this.chatClient = chatClientBuilder.build();
-	}
+    public FunctionCallingController(ChatClient.Builder chatClientBuilder) {
+        this.chatClient = chatClientBuilder.build();
+    }
 
-	@GetMapping("/weather-service")
-	public String weatherService(String subject) {
-		return chatClient.prompt()
-			.function("getWeather", "根据城市查询天气", new MockWeatherService())
-			.user(subject)
-			.call()
-			.content();
-	}
+    @GetMapping("/weather-service")
+    public String weatherService(String subject) {
+        return chatClient.prompt()
+                .function("getWeather", "根据城市查询天气", new MockWeatherService())
+                .user(subject)
+                .call()
+                .content();
+    }
 
 	@GetMapping("/order-detail")
 	public String orderDetail() {
@@ -50,7 +50,7 @@ public class FunctionCallingController {
 			.call()
 			.content();
 	}
-	
+
 	@GetMapping("/baidu-search")
 	public String baiduSearch(@RequestParam String query) {
 		return chatClient.prompt()
@@ -69,13 +69,22 @@ public class FunctionCallingController {
 				.content();
 	}
 
-	@GetMapping("/getTime")
-	public String getTime(String text) {
-		return chatClient.prompt()
-				.functions("getCityTimeFunction")
-				.user(text)
-				.call()
-				.content();
-	}
+    @GetMapping("/getTime")
+    public String getTime(String text) {
+        return chatClient.prompt()
+                .functions("getCityTimeFunction")
+                .user(text)
+                .call()
+                .content();
+    }
+
+    @GetMapping("/dingTalk-custom-robot-send")
+    public String dingTalkCustomRobotSend(String input) {
+        return chatClient.prompt()
+                .functions("dingTalkGroupSendMessageByCustomRobotFunction")
+                .user(String.format("帮我用自定义机器人发送'%s'", input))
+                .call()
+                .content();
+    }
 
 }
