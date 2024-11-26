@@ -33,13 +33,13 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @ConditionalOnClass(BaiduSearchService.class)
 public class BaiduSearchPluginConfiguration {
-    
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Use baidu search engine to query for the latest news.") // function
-    // description
-    public BaiduSearchService baiduSearchService() {
-        return new BaiduSearchService();
-    }
-    
+
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Use baidu search engine to query for the latest news.") // function
+	// description
+	public BaiduSearchService baiduSearchService() {
+		return new BaiduSearchService();
+	}
+
 }
