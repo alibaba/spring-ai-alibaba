@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.plugin.service;
+package com.alibaba.cloud.ai.plugin.larksuite;
 
 import com.alibaba.cloud.ai.plugin.properties.LarkSuiteProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
