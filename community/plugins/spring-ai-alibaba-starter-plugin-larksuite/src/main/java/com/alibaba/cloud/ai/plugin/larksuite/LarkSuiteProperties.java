@@ -25,32 +25,32 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties("spring.ai.alibaba.plugin.larksuite")
 public class LarkSuiteProperties {
 
-    /**
-     * AppId
-     */
-    private String appId;
+	/**
+	 * AppId
+	 */
+	private String appId;
 
-    /**
-     * AppSecret
-     */
-    private String appSecret;
+	/**
+	 * AppSecret
+	 */
+	private String appSecret;
 
-    public String getAppId() {
-        return appId;
-    }
+	public String getAppId() {
+		return appId;
+	}
 
-    public LarkSuiteProperties setAppId(String appId) {
-        this.appId = appId;
-        return this;
-    }
+	public LarkSuiteProperties setAppId(String appId) {
+		this.appId = appId;
+		return this;
+	}
 
-    public String getAppSecret() {
-        return appSecret;
-    }
+	public String getAppSecret() {
+		return appSecret;
+	}
 
-    public LarkSuiteProperties setAppSecret(String appSecret) {
-        this.appSecret = appSecret;
-        return this;
-    }
+	public LarkSuiteProperties setAppSecret(String appSecret) {
+		this.appSecret = appSecret;
+		return this;
+	}
+
 }
-
