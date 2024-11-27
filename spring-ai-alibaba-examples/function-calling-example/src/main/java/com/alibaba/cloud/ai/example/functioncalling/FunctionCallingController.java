@@ -97,4 +97,14 @@ public class FunctionCallingController {
 				.content();
 	}
 
+
+	@GetMapping("/getWeather")
+	public String getWeather(@RequestParam String text) {
+		return chatClient.prompt()
+				.functions("getWeatherService")
+				.user(text)
+				.call()
+				.content();
+	}
+
 }
