@@ -27,6 +27,7 @@
     </parent>
     <artifactId>spring-ai-alibaba-starter-plugin-baidusearch</artifactId>
     <name>spring-ai-alibaba-starter-plugin-baidusearch</name>
+
     <description>Baidu search tool for Spring AI Alibaba</description>
     
     <properties>
