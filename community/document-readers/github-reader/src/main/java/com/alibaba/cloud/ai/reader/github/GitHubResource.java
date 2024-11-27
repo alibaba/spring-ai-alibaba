@@ -16,22 +16,22 @@ import java.net.URL;
  * @author HeYQ
  * @since 1.0.0
  */
-public class GitHubSource implements Resource {
+public class GitHubResource implements Resource {
 
 	private final InputStream inputStream;
 
 	private final GHContent content;
 
-	public GitHubSource(String gitHubToken, String gitHubTokenOrganization, String owner, String repo, String branch,
+	public GitHubResource(String gitHubToken, String gitHubTokenOrganization, String owner, String repo, String branch,
 			String path) {
 		this(null, gitHubToken, gitHubTokenOrganization, owner, repo, branch, path);
 	}
 
-	public GitHubSource(String gitHubToken, String gitHubTokenOrganization, String owner, String repo, String path) {
+	public GitHubResource(String gitHubToken, String gitHubTokenOrganization, String owner, String repo, String path) {
 		this(null, gitHubToken, gitHubTokenOrganization, owner, repo, "main", path);
 	}
 
-	public GitHubSource(String apiUrl, String gitHubToken, String gitHubTokenOrganization, String owner, String repo,
+	public GitHubResource(String apiUrl, String gitHubToken, String gitHubTokenOrganization, String owner, String repo,
 			String branch, String path) {
 		GitHubBuilder gitHubBuilder = new GitHubBuilder();
 		if (apiUrl != null) {
@@ -115,11 +115,11 @@ public class GitHubSource implements Resource {
 			return this;
 		}
 
-		public GitHubSource build() {
+		public GitHubResource build() {
 			Assert.notNull(owner, "Owner must not be null");
 			Assert.notNull(repo, "Repo must not be null");
 			Assert.notNull(path, "Path must not be null");
-			return new GitHubSource(apiUrl, gitHubToken, gitHubTokenOrganization, owner, repo, branch, path);
+			return new GitHubResource(apiUrl, gitHubToken, gitHubTokenOrganization, owner, repo, branch, path);
 		}
 
 	}

@@ -31,8 +31,9 @@
     <dependencies>
 
         <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-core</artifactId>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-core</artifactId>
+            <version>${project.parent.version}</version>
         </dependency>
 
         <dependency>

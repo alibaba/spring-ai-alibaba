@@ -1,12 +1,18 @@
 package com.alibaba.cloud.ai.reader.github;
 
 import org.kohsuke.github.GHContent;
+import org.kohsuke.github.connector.GitHubConnectorResponse;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
+import org.springframework.ai.reader.ExtractedTextFormatter;
+import org.springframework.core.io.DefaultResourceLoader;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+
+import com.alibaba.cloud.ai.reader.DocumentParser;
 
 /**
  * @author HeYQ
@@ -14,18 +20,28 @@ import java.util.Map;
  */
 public class GitHubDocumentReader implements DocumentReader {
 
-	private final DocumentReader documentReader;
+	private final DocumentReader parser;
 
-	private final GHContent ghContent;
+	private final GitHubResource gitHubResource;
 
-	public GitHubDocumentReader(GHContent ghContent, DocumentReader documentReader) {
-		this.documentReader = documentReader;
-		this.ghContent = ghContent;
+	public GitHubDocumentReader(GitHubResource gitHubResource, DocumentParser parserType) {
+		this(gitHubResource, parserType.getParser(gitHubResource));
+	}
+
+	public GitHubDocumentReader(GitHubResource gitHubResource, DocumentParser parserType,
+			ExtractedTextFormatter formatter) {
+		this(gitHubResource, parserType.getParser(gitHubResource, formatter));
+	}
+
+	public GitHubDocumentReader(GitHubResource gitHubResource, DocumentReader parser) {
+		this.gitHubResource = gitHubResource;
+		this.parser = parser;
 	}
 
 	@Override
 	public List<Document> get() {
-		List<Document> documents = documentReader.get();
+		GHContent ghContent = gitHubResource.getContent();
+		List<Document> documents = parser.get();
 		for (Document document : documents) {
 			Map<String, Object> metadata = document.getMetadata();
 			metadata.put("github_git_url", ghContent.getGitUrl());
