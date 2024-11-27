@@ -17,3 +17,6 @@ spring:
         gaode:
           enabled: true
           web-api-key: ${GaoDe_Web_API_Key}
+        weather:
+          api-key: ${AI_WEATHER_API_KEY}
+
