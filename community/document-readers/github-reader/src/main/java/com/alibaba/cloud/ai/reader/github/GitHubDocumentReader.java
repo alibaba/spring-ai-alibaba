@@ -1,12 +1,9 @@
 package com.alibaba.cloud.ai.reader.github;
 
 import org.kohsuke.github.GHContent;
-import org.kohsuke.github.connector.GitHubConnectorResponse;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.reader.ExtractedTextFormatter;
-import org.springframework.core.io.DefaultResourceLoader;
 
 import java.io.IOException;
 import java.util.List;
