@@ -29,8 +29,8 @@ import java.util.List;
  */
 @CrossOrigin
 @RestController
-@RequestMapping("studio/api/model_observation")
-public class ModelObservationApiController {
+@RequestMapping("studio/api/observation")
+public class ObservationApiController {
 
     private final ObservationServiceImpl observationServiceImpl;
     private final ObservationDetailServiceImpl observationDetailServiceImpl;
@@ -38,11 +38,11 @@ public class ModelObservationApiController {
 
     private final DashScopeChatModel dashScopeChatModel;
 
-    public ModelObservationApiController(ObservationServiceImpl observationServiceImpl,
-                                         ObservationDetailServiceImpl observationDetailServiceImpl,
-                                          ObservationRegistry observationRegistry,
-                                         DashScopeApi dashScopeApi,
-                                         DashScopeChatModel dashScopeChatModel, ChatClient.Builder builder) {
+    public ObservationApiController(ObservationServiceImpl observationServiceImpl,
+                                    ObservationDetailServiceImpl observationDetailServiceImpl,
+                                    ObservationRegistry observationRegistry,
+                                    DashScopeApi dashScopeApi,
+                                    ChatClient.Builder builder) {
         this.observationServiceImpl = observationServiceImpl;
         this.observationDetailServiceImpl = observationDetailServiceImpl;
         this.dashScopeChatModel = new DashScopeChatModel(
