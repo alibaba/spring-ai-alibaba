@@ -87,4 +87,14 @@ public class FunctionCallingController {
                 .content();
     }
 
+	@GetMapping("/gaode-get-address-weather")
+	public String gaoDeGetAddressWeatherFunction(String input) {
+		return chatClient.prompt()
+				.functions("gaoDeGetAddressWeatherFunction")
+				.system("如果用户输入的内容中想询问天气情况,而且还给定了地址,则使用工具获取天气情况,不然提示用户缺少信息")
+				.user(input)
+				.call()
+				.content();
+	}
+
 }
