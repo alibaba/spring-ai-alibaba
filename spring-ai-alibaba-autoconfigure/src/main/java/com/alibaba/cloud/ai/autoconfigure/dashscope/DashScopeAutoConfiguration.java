@@ -26,10 +26,12 @@ import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
 import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
 import com.alibaba.dashscope.audio.asr.transcription.Transcription;
 import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
+import io.micrometer.observation.ObservationRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -93,10 +95,11 @@ public class DashScopeAutoConfiguration {
 	@ConditionalOnProperty(prefix = DashScopeChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public DashScopeChatModel dashscopeChatModel(DashScopeConnectionProperties commonProperties,
-			DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, List<FunctionCallback> toolFunctionCallbacks,
-			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler) {
+												 DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
+												 WebClient.Builder webClientBuilder, List<FunctionCallback> toolFunctionCallbacks,
+												 FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
+												 ResponseErrorHandler responseErrorHandler,
+												 ObjectProvider<ObservationRegistry> observationRegistry) {
 
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
@@ -106,7 +109,7 @@ public class DashScopeAutoConfiguration {
 				responseErrorHandler);
 
 		return new DashScopeChatModel(dashscopeApi, chatProperties.getOptions(), functionCallbackContext,
-				retryTemplate);
+				retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 	}
 
 	@Bean
