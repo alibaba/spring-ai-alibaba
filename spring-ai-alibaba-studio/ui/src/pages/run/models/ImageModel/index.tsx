@@ -19,24 +19,31 @@ import { Card, Flex, Button, Checkbox, Input, Image } from 'antd';
 import Setup from '../Setup';
 import { ChatModelData, ChatModelResultData } from '@/types/chat_model';
 import chatModelsService from '@/services/chat_models';
+import {RightPanelValues} from '../types';
+
 
 type ImageModelProps = {
   modelData: ChatModelData;
 };
 
 const ImageModel: React.FC<ImageModelProps> = ({ modelData }) => {
-  const initialValues = {
-    initialConfig: {
-      model: 'ollama/llama3.2',
-      temperature: 50,
-      topP: 50,
-      topK: 50,
-      maxTokens: 10,
-      sequences: '',
-      version: 1,
+  const [initialValues, setInitialValues] = useState<RightPanelValues>({
+    initialImgConfig:  {
+      model: 'wanx-v1',
+      responseFormat: '',
+      n: 0,
+      size_width: 0,
+      size_height: 0,
+      size: '',
+      style: '',
+      seed: 0,
+      ref_img: '',
+      ref_strength: 0,
+      ref_mode: '',
+      negative_prompt: ''
     },
-    initialTool: {},
-  };
+    initialTool: {}
+  });
 
   const [inputValue, setInputValue] = useState('');
   const [imageValue, setImageValue] = useState('');
@@ -47,7 +54,7 @@ const ImageModel: React.FC<ImageModelProps> = ({ modelData }) => {
     try {
       const res = (await chatModelsService.postImageModel({
         input: inputValue,
-        imageOptions: initialValues.initialConfig,
+        imageOptions: initialValues.initialChatConfig,
       })) as ChatModelResultData;
       console.log(res);
       setImageValue(res.result.response);
