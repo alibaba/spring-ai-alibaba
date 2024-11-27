@@ -5,10 +5,10 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.entity.ChatDTO;
-import com.alibaba.cloud.ai.entity.ModelObservationDetailEntity;
-import com.alibaba.cloud.ai.entity.ModelObservationEntity;
-import com.alibaba.cloud.ai.service.impl.ModelObservationDetailServiceImpl;
-import com.alibaba.cloud.ai.service.impl.ModelObservationServiceImpl;
+import com.alibaba.cloud.ai.entity.ObservationDetailEntity;
+import com.alibaba.cloud.ai.entity.ObservationEntity;
+import com.alibaba.cloud.ai.service.impl.ObservationDetailServiceImpl;
+import com.alibaba.cloud.ai.service.impl.ObservationServiceImpl;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.http.MediaType;
@@ -32,18 +32,19 @@ import java.util.List;
 @RequestMapping("studio/api/model_observation")
 public class ModelObservationApiController {
 
-    private final ModelObservationServiceImpl modelObservationServiceImpl;
-    private final ModelObservationDetailServiceImpl modelObservationDetailServiceImpl;
+    private final ObservationServiceImpl observationServiceImpl;
+    private final ObservationDetailServiceImpl observationDetailServiceImpl;
     private final ChatClient chatClient;
 
     private final DashScopeChatModel dashScopeChatModel;
 
-    public ModelObservationApiController(ModelObservationServiceImpl modelObservationServiceImpl,
-                                         ModelObservationDetailServiceImpl modelObservationDetailServiceImpl,
+    public ModelObservationApiController(ObservationServiceImpl observationServiceImpl,
+                                         ObservationDetailServiceImpl observationDetailServiceImpl,
                                           ObservationRegistry observationRegistry,
-                                         DashScopeApi dashScopeApi) {
-        this.modelObservationServiceImpl = modelObservationServiceImpl;
-        this.modelObservationDetailServiceImpl = modelObservationDetailServiceImpl;
+                                         DashScopeApi dashScopeApi,
+                                         DashScopeChatModel dashScopeChatModel, ChatClient.Builder builder) {
+        this.observationServiceImpl = observationServiceImpl;
+        this.observationDetailServiceImpl = observationDetailServiceImpl;
         this.dashScopeChatModel = new DashScopeChatModel(
                 dashScopeApi,
                 DashScopeChatOptions.builder()
@@ -55,17 +56,18 @@ public class ModelObservationApiController {
                 observationRegistry
         );
         this.chatClient = ChatClient.create(dashScopeChatModel, observationRegistry);
+//        this.chatClient = builder.build();
     }
 
     @GetMapping(value = "list", produces = MediaType.APPLICATION_JSON_VALUE)
-    public R<List<ModelObservationEntity>> list() {
-        List<ModelObservationEntity> list = modelObservationServiceImpl.list();
+    public R<List<ObservationEntity>> list() {
+        List<ObservationEntity> list = observationServiceImpl.list();
         return R.success(list);
     }
 
     @GetMapping(value = "detail/list", produces = MediaType.APPLICATION_JSON_VALUE)
-    public R<List<ModelObservationDetailEntity>> detailList() {
-        List<ModelObservationDetailEntity> list = modelObservationDetailServiceImpl.list();
+    public R<List<ObservationDetailEntity>> detailList() {
+        List<ObservationDetailEntity> list = observationDetailServiceImpl.list();
         return R.success(list);
     }
 
@@ -78,5 +80,17 @@ public class ModelObservationApiController {
     public R<String> generate(@RequestBody ChatDTO chatDTO) {
         String call = chatClient.prompt(chatDTO.getMessage()).call().content();
         return R.success(call);
+    }
+
+    @GetMapping(value = "exportObservation", produces = MediaType.APPLICATION_JSON_VALUE)
+    public R<List<ObservationDetailEntity>> exportObservation() {
+        observationServiceImpl.exportObservation();
+        return R.success(null);
+    }
+
+    @GetMapping(value = "exportObservationDetail", produces = MediaType.APPLICATION_JSON_VALUE)
+    public R<List<ObservationDetailEntity>> exportObservationDetail() {
+        observationDetailServiceImpl.exportObservationDetail();
+        return R.success(null);
     }
 }

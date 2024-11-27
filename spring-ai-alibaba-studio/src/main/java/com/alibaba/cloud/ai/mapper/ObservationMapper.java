@@ -1,6 +1,6 @@
 package com.alibaba.cloud.ai.mapper;
 
-import com.alibaba.cloud.ai.entity.ModelObservationEntity;
+import com.alibaba.cloud.ai.entity.ObservationEntity;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -10,5 +10,5 @@ import org.apache.ibatis.annotations.Mapper;
  * @Date: 2024/11/18
  */
 @Mapper
-public interface ModelObservationMapper extends BaseMapper<ModelObservationEntity> {
+public interface ObservationMapper extends BaseMapper<ObservationEntity> {
 }
