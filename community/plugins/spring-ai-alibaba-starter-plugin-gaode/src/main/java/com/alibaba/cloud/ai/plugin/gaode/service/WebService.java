@@ -30,76 +30,72 @@ import java.util.concurrent.CompletableFuture;
 
 public class WebService {
 
-    private final String baseUrl = "https://restapi.amap.com/v3";
+	private final String baseUrl = "https://restapi.amap.com/v3";
 
-    private final GaoDeProperties gaoDeProperties;
+	private final GaoDeProperties gaoDeProperties;
 
-    private final HttpClient httpClient;
+	private final HttpClient httpClient;
 
-    public WebService(GaoDeProperties gaoDeProperties){
-        this.gaoDeProperties = gaoDeProperties;
+	public WebService(GaoDeProperties gaoDeProperties) {
+		this.gaoDeProperties = gaoDeProperties;
 
-        this.httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_2)
-                .build();
+		this.httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
 
-        if (Objects.isNull(gaoDeProperties.getWebApiKey())){
-            throw new RuntimeException("Please configure your GaoDe API key in the application.yml file.");
-        }
-    }
+		if (Objects.isNull(gaoDeProperties.getWebApiKey())) {
+			throw new RuntimeException("Please configure your GaoDe API key in the application.yml file.");
+		}
+	}
 
-    /**
-     * Geographic/Inverse Geocoding
-     * @param address
-     * @return https://lbs.amap.com/api/webservice/guide/api/georegeo#s2
-     */
-    public String getAddressCityCode(String address) {
+	/**
+	 * Geographic/Inverse Geocoding
+	 * @param address
+	 * @return https://lbs.amap.com/api/webservice/guide/api/georegeo#s2
+	 */
+	public String getAddressCityCode(String address) {
 
-        String path = String.format("/geocode/geo?key=%s&address=%s", gaoDeProperties.getWebApiKey(), address);
+		String path = String.format("/geocode/geo?key=%s&address=%s", gaoDeProperties.getWebApiKey(), address);
 
-        HttpRequest httpRequest = createGetRequest(path);
+		HttpRequest httpRequest = createGetRequest(path);
 
-        CompletableFuture<HttpResponse<String>> responseFuture = httpClient.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString());
+		CompletableFuture<HttpResponse<String>> responseFuture = httpClient.sendAsync(httpRequest,
+				HttpResponse.BodyHandlers.ofString());
 
-        HttpResponse<String> response = responseFuture.join();
+		HttpResponse<String> response = responseFuture.join();
 
-        if (response.statusCode() != 200){
-            throw new RuntimeException("Failed to get address city code");
-        }
+		if (response.statusCode() != 200) {
+			throw new RuntimeException("Failed to get address city code");
+		}
 
-        return response.body();
-    }
+		return response.body();
+	}
 
+	/**
+	 * Weather Information
+	 * @param cityCode
+	 * @return https://lbs.amap.com/api/webservice/guide/api/weatherinfo#s0
+	 */
+	public String getWeather(String cityCode) {
+		String path = String.format("/weather/weatherInfo?key=%s&city=%s&extensions=%s", gaoDeProperties.getWebApiKey(),
+				cityCode, "all");
 
-    /**
-     * Weather Information
-     * @param cityCode
-     * @return https://lbs.amap.com/api/webservice/guide/api/weatherinfo#s0
-     */
-    public String getWeather(String cityCode) {
-        String path = String.format("/weather/weatherInfo?key=%s&city=%s&extensions=%s", gaoDeProperties.getWebApiKey(), cityCode, "all");
+		HttpRequest httpRequest = createGetRequest(path);
 
-        HttpRequest httpRequest = createGetRequest(path);
+		CompletableFuture<HttpResponse<String>> responseFuture = httpClient.sendAsync(httpRequest,
+				HttpResponse.BodyHandlers.ofString());
 
-        CompletableFuture<HttpResponse<String>> responseFuture = httpClient.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString());
+		HttpResponse<String> response = responseFuture.join();
 
-        HttpResponse<String> response = responseFuture.join();
+		if (response.statusCode() != 200) {
+			throw new RuntimeException("Failed to get weather information");
+		}
 
-        if (response.statusCode() != 200){
-            throw new RuntimeException("Failed to get weather information");
-        }
+		return response.body();
+	}
 
-        return response.body();
-    }
+	private HttpRequest createGetRequest(String path) {
+		URI uri = URI.create(baseUrl + path);
 
-    private HttpRequest createGetRequest(String path) {
-        URI uri = URI.create(baseUrl + path);
-
-        return HttpRequest.newBuilder()
-                .uri(uri)
-                .GET()
-                .build();
-    }
-
+		return HttpRequest.newBuilder().uri(uri).GET().build();
+	}
 
 }
