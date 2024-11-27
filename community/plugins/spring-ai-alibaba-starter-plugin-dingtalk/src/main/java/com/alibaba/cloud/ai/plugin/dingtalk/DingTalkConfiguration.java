@@ -1,4 +1,5 @@
 package com.alibaba.cloud.ai.plugin.dingtalk;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -30,10 +31,11 @@ import org.springframework.context.annotation.Description;
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.dingtalk", name = "enabled", havingValue = "true")
 public class DingTalkConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Send DingTalk group chat messages using a custom robot")
-    public DingTalkService dingTalkGroupSendMessageByCustomRobotFunction(DingTalkProperties dingTalkProperties) {
-        return new DingTalkService(dingTalkProperties);
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Send DingTalk group chat messages using a custom robot")
+	public DingTalkService dingTalkGroupSendMessageByCustomRobotFunction(DingTalkProperties dingTalkProperties) {
+		return new DingTalkService(dingTalkProperties);
+	}
+
 }
