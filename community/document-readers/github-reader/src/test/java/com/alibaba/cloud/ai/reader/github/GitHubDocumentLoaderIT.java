@@ -1,5 +1,6 @@
 package com.alibaba.cloud.ai.reader.github;
 
+import com.alibaba.cloud.ai.reader.DocumentParser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -18,7 +19,7 @@ class GitHubDocumentLoaderIT {
 
 	GitHubDocumentReader reader;
 
-	GitHubSource source = GitHubSource.builder()
+	GitHubResource source = GitHubResource.builder()
 		.gitHubToken(System.getenv("GITHUB_TOKEN"))
 		.owner(TEST_OWNER)
 		.repo(TEST_REPO)
@@ -26,11 +27,9 @@ class GitHubDocumentLoaderIT {
 		.path("Mergekit.ipynb") // Mergekit.ipynb //LICENSE
 		.build();
 
-	DocumentReader parser = new TextReader(source);
-
 	@BeforeEach
 	public void beforeEach() {
-		reader = new GitHubDocumentReader(source.getContent(), parser);
+		reader = new GitHubDocumentReader(source, DocumentParser.TEXT_PARSER);
 	}
 
 	@Test
