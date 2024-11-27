@@ -52,7 +52,7 @@ public class WeatherService
     public WeatherService(WeatherProperties properties) {
         this.webClient = WebClient.builder()
                 .defaultHeader(HttpHeaders.USER_AGENT,
-                        HttpHeaders.USER_AGENT) // 可以通过 Spring 中常量管理用户代理
+                        HttpHeaders.USER_AGENT) 
                 .defaultHeader(HttpHeaders.ACCEPT,
                         MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader(HttpHeaders.ACCEPT_ENCODING, "gzip, deflate")
