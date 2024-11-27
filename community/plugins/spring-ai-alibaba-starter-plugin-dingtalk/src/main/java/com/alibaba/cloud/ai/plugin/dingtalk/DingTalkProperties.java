@@ -1,4 +1,5 @@
 package com.alibaba.cloud.ai.plugin.dingtalk;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,31 +24,34 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.dingtalk")
 public class DingTalkProperties {
 
-    // Official Document Address：https://open.dingtalk.com/document/orgapp/custom-robots-send-group-messages
-    private String customRobotAccessToken;
+	// Official Document
+	// Address：https://open.dingtalk.com/document/orgapp/custom-robots-send-group-messages
+	private String customRobotAccessToken;
 
-    private String customRobotSignature;
+	private String customRobotSignature;
 
-    public DingTalkProperties() {}
+	public DingTalkProperties() {
+	}
 
-    public DingTalkProperties(String customRobotAccessToken, String customRobotSignature) {
-        this.customRobotAccessToken = customRobotAccessToken;
-        this.customRobotSignature = customRobotSignature;
-    }
+	public DingTalkProperties(String customRobotAccessToken, String customRobotSignature) {
+		this.customRobotAccessToken = customRobotAccessToken;
+		this.customRobotSignature = customRobotSignature;
+	}
 
-    public String getCustomRobotAccessToken() {
-        return customRobotAccessToken;
-    }
+	public String getCustomRobotAccessToken() {
+		return customRobotAccessToken;
+	}
 
-    public void setCustomRobotAccessToken(String customRobotAccessToken) {
-        this.customRobotAccessToken = customRobotAccessToken;
-    }
+	public void setCustomRobotAccessToken(String customRobotAccessToken) {
+		this.customRobotAccessToken = customRobotAccessToken;
+	}
 
-    public String getCustomRobotSignature() {
-        return customRobotSignature;
-    }
+	public String getCustomRobotSignature() {
+		return customRobotSignature;
+	}
 
-    public void setCustomRobotSignature(String customRobotSignature) {
-        this.customRobotSignature = customRobotSignature;
-    }
+	public void setCustomRobotSignature(String customRobotSignature) {
+		this.customRobotSignature = customRobotSignature;
+	}
+
 }

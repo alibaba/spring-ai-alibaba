@@ -1,4 +1,5 @@
 package com.alibaba.cloud.ai.plugin.gaode.function;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -31,41 +32,42 @@ import java.util.function.Function;
  */
 public class WeatherSearchFunction implements Function<WeatherSearchFunction.Request, WeatherSearchFunction.Response> {
 
-    private final WebService webService;
+	private final WebService webService;
 
-    public WeatherSearchFunction(GaoDeProperties gaoDeProperties) {
-        this.webService = new WebService(gaoDeProperties);
-    }
+	public WeatherSearchFunction(GaoDeProperties gaoDeProperties) {
+		this.webService = new WebService(gaoDeProperties);
+	}
 
-    @Override
-    public Response apply(Request request) {
+	@Override
+	public Response apply(Request request) {
 
-        String responseBody = webService.getAddressCityCode(request.address);
+		String responseBody = webService.getAddressCityCode(request.address);
 
-        String adcode = "";
+		String adcode = "";
 
-        try {
-            JSONObject jsonObject = JSON.parseObject(responseBody);
-            JSONArray geocodesArray = jsonObject.getJSONArray("geocodes");
-            if (geocodesArray != null && !geocodesArray.isEmpty()) {
-                JSONObject firstGeocode = geocodesArray.getJSONObject(0);
-                adcode = firstGeocode.getString("adcode");
-            }
-        } catch (Exception e){
-            return new Response("Error occurred while processing the request.");
-        }
+		try {
+			JSONObject jsonObject = JSON.parseObject(responseBody);
+			JSONArray geocodesArray = jsonObject.getJSONArray("geocodes");
+			if (geocodesArray != null && !geocodesArray.isEmpty()) {
+				JSONObject firstGeocode = geocodesArray.getJSONObject(0);
+				adcode = firstGeocode.getString("adcode");
+			}
+		}
+		catch (Exception e) {
+			return new Response("Error occurred while processing the request.");
+		}
 
-        String weather = webService.getWeather(adcode);
+		String weather = webService.getWeather(adcode);
 
-        return new Response(weather);
-    }
+		return new Response(weather);
+	}
 
-    @JsonClassDescription("Get the weather conditions for a specified address.")
-    public record Request(
-            @JsonProperty(required = true, value = "address")
-            @JsonPropertyDescription("The address") String address) {
-    }
+	@JsonClassDescription("Get the weather conditions for a specified address.")
+	public record Request(
+			@JsonProperty(required = true, value = "address") @JsonPropertyDescription("The address") String address) {
+	}
 
-    public record Response(String message) {
-    }
+	public record Response(String message) {
+	}
+
 }
