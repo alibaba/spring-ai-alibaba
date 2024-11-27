@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
+import { useState } from 'react';
 import { Card, Flex, Button, Checkbox, Input, Image } from 'antd';
 import Setup from '../Setup';
-import { ChatModelData } from '@/types/chat_model';
+import { ChatModelData, ChatModelResultData } from '@/types/chat_model';
+import chatModelsService from '@/services/chat_models';
 
 type ImageModelProps = {
   modelData: ChatModelData;
@@ -36,21 +38,46 @@ const ImageModel: React.FC<ImageModelProps> = ({ modelData }) => {
     initialTool: {},
   };
 
+  const [inputValue, setInputValue] = useState('');
+  const [imageValue, setImageValue] = useState('');
+
   const { TextArea } = Input;
+
+  const runModel = async () => {
+    try {
+      const res = (await chatModelsService.postImageModel({
+        input: inputValue,
+        imageOptions: initialValues.initialConfig,
+      })) as ChatModelResultData;
+      console.log(res);
+      setImageValue(res.result.response);
+    } catch (error) {
+      console.error('Failed to fetch chat models: ', error);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    setInputValue(e.target.value);
+  };
 
   return (
     <Flex justify="space-between">
-      <Flex vertical justify="space-between" style={{ width: 500 }}>
+      <Flex
+        vertical
+        justify="space-between"
+        style={{ marginRight: 20, flexGrow: 1 }}
+      >
         <div>
           <Card title={modelData.name}>
-            <TextArea autoSize={{ minRows: 3 }} />
+            <TextArea
+              autoSize={{ minRows: 3 }}
+              value={inputValue}
+              onChange={handleInputChange}
+            />
           </Card>
           <Card title="图片生成结果" style={{ marginTop: 20 }}>
             <Flex align="flex-end">
-              <Image
-                width={200}
-                src="https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png"
-              />
+              <Image width={200} src={imageValue} />
               <Button style={{ marginLeft: 20 }}>下载</Button>
             </Flex>
           </Card>
@@ -58,13 +85,12 @@ const ImageModel: React.FC<ImageModelProps> = ({ modelData }) => {
         <Flex align="center" justify="space-around">
           <Button>清空</Button>
           <Checkbox>聊天模式</Checkbox>
-          <Button>运行</Button>
+          <Button onClick={runModel}>运行</Button>
         </Flex>
       </Flex>
       <Setup initialValues={initialValues} />
     </Flex>
   );
 };
-
 
 export default ImageModel;
