@@ -41,7 +41,6 @@
 		<module>community/plugins/spring-ai-alibaba-starter-plugin-dingtalk</module>
 		<module>community/plugins/spring-ai-alibaba-starter-plugin-gaode</module>
         <module>community/plugins/spring-ai-alibaba-starter-plugin-weather</module>
-        <module>community/plugins/spring-ai-alibaba-starter-plugin-larksuite</module>
 
 		<module>community/document-readers/github-reader</module>
 		<module>community/document-readers/poi-document-reader</module>

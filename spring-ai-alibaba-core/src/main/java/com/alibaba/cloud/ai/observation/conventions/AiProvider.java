@@ -5,8 +5,7 @@ package com.alibaba.cloud.ai.observation.conventions;
  * Semantic Conventions for AI Systems.
  *
  * @author Lumian
- * @since 1.0.0
- * Semantic Conventions</a>.
+ * @since 1.0.0 Semantic Conventions</a>.
  * @see org.springframework.ai.observation.conventions.AiProvider
  */
 public enum AiProvider {
