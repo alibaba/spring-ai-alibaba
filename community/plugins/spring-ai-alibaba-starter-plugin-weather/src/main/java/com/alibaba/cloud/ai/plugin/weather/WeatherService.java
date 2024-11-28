@@ -37,92 +37,87 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-public class WeatherService
-        implements Function<WeatherService.Request, WeatherService.Response> {
+public class WeatherService implements Function<WeatherService.Request, WeatherService.Response> {
 
-    private static final Logger logger = LoggerFactory.getLogger(WeatherService.class);
+	private static final Logger logger = LoggerFactory.getLogger(WeatherService.class);
 
-    private static final String WEATHER_API_URL = "https://api.weatherapi.com/v1/forecast.json";
+	private static final String WEATHER_API_URL = "https://api.weatherapi.com/v1/forecast.json";
 
-    private final WebClient webClient;
+	private final WebClient webClient;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
+	public WeatherService(WeatherProperties properties) {
+		this.webClient = WebClient.builder()
+			.defaultHeader(HttpHeaders.USER_AGENT, HttpHeaders.USER_AGENT)
+			.defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+			.defaultHeader(HttpHeaders.ACCEPT_ENCODING, "gzip, deflate")
+			.defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+			.defaultHeader(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9,ja;q=0.8")
+			.defaultHeader("key", properties.getApiKey())
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024))
+			.build();
+	}
 
-    public WeatherService(WeatherProperties properties) {
-        this.webClient = WebClient.builder()
-                .defaultHeader(HttpHeaders.USER_AGENT,
-                        HttpHeaders.USER_AGENT) // 可以通过 Spring 中常量管理用户代理
-                .defaultHeader(HttpHeaders.ACCEPT,
-                        MediaType.APPLICATION_JSON_VALUE)
-                .defaultHeader(HttpHeaders.ACCEPT_ENCODING, "gzip, deflate")
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-                .defaultHeader(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9,ja;q=0.8")
-                .defaultHeader("key", properties.getApiKey())
-                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024))
-                .build();
-    }
-    @Override
-    public Response apply(Request request) {
-        if (request == null || !StringUtils.hasText(request.city())) {
-            logger.error("Invalid request: city is required.");
-            return null;
-        }
-        String location = preprocessLocation(request.city());
-        String url = UriComponentsBuilder.fromHttpUrl(WEATHER_API_URL)
-                .queryParam("q", location)
-                .queryParam("days", request.days())
-                .toUriString();
-        try {
-            Mono<String> responseMono = webClient.get().uri(url).retrieve().bodyToMono(String.class);
-            String jsonResponse = responseMono.block();
-            assert jsonResponse != null;
+	@Override
+	public Response apply(Request request) {
+		if (request == null || !StringUtils.hasText(request.city())) {
+			logger.error("Invalid request: city is required.");
+			return null;
+		}
+		String location = preprocessLocation(request.city());
+		String url = UriComponentsBuilder.fromHttpUrl(WEATHER_API_URL)
+			.queryParam("q", location)
+			.queryParam("days", request.days())
+			.toUriString();
+		try {
+			Mono<String> responseMono = webClient.get().uri(url).retrieve().bodyToMono(String.class);
+			String jsonResponse = responseMono.block();
+			assert jsonResponse != null;
 
-            Response response = fromJson(
-                    objectMapper.readValue(jsonResponse, new TypeReference<Map<String, Object>>() {})
-            );
-            logger.info("Weather data fetched successfully for city: {}", response.city());
-            return response;
-        } catch (Exception e) {
-            logger.error("Failed to fetch weather data: {}", e.getMessage());
-            return null;
-        }
-    }
+			Response response = fromJson(objectMapper.readValue(jsonResponse, new TypeReference<Map<String, Object>>() {
+			}));
+			logger.info("Weather data fetched successfully for city: {}", response.city());
+			return response;
+		}
+		catch (Exception e) {
+			logger.error("Failed to fetch weather data: {}", e.getMessage());
+			return null;
+		}
+	}
 
-    // Use the tools in hutool to convert Chinese place names into pinyin
-    private String preprocessLocation(String location) {
-        if (containsChinese(location)) {
-            return PinyinUtil.getPinyin(location, "");
-        }
-        return location;
-    }
+	// Use the tools in hutool to convert Chinese place names into pinyin
+	private String preprocessLocation(String location) {
+		if (containsChinese(location)) {
+			return PinyinUtil.getPinyin(location, "");
+		}
+		return location;
+	}
 
-    private boolean containsChinese(String str) {
-        return str.matches(".*[\u4e00-\u9fa5].*");
-    }
+	private boolean containsChinese(String str) {
+		return str.matches(".*[\u4e00-\u9fa5].*");
+	}
 
+	public static Response fromJson(Map<String, Object> json) {
+		Map<String, Object> location = (Map<String, Object>) json.get("location");
+		Map<String, Object> current = (Map<String, Object>) json.get("current");
+		Map<String, Object> forecast = (Map<String, Object>) json.get("forecast");
+		List<Map<String, Object>> forecastDays = (List<Map<String, Object>>) forecast.get("forecastday");
+		String city = (String) location.get("name");
+		return new Response(city, current, forecastDays);
+	}
 
-    public static Response fromJson(Map<String, Object> json) {
-        Map<String, Object> location = (Map<String, Object>) json.get("location");
-        Map<String, Object> current = (Map<String, Object>) json.get("current");
-        Map<String, Object> forecast = (Map<String, Object>) json.get("forecast");
-        List<Map<String, Object>> forecastDays = (List<Map<String, Object>>) forecast.get("forecastday");
-        String city = (String) location.get("name");
-        return new Response(city, current, forecastDays);
-    }
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonClassDescription("Weather Service API request")
+	public record Request(
+			@JsonProperty(required = true, value = "city") @JsonPropertyDescription("THE CITY OF INQUIRY") String city,
 
+			@JsonProperty(required = false,
+					value = "days") @JsonPropertyDescription("The number of days for which the weather is forecasted") int days) {
+	}
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    @JsonClassDescription("Weather Service API request")
-    public record Request(
-            @JsonProperty(required = true, value = "city") @JsonPropertyDescription("THE CITY OF INQUIRY") String city,
+	@JsonClassDescription("Weather Service API response")
+	public record Response(String city, Map<String, Object> current, List<Map<String, Object>> forecastDays) {
+	}
 
-            @JsonProperty(required = false, value = "days") @JsonPropertyDescription("The number of days for which the weather is forecasted") int days
-    ){}
-
-
-    @JsonClassDescription("Weather Service API response")
-    public record Response(
-            String city, Map<String, Object> current, List<Map<String, Object>> forecastDays
-    ) {}
 }

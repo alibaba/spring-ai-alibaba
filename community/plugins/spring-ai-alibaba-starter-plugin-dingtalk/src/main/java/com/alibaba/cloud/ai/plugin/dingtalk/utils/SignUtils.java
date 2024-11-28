@@ -1,4 +1,5 @@
 package com.alibaba.cloud.ai.plugin.dingtalk.utils;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,18 +28,20 @@ import java.nio.charset.StandardCharsets;
  */
 public class SignUtils {
 
-    public static String getSign(String signature) {
-        Long timestamp = System.currentTimeMillis();
-        String stringToSign = timestamp + "\n" + signature;
+	public static String getSign(String signature) {
+		Long timestamp = System.currentTimeMillis();
+		String stringToSign = timestamp + "\n" + signature;
 
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(signature.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            byte[] signData = mac.doFinal(stringToSign.getBytes(StandardCharsets.UTF_8));
-            String sign = URLEncoder.encode(new String(Base64.encodeBase64(signData)), StandardCharsets.UTF_8);
-            return "&timestamp=" + timestamp + "&sign=" + sign;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+		try {
+			Mac mac = Mac.getInstance("HmacSHA256");
+			mac.init(new SecretKeySpec(signature.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+			byte[] signData = mac.doFinal(stringToSign.getBytes(StandardCharsets.UTF_8));
+			String sign = URLEncoder.encode(new String(Base64.encodeBase64(signData)), StandardCharsets.UTF_8);
+			return "&timestamp=" + timestamp + "&sign=" + sign;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 }

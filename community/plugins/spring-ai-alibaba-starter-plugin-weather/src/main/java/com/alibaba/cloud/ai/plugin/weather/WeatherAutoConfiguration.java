@@ -29,11 +29,11 @@ import org.springframework.context.annotation.Description;
 @EnableConfigurationProperties(WeatherProperties.class)
 public class WeatherAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("TOOLS FOR GETTING WEATHER INFORMATION")
-    public WeatherService getWeatherService(WeatherProperties properties) {
-        return new WeatherService(properties);
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("TOOLS FOR GETTING WEATHER INFORMATION")
+	public WeatherService getWeatherService(WeatherProperties properties) {
+		return new WeatherService(properties);
+	}
 
 }

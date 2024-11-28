@@ -1,4 +1,5 @@
 package com.alibaba.cloud.ai.plugin.gaode;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -31,10 +32,11 @@ import org.springframework.context.annotation.Description;
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.gaode", name = "enabled", havingValue = "true")
 public class GaoDeConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Get weather information according to address.")
-    public WeatherSearchFunction gaoDeGetAddressWeatherFunction(GaoDeProperties gaoDeProperties) {
-        return new WeatherSearchFunction(gaoDeProperties);
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Get weather information according to address.")
+	public WeatherSearchFunction gaoDeGetAddressWeatherFunction(GaoDeProperties gaoDeProperties) {
+		return new WeatherSearchFunction(gaoDeProperties);
+	}
+
 }
