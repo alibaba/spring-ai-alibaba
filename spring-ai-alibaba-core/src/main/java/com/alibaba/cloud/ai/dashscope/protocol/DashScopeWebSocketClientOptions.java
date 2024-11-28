@@ -17,6 +17,9 @@
 package com.alibaba.cloud.ai.dashscope.protocol;
 
 import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
+import com.alibaba.cloud.ai.dashscope.api.ApiUtils;
+import okhttp3.Headers; // Import for Headers
+import okhttp3.Request;
 
 /**
  * @author kevinlin09
@@ -55,6 +58,14 @@ public class DashScopeWebSocketClientOptions {
 
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	public Headers buildHeaders() {
+		return Headers.of(ApiUtils.getMapContentHeaders(apiKey, false, workSpaceId, null));
+	}
+
+	public Request buildRequest() {
+		return new Request.Builder().url(this.url).headers(this.buildHeaders()).build();
 	}
 
 	public static class Builder {

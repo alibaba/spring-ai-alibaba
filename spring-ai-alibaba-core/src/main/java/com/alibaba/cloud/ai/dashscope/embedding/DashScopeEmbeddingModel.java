@@ -49,45 +49,28 @@ import org.springframework.util.Assert;
  */
 public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(DashScopeEmbeddingModel.class);
-
-	private final DashScopeEmbeddingOptions defaultOptions;
-
-	private final RetryTemplate retryTemplate;
-
 	private final DashScopeApi dashScopeApi;
+
+	private final RetryHandler retryHandler;
 
 	private final MetadataMode metadataMode;
 
 	public DashScopeEmbeddingModel(DashScopeApi dashScopeApi) {
-		this(dashScopeApi, MetadataMode.EMBED);
-	}
-
-	public DashScopeEmbeddingModel(DashScopeApi dashScopeApi, MetadataMode metadataMode) {
-		this(dashScopeApi, metadataMode,
-				DashScopeEmbeddingOptions.builder()
-					.withModel(DashScopeApi.DEFAULT_EMBEDDING_MODEL)
-					.withTextType(DashScopeApi.DEFAULT_EMBEDDING_TEXT_TYPE)
-					.build(),
-				RetryUtils.DEFAULT_RETRY_TEMPLATE);
-	}
-
-	public DashScopeEmbeddingModel(DashScopeApi dashScopeApi, MetadataMode metadataMode,
-			DashScopeEmbeddingOptions dashScopeEmbeddingOptions) {
-		this(dashScopeApi, metadataMode, dashScopeEmbeddingOptions, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+		this.dashScopeApi = dashScopeApi;
+		this.retryHandler = new RetryHandler(3, 1000);
+		this.metadataMode = MetadataMode.EMBED;
 	}
 
 	public DashScopeEmbeddingModel(DashScopeApi dashScopeApi, MetadataMode metadataMode,
 			DashScopeEmbeddingOptions options, RetryTemplate retryTemplate) {
 		Assert.notNull(dashScopeApi, "DashScopeApi must not be null");
-		Assert.notNull(metadataMode, "metadataMode must not be null");
-		Assert.notNull(options, "options must not be null");
-		Assert.notNull(retryTemplate, "retryTemplate must not be null");
+		Assert.notNull(metadataMode, "MetadataMode must not be null");
+		Assert.notNull(options, "DashScopeEmbeddingOptions must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 
 		this.dashScopeApi = dashScopeApi;
 		this.metadataMode = metadataMode;
-		this.defaultOptions = options;
-		this.retryTemplate = retryTemplate;
+		this.retryHandler = new RetryHandler(3, 1000);
 	}
 
 	@Override
@@ -98,55 +81,29 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
+		return retryHandler.executeWithRetry(() -> {
+			DashScopeApi.EmbeddingRequest apiRequest = new DashScopeApi.EmbeddingRequest(request.getInstructions(),
+					DashScopeApi.DEFAULT_EMBEDDING_MODEL, DashScopeApi.DEFAULT_EMBEDDING_TEXT_TYPE);
 
-		return this.retryTemplate.execute(ctx -> {
-			DashScopeApi.EmbeddingRequest apiRequest = (this.defaultOptions != null)
-					? new DashScopeApi.EmbeddingRequest(request.getInstructions(), this.defaultOptions.getModel(),
-							this.defaultOptions.getTextType())
-					: new DashScopeApi.EmbeddingRequest(request.getInstructions());
+			DashScopeApi.EmbeddingList apiEmbeddingResponse = dashScopeApi.embeddings(apiRequest).getBody();
 
-			if (request.getOptions() != null
-					&& !EmbeddingOptionsBuilder.builder().build().equals(request.getOptions())) {
-				apiRequest = ModelOptionsUtils.merge(request.getOptions(), apiRequest,
-						DashScopeApi.EmbeddingRequest.class);
+			if (apiEmbeddingResponse == null || apiEmbeddingResponse.message() != null) {
+				throw new RuntimeException("Embedding failed: " + apiEmbeddingResponse.message());
 			}
 
-			DashScopeApi.EmbeddingList apiEmbeddingResponse = null;
-			try {
-				apiEmbeddingResponse = this.dashScopeApi.embeddings(apiRequest).getBody();
-			}
-			catch (Exception e) {
-				logger.error("Error embedding request: {}", request.getInstructions(), e);
-				throw e;
-			}
-
-			if (apiEmbeddingResponse == null) {
-				logger.warn("No embeddings returned for request: {}", request);
-				return new EmbeddingResponse(List.of());
-			}
-
-			if (apiEmbeddingResponse.message() != null) {
-				logger.error("Error message returned for request: {}", apiEmbeddingResponse.message());
-				throw new RuntimeException("Embedding failed: error code:" + apiEmbeddingResponse.code() + ", message:"
-						+ apiEmbeddingResponse.message());
-			}
-
-			var metadata = generateResponseMetadata(apiRequest.model(), apiEmbeddingResponse.usage());
-			List<Embedding> embeddings = apiEmbeddingResponse.output()
+			return new EmbeddingResponse(apiEmbeddingResponse.output()
 				.embeddings()
 				.stream()
 				.map(e -> new Embedding(e.embedding(), e.textIndex()))
-				.toList();
-			return new EmbeddingResponse(embeddings, metadata);
-		});
+				.toList(), generateResponseMetadata(apiRequest.model(), apiEmbeddingResponse.usage()));
+		}, "Error embedding request");
 	}
 
 	private EmbeddingResponseMetadata generateResponseMetadata(String model, DashScopeApi.EmbeddingUsage usage) {
-		Map<String, Object> map = new HashMap<>();
-		map.put("model", model);
-		map.put("total-tokens", usage.totalTokens());
-
-		return new EmbeddingResponseMetadata(model, usage, map);
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("model", model);
+		metadata.put("total-tokens", usage.totalTokens());
+		return new EmbeddingResponseMetadata(model, usage, metadata);
 	}
 
 }
