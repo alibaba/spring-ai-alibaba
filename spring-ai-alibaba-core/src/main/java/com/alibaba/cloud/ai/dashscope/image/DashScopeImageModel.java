@@ -82,12 +82,12 @@ public class DashScopeImageModel implements ImageModel {
 					.output();
 				String taskStatus = output.taskStatus();
 				switch (taskStatus) {
-				case "SUCCEEDED" -> {
-					return toImageResponse(output);
-				}
-				case "FAILED", "UNKNOWN" -> {
-					return new ImageResponse(List.of());
-				}
+					case "SUCCEEDED" -> {
+						return toImageResponse(output);
+					}
+					case "FAILED", "UNKNOWN" -> {
+						return new ImageResponse(List.of());
+					}
 				}
 			}
 			try {
@@ -120,20 +120,17 @@ public class DashScopeImageModel implements ImageModel {
 	}
 
 	/**
-	 * Merge Image options.
-	 * Notice: Programmatically set options parameters take precedence
+	 * Merge Image options. Notice: Programmatically set options parameters take
+	 * precedence
 	 */
 	private DashScopeImageOptions toImageOptions(ImageOptions runtimeOptions) {
 
 		// set default image model
-		var currentOptions = DashScopeImageOptions
-				.builder()
-				.withModel(DEFAULT_MODEL)
-				.build();
+		var currentOptions = DashScopeImageOptions.builder().withModel(DEFAULT_MODEL).build();
 
 		if (Objects.nonNull(runtimeOptions)) {
-			currentOptions = ModelOptionsUtils.copyToTarget(runtimeOptions,
-					ImageOptions.class, DashScopeImageOptions.class);
+			currentOptions = ModelOptionsUtils.copyToTarget(runtimeOptions, ImageOptions.class,
+					DashScopeImageOptions.class);
 		}
 
 		currentOptions = ModelOptionsUtils.merge(currentOptions, this.defaultOptions, DashScopeImageOptions.class);
@@ -165,24 +162,16 @@ public class DashScopeImageModel implements ImageModel {
 		return new ImageResponse(imageGenerationList);
 	}
 
-	private DashScopeImageApi.DashScopeImageRequest constructImageRequest(ImagePrompt imagePrompt, DashScopeImageOptions options) {
+	private DashScopeImageApi.DashScopeImageRequest constructImageRequest(ImagePrompt imagePrompt,
+			DashScopeImageOptions options) {
 
-		return new DashScopeImageApi.DashScopeImageRequest(
-				options.getModel(),
+		return new DashScopeImageApi.DashScopeImageRequest(options.getModel(),
 				new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestInput(
-						imagePrompt.getInstructions().get(0).getText(),
-						options.getNegativePrompt(),
-						options.getRefImg()
-				),
-				new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestParameter(
-						options.getStyle(),
-						options.getSize(),
-						options.getN(),
-						options.getSeed(),
-						options.getRefStrength(),
-						options.getRefMode()
-				)
-		);
+						imagePrompt.getInstructions().get(0).getText(), options.getNegativePrompt(),
+						options.getRefImg()),
+				new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestParameter(options.getStyle(),
+						options.getSize(), options.getN(), options.getSeed(), options.getRefStrength(),
+						options.getRefMode()));
 	}
 
 }

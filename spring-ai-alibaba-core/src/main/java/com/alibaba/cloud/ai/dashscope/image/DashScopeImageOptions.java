@@ -206,18 +206,10 @@ public class DashScopeImageOptions implements ImageOptions {
 	@Override
 	public String toString() {
 
-		return "DashScopeImageOptions{" + "model='" + model + '\''
-				+ ", n=" + n
-				+ ", width=" + width
-				+ ", height=" + height
-				+ ", size='" + size + '\''
-				+ ", style='" + style + '\''
-				+ ", seed=" + seed
-				+ ", refImg='" + refImg + '\''
-				+ ", refStrength=" + refStrength
-				+ ", refMode='" + refMode + '\''
-				+ ", negativePrompt='" + negativePrompt + '\''
-				+ '}';
+		return "DashScopeImageOptions{" + "model='" + model + '\'' + ", n=" + n + ", width=" + width + ", height="
+				+ height + ", size='" + size + '\'' + ", style='" + style + '\'' + ", seed=" + seed + ", refImg='"
+				+ refImg + '\'' + ", refStrength=" + refStrength + ", refMode='" + refMode + '\'' + ", negativePrompt='"
+				+ negativePrompt + '\'' + '}';
 	}
 
 	public static class Builder {
