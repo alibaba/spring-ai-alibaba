@@ -31,18 +31,18 @@ import java.util.function.Function;
 /**
  * @author 北极星
  */
-public class LarkSuiteService implements Function<LarkSuiteService.Request, Object> {
+public class LarkSuiteDocService implements Function<LarkSuiteDocService.DocRequest, Object> {
 
-	private static final Logger logger = LoggerFactory.getLogger(LarkSuiteService.class);
+	private static final Logger logger = LoggerFactory.getLogger(LarkSuiteDocService.class);
 
 	LarkSuiteProperties larkSuiteProperties;
 
-	public LarkSuiteService(LarkSuiteProperties properties) {
+	public LarkSuiteDocService(LarkSuiteProperties properties) {
 		this.larkSuiteProperties = properties;
 	}
 
 	@Override
-	public Object apply(Request request) {
+	public Object apply(DocRequest request) {
 		if (ObjectUtils.isEmpty(larkSuiteProperties.getAppId())
 				|| ObjectUtils.isEmpty(larkSuiteProperties.getAppSecret())) {
 			logger.error("current spring.ai.alibaba.plugin.tool.larksuite must not be null.");
@@ -77,7 +77,7 @@ public class LarkSuiteService implements Function<LarkSuiteService.Request, Obje
 		return null;
 	}
 
-	public record Request(
+	public record DocRequest(
 			@JsonProperty(required = true,
 					value = "title") @JsonPropertyDescription("the larksuite title") String title,
 			@JsonProperty(required = true,
