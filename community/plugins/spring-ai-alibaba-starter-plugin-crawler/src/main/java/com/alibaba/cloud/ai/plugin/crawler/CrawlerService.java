@@ -49,8 +49,7 @@ public class CrawlerService implements Function<CrawlerService.Request, CrawlerS
 			}
 
 			String chineseText = setToStringWithNewLines(uniqueChineseTexts);
-
-			logger.error("chineseText={}", chineseText.toString());
+			
 			return new Response(chineseText.toString());
 		}
 		catch (Exception e) {
