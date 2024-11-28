@@ -16,7 +16,8 @@ public class GetCurrentLocalTimeService
 	@Override
 	public Response apply(Request request) {
 		TimeZone timeZone = TimeZone.getDefault();
-		return new Response(String.format("The current local time is %s", TimeZoneUtils.getTimeByZoneId(timeZone.getID())));
+		return new Response(
+				String.format("The current local time is %s", TimeZoneUtils.getTimeByZoneId(timeZone.getID())));
 	}
 
 	@JsonClassDescription("Request to obtain the current local time")

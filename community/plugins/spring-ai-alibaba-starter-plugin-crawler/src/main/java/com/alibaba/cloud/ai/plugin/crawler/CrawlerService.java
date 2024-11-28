@@ -21,67 +21,70 @@ import java.util.regex.Pattern;
  * @author chengle
  *
  */
-public class CrawlerService implements Function<CrawlerService.Request,CrawlerService.Response> {
+public class CrawlerService implements Function<CrawlerService.Request, CrawlerService.Response> {
 
-    private static final Logger logger = LoggerFactory.getLogger(CrawlerService.class);
+	private static final Logger logger = LoggerFactory.getLogger(CrawlerService.class);
 
-    @Override
-    public Response apply(Request request) {
-        try {
-            String url = request.url;
+	@Override
+	public Response apply(Request request) {
+		try {
+			String url = request.url;
 
-            Document document = Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
-                    .timeout(10000)
-                    .get();
+			Document document = Jsoup.connect(url)
+				.userAgent(
+						"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
+				.timeout(10000)
+				.get();
 
-            Set<String> uniqueChineseTexts = new HashSet<>();
+			Set<String> uniqueChineseTexts = new HashSet<>();
 
-            Elements paragraphs = document.select("p, div");
+			Elements paragraphs = document.select("p, div");
 
-            for (Element paragraph : paragraphs) {
-                String text = paragraph.text();
-                String chineseSegment = extractChinese(text);
-                if (!chineseSegment.isEmpty()) {
-                    uniqueChineseTexts.add(chineseSegment);
-                }
-            }
+			for (Element paragraph : paragraphs) {
+				String text = paragraph.text();
+				String chineseSegment = extractChinese(text);
+				if (!chineseSegment.isEmpty()) {
+					uniqueChineseTexts.add(chineseSegment);
+				}
+			}
 
-            String chineseText = setToStringWithNewLines(uniqueChineseTexts);
+			String chineseText = setToStringWithNewLines(uniqueChineseTexts);
 
-            logger.error("chineseText={}",chineseText.toString());
-            return new Response(chineseText.toString());
-        } catch (Exception e) {
-            logger.error("CrawlerService||apply||error={}",e);
-            return new Response(null);
-        }
-    }
+			logger.error("chineseText={}", chineseText.toString());
+			return new Response(chineseText.toString());
+		}
+		catch (Exception e) {
+			logger.error("CrawlerService||apply||error={}", e);
+			return new Response(null);
+		}
+	}
 
-    public static String extractChinese(String text) {
-        StringBuilder chineseText = new StringBuilder();
-        Pattern pattern = Pattern.compile("[\\u4e00-\\u9fa5]");
-        Matcher matcher = pattern.matcher(text);
+	public static String extractChinese(String text) {
+		StringBuilder chineseText = new StringBuilder();
+		Pattern pattern = Pattern.compile("[\\u4e00-\\u9fa5]");
+		Matcher matcher = pattern.matcher(text);
 
-        while (matcher.find()) {
-            chineseText.append(matcher.group());
-        }
-        return chineseText.toString();
-    }
+		while (matcher.find()) {
+			chineseText.append(matcher.group());
+		}
+		return chineseText.toString();
+	}
 
-    public static String setToStringWithNewLines(Set<String> set) {
-        StringBuilder result = new StringBuilder();
-        for (String s : set) {
-            result.append(s).append("\n");
-        }
-        return result.toString();
-    }
+	public static String setToStringWithNewLines(Set<String> set) {
+		StringBuilder result = new StringBuilder();
+		for (String s : set) {
+			result.append(s).append("\n");
+		}
+		return result.toString();
+	}
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    @JsonClassDescription("")
-    public record Request(@JsonProperty(required = true,
-            value = "url") @JsonPropertyDescription("The url link, such as https://www.baidu.com ") String url) {
-    }
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonClassDescription("")
+	public record Request(@JsonProperty(required = true,
+			value = "url") @JsonPropertyDescription("The url link, such as https://www.baidu.com ") String url) {
+	}
 
-    public record Response(String description) {
-    }
+	public record Response(String description) {
+	}
+
 }
