@@ -24,17 +24,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
-
 @Configuration
 @ConditionalOnClass(TranslateService.class)
 @EnableConfigurationProperties(TranslateProperties.class)
 public class TranslateAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Implement natural language translation capabilities") // function
-    public TranslateService translateService(TranslateProperties properties) {
-        return new TranslateService(properties);
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Implement natural language translation capabilities") // function
+	public TranslateService translateService(TranslateProperties properties) {
+		return new TranslateService(properties);
+	}
 
 }
