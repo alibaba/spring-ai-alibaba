@@ -4,7 +4,7 @@ spring:
 
   ai:
     dashscope:
-      api-key:  ${AI_DASHSCOPE_API_KEY}
+      api-key:  sk-3100cdd1bf0c43aa877e0c3ad56dd369
     alibaba:
       plugin:
         dingtalk:

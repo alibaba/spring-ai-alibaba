@@ -10,7 +10,7 @@
 
     <artifactId>spring-ai-alibaba-starter-plugin-time</artifactId>
     <packaging>jar</packaging>
-    <name>Spring Ai Alibaba Starter Time</name>
+    <name>spring-ai-alibaba-starter-plugin-time</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
 
     <dependencies>

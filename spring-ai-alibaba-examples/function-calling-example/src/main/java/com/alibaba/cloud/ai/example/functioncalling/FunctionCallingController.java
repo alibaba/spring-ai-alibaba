@@ -72,7 +72,7 @@ public class FunctionCallingController {
     @GetMapping("/getTime")
     public String getTime(String text) {
         return chatClient.prompt()
-                .functions("getCityTimeFunction")
+                .functions("getCityTime")
                 .user(text)
                 .call()
                 .content();

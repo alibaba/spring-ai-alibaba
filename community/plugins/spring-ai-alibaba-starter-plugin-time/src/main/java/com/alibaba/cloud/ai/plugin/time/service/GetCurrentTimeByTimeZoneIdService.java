@@ -1,6 +1,6 @@
 package com.alibaba.cloud.ai.plugin.time.service;
 
-import com.alibaba.cloud.ai.plugin.time.utils.ZoneUtils;
+import com.alibaba.cloud.ai.plugin.time.utils.TimeZoneUtils;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -15,7 +15,7 @@ public class GetCurrentTimeByTimeZoneIdService
 	public GetCurrentTimeByTimeZoneIdService.Response apply(GetCurrentTimeByTimeZoneIdService.Request request) {
 		String timeZoneId = request.timeZoneId;
 		return new Response(String.format("The current time zone is %s and the current time is %s", timeZoneId,
-				ZoneUtils.getTimeByZoneId(timeZoneId)));
+				TimeZoneUtils.getTimeByZoneId(timeZoneId)));
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
