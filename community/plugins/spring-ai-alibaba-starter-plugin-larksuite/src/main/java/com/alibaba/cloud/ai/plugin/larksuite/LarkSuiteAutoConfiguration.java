@@ -16,8 +16,6 @@
  */
 package com.alibaba.cloud.ai.plugin.larksuite;
 
-import com.alibaba.cloud.ai.plugin.properties.LarkSuiteProperties;
-import com.alibaba.cloud.ai.plugin.service.LarkSuiteService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,17 +26,16 @@ import org.springframework.context.annotation.Description;
 /**
  * @author 北极星
  */
-@EnableConfigurationProperties({LarkSuiteProperties.class})
-@ConditionalOnClass({LarkSuiteProperties.class})
+@EnableConfigurationProperties({ LarkSuiteProperties.class })
+@ConditionalOnClass({ LarkSuiteProperties.class })
 public class LarkSuiteAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("it calls the document api to invoke a method to create a larksuite document")
-    @ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.larksuite", name = "enabled", havingValue = "true")
-    public LarkSuiteService larksuiteCreateDocFunction(LarkSuiteProperties properties) {
-        return new LarkSuiteService(properties);
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("it calls the document api to invoke a method to create a larksuite document")
+	@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.larksuite", name = "enabled", havingValue = "true")
+	public LarkSuiteService larksuiteCreateDocFunction(LarkSuiteProperties properties) {
+		return new LarkSuiteService(properties);
+	}
+
 }
-
-

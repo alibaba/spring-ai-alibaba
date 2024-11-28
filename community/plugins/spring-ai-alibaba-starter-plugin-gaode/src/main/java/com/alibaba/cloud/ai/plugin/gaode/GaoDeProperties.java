@@ -1,4 +1,5 @@
 package com.alibaba.cloud.ai.plugin.gaode;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,20 +24,22 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.gaode")
 public class GaoDeProperties {
 
-    // Official Document Address：  https://lbs.amap.com/api/webservice/summary
-    private String webApiKey;
+	// Official Document Address： https://lbs.amap.com/api/webservice/summary
+	private String webApiKey;
 
-    public GaoDeProperties() {}
+	public GaoDeProperties() {
+	}
 
-    public GaoDeProperties(String webApiKey) {
-        this.webApiKey = webApiKey;
-    }
+	public GaoDeProperties(String webApiKey) {
+		this.webApiKey = webApiKey;
+	}
 
-    public String getWebApiKey() {
-        return webApiKey;
-    }
+	public String getWebApiKey() {
+		return webApiKey;
+	}
 
-    public void setWebApiKey(String webApiKey) {
-        this.webApiKey = webApiKey;
-    }
+	public void setWebApiKey(String webApiKey) {
+		this.webApiKey = webApiKey;
+	}
+
 }

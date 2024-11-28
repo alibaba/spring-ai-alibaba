@@ -1,4 +1,5 @@
 package com.alibaba.cloud.ai.plugin.dingtalk;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -32,51 +33,55 @@ import java.util.function.Function;
  */
 public class DingTalkService implements Function<DingTalkService.Request, DingTalkService.Response> {
 
-    private final DingTalkProperties dingTalkProperties;
+	private final DingTalkProperties dingTalkProperties;
 
-    public DingTalkService(DingTalkProperties dingTalkProperties) {
-        this.dingTalkProperties = dingTalkProperties;
-    }
+	public DingTalkService(DingTalkProperties dingTalkProperties) {
+		this.dingTalkProperties = dingTalkProperties;
+	}
 
-    /**
-     * The old version of DingTalk SDK. Some interfaces have not been fully replaced yet.
-     * Official Document Address：https://open.dingtalk.com/document/orgapp/custom-robots-send-group-messages
-     */
-    @Override
-    public Response apply(Request request) {
+	/**
+	 * The old version of DingTalk SDK. Some interfaces have not been fully replaced yet.
+	 * Official Document
+	 * Address：https://open.dingtalk.com/document/orgapp/custom-robots-send-group-messages
+	 */
+	@Override
+	public Response apply(Request request) {
 
-        if (ObjectUtils.isEmpty(dingTalkProperties.getCustomRobotAccessToken()) || ObjectUtils.isEmpty(dingTalkProperties.getCustomRobotSignature())) {
-            throw new IllegalArgumentException("spring.ai.alibaba.plugin.dingtalk.custom-robot must not be null.");
-        }
+		if (ObjectUtils.isEmpty(dingTalkProperties.getCustomRobotAccessToken())
+				|| ObjectUtils.isEmpty(dingTalkProperties.getCustomRobotSignature())) {
+			throw new IllegalArgumentException("spring.ai.alibaba.plugin.dingtalk.custom-robot must not be null.");
+		}
 
-        String accessToken = dingTalkProperties.getCustomRobotAccessToken();
-        String signature = dingTalkProperties.getCustomRobotSignature();
+		String accessToken = dingTalkProperties.getCustomRobotAccessToken();
+		String signature = dingTalkProperties.getCustomRobotSignature();
 
-        // Request Body, please see the official document for more parameters.
-        OapiRobotSendRequest req = new OapiRobotSendRequest();
-        req.setMsgtype("text");
-        req.setText(String.format("{\"content\":\"%s\"}", request.message()));
+		// Request Body, please see the official document for more parameters.
+		OapiRobotSendRequest req = new OapiRobotSendRequest();
+		req.setMsgtype("text");
+		req.setText(String.format("{\"content\":\"%s\"}", request.message()));
 
-        try {
-            DingTalkClient client = new DefaultDingTalkClient(String.format("https://oapi.dingtalk.com/robot/send?%s", SignUtils.getSign(signature)));
-            OapiRobotSendResponse response = client.execute(req, accessToken);
+		try {
+			DingTalkClient client = new DefaultDingTalkClient(
+					String.format("https://oapi.dingtalk.com/robot/send?%s", SignUtils.getSign(signature)));
+			OapiRobotSendResponse response = client.execute(req, accessToken);
 
-            if (response.isSuccess()) {
-                return new Response("The custom robot message was sent successfully!");
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Custom robot message sending failed!");
-        }
+			if (response.isSuccess()) {
+				return new Response("The custom robot message was sent successfully!");
+			}
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Custom robot message sending failed!");
+		}
 
-        return null;
-    }
+		return null;
+	}
 
-    @JsonClassDescription("Send group chat messages using a custom robot")
-    public record Request(
-            @JsonProperty(required = true, value = "message")
-            @JsonPropertyDescription("Customize what the robot needs to send") String message) {
-    }
+	@JsonClassDescription("Send group chat messages using a custom robot")
+	public record Request(@JsonProperty(required = true,
+			value = "message") @JsonPropertyDescription("Customize what the robot needs to send") String message) {
+	}
 
-    public record Response(String message) {
-    }
+	public record Response(String message) {
+	}
+
 }
