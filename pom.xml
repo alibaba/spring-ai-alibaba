@@ -33,7 +33,6 @@
     <modules>
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-starter</module>
-        <module>spring-ai-alibaba-examples</module>
         <module>spring-ai-alibaba-autoconfigure</module>
 		<module>community/plugins/spring-ai-alibaba-starter-plugin-time</module>
 		<module>community/plugins/spring-ai-alibaba-starter-plugin-baidusearch</module>
