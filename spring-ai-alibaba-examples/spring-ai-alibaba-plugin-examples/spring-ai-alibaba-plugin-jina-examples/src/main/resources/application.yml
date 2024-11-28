@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: prompt-example
+  ai:
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY}
+    alibaba:
+      plugin:
+        jina:
+          token: jina_80ff7ed1af5e400c9c86bdf90072b70c4jvaXiyOx3Uukx5iMnnfLhb-hBks
