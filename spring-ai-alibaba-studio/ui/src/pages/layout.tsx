@@ -20,6 +20,11 @@ import type { RadioChangeEvent } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'ice';
 import styles from './layout.module.css';
 import { useTranslation } from 'react-i18next';
+import {
+  CloudTwoTone,
+  CodeTwoTone,
+  ExperimentTwoTone,
+} from '@ant-design/icons';
 
 export default function PageLayout() {
   const { t, i18n } = useTranslation();
@@ -43,21 +48,27 @@ export default function PageLayout() {
   const headerMenu = [
     {
       key: '/run',
+      icon: <CodeTwoTone />,
       label: t('run'),
     },
     {
-      key: '/history',
-      label: t('history'),
+      key: '/traces',
+      icon: <CloudTwoTone />,
+      label: t('traces'),
     },
     {
       key: '/evaluate',
+      icon: <ExperimentTwoTone />,
       label: t('evaluate'),
     },
   ];
 
-  const [selectedKey, setSelectedKey] = useState(headerMenu[0].key);
+  const [selectedKey, setSelectedKey] = useState(
+    `/${location.pathname.split('/')[1]}` || headerMenu[0].key,
+  );
 
   const onMenuClick = (e) => {
+    setSelectedKey(e.key);
     navigate(e.key);
   };
 
@@ -80,9 +91,10 @@ export default function PageLayout() {
   return (
     <Layout>
       <Header className={styles.header}>
-        <Flex>
-          <span>alibaba-studio</span>
+        <span>alibaba-ai-studio</span>
+        <Flex justify={'center'}>
           <Menu
+            style={{ minWidth: 300 }}
             mode="horizontal"
             selectedKeys={[selectedKey]}
             items={headerMenu}

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,19 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.alibaba.cloud.ai.api;
 
-import { ChatOptions, ImageOptions } from './options';
+import io.swagger.v3.oas.annotations.tags.Tag;
 
-export type ChatModelData = {
-  name: string;
-  model: string;
-  modelType: string;
-  chatOptions: ChatOptions;
-  imageOptions: ImageOptions;
-};
+@Tag(name = "prompts-apu", description = "the prompt resp api")
+public interface PromptsAPI {
 
-export type ChatModelResultData = {
-  input: any;
-  result: any;
-  telemetry: any;
-};
+}
