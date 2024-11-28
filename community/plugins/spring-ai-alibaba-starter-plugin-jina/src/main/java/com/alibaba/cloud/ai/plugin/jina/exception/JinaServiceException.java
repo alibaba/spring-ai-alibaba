@@ -22,7 +22,7 @@ package com.alibaba.cloud.ai.plugin.jina.exception;
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
 
-public class JinaServiceException extends RuntimeException{
+public class JinaServiceException extends RuntimeException {
 
 	public JinaServiceException() {
 		super();

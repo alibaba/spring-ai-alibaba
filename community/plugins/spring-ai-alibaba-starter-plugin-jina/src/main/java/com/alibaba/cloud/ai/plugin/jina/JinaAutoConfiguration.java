@@ -38,8 +38,7 @@ public class JinaAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Jina Service plugin")
-	public JinaService jinaService(
-			JinaProperties jinaProperties) {
+	public JinaService jinaService(JinaProperties jinaProperties) {
 
 		Assert.notNull(jinaProperties, "Jina token must not be empty");
 		return new JinaService(jinaProperties);
