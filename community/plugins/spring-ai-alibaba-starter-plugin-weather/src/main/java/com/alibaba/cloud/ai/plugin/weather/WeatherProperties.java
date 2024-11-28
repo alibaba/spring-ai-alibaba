@@ -22,14 +22,15 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.weather")
 public class WeatherProperties {
 
-    // API key for the weather service.
-    private String apiKey;
+	// API key for the weather service.
+	private String apiKey;
 
-    public String getApiKey() {
-        return apiKey;
-    }
+	public String getApiKey() {
+		return apiKey;
+	}
 
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
-    }
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
+	}
+
 }
