@@ -91,10 +91,12 @@ public class JinaService {
 						response.append(inputLine);
 					}
 				}
-			} else {
+			}
+			else {
 				throw new JinaServiceException("Request failed with response code: " + responseCode);
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new JinaServiceException("Request failed, please check the target URL and token: " + e.getMessage());
 		}
 
