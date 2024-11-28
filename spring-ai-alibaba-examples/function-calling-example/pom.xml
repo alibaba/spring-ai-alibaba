@@ -90,6 +90,12 @@
 			<version>${spring-ai-alibaba.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.alibaba.cloud.ai</groupId>
+			<artifactId>spring-ai-alibaba-starter-plugin-translate</artifactId>
+			<version>${spring-ai-alibaba.version}</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>
