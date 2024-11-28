@@ -10,7 +10,8 @@ import lombok.Getter;
 @Getter
 public class ChatDTO {
 
-    String message;
+	String message;
 
-    String userId;
+	String userId;
+
 }

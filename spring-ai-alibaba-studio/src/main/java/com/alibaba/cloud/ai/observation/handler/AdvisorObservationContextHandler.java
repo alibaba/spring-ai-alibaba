@@ -7,9 +7,11 @@ import org.springframework.ai.chat.client.advisor.observation.AdvisorObservation
  * @Author: XiaoYunTao
  * @Date: 2024/11/26
  */
-public class AdvisorObservationContextHandler implements ContextHandler<AdvisorObservationContext>{
-    @Override
-    public void handle(AdvisorObservationContext context, long duration) {
+public class AdvisorObservationContextHandler implements ContextHandler<AdvisorObservationContext> {
 
-    }
+	@Override
+	public void handle(AdvisorObservationContext context, long duration) {
+
+	}
+
 }

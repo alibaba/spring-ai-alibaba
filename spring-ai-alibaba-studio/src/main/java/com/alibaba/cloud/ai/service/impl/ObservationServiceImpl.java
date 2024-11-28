@@ -17,23 +17,24 @@ import java.util.List;
 @Service
 public class ObservationServiceImpl implements ObservationService {
 
-    @Resource
-    private ObservationMapper observationMapper;
+	@Resource
+	private ObservationMapper observationMapper;
 
-    @Override
-    public List<ObservationEntity> list() {
+	@Override
+	public List<ObservationEntity> list() {
 
-        return observationMapper.selectList(null);
-    }
+		return observationMapper.selectList(null);
+	}
 
-    @Override
-    public Integer insert(ObservationEntity ObservationEntity){
-        return observationMapper.insert(ObservationEntity);
-    }
+	@Override
+	public Integer insert(ObservationEntity ObservationEntity) {
+		return observationMapper.insert(ObservationEntity);
+	}
 
-    @Override
-    public void exportObservation() {
-        String fileName = "Observation_" + "simpleWrite_" + System.currentTimeMillis() + ".xlsx";
-        EasyExcel.write(fileName, ObservationEntity.class).sheet("模板").doWrite(observationMapper.selectList(null));
-    }
+	@Override
+	public void exportObservation() {
+		String fileName = "Observation_" + "simpleWrite_" + System.currentTimeMillis() + ".xlsx";
+		EasyExcel.write(fileName, ObservationEntity.class).sheet("模板").doWrite(observationMapper.selectList(null));
+	}
+
 }

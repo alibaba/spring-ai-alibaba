@@ -15,32 +15,32 @@ import lombok.Data;
 @TableName("tb_observation_detail")
 public class ObservationDetailEntity {
 
-    @TableId(value = "id", type = IdType.ASSIGN_ID)
-    @ExcelProperty("id")
-    private String id;
+	@TableId(value = "id", type = IdType.ASSIGN_ID)
+	@ExcelProperty("id")
+	private String id;
 
-    @ExcelProperty("modelObservationId")
-    private String modelObservationId;
+	@ExcelProperty("modelObservationId")
+	private String modelObservationId;
 
-    @ExcelProperty("highCardinalityKeyValues")
-    private String highCardinalityKeyValues;
+	@ExcelProperty("highCardinalityKeyValues")
+	private String highCardinalityKeyValues;
 
-    @ExcelProperty("lowCardinalityKeyValues")
-    private String lowCardinalityKeyValues;
+	@ExcelProperty("lowCardinalityKeyValues")
+	private String lowCardinalityKeyValues;
 
-    @ExcelProperty("operationMetadata")
-    private String operationMetadata;
+	@ExcelProperty("operationMetadata")
+	private String operationMetadata;
 
-    @ExcelProperty("request")
-    private String request;
+	@ExcelProperty("request")
+	private String request;
 
-    @ExcelProperty("response")
-    private String response;
+	@ExcelProperty("response")
+	private String response;
 
-    @ExcelProperty("contextualName")
-    private String contextualName;
+	@ExcelProperty("contextualName")
+	private String contextualName;
 
-    @ExcelProperty("addTime")
-    private Long addTime;
+	@ExcelProperty("addTime")
+	private Long addTime;
 
 }

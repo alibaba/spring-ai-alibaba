@@ -8,23 +8,21 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * @Description:
- * @Author: XiaoYunTao
- * @Date: 2024/11/18
- */
 @Configuration
 public class ObservationConfig {
 
-    @Bean
-    public ObservationRegistry observationRegistry(ContextHandlerFactory contextHandlerFactory) {
-        ObservationRegistry observationRegistry = ObservationRegistry.create();
-        observationRegistry.observationConfig().observationHandler(new AlibabaObservationHandler(contextHandlerFactory));
-        return observationRegistry;
-    }
+	@Bean
+	public ObservationRegistry observationRegistry(ContextHandlerFactory contextHandlerFactory) {
+		ObservationRegistry observationRegistry = ObservationRegistry.create();
+		observationRegistry.observationConfig()
+			.observationHandler(new AlibabaObservationHandler(contextHandlerFactory));
+		return observationRegistry;
+	}
 
-    @Bean
-    public ContextHandlerFactory contextHandlerFactory(ObservationServiceImpl observationService, ObservationDetailServiceImpl modelObservationDetailService) {
-        return new ContextHandlerFactory(observationService, modelObservationDetailService);
-    }
+	@Bean
+	public ContextHandlerFactory contextHandlerFactory(ObservationServiceImpl observationService,
+			ObservationDetailServiceImpl modelObservationDetailService) {
+		return new ContextHandlerFactory(observationService, modelObservationDetailService);
+	}
+
 }

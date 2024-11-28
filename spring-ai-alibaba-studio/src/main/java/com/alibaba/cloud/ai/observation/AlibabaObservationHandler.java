@@ -20,69 +20,74 @@ import org.slf4j.LoggerFactory;
  */
 public class AlibabaObservationHandler implements ObservationHandler<Observation.Context> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AlibabaObservationHandler.class);
-    private final Clock clock;
-    private final Tracer tracer;
-    private final ContextHandlerFactory contextHandlerFactory;
+	private static final Logger LOGGER = LoggerFactory.getLogger(AlibabaObservationHandler.class);
 
-    public AlibabaObservationHandler(ContextHandlerFactory contextHandlerFactory) {
-        this.clock = Clock.SYSTEM;
-        this.tracer = GlobalOpenTelemetry.getTracer("com.alibaba.cloud.ai");
-        this.contextHandlerFactory = contextHandlerFactory;
-    }
+	private final Clock clock;
 
-    @Override
-    public void onStart(Observation.Context context) {
-        long startTime = getCurrentTimeMillis();
-        context.put("startTime", startTime);
+	private final Tracer tracer;
 
-        SpanBuilder spanBuilder = tracer.spanBuilder(context.getName())
-                .setAttribute("component", "AlibabaChatClient")
-                .setAttribute("start_time", startTime);
-        Span span = spanBuilder.startSpan();
+	private final ContextHandlerFactory contextHandlerFactory;
 
-        context.put("span", span);
-        LOGGER.info("onStart: Operation '{}' started. Start time: {}", context.getName(), startTime);
-    }
+	public AlibabaObservationHandler(ContextHandlerFactory contextHandlerFactory) {
+		this.clock = Clock.SYSTEM;
+		this.tracer = GlobalOpenTelemetry.getTracer("com.alibaba.cloud.ai");
+		this.contextHandlerFactory = contextHandlerFactory;
+	}
 
-    @Override
-    public void onStop(Observation.Context context) {
-        long startTime = context.getOrDefault("startTime", 0L);
-        long endTime = getCurrentTimeMillis();
-        long duration = endTime - startTime;
+	@Override
+	public void onStart(Observation.Context context) {
+		long startTime = getCurrentTimeMillis();
+		context.put("startTime", startTime);
 
-        Span span = context.getOrDefault("span", null);
-        if (span != null) {
-            span.setAttribute("duration_ns", duration);
-            span.end();
-        }
-        ContextHandler<Observation.Context> handler = contextHandlerFactory.getHandler(context);
+		SpanBuilder spanBuilder = tracer.spanBuilder(context.getName())
+			.setAttribute("component", "AlibabaChatClient")
+			.setAttribute("start_time", startTime);
+		Span span = spanBuilder.startSpan();
 
-        if (handler != null) {
-            handler.handle(context, duration);
-        } else {
-            LOGGER.warn("Unknown Observation.Context type: {}", context.getClass());
-        }
-    }
+		context.put("span", span);
+		LOGGER.info("onStart: Operation '{}' started. Start time: {}", context.getName(), startTime);
+	}
 
-    @Override
-    public void onError(Observation.Context context) {
-        Span span = context.getOrDefault("span", null);
-        if (span != null) {
-            span.setAttribute("error", true);
-            span.setAttribute("error.message", context.getError().getMessage());
-            span.recordException(context.getError());
-        }
-        LOGGER.error("onError: Operation '{}' failed with error: {}", context.getName(), context.getError().getMessage());
-    }
+	@Override
+	public void onStop(Observation.Context context) {
+		long startTime = context.getOrDefault("startTime", 0L);
+		long endTime = getCurrentTimeMillis();
+		long duration = endTime - startTime;
 
-    @Override
-    public boolean supportsContext(@NotNull Observation.Context context) {
-        return true;
-    }
+		Span span = context.getOrDefault("span", null);
+		if (span != null) {
+			span.setAttribute("duration_ns", duration);
+			span.end();
+		}
+		ContextHandler<Observation.Context> handler = contextHandlerFactory.getHandler(context);
 
-    private long getCurrentTimeMillis() {
-        return clock.monotonicTime() / 1_000_000;
-    }
+		if (handler != null) {
+			handler.handle(context, duration);
+		}
+		else {
+			LOGGER.warn("Unknown Observation.Context type: {}", context.getClass());
+		}
+	}
+
+	@Override
+	public void onError(Observation.Context context) {
+		Span span = context.getOrDefault("span", null);
+		if (span != null) {
+			span.setAttribute("error", true);
+			span.setAttribute("error.message", context.getError().getMessage());
+			span.recordException(context.getError());
+		}
+		LOGGER.error("onError: Operation '{}' failed with error: {}", context.getName(),
+				context.getError().getMessage());
+	}
+
+	@Override
+	public boolean supportsContext(@NotNull Observation.Context context) {
+		return true;
+	}
+
+	private long getCurrentTimeMillis() {
+		return clock.monotonicTime() / 1_000_000;
+	}
 
 }

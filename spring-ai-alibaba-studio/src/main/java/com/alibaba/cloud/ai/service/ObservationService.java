@@ -11,9 +11,10 @@ import java.util.List;
  */
 public interface ObservationService {
 
-    List<ObservationEntity> list();
+	List<ObservationEntity> list();
 
-    Integer insert(ObservationEntity ObservationEntity);
+	Integer insert(ObservationEntity ObservationEntity);
 
-    void exportObservation();
+	void exportObservation();
+
 }

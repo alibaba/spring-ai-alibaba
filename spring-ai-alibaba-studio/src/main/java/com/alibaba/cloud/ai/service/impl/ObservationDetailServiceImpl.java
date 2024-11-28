@@ -18,23 +18,26 @@ import java.util.List;
 @Service
 public class ObservationDetailServiceImpl implements ObservationDetailService {
 
-    @Resource
-    private ModelObservationDetailMapper observationDetailMapper;
+	@Resource
+	private ModelObservationDetailMapper observationDetailMapper;
 
-    @Override
-    public List<ObservationDetailEntity> list() {
+	@Override
+	public List<ObservationDetailEntity> list() {
 
-        return observationDetailMapper.selectList(null);
-    }
+		return observationDetailMapper.selectList(null);
+	}
 
-    @Override
-    public Integer insert(ObservationDetailEntity modelObservationDetailEntity) {
-        return observationDetailMapper.insert(modelObservationDetailEntity);
-    }
+	@Override
+	public Integer insert(ObservationDetailEntity modelObservationDetailEntity) {
+		return observationDetailMapper.insert(modelObservationDetailEntity);
+	}
 
-    @Override
-    public void exportObservationDetail() {
-        String fileName = "Observation_" + "simpleWrite_" + System.currentTimeMillis() + ".xlsx";
-        EasyExcel.write(fileName, ObservationDetailEntity.class).sheet("模板").doWrite(observationDetailMapper.selectList(null));
-    }
+	@Override
+	public void exportObservationDetail() {
+		String fileName = "Observation_" + "simpleWrite_" + System.currentTimeMillis() + ".xlsx";
+		EasyExcel.write(fileName, ObservationDetailEntity.class)
+			.sheet("模板")
+			.doWrite(observationDetailMapper.selectList(null));
+	}
+
 }

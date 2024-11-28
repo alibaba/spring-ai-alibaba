@@ -17,34 +17,35 @@ import lombok.Data;
 @TableName("tb_observation")
 public class ObservationEntity {
 
-    @TableId(value = "id", type = IdType.ASSIGN_ID)
-    @ExcelProperty("id")
-    private String id;
+	@TableId(value = "id", type = IdType.ASSIGN_ID)
+	@ExcelProperty("id")
+	private String id;
 
-    @ExcelProperty("name")
-    private String name;
+	@ExcelProperty("name")
+	private String name;
 
-    @ExcelProperty("userText")
-    private String userText;
+	@ExcelProperty("userText")
+	private String userText;
 
-    @ExcelProperty("parentId")
-    private Integer parentId;
+	@ExcelProperty("parentId")
+	private Integer parentId;
 
-    @ExcelProperty("totalTokens")
-    private Integer totalTokens;
+	@ExcelProperty("totalTokens")
+	private Integer totalTokens;
 
-    @ExcelProperty("model")
-    private String model;
+	@ExcelProperty("model")
+	private String model;
 
-    @ExcelProperty("error")
-    private String error;
+	@ExcelProperty("error")
+	private String error;
 
-    /*
-    Unit: Milliseconds
-     */
-    @ExcelProperty("duration")
-    private Long duration;
+	/*
+	 * Unit: Milliseconds
+	 */
+	@ExcelProperty("duration")
+	private Long duration;
 
-    @ExcelProperty("addTime")
-    private Long addTime;
+	@ExcelProperty("addTime")
+	private Long addTime;
+
 }

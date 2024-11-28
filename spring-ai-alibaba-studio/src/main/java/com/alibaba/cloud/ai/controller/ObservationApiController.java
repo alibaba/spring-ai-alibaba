@@ -32,65 +32,60 @@ import java.util.List;
 @RequestMapping("studio/api/observation")
 public class ObservationApiController {
 
-    private final ObservationServiceImpl observationServiceImpl;
-    private final ObservationDetailServiceImpl observationDetailServiceImpl;
-    private final ChatClient chatClient;
+	private final ObservationServiceImpl observationServiceImpl;
 
-    private final DashScopeChatModel dashScopeChatModel;
+	private final ObservationDetailServiceImpl observationDetailServiceImpl;
 
-    public ObservationApiController(ObservationServiceImpl observationServiceImpl,
-                                    ObservationDetailServiceImpl observationDetailServiceImpl,
-                                    ObservationRegistry observationRegistry,
-                                    DashScopeApi dashScopeApi,
-                                    ChatClient.Builder builder) {
-        this.observationServiceImpl = observationServiceImpl;
-        this.observationDetailServiceImpl = observationDetailServiceImpl;
-        this.dashScopeChatModel = new DashScopeChatModel(
-                dashScopeApi,
-                DashScopeChatOptions.builder()
-                        .withModel(DashScopeApi.DEFAULT_CHAT_MODEL)
-                        .withTemperature(0.7d)
-                        .build(),
-                null,
-                new RetryTemplate(),
-                observationRegistry
-        );
-        this.chatClient = ChatClient.create(dashScopeChatModel, observationRegistry);
-//        this.chatClient = builder.build();
-    }
+	private final ChatClient chatClient;
 
-    @GetMapping(value = "list", produces = MediaType.APPLICATION_JSON_VALUE)
-    public R<List<ObservationEntity>> list() {
-        List<ObservationEntity> list = observationServiceImpl.list();
-        return R.success(list);
-    }
+	private final DashScopeChatModel dashScopeChatModel;
 
-    @GetMapping(value = "detail/list", produces = MediaType.APPLICATION_JSON_VALUE)
-    public R<List<ObservationDetailEntity>> detailList() {
-        List<ObservationDetailEntity> list = observationDetailServiceImpl.list();
-        return R.success(list);
-    }
+	public ObservationApiController(ObservationServiceImpl observationServiceImpl,
+			ObservationDetailServiceImpl observationDetailServiceImpl, ObservationRegistry observationRegistry,
+			DashScopeApi dashScopeApi, ChatClient.Builder builder) {
+		this.observationServiceImpl = observationServiceImpl;
+		this.observationDetailServiceImpl = observationDetailServiceImpl;
+		this.dashScopeChatModel = new DashScopeChatModel(dashScopeApi,
+				DashScopeChatOptions.builder().withModel(DashScopeApi.DEFAULT_CHAT_MODEL).withTemperature(0.7d).build(),
+				null, new RetryTemplate(), observationRegistry);
+		this.chatClient = ChatClient.create(dashScopeChatModel, observationRegistry);
+		// this.chatClient = builder.build();
+	}
 
-    /**
-     * 直接对话接口
-     * @param chatDTO
-     * @return
-     */
-    @PostMapping(value = "generate", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public R<String> generate(@RequestBody ChatDTO chatDTO) {
-        String call = chatClient.prompt(chatDTO.getMessage()).call().content();
-        return R.success(call);
-    }
+	@GetMapping(value = "list", produces = MediaType.APPLICATION_JSON_VALUE)
+	public R<List<ObservationEntity>> list() {
+		List<ObservationEntity> list = observationServiceImpl.list();
+		return R.success(list);
+	}
 
-    @GetMapping(value = "exportObservation", produces = MediaType.APPLICATION_JSON_VALUE)
-    public R<List<ObservationDetailEntity>> exportObservation() {
-        observationServiceImpl.exportObservation();
-        return R.success(null);
-    }
+	@GetMapping(value = "detail/list", produces = MediaType.APPLICATION_JSON_VALUE)
+	public R<List<ObservationDetailEntity>> detailList() {
+		List<ObservationDetailEntity> list = observationDetailServiceImpl.list();
+		return R.success(list);
+	}
 
-    @GetMapping(value = "exportObservationDetail", produces = MediaType.APPLICATION_JSON_VALUE)
-    public R<List<ObservationDetailEntity>> exportObservationDetail() {
-        observationDetailServiceImpl.exportObservationDetail();
-        return R.success(null);
-    }
+	/**
+	 * 直接对话接口
+	 * @param chatDTO
+	 * @return
+	 */
+	@PostMapping(value = "generate", consumes = MediaType.APPLICATION_JSON_VALUE,
+			produces = MediaType.APPLICATION_JSON_VALUE)
+	public R<String> generate(@RequestBody ChatDTO chatDTO) {
+		String call = chatClient.prompt(chatDTO.getMessage()).call().content();
+		return R.success(call);
+	}
+
+	@GetMapping(value = "exportObservation", produces = MediaType.APPLICATION_JSON_VALUE)
+	public R<List<ObservationDetailEntity>> exportObservation() {
+		observationServiceImpl.exportObservation();
+		return R.success(null);
+	}
+
+	@GetMapping(value = "exportObservationDetail", produces = MediaType.APPLICATION_JSON_VALUE)
+	public R<List<ObservationDetailEntity>> exportObservationDetail() {
+		observationDetailServiceImpl.exportObservationDetail();
+		return R.success(null);
+	}
+
 }

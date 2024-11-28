@@ -17,17 +17,20 @@ import java.util.Map;
  */
 public class ContextHandlerFactory {
 
-    private final Map<Class<? extends Observation.Context>, ContextHandler<?>> handlers = new HashMap<>();
+	private final Map<Class<? extends Observation.Context>, ContextHandler<?>> handlers = new HashMap<>();
 
-    public ContextHandlerFactory(ObservationServiceImpl observationService,
-                                 ObservationDetailServiceImpl modelObservationDetailService) {
-        handlers.put(AdvisorObservationContext.class, new AdvisorObservationContextHandler());
-        handlers.put(ChatModelObservationContext.class, new ChatModelObservationContextHandler(observationService, modelObservationDetailService));
-        handlers.put(ChatClientObservationContext.class, new ChatClientObservationContextHandler(observationService, modelObservationDetailService));
-    }
+	public ContextHandlerFactory(ObservationServiceImpl observationService,
+			ObservationDetailServiceImpl modelObservationDetailService) {
+		handlers.put(AdvisorObservationContext.class, new AdvisorObservationContextHandler());
+		handlers.put(ChatModelObservationContext.class,
+				new ChatModelObservationContextHandler(observationService, modelObservationDetailService));
+		handlers.put(ChatClientObservationContext.class,
+				new ChatClientObservationContextHandler(observationService, modelObservationDetailService));
+	}
 
-    @SuppressWarnings("unchecked")
-    public <T extends Observation.Context> ContextHandler<T> getHandler(T context) {
-        return (ContextHandler<T>) handlers.get(context.getClass());
-    }
+	@SuppressWarnings("unchecked")
+	public <T extends Observation.Context> ContextHandler<T> getHandler(T context) {
+		return (ContextHandler<T>) handlers.get(context.getClass());
+	}
+
 }
