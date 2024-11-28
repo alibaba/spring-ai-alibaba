@@ -19,24 +19,21 @@ package com.alibaba.cloud.ai.plugin.translate;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-
 @ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.translate")
 public class TranslateProperties {
 
-    public static final String OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";
+	public static final String OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";
 
-    // translate api key for Ocp-Apim-Subscription-Key
-    // https://learn.microsoft.com/en-us/azure/ai-services/translator/reference/v3-0-translate
-    private String apiKey;
+	// translate api key for Ocp-Apim-Subscription-Key
+	// https://learn.microsoft.com/en-us/azure/ai-services/translator/reference/v3-0-translate
+	private String apiKey;
 
-    public String getApiKey() {
-        return apiKey;
-    }
+	public String getApiKey() {
+		return apiKey;
+	}
 
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
-    }
-
-
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
+	}
 
 }
