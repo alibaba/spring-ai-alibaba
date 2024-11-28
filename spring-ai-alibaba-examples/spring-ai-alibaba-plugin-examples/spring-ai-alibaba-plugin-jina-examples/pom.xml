@@ -20,29 +20,36 @@
 		 xmlns="http://maven.apache.org/POM/4.0.0"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.alibaba.cloud.ai</groupId>
-	<artifactId>spring-ai-alibaba-examples</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<packaging>pom</packaging>
 
-	<name>Spring AI Alibaba Examples</name>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.3.3</version>
+		<relativePath/>
+	</parent>
+
+	<groupId>com.alibaba.cloud.ai</groupId>
+	<artifactId>spring-ai-alibaba-plugin-jina-example</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+
+	<name>Spring AI Alibaba Plugin Jina Examples</name>
 
 	<properties>
 		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
 	</properties>
 
-	<modules>
-		<module>helloworld-example</module>
-		<module>chatmodel-example</module>
-		<module>multi-model-example</module>
-		<module>audio-example</module>
-		<module>prompt-example</module>
-		<module>function-calling-example</module>
-		<module>rag-example</module>
-		<module>output-parser-example</module>
-		<module>playground-flight-booking</module>
-		<module>spring-ai-alibaba-plugin-examples/</module>
-	</modules>
+	<dependencies>
+		<dependency>
+			<groupId>com.alibaba.cloud.ai</groupId>
+			<artifactId>spring-ai-alibaba-starter-plugin-jina</artifactId>
+			<version>1.0.0-M3.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+	</dependencies>
 
 	<build>
 		<plugins>

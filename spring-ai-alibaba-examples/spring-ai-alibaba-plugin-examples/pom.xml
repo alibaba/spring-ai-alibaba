@@ -25,23 +25,14 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
-	<name>Spring AI Alibaba Examples</name>
+	<name>Spring AI Alibaba Plugin Examples</name>
 
 	<properties>
 		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
 	</properties>
 
 	<modules>
-		<module>helloworld-example</module>
-		<module>chatmodel-example</module>
-		<module>multi-model-example</module>
-		<module>audio-example</module>
-		<module>prompt-example</module>
-		<module>function-calling-example</module>
-		<module>rag-example</module>
-		<module>output-parser-example</module>
-		<module>playground-flight-booking</module>
-		<module>spring-ai-alibaba-plugin-examples/</module>
+		<module>spring-ai-alibaba-plugin-jina-examples</module>
 	</modules>
 
 	<build>
