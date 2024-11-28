@@ -6,6 +6,10 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 import java.util.TimeZone;
 import java.util.function.Function;
 
+/**
+ * @author chengle
+ *
+ */
 public class GetCurrentLocalTimeService
 		implements Function<GetCurrentLocalTimeService.Request, GetCurrentLocalTimeService.Response> {
 

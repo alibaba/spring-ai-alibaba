@@ -107,4 +107,13 @@ public class FunctionCallingController {
 				.content();
 	}
 
+	@GetMapping("/getCrawler")
+	public String getCrawler(String text) {
+		return chatClient.prompt()
+				.functions("crawlerService")
+				.user(text)
+				.call()
+				.content();
+	}
+
 }

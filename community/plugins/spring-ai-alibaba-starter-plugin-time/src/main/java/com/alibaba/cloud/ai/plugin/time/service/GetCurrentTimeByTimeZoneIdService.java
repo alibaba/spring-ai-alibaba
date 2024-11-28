@@ -8,6 +8,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 
 import java.util.function.Function;
 
+/**
+ * @author chengle
+ *
+ */
 public class GetCurrentTimeByTimeZoneIdService
 		implements Function<GetCurrentTimeByTimeZoneIdService.Request, GetCurrentTimeByTimeZoneIdService.Response> {
 
