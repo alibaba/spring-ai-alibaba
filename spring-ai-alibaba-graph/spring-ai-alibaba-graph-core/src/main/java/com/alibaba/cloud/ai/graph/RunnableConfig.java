@@ -8,6 +8,10 @@ import java.util.Optional;
 @ToString
 public final class RunnableConfig {
 
+	private String userId;
+
+	private String graphId;
+
 	private String threadId;
 
 	private String checkPointId;
@@ -69,7 +73,6 @@ public final class RunnableConfig {
 		private final RunnableConfig config;
 
 		Builder() {
-			;
 			this.config = new RunnableConfig();
 		}
 
@@ -79,6 +82,16 @@ public final class RunnableConfig {
 
 		public Builder threadId(String threadId) {
 			this.config.threadId = threadId;
+			return this;
+		}
+
+		public Builder graphId(String graphId) {
+			this.config.graphId = graphId;
+			return this;
+		}
+
+		public Builder userId(String userId) {
+			this.config.userId = userId;
 			return this;
 		}
 
