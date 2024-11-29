@@ -53,7 +53,13 @@ public class DashScopeAiUsage implements Usage {
 
 	@Override
 	public Long getTotalTokens() {
-		return getUsage().totalTokens().longValue();
+		Integer totalTokens = getUsage().totalTokens();
+		if (totalTokens != null) {
+			return totalTokens.longValue();
+		}
+		else {
+			return getPromptTokens() + getGenerationTokens();
+		}
 	}
 
 	@Override
