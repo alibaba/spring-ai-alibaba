@@ -1,6 +1,8 @@
-package com.alibaba.cloud.ai.graph.checkpoint;
+package com.alibaba.cloud.ai.graph.checkpoint.savers;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -9,7 +11,6 @@ import java.util.stream.IntStream;
 
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableCollection;
-import static java.util.Optional.ofNullable;
 
 public class MemorySaver implements BaseCheckpointSaver {
 
@@ -42,10 +43,6 @@ public class MemorySaver implements BaseCheckpointSaver {
 		finally {
 			r.unlock();
 		}
-	}
-
-	protected Optional<Checkpoint> getLast(LinkedList<Checkpoint> checkpoints, RunnableConfig config) {
-		return (checkpoints.isEmpty()) ? Optional.empty() : ofNullable(checkpoints.peek());
 	}
 
 	@Override
@@ -92,4 +89,13 @@ public class MemorySaver implements BaseCheckpointSaver {
 		}
 	}
 
+	@Override
+	public Optional<Checkpoint> getLast(LinkedList<Checkpoint> checkpoints, RunnableConfig config) {
+		return BaseCheckpointSaver.super.getLast(checkpoints, config);
+	}
+
+	@Override
+	public boolean clear(RunnableConfig config) {
+		return false;
+	}
 }

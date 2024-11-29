@@ -1,9 +1,11 @@
 package com.alibaba.cloud.ai.graph.checkpoint;
 
+import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.graph.state.Channel;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -16,9 +18,9 @@ import java.util.*;
  *
  * @see AgentState
  */
-@Getter
+@Data
 @ToString
-public class Checkpoint {
+public class Checkpoint implements Serializable {
 
 	private String id = UUID.randomUUID().toString();
 

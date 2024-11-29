@@ -2,17 +2,16 @@ package com.alibaba.cloud.ai.model;
 
 import lombok.Data;
 
+import java.util.List;
 import java.util.Map;
 
-// TODO
+
 @Data
 public class Workflow {
 
     private String id;
 
-    private String type;
-
-    private Map<String, Object> graph;
+    private Graph graph;
 
     private String createdBy;
 
@@ -21,4 +20,11 @@ public class Workflow {
     private String updatedBy;
 
     private Long updatedAt;
+}
+
+@Data
+class Graph{
+    private List<WorkflowEdge> edges;
+    private List<WorkflowNode> nodes;
+    private Map<String, Float> viewport;
 }
