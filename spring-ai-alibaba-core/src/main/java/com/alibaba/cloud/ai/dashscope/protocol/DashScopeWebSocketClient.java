@@ -142,10 +142,7 @@ public class DashScopeWebSocketClient extends WebSocketListener {
 	}
 
 	private Request buildConnectionRequest() {
-		Builder bd = new Request.Builder();
-		bd.headers(
-				Headers.of(ApiUtils.getMapContentHeaders(options.getApiKey(), false, options.getWorkSpaceId(), null)));
-		return bd.url(options.getUrl()).build();
+		return options.buildRequest();
 	}
 
 	private String getRequestBody(Response response) {

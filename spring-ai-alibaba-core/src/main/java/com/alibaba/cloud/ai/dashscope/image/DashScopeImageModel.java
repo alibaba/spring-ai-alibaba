@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import com.alibaba.cloud.ai.dashscope.image.ImageSize;
+import com.alibaba.cloud.ai.dashscope.image.ImageStyle;
 
 import java.util.List;
 
