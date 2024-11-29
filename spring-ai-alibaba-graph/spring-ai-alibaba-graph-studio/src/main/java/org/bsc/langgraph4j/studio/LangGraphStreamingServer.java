@@ -7,6 +7,7 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
@@ -103,7 +104,10 @@ public interface LangGraphStreamingServer {
 
 		private CompileConfig compileConfig(PersistentConfig config) {
 			return CompileConfig.builder()
-				.checkpointSaver(saver)
+				.saverConfig(SaverConfig.builder()
+						.type("default")
+						.register("default", saver)
+						.build())
 				// .stateSerializer(stateSerializer)
 				.build();
 		}
