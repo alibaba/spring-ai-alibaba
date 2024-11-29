@@ -9,17 +9,31 @@ import java.util.List;
  */
 public interface WorkflowDelegate {
 
-    Workflow create();
+    default Workflow create(){
+        return null;
+    }
 
-    Workflow get(String id);
+    default Workflow get(String id){
+        return null;
+    }
 
-    List<Workflow> list();
+    default List<Workflow> list(){
+        return null;
+    }
 
-    Boolean post(Workflow workflow);
+    default Boolean post(Workflow workflow){
+        return false;
+    }
 
-    Boolean delete(String id);
+    default Boolean delete(String id){
+        return false;
+    }
 
-    Workflow importDSL(String dsl);
+    default Workflow importDSL(String dsl){
+        return null;
+    }
 
-    String exportDSL(String id);
+    default String exportDSL(String id){
+        return "";
+    }
 }
