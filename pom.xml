@@ -34,6 +34,7 @@
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-starter</module>
         <module>spring-ai-alibaba-autoconfigure</module>
+        <module>spring-ai-alibaba-examples</module>
 
 		<module>community/plugins/spring-ai-alibaba-starter-plugin-time</module>
 		<module>community/plugins/spring-ai-alibaba-starter-plugin-baidusearch</module>
@@ -42,7 +43,7 @@
 		<module>community/plugins/spring-ai-alibaba-starter-plugin-gaode</module>
         <module>community/plugins/spring-ai-alibaba-starter-plugin-weather</module>
         <module>community/plugins/spring-ai-alibaba-starter-plugin-larksuite</module>
-        <module>community/plugins/spring-ai-alibaba-starter-plugin-jina</module>
+        <module>community/plugins/spring-ai-alibaba-starter-plugin-crawler</module>
 
 		<module>community/document-readers/github-reader</module>
 		<module>community/document-readers/poi-document-reader</module>
