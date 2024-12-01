@@ -49,10 +49,13 @@ public class CrawlerAutoConfiguration {
 			name = "enabled",
 			havingValue = "true"
 	)
-	public CrawlerJinaServiceImpl jinaService(CrawlerJinaProperties jinaProperties) {
+	public CrawlerJinaServiceImpl jinaService(
+			CrawlerJinaProperties jinaProperties,
+			ObjectMapper objectMapper
+	) {
 
 		Assert.notNull(jinaProperties, "Jina reader api token must not be empty");
-		return new CrawlerJinaServiceImpl(jinaProperties);
+		return new CrawlerJinaServiceImpl(jinaProperties, objectMapper);
 	}
 
 	@Bean

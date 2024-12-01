@@ -41,7 +41,7 @@
 		<module>rag-example</module>
 		<module>output-parser-example</module>
 		<module>playground-flight-booking</module>
-		<module>spring-ai-alibaba-plugin-examples</module>
+		<module>plugin-example</module>
 	</modules>
 
 	<build>

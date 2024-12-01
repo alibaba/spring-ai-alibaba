@@ -29,6 +29,7 @@ import com.alibaba.cloud.ai.plugin.crawler.CrawlerFirecrawlProperties;
 import com.alibaba.cloud.ai.plugin.crawler.constant.CrawlerConstants;
 import com.alibaba.cloud.ai.plugin.crawler.exception.CrawlerServiceException;
 import com.alibaba.cloud.ai.plugin.crawler.service.AbstractCrawlerService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +67,7 @@ public class CrawlerFirecrawlServiceImpl extends AbstractCrawlerService {
 		try {
 			URL url = URI.create(CrawlerConstants.FIRECRAWL_BASE_URL).toURL();
 			logger.info("Firecrawl api request url: {}", url);
-			HttpURLConnection connection = this.initHttpURLConnection(url, Map.of());
+			HttpURLConnection connection = this.initHttpURLConnection(firecrawlProperties.getToken(), url, Map.of(), "");
 
 			connection.setDoOutput(true);
 			DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
@@ -75,7 +76,7 @@ public class CrawlerFirecrawlServiceImpl extends AbstractCrawlerService {
 			wr.flush();
 			wr.close();
 
-			return this.getResponse(connection);
+			return objectMapper.readValue(this.getResponse(connection), new TypeReference<>() {});
 		}
 		catch (IOException e) {
 			throw new CrawlerServiceException("Firecrawl api request failed: " + e.getMessage());
