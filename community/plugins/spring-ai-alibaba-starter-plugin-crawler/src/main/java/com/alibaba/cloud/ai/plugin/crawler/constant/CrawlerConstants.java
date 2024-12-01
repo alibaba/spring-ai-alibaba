@@ -26,9 +26,9 @@ public interface CrawlerConstants {
 
 	String JINA_BASE_URL = "https://r.jina.ai/";
 
-	String FIRECRAWL_BASE_URL = "https://api.firecrawl.dev";
+	String FIRECRAWL_BASE_URL = "https://api.firecrawl.dev/v1/";
 
-	String CONFIG_PREFIX = "spring.ai.alibaba.plugin.crawler";
+	String CONFIG_PREFIX = "spring.ai.alibaba.plugin.crawler.";
 
 	interface JinaHeaders {
 
@@ -59,4 +59,53 @@ public interface CrawlerConstants {
 		String X_WITH_SHADOW_DOM = "X-With-Shadow-Dom";
 	}
 
+	interface FirecrawlMode {
+
+		/**
+		 * Scrape single url and return the markdown.
+		 */
+		String SCRAPE = "scrape";
+
+		/**
+		 * Maps the URL and returns a list of semantically related pages.
+		 */
+		String MAP = "map";
+
+		/**
+		 * Crawl the url and all accessible sub pages and return the markdown for each one.
+		 */
+		String CRAWL = "crawl";
+	}
+
+	interface FirecrawlFormats {
+
+		String MARKDOWN = "markdown";
+
+		String RAW_HTML = "rawHtml";
+
+		String HTML = "html";
+
+		String LINKS = "links";
+	}
+
+	interface FirecrawlRequestBodyKey {
+
+		String REMOVE_BASE64_IMAGES = "removeBase64Images";
+
+		String SKIP_TLS_VERIFICATION = "skipTlsVerification";
+
+		String MOBILE = "mobile";
+
+		String WAIT_FOR = "waitFor";
+
+		String URL = "url";
+
+		String FORMATS = "formats";
+
+		String ONLY_MAIN_CONTENT = "onlyMainContent";
+
+		String INCLUDE_TAGS = "includeTags";
+
+		String EXCLUDE_TAGS = "excludeTags";
+	}
 }

@@ -17,7 +17,6 @@
 
 package com.alibaba.cloud.ai.plugin.crawler.service.impl;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -29,7 +28,6 @@ import com.alibaba.cloud.ai.plugin.crawler.CrawlerFirecrawlProperties;
 import com.alibaba.cloud.ai.plugin.crawler.constant.CrawlerConstants;
 import com.alibaba.cloud.ai.plugin.crawler.exception.CrawlerServiceException;
 import com.alibaba.cloud.ai.plugin.crawler.service.AbstractCrawlerService;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,59 +63,80 @@ public class CrawlerFirecrawlServiceImpl extends AbstractCrawlerService {
 		}
 
 		try {
-			URL url = URI.create(CrawlerConstants.FIRECRAWL_BASE_URL).toURL();
-			logger.info("Firecrawl api request url: {}", url);
-			HttpURLConnection connection = this.initHttpURLConnection(firecrawlProperties.getToken(), url, Map.of(), "");
+			String sourceUrl = CrawlerConstants.FIRECRAWL_BASE_URL + this.getMode();
+			URL url = URI.create(sourceUrl).toURL();
+			logger.info("Firecrawl api request url: {} target url: {}", url, targetUrl);
+			logger.debug("Firecrawl api request token: {}, mode: {}", firecrawlProperties.getToken(),
+					firecrawlProperties.getMode());
 
-			connection.setDoOutput(true);
-			DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
-			String requestBody = convertFirecrawlRequestBody(firecrawlProperties);
-			wr.writeBytes(requestBody);
-			wr.flush();
-			wr.close();
+			Map<String, Object> options = this.getOptions();
+			options.put(CrawlerConstants.FirecrawlRequestBodyKey.URL, targetUrl);
+			String requestBody = this.objectMapper.writeValueAsString(options);
+			logger.debug("Firecrawl api request body: {}", requestBody);
 
-			return objectMapper.readValue(this.getResponse(connection), new TypeReference<>() {});
+			HttpURLConnection connection = this.initHttpURLConnection(
+					firecrawlProperties.getToken(),
+					url,
+					Map.of(),
+					requestBody
+			);
+
+			return this.getResponse(connection);
 		}
 		catch (IOException e) {
 			throw new CrawlerServiceException("Firecrawl api request failed: " + e.getMessage());
 		}
 	}
 
-	private String convertFirecrawlRequestBody(CrawlerFirecrawlProperties firecrawlProperties) {
+	private String getMode() {
 
-		Map<String, String> map = new HashMap<>();
+		return switch (firecrawlProperties.getMode()) {
+			case CrawlerConstants.FirecrawlMode.MAP -> CrawlerConstants.FirecrawlMode.MAP;
+			case CrawlerConstants.FirecrawlMode.SCRAPE -> CrawlerConstants.FirecrawlMode.SCRAPE;
+			case CrawlerConstants.FirecrawlMode.CRAWL ->
+					throw new CrawlerServiceException("Firecrawl " + CrawlerConstants.FirecrawlMode.CRAWL + " mode not supported yet!");
 
-		if (firecrawlProperties.getExcludePaths() != null) {
-			map.put("excludePaths", firecrawlProperties.getExcludePaths().toString());
-		}
-		if (firecrawlProperties.getScrapeOptions() != null) {
-			map.put("scrapeOptions", firecrawlProperties.getScrapeOptions().toString());
-		}
-		if (firecrawlProperties.getUrl() != null) {
-			map.put("url", firecrawlProperties.getUrl());
-		}
-		if (firecrawlProperties.getIncludePaths() != null) {
-			map.put("includePaths", firecrawlProperties.getIncludePaths().toString());
-		}
-		if (firecrawlProperties.getMaxDepth() != null) {
-			map.put("maxDepth", firecrawlProperties.getMaxDepth().toString());
-		}
-		if (firecrawlProperties.getIgnoreSitemap() != null) {
-			map.put("ignoreSitemap", firecrawlProperties.getIgnoreSitemap().toString());
-		}
-		if (firecrawlProperties.getLimit() != null) {
-			map.put("limit", firecrawlProperties.getLimit().toString());
-		}
-		if (firecrawlProperties.getWebhook() != null) {
-			map.put("webhook", firecrawlProperties.getWebhook());
-		}
-		if (firecrawlProperties.getAllowExternalLinks() != null) {
-			map.put("allowExternalLinks", firecrawlProperties.getAllowExternalLinks().toString());
-		}
-		if (firecrawlProperties.getAllowBackwardLinks() != null) {
-			map.put("allowBackwardLinks", firecrawlProperties.getAllowBackwardLinks().toString());
-		}
-
-		return objectMapper.convertValue(map, String.class);
+			default -> throw new CrawlerServiceException("Firecrawl mode not supported yet!");
+		};
 	}
+
+	private Map<String, Object> getOptions() {
+
+		Map<String, Object> map = new HashMap<>();
+		CrawlerFirecrawlProperties runtimeOptions = this.firecrawlProperties;
+
+		if (runtimeOptions.getMobile() != null) {
+			map.put(CrawlerConstants.FirecrawlRequestBodyKey.MOBILE, runtimeOptions.getMobile().toString());
+		}
+		if (runtimeOptions.getRemoveBase64Images() != null) {
+			map.put(CrawlerConstants.FirecrawlRequestBodyKey.REMOVE_BASE64_IMAGES, runtimeOptions.getRemoveBase64Images()
+					.toString());
+		}
+		if (runtimeOptions.getSkipTlsVerification() != null) {
+			map.put(CrawlerConstants.FirecrawlRequestBodyKey.SKIP_TLS_VERIFICATION, runtimeOptions.getSkipTlsVerification()
+					.toString());
+		}
+		if (runtimeOptions.getWaitFor() != null) {
+			map.put(CrawlerConstants.FirecrawlRequestBodyKey.WAIT_FOR, runtimeOptions.getWaitFor().toString());
+		}
+		if (runtimeOptions.getFormats() != null) {
+			map.put(CrawlerConstants.FirecrawlRequestBodyKey.FORMATS, runtimeOptions.getFormats());
+		}
+		if (runtimeOptions.getIncludeTags() != null) {
+			map.put(CrawlerConstants.FirecrawlRequestBodyKey.INCLUDE_TAGS, runtimeOptions.getIncludeTags());
+		}
+		if (runtimeOptions.getExcludeTags() != null) {
+			map.put(CrawlerConstants.FirecrawlRequestBodyKey.EXCLUDE_TAGS, runtimeOptions.getExcludeTags());
+		}
+		if (runtimeOptions.getFormats() != null) {
+			map.put(CrawlerConstants.FirecrawlRequestBodyKey.FORMATS, runtimeOptions.getFormats());
+		}
+		if (runtimeOptions.getOnlyMainContent() != null) {
+			map.put(CrawlerConstants.FirecrawlRequestBodyKey.ONLY_MAIN_CONTENT, runtimeOptions.getOnlyMainContent()
+					.toString());
+		}
+
+		return map;
+	}
+
 }

@@ -30,7 +30,7 @@ import org.springframework.http.MediaType;
 @ConfigurationProperties(prefix = CrawlerJinaProperties.JINA_PROPERTIES_PREFIX)
 public class CrawlerJinaProperties {
 
-	public static final String JINA_PROPERTIES_PREFIX = CrawlerConstants.CONFIG_PREFIX + ".jina";
+	public static final String JINA_PROPERTIES_PREFIX = CrawlerConstants.CONFIG_PREFIX + "jina";
 
 	private String token;
 

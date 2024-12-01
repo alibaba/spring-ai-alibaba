@@ -71,7 +71,7 @@ public class CrawlerAutoConfiguration {
 			ObjectMapper objectMapper
 	) {
 
-		Assert.notNull(firecrawlProperties, "Firecrawl api token must not be empty");
+		Assert.notNull(firecrawlProperties.getToken(), "Firecrawl api token must not be empty");
 		return new CrawlerFirecrawlServiceImpl(firecrawlProperties, objectMapper);
 	}
 
