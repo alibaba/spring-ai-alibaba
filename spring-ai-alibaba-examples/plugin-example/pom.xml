@@ -19,20 +19,21 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		 xmlns="http://maven.apache.org/POM/4.0.0"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.alibaba.cloud.ai</groupId>
-	<artifactId>spring-ai-alibaba-examples</artifactId>
+	<artifactId>plugin-example</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
-	<name>Spring AI Alibaba Plugin Examples</name>
+	<name>Spring AI Alibaba Community Plugin Examples</name>
 
 	<properties>
 		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
 	</properties>
 
 	<modules>
-		<module>spring-ai-alibaba-plugin-crawler-example</module>
+		<module>crawler-plugin-example</module>
 	</modules>
 
 	<build>
