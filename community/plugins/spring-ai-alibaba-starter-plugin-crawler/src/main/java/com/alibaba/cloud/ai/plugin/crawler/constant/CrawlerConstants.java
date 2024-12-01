@@ -18,6 +18,10 @@
 package com.alibaba.cloud.ai.plugin.crawler.constant;
 
 /**
+ *  Crawler constants define.
+ *  In Jina Reader, parameters are passed through the request header.
+ *  In Firecrawl, parameters are passed through the request body.
+ *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
@@ -30,6 +34,9 @@ public interface CrawlerConstants {
 
 	String CONFIG_PREFIX = "spring.ai.alibaba.plugin.crawler.";
 
+	/**
+	 * Jina Reader Request headers.
+	 */
 	interface JinaHeaders {
 
 		String X_LOCALE = "X-Locale";
@@ -59,6 +66,11 @@ public interface CrawlerConstants {
 		String X_WITH_SHADOW_DOM = "X-With-Shadow-Dom";
 	}
 
+	/**
+	 * Firecrawl Request body keys.
+	 * Reference: <a href="https://docs.firecrawl.dev/api-reference/endpoint/scrape">...</a>
+	 * LangChain: <a href="https://python.langchain.com/docs/integrations/document_loaders/firecrawl/#modes">...</a>
+	 */
 	interface FirecrawlMode {
 
 		/**

@@ -85,6 +85,9 @@ public class CrawlerJinaServiceImpl extends AbstractCrawlerService {
 		}
 	}
 
+	/**
+	 * Get request options.
+	 */
 	private Map<String, String> getOptions() {
 
 		Map<String, String> map = new HashMap<>();
