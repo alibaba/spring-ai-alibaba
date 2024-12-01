@@ -27,6 +27,7 @@ import java.net.URL;
 import java.util.Map;
 import java.util.Objects;
 
+import com.alibaba.cloud.ai.plugin.crawler.CrawlerJinaProperties;
 import com.alibaba.cloud.ai.plugin.crawler.exception.CrawlerServiceException;
 import com.alibaba.cloud.ai.plugin.crawler.util.UrlValidator;
 
@@ -41,11 +42,27 @@ import org.springframework.http.MediaType;
 
 public abstract class AbstractCrawlerService implements CrawlerService {
 
+	/**
+	 * Pre-check the target url.
+	 * Don't use a LAN or local URL, and if you use an intranet, you need to set up a webhook proxy.
+	 * Reference: {@link  CrawlerJinaProperties#getProxyUrl()}
+	 * Firecrawl scrape not support yet. but crawl has webhook.
+	 * @param targetUrl target url
+	 * @return true if the target url is invalid
+	 */
 	protected Boolean preCheck(String targetUrl) {
 
 		return !((targetUrl != null && !targetUrl.isEmpty()) || UrlValidator.isValidUrl(targetUrl));
 	}
 
+	/**
+	 * Initialize the HttpURLConnection.
+	 * @param token LLMs crawler apikey or token
+	 * @param url LLMs crawler api url
+	 * @param optionHeaders option headers, Jina Reader use.
+	 * @param requestBody request body
+	 * @return HttpURLConnection
+	 */
 	protected HttpURLConnection initHttpURLConnection(
 			String token,
 			URL url,
@@ -70,6 +87,9 @@ public abstract class AbstractCrawlerService implements CrawlerService {
 		return this.setRequestBody(connection, requestBody);
 	}
 
+	/**
+	 * Get the response from the HttpURLConnection.
+	 */
 	protected String getResponse(HttpURLConnection connection) throws IOException {
 
 		if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
@@ -90,7 +110,8 @@ public abstract class AbstractCrawlerService implements CrawlerService {
 			while ((line = reader.readLine()) != null) {
 				response.append(line);
 			}
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new CrawlerServiceException("Failed to read response: " + e.getMessage());
 		}
 
@@ -104,7 +125,8 @@ public abstract class AbstractCrawlerService implements CrawlerService {
 		try (OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());) {
 			writer.write(requestBody);
 			writer.flush();
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new CrawlerServiceException("Failed to write request body: " + e.getMessage());
 		}
 
