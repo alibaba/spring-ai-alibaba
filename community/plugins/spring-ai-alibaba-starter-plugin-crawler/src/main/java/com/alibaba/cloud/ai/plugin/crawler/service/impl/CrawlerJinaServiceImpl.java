@@ -65,9 +65,11 @@ public class CrawlerJinaServiceImpl extends AbstractCrawlerService {
 		try {
 			URL url = URI.create(CrawlerConstants.JINA_BASE_URL).toURL();
 			logger.info("Jina api request url: {}", targetUrl);
+			logger.debug("Jina Reader api token: {}", jinaProperties.getToken());
 
 			Map<String, String> requestParam = Map.of("url", targetUrl);
 			String requestBody = this.objectMapper.writeValueAsString(requestParam);
+			logger.debug("Jina request body: {}", requestBody);
 
 			HttpURLConnection connection = this.initHttpURLConnection(
 					jinaProperties.getToken(),
@@ -76,7 +78,7 @@ public class CrawlerJinaServiceImpl extends AbstractCrawlerService {
 					requestBody
 			);
 
-			return objectMapper.writeValueAsString(convert2Response(this.getResponse(connection)));
+			return objectMapper.writeValueAsString(this.convert2Response(this.getResponse(connection)));
 		}
 		catch (IOException e) {
 			throw new CrawlerServiceException("Jina reader request failed: " + e.getMessage());
@@ -118,6 +120,15 @@ public class CrawlerJinaServiceImpl extends AbstractCrawlerService {
 			map.put(CrawlerConstants.JinaHeaders.X_WITH_IMAGES_SUMMARY, jinaProperties.getWithImagesSummary()
 					.toString());
 		}
+		if (Objects.nonNull(jinaProperties.getWithLinksSummary())) {
+			map.put(CrawlerConstants.JinaHeaders.X_WITH_LINKS_SUMMARY, jinaProperties.getWithLinksSummary().toString());
+		}
+		if (Objects.nonNull(jinaProperties.getTargetSelector())) {
+			map.put(CrawlerConstants.JinaHeaders.X_TARGET_SELECTOR, jinaProperties.getTargetSelector());
+		}
+		if (Objects.nonNull(jinaProperties.getWaitForSelector())) {
+			map.put(CrawlerConstants.JinaHeaders.X_WAIT_FOR_SELECTOR, jinaProperties.getWaitForSelector());
+		}
 
 		return map;
 	}
@@ -131,7 +142,8 @@ public class CrawlerJinaServiceImpl extends AbstractCrawlerService {
 			JsonNode dataNode = rootNode.get("data");
 
 			response = objectMapper.treeToValue(dataNode, JinaResponse.class);
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new CrawlerServiceException("Parse json data failed: " + e.getMessage());
 		}
 
