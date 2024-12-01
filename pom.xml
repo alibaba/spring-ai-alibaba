@@ -41,8 +41,9 @@
 		<module>community/plugins/spring-ai-alibaba-starter-plugin-gaode</module>
         <module>community/plugins/spring-ai-alibaba-starter-plugin-weather</module>
         <module>community/plugins/spring-ai-alibaba-starter-plugin-larksuite</module>
+        <module>community/plugins/spring-ai-alibaba-starter-plugin-feishu</module>
 
-		<module>community/document-readers/github-reader</module>
+        <module>community/document-readers/github-reader</module>
 		<module>community/document-readers/poi-document-reader</module>
         <module>community/document-readers/tencent-cos-reader</module>
     </modules>
