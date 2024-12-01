@@ -88,6 +88,10 @@ public class CrawlerFirecrawlServiceImpl extends AbstractCrawlerService {
 		}
 	}
 
+	/**
+	 * Get the mode of the Firecrawl API.
+	 * @return {@link CrawlerConstants.FirecrawlMode}
+	 */
 	private String getMode() {
 
 		return switch (firecrawlProperties.getMode()) {
@@ -100,6 +104,10 @@ public class CrawlerFirecrawlServiceImpl extends AbstractCrawlerService {
 		};
 	}
 
+	/**
+	 * Get the options of the Firecrawl API.
+	 * @return Request body parameters.
+	 */
 	private Map<String, Object> getOptions() {
 
 		Map<String, Object> map = new HashMap<>();
