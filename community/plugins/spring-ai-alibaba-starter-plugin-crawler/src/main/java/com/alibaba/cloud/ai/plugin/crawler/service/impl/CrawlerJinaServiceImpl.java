@@ -17,7 +17,6 @@
 
 package com.alibaba.cloud.ai.plugin.crawler.service.impl;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -28,8 +27,11 @@ import java.util.Objects;
 
 import com.alibaba.cloud.ai.plugin.crawler.CrawlerJinaProperties;
 import com.alibaba.cloud.ai.plugin.crawler.constant.CrawlerConstants;
+import com.alibaba.cloud.ai.plugin.crawler.entity.JinaResponse;
 import com.alibaba.cloud.ai.plugin.crawler.exception.CrawlerServiceException;
 import com.alibaba.cloud.ai.plugin.crawler.service.AbstractCrawlerService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,16 +48,11 @@ public class CrawlerJinaServiceImpl extends AbstractCrawlerService {
 
 	private final CrawlerJinaProperties jinaProperties;
 
-	private static final String defaultInjectPageScriptInfos =
-			"""
-					// Remove headers, footers, navigation elements
-					\\ndocument.querySelectorAll('header, footer, nav').forEach(el => el.remove());
-					\\n\\n// Or a url that returns a valid JavaScript code snippet\\n// https://example.com/script.js"
-					""";
+	private final ObjectMapper objectMapper;
 
-
-	public CrawlerJinaServiceImpl(CrawlerJinaProperties jinaProperties) {
+	public CrawlerJinaServiceImpl(CrawlerJinaProperties jinaProperties, ObjectMapper objectMapper) {
 		this.jinaProperties = jinaProperties;
+		this.objectMapper = objectMapper;
 	}
 
 	@Override
@@ -67,23 +64,19 @@ public class CrawlerJinaServiceImpl extends AbstractCrawlerService {
 
 		try {
 			URL url = URI.create(CrawlerConstants.JINA_BASE_URL).toURL();
-			logger.info("Jina reader request url: {}", url);
+			logger.info("Jina api request url: {}", targetUrl);
 
-			HttpURLConnection connection = this.initHttpURLConnection(url, this.getOptions());
+			Map<String, String> requestParam = Map.of("url", targetUrl);
+			String requestBody = this.objectMapper.writeValueAsString(requestParam);
 
-			connection.setDoOutput(true);
-			DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
-			String requestBody = String.format("""
-					{
-					    "url": "%s",
-					    "injectPageScript": [%s]
-					}""", targetUrl, defaultInjectPageScriptInfos);
-			logger.info("Jina reader request body: {}", requestBody);
-			wr.writeBytes(requestBody);
-			wr.flush();
-			wr.close();
+			HttpURLConnection connection = this.initHttpURLConnection(
+					jinaProperties.getToken(),
+					url,
+					this.getOptions(),
+					requestBody
+			);
 
-			return this.getResponse(connection);
+			return objectMapper.writeValueAsString(convert2Response(this.getResponse(connection)));
 		}
 		catch (IOException e) {
 			throw new CrawlerServiceException("Jina reader request failed: " + e.getMessage());
@@ -127,6 +120,22 @@ public class CrawlerJinaServiceImpl extends AbstractCrawlerService {
 		}
 
 		return map;
+	}
+
+	private JinaResponse convert2Response(String respStr) {
+
+		JinaResponse response;
+
+		try {
+			JsonNode rootNode = objectMapper.readTree(respStr);
+			JsonNode dataNode = rootNode.get("data");
+
+			response = objectMapper.treeToValue(dataNode, JinaResponse.class);
+		} catch (IOException e) {
+			throw new CrawlerServiceException("Parse json data failed: " + e.getMessage());
+		}
+
+		return response;
 	}
 
 }

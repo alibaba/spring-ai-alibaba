@@ -20,6 +20,7 @@ package com.alibaba.cloud.ai.plugin.crawler;
 import com.alibaba.cloud.ai.plugin.crawler.constant.CrawlerConstants;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.http.MediaType;
 
 /**
  * @author yuluo
@@ -34,6 +35,8 @@ public class CrawlerJinaProperties {
 	private String token;
 
 	private Boolean enabled;
+
+	private MediaType accept = MediaType.asMediaType(MediaType.APPLICATION_JSON);
 
 	private String targetSelector;
 
@@ -75,6 +78,14 @@ public class CrawlerJinaProperties {
 
 	public void setEnabled(Boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public MediaType getAccept() {
+		return accept;
+	}
+
+	public void setAccept(MediaType accept) {
+		this.accept = accept;
 	}
 
 	public String getTargetSelector() {
