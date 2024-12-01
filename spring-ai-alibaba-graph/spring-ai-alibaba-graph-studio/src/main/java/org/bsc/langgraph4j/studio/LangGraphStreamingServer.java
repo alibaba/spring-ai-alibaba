@@ -104,10 +104,7 @@ public interface LangGraphStreamingServer {
 
 		private CompileConfig compileConfig(PersistentConfig config) {
 			return CompileConfig.builder()
-				.saverConfig(SaverConfig.builder()
-						.type("default")
-						.register("default", saver)
-						.build())
+				.saverConfig(SaverConfig.builder().type("default").register("default", saver).build())
 				// .stateSerializer(stateSerializer)
 				.build();
 		}

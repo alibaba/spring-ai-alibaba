@@ -98,4 +98,5 @@ public class MemorySaver implements BaseCheckpointSaver {
 	public boolean clear(RunnableConfig config) {
 		return false;
 	}
+
 }
