@@ -11,4 +11,12 @@ spring:
         crawler:
           jina:
             enabled: true
-            token: jina_80ff7ed1af5e400c9c86bdf90072b70c4jvaXiyOx3Uukx5iMnnfLhb-hBks
+            token: ${JINA_TOKEN}
+          firecrawl:
+            enabled: true
+            token: ${FIRECRAWL_TOKEN}
+            formats: markdown, html
+
+logging:
+    level:
+        com.alibaba.cloud.ai.plugin.crawler: DEBUG
