@@ -1,6 +1,7 @@
 import React from 'react';
-import { Card, Col, Drawer, Row, Tree } from 'antd';
+import { Button, Card, Col, Drawer, Row, Tree } from 'antd';
 import { CarryOutOutlined, FormOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 
 const input = '{"input":"What is a document loader?","chat_history":[]}';
 const output = '{"output":"A document loader is a tool used to load and process documents for various tasks such as text analysis, information extraction, and more."}';
@@ -10,6 +11,7 @@ const preStyle: any = {
     overflow: 'auto', // This will provide a scrollbar if needed
 };
 const TraceDetailComp = ({ open, setOpen }) => {
+    const { t, i18n } = useTranslation();
     const [selectedKey, setSelectedKey] = React.useState('Chat Model');
     const treeData = [
         {
@@ -68,7 +70,7 @@ const TraceDetailComp = ({ open, setOpen }) => {
               />
             </Col>
             <Col span={18}>
-              <Card title={selectedKey}>
+              <Card title={selectedKey} extra={<Button disabled>{t('gotoDebug')}</Button>}>
                 <Card title={'Input'} style={{ marginTop: 10 }}><pre style={preStyle}>{JSON.stringify(JSON.parse(input), null, 2)}</pre></Card>
                 <Card title={'Output'} style={{ marginTop: 10 }}><pre style={preStyle}>{JSON.stringify(JSON.parse(output), null, 2)}</pre></Card>
                 <Card title={'Messages'} style={{ marginTop: 10 }}>
