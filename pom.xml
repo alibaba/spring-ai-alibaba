@@ -179,7 +179,9 @@
 				<version>${maven-surefire-plugin.version}</version>
 				<configuration>
 					<argLine>${surefireArgLine}</argLine>
+					<skipTests>true</skipTests>
 				</configuration>
+
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

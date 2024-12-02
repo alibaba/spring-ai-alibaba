@@ -37,12 +37,12 @@
       <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>com.alibaba.cloud.ai</groupId>
-      <artifactId>spring-ai-alibaba-starter</artifactId>
-      <version>${parent.version}</version>
-      <scope>test</scope>
-    </dependency>
+      <dependency>
+          <groupId>com.alibaba.cloud.ai</groupId>
+          <artifactId>spring-ai-alibaba-autoconfigure</artifactId>
+          <version>${project.parent.version}</version>
+      </dependency>
+
 
     <dependency>
       <groupId>org.projectlombok</groupId>
