@@ -81,9 +81,9 @@ public class StateGraphFileSystemPersistenceTest {
 		FileSystemSaver saver = new FileSystemSaver(Paths.get(rootPath, "testCheckpointSaverResubmit"),
 				workflow.getStateSerializer());
 		SaverConfig saverConfig = SaverConfig.builder()
-				.type(SaverConstant.FILE)
-				.register(SaverConstant.FILE,saver)
-				.build();
+			.type(SaverConstant.FILE)
+			.register(SaverConstant.FILE, saver)
+			.build();
 		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 
 		CompiledGraph<MessagesState> app = workflow.compile(compileConfig);

@@ -17,78 +17,81 @@ import java.util.stream.Collectors;
 
 /**
  * Node action that uses LLM with chat history messages.
+ *
  * @author Robocanic
  * @author robocanic@gmail.com
  */
 public class LLMNodeAction<State extends AgentState> implements NodeAction<State> {
 
-    public static final String DEFAULT_SYSTEM_MESSAGE = "You're a helpful assistant";
-    public static final String MESSAGES_KEY = "messages";
-    private final ChatClient chatClient;
+	public static final String DEFAULT_SYSTEM_MESSAGE = "You're a helpful assistant";
 
-    public LLMNodeAction(ChatClient chatClient){
-        this.chatClient = chatClient;
-    }
+	public static final String MESSAGES_KEY = "messages";
 
-    @Override
-    public Map<String, Object> apply(State state) throws Exception {
-        List<Message> messages = state.value(MESSAGES_KEY, new ArrayList<>());
-        List<Generation> generations = chatClient.prompt()
-                .system(s->s.params(state.data()))
-                .messages(messages)
-                .call()
-                .chatResponse().getResults();
-        List<Message> output = generations.stream().map(Generation::getOutput).collect(Collectors.toList());
-        // FIXME serialization issue with messages in spring
-        return Map.of(MESSAGES_KEY, output);
-    }
+	private final ChatClient chatClient;
 
-    public static Builder builder(ChatModel chatModel){
-        return new Builder(chatModel);
-    }
+	public LLMNodeAction(ChatClient chatClient) {
+		this.chatClient = chatClient;
+	}
 
-    public static class Builder{
-        private ChatModel chatModel;
+	@Override
+	public Map<String, Object> apply(State state) throws Exception {
+		List<Message> messages = state.value(MESSAGES_KEY, new ArrayList<>());
+		List<Generation> generations = chatClient.prompt()
+			.system(s -> s.params(state.data()))
+			.messages(messages)
+			.call()
+			.chatResponse()
+			.getResults();
+		List<Message> output = generations.stream().map(Generation::getOutput).collect(Collectors.toList());
+		// FIXME serialization issue with messages in spring
+		return Map.of(MESSAGES_KEY, output);
+	}
 
-        private String systemMessage;
+	public static Builder builder(ChatModel chatModel) {
+		return new Builder(chatModel);
+	}
 
-        private String[] functionNames;
+	public static class Builder {
 
-        public Builder(ChatModel chatModel){
-            this.chatModel = chatModel;
-        }
+		private ChatModel chatModel;
 
+		private String systemMessage;
 
-        public Builder systemMessage(String systemMessage){
-            this.systemMessage = systemMessage;
-            return this;
-        }
+		private String[] functionNames;
 
-        public Builder systemMessage(Resource resource){
-            try {
-                this.systemMessage = resource.getContentAsString(Charset.defaultCharset());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            return this;
-        }
+		public Builder(ChatModel chatModel) {
+			this.chatModel = chatModel;
+		}
 
-        public Builder functionNames(String... functionNames){
-            this.functionNames = functionNames;
-            return this;
-        }
+		public Builder systemMessage(String systemMessage) {
+			this.systemMessage = systemMessage;
+			return this;
+		}
 
-        public <State extends AgentState> LLMNodeAction<State> build(){
-            String defaultSystemMessage = systemMessage == null ? DEFAULT_SYSTEM_MESSAGE : systemMessage;
-            ChatClient.Builder clientBuilder = ChatClient.builder(this.chatModel)
-                    .defaultSystem(defaultSystemMessage);
-            if (functionNames != null && functionNames.length > 0){
-                clientBuilder = clientBuilder.defaultFunctions(functionNames);
-            }
-            return new LLMNodeAction<>(clientBuilder.build());
-        }
+		public Builder systemMessage(Resource resource) {
+			try {
+				this.systemMessage = resource.getContentAsString(Charset.defaultCharset());
+			}
+			catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			return this;
+		}
 
+		public Builder functionNames(String... functionNames) {
+			this.functionNames = functionNames;
+			return this;
+		}
 
-    }
+		public <State extends AgentState> LLMNodeAction<State> build() {
+			String defaultSystemMessage = systemMessage == null ? DEFAULT_SYSTEM_MESSAGE : systemMessage;
+			ChatClient.Builder clientBuilder = ChatClient.builder(this.chatModel).defaultSystem(defaultSystemMessage);
+			if (functionNames != null && functionNames.length > 0) {
+				clientBuilder = clientBuilder.defaultFunctions(functionNames);
+			}
+			return new LLMNodeAction<>(clientBuilder.build());
+		}
+
+	}
 
 }

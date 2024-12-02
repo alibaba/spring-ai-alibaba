@@ -10,7 +10,28 @@ tags:
   description: the chat-client API
 - name: chat-model
   description: the chat-model API
+- name: dsl
+  description: the DSL API
 paths:
+  /studio/api/dsl/import:
+    post:
+      tags:
+      - dsl
+      summary: import app from dsl
+      operationId: importDSL
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DSLParam"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RApp"
   /studio/api/chat-models:
     get:
       tags:
@@ -57,6 +78,30 @@ paths:
       responses:
         "200":
           description: OK
+  /studio/api/dsl/export/{id}:
+    get:
+      tags:
+      - dsl
+      summary: export app to dsl
+      operationId: exportDSL
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: dialect
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RString"
   /studio/api/chat-models/{modelName}:
     get:
       tags:
@@ -182,15 +227,55 @@ paths:
                 type: string
 components:
   schemas:
+    DSLParam:
+      type: object
+      properties:
+        content:
+          type: string
+          description: dsl raw content
+        dialect:
+          type: string
+          description: dsl dialect
+    App:
+      type: object
+      properties:
+        metadata:
+          $ref: "#/components/schemas/AppMetadata"
+        spec:
+          type: object
+    AppMetadata:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        mode:
+          type: string
+    RApp:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/App"
+        timestamp:
+          type: integer
+          format: int64
     DashScopeChatOptions:
       type: object
       properties:
-        maxTokens:
-          type: integer
-          format: int32
         presencePenalty:
           type: number
           format: double
+        maxTokens:
+          type: integer
+          format: int32
         frequencyPenalty:
           type: number
           format: double
@@ -355,6 +440,19 @@ components:
       properties:
         traceId:
           type: string
+    RString:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        msg:
+          type: string
+        data:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
     ChatModel:
       type: object
       properties:
