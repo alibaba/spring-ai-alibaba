@@ -1,13 +1,13 @@
 package com.alibaba.cloud.ai.service;
 
-import com.alibaba.cloud.ai.model.Workflow;
+import com.alibaba.cloud.ai.model.app.App;
 
-/**
- * DSLAdapter is used to convert workflow to different dsl(dify, flowise, etc.) and vice versa.
- */
 public interface DSLAdapter {
 
-    String toDSL(Workflow workflow);
+	String exportDSL(String id);
 
-    Workflow fromDSL(String dsl);
+	App importDSL(String dsl);
+
+	Boolean supportDialect(String dialect);
+
 }
