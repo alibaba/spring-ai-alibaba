@@ -6,6 +6,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,6 +15,7 @@ import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,33 +24,42 @@ import java.util.regex.Pattern;
  */
 public class YuQueResource implements Resource {
 
-    private static final String baseUrl = "https://www.yuque.com";
+    private static final String BASE_URL = "https://www.yuque.com";
 
-    private static final String infoPath = "/api/v2/hello";
+    private static final String INFO_PATH = "/api/v2/hello";
 
-    private static final String docDetailPath = "/api/v2/repos/%s/%s/docs/%s";
+    private static final String DOC_DETAIL_PATH = "/api/v2/repos/%s/%s/docs/%s";
+
+    public static final String SOURCE = "source";
+
+    public static final String SUPPORT_TYPE = "Doc";
 
     private final HttpClient httpClient;
 
-    private final String content;
+    private final InputStream inputStream;
 
-    public static final String SOURCE = "source";
+    private final URI uri;
+
+    private final String resourcePath;
+
     private String groupLogin;
     private String bookSlug;
     private String id;
 
     public YuQueResource(String yuQueToken, String resourcePath) {
 
+        this.resourcePath = resourcePath;
+
         this.httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
 
         judgePathRule(resourcePath);
         judgeToken(yuQueToken);
 
-        URI uri = URI.create(baseUrl + docDetailPath.formatted(groupLogin, bookSlug, id));
+        URI baseUri = URI.create(BASE_URL + DOC_DETAIL_PATH.formatted(groupLogin, bookSlug, id));
 
         HttpRequest httpRequest = HttpRequest.newBuilder()
                 .header("X-Auth-Token", yuQueToken)
-                .uri(uri).GET().build();
+                .uri(baseUri).GET().build();
 
         try {
             HttpResponse<String> response = this.httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
@@ -57,21 +68,21 @@ public class YuQueResource implements Resource {
             JSONObject jsonObject = JSON.parseObject(body);
             JSONObject dataObject = jsonObject.getJSONObject("data");
 
-            if (dataObject != null) {
-                content = dataObject.getString("body_html");
-            } else {
-                throw new IllegalArgumentException("Invalid response format: 'data' is not an object");
+            if (dataObject == null) {
+                throw new RuntimeException("Invalid response format: 'data' is not an object");
             }
 
+            if (!Objects.equals(dataObject.getString("type"), SUPPORT_TYPE)) {
+                throw new RuntimeException("Unsupported resource type, only support " + SUPPORT_TYPE);
+            }
+
+            inputStream = new ByteArrayInputStream(dataObject.getString("body_html").getBytes());
+            uri = URI.create(resourcePath);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
-    }
-
-    public String getContent() {
-        return content;
     }
 
     /**
@@ -104,7 +115,7 @@ public class YuQueResource implements Resource {
      * @param yuQueToken User/Team token
      */
     private void judgeToken(String yuQueToken) {
-        URI uri = URI.create(baseUrl + infoPath);
+        URI uri = URI.create(BASE_URL + INFO_PATH);
 
         HttpRequest httpRequest = HttpRequest.newBuilder()
                 .header("X-Auth-Token", yuQueToken)
@@ -147,6 +158,9 @@ public class YuQueResource implements Resource {
         }
     }
 
+    public String getResourcePath() {
+        return resourcePath;
+    }
 
     @Override
     public boolean exists() {
@@ -160,7 +174,7 @@ public class YuQueResource implements Resource {
 
     @Override
     public URI getURI() throws IOException {
-        return null;
+        return uri;
     }
 
     @Override
@@ -195,7 +209,7 @@ public class YuQueResource implements Resource {
 
     @Override
     public InputStream getInputStream() throws IOException {
-        return null;
+        return inputStream;
     }
 
 }

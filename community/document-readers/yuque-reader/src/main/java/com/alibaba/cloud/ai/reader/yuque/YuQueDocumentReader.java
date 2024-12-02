@@ -5,6 +5,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.reader.ExtractedTextFormatter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,6 +33,11 @@ public class YuQueDocumentReader implements DocumentReader {
     @Override
     public List<Document> get() {
         List<Document> documents = parser.get();
+        String source = yuQueResource.getResourcePath();
+
+        for (Document doc : documents) {
+            doc.getMetadata().put(YuQueResource.SOURCE, source);
+        }
 
         return documents;
     }
