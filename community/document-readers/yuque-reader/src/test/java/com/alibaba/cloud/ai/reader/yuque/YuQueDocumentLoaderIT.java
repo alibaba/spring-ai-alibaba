@@ -10,9 +10,9 @@ import java.util.List;
 
 class YuQueDocumentLoaderIT {
 
-	private static final String YU_QUE_TOKEN = "yqdi4ePciJnvQ3SWofp32h5e2bbW05iN5uVXrJvP";
+	private static final String YU_QUE_TOKEN = "${token}";
 
-	private static final String RESOURCE_PATH = "https://cfpamf.yuque.com/qualitycenter/target/xooysu8n0a8dikou";
+	private static final String RESOURCE_PATH = "${url}";
 
 	YuQueDocumentReader reader;
 
