@@ -1,6 +1,7 @@
 package com.alibaba.cloud.ai.tencent.cos;
 
-import com.alibaba.cloud.ai.reader.DocumentParser;
+import com.alibaba.cloud.ai.document.TextDocumentParser;
+import com.alibaba.cloud.ai.document.DocumentParser;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;
 import com.qcloud.cos.model.PutObjectRequest;
@@ -39,6 +40,8 @@ class TencentCosDocumentLoaderIT {
 
 	static COSClient cosClient;
 
+	DocumentParser parser = new TextDocumentParser();
+
 	@BeforeAll
 	public static void beforeAll() {
 		TencentCredentials tencentCredentials = new TencentCredentials(System.getenv("TENCENT_SECRET_ID"),
@@ -72,7 +75,7 @@ class TencentCosDocumentLoaderIT {
 
 		TencentCosResource tencentCosResource3 = TencentCosResource.builder().cosClient(cosClient).build();
 
-		loader = new TencentCosDocumentReader(tencentCosResource, DocumentParser.TEXT_PARSER);
+		loader = new TencentCosDocumentReader(tencentCosResource, parser);
 		// when
 		Document document = loader.get().get(0);
 
@@ -99,7 +102,7 @@ class TencentCosDocumentLoaderIT {
 			.bucket(TEST_BUCKET)
 			.buildBatch();
 
-		batchLoader = new TencentCosDocumentReader(tencentCosResourceList, DocumentParser.TEXT_PARSER);
+		batchLoader = new TencentCosDocumentReader(tencentCosResourceList, parser);
 
 		// when
 		List<Document> documents = batchLoader.get();
@@ -140,7 +143,7 @@ class TencentCosDocumentLoaderIT {
 			.prefix("test")
 			.buildBatch();
 
-		batchLoader = new TencentCosDocumentReader(tencentCosResourceList, DocumentParser.TEXT_PARSER);
+		batchLoader = new TencentCosDocumentReader(tencentCosResourceList, parser);
 		// when
 		List<Document> documents = batchLoader.get();
 
