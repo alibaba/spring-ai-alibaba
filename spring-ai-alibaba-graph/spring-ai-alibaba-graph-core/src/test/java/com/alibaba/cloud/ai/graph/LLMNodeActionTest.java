@@ -26,7 +26,6 @@ public class LLMNodeActionTest {
     void init_llmNode () throws Exception {
 
         LLMNodeAction node = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("sk-abb19cc7e4b640b6b84ded3d7ad63aa4")))
-                .withPromptTemplate("nihao")
                 //                .withSysPrompt("You're a helpful assistant")
                 //                .withFunctions("LarkSuiteDocService")
                 .build();
