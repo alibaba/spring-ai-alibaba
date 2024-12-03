@@ -13,11 +13,11 @@ via the
 which is always the second positional arg when invoking your application.
 
 Below, we walk through an example of letting you configure a user ID and pick
-which model to use.
+which modelCOnfig to use.
 
 ## Setup
 
-This guide will use Anthropic's Claude 3 Haiku and OpenAI's GPT-4o model. We
+This guide will use Anthropic's Claude 3 Haiku and OpenAI's GPT-4o modelCOnfig. We
 will optionally set our API key for
 [LangSmith tracing](https://smith.langchain.com/), which will give us
 best-in-class observability.
@@ -78,11 +78,11 @@ const callModel = async (
   config?: RunnableConfig,
 ) => {
   const { messages, userInfo } = state;
-  const modelName = config?.configurable?.model;
-  const model = modelName === "claude"
-    ? new ChatAnthropic({ model: "claude-3-haiku-20240307" })
-    : new ChatOpenAI({ model: "gpt-4o" });
-  const chain = promptTemplate.pipe(model);
+  const modelName = config?.configurable?.modelCOnfig;
+  const modelCOnfig = modelName === "claude"
+    ? new ChatAnthropic({ modelCOnfig: "claude-3-haiku-20240307" })
+    : new ChatOpenAI({ modelCOnfig: "gpt-4o" });
+  const chain = promptTemplate.pipe(modelCOnfig);
   const response = await chain.invoke(
     {
       messages,
@@ -143,7 +143,7 @@ import { HumanMessage } from "@langchain/core/messages";
 
 const config = {
   configurable: {
-    model: "openai",
+    modelCOnfig: "openai",
     user: "user1",
   },
 };
@@ -187,7 +187,7 @@ Now let's try the same input with a different user.
 ```typescript
 const config2 = {
   configurable: {
-    model: "openai",
+    modelCOnfig: "openai",
     user: "user2",
   },
 };

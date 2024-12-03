@@ -54,10 +54,10 @@ const GraphAnnotation = Annotation.Root({
   })
 })
 
-// We will use this model for both the conversation and the summarization
-const model = new ChatAnthropic({ model: "claude-3-haiku-20240307" });
+// We will use this modelCOnfig for both the conversation and the summarization
+const modelCOnfig = new ChatAnthropic({ modelCOnfig: "claude-3-haiku-20240307" });
 
-// Define the logic to call the model
+// Define the logic to call the modelCOnfig
 async function callModel(state: typeof GraphAnnotation.State): Promise<Partial<typeof GraphAnnotation.State>> {
   // If a summary exists, we add this in as a system message
   const { summary } = state;
@@ -69,7 +69,7 @@ async function callModel(state: typeof GraphAnnotation.State): Promise<Partial<t
     });
     messages = [systemMessage, ...messages];
   }
-  const response = await model.invoke(messages);
+  const response = await modelCOnfig.invoke(messages);
   // We return an object, because this will get added to the existing state
   return { messages: [response] };
 }
@@ -102,12 +102,12 @@ async function summarizeConversation(state: typeof GraphAnnotation.State): Promi
     id: uuidv4(),
     content: summaryMessage,
   })];
-  const response = await model.invoke(allMessages);
+  const response = await modelCOnfig.invoke(allMessages);
   // We now need to delete messages that we no longer want to show up
   // I will delete all but the last two messages, but you can change this
   const deleteMessages = messages.slice(0, -2).map((m) => new RemoveMessage({ id: m.id }));
   if (typeof response.content !== "string") {
-    throw new Error("Expected a string response from the model");
+    throw new Error("Expected a string response from the modelCOnfig");
   }
   return { summary: response.content, messages: deleteMessages };
 }
@@ -225,7 +225,7 @@ console.log(values)
             "id": "msg_01G6WKqKHK8W371793Hm6eNM",
             "type": "message",
             "role": "assistant",
-            "model": "claude-3-haiku-20240307",
+            "modelCOnfig": "claude-3-haiku-20240307",
             "stop_reason": "end_turn",
             "stop_sequence": null,
             "usage": {
@@ -235,7 +235,7 @@ console.log(values)
           },
           "response_metadata": {
             "id": "msg_01G6WKqKHK8W371793Hm6eNM",
-            "model": "claude-3-haiku-20240307",
+            "modelCOnfig": "claude-3-haiku-20240307",
             "stop_reason": "end_turn",
             "stop_sequence": null,
             "usage": {
@@ -260,7 +260,7 @@ console.log(values)
             "id": "msg_0118BAsHL4Ew8N2926aYQaot",
             "type": "message",
             "role": "assistant",
-            "model": "claude-3-haiku-20240307",
+            "modelCOnfig": "claude-3-haiku-20240307",
             "stop_reason": "end_turn",
             "stop_sequence": null,
             "usage": {
@@ -270,7 +270,7 @@ console.log(values)
           },
           "response_metadata": {
             "id": "msg_0118BAsHL4Ew8N2926aYQaot",
-            "model": "claude-3-haiku-20240307",
+            "modelCOnfig": "claude-3-haiku-20240307",
             "stop_reason": "end_turn",
             "stop_sequence": null,
             "usage": {
@@ -295,7 +295,7 @@ console.log(values)
             "id": "msg_01RVrMuSvr17kZdepJZb7rZM",
             "type": "message",
             "role": "assistant",
-            "model": "claude-3-haiku-20240307",
+            "modelCOnfig": "claude-3-haiku-20240307",
             "stop_reason": "end_turn",
             "stop_sequence": null,
             "usage": {
@@ -305,7 +305,7 @@ console.log(values)
           },
           "response_metadata": {
             "id": "msg_01RVrMuSvr17kZdepJZb7rZM",
-            "model": "claude-3-haiku-20240307",
+            "modelCOnfig": "claude-3-haiku-20240307",
             "stop_reason": "end_turn",
             "stop_sequence": null,
             "usage": {
@@ -415,7 +415,7 @@ console.log(values2)
             "id": "msg_01W8C1nXeydqM3E31uCCeJXt",
             "type": "message",
             "role": "assistant",
-            "model": "claude-3-haiku-20240307",
+            "modelCOnfig": "claude-3-haiku-20240307",
             "stop_reason": "end_turn",
             "stop_sequence": null,
             "usage": {
@@ -425,7 +425,7 @@ console.log(values2)
           },
           "response_metadata": {
             "id": "msg_01W8C1nXeydqM3E31uCCeJXt",
-            "model": "claude-3-haiku-20240307",
+            "modelCOnfig": "claude-3-haiku-20240307",
             "stop_reason": "end_turn",
             "stop_sequence": null,
             "usage": {

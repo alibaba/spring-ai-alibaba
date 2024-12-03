@@ -97,9 +97,9 @@ import { BaseMessage } from "@langchain/core/messages";
 const toolNode = new ToolNode<{ messages: BaseMessage[] }>(tools);
 ```
 
-## Set up the model
+## Set up the modelCOnfig
 
-Now we need to load the chat model we want to use.\
+Now we need to load the chat modelCOnfig we want to use.\
 Importantly, this should satisfy two criteria:
 
 1. It should work with messages. We will represent all agent state in the form
@@ -107,7 +107,7 @@ Importantly, this should satisfy two criteria:
 2. It should support
    [tool calling](https://js.langchain.com/v0.2/docs/concepts/#functiontool-calling).
 
-Note: these model requirements are not requirements for using LangGraph - they
+Note: these modelCOnfig requirements are not requirements for using LangGraph - they
 are just requirements for this one example.
 
 
@@ -115,13 +115,13 @@ are just requirements for this one example.
 ```typescript
 import { ChatOpenAI } from "@langchain/openai";
 
-const model = new ChatOpenAI({
+const modelCOnfig = new ChatOpenAI({
   temperature: 0,
-  model: "gpt-3.5-turbo",
+  modelCOnfig: "gpt-3.5-turbo",
 });
-// This formats the tools as json schema for the model API.
-// The model then uses this like a system prompt.
-const boundModel = model.bindTools(tools);
+// This formats the tools as json schema for the modelCOnfig API.
+// The modelCOnfig then uses this like a system prompt.
+const boundModel = modelCOnfig.bindTools(tools);
 ```
 
 ## Define the agent state
@@ -201,7 +201,7 @@ const shouldContinue = (state: typeof AgentState.State) => {
   }
 };
 
-// Define the function that calls the model
+// Define the function that calls the modelCOnfig
 const callModel = async (state: typeof AgentState.State, config?: RunnableConfig) => {
   const messages = state.messages;
   const response = await boundModel.invoke(messages, config);

@@ -1,6 +1,6 @@
 # How to stream LLM tokens (without LangChain models)
 
-In this guide, we will stream tokens from the language model powering an agent without using LangChain chat models. We'll be using the OpenAI client library directly in a ReAct agent as an example.
+In this guide, we will stream tokens from the language modelCOnfig powering an agent without using LangChain chat models. We'll be using the OpenAI client library directly in a ReAct agent as an example.
 
 ## Setup
 
@@ -19,9 +19,9 @@ $ npm install openai @langchain/langgraph
 
 You'll also need to make sure you have your OpenAI key set as `process.env.OPENAI_API_KEY`.
 
-## Defining a model and a tool schema
+## Defining a modelCOnfig and a tool schema
 
-First, initialize the OpenAI SDK and define a tool schema for the model to populate using [OpenAI's format](https://platform.openai.com/docs/api-reference/chat/create#chat-create-tools):
+First, initialize the OpenAI SDK and define a tool schema for the modelCOnfig to populate using [OpenAI's format](https://platform.openai.com/docs/api-reference/chat/create#chat-create-tools):
 
 
 ```typescript
@@ -47,11 +47,11 @@ const toolSchema: OpenAI.ChatCompletionTool = {
 };
 ```
 
-## Calling the model
+## Calling the modelCOnfig
 
-Now, define a method for a LangGraph node that will call the model. It will handle formatting tool calls to and from the model, as well as streaming via [custom callback events](https://js.langchain.com/v0.2/docs/how_to/callbacks_custom_events).
+Now, define a method for a LangGraph node that will call the modelCOnfig. It will handle formatting tool calls to and from the modelCOnfig, as well as streaming via [custom callback events](https://js.langchain.com/v0.2/docs/how_to/callbacks_custom_events).
 
-If you are using [LangSmith](https://docs.smith.langchain.com/), you can also wrap the OpenAI client for the same nice tracing you'd get with a LangChain chat model.
+If you are using [LangSmith](https://docs.smith.langchain.com/), you can also wrap the OpenAI client for the same nice tracing you'd get with a LangChain chat modelCOnfig.
 
 Here's what that looks like:
 
@@ -76,7 +76,7 @@ const callModel = async (state: typeof GraphState.State): Promise<Partial<typeof
   const { messages } = state;
   const stream = await wrappedClient.chat.completions.create({
     messages,
-    model: "gpt-4o-mini",
+    modelCOnfig: "gpt-4o-mini",
     tools: [toolSchema],
     stream: true,
   });
@@ -134,7 +134,7 @@ Note that you can't call this method outside of a LangGraph node since `dispatch
 
 ## Define tools and a tool-calling node
 
-Next, set up the actual tool function and the node that will call it when the model populates a tool call:
+Next, set up the actual tool function and the node that will call it when the modelCOnfig populates a tool call:
 
 
 ```typescript
@@ -192,14 +192,14 @@ const shouldContinue = (state: typeof GraphState.State) => {
 }
 
 const graph = new StateGraph(GraphState)
-  .addNode("model", callModel)
+  .addNode("modelCOnfig", callModel)
   .addNode("tools", callTools)
-  .addEdge("__start__", "model")
-  .addConditionalEdges("model", shouldContinue, {
+  .addEdge("__start__", "modelCOnfig")
+  .addConditionalEdges("modelCOnfig", shouldContinue, {
     tools: "tools",
     __end__: "__end__",
   })
-  .addEdge("tools", "model")
+  .addEdge("tools", "modelCOnfig")
   .compile();
   
 ```
@@ -223,7 +223,7 @@ await tslab.display.png(new Uint8Array(arrayBuffer));
 
 ## Streaming tokens
 
-And now we can use the [`.streamEvents`](https://js.langchain.com/v0.2/docs/how_to/streaming#using-stream-events) method to get the streamed tokens and tool calls from the OpenAI model:
+And now we can use the [`.streamEvents`](https://js.langchain.com/v0.2/docs/how_to/streaming#using-stream-events) method to get the streamed tokens and tool calls from the OpenAI modelCOnfig:
 
 
 ```typescript

@@ -23,8 +23,8 @@ import { tool } from "@langchain/core/tools";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { ChatAnthropic } from "@langchain/anthropic";
 
-const model = new ChatAnthropic({
-  model: "claude-3-5-sonnet-20240620",
+const modelCOnfig = new ChatAnthropic({
+  modelCOnfig: "claude-3-5-sonnet-20240620",
   temperature: 0,
 });
 
@@ -38,7 +38,7 @@ const getItems = tool(
       ],
     ]);
 
-    const modelWithConfig = model.withConfig({
+    const modelWithConfig = modelCOnfig.withConfig({
       runName: "Get Items LLM",
       tags: ["tool_llm"],
     });
@@ -64,7 +64,7 @@ We're adding a custom tag (`tool_llm`) to our LLM runnable within the tool. This
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 
 const agent = createReactAgent({
-  llm: model,
+  llm: modelCOnfig,
   tools: [getItems],
 });
 ```

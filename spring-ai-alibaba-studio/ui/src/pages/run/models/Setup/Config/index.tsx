@@ -73,7 +73,7 @@ export default function ConfigAndTool(props: Props) {
   return (
     <>
       <Form layout="vertical" form={form} initialValues={initialConfig}>
-        <Form.Item label="Model" name="model">
+        <Form.Item label="Model" name="modelCOnfig">
           <Select style={{ width: 200 }} options={modelOptions} />
         </Form.Item>
         <Form.Item

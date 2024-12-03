@@ -220,26 +220,26 @@ public class SearchTool {
 }
 ```
 
-## Set up the model
+## Set up the modelCOnfig
 
 Now we will load the
-[chat model].
+[chat modelCOnfig].
 
 1. It should work with messages. We will represent all agent state in the form of messages, so it needs to be able to work well with them.
 2. It should work with [tool calling],meaning it can return function arguments in its response.
 
 Note:
    >
-   > These model requirements are not general requirements for using LangGraph4j - they are just requirements for this one example.
+   > These modelCOnfig requirements are not general requirements for using LangGraph4j - they are just requirements for this one example.
    >
 
-[chat model]: https://docs.langchain4j.dev/tutorials/chat-and-language-models
+[chat modelCOnfig]: https://docs.langchain4j.dev/tutorials/chat-and-language-models
 [tool calling]: https://docs.langchain4j.dev/tutorials/tools   
 
 
 
 ```java
-import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.modelCOnfig.openai.OpenAiChatModel;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.agent.tool.ToolSpecifications;
 
@@ -262,8 +262,8 @@ import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.agent.tool.ToolSpecifications;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.model.output.Response;
-import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.modelCOnfig.output.Response;
+import dev.langchain4j.modelCOnfig.openai.OpenAiChatModel;
 import dev.langchain4j.service.tool.DefaultToolExecutor;
 
 var tools = ToolSpecifications.toolSpecificationsFrom( SearchTool.class );
@@ -405,7 +405,7 @@ var checkpoint=graph.getState(runnableConfig);
     StateSnapshot(state={messages=[UserMessage { name = null contents = [TextContent { text = "Hi I'm Bartolo." }] }, AiMessage { text = "Hello Bartolo! How can I assist you today?" toolExecutionRequests = null }]}, config=RunnableConfig(threadId=conversation-num-1, checkPointId=93c2b047-7927-4062-89e0-4498f63813f6, nextNode=__END__))
 
 
-The current state is the two messages we've seen above, 1. the Human Message we sent in, 2. the AIMessage we got back from the model.
+The current state is the two messages we've seen above, 1. the Human Message we sent in, 2. the AIMessage we got back from the modelCOnfig.
 
 The next value is `__END__`  since the graph has terminated.
 

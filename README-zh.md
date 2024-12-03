@@ -110,7 +110,7 @@ Spring AI Alibaba 提供 AI 开源框架以及与阿里巴巴整体开源生态�
 
 * [Spring AI](https://docs.spring.io/spring-ai/reference/index.html)
 * [Spring AI Alibaba](https://sca.aliyun.com/docs/ai/overview/)
-* [阿里云百炼大模型应用开发平台](https://help.aliyun.com/zh/model-studio/getting-started/what-is-model-studio/)
+* [阿里云百炼大模型应用开发平台](https://help.aliyun.com/zh/modelCOnfig-studio/getting-started/what-is-modelCOnfig-studio/)
 
 ## 联系我们
 

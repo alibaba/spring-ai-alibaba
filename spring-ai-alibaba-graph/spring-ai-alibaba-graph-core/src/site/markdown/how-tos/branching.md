@@ -16,7 +16,7 @@ First, install LangGraph.js
 yarn add @langchain/langgraph
 ```
 
-This guide will use OpenAI's GPT-4o model. We will optionally set our API key
+This guide will use OpenAI's GPT-4o modelCOnfig. We will optionally set our API key
 for [LangSmith tracing](https://smith.langchain.com/), which will give us
 best-in-class observability.
 

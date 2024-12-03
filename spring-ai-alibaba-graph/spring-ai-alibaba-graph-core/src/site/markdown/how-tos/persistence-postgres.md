@@ -325,10 +325,10 @@ import { ToolNode } from "@langchain/langgraph/prebuilt";
 const toolNode = new ToolNode<typeof AgentState.State>(tools);
 ```
 
-## Set up the model
+## Set up the modelCOnfig
 
 Now we will load the
-[chat model](https://js.langchain.com/v0.2/docs/concepts/#chat-models).
+[chat modelCOnfig](https://js.langchain.com/v0.2/docs/concepts/#chat-models).
 
 1. It should work with messages. We will represent all agent state in the form
    of messages, so it needs to be able to work well with them.
@@ -339,23 +339,23 @@ Now we will load the
 <div class="admonition tip">
     <p class="admonition-title">Note</p>
     <p>
-        These model requirements are not general requirements for using LangGraph - they are just requirements for this one example.
+        These modelCOnfig requirements are not general requirements for using LangGraph - they are just requirements for this one example.
     </p>
 </div>
 
 
 ```typescript
 import { ChatOpenAI } from "@langchain/openai";
-const model = new ChatOpenAI({ model: "gpt-4o" });
+const modelCOnfig = new ChatOpenAI({ modelCOnfig: "gpt-4o" });
 ```
 
-After we've done this, we should make sure the model knows that it has these
+After we've done this, we should make sure the modelCOnfig knows that it has these
 tools available to call. We can do this by calling
 [bindTools](https://v01.api.js.langchain.com/classes/langchain_core_language_models_chat_models.BaseChatModel.html#bindTools).
 
 
 ```typescript
-const boundModel = model.bindTools(tools);
+const boundModel = modelCOnfig.bindTools(tools);
 ```
 
 ## Define the graph

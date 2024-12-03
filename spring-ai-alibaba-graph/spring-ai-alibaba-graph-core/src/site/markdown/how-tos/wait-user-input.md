@@ -224,8 +224,8 @@ const search = tool((_) => {
 const tools = [search]
 const toolNode = new ToolNode<typeof GraphMessagesState.State>(tools)
 
-// Set up the model
-const model = new ChatAnthropic({ model: "claude-3-5-sonnet-20240620" })
+// Set up the modelCOnfig
+const modelCOnfig = new ChatAnthropic({ modelCOnfig: "claude-3-5-sonnet-20240620" })
 
 const askHumanTool = tool((_) => {
   return "The human said XYZ";
@@ -236,7 +236,7 @@ const askHumanTool = tool((_) => {
 });
 
 
-const modelWithTools = model.bindTools([...tools, askHumanTool])
+const modelWithTools = modelCOnfig.bindTools([...tools, askHumanTool])
 
 // Define nodes and conditional edges
 
@@ -260,7 +260,7 @@ function shouldContinue(state: typeof GraphMessagesState.State): "action" | "ask
 }
 
 
-// Define the function that calls the model
+// Define the function that calls the modelCOnfig
 async function callModel(state: typeof GraphMessagesState.State): Promise<Partial<typeof GraphMessagesState.State>> {
   const messages = state.messages;
   const response = await modelWithTools.invoke(messages);
@@ -460,7 +460,7 @@ for await (const event of await messagesApp.stream(null, config2)) {
             "id": "msg_01CsrDn46VqNXrdkpVHbcMKA",
             "type": "message",
             "role": "assistant",
-            "model": "claude-3-5-sonnet-20240620",
+            "modelCOnfig": "claude-3-5-sonnet-20240620",
             "stop_reason": "tool_use",
             "stop_sequence": null,
             "usage": {
@@ -470,7 +470,7 @@ for await (const event of await messagesApp.stream(null, config2)) {
           },
           "response_metadata": {
             "id": "msg_01CsrDn46VqNXrdkpVHbcMKA",
-            "model": "claude-3-5-sonnet-20240620",
+            "modelCOnfig": "claude-3-5-sonnet-20240620",
             "stop_reason": "tool_use",
             "stop_sequence": null,
             "usage": {
@@ -519,7 +519,7 @@ for await (const event of await messagesApp.stream(null, config2)) {
             "id": "msg_017hfZ8kdhX5nKD97THKWpPx",
             "type": "message",
             "role": "assistant",
-            "model": "claude-3-5-sonnet-20240620",
+            "modelCOnfig": "claude-3-5-sonnet-20240620",
             "stop_reason": "tool_use",
             "stop_sequence": null,
             "usage": {
@@ -529,7 +529,7 @@ for await (const event of await messagesApp.stream(null, config2)) {
           },
           "response_metadata": {
             "id": "msg_017hfZ8kdhX5nKD97THKWpPx",
-            "model": "claude-3-5-sonnet-20240620",
+            "modelCOnfig": "claude-3-5-sonnet-20240620",
             "stop_reason": "tool_use",
             "stop_sequence": null,
             "usage": {
@@ -599,7 +599,7 @@ for await (const event of await messagesApp.stream(null, config2)) {
             "id": "msg_01CsrDn46VqNXrdkpVHbcMKA",
             "type": "message",
             "role": "assistant",
-            "model": "claude-3-5-sonnet-20240620",
+            "modelCOnfig": "claude-3-5-sonnet-20240620",
             "stop_reason": "tool_use",
             "stop_sequence": null,
             "usage": {
@@ -609,7 +609,7 @@ for await (const event of await messagesApp.stream(null, config2)) {
           },
           "response_metadata": {
             "id": "msg_01CsrDn46VqNXrdkpVHbcMKA",
-            "model": "claude-3-5-sonnet-20240620",
+            "modelCOnfig": "claude-3-5-sonnet-20240620",
             "stop_reason": "tool_use",
             "stop_sequence": null,
             "usage": {
@@ -658,7 +658,7 @@ for await (const event of await messagesApp.stream(null, config2)) {
             "id": "msg_017hfZ8kdhX5nKD97THKWpPx",
             "type": "message",
             "role": "assistant",
-            "model": "claude-3-5-sonnet-20240620",
+            "modelCOnfig": "claude-3-5-sonnet-20240620",
             "stop_reason": "tool_use",
             "stop_sequence": null,
             "usage": {
@@ -668,7 +668,7 @@ for await (const event of await messagesApp.stream(null, config2)) {
           },
           "response_metadata": {
             "id": "msg_017hfZ8kdhX5nKD97THKWpPx",
-            "model": "claude-3-5-sonnet-20240620",
+            "modelCOnfig": "claude-3-5-sonnet-20240620",
             "stop_reason": "tool_use",
             "stop_sequence": null,
             "usage": {
@@ -738,7 +738,7 @@ for await (const event of await messagesApp.stream(null, config2)) {
             "id": "msg_01CsrDn46VqNXrdkpVHbcMKA",
             "type": "message",
             "role": "assistant",
-            "model": "claude-3-5-sonnet-20240620",
+            "modelCOnfig": "claude-3-5-sonnet-20240620",
             "stop_reason": "tool_use",
             "stop_sequence": null,
             "usage": {
@@ -748,7 +748,7 @@ for await (const event of await messagesApp.stream(null, config2)) {
           },
           "response_metadata": {
             "id": "msg_01CsrDn46VqNXrdkpVHbcMKA",
-            "model": "claude-3-5-sonnet-20240620",
+            "modelCOnfig": "claude-3-5-sonnet-20240620",
             "stop_reason": "tool_use",
             "stop_sequence": null,
             "usage": {
@@ -797,7 +797,7 @@ for await (const event of await messagesApp.stream(null, config2)) {
             "id": "msg_017hfZ8kdhX5nKD97THKWpPx",
             "type": "message",
             "role": "assistant",
-            "model": "claude-3-5-sonnet-20240620",
+            "modelCOnfig": "claude-3-5-sonnet-20240620",
             "stop_reason": "tool_use",
             "stop_sequence": null,
             "usage": {
@@ -807,7 +807,7 @@ for await (const event of await messagesApp.stream(null, config2)) {
           },
           "response_metadata": {
             "id": "msg_017hfZ8kdhX5nKD97THKWpPx",
-            "model": "claude-3-5-sonnet-20240620",
+            "modelCOnfig": "claude-3-5-sonnet-20240620",
             "stop_reason": "tool_use",
             "stop_sequence": null,
             "usage": {
@@ -849,7 +849,7 @@ for await (const event of await messagesApp.stream(null, config2)) {
             "id": "msg_01NuhYbiu36DSgW7brfoKMr8",
             "type": "message",
             "role": "assistant",
-            "model": "claude-3-5-sonnet-20240620",
+            "modelCOnfig": "claude-3-5-sonnet-20240620",
             "stop_reason": "end_turn",
             "stop_sequence": null,
             "usage": {
@@ -859,7 +859,7 @@ for await (const event of await messagesApp.stream(null, config2)) {
           },
           "response_metadata": {
             "id": "msg_01NuhYbiu36DSgW7brfoKMr8",
-            "model": "claude-3-5-sonnet-20240620",
+            "modelCOnfig": "claude-3-5-sonnet-20240620",
             "stop_reason": "end_turn",
             "stop_sequence": null,
             "usage": {

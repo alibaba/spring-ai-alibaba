@@ -75,9 +75,9 @@ npm start
           }));
 
           // 组装 ChatModel 目录
-          updatedRunMenu[1].children = chatModelList.map((model) => ({
-            key: `/run/models/${model.name}`,
-            label: model.name,
+          updatedRunMenu[1].children = chatModelList.map((modelCOnfig) => ({
+            key: `/run/models/${modelCOnfig.name}`,
+            label: modelCOnfig.name,
           }));
 
           // todo 组装prompts目录

@@ -72,7 +72,7 @@ either environment.
 
 The lack of `async_hooks` support in web browsers means that if you are calling
 a [`Runnable`](https://js.langchain.com/v0.2/docs/concepts#interface) within a
-node (for example, when calling a chat model), you need to manually pass a
+node (for example, when calling a chat modelCOnfig), you need to manually pass a
 `config` object through to properly support tracing,
 [`.streamEvents()`](https://js.langchain.com/v0.2/docs/how_to/streaming#using-stream-events)
 to stream intermediate steps, and other callback related functionality. This

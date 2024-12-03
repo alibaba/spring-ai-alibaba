@@ -59,7 +59,7 @@ public class PlantUMLGenerator extends DiagramGenerator {
 
 	@Override
 	protected void declareNode(StringBuilder sb, String name) {
-		sb.append(format("usecase \"%s\"<<Node>>\n", name));
+		sb.append(format("usecase \"%s\"<<AbstractNode>>\n", name));
 	}
 
 	@Override

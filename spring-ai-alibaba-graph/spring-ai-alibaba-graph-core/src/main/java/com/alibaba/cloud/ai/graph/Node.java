@@ -14,7 +14,7 @@ import java.util.Objects;
  */
 @Value
 @Accessors(fluent = true)
-class Node<State extends AgentState> {
+public class Node<State extends AgentState> {
 
 	/**
 	 * The unique identifier for the node.
@@ -33,10 +33,12 @@ class Node<State extends AgentState> {
 	 */
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
-			return true;
-		if (o == null || getClass() != o.getClass())
-			return false;
+		if (this == o) {
+            return true;
+        }
+		if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 		Node<?> node = (Node<?>) o;
 		return Objects.equals(id, node.id);
 	}

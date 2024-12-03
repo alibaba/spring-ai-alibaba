@@ -3,7 +3,7 @@
 In this example we will build a ReAct Agent that explicitly manages intermediate
 steps.
 
-The previous examples just put all messages into the model, but that extra
+The previous examples just put all messages into the modelCOnfig, but that extra
 context can distract the agent and add latency to the API calls. In this example
 we will only include the `N` most recent messages in the chat history. Note that
 this is meant to be illustrative of general state management.
@@ -107,9 +107,9 @@ import { ToolNode } from "@langchain/langgraph/prebuilt";
 const toolNode = new ToolNode<typeof AgentState.State>(tools);
 ```
 
-## Set up the model
+## Set up the modelCOnfig
 
-Now we need to load the chat model we want to use. This should satisfy two
+Now we need to load the chat modelCOnfig we want to use. This should satisfy two
 criteria:
 
 1. It should work with messages, since our state is primarily a list of messages
@@ -117,24 +117,24 @@ criteria:
 2. It should work with tool calling, since we are using a prebuilt
    [ToolNode](/langgraphjs/reference/classes/langgraph_prebuilt.ToolNode.html)
 
-**Note:** these model requirements are not requirements for using LangGraph -
+**Note:** these modelCOnfig requirements are not requirements for using LangGraph -
 they are just requirements for this particular example.
 
 
 ```typescript
 import { ChatOpenAI } from "@langchain/openai";
 
-const model = new ChatOpenAI({
-  model: "gpt-4o",
+const modelCOnfig = new ChatOpenAI({
+  modelCOnfig: "gpt-4o",
   temperature: 0,
 });
 ```
 
 
 ```typescript
-// After we've done this, we should make sure the model knows that it has these tools available to call.
-// We can do this by binding the tools to the model class.
-const boundModel = model.bindTools(tools);
+// After we've done this, we should make sure the modelCOnfig knows that it has these tools available to call.
+// We can do this by binding the tools to the modelCOnfig class.
+const boundModel = modelCOnfig.bindTools(tools);
 ```
 
 ## Define the nodes
@@ -183,7 +183,7 @@ const shouldContinue = (state: typeof AgentState.State) => {
 
 // **MODIFICATION**
 //
-// Here we don't pass all messages to the model but rather only pass the `N` most recent. Note that this is a terribly simplistic way to handle messages meant as an illustration, and there may be other methods you may want to look into depending on your use case. We also have to make sure we don't truncate the chat history to include the tool message first, as this would cause an API error.
+// Here we don't pass all messages to the modelCOnfig but rather only pass the `N` most recent. Note that this is a terribly simplistic way to handle messages meant as an illustration, and there may be other methods you may want to look into depending on your use case. We also have to make sure we don't truncate the chat history to include the tool message first, as this would cause an API error.
 const callModel = async (
   state: typeof AgentState.State,
   config?: RunnableConfig,

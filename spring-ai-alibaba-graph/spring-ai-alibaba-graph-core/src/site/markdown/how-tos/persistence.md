@@ -176,30 +176,30 @@ public class SearchTool {
 }
 ```
 
-## Set up the model
+## Set up the modelCOnfig
 
 Now we will load the
-[chat model].
+[chat modelCOnfig].
 
 1. It should work with messages. We will represent all agent state in the form of messages, so it needs to be able to work well with them.
 2. It should work with [tool calling],meaning it can return function arguments in its response.
 
 Note:
    >
-   > These model requirements are not general requirements for using LangGraph4j - they are just requirements for this one example.
+   > These modelCOnfig requirements are not general requirements for using LangGraph4j - they are just requirements for this one example.
    >
 
-[chat model]: https://docs.langchain4j.dev/tutorials/chat-and-language-models
+[chat modelCOnfig]: https://docs.langchain4j.dev/tutorials/chat-and-language-models
 [tool calling]: https://docs.langchain4j.dev/tutorials/tools   
 
 
 
 ```java
-import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.modelCOnfig.openai.OpenAiChatModel;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.agent.tool.ToolSpecifications;
 
-public record LLM( OpenAiChatModel model ) {
+public record LLM( OpenAiChatModel modelCOnfig ) {
     public LLM() {
         this( 
             OpenAiChatModel.builder()
@@ -253,7 +253,7 @@ EdgeAction<MessageState> routeMessage=state->{
 // Call Model
         NodeAction<MessageState> callModel=state->{
 
-        var response=llm.model().generate((List<ChatMessage>)state.messages());
+        var response=llm.modelCOnfig().generate((List<ChatMessage>)state.messages());
 
         return Map.of("messages",response.content());
         };

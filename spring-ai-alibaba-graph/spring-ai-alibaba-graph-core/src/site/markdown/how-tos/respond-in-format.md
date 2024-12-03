@@ -98,28 +98,28 @@ import { ToolNode } from "@langchain/langgraph/prebuilt";
 const toolNode = new ToolNode<typeof GraphState.State>(tools);
 ```
 
-## Set up the model
+## Set up the modelCOnfig
 
 
 
 ```typescript
 import { ChatOpenAI } from "@langchain/openai";
 
-const model = new ChatOpenAI({
+const modelCOnfig = new ChatOpenAI({
   temperature: 0,
-  model: "gpt-4o",
+  modelCOnfig: "gpt-4o",
 });
 ```
 
-After we've done this, we should make sure the model knows that it has these
-tools available to call. We can do this by binding the LangChain tools to the model class.
+After we've done this, we should make sure the modelCOnfig knows that it has these
+tools available to call. We can do this by binding the LangChain tools to the modelCOnfig class.
 
-We also want to define a response schema for the language model and bind it to
-the model as a tool. The idea is that when the model is ready to respond, it'll call this final
+We also want to define a response schema for the language modelCOnfig and bind it to
+the modelCOnfig as a tool. The idea is that when the modelCOnfig is ready to respond, it'll call this final
 tool and populate arguments for it according to the schema we want. Rather than calling
 a tool, we'll instead return from the graph.
 
-Because we only intend to use this final tool to guide the schema of the model's final response,
+Because we only intend to use this final tool to guide the schema of the modelCOnfig's final response,
 we'll declare it with a mocked out function:
 
 
@@ -137,7 +137,7 @@ const finalResponseTool = tool(async () => "mocked value", {
   schema: Response
 })
 
-const boundModel = model.bindTools([
+const boundModel = modelCOnfig.bindTools([
   ...tools,
   finalResponseTool
 ]);
@@ -167,7 +167,7 @@ const route = (state: typeof GraphState.State) => {
   return "tools";
 };
 
-// Define the function that calls the model
+// Define the function that calls the modelCOnfig
 const callModel = async (
   state: typeof GraphState.State,
   config?: RunnableConfig,
@@ -291,7 +291,7 @@ for await (const output of stream) {
 
 ## Partially streaming JSON
 
-If we want to stream the structured output as soon as it's available, we can use the [`.streamEvents()`](https://js.langchain.com/v0.2/docs/how_to/streaming#using-stream-events) method. We'll aggregate emitted `on_chat_model_events` and inspect the name field. As soon as we detect that the model is calling the final output tool, we can start logging the relevant chunks.
+If we want to stream the structured output as soon as it's available, we can use the [`.streamEvents()`](https://js.langchain.com/v0.2/docs/how_to/streaming#using-stream-events) method. We'll aggregate emitted `on_chat_model_events` and inspect the name field. As soon as we detect that the modelCOnfig is calling the final output tool, we can start logging the relevant chunks.
 
 Here's an example:
 

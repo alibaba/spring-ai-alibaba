@@ -2,9 +2,9 @@
 
 One common pattern for graphs is to stream LLM tokens from inside the final node only. This guide demonstrates how you can do this.
 
-## Define model and tools
+## Define modelCOnfig and tools
 
-First, set up a chat model and a tool to call within your graph:
+First, set up a chat modelCOnfig and a tool to call within your graph:
 
 ```bash
 npm install @langchain/langgraph @langchain/anthropic
@@ -34,14 +34,14 @@ const getWeather = tool(async ({ city }) => {
 
 const tools = [getWeather];
 
-const model = new ChatAnthropic({
-  model: "claude-3-5-sonnet-20240620",
+const modelCOnfig = new ChatAnthropic({
+  modelCOnfig: "claude-3-5-sonnet-20240620",
 }).bindTools(tools);
 
 
 // We add a tag that we'll be using later to filter outputs
 const finalModel = new ChatAnthropic({
-  model: "claude-3-5-sonnet-20240620",
+  modelCOnfig: "claude-3-5-sonnet-20240620",
 }).withConfig({
   tags: ["final_node"],
 });
@@ -70,7 +70,7 @@ const shouldContinue = async (state: typeof MessagesAnnotation.State) => {
 
 const callModel = async (state: typeof MessagesAnnotation.State) => {
   const messages = state.messages;
-  const response = await model.invoke(messages);
+  const response = await modelCOnfig.invoke(messages);
   // We return a list, because this will get added to the existing list
   return { messages: [response] };
 };
@@ -135,7 +135,7 @@ for await (const { event, tags, data } of eventStream) {
   if (event === "on_chat_model_stream" && tags.includes("final_node")) {
     if (data.chunk.content) {
       // Empty content in the context of OpenAI or Anthropic usually means
-      // that the model is asking for a tool to be invoked.
+      // that the modelCOnfig is asking for a tool to be invoked.
       // So we only print non-empty content
       console.log(data.chunk.content, "|");
     }

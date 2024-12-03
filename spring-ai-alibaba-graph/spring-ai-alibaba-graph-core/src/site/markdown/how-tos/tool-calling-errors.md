@@ -1,6 +1,6 @@
 # How to handle tool calling errors
 
-LLMs aren't perfect at calling tools. The model may try to call a tool that doesn't exist or fail to return arguments that match the requested schema. Strategies like keeping schemas simple, reducing the number of tools you pass at once, and having good names and descriptions can help mitigate this risk, but aren't foolproof.
+LLMs aren't perfect at calling tools. The modelCOnfig may try to call a tool that doesn't exist or fail to return arguments that match the requested schema. Strategies like keeping schemas simple, reducing the number of tools you pass at once, and having good names and descriptions can help mitigate this risk, but aren't foolproof.
 
 This guide covers some ways to build error handling into your graphs to mitigate these failure modes.
 
@@ -13,7 +13,7 @@ This guide covers some ways to build error handling into your graphs to mitigate
 
 ## Using the prebuilt `ToolNode`
 
-To start, define a mock weather tool that has some hidden restrictions on input queries. The intent here is to simulate a real-world case where a model fails to call a tool correctly:
+To start, define a mock weather tool that has some hidden restrictions on input queries. The intent here is to simulate a real-world case where a modelCOnfig fails to call a tool correctly:
 
 ```bash
 $ npm install @langchain/anthropic
@@ -41,7 +41,7 @@ const getWeather = tool(async ({ location }) => {
 });
 ```
 
-Next, set up a graph implementation of the [ReAct agent](/langgraphjs/concepts/). This agent takes some query as input, then repeatedly call tools until it has enough information to resolve the query. We'll use the prebuilt [`ToolNode`](/langgraphjs/reference/classes/langgraph_prebuilt.ToolNode.html) to execute called tools, and a small, fast model powered by Anthropic:
+Next, set up a graph implementation of the [ReAct agent](/langgraphjs/concepts/). This agent takes some query as input, then repeatedly call tools until it has enough information to resolve the query. We'll use the prebuilt [`ToolNode`](/langgraphjs/reference/classes/langgraph_prebuilt.ToolNode.html) to execute called tools, and a small, fast modelCOnfig powered by Anthropic:
 
 
 ```typescript
@@ -59,7 +59,7 @@ const GraphState = Annotation.Root({
 const toolNode = new ToolNode<typeof GraphState.State>([getWeather]);
 
 const modelWithTools = new ChatAnthropic({
-  model: "claude-3-haiku-20240307",
+  modelCOnfig: "claude-3-haiku-20240307",
   temperature: 0,
 }).bindTools([getWeather]);
 
@@ -109,7 +109,7 @@ await tslab.display.png(new Uint8Array(arrayBuffer));
     
 
 
-When you try to call the tool, you can see that the model calls the tool with a bad input, causing the tool to throw an error. The prebuilt `ToolNode` that executes the tool has some built-in error handling that captures the error and passes it back to the model so that it can try again:
+When you try to call the tool, you can see that the modelCOnfig calls the tool with a bad input, causing the tool to throw an error. The prebuilt `ToolNode` that executes the tool has some built-in error handling that captures the error and passes it back to the modelCOnfig so that it can try again:
 
 
 ```typescript
@@ -166,7 +166,7 @@ for (const message of response.messages) {
 
 This is a fine default in many cases, but there are cases where custom fallbacks may be better.
 
-For example, the below tool requires as input a list of elements of a specific length - tricky for a small model! We'll also intentionally avoid pluralizing `topic` to trick the model into thinking it should pass a string:
+For example, the below tool requires as input a list of elements of a specific length - tricky for a small modelCOnfig! We'll also intentionally avoid pluralizing `topic` to trick the modelCOnfig into thinking it should pass a string:
 
 
 ```typescript
@@ -185,11 +185,11 @@ const haikuRequestSchema = z.object({
 });
 
 const masterHaikuGenerator = tool(async ({ topic }) => {
-  const model = new ChatAnthropic({
-    model: "claude-3-haiku-20240307",
+  const modelCOnfig = new ChatAnthropic({
+    modelCOnfig: "claude-3-haiku-20240307",
     temperature: 0,
   });
-  const chain = model.pipe(new StringOutputParser());
+  const chain = modelCOnfig.pipe(new StringOutputParser());
   const topics = topic.join(", ");
   const haiku = await chain.invoke(`Write a haiku about ${topics}`);
   return haiku;
@@ -202,7 +202,7 @@ const masterHaikuGenerator = tool(async ({ topic }) => {
 const customStrategyToolNode = new ToolNode<typeof CustomStrategyState.State>([masterHaikuGenerator]);
 
 const customStrategyModel = new ChatAnthropic({
-  model: "claude-3-haiku-20240307",
+  modelCOnfig: "claude-3-haiku-20240307",
   temperature: 0,
 });
 const customStrategyModelWithTools = customStrategyModel.bindTools([masterHaikuGenerator]);
@@ -289,9 +289,9 @@ for (const message of response2.messages) {
     AI: "The haiku generator has produced a beautiful and evocative haiku about the different aspects of water - the ocean, waves, and rain. I hope you enjoy this poetic take on the theme of water!"
 
 
-We can see that the model takes two attempts.
+We can see that the modelCOnfig takes two attempts.
 
-A better strategy might be to trim the failed attempt to reduce distraction, then fall back to a more advanced model. Here's an example - note the custom-built tool calling node instead of the prebuilt `ToolNode`:
+A better strategy might be to trim the failed attempt to reduce distraction, then fall back to a more advanced modelCOnfig. Here's an example - note the custom-built tool calling node instead of the prebuilt `ToolNode`:
 
 
 ```typescript
@@ -309,11 +309,11 @@ const haikuRequestSchema2 = z.object({
 });
 
 const masterHaikuGenerator2 = tool(async ({ topic }) => {
-  const model = new ChatAnthropic({
-    model: "claude-3-haiku-20240307",
+  const modelCOnfig = new ChatAnthropic({
+    modelCOnfig: "claude-3-haiku-20240307",
     temperature: 0,
   });
-  const chain = model.pipe(new StringOutputParser());
+  const chain = modelCOnfig.pipe(new StringOutputParser());
   const topics = topic.join(", ");
   const haiku = await chain.invoke(`Write a haiku about ${topics}`);
   return haiku;
@@ -347,14 +347,14 @@ const callTool2 = async (state: typeof CustomStrategyState2.State) => {
   return { messages: outputMessages };
 };
 
-const model = new ChatAnthropic({
-  model: "claude-3-haiku-20240307",
+const modelCOnfig = new ChatAnthropic({
+  modelCOnfig: "claude-3-haiku-20240307",
   temperature: 0,
 });
-const modelWithTools2 = model.bindTools([masterHaikuGenerator2]);
+const modelWithTools2 = modelCOnfig.bindTools([masterHaikuGenerator2]);
 
 const betterModel = new ChatAnthropic({
-  model: "claude-3-5-sonnet-20240620",
+  modelCOnfig: "claude-3-5-sonnet-20240620",
   temperature: 0,
 });
 const betterModelWithTools = betterModel.bindTools([masterHaikuGenerator2]);
@@ -424,7 +424,7 @@ const app2 = new StateGraph(CustomStrategyState2)
   .compile();
 ```
 
-The `tools` node will now return `ToolMessage`s with an `error` field in `additional_kwargs` if a tool call fails. If that happens, it will go to another node that removes the failed tool messages, and has a better model retry the tool call generation. We also add a trimming step via returning the special message modifier `RemoveMessage` to remove previous messages from the state.
+The `tools` node will now return `ToolMessage`s with an `error` field in `additional_kwargs` if a tool call fails. If that happens, it will go to another node that removes the failed tool messages, and has a better modelCOnfig retry the tool call generation. We also add a trimming step via returning the special message modifier `RemoveMessage` to remove previous messages from the state.
 
 The diagram below shows this visually:
 
@@ -445,7 +445,7 @@ await tslab.display.png(new Uint8Array(arrayBuffer2));
     
 
 
-Let's try it out. To emphasize the removal steps, let's `stream` the responses from the model so that we can see each executed node:
+Let's try it out. To emphasize the removal steps, let's `stream` the responses from the modelCOnfig so that we can see each executed node:
 
 
 ```typescript
@@ -482,7 +482,7 @@ for await (const chunk of stream) {
               "id": "msg_01GLo6bFLEpcKH1mZHkb2jhf",
               "type": "message",
               "role": "assistant",
-              "model": "claude-3-haiku-20240307",
+              "modelCOnfig": "claude-3-haiku-20240307",
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
@@ -492,7 +492,7 @@ for await (const chunk of stream) {
             },
             "response_metadata": {
               "id": "msg_01GLo6bFLEpcKH1mZHkb2jhf",
-              "model": "claude-3-haiku-20240307",
+              "modelCOnfig": "claude-3-haiku-20240307",
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
@@ -581,7 +581,7 @@ for await (const chunk of stream) {
               "id": "msg_01EAWJF5xxc2wpr2gtqzT4AK",
               "type": "message",
               "role": "assistant",
-              "model": "claude-3-5-sonnet-20240620",
+              "modelCOnfig": "claude-3-5-sonnet-20240620",
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
@@ -591,7 +591,7 @@ for await (const chunk of stream) {
             },
             "response_metadata": {
               "id": "msg_01EAWJF5xxc2wpr2gtqzT4AK",
-              "model": "claude-3-5-sonnet-20240620",
+              "modelCOnfig": "claude-3-5-sonnet-20240620",
               "stop_reason": "tool_use",
               "stop_sequence": null,
               "usage": {
@@ -645,7 +645,7 @@ for await (const chunk of stream) {
               "id": "msg_014EjX9Y5WTW7vP1RyWWURCW",
               "type": "message",
               "role": "assistant",
-              "model": "claude-3-haiku-20240307",
+              "modelCOnfig": "claude-3-haiku-20240307",
               "stop_reason": "end_turn",
               "stop_sequence": null,
               "usage": {
@@ -655,7 +655,7 @@ for await (const chunk of stream) {
             },
             "response_metadata": {
               "id": "msg_014EjX9Y5WTW7vP1RyWWURCW",
-              "model": "claude-3-haiku-20240307",
+              "modelCOnfig": "claude-3-haiku-20240307",
               "stop_reason": "end_turn",
               "stop_sequence": null,
               "usage": {
@@ -678,9 +678,9 @@ for await (const chunk of stream) {
     }
 
 
-You can see that you get a cleaner response - the more powerful model gets it right on the first try, and the smaller model's failure gets wiped from the graph state. This shorter message history also avoid overpopulating the graph state with attempts.
+You can see that you get a cleaner response - the more powerful modelCOnfig gets it right on the first try, and the smaller modelCOnfig's failure gets wiped from the graph state. This shorter message history also avoid overpopulating the graph state with attempts.
 
-You can also inspect this [LangSmith trace](https://smith.langchain.com/public/c94f95d0-97fc-4d4d-a59a-b5161c2f4a90/r), which shows the failed initial call to the smaller model.
+You can also inspect this [LangSmith trace](https://smith.langchain.com/public/c94f95d0-97fc-4d4d-a59a-b5161c2f4a90/r), which shows the failed initial call to the smaller modelCOnfig.
 
 ## Next steps
 

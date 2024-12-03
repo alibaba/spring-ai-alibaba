@@ -72,7 +72,7 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 		return this.responseConverter.apply(response);
 	}
 
-	public String call(String functionArguments) {
+    public String call(String functionArguments) {
 		I request = fromJson(functionArguments, inputType);
 		return andThen(responseConverter).apply(request, null);
 	}

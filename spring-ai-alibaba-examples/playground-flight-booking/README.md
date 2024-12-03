@@ -32,7 +32,7 @@ Add the DashScope configuration to the `application.properties`:
 
 ```
 spring.ai.dashscope.api-key=${AI_DASHSCOPE_API_KEY}
-spring.ai.dashscope.chat.options.model=qwen-max
+spring.ai.dashscope.chat.options.modelCOnfig=qwen-max
 ```
 
 ## Build Jar

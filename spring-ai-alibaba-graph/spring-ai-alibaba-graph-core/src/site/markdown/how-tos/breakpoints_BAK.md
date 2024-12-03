@@ -175,9 +175,9 @@ const search = tool((_) => {
 const tools = [search]
 const toolNode = new ToolNode<typeof AgentState.State>(tools)
 
-// Set up the model
-const model = new ChatAnthropic({ model: "claude-3-5-sonnet-20240620" })
-const modelWithTools = model.bindTools(tools)
+// Set up the modelCOnfig
+const modelCOnfig = new ChatAnthropic({ modelCOnfig: "claude-3-5-sonnet-20240620" })
+const modelWithTools = modelCOnfig.bindTools(tools)
 
 
 // Define nodes and conditional edges
@@ -193,7 +193,7 @@ function shouldContinue(state: typeof AgentState.State): "action" | typeof END {
     return "action";
 }
 
-// Define the function that calls the model
+// Define the function that calls the modelCOnfig
 async function callModel(state: typeof AgentState.State): Promise<Partial<typeof AgentState.State>> {
     const messages = state.messages;
     const response = await modelWithTools.invoke(messages);

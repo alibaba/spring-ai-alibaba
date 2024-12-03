@@ -1,6 +1,6 @@
 # How to stream LLM tokens from your graph
 
-In this example, we will stream tokens from the language model powering an
+In this example, we will stream tokens from the language modelCOnfig powering an
 agent. We will use a ReAct agent as an example. The tl;dr is to use
 [streamEvents](https://js.langchain.com/v0.2/docs/how_to/chat_streaming/#stream-events)
 ([API Ref](https://api.js.langchain.com/classes/langchain_core_runnables.Runnable.html#streamEvents)).
@@ -19,7 +19,7 @@ In this how-to, we will create our agent from scratch to be transparent (but ver
 
 ## Setup
 
-This guide will use OpenAI's GPT-4o model. We will optionally set our API key
+This guide will use OpenAI's GPT-4o modelCOnfig. We will optionally set our API key
 for [LangSmith tracing](https://smith.langchain.com/), which will give us
 best-in-class observability.
 
@@ -91,9 +91,9 @@ import { ToolNode } from "@langchain/langgraph/prebuilt";
 const toolNode = new ToolNode<typeof GraphState.State>(tools);
 ```
 
-## Set up the model
+## Set up the modelCOnfig
 
-Now load the [chat model](https://js.langchain.com/v0.2/docs/concepts/#chat-models).
+Now load the [chat modelCOnfig](https://js.langchain.com/v0.2/docs/concepts/#chat-models).
 
 1. It should work with messages. We will represent all agent state in the form
    of messages, so it needs to be able to work well with them.
@@ -101,22 +101,22 @@ Now load the [chat model](https://js.langchain.com/v0.2/docs/concepts/#chat-mode
    [tool calling](https://js.langchain.com/v0.2/docs/how_to/tool_calling/#passing-tools-to-llms),
    meaning it can return function arguments in its response.
 
-These model requirements are not general requirements for using LangGraph - they are just requirements for this one example.
+These modelCOnfig requirements are not general requirements for using LangGraph - they are just requirements for this one example.
 
 
 ```typescript
 import { ChatOpenAI } from "@langchain/openai";
 
-const model = new ChatOpenAI({ model: "gpt-4o", temperature: 0 });
+const modelCOnfig = new ChatOpenAI({ modelCOnfig: "gpt-4o", temperature: 0 });
 ```
 
-After you've done this, we should make sure the model knows that it has these
+After you've done this, we should make sure the modelCOnfig knows that it has these
 tools available to call. We can do this by calling
 [bindTools](https://v01.api.js.langchain.com/classes/langchain_core_language_models_chat_models.BaseChatModel.html#bindTools).
 
 
 ```typescript
-const boundModel = model.bindTools(tools);
+const boundModel = modelCOnfig.bindTools(tools);
 ```
 
 ## Define the graph
@@ -268,13 +268,13 @@ for await (const { event, data } of eventStream) {
     ]
 
 
-Because this is a ReAct-style agent, this will only log intermediate steps and not the final response because the model generates a final response with no tool calls when it no longer needs to gather more information from calling tools.
+Because this is a ReAct-style agent, this will only log intermediate steps and not the final response because the modelCOnfig generates a final response with no tool calls when it no longer needs to gather more information from calling tools.
 
 ## Streaming final responses
 
 ### ReAct agents
 
-For ReAct-style agents, you know that as soon as you start message chunks with no `tool_call_chunks`, the model is responding directly to the user. So we can flip the conditional like this to only log tokens from the final response:
+For ReAct-style agents, you know that as soon as you start message chunks with no `tool_call_chunks`, the modelCOnfig is responding directly to the user. So we can flip the conditional like this to only log tokens from the final response:
 
 
 ```typescript
@@ -313,7 +313,7 @@ for await (const { event, data } of eventStreamFinalRes) {
 
 ### Other graphs
 
-If your graph has multiple model calls in multiple nodes and there's one that will always be called last, you can distinguish that model by assigning it a run name or a tag. To illustrate this, declare a new graph like this:
+If your graph has multiple modelCOnfig calls in multiple nodes and there's one that will always be called last, you can distinguish that modelCOnfig by assigning it a run name or a tag. To illustrate this, declare a new graph like this:
 
 
 ```typescript
@@ -327,8 +327,8 @@ const OtherGraphState = Annotation.Root({
 
 const respond = async (state: typeof OtherGraphState.State): Promise<Partial<typeof OtherGraphState.State>> => {
   const { messages } = state;
-  const model = new ChatOpenAI({ model: "gpt-4o", temperature: 0 });
-  const responseMessage = await model.invoke(messages);
+  const modelCOnfig = new ChatOpenAI({ modelCOnfig: "gpt-4o", temperature: 0 });
+  const responseMessage = await modelCOnfig.invoke(messages);
   return {
     messages: [responseMessage],
   }
@@ -336,13 +336,13 @@ const respond = async (state: typeof OtherGraphState.State): Promise<Partial<typ
 
 const summarize = async (state: typeof OtherGraphState.State): Promise<Partial<typeof OtherGraphState.State>> => {
   const { messages } = state;
-  // Assign the final model call a run name
-  const model = new ChatOpenAI({
-    model: "gpt-4o",
+  // Assign the final modelCOnfig call a run name
+  const modelCOnfig = new ChatOpenAI({
+    modelCOnfig: "gpt-4o",
     temperature: 0
   }).withConfig({ runName: "Summarizer" });
   const userMessage = new HumanMessage("Now, summarize the above messages")
-  const responseMessage = await model.invoke([
+  const responseMessage = await modelCOnfig.invoke([
     ...messages,
     userMessage,
   ]);
@@ -413,7 +413,7 @@ for await (const { event, data } of otherEventStream) {
     
 
 
-And you can see the resulting chunks are only ones from the final summary model call.
+And you can see the resulting chunks are only ones from the final summary modelCOnfig call.
 
 ## Next steps
 

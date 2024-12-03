@@ -77,36 +77,36 @@ import { BaseMessage } from "@langchain/core/messages";
 const toolNode = new ToolNode<{ messages: BaseMessage[] }>(tools);
 ```
 
-## Set up the model
+## Set up the modelCOnfig
 
-Now we need to load the chat model we want to use.\
+Now we need to load the chat modelCOnfig we want to use.\
 Importantly, this should satisfy two criteria:
 
 1. It should work with messages. We will represent all agent state in the form
    of messages, so it needs to be able to work well with them.
 2. It should work with OpenAI function calling. This means it should either be
-   an OpenAI model or a model that exposes a similar interface.
+   an OpenAI modelCOnfig or a modelCOnfig that exposes a similar interface.
 
-Note: these model requirements are not requirements for using LangGraph - they
+Note: these modelCOnfig requirements are not requirements for using LangGraph - they
 are just requirements for this one example.
 
 
 ```typescript
 import { ChatOpenAI } from "@langchain/openai";
 
-const model = new ChatOpenAI({
+const modelCOnfig = new ChatOpenAI({
   temperature: 0,
-  model: "gpt-4o",
+  modelCOnfig: "gpt-4o",
 });
 ```
 
-After we've done this, we should make sure the model knows that it has these
+After we've done this, we should make sure the modelCOnfig knows that it has these
 tools available to call. We can do this by converting the LangChain tools into
-the format for OpenAI function calling, and then bind them to the model class.
+the format for OpenAI function calling, and then bind them to the modelCOnfig class.
 
 
 ```typescript
-const boundModel = model.bindTools(tools);
+const boundModel = modelCOnfig.bindTools(tools);
 ```
 
 ## Define the agent state
@@ -176,7 +176,7 @@ const shouldContinue = (state: typeof AgentState.State) => {
   return "continue";
 };
 
-// Define the function that calls the model
+// Define the function that calls the modelCOnfig
 const callModel = async (
   state: typeof AgentState.State,
   config?: RunnableConfig,
@@ -204,7 +204,7 @@ this at the start to force it call a tool
 
 
 ```typescript
-// This is the new first - the first call of the model we want to explicitly hard-code some action
+// This is the new first - the first call of the modelCOnfig we want to explicitly hard-code some action
 const firstModel = async (state: typeof AgentState.State) => {
   const humanInput = state.messages[state.messages.length - 1].content || "";
   return {

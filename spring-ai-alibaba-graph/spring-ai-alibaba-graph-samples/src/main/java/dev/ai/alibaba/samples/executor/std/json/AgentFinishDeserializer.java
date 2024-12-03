@@ -32,7 +32,7 @@ class AgentFinishDeserializer extends JsonDeserializer<AgentFinish> {
 			}
 			return new AgentFinish(returnValues, log);
 		}
-		throw new IOException("Unsupported return values Node: " + returnValuesNode.getNodeType());
+		throw new IOException("Unsupported return values AbstractNode: " + returnValuesNode.getNodeType());
 	}
 
 }

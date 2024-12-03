@@ -19,7 +19,7 @@
             <a-col :span="20">
               <a-input
                 @keydown.enter="forHelp"
-                v-model:value="question"
+                v-modelCOnfig:value="question"
                 placeholder="Message"
               ></a-input>
             </a-col>

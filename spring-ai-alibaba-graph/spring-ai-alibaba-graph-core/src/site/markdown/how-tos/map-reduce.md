@@ -32,7 +32,7 @@ import { StateGraph, END, START, Annotation, Send } from "@langchain/langgraph";
 
 /* Model and prompts */
 
-// Define model and prompts we will use
+// Define modelCOnfig and prompts we will use
 const subjectsPrompt = "Generate a comma separated list of between 2 and 5 examples related to: {topic}."
 const jokePrompt = "Generate a joke about {subject}"
 const bestJokePrompt = `Below are a bunch of jokes about {topic}. Select the best one! Return the ID (index) of the best one.
@@ -50,8 +50,8 @@ const BestJoke = z.object({
   id: z.number(),
 });
 
-const model = new ChatAnthropic({
-  model: "claude-3-5-sonnet-20240620",
+const modelCOnfig = new ChatAnthropic({
+  modelCOnfig: "claude-3-5-sonnet-20240620",
 });
 
 /* Graph components: define the components that will make up the graph */
@@ -83,7 +83,7 @@ const generateTopics = async (
   state: typeof OverallState.State
 ): Promise<Partial<typeof OverallState.State>> => {
   const prompt = subjectsPrompt.replace("topic", state.topic);
-  const response = await model
+  const response = await modelCOnfig
     .withStructuredOutput(Subjects, { name: "subjects" })
     .invoke(prompt);
   return { subjects: response.subjects };
@@ -92,7 +92,7 @@ const generateTopics = async (
 // Function to generate a joke
 const generateJoke = async (state: JokeState): Promise<{ jokes: string[] }> => {
   const prompt = jokePrompt.replace("subject", state.subject);
-  const response = await model
+  const response = await modelCOnfig
     .withStructuredOutput(Joke, { name: "joke" })
     .invoke(prompt);
   return { jokes: [response.joke] };
@@ -115,7 +115,7 @@ const bestJoke = async (
   const prompt = bestJokePrompt
     .replace("jokes", jokes)
     .replace("topic", state.topic);
-  const response = await model
+  const response = await modelCOnfig
     .withStructuredOutput(BestJoke, { name: "best_joke" })
     .invoke(prompt);
   return { bestSelectedJoke: state.jokes[response.id] };

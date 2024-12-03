@@ -28,9 +28,9 @@
 	</parent>
 
 	<groupId>com.alibaba.cloud.ai</groupId>
-	<artifactId>multi-model-example</artifactId>
+	<artifactId>multi-modelCOnfig-example</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>multi-model-example</name>
+	<name>multi-modelCOnfig-example</name>
 	<description>Multi Model Example project for Spring AI Alibaba</description>
 
 	<properties>

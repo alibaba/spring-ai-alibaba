@@ -265,7 +265,7 @@ public class StateGraphPersistenceTest {
 			.collect(Collectors.toList());
 
 		results
-			.forEach(r -> log.info("{}: Node: {} - {}", r.getClass().getSimpleName(), r.node(), r.state().messages()));
+			.forEach(r -> log.info("{}: AbstractNode: {} - {}", r.getClass().getSimpleName(), r.node(), r.state().messages()));
 
 		assertEquals(5, results.size());
 		assertInstanceOf(NodeOutput.class, results.get(0));

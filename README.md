@@ -112,7 +112,7 @@ Spring AI Alibaba aims to reduce the complexity of building ai native java appli
 ## References
 * [Spring AI](https://docs.spring.io/spring-ai/reference/index.html)
 * [Spring AI Alibaba](https://sca.aliyun.com/docs/ai/overview/)
-* [Alibaba Cloud Dashscope Model Service Platform (阿里云百炼模型服务及应用开发平台)](https://help.aliyun.com/zh/model-studio/getting-started/what-is-model-studio/)
+* [Alibaba Cloud Dashscope Model Service Platform (阿里云百炼模型服务及应用开发平台)](https://help.aliyun.com/zh/modelCOnfig-studio/getting-started/what-is-modelCOnfig-studio/)
 
 ## Contact Us
 * Dingtalk Group (钉钉群), search `64485010179` and join.

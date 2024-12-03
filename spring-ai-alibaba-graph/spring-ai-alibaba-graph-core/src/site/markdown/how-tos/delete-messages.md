@@ -62,8 +62,8 @@ const search = tool((_) => {
 
 const tools = [search];
 const toolNode = new ToolNode<typeof MessagesAnnotation.State>(tools);
-const model = new ChatOpenAI({ model: "gpt-4o" });
-const boundModel = model.bindTools(tools);
+const modelCOnfig = new ChatOpenAI({ modelCOnfig: "gpt-4o" });
+const boundModel = modelCOnfig.bindTools(tools);
 
 function shouldContinue(state: typeof MessagesAnnotation.State): "action" | typeof END {
   const lastMessage = state.messages[state.messages.length - 1];
@@ -78,7 +78,7 @@ function shouldContinue(state: typeof MessagesAnnotation.State): "action" | type
   return END;
 }
 
-// Define the function that calls the model
+// Define the function that calls the modelCOnfig
 async function callModel(state: typeof MessagesAnnotation.State) {
   const response = await boundModel.invoke(state.messages);
   return { messages: [response] };

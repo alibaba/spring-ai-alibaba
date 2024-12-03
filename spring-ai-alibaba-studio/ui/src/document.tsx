@@ -21,7 +21,7 @@ import { Meta, Title, Links, Main, Scripts } from 'ice';
 import { description } from '../package.json';
 
 export default function Document() {
-  return (
+    return (
     <html>
       <head>
         <meta charSet="utf-8" />

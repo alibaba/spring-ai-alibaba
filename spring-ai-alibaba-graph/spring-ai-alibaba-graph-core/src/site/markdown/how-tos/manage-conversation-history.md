@@ -72,8 +72,8 @@ const searchTool = tool((_): string => {
 
 const tools = [searchTool]
 const toolNode = new ToolNode<typeof AgentState.State>(tools)
-const model = new ChatAnthropic({ model: "claude-3-haiku-20240307" })
-const boundModel = model.bindTools(tools)
+const modelCOnfig = new ChatAnthropic({ modelCOnfig: "claude-3-haiku-20240307" })
+const boundModel = modelCOnfig.bindTools(tools)
 
 function shouldContinue(state: typeof AgentState.State): "action" | typeof END {
   const lastMessage = state.messages[state.messages.length - 1];
@@ -85,9 +85,9 @@ function shouldContinue(state: typeof AgentState.State): "action" | typeof END {
   return "action";
 }
 
-// Define the function that calls the model
+// Define the function that calls the modelCOnfig
 async function callModel(state: typeof AgentState.State) {
-  const response = await model.invoke(state.messages);
+  const response = await modelCOnfig.invoke(state.messages);
   // We return an object, because this will get merged with the existing state
   return { messages: [response] };
 }
@@ -200,7 +200,7 @@ const messageFilteringSearchTool = tool((_): string => {
 // We can re-use the same search tool as above as we don't need to change it for this example.
 const messageFilteringTools = [messageFilteringSearchTool]
 const messageFilteringToolNode = new ToolNode<typeof MessageFilteringAgentState.State>(messageFilteringTools)
-const messageFilteringModel = new ChatAnthropic({ model: "claude-3-haiku-20240307" })
+const messageFilteringModel = new ChatAnthropic({ modelCOnfig: "claude-3-haiku-20240307" })
 const boundMessageFilteringModel = messageFilteringModel.bindTools(messageFilteringTools)
 
 
@@ -219,7 +219,7 @@ const filterMessages = (messages: BaseMessage[]): BaseMessage[] => {
   return messages.slice(-1);
 }
 
-// Define the function that calls the model
+// Define the function that calls the modelCOnfig
 async function callModelMessageFiltering(state: typeof MessageFilteringAgentState.State) {
   const response = await boundMessageFilteringModel.invoke(filterMessages(state.messages));
   // We return an object, because this will get merged with the existing state
