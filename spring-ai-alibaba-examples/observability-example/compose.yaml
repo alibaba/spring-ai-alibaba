@@ -1,5 +1,5 @@
 services:
   zipkin:
-    image: 'openzipkin/zipkin:latest'
+    image: 'openzipkin/zipkin:3.4'
     ports:
       - '9411:9411'
