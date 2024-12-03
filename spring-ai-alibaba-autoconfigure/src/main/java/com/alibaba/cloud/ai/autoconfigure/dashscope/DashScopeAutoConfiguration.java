@@ -95,11 +95,10 @@ public class DashScopeAutoConfiguration {
 	@ConditionalOnProperty(prefix = DashScopeChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public DashScopeChatModel dashscopeChatModel(DashScopeConnectionProperties commonProperties,
-												 DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
-												 WebClient.Builder webClientBuilder, List<FunctionCallback> toolFunctionCallbacks,
-												 FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
-												 ResponseErrorHandler responseErrorHandler,
-												 ObjectProvider<ObservationRegistry> observationRegistry) {
+			DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, List<FunctionCallback> toolFunctionCallbacks,
+			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry) {
 
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
@@ -108,8 +107,8 @@ public class DashScopeAutoConfiguration {
 		var dashscopeApi = dashscopeChatApi(commonProperties, chatProperties, restClientBuilder, webClientBuilder,
 				responseErrorHandler);
 
-		return new DashScopeChatModel(dashscopeApi, chatProperties.getOptions(), functionCallbackContext,
-				retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		return new DashScopeChatModel(dashscopeApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 	}
 
 	@Bean
