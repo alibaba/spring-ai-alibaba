@@ -1,5 +1,8 @@
 package com.alibaba.cloud.ai.example.observability;
 
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.context.Context;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -42,7 +45,7 @@ class JokeController {
                         """)
                 .call()
                 .content();
-
-        return Map.of("joke", reply);
+        Span currentSpan = Span.current();
+        return Map.of("joke", reply, "traceId", currentSpan.getSpanContext().getTraceId());
     }
 }
