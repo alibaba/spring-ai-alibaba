@@ -7,6 +7,20 @@ spring:
   ai:
     dashscope:
       api-key: ${AI_DASHSCOPE_API_KEY}
+    chat:
+      client:
+        observations:
+          include-input: true
+      observations:
+        include-completion: true
+        include-prompt: true
+        include-error-logging: true
+    image:
+      observations:
+        include-prompt: true
+    vectorstore:
+      observations:
+        include-query-response: true
 
 server:
   port: 8080
