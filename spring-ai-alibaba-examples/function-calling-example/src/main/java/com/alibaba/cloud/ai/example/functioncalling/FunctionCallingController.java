@@ -72,7 +72,7 @@ public class FunctionCallingController {
     @GetMapping("/getTime")
     public String getTime(String text) {
         return chatClient.prompt()
-                .functions("getCityTimeFunction")
+                .functions("getCityTime")
                 .user(text)
                 .call()
                 .content();
@@ -102,6 +102,15 @@ public class FunctionCallingController {
 	public String getWeather(@RequestParam String text) {
 		return chatClient.prompt()
 				.functions("getWeatherService")
+				.user(text)
+				.call()
+				.content();
+	}
+
+	@GetMapping("/getCrawler")
+	public String getCrawler(String text) {
+		return chatClient.prompt()
+				.functions("crawlerService")
 				.user(text)
 				.call()
 				.content();
