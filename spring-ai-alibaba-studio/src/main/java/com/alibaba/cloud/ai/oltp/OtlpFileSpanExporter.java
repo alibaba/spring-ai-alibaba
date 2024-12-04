@@ -192,4 +192,16 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 		return spanDataList;
 	}
 
+	public String clearExportContent() {
+		try (FileWriter writer = new FileWriter(outputFile, false)) {
+			writer.write("");
+			logger.log(Level.INFO, "File content cleared.");
+			return "File content cleared successfully.";
+		}
+		catch (IOException e) {
+			logger.log(Level.SEVERE, "Error clearing the file content", e);
+			return "Error clearing the file content: " + e.getMessage();
+		}
+	}
+
 }
