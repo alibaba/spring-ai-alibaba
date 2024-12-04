@@ -10,57 +10,56 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant.*;
 
-
 public class SaverConfig {
-    private Map<String, BaseCheckpointSaver> savers = new ConcurrentHashMap<>();
-    @Setter
-    @Getter
-    private String type = MEMORY;
 
-    public static Builder builder() {
-        return new Builder();
-    }
+	private Map<String, BaseCheckpointSaver> savers = new ConcurrentHashMap<>();
 
+	@Setter
+	@Getter
+	private String type = MEMORY;
 
-    public SaverConfig register(String type, BaseCheckpointSaver saver) {
-        // or computeIfPresent?
-        savers.computeIfAbsent(type, s -> saver);
-        return this;
-    }
+	public static Builder builder() {
+		return new Builder();
+	}
 
-    public BaseCheckpointSaver get(String type) {
-        if (StringUtil.isEmpty(type)) throw new IllegalArgumentException("type isn't allow null");
-        return savers.get(type);
-    }
+	public SaverConfig register(String type, BaseCheckpointSaver saver) {
+		// or computeIfPresent?
+		savers.computeIfAbsent(type, s -> saver);
+		return this;
+	}
 
-    public BaseCheckpointSaver get() {
-        return savers.get(this.type);
-    }
+	public BaseCheckpointSaver get(String type) {
+		if (StringUtil.isEmpty(type))
+			throw new IllegalArgumentException("type isn't allow null");
+		return savers.get(type);
+	}
 
-    public static class Builder {
+	public BaseCheckpointSaver get() {
+		return savers.get(this.type);
+	}
 
-        private final SaverConfig config;
+	public static class Builder {
 
-        Builder() {
-            this.config = new SaverConfig();
-        }
+		private final SaverConfig config;
 
+		Builder() {
+			this.config = new SaverConfig();
+		}
 
-        public Builder type(String type) {
-            this.config.type = type;
-            return this;
-        }
+		public Builder type(String type) {
+			this.config.type = type;
+			return this;
+		}
 
-        public Builder register(String type, BaseCheckpointSaver saver) {
-            this.config.register(type, saver);
-            return this;
-        }
+		public Builder register(String type, BaseCheckpointSaver saver) {
+			this.config.register(type, saver);
+			return this;
+		}
 
-        public SaverConfig build() {
-            return this.config;
-        }
+		public SaverConfig build() {
+			return this.config;
+		}
 
-    }
-
+	}
 
 }

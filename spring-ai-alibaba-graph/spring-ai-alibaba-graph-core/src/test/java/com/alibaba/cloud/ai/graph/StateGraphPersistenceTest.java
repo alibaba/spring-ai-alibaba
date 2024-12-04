@@ -73,9 +73,9 @@ public class StateGraphPersistenceTest {
 
 		MemorySaver saver = new MemorySaver();
 		SaverConfig saverConfig = SaverConfig.builder()
-				.type(SaverConstant.MEMORY)
-				.register(SaverConstant.MEMORY,saver)
-				.build();
+			.type(SaverConstant.MEMORY)
+			.register(SaverConstant.MEMORY, saver)
+			.build();
 		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 
 		RunnableConfig runnableConfig = RunnableConfig.builder().build();
@@ -151,9 +151,9 @@ public class StateGraphPersistenceTest {
 
 		MemorySaver saver = new MemorySaver();
 		SaverConfig saverConfig = SaverConfig.builder()
-				.type(SaverConstant.MEMORY)
-				.register(SaverConstant.MEMORY,saver)
-				.build();
+			.type(SaverConstant.MEMORY)
+			.register(SaverConstant.MEMORY, saver)
+			.build();
 
 		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 
@@ -249,9 +249,9 @@ public class StateGraphPersistenceTest {
 
 		MemorySaver saver = new MemorySaver();
 		SaverConfig saverConfig = SaverConfig.builder()
-				.type(SaverConstant.MEMORY)
-				.register(SaverConstant.MEMORY, saver)
-				.build();
+			.type(SaverConstant.MEMORY)
+			.register(SaverConstant.MEMORY, saver)
+			.build();
 		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 
 		CompiledGraph<MessagesState> app = workflow.compile(compileConfig);
@@ -355,9 +355,9 @@ public class StateGraphPersistenceTest {
 
 		MemorySaver saver = new MemorySaver();
 		SaverConfig saverConfig = SaverConfig.builder()
-				.type(SaverConstant.MEMORY)
-				.register(SaverConstant.MEMORY,saver)
-				.build();
+			.type(SaverConstant.MEMORY)
+			.register(SaverConstant.MEMORY, saver)
+			.build();
 
 		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).interruptBefore("tools").build();
 
