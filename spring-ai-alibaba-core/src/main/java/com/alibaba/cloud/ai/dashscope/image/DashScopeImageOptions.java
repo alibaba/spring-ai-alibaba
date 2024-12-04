@@ -203,6 +203,15 @@ public class DashScopeImageOptions implements ImageOptions {
 		this.negativePrompt = negativePrompt;
 	}
 
+	@Override
+	public String toString() {
+
+		return "DashScopeImageOptions{" + "model='" + model + '\'' + ", n=" + n + ", width=" + width + ", height="
+				+ height + ", size='" + size + '\'' + ", style='" + style + '\'' + ", seed=" + seed + ", refImg='"
+				+ refImg + '\'' + ", refStrength=" + refStrength + ", refMode='" + refMode + '\'' + ", negativePrompt='"
+				+ negativePrompt + '\'' + '}';
+	}
+
 	public static class Builder {
 
 		private final DashScopeImageOptions options;
