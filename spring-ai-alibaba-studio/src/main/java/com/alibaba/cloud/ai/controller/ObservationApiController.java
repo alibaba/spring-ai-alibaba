@@ -35,7 +35,8 @@ public class ObservationApiController {
 
 	private final ChatModel chatModel;
 
-	ObservationApiController(ChatClient.Builder builder, OtlpFileSpanExporter otlpFileSpanExporter, ChatModel chatModel) {
+	ObservationApiController(ChatClient.Builder builder, OtlpFileSpanExporter otlpFileSpanExporter,
+			ChatModel chatModel) {
 		this.chatClient = builder.build();
 		this.otlpFileSpanExporter = otlpFileSpanExporter;
 		this.chatModel = chatModel;
@@ -59,6 +60,12 @@ public class ObservationApiController {
 	R<List<OtlpFileSpanExporter.ListResponse>> list() {
 		var reply = otlpFileSpanExporter.extractSpansWithoutParentSpanId();
 		logger.info("list: " + reply);
+		return R.success(reply);
+	}
+
+	@GetMapping("/clearAll")
+	R<String> clearAll() {
+		var reply = otlpFileSpanExporter.clearExportContent();
 		return R.success(reply);
 	}
 
