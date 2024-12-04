@@ -148,11 +148,10 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record ListResponse(
-			@JsonProperty("traceId") String traceId,
+	public record ListResponse(@JsonProperty("traceId") String traceId,
 			@JsonProperty("startTimeUnixNano") String startTimeUnixNano,
-			@JsonProperty("endTimeUnixNano") String endTimeUnixNano
-	){}
+			@JsonProperty("endTimeUnixNano") String endTimeUnixNano) {
+	}
 
 	public List<ListResponse> extractSpansWithoutParentSpanId() {
 		List<ListResponse> spanDataList = new ArrayList<>();
@@ -168,7 +167,8 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 				JsonNode spansNode = scopeSpan.path("spans");
 
 				// Skip further processing if already found a valid span
-				if (found) break;
+				if (found)
+					break;
 
 				for (JsonNode span : spansNode) {
 					// Check if the span has no parentSpanId
