@@ -18,10 +18,12 @@ import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 
-import java.io.FileWriter;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -41,7 +43,12 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 
 	private final String outputFile = "spring-ai-alibaba-studio/spans.json";
 
+	private final Path outputPath = Paths.get(outputFile);
+
 	private final ObjectMapper objectMapper;
+
+	private static final String LINE_SEPARATOR = System.lineSeparator();
+
 
 	/** Returns a new {@link OtlpFileSpanExporter}. */
 	public static SpanExporter create() {
@@ -59,28 +66,47 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 		}
 
 		ResourceSpansMarshaler[] allResourceSpans = ResourceSpansMarshaler.create(spans);
-		for (ResourceSpansMarshaler resourceSpans : allResourceSpans) {
-			SegmentedStringWriter sw = new SegmentedStringWriter(JsonUtil.JSON_FACTORY._getBufferRecycler());
-			try (JsonGenerator gen = JsonUtil.create(sw)) {
-				resourceSpans.writeJsonTo(gen);
+
+		try {
+			if (!Files.exists(outputPath)) {
+				Files.createFile(outputPath);
 			}
-			catch (IOException e) {
-				logger.log(Level.WARNING, "Error generating OTLP JSON spans", e);
-				// Shouldn't happen in practice, just skip it.
-				continue;
-			}
-			try (FileWriter writer = new FileWriter(outputFile, true)) {
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "Failed to create file.", outputPath);
+		}
+
+		try (BufferedWriter writer = Files.newBufferedWriter(outputPath, StandardOpenOption.APPEND)) {
+			StringBuilder sb = new StringBuilder();
+			for (ResourceSpansMarshaler resourceSpans : allResourceSpans) {
+				SegmentedStringWriter sw = new SegmentedStringWriter(JsonUtil.JSON_FACTORY._getBufferRecycler());
+
+				try (JsonGenerator gen = JsonUtil.create(sw)) {
+					resourceSpans.writeJsonTo(gen);
+				} catch (IOException e) {
+					logger.log(Level.WARNING, "Error generating OTLP JSON spans", e);
+					continue;
+				}
+
 				String json = sw.getAndClear();
-				writer.write(json + System.lineSeparator());
-				logger.log(Level.INFO, "Exported span to file: {0}", json);
+				sb.append(json).append(LINE_SEPARATOR);
+
+				if (sb.length() > 1024 * 1024) {
+					writer.write(sb.toString());
+					sb.setLength(0);
+				}
 			}
-			catch (IOException e) {
-				logger.log(Level.SEVERE, "Error writing spans to file", e);
+
+			if (!sb.isEmpty()) {
+				writer.write(sb.toString());
 			}
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "Error opening output file for writing", e);
+			return CompletableResultCode.ofFailure();
 		}
 
 		return CompletableResultCode.ofSuccess();
 	}
+
 
 	@Override
 	public CompletableResultCode flush() {
@@ -102,12 +128,14 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 	 */
 	public ArrayNode readJsonFromFile() {
 		ArrayNode jsonArray = objectMapper.createArrayNode();
+
+		if (!outputPath.toFile().isFile()) {
+			logger.log(Level.WARNING, "Invalid file path: " + outputFile);
+			return jsonArray;
+		}
+
 		try {
-			if (!Files.exists(Paths.get(outputFile)) || Files.size(Paths.get(outputFile)) == 0) {
-				logger.log(Level.WARNING, "File is empty or does not exist: " + outputFile);
-				return jsonArray;
-			}
-			for (String line : Files.readAllLines(Paths.get(outputFile))) {
+			for (String line : Files.readAllLines(outputPath)) {
 				try {
 					JsonNode jsonNode = objectMapper.readTree(line);
 					jsonArray.add(jsonNode);
@@ -116,10 +144,10 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 					logger.log(Level.WARNING, "Invalid JSON entry in file: " + line, e);
 				}
 			}
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			logger.log(Level.WARNING, "Error reading JSON from file", e);
 		}
+
 		return jsonArray;
 	}
 
@@ -193,12 +221,11 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 	}
 
 	public String clearExportContent() {
-		try (FileWriter writer = new FileWriter(outputFile, false)) {
-			writer.write("");
+		try {
+			Files.deleteIfExists(outputPath);
 			logger.log(Level.INFO, "File content cleared.");
 			return "File content cleared successfully.";
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			logger.log(Level.SEVERE, "Error clearing the file content", e);
 			return "Error clearing the file content: " + e.getMessage();
 		}
