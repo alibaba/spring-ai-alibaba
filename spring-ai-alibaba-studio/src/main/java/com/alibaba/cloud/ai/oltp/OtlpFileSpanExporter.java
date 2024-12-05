@@ -41,25 +41,31 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 
 	private final AtomicBoolean isShutdown = new AtomicBoolean();
 
-	private final String outputFile = "spring-ai-alibaba-studio/spans.json";
-
-	private final Path outputPath = Paths.get(outputFile);
+	private final Path outputPath;
 
 	private final ObjectMapper objectMapper;
 
 	private static final String LINE_SEPARATOR = System.lineSeparator();
 
+	private final StudioObservabilityProperties studioObservabilityProperties;
+
 	/** Returns a new {@link OtlpFileSpanExporter}. */
 	public static SpanExporter create() {
-		return new OtlpFileSpanExporter();
+		return new OtlpFileSpanExporter(new StudioObservabilityProperties());
 	}
 
-	private OtlpFileSpanExporter() {
+	private OtlpFileSpanExporter(StudioObservabilityProperties studioObservabilityProperties) {
 		this.objectMapper = new ObjectMapper();
+		this.studioObservabilityProperties = studioObservabilityProperties;
+		this.outputPath = Paths.get(studioObservabilityProperties.getOutputFile());
 	}
 
 	@Override
 	public CompletableResultCode export(Collection<SpanData> spans) {
+		if (!studioObservabilityProperties.isEnabled()) {
+			return CompletableResultCode.ofSuccess();
+		}
+
 		if (isShutdown.get()) {
 			return CompletableResultCode.ofFailure();
 		}
@@ -131,7 +137,7 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 		ArrayNode jsonArray = objectMapper.createArrayNode();
 
 		if (!outputPath.toFile().isFile()) {
-			logger.log(Level.WARNING, "Invalid file path: " + outputFile);
+			logger.log(Level.WARNING, "Invalid file path: " + studioObservabilityProperties.getOutputFile());
 			return jsonArray;
 		}
 
