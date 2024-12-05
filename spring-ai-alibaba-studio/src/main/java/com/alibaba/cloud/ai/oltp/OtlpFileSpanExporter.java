@@ -178,7 +178,7 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record ListResponse(@JsonProperty("traceId") String traceId,
+	public record ListResponse(@JsonProperty("traceId") String traceId, @JsonProperty("spansSize") Integer spansSize,
 			@JsonProperty("startTimeUnixNano") String startTimeUnixNano,
 			@JsonProperty("endTimeUnixNano") String endTimeUnixNano) {
 	}
@@ -207,7 +207,8 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 						String startTimeUnixNano = span.path("startTimeUnixNano").asText();
 						String endTimeUnixNano = span.path("endTimeUnixNano").asText();
 
-						ListResponse spanData = new ListResponse(traceId, startTimeUnixNano, endTimeUnixNano);
+						ListResponse spanData = new ListResponse(traceId, spansNode.size(), startTimeUnixNano,
+								endTimeUnixNano);
 						spanDataList.add(spanData);
 
 						// Mark that we found a valid span and stop further searches
