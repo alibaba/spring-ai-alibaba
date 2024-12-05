@@ -49,7 +49,6 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 
 	private static final String LINE_SEPARATOR = System.lineSeparator();
 
-
 	/** Returns a new {@link OtlpFileSpanExporter}. */
 	public static SpanExporter create() {
 		return new OtlpFileSpanExporter();
@@ -71,7 +70,8 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 			if (!Files.exists(outputPath)) {
 				Files.createFile(outputPath);
 			}
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			logger.log(Level.SEVERE, "Failed to create file.", outputPath);
 		}
 
@@ -82,7 +82,8 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 
 				try (JsonGenerator gen = JsonUtil.create(sw)) {
 					resourceSpans.writeJsonTo(gen);
-				} catch (IOException e) {
+				}
+				catch (IOException e) {
 					logger.log(Level.WARNING, "Error generating OTLP JSON spans", e);
 					continue;
 				}
@@ -99,14 +100,14 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 			if (!sb.isEmpty()) {
 				writer.write(sb.toString());
 			}
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			logger.log(Level.SEVERE, "Error opening output file for writing", e);
 			return CompletableResultCode.ofFailure();
 		}
 
 		return CompletableResultCode.ofSuccess();
 	}
-
 
 	@Override
 	public CompletableResultCode flush() {
@@ -144,7 +145,8 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 					logger.log(Level.WARNING, "Invalid JSON entry in file: " + line, e);
 				}
 			}
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			logger.log(Level.WARNING, "Error reading JSON from file", e);
 		}
 
@@ -225,7 +227,8 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 			Files.deleteIfExists(outputPath);
 			logger.log(Level.INFO, "File content cleared.");
 			return "File content cleared successfully.";
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			logger.log(Level.SEVERE, "Error clearing the file content", e);
 			return "Error clearing the file content: " + e.getMessage();
 		}
