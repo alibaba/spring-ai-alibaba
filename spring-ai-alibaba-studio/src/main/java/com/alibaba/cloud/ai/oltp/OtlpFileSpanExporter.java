@@ -170,13 +170,10 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 
 		for (JsonNode jsonNode : jsonArray) {
 			JsonNode scopeSpans = jsonNode.path("scopeSpans");
-			for (JsonNode scopeSpan : scopeSpans) {
-				JsonNode spans = scopeSpan.path("spans");
-				for (JsonNode span : spans) {
-					if (span.path("traceId").asText().equals(traceId)) {
-						return jsonNode;
-					}
-				}
+			JsonNode spans = scopeSpans.get(0).path("spans");
+			JsonNode traceIdNode = spans.get(0).path("traceId");
+			if (traceIdNode.isTextual() && traceIdNode.asText().equals(traceId)) {
+				resultArray.add(jsonNode);
 			}
 		}
 
