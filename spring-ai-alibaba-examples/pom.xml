@@ -40,7 +40,7 @@
 		<module>function-calling-example</module>
 		<module>rag-example</module>
 		<module>output-parser-example</module>
-		<module>playground-flight-booking</module>
+		<module>playground-flight-booking-example</module>
 		<module>observability-example</module>
 	</modules>
 
