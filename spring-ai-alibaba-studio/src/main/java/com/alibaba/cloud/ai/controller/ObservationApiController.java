@@ -44,29 +44,29 @@ public class ObservationApiController {
 
 	@GetMapping("/getAll")
 	R<ArrayNode> getAll() {
-		var reply = otlpFileSpanExporter.readJsonFromFile();
-		logger.info("getAll: " + reply.toString());
-		return R.success(reply);
+		var res = otlpFileSpanExporter.readJsonFromFile();
+		logger.info("getAll: " + res.toString());
+		return R.success(res);
 	}
 
 	@GetMapping("/detail")
 	R<JsonNode> detail(String traceId) {
-		var reply = otlpFileSpanExporter.getJsonNodeByTraceId(traceId);
-		logger.info("detail: " + reply.toString());
-		return R.success(reply);
+		var res = otlpFileSpanExporter.getJsonNodeByTraceId(traceId);
+		logger.info("detail: " + res.toString());
+		return R.success(res);
 	}
 
 	@GetMapping("/list")
 	R<List<OtlpFileSpanExporter.ListResponse>> list() {
-		var reply = otlpFileSpanExporter.extractSpansWithoutParentSpanId();
-		logger.info("list: " + reply);
-		return R.success(reply);
+		var res = otlpFileSpanExporter.extractSpansWithoutParentSpanId();
+		logger.info("list: " + res);
+		return R.success(res);
 	}
 
 	@GetMapping("/clearAll")
 	R<String> clearAll() {
-		var reply = otlpFileSpanExporter.clearExportContent();
-		return R.success(reply);
+		var res = otlpFileSpanExporter.clearExportContent();
+		return R.success(res);
 	}
 
 	@GetMapping("/chatClient")
