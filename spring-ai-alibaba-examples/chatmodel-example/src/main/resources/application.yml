@@ -8,3 +8,8 @@ spring:
       image:
         options:
           model: wanx-v1
+
+      # set LLMs response format types.
+      # chat:
+      #   options:
+      #     response-format: text
