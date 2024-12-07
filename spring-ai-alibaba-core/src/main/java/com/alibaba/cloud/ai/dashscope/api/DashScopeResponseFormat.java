@@ -22,10 +22,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Lets you specify the format of the returned content.
- * Valid values: {"type": "text"} or {"type": "json_object"}.
- * When set to {"type": "json_object"}, a JSON string in standard format is output.
- * Params reference: <a href="https://help.aliyun.com/zh/dashscope/developer-reference/qwen-api">...</a>
+ * Lets you specify the format of the returned content. Valid values: {"type": "text"} or
+ * {"type": "json_object"}. When set to {"type": "json_object"}, a JSON string in standard
+ * format is output. Params reference:
+ * <a href="https://help.aliyun.com/zh/dashscope/developer-reference/qwen-api">...</a>
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
@@ -80,6 +80,7 @@ public class DashScopeResponseFormat {
 
 			return new DashScopeResponseFormat(this.type);
 		}
+
 	}
 
 	@Override
@@ -90,8 +91,10 @@ public class DashScopeResponseFormat {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
 		DashScopeResponseFormat that = (DashScopeResponseFormat) o;
 		return Objects.equals(type, that.type);
 	}
@@ -102,7 +105,8 @@ public class DashScopeResponseFormat {
 	}
 
 	/**
-	 * DashScopeResponseFormat type. Valid values: {"type": "text"} or {"type": "json_object"}.
+	 * DashScopeResponseFormat type. Valid values: {"type": "text"} or
+	 * {"type": "json_object"}.
 	 */
 	public enum Type {
 
@@ -113,7 +117,8 @@ public class DashScopeResponseFormat {
 		TEXT,
 
 		/**
-		 * Enables JSON mode, which guarantees the message the model generates is valid JSON string.
+		 * Enables JSON mode, which guarantees the message the model generates is valid
+		 * JSON string.
 		 */
 		@JsonProperty("json_object")
 		JSON_OBJECT,
