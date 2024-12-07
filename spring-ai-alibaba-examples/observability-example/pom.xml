@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.3.3</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.alibaba.cloud.ai</groupId>
+	<artifactId>observability-example</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>observability-example</name>
+	<description>Demo project for Spring AI Alibaba</description>
+
+	<properties>
+		<java.version>17</java.version>
+		<spring-ai.version>1.0.0-M3</spring-ai.version>
+		<spring-ai-alibaba.version>1.0.0-M3.2</spring-ai-alibaba.version>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-core</artifactId>
+			<version>1.13.6</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-tracing-bridge-otel</artifactId>
+			<version>1.3.4</version>
+		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>io.opentelemetry</groupId>-->
+<!--			<artifactId>opentelemetry-exporter-zipkin</artifactId>-->
+<!--			<version>1.37.0</version>-->
+<!--		</dependency>-->
+		<dependency>
+			<groupId>io.opentelemetry</groupId>
+			<artifactId>opentelemetry-sdk-extension-autoconfigure-spi</artifactId>
+			<version>1.37.0</version>
+		</dependency>
+		<dependency>
+			<groupId>io.opentelemetry</groupId>
+			<artifactId>opentelemetry-exporter-common</artifactId>
+			<version>1.37.0</version>
+		</dependency>
+		<dependency>
+			<groupId>io.opentelemetry</groupId>
+			<artifactId>opentelemetry-exporter-otlp-common</artifactId>
+			<version>1.37.0</version>
+		</dependency>
+		<dependency>
+			<groupId>io.opentelemetry</groupId>
+			<artifactId>opentelemetry-exporter-otlp</artifactId>
+			<version>1.37.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.alibaba.cloud.ai</groupId>
+			<artifactId>spring-ai-alibaba-starter</artifactId>
+			<version>${spring-ai-alibaba.version}</version>
+		</dependency>
+
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.boot</groupId>-->
+<!--			<artifactId>spring-boot-docker-compose</artifactId>-->
+<!--			<scope>runtime</scope>-->
+<!--			<optional>true</optional>-->
+<!--		</dependency>-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-bom</artifactId>
+				<version>${spring-ai.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.graalvm.buildtools</groupId>
+				<artifactId>native-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+	<repositories>
+		<repository>
+			<id>spring-milestones</id>
+			<name>Spring Milestones</name>
+			<url>https://repo.spring.io/milestone</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+
+</project>

@@ -5,3 +5,6 @@ spring:
   ai:
     dashscope:
       api-key: ${AI_DASHSCOPE_API_KEY}
+      image:
+        options:
+          model: wanx-v1
