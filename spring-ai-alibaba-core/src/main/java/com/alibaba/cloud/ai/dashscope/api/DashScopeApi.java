@@ -1,5 +1,17 @@
 package com.alibaba.cloud.ai.dashscope.api;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
 import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
 import com.alibaba.cloud.ai.dashscope.common.ErrorCodeEnum;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetrieverOptions;
@@ -8,6 +20,9 @@ import com.alibaba.cloud.ai.dashscope.rag.DashScopeStoreOptions;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -15,23 +30,17 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.net.URI;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
 
@@ -858,6 +867,7 @@ public class DashScopeApi {
 			@JsonProperty("repetition_penalty") Double repetitionPenalty,
 			@JsonProperty("presence_penalty") Double presencePenalty, @JsonProperty("temperature") Double temperature,
 			@JsonProperty("stop") List<Object> stop, @JsonProperty("enable_search") Boolean enableSearch,
+			@JsonProperty("response_format") DashScopeResponseFormat responseFormat,
 			@JsonProperty("incremental_output") Boolean incrementalOutput,
 			@JsonProperty("tools") List<FunctionTool> tools, @JsonProperty("tool_choice") Object toolChoice,
 			@JsonProperty("stream") Boolean stream,
@@ -867,7 +877,7 @@ public class DashScopeApi {
 		 * shortcut constructor for chat request parameter
 		 */
 		public ChatCompletionRequestParameter() {
-			this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+			this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -893,15 +903,6 @@ public class DashScopeApi {
 				return Map.of("type", "function", "function", Map.of("name", functionName));
 			}
 
-		}
-
-		/**
-		 * An object specifying the format that the model must output.
-		 *
-		 * @param type Must be one of 'text' or 'json_object'.
-		 */
-		@JsonInclude(JsonInclude.Include.NON_NULL)
-		public record ResponseFormat(@JsonProperty("type") String type) {
 		}
 	}
 
