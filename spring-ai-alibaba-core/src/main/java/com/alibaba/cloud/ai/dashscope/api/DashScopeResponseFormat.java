@@ -105,8 +105,7 @@ public class DashScopeResponseFormat {
 	}
 
 	/**
-	 * DashScopeResponseFormat type. Valid values: {"type": "text"} or
-	 * {"type": "json_object"}.
+	 * ResponseFormat type. Valid values: {"type": "text"} or {"type": "json_object"}.
 	 */
 	public enum Type {
 
