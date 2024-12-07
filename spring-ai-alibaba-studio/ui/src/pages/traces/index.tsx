@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Card, Table, Tag } from 'antd';
 import type { TableProps } from 'antd';
-import { tableList } from '@/mock/tracemock';
+import { traceDetailList } from '@/mock/tracemock';
 import { createStyles } from 'antd-style';
 import TraceDetailComp from '@/components/TraceDetailComp';
+import { convertToTraceInfo } from '@/traceUtil';
 interface DataType {
   id: string;
   latencyMilliseconds: string;
@@ -51,6 +52,7 @@ const useStyle = createStyles(({ css, token }) => {
 export default function History() {
   const [data, setData] = useState<DataType[]>([]);
   const [openTraceDetail, setOpenTraceDetail] = useState(false);
+  const [traceDetail, setTraceDetail] = useState({} as any);
   const columns: TableProps<DataType>['columns'] = [
     {
       title: 'id',
@@ -59,10 +61,13 @@ export default function History() {
       fixed: 'left',
       width: 100,
       ellipsis: true,
-      render: (text) => (
+      render: (text, record) => (
         <div style={{ width: 100 }}>
           <a
-            onClick={() => setOpenTraceDetail(true)}
+            onClick={() => {
+              setTraceDetail(record);
+              setOpenTraceDetail(true);
+            }}
             style={{
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
@@ -170,13 +175,13 @@ export default function History() {
 
   const { styles } = useStyle();
   const handleGetTraceData = async () => {
-    const temp = tableList.result.data.json.traces;
-    temp.forEach((trace) => {
-      // @ts-ignore
-      trace.model = Math.random() > 0.5 ? 'gpt-4o' : 'claude-3-5-sonnet';
-    });
+    // const temp = tableList.result.data.json.traces;
+    // temp.forEach((trace) => {
+    //   // @ts-ignore
+    //   trace.model = Math.random() > 0.5 ? 'gpt-4o' : 'claude-3-5-sonnet';
+    // });
     // @ts-ignore
-    setData(temp);
+    setData(traceDetailList.map((trace) => { const traceInfo = convertToTraceInfo(trace); console.log(traceInfo); return traceInfo; }).filter(trace => trace !== null));
   };
 
   useEffect(() => {
@@ -192,7 +197,7 @@ export default function History() {
           scroll={{ x: 'max-content' }}
           rowKey={(recode) => recode.id}
         />
-        <TraceDetailComp open={openTraceDetail} setOpen={setOpenTraceDetail} />
+        <TraceDetailComp record={traceDetail} open={openTraceDetail} setOpen={setOpenTraceDetail} />
       </Card>
     </div>
   );
