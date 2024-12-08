@@ -37,12 +37,6 @@
       <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
     </dependency>
 
-      <dependency>
-          <groupId>com.alibaba.cloud.ai</groupId>
-          <artifactId>spring-ai-alibaba-autoconfigure</artifactId>
-          <version>${project.parent.version}</version>
-      </dependency>
-
 
     <dependency>
       <groupId>org.projectlombok</groupId>
@@ -84,6 +78,7 @@
             <groupId>org.redisson</groupId>
             <artifactId>redisson</artifactId>
             <version>3.22.0</version>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
@@ -97,6 +92,7 @@
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
+            <optional>true</optional>
         </dependency>
 
 

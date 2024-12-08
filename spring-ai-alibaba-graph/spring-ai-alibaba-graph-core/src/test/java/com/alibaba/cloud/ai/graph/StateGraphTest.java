@@ -220,7 +220,7 @@ public class StateGraphTest {
 	@Test
 	void testWithLLMNodeAction() throws Exception {
 		NodeAction<MessagesState> llmNode = LLMNodeAction
-			.builder(new DashScopeChatModel(new DashScopeApi("${DASHSCOPE_API_KEY}}")))
+			.builder(new DashScopeChatModel(new DashScopeApi("sk-ec5a3fdc7796473a8c96e87b00b03453")))
 			.systemMessage("You're a code writer with strong language skills and coding skills")
 			.build();
 		Map<String, Object> stateData = llmNode.apply(new MessagesState(

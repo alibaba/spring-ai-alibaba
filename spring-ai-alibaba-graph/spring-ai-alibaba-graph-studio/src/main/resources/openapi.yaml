@@ -1,0 +1,239 @@
+openapi: 3.0.1
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+tags:
+- name: dsl
+  description: the DSL API
+- name: app
+  description: the app API
+paths:
+  /studio/api/app:
+    get:
+      tags:
+      - app
+      summary: list apps
+      operationId: list
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RListApp"
+    put:
+      tags:
+      - app
+      summary: sync app
+      operationId: sync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/App"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RApp"
+    post:
+      tags:
+      - app
+      summary: create app
+      operationId: create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAppParam"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RApp"
+  /studio/api/dsl/import:
+    post:
+      tags:
+      - dsl
+      summary: import app from dsl
+      operationId: importDSL
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DSLParam"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RApp"
+  /studio/api/dsl/export/{id}:
+    get:
+      tags:
+      - dsl
+      summary: export app to dsl
+      operationId: exportDSL
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: dialect
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RString"
+  /studio/api/app/{id}:
+    get:
+      tags:
+      - app
+      summary: get app by id
+      operationId: get
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RApp"
+    delete:
+      tags:
+      - app
+      summary: delete app
+      operationId: delete
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RBoolean"
+components:
+  schemas:
+    App:
+      type: object
+      properties:
+        metadata:
+          $ref: "#/components/schemas/AppMetadata"
+        spec:
+          type: object
+    AppMetadata:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        mode:
+          type: string
+    RApp:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/App"
+        timestamp:
+          type: integer
+          format: int64
+    DSLParam:
+      type: object
+      properties:
+        content:
+          type: string
+          description: dsl raw content
+        dialect:
+          type: string
+          description: dsl dialect
+    CreateAppParam:
+      type: object
+      properties:
+        name:
+          type: string
+          description: app name
+          example: rag-demo
+        mode:
+          type: string
+          description: app mode
+          example: "one of `chatbot`, `workflow`"
+        description:
+          type: string
+          description: app description
+    RString:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        msg:
+          type: string
+        data:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    RListApp:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        msg:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/App"
+        timestamp:
+          type: integer
+          format: int64
+    RBoolean:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        msg:
+          type: string
+        data:
+          type: boolean
+        timestamp:
+          type: integer
+          format: int64
