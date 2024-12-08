@@ -55,8 +55,8 @@ const ImageModel: React.FC<ImageModelProps> = ({ modelData }) => {
       const res = (await chatModelsService.postImageModel({
         input: inputValue,
         imageOptions: initialValues.initialChatConfig,
+        key: modelData.name,
       })) as ChatModelResultData;
-      console.log(res);
       setImageValue(res.result.response);
     } catch (error) {
       console.error('Failed to fetch chat models: ', error);
