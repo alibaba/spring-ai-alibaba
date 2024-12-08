@@ -1,0 +1,328 @@
+package com.alibaba.cloud.ai.service.dsl.dialects;
+
+import com.alibaba.cloud.ai.model.AppMetadata;
+import com.alibaba.cloud.ai.model.Variable;
+import com.alibaba.cloud.ai.model.VariableSelector;
+import com.alibaba.cloud.ai.model.chatbot.ChatBot;
+import com.alibaba.cloud.ai.model.workflow.Workflow;
+import com.alibaba.cloud.ai.model.workflow.WorkflowGraph;
+import com.alibaba.cloud.ai.model.workflow.edge.Case;
+import com.alibaba.cloud.ai.model.workflow.edge.WorkflowEdge;
+import com.alibaba.cloud.ai.model.workflow.edge.WorkflowEdgeType;
+import com.alibaba.cloud.ai.model.workflow.node.WorkflowNode;
+import com.alibaba.cloud.ai.model.workflow.node.WorkflowNodeType;
+import com.alibaba.cloud.ai.saver.AppSaver;
+import com.alibaba.cloud.ai.service.dsl.WorkflowNodeDataConverter;
+import com.alibaba.cloud.ai.service.dsl.AbstractDSLAdapter;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import org.springframework.stereotype.Component;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Component
+public class DifyDSLAdapter extends AbstractDSLAdapter {
+
+	private static final String DIFY_DIALECT = "dify";
+
+	private static final String[] DIFY_CHATBOT_MODES = { "chat", "completion", "agent-chat" };
+
+	private static final String[] DIFY_WORKFLOW_MODES = { "workflow", "advanced-chat" };
+
+	private List<WorkflowNodeDataConverter> nodeDataConverters;
+
+	public DifyDSLAdapter(List<WorkflowNodeDataConverter> nodeDataConverters) {
+		this.nodeDataConverters = nodeDataConverters;
+	}
+
+	private WorkflowNodeDataConverter getNodeDataConverter(String type) {
+		return nodeDataConverters.stream()
+			.filter(converter -> converter.supportType(type))
+			.findFirst()
+			.orElseThrow(() -> new IllegalArgumentException("invalid dify node type " + type));
+	}
+
+	@Override
+	public void validateDSLData(Map<String, Object> dslData) {
+		if (dslData == null || !dslData.containsKey("app")) {
+			throw new IllegalArgumentException("invalid dify dsl");
+		}
+	}
+
+	@Override
+	public AppMetadata mapToMetadata(Map<String, Object> data) {
+		Map<String, Object> map = (Map<String, Object>) data.get("app");
+		AppMetadata metadata = new AppMetadata();
+		if (Arrays.asList(DIFY_CHATBOT_MODES).contains((String) map.get("mode"))) {
+			metadata.setMode(AppMetadata.CHATBOT_MODE);
+		}
+		else if (Arrays.asList(DIFY_WORKFLOW_MODES).contains((String) map.get("mode"))) {
+			metadata.setMode(AppMetadata.WORKFLOW_MODE);
+		}
+		else {
+			throw new IllegalArgumentException("unknown dify app mode" + map.get("mode"));
+		}
+		metadata.setId(UUID.randomUUID().toString());
+		metadata.setName((String) map.getOrDefault("name", metadata.getMode() + "-" + metadata.getId()));
+		metadata.setDescription((String) map.getOrDefault("description", ""));
+		return metadata;
+	}
+
+	@Override
+	public Workflow mapToWorkflow(Map<String, Object> data) {
+		Workflow workflow = new Workflow();
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		// map key is snake_case style
+		objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+		if (data.containsKey("conversation_variables")) {
+			List<Map<String, Object>> variables = (List<Map<String, Object>>) data.get("conversation_variables");
+			List<Variable> workflowVars = variables.stream()
+				.map(variable -> objectMapper.convertValue(variable, Variable.class))
+				.collect(Collectors.toList());
+			workflow.setWorkflowVars(workflowVars);
+		}
+		if (data.containsKey("environment_variables")) {
+			List<Map<String, Object>> variables = (List<Map<String, Object>>) data.get("environment_variables");
+			List<Variable> envVars = variables.stream()
+				.map(variable -> objectMapper.convertValue(variable, Variable.class))
+				.collect(Collectors.toList());
+			workflow.setEnvVars(envVars);
+		}
+		workflow.setGraph(constructGraph((Map<String, Object>) data.get("graph")));
+		return workflow;
+	}
+
+	private WorkflowGraph constructGraph(Map<String, Object> data) {
+		WorkflowGraph graph = new WorkflowGraph();
+		List<WorkflowNode> workflowNodes = new ArrayList<>();
+		List<WorkflowEdge> workflowEdges = new ArrayList<>();
+		List<Map<String, Object>> branchNodes = new ArrayList<>();
+		Map<String, WorkflowEdge> branchEdges = new HashMap<>();
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		// convert nodes
+		if (data.containsKey("nodes")) {
+			List<Map<String, Object>> nodes = (List<Map<String, Object>>) data.get("nodes");
+			constructNodes(nodes, workflowNodes, branchNodes);
+		}
+		// convert edges
+		if (data.containsKey("edges")) {
+			List<Map<String, Object>> edges = (List<Map<String, Object>>) data.get("edges");
+			constructEdges(edges, workflowEdges, branchEdges);
+		}
+		// convert if-else node to condition edge
+		constructConditionEdge(branchNodes, branchEdges, workflowEdges);
+
+		graph.setNodes(workflowNodes);
+		graph.setEdges(workflowEdges);
+		return graph;
+	}
+
+	private void constructNodes(List<Map<String, Object>> nodeMaps, List<WorkflowNode> workflowNodes,
+			List<Map<String, Object>> branchNodes) {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		for (Map<String, Object> nodeMap : nodeMaps) {
+			Map<String, Object> nodeDataMap = (Map<String, Object>) nodeMap.get("data");
+			String difyNodeType = (String) nodeDataMap.get("type");
+			// collect if-else node
+			if (difyNodeType.equals("if-else")) {
+				branchNodes.add(nodeDataMap);
+				continue;
+			}
+			// determine the type of dify node is supported yet
+			WorkflowNodeType nodeType = WorkflowNodeType.difyValueOf(difyNodeType);
+			if (nodeType == null) {
+				throw new IllegalArgumentException("invalid dify dsl: unsupported node type " + difyNodeType);
+			}
+			// convert node map to workflow node using jackson
+			nodeMap.remove("data");
+			WorkflowNode n = objectMapper.convertValue(nodeMap, WorkflowNode.class);
+			// set title and desc
+			n.setTitle((String) nodeDataMap.get("title")).setDesc((String) nodeDataMap.get("desc"));
+			// convert node data using specific WorkflowNodeDataConverter
+			WorkflowNodeDataConverter nodeDataConverter = getNodeDataConverter(nodeType.value());
+			n.setData(nodeDataConverter.parseDifyData(nodeDataMap));
+			n.setType(nodeType.value());
+			workflowNodes.add(n);
+		}
+	}
+
+	private void constructEdges(List<Map<String, Object>> edgeMaps, List<WorkflowEdge> workflowEdges,
+			Map<String, WorkflowEdge> branchEdges) {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		for (Map<String, Object> edge : edgeMaps) {
+			WorkflowEdge workflowEdge = objectMapper.convertValue(edge, WorkflowEdge.class);
+			if (edge.get("sourceHandle").equals("source")) {
+				workflowEdge.setType(WorkflowEdgeType.DIRECT.value());
+				workflowEdges.add(workflowEdge);
+			}
+			else {
+				// collect if-else edges
+				// case id -> edge
+				branchEdges.put((String) edge.get("sourceHandle"), workflowEdge);
+			}
+		}
+	}
+
+	private void constructConditionEdge(List<Map<String, Object>> branchNodes, Map<String, WorkflowEdge> branchEdges,
+			List<WorkflowEdge> workflowEdges) {
+		for (Map<String, Object> nodeMap : branchNodes) {
+			Map<String, Object> nodeDataMap = (Map<String, Object>) nodeMap.get("data");
+			List<Case> cases = new ArrayList<>();
+			Map<String, String> targetMap = new HashMap<>();
+			List<Map<String, Object>> casesMap = (List<Map<String, java.lang.Object>>) nodeDataMap.get("cases");
+			for (Map<String, Object> caseData : casesMap) {
+				// convert cases
+				List<Map<String, Object>> conditionMaps = (List<Map<String, Object>>) caseData.get("conditions");
+				List<Case.Condition> conditions = conditionMaps.stream().map(conditionMap -> {
+					List<String> selectors = (List<String>) conditionMap.get("variable_selector");
+					return new Case.Condition().setValue((String) conditionMap.get("value"))
+						.setVarType((String) conditionMap.get("varType"))
+						.setComparisonOperator((String) conditionMap.get("comparison_operator"))
+						.setVariableSelector(new VariableSelector(selectors.get(0), selectors.get(1)));
+				}).collect(Collectors.toList());
+				Case c = new Case().setId((String) caseData.get("id"))
+					.setLogicalOperator((String) caseData.get("logical_operator"))
+					.setConditions(conditions);
+				// collect case target
+				WorkflowEdge branchEdge = branchEdges.get(c.getId());
+				targetMap.put(c.getId(), branchEdge.getTarget());
+				cases.add(c);
+			}
+			// find branchNode's source
+			String branchNodeId = (String) nodeMap.get("id");
+			String source = findSourceNode(workflowEdges, branchEdges.values().stream().toList(), branchNodeId);
+			WorkflowEdge conditionEdge = new WorkflowEdge().setId(branchNodeId)
+				.setType(WorkflowEdgeType.CONDITION.value())
+				.setSource(source)
+				.setCases(cases)
+				.setTargetMap(targetMap);
+			workflowEdges.add(conditionEdge);
+		}
+	}
+
+	private String findSourceNode(List<WorkflowEdge> edges, List<WorkflowEdge> branchEdges, String nodeId) {
+		for (WorkflowEdge edge : edges) {
+			if (edge.getTarget().equals(nodeId)) {
+				return edge.getSource();
+			}
+		}
+		for (WorkflowEdge edge : branchEdges) {
+			if (edge.getTarget().equals(nodeId)) {
+				return edge.getSource();
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public Map<String, Object> workflowToMap(Workflow workflow) {
+		Map<String, Object> data = new HashMap<>();
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		List<Map<String, Object>> workflowVars = objectMapper.convertValue(workflow.getWorkflowVars(), List.class);
+		List<Map<String, Object>> envVars = objectMapper.convertValue(workflow.getEnvVars(), List.class);
+		data.put("conversation_variables", workflowVars);
+		data.put("environment_variables", envVars);
+
+		WorkflowGraph graph = workflow.getGraph();
+		Map<String, Object> graphMap = deconstructGraph(graph);
+		data.put("graph", graphMap);
+		return data;
+	}
+
+	private Map<String, Object> deconstructGraph(WorkflowGraph graph) {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		List<Map<String, Object>> edgeMaps = new ArrayList<>();
+		List<Map<String, Object>> nodeMaps = new ArrayList<>();
+		// deconstruct edge
+		deconstructEdge(graph.getEdges(), edgeMaps, nodeMaps);
+		// deconstruct node
+		deconstructNode(graph.getNodes(), nodeMaps);
+		return Map.of("edges", edgeMaps, "nodes", nodeMaps);
+	}
+
+	private void deconstructEdge(List<WorkflowEdge> edges, List<Map<String, Object>> edgeMaps,
+			List<Map<String, Object>> nodeMaps) {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		for (WorkflowEdge edge : edges) {
+			// collect direct edge
+			if (edge.getType().equals(WorkflowEdgeType.DIRECT.value())) {
+				Map<String, Object> edgeMap = objectMapper.convertValue(edge, Map.class);
+				edgeMap.put("sourceHandle", "source");
+				edgeMap.put("targetHandle", "target");
+				edgeMap.put("type", "custom");
+				edgeMaps.add(edgeMap);
+				continue;
+			}
+			// convert condition edge
+			Map<String, String> targetMap = edge.getTargetMap();
+			// number of cases <-> number of edges
+			for (Case c : edge.getCases()) {
+				Map<String, Object> edgeMap = Map.of("source", edge.getSource(), "sourceHandle", c.getId(), "target",
+						targetMap.get(c.getId()), "targetHandle", "target", "type", "custom", "zIndex", 0, "selected",
+						false);
+				edgeMaps.add(edgeMap);
+			}
+			// convert to if-else node
+			List<Map<String, Object>> caseMaps = new ArrayList<>();
+			Map<String, Object> nodeMap = new HashMap<>();
+			for (Case c : edge.getCases()) {
+				List<Map<String, Object>> conditions = c.getConditions()
+					.stream()
+					.map(condition -> Map.of("comparison_operator", condition.getComparisonOperator(), "value",
+							condition.getValue(), "varType", condition.getVarType(), "variable_selector",
+							List.of(condition.getVariableSelector().getNamespace(),
+									condition.getVariableSelector().getName())))
+					.toList();
+				caseMaps.add(Map.of("id", c.getId(), "case_id", c.getId(), "conditions", conditions, "logical_operator",
+						c.getLogicalOperator()));
+			}
+			nodeMaps.add(Map.of("id", edge.getId(), "type", "custom", "width", 250, "height", 250, "data", Map
+				.of("cases", caseMaps, "desc", "", "selected", false, "title", "conditional edge", "type", "if-else")));
+		}
+
+	}
+
+	private void deconstructNode(List<WorkflowNode> nodes, List<Map<String, Object>> nodeMaps) {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		for (WorkflowNode node : nodes) {
+			Map<String, Object> n = objectMapper.convertValue(node, Map.class);
+			WorkflowNodeType nodeType = WorkflowNodeType.valueOf(node.getType());
+			WorkflowNodeDataConverter nodeDataConverter = getNodeDataConverter(node.getType());
+			Map<String, Object> nodeData = nodeDataConverter.dumpDifyData(node.getData());
+			nodeData.put("type", nodeType.difyValue());
+			nodeData.put("title", node.getTitle());
+			nodeData.put("desc", node.getDesc());
+			n.put("data", nodeData);
+			n.put("type", "custom");
+			nodeMaps.add(n);
+		}
+	}
+
+	@Override
+	public ChatBot mapToChatBot(Map<String, Object> data) {
+		// TODO
+		return null;
+	}
+
+	@Override
+	public Map<String, Object> chatbotToMap(ChatBot chatBot) {
+		// TODO
+		return null;
+	}
+
+	@Override
+	public Boolean supportDialect(String dialect) {
+		return DIFY_DIALECT.equals(dialect);
+	}
+
+}
