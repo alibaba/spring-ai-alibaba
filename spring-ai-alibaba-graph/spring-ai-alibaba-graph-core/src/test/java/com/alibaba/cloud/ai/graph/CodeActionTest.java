@@ -6,6 +6,10 @@ import com.alibaba.cloud.ai.graph.action.code.LocalCommandlineCodeExecutor;
 import com.alibaba.cloud.ai.graph.action.code.entity.CodeBlock;
 import com.alibaba.cloud.ai.graph.action.code.entity.CodeExecutionConfig;
 import com.alibaba.cloud.ai.graph.action.code.entity.CodeExecutionResult;
+import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.AppenderChannel;
+import com.alibaba.cloud.ai.graph.state.Channel;
+import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -40,7 +44,7 @@ public class CodeActionTest {
 				print('Hello, Python!')
 				""";
 
-		NodeAction<StateGraphTest.MessagesState> codeNode = CodeExecutorNodeAction.builder()
+		NodeAction<MessagesState> codeNode = CodeExecutorNodeAction.builder()
 			.codeExecutor(new LocalCommandlineCodeExecutor())
 			.build();
 		List<CodeBlock> codeBlockList = new ArrayList<>();
@@ -49,12 +53,33 @@ public class CodeActionTest {
 		map.put("codeBlockList", codeBlockList);
 		map.put("codeExecutionConfig", config);
 
-		StateGraphTest.MessagesState messagesState = new StateGraphTest.MessagesState(map);
+		MessagesState messagesState = new MessagesState(map);
 		Map<String, Object> stateData = codeNode.apply(messagesState);
 
 		CodeExecutionResult result = (CodeExecutionResult) stateData.get("codeExecutionResult");
 		assertThat(result.exitCode()).isZero();
 		assertThat(result.logs()).contains("Hello, Python!");
+		System.out.println(result.logs());
 	}
+
+	static class MessagesState extends AgentState {
+
+		static Map<String, Channel<?>> SCHEMA = CollectionsUtils.mapOf("messages",
+				AppenderChannel.<String>of(ArrayList::new));
+
+		public MessagesState(Map<String, Object> initData) {
+			super(initData);
+		}
+
+		int steps() {
+			return value("steps", 0);
+		}
+
+		List<String> messages() {
+			return this.<List<String>>value("messages").orElseThrow(() -> new RuntimeException("messages not found"));
+		}
+
+	}
+
 
 }

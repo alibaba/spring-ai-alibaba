@@ -25,11 +25,27 @@ public class CodeExecutorNodeAction<State extends AgentState> implements NodeAct
 	public Map<String, Object> apply(State state) throws Exception {
 		CodeExecutionConfig config = (CodeExecutionConfig) state.data().get("codeExecutionConfig");
 
-		List<CodeBlock> codeBlocks = (List<CodeBlock>) state.data().get("codeBlockList");
+		List<CodeBlock> codeBlocks =  getCodeBlockList(state.data().get("codeBlockList"));;
 
 		CodeExecutionResult executionResult = codeExecutor.executeCodeBlocks(codeBlocks, config);
 
 		return Map.of("codeExecutionResult", executionResult);
+	}
+
+	private List<CodeBlock> getCodeBlockList(Object codeBlockListObj) {
+		if (codeBlockListObj == null) {
+			throw new NullPointerException("The value of 'codeBlockList' is null");
+		}
+		if (codeBlockListObj instanceof List<?> codeBlockList) {
+			for (Object item : codeBlockList) {
+				if (!(item instanceof CodeBlock)) {
+					throw new IllegalArgumentException("The list contains an element that is not of type CodeBlock: " + item);
+				}
+			}
+			return (List<CodeBlock>) codeBlockList;
+		} else {
+			throw new IllegalArgumentException("The provided 'codeBlockList' is not a List");
+		}
 	}
 
 	public static Builder builder() {
