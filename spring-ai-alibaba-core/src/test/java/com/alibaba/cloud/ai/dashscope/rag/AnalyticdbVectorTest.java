@@ -40,11 +40,11 @@ class AnalyticdbVectorTest {
 		List<Document> list = new ArrayList<>(10);
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("docId", "1"); // 123 //12344
-		Document document = new Document("你好吗1234你是women12334444", metadata);
-		int length = 1536; // 数组长度
-		float min = 0f; // 最小值
-		float max = 1f; // 最大值
-		float[] em = new float[length]; // 创建 float 数组
+		Document document = new Document("hello1234you arewomen12334444", metadata);
+		int length = 1536; // Array length
+		float min = 0f; // smallest value
+		float max = 1f; // the largest value
+		float[] em = new float[length]; // create float array
 		Random random = new Random();
 		for (int i = 0; i < length; i++) {
 			em[i] = min + (max - min) * random.nextFloat();
@@ -52,7 +52,7 @@ class AnalyticdbVectorTest {
 		document.setEmbedding(em);
 		list.add(document);
 		analyticdbVector.add(list);
-		SearchRequest searchRequest = SearchRequest.query("你好");
+		SearchRequest searchRequest = SearchRequest.query("hello");
 		List<Document> documents = analyticdbVector.similaritySearch(searchRequest);
 		System.out.println(documents.get(0).getContent());
 
@@ -62,29 +62,31 @@ class AnalyticdbVectorTest {
 
 	@Test
 	void testSearchByVector() {
-		// 假设我们有一个已知的向量和一些预设的参数
+		// Suppose we have a known vector and some preset parameters.
 		// List<Float> queryVector = Arrays.asList(0.1f, 0.2f, 0.3f);
 		// Map<String, Object> kwargs = new HashMap<>();
 		// kwargs.put("score_threshold", 0.5f);
-		SearchRequest searchRequest = SearchRequest.query("你好");
+		SearchRequest searchRequest = SearchRequest.query("hello");
 		searchRequest.withTopK(5);
 		searchRequest.withSimilarityThreshold(0.5f);
 
-		// 调用方法并验证返回结果
+		// Call the method and verify the return result.
 		List<Document> results = analyticdbVector.similaritySearch(searchRequest);
 
-		// 这里应该有一些断言来验证结果是否符合预期
+		// There should be some assertions here to verify that the results meet
+		// expectations.
 		Assertions.assertNotNull(results);
-		// 更具体的断言可以根据你的需求添加
+		// The more specific assertions can be added based on your needs.
 	}
 
 	@Test
 	void testDelete() {
-		// 调用 delete 方法
+		// Call the delete method.
 		analyticdbVector.delete(List.of("1"));
 
-		// 根据你的实际情况，这里可以添加验证删除操作是否成功的逻辑
-		// 例如，检查数据库中是否存在该集合
+		// Based on your actual situation, you can add logic here to verify
+		// whether the delete operation was successful.
+		// For example, check whether the collection exists in the database.
 	}
 
 }

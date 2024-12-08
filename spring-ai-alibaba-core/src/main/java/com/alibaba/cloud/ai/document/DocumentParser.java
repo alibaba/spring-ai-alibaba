@@ -3,6 +3,7 @@ package com.alibaba.cloud.ai.document;
 import org.springframework.ai.document.Document;
 
 import java.io.InputStream;
+import java.util.List;
 
 /**
  * @author HeYQ
@@ -21,6 +22,6 @@ public interface DocumentParser {
 	 * {@link Document}.
 	 * @return The parsed {@link Document}.
 	 */
-	Document parse(InputStream inputStream);
+	List<Document> parse(InputStream inputStream);
 
 }

@@ -90,9 +90,11 @@ class TencentCosDocumentLoaderIT {
 
 		// given
 		URL url = getClass().getClassLoader().getResource("test.txt");
+		assert url != null;
 		cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY, new File(url.getFile())));
 
 		URL url2 = getClass().getClassLoader().getResource("test2.txt");
+		assert url2 != null;
 		cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY_2, new File(url2.getFile())));
 
 		List<TencentCosResource> tencentCosResourceList = TencentCosResource.builder()
@@ -126,13 +128,16 @@ class TencentCosDocumentLoaderIT {
 
 		// given
 		URL otherUrl = getClass().getClassLoader().getResource("other.txt");
+		assert otherUrl != null;
 		cosClient
 			.putObject(new PutObjectRequest(TEST_BUCKET, "other_directory/file.txt", new File(otherUrl.getFile())));
 
 		URL url = getClass().getClassLoader().getResource("test.txt");
+		assert url != null;
 		cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY, new File(url.getFile())));
 
 		URL url2 = getClass().getClassLoader().getResource("test2.txt");
+		assert url2 != null;
 		cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY_2, new File(url2.getFile())));
 
 		List<TencentCosResource> tencentCosResourceList = TencentCosResource.builder()

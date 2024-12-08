@@ -12,16 +12,19 @@ import org.springframework.ai.reader.ExtractedTextFormatter;
 import org.xml.sax.ContentHandler;
 
 import java.io.InputStream;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
+ * Parses files into {@link Document}s using Apache Tika library, automatically detecting
+ * the file format. This parser supports various file formats, including PDF, DOC, PPT,
+ * XLS. For detailed information on supported formats, please refer to the
+ * <a href="https://tika.apache.org/2.9.1/formats.html">Apache Tika documentation</a>.
+ *
  * @author HeYQ
- * @since 2024-12-02 11:32 Parses files into {@link Document}s using Apache Tika library,
- * automatically detecting the file format. This parser supports various file formats,
- * including PDF, DOC, PPT, XLS. For detailed information on supported formats, please
- * refer to the <a href="https://tika.apache.org/2.9.1/formats.html">Apache Tika
- * documentation</a>.
+ * @since 2024-12-02 11:32
  */
 
 public class TikaDocumentParser implements DocumentParser {
@@ -90,7 +93,7 @@ public class TikaDocumentParser implements DocumentParser {
 	}
 
 	@Override
-	public Document parse(InputStream inputStream) {
+	public List<Document> parse(InputStream inputStream) {
 		try {
 			Parser parser = parserSupplier.get();
 			ContentHandler contentHandler = contentHandlerSupplier.get();
@@ -104,7 +107,7 @@ public class TikaDocumentParser implements DocumentParser {
 				throw new ZeroByteFileException("The content is blank!");
 			}
 
-			return toDocument(text);
+			return Collections.singletonList(toDocument(text));
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);

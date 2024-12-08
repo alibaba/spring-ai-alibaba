@@ -22,7 +22,7 @@ class ApacheTikaDocumentParserTest {
 		DocumentParser parser = new TikaDocumentParser();
 		InputStream inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
 
-		Document document = parser.parse(inputStream);
+		Document document = parser.parse(inputStream).get(0);
 
 		assertThat(document.getContent()).isEqualToIgnoringWhitespace("test content");
 		assertThat(document.getMetadata()).isEmpty();
@@ -35,7 +35,7 @@ class ApacheTikaDocumentParserTest {
 		DocumentParser parser = new TikaDocumentParser(AutoDetectParser::new, null, null, null);
 		InputStream inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
 
-		Document document = parser.parse(inputStream);
+		Document document = parser.parse(inputStream).get(0);
 
 		assertThat(document.getContent()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
 		assertThat(document.getMetadata()).isEmpty();
@@ -48,8 +48,8 @@ class ApacheTikaDocumentParserTest {
 		InputStream inputStream1 = getClass().getClassLoader().getResourceAsStream("test-file.xls");
 		InputStream inputStream2 = getClass().getClassLoader().getResourceAsStream("test-file.xls");
 
-		Document document1 = parser.parse(inputStream1);
-		Document document2 = parser.parse(inputStream2);
+		Document document1 = parser.parse(inputStream1).get(0);
+		Document document2 = parser.parse(inputStream2).get(0);
 
 		assertThat(document1.getContent()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
 		assertThat(document2.getContent()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
