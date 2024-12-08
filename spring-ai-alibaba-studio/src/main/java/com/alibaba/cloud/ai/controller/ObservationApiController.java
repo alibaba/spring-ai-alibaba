@@ -47,6 +47,12 @@ public class ObservationApiController {
 		return R.success(res);
 	}
 
+	@GetMapping("/getAITraceInfo")
+	R<ArrayNode> getAITraceInfo() {
+		var res = studioObservabilityService.getAITraceInfo();
+		return R.success(res);
+	}
+
 	@GetMapping("/detail")
 	R<JsonNode> detail(String traceId) {
 		var res = studioObservabilityService.getTraceByTraceId(traceId);
