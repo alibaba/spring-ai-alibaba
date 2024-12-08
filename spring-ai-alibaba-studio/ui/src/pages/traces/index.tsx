@@ -3,6 +3,7 @@ import { Card, Table, Tag } from 'antd';
 import type { TableProps } from 'antd';
 import { tableList } from '@/mock/tracemock';
 import { createStyles } from 'antd-style';
+import TraceDetailComp from '@/components/TraceDetailComp';
 interface DataType {
   id: string;
   latencyMilliseconds: string;
@@ -27,121 +28,6 @@ interface DataType {
   };
 }
 
-const columns: TableProps<DataType>['columns'] = [
-  {
-    title: 'id',
-    dataIndex: 'id',
-    key: 'id',
-    fixed: 'left',
-    width: 100,
-    ellipsis: true,
-    render: (text) => (
-      <div style={{ width: 100 }}>
-        <a
-          style={{
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {text}
-        </a>
-        ...
-      </div>
-    ),
-  },
-  {
-    title: 'timestamp',
-    dataIndex: 'timestamp',
-    key: 'timestamp',
-    ellipsis: true,
-    // sorter: (a, b) => a.timestamp - b.timestamp,
-    width: 100,
-  },
-  {
-    title: 'name',
-    dataIndex: 'name',
-    key: 'name',
-  },
-  {
-    title: 'model',
-    dataIndex: 'model',
-    filters: [
-      {
-        text: 'gpt系列模型',
-        value: 'gpt',
-      },
-      {
-        text: 'Claude系列',
-        value: 'claude',
-      },
-    ],
-    key: 'model',
-    onFilter: (value, record) => record.model.startsWith(value as string),
-  },
-  {
-    title: 'latency',
-    key: 'latencyMilliseconds',
-    dataIndex: 'latencyMilliseconds',
-    render: (_, { latencyMilliseconds }) => <div>{latencyMilliseconds} ms</div>,
-  },
-  {
-    title: 'usageDetails',
-    dataIndex: 'usageDetails',
-    key: 'usageDetails',
-    render: (_, { usageDetails }) => (
-      <span>{`${usageDetails?.input} → ${usageDetails?.output} (∑ ${usageDetails?.total})`}</span>
-    ),
-  },
-  {
-    title: 'Total Cost',
-    dataIndex: 'costDetails',
-    key: 'costDetails',
-    render: (_, { costDetails }) => <span>{`${costDetails?.total}$`}</span>,
-  },
-  {
-    title: 'tags',
-    key: 'tags',
-    dataIndex: 'tags',
-    render: (_, { tags }) => (
-      <>
-        {tags.map((tag) => {
-          let color = tag.length > 5 ? 'geekblue' : 'green';
-          if (tag === 'loser') {
-            color = 'volcano';
-          }
-          return (
-            <Tag color={color} key={tag}>
-              {tag.toUpperCase()}
-            </Tag>
-          );
-        })}
-      </>
-    ),
-  },
-  {
-    title: 'calculatedTotalCost',
-    key: 'calculatedTotalCost',
-    dataIndex: 'calculatedTotalCost',
-  },
-  {
-    title: 'calculatedInputCost',
-    key: 'calculatedInputCost',
-    dataIndex: 'calculatedInputCost',
-  },
-  {
-    title: 'calculatedOutputCost',
-    key: 'calculatedOutputCost',
-    dataIndex: 'calculatedOutputCost',
-  },
-  {
-    title: 'Action',
-    key: 'operation',
-    fixed: 'right',
-    width: 100,
-    render: () => <a>查看详情</a>,
-  },
-];
 
 const useStyle = createStyles(({ css, token }) => {
   // @ts-ignore
@@ -164,6 +50,123 @@ const useStyle = createStyles(({ css, token }) => {
 
 export default function History() {
   const [data, setData] = useState<DataType[]>([]);
+  const [openTraceDetail, setOpenTraceDetail] = useState(false);
+  const columns: TableProps<DataType>['columns'] = [
+    {
+      title: 'id',
+      dataIndex: 'id',
+      key: 'id',
+      fixed: 'left',
+      width: 100,
+      ellipsis: true,
+      render: (text) => (
+        <div style={{ width: 100 }}>
+          <a
+            onClick={() => setOpenTraceDetail(true)}
+            style={{
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+          >
+            {text}
+          </a>
+          ...
+        </div>
+      ),
+    },
+    {
+      title: 'timestamp',
+      dataIndex: 'timestamp',
+      key: 'timestamp',
+      ellipsis: true,
+      // sorter: (a, b) => a.timestamp - b.timestamp,
+      width: 100,
+    },
+    {
+      title: 'name',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'model',
+      dataIndex: 'model',
+      filters: [
+        {
+          text: 'gpt系列模型',
+          value: 'gpt',
+        },
+        {
+          text: 'Claude系列',
+          value: 'claude',
+        },
+      ],
+      key: 'model',
+      onFilter: (value, record) => record.model.startsWith(value as string),
+    },
+    {
+      title: 'latency',
+      key: 'latencyMilliseconds',
+      dataIndex: 'latencyMilliseconds',
+      render: (_, { latencyMilliseconds }) => <div>{latencyMilliseconds} ms</div>,
+    },
+    {
+      title: 'usageDetails',
+      dataIndex: 'usageDetails',
+      key: 'usageDetails',
+      render: (_, { usageDetails }) => (
+        <span>{`${usageDetails?.input} → ${usageDetails?.output} (∑ ${usageDetails?.total})`}</span>
+      ),
+    },
+    {
+      title: 'Total Cost',
+      dataIndex: 'costDetails',
+      key: 'costDetails',
+      render: (_, { costDetails }) => <span>{`${costDetails?.total}$`}</span>,
+    },
+    {
+      title: 'tags',
+      key: 'tags',
+      dataIndex: 'tags',
+      render: (_, { tags }) => (
+        <>
+          {tags.map((tag) => {
+              let color = tag.length > 5 ? 'geekblue' : 'green';
+              if (tag === 'loser') {
+                color = 'volcano';
+              }
+              return (
+                <Tag color={color} key={tag}>
+                  {tag.toUpperCase()}
+                </Tag>
+              );
+            })}
+        </>
+      ),
+    },
+    {
+      title: 'calculatedTotalCost',
+      key: 'calculatedTotalCost',
+      dataIndex: 'calculatedTotalCost',
+    },
+    {
+      title: 'calculatedInputCost',
+      key: 'calculatedInputCost',
+      dataIndex: 'calculatedInputCost',
+    },
+    {
+      title: 'calculatedOutputCost',
+      key: 'calculatedOutputCost',
+      dataIndex: 'calculatedOutputCost',
+    },
+    {
+      title: 'Action',
+      key: 'operation',
+      fixed: 'right',
+      width: 100,
+      render: () => <a>查看详情</a>,
+    },
+  ];
 
   const { styles } = useStyle();
   const handleGetTraceData = async () => {
@@ -189,6 +192,7 @@ export default function History() {
           scroll={{ x: 'max-content' }}
           rowKey={(recode) => recode.id}
         />
+        <TraceDetailComp open={openTraceDetail} setOpen={setOpenTraceDetail} />
       </Card>
     </div>
   );
