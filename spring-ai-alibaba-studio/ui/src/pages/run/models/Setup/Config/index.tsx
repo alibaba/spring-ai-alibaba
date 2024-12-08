@@ -17,10 +17,10 @@
 import { useState } from 'react';
 import { Form, Select, Slider, Input, Flex, InputNumber, Button } from 'antd';
 import type { SelectProps } from 'antd';
-import { InitialConfig } from '../types';
+import { ChatOptions } from '@/types/options';
 
 type Props = {
-  initialConfig: InitialConfig;
+  initialConfig: ChatOptions;
 };
 
 export default function ConfigAndTool(props: Props) {
@@ -29,12 +29,12 @@ export default function ConfigAndTool(props: Props) {
   const [form] = Form.useForm();
 
   const [temperature, setTemperature] = useState(initialConfig.temperature);
-  const [topP, setTopP] = useState(initialConfig.topP);
-  const [topK, setTopK] = useState(initialConfig.topK);
+  const [topP, setTopP] = useState(initialConfig.top_p);
+  const [topK, setTopK] = useState(initialConfig.top_k);
 
   const modelOptions: SelectProps['options'] = [
-    { value: 'ollama/llama3.2', label: 'ollama/llama3.2' },
-    { value: 'chatgpt', label: 'chatgpt' },
+    { value: 'qwen-plus', label: 'qwen-plus' },
+    { value: 'wanx-v1', label: 'wanx-v1' },
   ];
 
   const versionOptions: SelectProps['options'] = [
@@ -65,8 +65,8 @@ export default function ConfigAndTool(props: Props) {
 
   const reset = () => {
     setTemperature(initialConfig.temperature);
-    setTopK(initialConfig.topK);
-    setTopP(initialConfig.topP);
+    setTopK(initialConfig.top_k);
+    setTopP(initialConfig.top_p);
     form.resetFields();
   };
 
@@ -80,15 +80,15 @@ export default function ConfigAndTool(props: Props) {
           label={sliderLabel('Temperature', temperature)}
           name="temperature"
         >
-          <Slider onChange={onTemperatureChange} />
+          <Slider onChange={onTemperatureChange} max={2.0} min={0.0} step={0.1} />
         </Form.Item>
-        <Form.Item label={sliderLabel('Top P', topP)} name="topP">
-          <Slider onChange={onTopPChange} />
+        <Form.Item label={sliderLabel('Top P', topP)} name="top_p">
+          <Slider onChange={onTopPChange} max={1.0} min={0.0} step={0.1} />
         </Form.Item>
-        <Form.Item label={sliderLabel('Top K', topK)} name="topK">
+        <Form.Item label={sliderLabel('Top K', topK)} name="top_k">
           <Slider onChange={onTopKChange} />
         </Form.Item>
-        <Form.Item label="Max output tokens" name="maxTokens">
+        {/* <Form.Item label="Max output tokens" name="maxTokens">
           <InputNumber min={1} max={10} />
         </Form.Item>
         <Form.Item label="Stop sequences" name="sequences">
@@ -96,7 +96,7 @@ export default function ConfigAndTool(props: Props) {
         </Form.Item>
         <Form.Item label="Model version" name="version">
           <Select style={{ width: 200 }} options={versionOptions} />
-        </Form.Item>
+        </Form.Item> */}
       </Form>
       <Flex justify="center">
         <Button onClick={reset}>Reset</Button>

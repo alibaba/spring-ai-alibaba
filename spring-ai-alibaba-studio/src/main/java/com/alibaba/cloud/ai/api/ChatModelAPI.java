@@ -20,15 +20,19 @@ import com.alibaba.cloud.ai.common.R;
 import com.alibaba.cloud.ai.model.ChatModel;
 import com.alibaba.cloud.ai.param.RunActionParam;
 import com.alibaba.cloud.ai.service.ChatModelDelegate;
+import com.alibaba.cloud.ai.vo.ActionResult;
 import com.alibaba.cloud.ai.vo.ChatModelRunResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -80,6 +84,18 @@ public interface ChatModelAPI {
 		catch (IOException e) {
 			response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 		}
+	}
+
+	@Operation(summary = "run image model by input, and url", description = "", tags = { "chat-model" })
+	@RequestMapping(value = "/run/image-gen/url", method = { RequestMethod.POST, RequestMethod.GET },
+			consumes = { MediaType.APPLICATION_JSON_VALUE }, produces = { MediaType.ALL_VALUE })
+	default R<ChatModelRunResult> runImageGenTaskAndGetUrl(@RequestBody RunActionParam runActionParam,
+			HttpServletResponse response) {
+		String imageUrl = getDelegate().runImageGenTask(runActionParam);
+		return R.success(ChatModelRunResult.builder()
+			.input(runActionParam)
+			.result(ActionResult.builder().Response(imageUrl).build())
+			.build());
 	}
 
 }

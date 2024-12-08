@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-export type InitialConfig = {
-  model: string;
-  temperature: number;
-  topP: number;
-  topK: number;
-  maxTokens: number;
-  sequences: string;
-  version: number;
+import { ChatOptions,ImageOptions } from "@/types/options";
+
+export type RightPanelValues = {
+  initialChatConfig?: ChatOptions;
+  initialImgConfig?: ImageOptions;
+  initialTool: InitialTool;
 };
 
-export type InitialTool = {};
+export type InitialTool = {}
