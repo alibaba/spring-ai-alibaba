@@ -42,6 +42,8 @@ public class StudioObservabilityServiceImpl implements StudioObservabilityServic
 
 	private static final String LINE_SEPARATOR = System.lineSeparator();
 
+	private final List<String> keyPrefixes = List.of("gen_ai.operation", "spring.ai");
+
 	public StudioObservabilityServiceImpl(StudioObservabilityProperties studioObservabilityProperties) {
 		this.objectMapper = new ObjectMapper();
 		this.studioObservabilityProperties = studioObservabilityProperties;
@@ -77,6 +79,33 @@ public class StudioObservabilityServiceImpl implements StudioObservabilityServic
 		}
 
 		return CompletableResultCode.ofSuccess();
+	}
+
+	@Override
+	public ArrayNode getAITraceInfo() {
+		ArrayNode resultArray = objectMapper.createArrayNode();
+		ArrayNode jsonArray = readObservabilityFile();
+
+		for (JsonNode jsonNode : jsonArray) {
+			JsonNode scopeSpans = jsonNode.path("scopeSpans");
+			JsonNode spans = scopeSpans.get(0).path("spans");
+			for (JsonNode span : spans) {
+				JsonNode attributes = span.path("attributes");
+				boolean hasMatchingKey = false;
+				for (JsonNode attribute : attributes) {
+					String key = attribute.path("key").asText();
+					if (keyPrefixes.stream().anyMatch(key::startsWith)) {
+						hasMatchingKey = true;
+						break;
+					}
+				}
+				if (hasMatchingKey) {
+					resultArray.add(jsonNode);
+					break;
+				}
+			}
+		}
+		return resultArray;
 	}
 
 	private String generateJson(ResourceSpansMarshaler resourceSpans) {
