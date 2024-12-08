@@ -39,6 +39,11 @@ export default function PageLayout() {
       label: 'Chat Model',
       children: [],
     },
+    {
+      key: '/run/prompts',
+      label: 'Prompts',
+      children: [],
+    },
   ]);
 
   useEffect(() => {

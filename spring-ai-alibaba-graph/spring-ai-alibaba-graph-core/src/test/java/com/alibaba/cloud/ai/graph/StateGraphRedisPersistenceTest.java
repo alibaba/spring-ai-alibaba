@@ -27,69 +27,69 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 public class StateGraphRedisPersistenceTest {
-    static class MessagesState extends AgentState {
 
-        static Map<String, Channel<?>> SCHEMA = CollectionsUtils.mapOf("messages",
-                AppenderChannel.<String>of(ArrayList::new));
+	static class MessagesState extends AgentState {
 
-        public MessagesState(Map<String, Object> initData) {
-            super(initData);
-        }
+		static Map<String, Channel<?>> SCHEMA = CollectionsUtils.mapOf("messages",
+				AppenderChannel.<String>of(ArrayList::new));
 
-        int steps() {
-            return value("steps", 0);
-        }
+		public MessagesState(Map<String, Object> initData) {
+			super(initData);
+		}
 
-        List<String> messages() {
-            return this.<List<String>>value("messages").orElseThrow(() -> new RuntimeException("messages not found"));
-        }
+		int steps() {
+			return value("steps", 0);
+		}
 
-        Optional<String> lastMessage() {
-            List<String> messages = messages();
-            if (messages.isEmpty()) {
-                return Optional.empty();
-            }
-            return Optional.of(messages.get(messages.size() - 1));
-        }
+		List<String> messages() {
+			return this.<List<String>>value("messages").orElseThrow(() -> new RuntimeException("messages not found"));
+		}
 
-    }
+		Optional<String> lastMessage() {
+			List<String> messages = messages();
+			if (messages.isEmpty()) {
+				return Optional.empty();
+			}
+			return Optional.of(messages.get(messages.size() - 1));
+		}
 
-    @Test
-    public void testRedisPersistenceApi() throws Exception {
-        Config config = new Config();
-        config.useSingleServer().setAddress("redis://host:6379").setPassword("password").setDatabase(0);
-        RedissonClient redisson = Redisson.create(config);
-        RedisSaver saver = new RedisSaver(redisson);
+	}
 
-        RunnableConfig runnableConfig = RunnableConfig.builder().checkPointId("test").threadId("test-thread-2").build();
-        Map<String, Object> message = Map.of("message", "hello world");
-        Checkpoint checkPoint = Checkpoint.builder()
-                .nodeId("agent_1")
-                .state(message)
-                .nextNodeId(StateGraph.END)
-                .build();
+	@Test
+	public void testRedisPersistenceApi() throws Exception {
+		Config config = new Config();
+		config.useSingleServer().setAddress("redis://host:6379").setPassword("password").setDatabase(0);
+		RedissonClient redisson = Redisson.create(config);
+		RedisSaver saver = new RedisSaver(redisson);
 
-        //put
-        RunnableConfig put = saver.put(runnableConfig, checkPoint);
-        System.out.println("put = " + put);
+		RunnableConfig runnableConfig = RunnableConfig.builder().checkPointId("test").threadId("test-thread-2").build();
+		Map<String, Object> message = Map.of("message", "hello world");
+		Checkpoint checkPoint = Checkpoint.builder()
+			.nodeId("agent_1")
+			.state(message)
+			.nextNodeId(StateGraph.END)
+			.build();
 
-        //get
-        Optional<Checkpoint> checkpoint = saver.get(runnableConfig);
-        System.out.println("checkpoint = " + checkpoint);
+		// put
+		RunnableConfig put = saver.put(runnableConfig, checkPoint);
+		System.out.println("put = " + put);
 
-        //list
-        Collection<Checkpoint> list = saver.list(runnableConfig);
-        System.out.println("list = " + list);
+		// get
+		Optional<Checkpoint> checkpoint = saver.get(runnableConfig);
+		System.out.println("checkpoint = " + checkpoint);
 
-        //clear
-        boolean clear = saver.clear(runnableConfig.withCheckPointId(checkPoint.getId()));
-        System.out.println("clear = " + clear);
-        Collection<Checkpoint> list1 = saver.list(runnableConfig);
-        System.out.println("list1 = " + list1);
-    }
+		// list
+		Collection<Checkpoint> list = saver.list(runnableConfig);
+		System.out.println("list = " + list);
 
+		// clear
+		boolean clear = saver.clear(runnableConfig.withCheckPointId(checkPoint.getId()));
+		System.out.println("clear = " + clear);
+		Collection<Checkpoint> list1 = saver.list(runnableConfig);
+		System.out.println("list1 = " + list1);
+	}
 
-    @Test
+	@Test
 	public void testCheckpointSaverResubmit() throws Exception {
 		int expectedSteps = 5;
 
@@ -109,13 +109,13 @@ public class StateGraphRedisPersistenceTest {
 			}), CollectionsUtils.mapOf("next", "agent_1", "exit", StateGraph.END));
 
 		Config config = new Config();
-        config.useSingleServer().setAddress("redis://host:6379").setPassword("password").setDatabase(0);
-        RedissonClient redisson = Redisson.create(config);
-        RedisSaver saver = new RedisSaver(redisson);
+		config.useSingleServer().setAddress("redis://host:6379").setPassword("password").setDatabase(0);
+		RedissonClient redisson = Redisson.create(config);
+		RedisSaver saver = new RedisSaver(redisson);
 		SaverConfig saverConfig = SaverConfig.builder()
-				.type(SaverConstant.REDIS)
-				.register(SaverConstant.REDIS,saver)
-				.build();
+			.type(SaverConstant.REDIS)
+			.register(SaverConstant.REDIS, saver)
+			.build();
 		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 
 		CompiledGraph<MessagesState> app = workflow.compile(compileConfig);
@@ -179,4 +179,5 @@ public class StateGraphRedisPersistenceTest {
 			saver.clear(runnableConfig_2);
 		}
 	}
+
 }
