@@ -36,6 +36,7 @@ public class LLMNodeAction<State extends AgentState> implements NodeAction<State
 	@Override
 	public Map<String, Object> apply(State state) throws Exception {
 		List<Message> messages = state.value(MESSAGES_KEY, new ArrayList<>());
+
 		List<Generation> generations = chatClient.prompt()
 			.system(s -> s.params(state.data()))
 			.messages(messages)
