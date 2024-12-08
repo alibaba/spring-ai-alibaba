@@ -17,7 +17,7 @@
 	<properties>
 		<java.version>17</java.version>
 		<spring-ai.version>1.0.0-M3</spring-ai.version>
-		<spring-ai-alibaba.version>1.0.0-M3.2</spring-ai-alibaba.version>
+		<spring-ai-alibaba.version>1.0.0-M3.workflow-SNAPSHOT</spring-ai-alibaba.version>
 	</properties>
 	<dependencies>
 		<dependency>
