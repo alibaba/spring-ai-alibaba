@@ -1,9 +1,9 @@
 package com.alibaba.cloud.ai.controller;
 
 import com.alibaba.cloud.ai.common.R;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.oltp.OtlpFileSpanExporter;
+import com.alibaba.cloud.ai.oltp.StudioObservabilityProperties;
+import com.alibaba.cloud.ai.service.StudioObservabilityService;
+import com.alibaba.cloud.ai.service.impl.StudioObservabilityServiceImpl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.springframework.ai.chat.client.ChatClient;
@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -31,41 +30,32 @@ public class ObservationApiController {
 
 	private final ChatClient chatClient;
 
-	private final OtlpFileSpanExporter otlpFileSpanExporter;
-
 	private final ChatModel chatModel;
 
-	ObservationApiController(ChatClient.Builder builder, OtlpFileSpanExporter otlpFileSpanExporter,
-			ChatModel chatModel) {
+	private final StudioObservabilityService studioObservabilityService;
+
+	ObservationApiController(ChatClient.Builder builder, ChatModel chatModel,
+			StudioObservabilityProperties studioObservabilityProperties) {
 		this.chatClient = builder.build();
-		this.otlpFileSpanExporter = otlpFileSpanExporter;
 		this.chatModel = chatModel;
+		this.studioObservabilityService = new StudioObservabilityServiceImpl(studioObservabilityProperties);
 	}
 
 	@GetMapping("/getAll")
 	R<ArrayNode> getAll() {
-		var res = otlpFileSpanExporter.readJsonFromFile();
-		logger.info("getAll: " + res.toString());
+		var res = studioObservabilityService.readObservabilityFile();
 		return R.success(res);
 	}
 
 	@GetMapping("/detail")
 	R<JsonNode> detail(String traceId) {
-		var res = otlpFileSpanExporter.getJsonNodeByTraceId(traceId);
-		logger.info("detail: " + res.toString());
-		return R.success(res);
-	}
-
-	@GetMapping("/list")
-	R<List<OtlpFileSpanExporter.ListResponse>> list() {
-		var res = otlpFileSpanExporter.extractSpansWithoutParentSpanId();
-		logger.info("list: " + res);
+		var res = studioObservabilityService.getTraceByTraceId(traceId);
 		return R.success(res);
 	}
 
 	@GetMapping("/clearAll")
 	R<String> clearAll() {
-		var res = otlpFileSpanExporter.clearExportContent();
+		var res = studioObservabilityService.clearExportContent();
 		return R.success(res);
 	}
 
