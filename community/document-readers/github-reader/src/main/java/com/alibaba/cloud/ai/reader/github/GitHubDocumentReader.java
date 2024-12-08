@@ -56,19 +56,21 @@ public class GitHubDocumentReader implements DocumentReader {
 
 	private void loadDocuments(List<Document> documents, GitHubResource gitHubResource) {
 		try {
-			Document document = parser.parse(gitHubResource.getInputStream());
-			GHContent ghContent = gitHubResource.getContent();
-			Map<String, Object> metadata = document.getMetadata();
-			metadata.put("github_git_url", ghContent.getGitUrl());
-			metadata.put("github_download_url", ghContent.getDownloadUrl());
-			metadata.put("github_html_url", ghContent.getHtmlUrl());
-			metadata.put("github_url", ghContent.getUrl());
-			metadata.put("github_file_name", ghContent.getName());
-			metadata.put("github_file_path", ghContent.getPath());
-			metadata.put("github_file_sha", ghContent.getSha());
-			metadata.put("github_file_size", Long.toString(ghContent.getSize()));
-			metadata.put("github_file_encoding", ghContent.getEncoding());
-			documents.add(document);
+			List<Document> documentList = parser.parse(gitHubResource.getInputStream());
+			for (Document document : documentList) {
+				GHContent ghContent = gitHubResource.getContent();
+				Map<String, Object> metadata = document.getMetadata();
+				metadata.put("github_git_url", ghContent.getGitUrl());
+				metadata.put("github_download_url", ghContent.getDownloadUrl());
+				metadata.put("github_html_url", ghContent.getHtmlUrl());
+				metadata.put("github_url", ghContent.getUrl());
+				metadata.put("github_file_name", ghContent.getName());
+				metadata.put("github_file_path", ghContent.getPath());
+				metadata.put("github_file_sha", ghContent.getSha());
+				metadata.put("github_file_size", Long.toString(ghContent.getSize()));
+				metadata.put("github_file_encoding", ghContent.getEncoding());
+				documents.add(document);
+			}
 		}
 		catch (IOException ioException) {
 			throw new RuntimeException("Failed to load document from GitHub: {}", ioException);
