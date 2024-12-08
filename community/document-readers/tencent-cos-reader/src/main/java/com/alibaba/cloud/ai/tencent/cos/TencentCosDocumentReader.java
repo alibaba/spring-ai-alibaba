@@ -59,9 +59,11 @@ public class TencentCosDocumentReader implements DocumentReader {
 		String bucket = resource.getBucket();
 		String source = format("cos://%s/%s", bucket, key);
 		try {
-			Document document = parser.parse(resource.getInputStream());
-			document.getMetadata().put(TencentCosResource.SOURCE, source);
-			documents.add(document);
+			List<Document> documentList = parser.parse(resource.getInputStream());
+			for (Document document : documentList) {
+				document.getMetadata().put(TencentCosResource.SOURCE, source);
+				documents.add(document);
+			}
 		}
 		catch (Exception e) {
 			log.warn("Failed to load an object with key '{}' from bucket '{}', skipping it. Stack trace: {}", key,
