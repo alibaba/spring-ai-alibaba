@@ -5,5 +5,6 @@
   "traces": "链路",
   "evaluate": "评估",
   "chinese": "中文",
-  "english": "英文"
+  "english": "英文",
+  "gotoDebug": "去调试"
 }
