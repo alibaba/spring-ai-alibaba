@@ -1,11 +1,11 @@
 package com.alibaba.cloud.ai.reader.github;
 
-import com.alibaba.cloud.ai.reader.DocumentParser;
+import com.alibaba.cloud.ai.document.TextDocumentParser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
-
+import com.alibaba.cloud.ai.document.DocumentParser;
 import java.util.List;
 
 @EnabledIfEnvironmentVariable(named = "GITHUB_TOKEN", matches = ".+")
@@ -25,9 +25,11 @@ class GitHubDocumentLoaderIT {
 		.path("Mergekit.ipynb") // Mergekit.ipynb //LICENSE
 		.build();
 
+	DocumentParser parser = new TextDocumentParser();
+
 	@BeforeEach
 	public void beforeEach() {
-		reader = new GitHubDocumentReader(source, DocumentParser.TEXT_PARSER);
+		reader = new GitHubDocumentReader(source, parser);
 	}
 
 	@Test
