@@ -15,6 +15,8 @@ public interface StudioObservabilityService {
 
 	CompletableResultCode export(Collection<ResourceSpansMarshaler> allResourceSpans);
 
+	ArrayNode getAITraceInfo();
+
 	ArrayNode readObservabilityFile();
 
 	ArrayNode getTraceByTraceId(String traceId);
