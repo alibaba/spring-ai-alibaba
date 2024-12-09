@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.model.workflow.edge;
+package com.alibaba.cloud.ai.model.workflow;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -6,9 +6,13 @@ import lombok.experimental.Accessors;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Edge defines the routes between node and node.
+ * There are two types of Edge: Direct and Conditional
+ */
 @Data
 @Accessors(chain = true)
-public class WorkflowEdge {
+public class Edge {
 
 	private String id;
 

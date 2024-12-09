@@ -1,10 +1,10 @@
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.model.VariableSelector;
-import com.alibaba.cloud.ai.model.workflow.node.WorkflowNodeData;
-import com.alibaba.cloud.ai.model.workflow.node.WorkflowNodeType;
-import com.alibaba.cloud.ai.model.workflow.node.data.RetrieverNodeData;
-import com.alibaba.cloud.ai.service.dsl.WorkflowNodeDataConverter;
+import com.alibaba.cloud.ai.model.workflow.NodeData;
+import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.model.workflow.nodedata.RetrieverNodeData;
+import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -13,18 +13,18 @@ import java.util.Map;
 import java.util.Optional;
 
 @Component
-public class RetrieverNodeDataConverter implements WorkflowNodeDataConverter {
+public class RetrieverNodeDataConverter implements NodeDataConverter {
 
 	@Override
 	public Boolean supportType(String nodeType) {
-		return WorkflowNodeType.RETRIEVER.value().equals(nodeType);
+		return NodeType.RETRIEVER.value().equals(nodeType);
 	}
 
 	@Override
-	public WorkflowNodeData parseDifyData(Map<String, Object> data) {
+	public NodeData parseDifyData(Map<String, Object> data) {
 		List<String> selector = (List<String>) data.get("query_variable_selector");
 		List<VariableSelector> inputs = List.of(new VariableSelector(selector.get(0), selector.get(1)));
-		Map<String, Object> configMap = (Map<String, Object>) data.get("multi_retrival_config");
+		Map<String, Object> configMap = (Map<String, Object>) data.get("multiple_retrieval_config");
 		Map<String, Object> rerankConfigMap = (Map<String, Object>) configMap.get("reranking_model");
 		Float rerankThreshold = (Float) Optional.ofNullable(rerankConfigMap.get("score_threshold"))
 			.orElse(RetrieverNodeData.RerankOptions.DEFAULT_RERANK_THRESHOLD);
@@ -43,7 +43,7 @@ public class RetrieverNodeDataConverter implements WorkflowNodeDataConverter {
 	}
 
 	@Override
-	public Map<String, Object> dumpDifyData(WorkflowNodeData nodeData) {
+	public Map<String, Object> dumpDifyData(NodeData nodeData) {
 		Map<String, Object> data = new HashMap<>();
 		RetrieverNodeData retrieverNodeData = (RetrieverNodeData) nodeData;
 		RetrieverNodeData.RerankOptions rerankConfig = retrieverNodeData.getMultipleRetrievalOptions();

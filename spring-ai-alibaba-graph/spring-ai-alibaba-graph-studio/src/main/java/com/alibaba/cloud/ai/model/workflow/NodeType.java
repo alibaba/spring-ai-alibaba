@@ -1,6 +1,6 @@
-package com.alibaba.cloud.ai.model.workflow.node;
+package com.alibaba.cloud.ai.model.workflow;
 
-public enum WorkflowNodeType {
+public enum NodeType {
 
 	START("START", "start"),
 
@@ -20,7 +20,7 @@ public enum WorkflowNodeType {
 
 	private String difyValue;
 
-	WorkflowNodeType(String value, String difyValue) {
+	NodeType(String value, String difyValue) {
 		this.value = value;
 		this.difyValue = difyValue;
 	}
@@ -33,8 +33,8 @@ public enum WorkflowNodeType {
 		return this.difyValue;
 	}
 
-	public static WorkflowNodeType difyValueOf(String difyValue) {
-		for (WorkflowNodeType nodeType : WorkflowNodeType.values()) {
+	public static NodeType difyValueOf(String difyValue) {
+		for (NodeType nodeType : NodeType.values()) {
 			if (nodeType.difyValue.equals(difyValue)) {
 				return nodeType;
 			}

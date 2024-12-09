@@ -4,7 +4,7 @@ public enum VariableType {
 
 	STRING("STRING", String.class, "string"),
 
-	NUMBER("DOUBLE", Number.class, "number"),
+	NUMBER("NUMBER", Number.class, "number"),
 
 	BOOLEAN("BOOLEAN", Boolean.class, "not supported"),
 

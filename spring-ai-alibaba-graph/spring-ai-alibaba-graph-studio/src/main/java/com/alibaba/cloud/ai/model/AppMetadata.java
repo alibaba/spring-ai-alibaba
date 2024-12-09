@@ -3,6 +3,9 @@ package com.alibaba.cloud.ai.model;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+/**
+ *AppMetadata carries the basic information of an App
+ */
 @Data
 @Accessors(chain = true)
 public class AppMetadata {

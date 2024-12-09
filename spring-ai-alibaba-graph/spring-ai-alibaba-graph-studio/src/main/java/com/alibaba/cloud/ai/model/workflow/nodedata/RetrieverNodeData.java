@@ -1,9 +1,9 @@
-package com.alibaba.cloud.ai.model.workflow.node.data;
+package com.alibaba.cloud.ai.model.workflow.nodedata;
 
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.VariableType;
-import com.alibaba.cloud.ai.model.workflow.node.WorkflowNodeData;
+import com.alibaba.cloud.ai.model.workflow.NodeData;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -14,7 +14,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 @Accessors(chain = true)
 @Data
-public class RetrieverNodeData extends WorkflowNodeData {
+public class RetrieverNodeData extends NodeData {
 
 	public static final List<Variable> INPUT_SCHEMA = List.of(new Variable("query", VariableType.STRING.value()));
 

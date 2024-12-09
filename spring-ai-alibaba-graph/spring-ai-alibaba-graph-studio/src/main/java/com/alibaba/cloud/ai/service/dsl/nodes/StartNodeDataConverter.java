@@ -2,10 +2,10 @@ package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableType;
-import com.alibaba.cloud.ai.model.workflow.node.WorkflowNodeData;
-import com.alibaba.cloud.ai.model.workflow.node.WorkflowNodeType;
-import com.alibaba.cloud.ai.model.workflow.node.data.StartNodeData;
-import com.alibaba.cloud.ai.service.dsl.WorkflowNodeDataConverter;
+import com.alibaba.cloud.ai.model.workflow.NodeData;
+import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.model.workflow.nodedata.StartNodeData;
+import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -14,17 +14,17 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 @Component
-public class StartNodeDataConverter implements WorkflowNodeDataConverter {
+public class StartNodeDataConverter implements NodeDataConverter {
 
 	private static final List<String> VARIABLE_STRING_TYPES = List.of("text-input", "paragraph", "select");
 
 	@Override
 	public Boolean supportType(String nodeType) {
-		return WorkflowNodeType.START.value().equals(nodeType);
+		return NodeType.START.value().equals(nodeType);
 	}
 
 	@Override
-	public WorkflowNodeData parseDifyData(Map<String, Object> data) {
+	public NodeData parseDifyData(Map<String, Object> data) {
 		List<Map<String, Object>> inputMap = (List<Map<String, Object>>) data.get("variables");
 		List<StartNodeData.StartInput> startInputs = new ArrayList<>();
 		List<Variable> outputs = new ArrayList<>();
@@ -54,7 +54,7 @@ public class StartNodeDataConverter implements WorkflowNodeDataConverter {
 	}
 
 	@Override
-	public Map<String, Object> dumpDifyData(WorkflowNodeData nodeData) {
+	public Map<String, Object> dumpDifyData(NodeData nodeData) {
 		StartNodeData startNodeData = (StartNodeData) nodeData;
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);

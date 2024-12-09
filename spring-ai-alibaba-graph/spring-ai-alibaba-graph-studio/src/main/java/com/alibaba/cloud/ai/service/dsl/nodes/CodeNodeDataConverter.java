@@ -3,28 +3,28 @@ package com.alibaba.cloud.ai.service.dsl.nodes;
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.VariableType;
-import com.alibaba.cloud.ai.model.workflow.node.WorkflowNodeData;
-import com.alibaba.cloud.ai.model.workflow.node.WorkflowNodeType;
-import com.alibaba.cloud.ai.model.workflow.node.data.CodeNodeData;
-import com.alibaba.cloud.ai.service.dsl.WorkflowNodeDataConverter;
+import com.alibaba.cloud.ai.model.workflow.NodeData;
+import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.model.workflow.nodedata.CodeNodeData;
+import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 @Component
-public class CodeNodeDataConverter implements WorkflowNodeDataConverter {
+public class CodeNodeDataConverter implements NodeDataConverter {
 
 	@Override
 	public Boolean supportType(String nodeType) {
-		return WorkflowNodeType.CODE.value().equals(nodeType);
+		return NodeType.CODE.value().equals(nodeType);
 	}
 
 	@Override
-	public WorkflowNodeData parseDifyData(Map<String, Object> data) {
+	public NodeData parseDifyData(Map<String, Object> data) {
 		List<Map<String, Object>> variables = (List<Map<String, Object>>) data.get("variables");
 		List<VariableSelector> inputs = variables.stream().map(variable -> {
-			String[] selector = (String[]) variable.get("value_selector");
-			return new VariableSelector(selector[0], selector[1], (String) variable.get("variable"));
+			List<String> selector = (List<String>) variable.get("value_selector");
+			return new VariableSelector(selector.get(0), selector.get(1), (String) variable.get("variable"));
 		}).toList();
 		Map<String, Map<String, Object>> outputsMap = (Map<String, Map<String, Object>>) data.get("outputs");
 		List<Variable> outputs = outputsMap.entrySet().stream().map(entry -> {
@@ -39,7 +39,7 @@ public class CodeNodeDataConverter implements WorkflowNodeDataConverter {
 	}
 
 	@Override
-	public Map<String, Object> dumpDifyData(WorkflowNodeData nodeData) {
+	public Map<String, Object> dumpDifyData(NodeData nodeData) {
 		CodeNodeData codeNodeData = (CodeNodeData) nodeData;
 		Map<String, Object> data = new HashMap<>();
 		data.put("code", codeNodeData.getCode());

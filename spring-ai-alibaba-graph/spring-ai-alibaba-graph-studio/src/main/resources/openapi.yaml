@@ -6,15 +6,95 @@ servers:
 - url: http://localhost:8080
   description: Generated server url
 tags:
-- name: dsl
-  description: the DSL API
-- name: app
+- name: App
   description: the app API
+- name: DSL
+  description: the DSL API
+- name: Generator
+  description: API related to project generation
+- name: Runner
+  description: the running api
 paths:
-  /studio/api/app:
+  /graph-studio/api/generate/project:
     get:
       tags:
-      - app
+      - Generator
+      summary: Generate project from DSL
+      operationId: generateZip
+      parameters:
+      - name: projectGenerateParam
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ProjectGenerateParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+    post:
+      tags:
+      - Generator
+      summary: Generate project from DSL
+      operationId: generateZip_1
+      parameters:
+      - name: projectGenerateParam
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ProjectGenerateParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: byte
+  /graph-studio/api/generate/code:
+    get:
+      tags:
+      - Generator
+      summary: Generate code from node data
+      operationId: generateCode
+      parameters:
+      - name: codeGenerateParam
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/CodeGenerateParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RString"
+    post:
+      tags:
+      - Generator
+      summary: Generate code from node data
+      operationId: generateCode_1
+      parameters:
+      - name: codeGenerateParam
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/CodeGenerateParam"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RString"
+  /graph-studio/api/app:
+    get:
+      tags:
+      - App
       summary: list apps
       operationId: list
       responses:
@@ -26,7 +106,7 @@ paths:
                 $ref: "#/components/schemas/RListApp"
     put:
       tags:
-      - app
+      - App
       summary: sync app
       operationId: sync
       requestBody:
@@ -44,7 +124,7 @@ paths:
                 $ref: "#/components/schemas/RApp"
     post:
       tags:
-      - app
+      - App
       summary: create app
       operationId: create
       requestBody:
@@ -60,10 +140,66 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RApp"
-  /studio/api/dsl/import:
+  /graph-studio/run/app/{id}/sync:
     post:
       tags:
-      - dsl
+      - Runner
+      summary: run app in sync mode
+      operationId: run
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RRunEvent"
+  /graph-studio/run/app/{id}/stream:
+    post:
+      tags:
+      - Runner
+      summary: run app in stream mode
+      operationId: stream
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RunEvent"
+  /graph-studio/api/dsl/import:
+    post:
+      tags:
+      - DSL
       summary: import app from dsl
       operationId: importDSL
       requestBody:
@@ -79,10 +215,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RApp"
-  /studio/api/dsl/export/{id}:
+  /graph-studio/api/dsl/export/{id}:
     get:
       tags:
-      - dsl
+      - DSL
       summary: export app to dsl
       operationId: exportDSL
       parameters:
@@ -103,10 +239,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RString"
-  /studio/api/app/{id}:
+  /graph-studio/api/app/{id}:
     get:
       tags:
-      - app
+      - App
       summary: get app by id
       operationId: get
       parameters:
@@ -124,7 +260,7 @@ paths:
                 $ref: "#/components/schemas/RApp"
     delete:
       tags:
-      - app
+      - App
       summary: delete app
       operationId: delete
       parameters:
@@ -142,6 +278,72 @@ paths:
                 $ref: "#/components/schemas/RBoolean"
 components:
   schemas:
+    ProjectGenerateParam:
+      type: object
+      properties:
+        dsl:
+          type: string
+          description: dsl raw content
+        dialect:
+          type: string
+          description: dsl dialect
+          example: dify
+        bootVersion:
+          type: string
+          description: spring boot version
+        baseDir:
+          type: string
+          description: base directory
+          example: demo
+        groupId:
+          type: string
+          description: group id
+          example: com.example
+        name:
+          type: string
+          description: artifact id
+          example: demo
+        description:
+          type: string
+          description: description
+        packageName:
+          type: string
+          description: package name
+          example: com.example.demo
+        packaging:
+          type: string
+          description: packaging
+          example: jar
+        javaVersion:
+          type: string
+          description: javaVersion
+          example: "21"
+    CodeGenerateParam:
+      type: object
+      properties:
+        nodeType:
+          type: string
+          description: node type
+          example: CODE
+        nodeData:
+          type: object
+          additionalProperties:
+            type: object
+            description: node data
+          description: node data
+    RString:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        msg:
+          type: string
+        data:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
     App:
       type: object
       properties:
@@ -149,6 +351,8 @@ components:
           $ref: "#/components/schemas/AppMetadata"
         spec:
           type: object
+        id:
+          type: string
     AppMetadata:
       type: object
       properties:
@@ -173,6 +377,24 @@ components:
         timestamp:
           type: integer
           format: int64
+    RRunEvent:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        msg:
+          type: string
+        data:
+          $ref: "#/components/schemas/RunEvent"
+        timestamp:
+          type: integer
+          format: int64
+    RunEvent:
+      type: object
+      properties:
+        eventType:
+          type: string
     DSLParam:
       type: object
       properties:
@@ -196,19 +418,6 @@ components:
         description:
           type: string
           description: app description
-    RString:
-      type: object
-      properties:
-        code:
-          type: integer
-          format: int32
-        msg:
-          type: string
-        data:
-          type: string
-        timestamp:
-          type: integer
-          format: int64
     RListApp:
       type: object
       properties:

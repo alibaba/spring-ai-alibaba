@@ -4,6 +4,9 @@ import lombok.Data;
 
 import java.util.Map;
 
+/**
+ * Variable is often used to represent the output of a node, or pre-defined variables in an App.
+ */
 @Data
 public class Variable {
 
@@ -17,7 +20,11 @@ public class Variable {
 
 	private Map<String, Object> extraProperties;
 
-	// only name and value is required
+	/**
+	 * Only name and valueType is required
+	 * @param name a valid variable name
+	 * @param valueType a {@link VariableType} value
+	 */
 	public Variable(String name, String valueType) {
 		this.name = name;
 		this.valueType = valueType;

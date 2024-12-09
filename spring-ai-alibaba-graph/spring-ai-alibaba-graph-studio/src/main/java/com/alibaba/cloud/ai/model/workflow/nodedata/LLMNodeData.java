@@ -1,9 +1,9 @@
-package com.alibaba.cloud.ai.model.workflow.node.data;
+package com.alibaba.cloud.ai.model.workflow.nodedata;
 
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.VariableType;
-import com.alibaba.cloud.ai.model.workflow.node.WorkflowNodeData;
+import com.alibaba.cloud.ai.model.workflow.NodeData;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,7 +14,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Accessors(chain = true)
-public class LLMNodeData extends WorkflowNodeData {
+public class LLMNodeData extends NodeData {
 
 	public static final Variable DEFAULT_OUTPUT_SCHEMA = new Variable("text", VariableType.STRING.value());
 

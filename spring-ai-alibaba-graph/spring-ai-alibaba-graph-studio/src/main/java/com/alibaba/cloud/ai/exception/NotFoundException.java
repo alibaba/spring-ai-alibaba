@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.common;
+package com.alibaba.cloud.ai.exception;
 
+import com.alibaba.cloud.ai.common.ReturnCode;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
-public enum ReturnCode {
+@Setter
+public class NotFoundException extends RuntimeException {
 
-	RC200(200, "OK"),
-	RC400(400, "INVALID_ARGUMENT"),
-	RC404(404, "NOT_FOUND"),
-	RC409(409, "ABORTED"),
-	RC500(500, "INTERNAL"),
-	RC501(501, "NOT_IMPLEMENTED");
+	private int code;
 
-	private final int code;
+	private String msg;
 
-	private final String msg;
+	public NotFoundException() {
+		this.code = ReturnCode.RC404.getCode();
+		this.msg = ReturnCode.RC404.getMsg();
+	}
 
-	ReturnCode(int code, String msg) {
-		this.code = code;
+	public NotFoundException(String msg) {
+		this.code = ReturnCode.RC404.getCode();
 		this.msg = msg;
 	}
 

@@ -5,18 +5,20 @@ import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.chatbot.ChatBot;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
-import com.alibaba.cloud.ai.model.workflow.WorkflowGraph;
-import com.alibaba.cloud.ai.model.workflow.edge.Case;
-import com.alibaba.cloud.ai.model.workflow.edge.WorkflowEdge;
-import com.alibaba.cloud.ai.model.workflow.edge.WorkflowEdgeType;
-import com.alibaba.cloud.ai.model.workflow.node.WorkflowNode;
-import com.alibaba.cloud.ai.model.workflow.node.WorkflowNodeType;
-import com.alibaba.cloud.ai.saver.AppSaver;
-import com.alibaba.cloud.ai.service.dsl.WorkflowNodeDataConverter;
+import com.alibaba.cloud.ai.model.workflow.Graph;
+import com.alibaba.cloud.ai.model.workflow.Case;
+import com.alibaba.cloud.ai.model.workflow.Edge;
+import com.alibaba.cloud.ai.model.workflow.EdgeType;
+import com.alibaba.cloud.ai.model.workflow.Node;
+import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.service.dsl.Serializer;
+import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.AbstractDSLAdapter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import org.apache.commons.lang3.NotImplementedException;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -31,13 +33,16 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 
 	private static final String[] DIFY_WORKFLOW_MODES = { "workflow", "advanced-chat" };
 
-	private List<WorkflowNodeDataConverter> nodeDataConverters;
+	private List<NodeDataConverter> nodeDataConverters;
 
-	public DifyDSLAdapter(List<WorkflowNodeDataConverter> nodeDataConverters) {
+	private Serializer serializer;
+
+	public DifyDSLAdapter(List<NodeDataConverter> nodeDataConverters, @Qualifier("yaml") Serializer serializer) {
 		this.nodeDataConverters = nodeDataConverters;
+		this.serializer = serializer;
 	}
 
-	private WorkflowNodeDataConverter getNodeDataConverter(String type) {
+	private NodeDataConverter getNodeDataConverter(String type) {
 		return nodeDataConverters.stream()
 			.filter(converter -> converter.supportType(type))
 			.findFirst()
@@ -49,6 +54,11 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		if (dslData == null || !dslData.containsKey("app")) {
 			throw new IllegalArgumentException("invalid dify dsl");
 		}
+	}
+
+	@Override
+	public Serializer getSerializer() {
+		return serializer;
 	}
 
 	@Override
@@ -71,38 +81,46 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 	}
 
 	@Override
+	public Map<String, Object> metadataToMap(AppMetadata metadata) {
+		Map<String, Object> data = new HashMap<>();
+		String difyMode = metadata.getMode().equals(AppMetadata.WORKFLOW_MODE) ? "workflow" : "agent-chat";
+		data.put("app", Map.of("name", metadata.getName(), "description", metadata.getDescription(), "mode", difyMode));
+		data.put("kind", "app");
+		return data;
+	}
+
+	@Override
 	public Workflow mapToWorkflow(Map<String, Object> data) {
+		Map<String, Object> workflowData = (Map<String, Object>) data.get("workflow");
 		Workflow workflow = new Workflow();
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		// map key is snake_case style
 		objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-		if (data.containsKey("conversation_variables")) {
-			List<Map<String, Object>> variables = (List<Map<String, Object>>) data.get("conversation_variables");
+		if (workflowData.containsKey("conversation_variables")) {
+			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData.get("conversation_variables");
 			List<Variable> workflowVars = variables.stream()
 				.map(variable -> objectMapper.convertValue(variable, Variable.class))
 				.collect(Collectors.toList());
 			workflow.setWorkflowVars(workflowVars);
 		}
-		if (data.containsKey("environment_variables")) {
-			List<Map<String, Object>> variables = (List<Map<String, Object>>) data.get("environment_variables");
+		if (workflowData.containsKey("environment_variables")) {
+			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData.get("environment_variables");
 			List<Variable> envVars = variables.stream()
 				.map(variable -> objectMapper.convertValue(variable, Variable.class))
 				.collect(Collectors.toList());
 			workflow.setEnvVars(envVars);
 		}
-		workflow.setGraph(constructGraph((Map<String, Object>) data.get("graph")));
+		workflow.setGraph(constructGraph((Map<String, Object>) workflowData.get("graph")));
 		return workflow;
 	}
 
-	private WorkflowGraph constructGraph(Map<String, Object> data) {
-		WorkflowGraph graph = new WorkflowGraph();
-		List<WorkflowNode> workflowNodes = new ArrayList<>();
-		List<WorkflowEdge> workflowEdges = new ArrayList<>();
+	private Graph constructGraph(Map<String, Object> data) {
+		Graph graph = new Graph();
+		List<Node> workflowNodes = new ArrayList<>();
+		List<Edge> workflowEdges = new ArrayList<>();
 		List<Map<String, Object>> branchNodes = new ArrayList<>();
-		Map<String, WorkflowEdge> branchEdges = new HashMap<>();
-		ObjectMapper objectMapper = new ObjectMapper();
-		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		Map<String, Edge> branchEdges = new HashMap<>();
 		// convert nodes
 		if (data.containsKey("nodes")) {
 			List<Map<String, Object>> nodes = (List<Map<String, Object>>) data.get("nodes");
@@ -121,7 +139,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		return graph;
 	}
 
-	private void constructNodes(List<Map<String, Object>> nodeMaps, List<WorkflowNode> workflowNodes,
+	private void constructNodes(List<Map<String, Object>> nodeMaps, List<Node> nodes,
 			List<Map<String, Object>> branchNodes) {
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -130,36 +148,36 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			String difyNodeType = (String) nodeDataMap.get("type");
 			// collect if-else node
 			if (difyNodeType.equals("if-else")) {
-				branchNodes.add(nodeDataMap);
+				branchNodes.add(nodeMap);
 				continue;
 			}
 			// determine the type of dify node is supported yet
-			WorkflowNodeType nodeType = WorkflowNodeType.difyValueOf(difyNodeType);
+			NodeType nodeType = NodeType.difyValueOf(difyNodeType);
 			if (nodeType == null) {
-				throw new IllegalArgumentException("invalid dify dsl: unsupported node type " + difyNodeType);
+				throw new NotImplementedException("unsupported node type " + difyNodeType);
 			}
 			// convert node map to workflow node using jackson
 			nodeMap.remove("data");
-			WorkflowNode n = objectMapper.convertValue(nodeMap, WorkflowNode.class);
+			Node n = objectMapper.convertValue(nodeMap, Node.class);
 			// set title and desc
 			n.setTitle((String) nodeDataMap.get("title")).setDesc((String) nodeDataMap.get("desc"));
 			// convert node data using specific WorkflowNodeDataConverter
-			WorkflowNodeDataConverter nodeDataConverter = getNodeDataConverter(nodeType.value());
+			NodeDataConverter nodeDataConverter = getNodeDataConverter(nodeType.value());
 			n.setData(nodeDataConverter.parseDifyData(nodeDataMap));
 			n.setType(nodeType.value());
-			workflowNodes.add(n);
+			nodes.add(n);
 		}
 	}
 
-	private void constructEdges(List<Map<String, Object>> edgeMaps, List<WorkflowEdge> workflowEdges,
-			Map<String, WorkflowEdge> branchEdges) {
+	private void constructEdges(List<Map<String, Object>> edgeMaps, List<Edge> edges,
+			Map<String, Edge> branchEdges) {
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		for (Map<String, Object> edge : edgeMaps) {
-			WorkflowEdge workflowEdge = objectMapper.convertValue(edge, WorkflowEdge.class);
+			Edge workflowEdge = objectMapper.convertValue(edge, Edge.class);
 			if (edge.get("sourceHandle").equals("source")) {
-				workflowEdge.setType(WorkflowEdgeType.DIRECT.value());
-				workflowEdges.add(workflowEdge);
+				workflowEdge.setType(EdgeType.DIRECT.value());
+				edges.add(workflowEdge);
 			}
 			else {
 				// collect if-else edges
@@ -169,8 +187,8 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		}
 	}
 
-	private void constructConditionEdge(List<Map<String, Object>> branchNodes, Map<String, WorkflowEdge> branchEdges,
-			List<WorkflowEdge> workflowEdges) {
+	private void constructConditionEdge(List<Map<String, Object>> branchNodes, Map<String, Edge> branchEdges,
+			List<Edge> edges) {
 		for (Map<String, Object> nodeMap : branchNodes) {
 			Map<String, Object> nodeDataMap = (Map<String, Object>) nodeMap.get("data");
 			List<Case> cases = new ArrayList<>();
@@ -190,29 +208,29 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 					.setLogicalOperator((String) caseData.get("logical_operator"))
 					.setConditions(conditions);
 				// collect case target
-				WorkflowEdge branchEdge = branchEdges.get(c.getId());
+				Edge branchEdge = branchEdges.get(c.getId());
 				targetMap.put(c.getId(), branchEdge.getTarget());
 				cases.add(c);
 			}
 			// find branchNode's source
 			String branchNodeId = (String) nodeMap.get("id");
-			String source = findSourceNode(workflowEdges, branchEdges.values().stream().toList(), branchNodeId);
-			WorkflowEdge conditionEdge = new WorkflowEdge().setId(branchNodeId)
-				.setType(WorkflowEdgeType.CONDITION.value())
+			String source = findSourceNode(edges, branchEdges.values().stream().toList(), branchNodeId);
+			Edge conditionEdge = new Edge().setId(branchNodeId)
+				.setType(EdgeType.CONDITIONAL.value())
 				.setSource(source)
 				.setCases(cases)
 				.setTargetMap(targetMap);
-			workflowEdges.add(conditionEdge);
+			edges.add(conditionEdge);
 		}
 	}
 
-	private String findSourceNode(List<WorkflowEdge> edges, List<WorkflowEdge> branchEdges, String nodeId) {
-		for (WorkflowEdge edge : edges) {
+	private String findSourceNode(List<Edge> directEdges, List<Edge> branchEdges, String nodeId) {
+		for (Edge edge : directEdges) {
 			if (edge.getTarget().equals(nodeId)) {
 				return edge.getSource();
 			}
 		}
-		for (WorkflowEdge edge : branchEdges) {
+		for (Edge edge : branchEdges) {
 			if (edge.getTarget().equals(nodeId)) {
 				return edge.getSource();
 			}
@@ -227,16 +245,17 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		List<Map<String, Object>> workflowVars = objectMapper.convertValue(workflow.getWorkflowVars(), List.class);
 		List<Map<String, Object>> envVars = objectMapper.convertValue(workflow.getEnvVars(), List.class);
-		data.put("conversation_variables", workflowVars);
-		data.put("environment_variables", envVars);
-
-		WorkflowGraph graph = workflow.getGraph();
+		Graph graph = workflow.getGraph();
 		Map<String, Object> graphMap = deconstructGraph(graph);
-		data.put("graph", graphMap);
+		data.put("workflow", Map.of(
+				"conversation_variables", workflowVars,
+				"environment_variables", envVars,
+				"graph", graphMap
+		));
 		return data;
 	}
 
-	private Map<String, Object> deconstructGraph(WorkflowGraph graph) {
+	private Map<String, Object> deconstructGraph(Graph graph) {
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		List<Map<String, Object>> edgeMaps = new ArrayList<>();
@@ -248,13 +267,13 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		return Map.of("edges", edgeMaps, "nodes", nodeMaps);
 	}
 
-	private void deconstructEdge(List<WorkflowEdge> edges, List<Map<String, Object>> edgeMaps,
-			List<Map<String, Object>> nodeMaps) {
+	private void deconstructEdge(List<Edge> edges, List<Map<String, Object>> edgeMaps,
+								 List<Map<String, Object>> nodeMaps) {
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		for (WorkflowEdge edge : edges) {
+		for (Edge edge : edges) {
 			// collect direct edge
-			if (edge.getType().equals(WorkflowEdgeType.DIRECT.value())) {
+			if (edge.getType().equals(EdgeType.DIRECT.value())) {
 				Map<String, Object> edgeMap = objectMapper.convertValue(edge, Map.class);
 				edgeMap.put("sourceHandle", "source");
 				edgeMap.put("targetHandle", "target");
@@ -291,13 +310,13 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 
 	}
 
-	private void deconstructNode(List<WorkflowNode> nodes, List<Map<String, Object>> nodeMaps) {
+	private void deconstructNode(List<Node> nodes, List<Map<String, Object>> nodeMaps) {
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		for (WorkflowNode node : nodes) {
+		for (Node node : nodes) {
 			Map<String, Object> n = objectMapper.convertValue(node, Map.class);
-			WorkflowNodeType nodeType = WorkflowNodeType.valueOf(node.getType());
-			WorkflowNodeDataConverter nodeDataConverter = getNodeDataConverter(node.getType());
+			NodeType nodeType = NodeType.valueOf(node.getType());
+			NodeDataConverter nodeDataConverter = getNodeDataConverter(node.getType());
 			Map<String, Object> nodeData = nodeDataConverter.dumpDifyData(node.getData());
 			nodeData.put("type", nodeType.difyValue());
 			nodeData.put("title", node.getTitle());

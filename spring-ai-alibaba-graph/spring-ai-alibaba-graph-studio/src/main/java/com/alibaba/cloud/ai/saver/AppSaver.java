@@ -4,15 +4,16 @@ import com.alibaba.cloud.ai.model.App;
 
 import java.util.List;
 
+/**
+ * AppSaver is the abstraction of the persistence of {@link App}
+ */
 public interface AppSaver {
 
 	List<App> list();
 
 	App get(String id);
 
-	App create(App app);
-
-	App update(App app);
+	App save(App app);
 
 	void delete(String id);
 
