@@ -39,7 +39,7 @@ The Spring AI Alibaba project management committee (PMC), is the only governance
 
 ## Committer
 
-[Project committers](./COMMITTERS.md) are responsible for activities around maintaining and updating Spring AI Alibaba. Final decisions on the project reside with the project committers.
+[Project committers](./COMMITTERS.md) are responsible for activities around maintaining and updating Spring AI Alibaba. 
 
 Committers MUST remain active. If they are unresponsive for >6 months, they will be automatically removed unless a <a href="https://en.wikipedia.org/wiki/Supermajority#Two-thirds_vote" target="_blank">super-majority</a> of the other project committers agrees to extend the period to be greater than 6 months.
 
