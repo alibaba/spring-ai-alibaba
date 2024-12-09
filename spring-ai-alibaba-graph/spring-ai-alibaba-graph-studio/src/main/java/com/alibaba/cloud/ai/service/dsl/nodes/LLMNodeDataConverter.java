@@ -1,11 +1,12 @@
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.model.VariableSelector;
-import com.alibaba.cloud.ai.model.workflow.node.WorkflowNodeData;
-import com.alibaba.cloud.ai.model.workflow.node.WorkflowNodeType;
-import com.alibaba.cloud.ai.model.workflow.node.data.LLMNodeData;
-import com.alibaba.cloud.ai.service.dsl.WorkflowNodeDataConverter;
+import com.alibaba.cloud.ai.model.workflow.NodeData;
+import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.model.workflow.nodedata.LLMNodeData;
+import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import com.alibaba.cloud.ai.utils.StringTemplateUtil;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -15,23 +16,27 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Component
-public class LLMNodeDataConverter implements WorkflowNodeDataConverter {
+public class LLMNodeDataConverter implements NodeDataConverter {
 
 	@Override
 	public Boolean supportType(String nodeType) {
-		return WorkflowNodeType.LLM.value().equals(nodeType);
+		return NodeType.LLM.value().equals(nodeType);
 	}
 
 	@Override
-	public WorkflowNodeData parseDifyData(Map<String, Object> data) {
+	public NodeData parseDifyData(Map<String, Object> data) {
 		List<VariableSelector> inputs = new ArrayList<>();
 		// convert prompt template
 		Map<String, Object> context = (Map<String, Object>) data.get("context");
-		List<Map<String, Object>> difyTmplList = (List<Map<String, Object>>) data.get("prompt_template");
+//		List<Map<String, Object>> difyTmplList = (List<Map<String, Object>>) data.get("prompt_template");
+		List<Map<String, Object>> difyTmplList;
+		if ( data.get("prompt_template")  instanceof List<?>){
+			difyTmplList = (List<Map<String, Object>>) data.get("prompt_template");
+		}else {
+			difyTmplList = List.of((Map<String, Object>) data.get("prompt_template"));
+		}
 		List<LLMNodeData.PromptTemplate> tmplList = new ArrayList<>();
 		if ((Boolean) context.get("enabled")) {
 			List<String> variableSelector = (List<String>) context.get("variable_selector");
@@ -47,7 +52,8 @@ public class LLMNodeDataConverter implements WorkflowNodeDataConverter {
 				String[] splits = variable.split("\\.", 2);
 				inputs.add(new VariableSelector(splits[0], splits[1], "arg"));
 			});
-			tmplList.add(new LLMNodeData.PromptTemplate((String) promptTmpl.get("role"), tmpl));
+			String role = promptTmpl.containsKey("role") ? (String) promptTmpl.get("role") : "system";
+			tmplList.add(new LLMNodeData.PromptTemplate( role, tmpl));
 		}
 		// convert model config
 		Map<String, Object> modelData = (Map<String, Object>) data.get("model");
@@ -81,12 +87,13 @@ public class LLMNodeDataConverter implements WorkflowNodeDataConverter {
 	}
 
 	@Override
-	public Map<String, Object> dumpDifyData(WorkflowNodeData nodeData) {
+	public Map<String, Object> dumpDifyData(NodeData nodeData) {
 		LLMNodeData llmNodeData = (LLMNodeData) nodeData;
 		Map<String, Object> data = new HashMap<>();
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.LOWER_CASE);
+		objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 		// put context
 		data.put("context", Map.of("enabled", false, "variable_selector", new ArrayList<>()
 

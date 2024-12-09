@@ -28,6 +28,18 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @ResponseBody
 public class RestExceptionHandler {
 
+	@ExceptionHandler(NotFoundException.class)
+	public R<String> notFoundException(NotFoundException e) {
+		log.error("NotFoundException ", e);
+		return R.error(e.getCode(), e.getMsg());
+	}
+
+	@ExceptionHandler(SerializationException.class)
+	public R<String> serializeException(SerializationException e) {
+		log.error("SerializeException ", e);
+		return R.error(e.getCode(), e.getMsg());
+	}
+
 	@ExceptionHandler(NullPointerException.class)
 	public R<String> nullPointerException(NullPointerException e) {
 		log.error("NullPointerException ", e);

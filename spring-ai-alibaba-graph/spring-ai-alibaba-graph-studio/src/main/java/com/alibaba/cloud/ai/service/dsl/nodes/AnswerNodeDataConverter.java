@@ -1,10 +1,10 @@
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.model.VariableSelector;
-import com.alibaba.cloud.ai.model.workflow.node.WorkflowNodeData;
-import com.alibaba.cloud.ai.model.workflow.node.WorkflowNodeType;
-import com.alibaba.cloud.ai.model.workflow.node.data.AnswerNodeData;
-import com.alibaba.cloud.ai.service.dsl.WorkflowNodeDataConverter;
+import com.alibaba.cloud.ai.model.workflow.NodeData;
+import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.model.workflow.nodedata.AnswerNodeData;
+import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import com.alibaba.cloud.ai.utils.StringTemplateUtil;
 import org.springframework.stereotype.Component;
 
@@ -14,15 +14,15 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class AnswerNodeDataConverter implements WorkflowNodeDataConverter {
+public class AnswerNodeDataConverter implements NodeDataConverter {
 
 	@Override
 	public Boolean supportType(String nodeType) {
-		return WorkflowNodeType.ANSWER.value().equals(nodeType);
+		return NodeType.ANSWER.value().equals(nodeType);
 	}
 
 	@Override
-	public WorkflowNodeData parseDifyData(Map<String, Object> data) {
+	public NodeData parseDifyData(Map<String, Object> data) {
 		String difyTmpl = (String) data.get("answer");
 		List<String> variables = new ArrayList<>();
 		String tmpl = StringTemplateUtil.fromDifyTmpl(difyTmpl, variables);
@@ -34,7 +34,7 @@ public class AnswerNodeDataConverter implements WorkflowNodeDataConverter {
 	}
 
 	@Override
-	public Map<String, Object> dumpDifyData(WorkflowNodeData nodeData) {
+	public Map<String, Object> dumpDifyData(NodeData nodeData) {
 		AnswerNodeData answerNodeData = (AnswerNodeData) nodeData;
 		Map<String, Object> data = new HashMap<>();
 		String difyTmpl = StringTemplateUtil.toDifyTmpl(answerNodeData.getAnswer());

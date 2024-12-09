@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Simple memory persistence implementation of {@link AppSaver}
+ */
 public class AppMemorySaver implements AppSaver {
 
 	private Map<String, App> apps;
@@ -15,7 +18,7 @@ public class AppMemorySaver implements AppSaver {
 	}
 
 	public AppMemorySaver(Map<String, App> apps) {
-		this.apps = apps;
+		this.apps = new ConcurrentHashMap<>(apps);
 	}
 
 	@Override
@@ -29,21 +32,11 @@ public class AppMemorySaver implements AppSaver {
 	}
 
 	@Override
-	public App create(App app) {
-		if (apps.containsKey(app.getMetadata().getId())) {
-			throw new IllegalArgumentException("app id already exists");
-		}
-		return apps.put(app.getMetadata().getId(), app);
+	public App save(App app) {
+		apps.put(app.getMetadata().getId(), app);
+		return app;
 	}
 
-	@Override
-	public App update(App app) {
-		if (!apps.containsKey(app.getMetadata().getId())) {
-			throw new IllegalArgumentException("app not exists: " + app.getMetadata().getId());
-		}
-		return apps.put(app.getMetadata().getId(), app);
-
-	}
 
 	@Override
 	public void delete(String id) {

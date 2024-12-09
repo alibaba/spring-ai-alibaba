@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.model.workflow.edge;
+package com.alibaba.cloud.ai.model.workflow;
 
 import com.alibaba.cloud.ai.model.VariableSelector;
 import lombok.Data;
@@ -6,6 +6,9 @@ import lombok.experimental.Accessors;
 
 import java.util.List;
 
+/**
+ * A Case represents a condition in ConditionalEdge
+ */
 @Data
 @Accessors(chain = true)
 public class Case {

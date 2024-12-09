@@ -1,11 +1,15 @@
-package com.alibaba.cloud.ai.model.workflow.node;
+package com.alibaba.cloud.ai.model.workflow;
 
+import com.alibaba.cloud.ai.service.runner.RunnableModel;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
+/**
+ * Node defines the visual elements and behavior of a node in a workflow.
+ */
 @Data
 @Accessors(chain = true)
-public class WorkflowNode {
+public class Node implements RunnableModel {
 
 	private String id;
 
@@ -31,7 +35,7 @@ public class WorkflowNode {
 
 	private String targetPosition;
 
-	private WorkflowNodeData data;
+	private NodeData data;
 
 	@Data
 	public static class Coordinate {
