@@ -1,7 +1,7 @@
 # Governance
 Below is the organizational structure of the Spring AI Alibaba project.
 
-![project-governance](./docs/imgs/governance.png)
+<img style="max-width:500px; height:auto;" src="./docs/imgs/governance.png">project-governance</img>
 
 Committers have full write permissions to the entire project codebase, like permissions to operate branches, issues, pull requests, etc. PMC Members have the same codebase permissions as Committers, and are responsible for the community management, decision-making, etc., and are responsible for voting and making decisions on important matters such as releases, vulnerabilities, committer and PMC Member nominations, etc.
 
