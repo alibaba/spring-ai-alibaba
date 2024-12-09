@@ -6,7 +6,7 @@ import com.alibaba.cloud.ai.param.CreateAppParam;
 import java.util.List;
 
 /**
- * WorkflowDelegate defines the workflow crud operations.
+ * AppDelegate defines the app crud operations.
  */
 public interface AppDelegate {
 

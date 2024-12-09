@@ -5,10 +5,13 @@ import lombok.Data;
 
 import java.util.List;
 
+/**
+ * Workflow defines the AI powered flow.
+ */
 @Data
 public class Workflow {
 
-	private WorkflowGraph graph;
+	private Graph graph;
 
 	private List<Variable> workflowVars;
 

@@ -3,13 +3,16 @@ package com.alibaba.cloud.ai.param;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+/**
+ * generate project params
+ */
 @Data
-public class GenerateParam {
+public class ProjectGenerateParam {
 
 	@Schema(description = "dsl raw content")
 	private String dsl;
 
-	@Schema(description = "dsl dialect")
+	@Schema(description = "dsl dialect", example = "dify")
 	private String dialect;
 
 	@Schema(description = "spring boot version")

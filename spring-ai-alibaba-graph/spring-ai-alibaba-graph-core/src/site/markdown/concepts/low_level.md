@@ -383,7 +383,7 @@ System.out.println(result.getContent());
 
 ## Streaming
 
-LangGraph4j is built with first class support for streaming. it uses [java-async-generator] library to help with this. 
+LangGraph4j is built with first class support for streaming. it uses [java-async-projectGenerator] library to help with this. 
 
 <!-- 
 There are several different streaming modes that LangGraph4j supports:
@@ -412,6 +412,6 @@ In addition, you can use the [`streamEvents`](https://v02.api.js.langchain.com/c
 [`graph.getStateHistory(config)`]: /langgraph4j/apidocs/org/bsc/langgraph4j/CompiledGraph.html#getStateHistory-com.alibaba.cloud.ai.graph.RunnableConfig-
 [`graph.getState(config)`]: /langgraph4j/apidocs/org/bsc/langgraph4j/CompiledGraph.html#getState-com.alibaba.cloud.ai.graph.RunnableConfig-
 [PlantUML]: https://plantuml.com
-[java-async-generator]: https://github.com/bsorrentino/java-async-generator
+[java-async-projectGenerator]: https://github.com/bsorrentino/java-async-projectGenerator
 [Mermaid]: https://mermaid.js.org
 [`graph.getGraph`]: /langgraph4j/apidocs/org/bsc/langgraph4j/CompiledGraph.html#getGraph-com.alibaba.cloud.ai.graph.GraphRepresentation.Type-java.lang.String-

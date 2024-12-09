@@ -12,25 +12,23 @@ import java.util.List;
 @CrossOrigin
 @RestController
 @RequestMapping("graph-studio/api/dsl")
-public class AppDSLController implements DSLAPI {
+public class DSLController implements DSLAPI {
 
 	private final List<DSLAdapter> adapters;
 
 	private final AppSaver appSaver;
 
-	public AppDSLController(AppSaver appSaver, List<DSLAdapter> adapters) {
+	public DSLController(AppSaver appSaver, List<DSLAdapter> adapters) {
 		this.appSaver = appSaver;
 		this.adapters = adapters;
 	}
 
 	@Override
 	public DSLAdapter getAdapter(String dialect) {
-		for (DSLAdapter adapter : adapters) {
-			if (adapter.supportDialect(dialect)) {
-				return adapter;
-			}
-		}
-		return null;
+		return adapters.stream().
+				filter(adapter -> adapter.supportDialect(dialect))
+				.findFirst()
+				.orElse(null);
 	}
 
 	@Override

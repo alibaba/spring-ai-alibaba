@@ -29,7 +29,7 @@ public class AppDelegateImpl implements AppDelegate {
 			.setMode(param.getMode())
 			.setDescription(param.getDescription());
 		App app = new App(metadata, null);
-		return appSaver.create(app);
+		return appSaver.save(app);
 	}
 
 	@Override
@@ -44,7 +44,7 @@ public class AppDelegateImpl implements AppDelegate {
 
 	@Override
 	public App sync(App app) {
-		return appSaver.update(app);
+		return appSaver.save(app);
 	}
 
 	@Override
