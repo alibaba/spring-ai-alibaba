@@ -35,7 +35,9 @@ public class CodeNodeDataConverter implements NodeDataConverter {
 			return new Variable(varName, varType.value());
 		}).toList();
 
-		return new CodeNodeData(inputs, outputs).setCode((String) data.get("code")).setCodeLanguage("code_language");
+		return new CodeNodeData(inputs, outputs)
+				.setCode((String) data.get("code"))
+				.setCodeLanguage((String) data.get("code_language"));
 	}
 
 	@Override
@@ -47,13 +49,13 @@ public class CodeNodeDataConverter implements NodeDataConverter {
 		List<Map<String, Object>> inputVars = new ArrayList<>();
 		nodeData.getInputs().forEach(v -> {
 			inputVars
-				.add(Map.of("variable", v.getLabel(), "value_selector", List.of(v.getNamespace(), v.getNamespace())));
+				.add(Map.of("variable", v.getLabel(), "value_selector", List.of(v.getNamespace(), v.getName())));
 		});
 		data.put("variables", inputVars);
 		Map<String, Object> outputVars = new HashMap<>();
 		nodeData.getOutputs().forEach(variable -> {
 			outputVars.put(variable.getName(),
-					Map.of("type", VariableType.valueOf(variable.getValueType()).difyValue(), "children", "null"));
+					Map.of("type", VariableType.valueOf(variable.getValueType()).difyValue()));
 		});
 		data.put("outputs", outputVars);
 		return data;
