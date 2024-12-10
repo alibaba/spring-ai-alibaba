@@ -1,6 +1,7 @@
 package com.alibaba.cloud.ai.tencent.cos;
 
-import com.alibaba.cloud.ai.reader.DocumentParser;
+import com.alibaba.cloud.ai.document.TextDocumentParser;
+import com.alibaba.cloud.ai.document.DocumentParser;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;
 import com.qcloud.cos.model.PutObjectRequest;
@@ -39,6 +40,8 @@ class TencentCosDocumentLoaderIT {
 
 	static COSClient cosClient;
 
+	DocumentParser parser = new TextDocumentParser();
+
 	@BeforeAll
 	public static void beforeAll() {
 		TencentCredentials tencentCredentials = new TencentCredentials(System.getenv("TENCENT_SECRET_ID"),
@@ -72,7 +75,7 @@ class TencentCosDocumentLoaderIT {
 
 		TencentCosResource tencentCosResource3 = TencentCosResource.builder().cosClient(cosClient).build();
 
-		loader = new TencentCosDocumentReader(tencentCosResource, DocumentParser.TEXT_PARSER);
+		loader = new TencentCosDocumentReader(tencentCosResource, parser);
 		// when
 		Document document = loader.get().get(0);
 
@@ -87,9 +90,11 @@ class TencentCosDocumentLoaderIT {
 
 		// given
 		URL url = getClass().getClassLoader().getResource("test.txt");
+		assert url != null;
 		cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY, new File(url.getFile())));
 
 		URL url2 = getClass().getClassLoader().getResource("test2.txt");
+		assert url2 != null;
 		cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY_2, new File(url2.getFile())));
 
 		List<TencentCosResource> tencentCosResourceList = TencentCosResource.builder()
@@ -99,7 +104,7 @@ class TencentCosDocumentLoaderIT {
 			.bucket(TEST_BUCKET)
 			.buildBatch();
 
-		batchLoader = new TencentCosDocumentReader(tencentCosResourceList, DocumentParser.TEXT_PARSER);
+		batchLoader = new TencentCosDocumentReader(tencentCosResourceList, parser);
 
 		// when
 		List<Document> documents = batchLoader.get();
@@ -123,13 +128,16 @@ class TencentCosDocumentLoaderIT {
 
 		// given
 		URL otherUrl = getClass().getClassLoader().getResource("other.txt");
+		assert otherUrl != null;
 		cosClient
 			.putObject(new PutObjectRequest(TEST_BUCKET, "other_directory/file.txt", new File(otherUrl.getFile())));
 
 		URL url = getClass().getClassLoader().getResource("test.txt");
+		assert url != null;
 		cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY, new File(url.getFile())));
 
 		URL url2 = getClass().getClassLoader().getResource("test2.txt");
+		assert url2 != null;
 		cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY_2, new File(url2.getFile())));
 
 		List<TencentCosResource> tencentCosResourceList = TencentCosResource.builder()
@@ -140,7 +148,7 @@ class TencentCosDocumentLoaderIT {
 			.prefix("test")
 			.buildBatch();
 
-		batchLoader = new TencentCosDocumentReader(tencentCosResourceList, DocumentParser.TEXT_PARSER);
+		batchLoader = new TencentCosDocumentReader(tencentCosResourceList, parser);
 		// when
 		List<Document> documents = batchLoader.get();
 
