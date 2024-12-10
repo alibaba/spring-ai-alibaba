@@ -14,29 +14,43 @@
  * limitations under the License.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, Flex, Button, Checkbox, Input } from 'antd';
 import Setup from '../Setup';
 import { ChatModelData, ChatModelResultData } from '@/types/chat_model';
+import { ChatOptions } from '@/types/options';
 import chatModelsService from '@/services/chat_models';
+import {RightPanelValues} from '../types';
 
 type ChatModelProps = {
   modelData: ChatModelData;
 };
 
 const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
-  const initialValues = {
-    initialConfig: {
-      model: 'ollama/llama3.2',
-      temperature: 50,
-      topP: 50,
-      topK: 50,
-      maxTokens: 10,
-      sequences: '',
-      version: 1,
+  const [initialValues, setInitialValues] = useState<RightPanelValues>({
+    initialChatConfig:  {
+      model: 'qwen-plus',
+      temperature: 0.85,
+      top_p: 0.8,
+      seed: 1,
+      enable_search: false,
+      top_k: 0,
+      stop: [],
+      incremental_output: false,
+      repetition_penalty: 1.1,
+      tools: [],
     },
-    initialTool: {},
-  };
+    initialTool: {}
+  });
+
+  // 当 modelData.chatOptions 发生变化时同步更新 initialValues
+  useEffect(() => {
+    delete modelData.chatOptions.proxyToolCalls;
+    setInitialValues((prev) => ({
+      initialChatConfig: { ...modelData.chatOptions },
+      initialTool: {},
+    }));
+  }, [modelData.chatOptions]);
 
   const [inputValue, setInputValue] = useState('');
   const [isStream, setIsStream] = useState(false);
@@ -57,8 +71,9 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
     try {
       const res = (await chatModelsService.postChatModel({
         input: inputValue,
-        chatOptions: initialValues.initialConfig,
+        chatOptions: initialValues.initialChatConfig,
         stream: isStream,
+        key: modelData.name,
       })) as ChatModelResultData;
       setMessages([
         ...messages,
