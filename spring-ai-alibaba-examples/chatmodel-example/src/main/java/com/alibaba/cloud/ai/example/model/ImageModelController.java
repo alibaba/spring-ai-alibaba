@@ -23,8 +23,6 @@ import java.net.URL;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.ai.image.ImageModel;
-import org.springframework.ai.image.ImageOptions;
-import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.http.MediaType;
@@ -46,11 +44,14 @@ public class ImageModelController {
 	@GetMapping("/image/{input}")
 	public void image(@PathVariable("input") String input, HttpServletResponse response) {
 
-		ImageOptions options = ImageOptionsBuilder.builder()
-				.withModel("wanx-v1")
-				.build();
+		// The options parameter set in this way takes precedence over the parameters in the yaml configuration file.
+		// The default image model is wanx-v1
+		// ImageOptions options = ImageOptionsBuilder.builder()
+		// 		.withModel("wax-2")
+		// 		.build();
+		// ImagePrompt imagePrompt = new ImagePrompt(input, options);
 
-		ImagePrompt imagePrompt = new ImagePrompt(input, options);
+		ImagePrompt imagePrompt = new ImagePrompt(input);
 		ImageResponse imageResponse = imageModel.call(imagePrompt);
 		String imageUrl = imageResponse.getResult().getOutput().getUrl();
 
