@@ -4,7 +4,8 @@ import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.saver.AppSaver;
 
 /**
- * DSLAdapter defined the mutual conversion between specific DSL(e.g.) and {@link App} model.
+ * DSLAdapter defined the mutual conversion between specific DSL(e.g.) and {@link App}
+ * model.
  */
 public interface DSLAdapter {
 

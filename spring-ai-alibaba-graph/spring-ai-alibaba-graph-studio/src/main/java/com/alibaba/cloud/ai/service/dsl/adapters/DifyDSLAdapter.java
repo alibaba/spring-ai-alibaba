@@ -1,5 +1,6 @@
 package com.alibaba.cloud.ai.service.dsl.adapters;
 
+import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.model.AppMetadata;
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
@@ -24,6 +25,9 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * DifyDSLAdapter converts Dify DSL to {@link App} and vice versa.
+ */
 @Component
 public class DifyDSLAdapter extends AbstractDSLAdapter {
 
@@ -33,9 +37,9 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 
 	private static final String[] DIFY_WORKFLOW_MODES = { "workflow", "advanced-chat" };
 
-	private List<NodeDataConverter> nodeDataConverters;
+	private final List<NodeDataConverter> nodeDataConverters;
 
-	private Serializer serializer;
+	private final Serializer serializer;
 
 	public DifyDSLAdapter(List<NodeDataConverter> nodeDataConverters, @Qualifier("yaml") Serializer serializer) {
 		this.nodeDataConverters = nodeDataConverters;
@@ -98,7 +102,8 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		// map key is snake_case style
 		objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 		if (workflowData.containsKey("conversation_variables")) {
-			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData.get("conversation_variables");
+			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData
+				.get("conversation_variables");
 			List<Variable> workflowVars = variables.stream()
 				.map(variable -> objectMapper.convertValue(variable, Variable.class))
 				.collect(Collectors.toList());
@@ -169,8 +174,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		}
 	}
 
-	private void constructEdges(List<Map<String, Object>> edgeMaps, List<Edge> edges,
-			Map<String, Edge> branchEdges) {
+	private void constructEdges(List<Map<String, Object>> edgeMaps, List<Edge> edges, Map<String, Edge> branchEdges) {
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		for (Map<String, Object> edgeMap : edgeMaps) {
@@ -181,15 +185,9 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			}
 			else {
 				// collect if-else edges
-				// source + sourceHandle(case id) -> edge
 				String sourceHandle = (String) edgeMap.get("sourceHandle");
 				String source = (String) edgeMap.get("source");
 				branchEdges.put(conditionKey(source, sourceHandle), edge);
-/*				if (Objects.equals(sourceHandle, "false") || Objects.equals(sourceHandle, "true")){
-					branchEdges.put(source+"-"+sourceHandle, workflowEdge);
-				}else {
-					branchEdges.put(sourceHandle, workflowEdge);
-				}*/
 			}
 		}
 	}
@@ -222,7 +220,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			}
 			// else branch
 			Edge elseEdge = branchEdges.get(conditionKey(branchNodeId, "false"));
-			if (elseEdge != null){
+			if (elseEdge != null) {
 				targetMap.put(conditionKey(branchNodeId, "false"), elseEdge.getTarget());
 			}
 			// find branchNode's source
@@ -236,9 +234,10 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		}
 	}
 
-	private String conditionKey(String source, String caseId){
+	private String conditionKey(String source, String caseId) {
 		return source + "&" + caseId;
 	}
+
 	private String findSourceNode(List<Edge> directEdges, List<Edge> branchEdges, String nodeId) {
 		for (Edge edge : directEdges) {
 			if (edge.getTarget().equals(nodeId)) {
@@ -262,11 +261,8 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		List<Map<String, Object>> envVars = objectMapper.convertValue(workflow.getEnvVars(), List.class);
 		Graph graph = workflow.getGraph();
 		Map<String, Object> graphMap = deconstructGraph(graph);
-		data.put("workflow", Map.of(
-				"conversation_variables", workflowVars,
-				"environment_variables", envVars,
-				"graph", graphMap
-		));
+		data.put("workflow",
+				Map.of("conversation_variables", workflowVars, "environment_variables", envVars, "graph", graphMap));
 		return data;
 	}
 
@@ -283,7 +279,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 	}
 
 	private void deconstructEdge(List<Edge> edges, List<Map<String, Object>> edgeMaps,
-								 List<Map<String, Object>> nodeMaps) {
+			List<Map<String, Object>> nodeMaps) {
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		for (Edge edge : edges) {
@@ -298,25 +294,15 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			}
 			// convert condition edge
 			Map<String, String> targetMap = edge.getTargetMap();
-			// number of entries in targetMap equals the number of edges needed to generate
-			targetMap.forEach((k, v) ->{
+			// number of entries in targetMap equals the number of edges needed to
+			targetMap.forEach((k, v) -> {
 				String[] splits = k.split("&");
-				Map<String, Object> edgeMap = Map.of(
-						"source", splits[0],
-						"sourceHandle", splits[1],
-						"target", v,
-						"targetHandle", "target",
-						"type", "custom",
-						"zIndex", 0,
-						"selected", false);
+				Map<String, Object> edgeMap = Map.of("source", splits[0], "sourceHandle", splits[1], "target", v,
+						"targetHandle", "target", "type", "custom", "zIndex", 0, "selected", false);
 				edgeMaps.add(edgeMap);
 			});
-
-//			edgeMaps.add(Map.of("source", edge.getSource(), "sourceHandle", "false", "target", targetMap.get("false"),
-//					"targetHandle", "target", "type", "custom", "zIndex", 0, "selected", false));
 			// convert to if-else node
 			List<Map<String, Object>> caseMaps = new ArrayList<>();
-			Map<String, Object> nodeMap = new HashMap<>();
 			for (Case c : edge.getCases()) {
 				List<Map<String, Object>> conditions = c.getConditions()
 					.stream()
@@ -328,8 +314,8 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 				caseMaps.add(Map.of("id", c.getId(), "case_id", c.getId(), "conditions", conditions, "logical_operator",
 						c.getLogicalOperator()));
 			}
-			nodeMaps.add(Map.of("id", edge.getId(), "type", "custom", "width", 250, "height", 250, "data", Map
-				.of("cases", caseMaps, "desc", "", "selected", false, "title", "if-else", "type", "if-else")));
+			nodeMaps.add(Map.of("id", edge.getId(), "type", "custom", "width", 250, "height", 250, "data",
+					Map.of("cases", caseMaps, "desc", "", "selected", false, "title", "if-else", "type", "if-else")));
 		}
 
 	}

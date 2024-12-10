@@ -8,17 +8,18 @@ import lombok.Setter;
 @Setter
 public class NotImplementedException {
 
-    private int code;
+	private int code;
 
-    private String msg;
+	private String msg;
 
-    public NotImplementedException(){
-        this.code = ReturnCode.RC501.getCode();
-        this.msg = ReturnCode.RC501.getMsg();
-    }
+	public NotImplementedException() {
+		this.code = ReturnCode.RC501.getCode();
+		this.msg = ReturnCode.RC501.getMsg();
+	}
 
-    public NotImplementedException(String msg){
-        this.code = ReturnCode.RC501.getCode();
-        this.msg = msg;
-    }
+	public NotImplementedException(String msg) {
+		this.code = ReturnCode.RC501.getCode();
+		this.msg = msg;
+	}
+
 }

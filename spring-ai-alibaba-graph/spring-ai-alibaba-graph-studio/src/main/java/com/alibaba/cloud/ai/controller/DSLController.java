@@ -25,10 +25,7 @@ public class DSLController implements DSLAPI {
 
 	@Override
 	public DSLAdapter getAdapter(String dialect) {
-		return adapters.stream().
-				filter(adapter -> adapter.supportDialect(dialect))
-				.findFirst()
-				.orElse(null);
+		return adapters.stream().filter(adapter -> adapter.supportDialect(dialect)).findFirst().orElse(null);
 	}
 
 	@Override

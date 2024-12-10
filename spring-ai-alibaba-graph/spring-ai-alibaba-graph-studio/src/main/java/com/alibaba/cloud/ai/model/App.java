@@ -12,8 +12,9 @@ public class App implements RunnableModel {
 	private AppMetadata metadata;
 
 	/**
-	 * Spec has different implementations depending on the type of application. e.g. Workflow
- 	 */
+	 * Spec has different implementations depending on the type of application. e.g.
+	 * Workflow
+	 */
 	private Object spec;
 
 	public App(AppMetadata metadata, Object spec) {
@@ -25,4 +26,5 @@ public class App implements RunnableModel {
 	public String getId() {
 		return metadata.getId();
 	}
+
 }

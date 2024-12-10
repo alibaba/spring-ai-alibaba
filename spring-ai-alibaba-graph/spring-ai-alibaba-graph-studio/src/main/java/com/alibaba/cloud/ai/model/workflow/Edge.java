@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Edge defines the routes between node and node.
- * There are two types of Edge: Direct and Conditional
+ * Edge defines the routes between node and node. There are two types of Edge: Direct and
+ * Conditional
  */
 @Data
 @Accessors(chain = true)

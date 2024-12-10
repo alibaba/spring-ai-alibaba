@@ -9,17 +9,18 @@ import java.util.Map;
  */
 public interface CodeGenerator {
 
-    /**
-     * whether the node type is supported
-     * @param nodeType {@link NodeType}
-     * @return true if supported
-     */
-    Boolean supportNodeType(String nodeType);
+	/**
+	 * whether the node type is supported
+	 * @param nodeType {@link NodeType}
+	 * @return true if supported
+	 */
+	Boolean supportNodeType(String nodeType);
 
-    /**
-     * generate code
-     * @param nodeData node properties
-     * @return code string
-     */
-    String generateCode(Map<String, Object> nodeData);
+	/**
+	 * generate code
+	 * @param nodeData node properties
+	 * @return code string
+	 */
+	String generateCode(Map<String, Object> nodeData);
+
 }

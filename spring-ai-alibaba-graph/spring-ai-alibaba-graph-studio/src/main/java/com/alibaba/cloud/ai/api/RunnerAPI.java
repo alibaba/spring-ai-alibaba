@@ -27,10 +27,9 @@ public interface RunnerAPI {
 	@Operation(summary = "run app in stream mode", tags = { "Runner" })
 	@PostMapping(value = "/app/{id}/stream")
 	default Flux<RunEvent> stream(@PathVariable String id, @RequestBody Map<String, Object> inputs) {
-		App app = Optional.ofNullable(getAppSaver().get(id))
-				.orElseThrow(() -> new NotFoundException("app not found"));
+		App app = Optional.ofNullable(getAppSaver().get(id)).orElseThrow(() -> new NotFoundException("app not found"));
 		Runner runner = Optional.ofNullable(getRunner(app.getMetadata().getMode()))
-				.orElseThrow(() -> new NotImplementedException("not supported yet "));
+			.orElseThrow(() -> new NotImplementedException("not supported yet "));
 		return runner.stream(app, inputs);
 	}
 
@@ -39,7 +38,7 @@ public interface RunnerAPI {
 	default R<RunEvent> run(@PathVariable String id, @RequestBody Map<String, Object> inputs) {
 		App app = Optional.ofNullable(getAppSaver().get(id)).orElseThrow(() -> new NotFoundException("app not found"));
 		Runner runner = Optional.ofNullable(getRunner(app.getMetadata().getMode()))
-				.orElseThrow(() -> new NotImplementedException("not supported yet "));
+			.orElseThrow(() -> new NotImplementedException("not supported yet "));
 		return R.success(runner.run(app, inputs));
 	}
 
