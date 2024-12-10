@@ -54,6 +54,7 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
 
   const [inputValue, setInputValue] = useState('');
   const [isStream, setIsStream] = useState(false);
+  const [disabled, setDisabled] = useState(false);
 
   const handleInputChange = (e) => {
     setInputValue(e.target.value);
@@ -69,6 +70,7 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
 
   const runModel = async () => {
     try {
+      setDisabled(true);
       setMessages([
         ...messages,
         {
@@ -99,6 +101,7 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
           content: res.result.response,
         },
       ]);
+      setDisabled(false);
       setInputValue('');
     } catch (error) {
       console.error('Failed to fetch chat models: ', error);
@@ -177,7 +180,9 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
               <Checkbox checked={isStream} onChange={handleStremChange}>
                 聊天模式
               </Checkbox>
-              <Button onClick={runModel}>运行</Button>
+              <Button onClick={runModel} disabled={disabled}>
+                运行
+              </Button>
             </Flex>
           </Flex>
         </Flex>
