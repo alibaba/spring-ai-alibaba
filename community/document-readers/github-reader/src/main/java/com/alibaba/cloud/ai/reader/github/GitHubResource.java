@@ -3,6 +3,8 @@ package com.alibaba.cloud.ai.reader.github;
 import org.kohsuke.github.GHContent;
 import org.kohsuke.github.GitHub;
 import org.kohsuke.github.GitHubBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 
@@ -11,6 +13,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * @author HeYQ
@@ -18,35 +23,17 @@ import java.net.URL;
  */
 public class GitHubResource implements Resource {
 
+	private static final Logger logger = LoggerFactory.getLogger(GitHubResource.class);
+
 	private final InputStream inputStream;
 
 	private final GHContent content;
 
-	public GitHubResource(String gitHubToken, String gitHubTokenOrganization, String owner, String repo, String branch,
-			String path) {
-		this(null, gitHubToken, gitHubTokenOrganization, owner, repo, branch, path);
-	}
-
-	public GitHubResource(String gitHubToken, String gitHubTokenOrganization, String owner, String repo, String path) {
-		this(null, gitHubToken, gitHubTokenOrganization, owner, repo, "main", path);
-	}
-
-	public GitHubResource(String apiUrl, String gitHubToken, String gitHubTokenOrganization, String owner, String repo,
-			String branch, String path) {
-		GitHubBuilder gitHubBuilder = new GitHubBuilder();
-		if (apiUrl != null) {
-			gitHubBuilder.withEndpoint(apiUrl);
-		}
-		if (gitHubToken != null) {
-			if (gitHubTokenOrganization == null) {
-				gitHubBuilder.withOAuthToken(gitHubToken);
-			}
-			else {
-				gitHubBuilder.withOAuthToken(gitHubToken, gitHubTokenOrganization);
-			}
+	public GitHubResource(GitHub gitHub, String owner, String repo, String branch, String path) {
+		if (Objects.isNull(branch)) {
+			branch = "main";
 		}
 		try {
-			GitHub gitHub = gitHubBuilder.build();
 			content = gitHub.getRepository(owner + "/" + repo).getFileContent(path, branch);
 			Assert.isTrue(content.isFile(), "Path must be a file");
 			inputStream = content.read();
@@ -56,72 +43,22 @@ public class GitHubResource implements Resource {
 		}
 	}
 
+	public GitHubResource(GHContent content) {
+		try {
+			this.content = content;
+			inputStream = content.read();
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
+	}
+
+	public static GitHubResource getInstance(GHContent content) {
+		return new GitHubResource(content);
+	}
+
 	public GHContent getContent() {
 		return content;
-	}
-
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	public static class Builder {
-
-		private String apiUrl;
-
-		private String gitHubToken;
-
-		private String gitHubTokenOrganization;
-
-		private String owner;
-
-		private String repo;
-
-		private String branch;
-
-		private String path;
-
-		public Builder apiUrl(String apiUrl) {
-			this.apiUrl = apiUrl;
-			return this;
-		}
-
-		public Builder gitHubToken(String gitHubToken) {
-			this.gitHubToken = gitHubToken;
-			return this;
-		}
-
-		public Builder gitHubTokenOrganization(String gitHubTokenOrganization) {
-			this.gitHubTokenOrganization = gitHubTokenOrganization;
-			return this;
-		}
-
-		public Builder owner(String owner) {
-			this.owner = owner;
-			return this;
-		}
-
-		public Builder repo(String repo) {
-			this.repo = repo;
-			return this;
-		}
-
-		public Builder branch(String branch) {
-			this.branch = branch;
-			return this;
-		}
-
-		public Builder path(String path) {
-			this.path = path;
-			return this;
-		}
-
-		public GitHubResource build() {
-			Assert.notNull(owner, "Owner must not be null");
-			Assert.notNull(repo, "Repo must not be null");
-			Assert.notNull(path, "Path must not be null");
-			return new GitHubResource(apiUrl, gitHubToken, gitHubTokenOrganization, owner, repo, branch, path);
-		}
-
 	}
 
 	@Override
@@ -172,6 +109,144 @@ public class GitHubResource implements Resource {
 	@Override
 	public InputStream getInputStream() throws IOException {
 		return inputStream;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private String apiUrl;
+
+		private String gitHubToken;
+
+		private String gitHubTokenOrganization;
+
+		private GitHub gitHub;
+
+		private String owner;
+
+		private String repo;
+
+		private String branch;
+
+		private String path;
+
+		public Builder apiUrl(String apiUrl) {
+			this.apiUrl = apiUrl;
+			return this;
+		}
+
+		public Builder gitHubToken(String gitHubToken) {
+			this.gitHubToken = gitHubToken;
+			return this;
+		}
+
+		public Builder gitHubTokenOrganization(String gitHubTokenOrganization) {
+			this.gitHubTokenOrganization = gitHubTokenOrganization;
+			return this;
+		}
+
+		public Builder gitHub(GitHub gitHub) {
+			this.gitHub = gitHub;
+			return this;
+		}
+
+		public Builder owner(String owner) {
+			this.owner = owner;
+			return this;
+		}
+
+		public Builder repo(String repo) {
+			this.repo = repo;
+			return this;
+		}
+
+		public Builder branch(String branch) {
+			this.branch = branch;
+			return this;
+		}
+
+		public Builder path(String path) {
+			this.path = path;
+			return this;
+		}
+
+		public GitHubResource build() {
+			createGithub();
+			return new GitHubResource(gitHub, owner, repo, branch, path);
+		}
+
+		public List<GitHubResource> buildBatch() {
+			createGithub();
+			return loadGitHubResources();
+		}
+
+		private void createGithub() {
+			Assert.notNull(owner, "Owner must not be null");
+			Assert.notNull(repo, "Repo must not be null");
+			Assert.notNull(path, "Path must not be null");
+			if (Objects.isNull(gitHub)) {
+				Assert.notNull(gitHubToken, "GitHub token must not be null");
+				GitHubBuilder gitHubBuilder = new GitHubBuilder();
+				if (apiUrl != null) {
+					gitHubBuilder.withEndpoint(apiUrl);
+				}
+				if (gitHubToken != null) {
+					if (gitHubTokenOrganization == null) {
+						gitHubBuilder.withOAuthToken(gitHubToken);
+					}
+					else {
+						gitHubBuilder.withOAuthToken(gitHubToken, gitHubTokenOrganization);
+					}
+				}
+				try {
+					this.gitHub = gitHubBuilder.build();
+				}
+				catch (IOException ioException) {
+					throw new RuntimeException(ioException);
+				}
+			}
+		}
+
+		private List<GitHubResource> loadGitHubResources() {
+			List<GitHubResource> gitHubResources = new ArrayList<>();
+			try {
+				gitHub.getRepository(owner + "/" + repo)
+					.getDirectoryContent(path, branch)
+					.forEach(ghDirectoryContent -> Builder.scanDirectory(ghDirectoryContent, gitHubResources));
+			}
+			catch (IOException ioException) {
+				throw new RuntimeException(ioException);
+			}
+			return gitHubResources;
+		}
+
+		private static void scanDirectory(GHContent ghContent, List<GitHubResource> gitHubResources) {
+			if (ghContent.isDirectory()) {
+				try {
+					ghContent.listDirectoryContent()
+						.forEach(ghDirectoryContent -> Builder.scanDirectory(ghDirectoryContent, gitHubResources));
+				}
+				catch (IOException ioException) {
+					logger.error("Failed to read directory from GitHub: {}", ghContent.getHtmlUrl(), ioException);
+				}
+			}
+			else {
+				GitHubResource gitHubResource = null;
+				try {
+					gitHubResource = GitHubResource.getInstance(ghContent);
+				}
+				catch (RuntimeException runtimeException) {
+					logger.error("Failed to read document from GitHub: {}", ghContent.getHtmlUrl(), runtimeException);
+				}
+				if (gitHubResource != null) {
+					gitHubResources.add(gitHubResource);
+				}
+			}
+		}
+
 	}
 
 }
