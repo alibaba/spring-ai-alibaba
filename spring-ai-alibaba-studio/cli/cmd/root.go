@@ -75,8 +75,6 @@ func init() {
 
 	rootCmd.Flags().BoolP(constant.VersionFlag, "v", false, "Print the version number of Spring AI Alibaba Studio")
 
-	viper.BindPFlag(constant.BaseURLFlag, rootCmd.PersistentFlags().Lookup(constant.BaseURLFlag))
-
 	// add subcommands
 	rootCmd.AddCommand(chatmodel.GetChatModelCmd())
 }
@@ -96,11 +94,16 @@ func initConfig() {
 		viper.SetConfigName(defaultConfigFileName)
 	}
 
-	viper.AutomaticEnv() // read in environment variables that match
-
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {
-		fmt.Fprintln(os.Stdout, "Failed loading config file:", viper.ConfigFileUsed())
-		panic(err)
+		// Check if the error is because the config file was not found
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			// Config file was found but another error was produced
+			fmt.Fprintln(os.Stderr, "Failed loading config file:", viper.ConfigFileUsed(), err)
+			os.Exit(1)
+		}
 	}
+
+	viper.AutomaticEnv() // read in environment variables that match
+	viper.BindPFlag(constant.BaseURLFlag, rootCmd.PersistentFlags().Lookup(constant.BaseURLFlag))
 }
