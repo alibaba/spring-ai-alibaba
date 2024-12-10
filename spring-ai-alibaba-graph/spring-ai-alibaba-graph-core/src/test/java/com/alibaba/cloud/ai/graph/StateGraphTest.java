@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.listOf;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -29,7 +28,6 @@ public class StateGraphTest {
 
 	@Test
 	void testValidation() throws Exception {
-
 		StateGraph<AgentState> workflow = new StateGraph<>(AgentState::new);
 		GraphStateException exception = assertThrows(GraphStateException.class, workflow::compile);
 		System.out.println(exception.getMessage());
