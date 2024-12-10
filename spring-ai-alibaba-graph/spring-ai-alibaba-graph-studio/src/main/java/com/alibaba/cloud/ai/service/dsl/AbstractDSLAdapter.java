@@ -36,7 +36,6 @@ public abstract class AbstractDSLAdapter implements DSLAdapter {
 		return app;
 	}
 
-
 	@Override
 	public String exportDSL(App app) {
 		log.info("App exporting: \n" + app);
@@ -49,11 +48,7 @@ public abstract class AbstractDSLAdapter implements DSLAdapter {
 			default -> throw new IllegalArgumentException("unsupported mode: " + metadata.getMode());
 		}
 		Map<String, Object> data = Stream.concat(metaMap.entrySet().stream(), specMap.entrySet().stream())
-				.collect(Collectors.toMap(
-						Map.Entry::getKey,
-						Map.Entry::getValue,
-						(v1, v2) -> v1
-				));
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1));
 		String dsl = getSerializer().dump(data);
 		log.info("App exported: \n" + dsl);
 		return dsl;

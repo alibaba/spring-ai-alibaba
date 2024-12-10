@@ -1,0 +1,21 @@
+.graph-node__handle {
+  border: none;
+  background: var(--xy-theme-selected) !important;
+  border-radius: 1px;
+  height: 8px;
+  width: 1px;
+
+  &.source {
+    right: -2px;
+  }
+
+  &.target {
+    left: -2px;
+  }
+}
+
+.react-flow__handle.connectionindicator:hover {
+  pointer-events: all;
+  border-color: var(--xy-theme-edge-hover);
+  background: var(--ant-color-info-bg-hover);
+}

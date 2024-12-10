@@ -8,7 +8,8 @@ import com.alibaba.cloud.ai.model.AppMetadata;
 import java.nio.file.Path;
 
 /**
- * ProjectGenerator abstracts the project generation of a specific app type, e.g. {@link Workflow}, {@link ChatBot}
+ * ProjectGenerator abstracts the project generation of a specific app type, e.g.
+ * {@link Workflow}, {@link ChatBot}
  */
 public interface ProjectGenerator {
 

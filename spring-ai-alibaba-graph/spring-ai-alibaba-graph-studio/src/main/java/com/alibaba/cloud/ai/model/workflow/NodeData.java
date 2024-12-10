@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * NodeData defines the behavior of a node. Each subclass represents the behavior of the node.
+ * NodeData defines the behavior of a node. Each subclass represents the behavior of the
+ * node.
  */
 @Data
 @AllArgsConstructor
@@ -18,7 +19,7 @@ public class NodeData {
 
 	/**
 	 * The inputs of the node is the output reference of the previous node
- 	 */
+	 */
 	protected List<VariableSelector> inputs;
 
 	/**

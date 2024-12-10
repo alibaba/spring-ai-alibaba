@@ -37,7 +37,6 @@ public class AppMemorySaver implements AppSaver {
 		return app;
 	}
 
-
 	@Override
 	public void delete(String id) {
 		apps.remove(id);

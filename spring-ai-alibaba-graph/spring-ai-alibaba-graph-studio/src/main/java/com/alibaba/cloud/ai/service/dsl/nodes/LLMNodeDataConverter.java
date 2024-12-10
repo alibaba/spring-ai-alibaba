@@ -30,11 +30,13 @@ public class LLMNodeDataConverter implements NodeDataConverter {
 		List<VariableSelector> inputs = new ArrayList<>();
 		// convert prompt template
 		Map<String, Object> context = (Map<String, Object>) data.get("context");
-//		List<Map<String, Object>> difyTmplList = (List<Map<String, Object>>) data.get("prompt_template");
+		// List<Map<String, Object>> difyTmplList = (List<Map<String, Object>>)
+		// data.get("prompt_template");
 		List<Map<String, Object>> difyTmplList;
-		if ( data.get("prompt_template")  instanceof List<?>){
+		if (data.get("prompt_template") instanceof List<?>) {
 			difyTmplList = (List<Map<String, Object>>) data.get("prompt_template");
-		}else {
+		}
+		else {
 			difyTmplList = List.of((Map<String, Object>) data.get("prompt_template"));
 		}
 		List<LLMNodeData.PromptTemplate> tmplList = new ArrayList<>();
@@ -53,7 +55,7 @@ public class LLMNodeDataConverter implements NodeDataConverter {
 				inputs.add(new VariableSelector(splits[0], splits[1], "arg"));
 			});
 			String role = promptTmpl.containsKey("role") ? (String) promptTmpl.get("role") : "system";
-			tmplList.add(new LLMNodeData.PromptTemplate( role, tmpl));
+			tmplList.add(new LLMNodeData.PromptTemplate(role, tmpl));
 		}
 		// convert model config
 		Map<String, Object> modelData = (Map<String, Object>) data.get("model");
