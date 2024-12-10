@@ -20,7 +20,7 @@ Rag includes the following steps:
 For how to run and test local rag example, please refer to the following instructions:
 ```
 1. start application.
-2. import document by using curl http request.
+2. import document by using curl http regexRequest.
 curl -X GET http://127.0.0.1:8080/ai/rag/importDocument
 
 3. retrieval and generation
@@ -41,7 +41,7 @@ Rag includes the following steps:
 For how to run and test cloud rag example, please refer to the following instructions:
 ```
 1. start application.
-2. import document by using curl http request.
+2. import document by using curl http regexRequest.
 curl -X GET http://127.0.0.1:8080/ai/cloud/rag/importDocument
 
 3. retrieval and generation
