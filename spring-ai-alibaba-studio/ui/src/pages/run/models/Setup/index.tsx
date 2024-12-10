@@ -24,7 +24,7 @@ import { ChatOptions, ImageOptions } from '@/types/options';
 import { RightPanelValues } from '../types';
 
 type Props = {
-  initialValues: RightPanelValues
+  initialValues: RightPanelValues;
 };
 
 export default function Setup(props: Props) {
@@ -41,7 +41,7 @@ export default function Setup(props: Props) {
     incremental_output: false,
     repetition_penalty: 1.1,
     tools: [],
-  }
+  };
 
   const defaultImgCfgs: ImageOptions = {
     model: 'wanx-v1',
@@ -55,8 +55,8 @@ export default function Setup(props: Props) {
     ref_img: '',
     ref_strength: 0,
     ref_mode: '',
-    negative_prompt: ''
-  }
+    negative_prompt: '',
+  };
 
   const items: TabsProps['items'] = [
     {
