@@ -71,12 +71,8 @@ public class CrawlerJinaServiceImpl extends AbstractCrawlerService {
 			String requestBody = this.objectMapper.writeValueAsString(requestParam);
 			logger.debug("Jina request body: {}", requestBody);
 
-			HttpURLConnection connection = this.initHttpURLConnection(
-					jinaProperties.getToken(),
-					url,
-					this.getOptions(),
-					requestBody
-			);
+			HttpURLConnection connection = this.initHttpURLConnection(jinaProperties.getToken(), url, this.getOptions(),
+					requestBody);
 
 			return objectMapper.writeValueAsString(this.convert2Response(this.getResponse(connection)));
 		}
@@ -120,8 +116,8 @@ public class CrawlerJinaServiceImpl extends AbstractCrawlerService {
 			map.put(CrawlerConstants.JinaHeaders.X_WITH_SHADOW_DOM, jinaProperties.getWithShadowDom().toString());
 		}
 		if (Objects.nonNull(jinaProperties.getWithImagesSummary())) {
-			map.put(CrawlerConstants.JinaHeaders.X_WITH_IMAGES_SUMMARY, jinaProperties.getWithImagesSummary()
-					.toString());
+			map.put(CrawlerConstants.JinaHeaders.X_WITH_IMAGES_SUMMARY,
+					jinaProperties.getWithImagesSummary().toString());
 		}
 		if (Objects.nonNull(jinaProperties.getWithLinksSummary())) {
 			map.put(CrawlerConstants.JinaHeaders.X_WITH_LINKS_SUMMARY, jinaProperties.getWithLinksSummary().toString());

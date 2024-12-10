@@ -1,10 +1,11 @@
 package com.alibaba.cloud.ai.reader.yuque;
 
-import com.alibaba.cloud.ai.reader.DocumentParser;
+import com.alibaba.cloud.ai.document.DocumentParser;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.reader.ExtractedTextFormatter;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,35 +14,30 @@ import java.util.List;
  */
 public class YuQueDocumentReader implements DocumentReader {
 
-    private DocumentReader parser;
+	private final DocumentParser parser;
 
-    private final YuQueResource yuQueResource;
+	private final YuQueResource yuQueResource;
 
-    public YuQueDocumentReader(YuQueResource yuQueResource, DocumentParser parserType) {
-        this(yuQueResource, parserType.getParser(yuQueResource));
-    }
+	public YuQueDocumentReader(YuQueResource yuQueResource, DocumentParser parser) {
+		this.yuQueResource = yuQueResource;
+		this.parser = parser;
+	}
 
-    public YuQueDocumentReader(YuQueResource yuQueResource, DocumentParser parserType, ExtractedTextFormatter formatter) {
-        this(yuQueResource, parserType.getParser(yuQueResource, formatter));
-    }
+	@Override
+	public List<Document> get() {
+		try {
+			List<Document> documents = parser.parse(yuQueResource.getInputStream());
+			String source = yuQueResource.getResourcePath();
 
-    public YuQueDocumentReader(YuQueResource yuQueResource, DocumentReader parser) {
-        this.yuQueResource = yuQueResource;
-        this.parser = parser;
-    }
+			for (Document doc : documents) {
+				doc.getMetadata().put(YuQueResource.SOURCE, source);
+			}
 
-    @Override
-    public List<Document> get() {
-        List<Document> documents = parser.get();
-        String source = yuQueResource.getResourcePath();
-
-        for (Document doc : documents) {
-            doc.getMetadata().put(YuQueResource.SOURCE, source);
-        }
-
-        return documents;
-    }
-
-
+			return documents;
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException("Failed to load document from yuque: {}", ioException);
+		}
+	}
 
 }

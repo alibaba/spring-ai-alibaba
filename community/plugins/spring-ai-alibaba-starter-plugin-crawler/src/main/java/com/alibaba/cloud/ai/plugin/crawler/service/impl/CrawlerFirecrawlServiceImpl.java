@@ -47,10 +47,7 @@ public class CrawlerFirecrawlServiceImpl extends AbstractCrawlerService {
 
 	private final ObjectMapper objectMapper;
 
-	public CrawlerFirecrawlServiceImpl(
-			CrawlerFirecrawlProperties firecrawlProperties,
-			ObjectMapper objectMapper
-	) {
+	public CrawlerFirecrawlServiceImpl(CrawlerFirecrawlProperties firecrawlProperties, ObjectMapper objectMapper) {
 		this.firecrawlProperties = firecrawlProperties;
 		this.objectMapper = objectMapper;
 	}
@@ -74,12 +71,8 @@ public class CrawlerFirecrawlServiceImpl extends AbstractCrawlerService {
 			String requestBody = this.objectMapper.writeValueAsString(options);
 			logger.debug("Firecrawl api request body: {}", requestBody);
 
-			HttpURLConnection connection = this.initHttpURLConnection(
-					firecrawlProperties.getToken(),
-					url,
-					Map.of(),
-					requestBody
-			);
+			HttpURLConnection connection = this.initHttpURLConnection(firecrawlProperties.getToken(), url, Map.of(),
+					requestBody);
 
 			return this.getResponse(connection);
 		}
@@ -97,8 +90,8 @@ public class CrawlerFirecrawlServiceImpl extends AbstractCrawlerService {
 		return switch (firecrawlProperties.getMode()) {
 			case CrawlerConstants.FirecrawlMode.MAP -> CrawlerConstants.FirecrawlMode.MAP;
 			case CrawlerConstants.FirecrawlMode.SCRAPE -> CrawlerConstants.FirecrawlMode.SCRAPE;
-			case CrawlerConstants.FirecrawlMode.CRAWL ->
-					throw new CrawlerServiceException("Firecrawl " + CrawlerConstants.FirecrawlMode.CRAWL + " mode not supported yet!");
+			case CrawlerConstants.FirecrawlMode.CRAWL -> throw new CrawlerServiceException(
+					"Firecrawl " + CrawlerConstants.FirecrawlMode.CRAWL + " mode not supported yet!");
 
 			default -> throw new CrawlerServiceException("Firecrawl mode not supported yet!");
 		};
@@ -117,12 +110,12 @@ public class CrawlerFirecrawlServiceImpl extends AbstractCrawlerService {
 			map.put(CrawlerConstants.FirecrawlRequestBodyKey.MOBILE, runtimeOptions.getMobile().toString());
 		}
 		if (runtimeOptions.getRemoveBase64Images() != null) {
-			map.put(CrawlerConstants.FirecrawlRequestBodyKey.REMOVE_BASE64_IMAGES, runtimeOptions.getRemoveBase64Images()
-					.toString());
+			map.put(CrawlerConstants.FirecrawlRequestBodyKey.REMOVE_BASE64_IMAGES,
+					runtimeOptions.getRemoveBase64Images().toString());
 		}
 		if (runtimeOptions.getSkipTlsVerification() != null) {
-			map.put(CrawlerConstants.FirecrawlRequestBodyKey.SKIP_TLS_VERIFICATION, runtimeOptions.getSkipTlsVerification()
-					.toString());
+			map.put(CrawlerConstants.FirecrawlRequestBodyKey.SKIP_TLS_VERIFICATION,
+					runtimeOptions.getSkipTlsVerification().toString());
 		}
 		if (runtimeOptions.getWaitFor() != null) {
 			map.put(CrawlerConstants.FirecrawlRequestBodyKey.WAIT_FOR, runtimeOptions.getWaitFor().toString());
@@ -140,8 +133,8 @@ public class CrawlerFirecrawlServiceImpl extends AbstractCrawlerService {
 			map.put(CrawlerConstants.FirecrawlRequestBodyKey.FORMATS, runtimeOptions.getFormats());
 		}
 		if (runtimeOptions.getOnlyMainContent() != null) {
-			map.put(CrawlerConstants.FirecrawlRequestBodyKey.ONLY_MAIN_CONTENT, runtimeOptions.getOnlyMainContent()
-					.toString());
+			map.put(CrawlerConstants.FirecrawlRequestBodyKey.ONLY_MAIN_CONTENT,
+					runtimeOptions.getOnlyMainContent().toString());
 		}
 
 		return map;

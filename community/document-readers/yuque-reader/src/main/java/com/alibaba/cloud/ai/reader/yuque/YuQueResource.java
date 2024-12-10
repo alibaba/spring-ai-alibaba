@@ -24,192 +24,194 @@ import java.util.regex.Pattern;
  */
 public class YuQueResource implements Resource {
 
-    private static final String BASE_URL = "https://www.yuque.com";
+	private static final String BASE_URL = "https://www.yuque.com";
 
-    private static final String INFO_PATH = "/api/v2/hello";
+	private static final String INFO_PATH = "/api/v2/hello";
 
-    private static final String DOC_DETAIL_PATH = "/api/v2/repos/%s/%s/docs/%s";
+	private static final String DOC_DETAIL_PATH = "/api/v2/repos/%s/%s/docs/%s";
 
-    public static final String SOURCE = "source";
+	public static final String SOURCE = "source";
 
-    public static final String SUPPORT_TYPE = "Doc";
+	public static final String SUPPORT_TYPE = "Doc";
 
-    private final HttpClient httpClient;
+	private final HttpClient httpClient;
 
-    private final InputStream inputStream;
+	private final InputStream inputStream;
 
-    private final URI uri;
+	private final URI uri;
 
-    private final String resourcePath;
+	private final String resourcePath;
 
-    private String groupLogin;
-    private String bookSlug;
-    private String id;
+	private String groupLogin;
 
-    public YuQueResource(String yuQueToken, String resourcePath) {
+	private String bookSlug;
 
-        this.resourcePath = resourcePath;
+	private String id;
 
-        this.httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
+	public YuQueResource(String yuQueToken, String resourcePath) {
 
-        judgePathRule(resourcePath);
-        judgeToken(yuQueToken);
+		this.resourcePath = resourcePath;
 
-        URI baseUri = URI.create(BASE_URL + DOC_DETAIL_PATH.formatted(groupLogin, bookSlug, id));
+		this.httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
 
-        HttpRequest httpRequest = HttpRequest.newBuilder()
-                .header("X-Auth-Token", yuQueToken)
-                .uri(baseUri).GET().build();
+		judgePathRule(resourcePath);
+		judgeToken(yuQueToken);
 
-        try {
-            HttpResponse<String> response = this.httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            String body = response.body();
-            // Parse the JSON response using FastJSON
-            JSONObject jsonObject = JSON.parseObject(body);
-            JSONObject dataObject = jsonObject.getJSONObject("data");
+		URI baseUri = URI.create(BASE_URL + DOC_DETAIL_PATH.formatted(groupLogin, bookSlug, id));
 
-            if (dataObject == null) {
-                throw new RuntimeException("Invalid response format: 'data' is not an object");
-            }
+		HttpRequest httpRequest = HttpRequest.newBuilder()
+			.header("X-Auth-Token", yuQueToken)
+			.uri(baseUri)
+			.GET()
+			.build();
 
-            if (!Objects.equals(dataObject.getString("type"), SUPPORT_TYPE)) {
-                throw new RuntimeException("Unsupported resource type, only support " + SUPPORT_TYPE);
-            }
+		try {
+			HttpResponse<String> response = this.httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+			String body = response.body();
+			// Parse the JSON response using FastJSON
+			JSONObject jsonObject = JSON.parseObject(body);
+			JSONObject dataObject = jsonObject.getJSONObject("data");
 
-            inputStream = new ByteArrayInputStream(dataObject.getString("body_html").getBytes());
-            uri = URI.create(resourcePath);
+			if (dataObject == null) {
+				throw new RuntimeException("Invalid response format: 'data' is not an object");
+			}
 
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+			if (!Objects.equals(dataObject.getString("type"), SUPPORT_TYPE)) {
+				throw new RuntimeException("Unsupported resource type, only support " + SUPPORT_TYPE);
+			}
 
-    }
+			inputStream = new ByteArrayInputStream(dataObject.getString("body_html").getBytes());
+			uri = URI.create(resourcePath);
 
-    /**
-     * Judge resource path rule
-     * Official online doc https://www.yuque.com/yuque/developer/openapi
-     *
-     * @param resourcePath
-     */
-    private void judgePathRule(String resourcePath) {
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 
-        // Determine if the path conforms to this format： https://xx.xxx.com/aa/bb/cc
-        String regex = "^https://[a-zA-Z0-9.-]+/([a-zA-Z0-9.-]+)/([a-zA-Z0-9.-]+)/([a-zA-Z0-9.-]+)$";
+	}
 
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(resourcePath);
-        Assert.isTrue(matcher.matches(), "Invalid resource path");
+	/**
+	 * Judge resource path rule Official online doc
+	 * https://www.yuque.com/yuque/developer/openapi
+	 * @param resourcePath
+	 */
+	private void judgePathRule(String resourcePath) {
 
-        // Extract the captured groups
-        this.groupLogin = matcher.group(1);
-        this.bookSlug = matcher.group(2);
-        this.id = matcher.group(3);
-        Assert.isTrue(StringUtils.hasText(this.groupLogin), "Invalid resource path");
-        Assert.isTrue(StringUtils.hasText(this.bookSlug), "Invalid resource path");
-        Assert.isTrue(StringUtils.hasText(this.id), "Invalid resource path");
-    }
+		// Determine if the path conforms to this format： https://xx.xxx.com/aa/bb/cc
+		String regex = "^https://[a-zA-Z0-9.-]+/([a-zA-Z0-9.-]+)/([a-zA-Z0-9.-]+)/([a-zA-Z0-9.-]+)$";
 
-    /**
-     * judge yuQue token
-     *
-     * @param yuQueToken User/Team token
-     */
-    private void judgeToken(String yuQueToken) {
-        URI uri = URI.create(BASE_URL + INFO_PATH);
+		Pattern pattern = Pattern.compile(regex);
+		Matcher matcher = pattern.matcher(resourcePath);
+		Assert.isTrue(matcher.matches(), "Invalid resource path");
 
-        HttpRequest httpRequest = HttpRequest.newBuilder()
-                .header("X-Auth-Token", yuQueToken)
-                .uri(uri).GET().build();
+		// Extract the captured groups
+		this.groupLogin = matcher.group(1);
+		this.bookSlug = matcher.group(2);
+		this.id = matcher.group(3);
+		Assert.isTrue(StringUtils.hasText(this.groupLogin), "Invalid resource path");
+		Assert.isTrue(StringUtils.hasText(this.bookSlug), "Invalid resource path");
+		Assert.isTrue(StringUtils.hasText(this.id), "Invalid resource path");
+	}
 
-        try {
-            HttpResponse<String> response = this.httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
-            int statusCode = response.statusCode();
-            Assert.isTrue(statusCode == 200, "Failed to auth YuQueToken");
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+	/**
+	 * judge yuQue token
+	 * @param yuQueToken User/Team token
+	 */
+	private void judgeToken(String yuQueToken) {
+		URI uri = URI.create(BASE_URL + INFO_PATH);
 
-    public static Builder builder() {
-        return new Builder();
-    }
+		HttpRequest httpRequest = HttpRequest.newBuilder().header("X-Auth-Token", yuQueToken).uri(uri).GET().build();
 
-    public static class Builder {
+		try {
+			HttpResponse<String> response = this.httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+			int statusCode = response.statusCode();
+			Assert.isTrue(statusCode == 200, "Failed to auth YuQueToken");
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
 
-        private String yuQueToken;
+	public static Builder builder() {
+		return new Builder();
+	}
 
-        private String resourcePath;
+	public static class Builder {
 
-        public Builder yuQueToken(String yuQueToken) {
-            this.yuQueToken = yuQueToken;
-            return this;
-        }
+		private String yuQueToken;
 
-        public Builder resourcePath(String resourcePath) {
-            this.resourcePath = resourcePath;
-            return this;
-        }
+		private String resourcePath;
 
+		public Builder yuQueToken(String yuQueToken) {
+			this.yuQueToken = yuQueToken;
+			return this;
+		}
 
-        public YuQueResource build() {
-            Assert.notNull(yuQueToken, "YuQueToken must not be null");
-            Assert.notNull(resourcePath, "ResourcePath must not be null");
-            return new YuQueResource(yuQueToken, resourcePath);
-        }
-    }
+		public Builder resourcePath(String resourcePath) {
+			this.resourcePath = resourcePath;
+			return this;
+		}
 
-    public String getResourcePath() {
-        return resourcePath;
-    }
+		public YuQueResource build() {
+			Assert.notNull(yuQueToken, "YuQueToken must not be null");
+			Assert.notNull(resourcePath, "ResourcePath must not be null");
+			return new YuQueResource(yuQueToken, resourcePath);
+		}
 
-    @Override
-    public boolean exists() {
-        return false;
-    }
+	}
 
-    @Override
-    public URL getURL() throws IOException {
-        return null;
-    }
+	public String getResourcePath() {
+		return resourcePath;
+	}
 
-    @Override
-    public URI getURI() throws IOException {
-        return uri;
-    }
+	@Override
+	public boolean exists() {
+		return false;
+	}
 
-    @Override
-    public File getFile() throws IOException {
-        return null;
-    }
+	@Override
+	public URL getURL() throws IOException {
+		return null;
+	}
 
-    @Override
-    public long contentLength() throws IOException {
-        return 0;
-    }
+	@Override
+	public URI getURI() throws IOException {
+		return uri;
+	}
 
-    @Override
-    public long lastModified() throws IOException {
-        return 0;
-    }
+	@Override
+	public File getFile() throws IOException {
+		return null;
+	}
 
-    @Override
-    public Resource createRelative(String relativePath) throws IOException {
-        return null;
-    }
+	@Override
+	public long contentLength() throws IOException {
+		return 0;
+	}
 
-    @Override
-    public String getFilename() {
-        return "";
-    }
+	@Override
+	public long lastModified() throws IOException {
+		return 0;
+	}
 
-    @Override
-    public String getDescription() {
-        return "";
-    }
+	@Override
+	public Resource createRelative(String relativePath) throws IOException {
+		return null;
+	}
 
-    @Override
-    public InputStream getInputStream() throws IOException {
-        return inputStream;
-    }
+	@Override
+	public String getFilename() {
+		return "";
+	}
+
+	@Override
+	public String getDescription() {
+		return "";
+	}
+
+	@Override
+	public InputStream getInputStream() throws IOException {
+		return inputStream;
+	}
 
 }
