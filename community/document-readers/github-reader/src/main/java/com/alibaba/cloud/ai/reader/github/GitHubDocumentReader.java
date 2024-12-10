@@ -4,13 +4,14 @@ import org.kohsuke.github.GHContent;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
-import org.springframework.ai.reader.ExtractedTextFormatter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
-import com.alibaba.cloud.ai.reader.DocumentParser;
+import com.alibaba.cloud.ai.document.DocumentParser;
 
 /**
  * @author HeYQ
@@ -18,46 +19,62 @@ import com.alibaba.cloud.ai.reader.DocumentParser;
  */
 public class GitHubDocumentReader implements DocumentReader {
 
-	private final DocumentReader parser;
+	private final DocumentParser parser;
 
-	private final GitHubResource gitHubResource;
+	private GitHubResource gitHubResource;
 
-	public GitHubDocumentReader(GitHubResource gitHubResource, DocumentParser parserType) {
-		this(gitHubResource, parserType.getParser(gitHubResource));
-	}
+	private List<GitHubResource> gitHubResourceList;
 
-	public GitHubDocumentReader(GitHubResource gitHubResource, DocumentParser parserType,
-			ExtractedTextFormatter formatter) {
-		this(gitHubResource, parserType.getParser(gitHubResource, formatter));
-	}
-
-	public GitHubDocumentReader(GitHubResource gitHubResource, DocumentReader parser) {
+	public GitHubDocumentReader(GitHubResource gitHubResource, DocumentParser parser) {
 		this.gitHubResource = gitHubResource;
+		this.parser = parser;
+	}
+
+	public GitHubDocumentReader(List<GitHubResource> gitHubResourceList, DocumentParser parser) {
+		this.gitHubResourceList = gitHubResourceList;
 		this.parser = parser;
 	}
 
 	@Override
 	public List<Document> get() {
-		GHContent ghContent = gitHubResource.getContent();
-		List<Document> documents = parser.get();
-		for (Document document : documents) {
-			Map<String, Object> metadata = document.getMetadata();
-			metadata.put("github_git_url", ghContent.getGitUrl());
-			try {
-				metadata.put("github_download_url", ghContent.getDownloadUrl());
-			}
-			catch (IOException e) {
-				// Ignore if download_url is not available
-			}
-			metadata.put("github_html_url", ghContent.getHtmlUrl());
-			metadata.put("github_url", ghContent.getUrl());
-			metadata.put("github_file_name", ghContent.getName());
-			metadata.put("github_file_path", ghContent.getPath());
-			metadata.put("github_file_sha", ghContent.getSha());
-			metadata.put("github_file_size", Long.toString(ghContent.getSize()));
-			metadata.put("github_file_encoding", ghContent.getEncoding());
+		List<Document> documents = new ArrayList<>();
+		if (!Objects.isNull(gitHubResourceList) && !gitHubResourceList.isEmpty()) {
+			processResourceList(documents);
 		}
+		else if (gitHubResource != null) {
+			loadDocuments(documents, gitHubResource);
+		}
+
 		return documents;
+	}
+
+	private void processResourceList(List<Document> documents) {
+		for (GitHubResource resource : gitHubResourceList) {
+			loadDocuments(documents, resource);
+		}
+	}
+
+	private void loadDocuments(List<Document> documents, GitHubResource gitHubResource) {
+		try {
+			List<Document> documentList = parser.parse(gitHubResource.getInputStream());
+			for (Document document : documentList) {
+				GHContent ghContent = gitHubResource.getContent();
+				Map<String, Object> metadata = document.getMetadata();
+				metadata.put("github_git_url", ghContent.getGitUrl());
+				metadata.put("github_download_url", ghContent.getDownloadUrl());
+				metadata.put("github_html_url", ghContent.getHtmlUrl());
+				metadata.put("github_url", ghContent.getUrl());
+				metadata.put("github_file_name", ghContent.getName());
+				metadata.put("github_file_path", ghContent.getPath());
+				metadata.put("github_file_sha", ghContent.getSha());
+				metadata.put("github_file_size", Long.toString(ghContent.getSize()));
+				metadata.put("github_file_encoding", ghContent.getEncoding());
+				documents.add(document);
+			}
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException("Failed to load document from GitHub: {}", ioException);
+		}
 	}
 
 }
