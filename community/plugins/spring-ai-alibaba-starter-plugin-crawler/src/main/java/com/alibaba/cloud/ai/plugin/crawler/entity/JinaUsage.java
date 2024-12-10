@@ -29,8 +29,5 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 @JsonClassDescription("JinaUsage information for the Jina Reader API")
 public record JinaUsage(
 
-		@JsonProperty(required = true, value = "tokens")
-		@JsonPropertyDescription("Number of tokens used")
-		int tokens
-) {
+		@JsonProperty(required = true, value = "tokens") @JsonPropertyDescription("Number of tokens used") int tokens) {
 }

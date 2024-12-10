@@ -43,10 +43,10 @@ import org.springframework.http.MediaType;
 public abstract class AbstractCrawlerService implements CrawlerService {
 
 	/**
-	 * Pre-check the target url.
-	 * Don't use a LAN or local URL, and if you use an intranet, you need to set up a webhook proxy.
-	 * Reference: {@link  CrawlerJinaProperties#getProxyUrl()}
-	 * Firecrawl scrape not support yet. but crawl has webhook.
+	 * Pre-check the target url. Don't use a LAN or local URL, and if you use an intranet,
+	 * you need to set up a webhook proxy. Reference:
+	 * {@link CrawlerJinaProperties#getProxyUrl()} Firecrawl scrape not support yet. but
+	 * crawl has webhook.
 	 * @param targetUrl target url
 	 * @return true if the target url is invalid
 	 */
@@ -63,12 +63,8 @@ public abstract class AbstractCrawlerService implements CrawlerService {
 	 * @param requestBody request body
 	 * @return HttpURLConnection
 	 */
-	protected HttpURLConnection initHttpURLConnection(
-			String token,
-			URL url,
-			Map<String, String> optionHeaders,
-			String requestBody
-	) throws IOException {
+	protected HttpURLConnection initHttpURLConnection(String token, URL url, Map<String, String> optionHeaders,
+			String requestBody) throws IOException {
 
 		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 		connection.setRequestMethod(HttpMethod.POST.name());
@@ -94,7 +90,8 @@ public abstract class AbstractCrawlerService implements CrawlerService {
 
 		if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
 			String errResp = this.getInputStreamAsString(connection.getErrorStream());
-			throw new CrawlerServiceException("Request Failed: " + connection.getResponseCode() + " err msg: " + errResp);
+			throw new CrawlerServiceException(
+					"Request Failed: " + connection.getResponseCode() + " err msg: " + errResp);
 		}
 
 		return this.getInputStreamAsString(connection.getInputStream());
