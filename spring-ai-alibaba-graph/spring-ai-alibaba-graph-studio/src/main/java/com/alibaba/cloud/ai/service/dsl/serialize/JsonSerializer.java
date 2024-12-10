@@ -12,25 +12,30 @@ import java.util.Map;
 
 @Component("json")
 public class JsonSerializer implements Serializer {
-    private ObjectMapper objectMapper;
 
-    public JsonSerializer (){
-        objectMapper = new ObjectMapper();
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    }
-    @Override
-    public Map<String, Object> load(String s) {
-        return objectMapper.convertValue(s, new TypeReference<>() {});
-    }
+	private ObjectMapper objectMapper;
 
-    @Override
-    public String dump(Map<String, Object> data) {
-        String result;
-        try {
-            result = objectMapper.writeValueAsString(data);
-        } catch (JsonProcessingException e) {
-            throw new SerializationException("failed to dump data" + data, e);
-        }
-        return result;
-    }
+	public JsonSerializer() {
+		objectMapper = new ObjectMapper();
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	}
+
+	@Override
+	public Map<String, Object> load(String s) {
+		return objectMapper.convertValue(s, new TypeReference<>() {
+		});
+	}
+
+	@Override
+	public String dump(Map<String, Object> data) {
+		String result;
+		try {
+			result = objectMapper.writeValueAsString(data);
+		}
+		catch (JsonProcessingException e) {
+			throw new SerializationException("failed to dump data" + data, e);
+		}
+		return result;
+	}
+
 }

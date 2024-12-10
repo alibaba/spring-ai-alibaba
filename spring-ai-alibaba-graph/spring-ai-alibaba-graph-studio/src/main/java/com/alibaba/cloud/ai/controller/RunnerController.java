@@ -12,26 +12,23 @@ import java.util.List;
 @RequestMapping("graph-studio/run")
 public class RunnerController implements RunnerAPI {
 
-    private final List<Runner> runners;
+	private final List<Runner> runners;
 
-    private final AppSaver appSaver;
+	private final AppSaver appSaver;
 
-    public RunnerController(List<Runner> runners, AppSaver appSaver){
-        this.runners = runners;
-        this.appSaver = appSaver;
-    }
+	public RunnerController(List<Runner> runners, AppSaver appSaver) {
+		this.runners = runners;
+		this.appSaver = appSaver;
+	}
 
+	@Override
+	public Runner getRunner(String type) {
+		return runners.stream().filter(r -> r.support(type)).findFirst().orElse(null);
+	}
 
-    @Override
-    public Runner getRunner(String type) {
-        return runners.stream()
-                .filter(r -> r.support(type))
-                .findFirst()
-                .orElse(null);
-    }
+	@Override
+	public AppSaver getAppSaver() {
+		return appSaver;
+	}
 
-    @Override
-    public AppSaver getAppSaver() {
-        return appSaver;
-    }
 }

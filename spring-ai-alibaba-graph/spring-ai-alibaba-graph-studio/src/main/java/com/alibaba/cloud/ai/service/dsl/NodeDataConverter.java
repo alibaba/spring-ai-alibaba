@@ -5,7 +5,8 @@ import com.alibaba.cloud.ai.model.workflow.NodeData;
 import java.util.Map;
 
 /**
- * NodeDataConverter defined the mutual conversion between specific DSL data and {@link NodeData}
+ * NodeDataConverter defined the mutual conversion between specific DSL data and
+ * {@link NodeData}
  */
 public interface NodeDataConverter {
 

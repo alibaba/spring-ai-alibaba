@@ -21,7 +21,8 @@ public interface DSLAPI {
 	@Operation(summary = "export app to dsl", tags = { "DSL" })
 	@GetMapping(value = "/export/{id}", produces = "application/json")
 	default R<String> exportDSL(@PathVariable("id") String id, @RequestParam("dialect") String dialect) {
-		App app = Optional.ofNullable(getAppSaver().get(id)).orElseThrow(()-> new IllegalArgumentException("App not found: " + id));
+		App app = Optional.ofNullable(getAppSaver().get(id))
+			.orElseThrow(() -> new IllegalArgumentException("App not found: " + id));
 		return R.success(getAdapter(dialect).exportDSL(app));
 	}
 

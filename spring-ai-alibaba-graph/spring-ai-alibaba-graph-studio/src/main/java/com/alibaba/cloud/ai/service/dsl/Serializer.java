@@ -7,7 +7,8 @@ import java.util.Map;
  */
 public interface Serializer {
 
-    Map<String, Object> load(String s);
+	Map<String, Object> load(String s);
 
-    String dump(Map<String, Object> data);
+	String dump(Map<String, Object> data);
+
 }

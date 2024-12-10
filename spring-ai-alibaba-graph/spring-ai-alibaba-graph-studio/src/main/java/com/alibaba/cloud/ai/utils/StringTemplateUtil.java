@@ -9,7 +9,7 @@ public class StringTemplateUtil {
 	/**
 	 * turn dify string template into spring-ai template
 	 * @param template e.g. "the output is {{#output}}"
-	 * @param variables  e.g. {{#output#}} -> context
+	 * @param variables e.g. {{#output#}} -> context
 	 * @return spring-ai template e.g. {output}
 	 */
 	public static String fromDifyTmpl(String template, List<String> variables) {

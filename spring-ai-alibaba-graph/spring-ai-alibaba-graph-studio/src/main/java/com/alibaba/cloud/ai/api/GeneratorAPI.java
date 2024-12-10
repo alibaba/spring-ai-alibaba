@@ -24,7 +24,7 @@ public interface GeneratorAPI {
 
 	DSLAdapter getDSLAdapter(String dialect);
 
-	@Operation(summary = "Generate project from DSL", tags = {"Generator"})
+	@Operation(summary = "Generate project from DSL", tags = { "Generator" })
 	@RequestMapping(value = "/project", method = { RequestMethod.GET, RequestMethod.POST })
 	default ResponseEntity<byte[]> generateZip(ProjectGenerateParam projectGenerateParam) {
 		DSLAdapter dslAdapter = getDSLAdapter(projectGenerateParam.getDialect());
@@ -35,9 +35,9 @@ public interface GeneratorAPI {
 		return null;
 	}
 
-	@Operation(summary = "Generate code from node data", tags = {"Generator"})
+	@Operation(summary = "Generate code from node data", tags = { "Generator" })
 	@RequestMapping(value = "/code", method = { RequestMethod.GET, RequestMethod.POST })
-	default R<String> generateCode(CodeGenerateParam codeGenerateParam){
+	default R<String> generateCode(CodeGenerateParam codeGenerateParam) {
 		// TODO
 		return R.success("");
 	}

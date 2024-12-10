@@ -1,11 +1,7 @@
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.action.llm.LLMNodeAction;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.graph.state.AppendableValue;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
@@ -14,14 +10,10 @@ import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.alibaba.cloud.ai.graph.action.llm.LLMNodeAction.MESSAGES_KEY;
-import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.listOf;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -34,60 +26,55 @@ public class StateGraphTest {
 		return map.entrySet().stream().sorted(Map.Entry.comparingByKey()).collect(Collectors.toList());
 	}
 
-	// @Test
-	// void testValidation() throws Exception {
-	//
-	// StateGraph<AgentState> workflow = new StateGraph<>(AgentState::new);
-	// GraphStateException exception = assertThrows(GraphStateException.class,
-	// workflow::compile);
-	// System.out.println(exception.getMessage());
-	// assertEquals("missing Entry Point", exception.getMessage());
-	//
-	// workflow.addEdge(StateGraph.START, "agent_1");
-	//
-	// exception = assertThrows(GraphStateException.class, workflow::compile);
-	// System.out.println(exception.getMessage());
-	// assertEquals("entryPoint: agent_1 doesn't exist!", exception.getMessage());
-	//
-	// workflow.addNode("agent_1", AsyncNodeAction.node_async((state) -> {
-	// System.out.print("agent_1 ");
-	// System.out.println(state);
-	// return CollectionsUtils.mapOf("prop1", "test");
-	// }));
-	//
-	// assertNotNull(workflow.compile());
-	//
-	// workflow.addEdge("agent_1", StateGraph.END);
-	//
-	// assertNotNull(workflow.compile());
-	//
-	// exception = assertThrows(GraphStateException.class, () ->
-	// workflow.addEdge(StateGraph.END, "agent_1"));
-	// System.out.println(exception.getMessage());
-	//
-	// exception = assertThrows(GraphStateException.class, () ->
-	// workflow.addEdge("agent_1", "agent_2"));
-	// System.out.println(exception.getMessage());
-	//
-	// workflow.addNode("agent_2", AsyncNodeAction.node_async(state -> {
-	//
-	// System.out.print("agent_2: ");
-	// System.out.println(state);
-	//
-	// return CollectionsUtils.mapOf("prop2", "test");
-	// }));
-	//
-	// workflow.addEdge("agent_2", "agent_3");
-	//
-	// exception = assertThrows(GraphStateException.class, workflow::compile);
-	// System.out.println(exception.getMessage());
-	//
-	// exception = assertThrows(GraphStateException.class, () ->
-	// workflow.addConditionalEdges("agent_1",
-	// AsyncEdgeAction.edge_async(state -> "agent_3"), CollectionsUtils.mapOf()));
-	// System.out.println(exception.getMessage());
-	//
-	// }
+	@Test
+	void testValidation() throws Exception {
+		StateGraph<AgentState> workflow = new StateGraph<>(AgentState::new);
+		GraphStateException exception = assertThrows(GraphStateException.class, workflow::compile);
+		System.out.println(exception.getMessage());
+		assertEquals("missing Entry Point", exception.getMessage());
+
+		workflow.addEdge(StateGraph.START, "agent_1");
+
+		exception = assertThrows(GraphStateException.class, workflow::compile);
+		System.out.println(exception.getMessage());
+		assertEquals("entryPoint: agent_1 doesn't exist!", exception.getMessage());
+
+		workflow.addNode("agent_1", AsyncNodeAction.node_async((state) -> {
+			System.out.print("agent_1 ");
+			System.out.println(state);
+			return CollectionsUtils.mapOf("prop1", "test");
+		}));
+
+		assertNotNull(workflow.compile());
+
+		workflow.addEdge("agent_1", StateGraph.END);
+
+		assertNotNull(workflow.compile());
+
+		exception = assertThrows(GraphStateException.class, () -> workflow.addEdge(StateGraph.END, "agent_1"));
+		System.out.println(exception.getMessage());
+
+		exception = assertThrows(GraphStateException.class, () -> workflow.addEdge("agent_1", "agent_2"));
+		System.out.println(exception.getMessage());
+
+		workflow.addNode("agent_2", AsyncNodeAction.node_async(state -> {
+
+			System.out.print("agent_2: ");
+			System.out.println(state);
+
+			return CollectionsUtils.mapOf("prop2", "test");
+		}));
+
+		workflow.addEdge("agent_2", "agent_3");
+
+		exception = assertThrows(GraphStateException.class, workflow::compile);
+		System.out.println(exception.getMessage());
+
+		exception = assertThrows(GraphStateException.class, () -> workflow.addConditionalEdges("agent_1",
+				AsyncEdgeAction.edge_async(state -> "agent_3"), CollectionsUtils.mapOf()));
+		System.out.println(exception.getMessage());
+
+	}
 
 	@Test
 	public void testRunningOneNode() throws Exception {
@@ -214,19 +201,6 @@ public class StateGraphTest {
 		assertEquals(3, result.get().steps());
 		assertIterableEquals(CollectionsUtils.listOf("message1", "message2", "message3"),
 				result.get().messages().values());
-
-	}
-
-	@Test
-	void testWithLLMNodeAction() throws Exception {
-		NodeAction<MessagesState> llmNode = LLMNodeAction
-			.builder(new DashScopeChatModel(new DashScopeApi("sk-ec5a3fdc7796473a8c96e87b00b03453")))
-			.systemMessage("You're a code writer with strong language skills and coding skills")
-			.build();
-		Map<String, Object> stateData = llmNode.apply(new MessagesState(
-				Map.of(MESSAGES_KEY, List.of(new UserMessage("can you provide a best practice using spring ai?")))));
-		assertEquals(1, stateData.size());
-		System.out.println(stateData);
 
 	}
 
