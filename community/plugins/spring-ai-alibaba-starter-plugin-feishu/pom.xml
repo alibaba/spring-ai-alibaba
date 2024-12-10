@@ -3,12 +3,11 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.1.1</version>
-		<relativePath/>
+		<groupId>com.alibaba.cloud.ai</groupId>
+		<artifactId>spring-ai-alibaba</artifactId>
+		<version>${revision}</version>
+		<relativePath>../../../pom.xml</relativePath>
 	</parent>
-	<groupId>com.alibaba.cloud.ai.plugin.feishu</groupId>
 	<artifactId>spring-ai-alibaba-starter-plugin-feishu</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>spring-ai-alibaba-starter-plugin-feishu</name>

@@ -37,8 +37,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-tika-document-reader</artifactId>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>document-parser-tika</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- test dependencies -->
