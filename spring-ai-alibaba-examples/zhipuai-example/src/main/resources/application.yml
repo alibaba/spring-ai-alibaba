@@ -1,0 +1,20 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: zhipuai-example
+  ai:
+    zhipuai:
+      base-url: https://open.bigmodel.cn/api/paas
+      api-key: ${ZHIPUAI_API_KEY}
+      chat:
+        enabled: true
+        options:
+          model: glm-4-flash
+          max_tokens: 2048
+          temperature: 0.8
+          topP: 0.7
+          stop: 1.0
+          user: "test"
+          doSample: true
+          proxy-tool-calls: false
