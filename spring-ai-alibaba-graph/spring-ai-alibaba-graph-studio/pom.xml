@@ -20,11 +20,6 @@
         </springdoc-openapi-maven-plugin.version>
     </properties>
 
-    <dependencyManagement>
-        <dependencies>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
         <dependency>
             <groupId>org.projectlombok</groupId>
