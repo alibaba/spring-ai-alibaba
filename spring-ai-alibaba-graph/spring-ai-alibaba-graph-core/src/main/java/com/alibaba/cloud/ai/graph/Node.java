@@ -1,6 +1,7 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 import lombok.Value;
 import lombok.experimental.Accessors;
@@ -24,7 +25,23 @@ class Node<State extends AgentState> {
 	/**
 	 * The action to be performed asynchronously by the node.
 	 */
-	AsyncNodeAction<State> action;
+	AsyncNodeActionWithConfig<State> action;
+
+	public Node( String id ) {
+		this.id = id;
+		this.action = null;
+
+	}
+
+	public Node( String id, AsyncNodeAction<State> action ) {
+		this.id = id;
+		this.action = AsyncNodeActionWithConfig.of(action);
+	}
+
+	public Node( String id, AsyncNodeActionWithConfig<State> action ) {
+		this.id = id;
+		this.action = action;
+	}
 
 	/**
 	 * Checks if this node is equal to another object.
