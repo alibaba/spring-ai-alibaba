@@ -5,3 +5,11 @@ spring:
   ai:
     dashscope:
       api-key: ${AI_DASHSCOPE_API_KEY}
+      image:
+        options:
+          model: wanx-v1
+
+      # set LLMs response format types.
+      # chat:
+      #   options:
+      #     response-format: text
