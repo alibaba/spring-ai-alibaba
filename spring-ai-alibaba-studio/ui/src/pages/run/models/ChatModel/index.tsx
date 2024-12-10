@@ -15,12 +15,12 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Card, Flex, Button, Checkbox, Input } from 'antd';
+import { Card, Flex, Button, Checkbox, Input, Spin, List } from 'antd';
 import Setup from '../Setup';
 import { ChatModelData, ChatModelResultData } from '@/types/chat_model';
-import { ChatOptions } from '@/types/options';
 import chatModelsService from '@/services/chat_models';
-import {RightPanelValues} from '../types';
+import { RightPanelValues } from '../types';
+import { RobotOutlined, UserOutlined } from '@ant-design/icons';
 
 type ChatModelProps = {
   modelData: ChatModelData;
@@ -28,7 +28,7 @@ type ChatModelProps = {
 
 const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
   const [initialValues, setInitialValues] = useState<RightPanelValues>({
-    initialChatConfig:  {
+    initialChatConfig: {
       model: 'qwen-plus',
       temperature: 0.85,
       top_p: 0.8,
@@ -40,7 +40,7 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
       repetition_penalty: 1.1,
       tools: [],
     },
-    initialTool: {}
+    initialTool: {},
   });
 
   // 当 modelData.chatOptions 发生变化时同步更新 initialValues
@@ -64,17 +64,30 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
   };
 
   const [messages, setMessages] = useState(
-    [] as Array<{ type: string; content: string }>,
+    [] as Array<{ type: string; content: JSX.Element | string }>,
   );
 
   const runModel = async () => {
     try {
+      setMessages([
+        ...messages,
+        {
+          type: 'user',
+          content: inputValue,
+        },
+        {
+          type: 'model',
+          content: loading(),
+        },
+      ]);
+
       const res = (await chatModelsService.postChatModel({
         input: inputValue,
         chatOptions: initialValues.initialChatConfig,
         stream: isStream,
         key: modelData.name,
       })) as ChatModelResultData;
+
       setMessages([
         ...messages,
         {
@@ -94,6 +107,25 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
 
   const { TextArea } = Input;
 
+  const loading = () => {
+    return (
+      <Spin tip="Loading">
+        <div
+          style={{
+            paddingLeft: 50,
+            paddingRight: 50,
+            paddingBottom: 10,
+            paddingTop: 10,
+          }}
+        />
+      </Spin>
+    );
+  };
+
+  const cleanHistory = () => {
+    setMessages([]);
+  };
+
   return (
     <Flex justify="space-between" style={{ height: '100%' }}>
       <Flex
@@ -105,16 +137,29 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
           <Flex vertical>
             {messages.map((message: any, index) => {
               return (
-                <Card
-                  key={index}
+                <Flex
                   style={{
-                    marginTop: 20,
-                    marginLeft: message.type === 'user' ? 50 : 0,
-                    marginRight: message.type === 'user' ? 0 : 50,
+                    alignSelf: message.type === 'user' ? 'end' : 'auto',
+                    alignItems: 'start',
+                    marginBottom: 20,
                   }}
                 >
-                  <p>{message.content}</p>
-                </Card>
+                  {message.type === 'model' && (
+                    <RobotOutlined style={{ fontSize: '24px' }} />
+                  )}
+                  <Card
+                    key={index}
+                    style={{
+                      marginLeft: message.type === 'user' ? 0 : 10,
+                      marginRight: message.type === 'user' ? 10 : 0,
+                    }}
+                  >
+                    <p>{message.content}</p>
+                  </Card>
+                  {message.type === 'user' && (
+                    <UserOutlined style={{ fontSize: '24px' }} />
+                  )}
+                </Flex>
               );
             })}
           </Flex>
@@ -128,7 +173,7 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
           />
           <Flex style={{ flexDirection: 'row-reverse' }}>
             <Flex style={{ width: 300 }} align="center" justify="space-around">
-              <Button>清空</Button>
+              <Button onClick={cleanHistory}>清空</Button>
               <Checkbox checked={isStream} onChange={handleStremChange}>
                 聊天模式
               </Checkbox>
