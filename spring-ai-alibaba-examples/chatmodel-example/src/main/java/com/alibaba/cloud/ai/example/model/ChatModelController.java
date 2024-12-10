@@ -16,12 +16,15 @@
  */
 package com.alibaba.cloud.ai.example.model;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeResponseFormat;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -52,6 +55,32 @@ public class ChatModelController {
 		});
 
 		return res.toString();
+	}
+
+	/**
+	 * Tips: When specifying response types as json, you must include json when entering input, otherwise you will receive an error:
+	 * 400 - {"code":"InvalidParameter","message":"<400> InternalError.Algo.InvalidParameter: 'messages' must contain the word 'json' in some form, to use 'response_format' of type 'json_object'."
+	 *
+	 * For example: In this interface, when mode is true, your input should be "Hello, returned in json format", and the prompt must contain the word json
+	 * request url: <a href="http://localhost:8080/ai/response_types/true/"你好，以 json 形式返回信息">...</a>
+	 *
+	 * @return json string
+	 */
+	@GetMapping("/response_types/{mode}/{input}")
+	public String responseTypes(
+			@PathVariable(value = "input") String input,
+			@PathVariable(value = "mode") Boolean mode
+	) {
+
+		DashScopeChatOptions.DashscopeChatOptionsBuilder builder = DashScopeChatOptions.builder();
+
+		if (!mode) {
+			builder.withResponseFormat(DashScopeResponseFormat.builder().type(DashScopeResponseFormat.Type.TEXT).build());
+		} else {
+			builder.withResponseFormat(DashScopeResponseFormat.builder().type(DashScopeResponseFormat.Type.JSON_OBJECT).build());
+		}
+
+		return chatModel.call(new Prompt(input, builder.build())).getResult().getOutput().getContent();
 	}
 
 }
