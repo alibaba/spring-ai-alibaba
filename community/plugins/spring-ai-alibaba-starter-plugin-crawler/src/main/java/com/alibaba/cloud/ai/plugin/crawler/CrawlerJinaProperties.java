@@ -194,21 +194,13 @@ public class CrawlerJinaProperties {
 
 	@Override
 	public String toString() {
-		return "CrawlerJinaProperties{" + "token='" + "**********" + '\''
-				+ ", enabled=" + enabled
-				+ ", targetSelector='" + targetSelector + '\''
-				+ ", waitForSelector='" + waitForSelector + '\''
-				+ ", removeSelector='" + removeSelector + '\''
-				+ ", retainImages='" + retainImages + '\''
-				+ ", withLinksSummary=" + withLinksSummary
-				+ ", withImagesSummary=" + withImagesSummary
-				+ ", setCookie='" + setCookie + '\''
-				+ ", withGeneratedAlt=" + withGeneratedAlt
-				+ ", proxyUrl='" + proxyUrl + '\''
-				+ ", noCache=" + noCache
-				+ ", locale='" + locale + '\''
-				+ ", withIframe=" + withIframe
-				+ ", withShadowDom=" + withShadowDom
-				+ '}';
+		return "CrawlerJinaProperties{" + "token='" + "**********" + '\'' + ", enabled=" + enabled
+				+ ", targetSelector='" + targetSelector + '\'' + ", waitForSelector='" + waitForSelector + '\''
+				+ ", removeSelector='" + removeSelector + '\'' + ", retainImages='" + retainImages + '\''
+				+ ", withLinksSummary=" + withLinksSummary + ", withImagesSummary=" + withImagesSummary
+				+ ", setCookie='" + setCookie + '\'' + ", withGeneratedAlt=" + withGeneratedAlt + ", proxyUrl='"
+				+ proxyUrl + '\'' + ", noCache=" + noCache + ", locale='" + locale + '\'' + ", withIframe=" + withIframe
+				+ ", withShadowDom=" + withShadowDom + '}';
 	}
+
 }

@@ -41,7 +41,7 @@ public class CrawlerFirecrawlProperties {
 
 	private String mode = CrawlerConstants.FirecrawlMode.SCRAPE;
 
-	private String[] formats = new String[] {CrawlerConstants.FirecrawlFormats.MARKDOWN};
+	private String[] formats = new String[] { CrawlerConstants.FirecrawlFormats.MARKDOWN };
 
 	private Boolean removeBase64Images;
 
@@ -151,16 +151,11 @@ public class CrawlerFirecrawlProperties {
 	@Override
 	public String toString() {
 
-		return "CrawlerFirecrawlProperties{" + "token='" + token + '\''
-				+ ", enabled=" + enabled
-				+ ", removeBase64Images=" + removeBase64Images
-				+ ", skipTlsVerification=" + skipTlsVerification
-				+ ", mobile=" + mobile
-				+ ", waitFor=" + waitFor
-				+ ", formats=" + formats
-				+ ", onlyMainContent=" + onlyMainContent
-				+ ", includeTags=" + Arrays.toString(includeTags)
-				+ ", excludeTags=" + Arrays.toString(excludeTags)
-				+ '}';
+		return "CrawlerFirecrawlProperties{" + "token='" + token + '\'' + ", enabled=" + enabled
+				+ ", removeBase64Images=" + removeBase64Images + ", skipTlsVerification=" + skipTlsVerification
+				+ ", mobile=" + mobile + ", waitFor=" + waitFor + ", formats=" + formats + ", onlyMainContent="
+				+ onlyMainContent + ", includeTags=" + Arrays.toString(includeTags) + ", excludeTags="
+				+ Arrays.toString(excludeTags) + '}';
 	}
+
 }

@@ -1,9 +1,8 @@
 package com.alibaba.cloud.ai.reader.yuque;
 
-import com.alibaba.cloud.ai.reader.DocumentParser;
+import com.alibaba.cloud.ai.parser.tika.TikaDocumentParser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
 
 import java.util.List;
@@ -16,14 +15,11 @@ class YuQueDocumentLoaderIT {
 
 	YuQueDocumentReader reader;
 
-	YuQueResource source = YuQueResource.builder()
-			.yuQueToken(YU_QUE_TOKEN)
-			.resourcePath(RESOURCE_PATH)
-			.build();
+	YuQueResource source = YuQueResource.builder().yuQueToken(YU_QUE_TOKEN).resourcePath(RESOURCE_PATH).build();
 
 	@BeforeEach
 	public void beforeEach() {
-		reader = new YuQueDocumentReader(source, DocumentParser.HTML_PARSER);
+		reader = new YuQueDocumentReader(source, new TikaDocumentParser());
 	}
 
 	@Test
