@@ -107,4 +107,13 @@ public class FunctionCallingController {
 				.content();
 	}
 
+	@GetMapping("/translate")
+	public String translate(@RequestParam String text) {
+		return chatClient.prompt()
+				.functions("translateService")
+				.user(text)
+				.call()
+				.content();
+	}
+
 }
