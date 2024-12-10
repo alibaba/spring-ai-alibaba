@@ -35,6 +35,7 @@
 		<module>spring-ai-alibaba-graph-core</module>
 		<module>spring-ai-alibaba-graph-samples</module>
 		<module>spring-ai-alibaba-graph-studio</module>
+		<module>spring-ai-alibaba-graph-run</module>
 	</modules>
 
 
