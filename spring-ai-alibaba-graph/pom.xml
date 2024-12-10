@@ -28,6 +28,7 @@
 	</parent>
 
 	<artifactId>spring-ai-alibaba-graph</artifactId>
+	<name>Spring AI Alibaba Graph</name>
 	<packaging>pom</packaging>
 
 	<modules>
