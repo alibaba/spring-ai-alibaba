@@ -1,11 +1,10 @@
 package com.alibaba.cloud.ai.tencent.cos;
 
-import com.alibaba.cloud.ai.reader.DocumentParser;
+import com.alibaba.cloud.ai.document.DocumentParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
-import org.springframework.ai.reader.ExtractedTextFormatter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,46 +19,20 @@ public class TencentCosDocumentReader implements DocumentReader {
 
 	private static final Logger log = LoggerFactory.getLogger(TencentCosDocumentReader.class);
 
-	private DocumentReader parser;
+	private final DocumentParser parser;
 
 	private TencentCosResource tencentCosResource;
 
 	private List<TencentCosResource> tencentCosResourceList;
 
-	private List<DocumentReader> parserList;
-
-	public TencentCosDocumentReader(TencentCosResource tencentCosResource, DocumentParser parserType) {
-		this(tencentCosResource, parserType.getParser(tencentCosResource));
-
-	}
-
-	public TencentCosDocumentReader(TencentCosResource tencentCosResource, DocumentParser parserType,
-			ExtractedTextFormatter formatter) {
-		this(tencentCosResource, parserType.getParser(tencentCosResource, formatter));
-	}
-
-	public TencentCosDocumentReader(TencentCosResource tencentCosResource, DocumentReader parser) {
+	public TencentCosDocumentReader(TencentCosResource tencentCosResource, DocumentParser parser) {
 		this.tencentCosResource = tencentCosResource;
 		this.parser = parser;
 	}
 
-	public TencentCosDocumentReader(List<TencentCosResource> tencentCosResourceList, DocumentParser parserType,
-			ExtractedTextFormatter formatter) {
+	public TencentCosDocumentReader(List<TencentCosResource> tencentCosResourceList, DocumentParser parser) {
 		this.tencentCosResourceList = tencentCosResourceList;
-		List<DocumentReader> parserList = new ArrayList<>();
-		for (TencentCosResource tencentCosResource : tencentCosResourceList) {
-			parserList.add(parserType.getParser(tencentCosResource, formatter));
-		}
-		this.parserList = parserList;
-	}
-
-	public TencentCosDocumentReader(List<TencentCosResource> tencentCosResourceList, DocumentParser parserType) {
-		this.tencentCosResourceList = tencentCosResourceList;
-		List<DocumentReader> parserList = new ArrayList<>();
-		for (TencentCosResource tencentCosResource : tencentCosResourceList) {
-			parserList.add(parserType.getParser(tencentCosResource));
-		}
-		this.parserList = parserList;
+		this.parser = parser;
 	}
 
 	@Override
@@ -69,44 +42,28 @@ public class TencentCosDocumentReader implements DocumentReader {
 			processResourceList(documents);
 		}
 		else if (tencentCosResource != null) {
-			processSingleResource(documents);
+			loadDocuments(documents, tencentCosResource);
 		}
 
 		return documents;
 	}
 
 	private void processResourceList(List<Document> documents) {
-		for (int i = 0; i < tencentCosResourceList.size(); i++) {
-			TencentCosResource resource = tencentCosResourceList.get(i);
-			String key = resource.getKey();
-			String bucket = resource.getBucket();
-			String source = format("cos://%s/%s", bucket, key);
-
-			try {
-				List<Document> document = parserList.get(i).get();
-				for (Document doc : document) {
-					doc.getMetadata().put(TencentCosResource.SOURCE, source);
-				}
-				documents.addAll(document);
-			}
-			catch (Exception e) {
-				log.warn("Failed to load an object with key '{}' from bucket '{}', skipping it. Stack trace: {}", key,
-						bucket, e.getMessage(), e);
-			}
+		for (TencentCosResource resource : tencentCosResourceList) {
+			loadDocuments(documents, resource);
 		}
 	}
 
-	private void processSingleResource(List<Document> documents) {
-		String key = tencentCosResource.getKey();
-		String bucket = tencentCosResource.getBucket();
+	private void loadDocuments(List<Document> documents, TencentCosResource resource) {
+		String key = resource.getKey();
+		String bucket = resource.getBucket();
 		String source = format("cos://%s/%s", bucket, key);
-
 		try {
-			List<Document> document = parser.get();
-			for (Document doc : document) {
-				doc.getMetadata().put(TencentCosResource.SOURCE, source);
+			List<Document> documentList = parser.parse(resource.getInputStream());
+			for (Document document : documentList) {
+				document.getMetadata().put(TencentCosResource.SOURCE, source);
+				documents.add(document);
 			}
-			documents.addAll(document);
 		}
 		catch (Exception e) {
 			log.warn("Failed to load an object with key '{}' from bucket '{}', skipping it. Stack trace: {}", key,
