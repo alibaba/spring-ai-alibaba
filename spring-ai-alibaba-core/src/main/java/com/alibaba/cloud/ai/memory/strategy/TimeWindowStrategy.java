@@ -6,7 +6,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
  * @author wudihaoke214
  * @author <a href="mailto:2897718178@qq.com">wudihaoke214</a>
  */
-public class TimeWindowsStrategy extends AbstractChatMemoryStrategy {
+public class TimeWindowStrategy extends AbstractChatMemoryStrategy {
 
 	private final String id;
     private final Integer timeRange;
@@ -18,7 +18,7 @@ public class TimeWindowsStrategy extends AbstractChatMemoryStrategy {
 	 * @param timeRange timeRange
 	 * @param tokenUsage tokenUsage
 	 */
-	public TimeWindowsStrategy(String id, Integer timeRange, DashScopeApi.TokenUsage tokenUsage) {
+	public TimeWindowStrategy(String id, Integer timeRange, DashScopeApi.TokenUsage tokenUsage) {
 		this.id = id;
 		this.timeRange = timeRange;
 		this.tokenUsage = tokenUsage;

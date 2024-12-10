@@ -1,8 +1,13 @@
 package com.alibaba.cloud.ai.advisor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import com.alibaba.cloud.ai.memory.types.ChatMemoryType;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
@@ -45,9 +50,14 @@ public class ChatMemoryTypesAdvisor extends AbstractChatMemoryAdvisor<ChatMemory
 		String name = chatMemoryTypes.getName();
 
 		if (Objects.equals(name, "message")) {
-			System.out.println("这是一个 message 类型的 advisor ");
-			System.out.println("将会从 types 中获取 message ");
-			System.out.println("之后添加到 chat 对话中 ");
+
+			advisedRequest = this.before(advisedRequest);
+
+			AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
+
+			this.observeAfter(advisedResponse);
+
+			return advisedResponse;
 		}
 
 		if (Objects.equals(name, "prompt")) {
@@ -66,5 +76,36 @@ public class ChatMemoryTypesAdvisor extends AbstractChatMemoryAdvisor<ChatMemory
 
 		return null;
 	}
+	private AdvisedRequest before(AdvisedRequest request) {
 
+		String conversationId = this.doGetConversationId(request.adviseContext());
+
+		int chatMemoryRetrieveSize = this.doGetChatMemoryRetrieveSize(request.adviseContext());
+
+		// 1. Retrieve the chat memory for the current conversation.
+		List<Message> memoryMessages = this.getChatMemoryStore().get(conversationId, chatMemoryRetrieveSize);
+
+		// 2. Advise the request messages list.
+		List<Message> advisedMessages = new ArrayList<>(request.messages());
+		advisedMessages.addAll(memoryMessages);
+
+		// 3. Create a new request with the advised messages.
+		AdvisedRequest advisedRequest = AdvisedRequest.from(request).withMessages(advisedMessages).build();
+
+		// 4. Add the new user input to the conversation memory.
+		UserMessage userMessage = new UserMessage(request.userText(), request.media());
+		this.getChatMemoryStore().add(this.doGetConversationId(request.adviseContext()), userMessage);
+
+		return advisedRequest;
+	}
+	private void observeAfter(AdvisedResponse advisedResponse) {
+
+		List<Message> assistantMessages = advisedResponse.response()
+				.getResults()
+				.stream()
+				.map(g -> (Message) g.getOutput())
+				.toList();
+
+		this.getChatMemoryStore().add(this.doGetConversationId(advisedResponse.adviseContext()), assistantMessages);
+	}
 }

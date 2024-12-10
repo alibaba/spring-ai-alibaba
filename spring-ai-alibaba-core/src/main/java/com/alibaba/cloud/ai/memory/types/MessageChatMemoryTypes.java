@@ -3,7 +3,7 @@ package com.alibaba.cloud.ai.memory.types;
 import java.util.List;
 
 import com.alibaba.cloud.ai.memory.strategy.ChatMemoryStrategy;
-import com.alibaba.cloud.ai.memory.strategy.TokenWindowsStrategy;
+import com.alibaba.cloud.ai.memory.strategy.TokenWindowStrategy;
 
 import org.springframework.ai.chat.messages.Message;
 
@@ -16,7 +16,7 @@ public class MessageChatMemoryTypes extends AbstractChatMemoryTypes<ChatMemorySt
 
 	private static final String NAME = "message";
 
-	public MessageChatMemoryTypes(TokenWindowsStrategy chatMemoryStrategy) {
+	public MessageChatMemoryTypes(TokenWindowStrategy chatMemoryStrategy) {
 
 		super(chatMemoryStrategy);
 	}

@@ -6,7 +6,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
-public class TokenWindowsStrategy extends AbstractChatMemoryStrategy {
+public class TokenWindowStrategy extends AbstractChatMemoryStrategy {
 
 	private final String id;
     private final Integer maxTokens;
@@ -18,7 +18,7 @@ public class TokenWindowsStrategy extends AbstractChatMemoryStrategy {
 	 * @param maxTokens
 	 * @param tokenUsage
 	 */
-	public TokenWindowsStrategy(String id, Integer maxTokens, DashScopeApi.TokenUsage tokenUsage) {
+	public TokenWindowStrategy(String id, Integer maxTokens, DashScopeApi.TokenUsage tokenUsage) {
 		this.id = id;
 		this.maxTokens = maxTokens;
 		this.tokenUsage = tokenUsage;

@@ -2,7 +2,7 @@ package com.alibaba.cloud.ai.memory;
 
 import com.alibaba.cloud.ai.advisor.ChatMemoryTypesAdvisor;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.memory.strategy.TokenWindowsStrategy;
+import com.alibaba.cloud.ai.memory.strategy.TokenWindowStrategy;
 import com.alibaba.cloud.ai.memory.types.ChatMemoryType;
 import com.alibaba.cloud.ai.memory.types.MessageChatMemoryTypes;
 import reactor.core.publisher.Flux;
@@ -33,8 +33,7 @@ public class main {
     public main(ChatClient.Builder builder, VectorStore vectorStore) {
 
 		chatMemory = new InMemoryChatMemory();
-		chatMemoryTypes = new MessageChatMemoryTypes(
-				new TokenWindowsStrategy(
+		chatMemoryTypes = new MessageChatMemoryTypes(new TokenWindowStrategy(
 						"id",
 						10,
 						(DashScopeApi.TokenUsage) new Object()
