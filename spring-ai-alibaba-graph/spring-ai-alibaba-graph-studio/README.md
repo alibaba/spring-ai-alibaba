@@ -1,3 +1,3 @@
-# 🦜🕸️ LangGraph4j Studio
+# Spring AI Alibaba Graph Studio
 
-An **embed playground webapp** that runs a Langgraph4j workflow in visual way.
+A **playground webapp** that enables you to build and test your AI apps in visual way.
