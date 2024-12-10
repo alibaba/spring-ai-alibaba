@@ -35,24 +35,15 @@ import org.springframework.util.Assert;
  */
 
 @Configuration
-@EnableConfigurationProperties({
-		CrawlerJinaProperties.class,
-		CrawlerFirecrawlProperties.class
-})
+@EnableConfigurationProperties({ CrawlerJinaProperties.class, CrawlerFirecrawlProperties.class })
 public class CrawlerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Jina Reader Service Plugin")
-	@ConditionalOnProperty(
-			prefix = CrawlerJinaProperties.JINA_PROPERTIES_PREFIX,
-			name = "enabled",
-			havingValue = "true"
-	)
-	public CrawlerJinaServiceImpl jinaService(
-			CrawlerJinaProperties jinaProperties,
-			ObjectMapper objectMapper
-	) {
+	@ConditionalOnProperty(prefix = CrawlerJinaProperties.JINA_PROPERTIES_PREFIX, name = "enabled",
+			havingValue = "true")
+	public CrawlerJinaServiceImpl jinaService(CrawlerJinaProperties jinaProperties, ObjectMapper objectMapper) {
 
 		Assert.notNull(jinaProperties, "Jina reader api token must not be empty");
 		return new CrawlerJinaServiceImpl(jinaProperties, objectMapper);
@@ -61,15 +52,10 @@ public class CrawlerAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Firecrawl Service Plugin")
-	@ConditionalOnProperty(
-			prefix = CrawlerJinaProperties.JINA_PROPERTIES_PREFIX,
-			name = "enabled",
-			havingValue = "true"
-	)
-	public CrawlerFirecrawlServiceImpl firecrawlService(
-			CrawlerFirecrawlProperties firecrawlProperties,
-			ObjectMapper objectMapper
-	) {
+	@ConditionalOnProperty(prefix = CrawlerJinaProperties.JINA_PROPERTIES_PREFIX, name = "enabled",
+			havingValue = "true")
+	public CrawlerFirecrawlServiceImpl firecrawlService(CrawlerFirecrawlProperties firecrawlProperties,
+			ObjectMapper objectMapper) {
 
 		Assert.notNull(firecrawlProperties.getToken(), "Firecrawl api token must not be empty");
 		return new CrawlerFirecrawlServiceImpl(firecrawlProperties, objectMapper);

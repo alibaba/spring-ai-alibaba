@@ -18,9 +18,8 @@
 package com.alibaba.cloud.ai.plugin.crawler.constant;
 
 /**
- *  Crawler constants define.
- *  In Jina Reader, parameters are passed through the request header.
- *  In Firecrawl, parameters are passed through the request body.
+ * Crawler constants define. In Jina Reader, parameters are passed through the request
+ * header. In Firecrawl, parameters are passed through the request body.
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
@@ -64,12 +63,14 @@ public interface CrawlerConstants {
 		String X_WITH_LINKS_SUMMARY = "X-With-Links-Summary";
 
 		String X_WITH_SHADOW_DOM = "X-With-Shadow-Dom";
+
 	}
 
 	/**
-	 * Firecrawl Request body keys.
-	 * Reference: <a href="https://docs.firecrawl.dev/api-reference/endpoint/scrape">...</a>
-	 * LangChain: <a href="https://python.langchain.com/docs/integrations/document_loaders/firecrawl/#modes">...</a>
+	 * Firecrawl Request body keys. Reference:
+	 * <a href="https://docs.firecrawl.dev/api-reference/endpoint/scrape">...</a>
+	 * LangChain: <a href=
+	 * "https://python.langchain.com/docs/integrations/document_loaders/firecrawl/#modes">...</a>
 	 */
 	interface FirecrawlMode {
 
@@ -84,9 +85,11 @@ public interface CrawlerConstants {
 		String MAP = "map";
 
 		/**
-		 * Crawl the url and all accessible sub pages and return the markdown for each one.
+		 * Crawl the url and all accessible sub pages and return the markdown for each
+		 * one.
 		 */
 		String CRAWL = "crawl";
+
 	}
 
 	interface FirecrawlFormats {
@@ -98,6 +101,7 @@ public interface CrawlerConstants {
 		String HTML = "html";
 
 		String LINKS = "links";
+
 	}
 
 	interface FirecrawlRequestBodyKey {
@@ -119,5 +123,7 @@ public interface CrawlerConstants {
 		String INCLUDE_TAGS = "includeTags";
 
 		String EXCLUDE_TAGS = "excludeTags";
+
 	}
+
 }

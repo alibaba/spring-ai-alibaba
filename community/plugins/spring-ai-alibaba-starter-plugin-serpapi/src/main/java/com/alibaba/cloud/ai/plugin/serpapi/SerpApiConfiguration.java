@@ -13,11 +13,12 @@ import org.springframework.context.annotation.Description;
 @EnableConfigurationProperties(SerpApiProperties.class)
 public class SerpApiConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Use SerpApi search to query for the latest news.")
-    @ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.serpapi", name = "enabled", havingValue = "true")
-    public SerpApiService serpApiService(SerpApiProperties properties) {
-        return new SerpApiService(properties);
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Use SerpApi search to query for the latest news.")
+	@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.serpapi", name = "enabled", havingValue = "true")
+	public SerpApiService serpApiService(SerpApiProperties properties) {
+		return new SerpApiService(properties);
+	}
+
 }
