@@ -46,7 +46,7 @@ export default {
   // 根据 Model name 获取 ChatModel
   async postImageModel(data): Promise<ChatModelResultData> {
     return await request({
-      url: '/studio/api/chat-models/run/image-gen',
+      url: '/studio/api/chat-models/run/image-gen/url',
       method: 'post',
       data,
     });
