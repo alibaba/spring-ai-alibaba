@@ -43,14 +43,14 @@ The Spring AI Alibaba project management committee (PMC), is the only governance
 
 Committers MUST remain active. If they are unresponsive for >6 months, they will be automatically removed unless a <a href="https://en.wikipedia.org/wiki/Supermajority#Two-thirds_vote" target="_blank">super-majority</a> of the other project committers agrees to extend the period to be greater than 6 months.
 
-New committers can be added to the project by receiving at least 3 votes from the existing [PMC members](./PMC_MEMBERS.md). A potential committer may be nominated by an existing PMC member. A vote is conducted in private between the current PMC members over the course of a one week voting period. At the end of the week, votes are counted and a pull request is made on the repo adding the new committer to the [COMMITTERS](./COMMITTERS.md) file.
+New committers can be added to the project by receiving at least 3 votes from the existing [PMC members](./PMC_MEMBERS.md). A potential committer may be nominated by an existing PMC member. A vote is conducted in private between the current PMC members over the course of a one week voting period. At the end of the week, votes are counted and a pull regexRequest is made on the repo adding the new committer to the [COMMITTERS](./COMMITTERS.md) file.
 
 A committer may step down by submitting an issue stating their intent.
 
 ### PMC Member
-Existing PMC members can initiate a vote for a new committer. The vote is conducted in a non-public mailing list or chatting group. To become a committer there must have at least 3 +1 votes from the existing PMC members. New committers can be added to the [COMMITTERS](./COMMITTERS.md) file in the form of pull request.
+Existing PMC members can initiate a vote for a new committer. The vote is conducted in a non-public mailing list or chatting group. To become a committer there must have at least 3 +1 votes from the existing PMC members. New committers can be added to the [COMMITTERS](./COMMITTERS.md) file in the form of pull regexRequest.
 
-Existing PMC members can initiate a vote for a new PMC member. The vote is conducted in a non-public mailing list or chatting group. A committer can become a PMC member if at least 3 existing PMC members vote in favor. New members can be added to the [PMC_MEMBERS](./PMC_MEMBERS.md) file in the form of pull request.
+Existing PMC members can initiate a vote for a new PMC member. The vote is conducted in a non-public mailing list or chatting group. A committer can become a PMC member if at least 3 existing PMC members vote in favor. New members can be added to the [PMC_MEMBERS](./PMC_MEMBERS.md) file in the form of pull regexRequest.
 
 If a PMC member does not have involve in any project or community activities for more than one year, he/she will automatically be listed as the emeritus member. Emeritus members do not participate in any voting decisions of the community. Emeritus members will be permanently retained. To become PMC members from emeritus members, a voting process is required.
 
@@ -60,4 +60,4 @@ A PMC member may step down by submitting an issue stating their intent.
 
 This project has adopted the [Contributor Covenant Code of Conduct](./CODE_OF_CONDUCT.md)
 
-Changes to this GOVERNANCE document require a pull request with approval from at least 3 of the current [PMC members](./PMC_MEMBERS.md).
+Changes to this GOVERNANCE document require a pull regexRequest with approval from at least 3 of the current [PMC members](./PMC_MEMBERS.md).

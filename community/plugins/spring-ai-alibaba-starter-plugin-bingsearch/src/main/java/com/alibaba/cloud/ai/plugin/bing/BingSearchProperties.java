@@ -1,4 +1,3 @@
-package com.alibaba.cloud.ai.plugin.bing;
 /*
  * Copyright 1999-2023 Alibaba Group Holding Ltd.
  *
@@ -15,23 +14,20 @@ package com.alibaba.cloud.ai.plugin.bing;
  * limitations under the License.
  */
 
+package com.alibaba.cloud.ai.plugin.bing;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 /**
- * .
- *
- * @date: 2024-11-20
- * @version: 1.0
  * @author: KrakenZJC
  **/
-
+@EnableConfigurationProperties
 @ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.bing")
 public class BingSearchProperties {
 
 	public static final String OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";
 
-	// bing api key for Ocp-Apim-Subscription-Key
-	// https://learn.microsoft.com/en-us/bing/search-apis/bing-web-search/quickstarts/rest/java
 	private String token;
 
 	public String getToken() {

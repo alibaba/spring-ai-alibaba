@@ -19,6 +19,9 @@ package com.alibaba.cloud.ai.plugin.weather;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * @author 31445
+ */
 @ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.weather")
 public class WeatherProperties {
 

@@ -24,6 +24,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
+/**
+ * @author 31445
+ */
 @Configuration
 @ConditionalOnClass(TranslateService.class)
 @EnableConfigurationProperties(TranslateProperties.class)

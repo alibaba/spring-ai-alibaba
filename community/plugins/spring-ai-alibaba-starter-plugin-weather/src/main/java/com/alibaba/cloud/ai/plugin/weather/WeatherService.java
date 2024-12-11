@@ -37,6 +37,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+/**
+ * @author 31445
+ */
 public class WeatherService implements Function<WeatherService.Request, WeatherService.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(WeatherService.class);
@@ -57,6 +60,15 @@ public class WeatherService implements Function<WeatherService.Request, WeatherS
 			.defaultHeader("key", properties.getApiKey())
 			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024))
 			.build();
+	}
+
+	public static Response fromJson(Map<String, Object> json) {
+		Map<String, Object> location = (Map<String, Object>) json.get("location");
+		Map<String, Object> current = (Map<String, Object>) json.get("current");
+		Map<String, Object> forecast = (Map<String, Object>) json.get("forecast");
+		List<Map<String, Object>> forecastDays = (List<Map<String, Object>>) forecast.get("forecastday");
+		String city = (String) location.get("name");
+		return new Response(city, current, forecastDays);
 	}
 
 	@Override
@@ -96,15 +108,6 @@ public class WeatherService implements Function<WeatherService.Request, WeatherS
 
 	private boolean containsChinese(String str) {
 		return str.matches(".*[\u4e00-\u9fa5].*");
-	}
-
-	public static Response fromJson(Map<String, Object> json) {
-		Map<String, Object> location = (Map<String, Object>) json.get("location");
-		Map<String, Object> current = (Map<String, Object>) json.get("current");
-		Map<String, Object> forecast = (Map<String, Object>) json.get("forecast");
-		List<Map<String, Object>> forecastDays = (List<Map<String, Object>>) forecast.get("forecastday");
-		String city = (String) location.get("name");
-		return new Response(city, current, forecastDays);
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)

@@ -59,4 +59,7 @@
 
     </dependencies>
 
+    <build>
+        <finalName>spring-ai-alibaba-plugin-crewler</finalName>
+    </build>
 </project>

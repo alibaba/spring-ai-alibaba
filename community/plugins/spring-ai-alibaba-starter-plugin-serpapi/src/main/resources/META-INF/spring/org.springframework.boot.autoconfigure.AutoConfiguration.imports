@@ -1,2 +1,2 @@
-com.alibaba.cloud.ai.plugin.serpapi.SerpApiConfiguration
+com.alibaba.cloud.ai.plugin.serpapi.SerpApiAutoConfiguration
 

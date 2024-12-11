@@ -34,7 +34,6 @@
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-starter</module>
         <module>spring-ai-alibaba-autoconfigure</module>
-
         <module>community/plugins/spring-ai-alibaba-starter-plugin-time</module>
         <module>community/plugins/spring-ai-alibaba-starter-plugin-baidusearch</module>
         <module>community/plugins/spring-ai-alibaba-starter-plugin-bingsearch</module>
@@ -44,18 +43,14 @@
         <module>community/plugins/spring-ai-alibaba-starter-plugin-larksuite</module>
         <module>community/plugins/spring-ai-alibaba-starter-plugin-translate</module>
         <module>community/plugins/spring-ai-alibaba-starter-plugin-crawler</module>
-        <module>community/plugins/spring-ai-alibaba-starter-plugin-feishu</module>
+        <module>community/plugins/spring-ai-alibaba-starter-plugin-regex</module>
+        <module>community/plugins/spring-ai-alibaba-starter-plugin-jsonprocessor</module>
         <module>community/plugins/spring-ai-alibaba-starter-plugin-serpapi</module>
 
         <module>community/document-readers/github-reader</module>
         <module>community/document-readers/poi-document-reader</module>
         <module>community/document-readers/tencent-cos-reader</module>
         <module>community/document-readers/feishu-document-reader</module>
-        <module>community/document-readers/yuque-reader</module>
-
-        <module>community/document-parsers/document-parser-apache-pdfbox</module>
-        <module>community/document-parsers/document-parser-markdown</module>
-        <module>community/document-parsers/document-parser-tika</module>
     </modules>
 
     <properties>
