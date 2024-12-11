@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Card, Flex, Button, Checkbox, Input, Spin, List } from 'antd';
 import Setup from '../Setup';
 import { ChatModelData, ChatModelResultData } from '@/types/chat_model';
 import chatModelsService from '@/services/chat_models';
 import { RightPanelValues } from '../types';
 import { RobotOutlined, UserOutlined } from '@ant-design/icons';
+import styles from './index.module.css';
 
 type ChatModelProps = {
   modelData: ChatModelData;
@@ -55,6 +56,7 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
   const [inputValue, setInputValue] = useState('');
   const [isStream, setIsStream] = useState(false);
   const [disabled, setDisabled] = useState(false);
+  const messagesEndRef = useRef(null);
 
   const handleInputChange = (e) => {
     setInputValue(e.target.value);
@@ -113,14 +115,7 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
   const loading = () => {
     return (
       <Spin tip="Loading">
-        <div
-          style={{
-            paddingLeft: 50,
-            paddingRight: 50,
-            paddingBottom: 10,
-            paddingTop: 10,
-          }}
-        />
+        <div className={styles['message-loading']} />
       </Spin>
     );
   };
@@ -129,43 +124,47 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
     setMessages([]);
   };
 
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   return (
     <Flex justify="space-between" style={{ height: '100%' }}>
-      <Flex
-        vertical
-        justify="space-between"
-        style={{ marginRight: 20, flexGrow: 1 }}
-      >
-        <div>
-          <Flex vertical>
-            {messages.map((message: any, index) => {
-              return (
-                <Flex
+      <Flex vertical style={{ marginRight: 20, flexGrow: 1, height: '100%' }}>
+        <div className={styles['message-wrapper']}>
+          {messages.map((message: any, index) => {
+            return (
+              <Flex
+                className={styles['message']}
+                style={{
+                  alignSelf: message.type === 'user' ? 'end' : 'auto',
+                }}
+                ref={index === messages.length - 1 ? messagesEndRef : undefined}
+              >
+                {message.type === 'model' && (
+                  <RobotOutlined className={styles['message-icon']} />
+                )}
+                <Card
+                  key={index}
                   style={{
-                    alignSelf: message.type === 'user' ? 'end' : 'auto',
-                    alignItems: 'start',
-                    marginBottom: 20,
+                    marginLeft: message.type === 'user' ? 0 : 10,
+                    marginRight: message.type === 'user' ? 10 : 0,
                   }}
                 >
-                  {message.type === 'model' && (
-                    <RobotOutlined style={{ fontSize: '24px' }} />
-                  )}
-                  <Card
-                    key={index}
-                    style={{
-                      marginLeft: message.type === 'user' ? 0 : 10,
-                      marginRight: message.type === 'user' ? 10 : 0,
-                    }}
-                  >
-                    <p>{message.content}</p>
-                  </Card>
-                  {message.type === 'user' && (
-                    <UserOutlined style={{ fontSize: '24px' }} />
-                  )}
-                </Flex>
-              );
-            })}
-          </Flex>
+                  <p>{message.content}</p>
+                </Card>
+                {message.type === 'user' && (
+                  <UserOutlined className={styles['message-icon']} />
+                )}
+              </Flex>
+            );
+          })}
         </div>
         <Flex vertical>
           <TextArea
