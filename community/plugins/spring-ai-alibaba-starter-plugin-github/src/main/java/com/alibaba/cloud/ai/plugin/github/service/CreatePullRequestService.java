@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.plugin.github.service.Impl;
+package com.alibaba.cloud.ai.plugin.github.service;
 
 import com.alibaba.cloud.ai.plugin.github.GithubProperties;
 import com.alibaba.cloud.ai.plugin.github.entity.Request;
 import com.alibaba.cloud.ai.plugin.github.entity.Response;
-import com.alibaba.cloud.ai.plugin.github.service.GithubService;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

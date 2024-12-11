@@ -19,6 +19,9 @@ package com.alibaba.cloud.ai.plugin.github;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/**
+ * @author Yeaury
+ */
 @ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.github")
 public class GithubProperties {
 

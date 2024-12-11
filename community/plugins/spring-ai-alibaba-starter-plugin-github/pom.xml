@@ -26,8 +26,8 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
     <artifactId>spring-ai-alibaba-starter-plugin-github</artifactId>
-    <name>spring-ai-alibaba-starter-plugin-math</name>
-    <description>Math Expression Evaluation tool for Spring AI Alibaba</description>
+    <name>spring-ai-alibaba-starter-plugin-github</name>
+    <description>github toolkit for Spring AI Alibaba</description>
 
 
     <dependencies>
@@ -57,30 +57,6 @@
     </dependencies>
 
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>${maven-deploy-plugin.version}</version>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-        </plugins>
+        <finalName>spring-ai-alibaba-starter-plugin-github</finalName>
     </build>
-
-    <repositories>
-        <repository>
-            <id>spring-milestones</id>
-            <name>Spring Milestones</name>
-            <url>https://repo.spring.io/milestone</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
 </project>
