@@ -25,8 +25,6 @@ public class AiInsurance {
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
-
-
 		// 核心步骤：构建graph对象
 		// 1、注入llm
 		// 2、注入序列化对象
