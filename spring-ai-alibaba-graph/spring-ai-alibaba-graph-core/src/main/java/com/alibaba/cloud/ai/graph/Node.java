@@ -27,18 +27,18 @@ class Node<State extends AgentState> {
 	 */
 	AsyncNodeActionWithConfig<State> action;
 
-	public Node( String id ) {
+	public Node(String id) {
 		this.id = id;
 		this.action = null;
 
 	}
 
-	public Node( String id, AsyncNodeAction<State> action ) {
+	public Node(String id, AsyncNodeAction<State> action) {
 		this.id = id;
 		this.action = AsyncNodeActionWithConfig.of(action);
 	}
 
-	public Node( String id, AsyncNodeActionWithConfig<State> action ) {
+	public Node(String id, AsyncNodeActionWithConfig<State> action) {
 		this.id = id;
 		this.action = action;
 	}

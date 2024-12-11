@@ -209,17 +209,18 @@ public class StateGraph<State extends AgentState> {
 	}
 
 	public StateGraph<State> addSubgraph(String id, CompiledGraph<State> subGraph) throws GraphStateException {
-		return addNode(id, new SubgraphNodeAction<State>(subGraph) );
+		return addNode(id, new SubgraphNodeAction<State>(subGraph));
 	}
 
 	/**
-	 *
 	 * @param id the identifier of the node
 	 * @param actionWithConfig the action to be performed by the node
 	 * @return this
-	 * @throws GraphStateException if the node identifier is invalid or the node already exists
+	 * @throws GraphStateException if the node identifier is invalid or the node already
+	 * exists
 	 */
-	public StateGraph<State> addNode(String id, AsyncNodeActionWithConfig<State> actionWithConfig) throws GraphStateException {
+	public StateGraph<State> addNode(String id, AsyncNodeActionWithConfig<State> actionWithConfig)
+			throws GraphStateException {
 		if (Objects.equals(id, END)) {
 			throw Errors.invalidNodeIdentifier.exception(END);
 		}

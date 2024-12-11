@@ -1,7 +1,11 @@
 package com.alibaba.cloud.ai.graph.practice.insurance_sale;
 
+import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.practice.insurance_sale.node.HumanNode;
 import com.alibaba.cloud.ai.graph.practice.insurance_sale.node.WelcomeNode;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
@@ -57,12 +61,32 @@ public class IsExecutor {
 			if (stateSerializer == null) {
 				stateSerializer = new IsAgentStateSerializer();
 			}
+			MemorySaver saver = new MemorySaver();
+			SaverConfig saverConfig = SaverConfig.builder()
+					.type(SaverConstant.MEMORY)
+					.register(SaverConstant.MEMORY, saver)
+					.build();
+			CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
+			var subGraph = new StateGraph<>(State.SCHEMA, stateSerializer).addEdge(START, "welcome")
+					.addNode("welcome", node_async(new WelcomeNode())) // 调用llm
+					.addEdge("welcome", "human")// 下一个节点
+					.addNode("human", node_async(new HumanNode()))
+					.addEdge("human", "agent")// 下一个节点
+					.addNode("agent", node_async(IsExecutor.this::callAgent)) // 调用llm
+					.addNode("action", IsExecutor.this::executeTools) // 独立节点
+					.addConditionalEdges( // 条件边，在agent节点之后
+							"agent", edge_async(IsExecutor.this::shouldContinue), // 根据agent的结果，进行条件判断
+							Map.of("continue", "action", "end", END) // 不同分支，使action不再独立
+					)
+					.addEdge("action", "agent").compile(compileConfig);
 
 			return new StateGraph<>(State.SCHEMA, stateSerializer).addEdge(START, "welcome")
 				.addNode("welcome", node_async(new WelcomeNode())) // 调用llm
 				.addEdge("welcome", "human")// 下一个节点
 				.addNode("human", node_async(new HumanNode()))
-				.addEdge("human", "agent")// 下一个节点
+				.addEdge("human", "subGraph")// 下一个节点
+				.addSubgraph("subGraph", subGraph)
+				.addEdge("subGraph", "agent")// 下一个节点
 				.addNode("agent", node_async(IsExecutor.this::callAgent)) // 调用llm
 				.addNode("action", IsExecutor.this::executeTools) // 独立节点
 				.addConditionalEdges( // 条件边，在agent节点之后

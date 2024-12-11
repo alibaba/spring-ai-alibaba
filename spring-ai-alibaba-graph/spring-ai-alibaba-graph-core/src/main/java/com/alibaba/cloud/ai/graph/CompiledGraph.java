@@ -437,7 +437,7 @@ public class CompiledGraph<State extends AgentState> {
 				if (action == null)
 					throw StateGraph.RunnableErrors.missingNode.exception(currentNodeId);
 
-				future = action.apply(cloneState(currentState),config).thenApply(partialState -> {
+				future = action.apply(cloneState(currentState), config).thenApply(partialState -> {
 					try {
 						currentState = AgentState.updateState(currentState, partialState, stateGraph.getChannels());
 						nextNodeId = nextNodeId(currentNodeId, currentState);

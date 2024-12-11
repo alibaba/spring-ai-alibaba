@@ -53,9 +53,9 @@ public class AgentExecutorStreamingServer {
 		 * usecaseStereotypeFontSize 12 skinparam hexagonFontSize 14 skinparam
 		 * hexagonStereotypeFontSize 12 title "Adaptive RAG" footer
 		 *
-		 * powered by SpringAiGraph end footer circle start<<input>> circle stop as __END__
-		 * usecase "agent"<<Node>> usecase "action"<<Node>> hexagon "check state" as
-		 * condition1<<Condition>> start -down-> "agent" "agent" -down-> "condition1"
+		 * powered by SpringAiGraph end footer circle start<<input>> circle stop as
+		 * __END__ usecase "agent"<<Node>> usecase "action"<<Node>> hexagon "check state"
+		 * as condition1<<Condition>> start -down-> "agent" "agent" -down-> "condition1"
 		 * "condition1" --> "action": "continue" '"agent" --> "action": "continue"
 		 * "condition1" -down-> stop: "end" '"agent" -down-> stop: "end" "action" -down->
 		 * "agent"
