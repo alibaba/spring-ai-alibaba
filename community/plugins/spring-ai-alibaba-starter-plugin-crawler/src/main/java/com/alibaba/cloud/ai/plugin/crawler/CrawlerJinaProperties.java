@@ -18,15 +18,14 @@
 package com.alibaba.cloud.ai.plugin.crawler;
 
 import com.alibaba.cloud.ai.plugin.crawler.constant.CrawlerConstants;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.MediaType;
 
 /**
  * @author yuluo
- * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
-
+@EnableConfigurationProperties
 @ConfigurationProperties(prefix = CrawlerJinaProperties.JINA_PROPERTIES_PREFIX)
 public class CrawlerJinaProperties {
 

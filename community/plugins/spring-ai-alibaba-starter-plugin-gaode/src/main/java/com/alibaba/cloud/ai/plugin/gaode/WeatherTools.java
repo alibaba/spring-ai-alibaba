@@ -1,6 +1,3 @@
-package com.alibaba.cloud.ai.plugin.gaode.service;
-
-import com.alibaba.cloud.ai.plugin.gaode.GaoDeProperties;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,6 +14,9 @@ import com.alibaba.cloud.ai.plugin.gaode.GaoDeProperties;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package com.alibaba.cloud.ai.plugin.gaode;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -27,8 +27,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * @author YunLong
  */
-
-public class WebService {
+public class WeatherTools {
 
 	private final String baseUrl = "https://restapi.amap.com/v3";
 
@@ -36,7 +35,7 @@ public class WebService {
 
 	private final HttpClient httpClient;
 
-	public WebService(GaoDeProperties gaoDeProperties) {
+	public WeatherTools(GaoDeProperties gaoDeProperties) {
 		this.gaoDeProperties = gaoDeProperties;
 
 		this.httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();

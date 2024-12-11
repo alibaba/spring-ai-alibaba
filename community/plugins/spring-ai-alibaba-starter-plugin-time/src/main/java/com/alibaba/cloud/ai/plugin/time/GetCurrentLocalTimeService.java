@@ -15,25 +15,30 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.plugin.weather;
+package com.alibaba.cloud.ai.plugin.time;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import com.fasterxml.jackson.annotation.JsonClassDescription;
+
+import java.util.TimeZone;
+import java.util.function.Function;
 
 /**
- * @author 31445
+ * @author chengle
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.weather")
-public class WeatherProperties {
+public class GetCurrentLocalTimeService
+		implements Function<GetCurrentLocalTimeService.Request, GetCurrentLocalTimeService.Response> {
 
-	// API key for the weather service.
-	private String apiKey;
-
-	public String getApiKey() {
-		return apiKey;
+	@Override
+	public Response apply(Request request) {
+		TimeZone timeZone = TimeZone.getDefault();
+		return new Response(String.format("The current local time is %s", ZoneUtils.getTimeByZoneId(timeZone.getID())));
 	}
 
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
+	@JsonClassDescription("Request to obtain the current local time")
+	public record Request() {
+	}
+
+	public record Response(String description) {
 	}
 
 }

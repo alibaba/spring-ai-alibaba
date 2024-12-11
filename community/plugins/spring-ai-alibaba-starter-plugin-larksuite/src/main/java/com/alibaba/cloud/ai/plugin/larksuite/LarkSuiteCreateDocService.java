@@ -31,18 +31,23 @@ import java.util.function.Function;
 /**
  * @author 北极星
  */
-public class LarkSuiteService implements Function<LarkSuiteService.Request, Object> {
+public class LarkSuiteCreateDocService implements Function<LarkSuiteCreateDocService.DocRequest, Object> {
 
-	private static final Logger logger = LoggerFactory.getLogger(LarkSuiteService.class);
+	private static final Logger logger = LoggerFactory.getLogger(LarkSuiteCreateDocService.class);
 
 	LarkSuiteProperties larkSuiteProperties;
 
-	public LarkSuiteService(LarkSuiteProperties properties) {
+	public LarkSuiteCreateDocService(LarkSuiteProperties properties) {
 		this.larkSuiteProperties = properties;
 	}
 
+	/**
+	 * 创建飞书doc
+	 * @param request the function argument
+	 * @return CreateDocumentResp
+	 */
 	@Override
-	public Object apply(Request request) {
+	public Object apply(DocRequest request) {
 		if (ObjectUtils.isEmpty(larkSuiteProperties.getAppId())
 				|| ObjectUtils.isEmpty(larkSuiteProperties.getAppSecret())) {
 			logger.error("current spring.ai.alibaba.plugin.tool.larksuite must not be null.");
@@ -61,8 +66,8 @@ public class LarkSuiteService implements Function<LarkSuiteService.Request, Obje
 				.document()
 				.create(CreateDocumentReq.newBuilder()
 					.createDocumentReqBody(CreateDocumentReqBody.newBuilder()
-						.title(request.title())
-						.folderToken(request.folderToken())
+						.title(request.title)
+						.folderToken(request.folderToken)
 						.build())
 					.build());
 			if (!resp.success()) {
@@ -77,7 +82,7 @@ public class LarkSuiteService implements Function<LarkSuiteService.Request, Obje
 		return null;
 	}
 
-	public record Request(
+	public record DocRequest(
 			@JsonProperty(required = true,
 					value = "title") @JsonPropertyDescription("the larksuite title") String title,
 			@JsonProperty(required = true,
