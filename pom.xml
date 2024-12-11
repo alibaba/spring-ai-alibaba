@@ -46,6 +46,7 @@
         <module>community/plugins/spring-ai-alibaba-starter-plugin-crawler</module>
         <module>community/plugins/spring-ai-alibaba-starter-plugin-feishu</module>
         <module>community/plugins/spring-ai-alibaba-starter-plugin-serpapi</module>
+        <module>community/plugins/spring-ai-alibaba-starter-plugin-github</module>
 
         <module>community/document-readers/github-reader</module>
         <module>community/document-readers/poi-document-reader</module>

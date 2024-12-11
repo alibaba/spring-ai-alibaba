@@ -116,4 +116,13 @@ public class FunctionCallingController {
 				.content();
 	}
 
+	@GetMapping("/github")
+	public String github(@RequestParam String text) {
+		return chatClient.prompt()
+				.functions("getIssuesService", "getIssueService", "getPullRequestsService", "getPullRequestService", "commentOnIssueService", "createPullRequestService")
+				.user(text)
+				.call()
+				.content();
+	}
+
 }
