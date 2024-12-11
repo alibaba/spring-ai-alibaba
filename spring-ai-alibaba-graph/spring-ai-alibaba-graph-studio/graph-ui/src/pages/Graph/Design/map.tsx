@@ -15,10 +15,20 @@ import {
   useState,
 } from 'react';
 
+import {
+  generateNodeFromKey,
+  NODE_TYPE,
+} from '@/components/Nodes/Common/manageNodes';
+import StartNode from '@/components/Nodes/StartNode';
 import FileToolBarNode from '@/pages/Graph/Design/types/FileToolBarNode';
-import { CalendarOutlined, MailOutlined } from '@ant-design/icons';
+import {
+  CopyOutlined,
+  FileAddOutlined,
+  SnippetsOutlined,
+  UploadOutlined,
+} from '@ant-design/icons';
 import '@xyflow/react/dist/style.css';
-import { GetProp, Menu, MenuProps } from 'antd';
+import { Menu, MenuProps } from 'antd';
 import './index.less';
 import './xyTheme.less';
 
@@ -34,14 +44,14 @@ type ContextMenuType = {
 const nodeTypes = {
   base: FileToolBarNode,
 };
-let initialNodes: any = [
+const initialNodes: any = [
   {
     id: '1',
-    type: 'input',
+    type: 'start',
     sourcePosition: 'right',
     targetPosition: 'left',
     data: {
-      label: <div>Start</div>,
+      label: <StartNode />,
       form: {
         name: 1,
       },
@@ -52,7 +62,7 @@ let initialNodes: any = [
     id: '2',
     sourcePosition: 'right',
     targetPosition: 'left',
-    type: 'base',
+    type: 'start',
     data: {
       label: 'node 2',
       form: {
@@ -63,7 +73,7 @@ let initialNodes: any = [
   },
 ];
 
-let initialEdges = [
+const initialEdges = [
   {
     id: 'e12',
     type: 'smoothstep',
@@ -77,17 +87,47 @@ const getLayoutedElements = (nodes: any, edges: any) => {
   return { nodes, edges };
 };
 
-type MenuItem = GetProp<MenuProps, 'items'>[number];
+const graphSubMenuItems = [
+  {
+    key: NODE_TYPE.START,
+    label: '开始',
+    element: <StartNode />,
+  },
+  // {
+  //   key: 'node-branch',
+  //   label: '条件分支',
+  // },
+  // {
+  //   key: 'node-llm',
+  //   label: 'LLM',
+  // },
+];
+
+type MenuItem = Required<MenuProps>['items'][number];
 const graphMenuItems: MenuItem[] = [
   {
     key: '1',
-    icon: <MailOutlined />,
-    label: 'Navigation One',
+    icon: <FileAddOutlined />,
+    label: '新建节点',
+    children: graphSubMenuItems.map((item) => ({
+      label: item?.label ?? '',
+      key: item?.key,
+    })),
   },
   {
     key: '2',
-    icon: <CalendarOutlined />,
-    label: 'Navigation Two',
+    icon: <CopyOutlined />,
+    label: '复制',
+  },
+  {
+    key: '3',
+    icon: <SnippetsOutlined />,
+    label: '粘贴',
+  },
+  {
+    key: '4',
+    icon: <UploadOutlined />,
+    label: '导入 DSL',
   },
 ];
 export const LayoutFlow = () => {
@@ -100,9 +140,11 @@ export const LayoutFlow = () => {
       document.removeEventListener('contextmenu', handleContext);
     };
   }, []);
-  const { fitView } = useReactFlow();
+  const reactFlowInstance = useReactFlow();
+  const { fitView } = reactFlowInstance;
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  // const [reactFlowInstance, setReactFlowInstance] = useState<any>();
 
   const onLayout = useCallback(() => {
     const layouted = getLayoutedElements(nodes, edges);
@@ -156,10 +198,29 @@ export const LayoutFlow = () => {
     >
       <Background />
       <MiniMap></MiniMap>
+
       {graphContextMenu &&
         `${graphContextMenu.left}_${graphContextMenu.right}_${graphContextMenu.top}_${graphContextMenu.bottom}`}
       {graphContextMenu && (
         <Menu
+          onClick={(e) => {
+            // const reactFlowBounds = ref.current.getBoundingClientRect();
+            const domEvent = e.domEvent as unknown as ReactMouseEvent<
+              HTMLElement,
+              MouseEvent
+            >;
+            const { x, y } = reactFlowInstance.getViewport();
+            const scale = reactFlowInstance.getZoom();
+            const clientX = domEvent.clientX;
+            const clientY = domEvent.clientY;
+            const nodePositionX = (clientX - x - 600) / scale;
+            const nodePositionY = (clientY - y - 200) / scale;
+            const newNode = generateNodeFromKey(e.key as NODE_TYPE, {
+              x: nodePositionX,
+              y: nodePositionY,
+            });
+            setNodes([...nodes, newNode]);
+          }}
           className="graph-menu"
           style={{
             left: graphContextMenu.left,
