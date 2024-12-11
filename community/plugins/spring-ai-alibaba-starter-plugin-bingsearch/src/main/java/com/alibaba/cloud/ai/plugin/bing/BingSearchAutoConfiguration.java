@@ -22,24 +22,18 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 /**
- * .
- *
  * @author: KrakenZJC
- * @since : 2024-11-18
  **/
-
-@Configuration
 @ConditionalOnClass(BingSearchService.class)
 @EnableConfigurationProperties(BingSearchProperties.class)
-public class BingSearchPluginConfiguration {
+public class BingSearchAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("Use bing search engine to query for the latest news.") // function
+	@Description("Use bing search engine to query for the latest news.")
 	@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.bing", name = "enabled", havingValue = "true")
 	public BingSearchService bingSearchService(BingSearchProperties properties) {
 		return new BingSearchService(properties);

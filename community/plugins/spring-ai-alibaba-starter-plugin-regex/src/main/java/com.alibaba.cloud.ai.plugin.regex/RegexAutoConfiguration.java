@@ -19,14 +19,12 @@ package com.alibaba.cloud.ai.plugin.regex;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
 
 /**
  * @author 北极星
  */
-@EnableConfigurationProperties
 @ConditionalOnClass(RegexService.class)
 public class RegexAutoConfiguration {
 

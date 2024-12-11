@@ -1,5 +1,3 @@
-package com.alibaba.cloud.ai.plugin.gaode.function;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,8 +14,9 @@ package com.alibaba.cloud.ai.plugin.gaode.function;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import com.alibaba.cloud.ai.plugin.gaode.GaoDeProperties;
-import com.alibaba.cloud.ai.plugin.gaode.service.WebService;
+
+package com.alibaba.cloud.ai.plugin.gaode;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -30,18 +29,18 @@ import java.util.function.Function;
 /**
  * @author YunLong
  */
-public class WeatherSearchFunction implements Function<WeatherSearchFunction.Request, WeatherSearchFunction.Response> {
+public class WeatherSearchService implements Function<WeatherSearchService.Request, WeatherSearchService.Response> {
 
-	private final WebService webService;
+	private final WeatherTools weatherTools;
 
-	public WeatherSearchFunction(GaoDeProperties gaoDeProperties) {
-		this.webService = new WebService(gaoDeProperties);
+	public WeatherSearchService(GaoDeProperties gaoDeProperties) {
+		this.weatherTools = new WeatherTools(gaoDeProperties);
 	}
 
 	@Override
 	public Response apply(Request request) {
 
-		String responseBody = webService.getAddressCityCode(request.address);
+		String responseBody = weatherTools.getAddressCityCode(request.address);
 
 		String adcode = "";
 
@@ -57,7 +56,7 @@ public class WeatherSearchFunction implements Function<WeatherSearchFunction.Req
 			return new Response("Error occurred while processing the request.");
 		}
 
-		String weather = webService.getWeather(adcode);
+		String weather = weatherTools.getWeather(adcode);
 
 		return new Response(weather);
 	}
