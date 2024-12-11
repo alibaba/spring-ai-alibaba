@@ -1,6 +1,7 @@
 import {
   Background,
   MiniMap,
+  OnSelectionChangeParams,
   ReactFlow,
   useEdgesState,
   useNodesState,
@@ -11,35 +12,29 @@ import {
   MutableRefObject,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 
 import {
+  copy,
   generateNodeFromKey,
+  NODE_TITLE,
   NODE_TYPE,
+  paste,
 } from '@/components/Nodes/Common/manageNodes';
-import StartNode from '@/components/Nodes/StartNode';
 import FileToolBarNode from '@/pages/Graph/Design/types/FileToolBarNode';
 import {
   CopyOutlined,
   FileAddOutlined,
   SnippetsOutlined,
-  UploadOutlined,
 } from '@ant-design/icons';
 import '@xyflow/react/dist/style.css';
-import { Menu, MenuProps } from 'antd';
+import { Menu } from 'antd';
 import './index.less';
+import { ContextMenuType, IGraphMenuItems, ISelections, TODO } from './types';
 import './xyTheme.less';
-
-////////////type////////////////
-type ContextMenuType = {
-  top: number;
-  left: number;
-  right: number;
-  bottom: number;
-} | null;
-////////////type////////////////
 
 const nodeTypes = {
   base: FileToolBarNode,
@@ -47,11 +42,11 @@ const nodeTypes = {
 const initialNodes: any = [
   {
     id: '1',
-    type: 'start',
+    type: NODE_TYPE.START,
     sourcePosition: 'right',
     targetPosition: 'left',
     data: {
-      label: <StartNode />,
+      label: NODE_TITLE[NODE_TYPE.START],
       form: {
         name: 1,
       },
@@ -62,9 +57,9 @@ const initialNodes: any = [
     id: '2',
     sourcePosition: 'right',
     targetPosition: 'left',
-    type: 'start',
+    type: NODE_TYPE.START,
     data: {
-      label: 'node 2',
+      label: NODE_TITLE[NODE_TYPE.START],
       form: {
         name: '表单数据',
       },
@@ -91,45 +86,17 @@ const graphSubMenuItems = [
   {
     key: NODE_TYPE.START,
     label: '开始',
-    element: <StartNode />,
+  },
+  {
+    key: NODE_TYPE.LLM,
+    label: 'LLM',
   },
   // {
   //   key: 'node-branch',
   //   label: '条件分支',
   // },
-  // {
-  //   key: 'node-llm',
-  //   label: 'LLM',
-  // },
 ];
 
-type MenuItem = Required<MenuProps>['items'][number];
-const graphMenuItems: MenuItem[] = [
-  {
-    key: '1',
-    icon: <FileAddOutlined />,
-    label: '新建节点',
-    children: graphSubMenuItems.map((item) => ({
-      label: item?.label ?? '',
-      key: item?.key,
-    })),
-  },
-  {
-    key: '2',
-    icon: <CopyOutlined />,
-    label: '复制',
-  },
-  {
-    key: '3',
-    icon: <SnippetsOutlined />,
-    label: '粘贴',
-  },
-  {
-    key: '4',
-    icon: <UploadOutlined />,
-    label: '导入 DSL',
-  },
-];
 export const LayoutFlow = () => {
   const handleContext = (e: MouseEvent) => {
     e.preventDefault();
@@ -144,7 +111,7 @@ export const LayoutFlow = () => {
   const { fitView } = reactFlowInstance;
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  // const [reactFlowInstance, setReactFlowInstance] = useState<any>();
+  const [selections, setSelections] = useState<ISelections>();
 
   const onLayout = useCallback(() => {
     const layouted = getLayoutedElements(nodes, edges);
@@ -159,11 +126,10 @@ export const LayoutFlow = () => {
 
   const [graphContextMenu, setGraphContextMenu] =
     useState<ContextMenuType>(null);
-  const onGrapContextMenu = useCallback(
+  const onGraphContextMenu = useCallback(
     (event: ReactMouseEvent) => {
       // Prevent native context menu from showing
       event.preventDefault();
-
       // Calculate position of the context menu. We want to make sure it
       // doesn't get positioned off-screen.
       const pane = ref.current.getBoundingClientRect();
@@ -183,6 +149,91 @@ export const LayoutFlow = () => {
     setGraphContextMenu(null);
   }, [setGraphContextMenu]);
 
+  const onSelectionChange = useCallback(
+    (selections: OnSelectionChangeParams) => {
+      console.log(selections);
+      setSelections(selections as ISelections);
+    },
+    [setSelections],
+  );
+
+  const getMenuOperationPosition = (e: TODO) => {
+    const domEvent = e.domEvent as unknown as ReactMouseEvent<
+      HTMLElement,
+      MouseEvent
+    >;
+    const { x, y } = reactFlowInstance.getViewport();
+    const scale = reactFlowInstance.getZoom();
+    const clientX = domEvent.clientX;
+    const clientY = domEvent.clientY;
+    const nodePositionX = (clientX - x - 600) / scale;
+    const nodePositionY = (clientY - y - 200) / scale;
+    return {
+      x: nodePositionX,
+      y: nodePositionY,
+    };
+  };
+
+  const graphMenuItems: IGraphMenuItems = useMemo(
+    () => [
+      {
+        key: 'create',
+        icon: <FileAddOutlined />,
+        label: '新建节点',
+        children: graphSubMenuItems.map((item) => ({
+          label: item?.label ?? '',
+          key: item?.key,
+        })),
+        onClick: (e) => {
+          const { x, y } = getMenuOperationPosition(e);
+          const newNode = generateNodeFromKey(e.key as NODE_TYPE, {
+            x,
+            y,
+          });
+          setNodes([...nodes, newNode]);
+        },
+      },
+      {
+        key: 'copy',
+        icon: <CopyOutlined />,
+        label: '复制',
+        disabled: selections?.nodes.length === 0,
+        onClick: (e) => {
+          // It seems that no need to copy edge
+          const { nodes } = selections ?? {};
+          if (nodes?.length) {
+            copy(nodes[0], 'node');
+          }
+          // } else if (edges?.length) {
+          //   copy(edges[0], 'edge');
+          // }
+          console.log(e);
+        },
+      },
+      {
+        key: 'paste',
+        icon: <SnippetsOutlined />,
+        label: '粘贴',
+        onClick: async (e) => {
+          const { x, y } = getMenuOperationPosition(e);
+          const newNode = await paste({ x, y });
+          if (newNode) {
+            setNodes([...nodes, newNode]);
+          }
+        },
+      },
+      // {
+      //   key: 'importFromDSL',
+      //   icon: <UploadOutlined />,
+      //   label: '导入 DSL',
+      //   onClick: (e) => {
+      //     console.log(e);
+      //   },
+      // },
+    ],
+    [nodes, edges, selections],
+  );
+
   return (
     <ReactFlow
       ref={ref}
@@ -192,8 +243,9 @@ export const LayoutFlow = () => {
       nodeTypes={nodeTypes}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
-      onContextMenu={onGrapContextMenu}
+      onContextMenu={onGraphContextMenu}
       onClick={clearGraphContextMenu}
+      onSelectionChange={onSelectionChange}
       fitView
     >
       <Background />
@@ -204,22 +256,12 @@ export const LayoutFlow = () => {
       {graphContextMenu && (
         <Menu
           onClick={(e) => {
-            // const reactFlowBounds = ref.current.getBoundingClientRect();
-            const domEvent = e.domEvent as unknown as ReactMouseEvent<
-              HTMLElement,
-              MouseEvent
-            >;
-            const { x, y } = reactFlowInstance.getViewport();
-            const scale = reactFlowInstance.getZoom();
-            const clientX = domEvent.clientX;
-            const clientY = domEvent.clientY;
-            const nodePositionX = (clientX - x - 600) / scale;
-            const nodePositionY = (clientY - y - 200) / scale;
-            const newNode = generateNodeFromKey(e.key as NODE_TYPE, {
-              x: nodePositionX,
-              y: nodePositionY,
-            });
-            setNodes([...nodes, newNode]);
+            console.log('click', e);
+            const menuTargetKey = e.keyPath[e.keyPath.length - 1];
+            const menuTarget = graphMenuItems.find(
+              (i) => i?.key === menuTargetKey,
+            );
+            menuTarget?.onClick(e);
           }}
           className="graph-menu"
           style={{
