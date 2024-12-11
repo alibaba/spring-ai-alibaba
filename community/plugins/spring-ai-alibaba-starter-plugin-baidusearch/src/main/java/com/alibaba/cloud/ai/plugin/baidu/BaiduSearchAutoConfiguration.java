@@ -15,25 +15,24 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.plugin.weather;
+package com.alibaba.cloud.ai.plugin.baidu;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Description;
 
 /**
- * @author 31445
- */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.weather")
-public class WeatherProperties {
+ * @author KrakenZJC
+ **/
+@ConditionalOnClass(BaiduSearchService.class)
+public class BaiduSearchAutoConfiguration {
 
-	// API key for the weather service.
-	private String apiKey;
-
-	public String getApiKey() {
-		return apiKey;
-	}
-
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Use baidu search engine to query for the latest news.")
+	public BaiduSearchService baiduSearchService() {
+		return new BaiduSearchService();
 	}
 
 }

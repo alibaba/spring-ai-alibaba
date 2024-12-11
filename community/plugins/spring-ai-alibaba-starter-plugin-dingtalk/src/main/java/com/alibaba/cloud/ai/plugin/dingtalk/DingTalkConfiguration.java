@@ -1,5 +1,3 @@
-package com.alibaba.cloud.ai.plugin.dingtalk;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,9 @@ package com.alibaba.cloud.ai.plugin.dingtalk;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package com.alibaba.cloud.ai.plugin.dingtalk;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
