@@ -17,19 +17,16 @@
 
 package com.alibaba.cloud.ai.plugin.crawler;
 
-import java.util.Arrays;
-
 import com.alibaba.cloud.ai.plugin.crawler.constant.CrawlerConstants;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+
+import java.util.Arrays;
 
 /**
  * @author yuluo
- * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
- *
- * Reference: https://docs.firecrawl.dev/api-reference/
  */
-
+@EnableConfigurationProperties
 @ConfigurationProperties(prefix = CrawlerFirecrawlProperties.FIRECRAWL_PROPERTIES_PREFIX)
 public class CrawlerFirecrawlProperties {
 
@@ -41,12 +38,9 @@ public class CrawlerFirecrawlProperties {
 
 	private String mode = CrawlerConstants.FirecrawlMode.SCRAPE;
 
-	private String[] formats = new String[] {CrawlerConstants.FirecrawlFormats.MARKDOWN};
+	private String[] formats = new String[] { CrawlerConstants.FirecrawlFormats.MARKDOWN };
 
 	private Boolean removeBase64Images;
-
-	// not support yet
-	// private Actions[] actions;
 
 	private Boolean skipTlsVerification;
 
@@ -151,16 +145,11 @@ public class CrawlerFirecrawlProperties {
 	@Override
 	public String toString() {
 
-		return "CrawlerFirecrawlProperties{" + "token='" + token + '\''
-				+ ", enabled=" + enabled
-				+ ", removeBase64Images=" + removeBase64Images
-				+ ", skipTlsVerification=" + skipTlsVerification
-				+ ", mobile=" + mobile
-				+ ", waitFor=" + waitFor
-				+ ", formats=" + formats
-				+ ", onlyMainContent=" + onlyMainContent
-				+ ", includeTags=" + Arrays.toString(includeTags)
-				+ ", excludeTags=" + Arrays.toString(excludeTags)
-				+ '}';
+		return "CrawlerFirecrawlProperties{" + "token='" + token + '\'' + ", enabled=" + enabled
+				+ ", removeBase64Images=" + removeBase64Images + ", skipTlsVerification=" + skipTlsVerification
+				+ ", mobile=" + mobile + ", waitFor=" + waitFor + ", formats=" + formats + ", onlyMainContent="
+				+ onlyMainContent + ", includeTags=" + Arrays.toString(includeTags) + ", excludeTags="
+				+ Arrays.toString(excludeTags) + '}';
 	}
+
 }

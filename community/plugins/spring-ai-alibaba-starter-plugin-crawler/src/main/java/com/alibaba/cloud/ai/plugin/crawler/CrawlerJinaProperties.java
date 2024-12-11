@@ -18,15 +18,14 @@
 package com.alibaba.cloud.ai.plugin.crawler;
 
 import com.alibaba.cloud.ai.plugin.crawler.constant.CrawlerConstants;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.MediaType;
 
 /**
  * @author yuluo
- * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
-
+@EnableConfigurationProperties
 @ConfigurationProperties(prefix = CrawlerJinaProperties.JINA_PROPERTIES_PREFIX)
 public class CrawlerJinaProperties {
 
@@ -194,21 +193,13 @@ public class CrawlerJinaProperties {
 
 	@Override
 	public String toString() {
-		return "CrawlerJinaProperties{" + "token='" + "**********" + '\''
-				+ ", enabled=" + enabled
-				+ ", targetSelector='" + targetSelector + '\''
-				+ ", waitForSelector='" + waitForSelector + '\''
-				+ ", removeSelector='" + removeSelector + '\''
-				+ ", retainImages='" + retainImages + '\''
-				+ ", withLinksSummary=" + withLinksSummary
-				+ ", withImagesSummary=" + withImagesSummary
-				+ ", setCookie='" + setCookie + '\''
-				+ ", withGeneratedAlt=" + withGeneratedAlt
-				+ ", proxyUrl='" + proxyUrl + '\''
-				+ ", noCache=" + noCache
-				+ ", locale='" + locale + '\''
-				+ ", withIframe=" + withIframe
-				+ ", withShadowDom=" + withShadowDom
-				+ '}';
+		return "CrawlerJinaProperties{" + "token='" + "**********" + '\'' + ", enabled=" + enabled
+				+ ", targetSelector='" + targetSelector + '\'' + ", waitForSelector='" + waitForSelector + '\''
+				+ ", removeSelector='" + removeSelector + '\'' + ", retainImages='" + retainImages + '\''
+				+ ", withLinksSummary=" + withLinksSummary + ", withImagesSummary=" + withImagesSummary
+				+ ", setCookie='" + setCookie + '\'' + ", withGeneratedAlt=" + withGeneratedAlt + ", proxyUrl='"
+				+ proxyUrl + '\'' + ", noCache=" + noCache + ", locale='" + locale + '\'' + ", withIframe=" + withIframe
+				+ ", withShadowDom=" + withShadowDom + '}';
 	}
+
 }

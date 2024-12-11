@@ -15,26 +15,28 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.plugin.weather;
+package com.alibaba.cloud.ai.plugin.serpapi;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
 
 /**
- * @author 31445
+ * @author 北极星
  */
-@ConditionalOnClass(WeatherService.class)
-@EnableConfigurationProperties(WeatherProperties.class)
-public class WeatherAutoConfiguration {
+@ConditionalOnClass(SerpApiService.class)
+@EnableConfigurationProperties(SerpApiProperties.class)
+public class SerpApiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("TOOLS FOR GETTING WEATHER INFORMATION")
-	public WeatherService getWeatherService(WeatherProperties properties) {
-		return new WeatherService(properties);
+	@Description("Use SerpApi search to query for the latest news.")
+	@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.serpapi", name = "enabled", havingValue = "true")
+	public SerpApiService serpApiService(SerpApiProperties properties) {
+		return new SerpApiService(properties);
 	}
 
 }

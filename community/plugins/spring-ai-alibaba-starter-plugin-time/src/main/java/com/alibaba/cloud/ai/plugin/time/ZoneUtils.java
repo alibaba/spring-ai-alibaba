@@ -15,31 +15,33 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.plugin.baidu;
+package com.alibaba.cloud.ai.plugin.time;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Description;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
- * .
- *
- * @author: KrakenZJC
- * @since : 2024-11-18
- **/
+ * @author chengle
+ */
 
-@Configuration
-@ConditionalOnClass(BaiduSearchService.class)
-public class BaiduSearchPluginConfiguration {
+public class ZoneUtils {
 
-	@Bean
-	@ConditionalOnMissingBean
-	@Description("Use baidu search engine to query for the latest news.") // function
-	// description
-	public BaiduSearchService baiduSearchService() {
-		return new BaiduSearchService();
+	public static String getTimeByZoneId(String zoneId) {
+
+		// Get the time zone using ZoneId
+		ZoneId zid = ZoneId.of(zoneId);
+
+		// Get the current time in this time zone
+		ZonedDateTime zonedDateTime = ZonedDateTime.now(zid);
+
+		// Defining a formatter
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
+
+		// Format ZonedDateTime as a string
+		String formattedDateTime = zonedDateTime.format(formatter);
+
+		return formattedDateTime;
 	}
 
 }
