@@ -11,27 +11,29 @@ import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.mapOf;
 
 class SubgraphNodeAction<State extends AgentState> implements AsyncNodeActionWithConfig<State> {
 
-    final CompiledGraph<State> subGraph;
+	final CompiledGraph<State> subGraph;
 
-    SubgraphNodeAction(CompiledGraph<State> subGraph ) {
-        this.subGraph = subGraph;
-    }
+	SubgraphNodeAction(CompiledGraph<State> subGraph) {
+		this.subGraph = subGraph;
+	}
 
-    @Override
-    public CompletableFuture<Map<String, Object>> apply(State state, RunnableConfig config)  {
-        CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
+	@Override
+	public CompletableFuture<Map<String, Object>> apply(State state, RunnableConfig config) {
+		CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
 
-        try {
+		try {
 
-            AsyncGenerator<NodeOutput<State>> generator = subGraph.stream( state.data(), config );
+			AsyncGenerator<NodeOutput<State>> generator = subGraph.stream(state.data(), config);
 
-            future.complete( mapOf( "_subgraph", generator ) );
+			future.complete(mapOf("_subgraph", generator));
 
-        } catch (Exception e) {
+		}
+		catch (Exception e) {
 
-            future.completeExceptionally(e);
-        }
+			future.completeExceptionally(e);
+		}
 
-        return future;
-    }
+		return future;
+	}
+
 }
