@@ -38,4 +38,8 @@ public class IsAgentService {
 		return chatClient.prompt().user(input).messages(messages).call().chatResponse();
 	}
 
+	public ChatResponse executeByPrompt(String input,String prompt) {
+		return chatClient.prompt(prompt).user(input).call().chatResponse();
+	}
+
 }
