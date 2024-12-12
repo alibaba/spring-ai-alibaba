@@ -1,5 +1,6 @@
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import lombok.Getter;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 
@@ -9,7 +10,7 @@ import static java.util.Optional.ofNullable;
 
 public class CompileConfig {
 
-	private BaseCheckpointSaver checkpointSaver;
+	private SaverConfig saverConfig;
 
 	@Getter
 	private String[] interruptBefore = {};
@@ -17,8 +18,12 @@ public class CompileConfig {
 	@Getter
 	private String[] interruptAfter = {};
 
+	public Optional<BaseCheckpointSaver> checkpointSaver(String type) {
+		return ofNullable(saverConfig.get(type));
+	}
+
 	public Optional<BaseCheckpointSaver> checkpointSaver() {
-		return ofNullable(checkpointSaver);
+		return ofNullable(saverConfig.get());
 	}
 
 	public static Builder builder() {
@@ -29,8 +34,8 @@ public class CompileConfig {
 
 		private final CompileConfig config = new CompileConfig();
 
-		public Builder checkpointSaver(BaseCheckpointSaver checkpointSaver) {
-			this.config.checkpointSaver = checkpointSaver;
+		public Builder saverConfig(SaverConfig saverConfig) {
+			this.config.saverConfig = saverConfig;
 			return this;
 		}
 
@@ -45,6 +50,9 @@ public class CompileConfig {
 		}
 
 		public CompileConfig build() {
+			if (config.saverConfig == null) {
+				throw new NullPointerException("saverConfig isn't allow null");
+			}
 			return config;
 		}
 

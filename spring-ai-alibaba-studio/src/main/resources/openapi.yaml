@@ -3,18 +3,18 @@ info:
   title: OpenAPI definition
   version: v0
 servers:
-- url: http://localhost:8080
-  description: Generated server url
+  - url: http://localhost:8080
+    description: Generated server url
 tags:
-- name: chat-client
-  description: the chat-client API
-- name: chat-model
-  description: the chat-model API
+  - name: chat-client
+    description: the chat-client API
+  - name: chat-model
+    description: the chat-model API
 paths:
   /studio/api/chat-models:
     get:
       tags:
-      - chat-model
+        - chat-model
       summary: list chat models
       operationId: list
       responses:
@@ -26,7 +26,7 @@ paths:
                 $ref: "#/components/schemas/RListChatModel"
     post:
       tags:
-      - chat-model
+        - chat-model
       summary: run chat model by input
       operationId: run
       requestBody:
@@ -45,7 +45,7 @@ paths:
   /studio/api/chat-models/run/image-gen:
     post:
       tags:
-      - chat-model
+        - chat-model
       summary: run image model by input
       operationId: runImageGenTask
       requestBody:
@@ -60,15 +60,15 @@ paths:
   /studio/api/chat-models/{modelName}:
     get:
       tags:
-      - chat-model
+        - chat-model
       summary: get chat model by model name
       operationId: get
       parameters:
-      - name: modelName
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: modelName
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -79,7 +79,7 @@ paths:
   /studio/api/chat-clients:
     get:
       tags:
-      - chat-client
+        - chat-client
       summary: list chat clients
       operationId: list_1
       responses:
@@ -92,15 +92,15 @@ paths:
   /studio/api/chat-clients/{clientName}:
     get:
       tags:
-      - chat-client
+        - chat-client
       summary: get chat client by name
       operationId: get_1
       parameters:
-      - name: clientName
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: clientName
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -111,14 +111,14 @@ paths:
   /ai/stream:
     get:
       tags:
-      - chat-controller
+        - chat-controller
       operationId: stream
       parameters:
-      - name: input
-        in: query
-        required: true
-        schema:
-          type: string
+        - name: input
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -129,14 +129,14 @@ paths:
   /ai/streamByModel:
     get:
       tags:
-      - chat-controller
+        - chat-controller
       operationId: streamByModel
       parameters:
-      - name: input
-        in: query
-        required: true
-        schema:
-          type: string
+        - name: input
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -147,14 +147,14 @@ paths:
   /ai/chat:
     get:
       tags:
-      - chat-controller
+        - chat-controller
       operationId: chat
       parameters:
-      - name: input
-        in: query
-        required: true
-        schema:
-          type: string
+        - name: input
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -165,14 +165,14 @@ paths:
   /ai/chatByModel:
     get:
       tags:
-      - chat-controller
+        - chat-controller
       operationId: chatByModel
       parameters:
-      - name: input
-        in: query
-        required: true
-        schema:
-          type: string
+        - name: input
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -185,12 +185,6 @@ components:
     DashScopeChatOptions:
       type: object
       properties:
-        maxTokens:
-          type: integer
-          format: int32
-        presencePenalty:
-          type: number
-          format: double
         frequencyPenalty:
           type: number
           format: double
@@ -198,6 +192,12 @@ components:
           type: array
           items:
             type: string
+        maxTokens:
+          type: integer
+          format: int32
+        presencePenalty:
+          type: number
+          format: double
         proxyToolCalls:
           type: boolean
         model:
@@ -288,7 +288,7 @@ components:
         type:
           type: string
           enum:
-          - function
+            - function
         function:
           $ref: "#/components/schemas/Function"
     RunActionParam:
@@ -367,9 +367,9 @@ components:
         modelType:
           type: string
           enum:
-          - CHAT
-          - IMAGE
-          - AUDIO
+            - CHAT
+            - IMAGE
+            - AUDIO
         chatOptions:
           $ref: "#/components/schemas/DashScopeChatOptions"
         imageOptions:

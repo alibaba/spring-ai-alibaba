@@ -1,21 +1,24 @@
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
-import lombok.Getter;
-import lombok.NonNull;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.ObjectStreamStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.state.Channel;
+import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
+import lombok.Getter;
+import lombok.NonNull;
 
-import java.util.*;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableMap;
-import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.mapOf;
 
 /**
  * Represents a state graph with nodes and edges.
@@ -205,6 +208,31 @@ public class StateGraph<State extends AgentState> {
 		return this;
 	}
 
+	public StateGraph<State> addSubgraph(String id, CompiledGraph<State> subGraph) throws GraphStateException {
+		return addNode(id, new SubgraphNodeAction<State>(subGraph) );
+	}
+
+	/**
+	 *
+	 * @param id the identifier of the node
+	 * @param actionWithConfig the action to be performed by the node
+	 * @return this
+	 * @throws GraphStateException if the node identifier is invalid or the node already exists
+	 */
+	public StateGraph<State> addNode(String id, AsyncNodeActionWithConfig<State> actionWithConfig) throws GraphStateException {
+		if (Objects.equals(id, END)) {
+			throw Errors.invalidNodeIdentifier.exception(END);
+		}
+		Node<State> node = new Node<State>(id, actionWithConfig);
+
+		if (nodes.contains(node)) {
+			throw Errors.duplicateNodeError.exception(id);
+		}
+
+		nodes.add(node);
+		return this;
+	}
+
 	/**
 	 * Adds an edge to the graph.
 	 * @param sourceId the identifier of the source node
@@ -270,7 +298,7 @@ public class StateGraph<State extends AgentState> {
 	 * @return a new fake node
 	 */
 	private Node<State> nodeById(String id) {
-		return new Node<>(id, null);
+		return new Node<>(id);
 	}
 
 	/**

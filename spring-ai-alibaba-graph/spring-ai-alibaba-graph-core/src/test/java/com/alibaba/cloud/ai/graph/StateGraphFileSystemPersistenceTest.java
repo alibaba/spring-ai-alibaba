@@ -2,7 +2,9 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.checkpoint.FileSystemSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.FileSystemSaver;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.Channel;
@@ -78,8 +80,11 @@ public class StateGraphFileSystemPersistenceTest {
 
 		FileSystemSaver saver = new FileSystemSaver(Paths.get(rootPath, "testCheckpointSaverResubmit"),
 				workflow.getStateSerializer());
-
-		CompileConfig compileConfig = CompileConfig.builder().checkpointSaver(saver).build();
+		SaverConfig saverConfig = SaverConfig.builder()
+			.type(SaverConstant.FILE)
+			.register(SaverConstant.FILE, saver)
+			.build();
+		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 
 		CompiledGraph<MessagesState> app = workflow.compile(compileConfig);
 
