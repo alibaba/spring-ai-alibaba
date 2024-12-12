@@ -109,6 +109,11 @@ Spring AI Alibaba aims to reduce the complexity of building ai native java appli
 
 ![ai-native-architecture](./docs/imgs/spring-ai-alibaba-arch.png)
 
+## Contribution Guide
+
+Please refer to the [Contribution Guide](./CONTRIBUTING.md) to learn how to participate in the development of Spring AI Alibaba.
+
+
 ## References
 * [Spring AI](https://docs.spring.io/spring-ai/reference/index.html)
 * [Spring AI Alibaba](https://sca.aliyun.com/docs/ai/overview/)

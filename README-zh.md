@@ -106,6 +106,10 @@ Spring AI Alibaba 提供 AI 开源框架以及与阿里巴巴整体开源生态�
 
 ![ai-native-architecture](./docs/imgs/spring-ai-alibaba-arch.png)
 
+## 贡献指南
+
+请参考 [贡献指南](./CONTRIBUTING.md) 了解如何参与 Spring AI Alibaba 的开发。
+
 ## 参考资料
 
 * [Spring AI](https://docs.spring.io/spring-ai/reference/index.html)
