@@ -21,4 +21,8 @@ spring:
           api-key: ${AI_WEATHER_API_KEY}
         translate:
           api-key: ${AI_TRANSLATE_API_KEY}
+        github:
+          token: ${GITHUB_TOKEN}
+          owner: ${GITHUB_REPOSITORY_OWNER}
+          repository: ${GITHUB_REPOSITORY}
 
