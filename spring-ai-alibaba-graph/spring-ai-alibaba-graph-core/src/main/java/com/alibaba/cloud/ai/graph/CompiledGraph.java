@@ -13,7 +13,6 @@ import org.bsc.async.AsyncGenerator;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -65,16 +64,6 @@ public class CompiledGraph<State extends AgentState> {
 		stateGraph.nodes.forEach(n -> nodes.put(n.id(), n.action()));
 
 		stateGraph.edges.forEach(e -> edges.put(e.sourceId(), e.target()));
-	}
-
-	public Collection<StateSnapshot<State>> getStateHistory(RunnableConfig config) {
-		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
-			.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
-
-		return saver.list(config)
-			.stream()
-			.map(checkpoint -> StateSnapshot.of(checkpoint, config, stateGraph.getStateFactory()))
-			.collect(Collectors.toList());
 	}
 
 	/**
@@ -147,10 +136,6 @@ public class CompiledGraph<State extends AgentState> {
 
 	public EdgeValue<State> getEntryPoint() {
 		return stateGraph.getEntryPoint();
-	}
-
-	public String getFinishPoint() {
-		return stateGraph.getFinishPoint();
 	}
 
 	/**
