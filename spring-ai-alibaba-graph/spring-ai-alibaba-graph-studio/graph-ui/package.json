@@ -14,9 +14,11 @@
     "@ant-design/icons": "^5.0.1",
     "@ant-design/pro-components": "^2.4.4",
     "@szhsin/react-menu": "^4.2.3",
+    "@types/js-yaml": "^4.0.9",
     "@umijs/max": "^4.3.35",
     "@xyflow/react": "^12.3.5",
-    "antd": "^5.22.2"
+    "antd": "^5.22.2",
+    "js-yaml": "^4.1.0"
   },
   "devDependencies": {
     "@iconify/react": "^5.0.2",
