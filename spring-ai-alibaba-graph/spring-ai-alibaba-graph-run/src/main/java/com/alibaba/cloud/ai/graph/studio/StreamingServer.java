@@ -135,7 +135,7 @@ public interface StreamingServer {
 
 			// Start asynchronous processing
 			var asyncContext = request.startAsync();
-			asyncContext.setTimeout(60000); // 设置超时时间为60秒
+			asyncContext.setTimeout(60000*2); // 设置超时时间为60秒
 
 			try {
 
