@@ -36,7 +36,7 @@ public class OtlpFileSpanExporterProvider implements ConfigurableSpanExporterPro
 
 	@Override
 	public String getName() {
-		return "logging-otlp";
+		return "file-otlp";
 	}
 
 }
