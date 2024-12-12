@@ -17,7 +17,9 @@
 
 package com.alibaba.cloud.ai.plugin.github;
 
-import com.alibaba.cloud.ai.plugin.github.service.*;
+import com.alibaba.cloud.ai.plugin.github.service.CreatePullRequestService;
+import com.alibaba.cloud.ai.plugin.github.service.GetIssueService;
+import com.alibaba.cloud.ai.plugin.github.service.SearchRepositoryService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -31,16 +33,9 @@ public class GithubAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("implement the function of get github list of issues operation")
-	public GetIssuesService getIssuesService(GithubProperties properties) {
-		return new GetIssuesService(properties);
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	@Description("implement the function of comment on GitHub issue operation")
-	public CommentOnIssueService commentOnIssueService(GithubProperties properties) {
-		return new CommentOnIssueService(properties);
+	@Description("implement the function of get a GitHub issue operation")
+	public GetIssueService getIssueService(GithubProperties properties) {
+		return new GetIssueService(properties);
 	}
 
 	@Bean
@@ -52,23 +47,9 @@ public class GithubAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("implement the function of get a GitHub issue operation")
-	public GetIssueService getIssueService(GithubProperties properties) {
-		return new GetIssueService(properties);
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	@Description("implement the function of get a GitHub pull request operation")
-	public GetPullRequestService getPullRequestService(GithubProperties properties) {
-		return new GetPullRequestService(properties);
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	@Description("implement the function of get GitHub list of pull requests operation")
-	public GetPullRequestsService getPullRequestsService(GithubProperties properties) {
-		return new GetPullRequestsService(properties);
+	@Description("implement the function of search the list of repositories operation")
+	public SearchRepositoryService SearchRepositoryService(GithubProperties properties) {
+		return new SearchRepositoryService(properties);
 	}
 
 }

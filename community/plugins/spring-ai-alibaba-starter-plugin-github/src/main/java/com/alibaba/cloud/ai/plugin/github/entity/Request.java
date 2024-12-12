@@ -25,14 +25,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonClassDescription("GitHub API request")
 public record Request(@JsonProperty(
-		value = "query") @JsonPropertyDescription("Keywords used for queries, useful for getting a list of issues") String query,
+		value = "query") @JsonPropertyDescription("Keywords used for queries, useful for getting a list of repositories") String query,
 
 		@JsonProperty(
 				value = "issueNumber") @JsonPropertyDescription("The number of the issue, which is used to get details about the issue or to leave a comment") Integer issueNumber,
-
-		@JsonProperty(
-				value = "comment") @JsonPropertyDescription("Comment content, which is suitable for commenting on an issue") String comment,
-
 		@JsonProperty(
 				value = "pullRequestNumber") @JsonPropertyDescription("The number of the pullRequest, which is used to get details about the pullRequest or to other operations") Integer pullRequestNumber,
 

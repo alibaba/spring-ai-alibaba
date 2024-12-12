@@ -25,33 +25,53 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 @JsonClassDescription("Get issue operation")
-public class GetIssueService extends GithubService {
+public class GetIssueService implements Function<Request, Response> {
+
+	private static final String GITHUB_API_URL = "https://api.github.com";
+
+	private static final String REPO_ENDPOINT = "/repos/{owner}/{repo}";
+
+	private static final String ISSUES_ENDPOINT = "/issues";
 
 	private static final Logger logger = LoggerFactory.getLogger(GetIssueService.class);
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
+	private final WebClient webClient;
+
+	private final GithubProperties properties;
+
 	public GetIssueService(GithubProperties properties) {
-		super(properties);
+		assert properties.getToken() != null && properties.getToken().length() == 40;
+		this.properties = properties;
+		this.webClient = WebClient.builder()
+			.defaultHeader(HttpHeaders.USER_AGENT, HttpHeaders.USER_AGENT)
+			.defaultHeader(HttpHeaders.ACCEPT, "application/vnd.github.v3+json")
+			.defaultHeader("X-GitHub-Api-Version", GithubProperties.X_GitHub_Api_Version)
+			.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.getToken())
+			.build();
 	}
 
 	@Override
 	public Response apply(Request request) {
-		String url = GITHUB_API_URL + REPO_ENDPOINT + ISSUES_ENDPOINT + "/{issueNumber}";
-		Mono<String> responseMono = webClient.get()
-			.uri(url, properties.getOwner(), properties.getRepository(), request.issueNumber())
-			.retrieve()
-			.bodyToMono(String.class);
-		String responseData = responseMono.block();
-		logger.info("GetIssueOperation response: {}", responseData);
 		try {
+			String url = GITHUB_API_URL + REPO_ENDPOINT + ISSUES_ENDPOINT + "/{issueNumber}";
+			Mono<String> responseMono = webClient.get()
+				.uri(url, properties.getOwner(), properties.getRepository(), request.issueNumber())
+				.retrieve()
+				.bodyToMono(String.class);
+			String responseData = responseMono.block();
+			logger.info("GetIssueOperation response: {}", responseData);
 			return new Response<>(parseIssueDetails(responseData));
 		}
 		catch (IOException e) {
@@ -61,7 +81,7 @@ public class GetIssueService extends GithubService {
 
 	}
 
-	public static GetIssueService.Issue parseIssueDetails(String json) throws IOException {
+	public static Issue parseIssueDetails(String json) throws IOException {
 		JsonNode issueNode = objectMapper.readTree(json);
 
 		long id = issueNode.get("id").asLong();
@@ -94,8 +114,8 @@ public class GetIssueService extends GithubService {
 		int comments = issueNode.get("comments").asInt();
 		String htmlUrl = issueNode.get("html_url").asText();
 		String body = issueNode.has("body") && !issueNode.get("body").isNull() ? issueNode.get("body").asText() : null;
-		return new GetIssueService.Issue(id, title, body, state, userLogin, labels, assignees, createdAt, updatedAt,
-				closedAt, closedBy, comments, htmlUrl);
+		return new Issue(id, title, body, state, userLogin, labels, assignees, createdAt, updatedAt, closedAt, closedBy,
+				comments, htmlUrl);
 	}
 
 	public record Issue(long id, String title, String body, String state, String userLogin, List<String> labels,

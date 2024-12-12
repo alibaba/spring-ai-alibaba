@@ -119,7 +119,7 @@ public class FunctionCallingController {
 	@GetMapping("/github")
 	public String github(@RequestParam String text) {
 		return chatClient.prompt()
-				.functions("getIssuesService", "getIssueService", "getPullRequestsService", "getPullRequestService", "commentOnIssueService", "createPullRequestService")
+				.functions("getIssueService", "createPullRequestService", "SearchRepositoryService")
 				.user(text)
 				.call()
 				.content();
