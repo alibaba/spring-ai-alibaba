@@ -32,6 +32,13 @@ export default {
       editMeta: '编辑',
       design: '设计',
       search: '搜索',
+      importFromDSL: '导入DSL',
+      back: '返回',
+      createNode: '新建节点',
+      copy: '复制',
+      paste: '粘贴',
+      start: '开始',
+      llm: 'LLM',
     },
   },
 };
