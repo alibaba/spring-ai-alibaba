@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.graph.practice.insurance_sale;
+package com.alibaba.cloud.ai.graph.serializer.agent;
 
 import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.fasterxml.jackson.core.JsonParser;
@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-class IsStateDeserializer extends JsonDeserializer<NodeState> {
+class StateDeserializer extends JsonDeserializer<NodeState> {
 
 	@Override
 	public NodeState deserialize(JsonParser parser, DeserializationContext ctx) throws IOException {
