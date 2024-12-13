@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class WelcomeNode implements NodeAction<NodeState> {
+public class WelcomeNode implements NodeAction{
 
 	public WelcomeNode(String template) {
 		this.template = template;

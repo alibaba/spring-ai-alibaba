@@ -11,9 +11,9 @@ import java.io.ObjectOutput;
 
 public class CheckPointSerializer implements NullableObjectSerializer<Checkpoint> {
 
-	final StateSerializer<NodeState> stateSerializer;
+	final StateSerializer stateSerializer;
 
-	public CheckPointSerializer(StateSerializer<NodeState> stateSerializer) {
+	public CheckPointSerializer(StateSerializer stateSerializer) {
 		this.stateSerializer = stateSerializer;
 	}
 

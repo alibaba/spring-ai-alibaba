@@ -10,25 +10,23 @@ import java.util.function.Function;
  * Represents an asynchronous node action that operates on an agent state and returns
  * state update.
  *
- * @param <S> the type of the agent state
  */
 @FunctionalInterface
-public interface AsyncNodeAction<S extends NodeState> extends Function<S, CompletableFuture<Map<String, Object>>> {
+public interface AsyncNodeAction extends Function<NodeState, CompletableFuture<Map<String, Object>>> {
 
 	/**
 	 * Applies this action to the given agent state.
 	 * @param t the agent state
 	 * @return a CompletableFuture representing the result of the action
 	 */
-	CompletableFuture<Map<String, Object>> apply(S t);
+	CompletableFuture<Map<String, Object>> apply(NodeState t);
 
 	/**
 	 * Creates an asynchronous node action from a synchronous node action.
 	 * @param syncAction the synchronous node action
-	 * @param <S> the type of the agent state
 	 * @return an asynchronous node action
 	 */
-	static <S extends NodeState> AsyncNodeAction<S> node_async(NodeAction<S> syncAction) {
+	static AsyncNodeAction node_async(NodeAction syncAction) {
 		return t -> {
 			CompletableFuture<Map<String, Object>> result = new CompletableFuture<>();
 			try {

@@ -6,6 +6,7 @@ import com.alibaba.cloud.ai.graph.practice.insurance_sale.node.HumanNode;
 import com.alibaba.cloud.ai.graph.practice.insurance_sale.node.WelcomeNode;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.state.NodeState;
+import dev.ai.alibaba.samples.executor.std.json.JSONStateSerializer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.stereotype.Service;
@@ -26,13 +27,13 @@ public class IsExecutor {
 
 		JSON(new IsJSONStateSerializer());
 
-		private final StateSerializer<NodeState> serializer;
+		private final StateSerializer serializer;
 
-		Serializers(StateSerializer<NodeState> serializer) {
+		Serializers(StateSerializer serializer) {
 			this.serializer = serializer;
 		}
 
-		public StateSerializer<NodeState> object() {
+		public StateSerializer object() {
 			return serializer;
 		}
 
@@ -40,16 +41,16 @@ public class IsExecutor {
 
 	public class GraphBuilder {
 
-		private StateSerializer<NodeState> stateSerializer;
+		private StateSerializer stateSerializer;
 
-		public GraphBuilder stateSerializer(StateSerializer<NodeState> stateSerializer) {
+		public GraphBuilder stateSerializer(StateSerializer stateSerializer) {
 			this.stateSerializer = stateSerializer;
 			return this;
 		}
 
-		public StateGraph<NodeState> build() throws GraphStateException {
+		public StateGraph build() throws GraphStateException {
 			if (stateSerializer == null) {
-				stateSerializer = new IsAgentStateSerializer();
+				stateSerializer = new JSONStateSerializer();
 			}
 			// MemorySaver saver = new MemorySaver();
 			// SaverConfig saverConfig = SaverConfig.builder()
@@ -73,7 +74,7 @@ public class IsExecutor {
 			// .addEdge("action", "agent")
 			// .compile(compileConfig);
 
-			return new StateGraph<>(stateSerializer).addEdge(START, "welcome")
+			return new StateGraph(stateSerializer).addEdge(START, "welcome")
 				.addNode("welcome",
 						node_async(new WelcomeNode(
 								"您好！我是您的保险助手popo。无论您是在寻找保障、规划未来，还是需要专业的保险建议，我都在这里为您提供帮助。请告诉我您的保险需求，让我们开始吧！"))) // 调用llm

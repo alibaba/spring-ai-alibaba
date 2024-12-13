@@ -29,12 +29,10 @@ import static java.lang.String.format;
 
 /**
  * Represents a compiled graph of nodes and edges. This class manage the StateGraph
- * execution
  *
- * @param <State> the type of the state associated with the graph
  */
 @Slf4j
-public class CompiledGraph<State extends NodeState> {
+public class CompiledGraph {
 
 	public enum StreamMode {
 
@@ -42,13 +40,13 @@ public class CompiledGraph<State extends NodeState> {
 
 	}
 
-	final StateGraph<State> stateGraph;
+	final StateGraph stateGraph;
 
 	@Getter
-	final Map<String, AsyncNodeActionWithConfig<State>> nodes = new LinkedHashMap<>();
+	final Map<String, AsyncNodeActionWithConfig> nodes = new LinkedHashMap<>();
 
 	@Getter
-	final Map<String, EdgeValue<State>> edges = new LinkedHashMap<>();
+	final Map<String, EdgeValue> edges = new LinkedHashMap<>();
 
 	private int maxIterations = 25;
 
@@ -58,7 +56,7 @@ public class CompiledGraph<State extends NodeState> {
 	 * Constructs a CompiledGraph with the given StateGraph.
 	 * @param stateGraph the StateGraph to be used in this CompiledGraph
 	 */
-	protected CompiledGraph(StateGraph<State> stateGraph, CompileConfig compileConfig) {
+	protected CompiledGraph(StateGraph stateGraph, CompileConfig compileConfig) {
 		this.stateGraph = stateGraph;
 		this.compileConfig = compileConfig;
 		stateGraph.nodes.forEach(n -> nodes.put(n.id(), n.action()));
@@ -74,7 +72,7 @@ public class CompiledGraph<State extends NodeState> {
 	 * @throws IllegalStateException if the saver is not defined, or no checkpoint is
 	 * found
 	 */
-	public StateSnapshot<State> getState(RunnableConfig config) {
+	public StateSnapshot getState(RunnableConfig config) {
 		return stateOf(config).orElseThrow(() -> (new IllegalStateException("Missing Checkpoint!")));
 	}
 
@@ -84,7 +82,7 @@ public class CompiledGraph<State extends NodeState> {
 	 * @return an Optional of StateSnapshot of the given RunnableConfig
 	 * @throws IllegalStateException if the saver is not defined
 	 */
-	public Optional<StateSnapshot<State>> stateOf(RunnableConfig config) {
+	public Optional<StateSnapshot> stateOf(RunnableConfig config) {
 		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
 			.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
 
@@ -134,7 +132,7 @@ public class CompiledGraph<State extends NodeState> {
 		return updateState(config, values, null);
 	}
 
-	public EdgeValue<State> getEntryPoint() {
+	public EdgeValue getEntryPoint() {
 		return stateGraph.getEntryPoint();
 	}
 
@@ -150,7 +148,7 @@ public class CompiledGraph<State extends NodeState> {
 		this.maxIterations = maxIterations;
 	}
 
-	private String nextNodeId(EdgeValue<State> route, Map<String, Object> state, String nodeId) throws Exception {
+	private String nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId) throws Exception {
 
 		if (route == null) {
 			throw StateGraph.RunnableErrors.missingEdge.exception(nodeId);
@@ -159,8 +157,8 @@ public class CompiledGraph<State extends NodeState> {
 			return route.id();
 		}
 		if (route.value() != null) {
-			State derefState = stateGraph.getStateFactory().apply(state);
-			AsyncEdgeAction<State> condition = route.value().action();
+			NodeState derefState = stateGraph.getStateFactory().apply(state);
+			AsyncEdgeAction condition = route.value().action();
 			String newRoute = condition.apply(derefState).get();
 			String result = route.value().mappings().get(newRoute);
 			if (result == null) {
@@ -225,7 +223,7 @@ public class CompiledGraph<State extends NodeState> {
 			.orElseGet(() -> NodeState.updateState(getInitialStateFromSchema(), inputs));
 	}
 
-	State cloneState(Map<String, Object> data) throws IOException, ClassNotFoundException {
+	NodeState cloneState(Map<String, Object> data) throws IOException, ClassNotFoundException {
 		return stateGraph.getStateSerializer().cloneObject(data);
 	}
 
@@ -236,8 +234,7 @@ public class CompiledGraph<State extends NodeState> {
 	 * @return an AsyncGenerator stream of NodeOutput
 	 * @throws Exception if there is an error creating the stream
 	 */
-	public AsyncGenerator<NodeOutput<State>> stream(Map<String, Object> inputs, RunnableConfig config)
-			throws Exception {
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config) throws Exception {
 		Objects.requireNonNull(config, "config cannot be null");
 
 		return new AsyncNodeGenerator<>(inputs, config);
@@ -249,7 +246,7 @@ public class CompiledGraph<State extends NodeState> {
 	 * @return an AsyncGenerator stream of NodeOutput
 	 * @throws Exception if there is an error creating the stream
 	 */
-	public AsyncGenerator<NodeOutput<State>> stream(Map<String, Object> inputs) throws Exception {
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs) throws Exception {
 		return this.stream(inputs, RunnableConfig.builder().build());
 	}
 
@@ -261,11 +258,11 @@ public class CompiledGraph<State extends NodeState> {
 	 * Optional
 	 * @throws Exception if there is an error during invocation
 	 */
-	public Optional<State> invoke(Map<String, Object> inputs, RunnableConfig config) throws Exception {
+	public Optional invoke(Map<String, Object> inputs, RunnableConfig config) throws Exception {
 
-		Iterator<NodeOutput<State>> sourceIterator = stream(inputs, config).iterator();
+		Iterator<NodeOutput> sourceIterator = stream(inputs, config).iterator();
 
-		java.util.stream.Stream<NodeOutput<State>> result = StreamSupport
+		java.util.stream.Stream<NodeOutput> result = StreamSupport
 			.stream(Spliterators.spliteratorUnknownSize(sourceIterator, Spliterator.ORDERED), false);
 
 		return result.reduce((a, b) -> b).map(NodeOutput::state);
@@ -278,7 +275,7 @@ public class CompiledGraph<State extends NodeState> {
 	 * Optional
 	 * @throws Exception if there is an error during invocation
 	 */
-	public Optional<State> invoke(Map<String, Object> inputs) throws Exception {
+	public Optional invoke(Map<String, Object> inputs) throws Exception {
 		return this.invoke(inputs, RunnableConfig.builder().build());
 	}
 
@@ -318,7 +315,7 @@ public class CompiledGraph<State extends NodeState> {
 		return getGraph(type, "Graph Diagram", true);
 	}
 
-	public class AsyncNodeGenerator<Output extends NodeOutput<State>> implements AsyncGenerator<Output> {
+	public class AsyncNodeGenerator<Output extends NodeOutput> implements AsyncGenerator<Output> {
 
 		Map<String, Object> currentState;
 
@@ -358,7 +355,7 @@ public class CompiledGraph<State extends NodeState> {
 
 				Map<String, Object> initState = getInitialState(inputs, config);
 				// patch for backward support of AppendableValue
-				State initializedState = stateGraph.getStateFactory().apply(initState);
+				NodeState initializedState = stateGraph.getStateFactory().apply(initState);
 				this.currentState = initializedState.data();
 				this.nextNodeId = null;
 				this.currentNodeId = StateGraph.START;
@@ -412,7 +409,7 @@ public class CompiledGraph<State extends NodeState> {
 
 				currentNodeId = nextNodeId;
 
-				AsyncNodeActionWithConfig<State> action = nodes.get(currentNodeId);
+				AsyncNodeActionWithConfig action = nodes.get(currentNodeId);
 
 				if (action == null)
 					throw StateGraph.RunnableErrors.missingNode.exception(currentNodeId);
@@ -449,7 +446,7 @@ public class CompiledGraph<State extends NodeState> {
 	 * @return an AsyncGenerator stream of NodeOutput
 	 * @throws Exception if there is an error creating the stream
 	 */
-	public AsyncGenerator<NodeOutput<State>> streamSnapshots(Map<String, Object> inputs, RunnableConfig config)
+	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config)
 			throws Exception {
 		Objects.requireNonNull(config, "config cannot be null");
 

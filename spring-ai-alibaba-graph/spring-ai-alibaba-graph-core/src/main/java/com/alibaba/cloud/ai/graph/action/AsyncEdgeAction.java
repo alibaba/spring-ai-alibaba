@@ -9,17 +9,16 @@ import java.util.function.Function;
  * Represents an asynchronous edge action that operates on an agent state and returns a
  * new route.
  *
- * @param <S> the type of the agent state
  */
 @FunctionalInterface
-public interface AsyncEdgeAction<S extends NodeState> extends Function<S, CompletableFuture<String>> {
+public interface AsyncEdgeAction extends Function<NodeState, CompletableFuture<String>> {
 
 	/**
 	 * Applies this action to the given agent state.
 	 * @param t the agent state
 	 * @return a CompletableFuture representing the result of the action
 	 */
-	CompletableFuture<String> apply(S t);
+	CompletableFuture<String> apply(NodeState t);
 
 	/**
 	 * Creates an asynchronous edge action from a synchronous edge action.
@@ -27,7 +26,7 @@ public interface AsyncEdgeAction<S extends NodeState> extends Function<S, Comple
 	 * @param <S> the type of the agent state
 	 * @return an asynchronous edge action
 	 */
-	static <S extends NodeState> AsyncEdgeAction<S> edge_async(EdgeAction<S> syncAction) {
+	static <S extends NodeState> AsyncEdgeAction edge_async(EdgeAction syncAction) {
 		return t -> {
 			CompletableFuture<String> result = new CompletableFuture<>();
 			try {
