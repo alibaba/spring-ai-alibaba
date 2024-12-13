@@ -5,7 +5,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.check_point.CheckPointSerializer;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,7 +35,7 @@ public class FileSystemSaver extends MemorySaver {
 	private final Serializer<Checkpoint> serializer;
 
 	@SuppressWarnings("unchecked")
-	public FileSystemSaver(@NonNull Path targetFolder, @NonNull StateSerializer<? extends AgentState> stateSerializer) {
+	public FileSystemSaver(@NonNull Path targetFolder, @NonNull StateSerializer<? extends NodeState> stateSerializer) {
 		File targetFolderAsFile = targetFolder.toFile();
 
 		if (targetFolderAsFile.exists()) {
@@ -59,7 +59,7 @@ public class FileSystemSaver extends MemorySaver {
 		}
 
 		this.targetFolder = targetFolder;
-		this.serializer = new CheckPointSerializer((StateSerializer<AgentState>) stateSerializer);
+		this.serializer = new CheckPointSerializer((StateSerializer<NodeState>) stateSerializer);
 	}
 
 	private File getFile(RunnableConfig config) {

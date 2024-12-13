@@ -3,7 +3,7 @@ package com.alibaba.cloud.ai.graph;
 import lombok.Value;
 import lombok.experimental.Accessors;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 
 import java.util.Map;
 
@@ -14,7 +14,7 @@ import java.util.Map;
  */
 @Value
 @Accessors(fluent = true)
-class EdgeCondition<S extends AgentState> {
+class EdgeCondition<S extends NodeState> {
 
 	/**
 	 * The action to be performed asynchronously when the edge condition is met.

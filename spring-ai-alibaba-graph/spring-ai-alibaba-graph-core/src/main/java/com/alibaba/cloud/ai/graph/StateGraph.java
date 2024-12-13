@@ -5,9 +5,9 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.ObjectStreamStateSerializer;
-import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.state.Channel;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
 import lombok.Getter;
 import lombok.NonNull;
@@ -18,14 +18,13 @@ import java.util.Objects;
 import java.util.Set;
 
 import static java.lang.String.format;
-import static java.util.Collections.unmodifiableMap;
 
 /**
  * Represents a state graph with nodes and edges.
  *
  * @param <State> the type of the state associated with the graph
  */
-public class StateGraph<State extends AgentState> {
+public class StateGraph<State extends NodeState> {
 
 	/**
 	 * Enum representing various error messages related to graph state.
@@ -96,27 +95,15 @@ public class StateGraph<State extends AgentState> {
 
 	private String finishPoint;
 
-	private final Map<String, Channel<?>> channels;
-
 	@Getter
 	private final StateSerializer<State> stateSerializer;
-
-	/**
-	 * @param channels the state's schema of the graph
-	 * @param stateSerializer the serializer to serialize the state
-	 */
-	public StateGraph(Map<String, Channel<?>> channels, StateSerializer<State> stateSerializer) {
-		this.channels = channels;
-		this.stateSerializer = stateSerializer;
-	}
 
 	/**
 	 * Constructs a new StateGraph with the specified serializer.
 	 * @param stateSerializer the serializer to serialize the state
 	 */
 	public StateGraph(@NonNull StateSerializer<State> stateSerializer) {
-		this(CollectionsUtils.mapOf(), stateSerializer);
-
+		this.stateSerializer = stateSerializer;
 	}
 
 	/**
@@ -133,15 +120,11 @@ public class StateGraph<State extends AgentState> {
 	 * @param stateFactory the factory to create agent states
 	 */
 	public StateGraph(Map<String, Channel<?>> channels, AgentStateFactory<State> stateFactory) {
-		this(channels, new ObjectStreamStateSerializer<>(stateFactory));
+		this(new ObjectStreamStateSerializer<>(stateFactory));
 	}
 
 	public final AgentStateFactory<State> getStateFactory() {
 		return stateSerializer.stateFactory();
-	}
-
-	public Map<String, Channel<?>> getChannels() {
-		return unmodifiableMap(channels);
 	}
 
 	@Deprecated

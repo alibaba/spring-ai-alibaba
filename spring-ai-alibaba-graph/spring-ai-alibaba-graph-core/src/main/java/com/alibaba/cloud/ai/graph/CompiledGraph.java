@@ -4,7 +4,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import lombok.Getter;
 import lombok.NonNull;
@@ -13,6 +13,7 @@ import org.bsc.async.AsyncGenerator;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -22,7 +23,6 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static java.lang.String.format;
@@ -34,7 +34,7 @@ import static java.lang.String.format;
  * @param <State> the type of the state associated with the graph
  */
 @Slf4j
-public class CompiledGraph<State extends AgentState> {
+public class CompiledGraph<State extends NodeState> {
 
 	public enum StreamMode {
 
@@ -110,7 +110,7 @@ public class CompiledGraph<State extends AgentState> {
 		// merge values with checkpoint values
 		Checkpoint branchCheckpoint = saver.get(config)
 			.map(Checkpoint::new)
-			.map(cp -> cp.updateState(values, stateGraph.getChannels()))
+			.map(cp -> cp.updateState(values))
 			.orElseThrow(() -> (new IllegalStateException("Missing Checkpoint!")));
 
 		String nextNodeId = null;
@@ -214,23 +214,18 @@ public class CompiledGraph<State extends AgentState> {
 	}
 
 	Map<String, Object> getInitialStateFromSchema() {
-		return stateGraph.getChannels()
-			.entrySet()
-			.stream()
-			.filter(c -> c.getValue().getDefault().isPresent())
-			.collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getDefault().get().get()));
+		return new HashMap<>();
 	}
 
 	Map<String, Object> getInitialState(Map<String, Object> inputs, RunnableConfig config) {
 
 		return compileConfig.checkpointSaver()
 			.flatMap(saver -> saver.get(config))
-			.map(cp -> AgentState.updateState(cp.getState(), inputs, stateGraph.getChannels()))
-			.orElseGet(() -> AgentState.updateState(getInitialStateFromSchema(), inputs, stateGraph.getChannels()));
+			.map(cp -> NodeState.updateState(cp.getState(), inputs))
+			.orElseGet(() -> NodeState.updateState(getInitialStateFromSchema(), inputs));
 	}
 
-	State cloneState(Map<String, Object> data)
-			throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+	State cloneState(Map<String, Object> data) throws IOException, ClassNotFoundException {
 		return stateGraph.getStateSerializer().cloneObject(data);
 	}
 
@@ -424,7 +419,7 @@ public class CompiledGraph<State extends AgentState> {
 
 				future = action.apply(cloneState(currentState), config).thenApply(partialState -> {
 					try {
-						currentState = AgentState.updateState(currentState, partialState, stateGraph.getChannels());
+						currentState = NodeState.updateState(currentState, partialState);
 						nextNodeId = nextNodeId(currentNodeId, currentState);
 
 						Optional<Checkpoint> cp = addCheckpoint(config, currentNodeId, currentState, nextNodeId);

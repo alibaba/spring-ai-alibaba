@@ -3,7 +3,7 @@ package com.alibaba.cloud.ai.graph;
 import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import com.alibaba.cloud.ai.graph.serializer.std.NullableObjectSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.ObjectStreamStateSerializer;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
 import lombok.ToString;
 import org.junit.jupiter.api.Test;
@@ -17,10 +17,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class SerializeTest {
 
-	private final ObjectStreamStateSerializer<AgentState> stateSerializer = new ObjectStreamStateSerializer<>(
-			AgentState::new);
+	private final ObjectStreamStateSerializer<NodeState> stateSerializer = new ObjectStreamStateSerializer<>(
+			NodeState::new);
 
-	private byte[] serializeState(AgentState state) throws Exception {
+	private byte[] serializeState(NodeState state) throws Exception {
 		try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
 			ObjectOutputStream oas = new ObjectOutputStream(stream);
 			stateSerializer.write(state, oas);
@@ -29,7 +29,7 @@ public class SerializeTest {
 		}
 	}
 
-	private AgentState deserializeState(byte[] bytes) throws Exception {
+	private NodeState deserializeState(byte[] bytes) throws Exception {
 		try (ByteArrayInputStream stream = new ByteArrayInputStream(bytes)) {
 			ObjectInputStream ois = new ObjectInputStream(stream);
 			return stateSerializer.read(ois);
@@ -62,7 +62,7 @@ public class SerializeTest {
 				return new ValueWithNull(readNullableUTF(in).orElse(null));
 			}
 		});
-		AgentState state = stateSerializer.stateOf(CollectionsUtils.mapOf("a", "b", "f", null, "c", 100, "e",
+		NodeState state = stateSerializer.stateOf(CollectionsUtils.mapOf("a", "b", "f", null, "c", 100, "e",
 				new ValueWithNull(null), "list", CollectionsUtils.listOf("aa", null, "cc", 200)
 
 		));
@@ -106,7 +106,7 @@ public class SerializeTest {
 	@Test
 	public void partiallySerializeStateTest() throws Exception {
 
-		AgentState state = stateSerializer.stateOf(
+		NodeState state = stateSerializer.stateOf(
 				CollectionsUtils.mapOf("a", "b", "f", new NonSerializableElement("I'M NOT SERIALIZABLE"), "c", "d"));
 
 		assertThrows(java.io.NotSerializableException.class, () -> {
@@ -131,7 +131,7 @@ public class SerializeTest {
 			}
 		});
 
-		AgentState state = stateSerializer.stateOf(CollectionsUtils.mapOf("a", "b", "x",
+		NodeState state = stateSerializer.stateOf(CollectionsUtils.mapOf("a", "b", "x",
 				new NonSerializableElement("I'M NOT SERIALIZABLE"), "f", "H", "c", "d"));
 
 		System.out.println(state);

@@ -1,13 +1,13 @@
 package com.alibaba.cloud.ai.graph.action;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 
-public interface AsyncNodeActionWithConfig<S extends AgentState>
+public interface AsyncNodeActionWithConfig<S extends NodeState>
 		extends BiFunction<S, RunnableConfig, CompletableFuture<Map<String, Object>>> {
 
 	/**
@@ -17,7 +17,7 @@ public interface AsyncNodeActionWithConfig<S extends AgentState>
 	 */
 	CompletableFuture<Map<String, Object>> apply(S t, RunnableConfig config);
 
-	static <S extends AgentState> AsyncNodeActionWithConfig<S> node_async(NodeActionWithConfig<S> syncAction) {
+	static <S extends NodeState> AsyncNodeActionWithConfig<S> node_async(NodeActionWithConfig<S> syncAction) {
 		return (t, config) -> {
 			CompletableFuture<Map<String, Object>> result = new CompletableFuture<>();
 			try {
@@ -36,7 +36,7 @@ public interface AsyncNodeActionWithConfig<S extends AgentState>
 	 * @param <S> the type of the agent state
 	 * @return an AsyncNodeActionWithConfig that wraps the given AsyncNodeAction
 	 */
-	static <S extends AgentState> AsyncNodeActionWithConfig<S> of(AsyncNodeAction<S> action) {
+	static <S extends NodeState> AsyncNodeActionWithConfig<S> of(AsyncNodeAction<S> action) {
 		return (t, config) -> action.apply(t);
 	}
 

@@ -7,7 +7,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 
 import static java.lang.String.*;
 
-public final class StateSnapshot<State extends AgentState> extends NodeOutput<State> {
+public final class StateSnapshot<State extends NodeState> extends NodeOutput<State> {
 
 	private final RunnableConfig config;
 
@@ -46,7 +46,7 @@ public final class StateSnapshot<State extends AgentState> extends NodeOutput<St
 		return format("StateSnapshot{node=%s, state=%s, config=%s}", node(), state(), config());
 	}
 
-	public static <State extends AgentState> StateSnapshot<State> of(Checkpoint checkpoint, RunnableConfig config,
+	public static <State extends NodeState> StateSnapshot<State> of(Checkpoint checkpoint, RunnableConfig config,
 			AgentStateFactory<State> factory) {
 
 		RunnableConfig newConfig = RunnableConfig.builder(config)

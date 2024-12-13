@@ -3,7 +3,7 @@ package dev.ai.alibaba.samples.executor;
 import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.Channel;
 import dev.ai.alibaba.samples.executor.std.AgentStateSerializer;
@@ -57,7 +57,7 @@ public class AgentExecutor {
 				stateSerializer = new AgentStateSerializer();
 			}
 
-			return new StateGraph<>(State.SCHEMA, stateSerializer).addEdge(START, "agent") // 下一个节点
+			return new StateGraph<>(stateSerializer).addEdge(START, "agent") // 下一个节点
 				.addNode("agent", node_async(AgentExecutor.this::callAgent)) // 调用llm
 				.addNode("action", AgentExecutor.this::executeTools) // 独立节点
 				.addConditionalEdges( // 条件边，在agent节点之后
@@ -87,11 +87,7 @@ public class AgentExecutor {
 	public record Finish(Map<String, Object> returnValues, String log) {
 	}
 
-	public static class State extends AgentState {
-
-		public static final String INPUT = "input";
-
-		public static final String AGENT_OUTCOME = "outcome";
+	public static class State extends NodeState {
 
 		public static final String INTERMEDIATE_STEPS = "intermediate_steps";
 
@@ -99,10 +95,6 @@ public class AgentExecutor {
 
 		public State(Map<String, Object> initData) {
 			super(initData);
-		}
-
-		public Optional<String> input() {
-			return value(INPUT);
 		}
 
 		public Optional<Outcome> agentOutcome() {

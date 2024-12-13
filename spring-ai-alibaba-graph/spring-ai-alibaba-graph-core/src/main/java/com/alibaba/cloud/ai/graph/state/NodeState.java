@@ -1,6 +1,9 @@
 package com.alibaba.cloud.ai.graph.state;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -11,7 +14,11 @@ import static java.util.Optional.ofNullable;
 /**
  * Represents the state of an agent with a map of data.
  */
-public class AgentState {
+public class NodeState {
+
+	public static final String INPUT = "input";
+
+	public static final String AGENT_OUTCOME = "outcome";
 
 	private final java.util.Map<String, Object> data;
 
@@ -19,7 +26,7 @@ public class AgentState {
 	 * Constructs an AgentState with the given initial data.
 	 * @param initData the initial data for the agent state
 	 */
-	public AgentState(Map<String, Object> initData) {
+	public NodeState(Map<String, Object> initData) {
 		this.data = new HashMap<>(initData);
 	}
 
@@ -29,6 +36,14 @@ public class AgentState {
 	 */
 	public final java.util.Map<String, Object> data() {
 		return unmodifiableMap(data);
+	}
+
+	public Optional<String> input() {
+		return value(INPUT);
+	}
+
+	public Optional<String> outcome() {
+		return value(AGENT_OUTCOME);
 	}
 
 	/**
@@ -53,11 +68,11 @@ public class AgentState {
 	 * Merges the current state with a partial state and returns a new state.
 	 * @param partialState the partial state to merge with
 	 * @return a new state resulting from the merge
-	 * @deprecated use {@link #updateState(AgentState, Map, Map)}
+	 * @deprecated use {@link #updateState(NodeState, Map)}
 	 */
 	@Deprecated
 	public final Map<String, Object> mergeWith(Map<String, Object> partialState, Map<String, Channel<?>> channels) {
-		return updateState(data(), partialState, channels);
+		return updateState(data(), partialState);
 	}
 
 	/**
@@ -81,19 +96,7 @@ public class AgentState {
 
 	private static Map<String, Object> updatePartialStateFromSchema(Map<String, Object> state,
 			Map<String, Object> partialState, Map<String, Channel<?>> channels) {
-		if (channels == null || channels.isEmpty()) {
-			return partialState;
-		}
-		return partialState.entrySet().stream().map(entry -> {
-
-			Channel<?> channel = channels.get(entry.getKey());
-			if (channel != null) {
-				Object newValue = channel.update(entry.getKey(), state.get(entry.getKey()), entry.getValue());
-				return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), newValue);
-			}
-
-			return entry;
-		}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		return partialState;
 	}
 
 	/**
@@ -101,21 +104,17 @@ public class AgentState {
 	 * merge the current state value with the new value.
 	 * @param state the current state
 	 * @param partialState the partial state to update from
-	 * @param channels the channels used to update the partial state if necessary
 	 * @return the updated state
 	 * @throws NullPointerException if state is null
 	 */
-	public static Map<String, Object> updateState(Map<String, Object> state, Map<String, Object> partialState,
-			Map<String, Channel<?>> channels) {
+	public static Map<String, Object> updateState(Map<String, Object> state, Map<String, Object> partialState) {
 		Objects.requireNonNull(state, "state cannot be null");
 		if (partialState == null || partialState.isEmpty()) {
 			return state;
 		}
 
-		Map<String, Object> updatedPartialState = updatePartialStateFromSchema(state, partialState, channels);
-
-		return Stream.concat(state.entrySet().stream(), updatedPartialState.entrySet().stream())
-			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, AgentState::mergeFunction));
+		return Stream.concat(state.entrySet().stream(), partialState.entrySet().stream())
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, NodeState::mergeFunction));
 	}
 
 	/**
@@ -123,13 +122,11 @@ public class AgentState {
 	 * merge the current state value with the new value.
 	 * @param state the current state
 	 * @param partialState the partial state to update from
-	 * @param channels the channels used to update the partial state if necessary
 	 * @return the updated state
 	 * @throws NullPointerException if state is null
 	 */
-	public static Map<String, Object> updateState(AgentState state, Map<String, Object> partialState,
-			Map<String, Channel<?>> channels) {
-		return updateState(state.data(), partialState, channels);
+	public static Map<String, Object> updateState(NodeState state, Map<String, Object> partialState) {
+		return updateState(state.data(), partialState);
 	}
 
 }

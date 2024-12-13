@@ -1,6 +1,6 @@
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 
 import static java.lang.String.format;
 
@@ -9,9 +9,9 @@ import static java.lang.String.format;
  *
  * @param <State> the type of the state associated with the node output
  */
-public class NodeOutput<State extends AgentState> {
+public class NodeOutput<State extends NodeState> {
 
-	public static <State extends AgentState> NodeOutput<State> of(String node, State state) {
+	public static <State extends NodeState> NodeOutput<State> of(String node, State state) {
 		return new NodeOutput<>(node, state);
 	}
 

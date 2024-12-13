@@ -3,6 +3,7 @@ package com.alibaba.cloud.ai.graph.practice.insurance_sale;
 import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import com.alibaba.cloud.ai.graph.serializer.std.NullableObjectSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.ObjectStreamStateSerializer;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 
@@ -12,10 +13,10 @@ import java.io.ObjectOutput;
 import java.util.Map;
 
 @Slf4j
-public class IsAgentStateSerializer extends ObjectStreamStateSerializer<IsExecutor.State> {
+public class IsAgentStateSerializer extends ObjectStreamStateSerializer<NodeState> {
 
 	public IsAgentStateSerializer() {
-		super(IsExecutor.State::new);
+		super(NodeState::new);
 
 		mapper().register(IsExecutor.Outcome.class, new OutcomeSerializer());
 		mapper().register(IsExecutor.Finish.class, new FinishSerializer());
