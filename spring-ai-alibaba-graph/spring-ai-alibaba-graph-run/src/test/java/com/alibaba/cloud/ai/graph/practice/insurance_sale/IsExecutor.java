@@ -74,7 +74,9 @@ public class IsExecutor {
 			// .compile(compileConfig);
 
 			return new StateGraph<>(stateSerializer).addEdge(START, "welcome")
-				.addNode("welcome", node_async(new WelcomeNode())) // 调用llm
+				.addNode("welcome",
+						node_async(new WelcomeNode(
+								"您好！我是您的保险助手popo。无论您是在寻找保障、规划未来，还是需要专业的保险建议，我都在这里为您提供帮助。请告诉我您的保险需求，让我们开始吧！"))) // 调用llm
 				.addEdge("welcome", "human")// 下一个节点
 				.addNode("human", node_async(new HumanNode()))
 				// .addEdge("human", "subGraph")// 下一个节点
@@ -135,13 +137,13 @@ public class IsExecutor {
 
 		if (output.hasToolCalls()) {
 			var action = new Action(output.getToolCalls().get(0), "");
-			return Map.of(NodeState.AGENT_OUTCOME, new Outcome(action, null));
+			return Map.of(NodeState.OUTPUT, new Outcome(action, null));
 
 		}
 		else {
 			var finish = new Finish(Map.of("returnValues", output.getContent()), output.getContent());
 
-			return Map.of(NodeState.AGENT_OUTCOME, new Outcome(null, finish));
+			return Map.of(NodeState.OUTPUT, new Outcome(null, finish));
 		}
 	}
 
