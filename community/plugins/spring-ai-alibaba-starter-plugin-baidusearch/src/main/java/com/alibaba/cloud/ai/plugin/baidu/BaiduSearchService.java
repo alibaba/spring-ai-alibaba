@@ -1,4 +1,3 @@
-package com.alibaba.cloud.ai.plugin.baidu;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,8 +15,10 @@ package com.alibaba.cloud.ai.plugin.baidu;
  * limitations under the License.
  */
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+package com.alibaba.cloud.ai.plugin.baidu;
+
 import com.fasterxml.jackson.annotation.JsonClassDescription;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.jsoup.Jsoup;
@@ -37,12 +38,8 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * .
- *
- * @author: KrakenZJC
- * @since : 2024-11-18
+ * @author KrakenZJC
  **/
-
 public class BaiduSearchService implements Function<BaiduSearchService.Request, BaiduSearchService.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(BaiduSearchService.class);
@@ -51,13 +48,13 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 
 	private static final int MAX_RESULTS = 20;
 
-	private final WebClient webClient;
-
 	private static final int Memory_Size = 5;
 
 	private static final int Memory_Unit = 1024;
 
 	private static final int Max_Memory_In_MB = Memory_Size * Memory_Unit * Memory_Unit;
+
+	private final WebClient webClient;
 
 	public BaiduSearchService() {
 		this.webClient = WebClient.builder()

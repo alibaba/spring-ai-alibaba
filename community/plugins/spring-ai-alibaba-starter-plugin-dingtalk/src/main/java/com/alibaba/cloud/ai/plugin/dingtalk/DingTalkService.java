@@ -1,5 +1,3 @@
-package com.alibaba.cloud.ai.plugin.dingtalk;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,7 +14,9 @@ package com.alibaba.cloud.ai.plugin.dingtalk;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import com.alibaba.cloud.ai.plugin.dingtalk.utils.SignUtils;
+
+package com.alibaba.cloud.ai.plugin.dingtalk;
+
 import com.dingtalk.api.DefaultDingTalkClient;
 import com.dingtalk.api.DingTalkClient;
 import com.dingtalk.api.request.OapiRobotSendRequest;
