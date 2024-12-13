@@ -2,7 +2,7 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
@@ -15,7 +15,7 @@ import java.util.Objects;
  */
 @Value
 @Accessors(fluent = true)
-class Node<State extends AgentState> {
+class Node<State extends NodeState> {
 
 	/**
 	 * The unique identifier for the node.

@@ -1,7 +1,7 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import org.bsc.async.AsyncGenerator;
 
 import java.util.Map;
@@ -9,7 +9,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.mapOf;
 
-class SubgraphNodeAction<State extends AgentState> implements AsyncNodeActionWithConfig<State> {
+class SubgraphNodeAction<State extends NodeState> implements AsyncNodeActionWithConfig<State> {
 
 	final CompiledGraph<State> subGraph;
 

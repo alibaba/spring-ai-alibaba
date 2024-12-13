@@ -3,11 +3,11 @@ package com.alibaba.cloud.ai.graph.serializer.plain_text;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import lombok.NonNull;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 
 import java.io.*;
 
-public abstract class PlainTextStateSerializer<State extends AgentState> extends StateSerializer<State> {
+public abstract class PlainTextStateSerializer<State extends NodeState> extends StateSerializer<State> {
 
 	protected PlainTextStateSerializer(@NonNull AgentStateFactory<State> stateFactory) {
 		super(stateFactory);

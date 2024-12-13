@@ -5,19 +5,13 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.practice.insurance_sale.node.HumanNode;
 import com.alibaba.cloud.ai.graph.practice.insurance_sale.node.WelcomeNode;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
-import com.alibaba.cloud.ai.graph.state.AgentState;
-import com.alibaba.cloud.ai.graph.state.AppenderChannel;
-import com.alibaba.cloud.ai.graph.state.Channel;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -32,13 +26,13 @@ public class IsExecutor {
 
 		JSON(new IsJSONStateSerializer());
 
-		private final StateSerializer<State> serializer;
+		private final StateSerializer<NodeState> serializer;
 
-		Serializers(StateSerializer<State> serializer) {
+		Serializers(StateSerializer<NodeState> serializer) {
 			this.serializer = serializer;
 		}
 
-		public StateSerializer<State> object() {
+		public StateSerializer<NodeState> object() {
 			return serializer;
 		}
 
@@ -46,14 +40,14 @@ public class IsExecutor {
 
 	public class GraphBuilder {
 
-		private StateSerializer<State> stateSerializer;
+		private StateSerializer<NodeState> stateSerializer;
 
-		public GraphBuilder stateSerializer(StateSerializer<State> stateSerializer) {
+		public GraphBuilder stateSerializer(StateSerializer<NodeState> stateSerializer) {
 			this.stateSerializer = stateSerializer;
 			return this;
 		}
 
-		public StateGraph<State> build() throws GraphStateException {
+		public StateGraph<NodeState> build() throws GraphStateException {
 			if (stateSerializer == null) {
 				stateSerializer = new IsAgentStateSerializer();
 			}
@@ -79,7 +73,7 @@ public class IsExecutor {
 			// .addEdge("action", "agent")
 			// .compile(compileConfig);
 
-			return new StateGraph<>(State.SCHEMA, stateSerializer).addEdge(START, "welcome")
+			return new StateGraph<>(stateSerializer).addEdge(START, "welcome")
 				.addNode("welcome", node_async(new WelcomeNode())) // 调用llm
 				.addEdge("welcome", "human")// 下一个节点
 				.addNode("human", node_async(new HumanNode()))
@@ -122,82 +116,36 @@ public class IsExecutor {
 	public record Finish(Map<String, Object> returnValues, String log) {
 	}
 
-	public static class State extends AgentState {
-
-		public static final String INPUT = "input";
-
-		public static final String AGENT_OUTCOME = "outcome";
-
-		public static final String INTERMEDIATE_STEPS = "intermediate_steps";
-
-		static Map<String, Channel<?>> SCHEMA = Map.of(INTERMEDIATE_STEPS, AppenderChannel.<Step>of(ArrayList::new));
-
-		public State(Map<String, Object> initData) {
-			super(initData);
-		}
-
-		public Optional<String> input() {
-			return value(INPUT);
-		}
-
-		public Optional<Outcome> agentOutcome() {
-			return value(AGENT_OUTCOME);
-		}
-
-		public List<Step> intermediateSteps() {
-			return this.<List<Step>>value(INTERMEDIATE_STEPS).orElseGet(ArrayList::new);
-		}
-
-	}
-
 	private final IsAgentService agentService;
 
 	public IsExecutor(IsAgentService agentService) {
 		this.agentService = agentService;
 	}
 
-	Map<String, Object> callAgent(State state) {
+	Map<String, Object> callAgent(NodeState state) {
 		log.info("callAgent");
 
 		var input = state.input()
 			.filter(StringUtils::hasText)
 			.orElseThrow(() -> new IllegalArgumentException("no input provided!"));
 
-		var intermediateSteps = state.intermediateSteps();
-
-		var response = agentService.execute(input, intermediateSteps);
+		var response = agentService.execute(input);
 
 		var output = response.getResult().getOutput();
 
 		if (output.hasToolCalls()) {
-
 			var action = new Action(output.getToolCalls().get(0), "");
-
-			return Map.of(State.AGENT_OUTCOME, new Outcome(action, null));
+			return Map.of(NodeState.AGENT_OUTCOME, new Outcome(action, null));
 
 		}
 		else {
 			var finish = new Finish(Map.of("returnValues", output.getContent()), output.getContent());
 
-			return Map.of(State.AGENT_OUTCOME, new Outcome(null, finish));
+			return Map.of(NodeState.AGENT_OUTCOME, new Outcome(null, finish));
 		}
 	}
 
-	CompletableFuture<Map<String, Object>> executeTools(State state) {
-		log.trace("executeTools");
-
-		var agentOutcome = state.agentOutcome()
-			.orElseThrow(() -> new IllegalArgumentException("no agentOutcome provided!"));
-
-		return agentService.toolService.executeFunction(agentOutcome.action().toolCall())
-			.thenApply(result -> Map.of("intermediate_steps", new Step(agentOutcome.action(), result.responseData())));
-	}
-
-	String shouldContinue(State state) {
-		return state.agentOutcome().map(Outcome::finish).map(finish -> "end").orElse("continue");
-	}
-
-	String questionEnough(State state) {
+	String questionEnough(NodeState state) {
 
 		Map<String, Object> returnValues = state.data();
 		if (!returnValues.containsKey("input")) {
@@ -213,7 +161,7 @@ public class IsExecutor {
 		}
 	}
 
-	String purchaseIntention(State state) {
+	String purchaseIntention(NodeState state) {
 
 		var input = state.input()
 			.filter(StringUtils::hasText)

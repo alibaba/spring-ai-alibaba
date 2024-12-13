@@ -5,7 +5,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.FileSystemSaver;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.Channel;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 public class StateGraphFileSystemPersistenceTest {
 
-	static class MessagesState extends AgentState {
+	static class MessagesState extends NodeState {
 
 		static Map<String, Channel<?>> SCHEMA = CollectionsUtils.mapOf("messages",
 				AppenderChannel.<String>of(ArrayList::new));

@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 /**
  * @author 北极星
  */
-public class LLMNodeAction<State extends AgentState> extends AbstractNode implements NodeAction<State> {
+public class LLMNodeAction<State extends NodeState> extends AbstractNode implements NodeAction<State> {
 
 	/**
 	 * each llm node has their own state
@@ -81,7 +81,7 @@ public class LLMNodeAction<State extends AgentState> extends AbstractNode implem
 			this.chatModel = chatModel;
 		}
 
-		public <State extends AgentState> LLMNodeAction<AgentState> build() {
+		public <State extends NodeState> LLMNodeAction<NodeState> build() {
 			ChatClient.Builder builder = ChatClient.builder(this.chatModel);
 			String sysPr = Optional.ofNullable(sysPrompt)
 				.orElse("{'role': 'system', 'content': 'You are a helpful assistant.'}");

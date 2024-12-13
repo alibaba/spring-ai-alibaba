@@ -1,6 +1,6 @@
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
 import org.junit.jupiter.api.Test;
 
@@ -12,11 +12,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GraphTest {
 
-	CompletableFuture<Map<String, Object>> dummyNodeAction(AgentState state) {
+	CompletableFuture<Map<String, Object>> dummyNodeAction(NodeState state) {
 		return CompletableFuture.completedFuture(CollectionsUtils.mapOf());
 	}
 
-	CompletableFuture<String> dummyCondition(AgentState state) {
+	CompletableFuture<String> dummyCondition(NodeState state) {
 		return CompletableFuture.completedFuture("");
 	}
 
@@ -56,7 +56,7 @@ public class GraphTest {
 	@Test
 	public void testCorrectionProcessGraph() throws Exception {
 
-		StateGraph<AgentState> workflow = new StateGraph<>(AgentState::new)
+		StateGraph<NodeState> workflow = new StateGraph<>(NodeState::new)
 			.addNode("evaluate_result", this::dummyNodeAction)
 			.addNode("agent_review", this::dummyNodeAction)
 			.addEdge("agent_review", "evaluate_result")
@@ -64,7 +64,7 @@ public class GraphTest {
 					CollectionsUtils.mapOf("OK", StateGraph.END, "ERROR", "agent_review", "UNKNOWN", StateGraph.END))
 			.addEdge(StateGraph.START, "evaluate_result");
 
-		CompiledGraph<AgentState> app = workflow.compile();
+		CompiledGraph<NodeState> app = workflow.compile();
 
 		GraphRepresentation result = app.getGraph(GraphRepresentation.Type.PLANTUML);
 		assertEquals(GraphRepresentation.Type.PLANTUML, result.getType());
@@ -88,14 +88,14 @@ public class GraphTest {
 
 	@Test
 	public void GenerateAgentExecutorGraph() throws Exception {
-		StateGraph<AgentState> workflow = new StateGraph<>(AgentState::new).addNode("agent", this::dummyNodeAction)
+		StateGraph<NodeState> workflow = new StateGraph<>(NodeState::new).addNode("agent", this::dummyNodeAction)
 			.addNode("action", this::dummyNodeAction)
 			.addEdge(StateGraph.START, "agent")
 			.addConditionalEdges("agent", this::dummyCondition,
 					CollectionsUtils.mapOf("continue", "action", "end", StateGraph.END))
 			.addEdge("action", "agent");
 
-		CompiledGraph<AgentState> app = workflow.compile();
+		CompiledGraph<NodeState> app = workflow.compile();
 
 		GraphRepresentation result = app.getGraph(GraphRepresentation.Type.PLANTUML);
 		assertEquals(GraphRepresentation.Type.PLANTUML, result.getType());
@@ -117,7 +117,7 @@ public class GraphTest {
 
 	@Test
 	public void GenerateImageToDiagramGraph() throws Exception {
-		StateGraph<AgentState> workflow = new StateGraph<>(AgentState::new)
+		StateGraph<NodeState> workflow = new StateGraph<>(NodeState::new)
 			.addNode("agent_describer", this::dummyNodeAction)
 			.addNode("agent_sequence_plantuml", this::dummyNodeAction)
 			.addNode("agent_generic_plantuml", this::dummyNodeAction)
@@ -129,7 +129,7 @@ public class GraphTest {
 			.addEdge(StateGraph.START, "agent_describer")
 			.addEdge("evaluate_result", StateGraph.END);
 
-		CompiledGraph<AgentState> app = workflow.compile();
+		CompiledGraph<NodeState> app = workflow.compile();
 
 		GraphRepresentation result = app.getGraph(GraphRepresentation.Type.PLANTUML);
 		assertEquals(GraphRepresentation.Type.PLANTUML, result.getType());

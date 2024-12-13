@@ -3,7 +3,7 @@ package com.alibaba.cloud.ai.graph.serializer.std;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import lombok.extern.slf4j.Slf4j;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -11,7 +11,7 @@ import java.io.ObjectOutput;
 import java.util.*;
 
 @Slf4j
-public class ObjectStreamStateSerializer<State extends AgentState> extends StateSerializer<State> {
+public class ObjectStreamStateSerializer<State extends NodeState> extends StateSerializer<State> {
 
 	static class ListSerializer implements NullableObjectSerializer<List<Object>> {
 

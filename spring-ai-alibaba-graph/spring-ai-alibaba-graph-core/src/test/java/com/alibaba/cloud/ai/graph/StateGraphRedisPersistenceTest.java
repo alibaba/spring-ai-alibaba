@@ -6,7 +6,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.RedisSaver;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.Channel;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
@@ -17,7 +17,6 @@ import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
-import java.nio.file.Paths;
 import java.util.*;
 
 import static java.lang.String.format;
@@ -28,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 public class StateGraphRedisPersistenceTest {
 
-	static class MessagesState extends AgentState {
+	static class MessagesState extends NodeState {
 
 		static Map<String, Channel<?>> SCHEMA = CollectionsUtils.mapOf("messages",
 				AppenderChannel.<String>of(ArrayList::new));
