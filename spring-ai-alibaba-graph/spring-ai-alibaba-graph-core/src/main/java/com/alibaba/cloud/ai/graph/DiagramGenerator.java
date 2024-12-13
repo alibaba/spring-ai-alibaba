@@ -29,8 +29,8 @@ public abstract class DiagramGenerator {
 
 	protected abstract StringBuilder commentLine(StringBuilder sb, boolean yesOrNo);
 
-	public final <State extends NodeState> String generate(StateGraph<State> compiledGraph, String title,
-			boolean printConditionalEdge) {
+	public final String generate(StateGraph compiledGraph, String title,
+								 boolean printConditionalEdge) {
 		StringBuilder sb = new StringBuilder();
 
 		appendHeader(sb, title);
@@ -46,7 +46,7 @@ public abstract class DiagramGenerator {
 			}
 		});
 
-		EdgeValue<State> entryPoint = compiledGraph.getEntryPoint();
+		EdgeValue entryPoint = compiledGraph.getEntryPoint();
 		if (entryPoint.id() != null) {
 			start(sb, entryPoint.id());
 		}
@@ -79,7 +79,7 @@ public abstract class DiagramGenerator {
 
 	}
 
-	private <State extends NodeState> void edgeCondition(StringBuilder sb, EdgeCondition<State> condition, String k,
+	private <State extends NodeState> void edgeCondition(StringBuilder sb, EdgeCondition condition, String k,
 			String conditionName, boolean printConditionalEdge) {
 		call(commentLine(sb, !printConditionalEdge), k, conditionName);
 

@@ -3,7 +3,6 @@ package com.alibaba.cloud.ai.graph.studio;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -59,7 +58,7 @@ public class StreamingServerJetty implements StreamingServer {
 
 		private BaseCheckpointSaver saver;
 
-		private StateGraph<? extends NodeState> stateGraph;
+		private StateGraph stateGraph;
 
 		public Builder port(int port) {
 			this.port = port;
@@ -91,7 +90,7 @@ public class StreamingServerJetty implements StreamingServer {
 			return this;
 		}
 
-		public <State extends NodeState> Builder stateGraph(StateGraph<State> stateGraph) {
+		public Builder stateGraph(StateGraph stateGraph) {
 			this.stateGraph = stateGraph;
 			return this;
 		}

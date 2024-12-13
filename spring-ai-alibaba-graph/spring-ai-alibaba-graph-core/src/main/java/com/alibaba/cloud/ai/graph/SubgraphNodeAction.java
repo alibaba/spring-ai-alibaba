@@ -9,21 +9,21 @@ import java.util.concurrent.CompletableFuture;
 
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.mapOf;
 
-class SubgraphNodeAction<State extends NodeState> implements AsyncNodeActionWithConfig<State> {
+class SubgraphNodeAction implements AsyncNodeActionWithConfig {
 
-	final CompiledGraph<State> subGraph;
+	final CompiledGraph subGraph;
 
-	SubgraphNodeAction(CompiledGraph<State> subGraph) {
+	SubgraphNodeAction(CompiledGraph subGraph) {
 		this.subGraph = subGraph;
 	}
 
 	@Override
-	public CompletableFuture<Map<String, Object>> apply(State state, RunnableConfig config) {
+	public CompletableFuture<Map<String, Object>> apply(NodeState state, RunnableConfig config) {
 		CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
 
 		try {
 
-			AsyncGenerator<NodeOutput<State>> generator = subGraph.stream(state.data(), config);
+			AsyncGenerator<NodeOutput> generator = subGraph.stream(state.data(), config);
 
 			future.complete(mapOf("_subgraph", generator));
 

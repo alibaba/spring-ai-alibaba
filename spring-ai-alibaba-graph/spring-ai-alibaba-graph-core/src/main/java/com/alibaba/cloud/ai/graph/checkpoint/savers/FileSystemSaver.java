@@ -5,15 +5,19 @@ import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.check_point.CheckPointSerializer;
-import com.alibaba.cloud.ai.graph.state.NodeState;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.Optional;
 
 import static java.lang.String.format;
 
@@ -35,31 +39,22 @@ public class FileSystemSaver extends MemorySaver {
 	private final Serializer<Checkpoint> serializer;
 
 	@SuppressWarnings("unchecked")
-	public FileSystemSaver(@NonNull Path targetFolder, @NonNull StateSerializer<? extends NodeState> stateSerializer) {
+	public FileSystemSaver(@NonNull Path targetFolder, @NonNull StateSerializer stateSerializer) {
 		File targetFolderAsFile = targetFolder.toFile();
 
 		if (targetFolderAsFile.exists()) {
 			if (targetFolderAsFile.isFile()) {
 				throw new IllegalArgumentException(format("targetFolder '%s' must be a folder", targetFolder)); // TODO:
-																												// format"targetFolder
-																												// must
-																												// be
-																												// a
-																												// directory");
 			}
 		}
 		else {
 			if (!targetFolderAsFile.mkdirs()) {
 				throw new IllegalArgumentException(format("targetFolder '%s' cannot be created", targetFolder)); // TODO:
-																													// format"targetFolder
-																													// cannot
-																													// be
-																													// created");
 			}
 		}
 
 		this.targetFolder = targetFolder;
-		this.serializer = new CheckPointSerializer((StateSerializer<NodeState>) stateSerializer);
+		this.serializer = new CheckPointSerializer(stateSerializer);
 	}
 
 	private File getFile(RunnableConfig config) {

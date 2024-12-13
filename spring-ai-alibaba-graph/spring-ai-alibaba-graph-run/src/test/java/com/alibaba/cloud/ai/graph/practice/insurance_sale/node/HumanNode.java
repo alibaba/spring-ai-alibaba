@@ -8,7 +8,7 @@ import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.studio.StreamingServer.USER_INPUT;
 
-public class HumanNode implements NodeAction<NodeState> {
+public class HumanNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(NodeState state) {

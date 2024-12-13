@@ -16,6 +16,6 @@ public class EdgeValue<State extends NodeState> {
 	/**
 	 * The condition associated with the edge value.
 	 */
-	EdgeCondition<State> value;
+	EdgeCondition value;
 
 }

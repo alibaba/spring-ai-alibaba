@@ -6,8 +6,8 @@ import com.alibaba.cloud.ai.graph.state.NodeState;
 import java.util.Map;
 
 @FunctionalInterface
-public interface NodeActionWithConfig<S extends NodeState> {
+public interface NodeActionWithConfig {
 
-	Map<String, Object> apply(S t, RunnableConfig config) throws Exception;
+	Map<String, Object> apply(NodeState t, RunnableConfig config) throws Exception;
 
 }
