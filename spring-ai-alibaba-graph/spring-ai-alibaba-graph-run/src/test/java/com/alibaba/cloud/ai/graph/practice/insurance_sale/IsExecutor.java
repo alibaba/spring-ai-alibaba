@@ -5,10 +5,12 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.practice.insurance_sale.node.HumanNode;
 import com.alibaba.cloud.ai.graph.practice.insurance_sale.node.WelcomeNode;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.agent.AgentAction;
+import com.alibaba.cloud.ai.graph.serializer.agent.AgentFinish;
+import com.alibaba.cloud.ai.graph.serializer.agent.AgentOutcome;
+import com.alibaba.cloud.ai.graph.serializer.agent.JSONStateSerializer;
 import com.alibaba.cloud.ai.graph.state.NodeState;
-import dev.ai.alibaba.samples.executor.std.json.JSONStateSerializer;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -25,7 +27,7 @@ public class IsExecutor {
 
 	public enum Serializers {
 
-		JSON(new IsJSONStateSerializer());
+		JSON(new JSONStateSerializer());
 
 		private final StateSerializer serializer;
 
@@ -107,17 +109,6 @@ public class IsExecutor {
 		return new GraphBuilder();
 	}
 
-	public record Outcome(Action action, Finish finish) {
-	}
-
-	public record Step(Action action, String observation) {
-	}
-
-	public record Action(AssistantMessage.ToolCall toolCall, String log) {
-	}
-
-	public record Finish(Map<String, Object> returnValues, String log) {
-	}
 
 	private final IsAgentService agentService;
 
@@ -137,14 +128,14 @@ public class IsExecutor {
 		var output = response.getResult().getOutput();
 
 		if (output.hasToolCalls()) {
-			var action = new Action(output.getToolCalls().get(0), "");
-			return Map.of(NodeState.OUTPUT, new Outcome(action, null));
+			var action = new AgentAction(output.getToolCalls().get(0), "");
+			return Map.of(NodeState.OUTPUT, new AgentOutcome(action, null));
 
 		}
 		else {
-			var finish = new Finish(Map.of("returnValues", output.getContent()), output.getContent());
+			var finish = new AgentFinish(Map.of("returnValues", output.getContent()), output.getContent());
 
-			return Map.of(NodeState.OUTPUT, new Outcome(null, finish));
+			return Map.of(NodeState.OUTPUT, new AgentOutcome(null, finish));
 		}
 	}
 

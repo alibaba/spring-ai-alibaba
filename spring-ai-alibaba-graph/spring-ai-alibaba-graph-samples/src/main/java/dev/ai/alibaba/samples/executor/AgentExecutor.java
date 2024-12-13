@@ -3,8 +3,8 @@ package dev.ai.alibaba.samples.executor;
 import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.agent.JSONStateSerializer;
 import com.alibaba.cloud.ai.graph.state.NodeState;
-import dev.ai.alibaba.samples.executor.std.json.JSONStateSerializer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.stereotype.Service;
@@ -56,7 +56,6 @@ public class AgentExecutor {
 						"agent", edge_async(AgentExecutor.this::shouldContinue), // 根据agent的结果，进行条件判断
 						Map.of("continue", END, "end", END) // 不同分支，使action不再独立
 				)
-				.addEdge("action", "agent") // action后返回agent，非条件边
 			;
 
 		}
@@ -68,9 +67,6 @@ public class AgentExecutor {
 	}
 
 	public record Outcome(Action action, Finish finish) {
-	}
-
-	public record Step(Action action, String observation) {
 	}
 
 	public record Action(AssistantMessage.ToolCall toolCall, String log) {
