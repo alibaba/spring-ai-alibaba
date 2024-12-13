@@ -8,9 +8,11 @@ import ToolBar from '@/pages/Graph/Design/toolbar/ToolBar';
 import { PageContainer } from '@ant-design/pro-components';
 import { Icon } from '@iconify/react';
 import { Affix, Button } from 'antd';
-import { history } from 'umi';
+import { history, useIntl } from '@umijs/max';
 
 export default function () {
+  const intl = useIntl();
+
   return (
     <PageContainer ghost>
       <Affix>
@@ -20,7 +22,7 @@ export default function () {
           }}
           type="dashed"
         >
-          返回
+          {intl.formatMessage({ id: 'page.graph.back' })}
           <Icon
             style={{
               fontSize: '20px',

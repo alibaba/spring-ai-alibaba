@@ -30,6 +30,7 @@ import {
   FileAddOutlined,
   SnippetsOutlined,
 } from '@ant-design/icons';
+import { useIntl } from '@umijs/max';
 import '@xyflow/react/dist/style.css';
 import { Menu } from 'antd';
 import './index.less';
@@ -82,22 +83,18 @@ const getLayoutedElements = (nodes: any, edges: any) => {
   return { nodes, edges };
 };
 
-const graphSubMenuItems = [
-  {
-    key: NODE_TYPE.START,
-    label: '开始',
-  },
-  {
-    key: NODE_TYPE.LLM,
-    label: 'LLM',
-  },
-  // {
-  //   key: 'node-branch',
-  //   label: '条件分支',
-  // },
-];
-
 export const LayoutFlow = () => {
+  const intl = useIntl();
+  const graphSubMenuItems = [
+    {
+      key: NODE_TYPE.START,
+      label: intl.formatMessage({ id: 'page.graph.start' }),
+    },
+    {
+      key: NODE_TYPE.LLM,
+      label: intl.formatMessage({ id: 'page.graph.llm' }),
+    },
+  ];
   const handleContext = (e: MouseEvent) => {
     e.preventDefault();
   };
@@ -179,7 +176,7 @@ export const LayoutFlow = () => {
       {
         key: 'create',
         icon: <FileAddOutlined />,
-        label: '新建节点',
+        label: intl.formatMessage({ id: 'page.graph.createNode' }),
         children: graphSubMenuItems.map((item) => ({
           label: item?.label ?? '',
           key: item?.key,
@@ -196,24 +193,20 @@ export const LayoutFlow = () => {
       {
         key: 'copy',
         icon: <CopyOutlined />,
-        label: '复制',
+        label: intl.formatMessage({ id: 'page.graph.copy' }),
         disabled: selections?.nodes.length === 0,
         onClick: (e) => {
-          // It seems that no need to copy edge
           const { nodes } = selections ?? {};
           if (nodes?.length) {
             copy(nodes[0], 'node');
           }
-          // } else if (edges?.length) {
-          //   copy(edges[0], 'edge');
-          // }
           console.log(e);
         },
       },
       {
         key: 'paste',
         icon: <SnippetsOutlined />,
-        label: '粘贴',
+        label: intl.formatMessage({ id: 'page.graph.paste' }),
         onClick: async (e) => {
           const { x, y } = getMenuOperationPosition(e);
           const newNode = await paste({ x, y });
