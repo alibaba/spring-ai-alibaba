@@ -75,11 +75,6 @@ public class StreamingServerJetty implements StreamingServer {
 			return this;
 		}
 
-		public Builder addInputStringArg(String name, boolean required) {
-			inputArgs.put(name, new ArgumentMetadata("string", required));
-			return this;
-		}
-
 		public Builder addInputStringArg(String name) {
 			inputArgs.put(name, new ArgumentMetadata("string", true));
 			return this;
