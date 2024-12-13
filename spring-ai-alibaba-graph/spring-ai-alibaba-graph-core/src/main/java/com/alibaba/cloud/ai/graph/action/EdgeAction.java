@@ -1,6 +1,6 @@
 package com.alibaba.cloud.ai.graph.action;
 
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 
 /**
  * Represents an edge action that operates on an agent state and returns a result.
@@ -8,7 +8,7 @@ import com.alibaba.cloud.ai.graph.state.AgentState;
  * @param <S> the type of the agent state
  */
 @FunctionalInterface
-public interface EdgeAction<S extends AgentState> {
+public interface EdgeAction<S extends NodeState> {
 
 	/**
 	 * Applies this action to the given agent state.

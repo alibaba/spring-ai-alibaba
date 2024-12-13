@@ -2,12 +2,12 @@ package com.alibaba.cloud.ai.graph.serializer;
 
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import lombok.NonNull;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 
 import java.io.IOException;
 import java.util.Map;
 
-public abstract class StateSerializer<State extends AgentState> implements Serializer<State> {
+public abstract class StateSerializer<State extends NodeState> implements Serializer<State> {
 
 	private final AgentStateFactory<State> stateFactory;
 

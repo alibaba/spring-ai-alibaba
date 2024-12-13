@@ -31,11 +31,8 @@ public class IsAgentService {
 		return new ToolResponseMessage(List.of(response), Map.of());
 	}
 
-	public ChatResponse execute(String input, List<IsExecutor.Step> intermediateSteps) {
-		var messages = intermediateSteps.stream()
-			.map(this::buildToolResponseMessage)
-			.toArray(ToolResponseMessage[]::new);
-		return chatClient.prompt().user(input).messages(messages).call().chatResponse();
+	public ChatResponse execute(String input) {
+		return chatClient.prompt().user(input).call().chatResponse();
 	}
 
 	public ChatResponse executeByPrompt(String input, String prompt) {

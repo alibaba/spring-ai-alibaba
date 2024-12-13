@@ -1,6 +1,6 @@
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 
 import static java.lang.String.format;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -29,7 +29,7 @@ public abstract class DiagramGenerator {
 
 	protected abstract StringBuilder commentLine(StringBuilder sb, boolean yesOrNo);
 
-	public final <State extends AgentState> String generate(StateGraph<State> compiledGraph, String title,
+	public final <State extends NodeState> String generate(StateGraph<State> compiledGraph, String title,
 			boolean printConditionalEdge) {
 		StringBuilder sb = new StringBuilder();
 
@@ -79,7 +79,7 @@ public abstract class DiagramGenerator {
 
 	}
 
-	private <State extends AgentState> void edgeCondition(StringBuilder sb, EdgeCondition<State> condition, String k,
+	private <State extends NodeState> void edgeCondition(StringBuilder sb, EdgeCondition<State> condition, String k,
 			String conditionName, boolean printConditionalEdge) {
 		call(commentLine(sb, !printConditionalEdge), k, conditionName);
 

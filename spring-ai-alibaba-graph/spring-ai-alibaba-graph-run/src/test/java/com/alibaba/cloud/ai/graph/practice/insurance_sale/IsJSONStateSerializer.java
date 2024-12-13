@@ -1,6 +1,7 @@
 package com.alibaba.cloud.ai.graph.practice.insurance_sale;
 
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,7 +16,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
-public class IsJSONStateSerializer extends PlainTextStateSerializer<IsExecutor.State> {
+public class IsJSONStateSerializer extends PlainTextStateSerializer<NodeState> {
 
 	final ObjectMapper objectMapper;
 
@@ -24,12 +25,12 @@ public class IsJSONStateSerializer extends PlainTextStateSerializer<IsExecutor.S
 	}
 
 	public IsJSONStateSerializer(@NonNull ObjectMapper objectMapper) {
-		super(IsExecutor.State::new);
+		super(NodeState::new);
 		this.objectMapper = objectMapper;
 		this.objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
 		var module = new SimpleModule();
-		module.addDeserializer(IsExecutor.State.class, new IsStateDeserializer());
+		module.addDeserializer(NodeState.class, new IsStateDeserializer());
 		module.addDeserializer(AgentOutcome.class, new IsAgentOutcomeDeserializer());
 		module.addDeserializer(AgentAction.class, new IsAgentActionDeserializer());
 		module.addDeserializer(AgentFinish.class, new IsAgentFinishDeserializer());
@@ -44,15 +45,15 @@ public class IsJSONStateSerializer extends PlainTextStateSerializer<IsExecutor.S
 	}
 
 	@Override
-	public void write(IsExecutor.State object, ObjectOutput out) throws IOException {
+	public void write(NodeState object, ObjectOutput out) throws IOException {
 		var json = objectMapper.writeValueAsString(object);
 		out.writeUTF(json);
 	}
 
 	@Override
-	public IsExecutor.State read(ObjectInput in) throws IOException, ClassNotFoundException {
+	public NodeState read(ObjectInput in) throws IOException, ClassNotFoundException {
 		var json = in.readUTF();
-		return objectMapper.readValue(json, IsExecutor.State.class);
+		return objectMapper.readValue(json, NodeState.class);
 	}
 
 }

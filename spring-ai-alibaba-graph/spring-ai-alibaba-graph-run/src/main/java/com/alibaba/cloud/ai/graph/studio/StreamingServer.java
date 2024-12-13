@@ -11,7 +11,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -88,13 +88,13 @@ public interface StreamingServer {
 
 		final BaseCheckpointSaver saver;
 
-		final StateGraph<? extends AgentState> stateGraph;
+		final StateGraph<? extends NodeState> stateGraph;
 
 		final ObjectMapper objectMapper;
 
-		final Map<PersistentConfig, CompiledGraph<? extends AgentState>> graphCache = new HashMap<>();
+		final Map<PersistentConfig, CompiledGraph<? extends NodeState>> graphCache = new HashMap<>();
 
-		public GraphStreamServlet(StateGraph<? extends AgentState> stateGraph, ObjectMapper objectMapper,
+		public GraphStreamServlet(StateGraph<? extends NodeState> stateGraph, ObjectMapper objectMapper,
 				BaseCheckpointSaver saver) {
 
 			Objects.requireNonNull(stateGraph, "stateGraph cannot be null");
@@ -139,7 +139,7 @@ public interface StreamingServer {
 
 			try {
 
-				AsyncGenerator<? extends NodeOutput<? extends AgentState>> generator = null;
+				AsyncGenerator<? extends NodeOutput<? extends NodeState>> generator = null;
 
 				var persistentConfig = new PersistentConfig(session.getId(), threadId);
 
@@ -147,7 +147,7 @@ public interface StreamingServer {
 
 				final Map<String, Object> dataMap;
 				if (resume && stateGraph
-					.getStateSerializer() instanceof PlainTextStateSerializer<? extends AgentState> textSerializer) {
+					.getStateSerializer() instanceof PlainTextStateSerializer<? extends NodeState> textSerializer) {
 
 					dataMap = textSerializer.read(new InputStreamReader(request.getInputStream())).data();
 				}
@@ -263,7 +263,7 @@ public interface StreamingServer {
 	record ArgumentMetadata(String type, boolean required) {
 	}
 
-	record ThreadEntry(String id, List<? extends NodeOutput<? extends AgentState>> entries) {
+	record ThreadEntry(String id, List<? extends NodeOutput<? extends NodeState>> entries) {
 
 	}
 
@@ -320,13 +320,13 @@ public interface StreamingServer {
 
 		Logger log = StreamingServer.log;
 
-		final StateGraph<? extends AgentState> stateGraph;
+		final StateGraph<? extends NodeState> stateGraph;
 
 		final ObjectMapper objectMapper = new ObjectMapper();
 
 		final InitData initData;
 
-		public GraphInitServlet(StateGraph<? extends AgentState> stateGraph, String title,
+		public GraphInitServlet(StateGraph<? extends NodeState> stateGraph, String title,
 				Map<String, ArgumentMetadata> args) {
 			Objects.requireNonNull(stateGraph, "stateGraph cannot be null");
 			this.stateGraph = stateGraph;

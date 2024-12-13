@@ -3,7 +3,7 @@ package com.alibaba.cloud.ai.graph;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.node.LLMNodeAction;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.Channel;
 import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
@@ -35,7 +35,7 @@ public class LLMNodeActionTest {
 
 	}
 
-	static class MessagesState extends AgentState {
+	static class MessagesState extends NodeState {
 
 		static Map<String, Channel<?>> SCHEMA = CollectionsUtils.mapOf("messages",
 				AppenderChannel.<String>of(ArrayList::new));
