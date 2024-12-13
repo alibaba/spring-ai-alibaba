@@ -50,31 +50,6 @@ public class AgentState {
 	}
 
 	/**
-	 * Retrieves or creates an AppendableValue associated with the given key.
-	 * @param key the key whose associated AppendableValue is to be returned or created
-	 * @param <T> the type of the value
-	 * @return an AppendableValue associated with the given key
-	 * @deprecated use {@link Channel} instead
-	 */
-	@Deprecated
-	public final <T> AppendableValue<T> appendableValue(String key) {
-		Object value = this.data.get(key);
-
-		if (value instanceof AppendableValue) {
-			return (AppendableValue<T>) value;
-		}
-		if (value instanceof Collection) {
-			return new AppendableValueRW<>((Collection<T>) value);
-		}
-		AppendableValueRW<T> rw = new AppendableValueRW<>();
-		if (value != null) {
-			rw.append(value);
-		}
-		this.data.put(key, rw);
-		return rw;
-	}
-
-	/**
 	 * Merges the current state with a partial state and returns a new state.
 	 * @param partialState the partial state to merge with
 	 * @return a new state resulting from the merge
@@ -101,10 +76,6 @@ public class AgentState {
 	 * @return the merged value
 	 */
 	private static Object mergeFunction(Object currentValue, Object newValue) {
-		if (currentValue instanceof AppendableValueRW<?>) {
-			((AppendableValueRW<?>) currentValue).append(newValue);
-			return currentValue;
-		}
 		return newValue;
 	}
 
