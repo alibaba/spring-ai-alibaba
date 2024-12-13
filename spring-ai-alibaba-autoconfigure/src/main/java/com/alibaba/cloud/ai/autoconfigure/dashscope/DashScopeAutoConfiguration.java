@@ -29,6 +29,8 @@ import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
 import io.micrometer.observation.ObservationRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.chat.observation.ChatModelObservationConvention;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.beans.factory.ObjectProvider;
@@ -95,10 +97,11 @@ public class DashScopeAutoConfiguration {
 	@ConditionalOnProperty(prefix = DashScopeChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public DashScopeChatModel dashscopeChatModel(DashScopeConnectionProperties commonProperties,
-			DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, List<FunctionCallback> toolFunctionCallbacks,
-			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry) {
+												 DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
+												 WebClient.Builder webClientBuilder, List<FunctionCallback> toolFunctionCallbacks,
+												 FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
+												 ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+												 ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
@@ -107,8 +110,12 @@ public class DashScopeAutoConfiguration {
 		var dashscopeApi = dashscopeChatApi(commonProperties, chatProperties, restClientBuilder, webClientBuilder,
 				responseErrorHandler);
 
-		return new DashScopeChatModel(dashscopeApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate,
+		var dashscopeModel = new DashScopeChatModel(dashscopeApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate,
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+
+		observationConvention.ifAvailable(dashscopeModel::setObservationConvention);
+
+		return dashscopeModel;
 	}
 
 	@Bean
@@ -132,13 +139,18 @@ public class DashScopeAutoConfiguration {
 	public DashScopeEmbeddingModel dashscopeEmbeddingModel(DashScopeConnectionProperties commonProperties,
 			DashScopeEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler) {
+			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
 		var dashScopeApi = dashscopeEmbeddingApi(commonProperties, embeddingProperties, restClientBuilder,
 				webClientBuilder, responseErrorHandler);
 
-		return new DashScopeEmbeddingModel(dashScopeApi, embeddingProperties.getMetadataMode(),
+		var embeddingModel = new DashScopeEmbeddingModel(dashScopeApi, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions(), retryTemplate);
+
+		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
+
+		return embeddingModel;
 	}
 
 	public DashScopeApi dashscopeEmbeddingApi(DashScopeConnectionProperties commonProperties,
