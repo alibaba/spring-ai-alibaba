@@ -9,10 +9,10 @@ import static java.lang.String.format;
  *
  * @param <State> the type of the state associated with the node output
  */
-public class NodeOutput<State extends NodeState> {
+public class NodeOutput {
 
-	public static <State extends NodeState> NodeOutput<State> of(String node, State state) {
-		return new NodeOutput<>(node, state);
+	public static NodeOutput of(String node, NodeState state) {
+		return new NodeOutput(node, state);
 	}
 
 	/**
@@ -23,13 +23,13 @@ public class NodeOutput<State extends NodeState> {
 	/**
 	 * The state associated with the node.
 	 */
-	private final State state;
+	private final NodeState state;
 
 	public String node() {
 		return node;
 	}
 
-	public State state() {
+	public NodeState state() {
 		return state;
 	}
 
@@ -37,11 +37,11 @@ public class NodeOutput<State extends NodeState> {
 	 * @deprecated Use {@link #state()} instead.
 	 */
 	@Deprecated
-	public State getState() {
+	public NodeState getState() {
 		return state();
 	}
 
-	protected NodeOutput(String node, State state) {
+	protected NodeOutput(String node, NodeState state) {
 		this.node = node;
 		this.state = state;
 	}

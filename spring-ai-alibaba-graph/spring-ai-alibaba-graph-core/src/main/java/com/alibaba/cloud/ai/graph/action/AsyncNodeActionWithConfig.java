@@ -7,17 +7,17 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 
-public interface AsyncNodeActionWithConfig<S extends NodeState>
-		extends BiFunction<S, RunnableConfig, CompletableFuture<Map<String, Object>>> {
+public interface AsyncNodeActionWithConfig
+		extends BiFunction<NodeState, RunnableConfig, CompletableFuture<Map<String, Object>>> {
 
 	/**
 	 * Applies this action to the given agent state.
 	 * @param t the agent state
 	 * @return a CompletableFuture representing the result of the action
 	 */
-	CompletableFuture<Map<String, Object>> apply(S t, RunnableConfig config);
+	CompletableFuture<Map<String, Object>> apply(NodeState t, RunnableConfig config);
 
-	static <S extends NodeState> AsyncNodeActionWithConfig<S> node_async(NodeActionWithConfig<S> syncAction) {
+	static AsyncNodeActionWithConfig node_async(NodeActionWithConfig syncAction) {
 		return (t, config) -> {
 			CompletableFuture<Map<String, Object>> result = new CompletableFuture<>();
 			try {
@@ -33,10 +33,9 @@ public interface AsyncNodeActionWithConfig<S extends NodeState>
 	/**
 	 * Adapts a simple AsyncNodeAction to an AsyncNodeActionWithConfig.
 	 * @param action the simple AsyncNodeAction to be adapted
-	 * @param <S> the type of the agent state
 	 * @return an AsyncNodeActionWithConfig that wraps the given AsyncNodeAction
 	 */
-	static <S extends NodeState> AsyncNodeActionWithConfig<S> of(AsyncNodeAction<S> action) {
+	static AsyncNodeActionWithConfig of(AsyncNodeAction action) {
 		return (t, config) -> action.apply(t);
 	}
 

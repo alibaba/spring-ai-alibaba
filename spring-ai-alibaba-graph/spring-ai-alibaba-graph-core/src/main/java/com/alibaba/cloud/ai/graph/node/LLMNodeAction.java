@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 /**
  * @author 北极星
  */
-public class LLMNodeAction<State extends NodeState> extends AbstractNode implements NodeAction<State> {
+public class LLMNodeAction extends AbstractNode implements NodeAction {
 
 	/**
 	 * each llm node has their own state
@@ -56,7 +56,7 @@ public class LLMNodeAction<State extends NodeState> extends AbstractNode impleme
 	 * @throws Exception
 	 */
 	@Override
-	public Map<String, Object> apply(State state) throws Exception {
+	public Map<String, Object> apply(NodeState state) throws Exception {
 
 		List<Message> messages = state.value(MESSAGES_KEY, new ArrayList<>());
 		List<Generation> generations = chatClient.prompt()
@@ -81,14 +81,14 @@ public class LLMNodeAction<State extends NodeState> extends AbstractNode impleme
 			this.chatModel = chatModel;
 		}
 
-		public <State extends NodeState> LLMNodeAction<NodeState> build() {
+		public LLMNodeAction build() {
 			ChatClient.Builder builder = ChatClient.builder(this.chatModel);
 			String sysPr = Optional.ofNullable(sysPrompt)
 				.orElse("{'role': 'system', 'content': 'You are a helpful assistant.'}");
 			builder.defaultSystem(sysPr);
 			if (functions != null && functions.length > 0)
 				builder.defaultFunctions(functions);
-			return new LLMNodeAction<>(builder.build());
+			return new LLMNodeAction(builder.build());
 		}
 
 		public Builder withSysPrompt(String prompt) {

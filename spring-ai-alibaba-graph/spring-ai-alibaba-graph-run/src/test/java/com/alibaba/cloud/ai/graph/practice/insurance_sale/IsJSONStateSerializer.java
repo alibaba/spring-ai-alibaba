@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
-public class IsJSONStateSerializer extends PlainTextStateSerializer<NodeState> {
+public class IsJSONStateSerializer extends PlainTextStateSerializer {
 
 	final ObjectMapper objectMapper;
 
