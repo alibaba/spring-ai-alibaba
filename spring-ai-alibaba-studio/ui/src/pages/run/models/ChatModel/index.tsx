@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useState, useRef } from 'react';
-import { Card, Flex, Button, Checkbox, Input, Spin, List } from 'antd';
+import { Card, Flex, Button, Checkbox, Input, Spin, Image } from 'antd';
 import Setup from '../Setup';
 import { ChatModelData, ChatModelResultData } from '@/types/chat_model';
 import chatModelsService from '@/services/chat_models';
@@ -25,9 +25,10 @@ import styles from './index.module.css';
 
 type ChatModelProps = {
   modelData: ChatModelData;
+  modeType: 'CHAT' | 'IMAGE';
 };
 
-const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
+const ChatModel: React.FC<ChatModelProps> = ({ modelData, modeType }) => {
   const [initialValues, setInitialValues] = useState<RightPanelValues>({
     initialChatConfig: {
       model: 'qwen-plus',
@@ -85,24 +86,51 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
         },
       ]);
 
-      const res = (await chatModelsService.postChatModel({
-        input: inputValue,
-        chatOptions: initialValues.initialChatConfig,
-        stream: isStream,
-        key: modelData.name,
-      })) as ChatModelResultData;
+      if (modeType === 'CHAT') {
+        const res = (await chatModelsService.postChatModel({
+          input: inputValue,
+          chatOptions: initialValues.initialChatConfig,
+          stream: isStream,
+          key: modelData.name,
+        })) as ChatModelResultData;
 
-      setMessages([
-        ...messages,
-        {
-          type: 'user',
-          content: inputValue,
-        },
-        {
-          type: 'model',
-          content: res.result.response,
-        },
-      ]);
+        setMessages([
+          ...messages,
+          {
+            type: 'user',
+            content: inputValue,
+          },
+          {
+            type: 'model',
+            content: res.result.response,
+          },
+        ]);
+      } else {
+        const res = (await chatModelsService.postImageModel({
+          input: inputValue,
+          imageOptions: initialValues.initialChatConfig,
+          key: modelData.name,
+        })) as ChatModelResultData;
+
+        setMessages([
+          ...messages,
+          {
+            type: 'user',
+            content: inputValue,
+          },
+          {
+            type: 'model',
+            content: (
+              <Flex>
+                <Image width={200} src={res.result.response} />
+                <Button type="primary" style={{ marginLeft: 10 }}>
+                  下载
+                </Button>
+              </Flex>
+            ),
+          },
+        ]);
+      }
       setDisabled(false);
       setInputValue('');
     } catch (error) {

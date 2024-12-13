@@ -19,7 +19,7 @@ import { ChatOptions, ImageOptions } from './options';
 export type ChatModelData = {
   name: string;
   model: string;
-  modelType: string;
+  modelType: 'CHAT' | 'IMAGE';
   chatOptions: ChatOptions;
   imageOptions: ImageOptions;
 };
