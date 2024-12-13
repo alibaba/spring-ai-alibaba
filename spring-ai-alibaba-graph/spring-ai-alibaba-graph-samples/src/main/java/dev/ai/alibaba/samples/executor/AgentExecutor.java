@@ -20,22 +20,6 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 @Service
 public class AgentExecutor {
 
-	public enum Serializers {
-
-		JSON(new JSONStateSerializer());
-
-		private final StateSerializer serializer;
-
-		Serializers(StateSerializer serializer) {
-			this.serializer = serializer;
-		}
-
-		public StateSerializer object() {
-			return serializer;
-		}
-
-	}
-
 	public class GraphBuilder {
 
 		private StateSerializer stateSerializer;
