@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import static dev.ai.alibaba.samples.executor.AgentExecutor.State.AGENT_OUTCOME;
+import static dev.ai.alibaba.samples.executor.AgentExecutor.State.OUTPUT;
 
 class StateDeserializer extends JsonDeserializer<AgentExecutor.State> {
 
@@ -45,7 +45,7 @@ class StateDeserializer extends JsonDeserializer<AgentExecutor.State> {
 		}
 		data.put("intermediate_steps", intermediateStepList);
 
-		var agentOutcomeNode = dataNode.get(AGENT_OUTCOME);
+		var agentOutcomeNode = dataNode.get(OUTPUT);
 		if (agentOutcomeNode != null && !agentOutcomeNode.isNull()) { // GUARD
 			var agentOutcome = ctx.readValue(agentOutcomeNode.traverse(parser.getCodec()), AgentOutcome.class);
 			data.put("agent_outcome", agentOutcome);

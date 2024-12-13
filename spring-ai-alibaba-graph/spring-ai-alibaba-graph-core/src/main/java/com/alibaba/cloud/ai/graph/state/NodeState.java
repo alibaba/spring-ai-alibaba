@@ -18,7 +18,7 @@ public class NodeState {
 
 	public static final String INPUT = "input";
 
-	public static final String AGENT_OUTCOME = "outcome";
+	public static final String OUTPUT = "output";
 
 	private final java.util.Map<String, Object> data;
 
@@ -43,7 +43,7 @@ public class NodeState {
 	}
 
 	public Optional<String> outcome() {
-		return value(AGENT_OUTCOME);
+		return value(OUTPUT);
 	}
 
 	/**

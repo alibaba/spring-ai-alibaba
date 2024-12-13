@@ -91,14 +91,12 @@ public class AgentExecutor {
 
 		public static final String INTERMEDIATE_STEPS = "intermediate_steps";
 
-		static Map<String, Channel<?>> SCHEMA = Map.of(INTERMEDIATE_STEPS, AppenderChannel.<Step>of(ArrayList::new));
-
 		public State(Map<String, Object> initData) {
 			super(initData);
 		}
 
 		public Optional<Outcome> agentOutcome() {
-			return value(AGENT_OUTCOME);
+			return value(OUTPUT);
 		}
 
 		public List<Step> intermediateSteps() {
@@ -128,13 +126,13 @@ public class AgentExecutor {
 
 			var action = new Action(output.getToolCalls().get(0), "");
 
-			return Map.of(State.AGENT_OUTCOME, new Outcome(action, null));
+			return Map.of(State.OUTPUT, new Outcome(action, null));
 
 		}
 		else {
 			var finish = new Finish(Map.of("returnValues", output.getContent()), output.getContent());
 
-			return Map.of(State.AGENT_OUTCOME, new Outcome(null, finish));
+			return Map.of(State.OUTPUT, new Outcome(null, finish));
 		}
 	}
 
