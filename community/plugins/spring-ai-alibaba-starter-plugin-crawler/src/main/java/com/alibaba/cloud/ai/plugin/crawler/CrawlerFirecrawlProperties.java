@@ -17,19 +17,16 @@
 
 package com.alibaba.cloud.ai.plugin.crawler;
 
-import java.util.Arrays;
-
 import com.alibaba.cloud.ai.plugin.crawler.constant.CrawlerConstants;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+
+import java.util.Arrays;
 
 /**
  * @author yuluo
- * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
- *
- * Reference: https://docs.firecrawl.dev/api-reference/
  */
-
+@EnableConfigurationProperties
 @ConfigurationProperties(prefix = CrawlerFirecrawlProperties.FIRECRAWL_PROPERTIES_PREFIX)
 public class CrawlerFirecrawlProperties {
 
@@ -44,9 +41,6 @@ public class CrawlerFirecrawlProperties {
 	private String[] formats = new String[] { CrawlerConstants.FirecrawlFormats.MARKDOWN };
 
 	private Boolean removeBase64Images;
-
-	// not support yet
-	// private Actions[] actions;
 
 	private Boolean skipTlsVerification;
 

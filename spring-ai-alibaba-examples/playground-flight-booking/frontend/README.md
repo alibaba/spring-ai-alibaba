@@ -74,10 +74,10 @@ function globalQuestion() {
 
       ```ts
       
-      import request from '@/base/http/request'
+      import regexRequest from '@/base/http/regexRequest'
       
       export const getClusterInfo = (params: any):Promise<any> => {
-          return request({
+          return regexRequest({
               url: '/metrics/cluster',
               method: 'get',
               params
@@ -127,10 +127,10 @@ function globalQuestion() {
       })
       ```
 
-   4. decide where the request is to go : request.ts
+   4. decide where the regexRequest is to go : regexRequest.ts
 
       ```ts
-      // request.ts
+      // regexRequest.ts
       
       const service: AxiosInstance = axios.create({
           //  change this to decide where to go
