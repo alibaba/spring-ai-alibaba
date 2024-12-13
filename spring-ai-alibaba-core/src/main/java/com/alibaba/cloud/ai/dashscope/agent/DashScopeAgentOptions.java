@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.dashscope.agent;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.Getter;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 import java.util.*;
