@@ -47,8 +47,7 @@ export default function Model() {
 
   return modelData ? (
     <div style={{ padding: 20, height: '100%' }}>
-      {modelData.modelType === 'CHAT' && <ChatModel modelData={modelData} />}
-      {modelData.modelType === 'IMAGE' && <ImageModel modelData={modelData} />}
+      <ChatModel modelData={modelData} modeType={modelData.modelType} />
     </div>
   ) : (
     <p>加载中...</p>
