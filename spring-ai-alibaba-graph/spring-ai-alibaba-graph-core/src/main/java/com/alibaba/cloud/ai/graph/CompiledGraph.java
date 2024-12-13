@@ -327,7 +327,7 @@ public class CompiledGraph {
 
 		RunnableConfig config;
 
-		protected AsyncNodeGenerator(Map<String, Object> inputs, RunnableConfig config) throws Exception {
+		protected AsyncNodeGenerator(Map<String, Object> inputs, RunnableConfig config) {
 			final boolean isResumeRequest = (inputs == null);
 
 			if (isResumeRequest) {
@@ -367,7 +367,7 @@ public class CompiledGraph {
 			return (Output) NodeOutput.of(nodeId, cloneState(currentState));
 		}
 
-		protected Output buildStateSnapshot(Checkpoint checkpoint) throws Exception {
+		protected Output buildStateSnapshot(Checkpoint checkpoint) {
 			return (Output) StateSnapshot.of(checkpoint, config, stateGraph.getStateFactory());
 		}
 
@@ -416,7 +416,7 @@ public class CompiledGraph {
 
 				future = action.apply(cloneState(currentState), config).thenApply(partialState -> {
 					try {
-						currentState = NodeState.updateState(currentState, partialState);
+						currentState = partialState;
 						nextNodeId = nextNodeId(currentNodeId, currentState);
 
 						Optional<Checkpoint> cp = addCheckpoint(config, currentNodeId, currentState, nextNodeId);

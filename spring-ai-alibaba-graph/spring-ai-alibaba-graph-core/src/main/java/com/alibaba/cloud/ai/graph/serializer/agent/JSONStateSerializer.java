@@ -14,41 +14,43 @@ import java.io.ObjectOutput;
 
 public class JSONStateSerializer extends PlainTextStateSerializer {
 
-	final ObjectMapper objectMapper;
+    public static final JSONStateSerializer INSTANCE = new JSONStateSerializer();
 
-	public JSONStateSerializer() {
-		this(new ObjectMapper());
-	}
+    final ObjectMapper objectMapper;
 
-	public JSONStateSerializer(@NonNull ObjectMapper objectMapper) {
-		super(NodeState::new);
-		this.objectMapper = objectMapper;
-		this.objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+    public JSONStateSerializer() {
+        this(new ObjectMapper());
+    }
 
-		var module = new SimpleModule();
-		module.addDeserializer(NodeState.class, new StateDeserializer());
-		module.addDeserializer(AgentOutcome.class, new AgentOutcomeDeserializer());
-		module.addDeserializer(AgentAction.class, new AgentActionDeserializer());
-		module.addDeserializer(AgentFinish.class, new AgentFinishDeserializer());
+    public JSONStateSerializer(@NonNull ObjectMapper objectMapper) {
+        super(NodeState::new);
+        this.objectMapper = objectMapper;
+        this.objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
-		objectMapper.registerModule(module);
-	}
+        var module = new SimpleModule();
+        module.addDeserializer(NodeState.class, new StateDeserializer());
+        module.addDeserializer(AgentOutcome.class, new AgentOutcomeDeserializer());
+        module.addDeserializer(AgentAction.class, new AgentActionDeserializer());
+        module.addDeserializer(AgentFinish.class, new AgentFinishDeserializer());
 
-	@Override
-	public String mimeType() {
-		return "application/json";
-	}
+        objectMapper.registerModule(module);
+    }
 
-	@Override
-	public void write(NodeState object, ObjectOutput out) throws IOException {
-		var json = objectMapper.writeValueAsString(object);
-		out.writeUTF(json);
-	}
+    @Override
+    public String mimeType() {
+        return "application/json";
+    }
 
-	@Override
-	public NodeState read(ObjectInput in) throws IOException, ClassNotFoundException {
-		var json = in.readUTF();
-		return objectMapper.readValue(json, NodeState.class);
-	}
+    @Override
+    public void write(NodeState object, ObjectOutput out) throws IOException {
+        var json = objectMapper.writeValueAsString(object);
+        out.writeUTF(json);
+    }
+
+    @Override
+    public NodeState read(ObjectInput in) throws IOException, ClassNotFoundException {
+        var json = in.readUTF();
+        return objectMapper.readValue(json, NodeState.class);
+    }
 
 }

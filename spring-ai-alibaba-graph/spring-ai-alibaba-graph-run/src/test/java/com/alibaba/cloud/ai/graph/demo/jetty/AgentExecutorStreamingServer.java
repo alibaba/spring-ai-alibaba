@@ -1,6 +1,7 @@
 package com.alibaba.cloud.ai.graph.demo.jetty;
 
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.serializer.agent.JSONStateSerializer;
 import com.alibaba.cloud.ai.graph.studio.StreamingServerJetty;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -33,7 +34,7 @@ public class AgentExecutorStreamingServer {
 		// 3、组装工作流流程
 		// AgentExecutor
 		var graph = new AgentExecutor(agentService).graphBuilder()
-			.stateSerializer(AgentExecutor.Serializers.JSON.object())
+			.stateSerializer(JSONStateSerializer.INSTANCE)
 			.build();
 
 		/*
