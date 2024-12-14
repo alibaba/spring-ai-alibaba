@@ -31,6 +31,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -66,8 +67,14 @@ public class CreatePullRequestService implements Function<Request, Response> {
 	public Response apply(Request request) {
 		try {
 			String url = GITHUB_API_URL + REPO_ENDPOINT + PULL_REQUESTS_ENDPOINT;
-			Map<String, Object> body = Map.of("title", request.pullRequestTitle(), "body", request.pullRequestBody(),
-					"head", request.pullRequestHead(), "base", request.pullRequestBase());
+			Map<String, Object> body = new HashMap<>();
+			addIfNotNull(body, "title", request.pullRequestTitle());
+			addIfNotNull(body, "body", request.pullRequestBody());
+			addIfNotNull(body, "head", request.pullRequestHead());
+			addIfNotNull(body, "base", request.pullRequestBase());
+			addIfNotNull(body, "head_repo", request.headRepo());
+			addIfNotNull(body, "issue", request.issue());
+			addIfNotNull(body, "draft", request.draft());
 
 			Mono<String> responseMono = webClient.post()
 				.uri(url, properties.getOwner(), properties.getRepository())
@@ -89,6 +96,12 @@ public class CreatePullRequestService implements Function<Request, Response> {
 		catch (Exception e) {
 			logger.error("Unexpected error: {}", e.getMessage());
 			throw new RuntimeException("Unexpected error", e);
+		}
+	}
+
+	private void addIfNotNull(Map<String, Object> map, String key, Object value) {
+		if (value != null) {
+			map.put(key, value);
 		}
 	}
 

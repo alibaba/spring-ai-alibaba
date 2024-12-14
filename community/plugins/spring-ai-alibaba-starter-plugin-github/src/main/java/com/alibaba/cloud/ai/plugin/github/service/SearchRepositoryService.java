@@ -70,6 +70,8 @@ public class SearchRepositoryService implements Function<Request, Response> {
 		URI uri = UriComponentsBuilder.fromHttpUrl(baseUrl)
 			.queryParam("q", request.query())
 			.queryParam("per_page", DEFAULT_PER_PAGE)
+			.queryParam("sort", request.sort() != null ? request.sort() : "best match")
+			.queryParam("order", request.order() != null ? request.order() : "desc")
 			.build(properties.getOwner(), properties.getRepository());
 		try {
 			Mono<String> responseMono = webClient.get().uri(uri).retrieve().bodyToMono(String.class);

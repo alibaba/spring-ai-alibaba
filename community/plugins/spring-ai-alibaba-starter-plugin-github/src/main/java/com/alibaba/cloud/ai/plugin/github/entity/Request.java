@@ -26,22 +26,32 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 @JsonClassDescription("GitHub API request")
 public record Request(@JsonProperty(
 		value = "query") @JsonPropertyDescription("Keywords used for queries, useful for getting a list of repositories") String query,
+		@JsonProperty(
+				value = "sort") @JsonPropertyDescription("Sorts the results of your query by number of stars, forks, or help-wanted-issues or how recently the items were updated. ") String sort,
+		@JsonProperty(
+				value = "order") @JsonPropertyDescription("Determines whether the first search result returned is the highest number of matches (desc) or lowest number of matches (asc). This parameter is ignored unless you provide sort.") String order,
 
 		@JsonProperty(
 				value = "issueNumber") @JsonPropertyDescription("The number of the issue, which is used to get details about the issue or to leave a comment") Integer issueNumber,
-		@JsonProperty(
-				value = "pullRequestNumber") @JsonPropertyDescription("The number of the pullRequest, which is used to get details about the pullRequest or to other operations") Integer pullRequestNumber,
 
 		@JsonProperty(
-				value = "pullRequestState") @JsonPropertyDescription("Pull Request state，open、closed、merged等状态") String pullRequestState,
+				value = "pullRequestTitle") @JsonPropertyDescription("the title of the Pull Request") String pullRequestTitle,
 
-		@JsonProperty(value = "pullRequestTitle") @JsonPropertyDescription("Pull Request 的标题") String pullRequestTitle,
-
-		@JsonProperty(value = "pullRequestBody") @JsonPropertyDescription("Pull Request 的描述") String pullRequestBody,
+		@JsonProperty(
+				value = "pullRequestBody") @JsonPropertyDescription("the description of the Pull Request") String pullRequestBody,
 
 		@JsonProperty(
 				value = "pullRequestHead") @JsonPropertyDescription("The name of the branch where your changes are implemented.") String pullRequestHead,
 
 		@JsonProperty(
-				value = "pullRequestBase") @JsonPropertyDescription("The name of the branch you want the changes pulled into.") String pullRequestBase) {
+				value = "pullRequestBase") @JsonPropertyDescription("The name of the branch you want the changes pulled into.") String pullRequestBase,
+
+		@JsonProperty(
+				value = "headRepo") @JsonPropertyDescription("The name of the repository where the changes in the pull request were made. This field is required for cross-repository pull requests if both repositories are owned by the same organization.") String headRepo,
+		@JsonProperty(
+				value = "issue") @JsonPropertyDescription("An issue in the repository to convert to a pull request. The issue title, body, and comments will become the title, body, and comments on the new pull request. Required unless title is specified.") String issue,
+		@JsonProperty(
+				value = "draft") @JsonPropertyDescription("Indicates whether the pull request is a draft. ") boolean draft
+
+) {
 }
