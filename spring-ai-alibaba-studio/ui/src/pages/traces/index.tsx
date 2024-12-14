@@ -5,6 +5,7 @@ import { traceDetailList } from '@/mock/tracemock';
 import { createStyles } from 'antd-style';
 import TraceDetailComp from '@/components/TraceDetailComp';
 import { convertToTraceInfo } from '@/traceUtil';
+import traceClient from '@/services/trace_clients';
 interface DataType {
   id: string;
   latencyMilliseconds: string;
@@ -175,13 +176,16 @@ export default function History() {
 
   const { styles } = useStyle();
   const handleGetTraceData = async () => {
+    const traceList = await traceClient.getTraceDetailClient();
+    console.log(traceList);
+    setData(traceList.map((trace) => { const traceInfo = convertToTraceInfo(trace); console.log(traceInfo); return traceInfo; }).filter(trace => trace !== null));
     // const temp = tableList.result.data.json.traces;
     // temp.forEach((trace) => {
     //   // @ts-ignore
     //   trace.model = Math.random() > 0.5 ? 'gpt-4o' : 'claude-3-5-sonnet';
     // });
     // @ts-ignore
-    setData(traceDetailList.map((trace) => { const traceInfo = convertToTraceInfo(trace); console.log(traceInfo); return traceInfo; }).filter(trace => trace !== null));
+    // setData(traceDetailList.map((trace) => { const traceInfo = convertToTraceInfo(trace); console.log(traceInfo); return traceInfo; }).filter(trace => trace !== null));
   };
 
   useEffect(() => {
