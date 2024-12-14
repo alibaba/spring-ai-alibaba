@@ -1,5 +1,6 @@
 package com.alibaba.cloud.ai.service.impl;
 
+import com.alibaba.cloud.ai.oltp.StudioObservabilityProperties;
 import com.alibaba.cloud.ai.service.StudioObservabilityService;
 import com.alibaba.cloud.ai.utils.FileUtils;
 import com.alibaba.cloud.ai.utils.JsonUtil;
@@ -10,10 +11,8 @@ import com.fasterxml.jackson.core.io.SegmentedStringWriter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.alibaba.cloud.ai.oltp.StudioObservabilityProperties;
 import io.opentelemetry.exporter.internal.otlp.traces.ResourceSpansMarshaler;
 import io.opentelemetry.sdk.common.CompletableResultCode;
-
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
