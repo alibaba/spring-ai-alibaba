@@ -35,8 +35,8 @@ public class ChatController {
 
     private final ChatModel chatModel;
 
-    public ChatController(ChatClient.Builder builder, ChatModel chatModel) {
-        this.chatClient = builder.build();
+    public ChatController(ChatClient chatClient, ChatModel chatModel) {
+        this.chatClient = chatClient;
         this.chatModel = chatModel;
     }
 

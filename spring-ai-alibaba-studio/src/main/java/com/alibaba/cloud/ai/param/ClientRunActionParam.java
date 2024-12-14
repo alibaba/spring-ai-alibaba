@@ -17,12 +17,11 @@
 package com.alibaba.cloud.ai.param;
 
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
-import com.alibaba.cloud.ai.dashscope.image.DashScopeImageOptions;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-public class RunActionParam {
+public class ClientRunActionParam {
 
 	@Schema(description = "action key, bean name", examples = { "chatModel, chatClient" })
 	private String key;
@@ -33,16 +32,16 @@ public class RunActionParam {
 	@Schema(description = "system prompt")
 	private String prompt;
 
-	@Schema(description = "use chat model, is use, will be enable chat memory", defaultValue = "false")
-	private Boolean useChatModel = Boolean.FALSE;
+	@Schema(description = "chat id use for chat mode, if not set, server will set a new", nullable = true)
+	private String chatID;
+
+	@Schema(description = "use chat mode, is use, will be enable chat memory", defaultValue = "false")
+	private Boolean useChatMode = Boolean.FALSE;
 
 	@Schema(description = "use stream response", defaultValue = "false")
 	private Boolean stream = Boolean.FALSE;
 
 	@Schema(description = "chat model config", nullable = true)
 	private DashScopeChatOptions chatOptions;
-
-	@Schema(description = "image model config", nullable = true)
-	private DashScopeImageOptions imageOptions;
 
 }
