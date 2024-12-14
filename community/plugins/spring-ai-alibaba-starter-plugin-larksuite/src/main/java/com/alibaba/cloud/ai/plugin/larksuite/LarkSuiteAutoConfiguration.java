@@ -28,14 +28,21 @@ import org.springframework.context.annotation.Description;
  */
 @EnableConfigurationProperties({ LarkSuiteProperties.class })
 @ConditionalOnClass({ LarkSuiteProperties.class })
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.larksuite", name = "enabled", havingValue = "true")
 public class LarkSuiteAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("it calls the document api to invoke a method to create a larksuite document")
-	@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.larksuite", name = "enabled", havingValue = "true")
-	public LarkSuiteService larksuiteCreateDocFunction(LarkSuiteProperties properties) {
-		return new LarkSuiteService(properties);
+	public LarkSuiteCreateDocService larksuiteCreateDocFunction(LarkSuiteProperties properties) {
+		return new LarkSuiteCreateDocService(properties);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("it runs a api to invoke a method to send message including group and single chat")
+	public LarkSuiteChatService larksuiteChatFunction(LarkSuiteProperties properties) {
+		return new LarkSuiteChatService(properties);
 	}
 
 }
