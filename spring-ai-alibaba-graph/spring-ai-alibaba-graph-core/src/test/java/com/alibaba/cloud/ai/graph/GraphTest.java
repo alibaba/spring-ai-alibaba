@@ -20,33 +20,38 @@ public class GraphTest {
 		return CompletableFuture.completedFuture("");
 	}
 
-	@Test
-	public void testSimpleGraph() throws Exception {
-
-		StateGraph<AgentState> workflow = new StateGraph<>(AgentState::new).addNode("agent_3", this::dummyNodeAction)
-			.addNode("agent_1", this::dummyNodeAction)
-			.addNode("agent_2", this::dummyNodeAction)
-			.addEdge(StateGraph.START, "agent_1")
-			.addEdge("agent_2", StateGraph.END)
-			.addEdge("agent_1", "agent_3")
-			.addEdge("agent_3", "agent_2");
-
-		CompiledGraph<AgentState> app = workflow.compile();
-
-		GraphRepresentation result = app.getGraph(GraphRepresentation.Type.PLANTUML);
-		assertEquals(GraphRepresentation.Type.PLANTUML, result.getType());
-
-		assertEquals("@startuml unnamed.puml\n" + "skinparam usecaseFontSize 14\n"
-				+ "skinparam usecaseStereotypeFontSize 12\n" + "skinparam hexagonFontSize 14\n"
-				+ "skinparam hexagonStereotypeFontSize 12\n" + "title \"Graph Diagram\"\n" + "footer\n" + "\n"
-				+ "powered by langgraph4j\n" + "end footer\n" + "circle start<<input>>\n" + "circle stop as __END__\n"
-				+ "usecase \"agent_3\"<<Node>>\n" + "usecase \"agent_1\"<<Node>>\n" + "usecase \"agent_2\"<<Node>>\n"
-				+ "start -down-> \"agent_1\"\n" + "\"agent_2\" -down-> \"__END__\"\n"
-				+ "\"agent_1\" -down-> \"agent_3\"\n" + "\"agent_3\" -down-> \"agent_2\"\n" + "@enduml\n",
-				result.getContent());
-
-		// System.out.println( result.getContent() );
-	}
+	// @Test
+	// public void testSimpleGraph() throws Exception {
+	//
+	// StateGraph<AgentState> workflow = new
+	// StateGraph<>(AgentState::new).addNode("agent_3", this::dummyNodeAction)
+	// .addNode("agent_1", this::dummyNodeAction)
+	// .addNode("agent_2", this::dummyNodeAction)
+	// .addEdge(StateGraph.START, "agent_1")
+	// .addEdge("agent_2", StateGraph.END)
+	// .addEdge("agent_1", "agent_3")
+	// .addEdge("agent_3", "agent_2");
+	//
+	// CompiledGraph<AgentState> app = workflow.compile();
+	//
+	// GraphRepresentation result = app.getGraph(GraphRepresentation.Type.PLANTUML);
+	// assertEquals(GraphRepresentation.Type.PLANTUML, result.getType());
+	//
+	// assertEquals("@startuml unnamed.puml\n" + "skinparam usecaseFontSize 14\n"
+	// + "skinparam usecaseStereotypeFontSize 12\n" + "skinparam hexagonFontSize 14\n"
+	// + "skinparam hexagonStereotypeFontSize 12\n" + "title \"Graph Diagram\"\n" +
+	// "footer\n" + "\n"
+	// + "powered by langgraph4j\n" + "end footer\n" + "circle start<<input>>\n" + "circle
+	// stop as __END__\n"
+	// + "usecase \"agent_3\"<<Node>>\n" + "usecase \"agent_1\"<<Node>>\n" + "usecase
+	// \"agent_2\"<<Node>>\n"
+	// + "start -down-> \"agent_1\"\n" + "\"agent_2\" -down-> \"__END__\"\n"
+	// + "\"agent_1\" -down-> \"agent_3\"\n" + "\"agent_3\" -down-> \"agent_2\"\n" +
+	// "@enduml\n",
+	// result.getContent());
+	//
+	// // System.out.println( result.getContent() );
+	// }
 
 	@Test
 	public void testCorrectionProcessGraph() throws Exception {

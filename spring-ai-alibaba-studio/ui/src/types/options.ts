@@ -30,11 +30,6 @@ export type ImageOptions = {
 };
 
 export type ChatOptions = {
-  maxTokens: number;
-  presencePenalty: number;
-  frequencyPenalty: number;
-  stopSequences: string[];
-  proxyToolCalls: boolean;
   model: string;
   temperature: number;
   seed: number;
@@ -55,7 +50,12 @@ export type ChatOptions = {
       };
     };
   }[];
-  tool_choice: Record<string, unknown>;
-  vl_high_resolution_images: boolean;
-  multi_model: boolean;
+  maxTokens?: number;
+  presencePenalty?: number;
+  frequencyPenalty?: number;
+  stopSequences?: string[];
+  proxyToolCalls?: boolean;
+  tool_choice?: Record<string, unknown>;
+  vl_high_resolution_images?: boolean;
+  multi_model?: boolean;
 };
