@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { useEffect, useState, useRef } from 'react';
-import { Card, Flex, Button, Checkbox, Input, Spin, Image } from 'antd';
+import { useEffect, useState, useRef, memo } from 'react';
+import { Flex, Card, Button, Checkbox, Input, Spin, Image } from 'antd';
 import Setup from '../Setup';
 import { ChatModelData, ChatModelResultData } from '@/types/chat_model';
 import chatModelsService from '@/services/chat_models';
@@ -23,12 +23,14 @@ import { RightPanelValues } from '../types';
 import { RobotOutlined, UserOutlined } from '@ant-design/icons';
 import styles from './index.module.css';
 
-type ChatModelProps = {
+type Props = {
   modelData: ChatModelData;
   modeType: 'CHAT' | 'IMAGE';
 };
 
-const ChatModel: React.FC<ChatModelProps> = ({ modelData, modeType }) => {
+const ChatModel = memo((props: Props) => {
+  const { modelData, modeType } = props;
+
   const [initialValues, setInitialValues] = useState<RightPanelValues>({
     initialChatConfig: {
       model: 'qwen-plus',
@@ -57,7 +59,7 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData, modeType }) => {
   const [inputValue, setInputValue] = useState('');
   const [isStream, setIsStream] = useState(false);
   const [disabled, setDisabled] = useState(false);
-  const messagesEndRef = useRef(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleInputChange = (e) => {
     setInputValue(e.target.value);
@@ -74,6 +76,7 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData, modeType }) => {
   const runModel = async () => {
     try {
       setDisabled(true);
+      setInputValue('');
       setMessages([
         ...messages,
         {
@@ -86,53 +89,34 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData, modeType }) => {
         },
       ]);
 
+      let res;
       if (modeType === 'CHAT') {
-        const res = (await chatModelsService.postChatModel({
+        res = (await chatModelsService.postChatModel({
           input: inputValue,
           chatOptions: initialValues.initialChatConfig,
           stream: isStream,
           key: modelData.name,
         })) as ChatModelResultData;
-
-        setMessages([
-          ...messages,
-          {
-            type: 'user',
-            content: inputValue,
-          },
-          {
-            type: 'model',
-            content: res.result.response,
-          },
-        ]);
       } else {
-        const res = (await chatModelsService.postImageModel({
+        res = (await chatModelsService.postImageModel({
           input: inputValue,
           imageOptions: initialValues.initialChatConfig,
           key: modelData.name,
         })) as ChatModelResultData;
-
-        setMessages([
-          ...messages,
-          {
-            type: 'user',
-            content: inputValue,
-          },
-          {
-            type: 'model',
-            content: (
-              <Flex>
-                <Image width={200} src={res.result.response} />
-                <Button type="primary" style={{ marginLeft: 10 }}>
-                  下载
-                </Button>
-              </Flex>
-            ),
-          },
-        ]);
       }
+
+      setMessages([
+        ...messages,
+        {
+          type: 'user',
+          content: inputValue,
+        },
+        {
+          type: modeType === 'CHAT' ? 'chatModel' : 'imageModel',
+          content: res.result.response,
+        },
+      ]);
       setDisabled(false);
-      setInputValue('');
     } catch (error) {
       console.error('Failed to fetch chat models: ', error);
     }
@@ -185,7 +169,15 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData, modeType }) => {
                     marginRight: message.type === 'user' ? 10 : 0,
                   }}
                 >
-                  <p>{message.content}</p>
+                  {message.type !== 'imageModel' && <p>{message.content}</p>}
+                  {message.type === 'imageModel' && (
+                    <Flex>
+                      <Image width={200} src={message.content} />
+                      <Button type="primary" style={{ marginLeft: 10 }}>
+                        下载
+                      </Button>
+                    </Flex>
+                  )}
                 </Card>
                 {message.type === 'user' && (
                   <UserOutlined className={styles['message-icon']} />
@@ -205,7 +197,7 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData, modeType }) => {
             <Flex style={{ width: 300 }} align="center" justify="space-around">
               <Button onClick={cleanHistory}>清空</Button>
               <Checkbox checked={isStream} onChange={handleStremChange}>
-                聊天模式
+                流式响应
               </Checkbox>
               <Button onClick={runModel} disabled={disabled}>
                 运行
@@ -217,6 +209,6 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData, modeType }) => {
       <Setup initialValues={initialValues} />
     </Flex>
   );
-};
+});
 
 export default ChatModel;
