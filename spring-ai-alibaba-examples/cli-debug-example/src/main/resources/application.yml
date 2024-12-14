@@ -1,10 +1,43 @@
 spring:
   application:
     name: cli-debug-example
-
+  threads:
+    virtual:
+      enabled: true
   ai:
     dashscope:
       api-key: ${AI_DASHSCOPE_API_KEY}
+    chat:
+      client:
+        observations:
+          include-input: true
+      observations:
+        include-completion: true
+        include-prompt: true
+        include-error-logging: true
+    image:
+      observations:
+        include-prompt: true
+    vectorstore:
+      observations:
+        include-query-response: true
 
 server:
   port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: always
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+
+#logging:
+#  pattern:
+#    level: '%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]
