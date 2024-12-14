@@ -82,7 +82,7 @@ public class LLMNodeActionTest {
 
     @Test
     public void testVariableRender() throws Exception {
-        LLMNodeAction<MockState> node = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("sk-ec5a3fdc7796473a8c96e87b00b03453")))
+        LLMNodeAction<MockState> node = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("${API_KEY}")))
                 .withPromptTemplates(List.of(
                         new SystemPromptTemplate("You're a helpful {type} assistant"),
                         new PromptTemplate("If I step on an ant and kill it, am I breaking the law?")))
@@ -95,7 +95,7 @@ public class LLMNodeActionTest {
 
     @Test
     public void testInputOutput() throws Exception{
-        LLMNodeAction<MockState> nodeAction = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("sk-ec5a3fdc7796473a8c96e87b00b03453")))
+        LLMNodeAction<MockState> nodeAction = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("${API_KEY}")))
                 .withPromptTemplates(List.of(
                         new SystemPromptTemplate("Your name is {llmName}"),
                         new PromptTemplate("What's your name?")))
@@ -115,7 +115,7 @@ public class LLMNodeActionTest {
     public void testFunctionCall() throws Exception{
         assert applicationContext.containsBean("consultLawyer") : "Bean 'consultLawyer' not found in application context.";
         // fixme this kind of function calling have issues: functionCallbackContext will be null dashscope
-        LLMNodeAction<MockState> node = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("sk-ec5a3fdc7796473a8c96e87b00b03453")))
+        LLMNodeAction<MockState> node = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("${API_KEY}")))
                 .withPromptTemplates(List.of(
                         new SystemPromptTemplate("You're a assistant of a lower, you need to consult lawyer at first"),
                         new PromptTemplate("If I step on an ant and kill it, am I guilty?")))
