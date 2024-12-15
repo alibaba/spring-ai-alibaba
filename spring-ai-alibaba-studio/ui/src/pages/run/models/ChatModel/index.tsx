@@ -153,6 +153,7 @@ const ChatModel = memo((props: Props) => {
           {messages.map((message: any, index) => {
             return (
               <Flex
+                key={index}
                 className={styles['message']}
                 style={{
                   alignSelf: message.type === 'user' ? 'end' : 'auto',
@@ -163,13 +164,14 @@ const ChatModel = memo((props: Props) => {
                   <RobotOutlined className={styles['message-icon']} />
                 )}
                 <Card
-                  key={index}
                   style={{
                     marginLeft: message.type === 'user' ? 0 : 10,
                     marginRight: message.type === 'user' ? 10 : 0,
                   }}
                 >
-                  {message.type !== 'imageModel' && <p>{message.content}</p>}
+                  {message.type !== 'imageModel' && (
+                    <div>{message.content}</div>
+                  )}
                   {message.type === 'imageModel' && (
                     <Flex>
                       <Image width={200} src={message.content} />
