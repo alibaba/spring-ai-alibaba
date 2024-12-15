@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, Flex, Button, Checkbox, Input, Image } from 'antd';
 import Setup from '../Setup';
 import { ChatModelData, ChatModelResultData } from '@/types/chat_model';
 import chatModelsService from '@/services/chat_models';
 import { RightPanelValues } from '../types';
+import { ChatOptions, ImageOptions } from '@/types/options';
+import { ModelType } from '@/types/chat_model';
 
 
 type ImageModelProps = {
@@ -31,9 +33,7 @@ const ImageModel: React.FC<ImageModelProps> = ({ modelData }) => {
     initialImgConfig: {
       model: 'wanx-v1',
       responseFormat: '',
-      n: 0,
-      size_width: 0,
-      size_height: 0,
+      n: 1,
       size: '',
       style: '',
       seed: 0,
@@ -47,14 +47,25 @@ const ImageModel: React.FC<ImageModelProps> = ({ modelData }) => {
   const [prompt, setPrompt] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [imageValue, setImageValue] = useState('');
+  const [modelOptions, setModelOptions] = useState<ImageOptions>();
 
   const { TextArea } = Input;
+
+  // 当 modelData.chatOptions 发生变化时同步更新 initialValues
+  useEffect(() => {
+    // 该属性不能传
+    // delete modelData.chatOptions.proxyToolCalls;
+    setInitialValues((prev) => ({
+      initialImgConfig: { ...modelData.imageOptions },
+      initialTool: {},
+    }));
+  }, [modelData.chatOptions]);
 
   const runModel = async () => {
     try {
       const res = (await chatModelsService.postImageModel({
         input: inputValue,
-        imageOptions: initialValues.initialChatConfig,
+        imageOptions: modelOptions,
         key: modelData.name,
         prompt: prompt,
       })) as ChatModelResultData;
@@ -62,6 +73,10 @@ const ImageModel: React.FC<ImageModelProps> = ({ modelData }) => {
     } catch (error) {
       console.error('Failed to fetch chat models: ', error);
     }
+  };
+
+  const handleOptions = (options: ImageOptions) => {
+    setModelOptions(options);
   };
 
   const handlePrompt = (prompt: string) => {
@@ -100,9 +115,10 @@ const ImageModel: React.FC<ImageModelProps> = ({ modelData }) => {
           <Button onClick={runModel}>运行</Button>
         </Flex>
       </Flex>
-      <Setup initialValues={initialValues} onChangePrompt={handlePrompt} />
+      <Setup modelType={ModelType.IMAGE} initialValues={initialValues} onChangeConfig={handleOptions} onChangePrompt={handlePrompt} />
     </Flex>
   );
 };
 
 export default ImageModel;
+

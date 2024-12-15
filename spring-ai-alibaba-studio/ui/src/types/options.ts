@@ -18,8 +18,6 @@ export type ImageOptions = {
   responseFormat: string;
   model: string;
   n: number;
-  size_width: number;
-  size_height: number;
   size: string;
   style: string;
   seed: number;
