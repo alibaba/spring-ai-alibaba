@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { ChatOptions,ImageOptions } from "@/types/options";
+import { ChatOptions, ImageOptions } from "@/types/options";
 
 export type RightPanelValues = {
   initialChatConfig?: ChatOptions;

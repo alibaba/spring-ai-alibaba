@@ -21,6 +21,7 @@ import { ChatModelData, ChatModelResultData } from '@/types/chat_model';
 import { ChatOptions } from '@/types/options';
 import chatModelsService from '@/services/chat_models';
 import { RightPanelValues } from '../types';
+import { ModelType } from '@/types/chat_model';
 
 type ChatModelProps = {
   modelData: ChatModelData;
@@ -42,6 +43,7 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
     },
     initialTool: {},
   });
+  const [modelOptions, setModelOptions] = useState<ChatOptions>();
   const [prompt, setPrompt] = useState('');
 
   // 当 modelData.chatOptions 发生变化时同步更新 initialValues
@@ -69,6 +71,10 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
     [] as Array<{ type: string; content: string }>,
   );
 
+  const handleOptions = (options: ChatOptions) => {
+    setModelOptions(options);
+  };
+
   const handlePrompt = (prompt: string) => {
     setPrompt(prompt);
   };
@@ -77,7 +83,7 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
     try {
       const res = (await chatModelsService.postChatModel({
         input: inputValue,
-        chatOptions: initialValues.initialChatConfig,
+        chatOptions: modelOptions,
         stream: isStream,
         key: modelData.name,
         prompt: prompt,
@@ -144,7 +150,7 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
           </Flex>
         </Flex>
       </Flex>
-      <Setup initialValues={initialValues} onChangePrompt={handlePrompt} />
+      <Setup modelType={ModelType.CHAT} initialValues={initialValues} onChangeConfig={handleOptions} onChangePrompt={handlePrompt} />
     </Flex>
   );
 };
