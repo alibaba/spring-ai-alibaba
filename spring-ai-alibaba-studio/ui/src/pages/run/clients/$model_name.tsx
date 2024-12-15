@@ -20,7 +20,7 @@ import chatClientsService from '@/services/chat_clients';
 import styles from './index.module.css';
 import { Card, Input, Divider, Tabs, Form, Button, Select, Slider, Spin } from 'antd';
 import ChatModel from '../models/ChatModel';
-import { ChatClientData } from '@/types/chat_clients'
+import { ChatClientData } from '@/types/chat_clients';
 
 type Params = {
   model_name: string;
@@ -56,6 +56,5 @@ export default function ChatClient() {
         </Spin>
       </div>
     )
-  )
-
+  );
 }
