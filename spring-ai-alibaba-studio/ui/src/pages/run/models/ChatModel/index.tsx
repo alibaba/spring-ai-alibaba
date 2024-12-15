@@ -17,11 +17,16 @@
 import { useEffect, useState, useRef, memo } from 'react';
 import { Flex, Card, Button, Checkbox, Input, Spin, Image } from 'antd';
 import Setup from '../Setup';
-import { ChatModelData, ChatModelResultData } from '@/types/chat_model';
+import {
+  ChatModelData,
+  ChatModelResultData,
+  ModelType,
+} from '@/types/chat_model';
 import chatModelsService from '@/services/chat_models';
 import { RightPanelValues } from '../types';
 import { RobotOutlined, UserOutlined } from '@ant-design/icons';
 import styles from './index.module.css';
+import { ChatOptions } from '@/types/options';
 
 type Props = {
   modelData: ChatModelData;
@@ -46,9 +51,12 @@ const ChatModel = memo((props: Props) => {
     },
     initialTool: {},
   });
+  const [modelOptions, setModelOptions] = useState<ChatOptions>();
+  const [prompt, setPrompt] = useState('');
 
   // 当 modelData.chatOptions 发生变化时同步更新 initialValues
   useEffect(() => {
+    // 该属性不能传
     delete modelData.chatOptions.proxyToolCalls;
     setInitialValues((prev) => ({
       initialChatConfig: { ...modelData.chatOptions },
@@ -73,6 +81,14 @@ const ChatModel = memo((props: Props) => {
     [] as Array<{ type: string; content: JSX.Element | string }>,
   );
 
+  const handleOptions = (options: ChatOptions) => {
+    setModelOptions(options);
+  };
+
+  const handlePrompt = (prompt: string) => {
+    setPrompt(prompt);
+  };
+
   const runModel = async () => {
     try {
       setDisabled(true);
@@ -93,9 +109,10 @@ const ChatModel = memo((props: Props) => {
       if (modeType === 'CHAT') {
         res = (await chatModelsService.postChatModel({
           input: inputValue,
-          chatOptions: initialValues.initialChatConfig,
+          chatOptions: modelOptions,
           stream: isStream,
           key: modelData.name,
+          prompt: prompt,
         })) as ChatModelResultData;
       } else {
         res = (await chatModelsService.postImageModel({
@@ -208,7 +225,12 @@ const ChatModel = memo((props: Props) => {
           </Flex>
         </Flex>
       </Flex>
-      <Setup initialValues={initialValues} />
+      <Setup
+        modelType={modelData.modelType}
+        initialValues={initialValues}
+        onChangeConfig={handleOptions}
+        onChangePrompt={handlePrompt}
+      />
     </Flex>
   );
 });
