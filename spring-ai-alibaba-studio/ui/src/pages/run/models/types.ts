@@ -17,8 +17,8 @@
 import { ChatOptions, ImageOptions } from '@/types/options';
 
 export type RightPanelValues = {
-  initialChatConfig?: ChatOptions;
-  initialImgConfig?: ImageOptions;
+  initialChatConfig: ChatOptions;
+  initialImgConfig: ImageOptions;
   initialTool: InitialTool;
 };
 
