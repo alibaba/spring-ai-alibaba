@@ -2,12 +2,15 @@ package com.alibaba.cloud.ai.advisor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
-import com.alibaba.cloud.ai.memory.types.ChatMemoryType;
+import com.alibaba.cloud.ai.memory.strategy.ChatMemoryStrategy;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.PromptChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.VectorStoreChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.MessageAggregator;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
@@ -20,37 +23,37 @@ import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 /**
  * Message 消息类型的 Advisor
  * 依赖于 MessageChatMemoryType
- *
- * @author yuluo
- * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
 
 public class ChatMemoryTypesAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
 
-	private ChatMemoryType chatMemoryTypes;
+	private ChatMemoryStrategy chatMemoryStrategy;
+	private AbstractChatMemoryAdvisor advisor;
 
-	public ChatMemoryTypesAdvisor(ChatMemory chatMemory, ChatMemoryType chatMemoryTypes) {
+	public ChatMemoryTypesAdvisor(ChatMemory chatMemory, AbstractChatMemoryAdvisor chatMemoryAdvisor, ChatMemoryStrategy chatMemoryStrategy) {
 		super(chatMemory);
-		this.chatMemoryTypes = chatMemoryTypes;
+		this.advisor = advisor;
+		this.chatMemoryStrategy = chatMemoryStrategy;
 	}
 
-	public ChatMemoryTypesAdvisor(ChatMemory chatMemory, ChatMemoryType chatMemoryTypes, String defaultConversationId, int chatHistoryWindowSize) {
-		this(chatMemory, chatMemoryTypes, defaultConversationId, chatHistoryWindowSize, Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
+	public ChatMemoryTypesAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize) {
+		this(chatMemory, defaultConversationId, chatHistoryWindowSize, Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
 	}
 
-	public ChatMemoryTypesAdvisor(ChatMemory chatMemory, ChatMemoryType chatMemoryTypes, String defaultConversationId, int chatHistoryWindowSize,
+	public ChatMemoryTypesAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
 			int order) {
 		super(chatMemory, defaultConversationId, chatHistoryWindowSize, true, order);
-		this.chatMemoryTypes = chatMemoryTypes;
 	}
 
 	@Override
 	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
-
-		String name = chatMemoryTypes.getName();
-
-		if (Objects.equals(name, "message")) {
-
+		if(advisor instanceof MessageChatMemoryAdvisor messageChatMemoryAdvisor) {
+			return messageChatMemoryAdvisor.aroundCall(advisedRequest, chain);
+		}else if(advisor instanceof PromptChatMemoryAdvisor promptChatMemoryAdvisor) {
+			return promptChatMemoryAdvisor.aroundCall(advisedRequest, chain);
+		}else if(advisor instanceof VectorStoreChatMemoryAdvisor vectorStoreChatMemoryAdvisor) {
+			return vectorStoreChatMemoryAdvisor.aroundCall(advisedRequest, chain);
+		}else {
 			advisedRequest = this.before(advisedRequest);
 
 			AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
@@ -59,25 +62,23 @@ public class ChatMemoryTypesAdvisor extends AbstractChatMemoryAdvisor<ChatMemory
 
 			return advisedResponse;
 		}
-
-		if (Objects.equals(name, "prompt")) {
-			throw new RuntimeException("no impl");
-		}
-
-		if (Objects.equals(name, "vector-store")) {
-			throw new RuntimeException("no impl");
-		}
-
-		return null;
 	}
 
 	@Override
 	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
-
-		return null;
+		if (advisor instanceof MessageChatMemoryAdvisor messageChatMemoryAdvisor) {
+			return messageChatMemoryAdvisor.aroundStream(advisedRequest, chain);
+		} else if (advisor instanceof PromptChatMemoryAdvisor promptChatMemoryAdvisor) {
+			return promptChatMemoryAdvisor.aroundStream(advisedRequest, chain);
+		} else if (advisor instanceof VectorStoreChatMemoryAdvisor vectorStoreChatMemoryAdvisor) {
+			return vectorStoreChatMemoryAdvisor.aroundStream(advisedRequest, chain);
+		} else {
+			Flux<AdvisedResponse> advisedResponses = this.doNextWithProtectFromBlockingBefore(advisedRequest, chain,
+					this::before);
+			return new MessageAggregator().aggregateAdvisedResponse(advisedResponses, this::observeAfter);
+		}
 	}
 	private AdvisedRequest before(AdvisedRequest request) {
-
 		String conversationId = this.doGetConversationId(request.adviseContext());
 
 		int chatMemoryRetrieveSize = this.doGetChatMemoryRetrieveSize(request.adviseContext());
@@ -98,8 +99,8 @@ public class ChatMemoryTypesAdvisor extends AbstractChatMemoryAdvisor<ChatMemory
 
 		return advisedRequest;
 	}
-	private void observeAfter(AdvisedResponse advisedResponse) {
 
+	private void observeAfter(AdvisedResponse advisedResponse) {
 		List<Message> assistantMessages = advisedResponse.response()
 				.getResults()
 				.stream()

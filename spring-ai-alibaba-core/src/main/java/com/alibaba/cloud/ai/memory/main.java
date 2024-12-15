@@ -1,15 +1,12 @@
 package com.alibaba.cloud.ai.memory;
 
 import com.alibaba.cloud.ai.advisor.ChatMemoryTypesAdvisor;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.memory.strategy.TokenWindowStrategy;
-import com.alibaba.cloud.ai.memory.types.ChatMemoryType;
-import com.alibaba.cloud.ai.memory.types.MessageChatMemoryTypes;
+import com.alibaba.cloud.ai.memory.strategy.ChatMemoryStrategy;
+import com.alibaba.cloud.ai.memory.strategy.TimeWindowStrategy;
+import org.springframework.ai.chat.client.advisor.*;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -26,20 +23,16 @@ public class main {
 
 	private ChatClient chatClient;
 
-	private ChatMemoryType chatMemoryTypes;
+	private MessageChatMemoryAdvisor messageChatMemoryAdvisor;
 
 	private ChatMemory chatMemory;
+    private ChatMemoryStrategy chatMemoryStrategy;
 
     public main(ChatClient.Builder builder, VectorStore vectorStore) {
 
 		chatMemory = new InMemoryChatMemory();
-		chatMemoryTypes = new MessageChatMemoryTypes(new TokenWindowStrategy(
-						"id",
-						10,
-						(DashScopeApi.TokenUsage) new Object()
-				)
-		);
-
+		messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory);
+        chatMemoryStrategy = new TimeWindowStrategy();
 //		chatMemory = new MySQLChatMemory();
 //		chatMemoryTypes = new PromptChatMemoryTypes();
 
@@ -56,7 +49,10 @@ public class main {
                     If there is a charge for the change, you MUST ask the user to consent before proceeding.
                     """)
             .defaultAdvisors(
-                    new ChatMemoryTypesAdvisor(chatMemory, chatMemoryTypes), // MESSAGE CHAT MEMORY
+//					new MessageChatMemoryAdvisor()
+//					new PromptChatMemoryAdvisor()
+//					new VectorStoreChatMemoryAdvisor()
+                    new ChatMemoryTypesAdvisor(chatMemory,messageChatMemoryAdvisor,chatMemoryStrategy),
                     new QuestionAnswerAdvisor(vectorStore, SearchRequest.defaults()), // RAG
                     new SimpleLoggerAdvisor())
             .defaultFunctions("getBookingDetails", "changeBooking", "cancelBooking") // FUNCTION CALLING

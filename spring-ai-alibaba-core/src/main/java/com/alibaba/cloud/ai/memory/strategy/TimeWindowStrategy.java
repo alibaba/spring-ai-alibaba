@@ -1,29 +1,21 @@
 package com.alibaba.cloud.ai.memory.strategy;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 
-/**
- * @author wudihaoke214
- * @author <a href="mailto:2897718178@qq.com">wudihaoke214</a>
- */
 public class TimeWindowStrategy extends AbstractChatMemoryStrategy {
 
-	private final String id;
-    private final Integer timeRange;
-    private final DashScopeApi.TokenUsage tokenUsage;
-
+	private  String id = "defaultId";
+	private  String type = "TimeWindow";
+    private  Integer timeRange = 120;
 	/**
 	 * 使用 build
 	 * @param id id
 	 * @param timeRange timeRange
-	 * @param tokenUsage tokenUsage
 	 */
-	public TimeWindowStrategy(String id, Integer timeRange, DashScopeApi.TokenUsage tokenUsage) {
+	public TimeWindowStrategy(String id, Integer timeRange) {
 		this.id = id;
 		this.timeRange = timeRange;
-		this.tokenUsage = tokenUsage;
 	}
-
+	public TimeWindowStrategy(){}
 	@Override
 	public void ensureCapacity() {
 

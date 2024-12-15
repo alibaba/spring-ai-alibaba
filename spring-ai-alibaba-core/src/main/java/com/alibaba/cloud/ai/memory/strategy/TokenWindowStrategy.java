@@ -1,28 +1,20 @@
 package com.alibaba.cloud.ai.memory.strategy;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-
-/**
- * @author yuluo
- * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
- */
 public class TokenWindowStrategy extends AbstractChatMemoryStrategy {
 
-	private final String id;
-    private final Integer maxTokens;
-    private final DashScopeApi.TokenUsage tokenUsage;
-
+	private  String id = "default";
+	private  String type = "TokenWindow";
+    private  Integer maxTokens = 1000;
 	/**
 	 * 使用 build
 	 * @param id
 	 * @param maxTokens
-	 * @param tokenUsage
 	 */
-	public TokenWindowStrategy(String id, Integer maxTokens, DashScopeApi.TokenUsage tokenUsage) {
+	public TokenWindowStrategy(String id, Integer maxTokens) {
 		this.id = id;
 		this.maxTokens = maxTokens;
-		this.tokenUsage = tokenUsage;
 	}
+	public TokenWindowStrategy() {}
 
 	@Override
 	public void ensureCapacity() {
