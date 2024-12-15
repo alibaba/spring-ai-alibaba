@@ -14,23 +14,11 @@
  * limitations under the License.
  */
 
-import { ChatClientData } from '@/types/chat_clients';
-import { request } from 'ice';
+import { ChatModelData } from "./chat_model";
 
-export default {
-  // 获取ChatClients列表
-  async getChatClients(): Promise<ChatClientData[]> {
-    return await request({
-      url: '/studio/api/chat-clients',
-      method: 'get',
-    });
-  },
-
-  // 根据chat client name获取ChatClient
-  async getChatClientByName(name: string): Promise<ChatClientData> {
-    return await request({
-      url: `/studio/api/chat-clients/${name}`,
-      method: 'get',
-    });
-  },
+export type ChatClientData = {
+  name: string;
+  defaultSystemText: string;
+  defaultSystemParams: any;
+  chatModel: ChatModelData;
 };

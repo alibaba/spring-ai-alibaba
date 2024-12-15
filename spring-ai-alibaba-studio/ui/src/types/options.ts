@@ -21,10 +21,10 @@ export type ImageOptions = {
   size: string;
   style: string;
   seed: number;
-  ref_img: string;
-  ref_strength: number;
-  ref_mode: string;
-  negative_prompt: string;
+  ref_img?: string;
+  ref_strength?: number;
+  ref_mode?: string;
+  negative_prompt?: string;
 };
 
 export type ChatOptions = {

@@ -19,17 +19,16 @@ import { Form, Input, Flex } from 'antd';
 import { ChatOptions } from '@/types/options';
 
 type Props = {
-  initialConfig: ChatOptions;
   onchangePrompt: (prompt: string) => void;
 };
 const { TextArea } = Input;
 
 export default function ConfigAndPrompt(props: Props) {
-  const { initialConfig, onchangePrompt } = props;
+  const { onchangePrompt } = props;
 
   const [form] = Form.useForm();
 
-  const [prompt, setPrompt] = useState(initialConfig.prompt);
+  const [prompt, setPrompt] = useState('');
 
 
   const sliderLabel = (left, right) => {
@@ -43,7 +42,7 @@ export default function ConfigAndPrompt(props: Props) {
 
   return (
     <>
-      <Form layout="vertical" form={form} initialValues={initialConfig}>
+      <Form layout="vertical" form={form}>
         <Form.Item
           label={sliderLabel('Prompt', prompt)}
         >
