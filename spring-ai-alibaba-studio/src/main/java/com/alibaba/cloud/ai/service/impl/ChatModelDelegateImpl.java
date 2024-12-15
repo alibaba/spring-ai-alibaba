@@ -36,14 +36,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.image.ImageMessage;
 import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 @Slf4j
@@ -137,6 +143,7 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 		String key = runActionParam.getKey();
 		String input = runActionParam.getInput();
 		DashScopeChatOptions chatOptions = runActionParam.getChatOptions();
+		String prompt = runActionParam.getPrompt();
 
 		org.springframework.ai.chat.model.ChatModel chatModel = getChatModel(key);
 		if (chatModel != null) {
@@ -147,7 +154,14 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 					dashScopeChatModel.setDashScopeChatOptions(chatOptions);
 				}
 			}
-			ChatResponse response = chatModel.call(new Prompt(input));
+			List<Message> messages = new ArrayList<>();
+			if (StringUtils.hasText(prompt)) {
+				Message systemMessage = new SystemMessage(prompt);
+				messages.add(systemMessage);
+			}
+			Message userMessage = new UserMessage(input);
+			messages.add(userMessage);
+			ChatResponse response = chatModel.call(new Prompt(messages));
 			String resp = response.getResult().getOutput().getContent();
 			return ChatModelRunResult.builder()
 				.input(runActionParam)
@@ -161,10 +175,11 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 	}
 
 	@Override
-	public String runImageGenTask(ModelRunActionParam modelRunActionParam) {
-		String key = modelRunActionParam.getKey();
-		String input = modelRunActionParam.getInput();
-		DashScopeImageOptions imageOptions = modelRunActionParam.getImageOptions();
+	public String runImageGenTask(ModelRunActionParam runActionParam) {
+		String key = runActionParam.getKey();
+		String input = runActionParam.getInput();
+		DashScopeImageOptions imageOptions = runActionParam.getImageOptions();
+		String prompt = runActionParam.getPrompt();
 
 		ImageModel imageModel = getImageModel(key);
 		if (imageModel != null) {
@@ -192,8 +207,15 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 				.withHeight(imageOptions.getHeight())
 				.withStyle(imageOptions.getStyle())
 				.build();
-			ImagePrompt imagePrompt = new ImagePrompt(input, options);
-			ImageResponse imageResponse = imageModel.call(imagePrompt);
+			List<ImageMessage> messages = new ArrayList<>();
+			if (StringUtils.hasText(prompt)) {
+				ImageMessage systemMessage = new ImageMessage(prompt);
+				messages.add(systemMessage);
+			}
+			ImageMessage userMessage = new ImageMessage(input);
+			messages.add(userMessage);
+
+			ImageResponse imageResponse = imageModel.call(new ImagePrompt(messages, options));
 			return imageResponse.getResult().getOutput().getUrl();
 		}
 
