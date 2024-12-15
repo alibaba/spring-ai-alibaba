@@ -20,7 +20,7 @@ import Setup from '../Setup';
 import { ChatModelData, ChatModelResultData } from '@/types/chat_model';
 import { ChatOptions } from '@/types/options';
 import chatModelsService from '@/services/chat_models';
-import {RightPanelValues} from '../types';
+import { RightPanelValues } from '../types';
 
 type ChatModelProps = {
   modelData: ChatModelData;
@@ -28,7 +28,7 @@ type ChatModelProps = {
 
 const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
   const [initialValues, setInitialValues] = useState<RightPanelValues>({
-    initialChatConfig:  {
+    initialChatConfig: {
       model: 'qwen-plus',
       temperature: 0.85,
       top_p: 0.8,
@@ -40,12 +40,13 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
       repetition_penalty: 1.1,
       tools: [],
     },
-    initialTool: {}
+    initialTool: {},
   });
+  const [prompt, setPrompt] = useState('');
 
   // 当 modelData.chatOptions 发生变化时同步更新 initialValues
   useEffect(() => {
-    delete modelData.chatOptions.proxyToolCalls;
+    // delete modelData.chatOptions.proxyToolCalls;
     setInitialValues((prev) => ({
       initialChatConfig: { ...modelData.chatOptions },
       initialTool: {},
@@ -67,6 +68,10 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
     [] as Array<{ type: string; content: string }>,
   );
 
+  const handlePrompt = (prompt: string) => {
+    setPrompt(prompt);
+  };
+
   const runModel = async () => {
     try {
       const res = (await chatModelsService.postChatModel({
@@ -74,6 +79,7 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
         chatOptions: initialValues.initialChatConfig,
         stream: isStream,
         key: modelData.name,
+        prompt: prompt,
       })) as ChatModelResultData;
       setMessages([
         ...messages,
@@ -137,7 +143,7 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
           </Flex>
         </Flex>
       </Flex>
-      <Setup initialValues={initialValues} />
+      <Setup initialValues={initialValues} onChangePrompt={handlePrompt} />
     </Flex>
   );
 };

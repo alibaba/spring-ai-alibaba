@@ -39,6 +39,7 @@ export type ChatOptions = {
   enable_search: boolean;
   incremental_output: boolean;
   repetition_penalty: number;
+  prompt?: string;
   tools: {
     type: 'function';
     function: {
