@@ -28,18 +28,45 @@ import {
 import type { SelectProps } from 'antd';
 import { ChatOptions, ImageOptions } from '@/types/options';
 import { ModelType } from '@/types/chat_model';
+import { useEffect, useState } from 'react';
+import { LoadingOutlined } from '@ant-design/icons';
 
 type Props = {
   modelType: ModelType;
-  initialConfig: ChatOptions | ImageOptions;
+  configFromAPI: ChatOptions | ImageOptions;
   onChangeConfig: (cfg: ChatOptions | ImageOptions) => void;
 };
 
 const { Option } = Select;
 
 export default function Config(props: Props) {
-  const { modelType, initialConfig, onChangeConfig } = props;
+  const { modelType, configFromAPI, onChangeConfig } = props;
   const [form] = Form.useForm<ChatOptions | ImageOptions>();
+
+  const initialChatConfig:ChatOptions = {
+    model: 'qwen-plus',
+    temperature: 0.85,
+    top_p: 0.8,
+    seed: 1,
+    enable_search: false,
+    top_k: 0,
+    stop: [],
+    incremental_output: false,
+    repetition_penalty: 1.1,
+    tools: [],
+  }
+  const initialImgConfig: ImageOptions = {
+    model: 'wanx-v1',
+    responseFormat: '',
+    n: 1,
+    size: '1024*1024',
+    style: '<auto>',
+    seed: 0,
+    ref_img: '',
+    ref_strength: 0,
+    ref_mode: '',
+    negative_prompt: '',
+  }
 
   const modelOptions: SelectProps['options'] = [
     { value: 'qwen-plus', label: 'qwen-plus' },
@@ -60,13 +87,18 @@ export default function Config(props: Props) {
     form.resetFields();
   };
 
+  useEffect(() => {
+    form.setFieldsValue(configFromAPI);
+  }, [configFromAPI]);
+
   return (
     <>
       <Form
         layout="vertical"
         form={form}
-        initialValues={initialConfig}
+        initialValues={modelType == ModelType.CHAT ? initialChatConfig : initialImgConfig}
         onValuesChange={(changedValues, allValues) => {
+          console.log(changedValues, allValues);
           onChangeConfig(allValues);
         }}
       >
@@ -128,7 +160,7 @@ export default function Config(props: Props) {
               )}
               name="repetition_penalty"
             >
-              <InputNumber defaultValue={1.1} step={0.1} />
+              <InputNumber step={0.1} />
             </Form.Item>
           </>
         ) : modelType == ModelType.IMAGE ? (
@@ -146,7 +178,6 @@ export default function Config(props: Props) {
               <Select
                 placeholder="输出图像的分辨率"
                 allowClear
-                defaultValue={'1024*1024'}
               >
                 <Option value="1024*1024">1024*1024</Option>
                 <Option value="720*1280">720*1280</Option>
@@ -155,7 +186,7 @@ export default function Config(props: Props) {
               </Select>
             </Form.Item>
             <Form.Item label={tipLabel('style', '生成图片风格')} name="style">
-              <Select placeholder="图片风格" allowClear defaultValue={'<auto>'}>
+              <Select placeholder="图片风格" allowClear>
                 <Option value="<photography>">摄影</Option>
                 <Option value="<portrait>">人像写真</Option>
                 <Option value="<3d cartoon>">3D卡通</Option>
@@ -202,7 +233,6 @@ export default function Config(props: Props) {
               <Select
                 placeholder="基于垫图（参考图）生成图像的模式"
                 allowClear
-                defaultValue={'repaint'}
               >
                 <Option value="repaint">基于参考图的内容生成图像</Option>
                 <Option value="refonly">基于参考图的风格生成图像</Option>

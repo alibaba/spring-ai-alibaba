@@ -19,6 +19,8 @@ import { useParams } from 'ice';
 import chatModelsService from '@/services/chat_models';
 import { ChatModelData } from '@/types/chat_model';
 import ChatModel from './ChatModel';
+import { Spin } from 'antd';
+import styles from './index.module.css';
 
 type Params = {
   model_name: string;
@@ -42,13 +44,21 @@ export default function Model() {
       }
     };
     fetchData();
+
+    return () => {
+      console.log(`${params.model_name} unmount`)
+    }
   }, [params]);
 
   return modelData ? (
     <div style={{ padding: 20, height: '100%' }}>
-      <ChatModel modelData={modelData} modeType={modelData.modelType} />
+      <ChatModel modelData={modelData} modelType={modelData.modelType} />
     </div>
   ) : (
-    <p>加载中...</p>
+    <div className={styles['container']} >
+      <Spin tip="Loading">
+        <div className={styles['message-loading']} />
+      </Spin>
+    </div>
   );
 }

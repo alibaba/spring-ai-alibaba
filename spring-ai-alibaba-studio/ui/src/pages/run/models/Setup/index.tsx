@@ -23,6 +23,7 @@ import styles from './index.module.css';
 import { RightPanelValues } from '../types';
 import { ChatOptions, ImageOptions } from '@/types/options';
 import { ModelType } from '@/types/chat_model';
+import { useEffect, useState } from 'react';
 
 type Props = {
   modelType: ModelType;
@@ -36,67 +37,43 @@ export default function Setup(props: Props) {
   const { initialChatConfig, initialImgConfig, initialTool } =
     props.initialValues;
 
-  const defaultChatCfgs: ChatOptions = {
-    model: 'qwen-plus',
-    temperature: 0.85,
-    top_p: 0.8,
-    seed: 1,
-    enable_search: false,
-    top_k: 0,
-    stop: [],
-    incremental_output: false,
-    repetition_penalty: 1.1,
-    tools: [],
-  };
-
-  const defaultImgCfgs: ImageOptions = {
-    model: 'wanx-v1',
-    responseFormat: '',
-    n: 1,
-    size: '',
-    style: '',
-    seed: 0,
-    ref_img: '',
-    ref_strength: 0,
-    ref_mode: '',
-    negative_prompt: '',
-  };
-
-  const items: TabsProps['items'] = [
-    {
-      key: 'config',
-      label: '配置',
-      children: (
-        <Config
-          modelType={modelType}
-          onChangeConfig={props.onChangeConfig}
-          initialConfig={
-            modelType == ModelType.CHAT
-              ? initialChatConfig || defaultChatCfgs
-              : initialImgConfig || defaultImgCfgs
-          }
-        />
-      ),
-    },
-    {
-      key: '2',
-      label: '提示词',
-      children: (
-        <Prompt
-          onchangePrompt={props.onChangePrompt}
-          initialConfig={initialChatConfig || defaultChatCfgs}
-        />
-      ),
-    },
-    {
-      key: '3',
-      label: '工具',
-      children: <Tool initialTool={initialTool} />,
-    },
-  ];
+  const [items, setItems] = useState<TabsProps['items']>();
+  useEffect(() => {
+    setItems([
+      {
+        key: 'config',
+        label: '配置',
+        children: (
+          <Config
+            modelType={modelType}
+            onChangeConfig={props.onChangeConfig}
+            configFromAPI={
+              modelType == ModelType.CHAT
+                ? initialChatConfig
+                : initialImgConfig
+            }
+          />
+        ),
+      },
+      {
+        key: 'prompt',
+        label: '提示词',
+        children: (
+          <Prompt
+            onchangePrompt={props.onChangePrompt}
+          />
+        ),
+      },
+      {
+        key: 'tool',
+        label: '工具',
+        children: <Tool initialTool={initialTool} />,
+      },
+    ])
+  }, [initialChatConfig, initialImgConfig])
   return (
     <div className={styles.container}>
-      <Tabs defaultActiveKey="1" items={items} />
+      <Tabs defaultActiveKey="config" items={items} />
     </div>
   );
 }
