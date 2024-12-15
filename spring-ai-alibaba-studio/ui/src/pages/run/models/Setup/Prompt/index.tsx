@@ -20,7 +20,7 @@ import { ChatOptions } from '@/types/options';
 
 type Props = {
   initialConfig: ChatOptions;
-  onchangePrompt?: (prompt: string) => void;
+  onchangePrompt: (prompt: string) => void;
 };
 const { TextArea } = Input;
 
