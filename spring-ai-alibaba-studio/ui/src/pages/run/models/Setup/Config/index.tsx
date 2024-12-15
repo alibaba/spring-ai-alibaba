@@ -43,7 +43,7 @@ export default function Config(props: Props) {
   const { modelType, configFromAPI, onChangeConfig } = props;
   const [form] = Form.useForm<ChatOptions | ImageOptions>();
 
-  const initialChatConfig:ChatOptions = {
+  const initialChatConfig: ChatOptions = {
     model: 'qwen-plus',
     temperature: 0.85,
     top_p: 0.8,
@@ -54,7 +54,7 @@ export default function Config(props: Props) {
     incremental_output: false,
     repetition_penalty: 1.1,
     tools: [],
-  }
+  };
   const initialImgConfig: ImageOptions = {
     model: 'wanx-v1',
     responseFormat: '',
@@ -66,7 +66,7 @@ export default function Config(props: Props) {
     ref_strength: 0,
     ref_mode: '',
     negative_prompt: '',
-  }
+  };
 
   const modelOptions: SelectProps['options'] = [
     { value: 'qwen-plus', label: 'qwen-plus' },

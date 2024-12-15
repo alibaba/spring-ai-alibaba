@@ -46,8 +46,8 @@ export default function Model() {
     fetchData();
 
     return () => {
-      console.log(`${params.model_name} unmount`)
-    }
+      console.log(`${params.model_name} unmount`);
+    };
   }, [params]);
 
   return modelData ? (

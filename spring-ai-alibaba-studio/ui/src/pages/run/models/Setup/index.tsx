@@ -69,8 +69,8 @@ export default function Setup(props: Props) {
         label: '工具',
         children: <Tool initialTool={initialTool} />,
       },
-    ])
-  }, [initialChatConfig, initialImgConfig])
+    ]);
+  }, [initialChatConfig, initialImgConfig]);
   return (
     <div className={styles.container}>
       <Tabs defaultActiveKey="config" items={items} />
