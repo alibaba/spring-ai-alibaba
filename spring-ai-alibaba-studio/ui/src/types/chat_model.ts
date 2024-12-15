@@ -19,7 +19,7 @@ import { ChatOptions, ImageOptions } from './options';
 export type ChatModelData = {
   name: string;
   model: string;
-  modelType: 'CHAT' | 'IMAGE';
+  modelType: ModelType;
   chatOptions: ChatOptions;
   imageOptions: ImageOptions;
 };
@@ -29,3 +29,8 @@ export type ChatModelResultData = {
   result: any;
   telemetry: any;
 };
+
+export enum ModelType {
+  CHAT = 'CHAT',
+  IMAGE = 'IMAGE',
+}

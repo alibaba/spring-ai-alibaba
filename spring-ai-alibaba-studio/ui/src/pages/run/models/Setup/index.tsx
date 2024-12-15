@@ -16,19 +16,25 @@
 
 import { Tabs } from 'antd';
 import Config from './Config';
+import Prompt from './Prompt';
 import Tool from './Tool';
 import type { TabsProps } from 'antd';
 import styles from './index.module.css';
-import { InitialTool } from '../types';
-import { ChatOptions, ImageOptions } from '@/types/options';
 import { RightPanelValues } from '../types';
+import { ChatOptions, ImageOptions } from '@/types/options';
+import { ModelType } from '@/types/chat_model';
 
 type Props = {
+  modelType: ModelType;
   initialValues: RightPanelValues;
+  onChangeConfig: (cfg: ChatOptions | ImageOptions) => void;
+  onChangePrompt: (prompt: string) => void;
 };
 
 export default function Setup(props: Props) {
-  const { initialChatConfig, initialImgConfig, initialTool } = props.initialValues;
+  const { modelType } = props;
+  const { initialChatConfig, initialImgConfig, initialTool } =
+    props.initialValues;
 
   const defaultChatCfgs: ChatOptions = {
     model: 'qwen-plus',
@@ -46,9 +52,7 @@ export default function Setup(props: Props) {
   const defaultImgCfgs: ImageOptions = {
     model: 'wanx-v1',
     responseFormat: '',
-    n: 0,
-    size_width: 0,
-    size_height: 0,
+    n: 1,
     size: '',
     style: '',
     seed: 0,
@@ -62,10 +66,30 @@ export default function Setup(props: Props) {
     {
       key: 'config',
       label: '配置',
-      children: <Config initialConfig={initialChatConfig || defaultChatCfgs} />,
+      children: (
+        <Config
+          modelType={modelType}
+          onChangeConfig={props.onChangeConfig}
+          initialConfig={
+            modelType == ModelType.CHAT
+              ? initialChatConfig || defaultChatCfgs
+              : initialImgConfig || defaultImgCfgs
+          }
+        />
+      ),
     },
     {
       key: '2',
+      label: '提示词',
+      children: (
+        <Prompt
+          onchangePrompt={props.onChangePrompt}
+          initialConfig={initialChatConfig || defaultChatCfgs}
+        />
+      ),
+    },
+    {
+      key: '3',
       label: '工具',
       children: <Tool initialTool={initialTool} />,
     },

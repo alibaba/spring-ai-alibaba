@@ -16,18 +16,20 @@
 
 package com.alibaba.cloud.ai.vo;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.List;
+import com.alibaba.cloud.ai.param.ClientRunActionParam;
 import lombok.Builder;
 import lombok.Data;
 
 @Data
 @Builder
-public class ActionResult {
+public class ChatClientRunResult {
 
-	private String Response;
+	private ClientRunActionParam input;
 
-	@Schema(description = "stream response", nullable = true)
-	private List<String> streamResponse;
+	private ActionResult result;
+
+	private TelemetryResult telemetry;
+
+	private String ChatID;
 
 }
