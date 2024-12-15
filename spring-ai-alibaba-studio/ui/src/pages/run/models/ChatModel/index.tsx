@@ -46,7 +46,8 @@ const ChatModel: React.FC<ChatModelProps> = ({ modelData }) => {
 
   // 当 modelData.chatOptions 发生变化时同步更新 initialValues
   useEffect(() => {
-    // delete modelData.chatOptions.proxyToolCalls;
+    // 该属性不能传
+    delete modelData.chatOptions.proxyToolCalls;
     setInitialValues((prev) => ({
       initialChatConfig: { ...modelData.chatOptions },
       initialTool: {},
