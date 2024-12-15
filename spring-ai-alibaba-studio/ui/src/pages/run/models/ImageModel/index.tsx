@@ -19,7 +19,7 @@ import { Card, Flex, Button, Checkbox, Input, Image } from 'antd';
 import Setup from '../Setup';
 import { ChatModelData, ChatModelResultData } from '@/types/chat_model';
 import chatModelsService from '@/services/chat_models';
-import {RightPanelValues} from '../types';
+import { RightPanelValues } from '../types';
 
 
 type ImageModelProps = {
@@ -28,7 +28,7 @@ type ImageModelProps = {
 
 const ImageModel: React.FC<ImageModelProps> = ({ modelData }) => {
   const [initialValues, setInitialValues] = useState<RightPanelValues>({
-    initialImgConfig:  {
+    initialImgConfig: {
       model: 'wanx-v1',
       responseFormat: '',
       n: 0,
@@ -40,11 +40,11 @@ const ImageModel: React.FC<ImageModelProps> = ({ modelData }) => {
       ref_img: '',
       ref_strength: 0,
       ref_mode: '',
-      negative_prompt: ''
+      negative_prompt: '',
     },
-    initialTool: {}
+    initialTool: {},
   });
-
+  const [prompt, setPrompt] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [imageValue, setImageValue] = useState('');
 
@@ -56,11 +56,16 @@ const ImageModel: React.FC<ImageModelProps> = ({ modelData }) => {
         input: inputValue,
         imageOptions: initialValues.initialChatConfig,
         key: modelData.name,
+        prompt: prompt,
       })) as ChatModelResultData;
       setImageValue(res.result.response);
     } catch (error) {
       console.error('Failed to fetch chat models: ', error);
     }
+  };
+
+  const handlePrompt = (prompt: string) => {
+    setPrompt(prompt);
   };
 
   const handleInputChange = (e) => {
@@ -95,7 +100,7 @@ const ImageModel: React.FC<ImageModelProps> = ({ modelData }) => {
           <Button onClick={runModel}>运行</Button>
         </Flex>
       </Flex>
-      <Setup initialValues={initialValues} />
+      <Setup initialValues={initialValues} onChangePrompt={handlePrompt} />
     </Flex>
   );
 };
