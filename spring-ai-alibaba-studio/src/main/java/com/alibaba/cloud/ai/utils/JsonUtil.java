@@ -8,7 +8,6 @@ package com.alibaba.cloud.ai.utils;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.io.SegmentedStringWriter;
-
 import java.io.IOException;
 
 public final class JsonUtil {

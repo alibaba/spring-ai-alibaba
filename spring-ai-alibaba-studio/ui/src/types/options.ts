@@ -18,8 +18,6 @@ export type ImageOptions = {
   responseFormat: string;
   model: string;
   n: number;
-  size_width: number;
-  size_height: number;
   size: string;
   style: string;
   seed: number;
@@ -39,6 +37,7 @@ export type ChatOptions = {
   enable_search: boolean;
   incremental_output: boolean;
   repetition_penalty: number;
+  prompt?: string;
   tools: {
     type: 'function';
     function: {
