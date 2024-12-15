@@ -3,6 +3,7 @@ package com.alibaba.cloud.ai.advisor;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.alibaba.cloud.ai.memory.store.InMemoryChatMemory;
 import com.alibaba.cloud.ai.memory.strategy.ChatMemoryStrategy;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.PromptChatMemoryAdvisor;
@@ -20,10 +21,6 @@ import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 
-/**
- * Message 消息类型的 Advisor
- * 依赖于 MessageChatMemoryType
- */
 
 public class ChatMemoryTypesAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
 
@@ -41,19 +38,20 @@ public class ChatMemoryTypesAdvisor extends AbstractChatMemoryAdvisor<ChatMemory
 	}
 
 	public ChatMemoryTypesAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
-			int order) {
+								  int order) {
 		super(chatMemory, defaultConversationId, chatHistoryWindowSize, true, order);
 	}
 
 	@Override
 	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
-		if(advisor instanceof MessageChatMemoryAdvisor messageChatMemoryAdvisor) {
+		this.clearOverLimit(advisedRequest);
+		if (this.advisor instanceof MessageChatMemoryAdvisor messageChatMemoryAdvisor) {
 			return messageChatMemoryAdvisor.aroundCall(advisedRequest, chain);
-		}else if(advisor instanceof PromptChatMemoryAdvisor promptChatMemoryAdvisor) {
+		} else if (this.advisor instanceof PromptChatMemoryAdvisor promptChatMemoryAdvisor) {
 			return promptChatMemoryAdvisor.aroundCall(advisedRequest, chain);
-		}else if(advisor instanceof VectorStoreChatMemoryAdvisor vectorStoreChatMemoryAdvisor) {
+		} else if (this.advisor instanceof VectorStoreChatMemoryAdvisor vectorStoreChatMemoryAdvisor) {
 			return vectorStoreChatMemoryAdvisor.aroundCall(advisedRequest, chain);
-		}else {
+		} else {
 			advisedRequest = this.before(advisedRequest);
 
 			AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
@@ -66,11 +64,11 @@ public class ChatMemoryTypesAdvisor extends AbstractChatMemoryAdvisor<ChatMemory
 
 	@Override
 	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
-		if (advisor instanceof MessageChatMemoryAdvisor messageChatMemoryAdvisor) {
+		if (this.advisor instanceof MessageChatMemoryAdvisor messageChatMemoryAdvisor) {
 			return messageChatMemoryAdvisor.aroundStream(advisedRequest, chain);
-		} else if (advisor instanceof PromptChatMemoryAdvisor promptChatMemoryAdvisor) {
+		} else if (this.advisor instanceof PromptChatMemoryAdvisor promptChatMemoryAdvisor) {
 			return promptChatMemoryAdvisor.aroundStream(advisedRequest, chain);
-		} else if (advisor instanceof VectorStoreChatMemoryAdvisor vectorStoreChatMemoryAdvisor) {
+		} else if (this.advisor instanceof VectorStoreChatMemoryAdvisor vectorStoreChatMemoryAdvisor) {
 			return vectorStoreChatMemoryAdvisor.aroundStream(advisedRequest, chain);
 		} else {
 			Flux<AdvisedResponse> advisedResponses = this.doNextWithProtectFromBlockingBefore(advisedRequest, chain,
@@ -78,6 +76,7 @@ public class ChatMemoryTypesAdvisor extends AbstractChatMemoryAdvisor<ChatMemory
 			return new MessageAggregator().aggregateAdvisedResponse(advisedResponses, this::observeAfter);
 		}
 	}
+
 	private AdvisedRequest before(AdvisedRequest request) {
 		String conversationId = this.doGetConversationId(request.adviseContext());
 
@@ -108,5 +107,24 @@ public class ChatMemoryTypesAdvisor extends AbstractChatMemoryAdvisor<ChatMemory
 				.toList();
 
 		this.getChatMemoryStore().add(this.doGetConversationId(advisedResponse.adviseContext()), assistantMessages);
+	}
+
+	private void clearOverLimit(AdvisedRequest advisedRequest) {
+
+		String conversationId = this.doGetConversationId(advisedRequest.adviseContext());
+
+		int chatMemoryRetrieveSize = this.doGetChatMemoryRetrieveSize(advisedRequest.adviseContext());
+
+		List<Message> memoryMessages = this.getChatMemoryStore().get(conversationId, chatMemoryRetrieveSize);
+
+		if(this.chatMemoryStrategy.getType().equals("TimeWindow")){
+
+		}else if (this.chatMemoryStrategy.getType().equals("TokenWindow")){
+
+		}else{
+			if(this.chatMemoryStore instanceof InMemoryChatMemory inMemoryChatMemory){
+				inMemoryChatMemory.clearOverLimit(conversationId,chatMemoryRetrieveSize,10);
+			}
+		}
 	}
 }

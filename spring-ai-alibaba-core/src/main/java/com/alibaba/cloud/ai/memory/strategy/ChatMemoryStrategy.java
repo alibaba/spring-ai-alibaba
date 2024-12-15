@@ -7,5 +7,5 @@ public interface ChatMemoryStrategy {
 	 * window 容量
 	 */
 	void ensureCapacity();
-
+	String getType();
 }

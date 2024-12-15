@@ -3,8 +3,8 @@ package com.alibaba.cloud.ai.memory.strategy;
 
 public class TimeWindowStrategy extends AbstractChatMemoryStrategy {
 
-	private  String id = "defaultId";
-	private  String type = "TimeWindow";
+	private  String id = "default";
+	private final String type = "TimeWindow";
     private  Integer timeRange = 120;
 	/**
 	 * 使用 build
@@ -23,6 +23,11 @@ public class TimeWindowStrategy extends AbstractChatMemoryStrategy {
 		if (this.timeRange > DEFAULT_CAPACITY) {
 			disuse();
 		}
+	}
+
+	@Override
+	public String getType() {
+		return this.type;
 	}
 
 }

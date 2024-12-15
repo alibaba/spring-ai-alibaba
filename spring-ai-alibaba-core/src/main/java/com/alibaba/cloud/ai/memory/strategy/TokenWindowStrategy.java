@@ -3,7 +3,7 @@ package com.alibaba.cloud.ai.memory.strategy;
 public class TokenWindowStrategy extends AbstractChatMemoryStrategy {
 
 	private  String id = "default";
-	private  String type = "TokenWindow";
+	private final String type = "TokenWindow";
     private  Integer maxTokens = 1000;
 	/**
 	 * 使用 build
@@ -24,5 +24,8 @@ public class TokenWindowStrategy extends AbstractChatMemoryStrategy {
 			disuse();
 		}
 	}
-
+	@Override
+	public String getType() {
+		return this.type;
+	}
 }
