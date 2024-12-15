@@ -20,9 +20,8 @@ import Prompt from './Prompt';
 import Tool from './Tool';
 import type { TabsProps } from 'antd';
 import styles from './index.module.css';
-import { InitialTool } from '../types';
-import { ChatOptions, ImageOptions } from '@/types/options';
 import { RightPanelValues } from '../types';
+import { ChatOptions, ImageOptions } from '@/types/options';
 import { ModelType } from '@/types/chat_model';
 
 type Props = {
@@ -34,7 +33,8 @@ type Props = {
 
 export default function Setup(props: Props) {
   const { modelType } = props;
-  const { initialChatConfig, initialImgConfig, initialTool } = props.initialValues;
+  const { initialChatConfig, initialImgConfig, initialTool } =
+    props.initialValues;
 
   const defaultChatCfgs: ChatOptions = {
     model: 'qwen-plus',
@@ -66,12 +66,27 @@ export default function Setup(props: Props) {
     {
       key: 'config',
       label: '配置',
-      children: <Config modelType={modelType} onChangeConfig={props.onChangeConfig} initialConfig={modelType == ModelType.CHAT ? (initialChatConfig || defaultChatCfgs) : (initialImgConfig || defaultImgCfgs)} />,
+      children: (
+        <Config
+          modelType={modelType}
+          onChangeConfig={props.onChangeConfig}
+          initialConfig={
+            modelType == ModelType.CHAT
+              ? initialChatConfig || defaultChatCfgs
+              : initialImgConfig || defaultImgCfgs
+          }
+        />
+      ),
     },
     {
       key: '2',
       label: '提示词',
-      children: <Prompt onchangePrompt={props.onChangePrompt} initialConfig={initialChatConfig || defaultChatCfgs} />,
+      children: (
+        <Prompt
+          onchangePrompt={props.onChangePrompt}
+          initialConfig={initialChatConfig || defaultChatCfgs}
+        />
+      ),
     },
     {
       key: '3',

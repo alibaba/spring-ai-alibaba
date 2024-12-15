@@ -17,8 +17,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'ice';
 import chatModelsService from '@/services/chat_models';
-import { ChatModelData, ModelType } from '@/types/chat_model';
-import ImageModel from './ImageModel';
+import { ChatModelData } from '@/types/chat_model';
 import ChatModel from './ChatModel';
 
 type Params = {
@@ -47,8 +46,7 @@ export default function Model() {
 
   return modelData ? (
     <div style={{ padding: 20, height: '100%' }}>
-      {modelData.modelType === ModelType.CHAT && <ChatModel modelData={modelData} />}
-      {modelData.modelType === ModelType.IMAGE && <ImageModel modelData={modelData} />}
+      <ChatModel modelData={modelData} modeType={modelData.modelType} />
     </div>
   ) : (
     <p>加载中...</p>

@@ -32,5 +32,5 @@ export type ChatModelResultData = {
 
 export enum ModelType {
   CHAT = 'CHAT',
-  IMAGE = 'IMAGE'
+  IMAGE = 'IMAGE',
 }
