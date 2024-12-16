@@ -30,7 +30,7 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @EnableConfigurationProperties(DingTalkProperties.class)
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.dingtalk", name = "enabled", havingValue = "true")
-public class DingTalkConfiguration {
+public class DingTalkAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
