@@ -58,18 +58,15 @@ public class RedisChatMemory implements ChatMemory {
         }
     }
 
-    public List<Message> clearOverLimit(String conversationId, int maxLimit, int deleteSize) {
+    public void clearOverLimit(String conversationId, int maxLimit, int deleteSize) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             String historyStr = redisPersistentStorageMemory.get(conversationId);
             List<Message> all = objectMapper.readValue(historyStr, new TypeReference<>() {
             });
-            if (all.size() > maxLimit) {
+            if (all.size() >= maxLimit) {
                 all = all.stream().skip(Math.max(0, deleteSize)).toList();
                 redisPersistentStorageMemory.set(conversationId, objectMapper.writeValueAsString(all));
-                return all;
-            }else {
-                return all;
             }
         } catch (Exception e) {
             logger.error("Error clearing over limit messages from Redis chat memory", e);

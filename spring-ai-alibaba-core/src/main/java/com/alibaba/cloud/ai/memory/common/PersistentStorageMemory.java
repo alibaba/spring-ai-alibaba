@@ -4,7 +4,7 @@ package com.alibaba.cloud.ai.memory.common;
  * @author <a href="mailto:2897718178@qq.com">wudihaoke214</a>
  */
 
-public interface AbstractPersistentStorageMemory {
+public interface PersistentStorageMemory {
     String get(String id) throws Exception;
     int delete(String id) throws Exception;
     int add(String id,String Messages) throws Exception;

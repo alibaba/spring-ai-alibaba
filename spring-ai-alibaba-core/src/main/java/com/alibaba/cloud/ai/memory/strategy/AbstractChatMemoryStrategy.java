@@ -1,7 +1,5 @@
 package com.alibaba.cloud.ai.memory.strategy;
 
-
-
 public abstract class AbstractChatMemoryStrategy implements ChatMemoryStrategy {
 
 	public static final int DEFAULT_CAPACITY = 100;
@@ -9,14 +7,4 @@ public abstract class AbstractChatMemoryStrategy implements ChatMemoryStrategy {
 	protected static void disuse() {
 		// no impl
 	}
-
-	/**
-	 * 确保 store 不为空，
-	 * 为空使用 默认
-	 * 可以使用 spring 注入
-	 */
-	protected static void ensureStore() {
-
-	}
-
 }

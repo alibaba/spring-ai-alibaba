@@ -9,7 +9,7 @@ import java.sql.SQLException;
  * @author <a href="mailto:2897718178@qq.com">wudihaoke214</a>
  */
 
-public class MySQLPersistentStorageMemory implements AbstractPersistentStorageMemory {
+public class MySQLPersistentStorageMemory implements PersistentStorageMemory {
 
     @Override
     public String get(String id) throws SQLException {

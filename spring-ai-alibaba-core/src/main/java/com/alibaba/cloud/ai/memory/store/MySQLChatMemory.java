@@ -60,18 +60,15 @@ public class MySQLChatMemory implements ChatMemory {
         }
     }
 
-    public List<Message> clearOverLimit(String conversationId, int maxLimit, int deleteSize) {
+    public void clearOverLimit(String conversationId, int maxLimit, int deleteSize) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             String historyStr = mySQLPersistentStorageMemory.get(conversationId);
             List<Message> all = objectMapper.readValue(historyStr, new TypeReference<>() {
             });
-            if (all.size() > maxLimit) {
+            if (all.size() >= maxLimit) {
                 all = all.stream().skip(Math.max(0, deleteSize)).toList();
                 mySQLPersistentStorageMemory.set(conversationId, objectMapper.writeValueAsString(all));
-                return all;
-            }else {
-                return all;
             }
         } catch (Exception e) {
             logger.error("Error clearing messages from MySQL chat memory", e);

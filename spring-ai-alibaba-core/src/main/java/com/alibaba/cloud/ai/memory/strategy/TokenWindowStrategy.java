@@ -7,8 +7,8 @@ public class TokenWindowStrategy extends AbstractChatMemoryStrategy {
     private  Integer maxTokens = 1000;
 	/**
 	 * 使用 build
-	 * @param id
-	 * @param maxTokens
+	 * @param id id
+	 * @param maxTokens maxTokens
 	 */
 	public TokenWindowStrategy(String id, Integer maxTokens) {
 		this.id = id;

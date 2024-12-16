@@ -31,14 +31,12 @@ public class InMemoryChatMemory implements ChatMemory {
         this.conversationHistory.remove(conversationId);
     }
 
-    public List<Message> clearOverLimit(String conversationId, int maxLimit, int deleteSize) {
+    public void clearOverLimit(String conversationId, int maxLimit, int deleteSize) {
         List<Message> all = this.conversationHistory.get(conversationId);
         try {
             if (all.size() >= maxLimit) {
                 all = all.stream().skip(Math.max(0, deleteSize)).toList();
-                return all;
-            }else {
-                return all;
+                this.conversationHistory.put(conversationId, all);
             }
         } catch (Exception e) {
             logger.error("Error clearing messages from InMemory chat memory", e);
