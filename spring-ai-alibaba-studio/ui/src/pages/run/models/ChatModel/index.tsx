@@ -70,7 +70,9 @@ const ChatModel = memo((props: Props) => {
     },
     initialTool: {},
   });
-  const [modelOptions, setModelOptions] = useState<ChatOptions | ImageOptions>();
+  const [modelOptions, setModelOptions] = useState<
+    ChatOptions | ImageOptions
+  >();
   const [prompt, setPrompt] = useState('');
 
   // 当 modelData.chatOptions 发生变化时同步更新 initialValues
@@ -160,7 +162,7 @@ const ChatModel = memo((props: Props) => {
         },
         {
           type: modelType === ModelType.CHAT ? 'chatModel' : 'imageModel',
-          content: res ? res.result.response : "请求失败，请重试",
+          content: res ? res.result.response : '请求失败，请重试',
         },
       ]);
       setDisabled(false);
@@ -208,7 +210,7 @@ const ChatModel = memo((props: Props) => {
                 }}
                 ref={index === messages.length - 1 ? messagesEndRef : undefined}
               >
-                {message.type === 'model' && (
+                {message.type !== 'user' && (
                   <RobotOutlined className={styles['message-icon']} />
                 )}
                 <Card
@@ -221,7 +223,7 @@ const ChatModel = memo((props: Props) => {
                     <div>{message.content}</div>
                   )}
                   {message.type === 'imageModel' && (
-                    <Flex>
+                    <Flex align="flex-end">
                       <Image width={200} src={message.content} />
                       <Button type="primary" style={{ marginLeft: 10 }}>
                         下载
