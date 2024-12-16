@@ -27,20 +27,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/ai/func")
 public class FunctionCallingController {
 
-	private final ChatClient chatClient;
+    private final ChatClient chatClient;
 
-	public FunctionCallingController(ChatClient.Builder chatClientBuilder) {
-		this.chatClient = chatClientBuilder.build();
-	}
+    public FunctionCallingController(ChatClient.Builder chatClientBuilder) {
+        this.chatClient = chatClientBuilder.build();
+    }
 
-	@GetMapping("/weather-service")
-	public String weatherService(String subject) {
-		return chatClient.prompt()
-			.function("getWeather", "根据城市查询天气", new MockWeatherService())
-			.user(subject)
-			.call()
-			.content();
-	}
+    @GetMapping("/weather-service")
+    public String weatherService(String subject) {
+        return chatClient.prompt()
+                .function("getWeather", "根据城市查询天气", new MockWeatherService())
+                .user(subject)
+                .call()
+                .content();
+    }
 
 	@GetMapping("/order-detail")
 	public String orderDetail() {
@@ -50,7 +50,7 @@ public class FunctionCallingController {
 			.call()
 			.content();
 	}
-	
+
 	@GetMapping("/baidu-search")
 	public String baiduSearch(@RequestParam String query) {
 		return chatClient.prompt()
@@ -59,11 +59,58 @@ public class FunctionCallingController {
 			.call()
 			.content();
 	}
-
-	@GetMapping("/getTime")
-	public String getTime(String text) {
+	
+	@GetMapping("/bing-search")
+	public String bingSearch(@RequestParam String query) {
 		return chatClient.prompt()
-				.functions("getCityTimeFunction")
+				.functions("bingSearchService")
+				.user(query)
+				.call()
+				.content();
+	}
+
+    @GetMapping("/getTime")
+    public String getTime(String text) {
+        return chatClient.prompt()
+                .functions("getCityTimeFunction")
+                .user(text)
+                .call()
+                .content();
+    }
+
+    @GetMapping("/dingTalk-custom-robot-send")
+    public String dingTalkCustomRobotSend(String input) {
+        return chatClient.prompt()
+                .functions("dingTalkGroupSendMessageByCustomRobotFunction")
+                .user(String.format("帮我用自定义机器人发送'%s'", input))
+                .call()
+                .content();
+    }
+
+	@GetMapping("/gaode-get-address-weather")
+	public String gaoDeGetAddressWeatherFunction(String input) {
+		return chatClient.prompt()
+				.functions("gaoDeGetAddressWeatherFunction")
+				.system("如果用户输入的内容中想询问天气情况,而且还给定了地址,则使用工具获取天气情况,不然提示用户缺少信息")
+				.user(input)
+				.call()
+				.content();
+	}
+
+
+	@GetMapping("/getWeather")
+	public String getWeather(@RequestParam String text) {
+		return chatClient.prompt()
+				.functions("getWeatherService")
+				.user(text)
+				.call()
+				.content();
+	}
+
+	@GetMapping("/translate")
+	public String translate(@RequestParam String text) {
+		return chatClient.prompt()
+				.functions("translateService")
 				.user(text)
 				.call()
 				.content();

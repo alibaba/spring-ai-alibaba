@@ -1,13 +1,31 @@
+/*
+ * Copyright 2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.alibaba.cloud.ai.dashscope.chat;
 
 import java.util.*;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeResponseFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -67,6 +85,12 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    * </ul>
    */
   private @JsonProperty("enable_search") Boolean enableSearch = false;
+
+  /**
+   * Models can specify the format of the returned content. Valid values: {"type": "text"} or {"type": "json_object"}
+   * {@link DashScopeResponseFormat}
+   */
+  private @JsonProperty("response_format") DashScopeResponseFormat responseFormat;
 
   /**
    * 控制在流式输出模式下是否开启增量输出，即后续输出内容是否包含已输出的内容。设置为True时，将开启增量输出模式，后面输出不会包含已经输出的内容，您需要自行拼接整体输出；设置为False则会包含已输出的内容。
@@ -202,10 +226,19 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
     this.stop = stop;
   }
 
+  public DashScopeResponseFormat getResponseFormat() {
+
+	return responseFormat;
+  }
+
+  public void setResponseFormat(DashScopeResponseFormat responseFormat) {
+
+	this.responseFormat = responseFormat;
+  }
+
   public Boolean getEnableSearch() {
     return enableSearch;
   }
-
   public void setEnableSearch(Boolean enableSearch) {
     this.enableSearch = enableSearch;
   }
@@ -332,6 +365,11 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
       return this;
     }
 
+    public DashscopeChatOptionsBuilder withResponseFormat(DashScopeResponseFormat responseFormat) {
+      this.options.responseFormat = responseFormat;
+      return this;
+    }
+
     public DashscopeChatOptionsBuilder withEnableSearch(Boolean enableSearch) {
       this.options.enableSearch = enableSearch;
       return this;
@@ -418,6 +456,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
         .withTopK(fromOptions.getTopK())
         .withSeed(fromOptions.getSeed())
         .withStop(fromOptions.getStop())
+        .withResponseFormat(fromOptions.getResponseFormat())
         .withStream(fromOptions.getStream())
         .withEnableSearch(fromOptions.enableSearch)
         .withIncrementalOutput(fromOptions.getIncrementalOutput())
@@ -430,4 +469,27 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
         .withVlHighResolutionImages(fromOptions.getVlHighResolutionImages())
         .build();
   }
+
+  @Override
+  public boolean equals(Object o) {
+
+	if (this == o) return true;
+	if (o == null || getClass() != o.getClass()) return false;
+	DashScopeChatOptions that = (DashScopeChatOptions) o;
+
+	return Objects.equals(model, that.model) && Objects.equals(stream, that.stream) && Objects.equals(temperature, that.temperature) && Objects.equals(seed, that.seed) && Objects.equals(topP, that.topP) && Objects.equals(topK, that.topK) && Objects.equals(stop, that.stop) && Objects.equals(enableSearch, that.enableSearch) && Objects.equals(responseFormat, that.responseFormat) && Objects.equals(incrementalOutput, that.incrementalOutput) && Objects.equals(repetitionPenalty, that.repetitionPenalty) && Objects.equals(tools, that.tools) && Objects.equals(toolChoice, that.toolChoice) && Objects.equals(vlHighResolutionImages, that.vlHighResolutionImages) && Objects.equals(functionCallbacks, that.functionCallbacks) && Objects.equals(functions, that.functions) && Objects.equals(multiModel, that.multiModel) && Objects.equals(toolContext, that.toolContext);
+  }
+
+  @Override
+  public int hashCode() {
+
+	return Objects.hash(model, stream, temperature, seed, topP, topK, stop, enableSearch, responseFormat, incrementalOutput, repetitionPenalty, tools, toolChoice, vlHighResolutionImages, functionCallbacks, functions, multiModel, toolContext);
+  }
+
+  @Override
+  public String toString() {
+
+    return "DashScopeChatOptions: " + ModelOptionsUtils.toJsonString(this);
+  }
+
 }
