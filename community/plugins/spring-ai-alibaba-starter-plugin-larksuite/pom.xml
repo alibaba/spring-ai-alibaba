@@ -61,6 +61,7 @@
             <artifactId>oapi-sdk</artifactId>
             <version>${larksiute-open-api.version}</version>
         </dependency>
+
     </dependencies>
 
     <build>
