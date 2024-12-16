@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.vo;
+.container {
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.List;
-import lombok.Builder;
-import lombok.Data;
-
-@Data
-@Builder
-public class ActionResult {
-
-	private String Response;
-
-	@Schema(description = "stream response", nullable = true)
-	private List<String> streamResponse;
-
+.message-loading {
+  padding-left: 50px;
+  padding-right: 50px;
+  padding-bottom: 10px;
+  padding-top: 10px;
 }

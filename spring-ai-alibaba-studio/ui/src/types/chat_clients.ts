@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.vo;
+import { ChatModelData } from "./chat_model";
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.List;
-import lombok.Builder;
-import lombok.Data;
-
-@Data
-@Builder
-public class ActionResult {
-
-	private String Response;
-
-	@Schema(description = "stream response", nullable = true)
-	private List<String> streamResponse;
-
-}
+export type ChatClientData = {
+  name: string;
+  defaultSystemText: string;
+  defaultSystemParams: any;
+  chatModel: ChatModelData;
+};
