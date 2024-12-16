@@ -18,14 +18,16 @@ package com.alibaba.cloud.ai.api;
 
 import com.alibaba.cloud.ai.common.R;
 import com.alibaba.cloud.ai.model.ChatModel;
-import com.alibaba.cloud.ai.param.RunActionParam;
+import com.alibaba.cloud.ai.param.ModelRunActionParam;
 import com.alibaba.cloud.ai.service.ChatModelDelegate;
-import com.alibaba.cloud.ai.vo.ActionResult;
 import com.alibaba.cloud.ai.vo.ChatModelRunResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,11 +35,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.List;
 
 @Tag(name = "chat-model", description = "the chat-model API")
 public interface ChatModelAPI {
@@ -63,16 +60,16 @@ public interface ChatModelAPI {
 
 	@Operation(summary = "run chat model by input", description = "", tags = { "chat-model" })
 	@PostMapping(value = "", consumes = { MediaType.APPLICATION_JSON_VALUE })
-	default R<ChatModelRunResult> run(@RequestBody RunActionParam runActionParam) {
-		ChatModelRunResult res = getDelegate().run(runActionParam);
+	default R<ChatModelRunResult> run(@RequestBody ModelRunActionParam modelRunActionParam) {
+		ChatModelRunResult res = getDelegate().run(modelRunActionParam);
 		return R.success(res);
 	}
 
 	@Operation(summary = "run image model by input", description = "", tags = { "chat-model" })
 	@PostMapping(value = "/run/image-gen", consumes = { MediaType.APPLICATION_JSON_VALUE },
 			produces = { MediaType.ALL_VALUE })
-	default void runImageGenTask(@RequestBody RunActionParam runActionParam, HttpServletResponse response) {
-		String imageUrl = getDelegate().runImageGenTask(runActionParam);
+	default void runImageGenTask(@RequestBody ModelRunActionParam modelRunActionParam, HttpServletResponse response) {
+		String imageUrl = getDelegate().runImageGenTask(modelRunActionParam);
 		try {
 			URL url = new URL(imageUrl);
 			InputStream in = url.openStream();
@@ -89,13 +86,8 @@ public interface ChatModelAPI {
 	@Operation(summary = "run image model by input, and url", description = "", tags = { "chat-model" })
 	@RequestMapping(value = "/run/image-gen/url", method = { RequestMethod.POST, RequestMethod.GET },
 			consumes = { MediaType.APPLICATION_JSON_VALUE }, produces = { MediaType.ALL_VALUE })
-	default R<ChatModelRunResult> runImageGenTaskAndGetUrl(@RequestBody RunActionParam runActionParam,
-			HttpServletResponse response) {
-		String imageUrl = getDelegate().runImageGenTask(runActionParam);
-		return R.success(ChatModelRunResult.builder()
-			.input(runActionParam)
-			.result(ActionResult.builder().Response(imageUrl).build())
-			.build());
+	default R<ChatModelRunResult> runImageGenTaskAndGetUrl(@RequestBody ModelRunActionParam modelRunActionParam) {
+		return R.success(getDelegate().runImageGenTaskAndGetUrl(modelRunActionParam));
 	}
 
 }
