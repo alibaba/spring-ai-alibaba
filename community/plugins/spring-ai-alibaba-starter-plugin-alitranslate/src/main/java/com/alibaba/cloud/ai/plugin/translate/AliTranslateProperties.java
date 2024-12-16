@@ -25,6 +25,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.alitranslate")
 public class AliTranslateProperties {
 
+	// https://help.aliyun.com/zh/machine-translation/developer-reference/api-alimt-2018-10-12-translategeneral?spm=a2c4g.11186623.help-menu-30396.d_4_1_2_0_0.5c8f1ef8azXIT4
 	private String apiKey;
 
 	public String getApiKey() {
