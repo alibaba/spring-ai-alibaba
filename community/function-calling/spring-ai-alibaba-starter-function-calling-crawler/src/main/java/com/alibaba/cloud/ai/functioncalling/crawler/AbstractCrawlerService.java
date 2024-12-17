@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.functioncalling.crawler;
 
 import java.io.BufferedReader;
@@ -35,7 +34,6 @@ import org.springframework.http.MediaType;
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
-
 public abstract class AbstractCrawlerService implements CrawlerService {
 
 	/**

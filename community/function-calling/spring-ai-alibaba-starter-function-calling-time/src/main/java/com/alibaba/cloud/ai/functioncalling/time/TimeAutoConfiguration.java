@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.functioncalling.time;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
 
@@ -26,19 +26,20 @@ import org.springframework.context.annotation.Description;
  * @author chengle
  */
 @ConditionalOnClass({ GetCurrentLocalTimeService.class, GetCurrentTimeByTimeZoneIdService.class })
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.time", name = "enabled", havingValue = "true")
 public class TimeAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("Get the current local time")
-	public GetCurrentLocalTimeService getCurrentLocalTime() {
+	@Description("Get the current local time.")
+	public GetCurrentLocalTimeService getCurrentLocalTimeFunction() {
 		return new GetCurrentLocalTimeService();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("Get the time of a specified city")
-	public GetCurrentTimeByTimeZoneIdService getCityTime() {
+	@Description("Get the time of a specified city.")
+	public GetCurrentTimeByTimeZoneIdService getCityTimeFunction() {
 		return new GetCurrentTimeByTimeZoneIdService();
 	}
 

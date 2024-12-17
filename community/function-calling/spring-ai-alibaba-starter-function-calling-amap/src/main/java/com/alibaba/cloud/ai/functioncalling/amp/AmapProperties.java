@@ -23,15 +23,15 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author YunLong
  */
 @ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.gaode")
-public class GaoDeProperties {
+public class AmapProperties {
 
 	// Official Document Address： https://lbs.amap.com/api/webservice/summary
 	private String webApiKey;
 
-	public GaoDeProperties() {
+	public AmapProperties () {
 	}
 
-	public GaoDeProperties(String webApiKey) {
+	public AmapProperties (String webApiKey) {
 		this.webApiKey = webApiKey;
 	}
 
