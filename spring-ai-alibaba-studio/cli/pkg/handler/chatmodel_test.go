@@ -125,6 +125,7 @@ func TestChatModelRunHandler(t *testing.T) {
 			},
 		}
 		mockAPI.On("RunChatModel", &chatmodel.RunChatModelReq{Key: "mockModel", Input: "mock input"}).Return(expectedResponse, nil)
+		mockAPI.On("GetChatModel", &chatmodel.GetChatModelReq{ModelName: "mockModel"}).Return(&chatmodel.GetChatModelRsp{ChatModel: &chatmodel.ChatModel{ModelType: "CHAT"}}, nil)
 
 		hm.ChatModelRunHandler(cmd, []string{"mockModel", "mock input"})
 
@@ -146,6 +147,7 @@ func TestChatModelRunHandler(t *testing.T) {
 		}
 
 		mockAPI.On("RunChatModel", &chatmodel.RunChatModelReq{Key: "err", Input: "err"}).Return(&chatmodel.RunChatModelRsp{}, errors.New("mock error"))
+		mockAPI.On("GetChatModel", &chatmodel.GetChatModelReq{ModelName: "err"}).Return(&chatmodel.GetChatModelRsp{ChatModel: &chatmodel.ChatModel{ModelType: "CHAT"}}, nil)
 
 		hm.ChatModelRunHandler(cmd, []string{"err", "err"})
 

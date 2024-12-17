@@ -12,25 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handler
+//go:build !test
+// +build !test
 
-import (
-	"fmt"
-	"io/fs"
-	"net/http"
+package static
 
-	"github.com/alibaba/spring-ai-alibaba/pkg/static"
-)
+import "embed"
 
-func StartUIServer() {
-	fsys, err := fs.Sub(static.GetStaticFiles(), "dist")
-	if err != nil {
-		panic(err)
-	}
-	http.Handle("/", http.FileServer(http.FS(fsys)))
-
-	fmt.Println("Spring AI Alibaba Studio UI: http://localhost:3000")
-	if err := http.ListenAndServe(":3000", nil); err != nil {
-		panic(err)
-	}
-}
+//go:embed dist/*
+var staticFiles embed.FS

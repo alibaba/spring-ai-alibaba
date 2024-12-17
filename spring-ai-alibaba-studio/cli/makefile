@@ -8,7 +8,7 @@ else
 endif
 VERSION := $(shell git describe --tags --always)
 LDFLAGS := -ldflags="-X 'github.com/alibaba/spring-ai-alibaba/pkg/constant.Version=$(VERSION)'"
-STATIC_DIR := pkg/handler/static
+STATIC_DIR := pkg/static/dist
 
 .DEFAULT_GOAL := build
 
@@ -21,16 +21,16 @@ deps:
 build: deps build-frontend
 	mkdir -p $(BUILD_DIR)
 	go build $(LDFLAGS) -o $(BIN) .
-	rm -rf $(STATIC_DIR)
 	@echo "Build success"
 
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)
+	rm -rf $(STATIC_DIR)
 
 .PHONY: test
 test:
-	go test -v $(SRC)
+	go test -v -tags=test $(SRC)
 
 .PHONY: lint
 lint:
