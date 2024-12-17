@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.functioncalling.crawler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,8 +33,8 @@ public class CrawlerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("Jina Reader Service Plugin")
-	public CrawlerJinaServiceImpl jinaService(CrawlerJinaProperties jinaProperties, ObjectMapper objectMapper) {
+	@Description("Jina Reader Service Plugin.")
+	public CrawlerJinaServiceImpl jinaFunction(CrawlerJinaProperties jinaProperties, ObjectMapper objectMapper) {
 
 		Assert.notNull(jinaProperties, "Jina reader api token must not be empty");
 		return new CrawlerJinaServiceImpl(jinaProperties, objectMapper);
@@ -43,8 +42,8 @@ public class CrawlerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("Firecrawl Service Plugin")
-	public CrawlerFirecrawlServiceImpl firecrawlService(CrawlerFirecrawlProperties firecrawlProperties,
+	@Description("Firecrawl Service Plugin.")
+	public CrawlerFirecrawlServiceImpl firecrawlFunction(CrawlerFirecrawlProperties firecrawlProperties,
 			ObjectMapper objectMapper) {
 
 		Assert.notNull(firecrawlProperties.getToken(), "Firecrawl api token must not be empty");

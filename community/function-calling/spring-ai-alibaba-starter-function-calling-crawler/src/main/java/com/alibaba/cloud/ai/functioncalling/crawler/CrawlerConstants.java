@@ -31,7 +31,7 @@ public interface CrawlerConstants {
 
 	String FIRECRAWL_BASE_URL = "https://api.firecrawl.dev/v1/";
 
-	String CONFIG_PREFIX = "spring.ai.alibaba.plugin.crawler.";
+	String CONFIG_PREFIX = "spring.ai.alibaba.functioncalling.crawler.";
 
 	/**
 	 * Jina Reader Request headers.

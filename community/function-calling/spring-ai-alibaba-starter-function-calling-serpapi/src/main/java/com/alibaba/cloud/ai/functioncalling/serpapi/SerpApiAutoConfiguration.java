@@ -29,14 +29,14 @@ import org.springframework.context.annotation.Description;
  */
 @ConditionalOnClass(SerpApiService.class)
 @EnableConfigurationProperties(SerpApiProperties.class)
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.serpapi", name = "enabled", havingValue = "true")
 public class SerpApiAutoConfiguration {
 
-	@Bean
-	@ConditionalOnMissingBean
-	@Description("Use SerpApi search to query for the latest news.")
-	@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.serpapi", name = "enabled", havingValue = "true")
-	public SerpApiService serpApiService(SerpApiProperties properties) {
-		return new SerpApiService(properties);
-	}
+    @Bean
+    @ConditionalOnMissingBean
+    @Description("Use SerpApi search to query for the latest news.")
+    public SerpApiService serpApiFunction (SerpApiProperties properties) {
+        return new SerpApiService(properties);
+    }
 
 }

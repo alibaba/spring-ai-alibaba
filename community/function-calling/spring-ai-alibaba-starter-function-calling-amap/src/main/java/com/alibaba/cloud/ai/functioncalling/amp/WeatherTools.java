@@ -31,16 +31,16 @@ public class WeatherTools {
 
 	private final String baseUrl = "https://restapi.amap.com/v3";
 
-	private final GaoDeProperties gaoDeProperties;
+	private final AmapProperties amapProperties;
 
 	private final HttpClient httpClient;
 
-	public WeatherTools(GaoDeProperties gaoDeProperties) {
-		this.gaoDeProperties = gaoDeProperties;
+	public WeatherTools(AmapProperties amapProperties) {
+		this.amapProperties = amapProperties;
 
 		this.httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
 
-		if (Objects.isNull(gaoDeProperties.getWebApiKey())) {
+		if (Objects.isNull(amapProperties.getWebApiKey())) {
 			throw new RuntimeException("Please configure your GaoDe API key in the application.yml file.");
 		}
 	}
@@ -52,7 +52,7 @@ public class WeatherTools {
 	 */
 	public String getAddressCityCode(String address) {
 
-		String path = String.format("/geocode/geo?key=%s&address=%s", gaoDeProperties.getWebApiKey(), address);
+		String path = String.format("/geocode/geo?key=%s&address=%s", amapProperties.getWebApiKey(), address);
 
 		HttpRequest httpRequest = createGetRequest(path);
 
@@ -74,7 +74,7 @@ public class WeatherTools {
 	 * @return https://lbs.amap.com/api/webservice/guide/api/weatherinfo#s0
 	 */
 	public String getWeather(String cityCode) {
-		String path = String.format("/weather/weatherInfo?key=%s&city=%s&extensions=%s", gaoDeProperties.getWebApiKey(),
+		String path = String.format("/weather/weatherInfo?key=%s&city=%s&extensions=%s", amapProperties.getWebApiKey(),
 				cityCode, "all");
 
 		HttpRequest httpRequest = createGetRequest(path);
