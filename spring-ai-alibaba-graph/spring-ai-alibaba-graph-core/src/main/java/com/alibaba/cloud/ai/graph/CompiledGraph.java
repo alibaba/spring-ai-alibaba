@@ -29,7 +29,6 @@ import static java.lang.String.format;
 
 /**
  * Represents a compiled graph of nodes and edges. This class manage the StateGraph
- *
  */
 @Slf4j
 public class CompiledGraph {
@@ -40,6 +39,7 @@ public class CompiledGraph {
 
 	}
 
+	@Getter
 	final StateGraph stateGraph;
 
 	@Getter
@@ -48,8 +48,9 @@ public class CompiledGraph {
 	@Getter
 	final Map<String, EdgeValue> edges = new LinkedHashMap<>();
 
-	private int maxIterations = 25;
+	public static int maxIterations = 25;
 
+	@Getter
 	private final CompileConfig compileConfig;
 
 	/**
@@ -177,30 +178,30 @@ public class CompiledGraph {
 	 * @return the next node ID
 	 * @throws Exception if there is an error determining the next node ID
 	 */
-	private String nextNodeId(String nodeId, Map<String, Object> state) throws Exception {
+	public String nextNodeId(String nodeId, Map<String, Object> state) throws Exception {
 		return nextNodeId(edges.get(nodeId), state, nodeId);
 
 	}
 
-	private String getEntryPoint(Map<String, Object> state) throws Exception {
+	public String getEntryPoint(Map<String, Object> state) throws Exception {
 		return nextNodeId(stateGraph.getEntryPoint(), state, "entryPoint");
 	}
 
-	private boolean shouldInterruptBefore(@NonNull String nodeId, String previousNodeId) {
+	public boolean shouldInterruptBefore(@NonNull String nodeId, String previousNodeId) {
 		if (previousNodeId == null) { // FIX RESUME ERROR
 			return false;
 		}
 		return Arrays.asList(compileConfig.getInterruptBefore()).contains(nodeId);
 	}
 
-	private boolean shouldInterruptAfter(String nodeId, String previousNodeId) {
+	public boolean shouldInterruptAfter(String nodeId, String previousNodeId) {
 		if (nodeId == null) { // FIX RESUME ERROR
 			return false;
 		}
 		return Arrays.asList(compileConfig.getInterruptAfter()).contains(nodeId);
 	}
 
-	private Optional<Checkpoint> addCheckpoint(RunnableConfig config, String nodeId, Map<String, Object> state,
+	public Optional<Checkpoint> addCheckpoint(RunnableConfig config, String nodeId, Map<String, Object> state,
 			String nextNodeId) throws Exception {
 		if (compileConfig.checkpointSaver().isPresent()) {
 			Checkpoint cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(state)).nextNodeId(nextNodeId).build();
@@ -215,12 +216,16 @@ public class CompiledGraph {
 		return new HashMap<>();
 	}
 
-	Map<String, Object> getInitialState(Map<String, Object> inputs, RunnableConfig config) {
+	public Map<String, Object> getInitialState(Map<String, Object> inputs, RunnableConfig config) {
 
 		return compileConfig.checkpointSaver()
 			.flatMap(saver -> saver.get(config))
 			.map(cp -> NodeState.updateState(cp.getState(), inputs))
 			.orElseGet(() -> NodeState.updateState(getInitialStateFromSchema(), inputs));
+	}
+
+	NodeState useCurrentState(Map<String, Object> data) throws ClassNotFoundException {
+		return stateGraph.getStateSerializer().stateOf(data);
 	}
 
 	NodeState cloneState(Map<String, Object> data) throws IOException, ClassNotFoundException {
@@ -319,6 +324,7 @@ public class CompiledGraph {
 
 		Map<String, Object> currentState;
 
+		@Getter
 		String currentNodeId;
 
 		String nextNodeId;
@@ -363,8 +369,12 @@ public class CompiledGraph {
 			}
 		}
 
-		protected Output buildNodeOutput(String nodeId) throws Exception {
+		public Output buildNodeOutput(String nodeId) throws Exception {
 			return (Output) NodeOutput.of(nodeId, cloneState(currentState));
+		}
+
+		public Output buildCurrentNodeOutput(String nodeId) throws Exception {
+			return (Output) NodeOutput.of(nodeId, useCurrentState(currentState));
 		}
 
 		protected Output buildStateSnapshot(Checkpoint checkpoint) {
@@ -397,7 +407,12 @@ public class CompiledGraph {
 				if (StateGraph.END.equals(nextNodeId)) {
 					nextNodeId = null;
 					currentNodeId = null;
-					return Data.of(buildNodeOutput(StateGraph.END));
+					if (currentState.containsKey(NodeState.SUB_GRAPH)) {
+						return Data.of(buildCurrentNodeOutput(StateGraph.END));
+					}
+					else {
+						return Data.of(buildNodeOutput(StateGraph.END));
+					}
 				}
 
 				// check on previous node
@@ -419,9 +434,14 @@ public class CompiledGraph {
 						currentState = partialState;
 						nextNodeId = nextNodeId(currentNodeId, currentState);
 
-						Optional<Checkpoint> cp = addCheckpoint(config, currentNodeId, currentState, nextNodeId);
-						return (cp.isPresent() && config.streamMode() == StreamMode.SNAPSHOTS)
-								? buildStateSnapshot(cp.get()) : buildNodeOutput(currentNodeId);
+						if (currentState.containsKey(NodeState.SUB_GRAPH)) {
+							return buildCurrentNodeOutput(currentNodeId);
+						}
+						else {
+							Optional<Checkpoint> cp = addCheckpoint(config, currentNodeId, currentState, nextNodeId);
+							return (cp.isPresent() && config.streamMode() == StreamMode.SNAPSHOTS)
+									? buildStateSnapshot(cp.get()) : buildNodeOutput(currentNodeId);
+						}
 
 					}
 					catch (Exception e) {
@@ -444,10 +464,8 @@ public class CompiledGraph {
 	 * @param inputs the input map
 	 * @param config the invoke configuration
 	 * @return an AsyncGenerator stream of NodeOutput
-	 * @throws Exception if there is an error creating the stream
 	 */
-	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config)
-			throws Exception {
+	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
 
 		return new AsyncNodeGenerator<>(inputs, config.withStreamMode(StreamMode.SNAPSHOTS));

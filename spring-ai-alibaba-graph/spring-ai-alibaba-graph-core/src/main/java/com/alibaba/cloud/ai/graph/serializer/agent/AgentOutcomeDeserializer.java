@@ -10,8 +10,7 @@ import java.io.IOException;
 class AgentOutcomeDeserializer extends JsonDeserializer<AgentOutcome> {
 
 	@Override
-	public AgentOutcome deserialize(JsonParser parser, DeserializationContext ctx)
-			throws IOException {
+	public AgentOutcome deserialize(JsonParser parser, DeserializationContext ctx) throws IOException {
 		JsonNode node = parser.getCodec().readTree(parser);
 
 		var actionNode = node.get("action");

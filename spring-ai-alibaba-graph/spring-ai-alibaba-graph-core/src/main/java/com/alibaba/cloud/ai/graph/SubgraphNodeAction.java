@@ -22,11 +22,8 @@ class SubgraphNodeAction implements AsyncNodeActionWithConfig {
 		CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
 
 		try {
-
 			AsyncGenerator<NodeOutput> generator = subGraph.stream(state.data(), config);
-
-			future.complete(mapOf("_subgraph", generator));
-
+			future.complete(mapOf(NodeState.SUB_GRAPH, generator));
 		}
 		catch (Exception e) {
 

@@ -11,6 +11,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -93,8 +94,7 @@ public interface StreamingServer {
 
 		final Map<PersistentConfig, CompiledGraph> graphCache = new HashMap<>();
 
-		public GraphStreamServlet(StateGraph stateGraph, ObjectMapper objectMapper,
-				BaseCheckpointSaver saver) {
+		public GraphStreamServlet(StateGraph stateGraph, ObjectMapper objectMapper, BaseCheckpointSaver saver) {
 
 			Objects.requireNonNull(stateGraph, "stateGraph cannot be null");
 			this.stateGraph = stateGraph;
@@ -134,7 +134,7 @@ public interface StreamingServer {
 
 			// Start asynchronous processing
 			var asyncContext = request.startAsync();
-			asyncContext.setTimeout(60000 * 2); // 设置超时时间为60秒
+			asyncContext.setTimeout(60000 * 20); // 设置超时时间为60秒
 
 			try {
 
@@ -145,8 +145,7 @@ public interface StreamingServer {
 				var compiledGraph = graphCache.get(persistentConfig);
 
 				final Map<String, Object> dataMap;
-				if (resume && stateGraph
-					.getStateSerializer() instanceof PlainTextStateSerializer textSerializer) {
+				if (resume && stateGraph.getStateSerializer() instanceof PlainTextStateSerializer textSerializer) {
 
 					dataMap = textSerializer.read(new InputStreamReader(request.getInputStream())).data();
 				}
@@ -197,11 +196,44 @@ public interface StreamingServer {
 				generator.forEachAsync(s -> {
 					try {
 						try {
-							writer.printf("[ \"%s\",", threadId);
-							writer.println();
-							var outputAsString = objectMapper.writeValueAsString(s);
-							writer.println(outputAsString);
-							writer.println("]");
+							if (s.state().data().containsKey(NodeState.SUB_GRAPH)) {
+								CompiledGraph.AsyncNodeGenerator<NodeOutput> subGenerator = (CompiledGraph.AsyncNodeGenerator) s
+									.state()
+									.data()
+									.get(NodeState.SUB_GRAPH);
+								subGenerator.forEach(subS -> {
+									writer.printf("[ \"%s\",", threadId);
+									writer.println();
+									String outputAsString = null;
+									try {
+										NodeOutput output = subGenerator
+											.buildNodeOutput(subGenerator.getCurrentNodeId());
+										outputAsString = objectMapper.writeValueAsString(output);
+									}
+									catch (IOException e) {
+										log.warn("error serializing state", e);
+									}
+									catch (Exception e) {
+										throw new RuntimeException(e);
+									}
+									writer.println(outputAsString);
+									writer.println("]");
+									writer.flush();
+									try {
+										TimeUnit.SECONDS.sleep(1);
+									}
+									catch (InterruptedException e) {
+										throw new CompletionException(e);
+									}
+								});
+							}
+							else {
+								writer.printf("[ \"%s\",", threadId);
+								writer.println();
+								var outputAsString = objectMapper.writeValueAsString(s);
+								writer.println(outputAsString);
+								writer.println("]");
+							}
 						}
 						catch (IOException e) {
 							log.warn("error serializing state", e);
@@ -325,8 +357,7 @@ public interface StreamingServer {
 
 		final InitData initData;
 
-		public GraphInitServlet(StateGraph stateGraph, String title,
-				Map<String, ArgumentMetadata> args) {
+		public GraphInitServlet(StateGraph stateGraph, String title, Map<String, ArgumentMetadata> args) {
 			Objects.requireNonNull(stateGraph, "stateGraph cannot be null");
 			this.stateGraph = stateGraph;
 
@@ -340,8 +371,7 @@ public interface StreamingServer {
 		}
 
 		@Override
-		protected void doGet(HttpServletRequest request, HttpServletResponse response)
-				throws IOException {
+		protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
 			response.setContentType("application/json");
 			response.setCharacterEncoding("UTF-8");
 
