@@ -12,16 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package constant
+package handler
 
-var (
-	RootCmdName string
-	Version     string
+import (
+	"embed"
+	"fmt"
+	"io/fs"
+	"net/http"
 )
 
-type ModelType string
+//go:embed static/*
+var staticFiles embed.FS
 
-const (
-	ChatModelType  ModelType = "CHAT"
-	ImageModelType ModelType = "IMAGE"
-)
+func StartUIServer() {
+	fsys, err := fs.Sub(staticFiles, "static")
+	if err != nil {
+		panic(err)
+	}
+	http.Handle("/", http.FileServer(http.FS(fsys)))
+
+	fmt.Println("Spring AI Alibaba Studio UI: http://localhost:3000")
+	if err := http.ListenAndServe(":3000", nil); err != nil {
+		panic(err)
+	}
+}

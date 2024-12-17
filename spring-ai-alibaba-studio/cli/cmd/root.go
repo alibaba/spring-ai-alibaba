@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/alibaba/spring-ai-alibaba/cmd/chatmodel"
+	"github.com/alibaba/spring-ai-alibaba/cmd/ui"
 	"github.com/alibaba/spring-ai-alibaba/pkg/api"
 	"github.com/alibaba/spring-ai-alibaba/pkg/constant"
 	"github.com/alibaba/spring-ai-alibaba/pkg/util/printer"
@@ -77,6 +78,7 @@ func init() {
 
 	// add subcommands
 	rootCmd.AddCommand(chatmodel.GetChatModelCmd())
+	rootCmd.AddCommand(ui.GetUICmd())
 }
 
 // initConfig reads in config file and ENV variables if set.
