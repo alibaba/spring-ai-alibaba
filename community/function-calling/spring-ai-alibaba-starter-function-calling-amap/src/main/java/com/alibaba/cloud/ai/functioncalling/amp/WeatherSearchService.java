@@ -33,8 +33,8 @@ public class WeatherSearchService implements Function<WeatherSearchService.Reque
 
 	private final WeatherTools weatherTools;
 
-	public WeatherSearchService(GaoDeProperties gaoDeProperties) {
-		this.weatherTools = new WeatherTools(gaoDeProperties);
+	public WeatherSearchService(AmapProperties amapProperties) {
+		this.weatherTools = new WeatherTools(amapProperties);
 	}
 
 	@Override

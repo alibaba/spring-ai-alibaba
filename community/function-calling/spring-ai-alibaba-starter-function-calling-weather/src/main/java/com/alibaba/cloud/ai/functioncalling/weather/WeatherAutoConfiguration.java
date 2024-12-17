@@ -25,18 +25,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
 
 /**
- * @author 31445
+ * @author 北极星
  */
 @ConditionalOnClass(WeatherService.class)
 @EnableConfigurationProperties(WeatherProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.weather", name = "enabled", havingValue = "true")
-
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.weather", name = "enabled", havingValue = "true")
 public class WeatherAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("TOOLS FOR GETTING WEATHER INFORMATION")
-	public WeatherService getWeatherService(WeatherProperties properties) {
+	@Description("Use api.weather to get weather information.")
+	public WeatherService getWeatherServiceFunction(WeatherProperties properties) {
 		return new WeatherService(properties);
 	}
 

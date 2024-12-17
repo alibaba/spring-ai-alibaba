@@ -29,15 +29,15 @@ import org.springframework.context.annotation.Description;
  * @author YunLong
  */
 @Configuration
-@EnableConfigurationProperties(GaoDeProperties.class)
+@EnableConfigurationProperties(AmapProperties.class)
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.gaode", name = "enabled", havingValue = "true")
-public class GaoDeConfiguration {
+public class AmapConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Get weather information according to address.")
-	public WeatherSearchService gaoDeGetAddressWeatherFunction(GaoDeProperties gaoDeProperties) {
-		return new WeatherSearchService(gaoDeProperties);
+	public WeatherSearchService gaoDeGetAddressWeatherFunction(AmapProperties amapProperties) {
+		return new WeatherSearchService(amapProperties);
 	}
 
 }

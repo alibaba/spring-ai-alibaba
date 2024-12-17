@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.functioncalling.dingtalk;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -29,7 +28,7 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @EnableConfigurationProperties(DingTalkProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.dingtalk", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.dingtalk", name = "enabled", havingValue = "true")
 public class DingTalkAutoConfiguration {
 
 	@Bean

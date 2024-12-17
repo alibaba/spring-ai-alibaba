@@ -33,14 +33,14 @@ public class LarkSuiteAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("it calls the document api to invoke a method to create a larksuite document")
+	@Description("It calls the document api to invoke a method to create a larksuite document")
 	public LarkSuiteCreateDocService larksuiteCreateDocFunction(LarkSuiteProperties properties) {
 		return new LarkSuiteCreateDocService(properties);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("it runs a api to invoke a method to send message including group and single chat")
+	@Description("It runs a api to invoke a method to send message including group and single chat")
 	public LarkSuiteChatService larksuiteChatFunction(LarkSuiteProperties properties) {
 		return new LarkSuiteChatService(properties);
 	}
