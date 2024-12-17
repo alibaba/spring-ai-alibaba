@@ -8,7 +8,7 @@ import java.util.Map;
  * NodeDataConverter defined the mutual conversion between specific DSL data and
  * {@link NodeData}
  */
-public interface NodeDataConverter {
+public interface NodeDataConverter<T extends NodeData> {
 
 	/**
 	 * Judge if this converter support this node type
@@ -22,13 +22,13 @@ public interface NodeDataConverter {
 	 * @param data DSL data
 	 * @return converted {@link NodeData}
 	 */
-	NodeData parseDifyData(Map<String, Object> data);
+	T parseDifyData(Map<String, Object> data);
 
 	/**
 	 * Dump NodeData to DSL data
 	 * @param nodeData {@link NodeData}
 	 * @return converted DSL data
 	 */
-	Map<String, Object> dumpDifyData(NodeData nodeData);
+	Map<String, Object> dumpDifyData(T nodeData);
 
 }
