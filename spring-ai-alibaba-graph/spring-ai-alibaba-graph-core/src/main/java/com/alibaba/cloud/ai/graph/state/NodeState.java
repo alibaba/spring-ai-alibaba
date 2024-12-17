@@ -20,6 +20,8 @@ public class NodeState {
 
 	public static final String OUTPUT = "output";
 
+	public static final String SUB_GRAPH = "_subgraph";
+
 	private final java.util.Map<String, Object> data;
 
 	/**
@@ -71,7 +73,7 @@ public class NodeState {
 	 * @deprecated use {@link #updateState(NodeState, Map)}
 	 */
 	@Deprecated
-	public final Map<String, Object> mergeWith(Map<String, Object> partialState, Map<String, Channel<?>> channels) {
+	public final Map<String, Object> mergeWith(Map<String, Object> partialState) {
 		return updateState(data(), partialState);
 	}
 
@@ -92,11 +94,6 @@ public class NodeState {
 	 */
 	private static Object mergeFunction(Object currentValue, Object newValue) {
 		return newValue;
-	}
-
-	private static Map<String, Object> updatePartialStateFromSchema(Map<String, Object> state,
-			Map<String, Object> partialState, Map<String, Channel<?>> channels) {
-		return partialState;
 	}
 
 	/**

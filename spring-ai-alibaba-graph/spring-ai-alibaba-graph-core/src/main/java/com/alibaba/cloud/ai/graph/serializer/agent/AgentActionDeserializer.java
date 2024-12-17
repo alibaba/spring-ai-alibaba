@@ -15,12 +15,10 @@ class AgentActionDeserializer extends JsonDeserializer<AgentAction> {
 		JsonNode node = parser.getCodec().readTree(parser);
 
 		var toolExecutionRequestNode = node.get("toolExecutionRequest");
-		var toolExecutionRequest = ctx.readValue(toolExecutionRequestNode.traverse(parser.getCodec()), AssistantMessage.ToolCall.class);
+		var toolExecutionRequest = ctx.readValue(toolExecutionRequestNode.traverse(parser.getCodec()),
+				AssistantMessage.ToolCall.class);
 
-		return new AgentAction(
-				toolExecutionRequest,
-				node.get("log").asText()
-		);
+		return new AgentAction(toolExecutionRequest, node.get("log").asText());
 	}
 
 }

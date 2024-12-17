@@ -8,6 +8,7 @@ import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.state.NodeState;
 import lombok.Getter;
 import lombok.NonNull;
+import org.bsc.async.AsyncGenerator;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -171,7 +172,10 @@ public class StateGraph {
 	}
 
 	public StateGraph addSubgraph(String id, CompiledGraph subGraph) throws GraphStateException {
-		return addNode(id, new SubgraphNodeAction(subGraph));
+		return addNode(id, AsyncNodeActionWithConfig.node_async((state, config) -> {
+			AsyncGenerator<NodeOutput> generator = subGraph.stream(state.data(), config);
+			return Map.of(NodeState.SUB_GRAPH, generator);
+		}));
 	}
 
 	/**
