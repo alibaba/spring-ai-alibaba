@@ -29,8 +29,7 @@ public abstract class DiagramGenerator {
 
 	protected abstract StringBuilder commentLine(StringBuilder sb, boolean yesOrNo);
 
-	public final String generate(StateGraph compiledGraph, String title,
-								 boolean printConditionalEdge) {
+	public final String generate(StateGraph compiledGraph, String title, boolean printConditionalEdge) {
 		StringBuilder sb = new StringBuilder();
 
 		appendHeader(sb, title);

@@ -39,8 +39,7 @@ public class AgentExecutor {
 				.addConditionalEdges( // 条件边，在agent节点之后
 						"agent", edge_async(AgentExecutor.this::shouldContinue), // 根据agent的结果，进行条件判断
 						Map.of("continue", END, "end", END) // 不同分支，使action不再独立
-				)
-			;
+				);
 
 		}
 
