@@ -14,6 +14,8 @@ public enum NodeType {
 
 	RETRIEVER("RETRIEVER", "knowledge-retrieval"),
 
+	AGGREGATOR("AGGREGATOR", "variable-aggregator"),
+
 	HUMAN("HUMAN", "unsupported"),;
 
 	private String value;
