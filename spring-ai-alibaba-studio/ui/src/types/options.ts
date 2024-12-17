@@ -18,15 +18,13 @@ export type ImageOptions = {
   responseFormat: string;
   model: string;
   n: number;
-  size_width: number;
-  size_height: number;
   size: string;
   style: string;
   seed: number;
-  ref_img: string;
-  ref_strength: number;
-  ref_mode: string;
-  negative_prompt: string;
+  ref_img?: string;
+  ref_strength?: number;
+  ref_mode?: string;
+  negative_prompt?: string;
 };
 
 export type ChatOptions = {
@@ -39,6 +37,7 @@ export type ChatOptions = {
   enable_search: boolean;
   incremental_output: boolean;
   repetition_penalty: number;
+  prompt?: string;
   tools: {
     type: 'function';
     function: {

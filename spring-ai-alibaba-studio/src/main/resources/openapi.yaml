@@ -3,26 +3,26 @@ info:
   title: OpenAPI definition
   version: v0
 servers:
-  - url: http://localhost:8080
-    description: Generated server url
+- url: http://localhost:8080
+  description: Generated server url
 tags:
-  - name: chat-client
-    description: the chat-client API
-  - name: chat-model
-    description: the chat-model API
+- name: chat-client
+  description: the chat-client API
+- name: chat-model
+  description: the chat-model API
 paths:
   /studio/api/chat-models/run/image-gen/url:
     get:
       tags:
-        - chat-model
+      - chat-model
       summary: "run image model by input, and url"
       operationId: runImageGenTaskAndGetUrl
       parameters:
-        - name: modelRunActionParam
-          in: query
-          required: true
-          schema:
-            $ref: "#/components/schemas/ModelRunActionParam"
+      - name: modelRunActionParam
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/ModelRunActionParam"
       responses:
         "200":
           description: OK
@@ -32,7 +32,7 @@ paths:
                 $ref: "#/components/schemas/RChatModelRunResult"
     post:
       tags:
-        - chat-model
+      - chat-model
       summary: "run image model by input, and url"
       operationId: runImageGenTaskAndGetUrl_1
       requestBody:
@@ -51,7 +51,7 @@ paths:
   /studio/api/chat-models:
     get:
       tags:
-        - chat-model
+      - chat-model
       summary: list chat models
       operationId: list
       responses:
@@ -63,7 +63,7 @@ paths:
                 $ref: "#/components/schemas/RListChatModel"
     post:
       tags:
-        - chat-model
+      - chat-model
       summary: run chat model by input
       operationId: run
       requestBody:
@@ -82,7 +82,7 @@ paths:
   /studio/api/chat-models/run/image-gen:
     post:
       tags:
-        - chat-model
+      - chat-model
       summary: run image model by input
       operationId: runImageGenTask
       requestBody:
@@ -97,19 +97,19 @@ paths:
   /studio/api/chat-clients:
     get:
       tags:
-        - chat-client
+      - chat-client
       summary: list chat clients
       operationId: list_1
       responses:
         "200":
           description: OK
           content:
-            application/json:
+            '*/*':
               schema:
                 $ref: "#/components/schemas/RListChatClient"
     post:
       tags:
-        - chat-client
+      - chat-client
       summary: run chat client by input
       operationId: run_1
       requestBody:
@@ -128,7 +128,7 @@ paths:
   /studio/api/observation/getAll:
     get:
       tags:
-        - observation-api-controller
+      - observation-api-controller
       operationId: getAll
       responses:
         "200":
@@ -140,7 +140,7 @@ paths:
   /studio/api/observation/getAITraceInfo:
     get:
       tags:
-        - observation-api-controller
+      - observation-api-controller
       operationId: getAITraceInfo
       responses:
         "200":
@@ -152,14 +152,14 @@ paths:
   /studio/api/observation/detail:
     get:
       tags:
-        - observation-api-controller
+      - observation-api-controller
       operationId: detail
       parameters:
-        - name: traceId
-          in: query
-          required: true
-          schema:
-            type: string
+      - name: traceId
+        in: query
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -170,7 +170,7 @@ paths:
   /studio/api/observation/clearAll:
     get:
       tags:
-        - observation-api-controller
+      - observation-api-controller
       operationId: clearAll
       responses:
         "200":
@@ -182,14 +182,14 @@ paths:
   /studio/api/observation/chatModel:
     get:
       tags:
-        - observation-api-controller
+      - observation-api-controller
       operationId: chatModel
       parameters:
-        - name: input
-          in: query
-          required: true
-          schema:
-            type: string
+      - name: input
+        in: query
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -200,14 +200,14 @@ paths:
   /studio/api/observation/chatClient:
     get:
       tags:
-        - observation-api-controller
+      - observation-api-controller
       operationId: chatClient
       parameters:
-        - name: input
-          in: query
-          required: true
-          schema:
-            type: string
+      - name: input
+        in: query
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -218,15 +218,15 @@ paths:
   /studio/api/chat-models/{modelName}:
     get:
       tags:
-        - chat-model
+      - chat-model
       summary: get chat model by model name
       operationId: get
       parameters:
-        - name: modelName
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: modelName
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -237,15 +237,15 @@ paths:
   /studio/api/chat-clients/{clientName}:
     get:
       tags:
-        - chat-client
+      - chat-client
       summary: get chat client by name
       operationId: get_1
       parameters:
-        - name: clientName
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: clientName
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -256,14 +256,14 @@ paths:
   /ai/stream:
     get:
       tags:
-        - chat-controller
+      - chat-controller
       operationId: stream
       parameters:
-        - name: input
-          in: query
-          required: true
-          schema:
-            type: string
+      - name: input
+        in: query
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -274,14 +274,14 @@ paths:
   /ai/streamByModel:
     get:
       tags:
-        - chat-controller
+      - chat-controller
       operationId: streamByModel
       parameters:
-        - name: input
-          in: query
-          required: true
-          schema:
-            type: string
+      - name: input
+        in: query
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -292,14 +292,14 @@ paths:
   /ai/chat:
     get:
       tags:
-        - chat-controller
+      - chat-controller
       operationId: chat
       parameters:
-        - name: input
-          in: query
-          required: true
-          schema:
-            type: string
+      - name: input
+        in: query
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -310,14 +310,14 @@ paths:
   /ai/chatByModel:
     get:
       tags:
-        - chat-controller
+      - chat-controller
       operationId: chatByModel
       parameters:
-        - name: input
-          in: query
-          required: true
-          schema:
-            type: string
+      - name: input
+        in: query
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -433,7 +433,7 @@ components:
         type:
           type: string
           enum:
-            - function
+          - function
         function:
           $ref: "#/components/schemas/Function"
     ModelRunActionParam:
@@ -601,9 +601,9 @@ components:
         modelType:
           type: string
           enum:
-            - CHAT
-            - IMAGE
-            - AUDIO
+          - CHAT
+          - IMAGE
+          - AUDIO
         chatOptions:
           $ref: "#/components/schemas/DashScopeChatOptions"
         imageOptions:
