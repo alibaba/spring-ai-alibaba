@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-import { ChatOptions,ImageOptions } from "@/types/options";
+import { ChatOptions, ImageOptions } from '@/types/options';
 
 export type RightPanelValues = {
-  initialChatConfig?: ChatOptions;
-  initialImgConfig?: ImageOptions;
+  initialChatConfig: ChatOptions;
+  initialImgConfig: ImageOptions;
   initialTool: InitialTool;
 };
 
-export type InitialTool = {}
+export type InitialTool = {};

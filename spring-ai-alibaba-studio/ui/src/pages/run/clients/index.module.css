@@ -16,8 +16,11 @@
 
 .container {
   width: 100%;
+  height: 100%;
   padding: 20px;
-  display: inline-flex;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .left {
   flex: 1.5;
@@ -27,4 +30,11 @@
 }
 .full-height-divider {
   height: 100%;
+}
+
+.message-loading {
+  padding-left: 50px;
+  padding-right: 50px;
+  padding-bottom: 10px;
+  padding-top: 10px;
 }
