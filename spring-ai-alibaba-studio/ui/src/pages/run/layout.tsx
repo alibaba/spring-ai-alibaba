@@ -81,7 +81,8 @@ export default function PageLayout() {
     fetchData();
   }, []);
 
-  const [selectedKey, setSelectedKey] = useState(runMenu[0].key);
+  const [selectedKey, setSelectedKey] = useState(
+    `/${location.pathname}` || runMenu[0].key);
 
   const onMenuClick = (e) => {
     navigate(e.key);
@@ -92,6 +93,8 @@ export default function PageLayout() {
     if (location.pathname === '/run') {
       navigate(runMenu[0].key);
       setSelectedKey(runMenu[0].key);
+    } else {
+      setSelectedKey(location.pathname);
     }
   }, [location, runMenu]);
 
