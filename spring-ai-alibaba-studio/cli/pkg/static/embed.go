@@ -21,3 +21,6 @@ import "embed"
 
 //go:embed dist/*
 var staticFiles embed.FS
+
+//go:embed templates/*
+var templateFiles embed.FS

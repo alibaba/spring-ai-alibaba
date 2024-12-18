@@ -19,3 +19,7 @@ import "embed"
 func GetStaticFiles() embed.FS {
 	return staticFiles
 }
+
+func GetTemplateFiles() embed.FS {
+	return templateFiles
+}

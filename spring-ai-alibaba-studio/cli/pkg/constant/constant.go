@@ -15,8 +15,9 @@
 package constant
 
 var (
-	RootCmdName string
-	Version     string
+	RootCmdName  string
+	Version      string
+	TemplatePath string
 )
 
 type ModelType string

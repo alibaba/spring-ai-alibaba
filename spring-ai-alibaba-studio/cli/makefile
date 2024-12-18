@@ -7,8 +7,12 @@ else
     BIN := $(BUILD_DIR)/$(APP_NAME)
 endif
 VERSION := $(shell git describe --tags --always)
-LDFLAGS := -ldflags="-X 'github.com/alibaba/spring-ai-alibaba/pkg/constant.Version=$(VERSION)'"
 STATIC_DIR := pkg/static/dist
+TEMPLATE_DIR := pkg/static/templates
+TEMPLATE_EXAMPLE := helloworld-example
+TEMPLATE_PATH := templates/$(TEMPLATE_EXAMPLE)
+
+LDFLAGS := -ldflags="-X 'github.com/alibaba/spring-ai-alibaba/pkg/constant.Version=$(VERSION)' -X 'github.com/alibaba/spring-ai-alibaba/pkg/constant.TemplatePath=$(TEMPLATE_PATH)'"
 
 .DEFAULT_GOAL := build
 
@@ -18,7 +22,7 @@ deps:
 	go mod download
 
 .PHONY: build
-build: deps build-frontend
+build: deps build-frontend cp-templates
 	mkdir -p $(BUILD_DIR)
 	go build $(LDFLAGS) -o $(BIN) .
 	@echo "Build success"
@@ -27,6 +31,7 @@ build: deps build-frontend
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -rf $(STATIC_DIR)
+	rm -rf $(TEMPLATE_DIR)
 
 .PHONY: test
 test:
@@ -53,3 +58,8 @@ build-frontend:
 	cd ../ui && npm run build
 	rm -rf $(STATIC_DIR)
 	mv ../ui/build $(STATIC_DIR)
+
+.PHONY: cp-templates
+cp-templates:
+	mkdir -p $(TEMPLATE_DIR)
+	cp -r ../../spring-ai-alibaba-examples/$(TEMPLATE_EXAMPLE)/ $(TEMPLATE_DIR)

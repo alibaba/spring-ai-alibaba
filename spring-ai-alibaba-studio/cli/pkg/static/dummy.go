@@ -20,3 +20,5 @@ package static
 import "embed"
 
 var staticFiles embed.FS
+
+var templateFiles embed.FS
