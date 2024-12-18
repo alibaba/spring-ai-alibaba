@@ -27,15 +27,12 @@ public class VariableAggregatorNodeDataConverter implements NodeDataConverter<Va
     public VariableAggregatorNodeData parseDifyData(Map<String, Object> data) {
         Map<String, Object> advanced_settings = (Map<String, Object>) data.get("advanced_settings");
         VariableAggregatorNodeData.AdvancedSettings advancedSettings = new VariableAggregatorNodeData.AdvancedSettings();
-        advancedSettings.setGroup_enabled((Boolean) advanced_settings.get("group_enabled"));
+        advancedSettings.setGroupEnabled((Boolean) advanced_settings.get("group_enabled"));
         advancedSettings.setGroups(JSON.parseArray(JSON.toJSONString(advanced_settings.get("groups")), VariableAggregatorNodeData.Groups.class));
         return VariableAggregatorNodeData.builder()
-                .title((String) data.get("title"))
-                .type((String) data.get("type"))
-                .selected((Boolean) data.get("selected"))
-                .desc((String) data.get("desc"))
                 .variables((List<List<String>>) data.get("variables"))
-                .advanced_settings(advancedSettings)
+                .outputType((String) data.get("output_type"))
+                .advancedSettings(advancedSettings)
                 .build();
     }
 
@@ -43,30 +40,24 @@ public class VariableAggregatorNodeDataConverter implements NodeDataConverter<Va
     @Override
     @SneakyThrows
     public Map<String, Object> dumpDifyData(VariableAggregatorNodeData nodeData) {
-        HashMap<String, Object> result = new HashMap<>();
-        ReflectionUtils.doWithFields(nodeData.getClass(), field -> {
-            field.setAccessible(true);
-            Object value = field.get(nodeData);
-            if (field.getName().equalsIgnoreCase("advanced_settings")) {
-                HashMap<Object, Object> advancedSettings = new HashMap<>();
-                VariableAggregatorNodeData.AdvancedSettings advancedSettings1 = (VariableAggregatorNodeData.AdvancedSettings) value;
-                advancedSettings.put("group_enabled", advancedSettings1.isGroup_enabled());
-                List<VariableAggregatorNodeData.Groups> groups1 = advancedSettings1.getGroups();
-                List<Map<String, Object>> groups = new ArrayList<>();
-                for (VariableAggregatorNodeData.Groups group : groups1) {
-                    Map<String, Object> groupMap = new HashMap<>();
-                    groupMap.put("output_type", group.getOutput_type());
-                    groupMap.put("variables", group.getVariables());
-                    groupMap.put("group_name", group.getGroup_name());
-                    groupMap.put("groupId", group.getGroupId());
-                    groups.add(groupMap);
-                }
-                advancedSettings.put("groups", groups);
-                result.put("advanced_settings", advancedSettings);
-            } else {
-                result.put(field.getName(), value);
-            }
-        });
+        Map<String,Object> result = new HashMap<>();
+        HashMap<Object, Object> advancedSettings = new HashMap<>();
+        VariableAggregatorNodeData.AdvancedSettings advancedSettings1 = nodeData.getAdvancedSettings();
+        advancedSettings.put("group_enabled", advancedSettings1.isGroupEnabled());
+        List<VariableAggregatorNodeData.Groups> groups1 = advancedSettings1.getGroups();
+        List<Map<String, Object>> groups = new ArrayList<>();
+        for (VariableAggregatorNodeData.Groups group : groups1) {
+            Map<String, Object> groupMap = new HashMap<>();
+            groupMap.put("output_type", group.getOutputType());
+            groupMap.put("variables", group.getVariables());
+            groupMap.put("group_name", group.getGroupName());
+            groupMap.put("groupId", group.getGroupId());
+            groups.add(groupMap);
+        }
+        advancedSettings.put("groups", groups);
+        result.put("variables",nodeData.getVariables());
+        result.put("output_type",nodeData.getOutputType());
+        result.put("advanced_settings",advancedSettings);
         return result;
     }
 

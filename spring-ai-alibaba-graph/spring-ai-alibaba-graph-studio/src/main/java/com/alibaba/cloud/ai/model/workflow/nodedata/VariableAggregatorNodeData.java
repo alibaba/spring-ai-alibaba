@@ -22,31 +22,30 @@ import java.util.List;
 public class VariableAggregatorNodeData extends NodeData {
 
 	private List<List<String>> variables;
-	private String output_type;
-	private AdvancedSettings advanced_settings;
+	private String outputType;
+	private AdvancedSettings advancedSettings;
 
 	@Builder
-	public VariableAggregatorNodeData(String type, String title, String desc, boolean selected,
-									  List<VariableSelector> inputs, List<Variable> outputs,
-									  List<List<String>> variables, String output_type,
-									  AdvancedSettings advanced_settings) {
-		super(type, title, desc, selected, inputs, outputs);
+	public VariableAggregatorNodeData(List<VariableSelector> inputs, List<Variable> outputs,
+									  List<List<String>> variables, String outputType,
+									  AdvancedSettings advancedSettings) {
+		super(inputs, outputs);
 		this.variables = variables;
-		this.output_type = output_type;
-		this.advanced_settings = advanced_settings;
+		this.outputType = outputType;
+		this.advancedSettings = advancedSettings;
 	}
 
 	@Data
 	public static class Groups{
-		private String output_type;
+		private String outputType;
 		private List<List<String>> variables;
-		private String group_name;
+		private String groupName;
 		private String groupId;
 	}
 
 	@Data
 	public static class AdvancedSettings {
-		private boolean group_enabled;
+		private boolean groupEnabled;
 		private List<Groups> groups;
 	}
 
