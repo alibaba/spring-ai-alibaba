@@ -3,7 +3,6 @@ package com.alibaba.cloud.ai.service;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.opentelemetry.exporter.internal.otlp.traces.ResourceSpansMarshaler;
 import io.opentelemetry.sdk.common.CompletableResultCode;
-
 import java.util.Collection;
 
 /**

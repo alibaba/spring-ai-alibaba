@@ -14,20 +14,28 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.vo;
+package com.alibaba.cloud.ai.exception;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.List;
-import lombok.Builder;
-import lombok.Data;
+import com.alibaba.cloud.ai.common.ReturnCode;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-@Builder
-public class ActionResult {
+@Getter
+@Setter
+public class ServiceInternalException extends RuntimeException {
 
-	private String Response;
+	private int code;
 
-	@Schema(description = "stream response", nullable = true)
-	private List<String> streamResponse;
+	private String msg;
+
+	public ServiceInternalException() {
+		this.code = ReturnCode.RC500.getCode();
+		this.msg = ReturnCode.RC500.getMsg();
+	}
+
+	public ServiceInternalException(String msg) {
+		this.code = ReturnCode.RC500.getCode();
+		this.msg = msg;
+	}
 
 }
