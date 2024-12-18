@@ -25,19 +25,18 @@ public class VariableAggregatorNodeDataConverter implements NodeDataConverter<Va
 
     @Override
     public VariableAggregatorNodeData parseDifyData(Map<String, Object> data) {
-        VariableAggregatorNodeData variableAggregatorNodeData = new VariableAggregatorNodeData(null, null);
-        variableAggregatorNodeData.setTitle((String) data.get("title"));
-        variableAggregatorNodeData.setType((String) data.get("type"));
-        variableAggregatorNodeData.setSelected((Boolean) data.get("selected"));
-        variableAggregatorNodeData.setOutput_type((String) data.get("output_type"));
-        variableAggregatorNodeData.setDesc((String) data.get("desc"));
-        variableAggregatorNodeData.setVariables((List<List<String>>) data.get("variables"));
-        Map<String,Object> advanced_settings = (Map<String, Object>) data.get("advanced_settings");
-        VariableAggregatorNodeData.AdvancedSettings advancedSettings  = new VariableAggregatorNodeData.AdvancedSettings();
+        Map<String, Object> advanced_settings = (Map<String, Object>) data.get("advanced_settings");
+        VariableAggregatorNodeData.AdvancedSettings advancedSettings = new VariableAggregatorNodeData.AdvancedSettings();
         advancedSettings.setGroup_enabled((Boolean) advanced_settings.get("group_enabled"));
         advancedSettings.setGroups(JSON.parseArray(JSON.toJSONString(advanced_settings.get("groups")), VariableAggregatorNodeData.Groups.class));
-        variableAggregatorNodeData.setAdvanced_settings(advancedSettings);
-        return variableAggregatorNodeData;
+        return VariableAggregatorNodeData.builder()
+                .title((String) data.get("title"))
+                .type((String) data.get("type"))
+                .selected((Boolean) data.get("selected"))
+                .desc((String) data.get("desc"))
+                .variables((List<List<String>>) data.get("variables"))
+                .advanced_settings(advancedSettings)
+                .build();
     }
 
 
@@ -48,29 +47,28 @@ public class VariableAggregatorNodeDataConverter implements NodeDataConverter<Va
         ReflectionUtils.doWithFields(nodeData.getClass(), field -> {
             field.setAccessible(true);
             Object value = field.get(nodeData);
-            if (field.getName().equalsIgnoreCase("advanced_settings")){
+            if (field.getName().equalsIgnoreCase("advanced_settings")) {
                 HashMap<Object, Object> advancedSettings = new HashMap<>();
                 VariableAggregatorNodeData.AdvancedSettings advancedSettings1 = (VariableAggregatorNodeData.AdvancedSettings) value;
-                advancedSettings.put("group_enabled",advancedSettings1.isGroup_enabled());
+                advancedSettings.put("group_enabled", advancedSettings1.isGroup_enabled());
                 List<VariableAggregatorNodeData.Groups> groups1 = advancedSettings1.getGroups();
-                List<Map<String,Object>> groups = new ArrayList<>();
+                List<Map<String, Object>> groups = new ArrayList<>();
                 for (VariableAggregatorNodeData.Groups group : groups1) {
                     Map<String, Object> groupMap = new HashMap<>();
-                    groupMap.put("output_type",group.getOutput_type());
-                    groupMap.put("variables",group.getVariables());
-                    groupMap.put("group_name",group.getGroup_name());
-                    groupMap.put("groupId",group.getGroupId());
+                    groupMap.put("output_type", group.getOutput_type());
+                    groupMap.put("variables", group.getVariables());
+                    groupMap.put("group_name", group.getGroup_name());
+                    groupMap.put("groupId", group.getGroupId());
                     groups.add(groupMap);
                 }
-                advancedSettings.put("groups",groups);
-                result.put("advanced_settings",advancedSettings);
-            }else {
+                advancedSettings.put("groups", groups);
+                result.put("advanced_settings", advancedSettings);
+            } else {
                 result.put(field.getName(), value);
             }
         });
         return result;
     }
-
 
 
 }
