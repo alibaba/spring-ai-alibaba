@@ -29,11 +29,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public class WeatherTools {
 
-	// TODO: 1. baseURL 2. 还需要查询地区编码的方法
-	// https://api.map.baidu.com/weather/v1/?district_id=222405&data_type=all&ak=你的ak
 	private final String baseUrl = "https://api.map.baidu.com";
-
-	// "https://restapi.amap.com/v3";
 
 	private final BaiDuMapProperties baiDuMapProperties;
 
