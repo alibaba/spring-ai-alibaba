@@ -146,7 +146,7 @@ public class DashScopeAutoConfiguration {
 				webClientBuilder, responseErrorHandler);
 
 		var embeddingModel = new DashScopeEmbeddingModel(dashScopeApi, embeddingProperties.getMetadataMode(),
-				embeddingProperties.getOptions(), retryTemplate);
+				embeddingProperties.getOptions(), retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
 
