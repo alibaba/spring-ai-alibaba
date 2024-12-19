@@ -27,7 +27,6 @@ import reactor.core.publisher.Flux;
  * @author yuanci.ytb
  * @since 1.0.0-M2
  */
-
 public abstract class Agent {
 
 	/**
