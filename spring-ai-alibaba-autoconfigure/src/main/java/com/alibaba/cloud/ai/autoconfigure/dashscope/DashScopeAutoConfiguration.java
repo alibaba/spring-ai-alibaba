@@ -97,11 +97,11 @@ public class DashScopeAutoConfiguration {
 	@ConditionalOnProperty(prefix = DashScopeChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public DashScopeChatModel dashscopeChatModel(DashScopeConnectionProperties commonProperties,
-												 DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
-												 WebClient.Builder webClientBuilder, List<FunctionCallback> toolFunctionCallbacks,
-												 FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
-												 ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
-												 ObjectProvider<ChatModelObservationConvention> observationConvention) {
+			DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, List<FunctionCallback> toolFunctionCallbacks,
+			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
 			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
@@ -110,8 +110,8 @@ public class DashScopeAutoConfiguration {
 		var dashscopeApi = dashscopeChatApi(commonProperties, chatProperties, restClientBuilder, webClientBuilder,
 				responseErrorHandler);
 
-		var dashscopeModel = new DashScopeChatModel(dashscopeApi, chatProperties.getOptions(), functionCallbackContext, retryTemplate,
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		var dashscopeModel = new DashScopeChatModel(dashscopeApi, chatProperties.getOptions(), functionCallbackContext,
+				retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(dashscopeModel::setObservationConvention);
 
@@ -138,15 +138,16 @@ public class DashScopeAutoConfiguration {
 			matchIfMissing = true)
 	public DashScopeEmbeddingModel dashscopeEmbeddingModel(DashScopeConnectionProperties commonProperties,
 			DashScopeEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
 		var dashScopeApi = dashscopeEmbeddingApi(commonProperties, embeddingProperties, restClientBuilder,
 				webClientBuilder, responseErrorHandler);
 
 		var embeddingModel = new DashScopeEmbeddingModel(dashScopeApi, embeddingProperties.getMetadataMode(),
-				embeddingProperties.getOptions(), retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+				embeddingProperties.getOptions(), retryTemplate,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
 
