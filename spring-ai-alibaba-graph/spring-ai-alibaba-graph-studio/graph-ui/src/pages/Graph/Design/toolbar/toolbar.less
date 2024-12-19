@@ -1,27 +1,32 @@
-.toolbar-card {
+.toolbar {
   height: 40px;
+  display: flex;
+  color: #676f83;
 
-  .ant-card-body {
-    padding: 0;
-    text-align: center;
-    line-height: 40px;
-    vertical-align: middle;
-    justify-content: space-between;
+  .zoom-wrapper {
+    background-color: #ffffff;
     display: flex;
     align-items: center;
-    height: 40px;
+    justify-content: space-between;
+    padding: 10px;
+    width: 150px;
+    border-radius: 8px;
 
-    .icon {
-      font-size: 22px;
-      flex-basis: 60%;
-    }
+    .icon-wrapper {
+      padding: 5px;
 
-    .split {
-      display: inline-block;
-      width: 1px;
-      height: 16px;
-      flex-basis: 1%;
-      border: 1px solid #d0d0d0;
+      .icon {
+        font-size: 22px;
+        flex-basis: 60%;
+      }
     }
   }
+}
+
+.split {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  flex-basis: 1%;
+  border: 1px solid #d0d0d0;
 }

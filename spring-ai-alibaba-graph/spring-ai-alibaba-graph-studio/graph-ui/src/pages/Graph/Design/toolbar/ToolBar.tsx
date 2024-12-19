@@ -1,6 +1,6 @@
 import { Icon } from '@iconify/react';
-import { Affix, Card, Col, Row } from 'antd';
-import React, { useState } from 'react';
+import { useReactFlow, useViewport } from '@xyflow/react';
+import React from 'react';
 import './toolbar.less';
 
 interface Props {
@@ -8,66 +8,33 @@ interface Props {
 }
 
 const ToolBar: React.FC<Props> = () => {
-  const [toolbarBottom] = useState<number>(12);
+  const { zoomIn, zoomOut, zoomTo, fitView } = useReactFlow();
+  const { zoom } = useViewport();
 
-  const toolList = [
-    {
-      type: 'edit',
-      options: [
-        {
-          title: 'undo',
-          icon: 'iconamoon:do-undo-light',
-        },
-        {
-          title: 'redo',
-          icon: 'iconamoon:do-redo-light',
-          split: true,
-        },
-
-        {
-          title: 'history',
-          icon: 'material-symbols:history-toggle-off',
-          split: false,
-        },
-      ],
-    },
-    {
-      type: 'map',
-    },
-    {
-      type: 'graph',
-    },
-  ];
   return (
-    <Affix offsetBottom={toolbarBottom}>
-      <Row gutter={12}>
-        {toolList.map((group) => {
-          let opts = group?.options || [];
-          return (
-            <>
-              <Col lg={opts.length || 2} sm={opts.length * 2 || 2}>
-                <Card className="toolbar-card">
-                  {opts.map((tool) => {
-                    return (
-                      <>
-                        <Icon className="icon" icon={tool.icon}></Icon>
-                        {tool.split ? (
-                          <div className="split">
-                            <div className="item"></div>
-                          </div>
-                        ) : (
-                          ''
-                        )}
-                      </>
-                    );
-                  })}
-                </Card>
-              </Col>
-            </>
-          );
-        })}
-      </Row>
-    </Affix>
+    <div className="toolbar">
+      <div className="zoom-wrapper">
+        <div
+          className="icon-wrapper"
+          onClick={(e) => {
+            e.stopPropagation();
+            zoomOut();
+          }}
+        >
+          <Icon className="icon" icon="iconamoon:zoom-out-light"></Icon>
+        </div>
+        <div>{parseFloat(`${zoom * 100}`).toFixed(0)}%</div>
+        <div
+          className="icon-wrapper"
+          onClick={(e) => {
+            e.stopPropagation();
+            zoomIn();
+          }}
+        >
+          <Icon className="icon" icon="iconamoon:zoom-in-light"></Icon>
+        </div>
+      </div>
+    </div>
   );
 };
 export default ToolBar;
