@@ -1,22 +1,20 @@
-package dev.ai.alibaba.samples.executor.std.json;
+package com.alibaba.cloud.ai.graph.serializer.agent;
 
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import dev.ai.alibaba.samples.executor.AgentAction;
-import dev.ai.alibaba.samples.executor.AgentExecutor;
-import dev.ai.alibaba.samples.executor.AgentFinish;
-import dev.ai.alibaba.samples.executor.AgentOutcome;
-import dev.ai.alibaba.samples.executor.IntermediateStep;
 import lombok.NonNull;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
-public class JSONStateSerializer extends PlainTextStateSerializer<AgentExecutor.State> {
+public class JSONStateSerializer extends PlainTextStateSerializer {
+
+	public static final JSONStateSerializer INSTANCE = new JSONStateSerializer();
 
 	final ObjectMapper objectMapper;
 
@@ -25,16 +23,15 @@ public class JSONStateSerializer extends PlainTextStateSerializer<AgentExecutor.
 	}
 
 	public JSONStateSerializer(@NonNull ObjectMapper objectMapper) {
-		super(AgentExecutor.State::new);
+		super(NodeState::new);
 		this.objectMapper = objectMapper;
 		this.objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
 		var module = new SimpleModule();
-		module.addDeserializer(AgentExecutor.State.class, new StateDeserializer());
+		module.addDeserializer(NodeState.class, new StateDeserializer());
 		module.addDeserializer(AgentOutcome.class, new AgentOutcomeDeserializer());
 		module.addDeserializer(AgentAction.class, new AgentActionDeserializer());
 		module.addDeserializer(AgentFinish.class, new AgentFinishDeserializer());
-		module.addDeserializer(IntermediateStep.class, new IntermediateStepDeserializer());
 
 		objectMapper.registerModule(module);
 	}
@@ -45,15 +42,15 @@ public class JSONStateSerializer extends PlainTextStateSerializer<AgentExecutor.
 	}
 
 	@Override
-	public void write(AgentExecutor.State object, ObjectOutput out) throws IOException {
+	public void write(NodeState object, ObjectOutput out) throws IOException {
 		var json = objectMapper.writeValueAsString(object);
 		out.writeUTF(json);
 	}
 
 	@Override
-	public AgentExecutor.State read(ObjectInput in) throws IOException, ClassNotFoundException {
+	public NodeState read(ObjectInput in) throws IOException, ClassNotFoundException {
 		var json = in.readUTF();
-		return objectMapper.readValue(json, AgentExecutor.State.class);
+		return objectMapper.readValue(json, NodeState.class);
 	}
 
 }

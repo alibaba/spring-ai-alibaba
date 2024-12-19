@@ -2,31 +2,18 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.graph.node.llm.LLMNodeAction;
-import com.alibaba.cloud.ai.graph.state.AgentState;
-import com.alibaba.cloud.ai.graph.state.AppenderChannel;
-import com.alibaba.cloud.ai.graph.state.Channel;
-import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
-import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.ToolCallHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +30,7 @@ public class LLMNodeActionTest {
 
     @Autowired
     private ApplicationContext applicationContext;
-    static class MockState extends AgentState{
+    static class MockState extends NodeState{
 
         /**
          * Constructs an AgentState with the given initial data.
@@ -82,7 +69,7 @@ public class LLMNodeActionTest {
 
     @Test
     public void testVariableRender() throws Exception {
-        LLMNodeAction<MockState> node = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("${API_KEY}")))
+        LLMNodeAction node = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("${API_KEY}")))
                 .withPromptTemplates(List.of(
                         new SystemPromptTemplate("You're a helpful {type} assistant"),
                         new PromptTemplate("If I step on an ant and kill it, am I breaking the law?")))
@@ -95,7 +82,7 @@ public class LLMNodeActionTest {
 
     @Test
     public void testInputOutput() throws Exception{
-        LLMNodeAction<MockState> nodeAction = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("${API_KEY}")))
+        LLMNodeAction nodeAction = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("${API_KEY}")))
                 .withPromptTemplates(List.of(
                         new SystemPromptTemplate("Your name is {llmName}"),
                         new PromptTemplate("What's your name?")))
@@ -115,7 +102,7 @@ public class LLMNodeActionTest {
     public void testFunctionCall() throws Exception{
         assert applicationContext.containsBean("consultLawyer") : "Bean 'consultLawyer' not found in application context.";
         // fixme this kind of function calling have issues: functionCallbackContext will be null dashscope
-        LLMNodeAction<MockState> node = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("${API_KEY}")))
+        LLMNodeAction node = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("${API_KEY}")))
                 .withPromptTemplates(List.of(
                         new SystemPromptTemplate("You're a assistant of a lower, you need to consult lawyer at first"),
                         new PromptTemplate("If I step on an ant and kill it, am I guilty?")))

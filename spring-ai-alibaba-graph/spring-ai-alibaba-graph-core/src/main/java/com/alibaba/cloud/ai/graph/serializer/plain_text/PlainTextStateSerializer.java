@@ -3,13 +3,13 @@ package com.alibaba.cloud.ai.graph.serializer.plain_text;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import lombok.NonNull;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 
 import java.io.*;
 
-public abstract class PlainTextStateSerializer<State extends AgentState> extends StateSerializer<State> {
+public abstract class PlainTextStateSerializer extends StateSerializer {
 
-	protected PlainTextStateSerializer(@NonNull AgentStateFactory<State> stateFactory) {
+	protected PlainTextStateSerializer(@NonNull AgentStateFactory stateFactory) {
 		super(stateFactory);
 	}
 
@@ -18,7 +18,7 @@ public abstract class PlainTextStateSerializer<State extends AgentState> extends
 		return "plain/text";
 	}
 
-	public State read(String data) throws IOException, ClassNotFoundException {
+	public NodeState read(String data) throws IOException, ClassNotFoundException {
 		ByteArrayOutputStream bytesStream = new ByteArrayOutputStream();
 
 		try (ObjectOutputStream out = new ObjectOutputStream(bytesStream)) {
@@ -32,7 +32,7 @@ public abstract class PlainTextStateSerializer<State extends AgentState> extends
 
 	}
 
-	public State read(Reader reader) throws IOException, ClassNotFoundException {
+	public NodeState read(Reader reader) throws IOException, ClassNotFoundException {
 		StringBuilder sb = new StringBuilder();
 		try (BufferedReader bufferedReader = new BufferedReader(reader)) {
 			String line;

@@ -4,7 +4,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import lombok.Getter;
 import lombok.NonNull;
@@ -13,7 +13,7 @@ import org.bsc.async.AsyncGenerator;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -23,19 +23,15 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static java.lang.String.format;
 
 /**
  * Represents a compiled graph of nodes and edges. This class manage the StateGraph
- * execution
- *
- * @param <State> the type of the state associated with the graph
  */
 @Slf4j
-public class CompiledGraph<State extends AgentState> {
+public class CompiledGraph {
 
 	public enum StreamMode {
 
@@ -43,38 +39,30 @@ public class CompiledGraph<State extends AgentState> {
 
 	}
 
-	final StateGraph<State> stateGraph;
+	@Getter
+	final StateGraph stateGraph;
 
 	@Getter
-	final Map<String, AsyncNodeActionWithConfig<State>> nodes = new LinkedHashMap<>();
+	final Map<String, AsyncNodeActionWithConfig> nodes = new LinkedHashMap<>();
 
 	@Getter
-	final Map<String, EdgeValue<State>> edges = new LinkedHashMap<>();
+	final Map<String, EdgeValue> edges = new LinkedHashMap<>();
 
-	private int maxIterations = 25;
+	public static int maxIterations = 25;
 
+	@Getter
 	private final CompileConfig compileConfig;
 
 	/**
 	 * Constructs a CompiledGraph with the given StateGraph.
 	 * @param stateGraph the StateGraph to be used in this CompiledGraph
 	 */
-	protected CompiledGraph(StateGraph<State> stateGraph, CompileConfig compileConfig) {
+	protected CompiledGraph(StateGraph stateGraph, CompileConfig compileConfig) {
 		this.stateGraph = stateGraph;
 		this.compileConfig = compileConfig;
 		stateGraph.nodes.forEach(n -> nodes.put(n.id(), n.action()));
 
 		stateGraph.edges.forEach(e -> edges.put(e.sourceId(), e.target()));
-	}
-
-	public Collection<StateSnapshot<State>> getStateHistory(RunnableConfig config) {
-		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
-			.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
-
-		return saver.list(config)
-			.stream()
-			.map(checkpoint -> StateSnapshot.of(checkpoint, config, stateGraph.getStateFactory()))
-			.collect(Collectors.toList());
 	}
 
 	/**
@@ -85,7 +73,7 @@ public class CompiledGraph<State extends AgentState> {
 	 * @throws IllegalStateException if the saver is not defined, or no checkpoint is
 	 * found
 	 */
-	public StateSnapshot<State> getState(RunnableConfig config) {
+	public StateSnapshot getState(RunnableConfig config) {
 		return stateOf(config).orElseThrow(() -> (new IllegalStateException("Missing Checkpoint!")));
 	}
 
@@ -95,7 +83,7 @@ public class CompiledGraph<State extends AgentState> {
 	 * @return an Optional of StateSnapshot of the given RunnableConfig
 	 * @throws IllegalStateException if the saver is not defined
 	 */
-	public Optional<StateSnapshot<State>> stateOf(RunnableConfig config) {
+	public Optional<StateSnapshot> stateOf(RunnableConfig config) {
 		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
 			.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
 
@@ -121,7 +109,7 @@ public class CompiledGraph<State extends AgentState> {
 		// merge values with checkpoint values
 		Checkpoint branchCheckpoint = saver.get(config)
 			.map(Checkpoint::new)
-			.map(cp -> cp.updateState(values, stateGraph.getChannels()))
+			.map(cp -> cp.updateState(values))
 			.orElseThrow(() -> (new IllegalStateException("Missing Checkpoint!")));
 
 		String nextNodeId = null;
@@ -145,12 +133,8 @@ public class CompiledGraph<State extends AgentState> {
 		return updateState(config, values, null);
 	}
 
-	public EdgeValue<State> getEntryPoint() {
+	public EdgeValue getEntryPoint() {
 		return stateGraph.getEntryPoint();
-	}
-
-	public String getFinishPoint() {
-		return stateGraph.getFinishPoint();
 	}
 
 	/**
@@ -165,7 +149,7 @@ public class CompiledGraph<State extends AgentState> {
 		this.maxIterations = maxIterations;
 	}
 
-	private String nextNodeId(EdgeValue<State> route, Map<String, Object> state, String nodeId) throws Exception {
+	private String nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId) throws Exception {
 
 		if (route == null) {
 			throw StateGraph.RunnableErrors.missingEdge.exception(nodeId);
@@ -174,8 +158,8 @@ public class CompiledGraph<State extends AgentState> {
 			return route.id();
 		}
 		if (route.value() != null) {
-			State derefState = stateGraph.getStateFactory().apply(state);
-			AsyncEdgeAction<State> condition = route.value().action();
+			NodeState derefState = stateGraph.getStateFactory().apply(state);
+			AsyncEdgeAction condition = route.value().action();
 			String newRoute = condition.apply(derefState).get();
 			String result = route.value().mappings().get(newRoute);
 			if (result == null) {
@@ -194,30 +178,30 @@ public class CompiledGraph<State extends AgentState> {
 	 * @return the next node ID
 	 * @throws Exception if there is an error determining the next node ID
 	 */
-	private String nextNodeId(String nodeId, Map<String, Object> state) throws Exception {
+	public String nextNodeId(String nodeId, Map<String, Object> state) throws Exception {
 		return nextNodeId(edges.get(nodeId), state, nodeId);
 
 	}
 
-	private String getEntryPoint(Map<String, Object> state) throws Exception {
+	public String getEntryPoint(Map<String, Object> state) throws Exception {
 		return nextNodeId(stateGraph.getEntryPoint(), state, "entryPoint");
 	}
 
-	private boolean shouldInterruptBefore(@NonNull String nodeId, String previousNodeId) {
+	public boolean shouldInterruptBefore(@NonNull String nodeId, String previousNodeId) {
 		if (previousNodeId == null) { // FIX RESUME ERROR
 			return false;
 		}
 		return Arrays.asList(compileConfig.getInterruptBefore()).contains(nodeId);
 	}
 
-	private boolean shouldInterruptAfter(String nodeId, String previousNodeId) {
+	public boolean shouldInterruptAfter(String nodeId, String previousNodeId) {
 		if (nodeId == null) { // FIX RESUME ERROR
 			return false;
 		}
 		return Arrays.asList(compileConfig.getInterruptAfter()).contains(nodeId);
 	}
 
-	private Optional<Checkpoint> addCheckpoint(RunnableConfig config, String nodeId, Map<String, Object> state,
+	public Optional<Checkpoint> addCheckpoint(RunnableConfig config, String nodeId, Map<String, Object> state,
 			String nextNodeId) throws Exception {
 		if (compileConfig.checkpointSaver().isPresent()) {
 			Checkpoint cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(state)).nextNodeId(nextNodeId).build();
@@ -229,23 +213,22 @@ public class CompiledGraph<State extends AgentState> {
 	}
 
 	Map<String, Object> getInitialStateFromSchema() {
-		return stateGraph.getChannels()
-			.entrySet()
-			.stream()
-			.filter(c -> c.getValue().getDefault().isPresent())
-			.collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getDefault().get().get()));
+		return new HashMap<>();
 	}
 
-	Map<String, Object> getInitialState(Map<String, Object> inputs, RunnableConfig config) {
+	public Map<String, Object> getInitialState(Map<String, Object> inputs, RunnableConfig config) {
 
 		return compileConfig.checkpointSaver()
 			.flatMap(saver -> saver.get(config))
-			.map(cp -> AgentState.updateState(cp.getState(), inputs, stateGraph.getChannels()))
-			.orElseGet(() -> AgentState.updateState(getInitialStateFromSchema(), inputs, stateGraph.getChannels()));
+			.map(cp -> NodeState.updateState(cp.getState(), inputs))
+			.orElseGet(() -> NodeState.updateState(getInitialStateFromSchema(), inputs));
 	}
 
-	State cloneState(Map<String, Object> data)
-			throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+	NodeState useCurrentState(Map<String, Object> data) throws ClassNotFoundException {
+		return stateGraph.getStateSerializer().stateOf(data);
+	}
+
+	NodeState cloneState(Map<String, Object> data) throws IOException, ClassNotFoundException {
 		return stateGraph.getStateSerializer().cloneObject(data);
 	}
 
@@ -256,8 +239,7 @@ public class CompiledGraph<State extends AgentState> {
 	 * @return an AsyncGenerator stream of NodeOutput
 	 * @throws Exception if there is an error creating the stream
 	 */
-	public AsyncGenerator<NodeOutput<State>> stream(Map<String, Object> inputs, RunnableConfig config)
-			throws Exception {
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config) throws Exception {
 		Objects.requireNonNull(config, "config cannot be null");
 
 		return new AsyncNodeGenerator<>(inputs, config);
@@ -269,7 +251,7 @@ public class CompiledGraph<State extends AgentState> {
 	 * @return an AsyncGenerator stream of NodeOutput
 	 * @throws Exception if there is an error creating the stream
 	 */
-	public AsyncGenerator<NodeOutput<State>> stream(Map<String, Object> inputs) throws Exception {
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs) throws Exception {
 		return this.stream(inputs, RunnableConfig.builder().build());
 	}
 
@@ -281,11 +263,11 @@ public class CompiledGraph<State extends AgentState> {
 	 * Optional
 	 * @throws Exception if there is an error during invocation
 	 */
-	public Optional<State> invoke(Map<String, Object> inputs, RunnableConfig config) throws Exception {
+	public Optional invoke(Map<String, Object> inputs, RunnableConfig config) throws Exception {
 
-		Iterator<NodeOutput<State>> sourceIterator = stream(inputs, config).iterator();
+		Iterator<NodeOutput> sourceIterator = stream(inputs, config).iterator();
 
-		java.util.stream.Stream<NodeOutput<State>> result = StreamSupport
+		java.util.stream.Stream<NodeOutput> result = StreamSupport
 			.stream(Spliterators.spliteratorUnknownSize(sourceIterator, Spliterator.ORDERED), false);
 
 		return result.reduce((a, b) -> b).map(NodeOutput::state);
@@ -298,7 +280,7 @@ public class CompiledGraph<State extends AgentState> {
 	 * Optional
 	 * @throws Exception if there is an error during invocation
 	 */
-	public Optional<State> invoke(Map<String, Object> inputs) throws Exception {
+	public Optional invoke(Map<String, Object> inputs) throws Exception {
 		return this.invoke(inputs, RunnableConfig.builder().build());
 	}
 
@@ -338,10 +320,11 @@ public class CompiledGraph<State extends AgentState> {
 		return getGraph(type, "Graph Diagram", true);
 	}
 
-	public class AsyncNodeGenerator<Output extends NodeOutput<State>> implements AsyncGenerator<Output> {
+	public class AsyncNodeGenerator<Output extends NodeOutput> implements AsyncGenerator<Output> {
 
 		Map<String, Object> currentState;
 
+		@Getter
 		String currentNodeId;
 
 		String nextNodeId;
@@ -350,7 +333,7 @@ public class CompiledGraph<State extends AgentState> {
 
 		RunnableConfig config;
 
-		protected AsyncNodeGenerator(Map<String, Object> inputs, RunnableConfig config) throws Exception {
+		protected AsyncNodeGenerator(Map<String, Object> inputs, RunnableConfig config) {
 			final boolean isResumeRequest = (inputs == null);
 
 			if (isResumeRequest) {
@@ -378,7 +361,7 @@ public class CompiledGraph<State extends AgentState> {
 
 				Map<String, Object> initState = getInitialState(inputs, config);
 				// patch for backward support of AppendableValue
-				State initializedState = stateGraph.getStateFactory().apply(initState);
+				NodeState initializedState = stateGraph.getStateFactory().apply(initState);
 				this.currentState = initializedState.data();
 				this.nextNodeId = null;
 				this.currentNodeId = StateGraph.START;
@@ -386,11 +369,15 @@ public class CompiledGraph<State extends AgentState> {
 			}
 		}
 
-		protected Output buildNodeOutput(String nodeId) throws Exception {
+		public Output buildNodeOutput(String nodeId) throws Exception {
 			return (Output) NodeOutput.of(nodeId, cloneState(currentState));
 		}
 
-		protected Output buildStateSnapshot(Checkpoint checkpoint) throws Exception {
+		public Output buildCurrentNodeOutput(String nodeId) throws Exception {
+			return (Output) NodeOutput.of(nodeId, useCurrentState(currentState));
+		}
+
+		protected Output buildStateSnapshot(Checkpoint checkpoint) {
 			return (Output) StateSnapshot.of(checkpoint, config, stateGraph.getStateFactory());
 		}
 
@@ -420,7 +407,12 @@ public class CompiledGraph<State extends AgentState> {
 				if (StateGraph.END.equals(nextNodeId)) {
 					nextNodeId = null;
 					currentNodeId = null;
-					return Data.of(buildNodeOutput(StateGraph.END));
+					if (currentState.containsKey(NodeState.SUB_GRAPH)) {
+						return Data.of(buildCurrentNodeOutput(StateGraph.END));
+					}
+					else {
+						return Data.of(buildNodeOutput(StateGraph.END));
+					}
 				}
 
 				// check on previous node
@@ -432,19 +424,24 @@ public class CompiledGraph<State extends AgentState> {
 
 				currentNodeId = nextNodeId;
 
-				AsyncNodeActionWithConfig<State> action = nodes.get(currentNodeId);
+				AsyncNodeActionWithConfig action = nodes.get(currentNodeId);
 
 				if (action == null)
 					throw StateGraph.RunnableErrors.missingNode.exception(currentNodeId);
 
-				future = action.apply(cloneState(currentState),config).thenApply(partialState -> {
+				future = action.apply(cloneState(currentState), config).thenApply(partialState -> {
 					try {
-						currentState = AgentState.updateState(currentState, partialState, stateGraph.getChannels());
+						currentState = partialState;
 						nextNodeId = nextNodeId(currentNodeId, currentState);
 
-						Optional<Checkpoint> cp = addCheckpoint(config, currentNodeId, currentState, nextNodeId);
-						return (cp.isPresent() && config.streamMode() == StreamMode.SNAPSHOTS)
-								? buildStateSnapshot(cp.get()) : buildNodeOutput(currentNodeId);
+						if (currentState.containsKey(NodeState.SUB_GRAPH)) {
+							return buildCurrentNodeOutput(currentNodeId);
+						}
+						else {
+							Optional<Checkpoint> cp = addCheckpoint(config, currentNodeId, currentState, nextNodeId);
+							return (cp.isPresent() && config.streamMode() == StreamMode.SNAPSHOTS)
+									? buildStateSnapshot(cp.get()) : buildNodeOutput(currentNodeId);
+						}
 
 					}
 					catch (Exception e) {
@@ -467,10 +464,8 @@ public class CompiledGraph<State extends AgentState> {
 	 * @param inputs the input map
 	 * @param config the invoke configuration
 	 * @return an AsyncGenerator stream of NodeOutput
-	 * @throws Exception if there is an error creating the stream
 	 */
-	public AsyncGenerator<NodeOutput<State>> streamSnapshots(Map<String, Object> inputs, RunnableConfig config)
-			throws Exception {
+	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
 
 		return new AsyncNodeGenerator<>(inputs, config.withStreamMode(StreamMode.SNAPSHOTS));
