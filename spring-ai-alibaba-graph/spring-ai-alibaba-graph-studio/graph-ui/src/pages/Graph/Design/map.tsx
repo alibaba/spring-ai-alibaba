@@ -24,6 +24,7 @@ import {
   NODE_TYPE,
   paste,
 } from '@/components/Nodes/Common/manageNodes';
+import ToolBar from '@/pages/Graph/Design/toolbar/ToolBar';
 import FileToolBarNode from '@/pages/Graph/Design/types/FileToolBarNode';
 import {
   CopyOutlined,
@@ -242,8 +243,6 @@ export const LayoutFlow = () => {
       fitView
     >
       <Background />
-      <MiniMap></MiniMap>
-
       {graphContextMenu &&
         `${graphContextMenu.left}_${graphContextMenu.right}_${graphContextMenu.top}_${graphContextMenu.bottom}`}
       {graphContextMenu && (
@@ -266,6 +265,18 @@ export const LayoutFlow = () => {
           items={graphMenuItems}
         />
       )}
+      <MiniMap
+        style={{
+          width: 150,
+          height: 120,
+          bottom: 50,
+        }}
+        maskColor="#00000010"
+        className="graph-minimap"
+      />
+      <div className="graph-toolbar">
+        <ToolBar />
+      </div>
     </ReactFlow>
   );
 };
