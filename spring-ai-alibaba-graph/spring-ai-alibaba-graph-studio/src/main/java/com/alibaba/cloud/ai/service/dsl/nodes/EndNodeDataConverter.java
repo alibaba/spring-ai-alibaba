@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class EndNodeDataConverter implements NodeDataConverter {
+public class EndNodeDataConverter implements NodeDataConverter<EndNodeData> {
 
 	@Override
 	public Boolean supportType(String nodeType) {
@@ -20,7 +20,7 @@ public class EndNodeDataConverter implements NodeDataConverter {
 	}
 
 	@Override
-	public NodeData parseDifyData(Map<String, Object> data) {
+	public EndNodeData parseDifyData(Map<String, Object> data) {
 		List<Map<String, Object>> outputsMap = (List<Map<String, Object>>) data.get("outputs");
 		List<VariableSelector> inputs = outputsMap.stream().map(output -> {
 			List<String> valueSelector = (List<String>) output.get("value_selector");
@@ -31,10 +31,9 @@ public class EndNodeDataConverter implements NodeDataConverter {
 	}
 
 	@Override
-	public Map<String, Object> dumpDifyData(NodeData nodeData) {
-		EndNodeData endNodeData = (EndNodeData) nodeData;
+	public Map<String, Object> dumpDifyData(EndNodeData nodeData) {
 		Map<String, Object> data = new HashMap<>();
-		List<Map<String, Object>> outputsMap = endNodeData.getInputs()
+		List<Map<String, Object>> outputsMap = nodeData.getInputs()
 			.stream()
 			.map(input -> Map.of("value_selector", List.of(input.getNamespace(), input.getName()), "variable",
 					input.getLabel()))

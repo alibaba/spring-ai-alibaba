@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @Component
-public class RetrieverNodeDataConverter implements NodeDataConverter {
+public class RetrieverNodeDataConverter implements NodeDataConverter<RetrieverNodeData> {
 
 	@Override
 	public Boolean supportType(String nodeType) {
@@ -21,7 +21,7 @@ public class RetrieverNodeDataConverter implements NodeDataConverter {
 	}
 
 	@Override
-	public NodeData parseDifyData(Map<String, Object> data) {
+	public RetrieverNodeData parseDifyData(Map<String, Object> data) {
 		List<String> selector = (List<String>) data.get("query_variable_selector");
 		List<VariableSelector> inputs = List.of(new VariableSelector(selector.get(0), selector.get(1)));
 		Map<String, Object> configMap = (Map<String, Object>) data.get("multiple_retrieval_config");
@@ -43,18 +43,17 @@ public class RetrieverNodeDataConverter implements NodeDataConverter {
 	}
 
 	@Override
-	public Map<String, Object> dumpDifyData(NodeData nodeData) {
+	public Map<String, Object> dumpDifyData(RetrieverNodeData nodeData) {
 		Map<String, Object> data = new HashMap<>();
-		RetrieverNodeData retrieverNodeData = (RetrieverNodeData) nodeData;
-		RetrieverNodeData.RerankOptions rerankConfig = retrieverNodeData.getMultipleRetrievalOptions();
+		RetrieverNodeData.RerankOptions rerankConfig = nodeData.getMultipleRetrievalOptions();
 		Map<String, Object> configMap = Map.of("reranking_enabled", rerankConfig.getEnableRerank(), "reranking_mode",
 				"reranking_model", "reranking_model",
 				Map.of("model", rerankConfig.getRerankModelName(), "provider", rerankConfig.getRerankModelProvider()),
 				"score_threshold", rerankConfig.getRerankThreshold(), "top_k", rerankConfig.getRerankTopK());
 		data.put("dataset_ids", List.of());
 		data.put("multiple_retrieval_config", configMap);
-		data.put("query_variable_selector", List.of(retrieverNodeData.getInputs().get(0).getNamespace(),
-				retrieverNodeData.getInputs().get(0).getName()));
+		data.put("query_variable_selector", List.of(nodeData.getInputs().get(0).getNamespace(),
+				nodeData.getInputs().get(0).getName()));
 		data.put("retrieval_mode", "multiple");
 		return data;
 	}
