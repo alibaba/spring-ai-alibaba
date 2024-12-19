@@ -39,8 +39,8 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequestInpu
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequestParameter;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.FunctionTool;
 import com.alibaba.cloud.ai.dashscope.chat.observation.DashScopeChatModelObservationConvention;
+import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import com.alibaba.cloud.ai.dashscope.metadata.DashScopeAiUsage;
-import com.alibaba.cloud.ai.observation.conventions.AiProvider;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -146,7 +146,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
-			.provider(AiProvider.DASHSCOPE.value())
+			.provider(DashScopeApiConstants.PROVIDER_NAME)
 			.requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions)
 			.build();
 
@@ -216,7 +216,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
-				.provider(AiProvider.DASHSCOPE.value())
+				.provider(DashScopeApiConstants.PROVIDER_NAME)
 				.requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions)
 				.build();
 
@@ -470,6 +470,15 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 				options.getToolChoice(),
 				stream, options.getVlHighResolutionImages()
 		);
+	}
+
+	/**
+	 * Use the provided convention for reporting observation data
+	 * @param observationConvention The provided convention
+	 */
+	public void setObservationConvention(ChatModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
 	}
 
 }
