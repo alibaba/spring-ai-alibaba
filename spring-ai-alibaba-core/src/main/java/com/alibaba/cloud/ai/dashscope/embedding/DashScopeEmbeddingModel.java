@@ -91,7 +91,7 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	public DashScopeEmbeddingModel(DashScopeApi dashScopeApi, MetadataMode metadataMode,
-								   DashScopeEmbeddingOptions dashScopeEmbeddingOptions, RetryTemplate retryTemplate) {
+			DashScopeEmbeddingOptions dashScopeEmbeddingOptions, RetryTemplate retryTemplate) {
 		this(dashScopeApi, metadataMode, dashScopeEmbeddingOptions, retryTemplate, ObservationRegistry.NOOP);
 	}
 
@@ -122,10 +122,10 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 		DashScopeApi.EmbeddingRequest apiRequest = createRequest(request, requestOptions);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
-				.embeddingRequest(request)
-				.provider(DashScopeApiConstants.PROVIDER_NAME)
-				.requestOptions(requestOptions)
-				.build();
+			.embeddingRequest(request)
+			.provider(DashScopeApiConstants.PROVIDER_NAME)
+			.requestOptions(requestOptions)
+			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
@@ -135,7 +135,8 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 					DashScopeApi.EmbeddingList embeddingResponse = null;
 					try {
 						embeddingResponse = this.dashScopeApi.embeddings(apiRequest).getBody();
-					} catch (Exception e) {
+					}
+					catch (Exception e) {
 						logger.error("Error embedding request: {}", request.getInstructions(), e);
 						throw e;
 					}
@@ -149,16 +150,16 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 
 				if (apiEmbeddingResponse.message() != null) {
 					logger.error("Error message returned for request: {}", apiEmbeddingResponse.message());
-					throw new RuntimeException("Embedding failed: error code:" + apiEmbeddingResponse.code() + ", message:"
-							+ apiEmbeddingResponse.message());
+					throw new RuntimeException("Embedding failed: error code:" + apiEmbeddingResponse.code()
+							+ ", message:" + apiEmbeddingResponse.message());
 				}
 
 				var metadata = generateResponseMetadata(apiRequest.model(), apiEmbeddingResponse.usage());
 				List<Embedding> embeddings = apiEmbeddingResponse.output()
-						.embeddings()
-						.stream()
-						.map(e -> new Embedding(e.embedding(), e.textIndex()))
-						.toList();
+					.embeddings()
+					.stream()
+					.map(e -> new Embedding(e.embedding(), e.textIndex()))
+					.toList();
 
 				EmbeddingResponse embeddingResponse = new EmbeddingResponse(embeddings, metadata);
 
@@ -168,7 +169,8 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 			});
 	}
 
-	private DashScopeApi.EmbeddingRequest createRequest(EmbeddingRequest request, DashScopeEmbeddingOptions requestOptions) {
+	private DashScopeApi.EmbeddingRequest createRequest(EmbeddingRequest request,
+			DashScopeEmbeddingOptions requestOptions) {
 		return new DashScopeApi.EmbeddingRequest(request.getInstructions(), requestOptions.getModel(),
 				requestOptions.getTextType());
 	}
@@ -184,13 +186,13 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 		}
 
 		return DashScopeEmbeddingOptions.builder()
-				// Handle portable embedding options
-				.withModel(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), defaultOptions.getModel()))
-				.withDimensions(
-						ModelOptionsUtils.mergeOption(runtimeOptions.getDimensions(), defaultOptions.getDimensions()))
-				// Handle DashScope specific embedding options
-				.withTextType(defaultOptions.getTextType())
-				.build();
+			// Handle portable embedding options
+			.withModel(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), defaultOptions.getModel()))
+			.withDimensions(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getDimensions(), defaultOptions.getDimensions()))
+			// Handle DashScope specific embedding options
+			.withTextType(defaultOptions.getTextType())
+			.build();
 	}
 
 	private EmbeddingResponseMetadata generateResponseMetadata(String model, DashScopeApi.EmbeddingUsage usage) {
