@@ -28,10 +28,10 @@ public class AmapProperties {
 	// Official Document Address： https://lbs.amap.com/api/webservice/summary
 	private String webApiKey;
 
-	public AmapProperties () {
+	public AmapProperties() {
 	}
 
-	public AmapProperties (String webApiKey) {
+	public AmapProperties(String webApiKey) {
 		this.webApiKey = webApiKey;
 	}
 

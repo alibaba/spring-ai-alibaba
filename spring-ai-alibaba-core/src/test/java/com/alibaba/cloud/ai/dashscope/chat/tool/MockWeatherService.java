@@ -41,6 +41,9 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 		else if (request.city().contains("上海")) {
 			return new Response(String.format("%s%s多云转阴, 气温31摄氏度。", request.date(), request.city()));
 		}
+		else if (request.city().contains("北京")) {
+			return new Response(String.format("%s%s小雨转中雨, 气温23摄氏度。", request.date(), request.city()));
+		}
 		else {
 			return new Response(String.format("暂时无法查询%s的天气状况。", request.city()));
 		}

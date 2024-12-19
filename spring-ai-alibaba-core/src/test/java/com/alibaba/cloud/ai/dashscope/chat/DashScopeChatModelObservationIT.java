@@ -2,7 +2,7 @@ package com.alibaba.cloud.ai.dashscope.chat;
 
 import com.alibaba.cloud.ai.dashscope.DashscopeAiTestConfiguration;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.observation.conventions.AiProvider;
+import com.alibaba.cloud.ai.dashscope.observation.conventions.AiProvider;
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
