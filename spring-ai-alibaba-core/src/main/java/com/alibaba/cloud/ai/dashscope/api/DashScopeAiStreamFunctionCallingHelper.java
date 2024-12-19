@@ -99,8 +99,7 @@ public class DashScopeAiStreamFunctionCallingHelper {
 		Role role = (current.role() != null ? current.role() : previous.role());
 		role = (role != null ? role : Role.ASSISTANT); // default to ASSISTANT (if null
 		String name = (StringUtils.hasText(current.name()) ? current.name() : previous.name());
-		String toolCallId = (StringUtils.hasText(current.toolCallId()) ? current.toolCallId() :
-				previous.toolCallId());
+		String toolCallId = (StringUtils.hasText(current.toolCallId()) ? current.toolCallId() : previous.toolCallId());
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
