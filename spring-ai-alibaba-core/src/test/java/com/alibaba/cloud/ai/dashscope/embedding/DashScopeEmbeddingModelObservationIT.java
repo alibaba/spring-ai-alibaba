@@ -47,7 +47,9 @@ public class DashScopeEmbeddingModelObservationIT {
 			.withTextType(DashScopeApi.EmbeddingTextType.QUERY.getValue())
 			.build();
 
-		EmbeddingRequest embeddingRequest = new EmbeddingRequest(List.of("The clothes are of good quality and look good, definitely worth the wait. I love them."), options);
+		EmbeddingRequest embeddingRequest = new EmbeddingRequest(
+				List.of("The clothes are of good quality and look good, definitely worth the wait. I love them."),
+				options);
 
 		EmbeddingResponse embeddingResponse = this.dashscopeEmbeddingModel.call(embeddingRequest);
 		assertThat(embeddingResponse.getResults()).isNotEmpty();
@@ -90,8 +92,8 @@ public class DashScopeEmbeddingModelObservationIT {
 		@Bean
 		public DashScopeEmbeddingModel dashScopeEmbeddingModel(DashScopeApi dashScopeApi,
 				TestObservationRegistry observationRegistry) {
-			return new DashScopeEmbeddingModel(dashScopeApi, MetadataMode.EMBED, DashScopeEmbeddingOptions.builder().build(),
-					RetryTemplate.defaultInstance(), observationRegistry);
+			return new DashScopeEmbeddingModel(dashScopeApi, MetadataMode.EMBED,
+					DashScopeEmbeddingOptions.builder().build(), RetryTemplate.defaultInstance(), observationRegistry);
 		}
 
 	}
