@@ -98,8 +98,9 @@ public class DashScopeAiStreamFunctionCallingHelper {
 				: (previous.content() != null) ? previous.content() : "");
 		Role role = (current.role() != null ? current.role() : previous.role());
 		role = (role != null ? role : Role.ASSISTANT); // default to ASSISTANT (if null
-		String name = (current.name() != null && !current.name().isEmpty() ? current.name() : previous.name());
-		String toolCallId = (current.toolCallId() != null ? current.toolCallId() : previous.toolCallId());
+		String name = (StringUtils.hasText(current.name()) ? current.name() : previous.name());
+		String toolCallId = (StringUtils.hasText(current.toolCallId()) ? current.toolCallId() :
+				previous.toolCallId());
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
@@ -136,8 +137,8 @@ public class DashScopeAiStreamFunctionCallingHelper {
 		if (previous == null) {
 			return current;
 		}
-		String id = (current.id() != null ? current.id() : previous.id());
-		String type = (current.type() != null ? current.type() : previous.type());
+		String id = (StringUtils.hasText(current.id()) ? current.id() : previous.id());
+		String type = (StringUtils.hasText(current.type()) ? current.type() : previous.type());
 		ChatCompletionFunction function = merge(previous.function(), current.function());
 		return new ToolCall(id, type, function);
 	}
@@ -146,7 +147,7 @@ public class DashScopeAiStreamFunctionCallingHelper {
 		if (previous == null) {
 			return current;
 		}
-		String name = (current.name() != null ? current.name() : previous.name());
+		String name = (StringUtils.hasText(current.name()) ? current.name() : previous.name());
 		StringBuilder arguments = new StringBuilder();
 		if (previous.arguments() != null) {
 			arguments.append(previous.arguments());
