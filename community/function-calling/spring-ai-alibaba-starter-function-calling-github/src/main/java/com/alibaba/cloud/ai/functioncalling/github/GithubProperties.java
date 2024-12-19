@@ -22,7 +22,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * @author Yeaury
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.github")
+@ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.github")
 public class GithubProperties {
 
 	public static final String X_GitHub_Api_Version = "2022-11-28";
