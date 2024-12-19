@@ -30,7 +30,8 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @ConditionalOnClass(TranslateService.class)
 @EnableConfigurationProperties(TranslateProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.microsofttranslate", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.microsofttranslate", name = "enabled",
+		havingValue = "true")
 public class TranslateAutoConfiguration {
 
 	@Bean
