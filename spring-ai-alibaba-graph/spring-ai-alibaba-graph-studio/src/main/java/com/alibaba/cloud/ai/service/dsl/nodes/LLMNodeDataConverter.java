@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class LLMNodeDataConverter implements NodeDataConverter {
+public class LLMNodeDataConverter implements NodeDataConverter<LLMNodeData> {
 
 	@Override
 	public Boolean supportType(String nodeType) {
@@ -26,7 +26,7 @@ public class LLMNodeDataConverter implements NodeDataConverter {
 	}
 
 	@Override
-	public NodeData parseDifyData(Map<String, Object> data) {
+	public LLMNodeData parseDifyData(Map<String, Object> data) {
 		List<VariableSelector> inputs = new ArrayList<>();
 		// convert prompt template
 		Map<String, Object> context = (Map<String, Object>) data.get("context");
@@ -89,8 +89,7 @@ public class LLMNodeDataConverter implements NodeDataConverter {
 	}
 
 	@Override
-	public Map<String, Object> dumpDifyData(NodeData nodeData) {
-		LLMNodeData llmNodeData = (LLMNodeData) nodeData;
+	public Map<String, Object> dumpDifyData(LLMNodeData nodeData) {
 		Map<String, Object> data = new HashMap<>();
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -101,7 +100,7 @@ public class LLMNodeDataConverter implements NodeDataConverter {
 
 		));
 		// put memory
-		LLMNodeData.MemoryConfig memory = llmNodeData.getMemoryConfig();
+		LLMNodeData.MemoryConfig memory = nodeData.getMemoryConfig();
 		if (memory != null) {
 			data.put("memory",
 					Map.of("query_prompt_template", StringTemplateUtil.toDifyTmpl(memory.getLastMessageTemplate()),
@@ -109,11 +108,11 @@ public class LLMNodeDataConverter implements NodeDataConverter {
 							Map.of("enabled", memory.getWindowEnabled(), "size", memory.getWindowSize())));
 		}
 		// put model
-		LLMNodeData.ModelConfig model = llmNodeData.getModel();
+		LLMNodeData.ModelConfig model = nodeData.getModel();
 		data.put("model", Map.of("mode", model.getMode(), "name", model.getName(), "provider", model.getProvider(),
 				"completion_params", objectMapper.convertValue(model.getCompletionParams(), Map.class)));
 		// put prompt template
-		List<LLMNodeData.PromptTemplate> tmplList = llmNodeData.getPromptTemplate();
+		List<LLMNodeData.PromptTemplate> tmplList = nodeData.getPromptTemplate();
 		List<Map<String, String>> difyTmplList = tmplList.stream().map(tmpl -> {
 			String difyTmpl = StringTemplateUtil.toDifyTmpl(tmpl.getText());
 			return Map.of("role", tmpl.getRole(), "text", difyTmpl);
