@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.dashscope.common;
 
+import com.alibaba.cloud.ai.dashscope.observation.conventions.AiProvider;
+
 /**
  * @author nuocheng.lxm
  * @since 1.0.0-M2
@@ -39,5 +41,7 @@ public final class DashScopeApiConstants {
 	public static final String DEFAULT_WEBSOCKET_URL = "wss://dashscope.aliyuncs.com/api-ws/v1/inference/";
 
 	public static final Integer DEFAULT_READ_TIMEOUT = 60;
+
+	public static final String PROVIDER_NAME = AiProvider.DASHSCOPE.value();
 
 }

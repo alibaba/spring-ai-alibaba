@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.observation.conventions;
+package com.alibaba.cloud.ai.dashscope.observation.conventions;
 
 /**
  * Extended collection of systems providing AI functionality. Based on the OpenTelemetry
