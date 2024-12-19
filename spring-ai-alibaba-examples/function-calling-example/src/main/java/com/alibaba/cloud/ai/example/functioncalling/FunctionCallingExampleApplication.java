@@ -14,7 +14,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.alibaba.cloud.ai")
 public class FunctionCallingExampleApplication {
 
 	public static void main(String[] args) {
