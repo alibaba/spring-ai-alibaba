@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.dashscope.common;
 
-import com.alibaba.cloud.ai.observation.conventions.AiProvider;
+import com.alibaba.cloud.ai.dashscope.observation.conventions.AiProvider;
 
 /**
  * @author nuocheng.lxm
