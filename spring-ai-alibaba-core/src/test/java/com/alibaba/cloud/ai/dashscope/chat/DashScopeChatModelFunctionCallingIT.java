@@ -52,7 +52,7 @@ class DashScopeChatModelFunctionCallingIT {
 	@Test
 	void functionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage("杭州，上海，北京今天的天气怎么样?");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -69,13 +69,13 @@ class DashScopeChatModelFunctionCallingIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(response.getResult().getOutput().getContent()).contains("32", "晴转多云", "31", "多云转阴", "23", "小雨转中雨");
 	}
 
 	@Test
 	void streamFunctionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage("杭州，上海，北京今天的天气怎么样?");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -100,7 +100,7 @@ class DashScopeChatModelFunctionCallingIT {
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
-		assertThat(content).contains("30", "10", "15");
+		assertThat(content).contains("32", "晴转多云", "31", "多云转阴", "23", "小雨转中雨");
 	}
 
 }
