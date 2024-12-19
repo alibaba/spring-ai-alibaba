@@ -30,7 +30,7 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @EnableConfigurationProperties(AmapProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.gaode", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.funcioncalling.amap", name = "enabled", havingValue = "true")
 public class AmapConfiguration {
 
 	@Bean
