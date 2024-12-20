@@ -28,7 +28,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-function-calling-dingtalk</artifactId>
-    <name>spring-ai-alibaba-starter-plugin-dingtalk</name>
+    <name>spring-ai-alibaba-starter-function-calling-dingtalk</name>
     <description>Ding Talk tool for Spring AI Alibaba</description>
 
     <properties>
@@ -75,6 +75,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-plugin-dingtalk</finalName>
+        <finalName>spring-ai-alibaba-function-calling-dingtalk</finalName>
     </build>
 </project>

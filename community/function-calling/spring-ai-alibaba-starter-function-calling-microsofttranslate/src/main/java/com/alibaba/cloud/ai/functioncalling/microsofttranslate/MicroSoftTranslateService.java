@@ -1,12 +1,11 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Copyright 2024-2025 the original author or authors.
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.alibaba.cloud.ai.functioncalling.translate;
+package com.alibaba.cloud.ai.functioncalling.microsofttranslate;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -35,20 +33,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-public class TranslateService implements Function<TranslateService.Request, TranslateService.Response> {
+public class MicroSoftTranslateService implements Function<MicroSoftTranslateService.Request, MicroSoftTranslateService.Response> {
 
-	private static final Logger logger = LoggerFactory.getLogger(TranslateService.class);
+	private static final Logger logger = LoggerFactory.getLogger(MicroSoftTranslateService.class);
 
 	private static final String TRANSLATE_HOST_URL = "https://api.cognitive.microsofttranslator.com";
 
-	private static final String TRANSLATE_PATH = "/translate?api-version=3.0";
+	private static final String TRANSLATE_PATH = "/microsofttranslate?api-version=3.0";
 
 	private final WebClient webClient;
 
-	public TranslateService(TranslateProperties properties) {
+	public MicroSoftTranslateService (MicroSoftTranslateProperties properties) {
 		assert StringUtils.hasText(properties.getApiKey());
 		this.webClient = WebClient.builder()
-			.defaultHeader(TranslateProperties.OCP_APIM_SUBSCRIPTION_KEY, properties.getApiKey())
+			.defaultHeader(MicroSoftTranslateProperties.OCP_APIM_SUBSCRIPTION_KEY, properties.getApiKey())
 			.defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
 			.build();
 	}
@@ -72,7 +70,7 @@ public class TranslateService implements Function<TranslateService.Request, Tran
 			return parseResponse(responseData);
 		}
 		catch (Exception e) {
-			logger.error("Failed to invoke translate API due to: {}", e.getMessage());
+			logger.error("Failed to invoke microsofttranslate API due to: {}", e.getMessage());
 			return null;
 		}
 	}
@@ -102,15 +100,15 @@ public class TranslateService implements Function<TranslateService.Request, Tran
 		return new Response(translations);
 	}
 
-	@JsonClassDescription("Request to translate text to a target language")
+	@JsonClassDescription("Request to microsofttranslate text to a target language")
 	public record Request(
 			@JsonProperty(required = true,
 					value = "text") @JsonPropertyDescription("Content that needs to be translated") String text,
 			@JsonProperty(required = true,
-					value = "targetLanguage") @JsonPropertyDescription("Target language to translate into") String targetLanguage) {
+					value = "targetLanguage") @JsonPropertyDescription("Target language to microsofttranslate into") String targetLanguage) {
 	}
 
-	@JsonClassDescription("Response to translate text to a target language")
+	@JsonClassDescription("Response to microsofttranslate text to a target language")
 	public record Response(Map<String, String> translatedTexts) {
 	}
 

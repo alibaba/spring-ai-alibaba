@@ -28,7 +28,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-function-calling-amap</artifactId>
-    <name>spring-ai-alibaba-starter-plugin-amap</name>
+    <name>spring-ai-alibaba-starter-function-calling-amap</name>
     <description>Gao De Map tool for Spring AI Alibaba</description>
 
     <dependencies>
@@ -57,6 +57,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-plugin-amap</finalName>
+        <finalName>spring-ai-alibaba-function-calling-amap</finalName>
     </build>
 </project>

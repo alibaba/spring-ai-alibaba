@@ -60,6 +60,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-plugin-crewler</finalName>
+        <finalName>spring-ai-alibaba-function-calling-crewler</finalName>
     </build>
 </project>

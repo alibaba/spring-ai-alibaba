@@ -26,7 +26,7 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
     <artifactId>spring-ai-alibaba-starter-function-calling-baidusearch</artifactId>
-    <name>spring-ai-alibaba-starter-plugin-baidusearch</name>
+    <name>spring-ai-alibaba-starter-function-calling-baidusearch</name>
 
     <description>Baidu search tool for Spring AI Alibaba</description>
 
@@ -65,6 +65,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-plugin-baidusearch</finalName>
+        <finalName>spring-ai-alibaba-function-calling-baidusearch</finalName>
     </build>
 </project>

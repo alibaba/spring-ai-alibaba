@@ -58,6 +58,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-starter-plugin-jsonprocessor</finalName>
+        <finalName>spring-ai-alibaba-starter-function-calling-jsonprocessor</finalName>
     </build>
 </project>

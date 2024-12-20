@@ -13,5 +13,5 @@
     @ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.baidusearch")
     public class BaidusearchProperties {}
     ```
-4. 请在根目录 pom.xml 中添加 module 配置，如 `<module>community/functioncalling/spring-ai-alibaba-starter-functioncalling-baidusearch</module>`
+4. 请在根目录 pom.xml 中添加 module 配置，如 `<module>community/function-calling/spring-ai-alibaba-starter-functioncalling-baidusearch</module>`
 5. 请在插件 pom.xml 文件中只保留必须的传递依赖，插件版本应与 Spring AI Alibaba 统一。

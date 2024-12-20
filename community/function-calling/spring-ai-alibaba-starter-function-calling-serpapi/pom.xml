@@ -29,7 +29,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-function-calling-serpapi</artifactId>
-    <name>spring-ai-alibaba-starter-plugin-serpapi</name>
+    <name>spring-ai-alibaba-starter-function-calling-serpapi</name>
 
     <description>SerpApi search tool for Spring AI Alibaba</description>
 
@@ -76,7 +76,7 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-starter-plugin-serpai</finalName>
+        <finalName>spring-ai-alibaba-starter-function-calling-serpai</finalName>
     </build>
 
 </project>

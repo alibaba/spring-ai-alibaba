@@ -53,6 +53,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-starter-plugin-time</finalName>
+        <finalName>spring-ai-alibaba-starter-function-calling-time</finalName>
     </build>
 </project>
