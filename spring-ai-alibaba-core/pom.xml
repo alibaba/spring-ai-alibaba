@@ -46,6 +46,7 @@
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-core</artifactId>
+            <version>1.0.0-M3</version>
         </dependency>
 
         <dependency>

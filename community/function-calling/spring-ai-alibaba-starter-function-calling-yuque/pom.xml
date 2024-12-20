@@ -16,8 +16,7 @@
    limitations under the License.
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
@@ -28,16 +27,11 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-starter-function-calling-time</artifactId>
-    <packaging>jar</packaging>
-    <name>Spring Ai Alibaba Starter Time</name>
-    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <artifactId>spring-ai-alibaba-starter-function-calling-yuque</artifactId>
+    <name>spring-ai-alibaba-starter-functioncalling-yuque</name>
+    <description>Yuque tool for Spring AI Alibaba</description>
 
     <dependencies>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
@@ -50,9 +44,19 @@
             <optional>true</optional>
         </dependency>
 
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-starter-function-calling-time</finalName>
+        <finalName>spring-ai-alibaba-functioncalling-yuque</finalName>
     </build>
 </project>
