@@ -41,11 +41,12 @@
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-amap</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-weather</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-larksuite</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-translate</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-microsofttranslate</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-crawler</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-regex</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-jsonprocessor</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-serpapi</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-yuque</module>
 
         <module>community/document-readers/github-reader</module>
         <module>community/document-readers/poi-document-reader</module>

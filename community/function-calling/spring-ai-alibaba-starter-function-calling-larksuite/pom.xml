@@ -65,6 +65,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-starter-plugin-larksuite</finalName>
+        <finalName>spring-ai-alibaba-starter-function-calling-larksuite</finalName>
     </build>
 </project>
