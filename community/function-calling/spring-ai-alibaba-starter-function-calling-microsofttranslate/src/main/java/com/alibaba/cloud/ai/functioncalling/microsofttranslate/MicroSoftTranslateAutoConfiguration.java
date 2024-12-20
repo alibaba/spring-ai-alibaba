@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.functioncalling.translate;
+package com.alibaba.cloud.ai.functioncalling.microsofttranslate;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -28,17 +28,17 @@ import org.springframework.context.annotation.Description;
  * @author 31445
  */
 @Configuration
-@ConditionalOnClass(TranslateService.class)
-@EnableConfigurationProperties(TranslateProperties.class)
+@ConditionalOnClass(MicroSoftTranslateService.class)
+@EnableConfigurationProperties(MicroSoftTranslateProperties.class)
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.microsofttranslate", name = "enabled",
 		havingValue = "true")
-public class TranslateAutoConfiguration {
+public class MicroSoftTranslateAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Implement natural language translation capabilities.")
-	public TranslateService microSoftTranslateFunction(TranslateProperties properties) {
-		return new TranslateService(properties);
+	public MicroSoftTranslateService microSoftTranslateFunction(MicroSoftTranslateProperties properties) {
+		return new MicroSoftTranslateService(properties);
 	}
 
 }

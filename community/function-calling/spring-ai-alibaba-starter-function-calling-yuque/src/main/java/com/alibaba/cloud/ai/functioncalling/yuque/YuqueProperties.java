@@ -15,26 +15,26 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.functioncalling.translate;
+package com.alibaba.cloud.ai.functioncalling.yuque;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * @author 31445
+ * @author 北极星
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.translate")
-public class TranslateProperties {
+@ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.yuque")
+public class YuqueProperties {
 
-	public static final String OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";
+    public static String BASE_URL = "https://www.yuque.com/api/v2/repo";
 
-	private String apiKey;
+    private String authToken;
 
-	public String getApiKey() {
-		return apiKey;
-	}
+    public String getAuthToken () {
+        return authToken;
+    }
 
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
-	}
-
+    public YuqueProperties setAuthToken (String authToken) {
+        this.authToken = authToken;
+        return this;
+    }
 }
