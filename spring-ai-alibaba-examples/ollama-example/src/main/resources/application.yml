@@ -4,9 +4,11 @@ spring:
   application:
     name: ollama-example
   ai:
-    ollama:
-      base-url: http://127.0.0.1:11434
-      chat:
-        options:
-          model: llama2:latest
-          temperature: 0.4F
+#    ollama:
+#      base-url: http://127.0.0.1:11434
+#      chat:
+#        options:
+#          model: llama2:latest
+#          temperature: 0.4F
+    dashscope:
+      api-key: sk-75c7a176837740ddafe9d4abbcea1ed6

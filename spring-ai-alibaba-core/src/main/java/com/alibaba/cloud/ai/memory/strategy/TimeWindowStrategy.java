@@ -1,11 +1,20 @@
 package com.alibaba.cloud.ai.memory.strategy;
 
+import org.springframework.ai.chat.messages.Message;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 public class TimeWindowStrategy extends AbstractChatMemoryStrategy {
 
-	private  String id = "default";
-	private final String type = "TimeWindow";
-    private  Integer timeRange = 120;
+	private String id = "default";
+
+	private String type = "TimeWindow";
+
+	// 默认10分钟
+	private Integer timeRange = 10;
+
 	/**
 	 * 使用 build
 	 * @param id id
@@ -15,14 +24,20 @@ public class TimeWindowStrategy extends AbstractChatMemoryStrategy {
 		this.id = id;
 		this.timeRange = timeRange;
 	}
-	public TimeWindowStrategy(){}
-	@Override
-	public void ensureCapacity() {
 
-		// 超出淘汰
-		if (this.timeRange > DEFAULT_CAPACITY) {
-			disuse();
-		}
+	public TimeWindowStrategy() {
+	}
+
+	@Override
+	public void ensureCapacity(List<Message> messages) {
+		// LocalDateTime currentTime = LocalDateTime.now();
+		//
+		// List<Message> messageList = messages.stream()
+		// .filter(message ->
+		// currentTime.minus(message.getTimestamp()).get(ChronoUnit.MINUTES) <= timeRange)
+		// .toList();
+		// messages.clear();
+		// messages.addAll(messageList);
 	}
 
 	@Override
