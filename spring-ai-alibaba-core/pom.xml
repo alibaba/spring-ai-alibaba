@@ -106,6 +106,13 @@
             <version>2.3.3</version>
         </dependency>
 
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>3.6.3</version>
+        </dependency>
+
+
         <!-- test dependencies -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
