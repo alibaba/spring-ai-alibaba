@@ -34,7 +34,7 @@ public class PromptTemplateAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = TEMPLATE_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
+	@ConditionalOnProperty(prefix = TEMPLATE_PREFIX, name = "enabled", havingValue = "false", matchIfMissing = true)
 	public ConfigurablePromptTemplateFactory configurablePromptTemplateFactory() {
 		return new ConfigurablePromptTemplateFactory();
 	}
