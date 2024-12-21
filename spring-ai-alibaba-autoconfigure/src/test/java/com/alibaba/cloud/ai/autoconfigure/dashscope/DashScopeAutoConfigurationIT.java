@@ -57,8 +57,8 @@ public class DashScopeAutoConfigurationIT {
 	private static final Log logger = LogFactory.getLog(DashScopeAutoConfigurationIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
-			.withConfiguration(AutoConfigurations.of(DashScopeAutoConfiguration.class));
+		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
+		.withConfiguration(AutoConfigurations.of(DashScopeAutoConfiguration.class));
 
 	@Test
 	void chatCall() {
@@ -71,31 +71,36 @@ public class DashScopeAutoConfigurationIT {
 		});
 	}
 
-// https://github.com/alibaba/spring-ai-alibaba/issues/295
-//	@Test
-//	void transcribe() {
-//
-//		this.contextRunner.run(context -> {
-//			DashScopeAudioTranscriptionModel transcriptionModel = context.getBean(DashScopeAudioTranscriptionModel.class);
-//			Resource audioFile = new ClassPathResource("/speech/jfk.flac");
-//			System.out.println(audioFile);
-//			String response = transcriptionModel.call(new AudioTranscriptionPrompt(audioFile)).getResult().getOutput();
-//			System.out.println(response);
-//			assertThat(response).isNotEmpty();
-//			logger.info("Response: " + response);
-//		});
-//	}
+	// https://github.com/alibaba/spring-ai-alibaba/issues/295
+	// @Test
+	// void transcribe() {
+	//
+	// this.contextRunner.run(context -> {
+	// DashScopeAudioTranscriptionModel transcriptionModel =
+	// context.getBean(DashScopeAudioTranscriptionModel.class);
+	// Resource audioFile = new ClassPathResource("/speech/jfk.flac");
+	// System.out.println(audioFile);
+	// String response = transcriptionModel.call(new
+	// AudioTranscriptionPrompt(audioFile)).getResult().getOutput();
+	// System.out.println(response);
+	// assertThat(response).isNotEmpty();
+	// logger.info("Response: " + response);
+	// });
+	// }
 
 	@Test
 	void speech() {
 		this.contextRunner.run(context -> {
 			DashScopeSpeechSynthesisModel speechModel = context.getBean(DashScopeSpeechSynthesisModel.class);
-			byte[] response = speechModel.call(
-					new SpeechSynthesisPrompt("H",
-							DashScopeSpeechSynthesisOptions.builder()
-									.withResponseFormat(DashScopeSpeechSynthesisApi.ResponseFormat.MP3)
-									.build()
-					)).getResult().getOutput().getAudio().array();
+			byte[] response = speechModel
+				.call(new SpeechSynthesisPrompt("H",
+						DashScopeSpeechSynthesisOptions.builder()
+							.withResponseFormat(DashScopeSpeechSynthesisApi.ResponseFormat.MP3)
+							.build()))
+				.getResult()
+				.getOutput()
+				.getAudio()
+				.array();
 			assertThat(response).isNotNull();
 			// todo: check mp3 types
 			assertThat(response.length).isNotEqualTo(0);
@@ -109,11 +114,10 @@ public class DashScopeAutoConfigurationIT {
 		this.contextRunner.run(context -> {
 			DashScopeChatModel chatModel = context.getBean(DashScopeChatModel.class);
 			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
-			String response = Objects.requireNonNull(responseFlux.collectList()
-							.block())
-					.stream()
-					.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getContent())
-					.collect(Collectors.joining());
+			String response = Objects.requireNonNull(responseFlux.collectList().block())
+				.stream()
+				.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getContent())
+				.collect(Collectors.joining());
 
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);
@@ -148,7 +152,7 @@ public class DashScopeAutoConfigurationIT {
 			DashScopeEmbeddingModel embeddingModel = context.getBean(DashScopeEmbeddingModel.class);
 
 			EmbeddingResponse embeddingResponse = embeddingModel
-					.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+				.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
 			assertThat(embeddingResponse.getResults()).hasSize(2);
 			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 			assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
@@ -174,15 +178,15 @@ public class DashScopeAutoConfigurationIT {
 	void generateImageWithModel() {
 		// The 256x256 size is supported by dall-e-2, but not by dall-e-3.
 		this.contextRunner
-				.withPropertyValues("spring.ai.dashScope.image.options.model=wanx-v1",
-						"spring.ai.dashScope.image.options.size=256x256")
-				.run(context -> {
-					DashScopeImageModel imageModel = context.getBean(DashScopeImageModel.class);
-					ImageResponse imageResponse = imageModel.call(new ImagePrompt("tree"));
-					assertThat(imageResponse.getResults()).hasSize(1);
-					assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
-					logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
-				});
+			.withPropertyValues("spring.ai.dashScope.image.options.model=wanx-v1",
+					"spring.ai.dashScope.image.options.size=256x256")
+			.run(context -> {
+				DashScopeImageModel imageModel = context.getBean(DashScopeImageModel.class);
+				ImageResponse imageResponse = imageModel.call(new ImagePrompt("tree"));
+				assertThat(imageResponse.getResults()).hasSize(1);
+				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
+				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+			});
 	}
 
 }
