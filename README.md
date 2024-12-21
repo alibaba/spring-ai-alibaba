@@ -12,7 +12,7 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 
 > Because Spring AI Alibaba is developed based on Spring Boot 3.x, it requires JDK version 17 and above.
 
-1. Add 'spring-ai-alibaba-starter' dependency to your project.
+1. Add `spring-ai-alibaba-starter` dependency to your project.
 
 	```xml
 	<dependency>
@@ -70,16 +70,7 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 
 ## Examples
 
-More examples can be found at [spring-ai-alibaba-examples](https://github.com/springaialibaba/spring-ai-alibaba-examples).
-
-* Hello World
-* Chat Model
-* Multi Model
-* Function Calling
-* Structured Output
-* Prompt
-* RAG
-* Flight Booking Playground, an advanced example showcasing usage of prompt template, function calling, chat memory and rag at the same time.
+[Spring AI Alibaba and Spring AI usage examples](https://github.com/springaialibaba/spring-ai-alibaba-examples)
 
 ## Core Features
 
