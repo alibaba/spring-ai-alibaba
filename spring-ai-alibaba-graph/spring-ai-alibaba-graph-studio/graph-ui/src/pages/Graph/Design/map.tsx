@@ -1,3 +1,4 @@
+import { WORKFLOW_OPERATION_MODE } from '@/constants';
 import {
   Background,
   MiniMap,
@@ -35,7 +36,13 @@ import { useIntl } from '@umijs/max';
 import '@xyflow/react/dist/style.css';
 import { Menu } from 'antd';
 import './index.less';
-import { ContextMenuType, IGraphMenuItems, ISelections, TODO } from './types';
+import {
+  ContextMenuType,
+  IGraphMenuItems,
+  ISelections,
+  OperationMode,
+  TODO,
+} from './types';
 import './xyTheme.less';
 
 const nodeTypes = {
@@ -228,6 +235,15 @@ export const LayoutFlow = () => {
     [nodes, edges, selections],
   );
 
+  const [operationMode, setOperationMode] = useState(
+    (localStorage.getItem(WORKFLOW_OPERATION_MODE) || 'hand') as OperationMode,
+  );
+
+  const changeOperationMode = (mode: OperationMode) => {
+    setOperationMode(mode);
+    localStorage.setItem(WORKFLOW_OPERATION_MODE, mode);
+  };
+
   return (
     <ReactFlow
       ref={ref}
@@ -240,6 +256,8 @@ export const LayoutFlow = () => {
       onContextMenu={onGraphContextMenu}
       onClick={clearGraphContextMenu}
       onSelectionChange={onSelectionChange}
+      panOnDrag={operationMode === 'hand'}
+      selectionOnDrag={operationMode === 'pointer'}
       fitView
     >
       <Background />
@@ -275,7 +293,10 @@ export const LayoutFlow = () => {
         className="graph-minimap"
       />
       <div className="graph-toolbar">
-        <ToolBar />
+        <ToolBar
+          operationMode={operationMode}
+          changeOperationMode={changeOperationMode}
+        />
       </div>
     </ReactFlow>
   );

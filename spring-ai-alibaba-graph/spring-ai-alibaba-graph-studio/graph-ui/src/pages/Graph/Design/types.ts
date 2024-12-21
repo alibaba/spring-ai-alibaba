@@ -39,3 +39,5 @@ export type ContextMenuType = {
 export type MenuItem = Required<MenuProps>['items'][number];
 
 export type IGraphMenuItems = Array<MenuItem & { onClick: (e: TODO) => void }>;
+
+export type OperationMode = 'hand' | 'pointer';
