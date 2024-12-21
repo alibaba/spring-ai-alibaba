@@ -16,25 +16,26 @@
 
 package com.alibaba.cloud.ai.dashscope.audio;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
-import com.alibaba.cloud.ai.dashscope.audio.synthesis.*;
+import java.nio.ByteBuffer;
+import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
+import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisModel;
+import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisOptions;
+import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisOutput;
+import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisPrompt;
+import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisResponse;
+import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisResult;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
-import reactor.core.publisher.Flux;
-
-import java.nio.ByteBuffer;
-import java.util.UUID;
 
 /**
  * @author kevinlin09
  */
 public class DashScopeSpeechSynthesisModel implements SpeechSynthesisModel {
-
-	private static final Logger logger = LoggerFactory.getLogger(DashScopeSpeechSynthesisModel.class);
 
 	private final DashScopeSpeechSynthesisApi api;
 

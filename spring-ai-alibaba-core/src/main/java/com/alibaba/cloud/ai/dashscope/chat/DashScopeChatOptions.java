@@ -156,22 +156,23 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
 
   @Override
   public Double getFrequencyPenalty() {
-    return null;
+
+    throw new RuntimeException("DashScope not implemented");
   }
 
   @Override
   public Integer getMaxTokens() {
-    return null;
+    throw new RuntimeException("DashScope not implemented");
   }
 
   @Override
   public Double getPresencePenalty() {
-    return null;
+    throw new RuntimeException("DashScope not implemented");
   }
 
   @Override
   public List<String> getStopSequences() {
-    return null;
+    throw new RuntimeException("DashScope not implemented");
   }
 
   public void setModel(String model) {
@@ -328,6 +329,8 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   public void setMultiModel(Boolean multiModel) {
       this.  multiModel = multiModel;
   }
+
+
 
   public static DashscopeChatOptionsBuilder builder() {
     return new DashscopeChatOptionsBuilder();

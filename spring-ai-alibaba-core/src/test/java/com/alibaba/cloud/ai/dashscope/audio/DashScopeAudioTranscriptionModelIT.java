@@ -16,28 +16,28 @@
 
 package com.alibaba.cloud.ai.dashscope.audio;
 
-import com.alibaba.cloud.ai.autoconfig.dashscope.DashScopeAutoConfiguration;
+import java.net.MalformedURLException;
+import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
+
+import com.alibaba.cloud.ai.dashscope.DashscopeAiTestConfiguration;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioTranscriptionApi;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.UrlResource;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.test.context.TestPropertySource;
-import reactor.core.publisher.Flux;
-
-import java.net.MalformedURLException;
-import java.util.Objects;
-import java.util.concurrent.CountDownLatch;
 
 @TestPropertySource("classpath:application.yml")
-@SpringBootTest(classes = DashScopeAutoConfiguration.class)
+@SpringBootTest(classes = DashscopeAiTestConfiguration.class)
 public class DashScopeAudioTranscriptionModelIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeAudioTranscriptionModelIT.class);

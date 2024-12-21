@@ -16,23 +16,19 @@
 
 package com.alibaba.cloud.ai.dashscope.api;
 
+import java.nio.ByteBuffer;
+
+import com.alibaba.cloud.ai.dashscope.protocol.DashScopeWebSocketClient;
+import com.alibaba.cloud.ai.dashscope.protocol.DashScopeWebSocketClientOptions;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.alibaba.cloud.ai.dashscope.protocol.DashScopeWebSocketClient;
-import com.alibaba.cloud.ai.dashscope.protocol.DashScopeWebSocketClientOptions;
-
-import java.nio.ByteBuffer;
 import reactor.core.publisher.Flux;
 
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.*;
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_WEBSOCKET_URL;
 
 public class DashScopeSpeechSynthesisApi {
-
-	private static final Logger logger = LoggerFactory.getLogger(DashScopeSpeechSynthesisApi.class);
 
 	private final DashScopeWebSocketClient webSocketClient;
 

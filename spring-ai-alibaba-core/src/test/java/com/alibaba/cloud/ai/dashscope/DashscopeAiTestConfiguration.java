@@ -1,30 +1,26 @@
 package com.alibaba.cloud.ai.dashscope;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioTranscriptionApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioTranscriptionApi;
+import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionModel;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisOptions;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
 import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
 import com.alibaba.cloud.ai.model.RerankModel;
-import com.alibaba.dashscope.audio.asr.transcription.Transcription;
-import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
-
 import io.micrometer.observation.tck.TestObservationRegistry;
+
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Scope;
 import org.springframework.util.StringUtils;
 
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
@@ -57,8 +53,18 @@ public class DashscopeAiTestConfiguration {
 		return newDashScopeChatApi(getApiKey());
 	}
 
+	@Bean
+	public DashScopeAgentApi dashScopeAgentApi() {
+		return newDashScopeAgentApi(getApiKey());
+	}
+
 	private DashScopeApi newDashScopeChatApi(String apiKey) {
 		return new DashScopeApi(DEFAULT_BASE_URL, apiKey, "");
+	}
+
+	private DashScopeAgentApi newDashScopeAgentApi(String apiKey) {
+
+		return new DashScopeAgentApi(apiKey);
 	}
 
 	private DashScopeApi newDashScopeApi(String apiKey) {
@@ -122,20 +128,6 @@ public class DashscopeAiTestConfiguration {
 	}
 
 	@Bean
-	@Scope("prototype")
-	@ConditionalOnMissingBean
-	public SpeechSynthesizer speechSynthesizer() {
-		return new SpeechSynthesizer();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	public Transcription transcription() {
-		return new Transcription();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
 	public RerankModel dashscopeRerankModel(DashScopeApi dashscopeApi) {
 		return new DashScopeRerankModel(dashscopeApi);
 	}

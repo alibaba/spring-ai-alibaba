@@ -16,24 +16,26 @@
 
 package com.alibaba.cloud.ai.dashscope.audio;
 
-import com.alibaba.cloud.ai.autoconfig.dashscope.DashScopeAutoConfiguration;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
+
+import com.alibaba.cloud.ai.dashscope.DashscopeAiTestConfiguration;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisPrompt;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisResponse;
-
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
-import reactor.core.publisher.Flux;
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.util.concurrent.CountDownLatch;
 
 @TestPropertySource("classpath:application.yml")
-@SpringBootTest(classes = DashScopeAutoConfiguration.class)
+@SpringBootTest(classes = DashscopeAiTestConfiguration.class)
 public class DashScopeSpeechSynthesisIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeSpeechSynthesisIT.class);
