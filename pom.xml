@@ -46,6 +46,7 @@
         <module>community/plugins/spring-ai-alibaba-starter-plugin-regex</module>
         <module>community/plugins/spring-ai-alibaba-starter-plugin-jsonprocessor</module>
         <module>community/plugins/spring-ai-alibaba-starter-plugin-serpapi</module>
+
         <module>community/document-readers/github-reader</module>
         <module>community/document-readers/poi-document-reader</module>
         <module>community/document-readers/tencent-cos-reader</module>
