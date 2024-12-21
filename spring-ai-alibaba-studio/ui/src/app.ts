@@ -41,6 +41,7 @@ export const requestConfig = defineRequestConfig({
       onConfig: (response) => {
         if (response.data.code != 200) {
           message.error(response.data.msg);
+          return Promise.reject(response.data.msg);
         }
         return response.data;
       },

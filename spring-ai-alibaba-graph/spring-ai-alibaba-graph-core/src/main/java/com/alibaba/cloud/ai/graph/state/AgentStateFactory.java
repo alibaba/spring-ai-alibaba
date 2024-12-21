@@ -4,10 +4,9 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * A factory interface for creating instances of {@link AgentState}.
+ * A factory interface for creating instances of {@link NodeState}.
  *
- * @param <State> the type of the agent state
  */
-public interface AgentStateFactory<State extends AgentState> extends Function<Map<String, Object>, State> {
+public interface AgentStateFactory extends Function<Map<String, Object>, NodeState> {
 
 }
