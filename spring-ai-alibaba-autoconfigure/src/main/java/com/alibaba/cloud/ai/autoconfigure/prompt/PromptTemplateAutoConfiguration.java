@@ -25,7 +25,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
- * @since 2024-09-20
  * @author KrakenZJC
  **/
 
@@ -38,6 +37,7 @@ public class PromptTemplateAutoConfiguration {
 	@ConditionalOnProperty(prefix = NacosPromptTmplProperties.TEMPLATE_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public ConfigurablePromptTemplateFactory configurablePromptTemplateFactory() {
+
 		return new ConfigurablePromptTemplateFactory();
 	}
 
