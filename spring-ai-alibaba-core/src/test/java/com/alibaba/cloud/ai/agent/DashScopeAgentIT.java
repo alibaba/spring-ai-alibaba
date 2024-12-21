@@ -16,7 +16,10 @@
 
 package com.alibaba.cloud.ai.agent;
 
-import com.alibaba.cloud.ai.autoconfig.dashscope.DashScopeAutoConfiguration;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+
+import com.alibaba.cloud.ai.dashscope.DashscopeAiTestConfiguration;
 import com.alibaba.cloud.ai.dashscope.agent.DashScopeAgent;
 import com.alibaba.cloud.ai.dashscope.agent.DashScopeAgentOptions;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi;
@@ -30,6 +33,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -37,10 +42,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
-import reactor.core.publisher.Flux;
-
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Title Dashscope Agent test cases.<br>
@@ -51,7 +52,7 @@ import java.util.concurrent.CountDownLatch;
  */
 
 @TestPropertySource("classpath:application.yml")
-@SpringBootTest(classes = DashScopeAutoConfiguration.class)
+@SpringBootTest(classes = DashscopeAiTestConfiguration.class)
 public class DashScopeAgentIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeAgentIT.class);

@@ -16,6 +16,11 @@
 
 package com.alibaba.cloud.ai.dashscope.api;
 
+import java.io.InputStream;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.util.List;
+
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionOptions;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
@@ -25,24 +30,16 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
-import reactor.core.publisher.Flux;
-
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.net.URL;
 
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
 
 public class DashScopeAudioTranscriptionApi {
-
-	private static final Logger logger = LoggerFactory.getLogger(DashScopeAudioTranscriptionApi.class);
 
 	private final RestClient restClient;
 
@@ -130,7 +127,7 @@ public class DashScopeAudioTranscriptionApi {
 		ObjectMapper objectMapper = new ObjectMapper();
 
 		try {
-			InputStream inputStream = new URL(transcriptionUrl).openStream();
+			InputStream inputStream = new URI(transcriptionUrl).toURL().openStream();
 			Outcome outcome = objectMapper.readValue(inputStream, Outcome.class);
 			inputStream.close();
 			return outcome;

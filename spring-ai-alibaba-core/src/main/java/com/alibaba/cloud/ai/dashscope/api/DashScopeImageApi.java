@@ -25,7 +25,6 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
 
@@ -35,27 +34,22 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAUL
  */
 public class DashScopeImageApi {
 
-	public static final String DEFAULT_IMAGE_MODEL = ImageModel.WANX_V1.getValue();
-
 	private final RestClient restClient;
 
 	public DashScopeImageApi(String apiKey) {
-		this(DEFAULT_BASE_URL, apiKey, RestClient.builder(), WebClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+		this(DEFAULT_BASE_URL, apiKey, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	public DashScopeImageApi(String apiKey, String workSpaceId) {
-		this(DEFAULT_BASE_URL, apiKey, workSpaceId, RestClient.builder(), WebClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+		this(DEFAULT_BASE_URL, apiKey, workSpaceId, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	public DashScopeImageApi(String baseUrl, String apiKey, String workSpaceId) {
-		this(baseUrl, apiKey, workSpaceId, RestClient.builder(), WebClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+		this(baseUrl, apiKey, workSpaceId, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	public DashScopeImageApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+			ResponseErrorHandler responseErrorHandler) {
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(ApiUtils.getJsonContentHeaders(apiKey))
 			.defaultStatusHandler(responseErrorHandler)
@@ -63,7 +57,7 @@ public class DashScopeImageApi {
 	}
 
 	public DashScopeImageApi(String baseUrl, String apiKey, String workSpaceId, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+			ResponseErrorHandler responseErrorHandler) {
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(ApiUtils.getJsonContentHeaders(apiKey, workSpaceId))
 			.defaultStatusHandler(responseErrorHandler)

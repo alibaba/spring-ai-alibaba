@@ -31,6 +31,8 @@
 	<artifactId>spring-ai-alibaba-starter</artifactId>
 	<name>Spring AI Alibaba Starter</name>
 	<packaging>jar</packaging>
+	<description>Spring AI Alibaba Starter</description>
+
 	<url>https://github.com/alibaba/spring-ai-alibaba</url>
 	<scm>
 		<url>https://github.com/alibaba/spring-ai-alibaba</url>
@@ -42,7 +44,7 @@
 		<dependency>
 			<groupId>com.alibaba.cloud.ai</groupId>
 			<artifactId>spring-ai-alibaba-autoconfigure</artifactId>
-			<version>${project.parent.version}</version>
+			<version>${revision}</version>
 		</dependency>
 	</dependencies>
 
