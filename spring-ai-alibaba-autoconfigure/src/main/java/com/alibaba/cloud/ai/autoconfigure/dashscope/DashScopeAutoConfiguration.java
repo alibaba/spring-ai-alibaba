@@ -64,32 +64,51 @@ import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUt
  * @author yuluo
  */
 
+// @formatter:off
 @ConditionalOnClass(DashScopeApi.class)
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
-		SpringAiRetryAutoConfiguration.class })
-@EnableConfigurationProperties({ DashScopeConnectionProperties.class, DashScopeChatProperties.class,
-		DashScopeImageProperties.class, DashScopeSpeechSynthesisProperties.class,
-		DashScopeAudioTranscriptionProperties.class, DashScopeEmbeddingProperties.class,
+@AutoConfiguration(after = {
+				RestClientAutoConfiguration.class,
+				WebClientAutoConfiguration.class,
+				SpringAiRetryAutoConfiguration.class})
+@ImportAutoConfiguration(classes = {
+		SpringAiRetryAutoConfiguration.class,
+		RestClientAutoConfiguration.class,
+		WebClientAutoConfiguration.class
+})
+@EnableConfigurationProperties({
+		DashScopeConnectionProperties.class,
+		DashScopeChatProperties.class,
+		DashScopeImageProperties.class,
+		DashScopeSpeechSynthesisProperties.class,
+		DashScopeAudioTranscriptionProperties.class,
+		DashScopeEmbeddingProperties.class,
 		DashScopeRerankProperties.class })
-@ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-		WebClientAutoConfiguration.class })
 public class DashScopeAutoConfiguration {
 
 	/**
 	 * Spring AI Alibaba DashScope Chat Configuration.
 	 */
-	@ConditionalOnProperty(prefix = DashScopeChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+	@ConditionalOnProperty(
+			prefix = DashScopeChatProperties.CONFIG_PREFIX,
+			name = "enabled",
+			havingValue = "true",
 			matchIfMissing = true)
 	protected static class DashScopeChatConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
-		public DashScopeChatModel dashscopeChatModel(DashScopeConnectionProperties commonProperties,
-				DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
-				WebClient.Builder webClientBuilder, List<FunctionCallback> toolFunctionCallbacks,
-				FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
-				ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
-				ObjectProvider<ChatModelObservationConvention> observationConvention) {
+		public DashScopeChatModel dashscopeChatModel(
+				DashScopeConnectionProperties commonProperties,
+				DashScopeChatProperties chatProperties,
+				RestClient.Builder restClientBuilder,
+				WebClient.Builder webClientBuilder,
+				List<FunctionCallback> toolFunctionCallbacks,
+				FunctionCallbackContext functionCallbackContext,
+				RetryTemplate retryTemplate,
+				ResponseErrorHandler responseErrorHandler,
+				ObjectProvider<ObservationRegistry> observationRegistry,
+				ObjectProvider<ChatModelObservationConvention> observationConvention
+		) {
 
 			if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
 				chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
@@ -108,9 +127,13 @@ public class DashScopeAutoConfiguration {
 		}
 
 		@Bean
-		public DashScopeApi dashscopeChatApi(DashScopeConnectionProperties commonProperties,
-				DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
-				WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+		public DashScopeApi dashscopeChatApi(
+				DashScopeConnectionProperties commonProperties,
+				DashScopeChatProperties chatProperties,
+				RestClient.Builder restClientBuilder,
+				WebClient.Builder webClientBuilder,
+				ResponseErrorHandler responseErrorHandler
+		) {
 
 			ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, chatProperties,
 					"chat");
@@ -120,9 +143,13 @@ public class DashScopeAutoConfiguration {
 		}
 
 		@Bean
-		public DashScopeAgentApi dashscopeAgentApi(DashScopeConnectionProperties commonProperties,
-				DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
-				WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+		public DashScopeAgentApi dashscopeAgentApi(
+				DashScopeConnectionProperties commonProperties,
+				DashScopeChatProperties chatProperties,
+				RestClient.Builder restClientBuilder,
+				WebClient.Builder webClientBuilder,
+				ResponseErrorHandler responseErrorHandler
+		) {
 
 			ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, chatProperties,
 					"chat");
@@ -136,15 +163,22 @@ public class DashScopeAutoConfiguration {
 	/**
 	 * Spring AI Alibaba DashScope Image Configuration.
 	 */
-	@ConditionalOnProperty(prefix = DashScopeImageProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+	@ConditionalOnProperty(
+			prefix = DashScopeImageProperties.CONFIG_PREFIX,
+			name = "enabled",
+			havingValue = "true",
 			matchIfMissing = true)
 	protected static class DashScopeImageConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
-		public DashScopeImageModel dashScopeImageModel(DashScopeConnectionProperties commonProperties,
-				DashScopeImageProperties imageProperties, RestClient.Builder restClientBuilder,
-				RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
+		public DashScopeImageModel dashScopeImageModel(
+				DashScopeConnectionProperties commonProperties,
+				DashScopeImageProperties imageProperties,
+				RestClient.Builder restClientBuilder,
+				RetryTemplate retryTemplate,
+				ResponseErrorHandler responseErrorHandler
+		) {
 
 			ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, imageProperties,
 					"image");
@@ -160,17 +194,26 @@ public class DashScopeAutoConfiguration {
 	/**
 	 * Spring AI Alibaba DashScope Embedding Configuration.
 	 */
-	@ConditionalOnProperty(prefix = DashScopeEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-			matchIfMissing = true)
+	@ConditionalOnProperty(
+			prefix = DashScopeEmbeddingProperties.CONFIG_PREFIX,
+			name = "enabled",
+			havingValue = "true",
+			matchIfMissing = true
+	)
 	protected static class DashScopeEmbeddingConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
-		public DashScopeEmbeddingModel dashscopeEmbeddingModel(DashScopeConnectionProperties commonProperties,
-				DashScopeEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
-				WebClient.Builder webClientBuilder, RetryTemplate retryTemplate,
-				ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
-				ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
+		public DashScopeEmbeddingModel dashscopeEmbeddingModel(
+				DashScopeConnectionProperties commonProperties,
+				DashScopeEmbeddingProperties embeddingProperties,
+				RestClient.Builder restClientBuilder,
+				WebClient.Builder webClientBuilder,
+				RetryTemplate retryTemplate,
+				ResponseErrorHandler responseErrorHandler,
+				ObjectProvider<ObservationRegistry> observationRegistry,
+				ObjectProvider<EmbeddingModelObservationConvention> observationConvention
+		) {
 
 			var dashScopeApi = dashscopeEmbeddingApi(commonProperties, embeddingProperties, restClientBuilder,
 					webClientBuilder, responseErrorHandler);
@@ -185,9 +228,13 @@ public class DashScopeAutoConfiguration {
 		}
 
 		@Bean
-		public DashScopeApi dashscopeEmbeddingApi(DashScopeConnectionProperties commonProperties,
-				DashScopeEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
-				WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+		public DashScopeApi dashscopeEmbeddingApi(
+				DashScopeConnectionProperties commonProperties,
+				DashScopeEmbeddingProperties embeddingProperties,
+				RestClient.Builder restClientBuilder,
+				WebClient.Builder webClientBuilder,
+				ResponseErrorHandler responseErrorHandler
+		) {
 			ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, embeddingProperties,
 					"embedding");
 
@@ -200,8 +247,11 @@ public class DashScopeAutoConfiguration {
 	/**
 	 * Spring AI Alibaba DashScope Speech Synthesis Configuration.
 	 */
-	@ConditionalOnProperty(prefix = DashScopeSpeechSynthesisProperties.CONFIG_PREFIX, name = "enabled",
-			havingValue = "true", matchIfMissing = true)
+	@ConditionalOnProperty(
+			prefix = DashScopeSpeechSynthesisProperties.CONFIG_PREFIX,
+			name = "enabled",
+			havingValue = "true",
+			matchIfMissing = true)
 	protected static class DashScopeSpeechSynthesisConfiguration {
 
 		@Bean
@@ -231,17 +281,19 @@ public class DashScopeAutoConfiguration {
 	/**
 	 * Spring AI Alibaba DashScope Audio Transcription Configuration.
 	 */
-	@ConditionalOnProperty(prefix = DashScopeAudioTranscriptionProperties.CONFIG_PREFIX, name = "enabled",
-			havingValue = "true", matchIfMissing = true)
+	@ConditionalOnProperty(
+			prefix = DashScopeAudioTranscriptionProperties.CONFIG_PREFIX,
+			name = "enabled",
+			havingValue = "true",
+			matchIfMissing = true)
 	protected static class DashScopeAudioTranscriptionConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
-		@ConditionalOnProperty(prefix = DashScopeAudioTranscriptionProperties.CONFIG_PREFIX, name = "enabled",
-				havingValue = "true", matchIfMissing = true)
 		public DashScopeAudioTranscriptionModel dashScopeAudioTranscriptionModel(
 				DashScopeConnectionProperties commonProperties,
-				DashScopeAudioTranscriptionProperties audioTranscriptionProperties, RetryTemplate retryTemplate) {
+				DashScopeAudioTranscriptionProperties audioTranscriptionProperties, RetryTemplate retryTemplate
+		) {
 
 			var dashScopeSpeechSynthesisApi = dashScopeAudioTranscriptionApi(commonProperties,
 					audioTranscriptionProperties);
@@ -253,7 +305,8 @@ public class DashScopeAutoConfiguration {
 		@Bean
 		public DashScopeAudioTranscriptionApi dashScopeAudioTranscriptionApi(
 				DashScopeConnectionProperties commonProperties,
-				DashScopeAudioTranscriptionProperties audioTranscriptionProperties) {
+				DashScopeAudioTranscriptionProperties audioTranscriptionProperties
+		) {
 
 			ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
 					audioTranscriptionProperties, "audio.transcription");
@@ -263,16 +316,24 @@ public class DashScopeAutoConfiguration {
 
 	}
 
-	@ConditionalOnProperty(prefix = DashScopeRerankProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-			matchIfMissing = true)
+	@ConditionalOnProperty(
+			prefix = DashScopeRerankProperties.CONFIG_PREFIX,
+			name = "enabled",
+			havingValue = "true",
+			matchIfMissing = true
+	)
 	protected static class DashScopeRerankConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
-		public DashScopeRerankModel dashscopeRerankModel(DashScopeConnectionProperties commonProperties,
-				DashScopeRerankProperties rerankProperties, RestClient.Builder restClientBuilder,
-				WebClient.Builder webClientBuilder, RetryTemplate retryTemplate,
-				ResponseErrorHandler responseErrorHandler) {
+		public DashScopeRerankModel dashscopeRerankModel(
+				DashScopeConnectionProperties commonProperties,
+				DashScopeRerankProperties rerankProperties,
+				RestClient.Builder restClientBuilder,
+				WebClient.Builder webClientBuilder,
+				RetryTemplate retryTemplate,
+				ResponseErrorHandler responseErrorHandler
+		) {
 			ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, rerankProperties,
 					"rerank");
 
@@ -286,9 +347,12 @@ public class DashScopeAutoConfiguration {
 
 	@Bean
 	public RestClientCustomizer restClientCustomizer(DashScopeConnectionProperties commonProperties) {
-		return restClientBuilder -> restClientBuilder
-			.requestFactory(ClientHttpRequestFactories.get(ClientHttpRequestFactorySettings.DEFAULTS
-				.withReadTimeout(Duration.ofSeconds(commonProperties.getReadTimeout()))));
+
+		return restClientBuilder -> restClientBuilder.requestFactory(
+				ClientHttpRequestFactories.get(
+					ClientHttpRequestFactorySettings
+							.DEFAULTS
+							.withReadTimeout(Duration.ofSeconds(commonProperties.getReadTimeout()))));
 	}
 
 	@Bean
@@ -301,3 +365,4 @@ public class DashScopeAutoConfiguration {
 	}
 
 }
+// @formatter:on

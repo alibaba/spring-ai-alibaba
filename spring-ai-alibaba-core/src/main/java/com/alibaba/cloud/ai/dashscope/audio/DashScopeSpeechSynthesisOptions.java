@@ -97,6 +97,7 @@ public class DashScopeSpeechSynthesisOptions implements SpeechSynthesisOptions {
 
     // @formatter:on
 	public static DashScopeSpeechSynthesisOptions.Builder builder() {
+
 		return new DashScopeSpeechSynthesisOptions.Builder();
 	}
 
@@ -172,14 +173,16 @@ public class DashScopeSpeechSynthesisOptions implements SpeechSynthesisOptions {
 	}
 
 	public void setEnablePhonemeTimestamp(Boolean enablePhonemeTimestamp) {
+
 		this.enablePhonemeTimestamp = enablePhonemeTimestamp;
 	}
 
-	DashScopeSpeechSynthesisApi.ResponseFormat getResponseFormat() {
+	public DashScopeSpeechSynthesisApi.ResponseFormat getResponseFormat() {
 		return responseFormat;
 	}
 
-	void setResponseFormat(DashScopeSpeechSynthesisApi.ResponseFormat responseFormat) {
+	public void setResponseFormat(DashScopeSpeechSynthesisApi.ResponseFormat responseFormat) {
+
 		this.responseFormat = responseFormat;
 	}
 
@@ -188,6 +191,7 @@ public class DashScopeSpeechSynthesisOptions implements SpeechSynthesisOptions {
 	}
 
 	public String getVoice() {
+
 		return voice;
 	}
 

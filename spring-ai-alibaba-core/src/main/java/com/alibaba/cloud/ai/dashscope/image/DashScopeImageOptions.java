@@ -140,7 +140,8 @@ public class DashScopeImageOptions implements ImageOptions {
 
 	@Override
 	public String getResponseFormat() {
-		return null;
+
+		throw new RuntimeException("DashScope Not implemented");
 	}
 
 	public String getStyle() {
