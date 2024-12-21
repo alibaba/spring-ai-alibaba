@@ -36,6 +36,7 @@
         <module>spring-ai-alibaba-autoconfigure</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-time</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-baidusearch</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-baidutranslate</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-bingsearch</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-dingtalk</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-amap</module>
