@@ -16,36 +16,64 @@
 
 import { Tabs } from 'antd';
 import Config from './Config';
+import Prompt from './Prompt';
 import Tool from './Tool';
 import type { TabsProps } from 'antd';
 import styles from './index.module.css';
-import { InitialConfig, InitialTool } from './types';
+import { RightPanelValues } from '../types';
+import { ChatOptions, ImageOptions } from '@/types/options';
+import { ModelType } from '@/types/chat_model';
+import { useEffect, useState } from 'react';
 
 type Props = {
-  initialValues: {
-    initialConfig: InitialConfig;
-    initialTool: InitialTool;
-  };
+  modelType: ModelType;
+  initialValues: RightPanelValues;
+  onChangeConfig: (cfg: ChatOptions | ImageOptions) => void;
+  onChangePrompt: (prompt: string) => void;
 };
 
 export default function Setup(props: Props) {
-  const { initialConfig, initialTool } = props.initialValues;
+  const { modelType } = props;
+  const { initialChatConfig, initialImgConfig, initialTool } =
+    props.initialValues;
 
-  const items: TabsProps['items'] = [
-    {
-      key: 'config',
-      label: '配置',
-      children: <Config initialConfig={initialConfig} />,
-    },
-    {
-      key: '2',
-      label: '工具',
-      children: <Tool initialTool={initialTool} />,
-    },
-  ];
+  const [items, setItems] = useState<TabsProps['items']>();
+  useEffect(() => {
+    setItems([
+      {
+        key: 'config',
+        label: '配置',
+        children: (
+          <Config
+            modelType={modelType}
+            onChangeConfig={props.onChangeConfig}
+            configFromAPI={
+              modelType == ModelType.CHAT
+                ? initialChatConfig
+                : initialImgConfig
+            }
+          />
+        ),
+      },
+      {
+        key: 'prompt',
+        label: '提示词',
+        children: (
+          <Prompt
+            onchangePrompt={props.onChangePrompt}
+          />
+        ),
+      },
+      {
+        key: 'tool',
+        label: '工具',
+        children: <Tool initialTool={initialTool} />,
+      },
+    ]);
+  }, [initialChatConfig, initialImgConfig]);
   return (
     <div className={styles.container}>
-      <Tabs defaultActiveKey="1" items={items} />
+      <Tabs defaultActiveKey="config" items={items} />
     </div>
   );
 }

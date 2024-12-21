@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-import { InitialTool } from '../types';
+import { InitialTool } from '../../types';
 
 type Props = {
   initialTool: InitialTool;
 };
 
-export default function ConfigAndTool(props: Props) {
+export default function Tool(props: Props) {
   const { initialTool } = props;
   return <></>;
 }
