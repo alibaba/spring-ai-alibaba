@@ -251,6 +251,7 @@ export const LayoutFlow = () => {
       onLoad={onLayout}
       edges={edges}
       nodeTypes={nodeTypes}
+      minZoom={0.25}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onContextMenu={onGraphContextMenu}

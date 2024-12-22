@@ -1,8 +1,57 @@
 import { Icon } from '@iconify/react';
 import { useReactFlow, useViewport } from '@xyflow/react';
+import type { MenuProps } from 'antd';
+import { Dropdown } from 'antd';
 import React from 'react';
 import { OperationMode } from '../types';
 import './toolbar.less';
+
+enum ZoomType {
+  zoomIn = 'zoomIn',
+  zoomOut = 'zoomOut',
+  zoomToFit = 'zoomToFit',
+  zoomTo25 = 'zoomTo25',
+  zoomTo50 = 'zoomTo50',
+  zoomTo75 = 'zoomTo75',
+  zoomTo100 = 'zoomTo100',
+  zoomTo200 = 'zoomTo200',
+}
+
+const ZOOM_IN_OUT_OPTIONS = [
+  {
+    key: ZoomType.zoomTo200,
+    text: '200%',
+    value: 2,
+  },
+  {
+    key: ZoomType.zoomTo100,
+    text: '100%',
+    value: 1,
+  },
+  {
+    key: ZoomType.zoomTo75,
+    text: '75%',
+    value: 0.75,
+  },
+  {
+    key: ZoomType.zoomTo50,
+    text: '50%',
+    value: 0.5,
+  },
+  {
+    key: ZoomType.zoomTo25,
+    text: '25%',
+    value: 0.25,
+  },
+  {
+    key: 'divider',
+    text: null,
+  },
+  {
+    key: ZoomType.zoomToFit,
+    text: 'Zoom To Fit',
+  },
+];
 
 interface Props {
   name?: string;
@@ -24,6 +73,18 @@ const ToolBar: React.FC<Props> = (props) => {
     history: Boolean(history && history.length),
   };
 
+  const options: MenuProps['items'] = ZOOM_IN_OUT_OPTIONS.map((item, index) => {
+    const option = { key: item.key } as MenuProps['items'];
+    if (item.key === 'divider') {
+      option.type = 'divider';
+    } else if (index !== ZOOM_IN_OUT_OPTIONS.length - 1) {
+      option.label = <a onClick={() => zoomTo(item.value)}>{item.text}</a>;
+    } else {
+      option.label = <a onClick={() => fitView()}>{item.text}</a>;
+    }
+    return option;
+  });
+
   return (
     <div className="toolbar">
       <div className="zoom-wrapper item-wapper">
@@ -36,7 +97,11 @@ const ToolBar: React.FC<Props> = (props) => {
         >
           <Icon className="icon" icon="iconamoon:zoom-out-light"></Icon>
         </div>
-        <div>{parseFloat(`${zoom * 100}`).toFixed(0)}%</div>
+        <Dropdown menu={{ items: options }} trigger={['click']}>
+          <div className="text-wrapper">
+            {parseFloat(`${zoom * 100}`).toFixed(0)}%
+          </div>
+        </Dropdown>
         <div
           className="icon-wrapper"
           onClick={(e) => {
