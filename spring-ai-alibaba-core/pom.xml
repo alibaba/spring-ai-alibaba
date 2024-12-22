@@ -111,8 +111,11 @@
             <artifactId>jedis</artifactId>
             <version>3.6.3</version>
         </dependency>
-
-
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.32</version>
+        </dependency>
         <!-- test dependencies -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
