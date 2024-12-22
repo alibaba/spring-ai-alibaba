@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.plugin.baidumap;
+package com.alibaba.cloud.ai.functioncalling.baidumap;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -29,15 +30,16 @@ import org.springframework.context.annotation.Description;
  * @author Carbon
  */
 @Configuration
+@ConditionalOnClass(MapSearchService.class)
 @EnableConfigurationProperties(BaiDuMapProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.baidumap", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.baidumap", name = "enabled", havingValue = "true")
 public class BaiDuMapConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("Get weather information according to address.")
-	public WeatherSearchService baiDuMapGetAddressWeatherFunction(BaiDuMapProperties baiDuMapProperties) {
-		return new WeatherSearchService(baiDuMapProperties);
+	@Description("Get detail information of a address and facility query with baidu map.")
+	public MapSearchService baiDuMapGetAddressInformationFunction(BaiDuMapProperties baiDuMapProperties) {
+		return new MapSearchService(baiDuMapProperties);
 	}
 
 }

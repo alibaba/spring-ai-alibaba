@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.plugin.baidumap;
+package com.alibaba.cloud.ai.functioncalling.baidumap;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -27,7 +27,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * @author Carbon
  */
-public class WeatherTools {
+public class MapTools {
 
 	private final String baseUrl = "https://api.map.baidu.com";
 
@@ -35,7 +35,7 @@ public class WeatherTools {
 
 	private final HttpClient httpClient;
 
-	public WeatherTools(BaiDuMapProperties baiDuMapProperties) {
+	public MapTools(BaiDuMapProperties baiDuMapProperties) {
 		this.baiDuMapProperties = baiDuMapProperties;
 
 		this.httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
@@ -87,6 +87,30 @@ public class WeatherTools {
 
 		if (response.statusCode() != 200) {
 			throw new RuntimeException("Failed to get weather information");
+		}
+
+		return response.body();
+	}
+
+	/**
+	 * Public Facility Information
+	 * @param address
+	 * @param facilityType
+	 * @return https://lbsyun.baidu.com/faq/api?title=webapi/guide/webservice-placeapi/district
+	 */
+	public String getFacilityInformation(String address, String facilityType) {
+		String path = String.format("/place/v2/search?query=%s&region=%s&output=json&ak=%s", facilityType, address,
+				baiDuMapProperties.getWebApiKey());
+
+		HttpRequest httpRequest = createGetRequest(path);
+
+		CompletableFuture<HttpResponse<String>> responseFuture = httpClient.sendAsync(httpRequest,
+				HttpResponse.BodyHandlers.ofString());
+
+		HttpResponse<String> response = responseFuture.join();
+
+		if (response.statusCode() != 200) {
+			throw new RuntimeException("Failed to get facility information");
 		}
 
 		return response.body();
