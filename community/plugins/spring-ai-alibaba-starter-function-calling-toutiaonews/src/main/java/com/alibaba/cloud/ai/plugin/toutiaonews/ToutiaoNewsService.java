@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.plugin.news;
+package com.alibaba.cloud.ai.plugin.toutiaonews;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
@@ -6,18 +6,21 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
 /**
  * @Author: XiaoYunTao
- * @Date: 2024/12/19
+ * @Date: 2024/12/18
  */
-public abstract class NewsService<T extends NewsService.Request, R extends NewsService.Response>
-		implements Function<T, R> {
+public class ToutiaoNewsService implements Function<ToutiaoNewsService.Request, ToutiaoNewsService.Response> {
 
-	private static final Logger logger = LoggerFactory.getLogger(NewsService.class);
+	private static final Logger logger = LoggerFactory.getLogger(ToutiaoNewsService.class);
+
+	private static final String API_URL = "https://www.toutiao.com/hot-event/hot-board/?origin=toutiao_pc";
 
 	private static final String USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
@@ -36,25 +39,45 @@ public abstract class NewsService<T extends NewsService.Request, R extends NewsS
 		.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024))
 		.build();
 
-	public WebClient getWebClient() {
-		return WEB_CLIENT;
-	}
-
 	@Override
-	public R apply(T request) {
+	public ToutiaoNewsService.Response apply(ToutiaoNewsService.Request request) {
 		JsonNode rootNode = fetchDataFromApi();
 
 		List<HotEvent> hotEvents = parseHotEvents(rootNode);
 
 		logger.info("{} hotEvents: {}", this.getClass().getSimpleName(), hotEvents);
-		return createResponse(hotEvents);
+		return new Response(hotEvents);
 	}
 
-	protected abstract JsonNode fetchDataFromApi();
+	protected JsonNode fetchDataFromApi() {
+		return WEB_CLIENT.get()
+			.uri(API_URL)
+			.retrieve()
+			.onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+					clientResponse -> Mono
+						.error(new RuntimeException("API call failed with status " + clientResponse.statusCode())))
+			.bodyToMono(JsonNode.class)
+			.block();
+	}
 
-	protected abstract List<HotEvent> parseHotEvents(JsonNode rootNode);
+	protected List<HotEvent> parseHotEvents(JsonNode rootNode) {
+		if (rootNode == null || !rootNode.has("data")) {
+			throw new RuntimeException("Failed to retrieve or parse response data");
+		}
 
-	protected abstract R createResponse(List<HotEvent> hotEvents);
+		JsonNode dataNode = rootNode.get("data");
+		List<HotEvent> hotEvents = new ArrayList<>();
+
+		for (JsonNode itemNode : dataNode) {
+			if (!itemNode.has("Title")) {
+				continue;
+			}
+			String title = itemNode.get("Title").asText();
+			hotEvents.add(new HotEvent(title));
+		}
+
+		return hotEvents;
+	}
 
 	public record HotEvent(String title) {
 	}

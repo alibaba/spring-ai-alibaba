@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.example.functioncalling;
 
 import com.alibaba.cloud.ai.example.functioncalling.function.MockWeatherService;
-import com.alibaba.cloud.ai.plugin.news.service.ToutiaoService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -111,8 +110,7 @@ public class FunctionCallingController {
 	@GetMapping("/getToutiaoNews")
 	public String getToutiaoNews(@RequestParam String text) {
 		return chatClient.prompt()
-//				.function("getToutiaoNews", "获取今日头条新闻", new ToutiaoService())
-				.functions("getToutiaoNews", "getSinaNews")
+				.functions("getToutiaoNewsFunction", "getSinaNewsFunction")
 				.user(text)
 				.call()
 				.content();

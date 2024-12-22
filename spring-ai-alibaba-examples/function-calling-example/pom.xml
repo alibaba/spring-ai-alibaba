@@ -92,7 +92,13 @@
 
 		<dependency>
 			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>spring-ai-alibaba-starter-plugin-news</artifactId>
+			<artifactId>spring-ai-alibaba-starter-function-calling-sinanews</artifactId>
+			<version>${spring-ai-alibaba.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.alibaba.cloud.ai</groupId>
+			<artifactId>spring-ai-alibaba-starter-function-calling-toutiaonews</artifactId>
 			<version>${spring-ai-alibaba.version}</version>
 		</dependency>
 	</dependencies>
