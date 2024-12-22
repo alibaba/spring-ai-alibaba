@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.plugin.baidumap;
+package com.alibaba.cloud.ai.functioncalling.baidumap;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Carbon
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.baidumap")
+@ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.baidumap")
 public class BaiDuMapProperties {
 
-	// Official Document Address： https://lbs.baidu.com/faq/api?title=webapi/ROS2/prepare
+	// Official Document URL： https://lbs.baidu.com/faq/api?title=webapi/ROS2/prepare
 	private String webApiKey;
 
 	public BaiDuMapProperties(String webApiKey) {
