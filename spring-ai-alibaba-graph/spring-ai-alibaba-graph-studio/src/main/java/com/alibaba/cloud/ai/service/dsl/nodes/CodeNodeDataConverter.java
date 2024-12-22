@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 @Component
-public class CodeNodeDataConverter implements NodeDataConverter {
+public class CodeNodeDataConverter implements NodeDataConverter<CodeNodeData> {
 
 	@Override
 	public Boolean supportType(String nodeType) {
@@ -20,7 +20,7 @@ public class CodeNodeDataConverter implements NodeDataConverter {
 	}
 
 	@Override
-	public NodeData parseDifyData(Map<String, Object> data) {
+	public CodeNodeData parseDifyData(Map<String, Object> data) {
 		List<Map<String, Object>> variables = (List<Map<String, Object>>) data.get("variables");
 		List<VariableSelector> inputs = variables.stream().map(variable -> {
 			List<String> selector = (List<String>) variable.get("value_selector");
@@ -40,11 +40,10 @@ public class CodeNodeDataConverter implements NodeDataConverter {
 	}
 
 	@Override
-	public Map<String, Object> dumpDifyData(NodeData nodeData) {
-		CodeNodeData codeNodeData = (CodeNodeData) nodeData;
+	public Map<String, Object> dumpDifyData(CodeNodeData nodeData) {
 		Map<String, Object> data = new HashMap<>();
-		data.put("code", codeNodeData.getCode());
-		data.put("code_language", codeNodeData.getCodeLanguage());
+		data.put("code", nodeData.getCode());
+		data.put("code_language", nodeData.getCodeLanguage());
 		List<Map<String, Object>> inputVars = new ArrayList<>();
 		nodeData.getInputs().forEach(v -> {
 			inputVars.add(Map.of("variable", v.getLabel(), "value_selector", List.of(v.getNamespace(), v.getName())));
