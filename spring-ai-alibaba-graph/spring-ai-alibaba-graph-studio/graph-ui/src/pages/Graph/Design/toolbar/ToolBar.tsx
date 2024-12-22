@@ -49,82 +49,63 @@ const ToolBar: React.FC<Props> = (props) => {
       </div>
       <div className="undo-redo-wrapper item-wapper">
         <div
-          className="icon-wrapper"
+          className={
+            buttonsDisabled.undo ? 'icon-wrapper-disabled' : 'icon-wrapper'
+          }
           onClick={() => !buttonsDisabled.undo && handleUndo && handleUndo()}
         >
-          <Icon
-            className="icon"
-            icon="iconamoon:do-redo-light"
-            style={{ color: buttonsDisabled.undo ? '#d0d5dc' : '#676f83' }}
-          ></Icon>
+          <Icon className="icon" icon="iconamoon:do-redo-light"></Icon>
         </div>
         <div
-          className="icon-wrapper"
+          className={
+            buttonsDisabled.redo ? 'icon-wrapper-disabled' : 'icon-wrapper'
+          }
           onClick={() => !buttonsDisabled.redo && handleRedo && handleRedo()}
         >
-          <Icon
-            className="icon"
-            icon="iconamoon:do-undo-light"
-            style={{ color: buttonsDisabled.redo ? '#d0d5dc' : '#676f83' }}
-          ></Icon>
+          <Icon className="icon" icon="iconamoon:do-undo-light"></Icon>
         </div>
         <div className="split"></div>
         <div
-          className="icon-wrapper"
+          className={
+            buttonsDisabled.history ? 'icon-wrapper-disabled' : 'icon-wrapper'
+          }
           onClick={() => !buttonsDisabled.history && handleRedo && handleRedo()}
         >
-          <Icon
-            className="icon"
-            icon="iconamoon:history-light"
-            style={{ color: buttonsDisabled.history ? '#d0d5dc' : '#676f83' }}
-          ></Icon>
+          <Icon className="icon" icon="iconamoon:history-light"></Icon>
         </div>
       </div>
       <div className="control-wrapper item-wapper">
-        <div
-          className="icon-wrapper"
-          onClick={() => !buttonsDisabled.redo && handleRedo && handleRedo()}
-        >
-          <Icon
-            className="icon"
-            icon="material-symbols:add-box-rounded"
-            style={{ color: buttonsDisabled.redo ? '#d0d5dc' : '#676f83' }}
-          ></Icon>
+        <div className="icon-wrapper-disabled">
+          <Icon className="icon" icon="material-symbols:add-box-rounded"></Icon>
         </div>
-        <div
-          className="icon-wrapper"
-          onClick={() => !buttonsDisabled.redo && handleRedo && handleRedo()}
-        >
+        <div className="icon-wrapper-disabled">
           <Icon
             className="icon"
             icon="material-symbols:note-alt-outline"
-            style={{ color: buttonsDisabled.redo ? '#d0d5dc' : '#676f83' }}
           ></Icon>
         </div>
         <div className="split"></div>
         <div
-          className={`icon-wrapper ${
-            operationMode === 'hand' ? 'icon-wrapper-selected' : ''
-          }`}
+          className={
+            operationMode === 'hand' ? 'icon-wrapper-selected' : 'icon-wrapper'
+          }
           onClick={() => changeOperationMode('hand')}
         >
           <Icon className="icon" icon="tabler:hand-stop"></Icon>
         </div>
         <div
-          className={`icon-wrapper ${
-            operationMode === 'pointer' ? 'icon-wrapper-selected' : ''
-          }`}
+          className={
+            operationMode === 'pointer'
+              ? 'icon-wrapper-selected'
+              : 'icon-wrapper '
+          }
           onClick={() => changeOperationMode('pointer')}
         >
           <Icon className="icon" icon="tabler:pointer"></Icon>
         </div>
         <div className="split"></div>
-        <div className="icon-wrapper">
-          <Icon
-            className="icon"
-            icon="ic:sharp-format-align-left"
-            style={{ color: '#d0d5dc' }}
-          ></Icon>
+        <div className="icon-wrapper-disabled">
+          <Icon className="icon" icon="ic:sharp-format-align-left"></Icon>
         </div>
       </div>
     </div>
