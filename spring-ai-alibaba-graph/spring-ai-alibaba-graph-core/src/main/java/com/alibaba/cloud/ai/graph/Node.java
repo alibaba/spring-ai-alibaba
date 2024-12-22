@@ -2,7 +2,6 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.state.AgentState;
 import lombok.Value;
 import lombok.experimental.Accessors;
 
@@ -10,12 +9,10 @@ import java.util.Objects;
 
 /**
  * Represents a node in a graph with a unique identifier and an associated action.
- *
- * @param <State> the type of the state associated with the node
  */
 @Value
 @Accessors(fluent = true)
-class Node<State extends AgentState> {
+class Node {
 
 	/**
 	 * The unique identifier for the node.
@@ -25,20 +22,20 @@ class Node<State extends AgentState> {
 	/**
 	 * The action to be performed asynchronously by the node.
 	 */
-	AsyncNodeActionWithConfig<State> action;
+	AsyncNodeActionWithConfig action;
 
-	public Node( String id ) {
+	public Node(String id) {
 		this.id = id;
 		this.action = null;
 
 	}
 
-	public Node( String id, AsyncNodeAction<State> action ) {
+	public Node(String id, AsyncNodeAction action) {
 		this.id = id;
 		this.action = AsyncNodeActionWithConfig.of(action);
 	}
 
-	public Node( String id, AsyncNodeActionWithConfig<State> action ) {
+	public Node(String id, AsyncNodeActionWithConfig action) {
 		this.id = id;
 		this.action = action;
 	}
@@ -54,7 +51,7 @@ class Node<State extends AgentState> {
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		Node<?> node = (Node<?>) o;
+		Node node = (Node) o;
 		return Objects.equals(id, node.id);
 	}
 
