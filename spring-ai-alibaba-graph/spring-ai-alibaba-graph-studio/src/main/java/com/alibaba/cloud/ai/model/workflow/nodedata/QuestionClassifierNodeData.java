@@ -20,30 +20,28 @@ import java.util.List;
 @Accessors(chain = true)
 public class QuestionClassifierNodeData extends NodeData {
 
-    public static final Variable DEFAULT_OUTPUT_SCHEMA = new Variable("class_name", VariableType.STRING.value());
+	public static final Variable DEFAULT_OUTPUT_SCHEMA = new Variable("class_name", VariableType.STRING.value());
 
-    private LLMNodeData.ModelConfig model;
+	private LLMNodeData.ModelConfig model;
 
-    private LLMNodeData.MemoryConfig memoryConfig;
-    
-    private String instruction;
+	private LLMNodeData.MemoryConfig memoryConfig;
 
-    private List<ClassConfig> classes;
+	private String instruction;
 
-    public QuestionClassifierNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
-        super(inputs, outputs);
-    }
+	private List<ClassConfig> classes;
 
-    @Data
-    @AllArgsConstructor
-    public static class ClassConfig {
+	public QuestionClassifierNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
+		super(inputs, outputs);
+	}
 
-        private String id;
+	@Data
+	@AllArgsConstructor
+	public static class ClassConfig {
 
-        private String text;
-    }
+		private String id;
 
+		private String text;
 
-
+	}
 
 }

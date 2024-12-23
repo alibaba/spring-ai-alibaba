@@ -5,7 +5,7 @@ import com.alibaba.cloud.ai.graph.node.AbstractNode;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeBlock;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionResult;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 
@@ -18,7 +18,7 @@ import java.util.Map;
  * @since 2024-11-28 11:47
  */
 
-public class CodeExecutorNodeAction<State extends AgentState> extends AbstractNode implements NodeAction<State>  {
+public class CodeExecutorNodeAction extends AbstractNode implements NodeAction {
 
 	private final CodeExecutor codeExecutor;
 
@@ -28,7 +28,8 @@ public class CodeExecutorNodeAction<State extends AgentState> extends AbstractNo
 
 	private final CodeExecutionConfig codeExecutionConfig;
 
-	public CodeExecutorNodeAction(CodeExecutor codeExecutor, String codeLanguage, String code, CodeExecutionConfig config) {
+	public CodeExecutorNodeAction(CodeExecutor codeExecutor, String codeLanguage, String code,
+			CodeExecutionConfig config) {
 		this.codeExecutor = codeExecutor;
 		this.codeLanguage = codeLanguage;
 		this.code = code;
@@ -36,14 +37,17 @@ public class CodeExecutorNodeAction<State extends AgentState> extends AbstractNo
 	}
 
 	@Override
-	public Map<String, Object> apply(State state) throws Exception {
+	public Map<String, Object> apply(NodeState state) throws Exception {
 		List<CodeBlock> codeBlockList = new ArrayList<>(10);
 		codeBlockList.add(new CodeBlock(codeLanguage, code));
-		CodeExecutionResult codeExecutionResult = codeExecutor.executeCodeBlocks(codeBlockList, this.codeExecutionConfig);
+		CodeExecutionResult codeExecutionResult = codeExecutor.executeCodeBlocks(codeBlockList,
+				this.codeExecutionConfig);
 		if (codeExecutionResult.exitCode() != 0) {
-			throw new RuntimeException("code execution failed, exit code: " + codeExecutionResult.exitCode() + ", logs: " + codeExecutionResult.logs());
+			throw new RuntimeException("code execution failed, exit code: " + codeExecutionResult.exitCode()
+					+ ", logs: " + codeExecutionResult.logs());
 		}
-		return JSONObject.parseObject(codeExecutionResult.logs(), new TypeReference<Map<String, Object>>() {});
+		return JSONObject.parseObject(codeExecutionResult.logs(), new TypeReference<Map<String, Object>>() {
+		});
 	}
 
 	public static Builder builder() {
@@ -83,8 +87,8 @@ public class CodeExecutorNodeAction<State extends AgentState> extends AbstractNo
 			return this;
 		}
 
-		public <State extends AgentState> CodeExecutorNodeAction<State> build() {
-			return new CodeExecutorNodeAction<>(codeExecutor, codeLanguage, code, config);
+		public CodeExecutorNodeAction build() {
+			return new CodeExecutorNodeAction(codeExecutor, codeLanguage, code, config);
 		}
 
 	}

@@ -3,20 +3,13 @@ package com.alibaba.cloud.ai.graph;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.node.code.CodeExecutorNodeAction;
 import com.alibaba.cloud.ai.graph.node.code.LocalCommandlineCodeExecutor;
-import com.alibaba.cloud.ai.graph.node.code.entity.CodeBlock;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig;
-import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionResult;
-import com.alibaba.cloud.ai.graph.state.AgentState;
-import com.alibaba.cloud.ai.graph.state.AppenderChannel;
-import com.alibaba.cloud.ai.graph.state.Channel;
-import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,48 +30,41 @@ public class CodeActionTest {
 		config = CodeExecutionConfig.builder().workDir(tempDir.toString()).build();
 	}
 
+	private LLMNodeActionTest.MockState mockState() {
+		Map<String, Object> initData = new HashMap<>();
+		return new LLMNodeActionTest.MockState(initData);
+	}
+
 	@Test
 	void testExecutePythonSuccessfully() throws Exception {
 		String code = """
-				print('Hello, Python!')
+				print({"result":'Hello, Python!'})
 				""";
 
-		NodeAction<MessagesState> codeNode = CodeExecutorNodeAction.builder()
+		NodeAction codeNode = CodeExecutorNodeAction.builder()
 			.codeExecutor(new LocalCommandlineCodeExecutor())
+			.code(code)
+			.codeLanguage("python")
+			.config(config)
 			.build();
-		List<CodeBlock> codeBlockList = new ArrayList<>();
-		codeBlockList.add(new CodeBlock("python", code));
-		Map<String, Object> map = new HashMap<>();
-		map.put("codeBlockList", codeBlockList);
-		map.put("codeExecutionConfig", config);
 
-		MessagesState messagesState = new MessagesState(map);
-		Map<String, Object> stateData = codeNode.apply(messagesState);
+		Map<String, Object> stateData = codeNode.apply(mockState());
 
-		CodeExecutionResult result = (CodeExecutionResult) stateData.get("codeExecutionResult");
-//		assertThat(result.exitCode()).isZero();
-//		assertThat(result.logs()).contains("Hello, Python!");
-		System.out.println(result.logs());
+		// assertThat(result.exitCode()).isZero();
+		// assertThat(result.logs()).contains("Hello, Python!");
+		System.out.println(stateData);
 	}
 
-	static class MessagesState extends AgentState {
+	static class MockState extends NodeState {
 
-		static Map<String, Channel<?>> SCHEMA = CollectionsUtils.mapOf("messages",
-				AppenderChannel.<String>of(ArrayList::new));
-
-		public MessagesState(Map<String, Object> initData) {
+		/**
+		 * Constructs an AgentState with the given initial data.
+		 * @param initData the initial data for the agent state
+		 */
+		public MockState(Map<String, Object> initData) {
 			super(initData);
 		}
 
-		int steps() {
-			return value("steps", 0);
-		}
-
-		List<String> messages() {
-			return this.<List<String>>value("messages").orElseThrow(() -> new RuntimeException("messages not found"));
-		}
-
 	}
-
 
 }
