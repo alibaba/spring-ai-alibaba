@@ -159,9 +159,6 @@ public class OpenSearchVector implements VectorStore {
 
 	/**
 	 * Represents the response body from a search operation.
-	 *
-	 * @author fuyou.lxm
-	 * @since 1.0.0-M3
 	 */
 	private record SearchResponseBody(String errorCode, String errorMessage,
 
@@ -191,9 +188,6 @@ public class OpenSearchVector implements VectorStore {
 
 	/**
 	 * Represents the response body from the OpenSearch API.
-	 *
-	 * @author fuyou.lxm
-	 * @since 1.0.0-M3
 	 */
 	private record ResponseBody(Integer code, String status, String errorCode, String errorMessage) {
 
@@ -242,8 +236,6 @@ public class OpenSearchVector implements VectorStore {
 	 * @param score The similarity score of the document.
 	 * @param content The content of the document.
 	 * @param metadata Additional metadata associated with the document.
-	 * @author fuyou.lxm
-	 * @since 1.0.0-M3
 	 */
 	public record SimilarityResult(String id, double score,
 
@@ -255,9 +247,6 @@ public class OpenSearchVector implements VectorStore {
 	/**
 	 * Wrapper class for interacting with OpenSearch, providing methods to upload
 	 * documents, delete documents, and execute search queries.
-	 *
-	 * @author fuyou.lxm
-	 * @since 1.0.0-M3
 	 */
 	public static class OpenSearchClientWrapper {
 
@@ -386,9 +375,6 @@ public class OpenSearchVector implements VectorStore {
 	 * {@link SimilarityResult} objects. This class handles the extraction of relevant
 	 * information such as document ID, content, score, and metadata from the JSON
 	 * response.
-	 *
-	 * @author fuyou.lxm
-	 * @since 1.0.0-M3
 	 */
 	private static class SearchResultParser {
 
