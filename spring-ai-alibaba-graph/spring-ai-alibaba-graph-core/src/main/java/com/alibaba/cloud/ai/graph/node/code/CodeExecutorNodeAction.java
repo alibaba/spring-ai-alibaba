@@ -1,10 +1,15 @@
 package com.alibaba.cloud.ai.graph.node.code;
 
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.node.AbstractNode;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeBlock;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionResult;
 import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.TypeReference;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -13,39 +18,32 @@ import java.util.Map;
  * @since 2024-11-28 11:47
  */
 
-public class CodeExecutorNodeAction<State extends AgentState> implements NodeAction<State> {
+public class CodeExecutorNodeAction<State extends AgentState> extends AbstractNode implements NodeAction<State>  {
 
 	private final CodeExecutor codeExecutor;
 
-	public CodeExecutorNodeAction(CodeExecutor codeExecutor) {
+	private final String codeLanguage;
+
+	private final String code;
+
+	private final CodeExecutionConfig codeExecutionConfig;
+
+	public CodeExecutorNodeAction(CodeExecutor codeExecutor, String codeLanguage, String code, CodeExecutionConfig config) {
 		this.codeExecutor = codeExecutor;
+		this.codeLanguage = codeLanguage;
+		this.code = code;
+		this.codeExecutionConfig = config;
 	}
 
 	@Override
 	public Map<String, Object> apply(State state) throws Exception {
-		CodeExecutionConfig config = (CodeExecutionConfig) state.data().get("codeExecutionConfig");
-
-		List<CodeBlock> codeBlocks =  getCodeBlockList(state.data().get("codeBlockList"));;
-
-		CodeExecutionResult executionResult = codeExecutor.executeCodeBlocks(codeBlocks, config);
-
-		return Map.of("codeExecutionResult", executionResult);
-	}
-
-	private List<CodeBlock> getCodeBlockList(Object codeBlockListObj) {
-		if (codeBlockListObj == null) {
-			throw new NullPointerException("The value of 'codeBlockList' is null");
+		List<CodeBlock> codeBlockList = new ArrayList<>(10);
+		codeBlockList.add(new CodeBlock(codeLanguage, code));
+		CodeExecutionResult codeExecutionResult = codeExecutor.executeCodeBlocks(codeBlockList, this.codeExecutionConfig);
+		if (codeExecutionResult.exitCode() != 0) {
+			throw new RuntimeException("code execution failed, exit code: " + codeExecutionResult.exitCode() + ", logs: " + codeExecutionResult.logs());
 		}
-		if (codeBlockListObj instanceof List<?> codeBlockList) {
-			for (Object item : codeBlockList) {
-				if (!(item instanceof CodeBlock)) {
-					throw new IllegalArgumentException("The list contains an element that is not of type CodeBlock: " + item);
-				}
-			}
-			return (List<CodeBlock>) codeBlockList;
-		} else {
-			throw new IllegalArgumentException("The provided 'codeBlockList' is not a List");
-		}
+		return JSONObject.parseObject(codeExecutionResult.logs(), new TypeReference<Map<String, Object>>() {});
 	}
 
 	public static Builder builder() {
@@ -60,6 +58,8 @@ public class CodeExecutorNodeAction<State extends AgentState> implements NodeAct
 
 		private String code;
 
+		private CodeExecutionConfig config;
+
 		public Builder() {
 		}
 
@@ -68,8 +68,23 @@ public class CodeExecutorNodeAction<State extends AgentState> implements NodeAct
 			return this;
 		}
 
+		public Builder codeLanguage(String codeLanguage) {
+			this.codeLanguage = codeLanguage;
+			return this;
+		}
+
+		public Builder code(String code) {
+			this.code = code;
+			return this;
+		}
+
+		public Builder config(CodeExecutionConfig config) {
+			this.config = config;
+			return this;
+		}
+
 		public <State extends AgentState> CodeExecutorNodeAction<State> build() {
-			return new CodeExecutorNodeAction<>(codeExecutor);
+			return new CodeExecutorNodeAction<>(codeExecutor, codeLanguage, code, config);
 		}
 
 	}

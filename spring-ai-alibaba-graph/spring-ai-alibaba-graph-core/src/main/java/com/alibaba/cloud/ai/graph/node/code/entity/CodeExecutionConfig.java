@@ -37,4 +37,7 @@ public class CodeExecutionConfig {
 	@Builder.Default
 	private int lastMessagesNumber = 1;
 
+	@Builder.Default
+	private int codeMaxDepth = 5;
+
 }
