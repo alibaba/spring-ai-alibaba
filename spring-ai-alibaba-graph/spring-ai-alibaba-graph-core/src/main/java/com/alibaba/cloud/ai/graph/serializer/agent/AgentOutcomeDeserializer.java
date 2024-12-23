@@ -1,21 +1,16 @@
-package com.alibaba.cloud.ai.graph.practice.insurance_sale;
+package com.alibaba.cloud.ai.graph.serializer.agent;
 
-import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
-import dev.ai.alibaba.samples.executor.AgentAction;
-import dev.ai.alibaba.samples.executor.AgentFinish;
-import dev.ai.alibaba.samples.executor.AgentOutcome;
 
 import java.io.IOException;
 
-class IsAgentOutcomeDeserializer extends JsonDeserializer<AgentOutcome> {
+class AgentOutcomeDeserializer extends JsonDeserializer<AgentOutcome> {
 
 	@Override
-	public AgentOutcome deserialize(JsonParser parser, DeserializationContext ctx)
-			throws IOException, JacksonException {
+	public AgentOutcome deserialize(JsonParser parser, DeserializationContext ctx) throws IOException {
 		JsonNode node = parser.getCodec().readTree(parser);
 
 		var actionNode = node.get("action");

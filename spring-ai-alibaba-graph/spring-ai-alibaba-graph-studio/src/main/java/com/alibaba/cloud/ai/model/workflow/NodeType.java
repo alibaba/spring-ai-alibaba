@@ -14,12 +14,11 @@ public enum NodeType {
 
 	RETRIEVER("RETRIEVER", "knowledge-retrieval"),
 
-	HUMAN("HUMAN", "unsupported"),
+	AGGREGATOR("AGGREGATOR", "variable-aggregator"),
 
 	QUESTION_CLASSIFIER("QUESTION_CLASSIFIER", "question-classifier"),
-	;
 
-
+	HUMAN("HUMAN", "unsupported"),;
 
 	private String value;
 
