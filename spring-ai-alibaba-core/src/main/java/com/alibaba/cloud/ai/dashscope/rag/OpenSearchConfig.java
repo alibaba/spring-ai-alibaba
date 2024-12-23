@@ -32,27 +32,27 @@ public class OpenSearchConfig {
 		this.instanceId = instanceId;
 	}
 
-	public String getEndpoint() { // 新增
+	public String getEndpoint() {
 		return endpoint;
 	}
 
-	public void setEndpoint(String endpoint) { // 新增
+	public void setEndpoint(String endpoint) {
 		this.endpoint = endpoint;
 	}
 
-	public String getAccessUserName() { // 新增
+	public String getAccessUserName() {
 		return accessUserName;
 	}
 
-	public void setAccessUserName(String accessUserName) { // 新增
+	public void setAccessUserName(String accessUserName) {
 		this.accessUserName = accessUserName;
 	}
 
-	public String getAccessPassWord() { // 新增
+	public String getAccessPassWord() {
 		return accessPassWord;
 	}
 
-	public void setAccessPassWord(String accessPassWord) { // 新增
+	public void setAccessPassWord(String accessPassWord) {
 		this.accessPassWord = accessPassWord;
 	}
 
