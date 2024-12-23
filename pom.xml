@@ -66,6 +66,8 @@
         <spring-ai.version>1.0.0-M3</spring-ai.version>
         <dashscope-sdk-java.version>2.15.1</dashscope-sdk-java.version>
 
+        <handlebars.version>4.3.1</handlebars.version>
+
         <!-- plugin versions -->
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
@@ -115,6 +117,11 @@
                 <version>${spring-ai.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.github.jknack</groupId>
+                <artifactId>handlebars</artifactId>
+                <version>${handlebars.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

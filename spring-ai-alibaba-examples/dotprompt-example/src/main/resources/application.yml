@@ -1,0 +1,10 @@
+spring:
+  ai:
+    alibaba:
+      dotprompt:
+        enabled: true
+        base-path: prompts/
+        file-extension: .prompt
+        cache-enabled: true
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY}

@@ -1,0 +1,17 @@
+---
+config:
+  temperature: 0.1
+  top_p: 0.95
+input:
+  schema:
+    text: string
+    aspects: string[]
+  default:
+    aspects: ["sentiment", "key_points", "tone"]
+---
+Analyze the following text focusing on these aspects: {{#each aspects}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}.
+
+Text to analyze:
+{{text}}
+
+Please provide a structured analysis with clear headings for each aspect.
