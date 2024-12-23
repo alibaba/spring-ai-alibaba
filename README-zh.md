@@ -1,10 +1,10 @@
 # Spring AI Alibaba
 
-[Spring AI Alibaba](https://sca.aliyun.com/ai/) 是一款 Java 语言实现的 AI 应用开发框架，旨在简化 Java AI 应用程序开发，让 Java 开发者像使用 Spring 开发普通应用一样开发 AI 应用。Spring AI Alibaba 基于 Spring AI 开源项目构建，默认提供阿里云基础模型服务、开源及商业生态组件的集成与最佳实践。
+[Spring AI Alibaba](https://java2ai.com) 是一款 Java 语言实现的 AI 应用开发框架，旨在简化 Java AI 应用程序开发，让 Java 开发者像使用 Spring 开发普通应用一样开发 AI 应用。Spring AI Alibaba 基于 Spring AI 开源项目构建，默认提供阿里云基础模型服务、开源及商业生态组件的集成与最佳实践。
 
 ## 快速开始
 
-请参考[快速开始](https://sca.aliyun.com/ai/get-started/) 了解如何使用 Spring AI Alibaba 快速开发生成式 AI 应用。
+请参考[快速开始](https://java2ai.com/docs/dev/get-started/) 了解如何使用 Spring AI Alibaba 快速开发生成式 AI 应用。
 
 总的来说，使用 Spring AI Alibaba 开发应用与使用普通 Spring Boot 没有什么区别，只需要增加 `spring-ai-alibaba-starter` 依赖，将 `ChatClient` Bean 注入就可以实现与模型聊天了。
 
@@ -68,7 +68,7 @@
 
 ## 示例
 
-请在 [spring-ai-alibaba-examples](./spring-ai-alibaba-examples) 查看更多 Example 示例。
+请在 [spring-ai-alibaba-examples](https://github.com/springaialibaba/spring-ai-alibaba-examples) 查看更多 Example 示例。
 
 * Hello World
 * Chat Model
@@ -81,7 +81,7 @@
 
 ## 特性
 
-以下是 Spring AI Alibaba 支持的核心能力，未来更多高级功能将以这些核心能力为基础。请参考官网文档 [Spring AI Alibaba 核心概念](https://sca.aliyun.com/docs/ai/concepts/)以及 [AI 应用开发最佳实践](https://sca.aliyun.com/docs/ai/practices/playground-flight-booking)。
+以下是 Spring AI Alibaba 支持的核心能力，未来更多高级功能将以这些核心能力为基础。请参考官网文档 [Spring AI Alibaba 核心概念](https://java2ai.com/docs/dev/concepts/)以及 [AI 应用开发最佳实践](https://java2ai.com/docs/dev/practices/playground-flight-booking/)。
 
 * 开发复杂 AI 应用的高阶抽象 Fluent API -- ChatClient
 * 提供多种大模型服务对接能力，包括主流开源与阿里云通义大模型服务（百炼）等
@@ -109,7 +109,7 @@ Spring AI Alibaba 提供 AI 开源框架以及与阿里巴巴整体开源生态�
 ## 参考资料
 
 * [Spring AI](https://docs.spring.io/spring-ai/reference/index.html)
-* [Spring AI Alibaba](https://sca.aliyun.com/docs/ai/overview/)
+* [Spring AI Alibaba](https://java2ai.com/docs/dev/overview/)
 * [阿里云百炼大模型应用开发平台](https://help.aliyun.com/zh/model-studio/getting-started/what-is-model-studio/)
 
 ## 联系我们
