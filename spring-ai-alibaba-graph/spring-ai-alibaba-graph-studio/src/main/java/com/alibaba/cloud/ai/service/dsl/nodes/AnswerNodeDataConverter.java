@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class AnswerNodeDataConverter implements NodeDataConverter {
+public class AnswerNodeDataConverter implements NodeDataConverter<AnswerNodeData> {
 
 	@Override
 	public Boolean supportType(String nodeType) {
@@ -22,7 +22,7 @@ public class AnswerNodeDataConverter implements NodeDataConverter {
 	}
 
 	@Override
-	public NodeData parseDifyData(Map<String, Object> data) {
+	public AnswerNodeData parseDifyData(Map<String, Object> data) {
 		String difyTmpl = (String) data.get("answer");
 		List<String> variables = new ArrayList<>();
 		String tmpl = StringTemplateUtil.fromDifyTmpl(difyTmpl, variables);
@@ -34,7 +34,7 @@ public class AnswerNodeDataConverter implements NodeDataConverter {
 	}
 
 	@Override
-	public Map<String, Object> dumpDifyData(NodeData nodeData) {
+	public Map<String, Object> dumpDifyData(AnswerNodeData nodeData) {
 		AnswerNodeData answerNodeData = (AnswerNodeData) nodeData;
 		Map<String, Object> data = new HashMap<>();
 		String difyTmpl = StringTemplateUtil.toDifyTmpl(answerNodeData.getAnswer());

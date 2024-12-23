@@ -16,15 +16,14 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class NodeData {
+    /**
+     * The inputs of the node is the output reference of the previous node
+     */
+    protected List<VariableSelector> inputs;
 
-	/**
-	 * The inputs of the node is the output reference of the previous node
-	 */
-	protected List<VariableSelector> inputs;
-
-	/**
-	 * The output variables of a node
-	 */
-	protected List<Variable> outputs;
+    /**
+     * The output variables of a node
+     */
+    protected List<Variable> outputs;
 
 }
