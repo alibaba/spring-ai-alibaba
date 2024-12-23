@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 @Component
-public class StartNodeDataConverter implements NodeDataConverter {
+public class StartNodeDataConverter implements NodeDataConverter<StartNodeData> {
 
 	private static final List<String> VARIABLE_STRING_TYPES = List.of("text-input", "paragraph", "select");
 
@@ -24,7 +24,7 @@ public class StartNodeDataConverter implements NodeDataConverter {
 	}
 
 	@Override
-	public NodeData parseDifyData(Map<String, Object> data) {
+	public StartNodeData parseDifyData(Map<String, Object> data) {
 		List<Map<String, Object>> inputMap = (List<Map<String, Object>>) data.get("variables");
 		List<StartNodeData.StartInput> startInputs = new ArrayList<>();
 		List<Variable> outputs = new ArrayList<>();
@@ -54,13 +54,12 @@ public class StartNodeDataConverter implements NodeDataConverter {
 	}
 
 	@Override
-	public Map<String, Object> dumpDifyData(NodeData nodeData) {
-		StartNodeData startNodeData = (StartNodeData) nodeData;
+	public Map<String, Object> dumpDifyData(StartNodeData nodeData) {
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		Map<String, Object> data = new HashMap<>();
-		data.put("variables", objectMapper.convertValue(startNodeData.getStartInputs(), List.class));
+		data.put("variables", objectMapper.convertValue(nodeData.getStartInputs(), List.class));
 		return data;
 	}
 

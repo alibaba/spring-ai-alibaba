@@ -19,7 +19,7 @@ package com.alibaba.cloud.ai.graph.node.llm;
 import com.alibaba.cloud.ai.graph.NodeActionDescriptor;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.node.AbstractNode;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  * @author 北极星
  * TODO add chat memory
  */
-public class LLMNodeAction<State extends AgentState> extends AbstractNode implements NodeAction<State> {
+public class LLMNodeAction extends AbstractNode implements NodeAction {
 
     public static final String DEFAULT_OUTPUT_KEY = "text";
 
@@ -58,7 +58,7 @@ public class LLMNodeAction<State extends AgentState> extends AbstractNode implem
     }
 
     @Override
-    public Map<String, Object> apply (State state) throws Exception {
+    public Map<String, Object> apply (NodeState state) throws Exception {
         Map<String, Object> partialState = reduceState(state);
          List<Message> messages = renderPromptTemplates(partialState, promptTemplates);
         List<Generation> generations = chatClient.prompt().messages(messages).call().chatResponse().getResults();
@@ -71,7 +71,7 @@ public class LLMNodeAction<State extends AgentState> extends AbstractNode implem
      * @param state global state
      * @return partial state
      */
-    private Map<String, Object> reduceState(State state){
+    private Map<String, Object> reduceState(NodeState state){
         if (nodeActionDescriptor.getInputSchema().isEmpty()){
             return state.data();
         }
@@ -131,10 +131,10 @@ public class LLMNodeAction<State extends AgentState> extends AbstractNode implem
             this.nodeActionDescriptor.setChatOptions(chatModel.getDefaultOptions());
         }
 
-        public <State extends AgentState> LLMNodeAction<State> build () {
+        public LLMNodeAction build () {
             ChatClient.Builder builder = ChatClient.builder(this.chatModel);
             if (functions != null && functions.length > 0) builder.defaultFunctions(functions);
-            return new LLMNodeAction<>(builder.build(), promptTemplates, nodeActionDescriptor);
+            return new LLMNodeAction(builder.build(), promptTemplates, nodeActionDescriptor);
         }
 
         public Builder withPromptTemplates(List<PromptTemplate> promptTemplates) {
