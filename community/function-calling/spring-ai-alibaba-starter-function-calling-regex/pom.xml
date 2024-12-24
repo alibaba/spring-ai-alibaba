@@ -55,6 +55,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-starter-plugin-regex</finalName>
+        <finalName>spring-ai-alibaba-starter-function-calling-regex</finalName>
     </build>
 </project>
