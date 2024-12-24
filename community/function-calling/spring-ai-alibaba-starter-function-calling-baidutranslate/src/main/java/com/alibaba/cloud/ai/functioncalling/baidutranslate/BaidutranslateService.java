@@ -108,20 +108,17 @@ public class BaidutranslateService implements Function<BaidutranslateService.Req
 		if (jsonElement.getAsJsonObject().has("error_code")) {
 			Map<String, String> responseList = gson.fromJson(responseData, new TypeToken<Map<String, String>>() {
 			}.getType());
-			String errorCode = responseList.get("error_code");
-			String errorMessage = responseList.get("error_msg");
-			logger.info("Translation exception, errorCode: {}, errorMessage: {}", errorCode, errorMessage);
-			logger.info("please inquire Baidu translation api documentation");
+			logger.info("Translation exception, please inquire Baidu translation api documentation");
 			return new Response(responseList);
 		}
 		else {
 			Map<String, String> translations = new HashMap<>();
 			TranslationResponse responseList = gson.fromJson(responseData, TranslationResponse.class);
-			String to = responseList.getTo();
-			List<TranslationResult> translationsList = responseList.getTransResult();
+			String to = responseList.to;
+			List<TranslationResult> translationsList = responseList.trans_result;
 			if (translationsList != null) {
 				for (TranslationResult translation : translationsList) {
-					String translatedText = translation.getDst();
+					String translatedText = translation.dst;
 					translations.put(to, translatedText);
 					logger.info("Translated text to {}: {}", to, translatedText);
 				}
@@ -142,6 +139,22 @@ public class BaidutranslateService implements Function<BaidutranslateService.Req
 
 	@JsonClassDescription("Response to translate text to a target language")
 	public record Response(Map<String, String> translatedTexts) {
+	}
+
+	@JsonClassDescription("part of the response")
+	public record TranslationResult(
+			@JsonProperty(required = true, value = "src") @JsonPropertyDescription("Original Content") String src,
+			@JsonProperty(required = true, value = "dst") @JsonPropertyDescription("Final Result") String dst) {
+	}
+
+	@JsonClassDescription("complete response")
+	public record TranslationResponse(
+			@JsonProperty(required = true,
+					value = "from") @JsonPropertyDescription("Source language that needs to be translated") String from,
+			@JsonProperty(required = true,
+					value = "to") @JsonPropertyDescription("Target language to translate into") String to,
+			@JsonProperty(required = true,
+					value = "trans_result") @JsonPropertyDescription("part of the response") List<TranslationResult> trans_result) {
 	}
 
 }
