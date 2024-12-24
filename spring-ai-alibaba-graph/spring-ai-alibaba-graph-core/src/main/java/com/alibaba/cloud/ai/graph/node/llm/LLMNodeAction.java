@@ -111,7 +111,7 @@ public class LLMNodeAction extends AbstractNode implements NodeAction {
 
 
     @Override
-    public NodeActionDescriptor getNodeAttributes() {
+    public NodeActionDescriptor getNodeActionDescriptor() {
         return nodeActionDescriptor;
     }
 

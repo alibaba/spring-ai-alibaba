@@ -37,6 +37,11 @@ public class Node implements RunnableModel {
 
 	private NodeData data;
 
+	@Override
+	public String id() {
+		return id;
+	}
+
 	@Data
 	public static class Coordinate {
 
