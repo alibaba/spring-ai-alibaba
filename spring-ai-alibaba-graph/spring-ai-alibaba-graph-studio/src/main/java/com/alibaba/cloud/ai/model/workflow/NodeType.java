@@ -1,22 +1,27 @@
 package com.alibaba.cloud.ai.model.workflow;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 public enum NodeType {
 
-	START("START", "start"),
+	START("start", "start"),
 
-	END("END", "end"),
+	END("end", "end"),
 
-	ANSWER("ANSWER", "answer"),
+	ANSWER("answer", "answer"),
 
-	LLM("LLM", "llm"),
+	LLM("llm", "llm"),
 
-	CODE("CODE", "code"),
+	CODE("code", "code"),
 
-	RETRIEVER("RETRIEVER", "knowledge-retrieval"),
+	RETRIEVER("retriever", "knowledge-retrieval"),
 
-	AGGREGATOR("AGGREGATOR", "variable-aggregator"),
+	AGGREGATOR("aggregator", "variable-aggregator"),
 
-	HUMAN("HUMAN", "unsupported"),;
+	HUMAN("human", "unsupported"),
+
+	BRANCH("branch", "if-else");
 
 	private String value;
 
@@ -35,13 +40,13 @@ public enum NodeType {
 		return this.difyValue;
 	}
 
-	public static NodeType difyValueOf(String difyValue) {
-		for (NodeType nodeType : NodeType.values()) {
-			if (nodeType.difyValue.equals(difyValue)) {
-				return nodeType;
-			}
-		}
-		return null;
+
+	public static Optional<NodeType> fromValue(String value) {
+		return Arrays.stream(NodeType.values()).filter(nodeType -> nodeType.value.equals(value)).findFirst();
+	}
+
+	public static Optional<NodeType> fromDifyValue(String difyValue) {
+		return Arrays.stream(NodeType.values()).filter(nodeType -> nodeType.difyValue.equals(difyValue)).findFirst();
 	}
 
 }
