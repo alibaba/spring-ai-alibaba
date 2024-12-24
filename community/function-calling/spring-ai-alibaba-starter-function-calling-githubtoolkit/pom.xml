@@ -25,8 +25,8 @@
         <version>${revision}</version>
         <relativePath>../../../pom.xml</relativePath>
     </parent>
-    <artifactId>spring-ai-alibaba-starter-function-calling-githubtool</artifactId>
-    <name>spring-ai-alibaba-starter-plugin-githubtool</name>
+    <artifactId>spring-ai-alibaba-starter-function-calling-githubtoolkit</artifactId>
+    <name>spring-ai-alibaba-starter-function-calling-githubtoolkit</name>
     <description>github toolkit for Spring AI Alibaba</description>
 
 
@@ -61,6 +61,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-starter-plugin-github</finalName>
+        <finalName>spring-ai-alibaba-starter-function-calling-githubtoolkit</finalName>
     </build>
 </project>

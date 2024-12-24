@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.functioncalling.githubtool;
+package com.alibaba.cloud.ai.functioncalling.githubtoolkit;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -44,15 +44,15 @@ public class GetIssueService implements Function<Request, Response> {
 
 	private final WebClient webClient;
 
-	private final GithubtoolProperties properties;
+	private final GithubToolKitProperties properties;
 
-	public GetIssueService(GithubtoolProperties properties) {
+	public GetIssueService(GithubToolKitProperties properties) {
 		assert properties.getToken() != null && properties.getToken().length() == 40;
 		this.properties = properties;
 		this.webClient = WebClient.builder()
 			.defaultHeader(HttpHeaders.USER_AGENT, HttpHeaders.USER_AGENT)
 			.defaultHeader(HttpHeaders.ACCEPT, "application/vnd.github.v3+json")
-			.defaultHeader("X-GitHub-Api-Version", GithubtoolProperties.X_GitHub_Api_Version)
+			.defaultHeader("X-GitHub-Api-Version", GithubToolKitProperties.X_GitHub_Api_Version)
 			.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.getToken())
 			.build();
 	}

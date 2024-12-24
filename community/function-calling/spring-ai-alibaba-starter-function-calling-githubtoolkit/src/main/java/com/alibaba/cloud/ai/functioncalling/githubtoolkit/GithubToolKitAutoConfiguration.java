@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.functioncalling.githubtool;
+package com.alibaba.cloud.ai.functioncalling.githubtoolkit;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -23,27 +23,27 @@ import org.springframework.context.annotation.Description;
 /**
  * @author Yeaury
  */
-@EnableConfigurationProperties(GithubtoolProperties.class)
-public class GithubtoolAutoConfiguration {
+@EnableConfigurationProperties(GithubToolKitProperties.class)
+public class GithubToolKitAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("implement the function of get a GitHub issue operation")
-	public GetIssueService getIssueService(GithubtoolProperties properties) {
+	public GetIssueService getIssueService(GithubToolKitProperties properties) {
 		return new GetIssueService(properties);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("implement the function of create GitHub pull request operation")
-	public CreatePullRequestService createPullRequestService(GithubtoolProperties properties) {
+	public CreatePullRequestService createPullRequestService(GithubToolKitProperties properties) {
 		return new CreatePullRequestService(properties);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("implement the function of search the list of repositories operation")
-	public SearchRepositoryService SearchRepositoryService(GithubtoolProperties properties) {
+	public SearchRepositoryService SearchRepositoryService(GithubToolKitProperties properties) {
 		return new SearchRepositoryService(properties);
 	}
 

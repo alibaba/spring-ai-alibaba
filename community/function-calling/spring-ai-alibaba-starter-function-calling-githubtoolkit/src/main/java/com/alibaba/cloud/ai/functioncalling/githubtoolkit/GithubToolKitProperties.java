@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.functioncalling.githubtool;
+package com.alibaba.cloud.ai.functioncalling.githubtoolkit;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -21,7 +21,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Yeaury
  */
 @ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.github")
-public class GithubtoolProperties {
+public class GithubToolKitProperties {
 
 	public static final String X_GitHub_Api_Version = "2022-11-28";
 
