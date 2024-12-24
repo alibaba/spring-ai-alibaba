@@ -47,6 +47,7 @@
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-jsonprocessor</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-serpapi</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-github</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-youdaotranslate</module>
 
         <module>community/document-readers/github-reader</module>
         <module>community/document-readers/poi-document-reader</module>
