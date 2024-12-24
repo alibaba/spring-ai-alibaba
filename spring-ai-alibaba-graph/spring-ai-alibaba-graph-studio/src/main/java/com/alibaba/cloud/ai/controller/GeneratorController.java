@@ -2,6 +2,7 @@ package com.alibaba.cloud.ai.controller;
 
 import com.alibaba.cloud.ai.api.GeneratorAPI;
 import com.alibaba.cloud.ai.service.dsl.DSLAdapter;
+import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.service.generator.CodeGenerator;
 import com.alibaba.cloud.ai.service.generator.ProjectGenerator;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,8 +44,8 @@ public class GeneratorController implements GeneratorAPI {
 	}
 
 	@Override
-	public DSLAdapter getDSLAdapter(String dialect) {
-		return dslAdapters.stream().filter(adapter -> adapter.supportDialect(dialect)).findFirst().orElse(null);
+	public DSLAdapter getDSLAdapter(DSLDialectType dialectType) {
+		return dslAdapters.stream().filter(adapter -> adapter.supportDialect(dialectType)).findFirst().orElse(null);
 	}
 
 }
