@@ -28,7 +28,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-function-calling-baidutranslate</artifactId>
-    <name>spring-ai-alibaba-starter-plugin-baidutranslate</name>
+    <name>spring-ai-alibaba-starter-function-calling-baidutranslate</name>
     <description>Translate tool for Spring AI Alibaba</description>
 
     <dependencies>
