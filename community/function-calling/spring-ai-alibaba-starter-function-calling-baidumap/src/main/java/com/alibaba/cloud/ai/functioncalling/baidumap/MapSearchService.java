@@ -17,12 +17,10 @@
 
 package com.alibaba.cloud.ai.functioncalling.baidumap;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.function.Function;
 
@@ -33,23 +31,25 @@ public class MapSearchService implements Function<MapSearchService.Request, MapS
 
 	private final MapTools mapTools;
 
+	private final ObjectMapper objectMapper;
+
 	public MapSearchService(BaiDuMapProperties baiDuMapProperties) {
 		this.mapTools = new MapTools(baiDuMapProperties);
+		this.objectMapper = new ObjectMapper();
 	}
 
 	@Override
 	public Response apply(Request request) {
 		try {
-			JSONObject jsonObject = new JSONObject();
+			var jsonObject = new com.fasterxml.jackson.databind.node.ObjectNode(objectMapper.getNodeFactory());
 
 			String addressCityCodeResponse = mapTools.getAddressCityCode(request.address);
-			JSONObject cityCodeJson = JSON.parseObject(addressCityCodeResponse);
-			JSONArray districtsArray = cityCodeJson.getJSONArray("districts");
+			var cityCodeJson = objectMapper.readTree(addressCityCodeResponse);
+			var districtsArray = cityCodeJson.path("districts");
 
-			if (districtsArray != null && !districtsArray.isEmpty()) {
-				for (int i = 0; i < districtsArray.size(); i++) {
-					JSONObject district = districtsArray.getJSONObject(i);
-					String adcode = district.getString("adcode"); 
+			if (districtsArray.isArray() && districtsArray.size() > 0) {
+				for (var district : districtsArray) {
+					String adcode = district.path("adcode").asText();
 
 					if (adcode != null && !adcode.isEmpty()) {
 						String weather = mapTools.getWeather(adcode);
@@ -58,9 +58,9 @@ public class MapSearchService implements Function<MapSearchService.Request, MapS
 				}
 
 				String facilityInformationJson = mapTools.getFacilityInformation(request.address, request.facilityType);
-				JSONArray facilityResults = JSON.parseObject(facilityInformationJson).getJSONArray("results");
-				if (facilityResults != null) {
-					jsonObject.put("facilityInformation", facilityResults.toJSONString());
+				var facilityResults = objectMapper.readTree(facilityInformationJson).path("results");
+				if (facilityResults.isArray()) {
+					jsonObject.set("facilityInformation", facilityResults);
 				}
 				else {
 					jsonObject.put("facilityInformation", "No facility information found.");
@@ -70,7 +70,7 @@ public class MapSearchService implements Function<MapSearchService.Request, MapS
 				return new Response("No districts found in the response.");
 			}
 
-			return new Response(jsonObject.toJSONString());
+			return new Response(objectMapper.writeValueAsString(jsonObject));
 		}
 		catch (Exception e) {
 			return new Response("Error occurred while processing the request: " + e.getMessage());

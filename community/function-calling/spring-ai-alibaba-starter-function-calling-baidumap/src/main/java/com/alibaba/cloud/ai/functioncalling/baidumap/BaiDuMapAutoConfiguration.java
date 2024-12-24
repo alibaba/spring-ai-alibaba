@@ -33,7 +33,7 @@ import org.springframework.context.annotation.Description;
 @ConditionalOnClass(MapSearchService.class)
 @EnableConfigurationProperties(BaiDuMapProperties.class)
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.baidumap", name = "enabled", havingValue = "true")
-public class BaiDuMapConfiguration {
+public class BaiDuMapAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
