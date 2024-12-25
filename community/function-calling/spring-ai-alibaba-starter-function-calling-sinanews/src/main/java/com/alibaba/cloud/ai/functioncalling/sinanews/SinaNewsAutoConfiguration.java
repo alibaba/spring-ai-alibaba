@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @ConditionalOnClass(SinaNewsService.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.sinanews", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.sinanews", name = "enabled", havingValue = "true")
 public class SinaNewsAutoConfiguration {
 
 	@Bean
