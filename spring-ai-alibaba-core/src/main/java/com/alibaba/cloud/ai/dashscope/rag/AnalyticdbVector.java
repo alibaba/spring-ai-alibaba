@@ -15,36 +15,22 @@
  */
 package com.alibaba.cloud.ai.dashscope.rag;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.aliyun.gpdb20160503.Client;
-import com.aliyun.gpdb20160503.models.CreateCollectionRequest;
-import com.aliyun.gpdb20160503.models.CreateNamespaceRequest;
-import com.aliyun.gpdb20160503.models.DeleteCollectionDataRequest;
-import com.aliyun.gpdb20160503.models.DeleteCollectionDataResponse;
-import com.aliyun.gpdb20160503.models.DescribeCollectionRequest;
-import com.aliyun.gpdb20160503.models.DescribeNamespaceRequest;
-import com.aliyun.gpdb20160503.models.InitVectorDatabaseRequest;
-import com.aliyun.gpdb20160503.models.InitVectorDatabaseResponse;
-import com.aliyun.gpdb20160503.models.QueryCollectionDataRequest;
-import com.aliyun.gpdb20160503.models.QueryCollectionDataResponse;
-import com.aliyun.gpdb20160503.models.QueryCollectionDataResponseBody;
-import com.aliyun.gpdb20160503.models.UpsertCollectionDataRequest;
-import com.aliyun.teaopenapi.models.Config;
+import com.aliyun.gpdb20160503.models.*;
 import com.aliyun.tea.TeaException;
+import com.aliyun.teaopenapi.models.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.alibaba.fastjson.JSON;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * @author HeYQ
@@ -60,12 +46,15 @@ public class AnalyticdbVector implements VectorStore {
 
 	private Client client;
 
-	public AnalyticdbVector(String collectionName, AnalyticdbConfig config) throws Exception {
+	private final EmbeddingModel embeddingModel;
+
+	public AnalyticdbVector(String collectionName, AnalyticdbConfig config, EmbeddingModel embeddingModel) throws Exception {
 		// collection_name must be updated every time
 		this.collectionName = collectionName.toLowerCase();
 		this.config = config;
 		Config clientConfig = Config.build(this.config.toAnalyticdbClientParams());
 		this.client = new Client(clientConfig);
+		this.embeddingModel = embeddingModel;
 		initialize();
 		logger.debug("created AnalyticdbVector client success");
 	}
@@ -160,15 +149,17 @@ public class AnalyticdbVector implements VectorStore {
 	public void add(List<Document> documents) {
 		List<UpsertCollectionDataRequest.UpsertCollectionDataRequestRows> rows = new ArrayList<>(10);
 		for (Document doc : documents) {
-			float[] floatEmbeddings = doc.getEmbedding();
-			List<Double> embedding = new ArrayList<>(floatEmbeddings.length);
-			for (float floatEmbedding : floatEmbeddings) {
-				embedding.add((double) floatEmbedding);
-			}
+			logger.info("Calling EmbeddingModel for document id = {}", doc.getId());
+			float[] floatEmbeddings = this.embeddingModel.embed(doc);
 			Map<String, String> metadata = new HashMap<>();
 			metadata.put("refDocId", (String) doc.getMetadata().get("docId"));
-			metadata.put("content", doc.getContent());
+			metadata.put("content", doc.getText());
 			metadata.put("metadata", JSON.toJSONString(doc.getMetadata()));
+
+			List<Double> embedding = IntStream.range(0, floatEmbeddings.length)
+					.mapToObj(i -> (double) floatEmbeddings[i])  // 将每个 float 转为 Double
+					.toList();
+
 			rows.add(new UpsertCollectionDataRequest.UpsertCollectionDataRequestRows().setVector(embedding)
 				.setMetadata(metadata));
 		}
@@ -214,7 +205,9 @@ public class AnalyticdbVector implements VectorStore {
 	@Override
 	public List<Document> similaritySearch(String query) {
 
-		return similaritySearch(SearchRequest.query(query));
+		return this.similaritySearch(SearchRequest.builder()
+				.query(query)
+				.build());
 
 	}
 
@@ -233,7 +226,7 @@ public class AnalyticdbVector implements VectorStore {
 			.setIncludeValues(includeValues)
 			.setMetrics(this.config.getMetrics())
 			.setVector(null)
-			.setContent(searchRequest.query)
+			.setContent(searchRequest.getQuery())
 			.setTopK((long) topK)
 			.setFilter(null);
 		try {
@@ -256,5 +249,4 @@ public class AnalyticdbVector implements VectorStore {
 			throw new RuntimeException("Failed to search by full text: " + e.getMessage(), e);
 		}
 	}
-
 }

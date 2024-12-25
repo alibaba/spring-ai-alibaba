@@ -133,7 +133,8 @@ public final class DashScopeAgent extends Agent {
 		metadata.put(OUTPUT, output);
 
 		var assistantMessage = new AssistantMessage(text, metadata);
-		var generationMetadata = ChatGenerationMetadata.from(output.finishReason(), text);
+		//TODO 去除了text，需要DashScope的同学，看下适配的方式是否合理
+		var generationMetadata = ChatGenerationMetadata.builder().finishReason(output.finishReason()).build();
 		Generation generation = new Generation(assistantMessage, generationMetadata);
 
 		return new ChatResponse(List.of(generation));
