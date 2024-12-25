@@ -12,9 +12,11 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.Resource;
+import org.springframework.web.client.RestClient;
 
 
 @SpringBootApplication
@@ -52,4 +54,9 @@ public class Application  {
 		return new InMemoryChatMemory();
 	}
 
+	@Bean
+	@ConditionalOnMissingBean
+	public RestClient.Builder restClientBuilder() {
+		return RestClient.builder();
+	}
 }
