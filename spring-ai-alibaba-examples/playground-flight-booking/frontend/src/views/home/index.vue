@@ -10,22 +10,22 @@
             <a-card class="chat-body">
               <MessageList :list="messageInfo.list"></MessageList>
               <div
-                  id="chat-body-id"
-                  style="height: 5px; margin-top: 20px"
+                id="chat-body-id"
+                style="height: 5px; margin-top: 20px"
               ></div>
             </a-card>
           </div>
           <a-row class="footer" :gutter="10">
             <a-col :span="20">
               <a-input
-                  @keydown.enter="forHelp"
-                  v-model:value="question"
-                  placeholder="Message"
+                @keydown.enter="forHelp"
+                v-model:value="question"
+                placeholder="Message"
               ></a-input>
             </a-col>
             <a-col :span="4">
               <a-button @click="forHelp" :disabled="lock" type="primary"
-              >Send</a-button
+                >Send</a-button
               >
             </a-col>
           </a-row>
@@ -37,22 +37,22 @@
             <label style="font-size: 25px">机票预定信息</label>
           </template>
           <a-table
-              :data-source="bookingInfo.dataSource"
-              :columns="bookingInfo.columns"
-              :pagination="false"
+            :data-source="bookingInfo.dataSource"
+            :columns="bookingInfo.columns"
+            :pagination="false"
           >
             <template #bodyCell="{ record, index, column, text }">
               <template v-if="column.dataIndex === 'bookingStatus'">
                 <template v-if="text === 'CONFIRMED'">
                   <Icon
-                      style="color: #52c41a; font-size: 20px; margin-bottom: -4px"
-                      icon="material-symbols:check-box-sharp"
+                    style="color: #52c41a; font-size: 20px; margin-bottom: -4px"
+                    icon="material-symbols:check-box-sharp"
                   />
                 </template>
                 <template v-else>
                   <Icon
-                      style="color: #be0b4a; font-size: 20px; margin-bottom: -4px"
-                      icon="material-symbols:cancel-presentation-sharp"
+                    style="color: #be0b4a; font-size: 20px; margin-bottom: -4px"
+                    icon="material-symbols:cancel-presentation-sharp"
                   />
                 </template>
               </template>
@@ -164,8 +164,8 @@ function forHelp() {
   addMessage("user", userMessage);
   question.value = "";
   const eventSource = new EventSource(
-      `/api/assistant/chat?chatId=${chatId}&userMessage=${userMessage}`,
-      {},
+    `/api/assistant/chat?chatId=${chatId}&userMessage=${userMessage}`,
+    {},
   );
   eventSource.onopen = function (event) {
     addMessage("assistant", "");
