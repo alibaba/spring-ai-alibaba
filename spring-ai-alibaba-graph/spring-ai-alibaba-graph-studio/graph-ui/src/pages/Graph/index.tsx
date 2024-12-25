@@ -2,9 +2,9 @@ import { FormattedMessage } from '@@/exports';
 import { PageContainer } from '@ant-design/pro-components';
 import { Button, Flex, Form, Input, Modal, Table } from 'antd';
 import FormItem from 'antd/es/form/FormItem';
+import { useState } from 'react';
 import { history } from 'umi';
 import styles from './index.less';
-import { useState } from 'react';
 
 const GraphIndex: React.FC = () => {
   const [editFormState, setEditFormState] = useState(false);
@@ -48,11 +48,13 @@ const GraphIndex: React.FC = () => {
         return (
           <>
             <Flex gap="small">
-              <Button type="primary"
-                      onClick={() => {
-                        setEditFormState(true);
-                      }}
-                      size="small">
+              <Button
+                type="primary"
+                onClick={() => {
+                  setEditFormState(true);
+                }}
+                size="small"
+              >
                 <FormattedMessage id={'page.graph.editMeta'} />
               </Button>
               <Button
@@ -93,7 +95,6 @@ const GraphIndex: React.FC = () => {
   ];
 
   const initForm = data[0];
-
 
   const [searchForm] = Form.useForm();
   const [editForm] = Form.useForm();
@@ -143,7 +144,8 @@ const GraphIndex: React.FC = () => {
         onOk={() => {
           setEditFormState(false);
         }}
-        open={editFormState}>
+        open={editFormState}
+      >
         <Form
           labelCol={{ span: 8 }}
           wrapperCol={{ span: 16 }}
@@ -151,37 +153,44 @@ const GraphIndex: React.FC = () => {
           style={{
             paddingTop: '20px',
           }}
-
           initialValues={initForm}
         >
-          <FormItem name="name"
-                    rules={[{ required: true }]}
-                    label={(<FormattedMessage id={'page.graph.graphName'} />)}>
+          <FormItem
+            name="name"
+            rules={[{ required: true }]}
+            label={<FormattedMessage id={'page.graph.graphName'} />}
+          >
             <Input></Input>
           </FormItem>
-          <FormItem name="desc"
-                    rules={[{ required: true }]}
-                    label={(<FormattedMessage id={'page.graph.graphDesc'} />)}>
+          <FormItem
+            name="desc"
+            rules={[{ required: true }]}
+            label={<FormattedMessage id={'page.graph.graphDesc'} />}
+          >
             <Input></Input>
           </FormItem>
-          <FormItem name="groupId"
-                    rules={[{ required: true }]}
-                    label="项目Group">
+          <FormItem
+            name="groupId"
+            rules={[{ required: true }]}
+            label="项目Group"
+          >
             <Input></Input>
           </FormItem>
-          <FormItem name="artifactId"
-                    rules={[{ required: true }]}
-                    label="项目Aitifact">
+          <FormItem
+            name="artifactId"
+            rules={[{ required: true }]}
+            label="项目Aitifact"
+          >
             <Input></Input>
           </FormItem>
-          <FormItem name="springAIAlibabaVersion"
-                    rules={[{ required: true }]}
-                    label="SpringAIAlibaba">
+          <FormItem
+            name="springAIAlibabaVersion"
+            rules={[{ required: true }]}
+            label="SpringAIAlibaba"
+          >
             <Input></Input>
           </FormItem>
-          <FormItem name="jdk"
-                    rules={[{ required: true }]}
-                    label="JDK">
+          <FormItem name="jdk" rules={[{ required: true }]} label="JDK">
             <Input></Input>
           </FormItem>
         </Form>

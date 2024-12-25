@@ -83,8 +83,7 @@ spec:
         sourcePosition: right
         targetPosition: left
         data:
-          inputs: [
-          ]
+          inputs: []
           outputs:
             - name: user_query
               value: null
@@ -101,8 +100,7 @@ spec:
               type: paragraph
               variable: user_query
               maxLength: 200
-              options: [
-              ]
+              options: []
               required: true
             - label: useLLM
               type: select
@@ -203,10 +201,8 @@ spec:
         sourcePosition: right
         targetPosition: left
         data:
-          inputs: [
-          ]
-          outputs: [
-          ]
+          inputs: []
+          outputs: []
           cases:
             - id: 'true'
               logicalOperator: and
@@ -235,10 +231,8 @@ spec:
         sourcePosition: right
         targetPosition: left
         data:
-          inputs: [
-          ]
-          outputs: [
-          ]
+          inputs: []
+          outputs: []
           cases:
             - id: 'true'
               logicalOperator: and
@@ -278,7 +272,5 @@ spec:
               description: null
               extraProperties: null
         zindex: 0
-  workflowVars: [
-  ]
-  envVars: [
-  ]
+  workflowVars: []
+  envVars: []

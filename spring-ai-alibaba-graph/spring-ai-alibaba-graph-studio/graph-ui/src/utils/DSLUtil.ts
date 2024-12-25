@@ -17,9 +17,8 @@ export function loadDSL() {
   {
   }
 
-
   function getEdges(): any {
-    return dsl.spec.graph.edges.map(x => {
+    return dsl.spec.graph.edges.map((x) => {
       let newEdge = { ...x };
       newEdge.type = 'smoothstep';
       if (newEdge.sourceHandle === 'source') {
@@ -33,9 +32,8 @@ export function loadDSL() {
     });
   }
 
-
   function getNodes(): any {
-    return dsl.spec.graph.nodes.map(x => {
+    return dsl.spec.graph.nodes.map((x) => {
       return {
         id: x.id,
         selected: x.selected,
@@ -53,15 +51,10 @@ export function loadDSL() {
     });
   }
 
-
-
   return {
     getEdges,
     getNodes,
   };
 }
 
-export function dumpDSL() {
-
-}
-
+export function dumpDSL() {}

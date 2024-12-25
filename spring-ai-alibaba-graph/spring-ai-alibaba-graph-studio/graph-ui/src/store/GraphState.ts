@@ -1,30 +1,30 @@
-import { proxy } from 'umi';
 import type { Edge, Node } from '@xyflow/react';
+import { proxy } from 'umi';
 
 /**
  * graph state
  */
 type graphStateType = {
-  nodes: Node[],
-  edges: Edge[],
-  currentNodeId: string | null,
+  nodes: Node[];
+  edges: Edge[];
+  currentNodeId: string | null;
 
-  mode: 'normal' | 'drag',
+  mode: 'normal' | 'drag';
   // graph  env
-  env: 'startup' | 'design' | 'runtime'
-  readonly: boolean,
+  env: 'startup' | 'design' | 'runtime';
+  readonly: boolean;
   contextMenu: {
-    top: number,
-    left: number,
-    right: number,
-    bottom: number,
-    show: boolean,
-  },
+    top: number;
+    left: number;
+    right: number;
+    bottom: number;
+    show: boolean;
+  };
   mousePosition: {
-    x: number,
-    y: number,
-  },
-}
+    x: number;
+    y: number;
+  };
+};
 export const graphState: graphStateType = proxy({
   nodes: [],
   edges: [],
