@@ -29,7 +29,6 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-function-calling-larksuite</artifactId>
-    <version>1.0.0-M3.2</version>
 
     <name>Spring Ai Alibaba Starter LarkSuite</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
