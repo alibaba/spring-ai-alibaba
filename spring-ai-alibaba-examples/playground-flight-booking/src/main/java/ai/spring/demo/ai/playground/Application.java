@@ -32,7 +32,7 @@ public class Application  {
 	// server or similar.
 	@Bean
 	CommandLineRunner ingestTermOfServiceToVectorStore(EmbeddingModel embeddingModel, VectorStore vectorStore,
-													   @Value("classpath:rag/terms-of-service.txt") Resource termsOfServiceDocs) {
+			@Value("classpath:rag/terms-of-service.txt") Resource termsOfServiceDocs) {
 
 		return args -> {
 			// Ingest the document into the vector store
