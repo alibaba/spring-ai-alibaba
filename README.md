@@ -1,4 +1,4 @@
-# [Spring AI Alibaba](https://sca.aliyun.com/ai/)
+# [Spring AI Alibaba](https://java2ai.com)
 
 [中文版本](./README-zh.md)
 
@@ -6,13 +6,13 @@ An AI application framework for Java developers built on top of Spring AI that p
 
 ## Get Started
 
-Please refer to [quick start](https://sca.aliyun.com/ai/get-started/) for how to quickly add generative AI to your Spring Boot applications.
+Please refer to [quick start](https://java2ai.com/docs/dev/get-started/) for how to quickly add generative AI to your Spring Boot applications.
 
 Overall, it takes only two steps to turn your Spring Boot application into an intelligent agent:
 
 > Because Spring AI Alibaba is developed based on Spring Boot 3.x, it requires JDK version 17 and above.
 
-1. Add 'spring-ai-alibaba-starter' dependency to your project.
+1. Add `spring-ai-alibaba-starter` dependency to your project.
 
 	```xml
 	<dependency>
@@ -70,20 +70,11 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 
 ## Examples
 
-More examples can be found at [spring-ai-alibaba-examples](./spring-ai-alibaba-examples).
-
-* Hello World
-* Chat Model
-* Multi Model
-* Function Calling
-* Structured Output
-* Prompt
-* RAG
-* Flight Booking Playground, an advanced example showcasing usage of prompt template, function calling, chat memory and rag at the same time.
+[Spring AI Alibaba and Spring AI usage examples](https://github.com/springaialibaba/spring-ai-alibaba-examples)
 
 ## Core Features
 
-Spring AI Alibaba provides the following features, read the [documentation](https://sca.aliyun.com/ai) on our website for more details of how to use these features.
+Spring AI Alibaba provides the following features, read the [documentation](https://java2ai.com/) on our website for more details of how to use these features.
 
 * Support for Alibaba Cloud QWen Model and Dashscope Model service.
 * Support high-level AI agent abstraction -- ChatClient.
@@ -111,7 +102,7 @@ Spring AI Alibaba aims to reduce the complexity of building ai native java appli
 
 ## References
 * [Spring AI](https://docs.spring.io/spring-ai/reference/index.html)
-* [Spring AI Alibaba](https://sca.aliyun.com/docs/ai/overview/)
+* [Spring AI Alibaba](https://java2ai.com/docs/dev/overview/)
 * [Alibaba Cloud Dashscope Model Service Platform (阿里云百炼模型服务及应用开发平台)](https://help.aliyun.com/zh/model-studio/getting-started/what-is-model-studio/)
 
 ## Contact Us
