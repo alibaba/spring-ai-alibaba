@@ -32,6 +32,11 @@
 
     <name>Spring Ai Alibaba Starter LarkSuite</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+    </scm>
 
     <properties>
         <larksiute-open-api.version>2.4.0</larksiute-open-api.version>
