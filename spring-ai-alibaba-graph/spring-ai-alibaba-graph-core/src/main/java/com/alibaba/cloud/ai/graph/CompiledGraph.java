@@ -1,19 +1,26 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-
-import org.bsc.async.AsyncGenerator;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.bsc.async.AsyncGenerator;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
@@ -39,7 +46,7 @@ public class CompiledGraph<State extends AgentState> {
 	final StateGraph<State> stateGraph;
 
 	@Getter
-	final Map<String, AsyncNodeAction<State>> nodes = new LinkedHashMap<>();
+	final Map<String, AsyncNodeActionWithConfig<State>> nodes = new LinkedHashMap<>();
 
 	@Getter
 	final Map<String, EdgeValue<State>> edges = new LinkedHashMap<>();
@@ -425,12 +432,12 @@ public class CompiledGraph<State extends AgentState> {
 
 				currentNodeId = nextNodeId;
 
-				AsyncNodeAction<State> action = nodes.get(currentNodeId);
+				AsyncNodeActionWithConfig<State> action = nodes.get(currentNodeId);
 
 				if (action == null)
 					throw StateGraph.RunnableErrors.missingNode.exception(currentNodeId);
 
-				future = action.apply(cloneState(currentState)).thenApply(partialState -> {
+				future = action.apply(cloneState(currentState),config).thenApply(partialState -> {
 					try {
 						currentState = AgentState.updateState(currentState, partialState, stateGraph.getChannels());
 						nextNodeId = nextNodeId(currentNodeId, currentState);

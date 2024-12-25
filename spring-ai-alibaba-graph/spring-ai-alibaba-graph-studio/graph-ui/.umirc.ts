@@ -1,5 +1,7 @@
 import { defineConfig } from '@umijs/max';
 import { DEFAULT_NAME } from './src/constants';
+import { codeInspectorPlugin } from 'code-inspector-plugin';
+
 export default defineConfig({
   title: 'site.title',
   antd: {
@@ -7,6 +9,13 @@ export default defineConfig({
       theme: { cssVar: true },
     },
     // dark: true
+  },
+  chainWebpack(memo) {
+    memo.plugin('code-inspector-plugin').use(
+      codeInspectorPlugin({
+        bundler: 'webpack',
+      }),
+    );
   },
   access: {},
   model: {},
