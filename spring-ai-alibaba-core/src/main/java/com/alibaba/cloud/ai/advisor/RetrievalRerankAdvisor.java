@@ -224,7 +224,8 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 
 		var searchRequestToUse = SearchRequest.from(this.searchRequest)
 			.query(request.userText())
-			.filterExpression(doGetFilterExpression(context)).build();
+			.filterExpression(doGetFilterExpression(context))
+			.build();
 
 		// 2. Search for similar documents in the vector store.
 		logger.debug("searchRequestToUse: {}", searchRequestToUse);

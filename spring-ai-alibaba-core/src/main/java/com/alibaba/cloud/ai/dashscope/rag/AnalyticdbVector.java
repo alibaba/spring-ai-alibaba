@@ -48,7 +48,8 @@ public class AnalyticdbVector implements VectorStore {
 
 	private final EmbeddingModel embeddingModel;
 
-	public AnalyticdbVector(String collectionName, AnalyticdbConfig config, EmbeddingModel embeddingModel) throws Exception {
+	public AnalyticdbVector(String collectionName, AnalyticdbConfig config, EmbeddingModel embeddingModel)
+			throws Exception {
 		// collection_name must be updated every time
 		this.collectionName = collectionName.toLowerCase();
 		this.config = config;
@@ -157,8 +158,8 @@ public class AnalyticdbVector implements VectorStore {
 			metadata.put("metadata", JSON.toJSONString(doc.getMetadata()));
 
 			List<Double> embedding = IntStream.range(0, floatEmbeddings.length)
-					.mapToObj(i -> (double) floatEmbeddings[i])  // 将每个 float 转为 Double
-					.toList();
+				.mapToObj(i -> (double) floatEmbeddings[i]) // 将每个 float 转为 Double
+				.toList();
 
 			rows.add(new UpsertCollectionDataRequest.UpsertCollectionDataRequestRows().setVector(embedding)
 				.setMetadata(metadata));
@@ -205,9 +206,7 @@ public class AnalyticdbVector implements VectorStore {
 	@Override
 	public List<Document> similaritySearch(String query) {
 
-		return this.similaritySearch(SearchRequest.builder()
-				.query(query)
-				.build());
+		return this.similaritySearch(SearchRequest.builder().query(query).build());
 
 	}
 
@@ -249,4 +248,5 @@ public class AnalyticdbVector implements VectorStore {
 			throw new RuntimeException("Failed to search by full text: " + e.getMessage(), e);
 		}
 	}
+
 }
