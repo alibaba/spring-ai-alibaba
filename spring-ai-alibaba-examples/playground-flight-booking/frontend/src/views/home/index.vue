@@ -65,17 +65,14 @@
 </template>
 
 <script setup lang="ts">
-import { PRIMARY_COLOR } from "@/base/constants";
-import { nextTick, onMounted, reactive, ref } from "vue";
-import { getBookings } from "@/api/service/booking";
-import { Icon } from "@iconify/vue";
-import Message from "@/views/home/Message.vue";
+import {PRIMARY_COLOR} from "@/base/constants";
+import {nextTick, onMounted, reactive, ref} from "vue";
+import {getBookings} from "@/api/service/booking";
+import {Icon} from "@iconify/vue";
 import MessageList from "@/views/home/MessageList.vue";
-import type { MessageItem } from "@/types/message";
-import { chat } from "@/api/service/assistant";
-import { getUUID } from "ant-design-vue/lib/vc-dialog/util";
-import { v4 as uuidv4 } from "uuid";
-import { message } from "ant-design-vue";
+import type {MessageItem} from "@/types/message";
+import {v4 as uuidv4} from "uuid";
+import {message} from "ant-design-vue";
 
 const messageInfo: { cur: MessageItem | null; list: MessageItem[] } = reactive({
   cur: null,
