@@ -15,25 +15,24 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.functioncalling.translate;
+package com.alibaba.cloud.ai.functioncalling.googletranslate;
+
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * @author 31445
+ * @author erasernoob
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.translate")
-public class TranslateProperties {
+@ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.googletranslate")
+public class GoogleTranslateProperties {
 
-	public static final String OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";
+    private String apiKey;
 
-	private String apiKey;
+    public String getApiKey() {
+        return apiKey;
+    }
 
-	public String getApiKey() {
-		return apiKey;
-	}
-
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
-	}
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
 }
