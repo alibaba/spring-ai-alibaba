@@ -19,7 +19,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 /**
- * @author: KrakenZJC
+ * @author KrakenZJC
  **/
 @EnableConfigurationProperties
 @ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.bing")

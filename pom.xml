@@ -34,6 +34,7 @@
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-starter</module>
         <module>spring-ai-alibaba-autoconfigure</module>
+
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-time</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-baidusearch</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-baidutranslate</module>
@@ -57,10 +58,14 @@
         <module>community/document-readers/poi-document-reader</module>
         <module>community/document-readers/tencent-cos-reader</module>
         <module>community/document-readers/feishu-document-reader</module>
+
+        <module>community/document-parsers/document-parser-apache-pdfbox</module>
+        <module>community/document-parsers/document-parser-markdown</module>
+        <module>community/document-parsers/document-parser-tika</module>
     </modules>
 
     <properties>
-        <revision>1.0.0-M3.2</revision>
+        <revision>1.0.0-M3.3</revision>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
