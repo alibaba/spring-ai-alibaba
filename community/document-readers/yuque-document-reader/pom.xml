@@ -10,9 +10,9 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>github-reader</artifactId>
-    <name>github-reader</name>
-    <description>github reader for Spring AI Alibaba</description>
+    <artifactId>yuque-document-reader</artifactId>
+    <name>yuque-document-reader</name>
+    <description>yuque reader for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
@@ -37,9 +37,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.kohsuke</groupId>
-            <artifactId>github-api</artifactId>
-            <version>1.318</version>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>document-parser-tika</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- test dependencies -->

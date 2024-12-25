@@ -10,8 +10,8 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>tencent-cos-reader</artifactId>
-    <name>tencent-cos-reader</name>
+    <artifactId>tencent-cos-document-reader</artifactId>
+    <name>tencent-cos-document-reader</name>
     <description>tencent-cos-reader for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
