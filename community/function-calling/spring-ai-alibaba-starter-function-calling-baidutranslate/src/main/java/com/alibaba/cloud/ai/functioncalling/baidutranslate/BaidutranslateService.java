@@ -19,9 +19,7 @@ package com.alibaba.cloud.ai.functioncalling.baidutranslate;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.reflect.TypeToken;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -101,19 +99,10 @@ public class BaidutranslateService implements Function<BaidutranslateService.Req
 	}
 
 	private Response parseResponse(String responseData) {
-
-		Gson gson = new Gson();
-		JsonElement jsonElement = gson.fromJson(responseData, JsonElement.class);
-
-		if (jsonElement.getAsJsonObject().has("error_code")) {
-			Map<String, String> responseList = gson.fromJson(responseData, new TypeToken<Map<String, String>>() {
-			}.getType());
-			logger.info("Translation exception, please inquire Baidu translation api documentation");
-			return new Response(responseList);
-		}
-		else {
+		ObjectMapper mapper = new ObjectMapper();
+		try {
 			Map<String, String> translations = new HashMap<>();
-			TranslationResponse responseList = gson.fromJson(responseData, TranslationResponse.class);
+			TranslationResponse responseList = mapper.readValue(responseData, TranslationResponse.class);
 			String to = responseList.to;
 			List<TranslationResult> translationsList = responseList.trans_result;
 			if (translationsList != null) {
@@ -124,6 +113,20 @@ public class BaidutranslateService implements Function<BaidutranslateService.Req
 				}
 			}
 			return new Response(translations);
+		}
+		catch (Exception e) {
+			try {
+				Map<String, String> responseList = mapper.readValue(responseData,
+						mapper.getTypeFactory().constructMapType(Map.class, String.class, String.class));
+				logger.info(
+						"Translation exception, please inquire Baidu translation api documentation to info error_code:{}",
+						responseList);
+				return new Response(responseList);
+			}
+			catch (Exception ex) {
+				logger.error("Failed to parse json due to: {}", ex.getMessage());
+				return null;
+			}
 		}
 	}
 
