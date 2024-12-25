@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * @Author: XiaoYunTao
- * @Date: 2024/12/18
+ * @author XiaoYunTao
+ * @since 2024/12/18
  */
 public class ToutiaoNewsService implements Function<ToutiaoNewsService.Request, ToutiaoNewsService.Response> {
 
