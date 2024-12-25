@@ -28,10 +28,14 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-function-calling-jsonprocessor</artifactId>
-    <version>1.0.0-M3.2</version>
 
     <name>Spring Ai Alibaba Starter jsonprocessor</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+    </scm>
 
     <dependencies>
 
@@ -58,6 +62,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-starter-plugin-jsonprocessor</finalName>
+        <finalName>spring-ai-alibaba-starter-function-calling-jsonprocessor</finalName>
     </build>
 </project>

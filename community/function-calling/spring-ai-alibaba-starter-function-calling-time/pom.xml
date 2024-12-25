@@ -32,6 +32,11 @@
     <packaging>jar</packaging>
     <name>Spring Ai Alibaba Starter Time</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+    </scm>
 
     <dependencies>
         <dependency>
@@ -53,6 +58,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-starter-plugin-time</finalName>
+        <finalName>spring-ai-alibaba-starter-function-calling-time</finalName>
     </build>
 </project>
