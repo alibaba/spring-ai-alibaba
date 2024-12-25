@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dashscope.chat;
 
 import java.util.ArrayList;
@@ -39,8 +38,8 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequestInpu
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequestParameter;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.FunctionTool;
 import com.alibaba.cloud.ai.dashscope.chat.observation.DashScopeChatModelObservationConvention;
+import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import com.alibaba.cloud.ai.dashscope.metadata.DashScopeAiUsage;
-import com.alibaba.cloud.ai.observation.conventions.AiProvider;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -146,7 +145,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
-			.provider(AiProvider.DASHSCOPE.value())
+			.provider(DashScopeApiConstants.PROVIDER_NAME)
 			.requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions)
 			.build();
 
@@ -216,7 +215,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
-				.provider(AiProvider.DASHSCOPE.value())
+				.provider(DashScopeApiConstants.PROVIDER_NAME)
 				.requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions)
 				.build();
 
@@ -470,6 +469,15 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 				options.getToolChoice(),
 				stream, options.getVlHighResolutionImages()
 		);
+	}
+
+	/**
+	 * Use the provided convention for reporting observation data
+	 * @param observationConvention The provided convention
+	 */
+	public void setObservationConvention(ChatModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
 	}
 
 }

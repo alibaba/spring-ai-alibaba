@@ -34,18 +34,21 @@
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-starter</module>
         <module>spring-ai-alibaba-autoconfigure</module>
-        <module>community/plugins/spring-ai-alibaba-starter-plugin-time</module>
-        <module>community/plugins/spring-ai-alibaba-starter-plugin-baidusearch</module>
-        <module>community/plugins/spring-ai-alibaba-starter-plugin-bingsearch</module>
-        <module>community/plugins/spring-ai-alibaba-starter-plugin-dingtalk</module>
-        <module>community/plugins/spring-ai-alibaba-starter-plugin-gaode</module>
-        <module>community/plugins/spring-ai-alibaba-starter-plugin-weather</module>
-        <module>community/plugins/spring-ai-alibaba-starter-plugin-larksuite</module>
-        <module>community/plugins/spring-ai-alibaba-starter-plugin-translate</module>
-        <module>community/plugins/spring-ai-alibaba-starter-plugin-crawler</module>
-        <module>community/plugins/spring-ai-alibaba-starter-plugin-regex</module>
-        <module>community/plugins/spring-ai-alibaba-starter-plugin-jsonprocessor</module>
-        <module>community/plugins/spring-ai-alibaba-starter-plugin-serpapi</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-time</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-baidusearch</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-bingsearch</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-dingtalk</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-amap</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-weather</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-larksuite</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-microsofttranslate</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-crawler</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-regex</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-jsonprocessor</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-serpapi</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-sinanews</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-toutiaonews</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-yuque</module>
 
         <module>community/document-readers/github-reader</module>
         <module>community/document-readers/poi-document-reader</module>
@@ -275,52 +278,33 @@
                                 <email/>
                                 <year>2024</year>
                             </properties>
-                            <licenseSets>
-                                <licenseSet>
-                                    <inlineHeader>
-                                        <!-- @formatter:off -->
-										Copyright 2024 - ${year} the original author or authors.
-
-										Licensed under the Apache License, Version 2.0 (the "License");
-										you may not use this file except in compliance with the License.
-										You may obtain a copy of the License at
-
-										https://www.apache.org/licenses/LICENSE-2.0
-
-										Unless required by applicable law or agreed to in writing, software
-										distributed under the License is distributed on an "AS IS" BASIS,
-										WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-										See the License for the specific language governing permissions and
-										limitations under the License.
-										<!-- @formatter:on -->
-                                    </inlineHeader>
-                                    <excludes>
-                                        <exclude>**/.antlr/**</exclude>
-                                        <exclude>**/aot.factories</exclude>
-                                        <exclude>**/.sdkmanrc</exclude>
-                                        <exclude>**/*.adoc</exclude>
-                                        <exclude>**/*.puml</exclude>
-                                        <exclude>**/pom.xml</exclude>
-                                        <exclude>**/*.properties</exclude>
-                                        <exclude>**/*.yaml</exclude>
-                                        <exclude>**/*.yml</exclude>
-                                        <exclude>**/*.map</exclude>
-                                        <exclude>**/*.html</exclude>
-                                        <exclude>**/*.xhtml</exclude>
-                                        <exclude>**/*.jsp</exclude>
-                                        <exclude>**/*.js</exclude>
-                                        <exclude>**/*.css</exclude>
-                                        <exclude>**/*.txt</exclude>
-                                        <exclude>**/*.xjb</exclude>
-                                        <exclude>**/*.ftl</exclude>
-                                        <exclude>**/*.xsd</exclude>
-                                        <exclude>**/*.xml</exclude>
-                                        <exclude>**/*.sh</exclude>
-                                        <exclude>**/generated/**</exclude>
-                                        <exclude>**/Dockerfile</exclude>
-                                    </excludes>
-                                </licenseSet>
-                            </licenseSets>
+                            <quiet>true</quiet>
+                            <header>HEADER</header>
+                                <excludes>
+                                    <exclude>**/.antlr/**</exclude>
+                                    <exclude>**/aot.factories</exclude>
+                                    <exclude>**/.sdkmanrc</exclude>
+                                    <exclude>**/*.adoc</exclude>
+                                    <exclude>**/*.puml</exclude>
+                                    <exclude>**/pom.xml</exclude>
+                                    <exclude>**/*.properties</exclude>
+                                    <exclude>**/*.yaml</exclude>
+                                    <exclude>**/*.yml</exclude>
+                                    <exclude>**/*.map</exclude>
+                                    <exclude>**/*.html</exclude>
+                                    <exclude>**/*.xhtml</exclude>
+                                    <exclude>**/*.jsp</exclude>
+                                    <exclude>**/*.js</exclude>
+                                    <exclude>**/*.css</exclude>
+                                    <exclude>**/*.txt</exclude>
+                                    <exclude>**/*.xjb</exclude>
+                                    <exclude>**/*.ftl</exclude>
+                                    <exclude>**/*.xsd</exclude>
+                                    <exclude>**/*.xml</exclude>
+                                    <exclude>**/*.sh</exclude>
+                                    <exclude>**/generated/**</exclude>
+                                    <exclude>**/Dockerfile</exclude>
+                                </excludes>
                         </configuration>
                     </plugin>
 
