@@ -27,44 +27,43 @@ import static com.alibaba.cloud.ai.functioncalling.yuque.YuqueProperties.BASE_UR
 /**
  * @author 北极星
  */
-public class YuqueUpdateDocService implements Function<YuqueUpdateDocService.updateDocRequest, YuqueUpdateDocService.updateDocResponse> {
+public class YuqueUpdateDocService
+		implements Function<YuqueUpdateDocService.updateDocRequest, YuqueUpdateDocService.updateDocResponse> {
 
-    private final WebClient webClient;
+	private final WebClient webClient;
 
-    public YuqueUpdateDocService (YuqueProperties yuqueProperties) {
-        this.webClient = WebClient.builder().baseUrl(BASE_URL).defaultHeader("X-Auth-Token", yuqueProperties.getAuthToken()).build();
+	public YuqueUpdateDocService(YuqueProperties yuqueProperties) {
+		this.webClient = WebClient.builder()
+			.baseUrl(BASE_URL)
+			.defaultHeader("X-Auth-Token", yuqueProperties.getAuthToken())
+			.build();
 
-    }
+	}
 
-    @Override
-    public YuqueUpdateDocService.updateDocResponse apply (YuqueUpdateDocService.updateDocRequest updateDocRequest) {
-        Mono<YuqueUpdateDocService.updateDocResponse> updateDocResponseMono = webClient.method(HttpMethod.PUT).uri("/{book_id}/docs/{id}", updateDocRequest.bookId, updateDocRequest.id).retrieve().bodyToMono(YuqueUpdateDocService.updateDocResponse.class);
+	@Override
+	public YuqueUpdateDocService.updateDocResponse apply(YuqueUpdateDocService.updateDocRequest updateDocRequest) {
+		Mono<YuqueUpdateDocService.updateDocResponse> updateDocResponseMono = webClient.method(HttpMethod.PUT)
+			.uri("/{book_id}/docs/{id}", updateDocRequest.bookId, updateDocRequest.id)
+			.retrieve()
+			.bodyToMono(YuqueUpdateDocService.updateDocResponse.class);
 
-        return updateDocResponseMono.block();
-    }
+		return updateDocResponseMono.block();
+	}
 
-    protected record updateDocRequest(@JsonProperty("bookId") String bookId, @JsonProperty("id") String id) {}
+	protected record updateDocRequest(@JsonProperty("bookId") String bookId, @JsonProperty("id") String id) {
+	}
 
-
-    protected record updateDocResponse(@JsonProperty("id") String id,
-                                       @JsonProperty("slug") String slug,
-                                       @JsonProperty("type") String type,
-                                       @JsonProperty("description") String description,
-                                       @JsonProperty("cover") String cover,
-                                       @JsonProperty("user_id") String userId,
-                                       @JsonProperty("book_id") String bookId,
-                                       @JsonProperty("last_editor_id") String lastEditorId,
-                                       @JsonProperty("format") String format,
-                                       @JsonProperty("body_draft") String bodyDraft,
-                                       @JsonProperty("body_sheet") String bodySheet,
-                                       @JsonProperty("body_table") String bodyTable,
-                                       @JsonProperty("body_html") String bodyHtml,
-                                       @JsonProperty("public") int isPublic, @JsonProperty("status") String status,
-                                       @JsonProperty("likes_count") int likesCount,
-                                       @JsonProperty("read_count") int readCount,
-                                       @JsonProperty("comments_count") int commentsCount,
-                                       @JsonProperty("word_count") int wordCount,
-                                       @JsonProperty("created_at") String createdAt,
-                                       @JsonProperty("updated_at") String updatedAt) {}
+	protected record updateDocResponse(@JsonProperty("id") String id, @JsonProperty("slug") String slug,
+			@JsonProperty("type") String type, @JsonProperty("description") String description,
+			@JsonProperty("cover") String cover, @JsonProperty("user_id") String userId,
+			@JsonProperty("book_id") String bookId, @JsonProperty("last_editor_id") String lastEditorId,
+			@JsonProperty("format") String format, @JsonProperty("body_draft") String bodyDraft,
+			@JsonProperty("body_sheet") String bodySheet, @JsonProperty("body_table") String bodyTable,
+			@JsonProperty("body_html") String bodyHtml, @JsonProperty("public") int isPublic,
+			@JsonProperty("status") String status, @JsonProperty("likes_count") int likesCount,
+			@JsonProperty("read_count") int readCount, @JsonProperty("comments_count") int commentsCount,
+			@JsonProperty("word_count") int wordCount, @JsonProperty("created_at") String createdAt,
+			@JsonProperty("updated_at") String updatedAt) {
+	}
 
 }
