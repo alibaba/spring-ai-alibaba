@@ -29,9 +29,14 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-function-calling-serpapi</artifactId>
-    <name>spring-ai-alibaba-starter-plugin-serpapi</name>
-
+    <name>spring-ai-alibaba-starter-function-calling-serpapi</name>
     <description>SerpApi search tool for Spring AI Alibaba</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+    </scm>
 
     <properties>
         <hutool-version>5.8.32</hutool-version>
@@ -76,7 +81,7 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-starter-plugin-serpai</finalName>
+        <finalName>spring-ai-alibaba-starter-function-calling-serpai</finalName>
     </build>
 
 </project>

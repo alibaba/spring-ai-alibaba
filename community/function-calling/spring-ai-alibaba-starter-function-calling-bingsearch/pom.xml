@@ -26,16 +26,21 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
     <artifactId>spring-ai-alibaba-starter-function-calling-bingsearch</artifactId>
-    <name>spring-ai-alibaba-starter-plugin-bingsearch</name>
-
+    <name>spring-ai-alibaba-starter-function-calling-bingsearch</name>
     <description>Bing search tool for Spring AI Alibaba</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+    </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
+        <maven-deploy-function-calling.version>3.1.1</maven-deploy-function-calling.version>
     </properties>
 
     <dependencies>
@@ -69,6 +74,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-plugin-bingsearch</finalName>
+        <finalName>spring-ai-alibaba-function-calling-bingsearch</finalName>
     </build>
 </project>
