@@ -33,7 +33,6 @@ public class BingSearchAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Use bing search engine to query for the latest news.")
-	@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.bing", name = "enabled", havingValue = "true")
 	public BingSearchService bingSearchFunction(BingSearchProperties properties) {
 		return new BingSearchService(properties);
 	}
