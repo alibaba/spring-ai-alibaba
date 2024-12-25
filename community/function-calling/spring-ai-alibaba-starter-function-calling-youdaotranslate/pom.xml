@@ -28,7 +28,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-function-calling-youdaotranslate</artifactId>
-    <name>spring-ai-alibaba-starter-function-calling-youdao</name>
+    <name>spring-ai-alibaba-starter-function-calling-youdaotranslate</name>
     <description>youdao translate tool for Spring AI Alibaba</description>
 
     <dependencies>
@@ -56,6 +56,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-function-calling-translate</finalName>
+        <finalName>spring-ai-alibaba-function-calling-youdaotranslate</finalName>
     </build>
 </project>
