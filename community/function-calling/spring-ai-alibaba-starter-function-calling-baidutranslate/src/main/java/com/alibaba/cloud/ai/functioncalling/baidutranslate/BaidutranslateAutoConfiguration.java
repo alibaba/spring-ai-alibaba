@@ -13,29 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.functioncalling.sinanews;
+
+package com.alibaba.cloud.ai.functioncalling.baidutranslate;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 /**
- * @Author: XiaoYunTao
- * @Date: 2024/12/18
+ * @author SCMRCORE
  */
-@Configuration
-@ConditionalOnClass(SinaNewsService.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.sinanews", name = "enabled", havingValue = "true")
-public class SinaNewsAutoConfiguration {
+@ConditionalOnClass(BaidutranslateService.class)
+@EnableConfigurationProperties(BaidutranslateProperties.class)
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.baidutranslate", name = "enabled",
+		havingValue = "true")
+public class BaidutranslateAutoConfiguration {
 
-	@Bean
+	@Bean(name = "baiduTranslateFunction")
 	@ConditionalOnMissingBean
-	@Description("Get the news from the Sina news (获取新浪新闻).")
-	public SinaNewsService getSinaNewsFunction() {
-		return new SinaNewsService();
+	@Description("Baidu translation function for general text translation")
+	public BaidutranslateService baiduTranslateFunction(BaidutranslateProperties properties) {
+		return new BaidutranslateService(properties);
 	}
 
 }
