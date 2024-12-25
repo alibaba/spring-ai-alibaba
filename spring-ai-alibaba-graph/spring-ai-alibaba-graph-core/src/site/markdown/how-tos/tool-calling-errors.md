@@ -253,7 +253,7 @@ for (const message of response2.messages) {
     AI: [
       {
         "type": "text",
-        "text": "Okay, let's generate a haiku about water using the master haiku generator tool:"
+        "text": "Okay, let's generate a haiku about water using the master haiku projectGenerator tool:"
       },
       {
         "type": "tool_use",
@@ -270,7 +270,7 @@ for (const message of response2.messages) {
     AI: [
       {
         "type": "text",
-        "text": "Oops, looks like I need to provide 3 topics for the haiku generator. Let me try again with 3 water-related topics:"
+        "text": "Oops, looks like I need to provide 3 topics for the haiku projectGenerator. Let me try again with 3 water-related topics:"
       },
       {
         "type": "tool_use",
@@ -286,7 +286,7 @@ for (const message of response2.messages) {
       }
     ]
     TOOL: "Here is a haiku about the ocean, waves, and rain:\n\nWaves crash on the shore,\nRhythmic dance of water's song,\nRain falls from the sky."
-    AI: "The haiku generator has produced a beautiful and evocative haiku about the different aspects of water - the ocean, waves, and rain. I hope you enjoy this poetic take on the theme of water!"
+    AI: "The haiku projectGenerator has produced a beautiful and evocative haiku about the different aspects of water - the ocean, waves, and rain. I hope you enjoy this poetic take on the theme of water!"
 
 
 We can see that the model takes two attempts.
@@ -467,7 +467,7 @@ for await (const chunk of stream) {
             "content": [
               {
                 "type": "text",
-                "text": "Okay, let's generate a haiku about water using the master haiku generator tool:"
+                "text": "Okay, let's generate a haiku about water using the master haiku projectGenerator tool:"
               },
               {
                 "type": "tool_use",
