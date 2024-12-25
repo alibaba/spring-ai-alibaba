@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.vo;
 
-import com.alibaba.cloud.ai.param.RunActionParam;
+import com.alibaba.cloud.ai.param.ModelRunActionParam;
 import lombok.Builder;
 import lombok.Data;
 
@@ -24,7 +24,7 @@ import lombok.Data;
 @Builder
 public class ChatModelRunResult {
 
-	private RunActionParam input;
+	private ModelRunActionParam input;
 
 	private ActionResult result;
 
