@@ -51,6 +51,7 @@
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-sinanews</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-toutiaonews</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-yuque</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-youdaotranslate</module>
 
         <module>community/document-readers/github-reader</module>
         <module>community/document-readers/poi-document-reader</module>
