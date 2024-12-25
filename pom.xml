@@ -46,6 +46,7 @@
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-regex</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-jsonprocessor</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-serpapi</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-githubtoolkit</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-sinanews</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-toutiaonews</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-yuque</module>
