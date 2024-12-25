@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -98,8 +98,8 @@ public class DashScopeAiStreamFunctionCallingHelper {
 				: (previous.content() != null) ? previous.content() : "");
 		Role role = (current.role() != null ? current.role() : previous.role());
 		role = (role != null ? role : Role.ASSISTANT); // default to ASSISTANT (if null
-		String name = (current.name() != null ? current.name() : previous.name());
-		String toolCallId = (current.toolCallId() != null ? current.toolCallId() : previous.toolCallId());
+		String name = (StringUtils.hasText(current.name()) ? current.name() : previous.name());
+		String toolCallId = (StringUtils.hasText(current.toolCallId()) ? current.toolCallId() : previous.toolCallId());
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
@@ -136,8 +136,8 @@ public class DashScopeAiStreamFunctionCallingHelper {
 		if (previous == null) {
 			return current;
 		}
-		String id = (current.id() != null ? current.id() : previous.id());
-		String type = (current.type() != null ? current.type() : previous.type());
+		String id = (StringUtils.hasText(current.id()) ? current.id() : previous.id());
+		String type = (StringUtils.hasText(current.type()) ? current.type() : previous.type());
 		ChatCompletionFunction function = merge(previous.function(), current.function());
 		return new ToolCall(id, type, function);
 	}
@@ -146,7 +146,7 @@ public class DashScopeAiStreamFunctionCallingHelper {
 		if (previous == null) {
 			return current;
 		}
-		String name = (current.name() != null ? current.name() : previous.name());
+		String name = (StringUtils.hasText(current.name()) ? current.name() : previous.name());
 		StringBuilder arguments = new StringBuilder();
 		if (previous.arguments() != null) {
 			arguments.append(previous.arguments());

@@ -26,6 +26,7 @@ NOTICE: Since spring-ai related packages haven't been published to the central r
 		</snapshots>
 	</repository>
 </repositories>
+
 Addendum: If the mirrorOf tag in your local Maven settings. xml is configured with the wildcard *, please modify it according to the following example.
 
 <mirror>
@@ -34,6 +35,7 @@ Addendum: If the mirrorOf tag in your local Maven settings. xml is configured wi
   <name>xxxx</name>
   <url>xxxx</url>
 </mirror>
+
 Inject ChatClient
 
 @RestController
