@@ -1,12 +1,12 @@
+import ToolBar, { ToolType } from '@/pages/Graph/Design/toolbar/ToolBar';
 import { Affix } from 'antd';
 import React, { useState } from 'react';
 import './toolbar.less';
-import ToolBar, { ToolType } from '@/pages/Graph/Design/toolbar/ToolBar';
 
 interface Props {
   name?: string;
-  reLayoutCallback: any,
-  viewport: any,
+  reLayoutCallback: any;
+  viewport: any;
 }
 
 const BottomToolBar: React.FC<Props> = ({ reLayoutCallback, viewport }) => {
@@ -18,14 +18,12 @@ const BottomToolBar: React.FC<Props> = ({ reLayoutCallback, viewport }) => {
       options: [
         {
           title: 'undo',
-          onClick: () => {
-          },
+          onClick: () => {},
           icon: 'iconamoon:do-undo-light',
         },
         {
           title: 'redo',
-          onClick: () => {
-          },
+          onClick: () => {},
           icon: 'iconamoon:do-redo-light',
           split: false,
         },
@@ -33,38 +31,41 @@ const BottomToolBar: React.FC<Props> = ({ reLayoutCallback, viewport }) => {
     },
     {
       type: 'map',
-      options: [{
-        title: 're_layout',
-        onClick: reLayoutCallback,
-        icon: 'material-symbols:responsive-layout-outline-rounded',
-        split: false,
-      },
+      options: [
+        {
+          title: 're_layout',
+          onClick: reLayoutCallback,
+          icon: 'material-symbols:responsive-layout-outline-rounded',
+          split: false,
+        },
       ],
     },
     {
       type: 'state',
-      options: [{
-        title: 'x',
-        onClick: reLayoutCallback,
-        text: `x:${viewport.y.toPrecision(4)}`,
-        split: true,
-      }, {
-        title: 'y',
-        onClick: reLayoutCallback,
-        text: ` y:${viewport.y.toPrecision(4)}`,
-        split: true,
-      }, {
-        title: 'zoom',
-        onClick: reLayoutCallback,
-        text: `zoom:${viewport.zoom.toPrecision(4)}`,
-        split: false,
-      },
+      options: [
+        {
+          title: 'x',
+          onClick: reLayoutCallback,
+          text: `x:${viewport.y.toPrecision(4)}`,
+          split: true,
+        },
+        {
+          title: 'y',
+          onClick: reLayoutCallback,
+          text: ` y:${viewport.y.toPrecision(4)}`,
+          split: true,
+        },
+        {
+          title: 'zoom',
+          onClick: reLayoutCallback,
+          text: `zoom:${viewport.zoom.toPrecision(4)}`,
+          split: false,
+        },
       ],
     },
   ];
   return (
-    <Affix offsetBottom={toolbarBottom} style={{
-    }}>
+    <Affix offsetBottom={toolbarBottom} style={{}}>
       <ToolBar toolList={toolList}></ToolBar>
     </Affix>
   );

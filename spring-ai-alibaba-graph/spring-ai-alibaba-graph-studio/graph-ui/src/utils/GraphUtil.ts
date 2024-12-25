@@ -1,5 +1,5 @@
-import produce from 'immer';
 import { graphState } from '@/store/GraphState';
+import produce from 'immer';
 
 /**
  * todo
@@ -26,8 +26,8 @@ export function reLayout(): any {
           pre.position.y = 150;
           return;
         }
-        let offsetW = (pre.width || 100);
-        let offsetH = (pre.height || 100);
+        let offsetW = pre.width || 100;
+        let offsetH = pre.height || 100;
         let offsetX = x.position.x - pre.position.x;
         let offsetY = x.position.y - pre.position.y;
         if (Math.abs(offsetX) < offsetW / 2) {
@@ -37,15 +37,13 @@ export function reLayout(): any {
           if (Math.abs(offsetY) < offsetH / 2) {
             x.position.y = pre.position.y;
           } else {
-            x.position.y = pre.position.y + (
-              offsetY > 0
-                ? (offsetH + heightGap)
-                : (-offsetH - heightGap));
+            x.position.y =
+              pre.position.y +
+              (offsetY > 0 ? offsetH + heightGap : -offsetH - heightGap);
           }
           x.position.x = pre.position.x + offsetW + widthGap;
         }
         pre = x;
       });
   });
-
 }

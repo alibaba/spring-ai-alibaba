@@ -1,14 +1,14 @@
-import { Affix } from 'antd';
-import React, { useState } from 'react';
-import './toolbar.less';
 import ToolBar, { ToolType } from '@/pages/Graph/Design/toolbar/ToolBar';
 import { FormattedMessage } from '@@/exports';
 import { Icon } from '@iconify/react';
+import { Affix } from 'antd';
+import React, { useState } from 'react';
+import './toolbar.less';
 
 interface Props {
   name?: string;
-  reLayoutCallback?: any,
-  viewport?: any,
+  reLayoutCallback?: any;
+  viewport?: any;
 }
 
 const TopToolBar: React.FC<Props> = () => {
@@ -31,7 +31,6 @@ const TopToolBar: React.FC<Props> = () => {
             </>
           ),
         },
-
       ],
     },
     {
@@ -52,18 +51,17 @@ const TopToolBar: React.FC<Props> = () => {
             </>
           ),
         },
-
       ],
     },
-
-
   ];
   return (
     <Affix
-      className='toolbar-wrapper'
-      offsetTop={toolbarTop} style={{
-      cursor: 'pointer',
-    }}>
+      className="toolbar-wrapper"
+      offsetTop={toolbarTop}
+      style={{
+        cursor: 'pointer',
+      }}
+    >
       <ToolBar toolList={toolList}></ToolBar>
     </Affix>
   );
