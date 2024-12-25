@@ -129,9 +129,7 @@ public class OpenSearchVector implements VectorStore {
 
 	@Override
 	public List<Document> similaritySearch(String query) {
-		return this.similaritySearch(SearchRequest.builder()
-				.query(query)
-				.build());
+		return this.similaritySearch(SearchRequest.builder().query(query).build());
 	}
 
 	@Override
