@@ -1,6 +1,7 @@
 package com.alibaba.cloud.ai.graph.practice.insurance_sale;
 
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.serializer.agent.JSONStateSerializer;
 import com.alibaba.cloud.ai.graph.studio.StreamingServerJetty;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -30,9 +31,7 @@ public class AiInsurance {
 		// 2、注入序列化对象
 		// 3、组装工作流流程
 		// IsExecutor
-		var graph = new IsExecutor(agentService).graphBuilder()
-			.stateSerializer(IsExecutor.Serializers.JSON.object())
-			.build();
+		var graph = new IsExecutor(agentService).graphBuilder().stateSerializer(JSONStateSerializer.INSTANCE).build();
 
 		/*
 		 * build(){ return new StateGraph<>(State.SCHEMA, stateSerializer)
@@ -51,9 +50,9 @@ public class AiInsurance {
 		 * usecaseStereotypeFontSize 12 skinparam hexagonFontSize 14 skinparam
 		 * hexagonStereotypeFontSize 12 title "Adaptive RAG" footer
 		 *
-		 * powered by SpringAiGraph end footer circle start<<input>> circle stop as __END__
-		 * usecase "agent"<<Node>> usecase "action"<<Node>> hexagon "check state" as
-		 * condition1<<Condition>> start -down-> "agent" "agent" -down-> "condition1"
+		 * powered by SpringAiGraph end footer circle start<<input>> circle stop as
+		 * __END__ usecase "agent"<<Node>> usecase "action"<<Node>> hexagon "check state"
+		 * as condition1<<Condition>> start -down-> "agent" "agent" -down-> "condition1"
 		 * "condition1" --> "action": "continue" '"agent" --> "action": "continue"
 		 * "condition1" -down-> stop: "end" '"agent" -down-> stop: "end" "action" -down->
 		 * "agent"
