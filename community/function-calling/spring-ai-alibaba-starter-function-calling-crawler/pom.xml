@@ -31,6 +31,11 @@
     <packaging>jar</packaging>
     <name>Spring Ai Alibaba Starter Plugin Crawler</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+    </scm>
 
     <dependencies>
 
@@ -60,6 +65,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-plugin-crewler</finalName>
+        <finalName>spring-ai-alibaba-function-calling-crewler</finalName>
     </build>
 </project>
