@@ -14,9 +14,13 @@
     "@ant-design/icons": "^5.0.1",
     "@ant-design/pro-components": "^2.4.4",
     "@szhsin/react-menu": "^4.2.3",
+    "@types/lodash": "^4.17.13",
     "@umijs/max": "^4.3.35",
     "@xyflow/react": "^12.3.5",
-    "antd": "^5.22.2"
+    "ahooks": "^3.8.4",
+    "antd": "^5.22.2",
+    "js-yaml": "^4.1.0",
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "@iconify/react": "^5.0.2",
@@ -27,6 +31,7 @@
     "prettier": "^2.8.7",
     "prettier-plugin-organize-imports": "^3.2.2",
     "prettier-plugin-packagejson": "^2.4.3",
+    "raw-loader": "^4.0.2",
     "typescript": "^5.0.3"
   }
 }
