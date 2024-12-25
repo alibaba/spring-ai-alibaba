@@ -105,12 +105,12 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 	}
 
 	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions options,
-							  FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate) {
+			FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate) {
 		this(dashscopeApi, options, functionCallbackResolver, retryTemplate, ObservationRegistry.NOOP);
 	}
 
 	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions options,
-							  FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate,
+			FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate,
 			ObservationRegistry observationRegistry) {
 		super(functionCallbackResolver);
 		Assert.notNull(dashscopeApi, "DashScopeApi must not be null");

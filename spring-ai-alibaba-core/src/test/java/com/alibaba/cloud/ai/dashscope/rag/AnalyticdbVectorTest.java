@@ -47,8 +47,8 @@ class AnalyticdbVectorTest {
 		config.setNamespacePassword("llamapassword");
 		config.setEmbeddingDimension(3L);
 
-		//TODO 需要修改
-		analyticdbVector = new AnalyticdbVector("test_llama", config,null);
+		// TODO 需要修改
+		analyticdbVector = new AnalyticdbVector("test_llama", config, null);
 	}
 
 	@Test
@@ -60,12 +60,12 @@ class AnalyticdbVectorTest {
 		int length = 1536; // Array length
 		float min = 0f; // smallest value
 		float max = 1f; // the largest value
-//		float[] em = new float[length]; // create float array
-//		Random random = new Random();
-//		for (int i = 0; i < length; i++) {
-//			em[i] = min + (max - min) * random.nextFloat();
-//		}
-//		document.setEmbedding(em);
+		// float[] em = new float[length]; // create float array
+		// Random random = new Random();
+		// for (int i = 0; i < length; i++) {
+		// em[i] = min + (max - min) * random.nextFloat();
+		// }
+		// document.setEmbedding(em);
 		list.add(document);
 		analyticdbVector.add(list);
 		SearchRequest searchRequest = SearchRequest.builder().query("hello").build();
