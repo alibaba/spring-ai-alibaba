@@ -23,8 +23,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 /**
- * @Author: XiaoYunTao
- * @Date: 2024/12/18
+ * @author XiaoYunTao
+ * @since 2024/12/18
  */
 @Configuration
 @ConditionalOnClass(ToutiaoNewsService.class)
