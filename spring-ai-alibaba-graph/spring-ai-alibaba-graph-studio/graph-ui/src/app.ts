@@ -5,12 +5,12 @@
 import { RunTimeLayoutConfig } from '@@/plugin-layout/types';
 
 export async function getInitialState(): Promise<{ name: string }> {
-  return { name: 'Graph@SpringAiAlibaba' };
+  return { name: '' };
 }
-
+import logo from './assets/logo.png'
 export const layout: RunTimeLayoutConfig = () => {
   return {
-    logo: 'https://img.alicdn.com/tfs/TB1YHEpwUT1gK0jSZFhXXaAtVXa-28-27.svg',
+    logo: logo,
     menu: {
       locale: true,
     },

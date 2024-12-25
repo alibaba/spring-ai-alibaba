@@ -32,6 +32,18 @@ export default {
       editMeta: '编辑',
       design: '设计',
       search: '搜索',
+      map: {
+        home: '主页',
+      },
+      toolbar: {
+        'import-dsl': '导入DSL',
+        'export-dsl': '导出DSL',
+      },
+      contextMenu: {
+        'add-node': '新增节点',
+        'import-dsl': '导入DSL',
+        'export-dsl': '导出DSL',
+      },
     },
   },
 };
