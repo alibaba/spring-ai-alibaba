@@ -25,6 +25,8 @@ export default defineConfig({
     title: true,
     baseNavigator: true,
   },
+  valtio: {
+  },
   routes: [
     {
       path: '/',
@@ -57,4 +59,7 @@ export default defineConfig({
     },
   ],
   npmClient: 'pnpm',
+  chainWebpack: config=>{
+
+  }
 });
