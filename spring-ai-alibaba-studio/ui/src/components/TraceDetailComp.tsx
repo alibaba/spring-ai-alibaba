@@ -1,84 +1,76 @@
-import React from 'react';
-import { Button, Card, Col, Drawer, Row, Tree } from 'antd';
+import React, { useEffect } from 'react';
+import { Button, Card, Col, Drawer, Row, Table, Tree } from 'antd';
 import { CarryOutOutlined, FormOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
-const input = '{"input":"What is a document loader?","chat_history":[]}';
-const output = '{"output":"A document loader is a tool used to load and process documents for various tasks such as text analysis, information extraction, and more."}';
+// const input = '{"input":"What is a document loader?","chat_history":[]}';
+// const output = '{"output":"A document loader is a tool used to load and process documents for various tasks such as text analysis, information extraction, and more."}';
 const preStyle: any = {
     whiteSpace: 'pre-wrap', // This will allow the text to wrap
     wordWrap: 'break-word', // This will break long words
     overflow: 'auto', // This will provide a scrollbar if needed
 };
-const TraceDetailComp = ({ open, setOpen }) => {
+const TraceDetailComp = ({ record, open, setOpen }) => {
     const { t, i18n } = useTranslation();
-    const [selectedKey, setSelectedKey] = React.useState('Chat Model');
-    const treeData = [
-        {
-            title: 'Chat Client',
-            key: 'Chat Client',
-            icon: <CarryOutOutlined />,
-            children: [
-                {
-                    title: 'Chat Model',
-                    key: 'Chat Model',
-                    icon: <CarryOutOutlined />,
-                    children: [
-                        { title: 'template', key: 'template', icon: <CarryOutOutlined /> },
-                        {
-                            title: 'tools',
-                            key: 'tools',
-                            icon: <CarryOutOutlined />,
-                        },
-                        { title: 'leaf', key: '0-0-0-2', icon: <CarryOutOutlined /> },
-                    ],
-                },
-                {
-                    title: 'parent 1-1',
-                    key: '0-0-1',
-                    icon: <CarryOutOutlined />,
-                    children: [{ title: 'leaf', key: '0-0-1-0', icon: <CarryOutOutlined /> }],
-                },
-                {
-                    title: 'parent 1-2',
-                    key: '0-0-2',
-                    icon: <CarryOutOutlined />,
-                    children: [
-                        { title: 'leaf', key: '0-0-2-0', icon: <CarryOutOutlined /> },
-                        {
-                            title: 'leaf',
-                            key: '0-0-2-1',
-                            icon: <CarryOutOutlined />,
-                            switcherIcon: <FormOutlined />,
-                        },
-                    ],
-                },
-            ],
-        },
-    ];
+    const [traceNodeInfo, setTraceNodeInfo] = React.useState({ title: 'chat_client', input: 'What is a document loader?', output: 'A document loader is a tool used to load and process documents for various tasks such as text analysis, information extraction, and more.' } as any);
+
+    const treeContainerStyle = {
+        whiteSpace: 'nowrap',
+        overflowX: 'auto',
+        width: '100%', // 容器宽度，可以根据需要调整
+        borderRight: '1px solid #d9d9d9', // 添加竖线
+        paddingRight: '10px', // 若需要留一些空间，避免内容贴住边界
+    };
+
+    useEffect(() => {
+        setTraceNodeInfo({ input: record.input, output: record.output, title: record.model });
+    }, [record]);
+
+    const buildTraceNodeInfo = (traceNodeInfo) => {
+        const arrayAttributes = [] as any;
+        Object.keys(traceNodeInfo.attributes || []).forEach((key) => {
+            arrayAttributes.push({ name: key, value: traceNodeInfo.attributes[key] });
+        });
+        const newData = JSON.parse(JSON.stringify(traceNodeInfo));
+        if (newData.input.length == 0) {
+            newData.input = record.input;
+        }
+        if (newData.output.length == 0) {
+            newData.output = record.output;
+        }
+        newData.attributes = arrayAttributes;
+        setTraceNodeInfo(newData);
+    };
     return (
       <div>
         <Drawer title="Trace Detail" width={'90%'} onClose={() => setOpen(false)} open={open}>
           <Row>
-            <Col span={6}>
+            <Col span={6} style={treeContainerStyle as any}>
               <Tree
-                onSelect={(e: any) => setSelectedKey(e[0])}
+                onSelect={(e: any, info) => buildTraceNodeInfo(info.selectedNodes[0])}
                 showLine
                 showIcon
-                defaultExpandedKeys={['Chat Model']}
-                treeData={treeData}
+                defaultExpandAll
+                treeData={[record.traceDetail]}
               />
             </Col>
             <Col span={18}>
-              <Card title={selectedKey} extra={<Button disabled>{t('gotoDebug')}</Button>}>
-                <Card title={'Input'} style={{ marginTop: 10 }}><pre style={preStyle}>{JSON.stringify(JSON.parse(input), null, 2)}</pre></Card>
-                <Card title={'Output'} style={{ marginTop: 10 }}><pre style={preStyle}>{JSON.stringify(JSON.parse(output), null, 2)}</pre></Card>
-                <Card title={'Messages'} style={{ marginTop: 10 }}>
-                  aaa
-                </Card>
+              <Card title={traceNodeInfo.title} extra={<Button disabled>{t('gotoDebug')}</Button>}>
+                <Row>
+                  <Col span={16} style={{ paddingRight: 10 }}>
+                    <Card title={'Input'} style={{ marginTop: 10 }}><pre style={preStyle}>{JSON.stringify(traceNodeInfo.input, null, 2)}</pre></Card>
+                    <Card title={'Output'} style={{ marginTop: 10 }}><pre style={preStyle}>{JSON.stringify(traceNodeInfo.output, null, 2)}</pre></Card>
+                    <Card title={'Messages'} style={{ marginTop: 10 }}>
+                      aaa
+                    </Card>
+                  </Col>
+                  <Col span={7}>
+                    <Table pagination={false} columns={[{ title: 'Name', dataIndex: 'name' }, { title: 'Value', dataIndex: 'value' }]} dataSource={traceNodeInfo?.attributes || []} />
+                  </Col>
+                </Row>
               </Card>
-
             </Col>
+
           </Row>
         </Drawer>
       </div>
