@@ -25,7 +25,11 @@ public class Kuaidi100Service implements Function<Kuaidi100Service.Request, Quer
 
 	private static final Logger logger = LoggerFactory.getLogger(Kuaidi100Service.class);
 
-	Kuaidi100Properties kuaidi100Properties;
+	private final Gson gson = new Gson();
+
+	private final AutoNum autoNum = new AutoNum();
+
+	final Kuaidi100Properties kuaidi100Properties;
 
 	public Kuaidi100Service(Kuaidi100Properties kuaidi100Properties) {
 		this.kuaidi100Properties = kuaidi100Properties;
@@ -36,32 +40,44 @@ public class Kuaidi100Service implements Function<Kuaidi100Service.Request, Quer
 		QueryTrackResp queryTrackResp;
 		try {
 			queryTrackResp = queryTrack(request.num());
+			logger.debug("queryTrackResp: {}", queryTrackResp);
 		}
 		catch (Exception e) {
-			throw new RuntimeException(e);
+			logger.error("Error occurred while querying track!", e);
+			throw new Kuaidi100Exception("Error querying track.", e);
 		}
-		logger.info("queryTrackResp: {}", queryTrackResp);
 		return queryTrackResp;
 	}
 
-	public QueryTrackResp queryTrack(String num) throws Exception {
+	private QueryTrackResp queryTrack(String num) throws Exception {
 		String key = kuaidi100Properties.getKey();
 		String customer = kuaidi100Properties.getCustomer();
 
-		QueryTrackReq queryTrackReq = new QueryTrackReq();
-		QueryTrackParam queryTrackParam = new QueryTrackParam();
+		QueryTrackParam queryTrackParam = createQueryTrackParam(num, key);
+		String param = gson.toJson(queryTrackParam);
+
+		QueryTrackReq queryTrackReq = createQueryTrackReq(customer, param, key);
+		return new QueryTrack().queryTrack(queryTrackReq);
+	}
+
+	private QueryTrackParam createQueryTrackParam(String num, String key) throws Exception {
 		AutoNumReq autoNumReq = new AutoNumReq();
 		autoNumReq.setNum(num);
 		autoNumReq.setKey(key);
-		AutoNum autoNum = new AutoNum();
-		queryTrackParam.setCom(autoNum.getFirstComByNum(autoNumReq));
-		queryTrackParam.setNum(num);
-		String param = new Gson().toJson(queryTrackParam);
+		String company = autoNum.getFirstComByNum(autoNumReq);
 
+		QueryTrackParam queryTrackParam = new QueryTrackParam();
+		queryTrackParam.setCom(company);
+		queryTrackParam.setNum(num);
+		return queryTrackParam;
+	}
+
+	private QueryTrackReq createQueryTrackReq(String customer, String param, String key) {
+		QueryTrackReq queryTrackReq = new QueryTrackReq();
 		queryTrackReq.setParam(param);
 		queryTrackReq.setCustomer(customer);
 		queryTrackReq.setSign(SignUtils.querySign(param, key, customer));
-		return new QueryTrack().queryTrack(queryTrackReq);
+		return queryTrackReq;
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
