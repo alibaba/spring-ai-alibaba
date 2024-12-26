@@ -16,7 +16,7 @@ public class PlantUMLGenerator extends DiagramGenerator {
 			.append("skinparam hexagonStereotypeFontSize 12\n")
 			.append(format("title \"%s\"\n", title))
 			.append("footer\n\n")
-			.append("powered by langgraph4j\n")
+			.append("powered by Spring Ai Alibaba\n")
 			.append("end footer\n")
 			.append("circle start<<input>>\n")
 			.append(format("circle stop as %s\n", END));
