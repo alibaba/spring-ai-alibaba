@@ -16,6 +16,8 @@ public enum NodeType {
 
 	AGGREGATOR("AGGREGATOR", "variable-aggregator"),
 
+	QUESTION_CLASSIFIER("QUESTION_CLASSIFIER", "question-classifier"),
+
 	HUMAN("HUMAN", "unsupported"),;
 
 	private String value;
