@@ -30,6 +30,12 @@
     <artifactId>spring-ai-alibaba-starter-function-calling-dingtalk</artifactId>
     <name>spring-ai-alibaba-starter-function-calling-dingtalk</name>
     <description>Ding Talk tool for Spring AI Alibaba</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+    </scm>
 
     <properties>
         <dingtalk-sdk-version>2.1.68</dingtalk-sdk-version>
