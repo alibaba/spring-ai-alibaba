@@ -20,7 +20,7 @@ public class Kuaidi100Properties {
 	 */
 	private String customer;
 
-	public Kuaidi100Properties(String key, String customer){
+	public Kuaidi100Properties(String key, String customer) {
 		this.key = key;
 		this.customer = customer;
 	}
