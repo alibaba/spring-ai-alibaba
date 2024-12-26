@@ -658,6 +658,14 @@ components:
     ChatOptions:
       type: object
       properties:
+        topP:
+          type: number
+          format: double
+        topK:
+          type: integer
+          format: int32
+        model:
+          type: string
         maxTokens:
           type: integer
           format: int32
@@ -674,14 +682,6 @@ components:
           type: array
           items:
             type: string
-        model:
-          type: string
-        topP:
-          type: number
-          format: double
-        topK:
-          type: integer
-          format: int32
     RListChatClient:
       type: object
       properties:

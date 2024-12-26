@@ -3,6 +3,7 @@ package com.alibaba.cloud.ai.tracing;
 import io.micrometer.tracing.Tracer;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -20,8 +21,10 @@ public class TraceIdInterceptor implements HandlerInterceptor {
 	@Override
 	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
 			throws Exception {
-		String traceId = tracer.currentSpan().context().traceId();
-		response.setHeader("X-Request-ID", traceId);
+		if (tracer.currentSpan() != null) {
+			String traceId = Objects.requireNonNull(tracer.currentSpan()).context().traceId();
+			response.setHeader("X-Request-ID", traceId);
+		}
 		return true;
 	}
 
