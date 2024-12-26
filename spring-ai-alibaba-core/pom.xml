@@ -130,6 +130,12 @@
 			<artifactId>micrometer-observation-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-function-calling-kuaidi100</artifactId>
+            <version>1.0.0-M3.2</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
 </project>
