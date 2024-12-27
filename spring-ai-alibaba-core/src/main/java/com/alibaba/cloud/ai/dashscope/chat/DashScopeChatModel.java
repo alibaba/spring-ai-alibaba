@@ -276,7 +276,8 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 
 		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
-		//TODO 需要DashScope的同学，看下适配的方式是否合理
+		// TODO Due to the structural changes in ChatGenerationMetadata.
+		// A review is needed to determine if the adaptation is reasonable.
 		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
 		return new Generation(assistantMessage, generationMetadata);
 	}
