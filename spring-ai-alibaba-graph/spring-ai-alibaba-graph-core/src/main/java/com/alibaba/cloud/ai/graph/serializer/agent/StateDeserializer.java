@@ -6,10 +6,13 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 class StateDeserializer extends JsonDeserializer<NodeState> {
@@ -26,11 +29,18 @@ class StateDeserializer extends JsonDeserializer<NodeState> {
 		}
 		if (dataNode.has(NodeState.OUTPUT)) {
 			JsonNode outputNode = dataNode.get(NodeState.OUTPUT);
-			if (StringUtils.hasText(outputNode.asText())) {
+			if (outputNode.isTextual())
+			{
 				data.put(NodeState.OUTPUT, outputNode.asText());
 			}
-			else {
-				if (!outputNode.isNull()) {
+			else
+			{
+				if (outputNode.isObject()){
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    Map map = objectMapper.convertValue(outputNode, Map.class);
+                    data.put(NodeState.OUTPUT,map);
+                }
+                else if (!outputNode.isNull()) {
 					var agentOutcome = ctx.readValue(outputNode.traverse(parser.getCodec()), AgentOutcome.class);
 					data.put("agent_outcome", agentOutcome);
 				}

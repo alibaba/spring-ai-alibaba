@@ -12,6 +12,10 @@ public interface BaseCheckpointSaver {
 
 	Optional<Checkpoint> get(RunnableConfig config);
 
+	default Optional<Checkpoint> getByNodeId(RunnableConfig config,String nodeId){
+		return Optional.empty();
+	};
+
 	RunnableConfig put(RunnableConfig config, Checkpoint checkpoint) throws Exception;
 
 	boolean clear(RunnableConfig config);
