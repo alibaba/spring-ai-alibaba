@@ -21,7 +21,7 @@ public class GoogleTranslateAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @Description("Implement natural language translation capabilities.")
-    public GoogleTranslateService GoogleTranslateFunction(GoogleTranslateProperties properties) {
+    public GoogleTranslateService googleTranslateFunction(GoogleTranslateProperties properties) {
         return new GoogleTranslateService(properties);
     }
 }
