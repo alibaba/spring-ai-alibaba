@@ -10,6 +10,7 @@ import static java.util.Optional.ofNullable;
 
 public class CompileConfig {
 
+	@Getter
 	private SaverConfig saverConfig;
 
 	@Getter

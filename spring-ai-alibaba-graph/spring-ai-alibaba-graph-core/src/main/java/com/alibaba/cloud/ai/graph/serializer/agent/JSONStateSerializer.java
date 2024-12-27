@@ -11,6 +11,7 @@ import lombok.NonNull;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Map;
 
 public class JSONStateSerializer extends PlainTextStateSerializer {
 

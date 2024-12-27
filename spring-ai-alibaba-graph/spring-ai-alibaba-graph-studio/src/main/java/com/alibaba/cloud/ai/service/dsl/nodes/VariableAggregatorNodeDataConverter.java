@@ -26,12 +26,15 @@ public class VariableAggregatorNodeDataConverter implements NodeDataConverter<Va
     @Override
     public VariableAggregatorNodeData parseDifyData(Map<String, Object> data) {
         Map<String, Object> advanced_settings = (Map<String, Object>) data.get("advanced_settings");
+        //variables not allow null
+        List<List<String>> variables = (List<List<String>>) data.get("variables");
+        String outputType = (String) data.get("output_type");
         VariableAggregatorNodeData.AdvancedSettings advancedSettings = new VariableAggregatorNodeData.AdvancedSettings();
-        advancedSettings.setGroupEnabled((Boolean) advanced_settings.get("group_enabled"));
-        advancedSettings.setGroups(JSON.parseArray(JSON.toJSONString(advanced_settings.get("groups")), VariableAggregatorNodeData.Groups.class));
+        advancedSettings.setGroupEnabled(advanced_settings != null ? (Boolean) advanced_settings.get("group_enabled") : null);
+        advancedSettings.setGroups(advanced_settings != null ? JSON.parseArray(JSON.toJSONString(advanced_settings.get("groups")), VariableAggregatorNodeData.Groups.class) : null);
         return VariableAggregatorNodeData.builder()
-                .variables((List<List<String>>) data.get("variables"))
-                .outputType((String) data.get("output_type"))
+                .variables(variables)
+                .outputType(outputType)
                 .advancedSettings(advancedSettings)
                 .build();
     }
@@ -40,7 +43,7 @@ public class VariableAggregatorNodeDataConverter implements NodeDataConverter<Va
     @Override
     @SneakyThrows
     public Map<String, Object> dumpDifyData(VariableAggregatorNodeData nodeData) {
-        Map<String,Object> result = new HashMap<>();
+        Map<String, Object> result = new HashMap<>();
         HashMap<Object, Object> advancedSettings = new HashMap<>();
         VariableAggregatorNodeData.AdvancedSettings advancedSettings1 = nodeData.getAdvancedSettings();
         advancedSettings.put("group_enabled", advancedSettings1.isGroupEnabled());
@@ -55,9 +58,9 @@ public class VariableAggregatorNodeDataConverter implements NodeDataConverter<Va
             groups.add(groupMap);
         }
         advancedSettings.put("groups", groups);
-        result.put("variables",nodeData.getVariables());
-        result.put("output_type",nodeData.getOutputType());
-        result.put("advanced_settings",advancedSettings);
+        result.put("variables", nodeData.getVariables());
+        result.put("output_type", nodeData.getOutputType());
+        result.put("advanced_settings", advancedSettings);
         return result;
     }
 
