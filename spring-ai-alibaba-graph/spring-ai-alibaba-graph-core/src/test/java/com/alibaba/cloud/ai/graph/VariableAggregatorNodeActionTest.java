@@ -32,14 +32,14 @@ public class VariableAggregatorNodeActionTest {
         variableAggregatorDescriptor.setVariables(List.of(List.of("node1", "input")));
         variableAggregatorDescriptor.setOutputType("string");
         //advanceSettings Test
-//        VariableAggregatorDescriptor.AdvancedSettings advancedSettings = new VariableAggregatorDescriptor.AdvancedSettings();
-//        advancedSettings.setGroupEnabled(true);
-//        VariableAggregatorDescriptor.Groups groups = new VariableAggregatorDescriptor.Groups();
-//        groups.setGroupName("Group1");
-//        groups.setOutputType("String");
-//        groups.setVariables(List.of(List.of("node1", "input")));
-//        advancedSettings.setGroups(List.of(groups));
-//        variableAggregatorDescriptor.setAdvancedSettings(advancedSettings);
+        VariableAggregatorDescriptor.AdvancedSettings advancedSettings = new VariableAggregatorDescriptor.AdvancedSettings();
+        advancedSettings.setGroupEnabled(true);
+        VariableAggregatorDescriptor.Groups groups = new VariableAggregatorDescriptor.Groups();
+        groups.setGroupName("Group1");
+        groups.setOutputType("String");
+        groups.setVariables(List.of(List.of("node1", "input")));
+        advancedSettings.setGroups(List.of(groups));
+        variableAggregatorDescriptor.setAdvancedSettings(advancedSettings);
         stateGraph.addNode("node2", AsyncNodeActionWithConfig.node_async(new VariableAggregatorNodeAction(variableAggregatorDescriptor, config)));
         stateGraph.addEdge(StateGraph.START, "node1");
         stateGraph.addEdge("node1", "node2");

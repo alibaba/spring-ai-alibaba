@@ -8,6 +8,8 @@ import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.alibaba.cloud.ai.graph.utils.TryConsumer;
+import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -48,7 +50,7 @@ public class VariableAggregatorNodeAction implements NodeActionWithConfig {
         }
         if (outPutResult.get() == null) throw new IllegalStateException("output is null");
         if (!isGroup) {
-            return Map.of(NodeState.OUTPUT, Map.of(groupName, Map.of(NodeState.OUTPUT, outPutResult), OUT_TYPE_PROMPT, outType));
+            return Map.of(NodeState.OUTPUT, JSON.toJSONString(Map.of(groupName, Map.of(NodeState.OUTPUT, outPutResult), OUT_TYPE_PROMPT, outType)));
         }
         return Map.of(NodeState.OUTPUT, Map.of(OUT_TYPE_PROMPT, outType, NodeState.OUTPUT, outPutResult));
     }
