@@ -19,6 +19,11 @@ package com.alibaba.cloud.ai.functioncalling.googletranslate;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
@@ -58,8 +63,8 @@ public class GoogleTranslateService implements Function<GoogleTranslateService.R
     }
     @Override
     public Response apply(Request request) {
-        if ( request == null || !StringUtils.hasText(properties.getApiKey()) ||
-                !StringUtils.hasText(request.text) || !StringUtils.hasText(request.targetLanguage)
+        if ( request == null || request.text == null || request.text.isEmpty()  ||
+                !StringUtils.hasText(properties.getApiKey()) || !StringUtils.hasText(request.targetLanguage)
         ) {return null;}
 
         String requestUrl = UriComponentsBuilder.fromHttpUrl(TRANSLATE_HOST + TRANSLATE_PATH)
@@ -81,33 +86,38 @@ public class GoogleTranslateService implements Function<GoogleTranslateService.R
         return null;
     }
 
-    private Response parseResponseData(String responseData, String q) {
-        Gson gson = new Gson();
-        Map<String, Object> response = gson.fromJson(responseData,
-                new TypeToken<Map<String, Object>>() {}.getType());
-        if (response.containsKey("error")) {
-            Map<String, Object> errorMap = (Map<String, Object>) response.get("error");
-            log.error("GoogleTranslation service failed due to {}", errorMap.get("message").toString());
-            return null;
-        }
-
-        Map<String, Object> data = (Map<String, Object>) response.get("data");
-        List<Map<String, String>> translationsList = (List<Map<String, String>>) data.get("translation");
-        if ( translationsList == null || translationsList.isEmpty()) {
-            log.error("Invalid response format: 'translation' list is empty.");
-            return null;
-        }
-
+    private Response parseResponseData(String responseData, List<String> query)  {
+        ObjectMapper mapper = new ObjectMapper();
         Map<String, String> translationResult = new HashMap<>();
-        for (Map<String, String> translation : translationsList) {
-            translationResult.put(q, translation.get("translatedText"));
+        try {
+            JsonNode rootNode = mapper.readTree(responseData);
+            JsonNode data = rootNode.path("data");
+            if (data == null || data.isNull()) {
+                translateFailed(rootNode);
+                return null;
+            }
+            JsonNode translations = data.path("translations");
+            assert translations != null;
+            assert query.size() == translations.size();
+            for (int i = 0; i < translations.size(); i++) {
+                translationResult.put(query.get(i), translations.get(i).asText());
+            }
+            return new Response(translationResult);
+        } catch(Exception e) {
+            log.error("failed to convert the response to json object  due to {}", e.getMessage());
+            return null;
         }
-        return new Response(translationResult);
+    }
+
+    private void translateFailed(JsonNode rootNode) {
+        String errorMessage = rootNode.path("error").path("message").asText();
+        String code = rootNode.path("error").path("code").asText();
+        log.info("Translate Text Failed. message:{} code:{}", errorMessage, code);
     }
 
     public record Request(
             @JsonProperty(required = true,
-                    value = "text")@JsonPropertyDescription("Content that needs to be translated") String text,
+                    value = "text")@JsonPropertyDescription("Content that needs to be translated") List<String> text,
             @JsonProperty(required = true, value = "targetLanguage")
             @JsonPropertyDescription("the target language to translate into")
             String targetLanguage
