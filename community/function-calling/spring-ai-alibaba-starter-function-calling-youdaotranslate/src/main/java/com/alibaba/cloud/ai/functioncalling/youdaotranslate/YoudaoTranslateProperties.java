@@ -20,7 +20,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * @author Yeaury
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.youdao")
+@ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.youdaotranslate")
 public class YoudaoTranslateProperties {
 
 	private String appKey;
