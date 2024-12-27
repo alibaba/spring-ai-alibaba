@@ -15,6 +15,7 @@
 	<url>https://github.com/alibaba/spring-ai-alibaba</url>
 
 	<dependencies>
+
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
@@ -36,6 +37,7 @@
 			<artifactId>sdk</artifactId>
 			<version>1.0.15</version>
 		</dependency>
+
 	</dependencies>
 
 	<build>
