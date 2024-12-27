@@ -32,6 +32,7 @@
     <description>youdao translate tool for Spring AI Alibaba</description>
 
     <dependencies>
+
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
