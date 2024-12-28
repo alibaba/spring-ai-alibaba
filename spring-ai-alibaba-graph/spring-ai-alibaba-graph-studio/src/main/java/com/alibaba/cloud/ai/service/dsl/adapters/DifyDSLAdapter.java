@@ -9,21 +9,26 @@ import com.alibaba.cloud.ai.model.workflow.*;
 import com.alibaba.cloud.ai.service.dsl.AbstractDSLAdapter;
 import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.Serializer;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
  * DifyDSLAdapter converts Dify DSL to {@link App} and vice versa.
  */
 @Component
+@Slf4j
 public class DifyDSLAdapter extends AbstractDSLAdapter {
 
     private static final String DIFY_DIALECT = "dify";
@@ -39,6 +44,31 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
     public DifyDSLAdapter (List<NodeDataConverter> nodeDataConverters, @Qualifier("yaml") Serializer serializer) {
         this.nodeDataConverters = nodeDataConverters;
         this.serializer = serializer;
+    }
+
+    private static <T> T safeConvert (Map<String, Object> data, String key, Class<T> clazz) {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        if (!data.containsKey(key) || data.get(key) == null) {
+            return null;
+        }
+        return objectMapper.convertValue(data.get(key), clazz);
+    }
+
+    private static String safeWriteValue (Map<String, Object> data, String key) {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        if (!data.containsKey(key) || data.get(key) == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(data.get(key));
+        }
+        catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("配置项序列化失败: " + key, e);
+        }
     }
 
     private NodeDataConverter getNodeDataConverter (String type) {
@@ -305,6 +335,9 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
     @Override
     @SneakyThrows
     public ChatBot mapToChatBot (Map<String, Object> data) {
+        if (data == null || !data.containsKey("model_config")) {
+            throw new IllegalArgumentException("Invalid input data");
+        }
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -312,14 +345,29 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 
         Map<String, Object> chatbotData = (Map<String, Object>) data.get("model_config");
 
-        ChatBot.AgentMode agentMode = objectMapper.convertValue(chatbotData.get("agent_mode"), ChatBot.AgentMode.class);
-        ChatBot.Model model = objectMapper.convertValue(chatbotData.get("model"), ChatBot.Model.class);
-        String openingStatement = objectMapper.writeValueAsString(chatbotData.get("opening_statement"));
-        String prePrompt = objectMapper.writeValueAsString(chatbotData.get("pre_prompt"));
-        String promptType = objectMapper.writeValueAsString(chatbotData.get("prompt_type"));
-        ChatBot.CompletionPromptConfig completionPromptConfig = objectMapper.convertValue(chatbotData.get("completion_prompt_config"), ChatBot.CompletionPromptConfig.class);
+        if (chatbotData == null) {
+            throw new IllegalArgumentException("Invalid model_config in input data");
+        }
+
+        ChatBot.AgentMode agentMode = safeConvert(chatbotData, "agent_mode", ChatBot.AgentMode.class);
+        ChatBot.Model model = safeConvert(chatbotData, "model", ChatBot.Model.class);
+        String openingStatement = safeWriteValue(chatbotData, "opening_statement");
+        String prePrompt = safeWriteValue(chatbotData, "pre_prompt");
+        String promptType = safeWriteValue(chatbotData, "prompt_type");
+        ChatBot.CompletionPromptConfig completionPromptConfig = safeConvert(chatbotData, "completion_prompt_config", ChatBot.CompletionPromptConfig.class);
+
+        chatBot.setAgentMode(agentMode);
+        chatBot.setModel(model);
+        chatBot.setPrePrompt(prePrompt);
+        chatBot.setPromptType(promptType);
+        chatBot.setOpeningStatement(openingStatement);
+        chatBot.setCompletionPromptConfig(completionPromptConfig);
 
         List<Map<String, Object>> userInputList = (List<Map<String, Object>>) ((Map<String, Object>) data.get("model_config")).get("user_input_form");
+
+        if (userInputList.isEmpty()) {
+            return chatBot;
+        }
 
         List<ChatBot.Paragraph> paragraphList = new ArrayList<>();
         List<ChatBot.Select> selectList = new ArrayList<>();
@@ -332,15 +380,15 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
                 ChatBot.TextInput textInput = objectMapper.convertValue(item.get("text-input"), ChatBot.TextInput.class);
                 textInputList.add(textInput);
             }
-            if (item.containsKey("select")) {
+            else if (item.containsKey("select")) {
                 ChatBot.Select select = objectMapper.convertValue(item.get("select"), ChatBot.Select.class);
                 selectList.add(select);
             }
-            if (item.containsKey("paragraph")) {
+            else if (item.containsKey("paragraph")) {
                 ChatBot.Paragraph paragraph = objectMapper.convertValue(item.get("paragraph"), ChatBot.Paragraph.class);
                 paragraphList.add(paragraph);
             }
-            if (item.containsKey("number")) {
+            else if (item.containsKey("number")) {
                 ChatBot.Number number = objectMapper.convertValue(item.get("number"), ChatBot.Number.class);
                 numberList.add(number);
             }
@@ -350,22 +398,53 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 
         userInputForm.setParagraph(paragraphList);
         userInputForm.setSelect(selectList);
+        userInputForm.setTextInput(textInputList);
+        userInputForm.setNumber(numberList);
 
         chatBot.setUserInputForm(userInputForm);
-        chatBot.setAgentMode(agentMode);
-        chatBot.setModel(model);
-        chatBot.setPrePrompt(prePrompt);
-        chatBot.setPromptType(promptType);
-        chatBot.setOpeningStatement(openingStatement);
-        chatBot.setCompletionPromptConfig(completionPromptConfig);
+
         return chatBot;
     }
 
     @Override
     public Map<String, Object> chatbotToMap (ChatBot chatBot) {
         Map<String, Object> data = new HashMap<>();
-        data.put("chatbot", chatBot);
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
+
+        Map<String, Object> modelConfig = Map.of("agent_mode", chatBot.getAgentMode() != null ? chatBot.getAgentMode() : "", "model", chatBot.getModel() != null ? chatBot.getModel() : "", "opening_statement", chatBot.getOpeningStatement() != null ? chatBot.getOpeningStatement() : "", "pre_prompt", chatBot.getPrePrompt() != null ? chatBot.getPrePrompt() : "", "prompt_type", chatBot.getPromptType() != null ? chatBot.getPromptType() : "", "completion_prompt_config", chatBot.getCompletionPromptConfig() != null ? chatBot.getCompletionPromptConfig() : "");
+
+        List<Map<String, Object>> userInputList = new ArrayList<>();
+        ChatBot.UserInputForm userInputForm = chatBot.getUserInputForm();
+
+        if (userInputForm != null) {
+
+            processElements(userInputForm::getParagraph, "paragraph", userInputList);
+            processElements(userInputForm::getSelect, "select", userInputList);
+            processElements(userInputForm::getNumber, "number", userInputList);
+            processElements(userInputForm::getTextInput, "text-input", userInputList);
+
+        }
+
+        data.put("model_config", Map.of("user_input_form", userInputList));
         return data;
+    }
+
+    private <T> void processElements (Supplier<List<T>> elementSupplier, String key, List<Map<String, Object>> userInputList) {
+        List<T> elements = elementSupplier.get();
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
+        if (elements != null && !elements.isEmpty()) {
+            for (T element : elements) {
+                try {
+                    Map<String, Object> elementMap = objectMapper.convertValue(element, Map.class);
+                    userInputList.add(Collections.singletonMap(key, elementMap));
+                }
+                catch (Exception e) {
+                    log.error("Error converting element to map: {}", e.getMessage());
+                }
+            }
+        }
     }
 
     @Override

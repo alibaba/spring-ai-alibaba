@@ -42,11 +42,11 @@ public class ChatBot extends NodeData {
     @Accessors
     public static class AgentMode {
 
-        private boolean enabled = false;
+        private Boolean enabled = false;
 
         private String strategy = "function_call";
 
-        private int maxIteration;
+        private Integer maxIteration;
     }
 
     @Data
