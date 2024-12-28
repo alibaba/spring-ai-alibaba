@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-   Copyright 2023-2024 the original author or authors.
+   Copyright 2024-2025 the original author or authors.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <groupId>com.alibaba.cloud.ai</groupId>
         <artifactId>spring-ai-alibaba</artifactId>
@@ -31,11 +30,6 @@
     <name>spring-ai-alibaba-starter-function-calling-googletranslate</name>
     <description>Translate tool for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
-    <scm>
-        <url>https://github.com/alibaba/spring-ai-alibaba</url>
-        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
-        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
-    </scm>
 
     <dependencies>
 
@@ -59,15 +53,11 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-        </dependency>
 
     </dependencies>
 
 
 <build>
-<finalName>spring-ai-alibaba-plugin-googletranslate</finalName>
+<finalName>spring-ai-alibaba-function-calling-googletranslate</finalName>
 </build>
 </project>
