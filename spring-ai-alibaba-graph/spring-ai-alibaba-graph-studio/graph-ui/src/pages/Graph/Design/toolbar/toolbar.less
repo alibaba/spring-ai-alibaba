@@ -1,7 +1,13 @@
-.toolbar {
+.toolbar-wrapper {
+  z-index: 1200;
+  position: fixed;
+  top: 80px;
+  right: 20px;
+}
+
+.toolbar-card {
   height: 40px;
-  display: flex;
-  color: #676f83;
+  margin-right: 20px;
 
   .item-wapper {
     background-color: #ffffff;
@@ -12,8 +18,34 @@
     border-radius: 8px;
   }
 
-  .zoom-wrapper {
-    width: 150px;
+  .toolbar-body {
+    justify-content: center;
+    align-items: center;
+  }
+
+  .icon {
+    font-size: 22px;
+    //flex-basis: 60%;
+    margin-left: 10px;
+    margin-right: 10px;
+
+    &:hover {
+      color: var(--ant-color-primary);
+    }
+  }
+
+  .button {
+    font-size: 14px;
+    .icon {
+      margin-bottom: -5px;
+    }
+  }
+
+  .text {
+    font-size: 12px;
+    //flex-basis: 60%;
+    margin-left: 10px;
+    margin-right: 10px;
   }
 
   .undo-redo-wrapper {
