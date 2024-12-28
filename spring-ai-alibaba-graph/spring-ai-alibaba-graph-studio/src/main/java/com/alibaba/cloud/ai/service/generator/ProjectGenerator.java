@@ -3,13 +3,13 @@ package com.alibaba.cloud.ai.service.generator;
 import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.param.ProjectGenerateParam;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
-import com.alibaba.cloud.ai.model.chatbot.node.ChatBotNodeData;
+import com.alibaba.cloud.ai.model.chatbot.node.ChatBot;
 import com.alibaba.cloud.ai.model.AppMetadata;
 import java.nio.file.Path;
 
 /**
  * ProjectGenerator abstracts the project generation of a specific app type, e.g.
- * {@link Workflow}, {@link ChatBotNodeData}
+ * {@link Workflow}, {@link ChatBot}
  */
 public interface ProjectGenerator {
 

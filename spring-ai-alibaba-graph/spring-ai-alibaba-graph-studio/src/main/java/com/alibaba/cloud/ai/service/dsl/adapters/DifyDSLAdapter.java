@@ -4,8 +4,7 @@ import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.model.AppMetadata;
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
-import com.alibaba.cloud.ai.model.chatbot.ChatBot;
-import com.alibaba.cloud.ai.model.chatbot.node.ChatBotNodeData;
+import com.alibaba.cloud.ai.model.chatbot.node.ChatBot;
 import com.alibaba.cloud.ai.model.workflow.*;
 import com.alibaba.cloud.ai.service.dsl.AbstractDSLAdapter;
 import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
@@ -13,6 +12,7 @@ import com.alibaba.cloud.ai.service.dsl.Serializer;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -42,10 +42,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
     }
 
     private NodeDataConverter getNodeDataConverter (String type) {
-        return nodeDataConverters.stream()
-                .filter(converter -> converter.supportType(type))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("invalid dify node type " + type));
+        return nodeDataConverters.stream().filter(converter -> converter.supportType(type)).findFirst().orElseThrow(() -> new IllegalArgumentException("invalid dify node type " + type));
     }
 
     @Override
@@ -97,18 +94,13 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
         // map key is snake_case style
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         if (workflowData.containsKey("conversation_variables")) {
-            List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData
-                    .get("conversation_variables");
-            List<Variable> workflowVars = variables.stream()
-                    .map(variable -> objectMapper.convertValue(variable, Variable.class))
-                    .collect(Collectors.toList());
+            List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData.get("conversation_variables");
+            List<Variable> workflowVars = variables.stream().map(variable -> objectMapper.convertValue(variable, Variable.class)).collect(Collectors.toList());
             workflow.setWorkflowVars(workflowVars);
         }
         if (workflowData.containsKey("environment_variables")) {
             List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData.get("environment_variables");
-            List<Variable> envVars = variables.stream()
-                    .map(variable -> objectMapper.convertValue(variable, Variable.class))
-                    .collect(Collectors.toList());
+            List<Variable> envVars = variables.stream().map(variable -> objectMapper.convertValue(variable, Variable.class)).collect(Collectors.toList());
             workflow.setEnvVars(envVars);
         }
         workflow.setGraph(constructGraph((Map<String, Object>) workflowData.get("graph")));
@@ -139,8 +131,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
         return graph;
     }
 
-    private void constructNodes (List<Map<String, Object>> nodeMaps, List<Node> nodes,
-                                 List<Map<String, Object>> branchNodes) {
+    private void constructNodes (List<Map<String, Object>> nodeMaps, List<Node> nodes, List<Map<String, Object>> branchNodes) {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         for (Map<String, Object> nodeMap : nodeMaps) {
@@ -187,8 +178,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
         }
     }
 
-    private void constructConditionEdge (List<Map<String, Object>> branchNodes, Map<String, Edge> branchEdges,
-                                         List<Edge> edges) {
+    private void constructConditionEdge (List<Map<String, Object>> branchNodes, Map<String, Edge> branchEdges, List<Edge> edges) {
         for (Map<String, Object> nodeMap : branchNodes) {
             Map<String, Object> nodeDataMap = (Map<String, Object>) nodeMap.get("data");
             String branchNodeId = (String) nodeMap.get("id");
@@ -200,14 +190,9 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
                 List<Map<String, Object>> conditionMaps = (List<Map<String, Object>>) caseData.get("conditions");
                 List<Case.Condition> conditions = conditionMaps.stream().map(conditionMap -> {
                     List<String> selectors = (List<String>) conditionMap.get("variable_selector");
-                    return new Case.Condition().setValue((String) conditionMap.get("value"))
-                            .setVarType((String) conditionMap.get("varType"))
-                            .setComparisonOperator((String) conditionMap.get("comparison_operator"))
-                            .setVariableSelector(new VariableSelector(selectors.get(0), selectors.get(1)));
+                    return new Case.Condition().setValue((String) conditionMap.get("value")).setVarType((String) conditionMap.get("varType")).setComparisonOperator((String) conditionMap.get("comparison_operator")).setVariableSelector(new VariableSelector(selectors.get(0), selectors.get(1)));
                 }).collect(Collectors.toList());
-                Case c = new Case().setId((String) caseData.get("id"))
-                        .setLogicalOperator((String) caseData.get("logical_operator"))
-                        .setConditions(conditions);
+                Case c = new Case().setId((String) caseData.get("id")).setLogicalOperator((String) caseData.get("logical_operator")).setConditions(conditions);
                 // collect case target
                 Edge branchEdge = branchEdges.get(conditionKey(branchNodeId, c.getId()));
                 targetMap.put(conditionKey(branchNodeId, c.getId()), branchEdge.getTarget());
@@ -220,11 +205,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
             }
             // find branchNode's source
             String source = findSourceNode(edges, branchEdges.values().stream().toList(), branchNodeId);
-            Edge conditionEdge = new Edge().setId(branchNodeId)
-                    .setType(EdgeType.CONDITIONAL.value())
-                    .setSource(source)
-                    .setCases(cases)
-                    .setTargetMap(targetMap);
+            Edge conditionEdge = new Edge().setId(branchNodeId).setType(EdgeType.CONDITIONAL.value()).setSource(source).setCases(cases).setTargetMap(targetMap);
             edges.add(conditionEdge);
         }
     }
@@ -256,8 +237,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
         List<Map<String, Object>> envVars = objectMapper.convertValue(workflow.getEnvVars(), List.class);
         Graph graph = workflow.getGraph();
         Map<String, Object> graphMap = deconstructGraph(graph);
-        data.put("workflow",
-                Map.of("conversation_variables", workflowVars, "environment_variables", envVars, "graph", graphMap));
+        data.put("workflow", Map.of("conversation_variables", workflowVars, "environment_variables", envVars, "graph", graphMap));
         return data;
     }
 
@@ -273,8 +253,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
         return Map.of("edges", edgeMaps, "nodes", nodeMaps);
     }
 
-    private void deconstructEdge (List<Edge> edges, List<Map<String, Object>> edgeMaps,
-                                  List<Map<String, Object>> nodeMaps) {
+    private void deconstructEdge (List<Edge> edges, List<Map<String, Object>> edgeMaps, List<Map<String, Object>> nodeMaps) {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         for (Edge edge : edges) {
@@ -292,25 +271,16 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
             // number of entries in targetMap equals the number of edges needed to
             targetMap.forEach((k, v) -> {
                 String[] splits = k.split("&");
-                Map<String, Object> edgeMap = Map.of("source", splits[0], "sourceHandle", splits[1], "target", v,
-                        "targetHandle", "target", "type", "custom", "zIndex", 0, "selected", false);
+                Map<String, Object> edgeMap = Map.of("source", splits[0], "sourceHandle", splits[1], "target", v, "targetHandle", "target", "type", "custom", "zIndex", 0, "selected", false);
                 edgeMaps.add(edgeMap);
             });
             // convert to if-else node
             List<Map<String, Object>> caseMaps = new ArrayList<>();
             for (Case c : edge.getCases()) {
-                List<Map<String, Object>> conditions = c.getConditions()
-                        .stream()
-                        .map(condition -> Map.of("comparison_operator", condition.getComparisonOperator(), "value",
-                                condition.getValue(), "varType", condition.getVarType(), "variable_selector",
-                                List.of(condition.getVariableSelector().getNamespace(),
-                                        condition.getVariableSelector().getName())))
-                        .toList();
-                caseMaps.add(Map.of("id", c.getId(), "case_id", c.getId(), "conditions", conditions, "logical_operator",
-                        c.getLogicalOperator()));
+                List<Map<String, Object>> conditions = c.getConditions().stream().map(condition -> Map.of("comparison_operator", condition.getComparisonOperator(), "value", condition.getValue(), "varType", condition.getVarType(), "variable_selector", List.of(condition.getVariableSelector().getNamespace(), condition.getVariableSelector().getName()))).toList();
+                caseMaps.add(Map.of("id", c.getId(), "case_id", c.getId(), "conditions", conditions, "logical_operator", c.getLogicalOperator()));
             }
-            nodeMaps.add(Map.of("id", edge.getId(), "type", "custom", "width", 250, "height", 250, "data",
-                    Map.of("cases", caseMaps, "desc", "", "selected", false, "title", "if-else", "type", "if-else")));
+            nodeMaps.add(Map.of("id", edge.getId(), "type", "custom", "width", 250, "height", 250, "data", Map.of("cases", caseMaps, "desc", "", "selected", false, "title", "if-else", "type", "if-else")));
         }
 
     }
@@ -333,24 +303,68 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
     }
 
     @Override
+    @SneakyThrows
     public ChatBot mapToChatBot (Map<String, Object> data) {
-
-        Map<String, Object> chatbotData = (Map<String, Object>) data.get("chatbot");
-        ChatBot chatBot = new ChatBot();
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-        chatBot.setData((ChatBotNodeData) chatbotData.get("chatbot"));
+
+        ChatBot chatBot = new ChatBot();
+
+        Map<String, Object> chatbotData = (Map<String, Object>) data.get("model_config");
+
+        ChatBot.AgentMode agentMode = objectMapper.convertValue(chatbotData.get("agent_mode"), ChatBot.AgentMode.class);
+        ChatBot.Model model = objectMapper.convertValue(chatbotData.get("model"), ChatBot.Model.class);
+        String openingStatement = objectMapper.writeValueAsString(chatbotData.get("opening_statement"));
+        String prePrompt = objectMapper.writeValueAsString(chatbotData.get("pre_prompt"));
+        String promptType = objectMapper.writeValueAsString(chatbotData.get("prompt_type"));
+        ChatBot.CompletionPromptConfig completionPromptConfig = objectMapper.convertValue(chatbotData.get("completion_prompt_config"), ChatBot.CompletionPromptConfig.class);
+
+        List<Map<String, Object>> userInputList = (List<Map<String, Object>>) ((Map<String, Object>) data.get("model_config")).get("user_input_form");
+
+        List<ChatBot.Paragraph> paragraphList = new ArrayList<>();
+        List<ChatBot.Select> selectList = new ArrayList<>();
+        List<ChatBot.Number> numberList = new ArrayList<>();
+        List<ChatBot.TextInput> textInputList = new ArrayList<>();
+
+        for (Map<String, Object> item : userInputList) {
+
+            if (item.containsKey("text_input")) {
+                ChatBot.TextInput textInput = objectMapper.convertValue(item.get("text-input"), ChatBot.TextInput.class);
+                textInputList.add(textInput);
+            }
+            if (item.containsKey("select")) {
+                ChatBot.Select select = objectMapper.convertValue(item.get("select"), ChatBot.Select.class);
+                selectList.add(select);
+            }
+            if (item.containsKey("paragraph")) {
+                ChatBot.Paragraph paragraph = objectMapper.convertValue(item.get("paragraph"), ChatBot.Paragraph.class);
+                paragraphList.add(paragraph);
+            }
+            if (item.containsKey("number")) {
+                ChatBot.Number number = objectMapper.convertValue(item.get("number"), ChatBot.Number.class);
+                numberList.add(number);
+            }
+        }
+
+        ChatBot.UserInputForm userInputForm = new ChatBot.UserInputForm();
+
+        userInputForm.setParagraph(paragraphList);
+        userInputForm.setSelect(selectList);
+
+        chatBot.setUserInputForm(userInputForm);
+        chatBot.setAgentMode(agentMode);
+        chatBot.setModel(model);
+        chatBot.setPrePrompt(prePrompt);
+        chatBot.setPromptType(promptType);
+        chatBot.setOpeningStatement(openingStatement);
+        chatBot.setCompletionPromptConfig(completionPromptConfig);
         return chatBot;
     }
 
     @Override
-    public Map<String, Object> chatbotToMap (ChatBotNodeData chatBot) {
+    public Map<String, Object> chatbotToMap (ChatBot chatBot) {
         Map<String, Object> data = new HashMap<>();
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        data.put("chatbot",
-                Map.of("chatbot", chatBot));
+        data.put("chatbot", chatBot);
         return data;
     }
 
