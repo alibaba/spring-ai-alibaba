@@ -1,7 +1,6 @@
 package com.alibaba.cloud.ai.model.chatbot.node;
 
 import com.alibaba.cloud.ai.model.Variable;
-import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -34,10 +33,6 @@ public class ChatBot extends NodeData {
 
     private UserInputForm userInputForm;
 
-    public ChatBot (List<VariableSelector> inputs, List<Variable> outputs) {
-        super(inputs, outputs);
-    }
-
     @Data
     @Accessors
     public static class AgentMode {
@@ -46,7 +41,8 @@ public class ChatBot extends NodeData {
 
         private String strategy = "function_call";
 
-        private Integer maxIteration;
+        @JsonProperty("max_iteration")
+        private Integer maxIteration = 0;
     }
 
     @Data

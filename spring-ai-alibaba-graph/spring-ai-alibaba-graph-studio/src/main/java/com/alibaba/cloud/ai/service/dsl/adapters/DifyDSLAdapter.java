@@ -46,20 +46,16 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
         this.serializer = serializer;
     }
 
-    private static <T> T safeConvert (Map<String, Object> data, String key, Class<T> clazz) {
+    private static <T> T safeConvert (Map<String, Object> data, String key, Class<T> clazz, ObjectMapper objectMapper) {
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         if (!data.containsKey(key) || data.get(key) == null) {
             return null;
         }
         return objectMapper.convertValue(data.get(key), clazz);
     }
 
-    private static String safeWriteValue (Map<String, Object> data, String key) {
+    private static String safeWriteValue (Map<String, Object> data, String key, ObjectMapper objectMapper) {
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         if (!data.containsKey(key) || data.get(key) == null) {
             return null;
         }
@@ -349,12 +345,12 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
             throw new IllegalArgumentException("Invalid model_config in input data");
         }
 
-        ChatBot.AgentMode agentMode = safeConvert(chatbotData, "agent_mode", ChatBot.AgentMode.class);
-        ChatBot.Model model = safeConvert(chatbotData, "model", ChatBot.Model.class);
-        String openingStatement = safeWriteValue(chatbotData, "opening_statement");
-        String prePrompt = safeWriteValue(chatbotData, "pre_prompt");
-        String promptType = safeWriteValue(chatbotData, "prompt_type");
-        ChatBot.CompletionPromptConfig completionPromptConfig = safeConvert(chatbotData, "completion_prompt_config", ChatBot.CompletionPromptConfig.class);
+        ChatBot.AgentMode agentMode = safeConvert(chatbotData, "agent_mode", ChatBot.AgentMode.class, objectMapper);
+        ChatBot.Model model = safeConvert(chatbotData, "model", ChatBot.Model.class, objectMapper);
+        String openingStatement = safeWriteValue(chatbotData, "opening_statement", objectMapper);
+        String prePrompt = safeWriteValue(chatbotData, "pre_prompt", objectMapper);
+        String promptType = safeWriteValue(chatbotData, "prompt_type", objectMapper);
+        ChatBot.CompletionPromptConfig completionPromptConfig = safeConvert(chatbotData, "completion_prompt_config", ChatBot.CompletionPromptConfig.class, objectMapper);
 
         chatBot.setAgentMode(agentMode);
         chatBot.setModel(model);
@@ -412,27 +408,32 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
 
-        Map<String, Object> modelConfig = Map.of("agent_mode", chatBot.getAgentMode() != null ? chatBot.getAgentMode() : "", "model", chatBot.getModel() != null ? chatBot.getModel() : "", "opening_statement", chatBot.getOpeningStatement() != null ? chatBot.getOpeningStatement() : "", "pre_prompt", chatBot.getPrePrompt() != null ? chatBot.getPrePrompt() : "", "prompt_type", chatBot.getPromptType() != null ? chatBot.getPromptType() : "", "completion_prompt_config", chatBot.getCompletionPromptConfig() != null ? chatBot.getCompletionPromptConfig() : "");
-
         List<Map<String, Object>> userInputList = new ArrayList<>();
         ChatBot.UserInputForm userInputForm = chatBot.getUserInputForm();
 
         if (userInputForm != null) {
 
-            processElements(userInputForm::getParagraph, "paragraph", userInputList);
-            processElements(userInputForm::getSelect, "select", userInputList);
-            processElements(userInputForm::getNumber, "number", userInputList);
-            processElements(userInputForm::getTextInput, "text-input", userInputList);
+            processElements(userInputForm::getParagraph, "paragraph", userInputList, objectMapper);
+            processElements(userInputForm::getSelect, "select", userInputList, objectMapper);
+            processElements(userInputForm::getNumber, "number", userInputList, objectMapper);
+            processElements(userInputForm::getTextInput, "text-input", userInputList, objectMapper);
 
         }
 
-        data.put("model_config", Map.of("user_input_form", userInputList));
+        Map<String, Object> modelConfig = Map.of("agent_mode", chatBot.getAgentMode() != null ? chatBot.getAgentMode() : "",
+                "model", chatBot.getModel() != null ? chatBot.getModel() : "",
+                "opening_statement", chatBot.getOpeningStatement() != null ? chatBot.getOpeningStatement() : "",
+                "pre_prompt", chatBot.getPrePrompt() != null ? chatBot.getPrePrompt() : "",
+                "prompt_type", chatBot.getPromptType() != null ? chatBot.getPromptType() : "",
+                "completion_prompt_config", chatBot.getCompletionPromptConfig() != null ? chatBot.getCompletionPromptConfig() : "",
+                "user_input_form", userInputList);
+
+        data.put("model_config", modelConfig);
         return data;
     }
 
-    private <T> void processElements (Supplier<List<T>> elementSupplier, String key, List<Map<String, Object>> userInputList) {
+    private <T> void processElements (Supplier<List<T>> elementSupplier, String key, List<Map<String, Object>> userInputList, ObjectMapper objectMapper) {
         List<T> elements = elementSupplier.get();
-        ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
         if (elements != null && !elements.isEmpty()) {
             for (T element : elements) {
