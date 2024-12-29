@@ -4,7 +4,7 @@
 import { graphState } from '@/store/GraphState';
 import { applyNodeChanges } from '@xyflow/react';
 import { NodeBase, NodeChange } from '@xyflow/system';
-import produce from 'immer';
+import { produce } from 'immer';
 
 /**
  * e.g.

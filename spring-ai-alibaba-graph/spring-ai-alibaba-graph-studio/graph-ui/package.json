@@ -18,8 +18,10 @@
     "@types/lodash": "^4.17.13",
     "@umijs/max": "^4.3.35",
     "@xyflow/react": "^12.3.5",
+    "@xyflow/system": "^0.0.47",
     "ahooks": "^3.8.4",
     "antd": "^5.22.2",
+    "immer": "^10.1.1",
     "js-yaml": "^4.1.0",
     "lodash": "^4.17.21",
     "uuid": "^11.0.3"

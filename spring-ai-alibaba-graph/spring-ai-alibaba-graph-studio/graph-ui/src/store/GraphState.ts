@@ -1,5 +1,5 @@
+import { proxy } from '@umijs/max';
 import type { Edge, Node } from '@xyflow/react';
-import { proxy } from 'umi';
 
 /**
  * graph state
