@@ -22,10 +22,10 @@ import org.springframework.util.StringUtils;
 
 /**
  * Uses the PDF catalog (e.g. TOC) information to split the input PDF into text paragraphs
- * and output a single {@link Document} per paragraph.
- * This class provides methods for reading and processing PDF documents. It uses the
- * Apache PDFBox library for parsing PDF content and converting it into text paragraphs.
- * The paragraphs are grouped into {@link Document} objects.
+ * and output a single {@link Document} per paragraph. This class provides methods for
+ * reading and processing PDF documents. It uses the Apache PDFBox library for parsing PDF
+ * content and converting it into text paragraphs. The paragraphs are grouped into
+ * {@link Document} objects.
  *
  * @author HeYQ
  */
@@ -58,7 +58,7 @@ public class ParagraphPdfDocumentParser implements DocumentParser {
 	 * @param config The configuration for PDF document processing.
 	 */
 	public ParagraphPdfDocumentParser(PdfDocumentReaderConfig config) {
-		 this.config =config;
+		this.config = config;
 	}
 
 	/**
@@ -69,12 +69,10 @@ public class ParagraphPdfDocumentParser implements DocumentParser {
 	public List<Document> parse(InputStream inputStream) {
 
 		try {
-			PDFParser pdfParser = new PDFParser(
-					new org.apache.pdfbox.io.RandomAccessReadBuffer(inputStream));
+			PDFParser pdfParser = new PDFParser(new org.apache.pdfbox.io.RandomAccessReadBuffer(inputStream));
 			PDDocument pdDocument = pdfParser.parse();
 
 			ParagraphManager paragraphTextExtractor = new ParagraphManager(pdDocument);
-
 
 			var paragraphs = paragraphTextExtractor.flatten();
 

@@ -45,7 +45,7 @@ public class PagePdfDocumentParser implements DocumentParser {
 	}
 
 	public PagePdfDocumentParser(PdfDocumentReaderConfig config) {
-			this.config = config;
+		this.config = config;
 	}
 
 	@Override
@@ -60,8 +60,7 @@ public class PagePdfDocumentParser implements DocumentParser {
 			int startPageNumber = pageNumber;
 
 			List<String> pageTextGroupList = new ArrayList<>();
-			PDFParser pdfParser = new PDFParser(
-					new org.apache.pdfbox.io.RandomAccessReadBuffer(inputStream));
+			PDFParser pdfParser = new PDFParser(new org.apache.pdfbox.io.RandomAccessReadBuffer(inputStream));
 			PDDocument document = pdfParser.parse();
 
 			int totalPages = document.getDocumentCatalog().getPages().getCount();
@@ -114,8 +113,8 @@ public class PagePdfDocumentParser implements DocumentParser {
 				pdfTextStripper.removeRegion(PDF_PAGE_REGION);
 			}
 			if (!CollectionUtils.isEmpty(pageTextGroupList)) {
-				readDocuments.add(toDocument(pageTextGroupList.stream().collect(Collectors.joining()),
-						startPageNumber, pageNumber));
+				readDocuments.add(toDocument(pageTextGroupList.stream().collect(Collectors.joining()), startPageNumber,
+						pageNumber));
 			}
 			logger.info("Processing {} pages", totalPages);
 			return readDocuments;
