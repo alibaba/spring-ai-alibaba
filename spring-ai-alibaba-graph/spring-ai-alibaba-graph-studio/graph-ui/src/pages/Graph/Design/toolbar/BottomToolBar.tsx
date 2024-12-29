@@ -1,16 +1,71 @@
 import ToolBar, { ToolType } from '@/pages/Graph/Design/toolbar/ToolBar';
-import { Affix } from 'antd';
+import { useReactFlow, useViewport } from '@xyflow/react';
+import type { MenuProps } from 'antd';
+import { Affix, Dropdown } from 'antd';
 import React, { useState } from 'react';
+import { OperationMode, ZoomType } from '../types';
 import './toolbar.less';
 
 interface Props {
   name?: string;
   reLayoutCallback: any;
+  changeOperationMode: (mode: OperationMode) => void;
   viewport: any;
 }
 
-const BottomToolBar: React.FC<Props> = ({ reLayoutCallback, viewport }) => {
+const BottomToolBar: React.FC<Props> = (props: Props) => {
   const [toolbarBottom] = useState<number>(12);
+  const { zoomIn, zoomOut, zoomTo } = useReactFlow();
+  const { zoom } = useViewport();
+  const { reLayoutCallback, changeOperationMode, viewport } = props;
+
+  const handleZoomIn = (e: MouseEvent) => {
+    e.stopPropagation();
+    zoomIn();
+  };
+  const handleZoomOut = (e: MouseEvent) => {
+    e.stopPropagation();
+    zoomOut();
+  };
+
+  const zoomOptions = [
+    {
+      key: ZoomType.zoomTo200,
+      text: '200%',
+      value: 2,
+    },
+    {
+      key: ZoomType.zoomTo150,
+      text: '150%',
+      value: 1.5,
+    },
+    {
+      key: ZoomType.zoomTo100,
+      text: '100%',
+      value: 1,
+    },
+    {
+      key: ZoomType.zoomTo75,
+      text: '75%',
+      value: 0.75,
+    },
+    {
+      key: ZoomType.zoomTo50,
+      text: '50%',
+      value: 0.5,
+    },
+    {
+      key: ZoomType.zoomTo25,
+      text: '25%',
+      value: 0.25,
+    },
+  ];
+
+  const options: MenuProps['items'] = zoomOptions.map((item) => {
+    const option = { key: item.key, label: <></> };
+    option.label = <a onClick={() => zoomTo(item.value)}>{item.text}</a>;
+    return option;
+  });
 
   const toolList: ToolType[] = [
     {
@@ -36,6 +91,55 @@ const BottomToolBar: React.FC<Props> = ({ reLayoutCallback, viewport }) => {
           title: 're_layout',
           onClick: reLayoutCallback,
           icon: 'material-symbols:responsive-layout-outline-rounded',
+          split: false,
+        },
+      ],
+    },
+    {
+      type: 'zoom',
+      options: [
+        {
+          title: 'zoom_in',
+          onClick: handleZoomIn,
+          icon: 'iconamoon:zoom-in-light',
+          split: true,
+        },
+        {
+          title: 'zoom',
+          text: (
+            <Dropdown
+              menu={{ items: options }}
+              trigger={['click']}
+              placement="top"
+            >
+              <div style={{ width: 40 }}>
+                {parseFloat(`${zoom * 100}`).toFixed(0)}%
+              </div>
+            </Dropdown>
+          ),
+          split: true,
+        },
+        {
+          title: 'zoom_out',
+          onClick: handleZoomOut,
+          icon: 'iconamoon:zoom-out-light',
+          split: false,
+        },
+      ],
+    },
+    {
+      type: 'mode',
+      options: [
+        {
+          title: 'hand',
+          onClick: () => changeOperationMode('hand'),
+          icon: 'tabler:hand-stop',
+          split: true,
+        },
+        {
+          title: 'pointer',
+          onClick: () => changeOperationMode('pointer'),
+          icon: 'tabler:pointer',
           split: false,
         },
       ],
