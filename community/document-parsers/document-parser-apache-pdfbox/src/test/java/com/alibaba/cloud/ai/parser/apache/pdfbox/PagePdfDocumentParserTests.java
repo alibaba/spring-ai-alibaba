@@ -22,36 +22,35 @@ class PagePdfDocumentParserTests {
 	void classpathRead() throws IOException {
 
 		PagePdfDocumentParser parser = new PagePdfDocumentParser(PdfDocumentReaderConfig.builder()
-				.withPageTopMargin(0)
-				.withPageBottomMargin(0)
-				.withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
-						.withNumberOfTopTextLinesToDelete(0)
-						.withNumberOfBottomTextLinesToDelete(3)
-						.withNumberOfTopPagesToSkipBeforeDelete(0)
-						.build())
-				.withPagesPerDocument(1)
-				.build());
+			.withPageTopMargin(0)
+			.withPageBottomMargin(0)
+			.withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
+				.withNumberOfTopTextLinesToDelete(0)
+				.withNumberOfBottomTextLinesToDelete(3)
+				.withNumberOfTopPagesToSkipBeforeDelete(0)
+				.build())
+			.withPagesPerDocument(1)
+			.build());
 
-
-		List<Document> docs = parser.parse(new DefaultResourceLoader().getResource("classpath:/sample1.pdf").getInputStream());
+		List<Document> docs = parser
+			.parse(new DefaultResourceLoader().getResource("classpath:/sample1.pdf").getInputStream());
 
 		assertThat(docs).hasSize(4);
 
 		String allText = docs.stream().map(Document::getContent).collect(Collectors.joining(System.lineSeparator()));
 		System.out.println(allText);
 
-//		assertThat(allText).doesNotContain(
-//				List.of("Page  1 of 4", "Page  2 of 4", "Page  3 of 4", "Page  4 of 4", "PDF  Bookmark   Sample"));
+		// assertThat(allText).doesNotContain(
+		// List.of("Page 1 of 4", "Page 2 of 4", "Page 3 of 4", "Page 4 of 4", "PDF
+		// Bookmark Sample"));
 	}
 
 	@Test
 	void testIndexOutOfBound() throws IOException {
-		var documents = new PagePdfDocumentParser(
-				PdfDocumentReaderConfig.builder()
-					.withPageExtractedTextFormatter(ExtractedTextFormatter.builder().build())
-					.withPagesPerDocument(1)
-					.build())
-			.parse(new DefaultResourceLoader().getResource("classpath:/sample2.pdf").getInputStream());
+		var documents = new PagePdfDocumentParser(PdfDocumentReaderConfig.builder()
+			.withPageExtractedTextFormatter(ExtractedTextFormatter.builder().build())
+			.withPagesPerDocument(1)
+			.build()).parse(new DefaultResourceLoader().getResource("classpath:/sample2.pdf").getInputStream());
 
 		assertThat(documents).hasSize(64);
 	}
