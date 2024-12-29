@@ -117,8 +117,8 @@ const LayoutFlow: React.FC<LayoutFlowProps> = memo(({ operationMode }) => {
       onNodesDelete={onNodesDeleteHook}
       onEdgesChange={onEdgesChange}
       onContextMenu={onGrapContextMenu}
-      panOnDrag={operationMode === 'hand'}
-      selectionOnDrag={operationMode === 'pointer'}
+      panOnDrag={operationMode === OperationMode.HAND}
+      selectionOnDrag={operationMode === OperationMode.POINT}
       onClick={() => {
         graphStore.contextMenu.show = false;
         if (graphStore.mode === 'drag') {
@@ -144,7 +144,7 @@ export default memo(() => {
   const { setNodes } = useStoreApi().getState();
   const graphRef: MutableRefObject<any> = useRef(null);
 
-  const [operationMode, setOperationMode] = useState('hand');
+  const [operationMode, setOperationMode] = useState(OperationMode.HAND);
 
   const changeOperationMode = (mode: OperationMode) => {
     setOperationMode(mode);

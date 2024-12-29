@@ -30,32 +30,32 @@ const BottomToolBar: React.FC<Props> = (props: Props) => {
 
   const zoomOptions = [
     {
-      key: ZoomType.zoomTo200,
+      key: ZoomType.ZOOM_TO_200,
       text: '200%',
       value: 2,
     },
     {
-      key: ZoomType.zoomTo150,
+      key: ZoomType.ZOOM_TO_150,
       text: '150%',
       value: 1.5,
     },
     {
-      key: ZoomType.zoomTo100,
+      key: ZoomType.ZOOM_TO_100,
       text: '100%',
       value: 1,
     },
     {
-      key: ZoomType.zoomTo75,
+      key: ZoomType.ZOOM_TO_75,
       text: '75%',
       value: 0.75,
     },
     {
-      key: ZoomType.zoomTo50,
+      key: ZoomType.ZOOM_TO_50,
       text: '50%',
       value: 0.5,
     },
     {
-      key: ZoomType.zoomTo25,
+      key: ZoomType.ZOOM_TO_25,
       text: '25%',
       value: 0.25,
     },
@@ -132,13 +132,13 @@ const BottomToolBar: React.FC<Props> = (props: Props) => {
       options: [
         {
           title: 'hand',
-          onClick: () => changeOperationMode('hand'),
+          onClick: () => changeOperationMode(OperationMode.HAND),
           icon: 'tabler:hand-stop',
           split: true,
         },
         {
           title: 'pointer',
-          onClick: () => changeOperationMode('pointer'),
+          onClick: () => changeOperationMode(OperationMode.POINT),
           icon: 'tabler:pointer',
           split: false,
         },
