@@ -7,6 +7,7 @@ import { reLayout } from '@/utils/GraphUtil';
 import { handleNodeChanges } from '@/utils/NodeUtil';
 import { FormattedMessage } from '@@/exports';
 import { Icon } from '@iconify/react';
+import { useProxy } from '@umijs/max';
 import type { Node } from '@xyflow/react';
 import {
   Background,
@@ -26,7 +27,6 @@ import {
   useRef,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
-import { useProxy } from 'umi';
 import './index.less';
 import NodeTypes from './types/index';
 import './xyTheme.less';
