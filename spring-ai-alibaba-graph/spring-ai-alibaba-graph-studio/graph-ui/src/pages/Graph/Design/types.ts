@@ -39,3 +39,17 @@ export type ContextMenuType = {
 export type MenuItem = Required<MenuProps>['items'][number];
 
 export type IGraphMenuItems = Array<MenuItem & { onClick: (e: TODO) => void }>;
+
+export enum ZoomType {
+  zoomIn = 'zoomIn',
+  zoomOut = 'zoomOut',
+  zoomToFit = 'zoomToFit',
+  zoomTo25 = 'zoomTo25',
+  zoomTo50 = 'zoomTo50',
+  zoomTo75 = 'zoomTo75',
+  zoomTo100 = 'zoomTo100',
+  zoomTo150 = 'zoomTo150',
+  zoomTo200 = 'zoomTo200',
+}
+
+export type OperationMode = 'hand' | 'pointer';

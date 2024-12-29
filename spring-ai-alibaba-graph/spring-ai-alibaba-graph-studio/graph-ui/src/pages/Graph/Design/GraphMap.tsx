@@ -24,17 +24,24 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useState,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
 import { useProxy } from 'umi';
 import './index.less';
+import { OperationMode } from './types';
 import NodeTypes from './types/index';
 import './xyTheme.less';
 
 const dsl = DSLUtil.loadDSL();
 graphState.nodes.push(...dsl.getNodes());
 graphState.edges.push(...dsl.getEdges());
-const LayoutFlow = memo(() => {
+
+type LayoutFlowProps = {
+  operationMode: OperationMode;
+};
+
+const LayoutFlow: React.FC<LayoutFlowProps> = memo(({ operationMode }) => {
   const graphStore = useProxy(graphState);
 
   const { setEdges, onEdgesChange, setNodes }: any = useStoreApi().getState();
@@ -110,6 +117,8 @@ const LayoutFlow = memo(() => {
       onNodesDelete={onNodesDeleteHook}
       onEdgesChange={onEdgesChange}
       onContextMenu={onGrapContextMenu}
+      panOnDrag={operationMode === 'hand'}
+      selectionOnDrag={operationMode === 'pointer'}
       onClick={() => {
         graphStore.contextMenu.show = false;
         if (graphStore.mode === 'drag') {
@@ -134,6 +143,13 @@ export default memo(() => {
   const { screenToFlowPosition, fitView } = useReactFlow();
   const { setNodes } = useStoreApi().getState();
   const graphRef: MutableRefObject<any> = useRef(null);
+
+  const [operationMode, setOperationMode] = useState('hand');
+
+  const changeOperationMode = (mode: OperationMode) => {
+    setOperationMode(mode);
+  };
+
   useEffect(() => {}, [
     screenToFlowPosition,
     graphStore.mousePosition,
@@ -225,12 +241,13 @@ export default memo(() => {
       }}
       ref={graphRef}
     >
-      <LayoutFlow></LayoutFlow>
+      <LayoutFlow operationMode={operationMode}></LayoutFlow>
       <ContextMenu items={graphMenuItems}></ContextMenu>
       <TopToolBar></TopToolBar>
       <BottomToolBar
         viewport={viewport}
         reLayoutCallback={reLayoutCallback}
+        changeOperationMode={changeOperationMode}
       ></BottomToolBar>
     </div>
   );
