@@ -30,6 +30,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+
 /**
  * @author yunlong
  */
@@ -47,29 +48,26 @@ public class AliTranslateService implements Function<AliTranslateService.Request
 	 */
 	public static final String FORM_TYPE = "text";
 
-
 	/**
-	 * offline doc: https://help.aliyun.com/zh/machine-translation/support/supported-languages-and-codes?spm=api-workbench.api_explorer.0.0.37a94eecsclZw9
+	 * offline doc:
+	 * https://help.aliyun.com/zh/machine-translation/support/supported-languages-and-codes?spm=api-workbench.api_explorer.0.0.37a94eecsclZw9
 	 */
 	public static final String LANGUAGE_CODE = "zh";
 
-	public AliTranslateService (AliTranslateProperties properties) {
+	public AliTranslateService(AliTranslateProperties properties) {
 		assert StringUtils.hasText(properties.getRegion());
 		assert StringUtils.hasText(properties.getAccessKeyId());
 		assert StringUtils.hasText(properties.getAccessKeySecret());
 		StaticCredentialProvider provider = StaticCredentialProvider.create(Credential.builder()
-				.accessKeyId(properties.getAccessKeyId())
-				.accessKeySecret(properties.getAccessKeySecret())
-				.build());
+			.accessKeyId(properties.getAccessKeyId())
+			.accessKeySecret(properties.getAccessKeySecret())
+			.build());
 
 		this.client = AsyncClient.builder()
-				.region(properties.getRegion()) // Region ID
-				.credentialsProvider(provider)
-				.overrideConfiguration(
-						ClientOverrideConfiguration.create()
-								.setEndpointOverride("mt.aliyuncs.com")
-				)
-				.build();
+			.region(properties.getRegion()) // Region ID
+			.credentialsProvider(provider)
+			.overrideConfiguration(ClientOverrideConfiguration.create().setEndpointOverride("mt.aliyuncs.com"))
+			.build();
 	}
 
 	@Override
@@ -79,36 +77,44 @@ public class AliTranslateService implements Function<AliTranslateService.Request
 		}
 
 		TranslateGeneralRequest translateGeneralRequest = TranslateGeneralRequest.builder()
-				.formatType(FORM_TYPE)
-				.sourceLanguage(LANGUAGE_CODE)
-				.targetLanguage(request.targetLanguage)
-				.sourceText(request.text)
-				.scene(SCENE)
-				.build();
+			.formatType(FORM_TYPE)
+			.sourceLanguage(LANGUAGE_CODE)
+			.targetLanguage(request.targetLanguage)
+			.sourceText(request.text)
+			.scene(SCENE)
+			.build();
 
 		CompletableFuture<TranslateGeneralResponse> response = client.translateGeneral(translateGeneralRequest);
 
-        TranslateGeneralResponse resp = null;
-        try {
-            resp = response.get();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+		TranslateGeneralResponse resp = null;
+		try {
+			resp = response.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 
 		// 假设 resp 是一个对象
 		String jsonString = new Gson().toJson(resp);
 		JsonObject jsonObject = new Gson().fromJson(jsonString, JsonObject.class);
-		String result = jsonObject.get("body").getAsJsonObject().get("data").getAsJsonObject().get("translated").toString();
+		String result = jsonObject.get("body")
+			.getAsJsonObject()
+			.get("data")
+			.getAsJsonObject()
+			.get("translated")
+			.toString();
 
 		client.close();
-        return new Response(result);
+		return new Response(result);
 
 	}
 
 	@JsonClassDescription("Request to alitranslate text to a target language")
 	public record Request(
-			@JsonProperty(required = true, value = "text") @JsonPropertyDescription("Content that needs to be translated") String text,
-			@JsonProperty(required = false, value = "targetLanguage") @JsonPropertyDescription("Target language to alitranslate into") String targetLanguage) {
+			@JsonProperty(required = true,
+					value = "text") @JsonPropertyDescription("Content that needs to be translated") String text,
+			@JsonProperty(required = false,
+					value = "targetLanguage") @JsonPropertyDescription("Target language to alitranslate into") String targetLanguage) {
 
 		public Request(@JsonProperty("text") String text) {
 			this(text, "en"); // 默认目标语言为英语
