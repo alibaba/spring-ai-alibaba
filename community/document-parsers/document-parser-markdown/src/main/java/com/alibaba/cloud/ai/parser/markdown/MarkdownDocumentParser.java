@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.parser.markdown;
 
 import com.alibaba.cloud.ai.document.DocumentParser;
@@ -132,14 +147,14 @@ public class MarkdownDocumentParser implements DocumentParser {
 			}
 
 			translateLineBreakToSpace();
-			this.currentDocumentBuilder.withMetadata("category", "blockquote");
+			this.currentDocumentBuilder.metadata("category", "blockquote");
 			super.visit(blockQuote);
 		}
 
 		@Override
 		public void visit(Code code) {
 			this.currentParagraphs.add(code.getLiteral());
-			this.currentDocumentBuilder.withMetadata("category", "code_inline");
+			this.currentDocumentBuilder.metadata("category", "code_inline");
 			super.visit(code);
 		}
 
@@ -151,8 +166,8 @@ public class MarkdownDocumentParser implements DocumentParser {
 
 			translateLineBreakToSpace();
 			this.currentParagraphs.add(fencedCodeBlock.getLiteral());
-			this.currentDocumentBuilder.withMetadata("category", "code_block");
-			this.currentDocumentBuilder.withMetadata("lang", fencedCodeBlock.getInfo());
+			this.currentDocumentBuilder.metadata("category", "code_block");
+			this.currentDocumentBuilder.metadata("lang", fencedCodeBlock.getInfo());
 
 			buildAndFlush();
 
@@ -162,8 +177,8 @@ public class MarkdownDocumentParser implements DocumentParser {
 		@Override
 		public void visit(Text text) {
 			if (text.getParent() instanceof Heading heading) {
-				this.currentDocumentBuilder.withMetadata("category", "header_%d".formatted(heading.getLevel()))
-					.withMetadata("title", text.getLiteral());
+				this.currentDocumentBuilder.metadata("category", "header_%d".formatted(heading.getLevel()))
+					.metadata("title", text.getLiteral());
 			}
 			else {
 				this.currentParagraphs.add(text.getLiteral());
@@ -182,9 +197,9 @@ public class MarkdownDocumentParser implements DocumentParser {
 			if (!this.currentParagraphs.isEmpty()) {
 				String content = String.join("", this.currentParagraphs);
 
-				Document.Builder builder = this.currentDocumentBuilder.withContent(content);
+				Document.Builder builder = this.currentDocumentBuilder.text(content);
 
-				this.config.additionalMetadata.forEach(builder::withMetadata);
+				this.config.additionalMetadata.forEach(builder::metadata);
 
 				Document document = builder.build();
 
