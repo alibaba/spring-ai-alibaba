@@ -133,7 +133,7 @@ public final class DashScopeAgent extends Agent {
 		metadata.put(OUTPUT, output);
 
 		var assistantMessage = new AssistantMessage(text, metadata);
-		var generationMetadata = ChatGenerationMetadata.from(output.finishReason(), text);
+		var generationMetadata = ChatGenerationMetadata.builder().finishReason(output.finishReason()).build();
 		Generation generation = new Generation(assistantMessage, generationMetadata);
 
 		return new ChatResponse(List.of(generation));
