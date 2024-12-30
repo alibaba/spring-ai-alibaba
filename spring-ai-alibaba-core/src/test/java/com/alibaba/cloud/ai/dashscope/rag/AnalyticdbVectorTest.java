@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.dashscope.rag;
 
 import org.junit.jupiter.api.Assertions;
@@ -12,7 +27,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "ANALYTICDB_SECRET_KEY", matches = ".+")
@@ -32,7 +46,9 @@ class AnalyticdbVectorTest {
 		config.setNamespace("llama");
 		config.setNamespacePassword("llamapassword");
 		config.setEmbeddingDimension(3L);
-		analyticdbVector = new AnalyticdbVector("test_llama", config);
+
+		// TODO 需要修改
+		analyticdbVector = new AnalyticdbVector("test_llama", config, null);
 	}
 
 	@Test
@@ -44,15 +60,15 @@ class AnalyticdbVectorTest {
 		int length = 1536; // Array length
 		float min = 0f; // smallest value
 		float max = 1f; // the largest value
-		float[] em = new float[length]; // create float array
-		Random random = new Random();
-		for (int i = 0; i < length; i++) {
-			em[i] = min + (max - min) * random.nextFloat();
-		}
-		document.setEmbedding(em);
+		// float[] em = new float[length]; // create float array
+		// Random random = new Random();
+		// for (int i = 0; i < length; i++) {
+		// em[i] = min + (max - min) * random.nextFloat();
+		// }
+		// document.setEmbedding(em);
 		list.add(document);
 		analyticdbVector.add(list);
-		SearchRequest searchRequest = SearchRequest.query("hello");
+		SearchRequest searchRequest = SearchRequest.builder().query("hello").build();
 		List<Document> documents = analyticdbVector.similaritySearch(searchRequest);
 		System.out.println(documents.get(0).getContent());
 

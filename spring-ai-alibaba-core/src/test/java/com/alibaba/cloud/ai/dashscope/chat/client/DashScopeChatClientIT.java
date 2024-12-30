@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dashscope.chat.client;
 
 import com.alibaba.cloud.ai.advisor.DocumentRetrievalAdvisor;
@@ -39,8 +38,8 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
-import org.springframework.ai.document.DocumentRetriever;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.reader.JsonReader;
 import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -389,7 +388,7 @@ public class DashScopeChatClientIT {
 
 		// Step 2 - Create embeddings and save to vector store
 		logger.info("Creating Embeddings...");
-		VectorStore vectorStore = new SimpleVectorStore(dashscopeEmbeddingModel);
+		VectorStore vectorStore = SimpleVectorStore.builder(dashscopeEmbeddingModel).build();
 		vectorStore.add(documents);
 
 		// Step3 - Retrieve and llm generate

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.dashscope.api;
 
 import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
@@ -459,7 +474,7 @@ public class DashScopeApi {
 
 	public ResponseEntity<DocumentSplitResponse> documentSplit(Document document,
 			DashScopeDocumentTransformerOptions options) {
-		DocumentSplitRequest request = new DocumentSplitRequest(document.getContent(), options.getChunkSize(),
+		DocumentSplitRequest request = new DocumentSplitRequest(document.getText(), options.getChunkSize(),
 				options.getOverlapSize(), options.getFileType(), options.getLanguage(), options.getSeparator());
 		return this.restClient.post()
 			.uri("/api/v1/indices/component/configed_transformations/spliter")
@@ -858,6 +873,7 @@ public class DashScopeApi {
 			@JsonProperty("repetition_penalty") Double repetitionPenalty,
 			@JsonProperty("presence_penalty") Double presencePenalty, @JsonProperty("temperature") Double temperature,
 			@JsonProperty("stop") List<Object> stop, @JsonProperty("enable_search") Boolean enableSearch,
+			@JsonProperty("response_format") DashScopeResponseFormat responseFormat,
 			@JsonProperty("incremental_output") Boolean incrementalOutput,
 			@JsonProperty("tools") List<FunctionTool> tools, @JsonProperty("tool_choice") Object toolChoice,
 			@JsonProperty("stream") Boolean stream,
@@ -867,7 +883,7 @@ public class DashScopeApi {
 		 * shortcut constructor for chat request parameter
 		 */
 		public ChatCompletionRequestParameter() {
-			this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+			this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -893,15 +909,6 @@ public class DashScopeApi {
 				return Map.of("type", "function", "function", Map.of("name", functionName));
 			}
 
-		}
-
-		/**
-		 * An object specifying the format that the model must output.
-		 *
-		 * @param type Must be one of 'text' or 'json_object'.
-		 */
-		@JsonInclude(JsonInclude.Include.NON_NULL)
-		public record ResponseFormat(@JsonProperty("type") String type) {
 		}
 	}
 
