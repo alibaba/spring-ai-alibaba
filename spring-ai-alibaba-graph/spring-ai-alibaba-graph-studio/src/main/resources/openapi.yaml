@@ -11,7 +11,7 @@ tags:
 - name: DSL
   description: the DSL API
 - name: Generator
-  description: API related to project generation
+  description: API related to code/project generation
 - name: Runner
   description: the running api
 paths:
@@ -215,6 +215,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RApp"
+  /graph-studio/api/dsl/import-file:
+    post:
+      tags:
+      - DSL
+      summary: 'import app from dsl file '
+      operationId: importDSLFile
+      parameters:
+      - name: dialect
+        in: query
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+              - file
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RApp"
   /graph-studio/api/dsl/export/{id}:
     get:
       tags:
@@ -239,6 +269,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RString"
+  /graph-studio/api/dsl/export-file/{id}:
+    get:
+      tags:
+      - DSL
+      summary: export app to dsl file
+      operationId: exportDSLFile
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: dialect
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
   /graph-studio/api/app/{id}:
     get:
       tags:
@@ -351,8 +406,6 @@ components:
           $ref: "#/components/schemas/AppMetadata"
         spec:
           type: object
-        id:
-          type: string
     AppMetadata:
       type: object
       properties:

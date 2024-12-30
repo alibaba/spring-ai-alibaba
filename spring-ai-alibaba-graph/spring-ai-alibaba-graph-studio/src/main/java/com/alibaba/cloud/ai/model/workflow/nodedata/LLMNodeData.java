@@ -4,16 +4,16 @@ import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
-@Data
+@ToString(callSuper = true)
 @Accessors(chain = true)
+@NoArgsConstructor
+@Data
 public class LLMNodeData extends NodeData {
 
 	public static final Variable DEFAULT_OUTPUT_SCHEMA = new Variable("text", VariableType.STRING.value());
@@ -30,6 +30,7 @@ public class LLMNodeData extends NodeData {
 
 	@Data
 	@AllArgsConstructor
+	@NoArgsConstructor
 	public static class PromptTemplate {
 
 		private String role;
@@ -80,11 +81,13 @@ public class LLMNodeData extends NodeData {
 	@Accessors(chain = true)
 	public static class MemoryConfig {
 
-		private Integer windowSize;
+		private Boolean enabled = false;
 
-		private Boolean windowEnabled;
+		private Integer windowSize = 20;
 
-		private Boolean includeLastMessage;
+		private Boolean windowEnabled = true;
+
+		private Boolean includeLastMessage = false;
 
 		private String lastMessageTemplate;
 
