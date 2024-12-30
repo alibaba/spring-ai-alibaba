@@ -3,18 +3,13 @@ package com.alibaba.cloud.ai.service.dsl.adapters;
 import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.model.AppMetadata;
 import com.alibaba.cloud.ai.model.Variable;
-import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.chatbot.ChatBot;
-import com.alibaba.cloud.ai.model.workflow.Workflow;
-import com.alibaba.cloud.ai.model.workflow.Graph;
-import com.alibaba.cloud.ai.model.workflow.Case;
-import com.alibaba.cloud.ai.model.workflow.Edge;
-import com.alibaba.cloud.ai.model.workflow.EdgeType;
-import com.alibaba.cloud.ai.model.workflow.Node;
-import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.model.workflow.*;
+import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.service.dsl.Serializer;
 import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.AbstractDSLAdapter;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -31,26 +26,24 @@ import java.util.stream.Collectors;
 @Component
 public class DifyDSLAdapter extends AbstractDSLAdapter {
 
-	private static final String DIFY_DIALECT = "dify";
-
 	private static final String[] DIFY_CHATBOT_MODES = { "chat", "completion", "agent-chat" };
 
 	private static final String[] DIFY_WORKFLOW_MODES = { "workflow", "advanced-chat" };
 
-	private final List<NodeDataConverter> nodeDataConverters;
+	private final List<NodeDataConverter<? extends NodeData>> nodeDataConverters;
 
 	private final Serializer serializer;
 
-	public DifyDSLAdapter(List<NodeDataConverter> nodeDataConverters, @Qualifier("yaml") Serializer serializer) {
+	public DifyDSLAdapter(List<NodeDataConverter<? extends NodeData>> nodeDataConverters, @Qualifier("yaml") Serializer serializer) {
 		this.nodeDataConverters = nodeDataConverters;
 		this.serializer = serializer;
 	}
 
-	private NodeDataConverter getNodeDataConverter(String type) {
+	private NodeDataConverter<? extends NodeData> getNodeDataConverter(NodeType nodeType) {
 		return nodeDataConverters.stream()
-			.filter(converter -> converter.supportType(type))
+			.filter(converter -> converter.supportNodeType(nodeType))
 			.findFirst()
-			.orElseThrow(() -> new IllegalArgumentException("invalid dify node type " + type));
+			.orElseThrow(() -> new IllegalArgumentException("invalid dify node type " + nodeType));
 	}
 
 	@Override
@@ -122,134 +115,51 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 
 	private Graph constructGraph(Map<String, Object> data) {
 		Graph graph = new Graph();
-		List<Node> workflowNodes = new ArrayList<>();
-		List<Edge> workflowEdges = new ArrayList<>();
-		List<Map<String, Object>> branchNodes = new ArrayList<>();
-		Map<String, Edge> branchEdges = new HashMap<>();
+		List<Node> nodes = new ArrayList<>();
+		List<Edge> edges = new ArrayList<>();
 		// convert nodes
 		if (data.containsKey("nodes")) {
-			List<Map<String, Object>> nodes = (List<Map<String, Object>>) data.get("nodes");
-			constructNodes(nodes, workflowNodes, branchNodes);
+			List<Map<String, Object>> nodeMaps = (List<Map<String, Object>>) data.get("nodes");
+			nodes = constructNodes(nodeMaps);
 		}
 		// convert edges
 		if (data.containsKey("edges")) {
-			List<Map<String, Object>> edges = (List<Map<String, Object>>) data.get("edges");
-			constructEdges(edges, workflowEdges, branchEdges);
+			List<Map<String, Object>> edgeMaps = (List<Map<String, Object>>) data.get("edges");
+			edges = constructEdges(edgeMaps);
 		}
-		// convert if-else node to condition edge
-		constructConditionEdge(branchNodes, branchEdges, workflowEdges);
-
-		graph.setNodes(workflowNodes);
-		graph.setEdges(workflowEdges);
+		graph.setNodes(nodes);
+		graph.setEdges(edges);
 		return graph;
 	}
 
-	private void constructNodes(List<Map<String, Object>> nodeMaps, List<Node> nodes,
-			List<Map<String, Object>> branchNodes) {
+	private List<Node> constructNodes(List<Map<String, Object>> nodeMaps) {
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		List<Node> nodes = new ArrayList<>();
 		for (Map<String, Object> nodeMap : nodeMaps) {
 			Map<String, Object> nodeDataMap = (Map<String, Object>) nodeMap.get("data");
 			String difyNodeType = (String) nodeDataMap.get("type");
-			// collect if-else node
-			if (difyNodeType.equals("if-else")) {
-				branchNodes.add(nodeMap);
-				continue;
-			}
 			// determine the type of dify node is supported yet
-			NodeType nodeType = NodeType.difyValueOf(difyNodeType);
-			if (nodeType == null) {
-				throw new NotImplementedException("unsupported node type " + difyNodeType);
-			}
+			NodeType nodeType = NodeType.fromDifyValue(difyNodeType)
+				.orElseThrow(() -> new NotImplementedException("unsupported node type " + difyNodeType));
 			// convert node map to workflow node using jackson
 			nodeMap.remove("data");
 			Node n = objectMapper.convertValue(nodeMap, Node.class);
 			// set title and desc
 			n.setTitle((String) nodeDataMap.get("title")).setDesc((String) nodeDataMap.get("desc"));
 			// convert node data using specific WorkflowNodeDataConverter
-			NodeDataConverter nodeDataConverter = getNodeDataConverter(nodeType.value());
-			n.setData(nodeDataConverter.parseDifyData(nodeDataMap));
+			NodeDataConverter<?> nodeDataConverter = getNodeDataConverter(nodeType);
+			n.setData(nodeDataConverter.parseMapData(nodeDataMap, DSLDialectType.DIFY));
 			n.setType(nodeType.value());
 			nodes.add(n);
 		}
+		return nodes;
 	}
 
-	private void constructEdges(List<Map<String, Object>> edgeMaps, List<Edge> edges, Map<String, Edge> branchEdges) {
+	private List<Edge> constructEdges(List<Map<String, Object>> edgeMaps) {
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		for (Map<String, Object> edgeMap : edgeMaps) {
-			Edge edge = objectMapper.convertValue(edgeMap, Edge.class);
-			if (edgeMap.get("sourceHandle").equals("source")) {
-				edge.setType(EdgeType.DIRECT.value());
-				edges.add(edge);
-			}
-			else {
-				// collect if-else edges
-				String sourceHandle = (String) edgeMap.get("sourceHandle");
-				String source = (String) edgeMap.get("source");
-				branchEdges.put(conditionKey(source, sourceHandle), edge);
-			}
-		}
-	}
-
-	private void constructConditionEdge(List<Map<String, Object>> branchNodes, Map<String, Edge> branchEdges,
-			List<Edge> edges) {
-		for (Map<String, Object> nodeMap : branchNodes) {
-			Map<String, Object> nodeDataMap = (Map<String, Object>) nodeMap.get("data");
-			String branchNodeId = (String) nodeMap.get("id");
-			List<Case> cases = new ArrayList<>();
-			Map<String, String> targetMap = new HashMap<>();
-			List<Map<String, Object>> casesMap = (List<Map<String, java.lang.Object>>) nodeDataMap.get("cases");
-			for (Map<String, Object> caseData : casesMap) {
-				// convert cases
-				List<Map<String, Object>> conditionMaps = (List<Map<String, Object>>) caseData.get("conditions");
-				List<Case.Condition> conditions = conditionMaps.stream().map(conditionMap -> {
-					List<String> selectors = (List<String>) conditionMap.get("variable_selector");
-					return new Case.Condition().setValue((String) conditionMap.get("value"))
-						.setVarType((String) conditionMap.get("varType"))
-						.setComparisonOperator((String) conditionMap.get("comparison_operator"))
-						.setVariableSelector(new VariableSelector(selectors.get(0), selectors.get(1)));
-				}).collect(Collectors.toList());
-				Case c = new Case().setId((String) caseData.get("id"))
-					.setLogicalOperator((String) caseData.get("logical_operator"))
-					.setConditions(conditions);
-				// collect case target
-				Edge branchEdge = branchEdges.get(conditionKey(branchNodeId, c.getId()));
-				targetMap.put(conditionKey(branchNodeId, c.getId()), branchEdge.getTarget());
-				cases.add(c);
-			}
-			// else branch
-			Edge elseEdge = branchEdges.get(conditionKey(branchNodeId, "false"));
-			if (elseEdge != null) {
-				targetMap.put(conditionKey(branchNodeId, "false"), elseEdge.getTarget());
-			}
-			// find branchNode's source
-			String source = findSourceNode(edges, branchEdges.values().stream().toList(), branchNodeId);
-			Edge conditionEdge = new Edge().setId(branchNodeId)
-				.setType(EdgeType.CONDITIONAL.value())
-				.setSource(source)
-				.setCases(cases)
-				.setTargetMap(targetMap);
-			edges.add(conditionEdge);
-		}
-	}
-
-	private String conditionKey(String source, String caseId) {
-		return source + "&" + caseId;
-	}
-
-	private String findSourceNode(List<Edge> directEdges, List<Edge> branchEdges, String nodeId) {
-		for (Edge edge : directEdges) {
-			if (edge.getTarget().equals(nodeId)) {
-				return edge.getSource();
-			}
-		}
-		for (Edge edge : branchEdges) {
-			if (edge.getTarget().equals(nodeId)) {
-				return edge.getSource();
-			}
-		}
-		return null;
+		return edgeMaps.stream().map(edgeMap -> objectMapper.convertValue(edgeMap, Edge.class)).toList();
 	}
 
 	@Override
@@ -269,65 +179,36 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 	private Map<String, Object> deconstructGraph(Graph graph) {
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		List<Map<String, Object>> edgeMaps = new ArrayList<>();
-		List<Map<String, Object>> nodeMaps = new ArrayList<>();
 		// deconstruct edge
-		deconstructEdge(graph.getEdges(), edgeMaps, nodeMaps);
+		List<Map<String, Object>> edgeMaps = deconstructEdge(graph.getEdges());
 		// deconstruct node
-		deconstructNode(graph.getNodes(), nodeMaps);
+		List<Map<String, Object>> nodeMaps = deconstructNode(graph.getNodes());
 		return Map.of("edges", edgeMaps, "nodes", nodeMaps);
 	}
 
-	private void deconstructEdge(List<Edge> edges, List<Map<String, Object>> edgeMaps,
-			List<Map<String, Object>> nodeMaps) {
+	private List<Map<String, Object>> deconstructEdge(List<Edge> edges) {
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		for (Edge edge : edges) {
-			// collect direct edge
-			if (edge.getType().equals(EdgeType.DIRECT.value())) {
-				Map<String, Object> edgeMap = objectMapper.convertValue(edge, Map.class);
-				edgeMap.put("sourceHandle", "source");
-				edgeMap.put("targetHandle", "target");
-				edgeMap.put("type", "custom");
-				edgeMaps.add(edgeMap);
-				continue;
-			}
-			// convert condition edge
-			Map<String, String> targetMap = edge.getTargetMap();
-			// number of entries in targetMap equals the number of edges needed to
-			targetMap.forEach((k, v) -> {
-				String[] splits = k.split("&");
-				Map<String, Object> edgeMap = Map.of("source", splits[0], "sourceHandle", splits[1], "target", v,
-						"targetHandle", "target", "type", "custom", "zIndex", 0, "selected", false);
-				edgeMaps.add(edgeMap);
+		return edges.stream().map(edge -> {
+			Map<String, Object> edgeMap = objectMapper.convertValue(edge, new TypeReference<>() {
 			});
-			// convert to if-else node
-			List<Map<String, Object>> caseMaps = new ArrayList<>();
-			for (Case c : edge.getCases()) {
-				List<Map<String, Object>> conditions = c.getConditions()
-					.stream()
-					.map(condition -> Map.of("comparison_operator", condition.getComparisonOperator(), "value",
-							condition.getValue(), "varType", condition.getVarType(), "variable_selector",
-							List.of(condition.getVariableSelector().getNamespace(),
-									condition.getVariableSelector().getName())))
-					.toList();
-				caseMaps.add(Map.of("id", c.getId(), "case_id", c.getId(), "conditions", conditions, "logical_operator",
-						c.getLogicalOperator()));
-			}
-			nodeMaps.add(Map.of("id", edge.getId(), "type", "custom", "width", 250, "height", 250, "data",
-					Map.of("cases", caseMaps, "desc", "", "selected", false, "title", "if-else", "type", "if-else")));
-		}
+			edgeMap.put("type", "custom");
+			return edgeMap;
+		}).toList();
 
 	}
 
-	private void deconstructNode(List<Node> nodes, List<Map<String, Object>> nodeMaps) {
+	private List<Map<String, Object>> deconstructNode(List<Node> nodes) {
 		ObjectMapper objectMapper = new ObjectMapper();
+		List<Map<String, Object>> nodeMaps = new ArrayList<>();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		for (Node node : nodes) {
-			Map<String, Object> n = objectMapper.convertValue(node, Map.class);
-			NodeType nodeType = NodeType.valueOf(node.getType());
-			NodeDataConverter nodeDataConverter = getNodeDataConverter(node.getType());
-			Map<String, Object> nodeData = nodeDataConverter.dumpDifyData(node.getData());
+			Map<String, Object> n = objectMapper.convertValue(node, new TypeReference<>() {
+			});
+			NodeType nodeType = NodeType.fromValue(node.getType())
+				.orElseThrow(() -> new NotImplementedException("Unsupported NodeType: " + node.getType()));
+			NodeDataConverter<? extends NodeData> nodeDataConverter = getNodeDataConverter(nodeType);
+			Map<String, Object> nodeData = dumpMapData(nodeDataConverter, node.getData());
 			nodeData.put("type", nodeType.difyValue());
 			nodeData.put("title", node.getTitle());
 			nodeData.put("desc", node.getDesc());
@@ -335,6 +216,11 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			n.put("type", "custom");
 			nodeMaps.add(n);
 		}
+		return nodeMaps;
+	}
+
+	private <T extends NodeData> Map<String, Object> dumpMapData(NodeDataConverter<T> converter, NodeData data) {
+		return converter.dumpMapData((T) data, DSLDialectType.DIFY);
 	}
 
 	@Override
@@ -350,8 +236,8 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 	}
 
 	@Override
-	public Boolean supportDialect(String dialect) {
-		return DIFY_DIALECT.equals(dialect);
+	public Boolean supportDialect(DSLDialectType dialectType) {
+		return DSLDialectType.DIFY.equals(dialectType);
 	}
 
 }
