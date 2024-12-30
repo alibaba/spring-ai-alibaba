@@ -95,7 +95,7 @@ public class EvaluationIT {
 		AnswerCorrectnessEvaluator evaluator = new AnswerCorrectnessEvaluator(ChatClient.builder(dashscopeChatModel),
 				correctnessResource.getContentAsString(StandardCharsets.UTF_8));
 		EvaluationRequest evaluationRequest = new EvaluationRequest(userText,
-				List.of(new AssistantMessage(expectedResult)), content);
+				List.of(Document.builder().text(expectedResult).build()), content);
 		EvaluationResponse evaluationResponse = evaluator.evaluate(evaluationRequest);
 
 		Assertions.assertTrue(evaluationResponse.isPass());
@@ -121,7 +121,7 @@ public class EvaluationIT {
 		AnswerRelevancyEvaluator evaluator = new AnswerRelevancyEvaluator(ChatClient.builder(dashscopeChatModel),
 				relevancyResource.getContentAsString(StandardCharsets.UTF_8), objectMapper);
 		EvaluationRequest evaluationRequest = new EvaluationRequest(userText,
-				List.of(new AssistantMessage(expectedResult)), content);
+				List.of(Document.builder().text(expectedResult).build()), content);
 		EvaluationResponse evaluationResponse = evaluator.evaluate(evaluationRequest);
 
 		Assertions.assertTrue(evaluationResponse.isPass());

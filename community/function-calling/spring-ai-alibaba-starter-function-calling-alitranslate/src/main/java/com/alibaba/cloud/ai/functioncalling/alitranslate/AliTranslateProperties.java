@@ -18,8 +18,9 @@ package com.alibaba.cloud.ai.functioncalling.alitranslate;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * @author yunlong offline doc:
- * https://help.aliyun.com/zh/machine-translation/developer-reference/api-alimt-2018-10-12-translategeneral?spm=a2c4g.11186623.help-menu-30396.d_4_1_2_0_0.54882fa7VX75w3&scm=20140722.H_2505929._.OR_help-T_cn~zh-V_1
+ * @author yunlong
+ *
+ * [offlinedoc](https://help.aliyun.com/zh/machine-translation/developer-reference/api-alimt-2018-10-12-translategeneral)
  */
 @ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.alitranslate")
 public class AliTranslateProperties {

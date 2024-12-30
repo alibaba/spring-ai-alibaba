@@ -42,11 +42,11 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
-import org.springframework.ai.parser.BeanOutputParser;
-import org.springframework.ai.parser.ListOutputParser;
-import org.springframework.ai.parser.MapOutputParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -111,9 +111,9 @@ public class DashScopeChatModelIT {
 	@Test
 	void outputParser() {
 		DefaultConversionService conversionService = new DefaultConversionService();
-		ListOutputParser outputParser = new ListOutputParser(conversionService);
+		ListOutputConverter outputConverter = new ListOutputConverter(conversionService);
 
-		String format = outputParser.getFormat();
+		String format = outputConverter.getFormat();
 		String template = """
 				List five {subject}
 				{format}
@@ -123,16 +123,16 @@ public class DashScopeChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		org.springframework.ai.chat.model.Generation generation = this.dashscopeChatModel.call(prompt).getResult();
 
-		List<String> list = outputParser.parse(generation.getOutput().getContent());
+		List<String> list = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(list).hasSize(5);
 
 	}
 
 	@Test
 	void mapOutputParser() {
-		MapOutputParser outputParser = new MapOutputParser();
+		MapOutputConverter mapOutputConverter = new MapOutputConverter();
 
-		String format = outputParser.getFormat();
+		String format = mapOutputConverter.getFormat();
 		String template = """
 				Provide me a List of {subject}
 				{format}
@@ -143,7 +143,7 @@ public class DashScopeChatModelIT {
 		org.springframework.ai.chat.model.Generation generation = dashscopeChatModel.call(prompt).getResult();
 		String generationText = generation.getOutput().getContent().replace("```json", "").replace("```", "");
 
-		Map<String, Object> result = outputParser.parse(generationText);
+		Map<String, Object> result = mapOutputConverter.convert(generationText);
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -151,7 +151,7 @@ public class DashScopeChatModelIT {
 	@Test
 	void beanStreamOutputParserRecords() {
 
-		BeanOutputParser<ActorsFilmsRecord> outputParser = new BeanOutputParser<>(ActorsFilmsRecord.class);
+		BeanOutputConverter<ActorsFilmsRecord> outputParser = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
 		String format = outputParser.getFormat();
 		String template = """
@@ -172,7 +172,7 @@ public class DashScopeChatModelIT {
 			.collect(Collectors.joining());
 		generationTextFromStream = generationTextFromStream.replace("```json", "").replace("```", "");
 
-		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);
+		ActorsFilmsRecord actorsFilms = outputParser.convert(generationTextFromStream);
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -239,7 +239,7 @@ public class DashScopeChatModelIT {
 	@Test
 	void usageInStream() {
 		DefaultConversionService conversionService = new DefaultConversionService();
-		ListOutputParser outputParser = new ListOutputParser(conversionService);
+		ListOutputConverter outputParser = new ListOutputConverter(conversionService);
 
 		String format = outputParser.getFormat();
 		String template = """
