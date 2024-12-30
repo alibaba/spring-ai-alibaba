@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
 
 /**
- * @author: KrakenZJC
+ * @author KrakenZJC
  **/
 @ConditionalOnClass(BingSearchService.class)
 @EnableConfigurationProperties(BingSearchProperties.class)

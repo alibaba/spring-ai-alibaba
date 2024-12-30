@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * @author: KrakenZJC
+ * @author KrakenZJC
  **/
 public class BingSearchService implements Function<BingSearchService.Request, BingSearchService.Response> {
 
