@@ -151,6 +151,7 @@ public class ChatBot {
 
         private Image image;
 
+        @JsonProperty("number_limits")
         private int numberLimit;
     }
 
