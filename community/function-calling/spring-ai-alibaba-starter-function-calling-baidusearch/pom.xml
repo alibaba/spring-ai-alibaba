@@ -27,8 +27,13 @@
     </parent>
     <artifactId>spring-ai-alibaba-starter-function-calling-baidusearch</artifactId>
     <name>spring-ai-alibaba-starter-function-calling-baidusearch</name>
-
     <description>Baidu search tool for Spring AI Alibaba</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+    </scm>
 
     <properties>
         <jsoup-version>1.18.1</jsoup-version>
