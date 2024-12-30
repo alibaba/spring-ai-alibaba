@@ -1,9 +1,9 @@
 import { FormattedMessage } from '@@/exports';
 import { PageContainer } from '@ant-design/pro-components';
+import { history } from '@umijs/max';
 import { Button, Flex, Form, Input, Modal, Table } from 'antd';
 import FormItem from 'antd/es/form/FormItem';
 import { useState } from 'react';
-import { history } from 'umi';
 import styles from './index.less';
 
 const GraphIndex: React.FC = () => {

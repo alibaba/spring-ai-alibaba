@@ -7,6 +7,7 @@ import { reLayout } from '@/utils/GraphUtil';
 import { handleNodeChanges } from '@/utils/NodeUtil';
 import { FormattedMessage } from '@@/exports';
 import { Icon } from '@iconify/react';
+import { useProxy } from '@umijs/max';
 import type { Node } from '@xyflow/react';
 import {
   Background,
@@ -27,7 +28,6 @@ import {
   useState,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
-import { useProxy } from 'umi';
 import './index.less';
 import { OperationMode } from './types';
 import NodeTypes from './types/index';
@@ -157,22 +157,22 @@ export default memo(() => {
   ]);
 
   const addNode = useCallback(
-    (event: any) => {
+    (event: any, nodeType?: string) => {
       const { clientX, clientY } = event;
       let id = String(new Date());
 
-      // todo create it with real node type
       const newNode: any = {
         id,
         position: screenToFlowPosition({
           x: clientX,
           y: clientY,
         }),
-        type: 'branch',
+        type: nodeType || 'default',
         data: {
           label: `Node ${id}`,
         },
-        selected: true,
+        // TODO: It conflicts with the `openPanel` method when creating a new node.
+        // selected: true,
         origin: [0, 0.0],
       };
       graphStore.currentNodeId = id;
@@ -187,12 +187,16 @@ export default memo(() => {
       key: '1',
       icon: <Icon icon="hugeicons:subnode-add" />,
       label: <FormattedMessage id={'page.graph.contextMenu.add-node'} />,
-      onClick: (event) => {
-        addNode(event.domEvent);
-        graphStore.mode = 'drag';
-        graphStore.readonly = true;
-        graphStore.contextMenu.show = false;
-      },
+      children: Object.keys(NodeTypes).map((nodeType) => ({
+        label: nodeType,
+        key: nodeType,
+        onClick: (event) => {
+          addNode(event.domEvent, nodeType);
+          graphStore.mode = 'drag';
+          graphStore.readonly = true;
+          graphStore.contextMenu.show = false;
+        },
+      })),
     },
     {
       key: '2',
