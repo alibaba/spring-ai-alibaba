@@ -3,6 +3,7 @@ package com.alibaba.cloud.ai.controller;
 import com.alibaba.cloud.ai.api.DSLAPI;
 import com.alibaba.cloud.ai.saver.AppSaver;
 import com.alibaba.cloud.ai.service.dsl.DSLAdapter;
+import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,7 +25,7 @@ public class DSLController implements DSLAPI {
 	}
 
 	@Override
-	public DSLAdapter getAdapter(String dialect) {
+	public DSLAdapter getAdapter(DSLDialectType dialect) {
 		return adapters.stream().filter(adapter -> adapter.supportDialect(dialect)).findFirst().orElse(null);
 	}
 
