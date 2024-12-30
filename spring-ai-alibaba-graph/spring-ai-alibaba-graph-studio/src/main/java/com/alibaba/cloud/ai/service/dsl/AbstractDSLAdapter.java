@@ -59,11 +59,12 @@ public abstract class AbstractDSLAdapter implements DSLAdapter {
 
     public abstract Workflow mapToWorkflow (Map<String, Object> data);
 
-    public abstract ChatBot mapToChatBot (Map<String, Object> data);
 
-    public abstract Map<String, Object> workflowToMap (Workflow workflow);
+	public abstract Map<String, Object> workflowToMap(Workflow workflow);
 
-    public abstract Map<String, Object> chatbotToMap (com.alibaba.cloud.ai.model.chatbot.node.ChatBot chatBot);
+	public abstract ChatBot mapToChatBot(Map<String, Object> data);
+
+	public abstract Map<String, Object> chatbotToMap(ChatBot chatBot);
 
     public abstract void validateDSLData (Map<String, Object> data);
 
