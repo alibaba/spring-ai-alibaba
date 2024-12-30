@@ -133,9 +133,6 @@ public final class DashScopeAgent extends Agent {
 		metadata.put(OUTPUT, output);
 
 		var assistantMessage = new AssistantMessage(text, metadata);
-		// Due to the structural changes in ChatGenerationMetadata, the field text has
-		// been removed.
-		// A review is needed to determine if the adaptation is reasonable.
 		var generationMetadata = ChatGenerationMetadata.builder().finishReason(output.finishReason()).build();
 		Generation generation = new Generation(assistantMessage, generationMetadata);
 
