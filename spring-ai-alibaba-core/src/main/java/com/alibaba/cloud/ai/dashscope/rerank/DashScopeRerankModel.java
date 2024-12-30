@@ -32,14 +32,12 @@
 package com.alibaba.cloud.ai.dashscope.rerank;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.metadata.DashScopeAiUsage;
 import com.alibaba.cloud.ai.document.DocumentWithScore;
 import com.alibaba.cloud.ai.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
@@ -47,12 +45,8 @@ import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
-import static java.util.Comparator.comparingInt;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Title Dashscope rerank model.<br>
@@ -126,7 +120,7 @@ public class DashScopeRerankModel implements RerankModel {
 	}
 
 	private DashScopeApi.RerankRequest createRequest(RerankRequest request, DashScopeRerankOptions requestOptions) {
-		List<String> docs = request.getInstructions().stream().map(Document::getContent).toList();
+		List<String> docs = request.getInstructions().stream().map(Document::getText).toList();
 
 		DashScopeApi.RerankRequestParameter parameter = new DashScopeApi.RerankRequestParameter(
 				requestOptions.getTopN(), requestOptions.getReturnDocuments());
