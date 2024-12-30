@@ -1,6 +1,6 @@
 import { defineConfig } from '@umijs/max';
-import { DEFAULT_NAME } from './src/constants';
 import { codeInspectorPlugin } from 'code-inspector-plugin';
+import { DEFAULT_NAME } from './src/constants';
 
 export default defineConfig({
   title: 'site.title',
@@ -34,6 +34,7 @@ export default defineConfig({
     title: true,
     baseNavigator: true,
   },
+  valtio: {},
   routes: [
     {
       path: '/',

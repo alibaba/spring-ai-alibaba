@@ -3,32 +3,12 @@ import '@xyflow/react/dist/style.css';
 import './index.less';
 import './xyTheme.less';
 
-import { LayoutFlow } from '@/pages/Graph/Design/map';
-import ToolBar from '@/pages/Graph/Design/toolbar/ToolBar';
+import GraphMap from '@/pages/Graph/Design/GraphMap';
 import { PageContainer } from '@ant-design/pro-components';
-import { Icon } from '@iconify/react';
-import { Affix, Button } from 'antd';
-import { history } from 'umi';
 
 export default function () {
   return (
-    <PageContainer ghost>
-      <Affix>
-        <Button
-          onClick={() => {
-            history.push('/graph');
-          }}
-          type="dashed"
-        >
-          返回
-          <Icon
-            style={{
-              fontSize: '20px',
-            }}
-            icon="material-symbols:keyboard-backspace-rounded"
-          ></Icon>
-        </Button>
-      </Affix>
+    <PageContainer className="graph-design" ghost>
       <div
         style={{
           width: '100%',
@@ -36,8 +16,7 @@ export default function () {
         }}
       >
         <ReactFlowProvider>
-          <LayoutFlow />
-          <ToolBar></ToolBar>
+          <GraphMap />
         </ReactFlowProvider>
       </div>
     </PageContainer>

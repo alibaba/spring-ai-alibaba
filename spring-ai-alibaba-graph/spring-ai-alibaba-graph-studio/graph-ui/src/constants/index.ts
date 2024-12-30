@@ -1,1 +1,1 @@
-export const DEFAULT_NAME = 'Spring AI Alibaba Graph';
+export const DEFAULT_NAME = 'Spring AI Alibaba G';
