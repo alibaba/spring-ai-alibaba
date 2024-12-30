@@ -20,7 +20,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * @author 北极星
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.serpapi")
+@ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.serpapi")
 public class SerpApiProperties {
 
 	public static final String SERP_API_URL = "https://serpapi.com/search.json";

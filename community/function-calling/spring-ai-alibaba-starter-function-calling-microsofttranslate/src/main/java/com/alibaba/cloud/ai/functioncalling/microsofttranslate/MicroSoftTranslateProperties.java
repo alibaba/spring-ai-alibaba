@@ -20,7 +20,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * @author 31445
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.microsofttranslate")
+@ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.microsofttranslate")
 public class MicroSoftTranslateProperties {
 
 	public static final String OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";

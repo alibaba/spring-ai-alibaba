@@ -20,7 +20,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * @author YunLong
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.gaode")
+@ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.amap")
 public class AmapProperties {
 
 	// Official Document Address： https://lbs.amap.com/api/webservice/summary
