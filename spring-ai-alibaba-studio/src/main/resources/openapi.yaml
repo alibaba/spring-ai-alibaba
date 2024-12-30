@@ -234,6 +234,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RChatModel"
+  /studio/api/chat-models/model-names:
+    get:
+      tags:
+      - chat-model
+      summary: list model names
+      operationId: listModelNames
+      parameters:
+      - name: modelType
+        in: query
+        required: true
+        schema:
+          type: string
+          enum:
+          - CHAT
+          - IMAGE
+          - AUDIO
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RListString"
   /studio/api/chat-clients/{clientName}:
     get:
       tags:
@@ -330,12 +353,6 @@ components:
     DashScopeChatOptions:
       type: object
       properties:
-        maxTokens:
-          type: integer
-          format: int32
-        presencePenalty:
-          type: number
-          format: double
         frequencyPenalty:
           type: number
           format: double
@@ -343,6 +360,12 @@ components:
           type: array
           items:
             type: string
+        maxTokens:
+          type: integer
+          format: int32
+        presencePenalty:
+          type: number
+          format: double
         proxyToolCalls:
           type: boolean
         model:
@@ -491,6 +514,8 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
     TelemetryResult:
       type: object
       properties:
@@ -546,6 +571,8 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
     ArrayNode:
       type: object
     RArrayNode:
@@ -561,6 +588,8 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
     JsonNode:
       type: object
     RJsonNode:
@@ -576,6 +605,8 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
     RString:
       type: object
       properties:
@@ -589,6 +620,8 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
     ChatModel:
       type: object
       properties:
@@ -623,6 +656,8 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
     RChatModel:
       type: object
       properties:
@@ -636,6 +671,25 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
+    RListString:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        msg:
+          type: string
+        data:
+          type: array
+          items:
+            type: string
+        timestamp:
+          type: integer
+          format: int64
+        requestId:
+          type: string
     ChatClient:
       type: object
       properties:
@@ -658,14 +712,13 @@ components:
     ChatOptions:
       type: object
       properties:
-        topP:
+        frequencyPenalty:
           type: number
           format: double
-        topK:
-          type: integer
-          format: int32
-        model:
-          type: string
+        stopSequences:
+          type: array
+          items:
+            type: string
         maxTokens:
           type: integer
           format: int32
@@ -675,13 +728,14 @@ components:
         temperature:
           type: number
           format: double
-        frequencyPenalty:
+        topP:
           type: number
           format: double
-        stopSequences:
-          type: array
-          items:
-            type: string
+        topK:
+          type: integer
+          format: int32
+        model:
+          type: string
     RListChatClient:
       type: object
       properties:
@@ -697,6 +751,8 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
     RChatClient:
       type: object
       properties:
@@ -710,3 +766,5 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
