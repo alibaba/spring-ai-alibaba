@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.service.impl;
 
 import com.alibaba.cloud.ai.common.ModelType;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
@@ -230,6 +231,25 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 			.result(ActionResult.builder().Response(imageUrl).build())
 			.telemetry(TelemetryResult.builder().traceId(tracer.currentSpan().context().traceId()).build())
 			.build();
+	}
+
+	@Override
+	public List<String> listModelNames(ModelType modelType) {
+		List<String> res = new ArrayList<>();
+		if (modelType == ModelType.CHAT) {
+			DashScopeApi.ChatModel[] values = DashScopeApi.ChatModel.values();
+			for (DashScopeApi.ChatModel value : values) {
+				res.add(value.getModel());
+			}
+		}
+		else if (modelType == ModelType.IMAGE) {
+			DashScopeImageApi.ImageModel[] values = DashScopeImageApi.ImageModel.values();
+			for (DashScopeImageApi.ImageModel value : values) {
+				res.add(value.getValue());
+			}
+		}
+
+		return res;
 	}
 
 	private org.springframework.ai.chat.model.ChatModel getChatModel(String modelName) {
