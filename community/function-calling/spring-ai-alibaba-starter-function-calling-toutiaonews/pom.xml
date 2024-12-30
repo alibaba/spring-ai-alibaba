@@ -13,6 +13,11 @@
 	<name>spring-ai-alibaba-starter-function-calling-toutiaonews</name>
 	<description>Toutiao News tool for Spring AI Alibaba</description>
 	<url>https://github.com/alibaba/spring-ai-alibaba</url>
+	<scm>
+		<url>https://github.com/alibaba/spring-ai-alibaba</url>
+		<connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+		<developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+	</scm>
 
 	<dependencies>
 		<dependency>
