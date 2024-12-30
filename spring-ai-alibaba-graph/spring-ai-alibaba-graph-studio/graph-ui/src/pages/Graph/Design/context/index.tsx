@@ -1,7 +1,7 @@
 import { graphState } from '@/store/GraphState';
+import { useSnapshot } from '@umijs/max';
 import { GetProp, Menu, MenuProps } from 'antd';
 import React from 'react';
-import { useSnapshot } from 'umi';
 import './index.less';
 
 export type ContextMenuItem = GetProp<MenuProps, 'items'>[number];

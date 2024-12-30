@@ -1,5 +1,5 @@
 import { graphState } from '@/store/GraphState';
-import produce from 'immer';
+import { produce } from 'immer';
 
 /**
  * todo
