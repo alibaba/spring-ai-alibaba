@@ -1,13 +1,12 @@
-package com.alibaba.cloud.ai.model.chatbot.node;
+package com.alibaba.cloud.ai.model.chatbot;
 
-import com.alibaba.cloud.ai.model.Variable;
-import com.alibaba.cloud.ai.model.VariableType;
-import com.alibaba.cloud.ai.model.workflow.NodeData;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -16,8 +15,7 @@ import java.util.List;
  */
 @Data
 @NoArgsConstructor
-public class ChatBot extends NodeData {
-    public static final Variable DEFAULT_OUTPUT_SCHEMA = new Variable("text", VariableType.STRING.value());
+public class ChatBot {
 
     private AgentMode agentMode;
 
@@ -30,6 +28,14 @@ public class ChatBot extends NodeData {
     private String promptType;
 
     private CompletionPromptConfig completionPromptConfig;
+
+    private DataSetConfig datasetConfigs;
+
+    private String datasetQueryVariable = "";
+
+    private List<String> externalDataTools = new ArrayList<>(0);
+
+    private FileUpLoad fileUpLoad;
 
     private UserInputForm userInputForm;
 
@@ -90,17 +96,74 @@ public class ChatBot extends NodeData {
     }
 
     @Data
-    @Accessors(chain = true)
-    public static class MemoryConfig {
+    @AllArgsConstructor
+    public static class DataSetConfig {
 
-        private Integer windowSize;
+        private List<DataSet> dataSet;
 
-        private Boolean windowEnabled;
+        private Boolean rerankingEnable;
 
-        private Boolean includeLastMessage;
+        private String rerankingMode;
 
-        private String lastMessageTemplate;
+        private Integer topK = 0;
 
+        private Weights weights;
+    }
+
+    @Data
+    public static class DataSet {
+
+        private String id;
+
+        private Boolean enabled;
+    }
+
+    @Data
+    public static class Weights {
+
+        private KeywordSetting keywordSetting;
+
+        private VectorSetting vectorSetting;
+    }
+
+    @Data
+    public static class KeywordSetting {
+        private int keywordWeight;
+    }
+
+    @Data
+    public static class VectorSetting {
+        private String embeddingModelName;
+        private String embeddingProviderName;
+        private int vectorWeight;
+    }
+
+    @Data
+    public static class FileUpLoad {
+
+        private List<String> allowed_file_extensions = new ArrayList<>(0);
+
+        private List<String> allowed_file_types = new ArrayList<>(0);
+
+        private List<String> allowed_file_upload_methods = new ArrayList<>(0);
+
+        private Boolean enabled = false;
+
+        private Image image;
+
+        private int numberLimit;
+    }
+
+    @Data
+    public static class Image {
+
+        private String detail;
+
+        private Boolean enabled = false;
+
+        private int numberLimits;
+
+        private List<String> transferMethods;
     }
 
     @Data

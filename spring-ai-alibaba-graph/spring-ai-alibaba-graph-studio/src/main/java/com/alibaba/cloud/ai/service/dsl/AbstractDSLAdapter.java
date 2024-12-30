@@ -2,9 +2,8 @@ package com.alibaba.cloud.ai.service.dsl;
 
 import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.model.AppMetadata;
-import com.alibaba.cloud.ai.model.chatbot.node.ChatBot;
+import com.alibaba.cloud.ai.model.chatbot.ChatBot;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -43,7 +42,7 @@ public abstract class AbstractDSLAdapter implements DSLAdapter {
         switch (metadata.getMode()) {
             case AppMetadata.WORKFLOW_MODE -> specMap = workflowToMap((Workflow) app.getSpec());
             case AppMetadata.CHATBOT_MODE ->
-                    specMap = chatbotToMap((com.alibaba.cloud.ai.model.chatbot.node.ChatBot) app.getSpec());
+                    specMap = chatbotToMap((com.alibaba.cloud.ai.model.chatbot.ChatBot) app.getSpec());
             default -> throw new IllegalArgumentException("unsupported mode: " + metadata.getMode());
         }
         Map<String, Object> data = Stream.concat(metaMap.entrySet().stream(), specMap.entrySet().stream())
@@ -62,9 +61,8 @@ public abstract class AbstractDSLAdapter implements DSLAdapter {
 
 	public abstract Map<String, Object> workflowToMap(Workflow workflow);
 
+    public abstract Map<String, Object> chatbotToMap (ChatBot chatBot);
 	public abstract ChatBot mapToChatBot(Map<String, Object> data);
-
-	public abstract Map<String, Object> chatbotToMap(ChatBot chatBot);
 
     public abstract void validateDSLData (Map<String, Object> data);
 

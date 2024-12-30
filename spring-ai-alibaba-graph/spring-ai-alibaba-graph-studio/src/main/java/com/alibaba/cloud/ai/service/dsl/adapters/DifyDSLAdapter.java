@@ -3,13 +3,18 @@ package com.alibaba.cloud.ai.service.dsl.adapters;
 import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.model.AppMetadata;
 import com.alibaba.cloud.ai.model.Variable;
+import com.alibaba.cloud.ai.model.VariableSelector;
+import com.alibaba.cloud.ai.model.chatbot.ChatBot;
 
 import com.alibaba.cloud.ai.model.chatbot.ChatBot;
 import com.alibaba.cloud.ai.model.workflow.*;
-import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.service.dsl.Serializer;
 import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.AbstractDSLAdapter;
+import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
+import com.alibaba.cloud.ai.service.dsl.Serializer;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -229,17 +234,177 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		return converter.dumpMapData((T) data, DSLDialectType.DIFY);
 	}
 
-	@Override
-	public ChatBot mapToChatBot(Map<String, Object> data) {
-		// TODO
-		return null;
-	}
+    @Override
+    @SneakyThrows
+    public ChatBot mapToChatBot (Map<String, Object> data) {
+        if (data == null || !data.containsKey("model_config")) {
+            throw new IllegalArgumentException("Invalid input data");
+        }
 
-	@Override
-	public Map<String, Object> chatbotToMap(ChatBot chatBot) {
-		// TODO
-		return null;
-	}
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        ChatBot chatBot = new ChatBot();
+
+        Map<String, Object> modelConfig = (Map<String, Object>) data.get("model_config");
+
+        if (modelConfig == null) {
+            throw new IllegalArgumentException("Invalid model_config in input data");
+        }
+
+        ChatBot.AgentMode agentMode = safeConvert(modelConfig, "agent_mode", ChatBot.AgentMode.class, objectMapper);
+        ChatBot.Model model = safeConvert(modelConfig, "model", ChatBot.Model.class, objectMapper);
+        String openingStatement = safeWriteValue(modelConfig, "opening_statement", objectMapper);
+        String prePrompt = safeWriteValue(modelConfig, "pre_prompt", objectMapper);
+        String promptType = safeWriteValue(modelConfig, "prompt_type", objectMapper);
+        ChatBot.CompletionPromptConfig completionPromptConfig = safeConvert(modelConfig, "completion_prompt_config", ChatBot.CompletionPromptConfig.class, objectMapper);
+
+        // 构建datasetList
+        Map<String, Object> datasetConfigsMap = (Map<String, Object>) modelConfig.get("dataset_configs");
+        boolean rerankingEnable = Boolean.parseBoolean(safeWriteValue(datasetConfigsMap, "reranking_enable", objectMapper));
+        String retrievalModel = safeWriteValue(datasetConfigsMap, "retrieval_model", objectMapper);
+        int topK = Integer.parseInt(safeWriteValue(datasetConfigsMap, "top_k", objectMapper));
+        ChatBot.Weights weights = safeConvert(datasetConfigsMap, "weights", ChatBot.Weights.class, objectMapper);
+        JsonNode datasetsNode = objectMapper.valueToTree(datasetConfigsMap.get("datasets"));
+        List<ChatBot.DataSet> datasetList = new ArrayList<>();
+        if (datasetsNode.isObject()) {
+            JsonNode datasetsArray = (datasetsNode).get("datasets");
+            if (datasetsArray.isArray()) {
+                for (JsonNode datasetNode : datasetsArray) {
+                    JsonNode innerDatasetNode = datasetNode.get("dataset");
+                    if (innerDatasetNode != null) {
+                        ChatBot.DataSet dataset = new ChatBot.DataSet();
+                        dataset.setEnabled(innerDatasetNode.get("enabled").asBoolean());
+                        dataset.setId(innerDatasetNode.get("id").asText());
+                        datasetList.add(dataset);
+                    }
+                }
+            }
+        }
+        chatBot.setDatasetConfigs(new ChatBot.DataSetConfig(datasetList, rerankingEnable, retrievalModel, topK, weights));
+
+        // 构建fileUpload
+        Map<String, Object> fileUploadMap = (Map<String, Object>) modelConfig.get("file_upload");
+        ChatBot.FileUpLoad fileUpLoad = objectMapper.convertValue(fileUploadMap, ChatBot.FileUpLoad.class);
+
+        chatBot.setFileUpLoad(fileUpLoad);
+        chatBot.setAgentMode(agentMode);
+        chatBot.setModel(model);
+        chatBot.setPrePrompt(prePrompt);
+        chatBot.setPromptType(promptType);
+        chatBot.setOpeningStatement(openingStatement);
+        chatBot.setCompletionPromptConfig(completionPromptConfig);
+
+        List<Map<String, Object>> userInputList = (List<Map<String, Object>>) ((Map<String, Object>) data.get("model_config")).get("user_input_form");
+
+        if (userInputList.isEmpty()) {
+            return chatBot;
+        }
+
+        List<ChatBot.Paragraph> paragraphList = new ArrayList<>();
+        List<ChatBot.Select> selectList = new ArrayList<>();
+        List<ChatBot.Number> numberList = new ArrayList<>();
+        List<ChatBot.TextInput> textInputList = new ArrayList<>();
+
+        for (Map<String, Object> item : userInputList) {
+
+            if (item.containsKey("text_input")) {
+                ChatBot.TextInput textInput = objectMapper.convertValue(item.get("text-input"), ChatBot.TextInput.class);
+                textInputList.add(textInput);
+            }
+            else if (item.containsKey("select")) {
+                ChatBot.Select select = objectMapper.convertValue(item.get("select"), ChatBot.Select.class);
+                selectList.add(select);
+            }
+            else if (item.containsKey("paragraph")) {
+                ChatBot.Paragraph paragraph = objectMapper.convertValue(item.get("paragraph"), ChatBot.Paragraph.class);
+                paragraphList.add(paragraph);
+            }
+            else if (item.containsKey("number")) {
+                ChatBot.Number number = objectMapper.convertValue(item.get("number"), ChatBot.Number.class);
+                numberList.add(number);
+            }
+        }
+
+        ChatBot.UserInputForm userInputForm = new ChatBot.UserInputForm();
+
+        userInputForm.setParagraph(paragraphList);
+        userInputForm.setSelect(selectList);
+        userInputForm.setTextInput(textInputList);
+        userInputForm.setNumber(numberList);
+
+        chatBot.setUserInputForm(userInputForm);
+
+        return chatBot;
+    }
+
+    @Override
+    public Map<String, Object> chatbotToMap (ChatBot chatBot) {
+        Map<String, Object> data = new HashMap<>();
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
+
+        List<Map<String, Object>> userInputList = new ArrayList<>();
+        ChatBot.UserInputForm userInputForm = chatBot.getUserInputForm();
+
+        Map<String, Object> datasetConfigMap = new HashMap<>();
+
+        // file_upload
+        ChatBot.FileUpLoad fileUpLoad = null;
+        if (chatBot.getFileUpLoad() != null) {
+            fileUpLoad = objectMapper.convertValue(chatBot.getFileUpLoad(), ChatBot.FileUpLoad.class);
+        }
+
+        // dataset_configs
+        if (chatBot.getDatasetConfigs() != null) {
+
+            datasetConfigMap.put("datasets", chatBot.getDatasetConfigs().getDataSet() != null ? chatBot.getDatasetConfigs().getDataSet() : "");
+            datasetConfigMap.put("reranking_enable", chatBot.getDatasetConfigs().getRerankingEnable());
+            datasetConfigMap.put("retrieval_model", chatBot.getDatasetConfigs().getRerankingMode());
+            datasetConfigMap.put("top_k", chatBot.getDatasetConfigs().getTopK());
+            datasetConfigMap.put("weights", chatBot.getDatasetConfigs().getWeights() != null ? chatBot.getDatasetConfigs().getWeights() : "");
+        }
+
+        // user_input_form
+        if (userInputForm != null) {
+
+            processElements(userInputForm::getParagraph, "paragraph", userInputList, objectMapper);
+            processElements(userInputForm::getSelect, "select", userInputList, objectMapper);
+            processElements(userInputForm::getNumber, "number", userInputList, objectMapper);
+            processElements(userInputForm::getTextInput, "text-input", userInputList, objectMapper);
+
+        }
+
+        Map<String, Object> modelConfig = Map.of("agent_mode", chatBot.getAgentMode() != null ? chatBot.getAgentMode() : "",
+                "model", chatBot.getModel() != null ? chatBot.getModel() : "", "opening_statement",
+                chatBot.getOpeningStatement() != null ? chatBot.getOpeningStatement() : "", "pre_prompt",
+                chatBot.getPrePrompt() != null ? chatBot.getPrePrompt() : "", "prompt_type",
+                chatBot.getPromptType() != null ? chatBot.getPromptType() : "", "completion_prompt_config",
+                chatBot.getCompletionPromptConfig() != null ? chatBot.getCompletionPromptConfig() : "",
+                "file_upload", fileUpLoad != null ? fileUpLoad : "",
+                "dataset_configs", datasetConfigMap,
+                "user_input_form", userInputList);
+
+        data.put("model_config", modelConfig);
+        return data;
+    }
+
+    private <T> void processElements (Supplier<List<T>> elementSupplier, String key, List<Map<String, Object>> userInputList, ObjectMapper objectMapper) {
+        List<T> elements = elementSupplier.get();
+        objectMapper.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
+        if (elements != null && !elements.isEmpty()) {
+            for (T element : elements) {
+                try {
+                    Map<String, Object> elementMap = objectMapper.convertValue(element, Map.class);
+                    userInputList.add(Collections.singletonMap(key, elementMap));
+                }
+                catch (Exception e) {
+                    log.error("Error converting element to map: {}", e.getMessage());
+                }
+            }
+        }
+    }
 
 	@Override
 	public Boolean supportDialect(DSLDialectType dialectType) {
