@@ -13,29 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.functioncalling.sinanews;
+package com.alibaba.cloud.ai.functioncalling.alitranslate;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 /**
- * @author XiaoYunTao
- * @since 2024/12/18
+ * @author yunlong
  */
 @Configuration
-@ConditionalOnClass(SinaNewsService.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.sinanews", name = "enabled", havingValue = "true")
-public class SinaNewsAutoConfiguration {
+@ConditionalOnClass(AliTranslateService.class)
+@EnableConfigurationProperties(AliTranslateProperties.class)
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.alitranslate", name = "enabled",
+		havingValue = "true")
+public class AliTranslateAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("Get the news from the Sina news (获取新浪新闻).")
-	public SinaNewsService getSinaNewsFunction() {
-		return new SinaNewsService();
+	@Description("Implement natural language translation capabilities.")
+	public AliTranslateService aliTranslateFunction(AliTranslateProperties properties) {
+		return new AliTranslateService(properties);
 	}
 
 }
