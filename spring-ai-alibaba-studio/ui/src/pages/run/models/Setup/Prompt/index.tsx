@@ -15,9 +15,10 @@
  */
 
 import { useState } from 'react';
-import { Form, Input, Flex } from 'antd';
+import { Form, Input, Flex, Typography } from 'antd';
 import { ChatOptions } from '@/types/options';
 
+const { Paragraph } = Typography;
 type Props = {
   onchangePrompt: (prompt: string) => void;
 };
@@ -40,13 +41,21 @@ export default function ConfigAndPrompt(props: Props) {
     );
   };
 
+  const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newPrompt = e.target.value;
+    onchangePrompt(newPrompt);
+    setPrompt(newPrompt);
+  };
+
   return (
     <>
       <Form layout="vertical" form={form}>
         <Form.Item
-          label={sliderLabel('Prompt', prompt)}
+          // label={sliderLabel('Prompt', prompt)}
         >
-          <TextArea rows={3} onChange={(e) => { onchangePrompt(e.target.value); setPrompt(e.target.value); }} />
+          <Paragraph copyable={{ text: prompt }}>
+            <TextArea rows={3} value={prompt} onChange={handlePromptChange} />
+          </Paragraph>
         </Form.Item>
       </Form>
     </>
