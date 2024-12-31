@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-import { ChatModelData, ChatModelResultData } from '@/types/chat_model';
-import { request } from 'ice';
+import {
+  ChatModelData,
+  ChatModelResultData,
+  ModelType,
+} from "@/types/chat_model";
+import { request } from "ice";
 
 export default {
   // 获取 ChatModels 列表
   async getChatModels(): Promise<ChatModelData[]> {
     return await request({
-      url: 'studio/api/chat-models',
-      method: 'get',
+      url: "studio/api/chat-models",
+      method: "get",
     });
   },
 
@@ -30,15 +34,15 @@ export default {
   async getChatModelByName(name: string): Promise<ChatModelData> {
     return await request({
       url: `studio/api/chat-models/${name}`,
-      method: 'get',
+      method: "get",
     });
   },
 
   // 根据 Model name 获取 ChatModel
   async postChatModel(data): Promise<ChatModelResultData> {
     return await request({
-      url: '/studio/api/chat-models',
-      method: 'post',
+      url: "/studio/api/chat-models",
+      method: "post",
       data,
     });
   },
@@ -46,9 +50,16 @@ export default {
   // 根据 Model name 获取 ChatModel
   async postImageModel(data): Promise<ChatModelResultData> {
     return await request({
-      url: '/studio/api/chat-models/run/image-gen/url',
-      method: 'post',
+      url: "/studio/api/chat-models/run/image-gen/url",
+      method: "post",
       data,
+    });
+  },
+
+  async getModelNames(modelType: ModelType): Promise<string[]> {
+    return await request({
+      url: `/studio/api/chat-models/model-names?modelType=${modelType}`,
+      method: "get",
     });
   },
 };
