@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useState, useRef, memo } from 'react';
-import { Flex, Card, Button, Checkbox, Input, Spin, Image } from 'antd';
+import { Flex, Card, Button, Checkbox, Input, Spin, Image, Divider } from 'antd';
 import Setup from '../Setup';
 import { useParams } from 'ice';
 import {
@@ -183,7 +183,19 @@ const ChatModel = memo((props: Props) => {
   };
 
   const cleanHistory = () => {
-    setMessages([]);
+    if (modelType === ModelType.CHAT) {
+      setMessages([]);
+    } else {
+      setMessages((prevMessages) => {
+        if (prevMessages.length === 0) return prevMessages;
+        const updatedMessages = [...prevMessages];
+        updatedMessages[updatedMessages.length - 1] = {
+          ...updatedMessages[updatedMessages.length - 1],
+          isClear: true,
+        };
+        return updatedMessages;
+      });
+    }
   };
 
   const scrollToBottom = () => {
@@ -202,7 +214,7 @@ const ChatModel = memo((props: Props) => {
         <div className={styles['message-wrapper']}>
           {messages.map((message: any, index) => {
             return (
-              <Flex
+              <><Flex
                 key={index}
                 className={styles['message']}
                 style={{
@@ -235,9 +247,11 @@ const ChatModel = memo((props: Props) => {
                   <UserOutlined className={styles['message-icon']} />
                 )}
               </Flex>
+                {message.isClear && <Divider>上下文已结束</Divider>}</>
             );
           })}
         </div>
+
         <Flex vertical>
           <TextArea
             autoSize={{ minRows: 3 }}
