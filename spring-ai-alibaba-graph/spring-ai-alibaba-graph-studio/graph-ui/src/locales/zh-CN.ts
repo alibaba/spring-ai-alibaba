@@ -32,13 +32,18 @@ export default {
       editMeta: '编辑',
       design: '设计',
       search: '搜索',
-      importFromDSL: '导入DSL',
-      back: '返回',
-      createNode: '新建节点',
-      copy: '复制',
-      paste: '粘贴',
-      start: '开始',
-      llm: 'LLM',
+      map: {
+        home: '主页',
+      },
+      toolbar: {
+        'import-dsl': '导入DSL',
+        'export-dsl': '导出DSL',
+      },
+      contextMenu: {
+        'add-node': '新增节点',
+        'import-dsl': '导入DSL',
+        'export-dsl': '导出DSL',
+      },
     },
   },
 };

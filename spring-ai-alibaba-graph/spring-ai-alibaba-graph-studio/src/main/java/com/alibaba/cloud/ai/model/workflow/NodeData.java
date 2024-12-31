@@ -13,17 +13,25 @@ import java.util.List;
  * node.
  */
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class NodeData {
-    /**
-     * The inputs of the node is the output reference of the previous node
-     */
-    protected List<VariableSelector> inputs;
 
-    /**
-     * The output variables of a node
-     */
-    protected List<Variable> outputs;
+	/**
+	 * The inputs of the node is the output reference of the previous node
+	 */
+	protected List<VariableSelector> inputs;
+
+	/**
+	 * The output variables of a node
+	 */
+	protected List<Variable> outputs;
+
+	public NodeData() {
+
+	}
+
+	protected NodeData(List<VariableSelector> inputs, List<Variable> outputs) {
+		this.inputs = inputs;
+		this.outputs = outputs;
+	}
 
 }
