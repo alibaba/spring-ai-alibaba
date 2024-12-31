@@ -79,6 +79,7 @@
                 <executions>
                     <execution>
                         <id>integration-test</id>
+                        <phase>compile</phase>
                         <goals>
                             <goal>generate</goal>
                         </goals>
