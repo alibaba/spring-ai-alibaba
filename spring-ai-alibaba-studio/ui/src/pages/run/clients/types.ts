@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-import { ChatModelData } from './chat_model';
+import { ChatOptions, ImageOptions } from '@/types/options';
 
-export type ChatClientData = {
-  name: string;
-  defaultSystemText: string;
-  defaultSystemParams: any;
-  chatModel: ChatModelData;
+export type RightPanelValues = {
+  initialChatConfig: ChatOptions;
+  initialImgConfig: ImageOptions;
+  initialTool: InitialTool;
 };
+
+export type InitialTool = {};

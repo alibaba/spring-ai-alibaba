@@ -32,7 +32,7 @@ type Params = {
   model_name: string;
 };
 
-const ChatClient = memo((props: Props) => {
+const ChatModel = memo((props: Props) => {
   const { modelData, modelType } = props;
   // 路径参数
   const params = useParams<Params>();
@@ -116,4 +116,4 @@ const ChatClient = memo((props: Props) => {
   );
 });
 
-export default ChatClient;
+export default ChatModel;
