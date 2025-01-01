@@ -19,7 +19,7 @@ import { useParams } from 'ice';
 import chatClientsService from '@/services/chat_clients';
 import styles from './index.module.css';
 import { Spin } from 'antd';
-import ChatClient from './ChatClient';
+import ChatClient from './index';
 import { ChatClientData } from '@/types/chat_clients';
 
 type Params = {
