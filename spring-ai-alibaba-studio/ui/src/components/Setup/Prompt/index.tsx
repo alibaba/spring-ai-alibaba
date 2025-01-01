@@ -50,9 +50,7 @@ export default function ConfigAndPrompt(props: Props) {
   return (
     <>
       <Form layout="vertical" form={form}>
-        <Form.Item
-          // label={sliderLabel('Prompt', prompt)}
-        >
+        <Form.Item >
           <Paragraph copyable={{ text: prompt }}>
             <TextArea rows={3} value={prompt} onChange={handlePromptChange} />
           </Paragraph>
