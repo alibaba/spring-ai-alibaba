@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 
-
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,140 +23,150 @@ import static java.lang.String.format;
  * @author <a href="mailto:2897718178@qq.com">wblu214</a>
  */
 public class FeiShuDocumentReader implements DocumentReader {
-    private static final Logger log = LoggerFactory.getLogger(FeiShuDocumentReader.class);
-    private final FeiShuResource feiShuResource;
-    private final Client client;
-    private String documentId;
-    private String userAccessToken;
-    private String tenantAccessToken;
 
+	private static final Logger log = LoggerFactory.getLogger(FeiShuDocumentReader.class);
 
-    public FeiShuDocumentReader(FeiShuResource feiShuResource) {
-        this.feiShuResource = feiShuResource;
-        this.client = feiShuResource.buildDefaultFeiShuClient();
-    }
-    public FeiShuDocumentReader(FeiShuResource feiShuResource,String documentId,String userAccessToken,String tenantAccessToken) {
-       this(feiShuResource);
-        this.documentId = documentId;
-        this.userAccessToken = userAccessToken;
-        this.tenantAccessToken = tenantAccessToken;
-    }
-    public FeiShuDocumentReader(FeiShuResource feiShuResource,String userAccessToken) {
-        this(feiShuResource);
-        this.userAccessToken = userAccessToken;
-    }
-    public FeiShuDocumentReader(FeiShuResource feiShuResource,String userAccessToken,String documentId) {
-        this(feiShuResource);
-        this.userAccessToken = userAccessToken;
-        this.documentId = documentId;
-    }
-        /**
-         * use tenant_access_token access [tenant identity]
-         * @param documentId documentId
-         * @param userAccessToken userAccessToken
-         * @return String
-         */
-    public Document getDocumentContentByUser(String documentId,String userAccessToken) throws Exception {
-        RawContentDocumentReq req = RawContentDocumentReq.newBuilder()
-                .documentId(documentId)
-                .lang(0)
-                .build();
+	private final FeiShuResource feiShuResource;
 
-        RawContentDocumentResp resp = client.docx().document().rawContent(req, RequestOptions.newBuilder()
-                .userAccessToken(userAccessToken)
-                .build());
-        if (!resp.success()) {
-            System.out.printf("code:%s,msg:%s,reqId:%s, resp:%s%n",
-                    resp.getCode(), resp.getMsg(), resp.getRequestId(), Jsons.createGSON(true, false).toJson(JsonParser.parseString(new String(resp.getRawResponse().getBody(), StandardCharsets.UTF_8))));
-            throw new Exception(resp.getMsg());
-        }
+	private final Client client;
 
-        return toDocument(Jsons.DEFAULT.toJson(resp.getData()));
-    }
+	private String documentId;
 
-    /**
-     * use tenant_access_token  [tenant identity]
-     * @param documentId documentId
-     * @param tenantAccessToken tenantAccessToken
-     * @return String
-     */
-    public Document getDocumentContentByTenant(String documentId,String tenantAccessToken) throws Exception {
-        RawContentDocumentReq req = RawContentDocumentReq.newBuilder()
-                .documentId(documentId)
-                .lang(0)
-                .build();
+	private String userAccessToken;
 
-        RawContentDocumentResp resp = client.docx().document().rawContent(req,RequestOptions.newBuilder()
-                .tenantAccessToken(tenantAccessToken)
-                .build());
-        if (!resp.success()) {
-            System.out.printf("code:%s,msg:%s,reqId:%s, resp:%s%n",
-                    resp.getCode(), resp.getMsg(), resp.getRequestId(), Jsons.createGSON(true, false).toJson(JsonParser.parseString(new String(resp.getRawResponse().getBody(), StandardCharsets.UTF_8))));
-            throw new Exception(resp.getMsg());
-        }
-        return toDocument(Jsons.DEFAULT.toJson(resp.getData()));
-    }
+	private String tenantAccessToken;
 
-    /**
-     * get document list
-     * @param userAccessToken userAccessToken
-     * @return String
-     */
-    public Document getDocumentListByUser(String userAccessToken) throws Exception {
-        ListFileReq req = ListFileReq.newBuilder()
-                .orderBy("EditedTime")
-                .direction("DESC")
-                .build();
-        ListFileResp resp = client.drive().file().list(req, RequestOptions.newBuilder()
-                .userAccessToken(userAccessToken)
-                .build());
-        if (!resp.success()) {
-            System.out.printf("code:%s,msg:%s,reqId:%s, resp:%s%n",
-                    resp.getCode(), resp.getMsg(), resp.getRequestId(), Jsons.createGSON(true, false).toJson(JsonParser.parseString(new String(resp.getRawResponse().getBody(), StandardCharsets.UTF_8))));
-            throw new Exception(resp.getMsg());
-        }
-        return toDocument(Jsons.DEFAULT.toJson(resp.getData()));
-    }
+	public FeiShuDocumentReader(FeiShuResource feiShuResource) {
+		this.feiShuResource = feiShuResource;
+		this.client = feiShuResource.buildDefaultFeiShuClient();
+	}
 
-    private Document toDocument(String docText) {
-        return new Document(docText);
-    }
+	public FeiShuDocumentReader(FeiShuResource feiShuResource, String documentId, String userAccessToken,
+			String tenantAccessToken) {
+		this(feiShuResource);
+		this.documentId = documentId;
+		this.userAccessToken = userAccessToken;
+		this.tenantAccessToken = tenantAccessToken;
+	}
 
-    @Override
-    public List<Document> get() {
-        List<Document> documents = new ArrayList<>();
-        if (this.feiShuResource != null) {
-            loadDocuments(documents, this.feiShuResource);
-        }
-        return documents;
-    }
+	public FeiShuDocumentReader(FeiShuResource feiShuResource, String userAccessToken) {
+		this(feiShuResource);
+		this.userAccessToken = userAccessToken;
+	}
 
-    private void loadDocuments(List<Document> documents, FeiShuResource feiShuResource) {
-        String appId = feiShuResource.getAppId();
-        String appSecret = feiShuResource.getAppSecret();
-        String source = format("feishu://%s/%s", appId, appSecret);
-        try {
-                documents.add(new Document(source));
-                if(this.userAccessToken != null){
-                    documents.add(getDocumentListByUser(userAccessToken));
-                }else {
-                    log.info("userAccessToken is null");
-                }
-                if(this.tenantAccessToken != null && this.documentId != null){
-                    documents.add(getDocumentContentByTenant(documentId,tenantAccessToken));
-                }else {
-                    log.info("tenantAccessToken or documentId is null");
-                }
-                if (this.userAccessToken != null && this.documentId != null){
-                    documents.add(getDocumentContentByUser(documentId,userAccessToken));
-                }else {
-                    log.info("userAccessToken or documentId is null");
-                }
+	public FeiShuDocumentReader(FeiShuResource feiShuResource, String userAccessToken, String documentId) {
+		this(feiShuResource);
+		this.userAccessToken = userAccessToken;
+		this.documentId = documentId;
+	}
 
-        }
-        catch (Exception e) {
-            log.warn("Failed to load an object with appId: {}, appSecret: {},{}", appId,
-                    appSecret, e.getMessage(), e);
-        }
-    }
+	/**
+	 * use tenant_access_token access [tenant identity]
+	 * @param documentId documentId
+	 * @param userAccessToken userAccessToken
+	 * @return String
+	 */
+	public Document getDocumentContentByUser(String documentId, String userAccessToken) throws Exception {
+		RawContentDocumentReq req = RawContentDocumentReq.newBuilder().documentId(documentId).lang(0).build();
+
+		RawContentDocumentResp resp = client.docx()
+			.document()
+			.rawContent(req, RequestOptions.newBuilder().userAccessToken(userAccessToken).build());
+		if (!resp.success()) {
+			System.out.printf("code:%s,msg:%s,reqId:%s, resp:%s%n", resp.getCode(), resp.getMsg(), resp.getRequestId(),
+					Jsons.createGSON(true, false)
+						.toJson(JsonParser
+							.parseString(new String(resp.getRawResponse().getBody(), StandardCharsets.UTF_8))));
+			throw new Exception(resp.getMsg());
+		}
+
+		return toDocument(Jsons.DEFAULT.toJson(resp.getData()));
+	}
+
+	/**
+	 * use tenant_access_token [tenant identity]
+	 * @param documentId documentId
+	 * @param tenantAccessToken tenantAccessToken
+	 * @return String
+	 */
+	public Document getDocumentContentByTenant(String documentId, String tenantAccessToken) throws Exception {
+		RawContentDocumentReq req = RawContentDocumentReq.newBuilder().documentId(documentId).lang(0).build();
+
+		RawContentDocumentResp resp = client.docx()
+			.document()
+			.rawContent(req, RequestOptions.newBuilder().tenantAccessToken(tenantAccessToken).build());
+		if (!resp.success()) {
+			System.out.printf("code:%s,msg:%s,reqId:%s, resp:%s%n", resp.getCode(), resp.getMsg(), resp.getRequestId(),
+					Jsons.createGSON(true, false)
+						.toJson(JsonParser
+							.parseString(new String(resp.getRawResponse().getBody(), StandardCharsets.UTF_8))));
+			throw new Exception(resp.getMsg());
+		}
+		return toDocument(Jsons.DEFAULT.toJson(resp.getData()));
+	}
+
+	/**
+	 * get document list
+	 * @param userAccessToken userAccessToken
+	 * @return String
+	 */
+	public Document getDocumentListByUser(String userAccessToken) throws Exception {
+		ListFileReq req = ListFileReq.newBuilder().orderBy("EditedTime").direction("DESC").build();
+		ListFileResp resp = client.drive()
+			.file()
+			.list(req, RequestOptions.newBuilder().userAccessToken(userAccessToken).build());
+		if (!resp.success()) {
+			System.out.printf("code:%s,msg:%s,reqId:%s, resp:%s%n", resp.getCode(), resp.getMsg(), resp.getRequestId(),
+					Jsons.createGSON(true, false)
+						.toJson(JsonParser
+							.parseString(new String(resp.getRawResponse().getBody(), StandardCharsets.UTF_8))));
+			throw new Exception(resp.getMsg());
+		}
+		return toDocument(Jsons.DEFAULT.toJson(resp.getData()));
+	}
+
+	private Document toDocument(String docText) {
+		return new Document(docText);
+	}
+
+	@Override
+	public List<Document> get() {
+		List<Document> documents = new ArrayList<>();
+		if (this.feiShuResource != null) {
+			loadDocuments(documents, this.feiShuResource);
+		}
+		return documents;
+	}
+
+	private void loadDocuments(List<Document> documents, FeiShuResource feiShuResource) {
+		String appId = feiShuResource.getAppId();
+		String appSecret = feiShuResource.getAppSecret();
+		String source = format("feishu://%s/%s", appId, appSecret);
+		try {
+			documents.add(new Document(source));
+			if (this.userAccessToken != null) {
+				documents.add(getDocumentListByUser(userAccessToken));
+			}
+			else {
+				log.info("userAccessToken is null");
+			}
+			if (this.tenantAccessToken != null && this.documentId != null) {
+				documents.add(getDocumentContentByTenant(documentId, tenantAccessToken));
+			}
+			else {
+				log.info("tenantAccessToken or documentId is null");
+			}
+			if (this.userAccessToken != null && this.documentId != null) {
+				documents.add(getDocumentContentByUser(documentId, userAccessToken));
+			}
+			else {
+				log.info("userAccessToken or documentId is null");
+			}
+
+		}
+		catch (Exception e) {
+			log.warn("Failed to load an object with appId: {}, appSecret: {},{}", appId, appSecret, e.getMessage(), e);
+		}
+	}
+
 }
