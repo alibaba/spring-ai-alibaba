@@ -18,7 +18,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'ice';
 import chatModelsService from '@/services/chat_models';
 import { ChatModelData } from '@/types/chat_model';
-import ChatModel from './ChatModel';
+import ChatModel from './index';
 import { Spin } from 'antd';
 import styles from './index.module.css';
 
