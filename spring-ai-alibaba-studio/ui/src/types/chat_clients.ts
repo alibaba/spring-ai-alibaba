@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { ChatModelData } from "./chat_model";
+import { ChatModelData } from './chat_model';
 
 export type ChatClientData = {
   name: string;

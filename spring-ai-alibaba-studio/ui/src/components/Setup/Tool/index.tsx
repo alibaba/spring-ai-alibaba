@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { InitialTool } from '../../types';
+import { InitialTool } from '../../../pages/run/models/types';
 
 type Props = {
   initialTool: InitialTool;
