@@ -53,7 +53,7 @@ const ChatModel = memo((props: Props) => {
   const [disabled, setDisabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [openTraceDetail, setOpenTraceDetail] = useState(false);
-  const [traceDetail, setTraceDetail] = useState<DataType | null>(null);
+  const [traceDetail, setTraceDetail] = useState<DataType>({} as any);
 
   const handleInputChange = (e) => {
     setInputValue(e.target.value);
