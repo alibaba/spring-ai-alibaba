@@ -19,14 +19,14 @@ import { useParams } from 'ice';
 import chatClientsService from '@/services/chat_clients';
 import styles from './index.module.css';
 import { Spin } from 'antd';
-import ChatModel from './ChatClient';
+import ChatClient from './ChatClient';
 import { ChatClientData } from '@/types/chat_clients';
 
 type Params = {
   model_name: string;
 };
 
-export default function ChatClient() {
+export default function Client() {
   // 路径参数
   const params = useParams<Params>();
 
@@ -36,7 +36,7 @@ export default function ChatClient() {
     const fetchData = async () => {
       try {
         const chatClientData = await chatClientsService.getChatClientByName(
-          params.model_name,
+          params.model_name as string,
         );
         setChatClientData(chatClientData);
       } catch (error) {
@@ -48,7 +48,7 @@ export default function ChatClient() {
 
   return clientData ? (
     <div style={{ padding: 20, height: '100%' }}>
-      <ChatModel
+      <ChatClient
         modelData={clientData.chatModel}
         modelType={clientData.chatModel.modelType}
       />
