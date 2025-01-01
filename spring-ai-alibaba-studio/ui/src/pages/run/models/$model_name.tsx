@@ -55,7 +55,7 @@ export default function Model() {
       <ChatModel modelData={modelData} modelType={modelData.modelType} />
     </div>
   ) : (
-    <div className={styles['container']} >
+    <div className={styles['container']}>
       <Spin tip="Loading">
         <div className={styles['message-loading']} />
       </Spin>
