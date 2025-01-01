@@ -31,9 +31,12 @@ import {
   ModelType,
 } from '@/types/chat_model';
 import chatModelsService from '@/services/chat_models';
-import { RobotOutlined, UserOutlined } from '@ant-design/icons';
+import traceClients from '@/services/trace_clients';
+import { RobotOutlined, UserOutlined, EyeOutlined } from '@ant-design/icons';
 import styles from './index.module.css';
 import { ChatOptions, ImageOptions } from '@/types/options';
+import TraceDetailComp from '@/components/TraceDetailComp';
+import { DataType } from '@/types/traces';
 
 type Props = {
   modelData: ChatModelData;
@@ -49,6 +52,8 @@ const ChatModel = memo((props: Props) => {
   const [isStream, setIsStream] = useState(false);
   const [disabled, setDisabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [openTraceDetail, setOpenTraceDetail] = useState(false);
+  const [traceDetail, setTraceDetail] = useState<DataType>({} as any);
 
   const handleInputChange = (e) => {
     setInputValue(e.target.value);
@@ -63,6 +68,7 @@ const ChatModel = memo((props: Props) => {
       type: string;
       content: JSX.Element | string;
       isClear?: boolean;
+      traceId?: string;
     }>,
   );
 
@@ -108,6 +114,7 @@ const ChatModel = memo((props: Props) => {
         {
           type: modelType === ModelType.CHAT ? 'chatModel' : 'imageModel',
           content: res ? res.result.response : '请求失败，请重试',
+          traceId: res ? res.telemetry.traceId : '',
         },
       ]);
       setDisabled(false);
@@ -153,71 +160,93 @@ const ChatModel = memo((props: Props) => {
     scrollToBottom();
   }, [messages]);
 
-  return (
-    <Flex vertical style={{ marginRight: 20, flexGrow: 1, height: '100%' }}>
-      <div className={styles['message-wrapper']}>
-        {messages.map((message: any, index) => {
-          return (
-            <>
-              <Flex
-                key={index}
-                className={styles['message']}
-                style={{
-                  alignSelf: message.type === 'user' ? 'end' : 'auto',
-                }}
-                ref={index === messages.length - 1 ? messagesEndRef : undefined}
-              >
-                {message.type !== 'user' && (
-                  <RobotOutlined className={styles['message-icon']} />
-                )}
-                <Card
-                  style={{
-                    marginLeft: message.type === 'user' ? 0 : 10,
-                    marginRight: message.type === 'user' ? 10 : 0,
-                  }}
-                >
-                  {message.type !== 'imageModel' && (
-                    <div>{message.content}</div>
-                  )}
-                  {message.type === 'imageModel' && (
-                    <Flex align="flex-end">
-                      <Image width={200} src={message.content} />
-                      <Button type="primary" style={{ marginLeft: 10 }}>
-                        下载
-                      </Button>
-                    </Flex>
-                  )}
-                </Card>
-                {message.type === 'user' && (
-                  <UserOutlined className={styles['message-icon']} />
-                )}
-              </Flex>
-              {message.isClear && <Divider>上下文已结束</Divider>}
-            </>
-          );
-        })}
-      </div>
+  const handleTraceDetail = async (traceId) => {
+    const res = (await traceClients.getTraceDetailClientById(
+      traceId,
+    )) as DataType;
+    setTraceDetail(res);
+    setOpenTraceDetail(true);
+  };
 
-      <Flex vertical>
-        <TextArea
-          autoSize={{ minRows: 3 }}
-          style={{ marginBottom: 20 }}
-          value={inputValue}
-          onChange={handleInputChange}
-        />
-        <Flex style={{ flexDirection: 'row-reverse' }}>
-          <Flex style={{ width: 300 }} align="center" justify="space-around">
-            <Button onClick={cleanHistory}>清空</Button>
-            <Checkbox checked={isStream} onChange={handleStreamChange}>
-              流式响应
-            </Checkbox>
-            <Button onClick={runModel} disabled={disabled}>
-              运行
-            </Button>
+  return (
+    <>
+      <Flex vertical style={{ marginRight: 20, flexGrow: 1, height: '100%' }}>
+        <div className={styles['message-wrapper']}>
+          {messages.map((message: any, index) => {
+            return (
+              <>
+                <Flex
+                  key={index}
+                  className={styles['message']}
+                  style={{
+                    alignSelf: message.type === 'user' ? 'end' : 'auto',
+                  }}
+                  ref={
+                    index === messages.length - 1 ? messagesEndRef : undefined
+                  }
+                >
+                  {message.type !== 'user' && (
+                    <RobotOutlined className={styles['message-icon']} />
+                  )}
+                  <Card
+                    style={{
+                      marginLeft: message.type === 'user' ? 0 : 10,
+                      marginRight: message.type === 'user' ? 10 : 0,
+                    }}
+                  >
+                    {message.type !== 'imageModel' && (
+                      <div>{message.content}</div>
+                    )}
+                    {message.type === 'imageModel' && (
+                      <Flex align="flex-end">
+                        <Image width={200} src={message.content} />
+                        <Button type="primary" style={{ marginLeft: 10 }}>
+                          下载
+                        </Button>
+                      </Flex>
+                    )}
+                    {message.type !== 'user' && message.traceId && (
+                      <EyeOutlined
+                        onClick={() => handleTraceDetail(message.traceId)}
+                      />
+                    )}
+                  </Card>
+                  {message.type === 'user' && (
+                    <UserOutlined className={styles['message-icon']} />
+                  )}
+                </Flex>
+                {message.isClear && <Divider>上下文已结束</Divider>}
+              </>
+            );
+          })}
+        </div>
+
+        <Flex vertical>
+          <TextArea
+            autoSize={{ minRows: 3 }}
+            style={{ marginBottom: 20 }}
+            value={inputValue}
+            onChange={handleInputChange}
+          />
+          <Flex style={{ flexDirection: 'row-reverse' }}>
+            <Flex style={{ width: 300 }} align="center" justify="space-around">
+              <Button onClick={cleanHistory}>清空</Button>
+              <Checkbox checked={isStream} onChange={handleStreamChange}>
+                流式响应
+              </Checkbox>
+              <Button onClick={runModel} disabled={disabled}>
+                运行
+              </Button>
+            </Flex>
           </Flex>
         </Flex>
       </Flex>
-    </Flex>
+      <TraceDetailComp
+        record={traceDetail}
+        open={openTraceDetail}
+        setOpen={setOpenTraceDetail}
+      />
+    </>
   );
 });
 
