@@ -27,6 +27,7 @@
 .message {
   align-items: start;
   margin-bottom: 20;
+  display: flex;
 }
 
 .message-icon {
