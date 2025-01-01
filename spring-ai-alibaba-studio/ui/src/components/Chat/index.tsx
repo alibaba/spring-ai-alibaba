@@ -205,12 +205,13 @@ const ChatModel = memo((props: Props) => {
                         </Button>
                       </Flex>
                     )}
-                    {message.type !== 'user' && message.traceId && (
-                      <EyeOutlined
-                        onClick={() => handleTraceDetail(message.traceId)}
-                      />
-                    )}
                   </Card>
+                  {message.type !== 'user' && message.traceId && (
+                    <EyeOutlined
+                      style={{ fontSize: 20, marginLeft: 10, alignSelf: 'end' }}
+                      onClick={() => handleTraceDetail(message.traceId)}
+                    />
+                  )}
                   {message.type === 'user' && (
                     <UserOutlined className={styles['message-icon']} />
                   )}
