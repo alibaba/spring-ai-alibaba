@@ -20,7 +20,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * @author 31445
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.weather")
+@ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.weather")
 public class WeatherProperties {
 
 	private String apiKey;

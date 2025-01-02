@@ -30,10 +30,9 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.document.DocumentRetriever;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
-import org.springframework.ai.model.Content;
+import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -45,7 +44,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Title React agent test cases.<br/>
@@ -97,7 +95,7 @@ public class EvaluationIT {
 		AnswerCorrectnessEvaluator evaluator = new AnswerCorrectnessEvaluator(ChatClient.builder(dashscopeChatModel),
 				correctnessResource.getContentAsString(StandardCharsets.UTF_8));
 		EvaluationRequest evaluationRequest = new EvaluationRequest(userText,
-				List.of(new AssistantMessage(expectedResult)), content);
+				List.of(Document.builder().text(expectedResult).build()), content);
 		EvaluationResponse evaluationResponse = evaluator.evaluate(evaluationRequest);
 
 		Assertions.assertTrue(evaluationResponse.isPass());
@@ -123,7 +121,7 @@ public class EvaluationIT {
 		AnswerRelevancyEvaluator evaluator = new AnswerRelevancyEvaluator(ChatClient.builder(dashscopeChatModel),
 				relevancyResource.getContentAsString(StandardCharsets.UTF_8), objectMapper);
 		EvaluationRequest evaluationRequest = new EvaluationRequest(userText,
-				List.of(new AssistantMessage(expectedResult)), content);
+				List.of(Document.builder().text(expectedResult).build()), content);
 		EvaluationResponse evaluationResponse = evaluator.evaluate(evaluationRequest);
 
 		Assertions.assertTrue(evaluationResponse.isPass());

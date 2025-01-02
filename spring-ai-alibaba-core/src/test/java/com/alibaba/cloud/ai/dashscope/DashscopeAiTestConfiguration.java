@@ -34,7 +34,6 @@ import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
