@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>github-document-reader</artifactId>
-    <name>github-reader</name>
+    <name>github-document-reader</name>
     <description>github reader for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>

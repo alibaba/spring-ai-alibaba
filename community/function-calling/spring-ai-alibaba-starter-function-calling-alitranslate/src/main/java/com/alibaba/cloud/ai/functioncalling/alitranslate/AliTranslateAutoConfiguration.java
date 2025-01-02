@@ -13,38 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.reader.feishu.config;
+package com.alibaba.cloud.ai.functioncalling.alitranslate;
 
-import com.lark.oapi.Client;
-import com.lark.oapi.core.enums.BaseUrlEnum;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
-import org.springframework.util.Assert;
 
 /**
- * @author wblu214
- * @author <a href="mailto:2897718178@qq.com">wblu214</a>
+ * @author yunlong
  */
 @Configuration
-@EnableConfigurationProperties(FeiShuProperties.class)
-public class FeiShuPluginConfiguration {
+@ConditionalOnClass(AliTranslateService.class)
+@EnableConfigurationProperties(AliTranslateProperties.class)
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.alitranslate", name = "enabled",
+		havingValue = "true")
+public class AliTranslateAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("Build FeiShu Client in Spring AI Alibaba") // description
-	@ConditionalOnProperty(prefix = FeiShuProperties.FEISHU_PROPERTIES_PREFIX, name = "enabled", havingValue = "true")
-	public Client buildDefaultFeiShuClient(FeiShuProperties feiShuProperties) {
-		Assert.notNull(feiShuProperties.getAppId(), "FeiShu AppId must not be empty");
-		Assert.notNull(feiShuProperties.getAppSecret(), "FeiShu AppSecret must not be empty");
-		return Client.newBuilder(feiShuProperties.getAppId(), feiShuProperties.getAppSecret())
-			.openBaseUrl(BaseUrlEnum.FeiShu)
-			.logReqAtDebug(true)
-			.build();
+	@Description("Implement natural language translation capabilities.")
+	public AliTranslateService aliTranslateFunction(AliTranslateProperties properties) {
+		return new AliTranslateService(properties);
 	}
-	// 商店应用自行扩展
 
 }
