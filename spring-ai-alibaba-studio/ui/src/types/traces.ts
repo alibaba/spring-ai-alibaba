@@ -14,11 +14,26 @@
  * limitations under the License.
  */
 
-import { ChatModelData } from './chat_model';
-
-export type ChatClientData = {
-  name: string;
-  defaultSystemText: string;
-  defaultSystemParams: any;
-  chatModel: ChatModelData;
-};
+export interface DataType {
+  id: string;
+  latencyMilliseconds: string;
+  model: string;
+  promptTokens: number;
+  completionTokens: string;
+  totalTokens: string;
+  tags: string[];
+  calculatedTotalCost: string;
+  calculatedInputCost: string;
+  calculatedOutputCost: string;
+  usageDetails: {
+    input: string;
+    output: string;
+    total: string;
+  };
+  timestamp: string;
+  costDetails: {
+    input: string;
+    output: string;
+    total: string;
+  };
+}
