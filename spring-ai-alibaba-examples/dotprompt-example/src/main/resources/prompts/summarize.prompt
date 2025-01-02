@@ -1,0 +1,16 @@
+---
+config:
+  temperature: 0.3
+  top_p: 0.9
+input:
+  schema:
+    text: string
+    length?: string
+    format?: string
+  default:
+    length: short
+    format: paragraph
+---
+Summarize the following text{{#if length}} in {{length}} form{{/if}}{{#if format}} as a {{format}}{{/if}}:
+
+{{text}}

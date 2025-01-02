@@ -37,6 +37,7 @@
 		<module>multi-model-example</module>
 		<module>audio-example</module>
 		<module>prompt-example</module>
+		<module>dotprompt-example</module>
 		<module>function-calling-example</module>
 		<module>rag-example</module>
 		<module>output-parser-example</module>
