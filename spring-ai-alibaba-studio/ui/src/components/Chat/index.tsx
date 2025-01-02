@@ -15,91 +15,45 @@
  */
 
 import { useEffect, useState, useRef, memo } from 'react';
-import { Flex, Card, Button, Checkbox, Input, Spin, Image } from 'antd';
-import Setup from '../Setup';
-import { useParams } from 'ice';
+import {
+  Flex,
+  Card,
+  Button,
+  Checkbox,
+  Input,
+  Spin,
+  Image,
+  Divider,
+} from 'antd';
 import {
   ChatModelData,
   ChatModelResultData,
   ModelType,
 } from '@/types/chat_model';
 import chatModelsService from '@/services/chat_models';
-import { RightPanelValues } from '../types';
-import { RobotOutlined, UserOutlined } from '@ant-design/icons';
+import traceClients from '@/services/trace_clients';
+import { RobotOutlined, UserOutlined, EyeOutlined } from '@ant-design/icons';
 import styles from './index.module.css';
 import { ChatOptions, ImageOptions } from '@/types/options';
+import TraceDetailComp from '@/components/TraceDetailComp';
+import { DataType } from '@/types/traces';
 
 type Props = {
   modelData: ChatModelData;
   modelType: ModelType;
-};
-
-type Params = {
-  model_name: string;
+  modelOptions: ChatOptions | ImageOptions | undefined;
+  prompt: string;
 };
 
 const ChatModel = memo((props: Props) => {
-  const { modelData, modelType } = props;
-  // 路径参数
-  const params = useParams<Params>();
-
-  const [initialValues, setInitialValues] = useState<RightPanelValues>({
-    initialChatConfig: {
-      model: 'qwen-plus',
-      temperature: 0.85,
-      top_p: 0.8,
-      seed: 1,
-      enable_search: false,
-      top_k: 0,
-      stop: [],
-      incremental_output: false,
-      repetition_penalty: 1.1,
-      tools: [],
-    },
-    initialImgConfig: {
-      model: 'wanx-v1',
-      responseFormat: '',
-      n: 1,
-      size: '1024*1024',
-      style: '<auto>',
-      seed: 0,
-      ref_img: '',
-      ref_strength: 0,
-      ref_mode: '',
-      negative_prompt: '',
-    },
-    initialTool: {},
-  });
-  const [modelOptions, setModelOptions] = useState<
-    ChatOptions | ImageOptions
-  >();
-  const [prompt, setPrompt] = useState('');
-
-  // 当 modelData.chatOptions 发生变化时同步更新 initialValues
-  useEffect(() => {
-    if (params.model_name != modelData.name) {
-      return;
-    }
-    // 该属性不能传
-    if (modelData != null && modelData.chatOptions != null) {
-      delete modelData.chatOptions.proxyToolCalls;
-    }
-    setInitialValues((prev) => ({
-      initialChatConfig: { ...modelData.chatOptions },
-      initialImgConfig: { ...modelData.imageOptions },
-      initialTool: {},
-    }));
-    if (modelData.modelType == ModelType.CHAT) {
-      setModelOptions(modelData.chatOptions);
-    } else if (modelData.modelType == ModelType.IMAGE) {
-      setModelOptions(modelData.imageOptions);
-    }
-  }, [modelData]);
+  const { modelData, modelType, modelOptions, prompt } = props;
 
   const [inputValue, setInputValue] = useState('');
   const [isStream, setIsStream] = useState(false);
   const [disabled, setDisabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [openTraceDetail, setOpenTraceDetail] = useState(false);
+  const [traceDetail, setTraceDetail] = useState<DataType>({} as any);
 
   const handleInputChange = (e) => {
     setInputValue(e.target.value);
@@ -110,16 +64,13 @@ const ChatModel = memo((props: Props) => {
   };
 
   const [messages, setMessages] = useState(
-    [] as Array<{ type: string; content: JSX.Element | string }>,
+    [] as Array<{
+      type: string;
+      content: JSX.Element | string;
+      isClear?: boolean;
+      traceId?: string;
+    }>,
   );
-
-  const handleOptions = (options: ChatOptions | ImageOptions) => {
-    setModelOptions(options);
-  };
-
-  const handlePrompt = (prompt: string) => {
-    setPrompt(prompt);
-  };
 
   const runModel = async () => {
     try {
@@ -163,6 +114,7 @@ const ChatModel = memo((props: Props) => {
         {
           type: modelType === ModelType.CHAT ? 'chatModel' : 'imageModel',
           content: res ? res.result.response : '请求失败，请重试',
+          traceId: res ? res.telemetry.traceId : '',
         },
       ]);
       setDisabled(false);
@@ -183,7 +135,19 @@ const ChatModel = memo((props: Props) => {
   };
 
   const cleanHistory = () => {
-    setMessages([]);
+    if (modelType === ModelType.CHAT) {
+      setMessages([]);
+    } else {
+      setMessages((prevMessages) => {
+        if (prevMessages.length === 0) return prevMessages;
+        const updatedMessages = [...prevMessages];
+        updatedMessages[updatedMessages.length - 1] = {
+          ...updatedMessages[updatedMessages.length - 1],
+          isClear: true,
+        };
+        return updatedMessages;
+      });
+    }
   };
 
   const scrollToBottom = () => {
@@ -196,48 +160,68 @@ const ChatModel = memo((props: Props) => {
     scrollToBottom();
   }, [messages]);
 
+  const handleTraceDetail = async (traceId) => {
+    const res = (await traceClients.getTraceDetailClientById(
+      traceId,
+    )) as DataType;
+    setTraceDetail(res);
+    setOpenTraceDetail(true);
+  };
+
   return (
-    <Flex justify="space-between" style={{ height: '100%' }}>
+    <>
       <Flex vertical style={{ marginRight: 20, flexGrow: 1, height: '100%' }}>
         <div className={styles['message-wrapper']}>
           {messages.map((message: any, index) => {
             return (
-              <Flex
-                key={index}
-                className={styles['message']}
-                style={{
-                  alignSelf: message.type === 'user' ? 'end' : 'auto',
-                }}
-                ref={index === messages.length - 1 ? messagesEndRef : undefined}
-              >
-                {message.type !== 'user' && (
-                  <RobotOutlined className={styles['message-icon']} />
-                )}
-                <Card
+              <>
+                <Flex
+                  key={index}
+                  className={styles['message']}
                   style={{
-                    marginLeft: message.type === 'user' ? 0 : 10,
-                    marginRight: message.type === 'user' ? 10 : 0,
+                    alignSelf: message.type === 'user' ? 'end' : 'auto',
                   }}
+                  ref={
+                    index === messages.length - 1 ? messagesEndRef : undefined
+                  }
                 >
-                  {message.type !== 'imageModel' && (
-                    <div>{message.content}</div>
+                  {message.type !== 'user' && (
+                    <RobotOutlined className={styles['message-icon']} />
                   )}
-                  {message.type === 'imageModel' && (
-                    <Flex align="flex-end">
-                      <Image width={200} src={message.content} />
-                      <Button type="primary" style={{ marginLeft: 10 }}>
-                        下载
-                      </Button>
-                    </Flex>
+                  <Card
+                    style={{
+                      marginLeft: message.type === 'user' ? 0 : 10,
+                      marginRight: message.type === 'user' ? 10 : 0,
+                    }}
+                  >
+                    {message.type !== 'imageModel' && (
+                      <div>{message.content}</div>
+                    )}
+                    {message.type === 'imageModel' && (
+                      <Flex align="flex-end">
+                        <Image width={200} src={message.content} />
+                        <Button type="primary" style={{ marginLeft: 10 }}>
+                          下载
+                        </Button>
+                      </Flex>
+                    )}
+                  </Card>
+                  {message.type !== 'user' && message.traceId && (
+                    <EyeOutlined
+                      style={{ fontSize: 20, marginLeft: 10, alignSelf: 'end' }}
+                      onClick={() => handleTraceDetail(message.traceId)}
+                    />
                   )}
-                </Card>
-                {message.type === 'user' && (
-                  <UserOutlined className={styles['message-icon']} />
-                )}
-              </Flex>
+                  {message.type === 'user' && (
+                    <UserOutlined className={styles['message-icon']} />
+                  )}
+                </Flex>
+                {message.isClear && <Divider>上下文已结束</Divider>}
+              </>
             );
           })}
         </div>
+
         <Flex vertical>
           <TextArea
             autoSize={{ minRows: 3 }}
@@ -258,13 +242,12 @@ const ChatModel = memo((props: Props) => {
           </Flex>
         </Flex>
       </Flex>
-      <Setup
-        modelType={modelData.modelType}
-        initialValues={initialValues}
-        onChangeConfig={handleOptions}
-        onChangePrompt={handlePrompt}
+      <TraceDetailComp
+        record={traceDetail}
+        open={openTraceDetail}
+        setOpen={setOpenTraceDetail}
       />
-    </Flex>
+    </>
   );
 });
 

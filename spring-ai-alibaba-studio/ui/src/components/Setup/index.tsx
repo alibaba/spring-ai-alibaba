@@ -20,7 +20,7 @@ import Prompt from './Prompt';
 import Tool from './Tool';
 import type { TabsProps } from 'antd';
 import styles from './index.module.css';
-import { RightPanelValues } from '../types';
+import { RightPanelValues } from '../../pages/run/models/types';
 import { ChatOptions, ImageOptions } from '@/types/options';
 import { ModelType } from '@/types/chat_model';
 import { useEffect, useState } from 'react';
@@ -48,9 +48,7 @@ export default function Setup(props: Props) {
             modelType={modelType}
             onChangeConfig={props.onChangeConfig}
             configFromAPI={
-              modelType == ModelType.CHAT
-                ? initialChatConfig
-                : initialImgConfig
+              modelType == ModelType.CHAT ? initialChatConfig : initialImgConfig
             }
           />
         ),
@@ -58,11 +56,7 @@ export default function Setup(props: Props) {
       {
         key: 'prompt',
         label: '提示词',
-        children: (
-          <Prompt
-            onchangePrompt={props.onChangePrompt}
-          />
-        ),
+        children: <Prompt onchangePrompt={props.onChangePrompt} />,
       },
       {
         key: 'tool',

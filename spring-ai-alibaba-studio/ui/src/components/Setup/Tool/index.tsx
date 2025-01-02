@@ -14,28 +14,13 @@
  * limitations under the License.
  */
 
-.message-wrapper {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden scroll;
-  padding-right: 30px;
-  margin-bottom: 10px;
-  flex-grow: 1;
-}
+import { InitialTool } from '../../../pages/run/models/types';
 
-.message {
-  align-items: start;
-  margin-bottom: 20;
-}
+type Props = {
+  initialTool: InitialTool;
+};
 
-.message-icon {
-  font-size: 24px;
-}
-
-.message-loading {
-  padding-left: 50px;
-  padding-right: 50px;
-  padding-bottom: 10px;
-  padding-top: 10px;
+export default function Tool(props: Props) {
+  const { initialTool } = props;
+  return <></>;
 }

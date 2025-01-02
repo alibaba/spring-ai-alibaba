@@ -6,30 +6,7 @@ import { createStyles } from 'antd-style';
 import TraceDetailComp from '@/components/TraceDetailComp';
 import { convertToTraceInfo } from '@/traceUtil';
 import traceClient from '@/services/trace_clients';
-interface DataType {
-  id: string;
-  latencyMilliseconds: string;
-  model: string;
-  promptTokens: number;
-  completionTokens: string;
-  totalTokens: string;
-  tags: string[];
-  calculatedTotalCost: string;
-  calculatedInputCost: string;
-  calculatedOutputCost: string;
-  usageDetails: {
-    input: string;
-    output: string;
-    total: string;
-  };
-  timestamp: string;
-  costDetails: {
-    input: string;
-    output: string;
-    total: string;
-  };
-}
-
+import { DataType } from '@/types/trace';
 
 const useStyle = createStyles(({ css, token }) => {
   // @ts-ignore
@@ -70,10 +47,10 @@ export default function History() {
               setOpenTraceDetail(true);
             }}
             style={{
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
           >
             {text}
           </a>
@@ -114,7 +91,9 @@ export default function History() {
       title: 'latency',
       key: 'latencyMilliseconds',
       dataIndex: 'latencyMilliseconds',
-      render: (_, { latencyMilliseconds }) => <div>{latencyMilliseconds} ms</div>,
+      render: (_, { latencyMilliseconds }) => (
+        <div>{latencyMilliseconds} ms</div>
+      ),
     },
     {
       title: 'usageDetails',
@@ -137,16 +116,16 @@ export default function History() {
       render: (_, { tags }) => (
         <>
           {tags.map((tag) => {
-              let color = tag.length > 5 ? 'geekblue' : 'green';
-              if (tag === 'loser') {
-                color = 'volcano';
-              }
-              return (
-                <Tag color={color} key={tag}>
-                  {tag.toUpperCase()}
-                </Tag>
-              );
-            })}
+            let color = tag.length > 5 ? 'geekblue' : 'green';
+            if (tag === 'loser') {
+              color = 'volcano';
+            }
+            return (
+              <Tag color={color} key={tag}>
+                {tag.toUpperCase()}
+              </Tag>
+            );
+          })}
         </>
       ),
     },
@@ -178,7 +157,15 @@ export default function History() {
   const handleGetTraceData = async () => {
     const traceList = await traceClient.getTraceDetailClient();
     console.log(traceList);
-    setData(traceList.map((trace) => { const traceInfo = convertToTraceInfo(trace); console.log(traceInfo); return traceInfo; }).filter(trace => trace !== null));
+    setData(
+      traceList
+        .map((trace) => {
+          const traceInfo = convertToTraceInfo(trace);
+          console.log(traceInfo);
+          return traceInfo;
+        })
+        .filter((trace) => trace !== null),
+    );
     // const temp = tableList.result.data.json.traces;
     // temp.forEach((trace) => {
     //   // @ts-ignore
@@ -201,7 +188,11 @@ export default function History() {
           scroll={{ x: 'max-content' }}
           rowKey={(recode) => recode.id}
         />
-        <TraceDetailComp record={traceDetail} open={openTraceDetail} setOpen={setOpenTraceDetail} />
+        <TraceDetailComp
+          record={traceDetail}
+          open={openTraceDetail}
+          setOpen={setOpenTraceDetail}
+        />
       </Card>
     </div>
   );
