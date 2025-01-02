@@ -14,13 +14,29 @@
  * limitations under the License.
  */
 
-import { InitialTool } from '../../types';
+.message-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden scroll;
+  padding-right: 30px;
+  margin-bottom: 10px;
+  flex-grow: 1;
+}
 
-type Props = {
-  initialTool: InitialTool;
-};
+.message {
+  align-items: start;
+  margin-bottom: 20;
+  display: flex;
+}
 
-export default function Tool(props: Props) {
-  const { initialTool } = props;
-  return <></>;
+.message-icon {
+  font-size: 24px;
+}
+
+.message-loading {
+  padding-left: 50px;
+  padding-right: 50px;
+  padding-bottom: 10px;
+  padding-top: 10px;
 }
