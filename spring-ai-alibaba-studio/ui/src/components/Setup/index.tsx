@@ -26,6 +26,7 @@ import { ModelType } from '@/types/chat_model';
 import { useEffect, useState } from 'react';
 
 type Props = {
+  tabs: string[];
   modelType: ModelType;
   initialValues: RightPanelValues;
   onChangeConfig: (cfg: ChatOptions | ImageOptions) => void;
@@ -33,37 +34,44 @@ type Props = {
 };
 
 export default function Setup(props: Props) {
-  const { modelType } = props;
+  const { modelType, tabs } = props;
   const { initialChatConfig, initialImgConfig, initialTool } =
     props.initialValues;
 
   const [items, setItems] = useState<TabsProps['items']>();
+
+  const allTabs = [
+    {
+      key: 'config',
+      label: '配置',
+      children: (
+        <Config
+          modelType={modelType}
+          onChangeConfig={props.onChangeConfig}
+          configFromAPI={
+            modelType == ModelType.CHAT ? initialChatConfig : initialImgConfig
+          }
+        />
+      ),
+    },
+    {
+      key: 'prompt',
+      label: '提示词',
+      children: <Prompt onchangePrompt={props.onChangePrompt} />,
+    },
+    {
+      key: 'tool',
+      label: '工具',
+      children: <Tool initialTool={initialTool} />,
+    },
+  ];
+
   useEffect(() => {
-    setItems([
-      {
-        key: 'config',
-        label: '配置',
-        children: (
-          <Config
-            modelType={modelType}
-            onChangeConfig={props.onChangeConfig}
-            configFromAPI={
-              modelType == ModelType.CHAT ? initialChatConfig : initialImgConfig
-            }
-          />
-        ),
-      },
-      {
-        key: 'prompt',
-        label: '提示词',
-        children: <Prompt onchangePrompt={props.onChangePrompt} />,
-      },
-      {
-        key: 'tool',
-        label: '工具',
-        children: <Tool initialTool={initialTool} />,
-      },
-    ]);
+    setItems(
+      allTabs.filter((tab) => {
+        return tabs.includes(tab.key);
+      }),
+    );
   }, [initialChatConfig, initialImgConfig]);
   return (
     <div className={styles.container}>
