@@ -107,6 +107,7 @@ const ChatModel = memo((props: Props) => {
         prompt={prompt}
       />
       <Setup
+        tabs={['config', 'prompt', 'tool']}
         modelType={modelData.modelType}
         initialValues={initialValues}
         onChangeConfig={handleOptions}

@@ -18,4 +18,5 @@
   width: 350px;
   padding-left: 25px;
   padding-right: 25px;
+  overflow: hidden scroll;
 }
