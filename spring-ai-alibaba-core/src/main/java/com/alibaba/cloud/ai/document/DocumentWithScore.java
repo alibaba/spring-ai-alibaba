@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package com.alibaba.cloud.ai.document;
 
 import com.alibaba.cloud.ai.model.RerankResultMetadata;

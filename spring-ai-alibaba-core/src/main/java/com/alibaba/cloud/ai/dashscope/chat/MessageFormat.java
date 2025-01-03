@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package com.alibaba.cloud.ai.dashscope.chat;
 
 /**
