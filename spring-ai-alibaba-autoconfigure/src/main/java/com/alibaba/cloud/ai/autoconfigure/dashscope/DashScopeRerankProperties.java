@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankOptions;
