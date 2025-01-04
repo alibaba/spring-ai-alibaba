@@ -24,7 +24,8 @@ import {
   Spin,
   Image,
   Divider,
-  message
+  message,
+  Radio
 } from 'antd';
 import {
   ChatModelData,
@@ -47,13 +48,14 @@ type Props = {
   modelType: ModelType;
   modelOptions: ChatOptions | ImageOptions | undefined;
   prompt: string;
+  isMemoryEnabled?: boolean;
 
-  onRun: (param: ModelRunActionParam| ClientRunActionParam) => Promise<ChatRunResult>;
+  onRun: (param: ModelRunActionParam | ClientRunActionParam) => Promise<ChatRunResult>;
 };
 
 // 聊天组件
 const ChatModel = memo((props: Props) => {
-  const { modelData, modelType, modelOptions, prompt,onRun } = props;
+  const { modelData, modelType, modelOptions, prompt, isMemoryEnabled, onRun } = props;
 
   const [inputValue, setInputValue] = useState('');
   const [isStream, setIsStream] = useState(false);
@@ -237,7 +239,10 @@ const ChatModel = memo((props: Props) => {
             value={inputValue}
             onChange={handleInputChange}
           />
-          <Flex style={{ flexDirection: 'row-reverse' }}>
+          <Flex align="center" justify="space-between">
+            <Flex >
+              <Checkbox checked={isMemoryEnabled} onChange={()=>{}}>对话记忆</Checkbox>
+            </Flex>
             <Flex style={{ width: 300 }} align="center" justify="space-around">
               <Button onClick={cleanHistory}>清空</Button>
               <Checkbox checked={isStream} onChange={handleStreamChange}>

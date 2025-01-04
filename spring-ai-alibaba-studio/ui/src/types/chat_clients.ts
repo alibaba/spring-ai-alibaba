@@ -22,6 +22,7 @@ export type ChatClientData = {
   defaultSystemText: string;
   defaultSystemParams: any;
   chatModel: ChatModelData;
+  isMemoryEnabled: boolean;
 };
 
 /**
