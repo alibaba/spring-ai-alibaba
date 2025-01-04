@@ -33,10 +33,10 @@ import technology.tabula.extractors.SpreadsheetExtractionAlgorithm;
 import org.springframework.ai.document.Document;
 
 /**
- * The purpose of this class is to extract tabular data from PDF files,
- * compared to Apache Pdfbox. Tabula is more recognizable.
- * tabula-java: <a href="https://github.com/tabulapdf/tabula-java">tabula-java</a>
- * return List<Document> {@link Document}
+ * The purpose of this class is to extract tabular data from PDF files, compared to Apache
+ * Pdfbox. Tabula is more recognizable. tabula-java:
+ * <a href="https://github.com/tabulapdf/tabula-java">tabula-java</a> return
+ * List<Document> {@link Document}
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
@@ -45,8 +45,7 @@ import org.springframework.ai.document.Document;
 public class PdfTablesParser implements DocumentParser {
 
 	/**
-	 * The page number of the PDF file to be parsed.
-	 * Default value is 1.
+	 * The page number of the PDF file to be parsed. Default value is 1.
 	 */
 	private final Integer page;
 
@@ -65,10 +64,7 @@ public class PdfTablesParser implements DocumentParser {
 		this(pageNumber, Map.of());
 	}
 
-	public PdfTablesParser(
-			Integer pageNumber,
-			Map<String, String> metadata
-	) {
+	public PdfTablesParser(Integer pageNumber, Map<String, String> metadata) {
 
 		this.page = pageNumber;
 		this.metadata = metadata;
@@ -116,18 +112,13 @@ public class PdfTablesParser implements DocumentParser {
 		}
 
 		return data.stream()
-				.flatMap(table -> table.getRows().stream()
-						.map(cells -> cells.stream()
-								.map(content ->
-										content.getText()
-												.replace("\r", "")
-												.replace("\n", " ")
-								)
-								.reduce((first, second) -> first + "|" + second)
-								.orElse("") + "|"
-						)
-				)
-				.collect(Collectors.toList());
+			.flatMap(table -> table.getRows()
+				.stream()
+				.map(cells -> cells.stream()
+					.map(content -> content.getText().replace("\r", "").replace("\n", " "))
+					.reduce((first, second) -> first + "|" + second)
+					.orElse("") + "|"))
+			.collect(Collectors.toList());
 	}
 
 	private List<Document> data2Document(List<String> data) {
