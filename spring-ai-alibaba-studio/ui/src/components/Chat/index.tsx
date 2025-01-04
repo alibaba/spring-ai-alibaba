@@ -24,43 +24,50 @@ import {
   Spin,
   Image,
   Divider,
+  message
 } from 'antd';
 import {
   ChatModelData,
-  ChatModelResultData,
+  ChatModelRunResult,
+  ModelRunActionParam,
   ModelType,
 } from '@/types/chat_model';
-import chatModelsService from '@/services/chat_models';
 import traceClients from '@/services/trace_clients';
 import { RobotOutlined, UserOutlined, EyeOutlined } from '@ant-design/icons';
 import styles from './index.module.css';
 import { ChatOptions, ImageOptions } from '@/types/options';
-import TraceDetailComp from '@/components/TraceDetailComp';
-import { DataType } from '@/types/traces';
+import TraceDetailComp from '@/components/trace_detail_comp';
+import { TraceInfo } from '@/types/traces';
+import { convertToTraceInfo } from '@/utils/trace_util';
+import { ChatRunResult } from './types';
+import { ClientRunActionParam } from '@/types/chat_clients';
 
 type Props = {
   modelData: ChatModelData;
   modelType: ModelType;
   modelOptions: ChatOptions | ImageOptions | undefined;
   prompt: string;
+
+  onRun: (param: ModelRunActionParam| ClientRunActionParam) => Promise<ChatRunResult>;
 };
 
+// 聊天组件
 const ChatModel = memo((props: Props) => {
-  const { modelData, modelType, modelOptions, prompt } = props;
+  const { modelData, modelType, modelOptions, prompt,onRun } = props;
 
   const [inputValue, setInputValue] = useState('');
   const [isStream, setIsStream] = useState(false);
   const [disabled, setDisabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [openTraceDetail, setOpenTraceDetail] = useState(false);
-  const [traceDetail, setTraceDetail] = useState<DataType>({} as any);
+  const [traceDetail, setTraceDetail] = useState<TraceInfo>({} as any);
 
   const handleInputChange = (e) => {
     setInputValue(e.target.value);
   };
 
   const handleStreamChange = (e) => {
-    setIsStream(e.target.value);
+    setIsStream(e.target.checked);
   };
 
   const [messages, setMessages] = useState(
@@ -87,23 +94,14 @@ const ChatModel = memo((props: Props) => {
           content: loading(),
         },
       ]);
+      const res = await onRun({
+        input: inputValue,
+        stream: isStream,
+      });
 
-      let res: ChatModelResultData | undefined;
-      if (modelType === ModelType.CHAT) {
-        res = (await chatModelsService.postChatModel({
-          input: inputValue,
-          chatOptions: modelOptions,
-          stream: isStream,
-          key: modelData.name,
-          prompt: prompt,
-        })) as ChatModelResultData;
-      } else if (modelType === ModelType.IMAGE) {
-        res = (await chatModelsService.postImageModel({
-          input: inputValue,
-          imageOptions: modelOptions,
-          key: modelData.name,
-        })) as ChatModelResultData;
-      }
+      const ans = res ?
+        res.result
+        : '请求失败，请重试';
 
       setMessages([
         ...messages,
@@ -113,14 +111,14 @@ const ChatModel = memo((props: Props) => {
         },
         {
           type: modelType === ModelType.CHAT ? 'chatModel' : 'imageModel',
-          content: res ? res.result.response : '请求失败，请重试',
+          content: ans,
           traceId: res ? res.telemetry.traceId : '',
         },
       ]);
-      setDisabled(false);
     } catch (error) {
-      setDisabled(false);
       console.error('Failed to fetch chat models: ', error);
+    } finally {
+      setDisabled(false);
     }
   };
 
@@ -161,11 +159,21 @@ const ChatModel = memo((props: Props) => {
   }, [messages]);
 
   const handleTraceDetail = async (traceId) => {
-    const res = (await traceClients.getTraceDetailClientById(
-      traceId,
-    )) as DataType;
-    setTraceDetail(res);
-    setOpenTraceDetail(true);
+    try {
+      const res = (await traceClients.getTraceDetailClientById(
+        traceId,
+      )) as TraceInfo;
+
+      const traceInfo = convertToTraceInfo(res)
+      if (traceInfo !== null) {
+        setTraceDetail(traceInfo);
+        setOpenTraceDetail(true);
+      } else {
+        message.error("TraceInfo is null");
+      }
+    } catch (error) {
+      console.error('Failed to fetch trace detail: ', error);
+    }
   };
 
   return (

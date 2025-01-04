@@ -16,8 +16,9 @@
 
 import {
   ChatModelData,
-  ChatModelResultData,
+  ChatModelRunResult,
   ModelType,
+  ModelRunActionParam,
 } from '@/types/chat_model';
 import { request } from 'ice';
 
@@ -39,7 +40,7 @@ export default {
   },
 
   // 根据 Model name 获取 ChatModel
-  async postChatModel(data): Promise<ChatModelResultData> {
+  async postChatModel(data: ModelRunActionParam): Promise<ChatModelRunResult> {
     return await request({
       url: '/studio/api/chat-models',
       method: 'post',
@@ -48,7 +49,7 @@ export default {
   },
 
   // 根据 Model name 获取 ChatModel
-  async postImageModel(data): Promise<ChatModelResultData> {
+  async postImageModel(data: ModelRunActionParam): Promise<ChatModelRunResult> {
     return await request({
       url: '/studio/api/chat-models/run/image-gen/url',
       method: 'post',

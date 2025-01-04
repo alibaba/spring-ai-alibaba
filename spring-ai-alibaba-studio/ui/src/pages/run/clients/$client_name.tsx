@@ -19,11 +19,11 @@ import { useParams } from 'ice';
 import chatClientsService from '@/services/chat_clients';
 import styles from './index.module.css';
 import { Spin } from 'antd';
-import ChatClient from './index';
+import ChatClient from '.';
 import { ChatClientData } from '@/types/chat_clients';
 
 type Params = {
-  model_name: string;
+  client_name: string;
 };
 
 export default function Client() {
@@ -36,7 +36,7 @@ export default function Client() {
     const fetchData = async () => {
       try {
         const chatClientData = await chatClientsService.getChatClientByName(
-          params.model_name as string,
+          params.client_name as string,
         );
         setChatClientData(chatClientData);
       } catch (error) {
@@ -49,8 +49,7 @@ export default function Client() {
   return clientData ? (
     <div style={{ padding: 20, height: '100%' }}>
       <ChatClient
-        modelData={clientData.chatModel}
-        modelType={clientData.chatModel.modelType}
+        chatClientData={clientData}
       />
     </div>
   ) : (

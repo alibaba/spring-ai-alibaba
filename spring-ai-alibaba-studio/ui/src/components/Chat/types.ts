@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-import { InitialTool } from '../../../pages/run/models/types';
+import { TelemetryResult } from "@/types/chat_model";
 
-type Props = {
-  initialTool: InitialTool;
-};
-
-export default function Tool(props: Props) {
-  const { initialTool } = props;
-  return <></>;
+export interface ChatRunResult {
+  result: string;
+  telemetry: TelemetryResult;
+  [property: string]: any;
 }
