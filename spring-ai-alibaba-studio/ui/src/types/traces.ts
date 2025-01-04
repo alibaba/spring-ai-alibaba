@@ -14,26 +14,40 @@
  * limitations under the License.
  */
 
-export interface DataType {
+export interface TraceInfo {
   id: string;
   latencyMilliseconds: string;
   model: string;
   promptTokens: number;
   completionTokens: string;
   totalTokens: string;
+  input: string;
+  output: string;
   tags: string[];
   calculatedTotalCost: string;
   calculatedInputCost: string;
   calculatedOutputCost: string;
   usageDetails: {
-    input: string;
-    output: string;
-    total: string;
+      input: string;
+      output: string;
+      total: string;
   };
   timestamp: string;
   costDetails: {
-    input: string;
-    output: string;
-    total: string;
+      input: string;
+      output: string;
+      total: string;
   };
+  traceDetail: TraceDetail;
+}
+
+export interface TraceDetail {
+  title: string;
+  input: string;
+  output: string;
+  key: string;
+  detail: object;
+  costTime: number;
+  attributes: object;
+  children: TraceDetail[];
 }

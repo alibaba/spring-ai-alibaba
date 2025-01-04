@@ -15,13 +15,16 @@
  */
 
 import { useEffect, useState, memo } from 'react';
-import { Flex } from 'antd';
+import { Empty, Flex } from 'antd';
 import { useParams } from 'ice';
-import { ChatModelData, ModelType } from '@/types/chat_model';
-import { RightPanelValues } from './types';
-import Chat from '@/components/Chat';
-import Setup from '@/components/Setup';
+import { ChatModelData, ChatModelRunResult, ModelType } from '@/types/chat_model';
+import { RightPanelValues } from '@/components/right_panel/types';
+import Chat from '@/components/chat';
+import Setup from '@/components/right_panel';
 import { ChatOptions, ImageOptions } from '@/types/options';
+import styles from './index.module.css';
+import chatModelsService from '@/services/chat_models';
+import { ChatRunResult } from '@/components/chat/types';
 
 type Props = {
   modelData: ChatModelData;
@@ -71,7 +74,7 @@ const ChatModel = memo((props: Props) => {
 
   // 当 modelData.chatOptions 发生变化时同步更新 initialValues
   useEffect(() => {
-    if (params.model_name != modelData.name) {
+    if (Object.keys(params).length === 0 || params.model_name != modelData.name) {
       return;
     }
     // 该属性不能传
@@ -99,21 +102,57 @@ const ChatModel = memo((props: Props) => {
   };
 
   return (
-    <Flex justify="space-between" style={{ height: '100%' }}>
-      <Chat
-        modelData={modelData}
-        modelType={modelType}
-        modelOptions={modelOptions}
-        prompt={prompt}
-      />
-      <Setup
-        tabs={['config', 'prompt', 'tool']}
-        modelType={modelData.modelType}
-        initialValues={initialValues}
-        onChangeConfig={handleOptions}
-        onChangePrompt={handlePrompt}
-      />
-    </Flex>
+    modelData ? (
+      <Flex justify="space-between" style={{ height: '100%' }}>
+        <Chat
+          modelData={modelData}
+          modelType={modelType}
+          modelOptions={modelOptions}
+          prompt={prompt}
+          onRun={async (param) => {
+            let res: ChatModelRunResult | undefined;
+            if (modelType === ModelType.CHAT) {
+              res = await chatModelsService.postChatModel({
+                input: param.input,
+                chatOptions: modelOptions as ChatOptions,
+                stream: param.stream,
+                key: modelData.name,
+                prompt: prompt,
+              });
+            } else if (modelType === ModelType.IMAGE) {
+              res = await chatModelsService.postImageModel({
+                input: param.input,
+                imageOptions: modelOptions as ImageOptions,
+                key: modelData.name,
+                prompt: prompt,
+              });
+            }
+
+            const ans = res ?
+              (param.stream ? (res.result.streamResponse?.join('\n') as string) : (res.result.response as string))
+              : '请求失败，请重试';
+
+            return {
+              result: ans,
+              telemetry: {
+                traceId: res ? res.telemetry.traceId : '',
+              }
+            } as ChatRunResult
+          }}
+        />
+        <Setup
+          tabs={['config', 'prompt']}
+          modelType={modelData.modelType}
+          initialValues={initialValues}
+          onChangeConfig={handleOptions}
+          onChangePrompt={handlePrompt}
+        />
+      </Flex>
+    ) : (
+      <div className={styles['container']}>
+        <Empty />
+      </div>
+    )
   );
 });
 

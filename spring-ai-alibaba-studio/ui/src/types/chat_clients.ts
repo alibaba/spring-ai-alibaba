@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { ChatModelData } from './chat_model';
+import { ActionResult, ChatModelData, TelemetryResult } from './chat_model';
+import { ChatOptions } from './options';
 
 export type ChatClientData = {
   name: string;
@@ -22,3 +23,43 @@ export type ChatClientData = {
   defaultSystemParams: any;
   chatModel: ChatModelData;
 };
+
+/**
+ * ClientRunActionParam
+ */
+export interface ClientRunActionParam {
+  /**
+   * chat id use for chat mode, if not set, server will set a new
+   */
+  chatID?: null | string;
+  chatOptions?: null | ChatOptions;
+  /**
+   * user input
+   */
+  input?: string;
+  /**
+   * action key, bean name
+   */
+  key?: string;
+  /**
+   * system prompt
+   */
+  prompt?: string;
+  /**
+   * use stream response
+   */
+  stream?: boolean;
+  /**
+   * use chat mode, is use, will be enable chat memory
+   */
+  useChatMode?: boolean;
+  [property: string]: any;
+}
+
+export interface ChatClientRunResult {
+  chatID?: string;
+  input: ClientRunActionParam;
+  result: ActionResult;
+  telemetry: TelemetryResult;
+  [property: string]: any;
+}
