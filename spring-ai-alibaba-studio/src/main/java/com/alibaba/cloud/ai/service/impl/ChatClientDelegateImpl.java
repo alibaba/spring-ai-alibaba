@@ -38,6 +38,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.DefaultChatClient;
+import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -58,15 +59,8 @@ public class ChatClientDelegateImpl implements ChatClientDelegate {
 
 	private final Tracer tracer;
 
-	private final Cache<String, Advisor> memChatCache;
-
 	public ChatClientDelegateImpl(Tracer tracer) {
 		this.tracer = tracer;
-		this.memChatCache = Caffeine.newBuilder()
-			.initialCapacity(5)
-			.maximumSize(1000)
-			.expireAfterWrite(24, TimeUnit.HOURS)
-			.build();
 	}
 
 	@Override
@@ -96,7 +90,6 @@ public class ChatClientDelegateImpl implements ChatClientDelegate {
 		String input = runActionParam.getInput();
 		String prompt = runActionParam.getPrompt();
 		DashScopeChatOptions chatOptions = runActionParam.getChatOptions();
-		Boolean chatMode = runActionParam.getUseChatMode();
 
 		org.springframework.ai.chat.client.ChatClient chatClient = getChatClientByBeanName(key);
 
@@ -109,30 +102,13 @@ public class ChatClientDelegateImpl implements ChatClientDelegate {
 		}
 
 		String chatID = runActionParam.getChatID();
-		if (chatMode) {
-			if (StringUtils.hasText(chatID)) {
-				// 不是新会话
-				Advisor messageChatMemoryAdvisor = memChatCache.get(chatID, (String id) -> {
-					ChatMemory chatMemory = new InMemoryChatMemory();
-					return new MessageChatMemoryAdvisor(chatMemory);
-				});
-				String finalChatID = chatID;
-				clientRequestSpec.advisors(messageChatMemoryAdvisor)
-					.advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, finalChatID)
-						.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, CHAT_MEMORY_RETRIEVE_SIZE));
-			}
-			else {
-				// 新会话
-				chatID = UUID.randomUUID().toString();
-				ChatMemory chatMemory = new InMemoryChatMemory();
-				MessageChatMemoryAdvisor messageChatMemoryAdvisor = new MessageChatMemoryAdvisor(chatMemory);
-				String finalChatID = chatID;
-				clientRequestSpec.advisors(messageChatMemoryAdvisor)
-					.advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, finalChatID)
-						.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, CHAT_MEMORY_RETRIEVE_SIZE));
-				memChatCache.put(chatID, messageChatMemoryAdvisor);
-			}
+		if (!StringUtils.hasText(chatID)) {
+			// 新会话
+			chatID = UUID.randomUUID().toString();
 		}
+		String finalChatID = chatID;
+		clientRequestSpec.advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, finalChatID)
+			.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, CHAT_MEMORY_RETRIEVE_SIZE));
 
 		String resp = clientRequestSpec.user(input).call().content();
 		return ChatClientRunResult.builder()
@@ -162,7 +138,19 @@ public class ChatClientDelegateImpl implements ChatClientDelegate {
 					client.setDefaultSystemText(defaultChatClientRequest.getSystemText());
 					client.setDefaultSystemParams(defaultChatClientRequest.getSystemParams());
 					client.setChatOptions(defaultChatClientRequest.getChatOptions());
-					// todo 完成Advisors等
+					client.setAdvisors(defaultChatClientRequest.getAdvisors());
+					// todo 扩展其他项
+
+					// 获取是否开启memory
+					for (Advisor advisor : defaultChatClientRequest.getAdvisors()) {
+						try {
+							Class<?> clazz = advisor.getClass();
+							client.setIsMemoryEnabled(AbstractChatMemoryAdvisor.class.isAssignableFrom(clazz));
+						}
+						catch (Exception e) {
+							client.setIsMemoryEnabled(false);
+						}
+					}
 
 					// 获取chatModel并设置
 					// 目前仅支持 ModelType.CHAT 类型，暂不支持其他类型的Model

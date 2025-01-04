@@ -330,6 +330,24 @@ paths:
             '*/*':
               schema:
                 type: string
+  /ai/chatWithMemory:
+    get:
+      tags:
+      - chat-controller
+      operationId: chatWithMemory
+      parameters:
+      - name: input
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
   /ai/chatByModel:
     get:
       tags:
@@ -537,10 +555,6 @@ components:
           type: string
           description: "chat id use for chat mode, if not set, server will set a new"
           nullable: true
-        useChatMode:
-          type: boolean
-          description: "use chat mode, is use, will be enable chat memory"
-          default: false
         stream:
           type: boolean
           description: use stream response
@@ -690,6 +704,14 @@ components:
           format: int64
         requestId:
           type: string
+    Advisor:
+      type: object
+      properties:
+        name:
+          type: string
+        order:
+          type: integer
+          format: int32
     ChatClient:
       type: object
       properties:
@@ -709,6 +731,12 @@ components:
           $ref: "#/components/schemas/ChatModel"
         chatOptions:
           $ref: "#/components/schemas/ChatOptions"
+        advisors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Advisor"
+        isMemoryEnabled:
+          type: boolean
     ChatOptions:
       type: object
       properties:

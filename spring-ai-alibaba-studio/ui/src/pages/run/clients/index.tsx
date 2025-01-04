@@ -71,6 +71,7 @@ const ChatClient = memo((props: Props) => {
     ChatOptions | ImageOptions
   >();
   const [prompt, setPrompt] = useState('');
+  const [chatID, setChatID] = useState('');
 
   // 当 modelData.chatOptions 发生变化时同步更新 initialValues
   useEffect(() => {
@@ -120,7 +121,9 @@ const ChatClient = memo((props: Props) => {
               chatOptions: modelOptions as ChatOptions,
               stream: param.stream,
               prompt: prompt,
+              chatID: chatID,
             });
+            setChatID(res.chatID);
             const ans = res ?
             (param.stream ? (res.result.streamResponse?.join('\n') as string) : (res.result.response as string))
             : '请求失败，请重试';
