@@ -353,6 +353,12 @@ components:
     DashScopeChatOptions:
       type: object
       properties:
+        maxTokens:
+          type: integer
+          format: int32
+        presencePenalty:
+          type: number
+          format: double
         frequencyPenalty:
           type: number
           format: double
@@ -360,12 +366,6 @@ components:
           type: array
           items:
             type: string
-        maxTokens:
-          type: integer
-          format: int32
-        presencePenalty:
-          type: number
-          format: double
         proxyToolCalls:
           type: boolean
         model:
@@ -712,13 +712,6 @@ components:
     ChatOptions:
       type: object
       properties:
-        frequencyPenalty:
-          type: number
-          format: double
-        stopSequences:
-          type: array
-          items:
-            type: string
         maxTokens:
           type: integer
           format: int32
@@ -728,6 +721,13 @@ components:
         temperature:
           type: number
           format: double
+        frequencyPenalty:
+          type: number
+          format: double
+        stopSequences:
+          type: array
+          items:
+            type: string
         topP:
           type: number
           format: double

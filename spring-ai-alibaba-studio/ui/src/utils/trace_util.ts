@@ -1,41 +1,5 @@
 
-interface TraceInfo {
-    id: string;
-    latencyMilliseconds: string;
-    model: string;
-    promptTokens: number;
-    completionTokens: string;
-    totalTokens: string;
-    input: string;
-    output: string;
-    tags: string[];
-    calculatedTotalCost: string;
-    calculatedInputCost: string;
-    calculatedOutputCost: string;
-    usageDetails: {
-        input: string;
-        output: string;
-        total: string;
-    };
-    timestamp: string;
-    costDetails: {
-        input: string;
-        output: string;
-        total: string;
-    };
-    traceDetail: TraceDetail;
-}
-
-interface TraceDetail {
-    title: string;
-    input: string;
-    output: string;
-    key: string;
-    detail: object;
-    costTime: number;
-    attributes: object;
-    children: TraceDetail[];
-}
+import { TraceDetail, TraceInfo } from "@/types/traces";
 
 export function convertToTraceInfo(data: any): TraceInfo | null {
     const spans = data.scopeSpans.flatMap((scopeSpan: any) => scopeSpan.spans);
