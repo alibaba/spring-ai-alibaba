@@ -49,15 +49,11 @@ export interface ClientRunActionParam {
    * use stream response
    */
   stream?: boolean;
-  /**
-   * use chat mode, is use, will be enable chat memory
-   */
-  useChatMode?: boolean;
   [property: string]: any;
 }
 
 export interface ChatClientRunResult {
-  chatID?: string;
+  chatID: string;
   input: ClientRunActionParam;
   result: ActionResult;
   telemetry: TelemetryResult;

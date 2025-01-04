@@ -27,6 +27,9 @@ import reactor.core.publisher.Flux;
 
 import java.util.Objects;
 
+import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
+import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
+
 @RestController
 @RequestMapping("/ai")
 public class ChatController {
@@ -67,6 +70,15 @@ public class ChatController {
         });
 
         return res.toString();
+    }
+
+    @GetMapping("/chatWithMemory")
+    public String chatWithMemory(String input) {
+        return this.chatClient
+            .prompt().user(input)
+            .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, "1")
+                .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
+            .call().content();
     }
 
 }
