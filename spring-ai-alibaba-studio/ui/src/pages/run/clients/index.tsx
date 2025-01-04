@@ -114,6 +114,7 @@ const ChatClient = memo((props: Props) => {
           modelType={chatClientData.chatModel.modelType}
           modelOptions={modelOptions}
           prompt={prompt}
+          isMemoryEnabled={chatClientData.isMemoryEnabled}
           onRun={async (param) => {
             const res = await chatClientsService.postChatClient({
               key: chatClientData.name,
