@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.graph;
+package com.alibaba.cloud.ai.graph.checkpoint;
 
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;

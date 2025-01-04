@@ -1,0 +1,9 @@
+spring:
+  ai:
+    dashscope:
+      api-key: sk-eba9e46456704338bf72c40342b1c9ad
+      chat:
+        options:
+          model: qwen-max
+      agent:
+        app-id: sk-eba9e46456704338bf72c40342b1c9ad

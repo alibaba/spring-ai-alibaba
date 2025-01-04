@@ -20,6 +20,8 @@ public class NodeState {
 
 	public static final String OUTPUT = "output";
 
+	public static final String RESUME_INPUT = "resume_input";
+
 	public static final String SUB_GRAPH = "_subgraph";
 
 	private final java.util.Map<String, Object> data;
@@ -43,6 +45,16 @@ public class NodeState {
 	public Optional<String> input() {
 		return value(INPUT);
 	}
+
+	public Optional<String> resumeInput(){
+		return value(RESUME_INPUT);
+	}
+
+
+    public Map<String, Object> out(Object obj) {
+        return Map.of(NodeState.OUTPUT, obj);
+    }
+
 
 	public Optional<String> outcome() {
 		return value(OUTPUT);
@@ -92,7 +104,7 @@ public class NodeState {
 	 * @param newValue the new value
 	 * @return the merged value
 	 */
-	private static Object mergeFunction(Object currentValue, Object newValue) {
+	public static Object mergeFunction(Object currentValue, Object newValue) {
 		return newValue;
 	}
 

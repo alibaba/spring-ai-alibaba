@@ -52,7 +52,7 @@ public class VariableAggregatorNodeAction implements NodeActionWithConfig {
         if (!isGroup) {
             return Map.of(NodeState.OUTPUT, JSON.toJSONString(Map.of(groupName, Map.of(NodeState.OUTPUT, outPutResult), OUT_TYPE_PROMPT, outType)));
         }
-        return Map.of(NodeState.OUTPUT, Map.of(OUT_TYPE_PROMPT, outType, NodeState.OUTPUT, outPutResult));
+        return Map.of(NodeState.OUTPUT, JSON.toJSONString(Map.of(OUT_TYPE_PROMPT, outType, NodeState.OUTPUT, outPutResult)));
     }
 
     private static void setOutPut(RunnableConfig config, List<List<String>> variables, BaseCheckpointSaver checkpointSaver, AtomicReference<Object> outPutResult) {

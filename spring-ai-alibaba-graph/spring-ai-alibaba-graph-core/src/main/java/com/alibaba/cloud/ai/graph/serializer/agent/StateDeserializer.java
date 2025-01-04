@@ -41,6 +41,13 @@ class StateDeserializer extends JsonDeserializer<NodeState> {
 				}
 			}
 		}
+		if (dataNode.has(NodeState.RESUME_INPUT)){
+			JsonNode resumeNode = dataNode.get(NodeState.RESUME_INPUT);
+			if (resumeNode.isTextual())
+			{
+				data.put(NodeState.RESUME_INPUT, resumeNode.asText());
+			}
+		}
 		if (dataNode.has(NodeState.SUB_GRAPH)) {
 			JsonNode outputNode = dataNode.get(NodeState.SUB_GRAPH);
 			var agentOutcome = ctx.readValue(outputNode.traverse(parser.getCodec()),

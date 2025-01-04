@@ -23,6 +23,8 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static java.lang.String.format;
@@ -334,9 +336,9 @@ public class CompiledGraph {
 		RunnableConfig config;
 
 		protected AsyncNodeGenerator(Map<String, Object> inputs, RunnableConfig config) {
-			final boolean isResumeRequest = (inputs == null);
+//			final boolean isResumeRequest = (inputs == null);
 
-			if (isResumeRequest) {
+			if (config.isResume().get()) {
 
 				log.trace("RESUME REQUEST");
 
@@ -345,8 +347,8 @@ public class CompiledGraph {
 							"inputs cannot be null (ie. resume request) if no checkpoint saver is configured")));
 				Checkpoint startCheckpoint = saver.get(config)
 					.orElseThrow(() -> (new IllegalStateException("Resume request without a saved checkpoint!")));
-
-				this.currentState = startCheckpoint.getState();
+				//TODO Merge by formatting
+				this.currentState = NodeState.updateState(startCheckpoint.getState(),inputs);
 
 				// Reset checkpoint id
 				this.config = config.withCheckPointId(null);

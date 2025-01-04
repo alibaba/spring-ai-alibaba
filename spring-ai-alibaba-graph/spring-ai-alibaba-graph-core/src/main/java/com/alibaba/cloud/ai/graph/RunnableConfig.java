@@ -16,6 +16,8 @@ public final class RunnableConfig {
 
 	private String checkPointId;
 
+	private Boolean isResume = Boolean.FALSE;
+
 	private String nextNode;
 
 	private CompiledGraph.StreamMode streamMode = CompiledGraph.StreamMode.VALUES;
@@ -26,6 +28,10 @@ public final class RunnableConfig {
 
 	public Optional<String> threadId() {
 		return Optional.ofNullable(threadId);
+	}
+
+	public Optional<Boolean> isResume() {
+		return Optional.ofNullable(isResume);
 	}
 
 	public Optional<String> checkPointId() {
@@ -87,6 +93,11 @@ public final class RunnableConfig {
 
 		public Builder graphId(String graphId) {
 			this.config.graphId = graphId;
+			return this;
+		}
+
+		public Builder resume(){
+			this.config.isResume = true;
 			return this;
 		}
 
