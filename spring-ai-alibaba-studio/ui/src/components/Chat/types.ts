@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { TelemetryResult } from "@/types/chat_model";
+import { TelemetryResult } from '@/types/chat_model';
 
 export interface ChatRunResult {
   result: string;

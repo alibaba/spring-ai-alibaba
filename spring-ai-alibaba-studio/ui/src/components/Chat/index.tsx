@@ -25,7 +25,7 @@ import {
   Image,
   Divider,
   message,
-  Radio
+  Radio,
 } from 'antd';
 import {
   ChatModelData,
@@ -101,8 +101,8 @@ const ChatModel = memo((props: Props) => {
         stream: isStream,
       });
 
-      const ans = res ?
-        res.result
+      const ans = res
+        ? res.result
         : '请求失败，请重试';
 
       setMessages([
@@ -166,12 +166,12 @@ const ChatModel = memo((props: Props) => {
         traceId,
       )) as TraceInfo;
 
-      const traceInfo = convertToTraceInfo(res)
+      const traceInfo = convertToTraceInfo(res);
       if (traceInfo !== null) {
         setTraceDetail(traceInfo);
         setOpenTraceDetail(true);
       } else {
-        message.error("TraceInfo is null");
+        message.error('TraceInfo is null');
       }
     } catch (error) {
       console.error('Failed to fetch trace detail: ', error);
@@ -241,7 +241,7 @@ const ChatModel = memo((props: Props) => {
           />
           <Flex align="center" justify="space-between">
             <Flex >
-              <Checkbox checked={isMemoryEnabled} onChange={()=>{}}>对话记忆</Checkbox>
+              <Checkbox checked={isMemoryEnabled} onChange={() => {}}>对话记忆</Checkbox>
             </Flex>
             <Flex style={{ width: 300 }} align="center" justify="space-around">
               <Button onClick={cleanHistory}>清空</Button>
