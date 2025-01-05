@@ -1,5 +1,5 @@
 
-import { TraceDetail, TraceInfo } from "@/types/traces";
+import { TraceDetail, TraceInfo } from '@/types/traces';
 
 export function convertToTraceInfo(data: any): TraceInfo | null {
     const spans = data.scopeSpans.flatMap((scopeSpan: any) => scopeSpan.spans);

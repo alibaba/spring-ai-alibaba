@@ -128,16 +128,16 @@ const ChatModel = memo((props: Props) => {
               });
             }
 
-            const ans = res ?
-              (param.stream ? (res.result.streamResponse?.join('\n') as string) : (res.result.response as string))
+            const ans = res
+              ? (param.stream ? (res.result.streamResponse?.join('\n') as string) : (res.result.response as string))
               : '请求失败，请重试';
 
             return {
               result: ans,
               telemetry: {
                 traceId: res ? res.telemetry.traceId : '',
-              }
-            } as ChatRunResult
+              },
+            } as ChatRunResult;
           }}
         />
         <Setup

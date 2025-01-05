@@ -78,7 +78,7 @@ const ChatClient = memo((props: Props) => {
     if (chatClientData == null) {
       return;
     }
-    const modelData = chatClientData.chatModel
+    const modelData = chatClientData.chatModel;
     if (Object.keys(params).length === 0 || params.client_name != modelData.name) {
       return;
     }
@@ -125,15 +125,15 @@ const ChatClient = memo((props: Props) => {
               chatID: chatID,
             });
             setChatID(res.chatID);
-            const ans = res ?
-            (param.stream ? (res.result.streamResponse?.join('\n') as string) : (res.result.response as string))
+            const ans = res
+            ? (param.stream ? (res.result.streamResponse?.join('\n') as string) : (res.result.response as string))
             : '请求失败，请重试';
             return {
               result: res ? ans : '',
               telemetry: {
                 traceId: res ? res.telemetry.traceId : '',
-              }
-            } as ChatRunResult
+              },
+            } as ChatRunResult;
           }}
         />
         <Setup
