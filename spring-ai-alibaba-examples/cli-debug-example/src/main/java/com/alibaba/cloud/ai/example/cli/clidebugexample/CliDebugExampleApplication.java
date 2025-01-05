@@ -1,5 +1,6 @@
 package com.alibaba.cloud.ai.example.cli.clidebugexample;
 
+import com.alibaba.cloud.ai.example.cli.clidebugexample.function.MockWeatherService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -17,6 +18,15 @@ public class CliDebugExampleApplication {
     ChatClient chatClient(ChatClient.Builder builder) {
         ChatMemory chatMemory = new InMemoryChatMemory();
         return builder
+            .defaultAdvisors(new MessageChatMemoryAdvisor(chatMemory))
+            .build();
+    }
+
+    @Bean
+    ChatClient weatherChatClient(ChatClient.Builder builder) {
+        ChatMemory chatMemory = new InMemoryChatMemory();
+        return builder
+            .defaultFunction("getWeather", "根据城市查询天气", new MockWeatherService())
             .defaultAdvisors(new MessageChatMemoryAdvisor(chatMemory))
             .build();
     }
