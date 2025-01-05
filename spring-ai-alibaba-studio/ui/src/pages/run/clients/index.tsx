@@ -24,7 +24,7 @@ import Setup from '@/components/right_panel';
 import { ChatOptions, ImageOptions } from '@/types/options';
 import styles from './index.module.css';
 import chatClientsService from '@/services/chat_clients';
-import { ChatRunResult } from '@/components/chat/types';
+import { ChatRunResult, ChatScene } from '@/components/chat/types';
 import { ChatClientData } from '@/types/chat_clients';
 
 type Props = {
@@ -113,8 +113,8 @@ const ChatClient = memo((props: Props) => {
           modelData={chatClientData.chatModel}
           modelType={chatClientData.chatModel.modelType}
           modelOptions={modelOptions}
-          prompt={prompt}
           isMemoryEnabled={chatClientData.isMemoryEnabled}
+          callScene={ChatScene.CLIENT}
           onRun={async (param) => {
             const res = await chatClientsService.postChatClient({
               key: chatClientData.name,
@@ -126,14 +126,17 @@ const ChatClient = memo((props: Props) => {
             });
             setChatID(res.chatID);
             const ans = res
-            ? (param.stream ? (res.result.streamResponse?.join('\n') as string) : (res.result.response as string))
-            : '请求失败，请重试';
+              ? (param.stream ? (res.result.streamResponse?.join('\n') as string) : (res.result.response as string))
+              : '请求失败，请重试';
             return {
               result: res ? ans : '',
               telemetry: {
                 traceId: res ? res.telemetry.traceId : '',
               },
             } as ChatRunResult;
+          }}
+          onClear={() => {
+            setChatID("");
           }}
         />
         <Setup
