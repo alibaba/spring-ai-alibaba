@@ -108,7 +108,6 @@ const ChatModel = memo((props: Props) => {
           modelData={modelData}
           modelType={modelType}
           modelOptions={modelOptions}
-          prompt={prompt}
           onRun={async (param) => {
             let res: ChatModelRunResult | undefined;
             if (modelType === ModelType.CHAT) {

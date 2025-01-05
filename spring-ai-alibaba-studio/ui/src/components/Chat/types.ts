@@ -21,3 +21,8 @@ export interface ChatRunResult {
   telemetry: TelemetryResult;
   [property: string]: any;
 }
+
+export enum ChatScene {
+  CLIENT = 'client',
+  MODEL = 'model',
+}
