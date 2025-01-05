@@ -40,22 +40,23 @@ import { ChatOptions, ImageOptions } from '@/types/options';
 import TraceDetailComp from '@/components/trace_detail_comp';
 import { TraceInfo } from '@/types/traces';
 import { convertToTraceInfo } from '@/utils/trace_util';
-import { ChatRunResult } from './types';
+import { ChatRunResult, ChatScene } from './types';
 import { ClientRunActionParam } from '@/types/chat_clients';
 
 type Props = {
   modelData: ChatModelData;
   modelType: ModelType;
   modelOptions: ChatOptions | ImageOptions | undefined;
-  prompt: string;
   isMemoryEnabled?: boolean;
+  callScene?: ChatScene; // 调用场景
 
   onRun: (param: ModelRunActionParam | ClientRunActionParam) => Promise<ChatRunResult>;
+  onClear?: () => void; // 清楚历史上下文的回调
 };
 
 // 聊天组件
 const ChatModel = memo((props: Props) => {
-  const { modelData, modelType, modelOptions, prompt, isMemoryEnabled, onRun } = props;
+  const { modelType, isMemoryEnabled, callScene, onRun, onClear } = props;
 
   const [inputValue, setInputValue] = useState('');
   const [isStream, setIsStream] = useState(false);
@@ -135,9 +136,7 @@ const ChatModel = memo((props: Props) => {
   };
 
   const cleanHistory = () => {
-    if (modelType === ModelType.CHAT) {
-      setMessages([]);
-    } else {
+    if (callScene && callScene == ChatScene.CLIENT) {
       setMessages((prevMessages) => {
         if (prevMessages.length === 0) return prevMessages;
         const updatedMessages = [...prevMessages];
@@ -147,6 +146,11 @@ const ChatModel = memo((props: Props) => {
         };
         return updatedMessages;
       });
+    } else {
+      setMessages([]);
+    }
+    if (onClear) {
+      onClear();
     }
   };
 
@@ -241,7 +245,7 @@ const ChatModel = memo((props: Props) => {
           />
           <Flex align="center" justify="space-between">
             <Flex >
-              <Checkbox checked={isMemoryEnabled} onChange={() => {}}>对话记忆</Checkbox>
+              <Checkbox checked={isMemoryEnabled} onChange={() => { }}>对话记忆</Checkbox>
             </Flex>
             <Flex style={{ width: 300 }} align="center" justify="space-around">
               <Button onClick={cleanHistory}>清空</Button>
