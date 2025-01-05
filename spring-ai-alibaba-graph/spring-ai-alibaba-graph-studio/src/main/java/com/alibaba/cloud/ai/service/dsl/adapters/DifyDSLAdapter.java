@@ -3,7 +3,7 @@ package com.alibaba.cloud.ai.service.dsl.adapters;
 import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.model.AppMetadata;
 import com.alibaba.cloud.ai.model.Variable;
-import com.alibaba.cloud.ai.model.chatbot.ChatBot;
+import com.alibaba.cloud.ai.model.agent.Agent;
 import com.alibaba.cloud.ai.model.workflow.*;
 import com.alibaba.cloud.ai.service.dsl.AbstractDSLAdapter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DifyDSLAdapter extends AbstractDSLAdapter {
 
-    private static final String[] DIFY_CHATBOT_MODES = {"chat", "completion", "agent-chat"};
+    private static final String[] DIFY_AGENT_MODES = {"chat", "completion", "agent-chat"};
 
     private static final String[] DIFY_WORKFLOW_MODES = {"workflow", "advanced-chat"};
 
@@ -65,10 +65,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
     }
 
     private NodeDataConverter<? extends NodeData> getNodeDataConverter (NodeType nodeType) {
-        return nodeDataConverters.stream()
-                .filter(converter -> converter.supportNodeType(nodeType))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("invalid dify node type " + nodeType));
+        return nodeDataConverters.stream().filter(converter -> converter.supportNodeType(nodeType)).findFirst().orElseThrow(() -> new IllegalArgumentException("invalid dify node type " + nodeType));
     }
 
     @Override
@@ -87,8 +84,8 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
     public AppMetadata mapToMetadata (Map<String, Object> data) {
         Map<String, Object> map = (Map<String, Object>) data.get("app");
         AppMetadata metadata = new AppMetadata();
-        if (Arrays.asList(DIFY_CHATBOT_MODES).contains((String) map.get("mode"))) {
-            metadata.setMode(AppMetadata.CHATBOT_MODE);
+        if (Arrays.asList(DIFY_AGENT_MODES).contains((String) map.get("mode"))) {
+            metadata.setMode(AppMetadata.AGENT_MODE);
         }
         else if (Arrays.asList(DIFY_WORKFLOW_MODES).contains((String) map.get("mode"))) {
             metadata.setMode(AppMetadata.WORKFLOW_MODE);
@@ -120,18 +117,13 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
         // map key is snake_case style
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         if (workflowData.containsKey("conversation_variables")) {
-            List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData
-                    .get("conversation_variables");
-            List<Variable> workflowVars = variables.stream()
-                    .map(variable -> objectMapper.convertValue(variable, Variable.class))
-                    .collect(Collectors.toList());
+            List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData.get("conversation_variables");
+            List<Variable> workflowVars = variables.stream().map(variable -> objectMapper.convertValue(variable, Variable.class)).collect(Collectors.toList());
             workflow.setWorkflowVars(workflowVars);
         }
         if (workflowData.containsKey("environment_variables")) {
             List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData.get("environment_variables");
-            List<Variable> envVars = variables.stream()
-                    .map(variable -> objectMapper.convertValue(variable, Variable.class))
-                    .collect(Collectors.toList());
+            List<Variable> envVars = variables.stream().map(variable -> objectMapper.convertValue(variable, Variable.class)).collect(Collectors.toList());
             workflow.setEnvVars(envVars);
         }
         workflow.setGraph(constructGraph((Map<String, Object>) workflowData.get("graph")));
@@ -165,8 +157,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
             Map<String, Object> nodeDataMap = (Map<String, Object>) nodeMap.get("data");
             String difyNodeType = (String) nodeDataMap.get("type");
             // determine the type of dify node is supported yet
-            NodeType nodeType = NodeType.fromDifyValue(difyNodeType)
-                    .orElseThrow(() -> new NotImplementedException("unsupported node type " + difyNodeType));
+            NodeType nodeType = NodeType.fromDifyValue(difyNodeType).orElseThrow(() -> new NotImplementedException("unsupported node type " + difyNodeType));
             // convert node map to workflow node using jackson
             nodeMap.remove("data");
             Node n = objectMapper.convertValue(nodeMap, Node.class);
@@ -196,8 +187,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
         List<Map<String, Object>> envVars = objectMapper.convertValue(workflow.getEnvVars(), List.class);
         Graph graph = workflow.getGraph();
         Map<String, Object> graphMap = deconstructGraph(graph);
-        data.put("workflow",
-                Map.of("conversation_variables", workflowVars, "environment_variables", envVars, "graph", graphMap));
+        data.put("workflow", Map.of("conversation_variables", workflowVars, "environment_variables", envVars, "graph", graphMap));
         return data;
     }
 
@@ -215,8 +205,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return edges.stream().map(edge -> {
-            Map<String, Object> edgeMap = objectMapper.convertValue(edge, new TypeReference<>() {
-            });
+            Map<String, Object> edgeMap = objectMapper.convertValue(edge, new TypeReference<>() {});
             edgeMap.put("type", "custom");
             return edgeMap;
         }).toList();
@@ -228,10 +217,8 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
         List<Map<String, Object>> nodeMaps = new ArrayList<>();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         for (Node node : nodes) {
-            Map<String, Object> n = objectMapper.convertValue(node, new TypeReference<>() {
-            });
-            NodeType nodeType = NodeType.fromValue(node.getType())
-                    .orElseThrow(() -> new NotImplementedException("Unsupported NodeType: " + node.getType()));
+            Map<String, Object> n = objectMapper.convertValue(node, new TypeReference<>() {});
+            NodeType nodeType = NodeType.fromValue(node.getType()).orElseThrow(() -> new NotImplementedException("Unsupported NodeType: " + node.getType()));
             NodeDataConverter<? extends NodeData> nodeDataConverter = getNodeDataConverter(nodeType);
             Map<String, Object> nodeData = dumpMapData(nodeDataConverter, node.getData());
             nodeData.put("type", nodeType.difyValue());
@@ -250,7 +237,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 
     @Override
     @SneakyThrows
-    public ChatBot mapToChatBot (Map<String, Object> data) {
+    public Agent mapToAgent (Map<String, Object> data) {
         if (data == null || !data.containsKey("model_config")) {
             throw new IllegalArgumentException("Invalid input data");
         }
@@ -259,7 +246,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-        ChatBot chatBot = new ChatBot();
+        Agent agent = new Agent();
 
         Map<String, Object> modelConfig = (Map<String, Object>) data.get("model_config");
 
@@ -267,28 +254,28 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
             throw new IllegalArgumentException("Invalid model_config in input data");
         }
 
-        ChatBot.AgentMode agentMode = safeConvert(modelConfig, "agent_mode", ChatBot.AgentMode.class, objectMapper);
-        ChatBot.Model model = safeConvert(modelConfig, "model", ChatBot.Model.class, objectMapper);
+        Agent.AgentMode agentMode = safeConvert(modelConfig, "agent_mode", Agent.AgentMode.class, objectMapper);
+        Agent.Model model = safeConvert(modelConfig, "model", Agent.Model.class, objectMapper);
         String openingStatement = safeWriteValue(modelConfig, "opening_statement", objectMapper);
         String prePrompt = safeWriteValue(modelConfig, "pre_prompt", objectMapper);
         String promptType = safeWriteValue(modelConfig, "prompt_type", objectMapper);
-        ChatBot.CompletionPromptConfig completionPromptConfig = safeConvert(modelConfig, "completion_prompt_config", ChatBot.CompletionPromptConfig.class, objectMapper);
+        Agent.CompletionPromptConfig completionPromptConfig = safeConvert(modelConfig, "completion_prompt_config", Agent.CompletionPromptConfig.class, objectMapper);
 
         // 构建datasetList
         Map<String, Object> datasetConfigsMap = (Map<String, Object>) modelConfig.get("dataset_configs");
         boolean rerankingEnable = Boolean.parseBoolean(safeWriteValue(datasetConfigsMap, "reranking_enable", objectMapper));
         String retrievalModel = safeWriteValue(datasetConfigsMap, "retrieval_model", objectMapper);
         int topK = Integer.parseInt(safeWriteValue(datasetConfigsMap, "top_k", objectMapper));
-        ChatBot.Weights weights = safeConvert(datasetConfigsMap, "weights", ChatBot.Weights.class, objectMapper);
+        Agent.Weights weights = safeConvert(datasetConfigsMap, "weights", Agent.Weights.class, objectMapper);
         JsonNode datasetsNode = objectMapper.valueToTree(datasetConfigsMap.get("datasets"));
-        List<ChatBot.DataSet> datasetList = new ArrayList<>();
+        List<Agent.DataSet> datasetList = new ArrayList<>();
         if (datasetsNode.isObject()) {
             JsonNode datasetsArray = (datasetsNode).get("datasets");
             if (datasetsArray.isArray()) {
                 for (JsonNode datasetNode : datasetsArray) {
                     JsonNode innerDatasetNode = datasetNode.get("dataset");
                     if (innerDatasetNode != null) {
-                        ChatBot.DataSet dataset = new ChatBot.DataSet();
+                        Agent.DataSet dataset = new Agent.DataSet();
                         dataset.setEnabled(innerDatasetNode.get("enabled").asBoolean());
                         dataset.setId(innerDatasetNode.get("id").asText());
                         datasetList.add(dataset);
@@ -296,88 +283,90 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
                 }
             }
         }
-        chatBot.setDatasetConfigs(new ChatBot.DataSetConfig(datasetList, rerankingEnable, retrievalModel, topK, weights));
+
+        agent.setDatasetConfigs(new Agent.DataSetConfig(datasetList, rerankingEnable, retrievalModel, topK, weights));
 
         // 构建fileUpload
-        Map<String, Object> fileUploadMap = (Map<String, Object>) modelConfig.get("file_upload");
-        ChatBot.FileUpLoad fileUpLoad = objectMapper.convertValue(fileUploadMap, ChatBot.FileUpLoad.class);
+        Map<String, Object> fileUploadMap = (Map<String, Object>) modelConfig.getOrDefault("file_upload", Collections.emptyMap());
 
-        chatBot.setFileUpLoad(fileUpLoad);
-        chatBot.setAgentMode(agentMode);
-        chatBot.setModel(model);
-        chatBot.setPrePrompt(prePrompt);
-        chatBot.setPromptType(promptType);
-        chatBot.setOpeningStatement(openingStatement);
-        chatBot.setCompletionPromptConfig(completionPromptConfig);
+        Agent.FileUpLoad fileUpLoad = objectMapper.convertValue(fileUploadMap, Agent.FileUpLoad.class);
+
+        agent.setFileUpLoad(fileUpLoad);
+        agent.setAgentMode(agentMode);
+        agent.setModel(model);
+        agent.setPrePrompt(prePrompt);
+        agent.setPromptType(promptType);
+        agent.setOpeningStatement(openingStatement);
+        agent.setCompletionPromptConfig(completionPromptConfig);
 
         List<Map<String, Object>> userInputList = (List<Map<String, Object>>) ((Map<String, Object>) data.get("model_config")).get("user_input_form");
 
         if (userInputList.isEmpty()) {
-            return chatBot;
+            return agent;
         }
 
-        List<ChatBot.Paragraph> paragraphList = new ArrayList<>();
-        List<ChatBot.Select> selectList = new ArrayList<>();
-        List<ChatBot.Number> numberList = new ArrayList<>();
-        List<ChatBot.TextInput> textInputList = new ArrayList<>();
+        List<Agent.Paragraph> paragraphList = new ArrayList<>();
+        List<Agent.Select> selectList = new ArrayList<>();
+        List<Agent.Number> numberList = new ArrayList<>();
+        List<Agent.TextInput> textInputList = new ArrayList<>();
 
         for (Map<String, Object> item : userInputList) {
 
             if (item.containsKey("text_input")) {
-                ChatBot.TextInput textInput = objectMapper.convertValue(item.get("text-input"), ChatBot.TextInput.class);
+                Agent.TextInput textInput = objectMapper.convertValue(item.get("text-input"), Agent.TextInput.class);
                 textInputList.add(textInput);
             }
             else if (item.containsKey("select")) {
-                ChatBot.Select select = objectMapper.convertValue(item.get("select"), ChatBot.Select.class);
+                Agent.Select select = objectMapper.convertValue(item.get("select"), Agent.Select.class);
                 selectList.add(select);
             }
             else if (item.containsKey("paragraph")) {
-                ChatBot.Paragraph paragraph = objectMapper.convertValue(item.get("paragraph"), ChatBot.Paragraph.class);
+                Agent.Paragraph paragraph = objectMapper.convertValue(item.get("paragraph"), Agent.Paragraph.class);
                 paragraphList.add(paragraph);
             }
             else if (item.containsKey("number")) {
-                ChatBot.Number number = objectMapper.convertValue(item.get("number"), ChatBot.Number.class);
+                Agent.Number number = objectMapper.convertValue(item.get("number"), Agent.Number.class);
                 numberList.add(number);
             }
         }
 
-        ChatBot.UserInputForm userInputForm = new ChatBot.UserInputForm();
+        Agent.UserInputForm userInputForm = new Agent.UserInputForm();
 
         userInputForm.setParagraph(paragraphList);
         userInputForm.setSelect(selectList);
         userInputForm.setTextInput(textInputList);
         userInputForm.setNumber(numberList);
 
-        chatBot.setUserInputForm(userInputForm);
+        agent.setUserInputForm(userInputForm);
 
-        return chatBot;
+        return agent;
     }
 
     @Override
-    public Map<String, Object> chatbotToMap (ChatBot chatBot) {
+    public Map<String, Object> agentToMap (Agent agent) {
         Map<String, Object> data = new HashMap<>();
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
 
         List<Map<String, Object>> userInputList = new ArrayList<>();
-        ChatBot.UserInputForm userInputForm = chatBot.getUserInputForm();
+        Agent.UserInputForm userInputForm = agent.getUserInputForm();
 
         Map<String, Object> datasetConfigMap = new HashMap<>();
 
         // file_upload
-        ChatBot.FileUpLoad fileUpLoad = null;
-        if (chatBot.getFileUpLoad() != null) {
-            fileUpLoad = objectMapper.convertValue(chatBot.getFileUpLoad(), ChatBot.FileUpLoad.class);
+        Agent.FileUpLoad fileUpLoad = null;
+        if (agent.getFileUpLoad() != null) {
+            fileUpLoad = objectMapper.convertValue(agent.getFileUpLoad(), Agent.FileUpLoad.class);
         }
 
         // dataset_configs
-        if (chatBot.getDatasetConfigs() != null) {
+        if (agent.getDatasetConfigs() != null) {
 
-            datasetConfigMap.put("datasets", Map.of("datasets", chatBot.getDatasetConfigs().getDataSet() != null ? chatBot.getDatasetConfigs().getDataSet() : ""));
-            datasetConfigMap.put("reranking_enable", chatBot.getDatasetConfigs().getRerankingEnable());
-            datasetConfigMap.put("retrieval_model", chatBot.getDatasetConfigs().getRerankingMode());
-            datasetConfigMap.put("top_k", chatBot.getDatasetConfigs().getTopK());
-            datasetConfigMap.put("weights", chatBot.getDatasetConfigs().getWeights() != null ? chatBot.getDatasetConfigs().getWeights() : "");
+            datasetConfigMap.put("datasets", Map.of("datasets", agent.getDatasetConfigs().getDataSet() != null ? agent.getDatasetConfigs().getDataSet() : ""));
+            datasetConfigMap.put("reranking_enable", agent.getDatasetConfigs().getRerankingEnable());
+            datasetConfigMap.put("retrieval_model", agent.getDatasetConfigs().getRerankingMode());
+            datasetConfigMap.put("top_k", agent.getDatasetConfigs().getTopK());
+            datasetConfigMap.put("weights", agent.getDatasetConfigs().getWeights() != null ? agent.getDatasetConfigs().getWeights() : "");
         }
 
         // user_input_form
@@ -390,15 +379,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 
         }
 
-        Map<String, Object> modelConfig = Map.of("agent_mode", chatBot.getAgentMode() != null ? chatBot.getAgentMode() : "",
-                "model", chatBot.getModel() != null ? chatBot.getModel() : "", "opening_statement",
-                chatBot.getOpeningStatement() != null ? chatBot.getOpeningStatement() : "", "pre_prompt",
-                chatBot.getPrePrompt() != null ? chatBot.getPrePrompt() : "", "prompt_type",
-                chatBot.getPromptType() != null ? chatBot.getPromptType() : "", "completion_prompt_config",
-                chatBot.getCompletionPromptConfig() != null ? chatBot.getCompletionPromptConfig() : "",
-                "file_upload", fileUpLoad != null ? fileUpLoad : "",
-                "dataset_configs", datasetConfigMap,
-                "user_input_form", userInputList);
+        Map<String, Object> modelConfig = Map.of("agent_mode", agent.getAgentMode() != null ? agent.getAgentMode() : "", "model", agent.getModel() != null ? agent.getModel() : "", "opening_statement", agent.getOpeningStatement() != null ? agent.getOpeningStatement() : "", "pre_prompt", agent.getPrePrompt() != null ? agent.getPrePrompt() : "", "prompt_type", agent.getPromptType() != null ? agent.getPromptType() : "", "completion_prompt_config", agent.getCompletionPromptConfig() != null ? agent.getCompletionPromptConfig() : "", "file_upload", fileUpLoad != null ? fileUpLoad : "", "dataset_configs", datasetConfigMap, "user_input_form", userInputList);
 
         data.put("model_config", modelConfig);
         return data;

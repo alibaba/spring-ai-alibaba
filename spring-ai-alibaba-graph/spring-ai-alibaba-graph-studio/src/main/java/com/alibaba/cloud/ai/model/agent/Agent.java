@@ -1,21 +1,19 @@
-package com.alibaba.cloud.ai.model.chatbot;
+package com.alibaba.cloud.ai.model.agent;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.util.ArrayList;
 import java.util.List;
 
-
 /**
  * @author 北极星
  */
 @Data
-@NoArgsConstructor
-public class ChatBot {
+public class Agent {
 
     private AgentMode agentMode;
 
@@ -37,6 +35,9 @@ public class ChatBot {
 
     private FileUpLoad fileUpLoad;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private List<Tool> tool;
+
     private UserInputForm userInputForm;
 
     @Data
@@ -49,6 +50,35 @@ public class ChatBot {
 
         @JsonProperty("max_iteration")
         private Integer maxIteration = 0;
+    }
+
+    @Data
+    public static class Tool {
+
+        private boolean enabled;
+
+        private String providerId;
+
+        private String providerName;
+
+        private String providerType;
+
+        private String toolLabel;
+
+        private String toolName;
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private ToolParameters toolParameters;
+    }
+
+    @Data
+    public static class ToolParameters {
+        private String cookies;
+        private String format;
+        private String language;
+        private String preserveFormatting;
+        private String proxy;
+        private String videoId;
     }
 
     @Data
@@ -141,11 +171,11 @@ public class ChatBot {
     @Data
     public static class FileUpLoad {
 
-        private List<String> allowed_file_extensions = new ArrayList<>(0);
+        private List<String> allowedFileExtensions = new ArrayList<>(0);
 
-        private List<String> allowed_file_types = new ArrayList<>(0);
+        private List<String> allowedFileTypes = new ArrayList<>(0);
 
-        private List<String> allowed_file_upload_methods = new ArrayList<>(0);
+        private List<String> allowedFileUploadMethods = new ArrayList<>(0);
 
         private Boolean enabled = false;
 
