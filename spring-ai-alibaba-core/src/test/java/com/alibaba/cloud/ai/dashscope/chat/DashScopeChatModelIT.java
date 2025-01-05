@@ -58,7 +58,7 @@ import org.springframework.util.MimeTypeUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = DashscopeAiTestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "DASHSCOPE_HTTP_BASE_URL", matches = ".+")
 public class DashScopeChatModelIT {
 
