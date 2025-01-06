@@ -32,81 +32,78 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class NotionDocumentReaderIT {
 
-    private static final String NOTION_TOKEN = System.getenv("NOTION_TOKEN");
+	private static final String NOTION_TOKEN = System.getenv("NOTION_TOKEN");
 
-    // Test page ID
-    private static final String TEST_PAGE_ID = "${pageId}";
+	// Test page ID
+	private static final String TEST_PAGE_ID = "${pageId}";
 
-    // Test database ID
-    private static final String TEST_DATABASE_ID = "${databaseId}";
+	// Test database ID
+	private static final String TEST_DATABASE_ID = "${databaseId}";
 
-    NotionDocumentReader pageReader;
-    NotionDocumentReader databaseReader;
+	NotionDocumentReader pageReader;
 
-    @BeforeEach
-    public void beforeEach() {
-        // Create page reader
-        NotionResource pageResource = NotionResource.builder()
-            .notionToken(NOTION_TOKEN)
-            .resourceId(TEST_PAGE_ID)
-            .resourceType(NotionResource.ResourceType.PAGE)
-            .build();
-        pageReader = new NotionDocumentReader(pageResource);
+	NotionDocumentReader databaseReader;
 
-        // Create database reader
-        NotionResource databaseResource = NotionResource.builder()
-            .notionToken(NOTION_TOKEN)
-            .resourceId(TEST_DATABASE_ID)
-            .resourceType(NotionResource.ResourceType.DATABASE)
-            .build();
-        databaseReader = new NotionDocumentReader(databaseResource);
-    }
+	@BeforeEach
+	public void beforeEach() {
+		// Create page reader
+		NotionResource pageResource = NotionResource.builder()
+			.notionToken(NOTION_TOKEN)
+			.resourceId(TEST_PAGE_ID)
+			.resourceType(NotionResource.ResourceType.PAGE)
+			.build();
+		pageReader = new NotionDocumentReader(pageResource);
 
-    @Test
-    void should_load_page() {
-        // when
-        List<Document> documents = pageReader.get();
+		// Create database reader
+		NotionResource databaseResource = NotionResource.builder()
+			.notionToken(NOTION_TOKEN)
+			.resourceId(TEST_DATABASE_ID)
+			.resourceType(NotionResource.ResourceType.DATABASE)
+			.build();
+		databaseReader = new NotionDocumentReader(databaseResource);
+	}
 
-        // then
-        assertThat(documents).isNotEmpty();
-        Document document = documents.get(0);
-        
-        // Verify metadata
-        assertThat(document.getMetadata()).containsKey(NotionResource.SOURCE);
-        assertThat(document.getMetadata().get(NotionResource.SOURCE))
-            .isEqualTo("notion://page/" + TEST_PAGE_ID);
-        assertThat(document.getMetadata().get("resourceType"))
-            .isEqualTo(NotionResource.ResourceType.PAGE.name());
-        assertThat(document.getMetadata().get("resourceId"))
-            .isEqualTo(TEST_PAGE_ID);
-        
-        // Verify content
-        String content = document.getContent();
-        assertThat(content).isNotEmpty();
-        System.out.println("Page content: " + content);
-    }
+	@Test
+	void should_load_page() {
+		// when
+		List<Document> documents = pageReader.get();
 
-    @Test
-    void should_load_database() {
-        // when
-        List<Document> documents = databaseReader.get();
+		// then
+		assertThat(documents).isNotEmpty();
+		Document document = documents.get(0);
 
-        // then
-        assertThat(documents).isNotEmpty();
-        Document document = documents.get(0);
-        
-        // Verify metadata
-        assertThat(document.getMetadata()).containsKey(NotionResource.SOURCE);
-        assertThat(document.getMetadata().get(NotionResource.SOURCE))
-            .isEqualTo("notion://database/" + TEST_DATABASE_ID);
-        assertThat(document.getMetadata().get("resourceType"))
-            .isEqualTo(NotionResource.ResourceType.DATABASE.name());
-        assertThat(document.getMetadata().get("resourceId"))
-            .isEqualTo(TEST_DATABASE_ID);
-        
-        // Verify content
-        String content = document.getContent();
-        assertThat(content).isNotEmpty();
-        System.out.println("Database content: " + content);
-    }
-} 
+		// Verify metadata
+		assertThat(document.getMetadata()).containsKey(NotionResource.SOURCE);
+		assertThat(document.getMetadata().get(NotionResource.SOURCE)).isEqualTo("notion://page/" + TEST_PAGE_ID);
+		assertThat(document.getMetadata().get("resourceType")).isEqualTo(NotionResource.ResourceType.PAGE.name());
+		assertThat(document.getMetadata().get("resourceId")).isEqualTo(TEST_PAGE_ID);
+
+		// Verify content
+		String content = document.getContent();
+		assertThat(content).isNotEmpty();
+		System.out.println("Page content: " + content);
+	}
+
+	@Test
+	void should_load_database() {
+		// when
+		List<Document> documents = databaseReader.get();
+
+		// then
+		assertThat(documents).isNotEmpty();
+		Document document = documents.get(0);
+
+		// Verify metadata
+		assertThat(document.getMetadata()).containsKey(NotionResource.SOURCE);
+		assertThat(document.getMetadata().get(NotionResource.SOURCE))
+			.isEqualTo("notion://database/" + TEST_DATABASE_ID);
+		assertThat(document.getMetadata().get("resourceType")).isEqualTo(NotionResource.ResourceType.DATABASE.name());
+		assertThat(document.getMetadata().get("resourceId")).isEqualTo(TEST_DATABASE_ID);
+
+		// Verify content
+		String content = document.getContent();
+		assertThat(content).isNotEmpty();
+		System.out.println("Database content: " + content);
+	}
+
+}
