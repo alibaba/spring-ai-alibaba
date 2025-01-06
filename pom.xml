@@ -61,6 +61,7 @@
         <module>community/document-readers/tencent-cos-document-reader</module>
         <module>community/document-readers/feishu-document-reader</module>
         <module>community/document-readers/yuque-document-reader</module>
+        <module>community/document-readers/notion-document-reader</module>
 
         <module>community/document-parsers/document-parser-apache-pdfbox</module>
         <module>community/document-parsers/document-parser-markdown</module>
