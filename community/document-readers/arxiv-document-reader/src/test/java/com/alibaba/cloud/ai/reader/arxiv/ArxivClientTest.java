@@ -141,13 +141,13 @@ public class ArxivClientTest {
 		assertNotNull(result.getPdfUrl(), "PDF URL不应为空");
 
 		// 测试使用默认文件名下载
-		Path defaultPath = client.downloadPdf(result, "/Users/xiadong/Documents/test");
+		Path defaultPath = client.downloadPdf(result, "/Users/your_name/Documents/test");
 		assertTrue(Files.exists(defaultPath), "PDF文件应该已下载");
 		assertTrue(Files.size(defaultPath) > 0, "PDF文件不应为空");
 
 		// 测试使用自定义文件名下载
 		String customFilename = "test_download.pdf";
-		Path customPath = client.downloadPdf(result, "/Users/xiadong/Documents/test", customFilename);
+		Path customPath = client.downloadPdf(result, "/Users/your_name/Documents/test", customFilename);
 		assertTrue(Files.exists(customPath), "使用自定义文件名的PDF文件应该已下载");
 		assertTrue(Files.size(customPath) > 0, "使用自定义文件名的PDF文件不应为空");
 		assertEquals(customFilename, customPath.getFileName().toString(), "文件名应该匹配自定义名称");
