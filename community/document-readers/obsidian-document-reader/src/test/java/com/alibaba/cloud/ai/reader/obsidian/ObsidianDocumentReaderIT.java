@@ -34,45 +34,41 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OBSIDIAN_VAULT_PATH", matches = ".+")
 class ObsidianDocumentReaderIT {
 
-    private static final String VAULT_PATH = System.getenv("OBSIDIAN_VAULT_PATH");
+	private static final String VAULT_PATH = System.getenv("OBSIDIAN_VAULT_PATH");
 
-    ObsidianDocumentReader reader;
+	ObsidianDocumentReader reader;
 
-    @BeforeEach
-    void setUp() {
-        reader = ObsidianDocumentReader.builder()
-                .vaultPath(Path.of(VAULT_PATH))
-                .build();
-    }
+	@BeforeEach
+	void setUp() {
+		reader = ObsidianDocumentReader.builder().vaultPath(Path.of(VAULT_PATH)).build();
+	}
 
-    @Test
-    void should_read_markdown_files() {
-        // when
-        List<Document> documents = reader.get();
+	@Test
+	void should_read_markdown_files() {
+		// when
+		List<Document> documents = reader.get();
 
-        // then
-        assertThat(documents).isNotEmpty();
-        
-        // Verify document content and metadata
-        for (Document doc : documents) {
-            // Verify source metadata
-            assertThat(doc.getMetadata()).containsKey(ObsidianResource.SOURCE);
-            String source = doc.getMetadata().get(ObsidianResource.SOURCE).toString();
-            assertThat(source)
-                    .isNotEmpty()
-                    .endsWith(ObsidianResource.MARKDOWN_EXTENSION);
-            
-            // Verify content
-            assertThat(doc.getContent()).isNotEmpty();
-            
-            // Print for debugging
-            System.out.println("Document source: " + source);
-            if (doc.getMetadata().containsKey("category")) {
-                System.out.println("Document category: " + doc.getMetadata().get("category"));
-            }
-            System.out.println("Document content: " + doc.getContent());
-            System.out.println("---");
-        }
-    }
+		// then
+		assertThat(documents).isNotEmpty();
 
-} 
+		// Verify document content and metadata
+		for (Document doc : documents) {
+			// Verify source metadata
+			assertThat(doc.getMetadata()).containsKey(ObsidianResource.SOURCE);
+			String source = doc.getMetadata().get(ObsidianResource.SOURCE).toString();
+			assertThat(source).isNotEmpty().endsWith(ObsidianResource.MARKDOWN_EXTENSION);
+
+			// Verify content
+			assertThat(doc.getContent()).isNotEmpty();
+
+			// Print for debugging
+			System.out.println("Document source: " + source);
+			if (doc.getMetadata().containsKey("category")) {
+				System.out.println("Document category: " + doc.getMetadata().get("category"));
+			}
+			System.out.println("Document content: " + doc.getContent());
+			System.out.println("---");
+		}
+	}
+
+}
