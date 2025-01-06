@@ -38,159 +38,164 @@ import java.util.stream.Stream;
  */
 public class ObsidianResource implements Resource {
 
-    public static final String SOURCE = "source";
-    public static final String MARKDOWN_EXTENSION = ".md";
+	public static final String SOURCE = "source";
 
-    private final Path vaultPath;
-    private final Path filePath;
-    private final InputStream inputStream;
+	public static final String MARKDOWN_EXTENSION = ".md";
 
-    /**
-     * Constructor for single file
-     * @param vaultPath Path to Obsidian vault
-     * @param filePath Path to markdown file
-     */
-    public ObsidianResource(Path vaultPath, Path filePath) {
-        Assert.notNull(vaultPath, "VaultPath must not be null");
-        Assert.notNull(filePath, "FilePath must not be null");
-        Assert.isTrue(Files.exists(vaultPath), "Vault directory does not exist: " + vaultPath);
-        Assert.isTrue(Files.exists(filePath), "File does not exist: " + filePath);
-        Assert.isTrue(filePath.toString().endsWith(MARKDOWN_EXTENSION), "File must be a markdown file: " + filePath);
+	private final Path vaultPath;
 
-        this.vaultPath = vaultPath;
-        this.filePath = filePath;
-        try {
-            this.inputStream = new FileInputStream(filePath.toFile());
-        }
-        catch (IOException e) {
-            throw new RuntimeException("Failed to create input stream for file: " + filePath, e);
-        }
-    }
+	private final Path filePath;
 
-    /**
-     * Find all markdown files in the vault
-     * Recursively searches through all subdirectories
-     * Only includes .md files and ignores hidden files/directories
-     * 
-     * @param vaultPath Root path of the Obsidian vault
-     * @return List of ObsidianResource for each markdown file
-     */
-    public static List<ObsidianResource> findAllMarkdownFiles(Path vaultPath) {
-        Assert.notNull(vaultPath, "VaultPath must not be null");
-        Assert.isTrue(Files.exists(vaultPath), "Vault directory does not exist: " + vaultPath);
-        Assert.isTrue(Files.isDirectory(vaultPath), "VaultPath must be a directory: " + vaultPath);
+	private final InputStream inputStream;
 
-        List<ObsidianResource> resources = new ArrayList<>();
-        try (Stream<Path> paths = Files.walk(vaultPath)) {
-            paths
-                // Only include .md files
-                .filter(path -> path.toString().endsWith(MARKDOWN_EXTENSION))
-                // Ignore hidden files and files in hidden directories
-                .filter(path -> {
-                    Path relativePath = vaultPath.relativize(path);
-                    String[] pathParts = relativePath.toString().split("/");
-                    for (String part : pathParts) {
-                        if (part.startsWith(".")) {
-                            return false;
-                        }
-                    }
-                    return true;
-                })
-                // Only include regular files (not directories)
-                .filter(Files::isRegularFile)
-                .forEach(path -> resources.add(new ObsidianResource(vaultPath, path)));
-        }
-        catch (IOException e) {
-            throw new RuntimeException("Failed to walk vault directory: " + vaultPath, e);
-        }
-        return resources;
-    }
+	/**
+	 * Constructor for single file
+	 * @param vaultPath Path to Obsidian vault
+	 * @param filePath Path to markdown file
+	 */
+	public ObsidianResource(Path vaultPath, Path filePath) {
+		Assert.notNull(vaultPath, "VaultPath must not be null");
+		Assert.notNull(filePath, "FilePath must not be null");
+		Assert.isTrue(Files.exists(vaultPath), "Vault directory does not exist: " + vaultPath);
+		Assert.isTrue(Files.exists(filePath), "File does not exist: " + filePath);
+		Assert.isTrue(filePath.toString().endsWith(MARKDOWN_EXTENSION), "File must be a markdown file: " + filePath);
 
-    public static Builder builder() {
-        return new Builder();
-    }
+		this.vaultPath = vaultPath;
+		this.filePath = filePath;
+		try {
+			this.inputStream = new FileInputStream(filePath.toFile());
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Failed to create input stream for file: " + filePath, e);
+		}
+	}
 
-    public static class Builder {
-        private Path vaultPath;
-        private Path filePath;
+	/**
+	 * Find all markdown files in the vault Recursively searches through all
+	 * subdirectories Only includes .md files and ignores hidden files/directories
+	 * @param vaultPath Root path of the Obsidian vault
+	 * @return List of ObsidianResource for each markdown file
+	 */
+	public static List<ObsidianResource> findAllMarkdownFiles(Path vaultPath) {
+		Assert.notNull(vaultPath, "VaultPath must not be null");
+		Assert.isTrue(Files.exists(vaultPath), "Vault directory does not exist: " + vaultPath);
+		Assert.isTrue(Files.isDirectory(vaultPath), "VaultPath must be a directory: " + vaultPath);
 
-        public Builder vaultPath(Path vaultPath) {
-            this.vaultPath = vaultPath;
-            return this;
-        }
+		List<ObsidianResource> resources = new ArrayList<>();
+		try (Stream<Path> paths = Files.walk(vaultPath)) {
+			paths
+				// Only include .md files
+				.filter(path -> path.toString().endsWith(MARKDOWN_EXTENSION))
+				// Ignore hidden files and files in hidden directories
+				.filter(path -> {
+					Path relativePath = vaultPath.relativize(path);
+					String[] pathParts = relativePath.toString().split("/");
+					for (String part : pathParts) {
+						if (part.startsWith(".")) {
+							return false;
+						}
+					}
+					return true;
+				})
+				// Only include regular files (not directories)
+				.filter(Files::isRegularFile)
+				.forEach(path -> resources.add(new ObsidianResource(vaultPath, path)));
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Failed to walk vault directory: " + vaultPath, e);
+		}
+		return resources;
+	}
 
-        public Builder filePath(Path filePath) {
-            this.filePath = filePath;
-            return this;
-        }
+	public static Builder builder() {
+		return new Builder();
+	}
 
-        public ObsidianResource build() {
-            Assert.notNull(vaultPath, "VaultPath must not be null");
-            Assert.notNull(filePath, "FilePath must not be null");
-            return new ObsidianResource(vaultPath, filePath);
-        }
-    }
+	public static class Builder {
 
-    @Override
-    public boolean exists() {
-        return Files.exists(filePath);
-    }
+		private Path vaultPath;
 
-    @Override
-    public URL getURL() throws IOException {
-        return filePath.toUri().toURL();
-    }
+		private Path filePath;
 
-    @Override
-    public URI getURI() throws IOException {
-        return filePath.toUri();
-    }
+		public Builder vaultPath(Path vaultPath) {
+			this.vaultPath = vaultPath;
+			return this;
+		}
 
-    @Override
-    public File getFile() throws IOException {
-        return filePath.toFile();
-    }
+		public Builder filePath(Path filePath) {
+			this.filePath = filePath;
+			return this;
+		}
 
-    @Override
-    public long contentLength() throws IOException {
-        return Files.size(filePath);
-    }
+		public ObsidianResource build() {
+			Assert.notNull(vaultPath, "VaultPath must not be null");
+			Assert.notNull(filePath, "FilePath must not be null");
+			return new ObsidianResource(vaultPath, filePath);
+		}
 
-    @Override
-    public long lastModified() throws IOException {
-        return Files.getLastModifiedTime(filePath).toMillis();
-    }
+	}
 
-    @Override
-    public Resource createRelative(String relativePath) throws IOException {
-        Path newPath = filePath.resolveSibling(relativePath);
-        return new ObsidianResource(vaultPath, newPath);
-    }
+	@Override
+	public boolean exists() {
+		return Files.exists(filePath);
+	}
 
-    @Override
-    public String getFilename() {
-        return filePath.getFileName().toString();
-    }
+	@Override
+	public URL getURL() throws IOException {
+		return filePath.toUri().toURL();
+	}
 
-    @Override
-    public String getDescription() {
-        return "Obsidian resource [vault=" + vaultPath + ", file=" + filePath + "]";
-    }
+	@Override
+	public URI getURI() throws IOException {
+		return filePath.toUri();
+	}
 
-    @Override
-    public InputStream getInputStream() throws IOException {
-        return inputStream;
-    }
+	@Override
+	public File getFile() throws IOException {
+		return filePath.toFile();
+	}
 
-    public Path getVaultPath() {
-        return vaultPath;
-    }
+	@Override
+	public long contentLength() throws IOException {
+		return Files.size(filePath);
+	}
 
-    public Path getFilePath() {
-        return filePath;
-    }
+	@Override
+	public long lastModified() throws IOException {
+		return Files.getLastModifiedTime(filePath).toMillis();
+	}
 
-    public String getSource() {
-        return vaultPath.relativize(filePath).toString();
-    }
-} 
+	@Override
+	public Resource createRelative(String relativePath) throws IOException {
+		Path newPath = filePath.resolveSibling(relativePath);
+		return new ObsidianResource(vaultPath, newPath);
+	}
+
+	@Override
+	public String getFilename() {
+		return filePath.getFileName().toString();
+	}
+
+	@Override
+	public String getDescription() {
+		return "Obsidian resource [vault=" + vaultPath + ", file=" + filePath + "]";
+	}
+
+	@Override
+	public InputStream getInputStream() throws IOException {
+		return inputStream;
+	}
+
+	public Path getVaultPath() {
+		return vaultPath;
+	}
+
+	public Path getFilePath() {
+		return filePath;
+	}
+
+	public String getSource() {
+		return vaultPath.relativize(filePath).toString();
+	}
+
+}

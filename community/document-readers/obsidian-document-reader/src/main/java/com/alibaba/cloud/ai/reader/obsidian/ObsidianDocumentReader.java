@@ -25,68 +25,72 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Document reader for Obsidian vault
- * Reads all markdown files in the vault and parses them using MarkdownDocumentParser
+ * Document reader for Obsidian vault Reads all markdown files in the vault and parses
+ * them using MarkdownDocumentParser
  *
  * @author xiadong
  * @since 2024-01-06
  */
 public class ObsidianDocumentReader implements DocumentReader {
 
-    private final Path vaultPath;
-    private final MarkdownDocumentParser parser;
+	private final Path vaultPath;
 
-    /**
-     * Constructor for reading all files in vault
-     * @param vaultPath Path to Obsidian vault
-     */
-    public ObsidianDocumentReader(Path vaultPath) {
-        this.vaultPath = vaultPath;
-        this.parser = new MarkdownDocumentParser();
-    }
+	private final MarkdownDocumentParser parser;
 
-    @Override
-    public List<Document> get() {
-        List<Document> allDocuments = new ArrayList<>();
-        
-        // Find all markdown files in vault
-        List<ObsidianResource> resources = ObsidianResource.findAllMarkdownFiles(vaultPath);
-        
-        // Parse each file
-        for (ObsidianResource resource : resources) {
-            try {
-                List<Document> documents = parser.parse(resource.getInputStream());
-                String source = resource.getSource();
-                
-                // Add metadata to each document
-                for (Document doc : documents) {
-                    doc.getMetadata().put(ObsidianResource.SOURCE, source);
-                }
-                
-                allDocuments.addAll(documents);
-            }
-            catch (IOException e) {
-                throw new RuntimeException("Failed to read Obsidian file: " + resource.getFilePath(), e);
-            }
-        }
-        
-        return allDocuments;
-    }
+	/**
+	 * Constructor for reading all files in vault
+	 * @param vaultPath Path to Obsidian vault
+	 */
+	public ObsidianDocumentReader(Path vaultPath) {
+		this.vaultPath = vaultPath;
+		this.parser = new MarkdownDocumentParser();
+	}
 
-    public static Builder builder() {
-        return new Builder();
-    }
+	@Override
+	public List<Document> get() {
+		List<Document> allDocuments = new ArrayList<>();
 
-    public static class Builder {
-        private Path vaultPath;
+		// Find all markdown files in vault
+		List<ObsidianResource> resources = ObsidianResource.findAllMarkdownFiles(vaultPath);
 
-        public Builder vaultPath(Path vaultPath) {
-            this.vaultPath = vaultPath;
-            return this;
-        }
+		// Parse each file
+		for (ObsidianResource resource : resources) {
+			try {
+				List<Document> documents = parser.parse(resource.getInputStream());
+				String source = resource.getSource();
 
-        public ObsidianDocumentReader build() {
-            return new ObsidianDocumentReader(vaultPath);
-        }
-    }
-} 
+				// Add metadata to each document
+				for (Document doc : documents) {
+					doc.getMetadata().put(ObsidianResource.SOURCE, source);
+				}
+
+				allDocuments.addAll(documents);
+			}
+			catch (IOException e) {
+				throw new RuntimeException("Failed to read Obsidian file: " + resource.getFilePath(), e);
+			}
+		}
+
+		return allDocuments;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private Path vaultPath;
+
+		public Builder vaultPath(Path vaultPath) {
+			this.vaultPath = vaultPath;
+			return this;
+		}
+
+		public ObsidianDocumentReader build() {
+			return new ObsidianDocumentReader(vaultPath);
+		}
+
+	}
+
+}
