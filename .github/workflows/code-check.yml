@@ -14,18 +14,28 @@
 # limitations under the License.
 #
 
-version: 2
-updates:
+name: PR Check
 
-  - package-ecosystem: "maven"
-    directory: "/"
-    open-pull-requests-limit: 20
-    # Ignore major version updates
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "03:00"
-      timezone: "US/Eastern"
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+#    name: Build branch
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout source code
+#        uses: actions/checkout@v4
+#
+#      - name: Set up JDK 17
+#        uses: actions/setup-java@v4
+#        with:
+#          java-version: '17'
+#          distribution: 'temurin'
+#          cache: 'maven'
+#
+#      - name: Run tests
+#        run: |
+#          ./mvnw test
