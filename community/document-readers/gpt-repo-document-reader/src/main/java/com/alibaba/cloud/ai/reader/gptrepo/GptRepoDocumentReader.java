@@ -43,7 +43,7 @@ public class GptRepoDocumentReader implements DocumentReader {
 
 	private static final String END_MARKER = "--END--";
 
-	// 默认的前导文本常量
+	// Default leading text constant
 	private static final String DEFAULT_CONCATENATED_PREAMBLE = "The following text is a Git repository with code. "
 			+ "The structure of the text are sections that begin with ----, "
 			+ "followed by a single line containing the file path and file "
@@ -61,19 +61,19 @@ public class GptRepoDocumentReader implements DocumentReader {
 			+ "when the symbols --END-- are encountered. Any further text beyond "
 			+ "--END-- are meant to be interpreted as instructions using the " + "aforementioned file as context.\n";
 
-	// 是否将所有文件内容合并为一个文档
+	// Whether to merge all file contents into one document
 	private final boolean concatenate;
 
-	// 仓库路径
+	// Repository path
 	private final Path repoPath;
 
-	// 文件扩展名过滤
+	// File extension filter
 	private final List<String> extensions;
 
-	// 文件编码
+	// File encoding
 	private final String encoding;
 
-	// 自定义前导文本
+	// Custom leading text
 	private final String preambleStr;
 
 	/**
@@ -115,19 +115,19 @@ public class GptRepoDocumentReader implements DocumentReader {
 	@Override
 	public List<Document> get() {
 		try {
-			// 读取.gptignore文件
+			// Read .gptignore file
 			List<String> ignorePatterns = readIgnorePatterns();
 
-			// 处理仓库文件
+			// Process repository files
 			List<String> processedTexts = processRepository(ignorePatterns);
 
-			// 转换为Document列表
+			// Convert to Document list
 			return processedTexts.stream().map(text -> {
 				String finalText = getPreambleText() + text + "\n" + END_MARKER + "\n";
 				Map<String, Object> metadata = new HashMap<>();
 				metadata.put("source", repoPath.toString());
 
-				// 从文本内容中提取文件路径
+				// Extract file path from text content
 				String filePath = extractFilePath(text);
 				if (filePath != null) {
 					Path path = Paths.get(filePath);
@@ -191,12 +191,12 @@ public class GptRepoDocumentReader implements DocumentReader {
 			public FileVisitResult visitFile(Path file, @NotNull BasicFileAttributes attrs) throws IOException {
 				String relativePath = repoPath.relativize(file).toString();
 
-				// 检查是否应该忽略该文件
+				// Check if file should be ignored
 				if (shouldIgnore(relativePath, ignorePatterns)) {
 					return FileVisitResult.CONTINUE;
 				}
 
-				// 检查文件扩展名
+				// Check file extension
 				if (extensions != null && !extensions.isEmpty()) {
 					String ext = com.google.common.io.Files.getFileExtension(file.toString());
 					if (!extensions.contains(ext)) {
@@ -204,7 +204,7 @@ public class GptRepoDocumentReader implements DocumentReader {
 					}
 				}
 
-				// 读取文件内容
+				// Read file content
 				String content = Files.readString(file, Charset.forName(encoding));
 				String formattedContent = formatFileContent(relativePath, content);
 

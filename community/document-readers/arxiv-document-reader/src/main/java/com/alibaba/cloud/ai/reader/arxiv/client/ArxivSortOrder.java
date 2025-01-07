@@ -16,7 +16,8 @@
 package com.alibaba.cloud.ai.reader.arxiv.client;
 
 /**
- * ArxivSortOrder指示根据指定的ArxivSortCriterion对搜索结果进行排序的顺序
+ * ArxivSortOrder indicates the order in which search results are sorted according to the
+ * specified ArxivSortCriterion
  *
  * @see <a href="https://arxiv.org/help/api/user-manual#sort">arXiv API User's Manual:
  * sort order</a>
@@ -25,12 +26,12 @@ package com.alibaba.cloud.ai.reader.arxiv.client;
 public enum ArxivSortOrder {
 
 	/**
-	 * 升序排序
+	 * Sort in ascending order
 	 */
 	ASCENDING("ascending"),
 
 	/**
-	 * 降序排序
+	 * Sort in descending order
 	 */
 	DESCENDING("descending");
 
