@@ -96,5 +96,4 @@ public class ArxivDocumentReaderTest {
 		assertEquals(firstDoc.getContent(), metadata.get(ArxivResource.SUMMARY), "文档内容应该与元数据中的摘要一致");
 	}
 
-
 }
