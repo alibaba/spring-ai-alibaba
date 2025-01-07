@@ -55,10 +55,11 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
 
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DASHSCOPE_API_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = DashscopeAiTestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = DASHSCOPE_API_KEY, matches = ".+")
 @EnabledIfEnvironmentVariable(named = "DASHSCOPE_HTTP_BASE_URL", matches = ".+")
 public class DashScopeChatModelIT {
 
