@@ -70,7 +70,7 @@ class GptRepoDocumentReaderTest {
 
 		assertNotNull(documents);
 		assertFalse(documents.isEmpty());
-		assertTrue(documents.size() >= 2); // 至少应该有两个文件被读取到
+		assertTrue(documents.size() >= 2); // Should have at least two files read
 
 		// 验证文档内容
 		boolean foundJavaFile = false;
@@ -109,7 +109,7 @@ class GptRepoDocumentReaderTest {
 		String content = doc.getContent();
 		assertTrue(content.contains(TEST_FILE_CONTENT));
 		assertTrue(content.contains(TEST_PYTHON_CONTENT));
-		assertTrue(content.contains("----")); // 验证分隔符存在
+		assertTrue(content.contains("----")); // Verify separator exists
 	}
 
 	/**

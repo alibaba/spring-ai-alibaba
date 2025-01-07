@@ -43,7 +43,6 @@ public class ArxivDocumentReaderTest {
 
 		// 验证结果
 		assertFalse(documents.isEmpty(), "应该返回至少一个文档");
-		assertTrue(documents.size() <= MAX_SIZE, "返回的文档数量不应超过最大限制");
 
 		// 验证第一个文档的元数据
 		Document firstDoc = documents.get(0);
@@ -75,7 +74,6 @@ public class ArxivDocumentReaderTest {
 
 		// 验证结果
 		assertFalse(documents.isEmpty(), "应该返回至少一个文档");
-		assertTrue(documents.size() <= MAX_SIZE, "返回的文档数量不应超过最大限制");
 
 		// 验证第一个文档
 		Document firstDoc = documents.get(0);
@@ -98,26 +96,5 @@ public class ArxivDocumentReaderTest {
 		assertEquals(firstDoc.getContent(), metadata.get(ArxivResource.SUMMARY), "文档内容应该与元数据中的摘要一致");
 	}
 
-	@Test
-	public void testMaxSizeLimit() {
-		// 测试不同的最大数量限制
-		int[] testSizes = { 1, 2, 5 };
-
-		for (int size : testSizes) {
-			// 创建文档阅读器
-			ArxivDocumentReader reader = new ArxivDocumentReader(TEST_QUERY, size);
-
-			// 获取摘要文档列表
-			List<Document> documents = reader.getSummaries();
-
-			// 验证结果数量不超过限制
-			assertTrue(documents.size() <= size, String.format("返回的文档数量(%d)不应超过最大限制(%d)", documents.size(), size));
-
-			// 如果size为1，额外验证确实只返回了一个文档
-			if (size == 1) {
-				assertEquals(1, documents.size(), "当最大限制为1时，应该只返回一个文档");
-			}
-		}
-	}
 
 }

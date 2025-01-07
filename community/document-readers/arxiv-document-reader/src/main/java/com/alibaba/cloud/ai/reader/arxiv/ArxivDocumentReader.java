@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * arXiv文档阅读器，用于从arXiv获取和解析论文
+ * ArXiv document reader for retrieving and parsing papers from arXiv
  *
  * @author brianxiadong
  */
@@ -54,9 +54,9 @@ public class ArxivDocumentReader implements DocumentReader {
 	private final ArxivResource arxivResource;
 
 	/**
-	 * 创建arXiv文档阅读器
-	 * @param queryString arXiv查询字符串
-	 * @param maxSize 最大获取数量
+	 * Create an arXiv document reader
+	 * @param queryString arXiv query string
+	 * @param maxSize maximum number of documents to retrieve
 	 */
 	public ArxivDocumentReader(String queryString, int maxSize) {
 		Assert.hasText(queryString, "Query string must not be empty");
@@ -70,14 +70,14 @@ public class ArxivDocumentReader implements DocumentReader {
 	}
 
 	/**
-	 * 从ArxivResult创建元数据Map
-	 * @param result arXiv搜索结果
-	 * @return 包含所有非空字段的元数据Map
+	 * Create metadata map from ArxivResult
+	 * @param result arXiv search result
+	 * @return metadata map containing all non-null fields
 	 */
 	private Map<String, Object> createMetadata(ArxivResult result) {
 		Map<String, Object> metadata = new HashMap<>();
 
-		// 使用函数式方法添加非空字段
+		// Add non-null fields using functional approach
 		addIfNotNull(metadata, ArxivResource.ENTRY_ID, result.getEntryId());
 		addIfNotNull(metadata, ArxivResource.TITLE, result.getTitle());
 		addIfNotNull(metadata, ArxivResource.SUMMARY, result.getSummary());
@@ -89,7 +89,7 @@ public class ArxivDocumentReader implements DocumentReader {
 		addIfNotNull(metadata, ArxivResource.COMMENT, result.getComment());
 		addIfNotNull(metadata, ArxivResource.PDF_URL, result.getPdfUrl());
 
-		// 处理作者列表
+		// Process author list
 		if (result.getAuthors() != null && !result.getAuthors().isEmpty()) {
 			List<String> authorNames = result.getAuthors()
 				.stream()
@@ -99,14 +99,14 @@ public class ArxivDocumentReader implements DocumentReader {
 			addIfNotEmpty(metadata, ArxivResource.AUTHORS, authorNames);
 		}
 
-		// 处理分类列表
+		// Process categories list
 		addIfNotEmpty(metadata, ArxivResource.CATEGORIES, result.getCategories());
 
 		return metadata;
 	}
 
 	/**
-	 * 添加非空值到元数据Map
+	 * Add non-null value to metadata map
 	 */
 	private void addIfNotNull(Map<String, Object> metadata, String key, Object value) {
 		if (value != null) {
@@ -115,7 +115,7 @@ public class ArxivDocumentReader implements DocumentReader {
 	}
 
 	/**
-	 * 添加非空集合到元数据Map
+	 * Add non-empty collection to metadata map
 	 */
 	private void addIfNotEmpty(Map<String, Object> metadata, String key, List<?> value) {
 		if (value != null && !value.isEmpty()) {
@@ -124,8 +124,9 @@ public class ArxivDocumentReader implements DocumentReader {
 	}
 
 	/**
-	 * 获取文档摘要列表，每个文档只包含元数据，不包含PDF内容
-	 * @return 文档列表，只包含元数据
+	 * Get list of document summaries, each document contains only metadata without PDF
+	 * content
+	 * @return list of documents with metadata only
 	 */
 	public List<Document> getSummaries() {
 		List<Document> documents = new ArrayList<>();
@@ -135,18 +136,19 @@ public class ArxivDocumentReader implements DocumentReader {
 			search.setMaxResults(maxSize);
 
 			arxivClient.results(search, 0).forEachRemaining(result -> {
-				// 检查是否已达到最大数量限制
+				// Check if maximum limit is reached
 				if (documents.size() >= maxSize) {
 					return;
 				}
 
-				// 创建Document实例，使用摘要作为内容
+				// Create Document instance using summary as content
 				Map<String, Object> metadata = createMetadata(result);
 				documents.add(new Document(result.getSummary(), metadata));
 			});
 		}
 		catch (IOException e) {
 			logger.error("Failed to get summaries from arXiv", e);
+			throw new RuntimeException("Failed to get summaries from arXiv", e);
 		}
 		return documents;
 	}
@@ -155,46 +157,53 @@ public class ArxivDocumentReader implements DocumentReader {
 	public List<Document> get() {
 		List<Document> documents = new ArrayList<>();
 		try {
-			// 1. 创建搜索
+			// 1. Create search
 			ArxivSearch search = new ArxivSearch();
 			search.setQuery(arxivResource.getQueryString());
 			search.setMaxResults(maxSize);
 
-			// 2. 执行搜索并处理结果
+			// 2. Execute search and process results
 			arxivClient.results(search, 0).forEachRemaining(result -> {
-				// 检查是否已达到最大数量限制
+				// Check if maximum limit is reached
 				if (documents.size() >= maxSize) {
 					return;
 				}
 
+				Path tempDir = null;
 				try {
-					// 3. 下载PDF到临时文件
-					Path tempDir = Files.createTempDirectory("arxiv-");
+					// 3. Download PDF to temporary file
+					tempDir = Files.createTempDirectory("arxiv-");
 					Path pdfPath = arxivClient.downloadPdf(result, tempDir.toString());
 					arxivResource.setTempFilePath(pdfPath);
 
-					// 4. 解析PDF文档
+					// 4. Parse PDF document
 					List<Document> parsedDocuments = parser.parse(arxivResource.getInputStream());
 
-					// 5. 为每个文档添加元数据
+					// 5. Add metadata to each document
 					for (Document doc : parsedDocuments) {
 						Map<String, Object> metadata = new HashMap<>(doc.getMetadata());
 						metadata.putAll(createMetadata(result));
 
-						// 创建新的Document实例，包含完整的元数据
+						// Create new Document instance with complete metadata
 						documents.add(new Document(doc.getContent(), metadata));
 					}
-
-					// 6. 清理临时文件
-					arxivResource.cleanup();
-					Files.delete(tempDir);
-
 				}
 				catch (IOException e) {
 					logger.error("Failed to process arXiv paper: " + result.getEntryId(), e);
 				}
+				finally {
+					// Clean up temporary files
+					arxivResource.cleanup();
+					if (tempDir != null) {
+						try {
+							Files.delete(tempDir);
+						}
+						catch (IOException e) {
+							logger.error("Failed to delete temporary directory", e);
+						}
+					}
+				}
 			});
-
 		}
 		catch (IOException e) {
 			throw new RuntimeException("Failed to read documents from arXiv", e);
