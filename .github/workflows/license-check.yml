@@ -14,18 +14,21 @@
 # limitations under the License.
 #
 
-version: 2
-updates:
+name: License Check
 
-  - package-ecosystem: "maven"
-    directory: "/"
-    open-pull-requests-limit: 20
-    # Ignore major version updates
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "03:00"
-      timezone: "US/Eastern"
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  license-header:
+    name: License header
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Check license header
+        uses: apache/skywalking-eyes@5b7ee1731d036b5aac68f8bd3fc9e6f98ada082e
