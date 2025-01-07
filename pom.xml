@@ -69,6 +69,7 @@
         <module>community/document-parsers/document-parser-apache-pdfbox</module>
         <module>community/document-parsers/document-parser-markdown</module>
         <module>community/document-parsers/document-parser-tika</module>
+        <module>community/document-parsers/document-parser-pdf-tables</module>
     </modules>
 
     <properties>
