@@ -15,12 +15,12 @@
  */
 
 import { Tabs } from 'antd';
-import Config from './Config';
-import Prompt from './Prompt';
-import Tool from './Tool';
+import Config from './config';
+import Prompt from './prompt';
+import Tool from './tool';
 import type { TabsProps } from 'antd';
 import styles from './index.module.css';
-import { RightPanelValues } from '../../pages/run/models/types';
+import { RightPanelValues } from './types';
 import { ChatOptions, ImageOptions } from '@/types/options';
 import { ModelType } from '@/types/chat_model';
 import { useEffect, useState } from 'react';
@@ -33,6 +33,7 @@ type Props = {
   onChangePrompt: (prompt: string) => void;
 };
 
+// 右侧面板组件
 export default function Setup(props: Props) {
   const { modelType, tabs } = props;
   const { initialChatConfig, initialImgConfig, initialTool } =
@@ -72,7 +73,7 @@ export default function Setup(props: Props) {
         return tabs.includes(tab.key);
       }),
     );
-  }, [initialChatConfig, initialImgConfig]);
+  }, [props.initialValues]);
   return (
     <div className={styles.container}>
       <Tabs defaultActiveKey="config" items={items} />

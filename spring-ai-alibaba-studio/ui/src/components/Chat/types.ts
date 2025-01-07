@@ -14,9 +14,15 @@
  * limitations under the License.
  */
 
-.container {
-  width: 350px;
-  padding-left: 25px;
-  padding-right: 25px;
-  overflow: hidden scroll;
+import { TelemetryResult } from '@/types/chat_model';
+
+export interface ChatRunResult {
+  result: string;
+  telemetry: TelemetryResult;
+  [property: string]: any;
+}
+
+export enum ChatScene {
+  CLIENT = 'client',
+  MODEL = 'model',
 }
