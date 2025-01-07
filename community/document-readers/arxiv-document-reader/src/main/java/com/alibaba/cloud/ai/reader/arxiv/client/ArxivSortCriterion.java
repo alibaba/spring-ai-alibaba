@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.reader.arxiv.client;
 
 /**
- * ArxivSortCriterion用于标识可以对搜索结果进行排序的属性
+ * ArxivSortCriterion identifies the properties by which search results can be sorted
  *
  * @see <a href="https://arxiv.org/help/api/user-manual#sort">arXiv API User's Manual:
  * sort order</a>
@@ -25,17 +25,17 @@ package com.alibaba.cloud.ai.reader.arxiv.client;
 public enum ArxivSortCriterion {
 
 	/**
-	 * 按相关性排序
+	 * Sort by relevance
 	 */
 	RELEVANCE("relevance"),
 
 	/**
-	 * 按最后更新日期排序
+	 * Sort by last updated date
 	 */
 	LAST_UPDATED_DATE("lastUpdatedDate"),
 
 	/**
-	 * 按提交日期排序
+	 * Sort by submitted date
 	 */
 	SUBMITTED_DATE("submittedDate");
 

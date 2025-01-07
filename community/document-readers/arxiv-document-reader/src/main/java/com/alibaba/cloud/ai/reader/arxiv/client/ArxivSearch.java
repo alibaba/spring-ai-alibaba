@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * arXiv数据库搜索的规范
+ * arXiv database search specification
  *
  * @see <a href="https://arxiv.org/help/api/user-manual#query_details">arXiv API User's
  * Manual: Details of Query Construction</a>
@@ -29,15 +29,15 @@ import java.util.Map;
  */
 public class ArxivSearch {
 
-	private String query; // 查询字符串
+	private String query; // Query string
 
-	private List<String> idList; // 限制搜索的文章ID列表
+	private List<String> idList; // List of article IDs to restrict search
 
-	private Integer maxResults; // 最大返回结果数
+	private Integer maxResults; // Maximum number of results to return
 
-	private ArxivSortCriterion sortBy; // 排序标准
+	private ArxivSortCriterion sortBy; // Sort criterion
 
-	private ArxivSortOrder sortOrder; // 排序顺序
+	private ArxivSortOrder sortOrder; // Sort order
 
 	public ArxivSearch() {
 		this("", new ArrayList<>(), null, ArxivSortCriterion.RELEVANCE, ArxivSortOrder.DESCENDING);
@@ -93,7 +93,7 @@ public class ArxivSearch {
 	}
 
 	/**
-	 * 返回用于API请求的搜索参数
+	 * Returns search parameters for API requests
 	 */
 	public Map<String, String> getUrlArgs() {
 		Map<String, String> args = new HashMap<>();
