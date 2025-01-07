@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - main
 
 jobs:
   build:
@@ -22,4 +25,4 @@ jobs:
 
       - name: Source code formatting check
         run: |
-          ./mvnw spring-javaformat:validate -pl spring-ai-alibaba-core
+          ./mvnw spring-javaformat:validate
