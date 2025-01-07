@@ -1,5 +1,6 @@
 package com.alibaba.cloud.ai.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.opentelemetry.exporter.internal.otlp.traces.ResourceSpansMarshaler;
 import io.opentelemetry.sdk.common.CompletableResultCode;
@@ -18,7 +19,7 @@ public interface StudioObservabilityService {
 
 	ArrayNode readObservabilityFile();
 
-	ArrayNode getTraceByTraceId(String traceId);
+	JsonNode getTraceByTraceId(String traceId);
 
 	String clearExportContent();
 

@@ -3,10 +3,10 @@ import { Card, Table, Tag } from 'antd';
 import type { TableProps } from 'antd';
 import { traceDetailList } from '@/mock/tracemock';
 import { createStyles } from 'antd-style';
-import TraceDetailComp from '@/components/TraceDetailComp';
-import { convertToTraceInfo } from '@/traceUtil';
+import TraceDetailComp from '@/components/trace_detail_comp';
+import { convertToTraceInfo } from '@/utils/trace_util';
 import traceClient from '@/services/trace_clients';
-import { DataType } from '@/types/trace';
+import { TraceInfo } from '@/types/traces';
 
 const useStyle = createStyles(({ css, token }) => {
   // @ts-ignore
@@ -28,10 +28,10 @@ const useStyle = createStyles(({ css, token }) => {
 });
 
 export default function History() {
-  const [data, setData] = useState<DataType[]>([]);
+  const [data, setData] = useState<TraceInfo[]>([]);
   const [openTraceDetail, setOpenTraceDetail] = useState(false);
   const [traceDetail, setTraceDetail] = useState({} as any);
-  const columns: TableProps<DataType>['columns'] = [
+  const columns: TableProps<TraceInfo>['columns'] = [
     {
       title: 'id',
       dataIndex: 'id',

@@ -14,13 +14,9 @@
  * limitations under the License.
  */
 
-import { InitialTool } from '../../../pages/run/models/types';
-
-type Props = {
-  initialTool: InitialTool;
-};
-
-export default function Tool(props: Props) {
-  const { initialTool } = props;
-  return <></>;
+.container {
+  min-width: 350px;
+  padding-left: 25px;
+  padding-right: 25px;
+  overflow: hidden scroll;
 }
