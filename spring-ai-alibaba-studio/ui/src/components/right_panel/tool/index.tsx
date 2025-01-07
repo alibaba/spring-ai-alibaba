@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-import { ChatOptions, ImageOptions } from '@/types/options';
+import { InitialTool } from '../types';
 
-export type RightPanelValues = {
-  initialChatConfig: ChatOptions;
-  initialImgConfig: ImageOptions;
+type Props = {
   initialTool: InitialTool;
 };
 
-export type InitialTool = {};
+export default function Tool(props: Props) {
+  const { initialTool } = props;
+  return <></>;
+}
