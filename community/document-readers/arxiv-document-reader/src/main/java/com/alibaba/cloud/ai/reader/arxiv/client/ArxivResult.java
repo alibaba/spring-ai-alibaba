@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.reader.arxiv.client;
 
 import java.time.LocalDateTime;
@@ -15,31 +30,31 @@ import java.util.regex.Pattern;
  */
 public class ArxivResult {
 
-	private String entryId; // 形如 https://arxiv.org/abs/{id} 的URL
+	private String entryId; // URL in the format https://arxiv.org/abs/{id}
 
-	private LocalDateTime updated; // 最后更新时间
+	private LocalDateTime updated; // Last update time
 
-	private LocalDateTime published; // 最初发布时间
+	private LocalDateTime published; // Initial publication time
 
-	private String title; // 标题
+	private String title; // Title
 
-	private List<ArxivAuthor> authors; // 作者列表
+	private List<ArxivAuthor> authors; // List of authors
 
-	private String summary; // 摘要
+	private String summary; // Abstract
 
-	private String comment; // 作者评论(可选)
+	private String comment; // Author comments (optional)
 
-	private String journalRef; // 期刊引用(可选)
+	private String journalRef; // Journal reference (optional)
 
-	private String doi; // DOI链接(可选)
+	private String doi; // DOI link (optional)
 
-	private String primaryCategory; // 主要分类
+	private String primaryCategory; // Primary category
 
-	private List<String> categories; // 所有分类
+	private List<String> categories; // All categories
 
-	private List<ArxivLink> links; // 相关链接(最多3个)
+	private List<ArxivLink> links; // Related links (up to 3)
 
-	private String pdfUrl; // PDF链接(如果存在)
+	private String pdfUrl; // PDF link (if available)
 
 	// Getters and Setters
 	public String getEntryId() {
@@ -149,8 +164,9 @@ public class ArxivResult {
 	}
 
 	/**
-	 * 获取文章的短ID 例如: - URL为"https://arxiv.org/abs/2107.05580v1"时返回"2107.05580v1" -
-	 * URL为"https://arxiv.org/abs/quant-ph/0201082v1"时返回"quant-ph/0201082v1"
+	 * Get article's short ID Examples: - For URL "https://arxiv.org/abs/2107.05580v1"
+	 * returns "2107.05580v1" - For URL "https://arxiv.org/abs/quant-ph/0201082v1" returns
+	 * "quant-ph/0201082v1"
 	 */
 	public String getShortId() {
 		return entryId.split("arxiv.org/abs/")[1];
@@ -226,13 +242,13 @@ public class ArxivResult {
 	 */
 	public static class ArxivLink {
 
-		private String href; // 链接URL
+		private String href; // Link URL
 
-		private String title; // 链接标题
+		private String title; // Link title
 
-		private String rel; // 链接与Result的关系
+		private String rel; // Relationship between link and Result
 
-		private String contentType; // HTTP内容类型
+		private String contentType; // HTTP content type
 
 		public ArxivLink(String href, String title, String rel, String contentType) {
 			this.href = href;

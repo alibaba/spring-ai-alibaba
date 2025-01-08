@@ -14,6 +14,7 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
 -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -25,9 +26,9 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>obsidian-document-reader</artifactId>
-    <name>obsidian-document-reader</name>
-    <description>obsidian reader for Spring AI Alibaba</description>
+    <artifactId>gpt-repo-document-reader</artifactId>
+    <name>gpt-repo-document-reader</name>
+    <description>gpt-repo reader for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
@@ -49,12 +50,6 @@
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-core</artifactId>
             <version>${project.parent.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>document-parser-markdown</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <!-- test dependencies -->
@@ -89,6 +84,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot.version}</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
