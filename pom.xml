@@ -64,6 +64,7 @@
         <module>community/document-readers/notion-document-reader</module>
         <module>community/document-readers/arxiv-document-reader</module>
         <module>community/document-readers/chatgpt-data-document-reader</module>
+        <module>community/document-readers/gpt-repo-document-reader</module>
 
 
         <module>community/document-parsers/document-parser-apache-pdfbox</module>

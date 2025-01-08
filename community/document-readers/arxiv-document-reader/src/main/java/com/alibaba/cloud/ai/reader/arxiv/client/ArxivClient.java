@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.reader.arxiv.client;
 
 import org.slf4j.Logger;
@@ -29,7 +44,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * arXiv API客户端，用于获取搜索结果
+ * arXiv API client, used to get search results
  *
  * @author brianxiadong
  */
@@ -41,13 +56,13 @@ public class ArxivClient {
 
 	private static final DateTimeFormatter ATOM_DATE_FORMAT = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
-	private final int pageSize; // 单次API请求的最大结果数
+	private final int pageSize; // Maximum results per API request
 
-	private final float delaySeconds; // API请求之间的延迟秒数
+	private final float delaySeconds; // Delay in seconds between API requests
 
-	private final int numRetries; // 失败重试次数
+	private final int numRetries; // Number of retry attempts on failure
 
-	private LocalDateTime lastRequestTime; // 上次请求时间
+	private LocalDateTime lastRequestTime; // Last request timestamp
 
 	private final HttpClient httpClient;
 
@@ -77,7 +92,7 @@ public class ArxivClient {
 	}
 
 	/**
-	 * 执行搜索并返回结果迭代器
+	 * Execute search and return result iterator
 	 */
 	public Iterator<ArxivResult> results(ArxivSearch search, int offset) throws IOException {
 		if (search.getMaxResults() != null) {
@@ -90,7 +105,7 @@ public class ArxivClient {
 	}
 
 	/**
-	 * 构造请求URL
+	 * Construct request URL
 	 */
 	private String formatUrl(ArxivSearch search, int start, int pageSize) {
 		Map<String, String> urlArgs = search.getUrlArgs();
@@ -107,7 +122,7 @@ public class ArxivClient {
 	}
 
 	/**
-	 * 解析feed并返回结果
+	 * Parse feed and return results
 	 */
 	private Document parseFeed(String url, boolean firstPage, int tryIndex) throws IOException {
 		try {
@@ -124,10 +139,10 @@ public class ArxivClient {
 	}
 
 	/**
-	 * 尝试解析feed
+	 * Try to parse feed
 	 */
 	private Document tryParseFeed(String url, boolean firstPage, int tryIndex) throws Exception {
-		// 检查是否需要等待
+		// Check if need to wait
 		if (lastRequestTime != null) {
 			long sinceLastRequest = java.time.Duration.between(lastRequestTime, LocalDateTime.now()).toMillis();
 			long requiredDelay = (long) (delaySeconds * 1000);
@@ -163,43 +178,43 @@ public class ArxivClient {
 	}
 
 	/**
-	 * 从XML条目创建ArxivResult对象
+	 * Create ArxivResult object from XML entry
 	 */
 	private ArxivResult resultFromEntry(Element entry) {
 		ArxivResult result = new ArxivResult();
 
-		// 设置基本字段
+		// Set basic fields
 		result.setEntryId(getElementText(entry, "id"));
 		result.setTitle(getElementText(entry, "title").replaceAll("\\s+", " "));
 		result.setSummary(getElementText(entry, "summary"));
 
-		// 设置日期
+		// Set dates
 		String updated = getElementText(entry, "updated");
 		String published = getElementText(entry, "published");
 		result.setUpdated(LocalDateTime.parse(updated, ATOM_DATE_FORMAT));
 		result.setPublished(LocalDateTime.parse(published, ATOM_DATE_FORMAT));
 
-		// 设置作者
+		// Set authors
 		NodeList authors = entry.getElementsByTagName("author");
 		result.setAuthors(IntStream.range(0, authors.getLength())
 			.mapToObj(i -> authors.item(i))
 			.map(node -> new ArxivResult.ArxivAuthor(getElementText((Element) node, "name")))
 			.collect(Collectors.toList()));
 
-		// 设置分类
+		// Set categories
 		NodeList categories = entry.getElementsByTagName("category");
 		result.setCategories(IntStream.range(0, categories.getLength())
 			.mapToObj(i -> categories.item(i))
 			.map(node -> ((Element) node).getAttribute("term"))
 			.collect(Collectors.toList()));
 
-		// 设置主分类
+		// Set primary category
 		NodeList primaryCategory = entry.getElementsByTagName("arxiv:primary_category");
 		if (primaryCategory.getLength() > 0) {
 			result.setPrimaryCategory(((Element) primaryCategory.item(0)).getAttribute("term"));
 		}
 
-		// 设置链接
+		// Set links
 		NodeList links = entry.getElementsByTagName("link");
 		result.setLinks(IntStream.range(0, links.getLength()).mapToObj(i -> links.item(i)).map(node -> {
 			Element link = (Element) node;
@@ -207,7 +222,7 @@ public class ArxivClient {
 					link.getAttribute("rel"), link.getAttribute("type"));
 		}).collect(Collectors.toList()));
 
-		// 设置其他可选字段
+		// Set optional fields
 		Optional.ofNullable(getElementText(entry, "arxiv:comment")).ifPresent(result::setComment);
 		Optional.ofNullable(getElementText(entry, "arxiv:journal_ref")).ifPresent(result::setJournalRef);
 		Optional.ofNullable(getElementText(entry, "arxiv:doi")).ifPresent(result::setDoi);
@@ -216,7 +231,7 @@ public class ArxivClient {
 	}
 
 	/**
-	 * 获取XML元素的文本内容
+	 * Get text content of XML element
 	 */
 	private String getElementText(Element parent, String tagName) {
 		NodeList nodes = parent.getElementsByTagName(tagName);
@@ -227,7 +242,7 @@ public class ArxivClient {
 	}
 
 	/**
-	 * 结果迭代器内部类
+	 * Result iterator internal class
 	 */
 	private class ResultIterator implements Iterator<ArxivResult> {
 
@@ -241,19 +256,19 @@ public class ArxivClient {
 
 		private int totalResults;
 
-		private int returnedResults; // 添加计数器跟踪已返回的结果数量
+		private int returnedResults; // Counter to track number of returned results
 
 		public ResultIterator(ArxivSearch search, int offset) throws IOException {
 			this.search = search;
 			this.offset = offset;
 			this.currentIndex = 0;
-			this.returnedResults = 0; // 初始化计数器
+			this.returnedResults = 0; // Initialize counter
 			fetchNextPage(true);
 		}
 
 		@Override
 		public boolean hasNext() {
-			// 检查是否达到最大结果数限制
+			// Check if maximum result limit reached
 			if (search.getMaxResults() != null && returnedResults >= search.getMaxResults()) {
 				return false;
 			}
@@ -276,12 +291,12 @@ public class ArxivClient {
 				}
 			}
 
-			returnedResults++; // 增加计数器
+			returnedResults++; // Increment counter
 			return resultFromEntry((Element) currentPage.item(currentIndex++));
 		}
 
 		private void fetchNextPage(boolean firstPage) throws IOException {
-			// 如果设置了maxResults，调整pageSize以避免获取过多结果
+			// If maxResults is set, adjust pageSize to avoid fetching too many results
 			int adjustedPageSize = pageSize;
 			if (search.getMaxResults() != null) {
 				int remaining = search.getMaxResults() - returnedResults;
@@ -298,7 +313,7 @@ public class ArxivClient {
 			if (firstPage) {
 				NodeList totalResultsNode = doc.getElementsByTagName("opensearch:totalResults");
 				totalResults = Integer.parseInt(totalResultsNode.item(0).getTextContent());
-				// 如果设置了maxResults，调整totalResults
+				// If maxResults is set, adjust totalResults
 				if (search.getMaxResults() != null) {
 					totalResults = Math.min(totalResults, search.getMaxResults());
 				}
@@ -314,38 +329,38 @@ public class ArxivClient {
 	}
 
 	/**
-	 * 下载论文的PDF文件
-	 * @param result arXiv搜索结果
-	 * @param dirPath 保存目录的路径
-	 * @param filename 可选的文件名，如果为null则使用默认文件名
-	 * @return 保存的文件路径
-	 * @throws IOException 如果下载或保存过程中发生错误
+	 * Download PDF file of a paper
+	 * @param result arXiv search result
+	 * @param dirPath Path to save directory
+	 * @param filename Optional filename, if null use default filename
+	 * @return Path to saved file
+	 * @throws IOException If error occurs during download or saving
 	 */
 	public Path downloadPdf(ArxivResult result, String dirPath, String filename) throws IOException {
 		if (result.getPdfUrl() == null) {
 			throw new IOException("PDF URL not available for this result");
 		}
 
-		// 创建保存目录
+		// Create save directory
 		Path dir = Paths.get(dirPath);
 		if (!Files.exists(dir)) {
 			Files.createDirectories(dir);
 		}
 
-		// 确定文件名
+		// Determine file name
 		String actualFilename = filename != null ? filename : result.getDefaultFilename("pdf");
 		Path targetPath = dir.resolve(actualFilename);
 
-		// 构建下载请求
+		// Build download request
 		HttpRequest request = HttpRequest.newBuilder()
 			.uri(URI.create(result.getPdfUrl()))
 			.header("User-Agent", "arxiv-java-client/1.0.0")
 			.GET()
 			.build();
 
-		// 执行下载
+		// Execute download
 		try {
-			// 检查是否需要等待
+			// Check if need to wait
 			if (lastRequestTime != null) {
 				long sinceLastRequest = java.time.Duration.between(lastRequestTime, LocalDateTime.now()).toMillis();
 				long requiredDelay = (long) (delaySeconds * 1000);
@@ -363,7 +378,7 @@ public class ArxivClient {
 				throw new IOException("Failed to download PDF: HTTP " + response.statusCode());
 			}
 
-			// 保存文件
+			// Save file
 			try (InputStream in = response.body()) {
 				Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
 			}
@@ -379,11 +394,11 @@ public class ArxivClient {
 	}
 
 	/**
-	 * 下载论文的PDF文件（使用默认文件名）
-	 * @param result arXiv搜索结果
-	 * @param dirPath 保存目录的路径
-	 * @return 保存的文件路径
-	 * @throws IOException 如果下载或保存过程中发生错误
+	 * Download PDF file of a paper (using default filename)
+	 * @param result arXiv search result
+	 * @param dirPath Path to save directory
+	 * @return Path to saved file
+	 * @throws IOException If error occurs during download or saving
 	 */
 	public Path downloadPdf(ArxivResult result, String dirPath) throws IOException {
 		return downloadPdf(result, dirPath, null);
