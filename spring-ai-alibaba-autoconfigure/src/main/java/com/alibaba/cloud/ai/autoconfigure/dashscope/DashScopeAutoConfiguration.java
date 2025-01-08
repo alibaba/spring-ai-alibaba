@@ -15,7 +15,17 @@
  */
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
-import com.alibaba.cloud.ai.dashscope.api.*;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioTranscriptionApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionModel;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
@@ -27,6 +37,7 @@ import com.alibaba.dashscope.audio.asr.transcription.Transcription;
 import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
 import io.micrometer.observation.ObservationRegistry;
 import org.jetbrains.annotations.NotNull;
+
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
@@ -56,12 +67,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 /**
  * @author nuocheng.lxm
@@ -103,15 +108,11 @@ public class DashScopeAutoConfiguration {
 			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
-		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
-			chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
-		}
-
 		var dashscopeApi = dashscopeChatApi(commonProperties, chatProperties, restClientBuilder, webClientBuilder,
 				responseErrorHandler);
 
 		var dashscopeModel = new DashScopeChatModel(dashscopeApi, chatProperties.getOptions(), functionCallbackResolver,
-				retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+				toolFunctionCallbacks, retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(dashscopeModel::setObservationConvention);
 
