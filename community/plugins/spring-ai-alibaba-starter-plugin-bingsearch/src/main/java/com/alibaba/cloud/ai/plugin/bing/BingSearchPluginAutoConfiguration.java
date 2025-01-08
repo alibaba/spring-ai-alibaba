@@ -1,5 +1,3 @@
-package com.alibaba.cloud.ai.plugin.dingtalk;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,26 +14,35 @@ package com.alibaba.cloud.ai.plugin.dingtalk;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package com.alibaba.cloud.ai.plugin.bing;
+
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 /**
- * @author YunLong
- */
-@Configuration
-@EnableConfigurationProperties(DingTalkProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.dingtalk", name = "enabled", havingValue = "true")
-public class DingTalkConfiguration {
+ * .
+ *
+ * @author: KrakenZJC
+ * @since : 2024-11-18
+ **/
+
+@AutoConfiguration
+@ConditionalOnClass(BingSearchService.class)
+@EnableConfigurationProperties(BingSearchProperties.class)
+public class BingSearchPluginAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("Send DingTalk group chat messages using a custom robot")
-	public DingTalkService dingTalkGroupSendMessageByCustomRobotFunction(DingTalkProperties dingTalkProperties) {
-		return new DingTalkService(dingTalkProperties);
+	@Description("Use bing search engine to query for the latest news.") // function
+	@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.bing", name = "enabled", havingValue = "true")
+	public BingSearchService bingSearchService(BingSearchProperties properties) {
+		return new BingSearchService(properties);
 	}
 
 }

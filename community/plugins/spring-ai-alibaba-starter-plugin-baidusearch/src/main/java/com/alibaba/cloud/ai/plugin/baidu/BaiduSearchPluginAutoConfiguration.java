@@ -15,14 +15,12 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.plugin.bing;
+package com.alibaba.cloud.ai.plugin.baidu;
 
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 /**
@@ -32,17 +30,16 @@ import org.springframework.context.annotation.Description;
  * @since : 2024-11-18
  **/
 
-@Configuration
-@ConditionalOnClass(BingSearchService.class)
-@EnableConfigurationProperties(BingSearchProperties.class)
-public class BingSearchPluginConfiguration {
+@AutoConfiguration
+@ConditionalOnClass(BaiduSearchService.class)
+public class BaiduSearchPluginAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("Use bing search engine to query for the latest news.") // function
-	@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.bing", name = "enabled", havingValue = "true")
-	public BingSearchService bingSearchService(BingSearchProperties properties) {
-		return new BingSearchService(properties);
+	@Description("Use baidu search engine to query for the latest news.") // function
+	// description
+	public BaiduSearchService baiduSearchService() {
+		return new BaiduSearchService();
 	}
 
 }

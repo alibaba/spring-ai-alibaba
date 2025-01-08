@@ -1,3 +1,5 @@
+package com.alibaba.cloud.ai.plugin.gaode;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,32 +16,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.alibaba.cloud.ai.plugin.baidu;
-
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import com.alibaba.cloud.ai.plugin.gaode.function.WeatherSearchFunction;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 /**
- * .
- *
- * @author: KrakenZJC
- * @since : 2024-11-18
- **/
-
-@Configuration
-@ConditionalOnClass(BaiduSearchService.class)
-public class BaiduSearchPluginConfiguration {
+ * @author YunLong
+ */
+@AutoConfiguration
+@EnableConfigurationProperties(GaoDeProperties.class)
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.gaode", name = "enabled", havingValue = "true")
+public class GaoDeAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("Use baidu search engine to query for the latest news.") // function
-	// description
-	public BaiduSearchService baiduSearchService() {
-		return new BaiduSearchService();
+	@Description("Get weather information according to address.")
+	public WeatherSearchFunction gaoDeGetAddressWeatherFunction(GaoDeProperties gaoDeProperties) {
+		return new WeatherSearchFunction(gaoDeProperties);
 	}
 
 }

@@ -16,6 +16,7 @@
  */
 package com.alibaba.cloud.ai.plugin.larksuite;
 
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -26,6 +27,7 @@ import org.springframework.context.annotation.Description;
 /**
  * @author 北极星
  */
+@AutoConfiguration
 @EnableConfigurationProperties({ LarkSuiteProperties.class })
 @ConditionalOnClass({ LarkSuiteProperties.class })
 public class LarkSuiteAutoConfiguration {

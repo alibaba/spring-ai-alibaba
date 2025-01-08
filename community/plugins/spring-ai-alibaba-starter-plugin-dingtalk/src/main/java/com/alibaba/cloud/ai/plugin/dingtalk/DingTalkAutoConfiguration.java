@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.plugin.gaode;
+package com.alibaba.cloud.ai.plugin.dingtalk;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -16,27 +16,26 @@ package com.alibaba.cloud.ai.plugin.gaode;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import com.alibaba.cloud.ai.plugin.gaode.function.WeatherSearchFunction;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 /**
  * @author YunLong
  */
-@Configuration
-@EnableConfigurationProperties(GaoDeProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.gaode", name = "enabled", havingValue = "true")
-public class GaoDeConfiguration {
+@AutoConfiguration
+@EnableConfigurationProperties(DingTalkProperties.class)
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.dingtalk", name = "enabled", havingValue = "true")
+public class DingTalkAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("Get weather information according to address.")
-	public WeatherSearchFunction gaoDeGetAddressWeatherFunction(GaoDeProperties gaoDeProperties) {
-		return new WeatherSearchFunction(gaoDeProperties);
+	@Description("Send DingTalk group chat messages using a custom robot")
+	public DingTalkService dingTalkGroupSendMessageByCustomRobotFunction(DingTalkProperties dingTalkProperties) {
+		return new DingTalkService(dingTalkProperties);
 	}
 
 }
