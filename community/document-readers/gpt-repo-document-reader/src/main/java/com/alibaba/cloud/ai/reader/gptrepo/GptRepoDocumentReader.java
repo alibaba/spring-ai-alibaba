@@ -29,7 +29,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * GptRepoDocumentReader - 用于读取Git仓库内容并转换为Document格式
+ * GptRepoDocumentReader - Used to read Git repository content and convert it to Document
+ * format
  *
  * @author brianxiadong
  */
@@ -77,12 +78,12 @@ public class GptRepoDocumentReader implements DocumentReader {
 	private final String preambleStr;
 
 	/**
-	 * 构造函数
-	 * @param repoPath 仓库路径
-	 * @param concatenate 是否合并所有文件内容
-	 * @param extensions 需要处理的文件扩展名列表
-	 * @param encoding 文件编码
-	 * @param preambleStr 自定义前导文本，如果为null则使用默认文本
+	 * Constructor
+	 * @param repoPath Repository path
+	 * @param concatenate Whether to merge all file contents
+	 * @param extensions List of file extensions to process
+	 * @param encoding File encoding
+	 * @param preambleStr Custom leading text, use default if null
 	 */
 	public GptRepoDocumentReader(String repoPath, boolean concatenate, List<String> extensions, String encoding,
 			String preambleStr) {
@@ -94,19 +95,19 @@ public class GptRepoDocumentReader implements DocumentReader {
 	}
 
 	/**
-	 * 构造函数 - 使用默认参数
-	 * @param repoPath 仓库路径
+	 * Constructor - Using default parameters
+	 * @param repoPath Repository path
 	 */
 	public GptRepoDocumentReader(String repoPath) {
 		this(repoPath, false, null, DEFAULT_ENCODING, null);
 	}
 
 	/**
-	 * 构造函数 - 不带自定义前导文本
-	 * @param repoPath 仓库路径
-	 * @param concatenate 是否合并所有文件内容
-	 * @param extensions 需要处理的文件扩展名列表
-	 * @param encoding 文件编码
+	 * Constructor - Without custom leading text
+	 * @param repoPath Repository path
+	 * @param concatenate Whether to merge all file contents
+	 * @param extensions List of file extensions to process
+	 * @param encoding File encoding
 	 */
 	public GptRepoDocumentReader(String repoPath, boolean concatenate, List<String> extensions, String encoding) {
 		this(repoPath, concatenate, extensions, encoding, null);
@@ -145,9 +146,9 @@ public class GptRepoDocumentReader implements DocumentReader {
 	}
 
 	/**
-	 * 从格式化的文本内容中提取文件路径
-	 * @param text 格式化的文本内容
-	 * @return 文件路径，如果未找到则返回null
+	 * Extract file path from formatted text content
+	 * @param text Formatted text content
+	 * @return File path, or null if not found
 	 */
 	private String extractFilePath(String text) {
 		String[] lines = text.split("\n");
@@ -158,7 +159,7 @@ public class GptRepoDocumentReader implements DocumentReader {
 	}
 
 	/**
-	 * 获取文档前导文本
+	 * Get document leading text
 	 */
 	private String getPreambleText() {
 		if (preambleStr != null) {
@@ -168,7 +169,7 @@ public class GptRepoDocumentReader implements DocumentReader {
 	}
 
 	/**
-	 * 读取.gptignore文件内容
+	 * Read .gptignore file content
 	 */
 	private List<String> readIgnorePatterns() throws IOException {
 		Path ignorePath = repoPath.resolve(IGNORE_FILE);
@@ -179,7 +180,7 @@ public class GptRepoDocumentReader implements DocumentReader {
 	}
 
 	/**
-	 * 处理仓库文件
+	 * Process repository files
 	 */
 	private List<String> processRepository(List<String> ignorePatterns) throws IOException {
 		List<String> results = new ArrayList<>();
@@ -227,14 +228,14 @@ public class GptRepoDocumentReader implements DocumentReader {
 	}
 
 	/**
-	 * 格式化文件内容
+	 * Format file content
 	 */
 	private String formatFileContent(String relativePath, String content) {
 		return String.format("%s\n%s\n%s\n", SECTION_SEPARATOR, relativePath, content);
 	}
 
 	/**
-	 * 检查文件是否应该被忽略
+	 * Check if file should be ignored
 	 */
 	private boolean shouldIgnore(String path, List<String> ignorePatterns) {
 		return ignorePatterns.stream().anyMatch(pattern -> {

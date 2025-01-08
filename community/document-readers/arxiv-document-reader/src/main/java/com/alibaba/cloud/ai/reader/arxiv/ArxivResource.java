@@ -21,7 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * arXiv资源类，用于管理查询和资源访问
+ * ArXiv resource class for managing queries and resource access
  *
  * @author brianxiadong
  */
@@ -89,7 +89,7 @@ public class ArxivResource {
 				Files.deleteIfExists(tempFilePath);
 			}
 			catch (IOException e) {
-				// 记录错误但不抛出异常，因为这只是清理操作
+				// Log error but don't throw exception since this is just cleanup
 			}
 		}
 	}
