@@ -4,4 +4,5 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 // TODO
 public class AppMemorySaverTest {
+
 }

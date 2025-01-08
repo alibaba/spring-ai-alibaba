@@ -14,10 +14,10 @@ import java.util.List;
 @Accessors(chain = true)
 public class LLMNodeActionDescriptor extends NodeActionDescriptor {
 
-    private ChatOptions chatOptions;
+	private ChatOptions chatOptions;
 
-    private List<PromptTemplate> promptTemplates;
+	private List<PromptTemplate> promptTemplates;
 
-    private List<String> functionNames;
+	private List<String> functionNames;
 
 }

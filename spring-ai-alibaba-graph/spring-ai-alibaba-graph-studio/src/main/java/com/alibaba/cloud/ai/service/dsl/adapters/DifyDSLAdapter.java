@@ -34,7 +34,8 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 
 	private final Serializer serializer;
 
-	public DifyDSLAdapter(List<NodeDataConverter<? extends NodeData>> nodeDataConverters, @Qualifier("yaml") Serializer serializer) {
+	public DifyDSLAdapter(List<NodeDataConverter<? extends NodeData>> nodeDataConverters,
+			@Qualifier("yaml") Serializer serializer) {
 		this.nodeDataConverters = nodeDataConverters;
 		this.serializer = serializer;
 	}
