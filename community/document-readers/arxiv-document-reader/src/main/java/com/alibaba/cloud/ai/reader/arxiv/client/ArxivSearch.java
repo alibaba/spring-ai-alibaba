@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.reader.arxiv.client;
 
 import java.util.ArrayList;
@@ -6,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * arXiv数据库搜索的规范
+ * arXiv database search specification
  *
  * @see <a href="https://arxiv.org/help/api/user-manual#query_details">arXiv API User's
  * Manual: Details of Query Construction</a>
@@ -14,15 +29,15 @@ import java.util.Map;
  */
 public class ArxivSearch {
 
-	private String query; // 查询字符串
+	private String query; // Query string
 
-	private List<String> idList; // 限制搜索的文章ID列表
+	private List<String> idList; // List of article IDs to restrict search
 
-	private Integer maxResults; // 最大返回结果数
+	private Integer maxResults; // Maximum number of results to return
 
-	private ArxivSortCriterion sortBy; // 排序标准
+	private ArxivSortCriterion sortBy; // Sort criterion
 
-	private ArxivSortOrder sortOrder; // 排序顺序
+	private ArxivSortOrder sortOrder; // Sort order
 
 	public ArxivSearch() {
 		this("", new ArrayList<>(), null, ArxivSortCriterion.RELEVANCE, ArxivSortOrder.DESCENDING);
@@ -78,7 +93,7 @@ public class ArxivSearch {
 	}
 
 	/**
-	 * 返回用于API请求的搜索参数
+	 * Returns search parameters for API requests
 	 */
 	public Map<String, String> getUrlArgs() {
 		Map<String, String> args = new HashMap<>();
