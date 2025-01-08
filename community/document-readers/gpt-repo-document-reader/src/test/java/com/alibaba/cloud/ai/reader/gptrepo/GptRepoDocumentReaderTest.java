@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * GptRepoDocumentReader的单元测试类
+ * Unit test class for GptRepoDocumentReader
  *
  * @author brianxiadong
  */
@@ -50,18 +50,18 @@ class GptRepoDocumentReaderTest {
 
 	@BeforeEach
 	void setUp() throws IOException {
-		// 创建一个模拟的Git仓库结构
+		// Create a mock Git repository structure
 		repoPath = tempDir.resolve("test-repo");
 		Files.createDirectories(repoPath);
 
-		// 创建测试文件
+		// Create test files
 		createTestFile(repoPath.resolve("src/main/java/TestFile.java"), TEST_FILE_CONTENT);
 		createTestFile(repoPath.resolve("src/main/python/test.py"), TEST_PYTHON_CONTENT);
 		createTestFile(repoPath.resolve(".gptignore"), "*.log\n*.tmp\n");
 	}
 
 	/**
-	 * 测试基本的文档读取功能
+	 * Test basic document reading functionality
 	 */
 	@Test
 	void testBasicDocumentReading() {
@@ -72,7 +72,7 @@ class GptRepoDocumentReaderTest {
 		assertFalse(documents.isEmpty());
 		assertTrue(documents.size() >= 2); // Should have at least two files read
 
-		// 验证文档内容
+		// Verify document content
 		boolean foundJavaFile = false;
 		boolean foundPythonFile = false;
 
@@ -93,7 +93,7 @@ class GptRepoDocumentReaderTest {
 	}
 
 	/**
-	 * 测试文件合并功能
+	 * Test file concatenation functionality
 	 */
 	@Test
 	void testConcatenatedReading() {
@@ -105,7 +105,7 @@ class GptRepoDocumentReaderTest {
 		assertEquals(1, documents.size(), "Should only have one concatenated document");
 		Document doc = documents.get(0);
 
-		// 验证合并后的文档包含所有文件内容
+		// Verify concatenated document contains all file contents
 		String content = doc.getContent();
 		assertTrue(content.contains(TEST_FILE_CONTENT));
 		assertTrue(content.contains(TEST_PYTHON_CONTENT));
@@ -113,11 +113,11 @@ class GptRepoDocumentReaderTest {
 	}
 
 	/**
-	 * 测试文件扩展名过滤功能
+	 * Test file extension filtering functionality
 	 */
 	@Test
 	void testExtensionFiltering() {
-		// 只读取Java文件
+		// Only read Java files
 		GptRepoDocumentReader reader = new GptRepoDocumentReader(repoPath.toString(), false, Arrays.asList("java"),
 				"UTF-8");
 
@@ -132,24 +132,24 @@ class GptRepoDocumentReaderTest {
 	}
 
 	/**
-	 * 测试.gptignore文件功能
+	 * Test .gptignore file functionality
 	 */
 	@Test
 	void testIgnorePatterns() throws IOException {
-		// 创建一个应该被忽略的文件
+		// Create a file that should be ignored
 		createTestFile(repoPath.resolve("test.log"), "This should be ignored");
 
 		GptRepoDocumentReader reader = new GptRepoDocumentReader(repoPath.toString());
 		List<Document> documents = reader.get();
 
-		// 验证.log文件被忽略
+		// Verify .log file is ignored
 		for (Document doc : documents) {
 			assertFalse(doc.getContent().contains("test.log"), "Should not contain ignored .log file");
 		}
 	}
 
 	/**
-	 * 测试元数据
+	 * Test metadata
 	 */
 	@Test
 	void testDocumentMetadata() {
@@ -159,14 +159,14 @@ class GptRepoDocumentReaderTest {
 		assertFalse(documents.isEmpty());
 		Document doc = documents.get(0);
 
-		// 验证元数据
+		// Verify metadata
 		assertNotNull(doc.getMetadata());
 		assertTrue(doc.getMetadata().containsKey("source"));
 		assertEquals(repoPath.toString(), doc.getMetadata().get("source"));
 	}
 
 	/**
-	 * 测试无效路径处理
+	 * Test invalid path handling
 	 */
 	@Test
 	void testInvalidPath() {
@@ -177,7 +177,7 @@ class GptRepoDocumentReaderTest {
 	}
 
 	/**
-	 * 辅助方法：创建测试文件
+	 * Helper method: Create test file
 	 */
 	private void createTestFile(Path filePath, String content) throws IOException {
 		Files.createDirectories(filePath.getParent());
@@ -185,7 +185,7 @@ class GptRepoDocumentReaderTest {
 	}
 
 	/**
-	 * 测试自定义前导文本
+	 * Test custom preamble text
 	 */
 	@Test
 	void testCustomPreamble() {
@@ -200,7 +200,7 @@ class GptRepoDocumentReaderTest {
 	}
 
 	/**
-	 * 测试文件元数据
+	 * Test file metadata
 	 */
 	@Test
 	void testFileMetadata() {
@@ -209,7 +209,7 @@ class GptRepoDocumentReaderTest {
 
 		assertFalse(documents.isEmpty());
 
-		// 查找Java文件的文档
+		// Find Java file document
 		Optional<Document> javaDoc = documents.stream()
 			.filter(doc -> doc.getContent().contains("TestFile.java"))
 			.findFirst();
@@ -217,7 +217,7 @@ class GptRepoDocumentReaderTest {
 		assertTrue(javaDoc.isPresent());
 		Document doc = javaDoc.get();
 
-		// 验证元数据
+		// Verify metadata
 		Map<String, Object> metadata = doc.getMetadata();
 		assertNotNull(metadata);
 		assertEquals("TestFile.java", metadata.get("file_name"));
@@ -237,7 +237,7 @@ class GptRepoDocumentReaderTest {
 		Document doc = documents.get(0);
 		assertTrue(doc.getContent().startsWith(customPreamble));
 
-		// 打印文档数量和第一个文档的元数据
+		// Print document count and first document metadata
 		System.out.println("Total documents: " + documents.size());
 		if (!documents.isEmpty()) {
 			System.out.println("First document metadata: " + doc.getMetadata());
@@ -245,23 +245,23 @@ class GptRepoDocumentReaderTest {
 	}
 
 	/**
-	 * 测试不同编码的文件读取
+	 * Test reading files with different encodings
 	 */
 	@Test
 	void testDifferentEncoding() throws IOException {
-		// 创建一个包含中文内容的文件
+		// Create a file with Chinese content
 		String chineseContent = "这是一个测试文件\n包含中文内容";
 		Path chineseFile = repoPath.resolve("src/main/resources/chinese.txt");
 		Files.createDirectories(chineseFile.getParent());
 		Files.write(chineseFile, chineseContent.getBytes("GBK"));
 
-		// 使用GBK编码读取（应该成功）
+		// Read with GBK encoding (should succeed)
 		GptRepoDocumentReader reader = new GptRepoDocumentReader(repoPath.toString(), false,
 				Collections.singletonList("txt"), "GBK");
 
 		List<Document> documents = reader.get();
 
-		// 查找中文文件的文档
+		// Find Chinese file document
 		Optional<Document> chineseDoc = documents.stream()
 			.filter(doc -> doc.getContent().contains("chinese.txt"))
 			.findFirst();
@@ -270,12 +270,13 @@ class GptRepoDocumentReaderTest {
 		Document doc = chineseDoc.get();
 		assertTrue(doc.getContent().contains(chineseContent));
 
-		// 使用错误的编码读取（应该抛出异常）
+		// Read with wrong encoding (should throw exception)
 		reader = new GptRepoDocumentReader(repoPath.toString(), false, Collections.singletonList("txt"), "UTF-8");
 
-		// 验证使用错误的编码时会抛出异常
+		// Verify exception is thrown when using wrong encoding
 		assertThrows(RuntimeException.class, reader::get,
 				"Reading GBK encoded file with UTF-8 encoding should throw an exception");
 	}
 
 }
+
