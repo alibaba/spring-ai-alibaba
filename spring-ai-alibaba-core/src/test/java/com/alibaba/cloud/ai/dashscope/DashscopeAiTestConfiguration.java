@@ -106,8 +106,8 @@ public class DashscopeAiTestConfiguration {
 	@Bean
 	public ChatModel dashscopeChatModel(DashScopeApi dashscopeChatApi, TestObservationRegistry observationRegistry) {
 		return new DashScopeChatModel(dashscopeChatApi,
-				DashScopeChatOptions.builder().withModel(DashScopeApi.DEFAULT_CHAT_MODEL).build(), null,
-				List.of(), RetryUtils.DEFAULT_RETRY_TEMPLATE, observationRegistry);
+				DashScopeChatOptions.builder().withModel(DashScopeApi.DEFAULT_CHAT_MODEL).build(), null, List.of(),
+				RetryUtils.DEFAULT_RETRY_TEMPLATE, observationRegistry);
 	}
 
 	@Bean
