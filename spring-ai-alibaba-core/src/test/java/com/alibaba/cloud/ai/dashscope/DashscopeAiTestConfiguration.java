@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.dashscope;
 
+import java.util.List;
+
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
@@ -105,7 +107,7 @@ public class DashscopeAiTestConfiguration {
 	public ChatModel dashscopeChatModel(DashScopeApi dashscopeChatApi, TestObservationRegistry observationRegistry) {
 		return new DashScopeChatModel(dashscopeChatApi,
 				DashScopeChatOptions.builder().withModel(DashScopeApi.DEFAULT_CHAT_MODEL).build(), null,
-				RetryUtils.DEFAULT_RETRY_TEMPLATE, observationRegistry);
+				List.of(), RetryUtils.DEFAULT_RETRY_TEMPLATE, observationRegistry);
 	}
 
 	@Bean
