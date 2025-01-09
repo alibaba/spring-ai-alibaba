@@ -84,4 +84,29 @@ class ApacheTikaDocumentParserTest {
 		assertThatThrownBy(() -> parser.parse(inputStream)).isExactlyInstanceOf(ZeroByteFileException.class);
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = { "example-utf8.html" })
+	void should_parse_html_file(String fileName) {
+
+		DocumentParser parser = new TikaDocumentParser(AutoDetectParser::new, null, null, null);
+		InputStream inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
+
+		Document document = parser.parse(inputStream).get(0);
+
+		System.out.println(document.getText());
+
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "factbook.xml" })
+	void should_parse_xml_file(String fileName) {
+
+		DocumentParser parser = new TikaDocumentParser(AutoDetectParser::new, null, null, null);
+		InputStream inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
+
+		Document document = parser.parse(inputStream).get(0);
+		System.out.println(document.getText());
+		assertThat(document.getMetadata()).isEmpty();
+	}
+
 }
