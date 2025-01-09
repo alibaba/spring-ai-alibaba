@@ -29,7 +29,8 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @ConditionalOnClass(YoudaoTranslateService.class)
 @EnableConfigurationProperties(YoudaoTranslateProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.youdaotranslate", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.youdaotranslate", name = "enabled",
+		havingValue = "true")
 public class YoudaoTranslateAutoConfiguration {
 
 	@Bean
