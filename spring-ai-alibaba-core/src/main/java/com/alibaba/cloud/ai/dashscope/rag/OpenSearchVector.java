@@ -1,3 +1,19 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.alibaba.cloud.ai.dashscope.rag;
 
 import com.alibaba.fastjson.JSON;
@@ -31,6 +47,8 @@ public class OpenSearchVector implements VectorStore {
 	private static final String CONTENT_FIELD_NAME = "content";
 
 	private static final String METADATA_FIELD_NAME = "metadata";
+
+	private static final String EMPTY_TEXT = "";
 
 	private final String tableName;
 
@@ -93,7 +111,7 @@ public class OpenSearchVector implements VectorStore {
 			// Insert document content information, key-value pairs matching.
 			// The field_pk field must be consistent with the pkField configuration.
 			documentFields.put(ID_FIELD_NAME, document.getId());
-			documentFields.put(CONTENT_FIELD_NAME, document.getContent());
+			documentFields.put(CONTENT_FIELD_NAME, document.getText());
 			// Convert metadata to JSON
 			documentFields.put(METADATA_FIELD_NAME, JSON.toJSONString(document.getMetadata()));
 
@@ -127,7 +145,7 @@ public class OpenSearchVector implements VectorStore {
 
 	@Override
 	public List<Document> similaritySearch(String query) {
-		return this.similaritySearch(SearchRequest.query(query));
+		return this.similaritySearch(SearchRequest.builder().query(query).build());
 	}
 
 	@Override
@@ -434,12 +452,12 @@ public class OpenSearchVector implements VectorStore {
 				JSONObject fields = jsonDocument.getJSONObject(FIELDS_KEY);
 				String content = fields.getString(CONTENT_FIELD_NAME);
 				if (content == null || content.isEmpty()) {
-					return Document.EMPTY_TEXT;
+					return EMPTY_TEXT;
 				}
 				return content;
 			}
 
-			return Document.EMPTY_TEXT;
+			return EMPTY_TEXT;
 		}
 
 		/**
@@ -450,7 +468,7 @@ public class OpenSearchVector implements VectorStore {
 		private static String extractId(JSONObject jsonDocument) {
 			String id = jsonDocument.getString(ID_FIELD_NAME);
 			if (id == null || id.isEmpty()) {
-				return Document.EMPTY_TEXT;
+				return EMPTY_TEXT;
 			}
 			return id;
 		}
