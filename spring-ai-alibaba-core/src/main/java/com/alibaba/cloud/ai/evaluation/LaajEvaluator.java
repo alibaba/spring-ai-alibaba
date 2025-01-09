@@ -17,9 +17,9 @@ package com.alibaba.cloud.ai.evaluation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.Evaluator;
-import org.springframework.ai.model.Content;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -67,10 +67,10 @@ public abstract class LaajEvaluator implements Evaluator {
 	}
 
 	public String doGetSupportingData(EvaluationRequest evaluationRequest) {
-		List<Content> data = evaluationRequest.getDataList();
+		List<Document> data = evaluationRequest.getDataList();
 		return data.stream()
-			.filter(node -> node != null && node.getContent() != null)
-			.map(Content::getContent)
+			.filter(node -> node != null && node.getText() != null)
+			.map(Document::getText)
 			.collect(Collectors.joining(System.lineSeparator()));
 	}
 
