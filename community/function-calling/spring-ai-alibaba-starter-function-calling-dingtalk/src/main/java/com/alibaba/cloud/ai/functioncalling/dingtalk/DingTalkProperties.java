@@ -20,7 +20,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * @author YunLong
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.dingtalk")
+@ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.dingtalk")
 public class DingTalkProperties {
 
 	private String customRobotAccessToken;

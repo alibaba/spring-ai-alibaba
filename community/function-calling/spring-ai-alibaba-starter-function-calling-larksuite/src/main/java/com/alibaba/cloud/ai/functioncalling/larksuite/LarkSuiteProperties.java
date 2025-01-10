@@ -21,7 +21,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author 北极星
  */
 
-@ConfigurationProperties("spring.ai.alibaba.plugin.larksuite")
+@ConfigurationProperties("spring.ai.alibaba.functioncalling.larksuite")
 public class LarkSuiteProperties {
 
 	/**

@@ -15,14 +15,14 @@
  */
 package com.alibaba.cloud.ai.dashscope.rag;
 
-import java.util.List;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
-
 import org.springframework.ai.document.Document;
-import org.springframework.ai.document.DocumentRetriever;
+import org.springframework.ai.rag.Query;
+import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.util.Assert;
+
+import java.util.List;
 
 /**
  * @author nuocheng.lxm
@@ -42,12 +42,12 @@ public class DashScopeDocumentRetriever implements DocumentRetriever {
 	}
 
 	@Override
-	public List<Document> retrieve(String query) {
+	public List<Document> retrieve(Query query) {
 		String pipelineId = dashScopeApi.getPipelineIdByName(options.getIndexName());
 		if (pipelineId == null) {
 			throw new DashScopeException("Index:" + options.getIndexName() + " NotExist");
 		}
-		List<Document> documentList = dashScopeApi.retriever(pipelineId, query, options);
+		List<Document> documentList = dashScopeApi.retriever(pipelineId, query.text(), options);
 		return documentList;
 	}
 
