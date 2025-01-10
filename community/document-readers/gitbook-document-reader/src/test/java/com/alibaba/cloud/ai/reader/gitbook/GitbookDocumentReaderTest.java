@@ -39,52 +39,52 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class GitbookDocumentReaderTest {
 
-    private static final String API_TOKEN = "test-token";
-    private static final String SPACE_ID = "test-space";
-    private static final String CUSTOM_API_URL = "https://api.custom-gitbook.com";
+	private static final String API_TOKEN = "test-token";
 
-    @Mock
-    private GitbookClient mockGitbookClient;
+	private static final String SPACE_ID = "test-space";
 
-    private GitbookDocumentReader reader;
+	private static final String CUSTOM_API_URL = "https://api.custom-gitbook.com";
 
-    @BeforeEach
-    void setUp() {
-        reader = new GitbookDocumentReader(API_TOKEN, SPACE_ID);
-    }
+	@Mock
+	private GitbookClient mockGitbookClient;
 
-    @Test
-    void constructorWithMinimalParameters() {
-        GitbookDocumentReader reader = new GitbookDocumentReader(API_TOKEN, SPACE_ID);
-        assertThat(reader).isNotNull();
-    }
+	private GitbookDocumentReader reader;
 
-    @Test
-    void constructorWithAllParameters() {
-        List<String> metadataFields = Arrays.asList("title", "description");
-        GitbookDocumentReader reader = new GitbookDocumentReader(API_TOKEN, SPACE_ID, CUSTOM_API_URL, metadataFields);
-        assertThat(reader).isNotNull();
-    }
+	@BeforeEach
+	void setUp() {
+		reader = new GitbookDocumentReader(API_TOKEN, SPACE_ID);
+	}
 
-    @Test
-    void constructorShouldThrowExceptionWhenApiTokenIsEmpty() {
-        assertThatThrownBy(() -> new GitbookDocumentReader("", SPACE_ID))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("API Token must not be empty");
-    }
+	@Test
+	void constructorWithMinimalParameters() {
+		GitbookDocumentReader reader = new GitbookDocumentReader(API_TOKEN, SPACE_ID);
+		assertThat(reader).isNotNull();
+	}
 
-    @Test
-    void constructorShouldThrowExceptionWhenSpaceIdIsEmpty() {
-        assertThatThrownBy(() -> new GitbookDocumentReader(API_TOKEN, ""))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Space ID must not be empty");
-    }
+	@Test
+	void constructorWithAllParameters() {
+		List<String> metadataFields = Arrays.asList("title", "description");
+		GitbookDocumentReader reader = new GitbookDocumentReader(API_TOKEN, SPACE_ID, CUSTOM_API_URL, metadataFields);
+		assertThat(reader).isNotNull();
+	}
 
-    @Test
-    void getShouldReturnEmptyListWhenNoPages() {
-        GitbookDocumentReader reader = new GitbookDocumentReader(API_TOKEN, SPACE_ID);
-        List<Document> documents = reader.get();
-        assertThat(documents).isNotEmpty();
-    }
+	@Test
+	void constructorShouldThrowExceptionWhenApiTokenIsEmpty() {
+		assertThatThrownBy(() -> new GitbookDocumentReader("", SPACE_ID)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("API Token must not be empty");
+	}
+
+	@Test
+	void constructorShouldThrowExceptionWhenSpaceIdIsEmpty() {
+		assertThatThrownBy(() -> new GitbookDocumentReader(API_TOKEN, "")).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Space ID must not be empty");
+	}
+
+	@Test
+	void getShouldReturnEmptyListWhenNoPages() {
+		GitbookDocumentReader reader = new GitbookDocumentReader(API_TOKEN, SPACE_ID);
+		List<Document> documents = reader.get();
+		assertThat(documents).isNotEmpty();
+	}
 
 }

@@ -20,39 +20,42 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 
 /**
- * Represents a space in Gitbook.
- * A space is a collection of pages and serves as the root container.
+ * Represents a space in Gitbook. A space is a collection of pages and serves as the root
+ * container.
  *
  * @author brianxiadong
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GitbookSpace {
 
-    private String id;
-    private String title;
-    private List<GitbookPage> pages;
+	private String id;
 
-    public String getId() {
-        return id;
-    }
+	private String title;
 
-    public void setId(String id) {
-        this.id = id;
-    }
+	private List<GitbookPage> pages;
 
-    public String getTitle() {
-        return title;
-    }
+	public String getId() {
+		return id;
+	}
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
+	public void setId(String id) {
+		this.id = id;
+	}
 
-    public List<GitbookPage> getPages() {
-        return pages;
-    }
+	public String getTitle() {
+		return title;
+	}
 
-    public void setPages(List<GitbookPage> pages) {
-        this.pages = pages;
-    }
-} 
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
+	public List<GitbookPage> getPages() {
+		return pages;
+	}
+
+	public void setPages(List<GitbookPage> pages) {
+		this.pages = pages;
+	}
+
+}
