@@ -16,21 +16,16 @@ public class Edge {
 
 	private String id;
 
-	private String type;
-
 	private String source;
 
 	private String target;
 
-	private List<Case> cases;
+	private String sourceHandle;
 
-	// case id -> target id
-	private Map<String, String> targetMap;
+	private String targetHandle;
 
 	private Map<String, Object> data;
 
 	private Integer zIndex = 0;
-
-	private Boolean selected = false;
 
 }

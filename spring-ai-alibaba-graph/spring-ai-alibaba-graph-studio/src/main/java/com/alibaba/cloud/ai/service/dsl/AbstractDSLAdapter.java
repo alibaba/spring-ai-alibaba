@@ -60,9 +60,9 @@ public abstract class AbstractDSLAdapter implements DSLAdapter {
 
 	public abstract Workflow mapToWorkflow(Map<String, Object> data);
 
-	public abstract ChatBot mapToChatBot(Map<String, Object> data);
-
 	public abstract Map<String, Object> workflowToMap(Workflow workflow);
+
+	public abstract ChatBot mapToChatBot(Map<String, Object> data);
 
 	public abstract Map<String, Object> chatbotToMap(ChatBot chatBot);
 

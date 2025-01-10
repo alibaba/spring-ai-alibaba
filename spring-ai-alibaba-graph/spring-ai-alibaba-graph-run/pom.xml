@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-graph-run</artifactId>
-    <name>Spring AI Graph Studio</name>
+    <name>Spring AI Graph Run</name>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
