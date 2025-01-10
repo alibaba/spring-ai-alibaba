@@ -2,15 +2,15 @@ package com.alibaba.cloud.ai.model.workflow;
 
 public enum EdgeType {
 
-	DIRECT("DIRECT"),
+	DIRECT("direct"),
 
-	CONDITIONAL("CONDITIONAL")
+	CONDITIONAL("conditional")
 
 	;
 
 	private String value;
 
-	private EdgeType(String value) {
+	EdgeType(String value) {
 		this.value = value;
 	}
 
