@@ -28,7 +28,7 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @ConditionalOnClass(ToutiaoNewsService.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.toutiaonews", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.toutiaonews", name = "enabled", havingValue = "true")
 public class TiaotiaoNewsAutoConfiguration {
 
 	@Bean
