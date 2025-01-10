@@ -1,56 +1,45 @@
 import { Icon } from '@iconify/react';
-import { Affix, Card, Col, Row } from 'antd';
-import React, { useState } from 'react';
+import { Card, Flex } from 'antd';
+import React from 'react';
 import './toolbar.less';
 
+export type ToolType = {
+  type: string;
+  options: {
+    title: string;
+    onClick?: any;
+    icon?: string;
+    text?: any;
+    split?: boolean;
+  }[];
+};
 interface Props {
-  name?: string;
+  toolList: ToolType[];
 }
 
-const ToolBar: React.FC<Props> = () => {
-  const [toolbarBottom] = useState<number>(12);
-
-  const toolList = [
-    {
-      type: 'edit',
-      options: [
-        {
-          title: 'undo',
-          icon: 'iconamoon:do-undo-light',
-        },
-        {
-          title: 'redo',
-          icon: 'iconamoon:do-redo-light',
-          split: true,
-        },
-
-        {
-          title: 'history',
-          icon: 'material-symbols:history-toggle-off',
-          split: false,
-        },
-      ],
-    },
-    {
-      type: 'map',
-    },
-    {
-      type: 'graph',
-    },
-  ];
+const ToolBar: React.FC<Props> = ({ toolList }) => {
   return (
-    <Affix offsetBottom={toolbarBottom}>
-      <Row gutter={12}>
-        {toolList.map((group) => {
-          let opts = group?.options || [];
-          return (
-            <>
-              <Col lg={opts.length || 2} sm={opts.length * 2 || 2}>
-                <Card className="toolbar-card">
-                  {opts.map((tool) => {
-                    return (
-                      <>
-                        <Icon className="icon" icon={tool.icon}></Icon>
+    <Flex style={{ marginLeft: '20px' }}>
+      {toolList.map((group) => {
+        let opts = group?.options || [];
+        return (
+          <div key={group.type}>
+            <Card className="toolbar-card">
+              <Flex align={'stretch'}>
+                {opts.map((tool) => {
+                  return (
+                    <div onClick={tool.onClick} key={tool.title}>
+                      <Flex className="toolbar-body" gap={5}>
+                        {tool.icon ? (
+                          <Icon className="icon" icon={tool.icon}></Icon>
+                        ) : (
+                          ''
+                        )}
+                        {tool.text ? (
+                          <div className="text">{tool.text}</div>
+                        ) : (
+                          ''
+                        )}
                         {tool.split ? (
                           <div className="split">
                             <div className="item"></div>
@@ -58,16 +47,16 @@ const ToolBar: React.FC<Props> = () => {
                         ) : (
                           ''
                         )}
-                      </>
-                    );
-                  })}
-                </Card>
-              </Col>
-            </>
-          );
-        })}
-      </Row>
-    </Affix>
+                      </Flex>
+                    </div>
+                  );
+                })}
+              </Flex>
+            </Card>
+          </div>
+        );
+      })}
+    </Flex>
   );
 };
 export default ToolBar;

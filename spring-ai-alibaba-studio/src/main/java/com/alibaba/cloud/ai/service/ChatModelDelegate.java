@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.service;
 
+import com.alibaba.cloud.ai.common.ModelType;
 import com.alibaba.cloud.ai.model.ChatModel;
 import com.alibaba.cloud.ai.param.ModelRunActionParam;
 import com.alibaba.cloud.ai.vo.ChatModelRunResult;
@@ -42,6 +43,10 @@ public interface ChatModelDelegate {
 
 	default ChatModelRunResult runImageGenTaskAndGetUrl(ModelRunActionParam modelRunActionParam) {
 		return null;
+	}
+
+	default List<String> listModelNames(ModelType modelType) {
+		return new ArrayList<>();
 	}
 
 }

@@ -1,6 +1,7 @@
 package com.alibaba.cloud.ai.model;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
@@ -9,6 +10,7 @@ import java.util.Map;
  * an App.
  */
 @Data
+@NoArgsConstructor
 public class Variable {
 
 	private String name;

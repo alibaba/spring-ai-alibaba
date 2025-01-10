@@ -2,11 +2,13 @@ package com.alibaba.cloud.ai.model;
 
 import com.alibaba.cloud.ai.service.runner.RunnableModel;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Unified app model definition.
  */
 @Data
+@NoArgsConstructor
 public class App implements RunnableModel {
 
 	private AppMetadata metadata;
@@ -23,7 +25,7 @@ public class App implements RunnableModel {
 	}
 
 	@Override
-	public String getId() {
+	public String id() {
 		return metadata.getId();
 	}
 
