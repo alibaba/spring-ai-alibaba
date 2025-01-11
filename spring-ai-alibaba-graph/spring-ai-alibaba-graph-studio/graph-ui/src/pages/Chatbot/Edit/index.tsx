@@ -1,4 +1,3 @@
-import { jsonToYML } from '@/utils/jsonToYML';
 import { Bubble, Sender } from '@ant-design/x';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import {
@@ -490,7 +489,6 @@ export default function () {
       },
       version: '0.1.4',
     };
-    jsonToYML(exportData);
   };
 
   // 添加上下文modal
@@ -665,13 +663,13 @@ export default function () {
             <div
               onClick={() => handleDatasetSelect(dataset)}
               key={index}
-              className={`${styles.dataset} ${
+              className={`${styles['dataset-item']} ${
                 selectedDataset.some((item) => item.id === dataset.id)
-                  ? styles.datasetSelected
+                  ? styles['dataset-item-selected']
                   : ''
               }`}
             >
-              <div className={styles.datasetName}>{dataset.name}</div>
+              <div className={styles['dataset-item-name']}>{dataset.name}</div>
               <Tag>{dataset.tag}</Tag>
             </div>
           ))
