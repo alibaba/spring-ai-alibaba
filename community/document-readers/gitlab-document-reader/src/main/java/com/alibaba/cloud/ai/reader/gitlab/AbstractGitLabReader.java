@@ -24,7 +24,7 @@ import org.springframework.ai.document.DocumentReader;
  *
  * @author brianxiadong
  */
-public abstract class AbstractGitLabReader implements DocumentReader {
+public abstract class AbstractGitLabReader implements DocumentReader, AutoCloseable {
 
     protected final GitLabApi gitLabApi;
     protected final Integer projectId;
@@ -35,14 +35,14 @@ public abstract class AbstractGitLabReader implements DocumentReader {
      * Constructor for AbstractGitLabReader.
      *
      * @param gitLabApi GitLab API client
-     * @param projectId Project ID
+     * @param projectId Project ID (optional)
      * @param verbose Whether to enable verbose logging
      */
     protected AbstractGitLabReader(GitLabApi gitLabApi, Integer projectId, boolean verbose) {
         this.gitLabApi = gitLabApi;
         this.projectId = projectId;
         this.verbose = verbose;
-        this.projectUrl = String.format("%s/projects/%d", gitLabApi.getGitLabServerUrl(), projectId);
+        this.projectUrl = projectId != null ? String.format("%s/projects/%d", gitLabApi.getGitLabServerUrl(), projectId) : null;
     }
 
     /**
@@ -61,5 +61,10 @@ public abstract class AbstractGitLabReader implements DocumentReader {
      */
     protected String getProjectUrl() {
         return projectUrl;
+    }
+
+    @Override
+    public void close() {
+        // Do not close GitLabApi here as it is managed by the factory
     }
 } 
