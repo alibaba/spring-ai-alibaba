@@ -115,7 +115,16 @@ public class DashScopeAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = DashScopeChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
-    public DashScopeChatModel dashscopeChatModel (DashScopeConnectionProperties commonProperties, DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder, List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<ChatModelObservationConvention> observationConvention) {
+    public DashScopeChatModel dashscopeChatModel (DashScopeConnectionProperties commonProperties,
+                                                  DashScopeChatProperties chatProperties,
+                                                  RestClient.Builder restClientBuilder,
+                                                  WebClient.Builder webClientBuilder,
+                                                  List<FunctionCallback> toolFunctionCallbacks,
+                                                  FunctionCallbackResolver functionCallbackResolver,
+                                                  RetryTemplate retryTemplate,
+                                                  ResponseErrorHandler responseErrorHandler,
+                                                  ObjectProvider<ObservationRegistry> observationRegistry,
+                                                  ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
         if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
             chatProperties.getOptions().getFunctionCallbacks().addAll(toolFunctionCallbacks);
@@ -198,7 +207,14 @@ public class DashScopeAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = DashScopeImageProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
-    public DashScopeImageModel dashScopeImageModel (DashScopeConnectionProperties commonProperties, DashScopeImageProperties imageProperties, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder, RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<DashScopeImageModelObservationConvention> observationConvention) {
+    public DashScopeImageModel dashScopeImageModel (DashScopeConnectionProperties commonProperties,
+                                                    DashScopeImageProperties imageProperties,
+                                                    RestClient.Builder restClientBuilder,
+                                                    WebClient.Builder webClientBuilder,
+                                                    RetryTemplate retryTemplate,
+                                                    ResponseErrorHandler responseErrorHandler,
+                                                    ObjectProvider<ObservationRegistry> observationRegistry,
+                                                    ObjectProvider<DashScopeImageModelObservationConvention> observationConvention) {
 
         ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, imageProperties, "image");
 
