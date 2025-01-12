@@ -17,13 +17,17 @@ package com.alibaba.cloud.ai.dashscope.image;
 
 import com.alibaba.cloud.ai.dashscope.DashscopeAiTestConfiguration;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
+import com.alibaba.cloud.ai.dashscope.observation.conventions.AiProvider;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.image.*;
 import org.springframework.ai.image.observation.DefaultImageModelObservationConvention;
+import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
+import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -57,7 +61,7 @@ public class DashScopeImageModelIT {
 
         ImageResponse imageResponse = imageModel.call(imagePrompt);
 
-//        assertThat(imageResponse.getResults()).hasSize(1);
+        assertThat(imageResponse.getResults()).hasSize(1);
 
         ImageResponseMetadata imageResponseMetadata = imageResponse.getMetadata();
         assertThat(imageResponseMetadata.getCreated()).isPositive();
@@ -65,14 +69,18 @@ public class DashScopeImageModelIT {
         var generation = imageResponse.getResult();
         Image image = generation.getOutput();
         assertThat(image.getUrl()).isNotEmpty();
-//        assertThat(image.getB64Json()).isNull();
 
         TestObservationRegistryAssert.assertThat(this.observationRegistry)
                 .doesNotHaveAnyRemainingCurrentObservation()
                 .hasObservationWithNameEqualTo(DefaultImageModelObservationConvention.DEFAULT_NAME)
-                .that().hasContextualNameEqualTo("image" + DashScopeImageApi.ImageModel.WANX_V2_T2I_TURBO);
+                .that().hasContextualNameEqualTo("image " + "wanx2.1-t2i-turbo")
+                .hasHighCardinalityKeyValue(ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_SIZE.asString(),"1024x1024")
+                .hasLowCardinalityKeyValue(ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
+                        AiProvider.DASHSCOPE.value())
+                .hasLowCardinalityKeyValue(
+                        ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
+                        AiOperationType.IMAGE.value());
     }
-
 
     @Test
     void imageAsUrlTest () {
@@ -98,6 +106,6 @@ public class DashScopeImageModelIT {
         var generation = imageResponse.getResult();
         Image image = generation.getOutput();
         assertThat(image.getUrl()).isNotEmpty();
-        assertThat(image.getB64Json()).isNull();
+        assertThat(image.getB64Json()).isNotEmpty();
     }
 }

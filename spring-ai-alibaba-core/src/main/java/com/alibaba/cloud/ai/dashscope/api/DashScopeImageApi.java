@@ -74,9 +74,7 @@ public class DashScopeImageApi {
 
     public enum ImageModel {
 
-        WANX_V1("wanx-v1"),
-
-        WANX_V2_T2I_TURBO("wanx2.1-t2i-turbo");
+        WANX_V1("wanx-v1");
 
         public final String value;
 
