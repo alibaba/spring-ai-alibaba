@@ -19,6 +19,8 @@ import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.IssuesApi;
 import org.gitlab4j.api.models.Issue;
+import org.gitlab4j.api.models.IssueFilter;
+import org.gitlab4j.models.Constants;
 import org.springframework.ai.document.Document;
 
 import java.time.LocalDateTime;
@@ -136,57 +138,54 @@ public class GitLabIssueReader extends AbstractGitLabReader {
         try {
             IssuesApi issuesApi = gitLabApi.getIssuesApi();
 
+            // Convert Integer iids to Long iids
+            List<Long> longIids = iids != null ? iids.stream()
+                    .map(Long::valueOf)
+                    .toList() : null;
+
             // Build the filter parameters
-            if (state == null) {
-                state = GitLabIssueState.OPEN;
+            IssueFilter filter = new IssueFilter()
+                .withIids(longIids)
+                .withState(state != null ? Constants.IssueState.valueOf(state.getValue().toUpperCase()) : Constants.IssueState.OPENED)
+                .withLabels(labels)
+                .withMilestone(milestone)
+                .withScope(scope != null ? Constants.IssueScope.valueOf(scope.getValue().toUpperCase()) : null)
+                .withSearch(search)
+                .withCreatedAfter(createdAfter != null ? toGitLabDateFormat(createdAfter) : null)
+                .withCreatedBefore(createdBefore != null ? toGitLabDateFormat(createdBefore) : null)
+                .withUpdatedAfter(updatedAfter != null ? toGitLabDateFormat(updatedAfter) : null)
+                .withUpdatedBefore(updatedBefore != null ? toGitLabDateFormat(updatedBefore) : null);
+
+            // Handle assignee and author
+            if (assignee != null) {
+                try {
+                    Long assigneeId = Long.parseLong(assignee);
+                    filter.withAssigneeId(assigneeId);
+                } catch (NumberFormatException e) {
+                    // If not a number, treat as username
+                    filter.withoutAssigneeUsername(assignee);
+                }
+            }
+
+            if (author != null) {
+                try {
+                    Long authorId = Long.parseLong(author);
+                    filter.withAuthorId(authorId);
+                } catch (NumberFormatException e) {
+                    // If not a number, treat as username
+                    filter.withoutAuthorUsername(author);
+                }
             }
 
             List<Issue> issues;
             if (projectId != null) {
-                // 使用 IssuesApi.getProjectIssues() 方法获取项目的 issues
-                // 该方法需要传入项目ID和其他过滤参数s
-                issues = issuesApi.getProjectIssues(projectId, 
-                        IssueFilter.builder()
-                            .withState(state.getValue())
-                            .withLabels(labels)
-                            .withMilestone(milestone)
-                            .withScope(scope != null ? scope.getValue() : null)
-                            .withAuthorUsername(author)
-                            .withAssigneeUsername(assignee)
-                            .withSearch(search)
-                            .withConfidential(confidential)
-                            .withCreatedAfter(createdAfter != null ? toGitLabDateFormat(createdAfter) : null)
-                            .withCreatedBefore(createdBefore != null ? toGitLabDateFormat(createdBefore) : null)
-                            .withUpdatedAfter(updatedAfter != null ? toGitLabDateFormat(updatedAfter) : null)
-                            .withUpdatedBefore(updatedBefore != null ? toGitLabDateFormat(updatedBefore) : null)
-                            .build());
+                // 使用 IssuesApi.getIssues(projectId, filter) 方法获取项目的 issues
+                issues = issuesApi.getIssues(projectId, filter);
             } else if (groupId != null) {
-                // 使用 IssuesApi.getGroupIssues() 方法获取组的 issues
-                // 该方法需要传入组ID和其他过滤参数
-                issues = issuesApi.getGroupIssues(groupId,
-                        IssueFilter.builder()
-                            .withState(state.getValue())
-                            .withLabels(labels)
-                            .withMilestone(milestone)
-                            .withScope(scope != null ? scope.getValue() : null)
-                            .withAuthorUsername(author)
-                            .withAssigneeUsername(assignee)
-                            .withSearch(search)
-                            .withConfidential(confidential)
-                            .withCreatedAfter(createdAfter != null ? toGitLabDateFormat(createdAfter) : null)
-                            .withCreatedBefore(createdBefore != null ? toGitLabDateFormat(createdBefore) : null)
-                            .withUpdatedAfter(updatedAfter != null ? toGitLabDateFormat(updatedAfter) : null)
-                            .withUpdatedBefore(updatedBefore != null ? toGitLabDateFormat(updatedBefore) : null)
-                            .build());
+                // 使用 IssuesApi.getGroupIssues(groupId, filter) 方法获取组的 issues
+                issues = issuesApi.getGroupIssues(groupId, filter);
             } else {
                 throw new IllegalStateException("Either projectId or groupId must be provided");
-            }
-
-            // Filter by IIDs if provided
-            if (iids != null && !iids.isEmpty()) {
-                issues = issues.stream()
-                        .filter(issue -> iids.contains(issue.getIid()))
-                        .toList();
             }
 
             return issues.stream()
