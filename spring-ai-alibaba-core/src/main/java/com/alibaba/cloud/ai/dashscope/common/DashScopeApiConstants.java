@@ -35,7 +35,7 @@ public final class DashScopeApiConstants {
 
 	public static final String DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com";
 
-	public static final String DASHSCOPE_API_KEY = "AI_DASHSCOPE_API_KEY";
+	public static final String DASHSCOPE_API_KEY = "DASHSCOPE_API_KEY";
 
 	public static final String DEFAULT_WEBSOCKET_URL = "wss://dashscope.aliyuncs.com/api-ws/v1/inference/";
 
