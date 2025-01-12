@@ -45,106 +45,113 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAUL
 @SpringBootConfiguration
 public class DashscopeAiTestConfiguration {
 
-    @Bean
-    public DashScopeImageApi dashscopeImageApi () {
-        return newDashScopeImageApi(getApiKey());
-    }
+	@Bean
+	public DashScopeImageApi dashscopeImageApi() {
+		return newDashScopeImageApi(getApiKey());
+	}
 
-    @Bean
-    public DashScopeApi dashscopeApi () {
-        return newDashScopeApi(getApiKey());
-    }
+	@Bean
+	public DashScopeApi dashscopeApi() {
+		return newDashScopeApi(getApiKey());
+	}
 
-    @Bean
-    public DashScopeSpeechSynthesisApi dashScopeSpeechSynthesisApi () {
-        return newDashScopeSpeechSynthesisApi(getApiKey());
-    }
+	@Bean
+	public DashScopeSpeechSynthesisApi dashScopeSpeechSynthesisApi() {
+		return newDashScopeSpeechSynthesisApi(getApiKey());
+	}
 
-    @Bean
-    public DashScopeAudioTranscriptionApi dashScopeAudioTranscriptionApi () {
-        return newDashScopeAudioTranscriptionApi(getApiKey());
-    }
+	@Bean
+	public DashScopeAudioTranscriptionApi dashScopeAudioTranscriptionApi() {
+		return newDashScopeAudioTranscriptionApi(getApiKey());
+	}
 
-    @Bean
-    public DashScopeApi dashscopeChatApi () {
-        return newDashScopeChatApi(getApiKey());
-    }
+	@Bean
+	public DashScopeApi dashscopeChatApi() {
+		return newDashScopeChatApi(getApiKey());
+	}
 
-    private DashScopeApi newDashScopeChatApi (String apiKey) {
-        return new DashScopeApi(DEFAULT_BASE_URL, apiKey, "");
-    }
+	private DashScopeApi newDashScopeChatApi(String apiKey) {
+		return new DashScopeApi(DEFAULT_BASE_URL, apiKey, "");
+	}
 
-    private DashScopeApi newDashScopeApi (String apiKey) {
-        return new DashScopeApi(apiKey);
-    }
+	private DashScopeApi newDashScopeApi(String apiKey) {
+		return new DashScopeApi(apiKey);
+	}
 
-    private DashScopeSpeechSynthesisApi newDashScopeSpeechSynthesisApi (String apiKey) {
-        return new DashScopeSpeechSynthesisApi(apiKey);
-    }
+	private DashScopeSpeechSynthesisApi newDashScopeSpeechSynthesisApi(String apiKey) {
+		return new DashScopeSpeechSynthesisApi(apiKey);
+	}
 
-    private DashScopeAudioTranscriptionApi newDashScopeAudioTranscriptionApi (String apiKey) {
-        return new DashScopeAudioTranscriptionApi(apiKey);
-    }
+	private DashScopeAudioTranscriptionApi newDashScopeAudioTranscriptionApi(String apiKey) {
+		return new DashScopeAudioTranscriptionApi(apiKey);
+	}
 
-    private DashScopeImageApi newDashScopeImageApi (String apiKey) {
-        return new DashScopeImageApi(apiKey);
-    }
+	private DashScopeImageApi newDashScopeImageApi(String apiKey) {
+		return new DashScopeImageApi(apiKey);
+	}
 
-    private String getApiKey () {
-        String apiKey = System.getenv("DASHSCOPE_API_KEY");
-        if (!StringUtils.hasText(apiKey)) {
-            throw new IllegalArgumentException("You must provide an API key.  Put it in an environment variable under the name DASHSCOPE_API_KEY");
-        }
-        return apiKey;
-    }
+	private String getApiKey() {
+		String apiKey = System.getenv("DASHSCOPE_API_KEY");
+		if (!StringUtils.hasText(apiKey)) {
+			throw new IllegalArgumentException(
+					"You must provide an API key.  Put it in an environment variable under the name DASHSCOPE_API_KEY");
+		}
+		return apiKey;
+	}
 
-    @Bean
-    public ChatModel dashscopeChatModel (DashScopeApi dashscopeChatApi, TestObservationRegistry observationRegistry) {
-        return new DashScopeChatModel(dashscopeChatApi, DashScopeChatOptions.builder().withModel(DashScopeApi.DEFAULT_CHAT_MODEL).build(), null, RetryUtils.DEFAULT_RETRY_TEMPLATE, observationRegistry);
-    }
+	@Bean
+	public ChatModel dashscopeChatModel(DashScopeApi dashscopeChatApi, TestObservationRegistry observationRegistry) {
+		return new DashScopeChatModel(dashscopeChatApi,
+				DashScopeChatOptions.builder().withModel(DashScopeApi.DEFAULT_CHAT_MODEL).build(), null,
+				RetryUtils.DEFAULT_RETRY_TEMPLATE, observationRegistry);
+	}
 
-    @Bean
-    public EmbeddingModel dashscopeEmbeddingModel (DashScopeApi dashscopeApi) {
-        return new DashScopeEmbeddingModel(dashscopeApi);
-    }
+	@Bean
+	public EmbeddingModel dashscopeEmbeddingModel(DashScopeApi dashscopeApi) {
+		return new DashScopeEmbeddingModel(dashscopeApi);
+	}
 
-    @Bean
-    public DashScopeImageModel dashscopeImageModel (DashScopeImageApi dashscopeImageApi, TestObservationRegistry observationRegistry) {
-        return new DashScopeImageModel(dashscopeImageApi, observationRegistry);
-    }
+	@Bean
+	public DashScopeImageModel dashscopeImageModel(DashScopeImageApi dashscopeImageApi,
+			TestObservationRegistry observationRegistry) {
+		return new DashScopeImageModel(dashscopeImageApi, observationRegistry);
+	}
 
-    @Bean
-    public DashScopeSpeechSynthesisModel dashScopeSpeechSynthesisModel (DashScopeSpeechSynthesisApi dashScopeSpeechSynthesisApi) {
-        return new DashScopeSpeechSynthesisModel(dashScopeSpeechSynthesisApi, DashScopeSpeechSynthesisOptions.builder().withModel("cosyvoice-v1").withVoice("longhua").build());
-    }
+	@Bean
+	public DashScopeSpeechSynthesisModel dashScopeSpeechSynthesisModel(
+			DashScopeSpeechSynthesisApi dashScopeSpeechSynthesisApi) {
+		return new DashScopeSpeechSynthesisModel(dashScopeSpeechSynthesisApi,
+				DashScopeSpeechSynthesisOptions.builder().withModel("cosyvoice-v1").withVoice("longhua").build());
+	}
 
-    @Bean
-    public DashScopeAudioTranscriptionModel dashScopeAudioTranscriptionModel (DashScopeAudioTranscriptionApi dashScopeAudioTranscriptionApi) {
-        return new DashScopeAudioTranscriptionModel(dashScopeAudioTranscriptionApi);
-    }
+	@Bean
+	public DashScopeAudioTranscriptionModel dashScopeAudioTranscriptionModel(
+			DashScopeAudioTranscriptionApi dashScopeAudioTranscriptionApi) {
+		return new DashScopeAudioTranscriptionModel(dashScopeAudioTranscriptionApi);
+	}
 
-    @Bean
-    public TestObservationRegistry observationRegistry () {
-        return TestObservationRegistry.create();
-    }
+	@Bean
+	public TestObservationRegistry observationRegistry() {
+		return TestObservationRegistry.create();
+	}
 
-    @Bean
-    @Scope("prototype")
-    @ConditionalOnMissingBean
-    public SpeechSynthesizer speechSynthesizer () {
-        return new SpeechSynthesizer();
-    }
+	@Bean
+	@Scope("prototype")
+	@ConditionalOnMissingBean
+	public SpeechSynthesizer speechSynthesizer() {
+		return new SpeechSynthesizer();
+	}
 
-    @Bean
-    @ConditionalOnMissingBean
-    public Transcription transcription () {
-        return new Transcription();
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	public Transcription transcription() {
+		return new Transcription();
+	}
 
-    @Bean
-    @ConditionalOnMissingBean
-    public RerankModel dashscopeRerankModel (DashScopeApi dashscopeApi) {
-        return new DashScopeRerankModel(dashscopeApi);
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	public RerankModel dashscopeRerankModel(DashScopeApi dashscopeApi) {
+		return new DashScopeRerankModel(dashscopeApi);
+	}
 
 }

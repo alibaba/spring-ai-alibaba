@@ -37,12 +37,13 @@ import java.util.Objects;
  */
 public class DashScopeImageModelObservationConvention extends DefaultImageModelObservationConvention {
 
-    public static final String DEFAULT_NAME = "gen_ai.client.operation";
+	public static final String DEFAULT_NAME = "gen_ai.client.operation";
 
-    private static final String ILLEGAL_STOP_CONTENT = "<illegal_stop_content>";
+	private static final String ILLEGAL_STOP_CONTENT = "<illegal_stop_content>";
 
-    @Override
-    public String getName () {
-        return DEFAULT_NAME;
-    }
+	@Override
+	public String getName() {
+		return DEFAULT_NAME;
+	}
+
 }
