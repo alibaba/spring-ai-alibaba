@@ -55,6 +55,7 @@
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-kuaidi100</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-googletranslate</module>
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-alitranslate</module>
+        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-youdaotranslate</module>
 
         <module>community/document-readers/github-document-reader</module>
         <module>community/document-readers/poi-document-reader</module>
