@@ -51,9 +51,19 @@ export default defineConfig({
       component: './Chatbot',
     },
     {
+      hide: true,
+      path: '/chatbot/edit',
+      component: './Chatbot/Edit',
+    },
+    {
       title: 'router.agent',
       path: '/agent',
       component: './Agent',
+    },
+    {
+      hide: true,
+      path: '/agent/edit',
+      component: './Agent/Edit',
     },
     {
       title: 'router.graph',
