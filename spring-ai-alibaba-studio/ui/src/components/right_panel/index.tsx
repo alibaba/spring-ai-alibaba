@@ -15,62 +15,65 @@
  */
 
 import { Tabs } from 'antd';
-import Config from './Config';
-import Prompt from './Prompt';
-import Tool from './Tool';
+import Config from './config';
+import Prompt from './prompt';
+import Tool from './tool';
 import type { TabsProps } from 'antd';
 import styles from './index.module.css';
-import { RightPanelValues } from '../types';
+import { RightPanelValues } from './types';
 import { ChatOptions, ImageOptions } from '@/types/options';
 import { ModelType } from '@/types/chat_model';
 import { useEffect, useState } from 'react';
 
 type Props = {
+  tabs: string[];
   modelType: ModelType;
   initialValues: RightPanelValues;
   onChangeConfig: (cfg: ChatOptions | ImageOptions) => void;
   onChangePrompt: (prompt: string) => void;
 };
 
+// 右侧面板组件
 export default function Setup(props: Props) {
-  const { modelType } = props;
+  const { modelType, tabs } = props;
   const { initialChatConfig, initialImgConfig, initialTool } =
     props.initialValues;
 
   const [items, setItems] = useState<TabsProps['items']>();
+
+  const allTabs = [
+    {
+      key: 'config',
+      label: '配置',
+      children: (
+        <Config
+          modelType={modelType}
+          onChangeConfig={props.onChangeConfig}
+          configFromAPI={
+            modelType == ModelType.CHAT ? initialChatConfig : initialImgConfig
+          }
+        />
+      ),
+    },
+    {
+      key: 'prompt',
+      label: '提示词',
+      children: <Prompt onchangePrompt={props.onChangePrompt} />,
+    },
+    {
+      key: 'tool',
+      label: '工具',
+      children: <Tool initialTool={initialTool} />,
+    },
+  ];
+
   useEffect(() => {
-    setItems([
-      {
-        key: 'config',
-        label: '配置',
-        children: (
-          <Config
-            modelType={modelType}
-            onChangeConfig={props.onChangeConfig}
-            configFromAPI={
-              modelType == ModelType.CHAT
-                ? initialChatConfig
-                : initialImgConfig
-            }
-          />
-        ),
-      },
-      {
-        key: 'prompt',
-        label: '提示词',
-        children: (
-          <Prompt
-            onchangePrompt={props.onChangePrompt}
-          />
-        ),
-      },
-      {
-        key: 'tool',
-        label: '工具',
-        children: <Tool initialTool={initialTool} />,
-      },
-    ]);
-  }, [initialChatConfig, initialImgConfig]);
+    setItems(
+      allTabs.filter((tab) => {
+        return tabs.includes(tab.key);
+      }),
+    );
+  }, [props.initialValues]);
   return (
     <div className={styles.container}>
       <Tabs defaultActiveKey="config" items={items} />

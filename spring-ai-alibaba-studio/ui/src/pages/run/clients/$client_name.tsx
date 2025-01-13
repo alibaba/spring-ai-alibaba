@@ -18,15 +18,15 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'ice';
 import chatClientsService from '@/services/chat_clients';
 import styles from './index.module.css';
-import { Card, Input, Divider, Tabs, Form, Button, Select, Slider, Spin } from 'antd';
-import ChatModel from '../models/ChatModel';
+import { Spin } from 'antd';
+import ChatClient from '.';
 import { ChatClientData } from '@/types/chat_clients';
 
 type Params = {
-  model_name: string;
+  client_name: string;
 };
 
-export default function ChatClient() {
+export default function Client() {
   // 路径参数
   const params = useParams<Params>();
 
@@ -35,7 +35,9 @@ export default function ChatClient() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const chatClientData = await chatClientsService.getChatClientByName(params.model_name);
+        const chatClientData = await chatClientsService.getChatClientByName(
+          params.client_name as string,
+        );
         setChatClientData(chatClientData);
       } catch (error) {
         console.error('Failed to fetch chat models: ', error);
@@ -44,17 +46,17 @@ export default function ChatClient() {
     fetchData();
   }, [params]);
 
-  return (
-    clientData ? (
-      <div style={{ padding: 20, height: '100%' }}>
-        <ChatModel modelData={clientData.chatModel} modelType={clientData.chatModel.modelType} />
-      </div>
-    ) : (
-      <div className={styles['container']} >
-        <Spin tip="Loading">
-          <div className={styles['message-loading']} />
-        </Spin>
-      </div>
-    )
+  return clientData ? (
+    <div style={{ padding: 20, height: '100%' }}>
+      <ChatClient
+        chatClientData={clientData}
+      />
+    </div>
+  ) : (
+    <div className={styles['container']}>
+      <Spin tip="Loading">
+        <div className={styles['message-loading']} />
+      </Spin>
+    </div>
   );
 }
