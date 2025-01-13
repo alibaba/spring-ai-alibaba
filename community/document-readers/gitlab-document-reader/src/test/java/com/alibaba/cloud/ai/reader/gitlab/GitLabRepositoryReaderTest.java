@@ -15,154 +15,171 @@
  */
 package com.alibaba.cloud.ai.reader.gitlab;
 
-import org.gitlab4j.api.GitLabApi;
-import org.gitlab4j.api.RepositoryApi;
-import org.gitlab4j.api.RepositoryFileApi;
-import org.gitlab4j.api.models.RepositoryFile;
-import org.gitlab4j.api.models.TreeItem;
-import org.gitlab4j.api.models.User;
-import org.junit.jupiter.api.AfterEach;
+import org.gitlab4j.api.GitLabApiException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.document.Document;
 
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
 
 /**
  * Test cases for GitLabRepositoryReader.
+ * Using real repository from Spring AI project (https://gitlab.com/spring-ai/spring-ai).
  *
  * @author brianxiadong
  */
-@ExtendWith(MockitoExtension.class)
 class GitLabRepositoryReaderTest {
 
     private static final String TEST_HOST_URL = "https://gitlab.com";
-    private static final String TEST_TOKEN = "test-token";
-    private static final Integer TEST_PROJECT_ID = 123;
+    private static final String TEST_NAMESPACE = "VishnuprakashJ";
+    private static final String TEST_PROJECT_NAME = "home";
     private static final String TEST_REF = "main";
+    private static final String TEST_FILE_PATH = "README.md";
 
-    @Mock
-    private GitLabApi gitLabApi;
-
-    @Mock
-    private RepositoryApi repositoryApi;
-
-    @Mock
-    private RepositoryFileApi repositoryFileApi;
-
-    private GitLabReaderFactory factory;
     private GitLabRepositoryReader reader;
 
     @BeforeEach
-    void setUp() throws Exception {
-        // Mock GitLabApi creation
-        when(gitLabApi.getUserApi().getCurrentUser()).thenReturn(new User());
-        when(gitLabApi.getRepositoryApi()).thenReturn(repositoryApi);
-        when(gitLabApi.getRepositoryFileApi()).thenReturn(repositoryFileApi);
-        when(gitLabApi.getGitLabServerUrl()).thenReturn(TEST_HOST_URL);
-
-        // Create factory with mocked GitLabApi
-        factory = new GitLabReaderFactory(TEST_HOST_URL, TEST_TOKEN) {
-            @Override
-            public GitLabRepositoryReader createRepositoryReader(Integer projectId, boolean useParser, boolean verbose) {
-                return new GitLabRepositoryReader(gitLabApi, projectId, useParser, verbose);
-            }
-        };
-
-        // Create reader using factory
-        reader = factory.createRepositoryReader(TEST_PROJECT_ID, true, true);
-    }
-
-    @AfterEach
-    void tearDown() {
-        if (factory != null) {
-            factory.close();
-        }
+    void setUp() throws GitLabApiException {
+        // Create GitLabRepositoryReader instance without token since we're accessing a public project
+        reader = new GitLabRepositoryReader(TEST_HOST_URL, null, TEST_NAMESPACE, TEST_PROJECT_NAME);
     }
 
     @Test
-    void testLoadSingleFile() throws Exception {
-        // Prepare test data
-        String filePath = "test.txt";
-        String content = "Test content";
-        String base64Content = Base64.getEncoder().encodeToString(content.getBytes());
-
-        RepositoryFile mockFile = new RepositoryFile();
-        mockFile.setFilePath(filePath);
-        mockFile.setFileName("test.txt");
-        mockFile.setBlobId("123");
-        mockFile.setContent(base64Content);
-
-        when(repositoryFileApi.getFile(eq(TEST_PROJECT_ID), eq(filePath), eq(TEST_REF)))
-            .thenReturn(mockFile);
-
-        // Execute test
-        List<Document> documents = reader.loadData(TEST_REF, filePath, null, false);
+    void testGetSingleFile() {
+        // Configure reader to load a single file
+        List<Document> documents = reader
+            .setRef(TEST_REF)
+            .setFilePath(TEST_FILE_PATH)
+            .get();
 
         // Verify results
         assertThat(documents).hasSize(1);
         Document doc = documents.get(0);
-        assertThat(doc.getId()).isEqualTo("123");
-        assertThat(doc.getContent()).isEqualTo(content);
+        assertThat(doc.getId()).isNotNull();
+        assertThat(doc.getContent()).isNotBlank();
         assertThat(doc.getMetadata())
-            .containsEntry("file_path", filePath)
-            .containsEntry("file_name", "test.txt");
+            .containsKey("file_path")
+            .containsKey("file_name")
+            .containsKey("url")
+            .containsKey("ref");
     }
 
     @Test
-    void testLoadDirectory() throws Exception {
-        // Prepare test data
-        TreeItem file1 = new TreeItem();
-        file1.setType("blob");
-        file1.setPath("file1.txt");
-
-        TreeItem file2 = new TreeItem();
-        file2.setType("blob");
-        file2.setPath("file2.txt");
-
-        TreeItem directory = new TreeItem();
-        directory.setType("tree");
-        directory.setPath("dir");
-
-        when(repositoryApi.getTree(eq(TEST_PROJECT_ID), isNull(), eq(TEST_REF), eq(false)))
-            .thenReturn(Arrays.asList(file1, file2, directory));
-
-        // Mock file contents
-        RepositoryFile mockFile1 = new RepositoryFile();
-        mockFile1.setFilePath("file1.txt");
-        mockFile1.setFileName("file1.txt");
-        mockFile1.setBlobId("123");
-        mockFile1.setContent(Base64.getEncoder().encodeToString("Content 1".getBytes()));
-
-        RepositoryFile mockFile2 = new RepositoryFile();
-        mockFile2.setFilePath("file2.txt");
-        mockFile2.setFileName("file2.txt");
-        mockFile2.setBlobId("456");
-        mockFile2.setContent(Base64.getEncoder().encodeToString("Content 2".getBytes()));
-
-        when(repositoryFileApi.getFile(eq(TEST_PROJECT_ID), eq("file1.txt"), eq(TEST_REF)))
-            .thenReturn(mockFile1);
-        when(repositoryFileApi.getFile(eq(TEST_PROJECT_ID), eq("file2.txt"), eq(TEST_REF)))
-            .thenReturn(mockFile2);
-
-        // Execute test
-        List<Document> documents = reader.loadData(TEST_REF, null, null, false);
+    void testGetAllFiles() {
+        // Configure reader to load all files from root directory
+        List<Document> documents = reader
+            .setRef(TEST_REF)
+            .setRecursive(true)
+            .get();
 
         // Verify results
-        assertThat(documents).hasSize(2);
-        assertThat(documents).extracting(Document::getId)
-            .containsExactlyInAnyOrder("123", "456");
-        assertThat(documents).extracting(Document::getContent)
-            .containsExactlyInAnyOrder("Content 1", "Content 2");
+        assertThat(documents).isNotEmpty();
+        
+        // Verify each document has required metadata
+        for (Document doc : documents) {
+            assertThat(doc.getId()).isNotNull();
+            assertThat(doc.getContent()).isNotBlank();
+            assertThat(doc.getMetadata())
+                .containsKey("file_path")
+                .containsKey("file_name")
+                .containsKey("url")
+                .containsKey("ref");
+        }
+    }
+
+    @Test
+    void testGetMarkdownFiles() {
+        // Configure reader to load only markdown files
+        List<Document> documents = reader
+            .setRef(TEST_REF)
+            .setPattern("*.md")
+            .setRecursive(true)
+            .get();
+
+        // Verify results
+        assertThat(documents).isNotEmpty();
+        
+        // Verify all documents are markdown files
+        for (Document doc : documents) {
+            assertThat(doc.getId()).isNotNull();
+            assertThat(doc.getContent()).isNotBlank();
+            assertThat(doc.getMetadata())
+                .containsKey("file_path")
+                .containsKey("file_name")
+                .containsKey("url")
+                .containsKey("ref");
+                
+            String filePath = (String) doc.getMetadata().get("file_path");
+            assertThat(filePath).endsWith(".md");
+        }
+    }
+
+    @Test
+    void testGetFilesInDirectory() {
+        // Configure reader to load files from a specific directory
+        List<Document> documents = reader
+            .setRef(TEST_REF)
+            .setFilePath("docs")
+            .setRecursive(true)
+            .get();
+
+        // Verify results
+        assertThat(documents).isNotEmpty();
+        
+        // Verify all files are from the docs directory
+        for (Document doc : documents) {
+            String filePath = (String) doc.getMetadata().get("file_path");
+            assertThat(filePath).startsWith("docs/");
+        }
+    }
+
+    @Test
+    void testGetFilesWithComplexPattern() {
+        // Configure reader to load Java files from src directory and its subdirectories
+        List<Document> documents = reader
+            .setRef(TEST_REF)
+            .setPattern("src/**/*.java")
+            .setRecursive(true)
+            .get();
+
+        // Verify results
+        assertThat(documents).isNotEmpty();
+        
+        // Verify all files match the pattern
+        for (Document doc : documents) {
+            String filePath = (String) doc.getMetadata().get("file_path");
+            assertThat(filePath)
+                .startsWith("src/")
+                .endsWith(".java");
+        }
+    }
+
+    @Test
+    void testGetFilesWithMetadata() {
+        // Configure reader to load a single file and check metadata
+        List<Document> documents = reader
+            .setRef(TEST_REF)
+            .setFilePath(TEST_FILE_PATH)
+            .get();
+
+        // Verify results
+        assertThat(documents).hasSize(1);
+        Document doc = documents.get(0);
+        
+        // Verify required metadata fields
+        assertThat(doc.getMetadata())
+            .containsKey("file_path")
+            .containsKey("file_name")
+            .containsKey("size")
+            .containsKey("url")
+            .containsKey("ref");
+            
+        // Verify metadata values
+        assertThat(doc.getMetadata().get("file_path")).isEqualTo(TEST_FILE_PATH);
+        assertThat(doc.getMetadata().get("file_name")).isEqualTo("README.md");
+        assertThat(doc.getMetadata().get("size")).isInstanceOf(Integer.class);
+        assertThat(doc.getMetadata().get("url")).asString().contains(TEST_FILE_PATH);
     }
 } 

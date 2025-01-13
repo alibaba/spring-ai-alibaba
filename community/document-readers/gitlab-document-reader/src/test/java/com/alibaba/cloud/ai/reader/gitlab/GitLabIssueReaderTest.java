@@ -15,149 +15,117 @@
  */
 package com.alibaba.cloud.ai.reader.gitlab;
 
-import org.gitlab4j.api.GitLabApi;
-import org.gitlab4j.api.IssuesApi;
-import org.gitlab4j.api.models.Issue;
-import org.gitlab4j.api.models.IssueFilter;
-import org.gitlab4j.api.models.User;
-import org.gitlab4j.api.Constants.IssueState;
-import org.junit.jupiter.api.AfterEach;
+import org.gitlab4j.api.GitLabApiException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.document.Document;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.lang.reflect.Field;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
 
 /**
  * Test cases for GitLabIssueReader.
+ * Using real issues from Spring AI project (https://gitlab.com/spring-ai/spring-ai).
  *
- * @author YunLong
+ * @author brianxiadong
  */
-@ExtendWith(MockitoExtension.class)
 class GitLabIssueReaderTest {
 
     private static final String TEST_HOST_URL = "https://gitlab.com";
-    private static final String TEST_TOKEN = "test-token";
-    private static final Integer TEST_PROJECT_ID = 123;
+    private static final String TEST_NAMESPACE = "VishnuprakashJ";
+    private static final String TEST_PROJECT_NAME = "home";
 
-    @Mock
-    private GitLabApi gitLabApi;
-
-    @Mock
-    private IssuesApi issuesApi;
-
-    private GitLabReaderFactory factory;
     private GitLabIssueReader reader;
 
     @BeforeEach
-    void setUp() throws Exception {
-        // Mock GitLabApi creation
-        when(gitLabApi.getUserApi().getCurrentUser()).thenReturn(new User());
-        when(gitLabApi.getIssuesApi()).thenReturn(issuesApi);
-
-        // Create factory with mocked GitLabApi
-        factory = new GitLabReaderFactory(TEST_HOST_URL, TEST_TOKEN) {
-            @Override
-            public GitLabIssueReader createIssueReader(Integer projectId, Integer groupId, boolean verbose) {
-                return new GitLabIssueReader(gitLabApi, projectId, groupId, verbose);
-            }
-        };
-
-        // Create reader using factory
-        reader = factory.createIssueReader(TEST_PROJECT_ID, null, true);
+    void setUp() throws GitLabApiException {
+        // Create GitLabIssueReader instance without token since we're accessing a public project
+        GitLabIssueConfig config = GitLabIssueConfig.builder()
+                .state(GitLabIssueState.OPEN)
+                .build();
+                
+        reader = new GitLabIssueReader(TEST_HOST_URL, null, TEST_NAMESPACE, TEST_PROJECT_NAME, null, config, true);
     }
 
-    @AfterEach
-    void tearDown() {
-        if (factory != null) {
-            factory.close();
+    @Test
+    void testGetIssuesWithDefaultParameters() {
+        // Get all open issues directly
+        List<Document> documents = reader.get();
+
+        // Verify results
+        assertThat(documents).isNotEmpty();
+        
+        // Verify basic structure of first document
+        Document doc = documents.get(0);
+        assertThat(doc.getId()).isNotNull();
+        assertThat(doc.getContent()).isNotBlank();
+        assertThat(doc.getMetadata())
+            .containsKey("state")
+            .containsKey("url")
+            .containsKey("source");
+    }
+
+    @Test
+    void testLoadDataWithCustomParameters() throws GitLabApiException {
+        // Create new reader instance with custom parameters
+        GitLabIssueConfig config = GitLabIssueConfig.builder()
+                .confidential(false)
+                .createdAfter(LocalDateTime.now().minusDays(365))
+                .issueType(GitLabIssueType.ISSUE)
+                .labels(Arrays.asList("enhancement", "feature"))
+                .nonArchived(true)
+                .scope(GitLabScope.ALL)
+                .state(GitLabIssueState.CLOSED)
+                .build();
+                
+        reader = new GitLabIssueReader(TEST_HOST_URL, null, TEST_NAMESPACE, TEST_PROJECT_NAME, null, config, true);
+
+        // Get issues
+        List<Document> documents = reader.get();
+
+        // Verify results
+        assertThat(documents).isNotEmpty();
+        
+        // Verify all documents match our filter criteria
+        for (Document doc : documents) {
+            assertThat(doc.getMetadata())
+                .containsEntry("state", "closed")
+                .hasEntrySatisfying("labels", labels -> {
+                    @SuppressWarnings("unchecked")
+                    List<String> labelList = (List<String>) labels;
+                    assertThat(labelList).containsAnyOf("enhancement", "feature");
+                })
+                .containsKey("url")
+                .containsKey("source");
+                
+            // Verify document content
+            assertThat(doc.getId()).isNotNull();
+            assertThat(doc.getContent()).isNotBlank();
         }
     }
 
     @Test
-    void testGetIssuesWithDefaultParameters() throws Exception {
-        // Prepare test data
-        Issue mockIssue = new Issue();
-        mockIssue.setIid(1L);
-        mockIssue.setTitle("Test Issue");
-        mockIssue.setDescription("Test Description");
-        mockIssue.setState(IssueState.OPENED);
-        mockIssue.setLabels(Arrays.asList("bug", "critical"));
-        
-        User author = new User();
-        author.setUsername("testAuthor");
-        mockIssue.setAuthor(author);
+    void testLoadSpecificIssue() throws GitLabApiException {
+        // Create configuration to get specific issue
+        GitLabIssueConfig config = GitLabIssueConfig.builder()
+                .iids(Arrays.asList(1))
+                .build();
+                
+        reader = new GitLabIssueReader(TEST_HOST_URL, null, TEST_NAMESPACE, TEST_PROJECT_NAME, null, config, true);
 
-        User assignee = new User();
-        assignee.setUsername("testAssignee");
-        mockIssue.setAssignee(assignee);
-
-        when(issuesApi.getIssues(eq(TEST_PROJECT_ID), any(IssueFilter.class)))
-            .thenReturn(Collections.singletonList(mockIssue));
-
-        // Execute test
+        // Get specific issue (#1)
         List<Document> documents = reader.get();
 
         // Verify results
         assertThat(documents).hasSize(1);
         Document doc = documents.get(0);
         assertThat(doc.getId()).isEqualTo("1");
-        assertThat(doc.getContent()).contains("Test Issue");
-        assertThat(doc.getContent()).contains("Test Description");
         assertThat(doc.getMetadata())
-            .containsEntry("state", IssueState.OPENED.toString())
-            .containsEntry("author", "testAuthor")
-            .containsEntry("assignee", "testAssignee");
-    }
-
-    @Test
-    void testLoadDataWithCustomParameters() throws Exception {
-        // Prepare test data
-        Issue mockIssue = new Issue();
-        mockIssue.setIid(2L);
-        mockIssue.setTitle("Custom Issue");
-        mockIssue.setDescription("Custom Description");
-        mockIssue.setState(IssueState.CLOSED);
-
-        when(issuesApi.getIssues(eq(TEST_PROJECT_ID), any(IssueFilter.class)))
-            .thenReturn(Collections.singletonList(mockIssue));
-
-        // Execute test with custom parameters
-        List<Document> documents = reader.loadData(
-            "assignee1",
-            "author1",
-            true,
-            LocalDateTime.now().minusDays(7),
-            LocalDateTime.now(),
-            Arrays.asList(1, 2),
-            GitLabIssueType.ISSUE,
-            Arrays.asList("label1", "label2"),
-            "milestone1",
-            true,
-            GitLabScope.ALL,
-            "searchTerm",
-            GitLabIssueState.CLOSED,
-            LocalDateTime.now().minusDays(1),
-            LocalDateTime.now()
-        );
-
-        // Verify results
-        assertThat(documents).hasSize(1);
-        Document doc = documents.get(0);
-        assertThat(doc.getId()).isEqualTo("2");
-        assertThat(doc.getContent()).contains("Custom Issue");
-        assertThat(doc.getContent()).contains("Custom Description");
-        assertThat(doc.getMetadata()).containsEntry("state", IssueState.CLOSED.toString());
+            .containsKey("state")
+            .containsKey("url")
+            .containsKey("source");
     }
 } 

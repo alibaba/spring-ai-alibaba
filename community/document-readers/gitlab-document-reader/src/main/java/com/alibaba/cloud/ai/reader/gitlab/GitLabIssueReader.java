@@ -20,7 +20,7 @@ import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.IssuesApi;
 import org.gitlab4j.api.models.Issue;
 import org.gitlab4j.api.models.IssueFilter;
-import org.gitlab4j.models.Constants;
+import org.gitlab4j.api.Constants;
 import org.springframework.ai.document.Document;
 
 import java.time.LocalDateTime;
@@ -35,19 +35,42 @@ import java.util.*;
  */
 public class GitLabIssueReader extends AbstractGitLabReader {
 
-    private final Integer groupId;
+    private final String groupPath;
+    private final GitLabIssueConfig config;
 
     /**
-     * Constructor for GitLabIssueReader.
+     * Constructor for GitLabIssueReader with token.
+     *
+     * @param hostUrl GitLab host URL
+     * @param token GitLab private token (optional)
+     * @param namespace Project namespace (e.g. "spring-ai")
+     * @param projectName Project name (e.g. "spring-ai")
+     * @param groupPath Group path (optional)
+     * @param config Issue configuration
+     * @param verbose Whether to enable verbose logging
+     * @throws GitLabApiException if project cannot be found
+     */
+    public GitLabIssueReader(String hostUrl, String token, String namespace, String projectName, String groupPath, GitLabIssueConfig config, boolean verbose) throws GitLabApiException {
+        super(hostUrl, token, namespace, projectName);
+        this.groupPath = groupPath;
+        this.config = config != null ? config : GitLabIssueConfig.builder().state(GitLabIssueState.OPEN).build();
+    }
+
+    /**
+     * Constructor for GitLabIssueReader with existing GitLabApi instance.
      *
      * @param gitLabApi GitLab API client
-     * @param projectId Project ID (optional)
-     * @param groupId Group ID (optional)
+     * @param namespace Project namespace (e.g. "spring-ai")
+     * @param projectName Project name (e.g. "spring-ai")
+     * @param groupPath Group path (optional)
+     * @param config Issue configuration
      * @param verbose Whether to enable verbose logging
+     * @throws GitLabApiException if project cannot be found
      */
-    public GitLabIssueReader(GitLabApi gitLabApi, Integer projectId, Integer groupId, boolean verbose) {
-        super(gitLabApi, projectId, verbose);
-        this.groupId = groupId;
+    public GitLabIssueReader(GitLabApi gitLabApi, String namespace, String projectName, String groupPath, GitLabIssueConfig config, boolean verbose) throws GitLabApiException {
+        super(gitLabApi, namespace, projectName);
+        this.groupPath = groupPath;
+        this.config = config != null ? config : GitLabIssueConfig.builder().state(GitLabIssueState.OPEN).build();
     }
 
     /**
@@ -61,22 +84,35 @@ public class GitLabIssueReader extends AbstractGitLabReader {
         String description = issue.getDescription();
         
         Map<String, Object> metadata = new HashMap<>();
+        
+        // Required fields
         metadata.put("state", issue.getState());
-        metadata.put("labels", issue.getLabels());
-        metadata.put("created_at", issue.getCreatedAt());
-        metadata.put("closed_at", issue.getClosedAt());
         metadata.put("url", issue.getWebUrl());
         metadata.put("source", issue.getWebUrl());
-
-        if (issue.getAssignee() != null) {
+        
+        // Optional fields, only add if not empty
+        if (issue.getLabels() != null && !issue.getLabels().isEmpty()) {
+            metadata.put("labels", issue.getLabels());
+        }
+        
+        if (issue.getCreatedAt() != null) {
+            metadata.put("created_at", issue.getCreatedAt());
+        }
+        
+        if (issue.getClosedAt() != null) {
+            metadata.put("closed_at", issue.getClosedAt());
+        }
+        
+        if (issue.getAssignee() != null && issue.getAssignee().getUsername() != null) {
             metadata.put("assignee", issue.getAssignee().getUsername());
         }
-        if (issue.getAuthor() != null) {
+        
+        if (issue.getAuthor() != null && issue.getAuthor().getUsername() != null) {
             metadata.put("author", issue.getAuthor().getUsername());
         }
 
         return new Document(String.valueOf(issue.getIid()), 
-                          String.format("%s\n%s", title, description),
+                          String.format("%s\n%s", title, description != null ? description : ""),
                           metadata);
     }
 
@@ -95,68 +131,29 @@ public class GitLabIssueReader extends AbstractGitLabReader {
 
     @Override
     public List<Document> get() {
-        return loadData(null, null, null, null, null, null,
-                null, null, null, null, null, null,
-                GitLabIssueState.OPEN, null, null);
-    }
-
-    /**
-     * Load issues from GitLab and convert them to documents.
-     *
-     * @param assignee Username or ID of assigned user
-     * @param author Username or ID of author
-     * @param confidential Filter confidential issues
-     * @param createdAfter Filter issues created after date
-     * @param createdBefore Filter issues created before date
-     * @param iids List of issue IIDs
-     * @param issueType Filter by issue type
-     * @param labels List of label names
-     * @param milestone Milestone title
-     * @param nonArchived Return issues from non-archived projects
-     * @param scope Return issues for given scope
-     * @param search Search in title and description
-     * @param state State of issues to retrieve
-     * @param updatedAfter Filter issues updated after date
-     * @param updatedBefore Filter issues updated before date
-     * @return List of documents
-     */
-    public List<Document> loadData(String assignee,
-                                 String author,
-                                 Boolean confidential,
-                                 LocalDateTime createdAfter,
-                                 LocalDateTime createdBefore,
-                                 List<Integer> iids,
-                                 GitLabIssueType issueType,
-                                 List<String> labels,
-                                 String milestone,
-                                 Boolean nonArchived,
-                                 GitLabScope scope,
-                                 String search,
-                                 GitLabIssueState state,
-                                 LocalDateTime updatedAfter,
-                                 LocalDateTime updatedBefore) {
         try {
             IssuesApi issuesApi = gitLabApi.getIssuesApi();
 
             // Convert Integer iids to Long iids
-            List<Long> longIids = iids != null ? iids.stream()
+            List<Long> longIids = config.getIids() != null ? config.getIids().stream()
                     .map(Long::valueOf)
                     .toList() : null;
 
             // Build the filter parameters
             IssueFilter filter = new IssueFilter()
                 .withIids(longIids)
-                .withState(state != null ? Constants.IssueState.valueOf(state.getValue().toUpperCase()) : Constants.IssueState.OPENED)
-                .withLabels(labels)
-                .withMilestone(milestone)
-                .withScope(scope != null ? Constants.IssueScope.valueOf(scope.getValue().toUpperCase()) : null)
-                .withSearch(search)
-                .withCreatedAfter(createdAfter != null ? toGitLabDateFormat(createdAfter) : null)
-                .withCreatedBefore(createdBefore != null ? toGitLabDateFormat(createdBefore) : null)
-                .withUpdatedAfter(updatedAfter != null ? toGitLabDateFormat(updatedAfter) : null)
-                .withUpdatedBefore(updatedBefore != null ? toGitLabDateFormat(updatedBefore) : null);
+                .withState(config.getState() != null ? Constants.IssueState.valueOf(config.getState().getValue().toUpperCase()) : Constants.IssueState.OPENED)
+                .withLabels(config.getLabels())
+                .withMilestone(config.getMilestone())
+                .withScope(config.getScope() != null ? Constants.IssueScope.valueOf(config.getScope().getValue().toUpperCase()) : null)
+                .withSearch(config.getSearch())
+                .withCreatedAfter(config.getCreatedAfter() != null ? toGitLabDateFormat(config.getCreatedAfter()) : null)
+                .withCreatedBefore(config.getCreatedBefore() != null ? toGitLabDateFormat(config.getCreatedBefore()) : null)
+                .withUpdatedAfter(config.getUpdatedAfter() != null ? toGitLabDateFormat(config.getUpdatedAfter()) : null)
+                .withUpdatedBefore(config.getUpdatedBefore() != null ? toGitLabDateFormat(config.getUpdatedBefore()) : null);
 
             // Handle assignee and author
+            String assignee = config.getAssignee();
             if (assignee != null) {
                 try {
                     Long assigneeId = Long.parseLong(assignee);
@@ -167,6 +164,7 @@ public class GitLabIssueReader extends AbstractGitLabReader {
                 }
             }
 
+            String author = config.getAuthor();
             if (author != null) {
                 try {
                     Long authorId = Long.parseLong(author);
@@ -178,14 +176,12 @@ public class GitLabIssueReader extends AbstractGitLabReader {
             }
 
             List<Issue> issues;
-            if (projectId != null) {
-                // 使用 IssuesApi.getIssues(projectId, filter) 方法获取项目的 issues
-                issues = issuesApi.getIssues(projectId, filter);
-            } else if (groupId != null) {
-                // 使用 IssuesApi.getGroupIssues(groupId, filter) 方法获取组的 issues
-                issues = issuesApi.getGroupIssues(groupId, filter);
+            if (groupPath != null) {
+                // Get group issues using IssuesApi.getGroupIssues(groupPath, filter)
+                issues = issuesApi.getGroupIssues(groupPath, filter);
             } else {
-                throw new IllegalStateException("Either projectId or groupId must be provided");
+                // Get project issues using IssuesApi.getIssues(projectId, filter)
+                issues = issuesApi.getIssues(project.getId(), filter);
             }
 
             return issues.stream()
