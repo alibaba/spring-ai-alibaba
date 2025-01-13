@@ -16,33 +16,57 @@
 package com.alibaba.cloud.ai.reader.gitlab;
 
 import org.gitlab4j.api.GitLabApi;
+import org.gitlab4j.api.GitLabApiException;
+import org.gitlab4j.api.models.Project;
 import org.springframework.ai.document.DocumentReader;
+import org.springframework.util.Assert;
 
 /**
  * Abstract base class for GitLab document readers.
- * Provides common functionality for GitLab API interactions.
+ * Provides common functionality for GitLab API access.
  *
  * @author brianxiadong
  */
-public abstract class AbstractGitLabReader implements DocumentReader, AutoCloseable {
+public abstract class AbstractGitLabReader implements DocumentReader {
 
     protected final GitLabApi gitLabApi;
-    protected final Integer projectId;
-    protected final boolean verbose;
+    protected final Project project;
     protected final String projectUrl;
 
     /**
-     * Constructor for AbstractGitLabReader.
+     * Constructor with GitLab host URL and token.
+     *
+     * @param hostUrl GitLab host URL
+     * @param token GitLab private token (optional)
+     * @param namespace Project namespace (e.g. "spring-ai")
+     * @param projectName Project name (e.g. "spring-ai")
+     * @throws GitLabApiException if project cannot be found
+     */
+    protected AbstractGitLabReader(String hostUrl, String token, String namespace, String projectName) throws GitLabApiException {
+        Assert.hasText(namespace, "Namespace must not be empty");
+        Assert.hasText(projectName, "Project name must not be empty");
+        
+        this.gitLabApi = new GitLabApi(hostUrl, token);
+        this.project = gitLabApi.getProjectApi().getProject(namespace, projectName);
+        this.projectUrl = project.getWebUrl();
+    }
+
+    /**
+     * Constructor with existing GitLabApi instance.
      *
      * @param gitLabApi GitLab API client
-     * @param projectId Project ID (optional)
-     * @param verbose Whether to enable verbose logging
+     * @param namespace Project namespace (e.g. "spring-ai")
+     * @param projectName Project name (e.g. "spring-ai")
+     * @throws GitLabApiException if project cannot be found
      */
-    protected AbstractGitLabReader(GitLabApi gitLabApi, Integer projectId, boolean verbose) {
+    protected AbstractGitLabReader(GitLabApi gitLabApi, String namespace, String projectName) throws GitLabApiException {
+        Assert.hasText(namespace, "Namespace must not be empty");
+        Assert.hasText(projectName, "Project name must not be empty");
+        Assert.notNull(gitLabApi, "GitLabApi must not be null");
+        
         this.gitLabApi = gitLabApi;
-        this.projectId = projectId;
-        this.verbose = verbose;
-        this.projectUrl = projectId != null ? String.format("%s/projects/%d", gitLabApi.getGitLabServerUrl(), projectId) : null;
+        this.project = gitLabApi.getProjectApi().getProject(namespace, projectName);
+        this.projectUrl = project.getWebUrl();
     }
 
     /**
@@ -55,16 +79,20 @@ public abstract class AbstractGitLabReader implements DocumentReader, AutoClosea
     }
 
     /**
+     * Get the project.
+     *
+     * @return GitLab project
+     */
+    protected Project getProject() {
+        return project;
+    }
+
+    /**
      * Get the project URL.
      *
      * @return Project URL
      */
     protected String getProjectUrl() {
         return projectUrl;
-    }
-
-    @Override
-    public void close() {
-        // Do not close GitLabApi here as it is managed by the factory
     }
 } 
