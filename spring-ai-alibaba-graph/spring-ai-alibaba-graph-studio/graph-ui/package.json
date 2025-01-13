@@ -13,6 +13,7 @@
   "dependencies": {
     "@ant-design/icons": "^5.0.1",
     "@ant-design/pro-components": "^2.8.2",
+    "@ant-design/x": "^1.0.2",
     "@formily/antd-v5": "^1.2.3",
     "@formily/core": "^2.3.2",
     "@formily/react": "^2.3.2",
