@@ -1,5 +1,6 @@
 package com.alibaba.cloud.ai.service.impl;
 
+import com.alibaba.cloud.ai.exception.NotFoundException;
 import com.alibaba.cloud.ai.oltp.StudioObservabilityProperties;
 import com.alibaba.cloud.ai.service.StudioObservabilityService;
 import com.alibaba.cloud.ai.utils.FileUtils;
@@ -149,8 +150,7 @@ public class StudioObservabilityServiceImpl implements StudioObservabilityServic
 	}
 
 	@Override
-	public ArrayNode getTraceByTraceId(String traceId) {
-		ArrayNode resultArray = objectMapper.createArrayNode();
+	public JsonNode getTraceByTraceId(String traceId) {
 		ArrayNode jsonArray = readObservabilityFile();
 
 		for (JsonNode jsonNode : jsonArray) {
@@ -158,10 +158,10 @@ public class StudioObservabilityServiceImpl implements StudioObservabilityServic
 			JsonNode spans = scopeSpans.get(0).path("spans");
 			JsonNode traceIdNode = spans.get(0).path("traceId");
 			if (traceIdNode.isTextual() && traceIdNode.asText().equals(traceId)) {
-				resultArray.add(jsonNode);
+				return jsonNode;
 			}
 		}
-		return resultArray;
+		throw new NotFoundException("Not found trace info");
 	}
 
 	public List<ListResponse> extractSpansWithoutParentSpanId() {

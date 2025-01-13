@@ -93,10 +93,10 @@ export default function Config(props: Props) {
           modelNameList.map((modelName) => ({
             value: modelName,
             label: modelName,
-          }))
-        )
+          })),
+        );
       }
-    }
+    };
     fetchData();
     form.setFieldsValue(configFromAPI);
   }, [configFromAPI]);

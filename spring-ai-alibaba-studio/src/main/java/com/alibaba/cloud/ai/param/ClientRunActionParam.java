@@ -35,9 +35,6 @@ public class ClientRunActionParam {
 	@Schema(description = "chat id use for chat mode, if not set, server will set a new", nullable = true)
 	private String chatID;
 
-	@Schema(description = "use chat mode, is use, will be enable chat memory", defaultValue = "false")
-	private Boolean useChatMode = Boolean.FALSE;
-
 	@Schema(description = "use stream response", defaultValue = "false")
 	private Boolean stream = Boolean.FALSE;
 
