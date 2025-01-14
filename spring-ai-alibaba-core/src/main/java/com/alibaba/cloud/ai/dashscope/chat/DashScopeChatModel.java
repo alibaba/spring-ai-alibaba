@@ -15,12 +15,28 @@
  */
 package com.alibaba.cloud.ai.dashscope.chat;
 
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.*;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletion;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionChunk;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.ChatCompletionFunction;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.MediaContent;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.ToolCall;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput.Choice;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequest;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequestInput;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequestParameter;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.FunctionTool;
 import com.alibaba.cloud.ai.dashscope.chat.observation.DashScopeChatModelObservationConvention;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import com.alibaba.cloud.ai.dashscope.metadata.DashScopeAiUsage;
@@ -29,20 +45,27 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.*;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
@@ -50,11 +73,6 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link ChatModel} implementation for {@literal Alibaba DashScope} backed by
@@ -106,16 +124,29 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 
 	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions options,
 			FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate) {
-		this(dashscopeApi, options, functionCallbackResolver, retryTemplate, ObservationRegistry.NOOP);
+		this(dashscopeApi, options, functionCallbackResolver, List.of(), retryTemplate);
 	}
 
 	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate,
-			ObservationRegistry observationRegistry) {
-		super(functionCallbackResolver);
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
+			RetryTemplate retryTemplate) {
+
+		this(dashscopeApi, options, functionCallbackResolver, toolFunctionCallbacks, retryTemplate,
+				ObservationRegistry.NOOP);
+	}
+
+	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions options,
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
+			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
+
+		super(functionCallbackResolver, options, toolFunctionCallbacks);
+
 		Assert.notNull(dashscopeApi, "DashScopeApi must not be null");
 		Assert.notNull(options, "Options must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+		Assert.isTrue(CollectionUtils.isEmpty(options.getFunctionCallbacks()),
+				"The default function callbacks must be set via the toolFunctionCallbacks constructor parameter");
+		Assert.notNull(observationRegistry, "ObservationRegistry must not be null");
 
 		this.dashscopeApi = dashscopeApi;
 		this.defaultOptions = options;
