@@ -19,180 +19,213 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Configuration class for GitLab issue reader.
- * Contains all parameters for filtering and retrieving issues.
+ * Configuration class for GitLab issue reader. Contains all parameters for filtering and
+ * retrieving issues.
  *
  * @author brianxiadong
  */
 public class GitLabIssueConfig {
-    private String assignee;
-    private String author;
-    private Boolean confidential;
-    private LocalDateTime createdAfter;
-    private LocalDateTime createdBefore;
-    private List<Integer> iids;
-    private GitLabIssueType issueType;
-    private List<String> labels;
-    private String milestone;
-    private Boolean nonArchived;
-    private GitLabScope scope;
-    private String search;
-    private GitLabIssueState state;
-    private LocalDateTime updatedAfter;
-    private LocalDateTime updatedBefore;
 
-    private GitLabIssueConfig() {
-        // Use builder pattern to create instances
-    }
+	// Assignee username to filter issues
+	private String assignee;
 
-    public String getAssignee() {
-        return assignee;
-    }
+	// Author username to filter issues
+	private String author;
 
-    public String getAuthor() {
-        return author;
-    }
+	// Whether to return only confidential issues
+	private Boolean confidential;
 
-    public Boolean getConfidential() {
-        return confidential;
-    }
+	// Return issues created after this date
+	private LocalDateTime createdAfter;
 
-    public LocalDateTime getCreatedAfter() {
-        return createdAfter;
-    }
+	// Return issues created before this date
+	private LocalDateTime createdBefore;
 
-    public LocalDateTime getCreatedBefore() {
-        return createdBefore;
-    }
+	// List of issue IIDs to filter
+	private List<Integer> iids;
 
-    public List<Integer> getIids() {
-        return iids;
-    }
+	// Type of issues to return (issue, incident, test_case)
+	private GitLabIssueType issueType;
 
-    public GitLabIssueType getIssueType() {
-        return issueType;
-    }
+	// Labels to filter issues
+	private List<String> labels;
 
-    public List<String> getLabels() {
-        return labels;
-    }
+	// Milestone title to filter issues
+	private String milestone;
 
-    public String getMilestone() {
-        return milestone;
-    }
+	// Whether to return only non-archived issues
+	private Boolean nonArchived;
 
-    public Boolean getNonArchived() {
-        return nonArchived;
-    }
+	// Scope of issues to return (created_by_me, assigned_to_me, all)
+	private GitLabScope scope;
 
-    public GitLabScope getScope() {
-        return scope;
-    }
+	// Search query to filter issues
+	private String search;
 
-    public String getSearch() {
-        return search;
-    }
+	// State of issues to return (opened, closed, all)
+	private GitLabIssueState state;
 
-    public GitLabIssueState getState() {
-        return state;
-    }
+	// Return issues updated after this date
+	private LocalDateTime updatedAfter;
 
-    public LocalDateTime getUpdatedAfter() {
-        return updatedAfter;
-    }
+	// Return issues updated before this date
+	private LocalDateTime updatedBefore;
 
-    public LocalDateTime getUpdatedBefore() {
-        return updatedBefore;
-    }
+	private GitLabIssueConfig() {
+		// Use builder pattern to create instances
+	}
 
-    public static Builder builder() {
-        return new Builder();
-    }
+	public String getAssignee() {
+		return assignee;
+	}
 
-    public static class Builder {
-        private final GitLabIssueConfig config;
+	public String getAuthor() {
+		return author;
+	}
 
-        private Builder() {
-            config = new GitLabIssueConfig();
-        }
+	public Boolean getConfidential() {
+		return confidential;
+	}
 
-        public Builder assignee(String assignee) {
-            config.assignee = assignee;
-            return this;
-        }
+	public LocalDateTime getCreatedAfter() {
+		return createdAfter;
+	}
 
-        public Builder author(String author) {
-            config.author = author;
-            return this;
-        }
+	public LocalDateTime getCreatedBefore() {
+		return createdBefore;
+	}
 
-        public Builder confidential(Boolean confidential) {
-            config.confidential = confidential;
-            return this;
-        }
+	public List<Integer> getIids() {
+		return iids;
+	}
 
-        public Builder createdAfter(LocalDateTime createdAfter) {
-            config.createdAfter = createdAfter;
-            return this;
-        }
+	public GitLabIssueType getIssueType() {
+		return issueType;
+	}
 
-        public Builder createdBefore(LocalDateTime createdBefore) {
-            config.createdBefore = createdBefore;
-            return this;
-        }
+	public List<String> getLabels() {
+		return labels;
+	}
 
-        public Builder iids(List<Integer> iids) {
-            config.iids = iids;
-            return this;
-        }
+	public String getMilestone() {
+		return milestone;
+	}
 
-        public Builder issueType(GitLabIssueType issueType) {
-            config.issueType = issueType;
-            return this;
-        }
+	public Boolean getNonArchived() {
+		return nonArchived;
+	}
 
-        public Builder labels(List<String> labels) {
-            config.labels = labels;
-            return this;
-        }
+	public GitLabScope getScope() {
+		return scope;
+	}
 
-        public Builder milestone(String milestone) {
-            config.milestone = milestone;
-            return this;
-        }
+	public String getSearch() {
+		return search;
+	}
 
-        public Builder nonArchived(Boolean nonArchived) {
-            config.nonArchived = nonArchived;
-            return this;
-        }
+	public GitLabIssueState getState() {
+		return state;
+	}
 
-        public Builder scope(GitLabScope scope) {
-            config.scope = scope;
-            return this;
-        }
+	public LocalDateTime getUpdatedAfter() {
+		return updatedAfter;
+	}
 
-        public Builder search(String search) {
-            config.search = search;
-            return this;
-        }
+	public LocalDateTime getUpdatedBefore() {
+		return updatedBefore;
+	}
 
-        public Builder state(GitLabIssueState state) {
-            config.state = state != null ? state : GitLabIssueState.OPEN;
-            return this;
-        }
+	public static Builder builder() {
+		return new Builder();
+	}
 
-        public Builder updatedAfter(LocalDateTime updatedAfter) {
-            config.updatedAfter = updatedAfter;
-            return this;
-        }
+	public static class Builder {
 
-        public Builder updatedBefore(LocalDateTime updatedBefore) {
-            config.updatedBefore = updatedBefore;
-            return this;
-        }
+		private final GitLabIssueConfig config;
 
-        public GitLabIssueConfig build() {
-            return config;
-        }
-    }
-} 
+		private Builder() {
+			config = new GitLabIssueConfig();
+		}
+
+		public Builder assignee(String assignee) {
+			config.assignee = assignee;
+			return this;
+		}
+
+		public Builder author(String author) {
+			config.author = author;
+			return this;
+		}
+
+		public Builder confidential(Boolean confidential) {
+			config.confidential = confidential;
+			return this;
+		}
+
+		public Builder createdAfter(LocalDateTime createdAfter) {
+			config.createdAfter = createdAfter;
+			return this;
+		}
+
+		public Builder createdBefore(LocalDateTime createdBefore) {
+			config.createdBefore = createdBefore;
+			return this;
+		}
+
+		public Builder iids(List<Integer> iids) {
+			config.iids = iids;
+			return this;
+		}
+
+		public Builder issueType(GitLabIssueType issueType) {
+			config.issueType = issueType;
+			return this;
+		}
+
+		public Builder labels(List<String> labels) {
+			config.labels = labels;
+			return this;
+		}
+
+		public Builder milestone(String milestone) {
+			config.milestone = milestone;
+			return this;
+		}
+
+		public Builder nonArchived(Boolean nonArchived) {
+			config.nonArchived = nonArchived;
+			return this;
+		}
+
+		public Builder scope(GitLabScope scope) {
+			config.scope = scope;
+			return this;
+		}
+
+		public Builder search(String search) {
+			config.search = search;
+			return this;
+		}
+
+		public Builder state(GitLabIssueState state) {
+			config.state = state != null ? state : GitLabIssueState.OPEN;
+			return this;
+		}
+
+		public Builder updatedAfter(LocalDateTime updatedAfter) {
+			config.updatedAfter = updatedAfter;
+			return this;
+		}
+
+		public Builder updatedBefore(LocalDateTime updatedBefore) {
+			config.updatedBefore = updatedBefore;
+			return this;
+		}
+
+		public GitLabIssueConfig build() {
+			return config;
+		}
+
+	}
+
+}

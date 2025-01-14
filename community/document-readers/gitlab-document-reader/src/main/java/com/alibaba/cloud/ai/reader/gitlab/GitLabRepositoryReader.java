@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.reader.gitlab;
 
-import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.RepositoryApi;
 import org.gitlab4j.api.models.RepositoryFile;
@@ -27,184 +26,166 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
- * GitLab repository reader.
- * Reads files from GitLab repositories and converts them to documents.
+ * GitLab repository reader. Reads files from GitLab repositories and converts them to
+ * documents. Only supports public repositories.
  *
  * @author brianxiadong
  */
 public class GitLabRepositoryReader extends AbstractGitLabReader {
 
-    private String ref;
-    private String filePath;
-    private String pattern;
-    private boolean recursive;
+	private String ref;
 
-    /**
-     * Constructor for GitLabRepositoryReader with token.
-     *
-     * @param hostUrl GitLab host URL
-     * @param token GitLab private token (optional)
-     * @param namespace Project namespace (e.g. "spring-ai")
-     * @param projectName Project name (e.g. "spring-ai")
-     * @throws GitLabApiException if project cannot be found
-     */
-    public GitLabRepositoryReader(String hostUrl, String token, String namespace, String projectName) throws GitLabApiException {
-        super(hostUrl, token, namespace, projectName);
-        this.ref = "main"; // Default branch
-    }
+	private String filePath;
 
-    /**
-     * Constructor for GitLabRepositoryReader with existing GitLabApi instance.
-     *
-     * @param gitLabApi GitLab API client
-     * @param namespace Project namespace (e.g. "spring-ai")
-     * @param projectName Project name (e.g. "spring-ai")
-     * @throws GitLabApiException if project cannot be found
-     */
-    public GitLabRepositoryReader(GitLabApi gitLabApi, String namespace, String projectName) throws GitLabApiException {
-        super(gitLabApi, namespace, projectName);
-        this.ref = "main"; // Default branch
-    }
+	private String pattern;
 
-    /**
-     * Set the Git reference (branch, tag, or commit) to read from.
-     *
-     * @param ref Git reference
-     * @return this reader instance
-     */
-    public GitLabRepositoryReader setRef(String ref) {
-        this.ref = ref;
-        return this;
-    }
+	private boolean recursive;
 
-    /**
-     * Set the file path to read.
-     * If null, will read all files in the repository.
-     *
-     * @param filePath File path relative to repository root
-     * @return this reader instance
-     */
-    public GitLabRepositoryReader setFilePath(String filePath) {
-        this.filePath = filePath;
-        return this;
-    }
+	/**
+	 * Constructor for GitLabRepositoryReader.
+	 * @param hostUrl GitLab host URL
+	 * @param namespace Project namespace (e.g. "spring-ai")
+	 * @param projectName Project name (e.g. "spring-ai")
+	 * @throws GitLabApiException if project cannot be found
+	 */
+	public GitLabRepositoryReader(String hostUrl, String namespace, String projectName) throws GitLabApiException {
+		super(hostUrl, namespace, projectName);
+		this.ref = "main"; // Default branch
+	}
 
-    /**
-     * Set the file pattern to filter files.
-     * Supports glob patterns like:
-     * - "*.md" for all markdown files
-     * - "docs/*.txt" for all text files in docs directory
-     * - "src/**\/*.java" for all Java files in src directory and subdirectories
-     *
-     * @param pattern File pattern in glob format
-     * @return this reader instance
-     */
-    public GitLabRepositoryReader setPattern(String pattern) {
-        this.pattern = pattern;
-        return this;
-    }
+	/**
+	 * Set the Git reference (branch, tag, or commit) to read from.
+	 * @param ref Git reference
+	 * @return this reader instance
+	 */
+	public GitLabRepositoryReader setRef(String ref) {
+		this.ref = ref;
+		return this;
+	}
 
-    /**
-     * Set whether to recursively read files in subdirectories.
-     *
-     * @param recursive Whether to read recursively
-     * @return this reader instance
-     */
-    public GitLabRepositoryReader setRecursive(boolean recursive) {
-        this.recursive = recursive;
-        return this;
-    }
+	/**
+	 * Set the file path to read. If null, will read all files in the repository.
+	 * @param filePath File path relative to repository root
+	 * @return this reader instance
+	 */
+	public GitLabRepositoryReader setFilePath(String filePath) {
+		this.filePath = filePath;
+		return this;
+	}
 
-    @Override
-    public List<Document> get() {
-        try {
-            return loadData(ref, filePath, pattern, recursive);
-        } catch (GitLabApiException e) {
-            throw new RuntimeException("Failed to load files from GitLab", e);
-        }
-    }
+	/**
+	 * Set the file pattern to filter files. Supports glob patterns like: - "*.md" for all
+	 * markdown files - "docs/*.txt" for all text files in docs directory -
+	 * "src/**\/*.java" for all Java files in src directory and subdirectories
+	 * @param pattern File pattern in glob format
+	 * @return this reader instance
+	 */
+	public GitLabRepositoryReader setPattern(String pattern) {
+		this.pattern = pattern;
+		return this;
+	}
 
-    /**
-     * Load files from GitLab repository.
-     *
-     * @param ref Git reference (branch, tag, or commit)
-     * @param filePath File path to load (optional)
-     * @param pattern File pattern to filter (optional)
-     * @param recursive Whether to read recursively
-     * @return List of documents
-     * @throws GitLabApiException if API call fails
-     */
-    List<Document> loadData(String ref, String filePath, String pattern, boolean recursive) throws GitLabApiException {
-        try {
-            if (StringUtils.hasText(filePath)) {
-                return Collections.singletonList(loadSingleFile(filePath, ref));
-            }
+	/**
+	 * Set whether to recursively read files in subdirectories.
+	 * @param recursive Whether to read recursively
+	 * @return this reader instance
+	 */
+	public GitLabRepositoryReader setRecursive(boolean recursive) {
+		this.recursive = recursive;
+		return this;
+	}
 
-            RepositoryApi repositoryApi = gitLabApi.getRepositoryApi();
-            List<TreeItem> items = repositoryApi.getTree(project.getId(), filePath, ref, recursive);
+	@Override
+	public List<Document> get() {
+		try {
+			return loadData(ref, filePath, pattern, recursive);
+		}
+		catch (GitLabApiException e) {
+			throw new RuntimeException("Failed to load files from GitLab", e);
+		}
+	}
 
-            List<Document> documents = new ArrayList<>();
-            for (TreeItem item : items) {
-                if (TreeItem.Type.BLOB.equals(item.getType())) {
-                    // Apply pattern filter if specified
-                    if (pattern != null && !pattern.isEmpty()) {
-                        String path = item.getPath();
-                        // Convert glob pattern to regex pattern
-                        String regexPattern = pattern
-                            .replace(".", "\\.")     // Escape dots
-                            .replace("**", ".*")     // Match any characters across directories
-                            .replace("*", "[^/]*")   // Match any characters except directory separator
-                            .replace("?", ".");      // Match single character
-                        if (!path.matches(regexPattern)) {
-                            continue;
-                        }
-                    }
-                    documents.add(loadSingleFile(item.getPath(), ref));
-                }
-            }
+	/**
+	 * Load files from GitLab repository.
+	 * @param ref Git reference (branch, tag, or commit)
+	 * @param filePath File path to load (optional)
+	 * @param pattern File pattern to filter (optional)
+	 * @param recursive Whether to read recursively
+	 * @return List of documents
+	 * @throws GitLabApiException if API call fails
+	 */
+	List<Document> loadData(String ref, String filePath, String pattern, boolean recursive) throws GitLabApiException {
+		try {
+			if (StringUtils.hasText(filePath)) {
+				return Collections.singletonList(loadSingleFile(filePath, ref));
+			}
 
-            return documents;
-        }
-        catch (GitLabApiException e) {
-            throw new RuntimeException("Failed to load repository data from GitLab", e);
-        }
-    }
+			RepositoryApi repositoryApi = gitLabApi.getRepositoryApi();
+			List<TreeItem> items = repositoryApi.getTree(project.getId(), filePath, ref, recursive);
 
-    /**
-     * Load a single file from the repository.
-     *
-     * @param filePath Path to the file
-     * @param ref Branch name or commit ID
-     * @return Document representation of the file
-     * @throws GitLabApiException if there is an error accessing the GitLab API
-     */
-    private Document loadSingleFile(String filePath, String ref) throws GitLabApiException {
-        RepositoryFile file = gitLabApi.getRepositoryFileApi().getFile(project.getId(), filePath, ref);
-        byte[] content = Base64.getDecoder().decode(file.getContent());
-        String fileContent = new String(content, StandardCharsets.UTF_8);
+			List<Document> documents = new ArrayList<>();
+			for (TreeItem item : items) {
+				if (TreeItem.Type.BLOB.equals(item.getType())) {
+					// Apply pattern filter if specified
+					if (pattern != null && !pattern.isEmpty()) {
+						String path = item.getPath();
+						// Convert glob pattern to regex pattern
+						String regexPattern = pattern.replace(".", "\\.") // Escape dots
+							.replace("**", ".*") // Match any characters across
+													// directories
+							.replace("*", "[^/]*") // Match any characters except
+													// directory separator
+							.replace("?", "."); // Match single character
+						if (!path.matches(regexPattern)) {
+							continue;
+						}
+					}
+					documents.add(loadSingleFile(item.getPath(), ref));
+				}
+			}
 
-        Map<String, Object> metadata = new HashMap<>();
-        
-        // Required fields
-        metadata.put("file_path", file.getFilePath());
-        metadata.put("file_name", file.getFileName());
-        metadata.put("size", content.length);
-        metadata.put("url", String.format("%s/repository/files/%s/raw", projectUrl, 
-                                        StringUtils.replace(file.getFilePath(), "/", "%2F")));
-        
-        // Optional fields, only add if not empty
-        if (file.getLastCommitId() != null) {
-            metadata.put("last_commit_id", file.getLastCommitId());
-        }
-        
-        if (file.getRef() != null) {
-            metadata.put("ref", file.getRef());
-        }
-        
-        if (file.getContentSha256() != null) {
-            metadata.put("content_sha256", file.getContentSha256());
-        }
+			return documents;
+		}
+		catch (GitLabApiException e) {
+			throw new RuntimeException("Failed to load repository data from GitLab", e);
+		}
+	}
 
-        return new Document(file.getBlobId(), fileContent, metadata);
-    }
-} 
+	/**
+	 * Load a single file from the repository.
+	 * @param filePath Path to the file
+	 * @param ref Branch name or commit ID
+	 * @return Document representation of the file
+	 * @throws GitLabApiException if there is an error accessing the GitLab API
+	 */
+	private Document loadSingleFile(String filePath, String ref) throws GitLabApiException {
+		RepositoryFile file = gitLabApi.getRepositoryFileApi().getFile(project.getId(), filePath, ref);
+		byte[] content = Base64.getDecoder().decode(file.getContent());
+		String fileContent = new String(content, StandardCharsets.UTF_8);
+
+		Map<String, Object> metadata = new HashMap<>();
+
+		// Required fields
+		metadata.put("file_path", file.getFilePath());
+		metadata.put("file_name", file.getFileName());
+		metadata.put("size", content.length);
+		metadata.put("url", String.format("%s/repository/files/%s/raw", projectUrl,
+				StringUtils.replace(file.getFilePath(), "/", "%2F")));
+
+		// Optional fields, only add if not empty
+		if (file.getLastCommitId() != null) {
+			metadata.put("last_commit_id", file.getLastCommitId());
+		}
+
+		if (file.getRef() != null) {
+			metadata.put("ref", file.getRef());
+		}
+
+		if (file.getContentSha256() != null) {
+			metadata.put("content_sha256", file.getContentSha256());
+		}
+
+		return new Document(file.getBlobId(), fileContent, metadata);
+	}
+
+}

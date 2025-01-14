@@ -22,77 +22,61 @@ import org.springframework.ai.document.DocumentReader;
 import org.springframework.util.Assert;
 
 /**
- * Abstract base class for GitLab document readers.
- * Provides common functionality for GitLab API access.
+ * Abstract base class for GitLab document readers. Provides common functionality for
+ * GitLab API access. Only supports public repositories.
  *
  * @author brianxiadong
  */
 public abstract class AbstractGitLabReader implements DocumentReader {
 
-    protected final GitLabApi gitLabApi;
-    protected final Project project;
-    protected final String projectUrl;
+	// GitLab API client for interacting with GitLab server
+	protected final GitLabApi gitLabApi;
 
-    /**
-     * Constructor with GitLab host URL and token.
-     *
-     * @param hostUrl GitLab host URL
-     * @param token GitLab private token (optional)
-     * @param namespace Project namespace (e.g. "spring-ai")
-     * @param projectName Project name (e.g. "spring-ai")
-     * @throws GitLabApiException if project cannot be found
-     */
-    protected AbstractGitLabReader(String hostUrl, String token, String namespace, String projectName) throws GitLabApiException {
-        Assert.hasText(namespace, "Namespace must not be empty");
-        Assert.hasText(projectName, "Project name must not be empty");
-        
-        this.gitLabApi = new GitLabApi(hostUrl, token);
-        this.project = gitLabApi.getProjectApi().getProject(namespace, projectName);
-        this.projectUrl = project.getWebUrl();
-    }
+	// GitLab project object containing project details
+	protected final Project project;
 
-    /**
-     * Constructor with existing GitLabApi instance.
-     *
-     * @param gitLabApi GitLab API client
-     * @param namespace Project namespace (e.g. "spring-ai")
-     * @param projectName Project name (e.g. "spring-ai")
-     * @throws GitLabApiException if project cannot be found
-     */
-    protected AbstractGitLabReader(GitLabApi gitLabApi, String namespace, String projectName) throws GitLabApiException {
-        Assert.hasText(namespace, "Namespace must not be empty");
-        Assert.hasText(projectName, "Project name must not be empty");
-        Assert.notNull(gitLabApi, "GitLabApi must not be null");
-        
-        this.gitLabApi = gitLabApi;
-        this.project = gitLabApi.getProjectApi().getProject(namespace, projectName);
-        this.projectUrl = project.getWebUrl();
-    }
+	// Web URL of the GitLab project
+	protected final String projectUrl;
 
-    /**
-     * Get the GitLab API client.
-     *
-     * @return GitLab API client
-     */
-    protected GitLabApi getGitLabApi() {
-        return gitLabApi;
-    }
+	/**
+	 * Constructor for accessing public GitLab repositories.
+	 * @param hostUrl GitLab host URL
+	 * @param namespace Project namespace (e.g. "spring-ai")
+	 * @param projectName Project name (e.g. "spring-ai")
+	 * @throws GitLabApiException if project cannot be found
+	 */
+	protected AbstractGitLabReader(String hostUrl, String namespace, String projectName) throws GitLabApiException {
+		Assert.hasText(hostUrl, "Host URL must not be empty");
+		Assert.hasText(namespace, "Namespace must not be empty");
+		Assert.hasText(projectName, "Project name must not be empty");
 
-    /**
-     * Get the project.
-     *
-     * @return GitLab project
-     */
-    protected Project getProject() {
-        return project;
-    }
+		this.gitLabApi = new GitLabApi(hostUrl, ""); // Empty token for public access
+		this.project = gitLabApi.getProjectApi().getProject(namespace, projectName);
+		this.projectUrl = project.getWebUrl();
+	}
 
-    /**
-     * Get the project URL.
-     *
-     * @return Project URL
-     */
-    protected String getProjectUrl() {
-        return projectUrl;
-    }
-} 
+	/**
+	 * Get the GitLab API client.
+	 * @return GitLab API client
+	 */
+	protected GitLabApi getGitLabApi() {
+		return gitLabApi;
+	}
+
+	/**
+	 * Get the project.
+	 * @return GitLab project
+	 */
+	protected Project getProject() {
+		return project;
+	}
+
+	/**
+	 * Get the project URL.
+	 * @return Project URL
+	 */
+	protected String getProjectUrl() {
+		return projectUrl;
+	}
+
+}
