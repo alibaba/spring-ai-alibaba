@@ -30,7 +30,7 @@ public class CustomDSLAdapter extends AbstractDSLAdapter {
 
 	private final List<NodeDataConverter<?>> nodeDataConverters;
 
-	public  CustomDSLAdapter(@Qualifier("yaml") Serializer serializer, List<NodeDataConverter<?>> nodeDataConverters) {
+	public CustomDSLAdapter(@Qualifier("yaml") Serializer serializer, List<NodeDataConverter<?>> nodeDataConverters) {
 		this.serializer = serializer;
 		this.nodeDataConverters = nodeDataConverters;
 		this.objectMapper = new ObjectMapper();
@@ -58,14 +58,14 @@ public class CustomDSLAdapter extends AbstractDSLAdapter {
 	public Workflow mapToWorkflow(Map<String, Object> data) {
 		Workflow workflow = new Workflow();
 		Map<String, Object> specMap = (Map<String, Object>) data.get("spec");
-		if (specMap.containsKey("workflowVars")){
+		if (specMap.containsKey("workflowVars")) {
 			List<Map<String, Object>> variables = (List<Map<String, Object>>) specMap.get("workflowVars");
 			List<Variable> workflowVars = variables.stream()
 				.map(variable -> objectMapper.convertValue(variable, Variable.class))
 				.toList();
 			workflow.setWorkflowVars(workflowVars);
 		}
-		if (specMap.containsKey("envVars")){
+		if (specMap.containsKey("envVars")) {
 			List<Map<String, Object>> variables = (List<Map<String, Object>>) specMap.get("envVars");
 			List<Variable> envVars = variables.stream()
 				.map(variable -> objectMapper.convertValue(variable, Variable.class))
@@ -73,7 +73,7 @@ public class CustomDSLAdapter extends AbstractDSLAdapter {
 			workflow.setEnvVars(envVars);
 		}
 		if (specMap.containsKey("graph")) {
-			Graph graph = constructGraph((Map<String, Object>)specMap.get("graph"));
+			Graph graph = constructGraph((Map<String, Object>) specMap.get("graph"));
 			workflow.setGraph(graph);
 		}
 		return workflow;
@@ -90,18 +90,19 @@ public class CustomDSLAdapter extends AbstractDSLAdapter {
 		}
 		// convert edges
 		if (data.containsKey("edges")) {
-			edges = objectMapper.convertValue(data.get("edges"), new TypeReference<>() {});
+			edges = objectMapper.convertValue(data.get("edges"), new TypeReference<>() {
+			});
 		}
 		graph.setNodes(nodes);
 		graph.setEdges(edges);
 		return graph;
 	}
 
-	private Node constructNode(Map<String, Object> nodeMap){
-		Map<String,Object> nodeDataMap = (Map<String, Object>) nodeMap.remove("data");
+	private Node constructNode(Map<String, Object> nodeMap) {
+		Map<String, Object> nodeDataMap = (Map<String, Object>) nodeMap.remove("data");
 		Node node = objectMapper.convertValue(nodeMap, Node.class);
 		NodeType nodeType = NodeType.fromValue(node.getType())
-				.orElseThrow(()-> new NotImplementedException("Unsupported Node Type: "+ node.getType()));
+			.orElseThrow(() -> new NotImplementedException("Unsupported Node Type: " + node.getType()));
 		NodeDataConverter<?> nodeDataConverter = getNodeDataConverter(nodeType);
 		node.setData(nodeDataConverter.parseMapData(nodeDataMap, DSLDialectType.CUSTOM));
 		return node;
@@ -109,14 +110,16 @@ public class CustomDSLAdapter extends AbstractDSLAdapter {
 
 	private NodeDataConverter<?> getNodeDataConverter(NodeType nodeType) {
 		return nodeDataConverters.stream()
-				.filter(converter -> converter.supportNodeType(nodeType))
-				.findFirst()
-				.orElseThrow(() -> new IllegalArgumentException("invalid dify node type " + nodeType));
+			.filter(converter -> converter.supportNodeType(nodeType))
+			.findFirst()
+			.orElseThrow(() -> new IllegalArgumentException("invalid dify node type " + nodeType));
 	}
+
 	@Override
 	public Map<String, Object> workflowToMap(Workflow workflow) {
 		Map<String, Object> data = new HashMap<>();
-		data.put("spec", objectMapper.convertValue(workflow, new TypeReference<>() {}));
+		data.put("spec", objectMapper.convertValue(workflow, new TypeReference<>() {
+		}));
 		return data;
 	}
 

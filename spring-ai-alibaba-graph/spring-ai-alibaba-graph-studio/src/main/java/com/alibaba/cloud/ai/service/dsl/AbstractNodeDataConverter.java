@@ -65,7 +65,8 @@ public abstract class AbstractNodeDataConverter<T extends NodeData> implements N
 			public Map<String, Object> dump(R nodeData) {
 				ObjectMapper objectMapper = new ObjectMapper();
 				objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE);
-				return objectMapper.convertValue(nodeData, new TypeReference<>() {});
+				return objectMapper.convertValue(nodeData, new TypeReference<>() {
+				});
 			}
 		};
 	}

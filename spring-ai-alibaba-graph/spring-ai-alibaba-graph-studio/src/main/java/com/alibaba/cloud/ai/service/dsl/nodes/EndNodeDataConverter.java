@@ -43,7 +43,9 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 					String variable = (String) output.get("variable");
 					return new VariableSelector(valueSelector.get(0), valueSelector.get(1)).setLabel(variable);
 				}).toList();
-				List<Variable> outputs = inputs.stream().map(input -> new Variable(input.getLabel(), VariableType.OBJECT.value())).toList();
+				List<Variable> outputs = inputs.stream()
+					.map(input -> new Variable(input.getLabel(), VariableType.OBJECT.value()))
+					.toList();
 				return new EndNodeData(inputs, outputs);
 			}
 
