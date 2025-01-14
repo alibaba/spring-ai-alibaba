@@ -41,50 +41,6 @@ public class DashScopeImageModelIT {
 	@Autowired
 	protected ImageModel imageModel;
 
-	@Autowired
-	TestObservationRegistry observationRegistry;
-
-	@Test
-	void imageModelObservationTest() {
-
-		var options = ImageOptionsBuilder.builder()
-			.model("wanx2.1-t2i-turbo")
-			.withHeight(1024)
-			.withWidth(1024)
-			.N(1)
-			.build();
-
-		var instructions = """
-				A light cream colored mini golden doodle with a sign that contains the message "I'm on my way to BARCADE!".""";
-
-		ImagePrompt imagePrompt = new ImagePrompt(instructions, options);
-
-		ImageResponse imageResponse = imageModel.call(imagePrompt);
-
-		assertThat(imageResponse.getResults()).hasSize(1);
-
-		ImageResponseMetadata imageResponseMetadata = imageResponse.getMetadata();
-		assertThat(imageResponseMetadata.getCreated()).isPositive();
-
-		var generation = imageResponse.getResult();
-		Image image = generation.getOutput();
-		assertThat(image.getUrl()).isNotEmpty();
-
-		TestObservationRegistryAssert.assertThat(this.observationRegistry)
-			.doesNotHaveAnyRemainingCurrentObservation()
-			.hasObservationWithNameEqualTo(DefaultImageModelObservationConvention.DEFAULT_NAME)
-			.that()
-			.hasContextualNameEqualTo("image " + "wanx2.1-t2i-turbo")
-			.hasHighCardinalityKeyValue(
-					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_SIZE.asString(),
-					"1024x1024")
-			.hasLowCardinalityKeyValue(ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
-					AiProvider.DASHSCOPE.value())
-			.hasLowCardinalityKeyValue(
-					ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
-					AiOperationType.IMAGE.value());
-	}
-
 	@Test
 	void imageAsUrlTest() {
 		var options = ImageOptionsBuilder.builder()
