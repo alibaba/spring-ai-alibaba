@@ -33,139 +33,143 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * @author 北极星
- * TODO add chat memory
+ * @author 北极星 TODO add chat memory
  */
 public class LLMNodeAction extends AbstractNode implements NodeAction {
 
-    public static final String DEFAULT_OUTPUT_KEY = "text";
+	public static final String DEFAULT_OUTPUT_KEY = "text";
 
-    private ChatClient chatClient;
+	private ChatClient chatClient;
 
-    private List<PromptTemplate> promptTemplates;
+	private List<PromptTemplate> promptTemplates;
 
-    private NodeActionDescriptor nodeActionDescriptor;
+	private NodeActionDescriptor nodeActionDescriptor;
 
-    private LLMNodeAction (ChatClient chatClient, List<PromptTemplate> promptTemplates, NodeActionDescriptor nodeActionDescriptor) {
-        this.chatClient = chatClient;
-        this.promptTemplates = promptTemplates;
-        this.nodeActionDescriptor = nodeActionDescriptor;
-    }
+	private LLMNodeAction(ChatClient chatClient, List<PromptTemplate> promptTemplates,
+			NodeActionDescriptor nodeActionDescriptor) {
+		this.chatClient = chatClient;
+		this.promptTemplates = promptTemplates;
+		this.nodeActionDescriptor = nodeActionDescriptor;
+	}
 
-    public static Builder builder (ChatModel chatModel) {
+	public static Builder builder(ChatModel chatModel) {
 
-        return new Builder(chatModel);
-    }
+		return new Builder(chatModel);
+	}
 
-    @Override
-    public Map<String, Object> apply (NodeState state) throws Exception {
-        Map<String, Object> partialState = reduceState(state);
-         List<Message> messages = renderPromptTemplates(partialState, promptTemplates);
-        List<Generation> generations = chatClient.prompt().messages(messages).call().chatResponse().getResults();
-        List<Message> result = generations.stream().map(Generation::getOutput).collect(Collectors.toList());
-        return formattedOutput(result);
-    }
+	@Override
+	public Map<String, Object> apply(NodeState state) throws Exception {
+		Map<String, Object> partialState = reduceState(state);
+		List<Message> messages = renderPromptTemplates(partialState, promptTemplates);
+		List<Generation> generations = chatClient.prompt().messages(messages).call().chatResponse().getResults();
+		List<Message> result = generations.stream().map(Generation::getOutput).collect(Collectors.toList());
+		return formattedOutput(result);
+	}
 
-    /**
-     * reduce the global state
-     * @param state global state
-     * @return partial state
-     */
-    private Map<String, Object> reduceState(NodeState state){
-        if (nodeActionDescriptor.getInputSchema().isEmpty()){
-            return state.data();
-        }
-        return nodeActionDescriptor.getInputSchema()
-                .stream()
-                .collect(Collectors.toMap(inputKey -> inputKey, inputKey -> state.value(inputKey, () -> "")));
-    }
+	/**
+	 * reduce the global state
+	 * @param state global state
+	 * @return partial state
+	 */
+	private Map<String, Object> reduceState(NodeState state) {
+		if (nodeActionDescriptor.getInputSchema().isEmpty()) {
+			return state.data();
+		}
+		return nodeActionDescriptor.getInputSchema()
+			.stream()
+			.collect(Collectors.toMap(inputKey -> inputKey, inputKey -> state.value(inputKey, () -> "")));
+	}
 
-    /**
-     * render the variable in the messages
-     * @param state variable's key and value
-     */
-    private List<Message> renderPromptTemplates(Map<String, Object> state, List<PromptTemplate> promptTemplates){
-        return promptTemplates.stream().map(tmpl -> {
-            state.forEach(tmpl::add);
-            return tmpl.createMessage();
-        }).toList();
-    }
+	/**
+	 * render the variable in the messages
+	 * @param state variable's key and value
+	 */
+	private List<Message> renderPromptTemplates(Map<String, Object> state, List<PromptTemplate> promptTemplates) {
+		return promptTemplates.stream().map(tmpl -> {
+			state.forEach(tmpl::add);
+			return tmpl.createMessage();
+		}).toList();
+	}
 
-    /**
-     * format the llm output
-     * @param messages llm output messages
-     * @return map
-     */
-    private Map<String, Object> formattedOutput(List<Message> messages){
-        String outputKey;
-        if (!nodeActionDescriptor.getOutputSchema().isEmpty()){
-            // only the first output key is accepted
-            outputKey = nodeActionDescriptor.getOutputSchema().get(0);
-        }else {
-            outputKey = DEFAULT_OUTPUT_KEY;
-        }
-        // concat all the message content into a string
-        String outputValue = messages.stream().map(Message::getContent).reduce("", (a, b)-> a + b + "\n");
-        return Map.of(outputKey, outputValue);
-    }
+	/**
+	 * format the llm output
+	 * @param messages llm output messages
+	 * @return map
+	 */
+	private Map<String, Object> formattedOutput(List<Message> messages) {
+		String outputKey;
+		if (!nodeActionDescriptor.getOutputSchema().isEmpty()) {
+			// only the first output key is accepted
+			outputKey = nodeActionDescriptor.getOutputSchema().get(0);
+		}
+		else {
+			outputKey = DEFAULT_OUTPUT_KEY;
+		}
+		// concat all the message content into a string
+		String outputValue = messages.stream().map(Message::getContent).reduce("", (a, b) -> a + b + "\n");
+		return Map.of(outputKey, outputValue);
+	}
 
+	@Override
+	public NodeActionDescriptor getNodeActionDescriptor() {
+		return nodeActionDescriptor;
+	}
 
-    @Override
-    public NodeActionDescriptor getNodeActionDescriptor() {
-        return nodeActionDescriptor;
-    }
+	public static class Builder {
 
-    public static class Builder {
+		private ChatModel chatModel;
 
-        private ChatModel chatModel;
+		private List<PromptTemplate> promptTemplates;
 
-        private List<PromptTemplate> promptTemplates;
+		private String[] functions;
 
-        private String[] functions;
+		private LLMNodeActionDescriptor nodeActionDescriptor;
 
-        private LLMNodeActionDescriptor nodeActionDescriptor;
+		public Builder(ChatModel chatModel) {
+			this.chatModel = chatModel;
+			this.nodeActionDescriptor = new LLMNodeActionDescriptor();
+			this.nodeActionDescriptor.setChatOptions(chatModel.getDefaultOptions());
+		}
 
-        public Builder (ChatModel chatModel) {
-            this.chatModel = chatModel;
-            this.nodeActionDescriptor = new LLMNodeActionDescriptor();
-            this.nodeActionDescriptor.setChatOptions(chatModel.getDefaultOptions());
-        }
+		public LLMNodeAction build() {
+			ChatClient.Builder builder = ChatClient.builder(this.chatModel);
+			if (functions != null && functions.length > 0)
+				builder.defaultFunctions(functions);
+			return new LLMNodeAction(builder.build(), promptTemplates, nodeActionDescriptor);
+		}
 
-        public LLMNodeAction build () {
-            ChatClient.Builder builder = ChatClient.builder(this.chatModel);
-            if (functions != null && functions.length > 0) builder.defaultFunctions(functions);
-            return new LLMNodeAction(builder.build(), promptTemplates, nodeActionDescriptor);
-        }
+		public Builder withPromptTemplates(List<PromptTemplate> promptTemplates) {
+			this.promptTemplates = promptTemplates;
+			this.nodeActionDescriptor.setPromptTemplates(promptTemplates);
+			return this;
+		}
 
-        public Builder withPromptTemplates(List<PromptTemplate> promptTemplates) {
-            this.promptTemplates = promptTemplates;
-            this.nodeActionDescriptor.setPromptTemplates(promptTemplates);
-            return this;
-        }
+		public Builder withFunctions(String... functionNames) {
+			if (functionNames == null || functionNames.length == 0)
+				return this;
+			this.functions = functionNames;
+			this.nodeActionDescriptor.setFunctionNames(List.of(functions));
+			return this;
+		}
 
-        public Builder withFunctions (String... functionNames) {
-            if (functionNames == null || functionNames.length == 0) return this;
-            this.functions = functionNames;
-            this.nodeActionDescriptor.setFunctionNames(List.of(functions));
-            return this;
-        }
+		public Builder withFunctions(FunctionCallback... functionCallbacks) {
+			if (functionCallbacks == null || functionCallbacks.length == 0)
+				return this;
+			this.nodeActionDescriptor
+				.setFunctionNames(Arrays.stream(functionCallbacks).map(FunctionCallback::getName).toList());
+			return this;
+		}
 
-        public Builder withFunctions(FunctionCallback ...functionCallbacks){
-            if (functionCallbacks == null || functionCallbacks.length == 0) return this;
-            this.nodeActionDescriptor.setFunctionNames(
-                    Arrays.stream(functionCallbacks).map(FunctionCallback::getName).toList());
-            return this;
-        }
+		public Builder withInputKey(String... inputKey) {
+			this.nodeActionDescriptor.addInputKey(inputKey);
+			return this;
+		}
 
-        public Builder withInputKey(String ...inputKey){
-            this.nodeActionDescriptor.addInputKey(inputKey);
-            return this;
-        }
+		public Builder withOutputKey(String... outputKey) {
+			this.nodeActionDescriptor.addOutputKey(outputKey);
+			return this;
+		}
 
-        public Builder withOutputKey(String ...outputKey){
-            this.nodeActionDescriptor.addOutputKey(outputKey);
-            return this;
-        }
-    }
+	}
+
 }
-

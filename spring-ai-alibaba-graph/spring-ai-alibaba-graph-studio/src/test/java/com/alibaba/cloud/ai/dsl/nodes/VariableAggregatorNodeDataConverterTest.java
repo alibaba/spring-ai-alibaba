@@ -5,4 +5,5 @@ import org.springframework.boot.test.context.SpringBootTest;
 // TODO
 @SpringBootTest
 public class VariableAggregatorNodeDataConverterTest {
+
 }

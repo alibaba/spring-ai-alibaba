@@ -40,7 +40,6 @@ public enum NodeType {
 		return this.difyValue;
 	}
 
-
 	public static Optional<NodeType> fromValue(String value) {
 		return Arrays.stream(NodeType.values()).filter(nodeType -> nodeType.value.equals(value)).findFirst();
 	}

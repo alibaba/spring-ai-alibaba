@@ -96,16 +96,15 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 					Boolean windowEnabled = (Boolean) window.get("enabled");
 					Integer windowSize = (Integer) window.get("size");
 					memoryConfig.setEnabled(true)
-							.setWindowEnabled(windowEnabled)
-							.setWindowSize(windowSize)
-							.setLastMessageTemplate(lastMessageTemplate)
-							.setIncludeLastMessage(false);
+						.setWindowEnabled(windowEnabled)
+						.setWindowSize(windowSize)
+						.setLastMessageTemplate(lastMessageTemplate)
+						.setIncludeLastMessage(false);
 				}
 
-                return new LLMNodeData(inputs, List.of(LLMNodeData.DEFAULT_OUTPUT_SCHEMA))
-						.setModel(modelConfig)
-						.setPromptTemplate(tmplList)
-						.setMemoryConfig(memoryConfig);
+				return new LLMNodeData(inputs, List.of(LLMNodeData.DEFAULT_OUTPUT_SCHEMA)).setModel(modelConfig)
+					.setPromptTemplate(tmplList)
+					.setMemoryConfig(memoryConfig);
 			}
 
 			@Override
