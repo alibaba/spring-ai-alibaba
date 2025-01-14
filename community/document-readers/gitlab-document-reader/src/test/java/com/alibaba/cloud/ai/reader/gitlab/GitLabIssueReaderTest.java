@@ -59,7 +59,7 @@ class GitLabIssueReaderTest {
 		// Verify basic structure of first document
 		Document doc = documents.get(0);
 		assertThat(doc.getId()).isNotNull();
-		assertThat(doc.getContent()).isNotBlank();
+		assertThat(doc.getText()).isNotBlank();
 		assertThat(doc.getMetadata()).containsKey("state").containsKey("url");
 
 		// Verify default state is OPEN
@@ -97,7 +97,7 @@ class GitLabIssueReaderTest {
 
 			// Verify document content
 			assertThat(doc.getId()).isNotNull();
-			assertThat(doc.getContent()).isNotBlank();
+			assertThat(doc.getText()).isNotBlank();
 		}
 	}
 

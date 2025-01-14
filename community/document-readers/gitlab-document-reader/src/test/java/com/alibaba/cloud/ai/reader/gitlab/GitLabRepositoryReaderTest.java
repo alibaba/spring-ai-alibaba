@@ -77,7 +77,7 @@ class GitLabRepositoryReaderTest {
 		// Verify each document has required metadata
 		for (Document doc : documents) {
 			assertThat(doc.getId()).isNotNull();
-			assertThat(doc.getContent()).isNotBlank();
+			assertThat(doc.getText()).isNotBlank();
 			assertThat(doc.getMetadata()).containsKey("file_path")
 				.containsKey("file_name")
 				.containsKey("url")
@@ -96,7 +96,7 @@ class GitLabRepositoryReaderTest {
 		// Verify all documents are markdown files
 		for (Document doc : documents) {
 			assertThat(doc.getId()).isNotNull();
-			assertThat(doc.getContent()).isNotBlank();
+			assertThat(doc.getText()).isNotBlank();
 			assertThat(doc.getMetadata()).containsKey("file_path")
 				.containsKey("file_name")
 				.containsKey("url")
