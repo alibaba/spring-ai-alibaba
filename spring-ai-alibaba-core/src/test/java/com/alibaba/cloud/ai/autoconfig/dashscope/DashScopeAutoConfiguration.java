@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.autoconfig.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.api.*;
@@ -28,8 +27,9 @@ import com.alibaba.dashscope.audio.asr.transcription.Transcription;
 import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -95,7 +95,7 @@ public class DashScopeAutoConfiguration {
 	public DashScopeChatModel dashscopeChatModel(DashScopeConnectionProperties commonProperties,
 			DashScopeChatProperties chatProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, List<FunctionCallback> toolFunctionCallbacks,
-			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
+			FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate,
 			ResponseErrorHandler responseErrorHandler) {
 
 		if (!CollectionUtils.isEmpty(toolFunctionCallbacks)) {
@@ -105,7 +105,7 @@ public class DashScopeAutoConfiguration {
 		var dashscopeApi = dashscopeChatApi(commonProperties, chatProperties, restClientBuilder, webClientBuilder,
 				responseErrorHandler);
 
-		return new DashScopeChatModel(dashscopeApi, chatProperties.getOptions(), functionCallbackContext,
+		return new DashScopeChatModel(dashscopeApi, chatProperties.getOptions(), functionCallbackResolver,
 				retryTemplate);
 	}
 
@@ -266,9 +266,8 @@ public class DashScopeAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
-
-		FunctionCallbackContext manager = new FunctionCallbackContext();
+	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
+		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
 		manager.setApplicationContext(context);
 		return manager;
 	}
