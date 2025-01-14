@@ -75,8 +75,7 @@ public class RetrieverNodeDataConverter extends AbstractNodeDataConverter<Retrie
 			}
 		}),
 
-		CUSTOM(AbstractNodeDataConverter.defaultCustomDialectConverter(RetrieverNodeData.class))
-		;
+		CUSTOM(AbstractNodeDataConverter.defaultCustomDialectConverter(RetrieverNodeData.class));
 
 		private final DialectConverter<RetrieverNodeData> dialectConverter;
 

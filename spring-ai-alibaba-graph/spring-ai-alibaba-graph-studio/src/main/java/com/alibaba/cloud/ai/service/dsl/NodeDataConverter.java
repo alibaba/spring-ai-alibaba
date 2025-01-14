@@ -27,7 +27,6 @@ public interface NodeDataConverter<T extends NodeData> {
 	 */
 	T parseMapData(Map<String, Object> data, DSLDialectType dialectType);
 
-
 	/**
 	 * Dump NodeData to DSL map data
 	 * @param nodeData {@link NodeData}
@@ -35,6 +34,5 @@ public interface NodeDataConverter<T extends NodeData> {
 	 * modifiable</strong>
 	 */
 	Map<String, Object> dumpMapData(T nodeData, DSLDialectType dialectType);
-
 
 }
