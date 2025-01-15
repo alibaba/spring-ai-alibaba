@@ -33,7 +33,6 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAUL
  */
 public class DashScopeImageApi {
 
-	// public static final String DEFAULT_IMAGE_MODEL = ImageModel.WANX_V1.getValue();
 	public static final String DEFAULT_IMAGE_MODEL = ImageModel.WANX_V1.getValue();
 
 	private final RestClient restClient;

@@ -19,39 +19,54 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 /**
  * @author 北极星
- */ public class DashScopeImageModelObservationIT {
+ */
+public class DashScopeImageModelObservationIT {
 
-    @Autowired
-    ImageModel imageModel;
+	@Autowired
+	ImageModel imageModel;
 
-    @Autowired
-    TestObservationRegistry observationRegistry;
+	@Autowired
+	TestObservationRegistry observationRegistry;
 
-    @Test
-    void imageModelObservationTest () {
+	@Test
+	void imageModelObservationTest() {
 
-        var options = ImageOptionsBuilder.builder().model("wanx2.1-t2i-turbo")
-                .withHeight(1024)
-                .withWidth(1024)
-                .N(1)
-                .build();
+		var options = ImageOptionsBuilder.builder()
+			.model("wanx2.1-t2i-turbo")
+			.withHeight(1024)
+			.withWidth(1024)
+			.N(1)
+			.build();
 
-        var instructions = """
-                A light cream colored mini golden doodle with a sign that contains the message "I'm on my way to BARCADE!".""";
+		var instructions = """
+				A light cream colored mini golden doodle with a sign that contains the message "I'm on my way to BARCADE!".""";
 
-        ImagePrompt imagePrompt = new ImagePrompt(instructions, options);
+		ImagePrompt imagePrompt = new ImagePrompt(instructions, options);
 
-        ImageResponse imageResponse = imageModel.call(imagePrompt);
+		ImageResponse imageResponse = imageModel.call(imagePrompt);
 
-        assertThat(imageResponse.getResults()).hasSize(1);
+		assertThat(imageResponse.getResults()).hasSize(1);
 
-        ImageResponseMetadata imageResponseMetadata = imageResponse.getMetadata();
-        assertThat(imageResponseMetadata.getCreated()).isPositive();
+		ImageResponseMetadata imageResponseMetadata = imageResponse.getMetadata();
+		assertThat(imageResponseMetadata.getCreated()).isPositive();
 
-        var generation = imageResponse.getResult();
-        Image image = generation.getOutput();
-        assertThat(image.getUrl()).isNotEmpty();
+		var generation = imageResponse.getResult();
+		Image image = generation.getOutput();
+		assertThat(image.getUrl()).isNotEmpty();
 
-        TestObservationRegistryAssert.assertThat(this.observationRegistry).doesNotHaveAnyRemainingCurrentObservation().hasObservationWithNameEqualTo(DefaultImageModelObservationConvention.DEFAULT_NAME).that().hasContextualNameEqualTo("image " + "wanx2.1-t2i-turbo").hasHighCardinalityKeyValue(ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_SIZE.asString(), "1024x1024").hasLowCardinalityKeyValue(ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.DASHSCOPE.value()).hasLowCardinalityKeyValue(ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(), AiOperationType.IMAGE.value());
-    }
+		TestObservationRegistryAssert.assertThat(this.observationRegistry)
+			.doesNotHaveAnyRemainingCurrentObservation()
+			.hasObservationWithNameEqualTo(DefaultImageModelObservationConvention.DEFAULT_NAME)
+			.that()
+			.hasContextualNameEqualTo("image " + "wanx2.1-t2i-turbo")
+			.hasHighCardinalityKeyValue(
+					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_SIZE.asString(),
+					"1024x1024")
+			.hasLowCardinalityKeyValue(ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
+					AiProvider.DASHSCOPE.value())
+			.hasLowCardinalityKeyValue(
+					ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
+					AiOperationType.IMAGE.value());
+	}
+
 }
