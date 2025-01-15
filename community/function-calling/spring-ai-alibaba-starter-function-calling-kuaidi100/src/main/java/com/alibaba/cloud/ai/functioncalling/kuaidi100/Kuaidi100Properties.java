@@ -18,8 +18,8 @@ package com.alibaba.cloud.ai.functioncalling.kuaidi100;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * @Author: XiaoYunTao
- * @Date: 2024/12/25
+ * @author XiaoYunTao
+ * @since 2024/12/25
  */
 @ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.kuaidi100")
 public class Kuaidi100Properties {
