@@ -74,6 +74,15 @@
         <aliyun-sdk-ha3engine-vector.version>1.1.8</aliyun-sdk-ha3engine-vector.version>
         <fastjson.version>1.2.75</fastjson.version>
         <opennlp-tools.version>2.3.3</opennlp-tools.version>
+        <alibabacloud-alimt20181012.version>1.0.2</alibabacloud-alimt20181012.version>
+        <jsoup-version>1.18.1</jsoup-version>
+        <dingtalk-sdk-version>2.1.68</dingtalk-sdk-version>
+        <old-dingtalk-sdk-version>2.0.0</old-dingtalk-sdk-version>
+        <kuaidi100.version>1.0.15</kuaidi100.version>
+        <larksiute-open-api.version>2.4.0</larksiute-open-api.version>
+        <hutool-version>5.8.32</hutool-version>
+        <hutool-extra.version>5.8.20</hutool-extra.version>
+        <pinyin4j.version>2.5.1</pinyin4j.version>
     </properties>
 
     <organization>
@@ -112,6 +121,55 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-extra</artifactId>
+                <version>${hutool-extra.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.belerweb</groupId>
+                <artifactId>pinyin4j</artifactId>
+                <version>${pinyin4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>${hutool-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.larksuite.oapi</groupId>
+                <artifactId>oapi-sdk</artifactId>
+                <version>${larksiute-open-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.kuaidi100-api</groupId>
+                <artifactId>sdk</artifactId>
+                <version>${kuaidi100.version}</version>
+            </dependency>
+            <!--New version of DingTalk SDK-->
+            <dependency>
+                <groupId>com.aliyun</groupId>
+                <artifactId>dingtalk</artifactId>
+                <version>${dingtalk-sdk-version}</version>
+            </dependency>
+
+            <!--The old version of DingTalk SDK. Some interfaces have not been fully replaced yet-->
+            <dependency>
+                <groupId>com.aliyun</groupId>
+                <artifactId>alibaba-dingtalk-service-sdk</artifactId>
+                <version>${old-dingtalk-sdk-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jsoup</groupId>
+                <artifactId>jsoup</artifactId>
+                <version>${jsoup-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.aliyun</groupId>
+                <artifactId>alibabacloud-alimt20181012</artifactId>
+                <version>${alibabacloud-alimt20181012.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.apache.opennlp</groupId>
                 <artifactId>opennlp-tools</artifactId>
