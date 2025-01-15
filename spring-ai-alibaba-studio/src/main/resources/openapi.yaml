@@ -234,6 +234,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RChatModel"
+  /studio/api/chat-models/model-names:
+    get:
+      tags:
+      - chat-model
+      summary: list model names
+      operationId: listModelNames
+      parameters:
+      - name: modelType
+        in: query
+        required: true
+        schema:
+          type: string
+          enum:
+          - CHAT
+          - IMAGE
+          - AUDIO
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RListString"
   /studio/api/chat-clients/{clientName}:
     get:
       tags:
@@ -294,6 +317,24 @@ paths:
       tags:
       - chat-controller
       operationId: chat
+      parameters:
+      - name: input
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /ai/chatWithMemory:
+    get:
+      tags:
+      - chat-controller
+      operationId: chatWithMemory
       parameters:
       - name: input
         in: query
@@ -491,6 +532,8 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
     TelemetryResult:
       type: object
       properties:
@@ -512,10 +555,6 @@ components:
           type: string
           description: "chat id use for chat mode, if not set, server will set a new"
           nullable: true
-        useChatMode:
-          type: boolean
-          description: "use chat mode, is use, will be enable chat memory"
-          default: false
         stream:
           type: boolean
           description: use stream response
@@ -546,6 +585,8 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
     ArrayNode:
       type: object
     RArrayNode:
@@ -561,6 +602,8 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
     JsonNode:
       type: object
     RJsonNode:
@@ -576,6 +619,8 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
     RString:
       type: object
       properties:
@@ -589,6 +634,8 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
     ChatModel:
       type: object
       properties:
@@ -623,6 +670,8 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
     RChatModel:
       type: object
       properties:
@@ -636,6 +685,33 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
+    RListString:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        msg:
+          type: string
+        data:
+          type: array
+          items:
+            type: string
+        timestamp:
+          type: integer
+          format: int64
+        requestId:
+          type: string
+    Advisor:
+      type: object
+      properties:
+        name:
+          type: string
+        order:
+          type: integer
+          format: int32
     ChatClient:
       type: object
       properties:
@@ -655,6 +731,12 @@ components:
           $ref: "#/components/schemas/ChatModel"
         chatOptions:
           $ref: "#/components/schemas/ChatOptions"
+        advisors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Advisor"
+        isMemoryEnabled:
+          type: boolean
     ChatOptions:
       type: object
       properties:
@@ -674,14 +756,14 @@ components:
           type: array
           items:
             type: string
-        model:
-          type: string
         topP:
           type: number
           format: double
         topK:
           type: integer
           format: int32
+        model:
+          type: string
     RListChatClient:
       type: object
       properties:
@@ -697,6 +779,8 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string
     RChatClient:
       type: object
       properties:
@@ -710,3 +794,5 @@ components:
         timestamp:
           type: integer
           format: int64
+        requestId:
+          type: string

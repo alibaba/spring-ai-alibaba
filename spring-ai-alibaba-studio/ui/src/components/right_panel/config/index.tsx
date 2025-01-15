@@ -30,6 +30,7 @@ import { ChatOptions, ImageOptions } from '@/types/options';
 import { ModelType } from '@/types/chat_model';
 import { useEffect, useState } from 'react';
 import { LoadingOutlined } from '@ant-design/icons';
+import chatModelsService from '@/services/chat_models';
 
 type Props = {
   modelType: ModelType;
@@ -68,10 +69,7 @@ export default function Config(props: Props) {
     negative_prompt: '',
   };
 
-  const modelOptions: SelectProps['options'] = [
-    { value: 'qwen-plus', label: 'qwen-plus' },
-    { value: 'wanx-v1', label: 'wanx-v1' },
-  ];
+  const [modelOptions, setModelOptions] = useState<SelectProps['options']>([]);
 
   const tipLabel = (left, desc) => {
     return (
@@ -88,6 +86,18 @@ export default function Config(props: Props) {
   };
 
   useEffect(() => {
+    const fetchData = async () => {
+      const modelNameList = await chatModelsService.getModelNames(modelType);
+      if (modelNameList.length > 0) {
+        setModelOptions(
+          modelNameList.map((modelName) => ({
+            value: modelName,
+            label: modelName,
+          })),
+        );
+      }
+    };
+    fetchData();
     form.setFieldsValue(configFromAPI);
   }, [configFromAPI]);
 

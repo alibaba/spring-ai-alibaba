@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-import { InitialTool } from '../../types';
+import { TelemetryResult } from '@/types/chat_model';
 
-type Props = {
-  initialTool: InitialTool;
-};
+export interface ChatRunResult {
+  result: string;
+  telemetry: TelemetryResult;
+  [property: string]: any;
+}
 
-export default function Tool(props: Props) {
-  const { initialTool } = props;
-  return <></>;
+export enum ChatScene {
+  CLIENT = 'client',
+  MODEL = 'model',
 }
