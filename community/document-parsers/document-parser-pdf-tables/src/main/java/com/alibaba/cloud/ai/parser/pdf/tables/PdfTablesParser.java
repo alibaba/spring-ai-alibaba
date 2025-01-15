@@ -35,8 +35,8 @@ import org.springframework.ai.document.Document;
 /**
  * The purpose of this class is to extract tabular data from PDF files, compared to Apache
  * Pdfbox. Tabula is more recognizable. tabula-java:
- * <a href="https://github.com/tabulapdf/tabula-java">tabula-java</a> return
- * List<Document> {@link Document}
+ * <a href="https://github.com/tabulapdf/tabula-java">tabula-java</a> return a list of
+ * {@link Document}
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
