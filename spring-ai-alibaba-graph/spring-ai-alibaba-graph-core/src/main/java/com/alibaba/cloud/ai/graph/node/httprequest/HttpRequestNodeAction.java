@@ -27,12 +27,11 @@ import java.util.Objects;
  */
 @Slf4j
 @Data
-@NoArgsConstructor
 public class HttpRequestNodeAction extends AbstractNode implements NodeAction {
 
     private final WebClient webClient = WebClient.create();
 
-    private final RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+    private final RetryTemplate retryTemplate;
 
     private String url;
 
@@ -46,16 +45,18 @@ public class HttpRequestNodeAction extends AbstractNode implements NodeAction {
 
     private TimeOut timeout;
 
-    private String title;
-
-    public HttpRequestNodeAction (String url, String method, Map<String, Object> headers, Map<String, Object> params, JSONObject body, TimeOut timeout, String title) {
+    public HttpRequestNodeAction (String url, String method, Map<String, Object> headers, Map<String, Object> params, JSONObject body, TimeOut timeout, RetryTemplate retryTemplate) {
         this.url = url;
         this.method = method;
         this.headers = headers;
         this.params = params;
         this.body = body;
         this.timeout = timeout;
-        this.title = title;
+        this.retryTemplate = retryTemplate;
+    }
+
+    public static HttpRequestNodeAction.Builder builder () {
+        return new HttpRequestNodeAction.Builder();
     }
 
     @Override
@@ -139,58 +140,50 @@ public class HttpRequestNodeAction extends AbstractNode implements NodeAction {
 
         private JSONObject body;
 
-        private RuntimeException customException;
-
         private TimeOut timeout;
 
-        private String title;
+        private RetryTemplate retryTemplate;
 
-        public Builder () {
+        public Builder () {}
 
+        public HttpRequestNodeAction build () {
+
+            return new HttpRequestNodeAction(url, method, headers, params, body, timeout, retryTemplate);
         }
 
-        public Builder setUrl (String url) {
+        public Builder withRetryTemplate (RetryTemplate retryTemplate) {
+            this.retryTemplate = retryTemplate;
+            return this;
+        }
+
+        public Builder withUrl (String url) {
             this.url = url;
             return this;
         }
 
-        public Builder setMethod (String method) {
+        public Builder withMethod (String method) {
             this.method = method;
             return this;
         }
 
-        public Builder setHeaders (Map<String, Object> headers) {
+        public Builder withHeaders (Map<String, Object> headers) {
             this.headers = headers;
             return this;
         }
 
-        public Builder setParams (Map<String, Object> params) {
+        public Builder withParams (Map<String, Object> params) {
             this.params = params;
             return this;
         }
 
-        public Builder setBody (JSONObject body) {
+        public Builder withBody (JSONObject body) {
             this.body = body;
             return this;
         }
 
-        public Builder setCustomException (RuntimeException customException) {
-            this.customException = customException;
-            return this;
-        }
-
-        public Builder setTimeout (TimeOut timeout) {
+        public Builder withTimeout (TimeOut timeout) {
             this.timeout = timeout;
             return this;
-        }
-
-        public Builder setTitle (String title) {
-            this.title = title;
-            return this;
-        }
-
-        public HttpRequestNodeAction build () {
-            return new HttpRequestNodeAction();
         }
     }
 }
