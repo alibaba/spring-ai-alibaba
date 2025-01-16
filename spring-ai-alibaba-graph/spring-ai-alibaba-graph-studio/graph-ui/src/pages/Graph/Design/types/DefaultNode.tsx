@@ -1,38 +1,19 @@
 import ExpandNodeToolBar from '@/pages/Graph/Design/types/ExpandNodeToolBar';
-import { openPanel } from '@/utils/FormUtils';
+import { graphState } from '@/store/GraphState';
 import { Icon } from '@iconify/react';
+import { useProxy } from '@umijs/max';
 import { Handle, Position } from '@xyflow/react';
 import { Flex } from 'antd';
-import React, { useState } from 'react';
+import React from 'react';
 import './base.less';
-
-const defaultNodeFormSchema = {
-  type: 'object',
-  properties: {
-    aaa: {
-      type: 'string',
-      title: 'input 1',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-    },
-  },
-};
-
-interface IDefaultNodeFormData {
-  aaa: string;
-}
 
 type props = {
   data: any;
 };
 const StartNode: React.FC<props> = ({ data }) => {
-  const [formData, setFormData] = useState<IDefaultNodeFormData>();
+  const graphStore = useProxy(graphState);
   const onClick = () => {
-    openPanel<IDefaultNodeFormData>(defaultNodeFormSchema, {
-      onConfirm: (values) => setFormData(values),
-      data: formData,
-    });
+    graphStore.formDrawer.isOpen = true;
   };
 
   return (
