@@ -14,13 +14,11 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
-import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 
@@ -46,19 +44,16 @@ public class HttpRequestNodeAction extends AbstractNode implements NodeAction {
 
     private JSONObject body;
 
-    private RuntimeException customException;
-
     private TimeOut timeout;
 
     private String title;
 
-    public HttpRequestNodeAction (String url, String method, Map<String, Object> headers, Map<String, Object> params, JSONObject body, RuntimeException customException, TimeOut timeout, String title) {
+    public HttpRequestNodeAction (String url, String method, Map<String, Object> headers, Map<String, Object> params, JSONObject body, TimeOut timeout, String title) {
         this.url = url;
         this.method = method;
         this.headers = headers;
         this.params = params;
         this.body = body;
-        this.customException = customException;
         this.timeout = timeout;
         this.title = title;
     }
@@ -88,7 +83,7 @@ public class HttpRequestNodeAction extends AbstractNode implements NodeAction {
 
         // 添加超时设置
         if (timeout != null) {
-            HttpClient httpClient = HttpClient.create().tcpConfiguration(client -> client.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3_000).doOnConnected(conn -> conn.addHandlerFirst(new ReadTimeoutHandler(timeout.getReadTimeout())).addHandlerLast(new WriteTimeoutHandler(timeout.getWriteTimeout()))));
+            HttpClient httpClient = HttpClient.create().tcpConfiguration(client -> client.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, timeout.connectTimeout).doOnConnected(conn -> conn.addHandlerFirst(new ReadTimeoutHandler(timeout.getReadTimeout())).addHandlerLast(new WriteTimeoutHandler(timeout.getWriteTimeout()))));
             instance.mutate().clientConnector(new ReactorClientHttpConnector(httpClient)).build();
         }
 
@@ -116,21 +111,12 @@ public class HttpRequestNodeAction extends AbstractNode implements NodeAction {
     }
 
     private Map<String, Object> handleResponse (WebClient.ResponseSpec responseSpec) {
-        try {
-            String responseBody = String.valueOf(responseSpec.onStatus(status -> status.is4xxClientError() || status.is5xxServerError(), this::handleErrorResponse).bodyToFlux(String.class).timeout(Duration.ofSeconds(timeout.getConnectTimeout())));
 
-            return Map.of("statusCode", Objects.requireNonNull(responseSpec.toBodilessEntity().block()).getStatusCode().value(), "body", responseBody != null ? new JSONObject(responseBody) : new JSONObject(), "success", true);
-        }
-        catch (Exception e) {
-            if (customException != null) {
-                throw customException;
-            }
-            throw new RuntimeException("Failed to execute HTTP request", e);
-        }
-    }
+        String responseBody = String.valueOf(responseSpec.onStatus(status -> status.is4xxClientError() || status.is5xxServerError(), clientResponse -> {
+            return (Mono<? extends Throwable>) Map.of("statusCode", 1000, "body", new JSONObject(), "success", "failure");
+        }).bodyToFlux(Map.class));
 
-    private Mono<? extends Throwable> handleErrorResponse (ClientResponse response) {
-        return response.bodyToMono(String.class).map(errorBody -> new RuntimeException(String.format("Request failed with status %s and body: %s", response.statusCode(), errorBody)));
+        return Map.of("statusCode", Objects.requireNonNull(responseSpec.toBodilessEntity().block()).getStatusCode().value(), "body", responseBody != null ? new JSONObject(responseBody) : new JSONObject(), "success", true);
     }
 
     @Data
