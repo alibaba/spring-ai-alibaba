@@ -1,27 +1,11 @@
 import ExpandNodeToolBar from '@/pages/Graph/Design/types/ExpandNodeToolBar';
-import { openPanel } from '@/utils/FormUtils';
+import { graphState } from '@/store/GraphState';
 import { Icon } from '@iconify/react';
+import { useProxy } from '@umijs/max';
 import { Handle, Position } from '@xyflow/react';
 import { Flex, Tag } from 'antd';
-import React, { memo, useState } from 'react';
+import React, { memo } from 'react';
 import './base.less';
-
-const branchNodeFormSchema = {
-  type: 'object',
-  properties: {
-    aaa: {
-      type: 'string',
-      title: 'input 1',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-    },
-  },
-};
-
-interface IBranchNodeFormData {
-  aaa: string;
-}
 
 export type CaseType = {
   id: string;
@@ -40,7 +24,10 @@ interface Props {
 }
 
 const ToolbarNode: React.FC<Props> = ({ data }) => {
-  const [formData, setFormData] = useState<IBranchNodeFormData>();
+  const graphStore = useProxy(graphState);
+  const onClick = () => {
+    graphStore.formDrawer.isOpen = true;
+  };
 
   let cases: CaseType[] = data.cases;
   if (!cases || cases.length === 0) {
@@ -62,12 +49,6 @@ const ToolbarNode: React.FC<Props> = ({ data }) => {
       },
     ];
   }
-  const onClick = () => {
-    openPanel<IBranchNodeFormData>(branchNodeFormSchema, {
-      onConfirm: (values) => setFormData(values),
-      data: formData,
-    });
-  };
 
   return (
     <div onClick={onClick}>
