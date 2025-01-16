@@ -48,13 +48,19 @@ public class MboxDocumentReader implements DocumentReader {
 	public static final String DEFAULT_MESSAGE_FORMAT = "Date: %s\nFrom: %s\nTo: %s\nSubject: %s\nContent: %s";
 
 	private static final Pattern FROM_LINE_PATTERN = Pattern.compile("^From .*\\d{4}$");
+
 	private static final Pattern HEADER_PATTERN = Pattern.compile("^([^:]+):\\s*(.*)$");
+
 	private static final Pattern BOUNDARY_PATTERN = Pattern.compile("boundary=\"?([^\"]+)\"?");
 
 	private final File mboxFile;
+
 	private final int maxCount;
+
 	private final String messageFormat;
+
 	private final BsHtmlDocumentParser htmlParser;
+
 	private final SimpleDateFormat dateFormat;
 
 	/**
@@ -85,7 +91,7 @@ public class MboxDocumentReader implements DocumentReader {
 		Assert.notNull(mboxFile, "Mbox file must not be null");
 		Assert.isTrue(mboxFile.exists(), "Mbox file does not exist: " + mboxFile.getAbsolutePath());
 		Assert.isTrue(mboxFile.isFile(), "Mbox path is not a file: " + mboxFile.getAbsolutePath());
-		
+
 		this.mboxFile = mboxFile;
 		this.maxCount = maxCount;
 		this.messageFormat = messageFormat;
@@ -112,7 +118,7 @@ public class MboxDocumentReader implements DocumentReader {
 		try (LineIterator it = FileUtils.lineIterator(mboxFile, StandardCharsets.UTF_8.name())) {
 			while (it.hasNext()) {
 				String line = it.nextLine();
-				
+
 				// Check if this is a new message
 				if (FROM_LINE_PATTERN.matcher(line).matches()) {
 					// Process previous message if exists
@@ -121,7 +127,7 @@ public class MboxDocumentReader implements DocumentReader {
 						if (doc != null) {
 							documents.add(doc);
 							count++;
-							
+
 							if (maxCount > 0 && count >= maxCount) {
 								break;
 							}
@@ -137,7 +143,7 @@ public class MboxDocumentReader implements DocumentReader {
 					currentMessage.append(line).append("\n");
 				}
 			}
-			
+
 			// Process the last message
 			if (!currentMessage.isEmpty()) {
 				Document doc = parseMessage(currentMessage.toString());
@@ -155,16 +161,16 @@ public class MboxDocumentReader implements DocumentReader {
 		Map<String, String> headers = new HashMap<>();
 		StringBuilder content = new StringBuilder();
 		String[] lines = messageContent.split("\n");
-		
+
 		boolean inHeaders = true;
 		String boundary = null;
 		boolean inHtmlPart = false;
 		boolean skipCurrentPart = false;
 		StringBuilder currentPart = new StringBuilder();
-		
+
 		for (int i = 0; i < lines.length; i++) {
 			String line = lines[i];
-			
+
 			if (inHeaders) {
 				if (line.trim().isEmpty()) {
 					inHeaders = false;
@@ -178,7 +184,7 @@ public class MboxDocumentReader implements DocumentReader {
 					}
 					continue;
 				}
-				
+
 				Matcher m = HEADER_PATTERN.matcher(line);
 				if (m.matches()) {
 					String name = m.group(1).trim();
@@ -187,7 +193,7 @@ public class MboxDocumentReader implements DocumentReader {
 				}
 				continue;
 			}
-			
+
 			// Process message body
 			if (boundary != null) {
 				if (line.contains("--" + boundary)) {
@@ -199,7 +205,8 @@ public class MboxDocumentReader implements DocumentReader {
 							if (!parsedHtml.isEmpty()) {
 								content = new StringBuilder(parsedHtml);
 							}
-						} else if (content.isEmpty() && !skipCurrentPart) {
+						}
+						else if (content.isEmpty() && !skipCurrentPart) {
 							content = currentPart;
 						}
 					}
@@ -208,23 +215,25 @@ public class MboxDocumentReader implements DocumentReader {
 					skipCurrentPart = false;
 					continue;
 				}
-				
+
 				// Check content type of the part
 				if (line.startsWith("Content-Type:")) {
 					if (line.contains("text/html")) {
 						inHtmlPart = true;
 						skipCurrentPart = false;
-					} else if (!line.contains("text/plain")) {
+					}
+					else if (!line.contains("text/plain")) {
 						// Skip non-text parts
 						skipCurrentPart = true;
 					}
 					continue;
 				}
-				
+
 				if (!skipCurrentPart) {
 					currentPart.append(line).append("\n");
 				}
-			} else {
+			}
+			else {
 				// For non-multipart messages
 				String contentType = headers.get("Content-Type");
 				if (contentType != null && contentType.contains("text/html")) {
@@ -237,12 +246,13 @@ public class MboxDocumentReader implements DocumentReader {
 							content = new StringBuilder(parsedHtml);
 						}
 					}
-				} else {
+				}
+				else {
 					content.append(line).append("\n");
 				}
 			}
 		}
-		
+
 		// Extract metadata
 		metadata.put("subject", headers.getOrDefault("Subject", ""));
 		metadata.put("from", headers.getOrDefault("From", ""));
@@ -252,32 +262,31 @@ public class MboxDocumentReader implements DocumentReader {
 			if (dateStr != null) {
 				metadata.put("date", dateFormat.parse(dateStr));
 			}
-		} catch (ParseException e) {
+		}
+		catch (ParseException e) {
 			throw new RuntimeException("Failed to parse date: " + e.getMessage(), e);
 		}
-		
+
 		// Check if content is empty
 		String contentStr = content.toString().trim();
 		if (contentStr.isEmpty()) {
-			throw new RuntimeException("Empty content found for message: " + headers.getOrDefault("Message-ID", "unknown"));
+			throw new RuntimeException(
+					"Empty content found for message: " + headers.getOrDefault("Message-ID", "unknown"));
 		}
-		
+
 		// Format the content
-		String formattedContent = String.format(messageFormat,
-				metadata.getOrDefault("date", ""),
-				metadata.get("from"),
-				metadata.get("to"),
-				metadata.get("subject"),
-				contentStr);
-		
+		String formattedContent = String.format(messageFormat, metadata.getOrDefault("date", ""), metadata.get("from"),
+				metadata.get("to"), metadata.get("subject"), contentStr);
+
 		// Check if formatted content is empty
 		if (formattedContent.trim().isEmpty()) {
-			throw new RuntimeException("Empty formatted content for message: " + headers.getOrDefault("Message-ID", "unknown"));
+			throw new RuntimeException(
+					"Empty formatted content for message: " + headers.getOrDefault("Message-ID", "unknown"));
 		}
-		
+
 		// Use Message-ID as document ID
 		String id = headers.getOrDefault("Message-ID", "msg-" + System.currentTimeMillis());
-		
+
 		return new Document(id, formattedContent, metadata);
 	}
 
@@ -285,7 +294,7 @@ public class MboxDocumentReader implements DocumentReader {
 		if (html == null || html.trim().isEmpty()) {
 			throw new RuntimeException("HTML content is null or empty");
 		}
-		
+
 		try (InputStream is = new ByteArrayInputStream(html.getBytes(StandardCharsets.UTF_8))) {
 			List<Document> docs = htmlParser.parse(is);
 			if (!docs.isEmpty()) {
@@ -303,4 +312,5 @@ public class MboxDocumentReader implements DocumentReader {
 			throw new RuntimeException("Failed to parse HTML content: " + e.getMessage(), e);
 		}
 	}
+
 }
