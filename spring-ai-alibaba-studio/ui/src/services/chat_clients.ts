@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { ChatClientData } from '@/types/chat_clients';
+import { ChatClientData, ChatClientRunResult, ClientRunActionParam } from '@/types/chat_clients';
 import { request } from 'ice';
 
 export default {
@@ -31,6 +31,14 @@ export default {
     return await request({
       url: `/studio/api/chat-clients/${name}`,
       method: 'get',
+    });
+  },
+
+  async postChatClient(data: ClientRunActionParam): Promise<ChatClientRunResult> {
+    return await request({
+      url: '/studio/api/chat-clients',
+      method: 'post',
+      data,
     });
   },
 };

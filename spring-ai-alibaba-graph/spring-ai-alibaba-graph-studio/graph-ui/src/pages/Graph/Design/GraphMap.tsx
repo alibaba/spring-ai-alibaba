@@ -7,6 +7,7 @@ import { reLayout } from '@/utils/GraphUtil';
 import { handleNodeChanges } from '@/utils/NodeUtil';
 import { FormattedMessage } from '@@/exports';
 import { Icon } from '@iconify/react';
+import { useProxy } from '@umijs/max';
 import type { Node } from '@xyflow/react';
 import {
   Background,
@@ -24,17 +25,24 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useState,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
-import { useProxy } from 'umi';
+import FormDrawer from './FormDrawer';
 import './index.less';
+import { OperationMode } from './types';
 import NodeTypes from './types/index';
 import './xyTheme.less';
 
 const dsl = DSLUtil.loadDSL();
 graphState.nodes.push(...dsl.getNodes());
 graphState.edges.push(...dsl.getEdges());
-const LayoutFlow = memo(() => {
+
+type LayoutFlowProps = {
+  operationMode: OperationMode;
+};
+
+const LayoutFlow: React.FC<LayoutFlowProps> = memo(({ operationMode }) => {
   const graphStore = useProxy(graphState);
 
   const { setEdges, onEdgesChange, setNodes }: any = useStoreApi().getState();
@@ -48,12 +56,13 @@ const LayoutFlow = memo(() => {
     handleNodeChanges(changes);
     setNodes(graphStore.nodes);
   }, []);
-  const onNodesDeleteHook = useCallback((nodes: any) => {
+  const onNodesDeleteHook = useCallback(() => {
     if (graphStore.readonly) return;
   }, []);
   const onNodeClickHook = useCallback((event: ReactMouseEvent, node: Node) => {
     if (graphStore.readonly) return;
     graphStore.currentNodeId = node.id;
+    graphStore.formDrawer.isOpen = true;
   }, []);
   const onNodeMouseEnterHook = useCallback(
     (event: ReactMouseEvent, node: Node) => {
@@ -110,6 +119,8 @@ const LayoutFlow = memo(() => {
       onNodesDelete={onNodesDeleteHook}
       onEdgesChange={onEdgesChange}
       onContextMenu={onGrapContextMenu}
+      panOnDrag={operationMode === OperationMode.HAND}
+      selectionOnDrag={operationMode === OperationMode.POINT}
       onClick={() => {
         graphStore.contextMenu.show = false;
         if (graphStore.mode === 'drag') {
@@ -124,6 +135,7 @@ const LayoutFlow = memo(() => {
       <Background />
 
       <MiniMap pannable zoomable></MiniMap>
+      <FormDrawer />
     </ReactFlow>
   );
 });
@@ -134,6 +146,13 @@ export default memo(() => {
   const { screenToFlowPosition, fitView } = useReactFlow();
   const { setNodes } = useStoreApi().getState();
   const graphRef: MutableRefObject<any> = useRef(null);
+
+  const [operationMode, setOperationMode] = useState(OperationMode.HAND);
+
+  const changeOperationMode = (mode: OperationMode) => {
+    setOperationMode(mode);
+  };
+
   useEffect(() => {}, [
     screenToFlowPosition,
     graphStore.mousePosition,
@@ -141,22 +160,22 @@ export default memo(() => {
   ]);
 
   const addNode = useCallback(
-    (event: any) => {
+    (event: any, nodeType?: string) => {
       const { clientX, clientY } = event;
       let id = String(new Date());
 
-      // todo create it with real node type
       const newNode: any = {
         id,
         position: screenToFlowPosition({
           x: clientX,
           y: clientY,
         }),
-        type: 'branch',
+        type: nodeType || 'default',
         data: {
           label: `Node ${id}`,
         },
-        selected: true,
+        // TODO: It conflicts with the `openPanel` method when creating a new node.
+        // selected: true,
         origin: [0, 0.0],
       };
       graphStore.currentNodeId = id;
@@ -171,12 +190,16 @@ export default memo(() => {
       key: '1',
       icon: <Icon icon="hugeicons:subnode-add" />,
       label: <FormattedMessage id={'page.graph.contextMenu.add-node'} />,
-      onClick: (event) => {
-        addNode(event.domEvent);
-        graphStore.mode = 'drag';
-        graphStore.readonly = true;
-        graphStore.contextMenu.show = false;
-      },
+      children: Object.keys(NodeTypes).map((nodeType) => ({
+        label: nodeType,
+        key: nodeType,
+        onClick: (event) => {
+          addNode(event.domEvent, nodeType);
+          graphStore.mode = 'drag';
+          graphStore.readonly = true;
+          graphStore.contextMenu.show = false;
+        },
+      })),
     },
     {
       key: '2',
@@ -225,12 +248,13 @@ export default memo(() => {
       }}
       ref={graphRef}
     >
-      <LayoutFlow></LayoutFlow>
+      <LayoutFlow operationMode={operationMode}></LayoutFlow>
       <ContextMenu items={graphMenuItems}></ContextMenu>
       <TopToolBar></TopToolBar>
       <BottomToolBar
         viewport={viewport}
         reLayoutCallback={reLayoutCallback}
+        changeOperationMode={changeOperationMode}
       ></BottomToolBar>
     </div>
   );

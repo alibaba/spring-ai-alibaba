@@ -1,5 +1,5 @@
+import { proxy } from '@umijs/max';
 import type { Edge, Node } from '@xyflow/react';
-import { proxy } from 'umi';
 
 /**
  * graph state
@@ -24,6 +24,11 @@ type graphStateType = {
     x: number;
     y: number;
   };
+  formDrawer: {
+    isOpen: boolean;
+    // nodeId 2 formData
+    formDataMap: Record<string, any>;
+  };
 };
 export const graphState: graphStateType = proxy({
   nodes: [],
@@ -42,5 +47,9 @@ export const graphState: graphStateType = proxy({
   mousePosition: {
     x: 0,
     y: 0,
+  },
+  formDrawer: {
+    isOpen: false,
+    formDataMap: {},
   },
 });

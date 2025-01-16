@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.api;
 
+import com.alibaba.cloud.ai.common.ModelType;
 import com.alibaba.cloud.ai.common.R;
 import com.alibaba.cloud.ai.model.ChatModel;
 import com.alibaba.cloud.ai.param.ModelRunActionParam;
@@ -35,6 +36,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "chat-model", description = "the chat-model API")
 public interface ChatModelAPI {
@@ -88,6 +90,13 @@ public interface ChatModelAPI {
 			consumes = { MediaType.APPLICATION_JSON_VALUE }, produces = { MediaType.ALL_VALUE })
 	default R<ChatModelRunResult> runImageGenTaskAndGetUrl(@RequestBody ModelRunActionParam modelRunActionParam) {
 		return R.success(getDelegate().runImageGenTaskAndGetUrl(modelRunActionParam));
+	}
+
+	@Operation(summary = "list model names", description = "", tags = { "chat-model" })
+	@GetMapping(value = "model-names", produces = { "application/json" })
+	default R<List<String>> listModelNames(@RequestParam("modelType") ModelType modelType) {
+		List<String> res = getDelegate().listModelNames(modelType);
+		return R.success(res);
 	}
 
 }

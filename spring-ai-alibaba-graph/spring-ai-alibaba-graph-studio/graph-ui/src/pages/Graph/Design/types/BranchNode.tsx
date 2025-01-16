@@ -1,5 +1,7 @@
 import ExpandNodeToolBar from '@/pages/Graph/Design/types/ExpandNodeToolBar';
+import { graphState } from '@/store/GraphState';
 import { Icon } from '@iconify/react';
+import { useProxy } from '@umijs/max';
 import { Handle, Position } from '@xyflow/react';
 import { Flex, Tag } from 'antd';
 import React, { memo } from 'react';
@@ -22,6 +24,11 @@ interface Props {
 }
 
 const ToolbarNode: React.FC<Props> = ({ data }) => {
+  const graphStore = useProxy(graphState);
+  const onClick = () => {
+    graphStore.formDrawer.isOpen = true;
+  };
+
   let cases: CaseType[] = data.cases;
   if (!cases || cases.length === 0) {
     cases = [
@@ -44,7 +51,7 @@ const ToolbarNode: React.FC<Props> = ({ data }) => {
   }
 
   return (
-    <div>
+    <div onClick={onClick}>
       <ExpandNodeToolBar></ExpandNodeToolBar>
       <Handle
         type="target"
