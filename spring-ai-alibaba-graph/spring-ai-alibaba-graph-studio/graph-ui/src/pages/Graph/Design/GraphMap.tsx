@@ -28,6 +28,7 @@ import {
   useState,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
+import FormDrawer from './FormDrawer';
 import './index.less';
 import { OperationMode } from './types';
 import NodeTypes from './types/index';
@@ -55,12 +56,13 @@ const LayoutFlow: React.FC<LayoutFlowProps> = memo(({ operationMode }) => {
     handleNodeChanges(changes);
     setNodes(graphStore.nodes);
   }, []);
-  const onNodesDeleteHook = useCallback((nodes: any) => {
+  const onNodesDeleteHook = useCallback(() => {
     if (graphStore.readonly) return;
   }, []);
   const onNodeClickHook = useCallback((event: ReactMouseEvent, node: Node) => {
     if (graphStore.readonly) return;
     graphStore.currentNodeId = node.id;
+    graphStore.formDrawer.isOpen = true;
   }, []);
   const onNodeMouseEnterHook = useCallback(
     (event: ReactMouseEvent, node: Node) => {
@@ -133,6 +135,7 @@ const LayoutFlow: React.FC<LayoutFlowProps> = memo(({ operationMode }) => {
       <Background />
 
       <MiniMap pannable zoomable></MiniMap>
+      <FormDrawer />
     </ReactFlow>
   );
 });

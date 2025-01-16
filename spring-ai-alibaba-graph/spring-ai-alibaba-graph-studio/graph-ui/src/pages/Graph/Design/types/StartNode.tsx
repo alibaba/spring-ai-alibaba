@@ -1,37 +1,18 @@
-import { openPanel } from '@/utils/FormUtils';
+import { graphState } from '@/store/GraphState';
 import { Icon } from '@iconify/react';
+import { useProxy } from '@umijs/max';
 import { Handle, Position } from '@xyflow/react';
 import { Flex } from 'antd';
-import React, { useState } from 'react';
+import React from 'react';
 import './base.less';
-
-const startNodeFormSchema = {
-  type: 'object',
-  properties: {
-    aaa: {
-      type: 'string',
-      title: 'input 1',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-    },
-  },
-};
-
-interface IStartNodeFormData {
-  aaa: string;
-}
 
 type props = {
   data: any;
 };
 const StartNode: React.FC<props> = ({ data }) => {
-  const [formData, setFormData] = useState<IStartNodeFormData>();
+  const graphStore = useProxy(graphState);
   const onClick = () => {
-    openPanel<IStartNodeFormData>(startNodeFormSchema, {
-      onConfirm: (values) => setFormData(values),
-      data: formData,
-    });
+    graphStore.formDrawer.isOpen = true;
   };
 
   return (
