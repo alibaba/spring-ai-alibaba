@@ -1,7 +1,7 @@
 package com.alibaba.cloud.ai.graph.practice.intelligent_outbound_call.data;
 
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.practice.insurance_sale.node.HumanNode;
+import com.alibaba.cloud.ai.graph.practice.intelligent_outbound_call.node.CustomerNode;
 import com.alibaba.cloud.ai.graph.practice.intelligent_outbound_call.node.RobotNode;
 
 import java.util.*;
@@ -23,28 +23,28 @@ public class IocDataFactory {
 
     static {
         NODES.put("r_welcome", new RobotNode("喂，哎您好，我这边是xx街道社区卫生服务中心的家庭医生，我们正在对辖区居民的健康情况做了解和更新，有几个问题想问一下，请问您是xx本人吗？"));
-        NODES.put("c_welcome", new HumanNode());
+        NODES.put("c_welcome", new CustomerNode());
         NODES.put("r_refusal", new RobotNode("那不好意思打扰了，再见？"));
         NODES.put("r_blood_pressure", new RobotNode("好的，请问您的血压和血糖都正常吗？"));
-        NODES.put("c_blood_pressure", new HumanNode());
+        NODES.put("c_blood_pressure", new CustomerNode());
         NODES.put("r_family_members", new RobotNode("那您是xx的家属吗？"));
-        NODES.put("c_family_members", new HumanNode());
+        NODES.put("c_family_members", new CustomerNode());
         NODES.put("r_hight", new RobotNode("好的，您的身高是多少呢？"));
-        NODES.put("c_hight", new HumanNode());
+        NODES.put("c_hight", new CustomerNode());
         NODES.put("r_wight", new RobotNode("那您的体重是多少呢？"));
-        NODES.put("c_wight", new HumanNode());
+        NODES.put("c_wight", new CustomerNode());
         NODES.put("r_smoke", new RobotNode("您平时抽烟吗？"));
-        NODES.put("c_smoke", new HumanNode());
+        NODES.put("c_smoke", new CustomerNode());
         NODES.put("r_smoke_yes", new RobotNode("一天大概抽几只呢？"));
-        NODES.put("c_smoke_yes", new HumanNode());
+        NODES.put("c_smoke_yes", new CustomerNode());
         NODES.put("r_drink", new RobotNode("您平时有喝酒吗？您可以说“不喝”“偶尔喝”“经常喝”“每天喝”"));
-        NODES.put("c_drink", new HumanNode());
+        NODES.put("c_drink", new CustomerNode());
         NODES.put("r_eye", new RobotNode("再问一下关于视力方面的，您有近视或者老花吗？度数是多少呢？"));
-        NODES.put("c_eye", new HumanNode());
+        NODES.put("c_eye", new CustomerNode());
         NODES.put("r_sport", new RobotNode("您平时都喜欢做哪些运动呢？"));
-        NODES.put("c_sport", new HumanNode());
+        NODES.put("c_sport", new CustomerNode());
         NODES.put("r_sport_times", new RobotNode("每周大概运动几次，每次大概多长时间呢？"));
-        NODES.put("c_sport_times", new HumanNode());
+        NODES.put("c_sport_times", new CustomerNode());
 
         IOC_EDGES.add(new IocEdge(START, "r_welcome"));
         IOC_EDGES.add(new IocEdge("r_welcome", "c_welcome"));

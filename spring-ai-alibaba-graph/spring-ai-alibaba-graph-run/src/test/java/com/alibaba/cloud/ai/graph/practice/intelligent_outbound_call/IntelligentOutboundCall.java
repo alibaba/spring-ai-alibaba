@@ -33,32 +33,9 @@ public class IntelligentOutboundCall {
 		// IsExecutor
 		var graph = new IocExecutor(agentService).graphBuilder().stateSerializer(JSONStateSerializer.INSTANCE).build();
 
-		/*
-		 * build(){ return new StateGraph<>(State.SCHEMA, stateSerializer)
-		 * .addEdge(START,"agent") .addNode( "agent",
-		 * node_async(IsExecutor.this::callAgent) ) .addNode( "action",
-		 * IsExecutor.this::executeTools ) .addConditionalEdges( "agent",
-		 * edge_async(IsExecutor.this::shouldContinue), Map.of("continue", "action",
-		 * "end", END) ) .addEdge("action", "agent") ; }
-		 */
-
 		// 打印工作流内容，非json格式
 		GraphRepresentation plantUml = graph.getGraph(GraphRepresentation.Type.PLANTUML, "Adaptive RAG");
 		System.out.println(plantUml.getContent());
-		/*
-		 * @startuml unnamed.puml skinparam usecaseFontSize 14 skinparam
-		 * usecaseStereotypeFontSize 12 skinparam hexagonFontSize 14 skinparam
-		 * hexagonStereotypeFontSize 12 title "Adaptive RAG" footer
-		 *
-		 * powered by SpringAiGraph end footer circle start<<input>> circle stop as
-		 * __END__ usecase "agent"<<Node>> usecase "action"<<Node>> hexagon "check state"
-		 * as condition1<<Condition>> start -down-> "agent" "agent" -down-> "condition1"
-		 * "condition1" --> "action": "continue" '"agent" --> "action": "continue"
-		 * "condition1" -down-> stop: "end" '"agent" -down-> stop: "end" "action" -down->
-		 * "agent"
-		 *
-		 * @enduml
-		 */
 
 		var server = StreamingServerJetty.builder()
 			.port(8080)

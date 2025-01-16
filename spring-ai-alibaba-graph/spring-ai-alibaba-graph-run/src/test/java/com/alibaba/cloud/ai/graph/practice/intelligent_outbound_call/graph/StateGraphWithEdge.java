@@ -11,35 +11,22 @@ import lombok.NonNull;
 
 import java.util.Map;
 
-/**
- * Represents a state graph with nodes and edges.</p>
- * Except 'START' node and 'END' node, every node has four edges: affirmative edge,negative edge,refusal edge,default edge.
- *
- * @author 黄展鹏
- */
 public class StateGraphWithEdge extends StateGraph {
-    /**
-     * Constructs a new StateGraph with the specified serializer.
-     *
-     * @param stateSerializer the serializer to serialize the state
-     */
     public StateGraphWithEdge(@NonNull StateSerializer stateSerializer) {
         super(stateSerializer);
     }
 
-    public StateGraphWithEdge addNodeWithEdge(String id, String nextNode, AsyncNodeAction action) throws GraphStateException {
+    public void addNodeWithEdge(String id, String nextNode, AsyncNodeAction action) throws GraphStateException {
         this.addNode(id, action);
         this.addEdge(id, nextNode);
-        return this;
     }
 
-    public StateGraphWithEdge addNodeWithEdge(String id, String affirmativeNode, String negativeNode, String refusalNode, String defaultNode, AsyncNodeAction action) throws GraphStateException {
+    public void addNodeWithEdge(String id, String affirmativeNode, String negativeNode, String refusalNode, String defaultNode, AsyncNodeAction action) throws GraphStateException {
         this.addNode(id, action);
         this.addEdge(id, affirmativeNode);
         this.addEdge(id, negativeNode);
         this.addEdge(id, refusalNode);
         this.addEdge(id, defaultNode);
-        return this;
     }
 
     @Override

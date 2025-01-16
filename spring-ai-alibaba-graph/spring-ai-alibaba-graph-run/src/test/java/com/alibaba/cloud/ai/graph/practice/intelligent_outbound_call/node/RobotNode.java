@@ -35,7 +35,6 @@ public class RobotNode implements NodeAction {
 					String replacement = mapV.get(key);
 					matcher.appendReplacement(sb, replacement != null ? replacement : "");
 				}
-
 			}
 			else if (agentState.data().containsKey(key)) {
 				String replacement = agentState.data().get(key).toString();
@@ -44,7 +43,6 @@ public class RobotNode implements NodeAction {
 		}
 		matcher.appendTail(sb);
 		String content = anyFind ? sb.toString() : template;
-
 		return Map.of(NodeState.OUTPUT, content);
 	}
 
