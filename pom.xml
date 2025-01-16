@@ -67,6 +67,7 @@
         <module>community/document-readers/arxiv-document-reader</module>
         <module>community/document-readers/chatgpt-data-document-reader</module>
         <module>community/document-readers/gpt-repo-document-reader</module>
+        <module>community/document-readers/gitlab-document-reader</module>
         <module>community/document-readers/gitbook-document-reader</module>
         <module>community/document-readers/huggingface-fs-document-reader</module>
 
