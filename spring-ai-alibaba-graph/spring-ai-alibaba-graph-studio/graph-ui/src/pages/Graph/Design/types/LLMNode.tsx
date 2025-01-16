@@ -1,39 +1,20 @@
 import ExpandNodeToolBar from '@/pages/Graph/Design/types/ExpandNodeToolBar';
-import { openPanel } from '@/utils/FormUtils';
+import { graphState } from '@/store/GraphState';
 import { Icon } from '@iconify/react';
+import { useProxy } from '@umijs/max';
 import { Handle, Position } from '@xyflow/react';
 import { Flex, Tag } from 'antd';
-import React, { memo, useState } from 'react';
+import React, { memo } from 'react';
 import './base.less';
-
-const llmNodeFormSchema = {
-  type: 'object',
-  properties: {
-    aaa: {
-      type: 'string',
-      title: 'input 1',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-    },
-  },
-};
-
-interface ILLMNodeFormData {
-  aaa: string;
-}
 
 interface Props {
   data: any;
 }
 
 const LLMNode: React.FC<Props> = ({ data }) => {
-  const [formData, setFormData] = useState<ILLMNodeFormData>();
+  const graphStore = useProxy(graphState);
   const onClick = () => {
-    openPanel<ILLMNodeFormData>(llmNodeFormSchema, {
-      onConfirm: (values) => setFormData(values),
-      data: formData,
-    });
+    graphStore.formDrawer.isOpen = true;
   };
 
   return (
