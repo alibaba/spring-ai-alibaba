@@ -18,77 +18,84 @@ package com.alibaba.cloud.ai.reader.mysql;
 import java.util.List;
 
 /**
- * Configuration class for MySQL document reader
- * Contains connection information and query settings
+ * Configuration class for MySQL document reader Contains connection information and query
+ * settings
  *
  * @author brianxiadong
  **/
 public class MySQLResource {
 
-    // MySQL connection properties
-    private final String host;        // MySQL server hostname or IP address
-    private final int port;           // MySQL server port number, default is 3306
-    private final String database;    // Name of the database to connect to
-    private final String username;    // MySQL user name for authentication
-    private final String password;    // MySQL password for authentication
+	// MySQL connection properties
+	private final String host; // MySQL server hostname or IP address
 
-    // Query settings
-    private final String query;               // SQL query to execute
-    private final List<String> contentColumns;    // Columns to include in document content
-    private final List<String> metadataColumns;   // Columns to include in document metadata
+	private final int port; // MySQL server port number, default is 3306
 
-    public static final String SOURCE = "mysql";
+	private final String database; // Name of the database to connect to
 
-    public MySQLResource(String host, int port, String database, String username, String password,
-            String query, List<String> contentColumns, List<String> metadataColumns) {
-        this.host = host;
-        this.port = port;
-        this.database = database;
-        this.username = username;
-        this.password = password;
-        this.query = query;
-        this.contentColumns = contentColumns;
-        this.metadataColumns = metadataColumns;
-    }
+	private final String username; // MySQL user name for authentication
 
-    // Getters
-    public String getHost() {
-        return host;
-    }
+	private final String password; // MySQL password for authentication
 
-    public int getPort() {
-        return port;
-    }
+	// Query settings
+	private final String query; // SQL query to execute
 
-    public String getDatabase() {
-        return database;
-    }
+	private final List<String> contentColumns; // Columns to include in document content
 
-    public String getUsername() {
-        return username;
-    }
+	private final List<String> metadataColumns; // Columns to include in document metadata
 
-    public String getPassword() {
-        return password;
-    }
+	public static final String SOURCE = "mysql";
 
-    public String getQuery() {
-        return query;
-    }
+	public MySQLResource(String host, int port, String database, String username, String password, String query,
+			List<String> contentColumns, List<String> metadataColumns) {
+		this.host = host;
+		this.port = port;
+		this.database = database;
+		this.username = username;
+		this.password = password;
+		this.query = query;
+		this.contentColumns = contentColumns;
+		this.metadataColumns = metadataColumns;
+	}
 
-    public List<String> getContentColumns() {
-        return contentColumns;
-    }
+	// Getters
+	public String getHost() {
+		return host;
+	}
 
-    public List<String> getMetadataColumns() {
-        return metadataColumns;
-    }
+	public int getPort() {
+		return port;
+	}
 
-    /**
-     * Get JDBC URL for MySQL connection
-     * @return JDBC URL string
-     */
-    public String getJdbcUrl() {
-        return String.format("jdbc:mysql://%s:%d/%s", host, port, database);
-    }
+	public String getDatabase() {
+		return database;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public String getQuery() {
+		return query;
+	}
+
+	public List<String> getContentColumns() {
+		return contentColumns;
+	}
+
+	public List<String> getMetadataColumns() {
+		return metadataColumns;
+	}
+
+	/**
+	 * Get JDBC URL for MySQL connection
+	 * @return JDBC URL string
+	 */
+	public String getJdbcUrl() {
+		return String.format("jdbc:mysql://%s:%d/%s", host, port, database);
+	}
+
 }
