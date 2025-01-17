@@ -70,7 +70,7 @@ List<Document> documents = reader.get();
 ```java
 for (Document doc : documents) {
     // 获取文档内容 | Get document content
-    String content = doc.getContent();
+    String content = doc.getText();
     
     // 获取元数据 | Get metadata
     Map<String, Object> metadata = doc.getMetadata();
