@@ -29,11 +29,10 @@ MySQL Document Reader is a Spring AI-based document reader implementation that r
     </dependency>
     
     <!-- MySQL JDBC Driver -->
-    <dependency>
-        <groupId>mysql</groupId>
-        <artifactId>mysql-connector-java</artifactId>
-        <version>8.0.33</version>
-    </dependency>
+   <dependency>
+      <groupId>com.mysql</groupId>
+      <artifactId>mysql-connector-j</artifactId>
+   </dependency>
 </dependencies>
 ```
 
@@ -86,14 +85,42 @@ for (Document doc : documents) {
 
 | 参数 Parameter | 说明 Description | 默认值 Default |
 |------|------|--------|
-| host | MySQL服务器地址 MySQL server address | 无 None |
-| port | MySQL服务器端口 MySQL server port | 无 None |
+| host | MySQL服务器地址 MySQL server address | 127.0.0.1 |
+| port | MySQL服务器端口 MySQL server port | 3306 |
 | database | 数据库名称 Database name | 无 None |
-| username | 用户名 Username | 无 None |
-| password | 密码 Password | 无 None |
+| username | 用户名 Username | root |
+| password | 密码 Password | root |
 | query | SQL查询语句 SQL query | 无 None |
 | contentColumns | 文档内容字段列表 Document content field list | null (使用所有字段 use all fields) |
 | metadataColumns | 元数据字段列表 Metadata field list | null (不使用元数据 no metadata) |
+
+### 简化配置示例 | Simplified Configuration Example
+
+使用默认host和port的配置示例：
+
+```java
+// 使用默认的host(127.0.0.1)和port(3306)
+MySQLResource resource = new MySQLResource(
+    "test_db",           // 数据库名称 | Database name
+    "test_user",         // 用户名 | Username
+    "test_password",     // 密码 | Password
+    "SELECT * FROM articles",  // SQL查询语句 | SQL query
+    Arrays.asList("title", "content"),  // 文档内容字段 | Document content fields
+    Arrays.asList("id")                 // 元数据字段 | Metadata fields
+);
+```
+
+使用所有默认连接参数的配置示例：
+
+```java
+// 使用所有默认连接参数 (host=127.0.0.1, port=3306, username=root, password=root)
+MySQLResource resource = new MySQLResource(
+    "test_db",           // 数据库名称 | Database name
+    "SELECT * FROM articles",  // SQL查询语句 | SQL query
+    Arrays.asList("title", "content"),  // 文档内容字段 | Document content fields
+    Arrays.asList("id")                 // 元数据字段 | Metadata fields
+);
+```
 
 ## 注意事项 | Notes
 
@@ -160,4 +187,4 @@ MySQLResource resource = new MySQLResource(
 
 ## 许可证 | License
 
-[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) 
+[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)

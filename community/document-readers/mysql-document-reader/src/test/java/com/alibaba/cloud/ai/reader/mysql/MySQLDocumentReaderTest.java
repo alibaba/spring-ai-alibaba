@@ -40,7 +40,7 @@ public class MySQLDocumentReaderTest {
 	void setUp() {
 		// Setup test MySQL resource
 		// Note: These are test credentials, change them according to your environment
-		mysqlResource = new MySQLResource("localhost", 3306, "iching-stock", "root", "root",
+		mysqlResource = new MySQLResource("localhost", 3306, "demo1", "root", "root",
 				"SELECT * FROM user_table LIMIT 10;", Arrays.asList("username", "email"), // content
 																							// columns
 				Arrays.asList("username", "email") // metadata columns

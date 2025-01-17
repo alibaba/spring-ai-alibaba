@@ -45,6 +45,15 @@ public class MySQLResource {
 
 	public static final String SOURCE = "mysql";
 
+	// Default values for MySQL connection
+	public static final String DEFAULT_HOST = "127.0.0.1";
+
+	public static final int DEFAULT_PORT = 3306;
+
+	public static final String DEFAULT_USERNAME = "root";
+
+	public static final String DEFAULT_PASSWORD = "root";
+
 	public MySQLResource(String host, int port, String database, String username, String password, String query,
 			List<String> contentColumns, List<String> metadataColumns) {
 		this.host = host;
@@ -55,6 +64,32 @@ public class MySQLResource {
 		this.query = query;
 		this.contentColumns = contentColumns;
 		this.metadataColumns = metadataColumns;
+	}
+
+	/**
+	 * Constructor with default host and port
+	 * @param database Database name
+	 * @param username MySQL username
+	 * @param password MySQL password
+	 * @param query SQL query to execute
+	 * @param contentColumns Columns to include in document content
+	 * @param metadataColumns Columns to include in document metadata
+	 */
+	public MySQLResource(String database, String username, String password, String query, List<String> contentColumns,
+			List<String> metadataColumns) {
+		this(DEFAULT_HOST, DEFAULT_PORT, database, username, password, query, contentColumns, metadataColumns);
+	}
+
+	/**
+	 * Constructor with all default connection parameters
+	 * @param database Database name
+	 * @param query SQL query to execute
+	 * @param contentColumns Columns to include in document content
+	 * @param metadataColumns Columns to include in document metadata
+	 */
+	public MySQLResource(String database, String query, List<String> contentColumns, List<String> metadataColumns) {
+		this(DEFAULT_HOST, DEFAULT_PORT, database, DEFAULT_USERNAME, DEFAULT_PASSWORD, query, contentColumns,
+				metadataColumns);
 	}
 
 	// Getters
