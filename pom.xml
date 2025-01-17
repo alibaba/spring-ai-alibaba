@@ -70,6 +70,7 @@
         <module>community/document-readers/gitlab-document-reader</module>
         <module>community/document-readers/gitbook-document-reader</module>
         <module>community/document-readers/huggingface-fs-document-reader</module>
+        <module>community/document-readers/mysql-document-reader</module>
 
 
         <module>community/document-parsers/document-parser-apache-pdfbox</module>
