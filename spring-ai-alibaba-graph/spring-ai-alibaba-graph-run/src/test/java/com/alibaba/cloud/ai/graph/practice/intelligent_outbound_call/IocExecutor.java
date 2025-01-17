@@ -7,13 +7,9 @@ import com.alibaba.cloud.ai.graph.practice.intelligent_outbound_call.data.IocEdg
 import com.alibaba.cloud.ai.graph.practice.intelligent_outbound_call.graph.StateGraphWithEdge;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.agent.JSONStateSerializer;
-import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.aliyuncs.utils.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;

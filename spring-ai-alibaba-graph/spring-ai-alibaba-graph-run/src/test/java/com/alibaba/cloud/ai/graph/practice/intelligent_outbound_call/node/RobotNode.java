@@ -19,7 +19,7 @@ public class RobotNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(NodeState agentState) {
-		Pattern pattern = Pattern.compile("#\\{(.*?)\\}");
+		Pattern pattern = Pattern.compile("#\\{(.*?)}");
 		Matcher matcher = pattern.matcher(template);
 		StringBuilder sb = new StringBuilder();
 		boolean anyFind = false;
