@@ -31,7 +31,7 @@ public class IocExecutor {
 		return new GraphBuilder();
 	}
 
-	public class GraphBuilder {
+	public static class GraphBuilder {
 		private StateSerializer stateSerializer;
 
 		public GraphBuilder stateSerializer(StateSerializer stateSerializer) {
@@ -48,44 +48,11 @@ public class IocExecutor {
 				if (!StringUtils.isEmpty(iocEdge.getNextNode())) {
 					graph.addNodeWithEdge(iocEdge.getId(), iocEdge.getNextNode(), node_async(IocDataFactory.getNode(iocEdge.getId())));
 				} else {
-					graph.addNodeWithConditionalEdge(iocEdge.getId(), iocEdge.getAffirmativeNode(), iocEdge.getNegativeNode(), iocEdge.getRefusalNode(), iocEdge.getDefaultNode(), node_async(IocDataFactory.getNode(iocEdge.getId())), edge_async(IocExecutor.this::generateCustomer));
+					graph.addNodeWithConditionalEdge(iocEdge.getId(), iocEdge.getAffirmativeNode(), iocEdge.getNegativeNode(), iocEdge.getRefusalNode(), iocEdge.getDefaultNode(), node_async(IocDataFactory.getNode(iocEdge.getId())), edge_async(IocDataFactory::generateCustomer));
 				}
 			}
 			return graph;
 		}
-	}
-
-	String generateCustomer(NodeState state) {
-		var input = state.input()
-				.filter(org.springframework.util.StringUtils::hasText)
-				.orElseThrow(() -> new IllegalArgumentException("no input provided!"));
-		if (affirmatives.contains(input)) {
-			return "affirmative";
-		} else if (negatives.contains(input)) {
-			return "negative";
-		} else if (refusals.contains(input)) {
-			return "refusal";
-		} else {
-			return "default";
-		}
-	}
-
-	private static final List<String> affirmatives = new ArrayList<>();
-	private static final List<String> negatives = new ArrayList<>();
-	private static final List<String> refusals = new ArrayList<>();
-
-	static {
-		affirmatives.add("是的");
-		affirmatives.add("好的");
-		affirmatives.add("对的");
-
-		negatives.add("不是");
-		negatives.add("不行");
-		negatives.add("不对");
-
-		refusals.add("不需要");
-		refusals.add("没空");
-		refusals.add("在忙");
 	}
 
 }

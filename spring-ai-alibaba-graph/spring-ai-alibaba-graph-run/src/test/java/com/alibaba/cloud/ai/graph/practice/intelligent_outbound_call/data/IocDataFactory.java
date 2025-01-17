@@ -3,6 +3,7 @@ package com.alibaba.cloud.ai.graph.practice.intelligent_outbound_call.data;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.practice.intelligent_outbound_call.node.CustomerNode;
 import com.alibaba.cloud.ai.graph.practice.intelligent_outbound_call.node.RobotNode;
+import com.alibaba.cloud.ai.graph.state.NodeState;
 
 import java.util.*;
 
@@ -70,6 +71,39 @@ public class IocDataFactory {
         IOC_EDGES.add(new IocEdge("c_sport", "r_sport_times", END, "r_refusal", END));
         IOC_EDGES.add(new IocEdge("r_sport_times", "c_sport_times"));
         IOC_EDGES.add(new IocEdge("c_sport_times", END));
+    }
+
+    private static final List<String> affirmatives = new ArrayList<>();
+    private static final List<String> negatives = new ArrayList<>();
+    private static final List<String> refusals = new ArrayList<>();
+
+    static {
+        affirmatives.add("是的");
+        affirmatives.add("好的");
+        affirmatives.add("对的");
+
+        negatives.add("不是");
+        negatives.add("不行");
+        negatives.add("不对");
+
+        refusals.add("不需要");
+        refusals.add("没空");
+        refusals.add("在忙");
+    }
+
+    public static String generateCustomer(NodeState state) {
+        var input = state.input()
+                .filter(org.springframework.util.StringUtils::hasText)
+                .orElseThrow(() -> new IllegalArgumentException("no input provided!"));
+        if (affirmatives.contains(input)) {
+            return "affirmative";
+        } else if (negatives.contains(input)) {
+            return "negative";
+        } else if (refusals.contains(input)) {
+            return "refusal";
+        } else {
+            return "default";
+        }
     }
 
 }
