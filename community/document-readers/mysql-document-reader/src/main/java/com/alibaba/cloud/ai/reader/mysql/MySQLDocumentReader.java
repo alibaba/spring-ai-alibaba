@@ -19,7 +19,10 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 
 import java.sql.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * MySQL document reader implementation Uses JDBC to connect and fetch data from MySQL
