@@ -22,142 +22,138 @@ import java.sql.*;
 import java.util.*;
 
 /**
- * MySQL document reader implementation
- * Uses JDBC to connect and fetch data from MySQL
+ * MySQL document reader implementation Uses JDBC to connect and fetch data from MySQL
  *
  * @author brianxiadong
  **/
 public class MySQLDocumentReader implements DocumentReader {
 
-    private final MySQLResource mysqlResource;
+	private final MySQLResource mysqlResource;
 
-    public MySQLDocumentReader(MySQLResource mysqlResource) {
-        this.mysqlResource = mysqlResource;
-    }
+	public MySQLDocumentReader(MySQLResource mysqlResource) {
+		this.mysqlResource = mysqlResource;
+	}
 
-    @Override
-    public List<Document> get() {
-        List<Document> documents = new ArrayList<>();
-        try {
-            // Register MySQL JDBC driver
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            
-            // Create database connection
-            try (Connection connection = createConnection()) {
-                documents = executeQueryAndProcessResults(connection);
-            }
-        }
-        catch (ClassNotFoundException e) {
-            throw new RuntimeException("MySQL JDBC driver not found", e);
-        }
-        catch (SQLException e) {
-            throw new RuntimeException("Error executing MySQL query: " + e.getMessage(), e);
-        }
-        return documents;
-    }
+	@Override
+	public List<Document> get() {
+		List<Document> documents = new ArrayList<>();
+		try {
+			// Register MySQL JDBC driver
+			Class.forName("com.mysql.cj.jdbc.Driver");
 
-    /**
-     * Create database connection
-     */
-    private Connection createConnection() throws SQLException {
-        return DriverManager.getConnection(
-                mysqlResource.getJdbcUrl(),
-                mysqlResource.getUsername(),
-                mysqlResource.getPassword());
-    }
+			// Create database connection
+			try (Connection connection = createConnection()) {
+				documents = executeQueryAndProcessResults(connection);
+			}
+		}
+		catch (ClassNotFoundException e) {
+			throw new RuntimeException("MySQL JDBC driver not found", e);
+		}
+		catch (SQLException e) {
+			throw new RuntimeException("Error executing MySQL query: " + e.getMessage(), e);
+		}
+		return documents;
+	}
 
-    /**
-     * Execute query and process results
-     */
-    private List<Document> executeQueryAndProcessResults(Connection connection) throws SQLException {
-        List<Document> documents = new ArrayList<>();
-        try (Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(mysqlResource.getQuery())) {
-            
-            List<String> columnNames = getColumnNames(resultSet.getMetaData());
-            while (resultSet.next()) {
-                Map<String, Object> rowData = extractRowData(resultSet, columnNames);
-                String content = buildContent(rowData);
-                Map<String, Object> metadata = buildMetadata(rowData);
-                documents.add(new Document(content, metadata));
-            }
-        }
-        return documents;
-    }
+	/**
+	 * Create database connection
+	 */
+	private Connection createConnection() throws SQLException {
+		return DriverManager.getConnection(mysqlResource.getJdbcUrl(), mysqlResource.getUsername(),
+				mysqlResource.getPassword());
+	}
 
-    /**
-     * Get list of column names
-     */
-    private List<String> getColumnNames(ResultSetMetaData metaData) throws SQLException {
-        List<String> columnNames = new ArrayList<>();
-        int columnCount = metaData.getColumnCount();
-        for (int i = 1; i <= columnCount; i++) {
-            columnNames.add(metaData.getColumnName(i));
-        }
-        return columnNames;
-    }
+	/**
+	 * Execute query and process results
+	 */
+	private List<Document> executeQueryAndProcessResults(Connection connection) throws SQLException {
+		List<Document> documents = new ArrayList<>();
+		try (Statement statement = connection.createStatement();
+				ResultSet resultSet = statement.executeQuery(mysqlResource.getQuery())) {
 
-    /**
-     * Extract row data
-     */
-    private Map<String, Object> extractRowData(ResultSet resultSet, List<String> columnNames) throws SQLException {
-        Map<String, Object> rowData = new HashMap<>();
-        for (int i = 0; i < columnNames.size(); i++) {
-            String columnName = columnNames.get(i);
-            Object value = resultSet.getObject(i + 1);
-            rowData.put(columnName, value);
-        }
-        return rowData;
-    }
+			List<String> columnNames = getColumnNames(resultSet.getMetaData());
+			while (resultSet.next()) {
+				Map<String, Object> rowData = extractRowData(resultSet, columnNames);
+				String content = buildContent(rowData);
+				Map<String, Object> metadata = buildMetadata(rowData);
+				documents.add(new Document(content, metadata));
+			}
+		}
+		return documents;
+	}
 
-    /**
-     * Build document content
-     */
-    private String buildContent(Map<String, Object> rowData) {
-        StringBuilder contentBuilder = new StringBuilder();
-        List<String> contentColumns = mysqlResource.getContentColumns();
-        
-        if (contentColumns == null || contentColumns.isEmpty()) {
-            // If no content columns specified, use all columns
-            for (Map.Entry<String, Object> entry : rowData.entrySet()) {
-                appendColumnContent(contentBuilder, entry.getKey(), entry.getValue());
-            }
-        } else {
-            // Only use specified content columns
-            for (String column : contentColumns) {
-                if (rowData.containsKey(column)) {
-                    appendColumnContent(contentBuilder, column, rowData.get(column));
-                }
-            }
-        }
-        return contentBuilder.toString().trim();
-    }
+	/**
+	 * Get list of column names
+	 */
+	private List<String> getColumnNames(ResultSetMetaData metaData) throws SQLException {
+		List<String> columnNames = new ArrayList<>();
+		int columnCount = metaData.getColumnCount();
+		for (int i = 1; i <= columnCount; i++) {
+			columnNames.add(metaData.getColumnName(i));
+		}
+		return columnNames;
+	}
 
-    /**
-     * Append column content
-     */
-    private void appendColumnContent(StringBuilder builder, String column, Object value) {
-        builder.append(column)
-                .append(": ")
-                .append(value)
-                .append("\n");
-    }
+	/**
+	 * Extract row data
+	 */
+	private Map<String, Object> extractRowData(ResultSet resultSet, List<String> columnNames) throws SQLException {
+		Map<String, Object> rowData = new HashMap<>();
+		for (int i = 0; i < columnNames.size(); i++) {
+			String columnName = columnNames.get(i);
+			Object value = resultSet.getObject(i + 1);
+			rowData.put(columnName, value);
+		}
+		return rowData;
+	}
 
-    /**
-     * Build metadata
-     */
-    private Map<String, Object> buildMetadata(Map<String, Object> rowData) {
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put(MySQLResource.SOURCE, mysqlResource.getJdbcUrl());
-        
-        List<String> metadataColumns = mysqlResource.getMetadataColumns();
-        if (metadataColumns != null) {
-            for (String column : metadataColumns) {
-                if (rowData.containsKey(column)) {
-                    metadata.put(column, rowData.get(column));
-                }
-            }
-        }
-        return metadata;
-    }
+	/**
+	 * Build document content
+	 */
+	private String buildContent(Map<String, Object> rowData) {
+		StringBuilder contentBuilder = new StringBuilder();
+		List<String> contentColumns = mysqlResource.getContentColumns();
+
+		if (contentColumns == null || contentColumns.isEmpty()) {
+			// If no content columns specified, use all columns
+			for (Map.Entry<String, Object> entry : rowData.entrySet()) {
+				appendColumnContent(contentBuilder, entry.getKey(), entry.getValue());
+			}
+		}
+		else {
+			// Only use specified content columns
+			for (String column : contentColumns) {
+				if (rowData.containsKey(column)) {
+					appendColumnContent(contentBuilder, column, rowData.get(column));
+				}
+			}
+		}
+		return contentBuilder.toString().trim();
+	}
+
+	/**
+	 * Append column content
+	 */
+	private void appendColumnContent(StringBuilder builder, String column, Object value) {
+		builder.append(column).append(": ").append(value).append("\n");
+	}
+
+	/**
+	 * Build metadata
+	 */
+	private Map<String, Object> buildMetadata(Map<String, Object> rowData) {
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put(MySQLResource.SOURCE, mysqlResource.getJdbcUrl());
+
+		List<String> metadataColumns = mysqlResource.getMetadataColumns();
+		if (metadataColumns != null) {
+			for (String column : metadataColumns) {
+				if (rowData.containsKey(column)) {
+					metadata.put(column, rowData.get(column));
+				}
+			}
+		}
+		return metadata;
+	}
+
 }
