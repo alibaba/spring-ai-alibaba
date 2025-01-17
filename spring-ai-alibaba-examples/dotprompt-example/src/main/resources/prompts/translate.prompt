@@ -1,0 +1,17 @@
+---
+config:
+  temperature: 0.7
+  top_p: 1.0
+input:
+  schema:
+    text: string
+    from?: string
+    to: string
+  default:
+    from: English
+---
+Translate the following text from {{from}} to {{to}}:
+
+{{text}}
+
+Please provide only the translation without any additional explanation or notes.

@@ -1,0 +1,76 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# EditorConfig is awesome: https://EditorConfig.org
+
+# top-most EditorConfig file
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 4
+indent_style = space
+tab_width = 4
+max_line_length = 120
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.java]
+indent_style = tab
+ij_java_continuation_indent_size = 8
+ij_java_keep_control_statement_in_one_line = false
+ij_java_for_brace_force = always
+ij_java_if_brace_force = always
+ij_java_keep_first_column_comment = false
+ij_java_keep_line_breaks = false
+ij_java_keep_simple_blocks_in_one_line = true
+ij_java_keep_simple_classes_in_one_line = true
+ij_java_keep_simple_lambdas_in_one_line = true
+ij_java_keep_simple_methods_in_one_line = true
+ij_java_keep_blank_lines_in_code = 1
+ij_java_keep_blank_lines_in_declarations = 1
+ij_java_blank_lines_after_class_header = 1
+ij_java_class_count_to_use_import_on_demand = 999
+ij_java_names_count_to_use_import_on_demand = 999
+ij_java_imports_layout = javax.**, |, java.**, |, *, |, $*
+ij_java_insert_inner_class_imports = true
+ij_java_space_before_array_initializer_left_brace = true
+ij_java_method_parameters_new_line_after_left_paren = true
+ij_java_wrap_comments = false
+ij_java_wrap_long_lines = false
+ij_java_enum_constants_wrap = split_into_lines
+ij_java_method_call_chain_wrap = on_every_item
+ij_java_method_parameters_wrap = on_every_item
+ij_java_extends_list_wrap = normal
+ij_java_extends_keyword_wrap = normal
+ij_java_binary_operation_wrap = normal
+ij_java_binary_operation_sign_on_next_line = true
+ij_java_generate_final_locals = false
+ij_java_generate_final_parameters = false
+
+[*.json]
+tab_width = 2
+indent_size = 2
+
+[*.{yml,yaml}]
+tab_width = 2
+indent_size = 2
+
+[*.xml]
+ij_xml_attribute_wrap = off
+ij_xml_text_wrap = off
+ij_xml_keep_blank_lines = 1
