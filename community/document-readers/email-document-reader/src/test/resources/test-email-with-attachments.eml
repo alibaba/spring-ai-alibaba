@@ -1,0 +1,47 @@
+From: Sender <sender@example.com>
+To: Recipient <recipient@example.com>
+Subject: Test Email with Attachments
+Date: Thu, 6 Jan 2024 10:00:00 +0800
+Content-Type: multipart/mixed; boundary="------------BOUNDARY"
+
+--------------BOUNDARY
+Content-Type: multipart/alternative; boundary="------------INNER"
+
+--------------INNER
+Content-Type: text/plain; charset="UTF-8"
+
+This is a test email for the EmlEmailDocumentReader with attachments.
+
+Best regards,
+Sender
+
+--------------INNER
+Content-Type: text/html; charset="UTF-8"
+
+<html>
+<body>
+<h1>Test Email with Attachments</h1>
+<p>This is a test email for the EmlEmailDocumentReader with attachments.</p>
+<p>Best regards,<br>Sender</p>
+</body>
+</html>
+
+--------------INNER--
+
+--------------BOUNDARY
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: attachment; filename="test.txt"
+
+This is a test attachment file.
+
+--------------BOUNDARY
+Content-Type: application/json; charset="UTF-8"
+Content-Disposition: attachment; filename="test.json"
+
+{
+    "name": "Test JSON",
+    "type": "attachment",
+    "version": "1.0"
+}
+
+--------------BOUNDARY-- 
