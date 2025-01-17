@@ -25,10 +25,10 @@ public class IocDataFactory {
         NODES.put("r_welcome", new RobotNode("喂，哎您好，我这边是xx街道社区卫生服务中心的家庭医生，我们正在对辖区居民的健康情况做了解和更新，有几个问题想问一下，请问您是xx本人吗？"));
         NODES.put("c_welcome", new CustomerNode());
         NODES.put("r_refusal", new RobotNode("那不好意思打扰了，再见？"));
-        NODES.put("r_blood_pressure", new RobotNode("好的，请问您的血压和血糖都正常吗？"));
-        NODES.put("c_blood_pressure", new CustomerNode());
         NODES.put("r_family_members", new RobotNode("那您是xx的家属吗？"));
         NODES.put("c_family_members", new CustomerNode());
+        NODES.put("r_blood_pressure", new RobotNode("好的，请问您的血压和血糖都正常吗？"));
+        NODES.put("c_blood_pressure", new CustomerNode());
         NODES.put("r_hight", new RobotNode("好的，您的身高是多少呢？"));
         NODES.put("c_hight", new CustomerNode());
         NODES.put("r_wight", new RobotNode("那您的体重是多少呢？"));

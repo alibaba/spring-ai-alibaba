@@ -21,12 +21,10 @@ public class StateGraphWithEdge extends StateGraph {
         this.addEdge(id, nextNode);
     }
 
-    public void addNodeWithEdge(String id, String affirmativeNode, String negativeNode, String refusalNode, String defaultNode, AsyncNodeAction action) throws GraphStateException {
+    public void addNodeWithConditionalEdge(String id, String affirmativeNode, String negativeNode, String refusalNode, String defaultNode, AsyncNodeAction action, AsyncEdgeAction condition) throws GraphStateException {
+        Map<String, String> mappings = Map.of("affirmative",affirmativeNode,"negative",negativeNode,"refusal",refusalNode,"default",defaultNode);
         this.addNode(id, action);
-        this.addEdge(id, affirmativeNode);
-        this.addEdge(id, negativeNode);
-        this.addEdge(id, refusalNode);
-        this.addEdge(id, defaultNode);
+        this.addConditionalEdges(id, condition, mappings);
     }
 
     @Override
@@ -49,25 +47,13 @@ public class StateGraphWithEdge extends StateGraph {
 
     @Override
     public StateGraphWithEdge addEdge(String sourceId, String targetId) throws GraphStateException {
-        try {
-            super.addEdge(sourceId, targetId);
-        } catch (GraphStateException e) {
-            // 忽略重复边
-        } catch (Throwable e) {
-            throw new GraphStateException(e.getMessage());
-        }
+        super.addEdge(sourceId, targetId);
         return this;
     }
 
     @Override
     public StateGraphWithEdge addConditionalEdges(String sourceId, AsyncEdgeAction condition, Map<String, String> mappings) throws GraphStateException {
-        try {
-            super.addConditionalEdges(sourceId, condition, mappings);
-        } catch (GraphStateException e) {
-            // 忽略重复边
-        } catch (Throwable e) {
-            throw new GraphStateException(e.getMessage());
-        }
+        super.addConditionalEdges(sourceId, condition, mappings);
         return this;
     }
 
