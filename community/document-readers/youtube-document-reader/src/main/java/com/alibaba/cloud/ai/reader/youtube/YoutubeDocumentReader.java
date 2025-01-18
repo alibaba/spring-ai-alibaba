@@ -35,126 +35,127 @@ import java.util.regex.Pattern;
 
 /**
  * A class for reading and parsing video information and subtitles from Youtube.
- * Implements the DocumentReader interface to provide methods for obtaining document content.
+ * Implements the DocumentReader interface to provide methods for obtaining document
+ * content.
  */
 public class YoutubeDocumentReader implements DocumentReader {
 
-    private static final String WATCH_URL = "https://www.youtube.com/watch?v=%s";
-    private final ObjectMapper objectMapper;
-    private static final List<String> YOUTUBE_URL_PATTERNS = List.of(
-            "youtube\\.com/watch\\?v=([^&]+)",
-            "youtu\\.be/([^?&]+)"
-    );
-    private final String resourcePath;
-    private static final WebClient WEB_CLIENT = WebClient.builder()
-            .defaultHeader("Accept-Language", "en-US")
-            .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024))
-            .build();
+	private static final String WATCH_URL = "https://www.youtube.com/watch?v=%s";
 
-    public YoutubeDocumentReader(String resourcePath) {
-        Assert.hasText(resourcePath, "Query string must not be empty");
-        this.resourcePath = resourcePath;
-        this.objectMapper = new ObjectMapper();
-    }
+	private final ObjectMapper objectMapper;
 
-    @Override
-    public List<Document> get() {
-        List<Document> documents = new ArrayList<>();
-        try {
-            String videoId = extractVideoIdFromUrl(resourcePath);
-            String subtitleContent = getSubtitleInfo(videoId);
-            documents.add(new Document(StringEscapeUtils.unescapeHtml4(subtitleContent)));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load document from Youtube: {}", e);
-        }
-        return documents;
-    }
+	private static final List<String> YOUTUBE_URL_PATTERNS = List.of("youtube\\.com/watch\\?v=([^&]+)",
+			"youtu\\.be/([^?&]+)");
 
-    // Method to extract the videoId from the resourcePath
-    public String extractVideoIdFromUrl(String resourcePath) {
-        for (String pattern : YOUTUBE_URL_PATTERNS) {
-            Pattern regexPattern = Pattern.compile(pattern);
-            Matcher matcher = regexPattern.matcher(resourcePath);
-            if (matcher.find()) {
-                return matcher.group(1);  // Extract the videoId (captured group)
-            }
-        }
-        throw new IllegalArgumentException("Invalid YouTube URL: Unable to extract videoId.");
-    }
+	private final String resourcePath;
 
-    public String getSubtitleInfo(String videoId) throws IOException {
-        // Step 1: Fetch the HTML content of the YouTube video page
-        String url = String.format(WATCH_URL, videoId);
-        String htmlContent = fetchHtmlContent(url).block();  // Blocking for simplicity in this example
+	private static final WebClient WEB_CLIENT = WebClient.builder()
+		.defaultHeader("Accept-Language", "en-US")
+		.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024))
+		.build();
 
-        // Step 2: Extract the subtitle tracks from the HTML
-        String captionsJsonString = extractCaptionsJson(htmlContent);
-        if (captionsJsonString != null) {
-            JsonNode captionsJson = objectMapper.readTree(captionsJsonString);
-            JsonNode captionTracks = captionsJson.path("playerCaptionsTracklistRenderer").path("captionTracks");
+	public YoutubeDocumentReader(String resourcePath) {
+		Assert.hasText(resourcePath, "Query string must not be empty");
+		this.resourcePath = resourcePath;
+		this.objectMapper = new ObjectMapper();
+	}
 
-            // Check if captionTracks exists and is an array
-            if (captionTracks.isArray()) {
-                // Step 3: Extract and decode each subtitle track's URL
-                StringBuilder subtitleInfo = new StringBuilder();
-                JsonNode captionTrack = captionTracks.get(0);
-                // Safely access languageCode and baseUrl with null checks
-                String language = captionTrack.path("languageCode").asText("Unknown");
-                String urlEncoded = captionTrack.path("baseUrl").asText("");
+	@Override
+	public List<Document> get() {
+		List<Document> documents = new ArrayList<>();
+		try {
+			String videoId = extractVideoIdFromUrl(resourcePath);
+			String subtitleContent = getSubtitleInfo(videoId);
+			documents.add(new Document(StringEscapeUtils.unescapeHtml4(subtitleContent)));
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Failed to load document from Youtube: {}", e);
+		}
+		return documents;
+	}
 
-                // Decode the URL to avoid \u0026 issues
-                String decodedUrl = URLDecoder.decode(urlEncoded, StandardCharsets.UTF_8);
+	// Method to extract the videoId from the resourcePath
+	public String extractVideoIdFromUrl(String resourcePath) {
+		for (String pattern : YOUTUBE_URL_PATTERNS) {
+			Pattern regexPattern = Pattern.compile(pattern);
+			Matcher matcher = regexPattern.matcher(resourcePath);
+			if (matcher.find()) {
+				return matcher.group(1); // Extract the videoId (captured group)
+			}
+		}
+		throw new IllegalArgumentException("Invalid YouTube URL: Unable to extract videoId.");
+	}
 
-                System.out.println(decodedUrl);
-                String subtitleText = fetchSubtitleText(decodedUrl);
-                subtitleInfo.append("Language: ").append(language)
-                        .append("\n").append(subtitleText).append("\n\n");
+	public String getSubtitleInfo(String videoId) throws IOException {
+		// Step 1: Fetch the HTML content of the YouTube video page
+		String url = String.format(WATCH_URL, videoId);
+		String htmlContent = fetchHtmlContent(url).block(); // Blocking for simplicity in
+															// this example
 
-                return subtitleInfo.toString();
-            } else {
-                return "No captions available.";
-            }
-        } else {
-            return "No captions data found.";
-        }
-    }
+		// Step 2: Extract the subtitle tracks from the HTML
+		String captionsJsonString = extractCaptionsJson(htmlContent);
+		if (captionsJsonString != null) {
+			JsonNode captionsJson = objectMapper.readTree(captionsJsonString);
+			JsonNode captionTracks = captionsJson.path("playerCaptionsTracklistRenderer").path("captionTracks");
 
+			// Check if captionTracks exists and is an array
+			if (captionTracks.isArray()) {
+				// Step 3: Extract and decode each subtitle track's URL
+				StringBuilder subtitleInfo = new StringBuilder();
+				JsonNode captionTrack = captionTracks.get(0);
+				// Safely access languageCode and baseUrl with null checks
+				String language = captionTrack.path("languageCode").asText("Unknown");
+				String urlEncoded = captionTrack.path("baseUrl").asText("");
 
-    private Mono<String> fetchHtmlContent(String url) {
-        // Use WebClient to fetch HTML content asynchronously
-        return WEB_CLIENT.get()
-                .uri(url)
-                .retrieve()
-                .bodyToMono(String.class);
-    }
+				// Decode the URL to avoid \u0026 issues
+				String decodedUrl = URLDecoder.decode(urlEncoded, StandardCharsets.UTF_8);
 
-    private String extractCaptionsJson(String htmlContent) {
-        // Extract the captions JSON from the HTML content
-        String marker = "\"captions\":";
-        int startIndex = htmlContent.indexOf(marker);
-        if (startIndex != -1) {
-            int endIndex = htmlContent.indexOf("\"videoDetails", startIndex);
-            if (endIndex != -1) {
-                String captionsJsonString = htmlContent.substring(startIndex + marker.length(), endIndex);
-                return captionsJsonString.trim();
-            }
-        }
-        return null;
-    }
+				System.out.println(decodedUrl);
+				String subtitleText = fetchSubtitleText(decodedUrl);
+				subtitleInfo.append("Language: ").append(language).append("\n").append(subtitleText).append("\n\n");
 
-    private String fetchSubtitleText(String decodedUrl) throws IOException {
-        // Fetch the subtitle text by making a request to the decoded subtitle URL
-        org.jsoup.nodes.Document doc = Jsoup.connect(decodedUrl).get();
+				return subtitleInfo.toString();
+			}
+			else {
+				return "No captions available.";
+			}
+		}
+		else {
+			return "No captions data found.";
+		}
+	}
 
-        // Assuming the subtitle text is inside <transcript> tags, extract the text
-        StringBuilder subtitleText = new StringBuilder();
-        doc.select("text").forEach(textNode -> {
-            String text = textNode.text();
-            subtitleText.append(text).append("\n");
-        });
+	private Mono<String> fetchHtmlContent(String url) {
+		// Use WebClient to fetch HTML content asynchronously
+		return WEB_CLIENT.get().uri(url).retrieve().bodyToMono(String.class);
+	}
 
-        return subtitleText.toString();
-    }
+	private String extractCaptionsJson(String htmlContent) {
+		// Extract the captions JSON from the HTML content
+		String marker = "\"captions\":";
+		int startIndex = htmlContent.indexOf(marker);
+		if (startIndex != -1) {
+			int endIndex = htmlContent.indexOf("\"videoDetails", startIndex);
+			if (endIndex != -1) {
+				String captionsJsonString = htmlContent.substring(startIndex + marker.length(), endIndex);
+				return captionsJsonString.trim();
+			}
+		}
+		return null;
+	}
+
+	private String fetchSubtitleText(String decodedUrl) throws IOException {
+		// Fetch the subtitle text by making a request to the decoded subtitle URL
+		org.jsoup.nodes.Document doc = Jsoup.connect(decodedUrl).get();
+
+		// Assuming the subtitle text is inside <transcript> tags, extract the text
+		StringBuilder subtitleText = new StringBuilder();
+		doc.select("text").forEach(textNode -> {
+			String text = textNode.text();
+			subtitleText.append(text).append("\n");
+		});
+
+		return subtitleText.toString();
+	}
+
 }
-
-
