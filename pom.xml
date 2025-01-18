@@ -70,12 +70,16 @@
         <module>community/document-readers/gitlab-document-reader</module>
         <module>community/document-readers/gitbook-document-reader</module>
         <module>community/document-readers/huggingface-fs-document-reader</module>
+        <module>community/document-readers/mbox-document-reader</module>
+        <module>community/document-readers/mysql-document-reader</module>
 
 
         <module>community/document-parsers/document-parser-apache-pdfbox</module>
         <module>community/document-parsers/document-parser-markdown</module>
         <module>community/document-parsers/document-parser-tika</module>
         <module>community/document-parsers/document-parser-pdf-tables</module>
+        <module>community/document-parsers/document-parser-bshtml</module>
+        <module>community/document-parsers/document-parser-bibtex</module>
     </modules>
 
     <properties>
