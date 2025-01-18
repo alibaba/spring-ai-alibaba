@@ -28,12 +28,14 @@ import java.util.List;
  */
 public class YoutubeDocumentReaderTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(YoutubeDocumentReaderTest.class);
+	private static final Logger logger = LoggerFactory.getLogger(YoutubeDocumentReaderTest.class);
 
-    @Test
-    void bilibiliDocumentReaderTest() {
-        YoutubeDocumentReader youtubeDocumentReader = new YoutubeDocumentReader("https://www.youtube.com/watch?v=q-9wxg9tQRk");
-        List<Document> documents = youtubeDocumentReader.get();
-        logger.info("documents: {}", documents);
-    }
+	@Test
+	void bilibiliDocumentReaderTest() {
+		YoutubeDocumentReader youtubeDocumentReader = new YoutubeDocumentReader(
+				"https://www.youtube.com/watch?v=q-9wxg9tQRk");
+		List<Document> documents = youtubeDocumentReader.get();
+		logger.info("documents: {}", documents);
+	}
+
 }
