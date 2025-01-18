@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.reader.mongodb;
 
 import com.alibaba.cloud.ai.reader.mongodb.converter.DefaultDocumentConverter;
@@ -7,7 +22,6 @@ import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoException;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
-import io.micrometer.core.instrument.Timer;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +44,11 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
- * MongoDB文档读取器实现类
+ * MongoDB Document Reader Implementation Class
+ *
+ * @author Yongtao Tan
+ * @version 1.0.0
+ *
  */
 public class MongodbDocumentReader implements DocumentReader, Closeable {
     private static final Logger log = LoggerFactory.getLogger(MongodbDocumentReader.class);
@@ -45,20 +63,19 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
     private volatile boolean closed = false;
 
     /**
-     * 转换接口
+     * Document Converter Interface
      */
     private final DocumentConverter documentConverter;
 
-    // MongoDB URI格式验证
+    // MongoDB URI format validation
     private static final Pattern MONGODB_URI_PATTERN = Pattern.compile("mongodb(?:\\+srv)?://[^/]+(/[^?]+)?(\\?.*)?");
-
 
     public static Builder builder() {
         return new Builder();
     }
 
     /**
-     * Builder模式构建器
+     * Builder Pattern Constructor
      */
     public static class Builder {
         private MongoTemplate mongoTemplate;
@@ -81,18 +98,17 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
             return this;
         }
 
-
         public Builder withDocumentConverter(DocumentConverter converter) {
             this.converter = converter;
             return this;
         }
 
         /**
-         * 创建MongoDB客户端
-         * 根据配置创建具有连接池和超时设置的MongoDB客户端
+         * Create MongoDB Client
+         * Creates a MongoDB client with connection pool and timeout settings based on configuration
          *
-         * @param resource MongoDB配置资源
-         * @return 配置好的MongoDB客户端实例
+         * @param resource MongoDB configuration resource
+         * @return Configured MongoDB client instance
          */
         private static MongoClient createMongoClient(MongodbResource resource) {
             Assert.notNull(resource, "MongodbResource must not be null");
@@ -138,12 +154,11 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
         this.documentConverter = Objects.isNull(builder.converter) ? new DefaultDocumentConverter() : builder.converter;
         this.shouldCloseClient = builder.mongoClient == null;
 
-
         validateConfiguration();
     }
 
     /**
-     * 验证配置的有效性
+     * Validate configuration validity
      */
     private void validateConfiguration() {
         validateMongoDbUri(properties.getUri());
@@ -167,11 +182,10 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
     }
 
     /**
-     * 执行查询并记录性能指标
+     * Execute query and record performance metrics
      */
     private <T> T executeWithMetrics(String operation, Supplier<T> query) {
         checkState();
-        Timer.Sample sample = Timer.start();
         try {
             log.debug("Executing operation: {}", operation);
             T result = query.get();
@@ -183,9 +197,8 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
         }
     }
 
-
     /**
-     * 检查读取器状态
+     * Check reader state
      */
     private void checkState() {
         if (closed) {
@@ -216,10 +229,10 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
     }
 
     /**
-     * 根据条件定义查询文档
+     * Query documents based on criteria definition
      *
-     * @param criteriaDefinition MongoDB查询条件定义，用于指定查询规则
-     * @return 符合条件的文档列表，如果条件为空则返回空列表
+     * @param criteriaDefinition MongoDB query criteria definition for specifying query rules
+     * @return List of documents matching the criteria, returns empty list if criteria is null
      */
     public List<org.springframework.ai.document.Document> findByCriteriaDefinition(CriteriaDefinition criteriaDefinition) {
         if (criteriaDefinition == null) {
@@ -232,10 +245,10 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
     }
 
     /**
-     * 使用Query对象进行文档查询
+     * Query documents using Query object
      *
-     * @param query MongoDB查询对象，可以包含各种查询条件
-     * @return 符合查询条件的文档列表，如果查询对象为空则返回空列表
+     * @param query MongoDB query object that can contain various query conditions
+     * @return List of documents matching the query conditions, returns empty list if query is null
      */
     public List<org.springframework.ai.document.Document> findByQuery(Query query) {
         if (query == null) {
@@ -244,14 +257,13 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
         return processDocuments(query);
     }
 
-
     /**
-     * 分页查询文档
+     * Paginated document query
      *
-     * @param query MongoDB查询对象
-     * @param page  页码，从0开始
-     * @param size  每页大小
-     * @return 分页后的文档列表
+     * @param query MongoDB query object
+     * @param page  Page number, starting from 0
+     * @param size  Page size
+     * @return Paginated document list
      */
     public List<org.springframework.ai.document.Document> findWithPagination(Query query, int page, int size) {
         query.skip((long) page * size).limit(size);
@@ -259,11 +271,11 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
     }
 
     /**
-     * 实现DocumentReader接口的get方法
-     * 根据配置的查询条件获取文档
+     * Implement DocumentReader interface's get method
+     * Get documents based on configured query conditions
      *
-     * @return 查询到的文档列表
-     * @throws RuntimeException 当发生MongoDB操作异常或其他异常时抛出
+     * @return List of queried documents
+     * @throws RuntimeException when MongoDB operation or other exceptions occur
      */
     @Override
     public List<org.springframework.ai.document.Document> get() {
@@ -273,10 +285,10 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
     }
 
     /**
-     * 根据配置构建MongoDB查询对象
+     * Build MongoDB query object based on configuration
      *
-     * @return 构建的查询对象
-     * @throws RuntimeException 当查询字符串解析失败时抛出
+     * @return Built query object
+     * @throws RuntimeException when query string parsing fails
      */
     private Query buildQuery() {
         Query query = new Query();
@@ -285,14 +297,14 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
                 Document queryDoc = Document.parse(properties.getQuery());
                 query = new BasicQuery(queryDoc);
             } catch (Exception e) {
-                throw new RuntimeException("解析查询字符串失败: " + e.getMessage(), e);
+                throw new RuntimeException("Failed to parse query string: " + e.getMessage(), e);
             }
         }
         return query;
     }
 
     /**
-     * 处理MongoDB查询并转换文档格式
+     * Process MongoDB query and convert document format
      */
     private List<org.springframework.ai.document.Document> processDocuments(Query query) {
         return executeWithMetrics("processDocuments", () ->
@@ -307,12 +319,12 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
     }
 
     /**
-     * 在指定数据库和集合中执行查询
+     * Execute query in specified database and collection
      *
-     * @param database   要查询的数据库名
-     * @param collection 要查询的集合名
-     * @param query      查询条件
-     * @return 查询结果文档列表
+     * @param database   Database name to query
+     * @param collection Collection name to query
+     * @param query      Query conditions
+     * @return List of queried documents
      */
     public List<org.springframework.ai.document.Document> findInDatabaseAndCollection(String database, String collection, Query query) {
         Assert.hasText(collection, "Collection name must not be empty");
@@ -334,7 +346,7 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
     }
 
     /**
-     * 并行查询多个集合
+     * Parallel query across multiple collections
      */
     public List<org.springframework.ai.document.Document> findInDatabaseAndCollectionParallel(
             String database, List<String> collections, Query query) {
@@ -349,13 +361,13 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
     }
 
     /**
-     * 在指定集合中执行分页查询
+     * Execute paginated query in specified collection
      *
-     * @param collection 要查询的集合名
-     * @param query      查询条件
-     * @param page       页码（从0开始）
-     * @param size       每页大小
-     * @return 分页查询结果文档列表
+     * @param collection Collection name to query
+     * @param query      Query conditions
+     * @param page       Page number (starting from 0)
+     * @param size       Page size
+     * @return Paginated query result document list
      */
     public List<org.springframework.ai.document.Document> findInDatabaseAndCollectionWithPagination(
             String collection, Query query, int page, int size) {
@@ -363,14 +375,14 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
     }
 
     /**
-     * 在指定数据库和集合中执行分页查询
+     * Execute paginated query in specified database and collection
      *
-     * @param database   要查询的数据库名
-     * @param collection 要查询的集合名
-     * @param query      查询条件
-     * @param page       页码（从0开始）
-     * @param size       每页大小
-     * @return 分页查询结果文档列表
+     * @param database   Database name to query
+     * @param collection Collection name to query
+     * @param query      Query conditions
+     * @param page       Page number (starting from 0)
+     * @param size       Page size
+     * @return Paginated query result document list
      */
     public List<org.springframework.ai.document.Document> findInDatabaseAndCollectionWithPagination(
             String database, String collection, Query query, int page, int size) {
@@ -379,9 +391,6 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
         Assert.notNull(query, "Query must not be null");
         Assert.isTrue(page >= 0, "Page index must not be negative");
         Assert.isTrue(size > 0, "Page size must be greater than 0");
-
-        String cacheKey = String.format("%s:%s:%s:page=%d:size=%d",
-                database, collection, query.toString(), page, size);
 
 
         return executeWithMetrics("findInDatabaseAndCollectionWithPagination", () -> {
@@ -396,24 +405,8 @@ public class MongodbDocumentReader implements DocumentReader, Closeable {
                     .map(doc -> documentConverter.convert(doc, database, collection, properties))
                     .collect(Collectors.toList());
 
-
             return results;
         });
     }
-
-//    /**
-//     * 使用重试模板执行操作
-//     */
-//    private <T> T executeWithRetry(String operation, Supplier<T> supplier) {
-//        if (retryTemplate != null) {
-//            return retryTemplate.execute(context -> {
-//                log.debug("Attempting operation: {} (Attempt: {})",
-//                        operation, context.getRetryCount() + 1);
-//                return supplier.get();
-//            });
-//        }
-//        return supplier.get();
-//    }
-
 
 }

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.reader.mongodb;
 
 import lombok.Builder;
@@ -11,115 +26,114 @@ import java.net.URL;
 
 
 /**
- * MongoDB文档读取器配置属性类
- * 用于配置MongoDB连接、文档处理和性能相关的参数
+ * MongoDB Document Reader Configuration Properties Class
+ * Used to configure MongoDB connection, document processing and performance related parameters
  *
- * @author 驰恩
+ * @author Yongtao Tan
  * @version 1.0.0
  */
 @Builder
 public class MongodbResource implements Resource {
 
     /**
-     * MongoDB连接URI
-     * 格式: mongodb://[username:password@]host1[:port1][,host2[:port2],...][/database][?options]
-     * 默认值: mongodb://localhost:27017
+     * MongoDB Connection URI
+     * Format: mongodb://[username:password@]host1[:port1][,host2[:port2],...][/database][?options]
+     * Default: mongodb://localhost:27017
      */
     private String uri;
 
-
     /**
-     * MongoDB用户名
-     * 可选项，用于身份验证
+     * MongoDB Username
+     * Optional, used for authentication
      */
     private String username;
 
     /**
-     * MongoDB密码
-     * 可选项，用于身份验证
+     * MongoDB Password
+     * Optional, used for authentication
      */
     private String password;
 
     /**
-     * MongoDB数据库名称
-     * 必填项，指定要连接的数据库
+     * MongoDB Database Name
+     * Required, specifies the database to connect to
      */
     private String database;
 
     /**
-     * MongoDB集合名称
-     * 必填项，指定要读取的集合
+     * MongoDB Collection Name
+     * Required, specifies the collection to read from
      */
     private String collection;
 
     /**
-     * MongoDB查询条件（JSON格式）
-     * 可选项，用于过滤要读取的文档
-     * 示例: {"status": "active", "type": "article"}
+     * MongoDB Query Condition (JSON format)
+     * Optional, used to filter documents to be read
+     * Example: {"status": "active", "type": "article"}
      */
     private String query;
 
     /**
-     * 文档分块大小（字符数）
-     * 用于将大文档分割成小块进行处理
-     * 默认值: 1000字符
+     * Document Chunk Size (in characters)
+     * Used to split large documents into smaller chunks for processing
+     * Default: 1000 characters
      */
     @Builder.Default
     private int chunkSize = 1000;
 
     /**
-     * 分块重叠大小（字符数）
-     * 相邻分块之间的重叠字符数，用于保持上下文连贯性
-     * 默认值: 200字符
+     * Chunk Overlap Size (in characters)
+     * Number of overlapping characters between adjacent chunks, used to maintain context continuity
+     * Default: 200 characters
      */
     @Builder.Default
     private int overlap = 200;
 
     /**
-     * 是否启用向量化处理
-     * 如果为true，将处理文档中的向量字段
-     * 默认值: false
+     * Whether to Enable Vectorization
+     * If true, will process vector fields in documents
+     * Default: false
      */
     @Builder.Default
     private boolean enableVectorization = false;
 
     /**
-     * 向量维度
-     * 文档向量化时的维度大小
-     * 默认值: 1536 (适用于OpenAI的text-embedding-ada-002模型)
+     * Vector Dimensions
+     * Dimension size for document vectorization
+     * Default: 1536 (suitable for OpenAI's text-embedding-ada-002 model)
      */
     @Builder.Default
     private int vectorDimensions = 1536;
 
     /**
-     * 向量字段名
-     * MongoDB文档中存储向量的字段名
-     * 默认值: "vector"
+     * Vector Field Name
+     * Field name storing vectors in MongoDB documents
+     * Default: "vector"
      */
     @Builder.Default
     private String vectorField = "vector";
 
     /**
-     * 批处理大小
-     * 每次从MongoDB批量读取的文档数量
-     * 默认值: 100
+     * Batch Size
+     * Number of documents to read from MongoDB in each batch
+     * Default: 100
      */
     @Builder.Default
     private int batchSize = 100;
 
     /**
-     * MongoDB连接池大小
-     * 默认值: 10
+     * MongoDB Connection Pool Size
+     * Default: 10
      */
     @Builder.Default
-    private int poolSize = 10;
+    private int poolSize = 5;
 
     /**
-     * MongoDB连接超时时间（毫秒）
-     * 默认值: 5000ms (5秒)
+     * MongoDB Connection Timeout (milliseconds)
+     * Default: 3000ms (3 seconds)
      */
     @Builder.Default
-    private int connectTimeout = 5000;
+    private int connectTimeout = 3000;
 
     // Getters and Setters
 
