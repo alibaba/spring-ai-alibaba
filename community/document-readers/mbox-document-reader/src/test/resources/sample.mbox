@@ -1,0 +1,82 @@
+From test@example.com Thu Jan 1 00:00:00 2024
+From: Test Sender <test@example.com>
+Date: Thu, 1 Jan 2024 00:00:00 +0000
+Message-ID: <test123@example.com>
+Subject: Plain Text Email
+To: recipient@example.com
+Content-Type: text/plain; charset=UTF-8
+
+This is a plain text email message.
+It contains multiple lines of text
+for testing the MboxDocumentReader implementation.
+
+Best regards,
+Test Sender
+
+From test@example.com Thu Jan 1 00:00:01 2024
+From: Test Sender <test@example.com>
+Date: Thu, 1 Jan 2024 00:00:01 +0000
+Message-ID: <test124@example.com>
+Subject: HTML Email
+To: recipient@example.com
+Content-Type: text/html; charset=UTF-8
+
+<html>
+<head><title>Test HTML Email</title></head>
+<body>
+<h1>HTML Email Test</h1>
+<p>This is a <b>HTML</b> formatted email message.</p>
+<p>It contains <i>styled</i> text and multiple paragraphs.</p>
+</body>
+</html>
+
+From test@example.com Thu Jan 1 00:00:02 2024
+From: Test Sender <test@example.com>
+Date: Thu, 1 Jan 2024 00:00:02 +0000
+Message-ID: <test125@example.com>
+Subject: Multipart Email
+To: recipient@example.com
+Content-Type: multipart/alternative; boundary="boundary123"
+
+--boundary123
+Content-Type: text/plain; charset=UTF-8
+
+This is the plain text version of the email.
+For email clients that don't support HTML.
+
+--boundary123
+Content-Type: text/html; charset=UTF-8
+
+<html>
+<head><title>Multipart Email</title></head>
+<body>
+<h1>Multipart Email Test</h1>
+<p>This is the <b>HTML version</b> of the email.</p>
+<p>For modern email clients that support HTML.</p>
+</body>
+</html>
+--boundary123--
+
+From test@example.com Thu Jan 1 00:00:03 2024
+From: Test Sender <test@example.com>
+Date: Thu, 1 Jan 2024 00:00:03 +0000
+Message-ID: <test126@example.com>
+Subject: Email with Attachment
+To: recipient@example.com
+Content-Type: multipart/mixed; boundary="boundary456"
+
+--boundary456
+Content-Type: text/plain; charset=UTF-8
+
+This is the main email content.
+The attachment should be ignored by the reader.
+
+--boundary456
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="test.pdf"
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjMKJcTl8uXrp/Og0MTGCjQgMCBvYmoKPDwgL0xlbmd0aCA1IDAgUiAvRmls
+dGVyIC9GbGF0ZURlY29kZSA+PgpzdHJlYW0KeAEtjTELwjAUhPd
+
+--boundary456-- 
