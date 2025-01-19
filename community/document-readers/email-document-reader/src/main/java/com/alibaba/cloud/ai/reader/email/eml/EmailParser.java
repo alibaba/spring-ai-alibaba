@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.reader.email;
+package com.alibaba.cloud.ai.reader.email.eml;
 
 import com.alibaba.cloud.ai.parser.bshtml.BsHtmlDocumentParser;
 import org.slf4j.Logger;
@@ -22,19 +22,14 @@ import org.springframework.ai.document.Document;
 import org.springframework.util.StringUtils;
 
 import javax.mail.Header;
-import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Multipart;
 import javax.mail.Part;
-import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;

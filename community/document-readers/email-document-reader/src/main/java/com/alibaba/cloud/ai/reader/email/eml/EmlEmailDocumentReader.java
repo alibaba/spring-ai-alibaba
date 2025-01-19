@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.reader.email;
+package com.alibaba.cloud.ai.reader.email.eml;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +27,6 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.Multipart;
 import javax.mail.Part;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.*;
