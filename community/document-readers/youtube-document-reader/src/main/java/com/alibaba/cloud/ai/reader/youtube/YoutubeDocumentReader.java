@@ -110,7 +110,6 @@ public class YoutubeDocumentReader implements DocumentReader {
 				// Decode the URL to avoid \u0026 issues
 				String decodedUrl = URLDecoder.decode(urlEncoded, StandardCharsets.UTF_8);
 
-				System.out.println(decodedUrl);
 				String subtitleText = fetchSubtitleText(decodedUrl);
 				subtitleInfo.append("Language: ").append(language).append("\n").append(subtitleText).append("\n\n");
 
