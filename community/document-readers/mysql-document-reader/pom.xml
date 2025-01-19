@@ -26,62 +26,40 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>document-parser-bshtml</artifactId>
-    <name>document-parser-bshtml</name>
-    <description>document-parser-bshtml for Spring AI Alibaba</description>
-    <packaging>jar</packaging>
-    <url>https://github.com/alibaba/spring-ai-alibaba</url>
-    <scm>
-        <url>https://github.com/alibaba/spring-ai-alibaba</url>
-        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
-        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
-    </scm>
-
-    <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jsoup.version>1.18.1</jsoup.version>
-    </properties>
+    <artifactId>mysql-document-reader</artifactId>
+    <name>Spring AI Alibaba MySQL Document Reader</name>
+    <description>Spring AI Alibaba MySQL Document Reader Implementation</description>
 
     <dependencies>
-        <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-core</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jsoup</groupId>
-            <artifactId>jsoup</artifactId>
-            <version>${jsoup.version}</version>
-        </dependency>
-
-        <!-- test dependencies -->
+        <!-- Spring AI Core -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-test</artifactId>
-            <scope>test</scope>
+            <artifactId>spring-ai-core</artifactId>
         </dependency>
 
+        <!-- MySQL JDBC Driver -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
         </dependency>
 
+        <!-- Test Dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
 </project>
+
