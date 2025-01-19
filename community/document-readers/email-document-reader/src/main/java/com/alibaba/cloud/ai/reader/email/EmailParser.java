@@ -52,9 +52,6 @@ public class EmailParser {
 
 	private final Logger log = LoggerFactory.getLogger(EmailParser.class);
 
-	// Valid content types for email body
-	private final List<String> VALID_CONTENT_TYPES = List.of("text/html", "text/plain");
-
 	// Pattern for email address extraction
 	private final Pattern EMAIL_PATTERN = Pattern.compile("<([^>]+)>");
 
@@ -294,11 +291,6 @@ public class EmailParser {
 		// Return plain text if available
 		if (textContent != null) {
 			return textContent;
-		}
-
-		// If no text content but have HTML, parse it
-		if (htmlContent != null) {
-			return parseHtmlContent(htmlContent);
 		}
 
 		return "";
