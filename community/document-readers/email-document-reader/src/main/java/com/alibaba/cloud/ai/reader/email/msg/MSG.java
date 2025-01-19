@@ -477,4 +477,46 @@ public class MSG
 	{
 		return new DirectoryEntryDataIterator(directory.recipientEntries.iterator(), directory, namedProperties);
 	}
+
+	/** Get the ByteBuffer for this MSG file
+	*   @return The ByteBuffer containing the MSG file data
+	*/
+	public java.nio.MappedByteBuffer getByteBuffer() {
+		return mbb;
+	}
+
+	/** Get the header for this MSG file
+	*   @return The MSG file header
+	*/
+	public Header getHeader() {
+		return header;
+	}
+
+	/** Get the FAT for this MSG file
+	*   @return The File Allocation Table
+	*/
+	public FAT getFAT() {
+		return fat;
+	}
+
+	/** Get the Mini FAT for this MSG file
+	*   @return The Mini File Allocation Table
+	*/
+	public MiniFAT getMiniFAT() {
+		return miniFAT;
+	}
+
+	/** Get the directory for this MSG file
+	*   @return The directory
+	*/
+	public Directory getDirectory() {
+		return directory;
+	}
+
+	/** Get the named properties for this MSG file
+	*   @return The named properties
+	*/
+	public NamedProperties getNamedProperties() {
+		return namedProperties;
+	}
 }
