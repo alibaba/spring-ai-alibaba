@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.reader.email;
+package com.alibaba.cloud.ai.reader.email.eml;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
