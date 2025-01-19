@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.reader.email.eml;
 
+import com.alibaba.cloud.ai.parser.tika.TikaDocumentParser;
+import com.alibaba.cloud.ai.parser.bshtml.BsHtmlDocumentParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -70,6 +72,16 @@ public class EmlEmailDocumentReader implements DocumentReader {
 	private final EmailParser emailParser;
 
 	/**
+	 * TikaDocumentParser instance for parsing attachments
+	 */
+	private final TikaDocumentParser tikaDocumentParser;
+
+	/**
+	 * BsHtmlDocumentParser instance for parsing HTML attachments
+	 */
+	private final BsHtmlDocumentParser bsHtmlDocumentParser;
+
+	/**
 	 * Constructor with file path
 	 * @param filePath The absolute path to the email file
 	 */
@@ -98,6 +110,8 @@ public class EmlEmailDocumentReader implements DocumentReader {
 		this.processAttachments = processAttachments;
 		this.preferHtml = preferHtml;
 		this.emailParser = new EmailParser();
+		this.tikaDocumentParser = new TikaDocumentParser();
+		this.bsHtmlDocumentParser = new BsHtmlDocumentParser(org.jsoup.parser.Parser.htmlParser());
 	}
 
 	@Override
@@ -207,28 +221,33 @@ public class EmlEmailDocumentReader implements DocumentReader {
 			filename = "attachment_" + System.currentTimeMillis();
 		}
 
-		// Create temporary directory for attachments
-		File tempDir = Files.createTempDirectory("email_attachments").toFile();
-		try {
-			// Save attachment to file
-			File file = new File(tempDir, filename);
-			try (InputStream is = part.getInputStream()) {
-				org.apache.commons.io.FileUtils.copyInputStreamToFile(is, file);
+		// Create attachment metadata
+		Map<String, Object> attachmentMetadata = new HashMap<>(metadata);
+		attachmentMetadata.put("filename", filename);
+		attachmentMetadata.put("content_type", part.getContentType());
+		attachmentMetadata.put("size", part.getSize());
+
+		// Choose appropriate parser based on content type
+		try (InputStream is = part.getInputStream()) {
+			String contentType = part.getContentType().toLowerCase();
+			List<Document> parsedDocuments;
+
+			if (contentType.contains("text/html") || contentType.contains("application/html")) {
+				// Use BsHtmlDocumentParser for HTML content
+				parsedDocuments = bsHtmlDocumentParser.parse(is);
+			}
+			else {
+				// Use TikaDocumentParser for other content types
+				parsedDocuments = tikaDocumentParser.parse(is);
 			}
 
-			// Create attachment metadata
-			Map<String, Object> attachmentMetadata = new HashMap<>(metadata);
-			attachmentMetadata.put("filename", filename);
-			attachmentMetadata.put("content_type", part.getContentType());
-			attachmentMetadata.put("size", part.getSize());
-
-			// Read attachment content
-			String attachmentContent = Files.readString(file.toPath());
-			documents.add(new Document(attachmentContent, attachmentMetadata));
-		}
-		finally {
-			// Clean up temporary directory
-			org.apache.commons.io.FileUtils.deleteDirectory(tempDir);
+			if (!parsedDocuments.isEmpty()) {
+				// Add attachment metadata to parsed documents
+				for (Document doc : parsedDocuments) {
+					doc.getMetadata().putAll(attachmentMetadata);
+				}
+				documents.addAll(parsedDocuments);
+			}
 		}
 	}
 
