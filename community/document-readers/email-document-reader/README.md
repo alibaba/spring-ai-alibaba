@@ -9,16 +9,17 @@ A Spring AI document reader implementation for parsing email files (EML format).
 - Handles both plain text and HTML content
 - Supports various character encodings (UTF-8, etc.)
 - Handles Base64 and Quoted-Printable encoded content
+- Processes attachments using Apache Tika (supports PDF, DOC, etc.)
 - Compliant with Spring AI Document interface specification
 
 ## Dependencies
 
 ```xml
 <dependencies>
+    <!-- Spring AI Document Reader API -->
     <dependency>
         <groupId>com.alibaba.cloud.ai</groupId>
         <artifactId>email-document-reader</artifactId>
-        <version>${project.version}</version>
     </dependency>
 </dependencies>
 ```
@@ -26,8 +27,8 @@ A Spring AI document reader implementation for parsing email files (EML format).
 ## Usage
 
 ```java
-// Create a reader instance with an EML file
-EmlEmailDocumentReader reader = new EmlEmailDocumentReader("path/to/email.eml");
+// Create a reader instance with an EML file and enable attachment processing
+EmlEmailDocumentReader reader = new EmlEmailDocumentReader("path/to/email.eml", true);
 
 // Get documents (email body and attachments if any)
 List<Document> documents = reader.get();
@@ -42,6 +43,13 @@ String date = (String) metadata.get("date");
 
 // Access email content
 String content = emailDoc.getText();
+
+// Access attachment content (if any)
+if (documents.size() > 1) {
+    Document attachmentDoc = documents.get(1);
+    String filename = (String) attachmentDoc.getMetadata().get("filename");
+    String attachmentContent = attachmentDoc.getText();
+}
 ```
 
 ## Metadata Fields
@@ -55,6 +63,8 @@ The following metadata fields are available:
 - `to_name`: Recipient's display name (if available)
 - `date`: Email date in RFC 822 format
 - `content_type`: MIME content type of the email
+- `filename`: Original filename (for attachments)
+- `size`: File size in bytes (for attachments)
 
 ## License
 

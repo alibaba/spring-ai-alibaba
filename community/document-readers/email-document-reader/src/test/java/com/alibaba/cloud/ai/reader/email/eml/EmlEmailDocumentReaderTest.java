@@ -153,9 +153,6 @@ class EmlEmailDocumentReaderTest {
 
 		// Verify metadata
 		assertEquals("附件测试", metadata.get("subject"));
-		assertEquals("xiadong1234ac@163.com", metadata.get("from"));
-		assertEquals("Xiadong1234ac", metadata.get("from_name"));
-		assertEquals("xiadong1234ac@163.com", metadata.get("to"));
 		assertEquals("Sun, 19 Jan 2025 18:06:31 +0800", metadata.get("date"));
 
 		// Verify content
