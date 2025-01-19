@@ -18,13 +18,16 @@ package com.alibaba.cloud.ai.reader.email;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.io.UnsupportedEncodingException;
+import javax.mail.internet.MimeUtility;
 
 /**
  * Base class for all email elements
  * Represents different parts of an email like subject, sender, recipient, etc.
  *
- * @author xiadong
- * @since 2024-01-06
+ * @author brianxiadong
+ * @since 2024-01-19
  */
 public abstract class EmailElement {
 
@@ -84,8 +87,30 @@ public abstract class EmailElement {
  * Represents the subject of an email
  */
 class Subject extends EmailElement {
+    // Pattern for Q-encoded content
+    private static final Pattern Q_ENCODED_PATTERN = Pattern.compile("=\\?[^?]+\\?[qQbB]\\?[^?]+\\?=");
+
     public Subject(String text) {
-        super(text);
+        super(decodeSubject(text));
+    }
+
+    /**
+     * Decode the subject text, handling Q-encoded and Base64 encoded content
+     * @param text The subject text to decode
+     * @return The decoded subject text
+     */
+    private static String decodeSubject(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+
+        try {
+            // 使用 JavaMail 的 MimeUtility 来解码
+            return MimeUtility.decodeText(text);
+        } catch (UnsupportedEncodingException e) {
+            // 如果解码失败，返回原始文本
+            return text;
+        }
     }
 }
 
@@ -157,4 +182,5 @@ class ReceivedInfo extends EmailElement {
     public ZonedDateTime getDatestamp() {
         return datestamp;
     }
-} 
+}
+
