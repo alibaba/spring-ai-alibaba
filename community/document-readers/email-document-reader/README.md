@@ -15,22 +15,10 @@ A Spring AI document reader implementation for parsing email files (EML format).
 
 ```xml
 <dependencies>
-    <!-- Spring AI Core -->
     <dependency>
-        <groupId>org.springframework.ai</groupId>
-        <artifactId>spring-ai-core</artifactId>
-    </dependency>
-    
-    <!-- Jakarta Mail API -->
-    <dependency>
-        <groupId>jakarta.mail</groupId>
-        <artifactId>jakarta.mail-api</artifactId>
-    </dependency>
-    
-    <!-- Eclipse Angus Mail Implementation -->
-    <dependency>
-        <groupId>org.eclipse.angus</groupId>
-        <artifactId>jakarta.mail</artifactId>
+        <groupId>com.alibaba.cloud.ai</groupId>
+        <artifactId>email-document-reader</artifactId>
+        <version>${project.version}</version>
     </dependency>
 </dependencies>
 ```
