@@ -1,0 +1,73 @@
+# Email Document Reader
+
+A Spring AI document reader implementation for parsing email files (EML format).
+
+## Features
+
+- Support for EML format email files
+- Extracts email metadata (subject, from, to, date, etc.)
+- Handles both plain text and HTML content
+- Supports various character encodings (UTF-8, etc.)
+- Handles Base64 and Quoted-Printable encoded content
+- Compliant with Spring AI Document interface specification
+
+## Dependencies
+
+```xml
+<dependencies>
+    <!-- Spring AI Core -->
+    <dependency>
+        <groupId>org.springframework.ai</groupId>
+        <artifactId>spring-ai-core</artifactId>
+    </dependency>
+    
+    <!-- Jakarta Mail API -->
+    <dependency>
+        <groupId>jakarta.mail</groupId>
+        <artifactId>jakarta.mail-api</artifactId>
+    </dependency>
+    
+    <!-- Eclipse Angus Mail Implementation -->
+    <dependency>
+        <groupId>org.eclipse.angus</groupId>
+        <artifactId>jakarta.mail</artifactId>
+    </dependency>
+</dependencies>
+```
+
+## Usage
+
+```java
+// Create a reader instance with an EML file
+EmlEmailDocumentReader reader = new EmlEmailDocumentReader("path/to/email.eml");
+
+// Get documents (email body and attachments if any)
+List<Document> documents = reader.get();
+
+// Access email metadata
+Document emailDoc = documents.get(0);
+Map<String, Object> metadata = emailDoc.getMetadata();
+
+String subject = (String) metadata.get("subject");
+String from = (String) metadata.get("from");
+String date = (String) metadata.get("date");
+
+// Access email content
+String content = emailDoc.getText();
+```
+
+## Metadata Fields
+
+The following metadata fields are available:
+
+- `subject`: Email subject line
+- `from`: Sender's email address
+- `from_name`: Sender's display name (if available)
+- `to`: Recipient's email address
+- `to_name`: Recipient's display name (if available)
+- `date`: Email date in RFC 822 format
+- `content_type`: MIME content type of the email
+
+## License
+
+Licensed under the Apache License, Version 2.0. 

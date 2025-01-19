@@ -40,45 +40,58 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Base64;
 
 /**
  * Email parser utility class
  * Provides methods to parse email content and extract metadata
  *
- * @author xiadong
+ * @author brianxiadong
  * @since 2024-01-06
  */
 public class EmailParser {
 
-    private static final Logger log = LoggerFactory.getLogger(EmailParser.class);
+    private final Logger log = LoggerFactory.getLogger(EmailParser.class);
 
     // Valid content types for email body
-    private static final List<String> VALID_CONTENT_TYPES = List.of("text/html", "text/plain");
+    private final List<String> VALID_CONTENT_TYPES = List.of("text/html", "text/plain");
 
     // Pattern for email address extraction
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("<([^>]+)>");
+    private final Pattern EMAIL_PATTERN = Pattern.compile("<([^>]+)>");
 
     // Pattern for IP address extraction
-    private static final Pattern IP_PATTERN = Pattern.compile("\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b");
+    private final Pattern IP_PATTERN = Pattern.compile("\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b");
 
     // Pattern for IP hostname extraction
-    private static final Pattern IP_NAME_PATTERN = Pattern.compile("\\b[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}\\b");
+    private final Pattern IP_NAME_PATTERN = Pattern.compile("\\b[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}\\b");
 
     // Pattern for MAPI ID extraction
-    private static final Pattern MAPI_PATTERN = Pattern.compile("MapiId=([^;]+)");
-
-    // Pattern for datetime extraction
-    private static final Pattern DATETIME_PATTERN = Pattern.compile("\\w{3}, \\d{1,2} \\w{3} \\d{4} \\d{2}:\\d{2}:\\d{2} [+-]\\d{4}");
+    private final Pattern MAPI_PATTERN = Pattern.compile("MapiId=([^;]+)");
 
     // HTML parser
-    private static final BsHtmlDocumentParser HTML_PARSER = new BsHtmlDocumentParser();
+    private final BsHtmlDocumentParser htmlParser;
+
+    /**
+     * Default constructor
+     */
+    public EmailParser() {
+        this.htmlParser = new BsHtmlDocumentParser();
+    }
+
+    /**
+     * Constructor with custom HTML parser
+     * @param htmlParser Custom HTML parser
+     */
+    public EmailParser(BsHtmlDocumentParser htmlParser) {
+        this.htmlParser = htmlParser;
+    }
 
     /**
      * Parse email header and extract elements
      * @param message The email message
      * @return List of email elements
      */
-    public static List<EmailElement> parseEmailHeader(MimeMessage message) throws MessagingException {
+    public List<EmailElement> parseEmailHeader(MimeMessage message) throws MessagingException {
         List<EmailElement> elements = new ArrayList<>();
 
         // Parse headers
@@ -90,13 +103,16 @@ public class EmailParser {
 
             switch (name) {
                 case "To":
-                    parseRecipients(value).forEach(elements::add);
+                    elements.addAll(parseRecipients(value));
                     break;
                 case "From":
-                    parseSenders(value).forEach(elements::add);
+                    elements.addAll(parseSenders(value));
                     break;
                 case "Subject":
                     elements.add(new Subject(value));
+                    break;
+                case "Date":
+                    elements.add(new MetaData("date", value));
                     break;
                 case "Received":
                     elements.addAll(parseReceivedData(value));
@@ -114,7 +130,7 @@ public class EmailParser {
      * @param data Recipients string
      * @return List of Recipient elements
      */
-    private static List<Recipient> parseRecipients(String data) {
+    private List<Recipient> parseRecipients(String data) {
         List<Recipient> recipients = new ArrayList<>();
         String[] addresses = data.split(",");
         
@@ -131,7 +147,7 @@ public class EmailParser {
      * @param data Senders string
      * @return List of Sender elements
      */
-    private static List<Sender> parseSenders(String data) {
+    private List<Sender> parseSenders(String data) {
         List<Sender> senders = new ArrayList<>();
         String[] addresses = data.split(",");
         
@@ -148,7 +164,7 @@ public class EmailParser {
      * @param data Received data string
      * @return List of ReceivedInfo elements
      */
-    private static List<ReceivedInfo> parseReceivedData(String data) {
+    private List<ReceivedInfo> parseReceivedData(String data) {
         List<ReceivedInfo> elements = new ArrayList<>();
         
         // Extract IP hostnames
@@ -176,14 +192,6 @@ public class EmailParser {
             elements.add(new ReceivedInfo("mapi_id", mapiMatcher.group(1), null));
         }
 
-        // Extract datetime
-        Matcher dtMatcher = DATETIME_PATTERN.matcher(data);
-        if (dtMatcher.find()) {
-            String dtStr = dtMatcher.group();
-            ZonedDateTime dt = ZonedDateTime.parse(dtStr, DateTimeFormatter.RFC_1123_DATE_TIME);
-            elements.add(new ReceivedInfo("received_datetimetz", dtStr, dt));
-        }
-
         return elements;
     }
 
@@ -192,147 +200,131 @@ public class EmailParser {
      * @param data Email address string
      * @return Array containing [name, email]
      */
-    private static String[] parseEmailAddress(String data) {
-        Matcher matcher = EMAIL_PATTERN.matcher(data);
-        String email = matcher.find() ? matcher.group(1) : data;
-        String name = data.split(Pattern.quote(email))[0].trim();
-        name = name.replace("<", "").replace(">", "");
-        
-        if (name.isEmpty()) {
-            name = email.split("@")[0];
+    private String[] parseEmailAddress(String data) {
+        try {
+            // Handle Base64 encoded name
+            if (data.contains("=?utf-8?B?")) {
+                // Extract email address first
+                Matcher matcher = EMAIL_PATTERN.matcher(data);
+                String email = matcher.find() ? matcher.group(1) : data;
+                
+                // Extract and decode Base64 name
+                String encodedPart = data.substring(data.indexOf("=?utf-8?B?") + 10, data.indexOf("?="));
+                String name = new String(Base64.getDecoder().decode(encodedPart), StandardCharsets.UTF_8);
+                
+                return new String[]{name, email};
+            }
+            
+            // Handle normal email address format
+            Matcher matcher = EMAIL_PATTERN.matcher(data);
+            if (matcher.find()) {
+                // Email with angle brackets
+                String email = matcher.group(1);
+                String name = data.substring(0, data.indexOf("<")).trim();
+                if (name.isEmpty()) {
+                    name = email.split("@")[0];
+                }
+                return new String[]{StringUtils.capitalize(name.toLowerCase()), email};
+            } else {
+                // Plain email address without name
+                String email = data.trim();
+                String name = email.split("@")[0];
+                return new String[]{StringUtils.capitalize(name), email};
+            }
+        } catch (Exception e) {
+            log.warn("Failed to parse email address: " + data, e);
+            // If parsing fails, try to extract just the email address
+            try {
+                String email = data.trim();
+                if (email.contains("@")) {
+                    String name = email.split("@")[0];
+                    return new String[]{StringUtils.capitalize(name), email};
+                }
+            } catch (Exception ex) {
+                log.error("Failed to extract email from: " + data, ex);
+            }
+            // Return a default value in case of parsing error
+            return new String[]{"Unknown", data};
         }
-        
-        return new String[]{StringUtils.capitalize(name.toLowerCase()), email};
     }
 
     /**
-     * Extract attachments from email message
-     * @param message The email message
-     * @param outputDir Output directory for attachments
-     * @return List of attachment information
+     * Get email content in HTML or plain text format
+     * @param part The email part
+     * @param preferHtml Whether to prefer HTML content over plain text
+     * @return Email content
      */
-    public static List<AttachmentInfo> extractAttachments(MimeMessage message, File outputDir) throws MessagingException, IOException {
-        List<AttachmentInfo> attachments = new ArrayList<>();
+    public String getEmailContent(Part part, boolean preferHtml) throws MessagingException, IOException {
+        String htmlContent = null;
+        String textContent = null;
         
-        Object content = message.getContent();
-        if (content instanceof Multipart) {
+        Object content = part.getContent();
+        if (content instanceof String) {
+            // Check if content is HTML
+            String contentType = part.getContentType().toLowerCase();
+            if (contentType.contains("text/html")) {
+                htmlContent = (String) content;
+            } else {
+                textContent = (String) content;
+            }
+        }
+        else if (content instanceof Multipart) {
             Multipart multipart = (Multipart) content;
             for (int i = 0; i < multipart.getCount(); i++) {
-                Part part = multipart.getBodyPart(i);
-                if (Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition())) {
-                    String filename = part.getFileName();
-                    if (filename == null) {
-                        filename = "attachment_" + i;
-                    }
-                    
-                    // Save attachment to file
-                    File file = new File(outputDir, filename);
-                    try (InputStream is = part.getInputStream()) {
-                        org.apache.commons.io.FileUtils.copyInputStreamToFile(is, file);
-                    }
-                    
-                    // Create attachment info
-                    AttachmentInfo info = new AttachmentInfo();
-                    info.setFilename(filename);
-                    info.setContentType(part.getContentType());
-                    info.setSize(part.getSize());
-                    attachments.add(info);
+                Part bodyPart = multipart.getBodyPart(i);
+                String contentType = bodyPart.getContentType().toLowerCase();
+                
+                if (contentType.contains("text/html")) {
+                    htmlContent = new String(bodyPart.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                }
+                else if (contentType.contains("text/plain")) {
+                    textContent = new String(bodyPart.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
                 }
             }
         }
         
-        return attachments;
+        // Parse HTML content if available and preferred
+        if (htmlContent != null && (preferHtml || textContent == null)) {
+            return parseHtmlContent(htmlContent);
+        }
+        
+        // Return plain text if available
+        if (textContent != null) {
+            return textContent;
+        }
+        
+        // If no text content but have HTML, parse it
+        if (htmlContent != null) {
+            return parseHtmlContent(htmlContent);
+        }
+        
+        return "";
     }
 
     /**
      * Get email content in HTML or plain text format
      * @param message The email message
      * @param preferHtml Whether to prefer HTML content over plain text
-     * @return The email content
+     * @return Email content
      */
-    public static String getEmailContent(MimeMessage message, boolean preferHtml) throws MessagingException, IOException {
-        Object content = message.getContent();
-        
-        if (content instanceof String) {
-            return (String) content;
-        }
-        else if (content instanceof Multipart) {
-            Multipart multipart = (Multipart) content;
-            String htmlContent = null;
-            String textContent = null;
-            
-            // Find HTML and text content
-            for (int i = 0; i < multipart.getCount(); i++) {
-                Part part = multipart.getBodyPart(i);
-                String contentType = part.getContentType().toLowerCase();
-                
-                if (contentType.contains("text/html")) {
-                    htmlContent = new String(part.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-                }
-                else if (contentType.contains("text/plain")) {
-                    textContent = new String(part.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-                }
-            }
-            
-            // Return preferred content type
-            if (preferHtml && htmlContent != null) {
-                // Parse HTML content using BsHtmlDocumentParser
-                try (InputStream is = new ByteArrayInputStream(htmlContent.getBytes(StandardCharsets.UTF_8))) {
-                    List<Document> docs = HTML_PARSER.parse(is);
-                    if (!docs.isEmpty()) {
-                        return docs.get(0).getContent();
-                    }
-                }
-                return htmlContent;
-            }
-            else if (textContent != null) {
-                return textContent;
-            }
-            else if (htmlContent != null) {
-                // Parse HTML content using BsHtmlDocumentParser
-                try (InputStream is = new ByteArrayInputStream(htmlContent.getBytes(StandardCharsets.UTF_8))) {
-                    List<Document> docs = HTML_PARSER.parse(is);
-                    if (!docs.isEmpty()) {
-                        return docs.get(0).getContent();
-                    }
-                }
-                return htmlContent;
+    public String getEmailContent(MimeMessage message, boolean preferHtml) throws MessagingException, IOException {
+        return getEmailContent((Part) message, preferHtml);
+    }
+
+    /**
+     * Parse HTML content using BsHtmlDocumentParser
+     * @param htmlContent HTML content to parse
+     * @return Parsed text content
+     */
+    private String parseHtmlContent(String htmlContent) throws IOException {
+        try (InputStream is = new ByteArrayInputStream(htmlContent.getBytes(StandardCharsets.UTF_8))) {
+            List<Document> docs = htmlParser.parse(is);
+            if (!docs.isEmpty()) {
+                return docs.get(0).getContent();
             }
         }
-        
-        return "";
+        return htmlContent;
     }
 }
 
-/**
- * Class to hold attachment information
- */
-class AttachmentInfo {
-    private String filename;
-    private String contentType;
-    private int size;
 
-    public String getFilename() {
-        return filename;
-    }
-
-    public void setFilename(String filename) {
-        this.filename = filename;
-    }
-
-    public String getContentType() {
-        return contentType;
-    }
-
-    public void setContentType(String contentType) {
-        this.contentType = contentType;
-    }
-
-    public int getSize() {
-        return size;
-    }
-
-    public void setSize(int size) {
-        this.size = size;
-    }
-} 
