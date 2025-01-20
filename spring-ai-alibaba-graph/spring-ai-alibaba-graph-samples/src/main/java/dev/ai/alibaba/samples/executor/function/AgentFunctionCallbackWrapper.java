@@ -11,7 +11,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.TypeResolverHelper;
 import org.springframework.util.Assert;
 
@@ -39,7 +39,7 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 	private final BiFunction<I, ToolContext, O> biFunction;
 
 	protected AgentFunctionCallbackWrapper(String name, String description, String inputTypeSchema, Class<I> inputType,
-			Function<O, String> responseConverter, ObjectMapper objectMapper, BiFunction<I, ToolContext, O> function) {
+										   Function<O, String> responseConverter, ObjectMapper objectMapper, BiFunction<I, ToolContext, O> function) {
 		Assert.notNull(name, "Name must not be null");
 		Assert.notNull(description, "Description must not be null");
 		Assert.notNull(inputType, "InputType must not be null");
@@ -66,12 +66,14 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 		}
 	}
 
+	@Override
 	public String call(String functionInput, ToolContext toolContext) {
 		I request = fromJson(functionInput, inputType);
 		O response = apply(request, toolContext);
 		return this.responseConverter.apply(response);
 	}
 
+	@Override
 	public String call(String functionArguments) {
 		I request = fromJson(functionArguments, inputType);
 		return andThen(responseConverter).apply(request, null);
@@ -86,13 +88,14 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 		}
 	}
 
+	@Override
 	public O apply(I input, ToolContext context) {
 		return biFunction.apply(input, context);
 	}
 
 	private static <I, O> Class<O> resolveOutputType(BiFunction<I, ToolContext, O> biFunction) {
 		return (Class<O>) TypeResolverHelper
-			.getBiFunctionArgumentClass((Class<? extends BiFunction<?, ?, ?>>) biFunction.getClass(), 2);
+				.getBiFunctionArgumentClass((Class<? extends BiFunction<?, ?, ?>>) biFunction.getClass(), 2);
 	}
 
 	public static <I, O> Builder<I, O> builder(BiFunction<I, ToolContext, O> biFunction) {
@@ -115,7 +118,7 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 
 		private final Function<I, O> function;
 
-		private FunctionCallbackContext.SchemaType schemaType;
+		private FunctionCallback.SchemaType schemaType;
 
 		private Function<O, String> responseConverter;
 
@@ -124,22 +127,22 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 		private ObjectMapper objectMapper;
 
 		public Builder(BiFunction<I, ToolContext, O> biFunction) {
-			this.schemaType = FunctionCallbackContext.SchemaType.JSON_SCHEMA;
+			this.schemaType = FunctionCallback.SchemaType.JSON_SCHEMA;
 			this.responseConverter = ModelOptionsUtils::toJsonString;
 			this.objectMapper = (new ObjectMapper()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-				.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-				.registerModule(new JavaTimeModule());
+					.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+					.registerModule(new JavaTimeModule());
 			Assert.notNull(biFunction, "Function must not be null");
 			this.biFunction = biFunction;
 			this.function = null;
 		}
 
 		public Builder(Function<I, O> function) {
-			this.schemaType = FunctionCallbackContext.SchemaType.JSON_SCHEMA;
+			this.schemaType = FunctionCallback.SchemaType.JSON_SCHEMA;
 			this.responseConverter = ModelOptionsUtils::toJsonString;
 			this.objectMapper = (new ObjectMapper()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-				.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-				.registerModule(new JavaTimeModule());
+					.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+					.registerModule(new JavaTimeModule());
 			Assert.notNull(function, "Function must not be null");
 			this.biFunction = null;
 			this.function = function;
@@ -180,7 +183,7 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 			return this;
 		}
 
-		public Builder<I, O> withSchemaType(FunctionCallbackContext.SchemaType schemaType) {
+		public Builder<I, O> withSchemaType(FunctionCallback.SchemaType schemaType) {
 			Assert.notNull(schemaType, "SchemaType must not be null");
 			this.schemaType = schemaType;
 			return this;
@@ -201,7 +204,7 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 			}
 
 			if (inputTypeSchema == null) {
-				boolean upperCaseTypeValues = schemaType == FunctionCallbackContext.SchemaType.OPEN_API_SCHEMA;
+				boolean upperCaseTypeValues = schemaType == FunctionCallback.SchemaType.OPEN_API_SCHEMA;
 				inputTypeSchema = ModelOptionsUtils.getJsonSchema(inputType, upperCaseTypeValues);
 			}
 
@@ -214,12 +217,12 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 
 		private static <I, O> Class<I> resolveInputType(BiFunction<I, ToolContext, O> biFunction) {
 			return (Class<I>) TypeResolverHelper
-				.getBiFunctionInputClass((Class<? extends BiFunction<?, ?, ?>>) biFunction.getClass());
+					.getBiFunctionInputClass((Class<? extends BiFunction<?, ?, ?>>) biFunction.getClass());
 		}
 
 		private static <I, O> Class<I> resolveInputType(Function<I, O> function) {
 			return (Class<I>) TypeResolverHelper
-				.getFunctionInputClass((Class<? extends Function<?, ?>>) function.getClass());
+					.getFunctionInputClass((Class<? extends Function<?, ?>>) function.getClass());
 		}
 
 	}
