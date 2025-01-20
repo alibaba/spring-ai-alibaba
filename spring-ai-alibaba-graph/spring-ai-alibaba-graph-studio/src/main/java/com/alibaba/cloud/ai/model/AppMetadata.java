@@ -10,18 +10,20 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class AppMetadata {
 
-	public static final String CHATBOT_MODE = "chatbot";
+    public static final String CHATBOT_MODE = "chatbot";
 
-	public static final String WORKFLOW_MODE = "workflow";
+    public static final String AGENT_MODE = "agent";
 
-	public static final String[] SUPPORT_MODES = { CHATBOT_MODE, WORKFLOW_MODE };
+    public static final String WORKFLOW_MODE = "workflow";
 
-	private String id;
+    public static final String[] SUPPORT_MODES = {CHATBOT_MODE, WORKFLOW_MODE, AGENT_MODE};
 
-	private String name;
+    private String id;
 
-	private String description;
+    private String name;
 
-	private String mode;
+    private String description;
+
+    private String mode;
 
 }
