@@ -10,7 +10,6 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import java.util.function.Supplier;
 
 /**
- *
  * @author Dolphin
  * @version V1.0
  * @date 2025/1/2 19:43
@@ -19,8 +18,13 @@ import java.util.function.Supplier;
 @Data
 @Accessors(chain = true)
 public class DocumentRetrieverNodeActionDescriptor extends NodeActionDescriptor {
-    private VectorStore vectorStore;
-    private Double similarityThreshold;
-    private Integer topK;
-    private Supplier<Filter.Expression> filterExpression;
+
+	private VectorStore vectorStore;
+
+	private Double similarityThreshold;
+
+	private Integer topK;
+
+	private Supplier<Filter.Expression> filterExpression;
+
 }

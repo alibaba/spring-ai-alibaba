@@ -18,83 +18,91 @@ import java.util.function.Supplier;
 
 /**
  * DocumentRetrieverNodeAction is responsible for retrieving documents based on a query.
+ *
  * @author Dolphin
  * @version V1.0
  * @date 2024/12/3 15:51
  */
 public class DocumentRetrieverNodeAction extends AbstractNode implements NodeAction {
-    public static final String QUERY_KEY = "query";
-    public static final String RETRIEVED_DOCUMENTS_KEY = "retrievedDocuments";
 
-    private final VectorStoreDocumentRetriever documentRetriever;
+	public static final String QUERY_KEY = "query";
 
-    private NodeActionDescriptor nodeActionDescriptor;
+	public static final String RETRIEVED_DOCUMENTS_KEY = "retrievedDocuments";
 
-    public DocumentRetrieverNodeAction(VectorStore vectorStore, Double similarityThreshold,
-                                       Integer topK, Supplier<Filter.Expression> filterExpression,
-                                       NodeActionDescriptor nodeActionDescriptor) {
-        this.documentRetriever = new VectorStoreDocumentRetriever(vectorStore, similarityThreshold,
-                topK, filterExpression);
-        this.nodeActionDescriptor = nodeActionDescriptor;
-    }
+	private final VectorStoreDocumentRetriever documentRetriever;
 
-    @Override
-    public Map<String, Object> apply(NodeState state) throws Exception {
-        Optional<Object> queryOptional = state.value(QUERY_KEY);
-        if (!queryOptional.isPresent()) {
-            throw new GraphRunnerException("Query cannot be null");
-        }
+	private NodeActionDescriptor nodeActionDescriptor;
 
-        String queryStr = queryOptional.map(Object::toString).orElse(null);
-        Query query = new Query(queryStr);
+	public DocumentRetrieverNodeAction(VectorStore vectorStore, Double similarityThreshold, Integer topK,
+			Supplier<Filter.Expression> filterExpression, NodeActionDescriptor nodeActionDescriptor) {
+		this.documentRetriever = new VectorStoreDocumentRetriever(vectorStore, similarityThreshold, topK,
+				filterExpression);
+		this.nodeActionDescriptor = nodeActionDescriptor;
+	}
 
-        List<Document> retrievedDocuments = documentRetriever.retrieve(query);
+	@Override
+	public Map<String, Object> apply(NodeState state) throws Exception {
+		Optional<Object> queryOptional = state.value(QUERY_KEY);
+		if (!queryOptional.isPresent()) {
+			throw new GraphRunnerException("Query cannot be null");
+		}
 
-        return Map.of(RETRIEVED_DOCUMENTS_KEY, retrievedDocuments);
-    }
+		String queryStr = queryOptional.map(Object::toString).orElse(null);
+		Query query = new Query(queryStr);
 
-    public static Builder builder() {
-        return new Builder();
-    }
+		List<Document> retrievedDocuments = documentRetriever.retrieve(query);
 
-    public static class Builder {
-        private VectorStore vectorStore;
-        private Double similarityThreshold;
-        private Integer topK;
-        private Supplier<Filter.Expression> filterExpression;
+		return Map.of(RETRIEVED_DOCUMENTS_KEY, retrievedDocuments);
+	}
 
-        private DocumentRetrieverNodeActionDescriptor nodeActionDescriptor;
+	public static Builder builder() {
+		return new Builder();
+	}
 
-        public Builder() {
-            this.nodeActionDescriptor = new DocumentRetrieverNodeActionDescriptor();
-        }
+	public static class Builder {
 
-        public Builder withVectorStore(VectorStore vectorStore) {
-            this.vectorStore = vectorStore;
-            return this;
-        }
+		private VectorStore vectorStore;
 
-        public Builder withSimilarityThreshold(Double similarityThreshold) {
-            this.similarityThreshold = similarityThreshold;
-            this.nodeActionDescriptor.setSimilarityThreshold(similarityThreshold);
-            return this;
-        }
+		private Double similarityThreshold;
 
-        public Builder withTopK(Integer topK) {
-            this.topK = topK;
-            this.nodeActionDescriptor.setTopK(topK);
-            return this;
-        }
+		private Integer topK;
 
-        public Builder withFilterExpression(Supplier<Filter.Expression> filterExpression) {
-            this.filterExpression = filterExpression;
-            this.nodeActionDescriptor.setFilterExpression(filterExpression);
-            return this;
-        }
+		private Supplier<Filter.Expression> filterExpression;
 
-        public DocumentRetrieverNodeAction build() {
-            return new DocumentRetrieverNodeAction(vectorStore, similarityThreshold,
-                    topK, filterExpression, nodeActionDescriptor);
-        }
-    }
+		private DocumentRetrieverNodeActionDescriptor nodeActionDescriptor;
+
+		public Builder() {
+			this.nodeActionDescriptor = new DocumentRetrieverNodeActionDescriptor();
+		}
+
+		public Builder withVectorStore(VectorStore vectorStore) {
+			this.vectorStore = vectorStore;
+			return this;
+		}
+
+		public Builder withSimilarityThreshold(Double similarityThreshold) {
+			this.similarityThreshold = similarityThreshold;
+			this.nodeActionDescriptor.setSimilarityThreshold(similarityThreshold);
+			return this;
+		}
+
+		public Builder withTopK(Integer topK) {
+			this.topK = topK;
+			this.nodeActionDescriptor.setTopK(topK);
+			return this;
+		}
+
+		public Builder withFilterExpression(Supplier<Filter.Expression> filterExpression) {
+			this.filterExpression = filterExpression;
+			this.nodeActionDescriptor.setFilterExpression(filterExpression);
+			return this;
+		}
+
+		public DocumentRetrieverNodeAction build() {
+			return new DocumentRetrieverNodeAction(vectorStore, similarityThreshold, topK, filterExpression,
+					nodeActionDescriptor);
+		}
+
+	}
+
 }
