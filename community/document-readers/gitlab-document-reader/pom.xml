@@ -26,9 +26,9 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>document-parser-bshtml</artifactId>
-    <name>document-parser-bshtml</name>
-    <description>document-parser-bshtml for Spring AI Alibaba</description>
+    <artifactId>gitlab-document-reader</artifactId>
+    <name>gitlab-document-reader</name>
+    <description>gitlab reader for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
@@ -41,10 +41,11 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jsoup.version>1.18.1</jsoup.version>
+        <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
     </properties>
 
     <dependencies>
+
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-core</artifactId>
@@ -52,9 +53,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.jsoup</groupId>
-            <artifactId>jsoup</artifactId>
-            <version>${jsoup.version}</version>
+            <groupId>org.gitlab4j</groupId>
+            <artifactId>gitlab4j-api</artifactId>
+            <version>6.0.0-rc.8</version>
         </dependency>
 
         <!-- test dependencies -->
@@ -71,17 +72,46 @@
         </dependency>
 
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-test</artifactId>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-observation-test</artifactId>
             <scope>test</scope>
         </dependency>
 
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>${maven-deploy-plugin.version}</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <repositories>
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
 </project>
