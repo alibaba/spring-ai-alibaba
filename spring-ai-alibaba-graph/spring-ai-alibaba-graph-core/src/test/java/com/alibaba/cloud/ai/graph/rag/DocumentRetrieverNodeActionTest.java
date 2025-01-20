@@ -33,139 +33,141 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ
 
 class DocumentRetrieverNodeActionTest {
 
-    static class MockState extends NodeState {
+	static class MockState extends NodeState {
 
-        /**
-         * Constructs an AgentState with the given initial data.
-         *
-         * @param initData the initial data for the agent state
-         */
-        public MockState(Map<String, Object> initData) {
-            super(initData);
-        }
-    }
+		/**
+		 * Constructs an AgentState with the given initial data.
+		 * @param initData the initial data for the agent state
+		 */
+		public MockState(Map<String, Object> initData) {
+			super(initData);
+		}
 
-    @Test
-    void testApplyWithValidQuery() throws Exception {
-        Map<String, Object> initData = Map.of(DocumentRetrieverNodeAction.QUERY_KEY, "test query");
-        MockState mockState = new MockState(initData);
+	}
 
-        var mockVectorStore = mock(VectorStore.class);
-        DocumentRetrieverNodeAction nodeAction = DocumentRetrieverNodeAction.builder()
-                .withVectorStore(mockVectorStore)
-                .withSimilarityThreshold(0.7)
-                .withTopK(3)
-                .build();
-        Map<String, Object> result = nodeAction.apply(mockState);
-        assertEquals(1, result.size());
-        for (String outputKey : result.keySet()) {
-            assertEquals("retrievedDocuments", outputKey);
-        }
-        System.out.println(result);
-    }
+	@Test
+	void testApplyWithValidQuery() throws Exception {
+		Map<String, Object> initData = Map.of(DocumentRetrieverNodeAction.QUERY_KEY, "test query");
+		MockState mockState = new MockState(initData);
 
-    @Test
-    void testApplyWithDashScope() throws Exception {
-        DashScopeApi dashScopeApi = new DashScopeApi("sk-ee4f3c63b69348958a824cc7aecefdd6");
-        String filePath = "C:\\Users\\dolphin\\AppData\\Local\\Temp\\06- Spring AI 1.0.0 M5 升级.pdf";
-        DashScopeDocumentCloudReader cloudReader = new DashScopeDocumentCloudReader(filePath, dashScopeApi, null);
-        List<Document> documentList = cloudReader.get();
+		var mockVectorStore = mock(VectorStore.class);
+		DocumentRetrieverNodeAction nodeAction = DocumentRetrieverNodeAction.builder()
+			.withVectorStore(mockVectorStore)
+			.withSimilarityThreshold(0.7)
+			.withTopK(3)
+			.build();
+		Map<String, Object> result = nodeAction.apply(mockState);
+		assertEquals(1, result.size());
+		for (String outputKey : result.keySet()) {
+			assertEquals("retrievedDocuments", outputKey);
+		}
+		System.out.println(result);
+	}
 
-        DashScopeCloudStore dashScopeCloudStore = new DashScopeCloudStore(dashScopeApi, new DashScopeStoreOptions("test index"));
-        dashScopeCloudStore.add(documentList);
+	@Test
+	void testApplyWithDashScope() throws Exception {
+		DashScopeApi dashScopeApi = new DashScopeApi("sk-ee4f3c63b69348958a824cc7aecefdd6");
+		String filePath = "C:\\Users\\dolphin\\AppData\\Local\\Temp\\06- Spring AI 1.0.0 M5 升级.pdf";
+		DashScopeDocumentCloudReader cloudReader = new DashScopeDocumentCloudReader(filePath, dashScopeApi, null);
+		List<Document> documentList = cloudReader.get();
 
-        Map<String, Object> initData = Map.of(DocumentRetrieverNodeAction.QUERY_KEY, "M5");
-        MockState mockState = new MockState(initData);
-        DocumentRetrieverNodeAction nodeAction = DocumentRetrieverNodeAction.builder()
-                .withVectorStore(dashScopeCloudStore)
-                .withSimilarityThreshold(0.7)
-                .withTopK(3)
-                .build();
-        Map<String, Object> result = nodeAction.apply(mockState);
-        for (String outputKey : result.keySet()) {
-            assertEquals("retrievedDocuments", outputKey);
-        }
-        System.out.println(result);
-    }
+		DashScopeCloudStore dashScopeCloudStore = new DashScopeCloudStore(dashScopeApi,
+				new DashScopeStoreOptions("test index"));
+		dashScopeCloudStore.add(documentList);
 
-    @Test
-    void testApplyWithInvalidQuery() {
-        Map<String, Object> initData = new HashMap<>();
-        NodeState mockState = new MockState(initData);
-        var mockVectorStore = mock(VectorStore.class);
+		Map<String, Object> initData = Map.of(DocumentRetrieverNodeAction.QUERY_KEY, "M5");
+		MockState mockState = new MockState(initData);
+		DocumentRetrieverNodeAction nodeAction = DocumentRetrieverNodeAction.builder()
+			.withVectorStore(dashScopeCloudStore)
+			.withSimilarityThreshold(0.7)
+			.withTopK(3)
+			.build();
+		Map<String, Object> result = nodeAction.apply(mockState);
+		for (String outputKey : result.keySet()) {
+			assertEquals("retrievedDocuments", outputKey);
+		}
+		System.out.println(result);
+	}
 
-        DocumentRetrieverNodeAction nodeAction = DocumentRetrieverNodeAction.builder()
-                .withVectorStore(mockVectorStore)
-                .withSimilarityThreshold(0.7)
-                .withTopK(3)
-                .build();
+	@Test
+	void testApplyWithInvalidQuery() {
+		Map<String, Object> initData = new HashMap<>();
+		NodeState mockState = new MockState(initData);
+		var mockVectorStore = mock(VectorStore.class);
 
-        Exception exception = assertThrows(GraphRunnerException.class, () -> nodeAction.apply(mockState));
-        assertThat(exception.getMessage()).isEqualTo("Query cannot be null");
-    }
+		DocumentRetrieverNodeAction nodeAction = DocumentRetrieverNodeAction.builder()
+			.withVectorStore(mockVectorStore)
+			.withSimilarityThreshold(0.7)
+			.withTopK(3)
+			.build();
 
-    @Test
-    void testBuilderWithSimilarityThreshold() {
-        assertThatThrownBy(() ->
-            DocumentRetrieverNodeAction.builder()
-                    .withSimilarityThreshold(-0.1)
-                    .withVectorStore(mock(VectorStore.class))
-                    .build())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("similarityThreshold must be equal to or greater than 0.0");
-    }
+		Exception exception = assertThrows(GraphRunnerException.class, () -> nodeAction.apply(mockState));
+		assertThat(exception.getMessage()).isEqualTo("Query cannot be null");
+	}
 
-    @Test
-    void testBuilderWithFilterExpressions() throws Exception {
-        var mockVectorStore = mock(VectorStore.class);
-        var nodeAction = DocumentRetrieverNodeAction.builder()
-                .withVectorStore(mockVectorStore)
-                .withFilterExpression(
-                        () -> new FilterExpressionBuilder().eq("tenantId", TenantContextHolder.getTenantIdentifier())
-                                .build())
-                .build();
+	@Test
+	void testBuilderWithSimilarityThreshold() {
+		assertThatThrownBy(() -> DocumentRetrieverNodeAction.builder()
+			.withSimilarityThreshold(-0.1)
+			.withVectorStore(mock(VectorStore.class))
+			.build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("similarityThreshold must be equal to or greater than 0.0");
+	}
 
-        Map<String, Object> initData = Map.of(DocumentRetrieverNodeAction.QUERY_KEY, "query");
-        MockState mockState = new MockState(initData);
+	@Test
+	void testBuilderWithFilterExpressions() throws Exception {
+		var mockVectorStore = mock(VectorStore.class);
+		var nodeAction = DocumentRetrieverNodeAction.builder()
+			.withVectorStore(mockVectorStore)
+			.withFilterExpression(
+					() -> new FilterExpressionBuilder().eq("tenantId", TenantContextHolder.getTenantIdentifier())
+						.build())
+			.build();
 
-        TenantContextHolder.setTenantIdentifier("tenant1");
-        nodeAction.apply(mockState);
-        TenantContextHolder.clear();
+		Map<String, Object> initData = Map.of(DocumentRetrieverNodeAction.QUERY_KEY, "query");
+		MockState mockState = new MockState(initData);
 
-        TenantContextHolder.setTenantIdentifier("tenant2");
-        nodeAction.apply(mockState);
-        TenantContextHolder.clear();
+		TenantContextHolder.setTenantIdentifier("tenant1");
+		nodeAction.apply(mockState);
+		TenantContextHolder.clear();
 
-        var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+		TenantContextHolder.setTenantIdentifier("tenant2");
+		nodeAction.apply(mockState);
+		TenantContextHolder.clear();
 
-        verify(mockVectorStore, new Times(2)).similaritySearch(searchRequestCaptor.capture());
+		var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
 
-        var searchRequest1 = searchRequestCaptor.getAllValues().get(0);
-        assertThat(searchRequest1.getFilterExpression())
-                .isEqualTo(new Filter.Expression(EQ, new Filter.Key("tenantId"), new Filter.Value("tenant1")));
+		verify(mockVectorStore, new Times(2)).similaritySearch(searchRequestCaptor.capture());
 
-        var searchRequest2 = searchRequestCaptor.getAllValues().get(1);
-        assertThat(searchRequest2.getFilterExpression())
-                .isEqualTo(new Filter.Expression(EQ, new Filter.Key("tenantId"), new Filter.Value("tenant2")));
-    }
+		var searchRequest1 = searchRequestCaptor.getAllValues().get(0);
+		assertThat(searchRequest1.getFilterExpression())
+			.isEqualTo(new Filter.Expression(EQ, new Filter.Key("tenantId"), new Filter.Value("tenant1")));
 
-    static final class TenantContextHolder {
-        private static final ThreadLocal<String> TENANT_IDENTIFIER = new ThreadLocal<>();
+		var searchRequest2 = searchRequestCaptor.getAllValues().get(1);
+		assertThat(searchRequest2.getFilterExpression())
+			.isEqualTo(new Filter.Expression(EQ, new Filter.Key("tenantId"), new Filter.Value("tenant2")));
+	}
 
-        private TenantContextHolder() {
-        }
+	static final class TenantContextHolder {
 
-        public static void setTenantIdentifier(String tenant) {
-            Assert.hasText(tenant, "tenant cannot be null or empty");
-            TENANT_IDENTIFIER.set(tenant);
-        }
+		private static final ThreadLocal<String> TENANT_IDENTIFIER = new ThreadLocal<>();
 
-        public static String getTenantIdentifier() {
-            return TENANT_IDENTIFIER.get();
-        }
+		private TenantContextHolder() {
+		}
 
-        public static void clear() {
-            TENANT_IDENTIFIER.remove();
-        }
-    }
+		public static void setTenantIdentifier(String tenant) {
+			Assert.hasText(tenant, "tenant cannot be null or empty");
+			TENANT_IDENTIFIER.set(tenant);
+		}
+
+		public static String getTenantIdentifier() {
+			return TENANT_IDENTIFIER.get();
+		}
+
+		public static void clear() {
+			TENANT_IDENTIFIER.remove();
+		}
+
+	}
+
 }
