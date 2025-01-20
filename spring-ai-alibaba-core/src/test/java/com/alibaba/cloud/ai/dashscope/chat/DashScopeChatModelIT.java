@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.dashscope.chat;
 
 import java.net.MalformedURLException;
@@ -27,11 +42,11 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.function.FunctionCallbackWrapper;
-import org.springframework.ai.parser.BeanOutputParser;
-import org.springframework.ai.parser.ListOutputParser;
-import org.springframework.ai.parser.MapOutputParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,10 +55,11 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
 
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DASHSCOPE_API_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = DashscopeAiTestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = DASHSCOPE_API_KEY, matches = ".+")
 @EnabledIfEnvironmentVariable(named = "DASHSCOPE_HTTP_BASE_URL", matches = ".+")
 public class DashScopeChatModelIT {
 
@@ -96,9 +112,9 @@ public class DashScopeChatModelIT {
 	@Test
 	void outputParser() {
 		DefaultConversionService conversionService = new DefaultConversionService();
-		ListOutputParser outputParser = new ListOutputParser(conversionService);
+		ListOutputConverter outputConverter = new ListOutputConverter(conversionService);
 
-		String format = outputParser.getFormat();
+		String format = outputConverter.getFormat();
 		String template = """
 				List five {subject}
 				{format}
@@ -108,16 +124,16 @@ public class DashScopeChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		org.springframework.ai.chat.model.Generation generation = this.dashscopeChatModel.call(prompt).getResult();
 
-		List<String> list = outputParser.parse(generation.getOutput().getContent());
+		List<String> list = outputConverter.convert(generation.getOutput().getContent());
 		assertThat(list).hasSize(5);
 
 	}
 
 	@Test
 	void mapOutputParser() {
-		MapOutputParser outputParser = new MapOutputParser();
+		MapOutputConverter mapOutputConverter = new MapOutputConverter();
 
-		String format = outputParser.getFormat();
+		String format = mapOutputConverter.getFormat();
 		String template = """
 				Provide me a List of {subject}
 				{format}
@@ -128,7 +144,7 @@ public class DashScopeChatModelIT {
 		org.springframework.ai.chat.model.Generation generation = dashscopeChatModel.call(prompt).getResult();
 		String generationText = generation.getOutput().getContent().replace("```json", "").replace("```", "");
 
-		Map<String, Object> result = outputParser.parse(generationText);
+		Map<String, Object> result = mapOutputConverter.convert(generationText);
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -136,7 +152,7 @@ public class DashScopeChatModelIT {
 	@Test
 	void beanStreamOutputParserRecords() {
 
-		BeanOutputParser<ActorsFilmsRecord> outputParser = new BeanOutputParser<>(ActorsFilmsRecord.class);
+		BeanOutputConverter<ActorsFilmsRecord> outputParser = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
 		String format = outputParser.getFormat();
 		String template = """
@@ -157,7 +173,7 @@ public class DashScopeChatModelIT {
 			.collect(Collectors.joining());
 		generationTextFromStream = generationTextFromStream.replace("```json", "").replace("```", "");
 
-		ActorsFilmsRecord actorsFilms = outputParser.parse(generationTextFromStream);
+		ActorsFilmsRecord actorsFilms = outputParser.convert(generationTextFromStream);
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -224,7 +240,7 @@ public class DashScopeChatModelIT {
 	@Test
 	void usageInStream() {
 		DefaultConversionService conversionService = new DefaultConversionService();
-		ListOutputParser outputParser = new ListOutputParser(conversionService);
+		ListOutputConverter outputParser = new ListOutputConverter(conversionService);
 
 		String format = outputParser.getFormat();
 		String template = """
