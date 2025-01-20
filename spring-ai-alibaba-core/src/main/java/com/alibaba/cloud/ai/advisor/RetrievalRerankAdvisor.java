@@ -1,18 +1,18 @@
 /*
-* Copyright 2024 the original author or authors.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      https://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.alibaba.cloud.ai.advisor;
 
@@ -26,7 +26,6 @@ import org.springframework.ai.chat.client.advisor.api.*;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.model.Content;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -91,11 +90,11 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 	public static final String RERANK_SCORE = "rerank_score";
 
 	public RetrievalRerankAdvisor(VectorStore vectorStore, RerankModel rerankModel) {
-		this(vectorStore, rerankModel, SearchRequest.defaults(), DEFAULT_USER_TEXT_ADVISE, DEFAULT_MIN_SCORE);
+		this(vectorStore, rerankModel, SearchRequest.builder().build(), DEFAULT_USER_TEXT_ADVISE, DEFAULT_MIN_SCORE);
 	}
 
 	public RetrievalRerankAdvisor(VectorStore vectorStore, RerankModel rerankModel, Double score) {
-		this(vectorStore, rerankModel, SearchRequest.defaults(), DEFAULT_USER_TEXT_ADVISE, score);
+		this(vectorStore, rerankModel, SearchRequest.builder().build(), DEFAULT_USER_TEXT_ADVISE, score);
 	}
 
 	public RetrievalRerankAdvisor(VectorStore vectorStore, RerankModel rerankModel, SearchRequest searchRequest) {
@@ -209,8 +208,9 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 		String advisedUserText = request.userText() + System.lineSeparator() + this.userTextAdvise;
 
 		var searchRequestToUse = SearchRequest.from(this.searchRequest)
-			.withQuery(request.userText())
-			.withFilterExpression(doGetFilterExpression(context));
+			.query(request.userText())
+			.filterExpression(doGetFilterExpression(context))
+			.build();
 
 		// 2. Search for similar documents in the vector store.
 		logger.debug("searchRequestToUse: {}", searchRequestToUse);
@@ -224,7 +224,7 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 
 		// 4. Create the context from the documents.
 		String documentContext = documents.stream()
-			.map(Content::getContent)
+			.map(Document::getText)
 			.collect(Collectors.joining(System.lineSeparator()));
 
 		// 5. Advise the user parameters.
@@ -232,9 +232,9 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 		advisedUserParams.put("question_answer_context", documentContext);
 
 		return AdvisedRequest.from(request)
-			.withUserText(advisedUserText)
-			.withUserParams(advisedUserParams)
-			.withAdviseContext(context)
+			.userText(advisedUserText)
+			.userParams(advisedUserParams)
+			.adviseContext(context)
 			.build();
 	}
 
@@ -243,19 +243,19 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 		// model, usage, etc. This will
 		// be changed once new version of spring ai core is updated.
 		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder();
-		metadataBuilder.withKeyValue(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
+		metadataBuilder.keyValue(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
 
 		ChatResponseMetadata metadata = advisedResponse.response().getMetadata();
 		if (metadata != null) {
-			metadataBuilder.withId(metadata.getId());
-			metadataBuilder.withModel(metadata.getModel());
-			metadataBuilder.withUsage(metadata.getUsage());
-			metadataBuilder.withPromptMetadata(metadata.getPromptMetadata());
-			metadataBuilder.withRateLimit(metadata.getRateLimit());
+			metadataBuilder.id(metadata.getId());
+			metadataBuilder.model(metadata.getModel());
+			metadataBuilder.usage(metadata.getUsage());
+			metadataBuilder.promptMetadata(metadata.getPromptMetadata());
+			metadataBuilder.rateLimit(metadata.getRateLimit());
 
 			Set<Map.Entry<String, Object>> entries = metadata.entrySet();
 			for (Map.Entry<String, Object> entry : entries) {
-				metadataBuilder.withKeyValue(entry.getKey(), entry.getValue());
+				metadataBuilder.keyValue(entry.getKey(), entry.getValue());
 			}
 		}
 
