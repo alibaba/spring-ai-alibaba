@@ -1,18 +1,18 @@
 /*
-* Copyright 2024 the original author or authors.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      https://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.alibaba.cloud.ai.dashscope.rerank;
 
@@ -55,10 +55,10 @@ public class DashScopeRerankModelTest {
 	void testRerank() {
 		String query = "什么是文本排序模型";
 		List<Document> documents = new ArrayList<>();
-		documents.add(Document.builder().withContent("文本排序模型广泛用于搜索引擎和推荐系统中，它们根据文本相关性对候选文本进行排序").build());
-		documents.add(Document.builder().withContent("量子计算是计算科学的一个前沿领域").build());
-		documents.add(Document.builder().withContent("预训练语言模型的发展给文本排序模型带来了新的进展").build());
-		documents.add(Document.builder().withContent("文本排序模型能够帮助检索增强生成提升效果").build());
+		documents.add(Document.builder().text("文本排序模型广泛用于搜索引擎和推荐系统中，它们根据文本相关性对候选文本进行排序").build());
+		documents.add(Document.builder().text("量子计算是计算科学的一个前沿领域").build());
+		documents.add(Document.builder().text("预训练语言模型的发展给文本排序模型带来了新的进展").build());
+		documents.add(Document.builder().text("文本排序模型能够帮助检索增强生成提升效果").build());
 
 		RerankRequest request = new RerankRequest(query, documents);
 		RerankResponse response = dashscopeRerankModel.call(request);
