@@ -61,7 +61,7 @@ public class LLMNodeActionTest {
 
 	@Test
 	public void testVariableRender() throws Exception {
-		LLMNodeAction node = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("sk-eba9e46456704338bf72c40342b1c9ad ")))
+		LLMNodeAction node = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("${API_KEY}")))
 			.withPromptTemplates(List.of(new SystemPromptTemplate("You're a helpful {type} assistant"),
 					new PromptTemplate("If I step on an ant and kill it, am I breaking the law?")))
 			.build();
