@@ -18,7 +18,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class StateGraphTest {
+public class OverAllStateGraphTest {
     @Test
     public void graphTest() throws Exception {
         //d llm1 -> node2 -> llm2
