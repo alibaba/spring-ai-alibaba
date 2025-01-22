@@ -68,7 +68,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter</artifactId>
+            <artifactId>spring-ai-alibaba-core</artifactId>
             <version>${parent.version}</version>
             <scope>test</scope>
         </dependency>
