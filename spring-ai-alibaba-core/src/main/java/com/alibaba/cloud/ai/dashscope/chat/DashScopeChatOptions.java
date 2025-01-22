@@ -144,6 +144,14 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    */
   private @JsonProperty("multi_model") Boolean multiModel = false;
 
+  /**
+   * If true, the Spring AI will not handle the function calls internally, but will proxy them to the client.
+   * It is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results.
+   * If false, the Spring AI will handle the function calls internally.
+   */
+  @JsonIgnore
+  private Boolean proxyToolCalls;
+
   @NestedConfigurationProperty
   @JsonIgnore
   private Map<String, Object> toolContext;
@@ -272,6 +280,15 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
 
   public void setSeed(Integer seed) {
     this.seed = seed;
+  }
+
+  @Override
+  public Boolean getProxyToolCalls() {
+    return this.proxyToolCalls;
+  }
+
+  public void setProxyToolCalls(Boolean proxyToolCalls) {
+    this.proxyToolCalls = proxyToolCalls;
   }
 
   @Override
@@ -412,6 +429,11 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
       return this;
     }
 
+    public DashscopeChatOptionsBuilder withProxyToolCalls(Boolean proxyToolCalls) {
+      this.options.proxyToolCalls = proxyToolCalls;
+      return this;
+    }
+
     public DashscopeChatOptionsBuilder withSeed(Integer seed) {
       this.options.seed = seed;
       return this;
@@ -465,6 +487,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
         .withTools(fromOptions.getTools())
         .withToolContext(fromOptions.getToolContext())
         .withMultiModel(fromOptions.getMultiModel())
+        .withProxyToolCalls(fromOptions.getProxyToolCalls())
         .withVlHighResolutionImages(fromOptions.getVlHighResolutionImages())
         .build();
   }
@@ -476,13 +499,13 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
 	if (o == null || getClass() != o.getClass()) return false;
 	DashScopeChatOptions that = (DashScopeChatOptions) o;
 
-	return Objects.equals(model, that.model) && Objects.equals(stream, that.stream) && Objects.equals(temperature, that.temperature) && Objects.equals(seed, that.seed) && Objects.equals(topP, that.topP) && Objects.equals(topK, that.topK) && Objects.equals(stop, that.stop) && Objects.equals(enableSearch, that.enableSearch) && Objects.equals(responseFormat, that.responseFormat) && Objects.equals(incrementalOutput, that.incrementalOutput) && Objects.equals(repetitionPenalty, that.repetitionPenalty) && Objects.equals(tools, that.tools) && Objects.equals(toolChoice, that.toolChoice) && Objects.equals(vlHighResolutionImages, that.vlHighResolutionImages) && Objects.equals(functionCallbacks, that.functionCallbacks) && Objects.equals(functions, that.functions) && Objects.equals(multiModel, that.multiModel) && Objects.equals(toolContext, that.toolContext);
+    return Objects.equals(model, that.model) && Objects.equals(stream, that.stream) && Objects.equals(temperature, that.temperature) && Objects.equals(seed, that.seed) && Objects.equals(topP, that.topP) && Objects.equals(topK, that.topK) && Objects.equals(stop, that.stop) && Objects.equals(enableSearch, that.enableSearch) && Objects.equals(responseFormat, that.responseFormat) && Objects.equals(incrementalOutput, that.incrementalOutput) && Objects.equals(repetitionPenalty, that.repetitionPenalty) && Objects.equals(tools, that.tools) && Objects.equals(toolChoice, that.toolChoice) && Objects.equals(vlHighResolutionImages, that.vlHighResolutionImages) && Objects.equals(functionCallbacks, that.functionCallbacks) && Objects.equals(functions, that.functions) && Objects.equals(multiModel, that.multiModel) && Objects.equals(toolContext, that.toolContext) && Objects.equals(proxyToolCalls, that.proxyToolCalls);
   }
 
   @Override
   public int hashCode() {
 
-	return Objects.hash(model, stream, temperature, seed, topP, topK, stop, enableSearch, responseFormat, incrementalOutput, repetitionPenalty, tools, toolChoice, vlHighResolutionImages, functionCallbacks, functions, multiModel, toolContext);
+    return Objects.hash(model, stream, temperature, seed, topP, topK, stop, enableSearch, responseFormat, incrementalOutput, repetitionPenalty, tools, toolChoice, vlHighResolutionImages, functionCallbacks, functions, multiModel, toolContext, proxyToolCalls);
   }
 
   @Override
