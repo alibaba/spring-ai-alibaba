@@ -1,104 +1,128 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.reader.email.msg;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * MSG邮件元素类
- * 用于存储MSG邮件的各种属性，包括主题、发件人、收件人、正文和附件等
+ * MSG Email Element Class Stores the parsed components of an MSG email message
+ *
+ * @author xiadong
+ * @since 2024-01-19
  */
 public class MsgEmailElement {
-    private String subject;
-    private String from;
-    private String to;
-    private String cc;
-    private String bcc;
-    private String textContent;
-    private String htmlContent;
-    private List<Attachment> attachments;
 
-    public String getSubject() {
-        return subject;
-    }
+	private String subject;
 
-    public void setSubject(String subject) {
-        this.subject = subject;
-    }
+	private String from;
 
-    public String getFrom() {
-        return from;
-    }
+	private String fromName;
 
-    public void setFrom(String from) {
-        this.from = from;
-    }
+	private String to;
 
-    public String getTo() {
-        return to;
-    }
+	private String toName;
 
-    public void setTo(String to) {
-        this.to = to;
-    }
+	private String date;
 
-    public String getCc() {
-        return cc;
-    }
+	private String contentType;
 
-    public void setCc(String cc) {
-        this.cc = cc;
-    }
+	private String content;
 
-    public String getBcc() {
-        return bcc;
-    }
+	private List<MsgEmailElement> attachments;
 
-    public void setBcc(String bcc) {
-        this.bcc = bcc;
-    }
+	public MsgEmailElement() {
+		this.attachments = new ArrayList<>();
+	}
 
-    public String getTextContent() {
-        return textContent;
-    }
+	// Getters and Setters
+	public String getSubject() {
+		return subject;
+	}
 
-    public void setTextContent(String textContent) {
-        this.textContent = textContent;
-    }
+	public void setSubject(String subject) {
+		this.subject = subject;
+	}
 
-    public String getHtmlContent() {
-        return htmlContent;
-    }
+	public String getFrom() {
+		return from;
+	}
 
-    public void setHtmlContent(String htmlContent) {
-        this.htmlContent = htmlContent;
-    }
+	public void setFrom(String from) {
+		this.from = from;
+	}
 
-    public List<Attachment> getAttachments() {
-        return attachments;
-    }
+	public String getFromName() {
+		return fromName;
+	}
 
-    public void setAttachments(List<Attachment> attachments) {
-        this.attachments = attachments;
-    }
+	public void setFromName(String fromName) {
+		this.fromName = fromName;
+	}
 
-    /**
-     * MSG附件类
-     * 用于存储MSG附件的文件名和内容
-     */
-    public static class Attachment {
-        private final String filename;
-        private final byte[] content;
+	public String getTo() {
+		return to;
+	}
 
-        public Attachment(String filename, byte[] content) {
-            this.filename = filename;
-            this.content = content;
-        }
+	public void setTo(String to) {
+		this.to = to;
+	}
 
-        public String getFilename() {
-            return filename;
-        }
+	public String getToName() {
+		return toName;
+	}
 
-        public byte[] getContent() {
-            return content;
-        }
-    }
-} 
+	public void setToName(String toName) {
+		this.toName = toName;
+	}
+
+	public String getDate() {
+		return date;
+	}
+
+	public void setDate(String date) {
+		this.date = date;
+	}
+
+	public String getContentType() {
+		return contentType;
+	}
+
+	public void setContentType(String contentType) {
+		this.contentType = contentType;
+	}
+
+	public String getContent() {
+		return content;
+	}
+
+	public void setContent(String content) {
+		this.content = content;
+	}
+
+	public List<MsgEmailElement> getAttachments() {
+		return attachments;
+	}
+
+	public void setAttachments(List<MsgEmailElement> attachments) {
+		this.attachments = attachments;
+	}
+
+	public void addAttachment(MsgEmailElement attachment) {
+		this.attachments.add(attachment);
+	}
+
+}

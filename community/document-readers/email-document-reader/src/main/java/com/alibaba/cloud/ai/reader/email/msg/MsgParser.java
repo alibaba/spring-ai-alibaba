@@ -1,177 +1,208 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.reader.email.msg;
 
-import org.apache.poi.poifs.filesystem.DirectoryNode;
-import org.apache.poi.poifs.filesystem.POIFSFileSystem;
-import org.apache.poi.poifs.filesystem.DocumentEntry;
-import org.apache.poi.poifs.filesystem.DocumentInputStream;
-import org.apache.poi.poifs.filesystem.Entry;
-import org.apache.poi.util.IOUtils;
+import org.apache.poi.hsmf.MAPIMessage;
+import org.apache.poi.hsmf.exceptions.ChunkNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import com.alibaba.cloud.ai.parser.bshtml.BsHtmlDocumentParser;
+import org.springframework.ai.document.Document;
+
 /**
- * MSG文件解析器
- * 负责解析MSG文件的具体实现
- * 使用Apache POI库来处理复合文件二进制格式
+ * MSG File Parser Uses Apache POI library to parse MSG files in Compound File Binary
+ * Format
+ *
+ * @author xiadong
+ * @since 2024-01-19
  */
 public class MsgParser {
-    private static final Logger logger = LoggerFactory.getLogger(MsgParser.class);
-    
-    private final POIFSFileSystem fs;
-    private final DirectoryNode root;
-    
-    public MsgParser(InputStream input) throws IOException {
-        this.fs = new POIFSFileSystem(input);
-        this.root = fs.getRoot();
-    }
-    
-    /**
-     * 解析MSG文件，提取邮件内容
-     * @return MsgEmailElement 包含邮件所有信息的对象
-     * @throws IOException 如果读取文件出错
-     */
-    public MsgEmailElement parse() throws IOException {
-        try {
-            MsgEmailElement email = new MsgEmailElement();
-            
-            // 读取邮件属性
-            readProperties(email);
-            
-            // 读取邮件正文
-            readBody(email);
-            
-            // 读取附件
-            readAttachments(email);
-            
-            return email;
-        }
-        finally {
-            fs.close();
-        }
-    }
-    
-    /**
-     * 读取邮件属性（主题、发件人、收件人等）
-     */
-    private void readProperties(MsgEmailElement email) throws IOException {
-        // 读取主题
-        String subject = readStringProperty(MsgPropertyTags.PR_SUBJECT);
-        email.setSubject(subject);
-        
-        // 读取发件人信息
-        String senderName = readStringProperty(MsgPropertyTags.PR_SENDER_NAME);
-        String senderEmail = readStringProperty(MsgPropertyTags.PR_SENDER_EMAIL_ADDRESS);
-        email.setFrom(senderEmail != null ? senderEmail : senderName);
-        
-        // 读取收件人信息
-        String to = readStringProperty(MsgPropertyTags.PR_DISPLAY_TO);
-        String cc = readStringProperty(MsgPropertyTags.PR_DISPLAY_CC);
-        String bcc = readStringProperty(MsgPropertyTags.PR_DISPLAY_BCC);
-        
-        if (to != null) email.setTo(to);
-        if (cc != null) email.setCc(cc);
-        if (bcc != null) email.setBcc(bcc);
-    }
-    
-    /**
-     * 读取邮件正文内容
-     */
-    private void readBody(MsgEmailElement email) throws IOException {
-        // 优先尝试读取HTML内容
-        String htmlBody = readStringProperty(MsgPropertyTags.PR_HTML);
-        if (htmlBody != null) {
-            email.setHtmlContent(htmlBody);
-            return;
-        }
-        
-        // 如果没有HTML内容，读取纯文本内容
-        String textBody = readStringProperty(MsgPropertyTags.PR_BODY);
-        if (textBody != null) {
-            email.setTextContent(textBody);
-        }
-    }
-    
-    /**
-     * 读取邮件附件
-     */
-    private void readAttachments(MsgEmailElement email) throws IOException {
-        List<MsgEmailElement.Attachment> attachments = new ArrayList<>();
-        
-        for (Entry entry : root) {
-            if (entry instanceof DirectoryNode) {
-                DirectoryNode dir = (DirectoryNode) entry;
-                String name = dir.getName();
-                
-                if (name.startsWith(MsgPropertyTags.ATTACHMENT_PREFIX)) {
-                    MsgEmailElement.Attachment attachment = readAttachment(dir);
-                    if (attachment != null) {
-                        attachments.add(attachment);
-                    }
-                }
-            }
-        }
-        
-        if (!attachments.isEmpty()) {
-            email.setAttachments(attachments);
-        }
-    }
-    
-    /**
-     * 读取单个附件
-     */
-    private MsgEmailElement.Attachment readAttachment(DirectoryNode dir) throws IOException {
-        String filename = readStringProperty(dir, MsgPropertyTags.PR_ATTACH_LONG_FILENAME);
-        if (filename == null) {
-            return null;
-        }
-        
-        byte[] content = readBinaryProperty(dir, MsgPropertyTags.PR_ATTACH_DATA);
-        if (content == null) {
-            return null;
-        }
-        
-        return new MsgEmailElement.Attachment(filename, content);
-    }
-    
-    /**
-     * 读取字符串类型的属性
-     */
-    private String readStringProperty(int tag) throws IOException {
-        return readStringProperty(root, tag);
-    }
-    
-    private String readStringProperty(DirectoryNode dir, int tag) throws IOException {
-        byte[] data = readBinaryProperty(dir, tag);
-        return data != null ? new String(data, "UTF-8").trim() : null;
-    }
-    
-    /**
-     * 读取二进制类型的属性
-     */
-    private byte[] readBinaryProperty(DirectoryNode dir, int tag) throws IOException {
-        String name = String.format("__substg1.0_%04X001F", tag);
-        
-        if (!dir.hasEntry(name)) {
-            name = String.format("__substg1.0_%04X001E", tag);
-            if (!dir.hasEntry(name)) {
-                return null;
-            }
-        }
-        
-        DocumentEntry entry = (DocumentEntry) dir.getEntry(name);
-        DocumentInputStream stream = null;
-        try {
-            stream = new DocumentInputStream(entry);
-            return IOUtils.toByteArray(stream);
-        }
-        finally {
-            IOUtils.closeQuietly(stream);
-        }
-    }
-} 
+
+	private static final Logger logger = LoggerFactory.getLogger(MsgParser.class);
+
+	private final InputStream inputStream;
+
+	public MsgParser(InputStream inputStream) {
+		this.inputStream = inputStream;
+	}
+
+	/**
+	 * Parse MSG file
+	 * @return Parsed email element object
+	 */
+	public MsgEmailElement parse() {
+		try {
+			MAPIMessage msg = new MAPIMessage(inputStream);
+			MsgEmailElement email = new MsgEmailElement();
+
+			// Parse email properties
+			parseEmailProperties(msg, email);
+
+			// Parse email body
+			parseEmailBody(msg, email);
+
+			// Parse attachments
+			parseAttachments(msg, email);
+
+			return email;
+		}
+		catch (Exception e) {
+			logger.error("Failed to parse MSG file", e);
+			throw new RuntimeException("Failed to parse MSG file", e);
+		}
+	}
+
+	private void parseEmailProperties(MAPIMessage msg, MsgEmailElement email) {
+		try {
+			// Subject
+			try {
+				email.setSubject(msg.getSubject());
+			}
+			catch (ChunkNotFoundException e) {
+				// maybe not found
+				logger.debug("Subject not found in MSG file");
+			}
+
+			// From
+			try {
+				String fromAddress = msg.getDisplayFrom();
+				if (fromAddress != null) {
+					email.setFrom(fromAddress);
+				}
+			}
+			catch (ChunkNotFoundException e) {
+				logger.debug("From address not found in MSG file");
+			}
+
+			// From Name
+			try {
+				String fromName = msg.getDisplayFrom();
+				if (fromName != null) {
+					email.setFromName(fromName);
+				}
+			}
+			catch (ChunkNotFoundException e) {
+				logger.debug("From name not found in MSG file");
+			}
+
+			// To
+			try {
+				String[] recipients = msg.getRecipientEmailAddressList();
+				if (recipients != null && recipients.length > 0) {
+					email.setTo(recipients[0]);
+				}
+			}
+			catch (ChunkNotFoundException e) {
+				logger.debug("To address not found in MSG file");
+			}
+
+			// To Name
+			try {
+				String recipientName = msg.getRecipientNames();
+				if (recipientName != null) {
+					email.setToName(recipientName);
+				}
+			}
+			catch (ChunkNotFoundException e) {
+				logger.debug("To name not found in MSG file");
+			}
+
+			// Date
+			try {
+				if (msg.getMessageDate() != null) {
+					email.setDate(msg.getMessageDate().toString());
+				}
+			}
+			catch (ChunkNotFoundException e) {
+				logger.debug("Date not found in MSG file");
+			}
+		}
+		catch (Exception e) {
+			logger.error("Error parsing email properties", e);
+			throw new RuntimeException("Error parsing email properties", e);
+		}
+	}
+
+	private void parseEmailBody(MAPIMessage msg, MsgEmailElement email) {
+		try {
+			// Try to get HTML body
+			try {
+				String htmlBody = msg.getHtmlBody();
+				if (htmlBody != null) {
+					email.setContentType("text/html");
+					// Parse HTML content using BsHtmlDocumentParser
+					BsHtmlDocumentParser htmlParser = new BsHtmlDocumentParser();
+					try (InputStream htmlStream = new ByteArrayInputStream(htmlBody.getBytes(StandardCharsets.UTF_8))) {
+						List<Document> parsedDocs = htmlParser.parse(htmlStream);
+						if (!parsedDocs.isEmpty()) {
+							email.setContent(parsedDocs.get(0).getText());
+						}
+						else {
+							email.setContent(htmlBody); // Fallback to original HTML if
+														// parsing fails
+						}
+					}
+					return;
+				}
+			}
+			catch (ChunkNotFoundException e) {
+				logger.debug("HTML body not found in MSG file");
+			}
+
+			// If no HTML body, try to get text body
+			try {
+				String textBody = msg.getTextBody();
+				if (textBody != null) {
+					email.setContentType("text/plain");
+					email.setContent(textBody);
+				}
+			}
+			catch (ChunkNotFoundException e) {
+				logger.debug("Text body not found in MSG file");
+			}
+		}
+		catch (Exception e) {
+			logger.error("Error parsing email body", e);
+			throw new RuntimeException("Error parsing email body", e);
+		}
+	}
+
+	private void parseAttachments(MAPIMessage msg, MsgEmailElement email) {
+		try {
+			org.apache.poi.hsmf.datatypes.AttachmentChunks[] attachments = msg.getAttachmentFiles();
+			if (attachments != null) {
+				for (org.apache.poi.hsmf.datatypes.AttachmentChunks attachment : attachments) {
+					MsgEmailElement attachmentElement = new MsgEmailElement();
+					attachmentElement.setSubject(attachment.getAttachFileName().getValue());
+					attachmentElement.setContent(new String(attachment.getAttachData().getValue()));
+					email.addAttachment(attachmentElement);
+				}
+			}
+		}
+		catch (Exception e) {
+			logger.error("Error parsing attachments", e);
+			throw new RuntimeException("Error parsing attachments", e);
+		}
+	}
+
+}
