@@ -1,50 +1,105 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.reader.email.msg;
 
-import com.alibaba.cloud.ai.document.Document;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.document.Document;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * MSG文件解析器测试类
+ * Test cases for MSG Email Document Reader
+ *
+ * @author brianxiadong
+ * @since 2024-01-19
  */
-public class MsgEmailDocumentReaderTest {
-    
-    private final MsgEmailDocumentReader reader = new MsgEmailDocumentReader();
-    
-    @Test
-    void testSupports() {
-        assertThat(reader.supports("test.msg")).isTrue();
-        assertThat(reader.supports("test.MSG")).isTrue();
-        assertThat(reader.supports("test.eml")).isFalse();
-        assertThat(reader.supports(null)).isFalse();
-    }
-    
-    @Test
-    void testReadMsgFile() throws IOException {
-        // 从测试资源目录加载测试MSG文件
-        ClassPathResource resource = new ClassPathResource("test.msg");
-        try (InputStream input = resource.getInputStream()) {
-            Document document = reader.read(input);
-            
-            // 验证解析结果
-            assertThat(document).isNotNull();
-            assertThat(document.getText()).isNotEmpty();
-            // TODO: 添加更多具体的断言来验证邮件内容
-        }
-    }
-    
-    @Test
-    void testReadInvalidFile() {
-        assertThrows(MsgFileException.class, () -> {
-            try (InputStream input = new ClassPathResource("invalid.msg").getInputStream()) {
-                reader.read(input);
-            }
-        });
-    }
-} 
+class MsgEmailDocumentReaderTest {
+
+	@Test
+	void should_read_msg_file() throws IOException {
+		// Given
+		ClassPathResource emailResource = new ClassPathResource("strangeDate.msg");
+		MsgEmailDocumentReader reader = new MsgEmailDocumentReader(emailResource.getFile().getAbsolutePath());
+
+		// When
+		List<Document> documents = reader.get();
+
+		// Then
+		assertNotNull(documents);
+		assertEquals(1, documents.size());
+
+		Document emailDoc = documents.get(0);
+		Map<String, Object> metadata = emailDoc.getMetadata();
+
+		// Verify metadata
+		assertNotNull(metadata);
+		assertNotEquals(0, metadata.size());
+
+		// Verify content
+		String content = emailDoc.getText();
+		assertNotEquals("", content);
+	}
+
+	@Test
+	void should_read_msg_file2() throws IOException {
+		// Given
+		ClassPathResource emailResource = new ClassPathResource("unicode.msg");
+		MsgEmailDocumentReader reader = new MsgEmailDocumentReader(emailResource.getFile().getAbsolutePath());
+
+		// When
+		List<Document> documents = reader.get();
+
+		// Then
+		assertNotNull(documents);
+		assertEquals(1, documents.size());
+
+		Document emailDoc = documents.get(0);
+		Map<String, Object> metadata = emailDoc.getMetadata();
+
+		// Verify metadata
+		assertNotNull(metadata);
+		assertNotEquals(0, metadata.size());
+
+		// Verify content
+		String content = emailDoc.getText();
+		assertNotEquals("", content);
+	}
+
+	@Test
+	void should_handle_missing_file() {
+		// Given
+		MsgEmailDocumentReader reader = new MsgEmailDocumentReader("non-existent.msg");
+
+		// When & Then
+		assertThrows(RuntimeException.class, reader::get);
+	}
+
+	@Test
+	void should_handle_invalid_msg_file() throws IOException {
+		// Given
+		ClassPathResource invalidResource = new ClassPathResource("1.eml");
+		MsgEmailDocumentReader reader = new MsgEmailDocumentReader(invalidResource.getFile().getAbsolutePath());
+
+		// When & Then
+		assertThrows(RuntimeException.class, reader::get);
+	}
+
+}
