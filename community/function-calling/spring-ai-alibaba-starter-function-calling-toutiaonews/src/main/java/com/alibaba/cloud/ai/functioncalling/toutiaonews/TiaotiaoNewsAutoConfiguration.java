@@ -23,12 +23,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 /**
- * @Author: XiaoYunTao
- * @Date: 2024/12/18
+ * @author XiaoYunTao
+ * @since 2024/12/18
  */
 @Configuration
 @ConditionalOnClass(ToutiaoNewsService.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.plugin.toutiaonews", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.toutiaonews", name = "enabled", havingValue = "true")
 public class TiaotiaoNewsAutoConfiguration {
 
 	@Bean
