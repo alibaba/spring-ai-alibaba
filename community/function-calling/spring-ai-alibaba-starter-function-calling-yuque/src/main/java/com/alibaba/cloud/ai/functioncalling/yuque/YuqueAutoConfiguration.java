@@ -30,10 +30,11 @@ import org.springframework.context.annotation.Description;
 @EnableConfigurationProperties(YuqueProperties.class)
 public class YuqueAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Use yuque api to invoke a http request to create a doc.")
-    public YuqueQueryDocService createYuqueDocFunction (YuqueProperties yuqueProperties) {
-        return new YuqueQueryDocService(yuqueProperties);
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Use yuque api to invoke a http request to create a doc.")
+	public YuqueQueryDocService createYuqueDocFunction(YuqueProperties yuqueProperties) {
+		return new YuqueQueryDocService(yuqueProperties);
+	}
+
 }
