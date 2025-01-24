@@ -1,7 +1,10 @@
 package dev.ai.alibaba.samples.executor;
 
 import com.alibaba.cloud.ai.graph.GraphStateException;
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.action.EdgeAction;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.agent.JSONStateSerializer;
 import com.alibaba.cloud.ai.graph.state.NodeState;
@@ -35,9 +38,19 @@ public class AgentExecutor {
 			}
 
 			return new StateGraph(stateSerializer).addEdge(START, "agent") // 下一个节点
-				.addNode("agent", node_async(AgentExecutor.this::callAgent)) // 调用llm
+				.addNode("agent", node_async(new NodeAction() {
+					@Override
+					public Map<String, Object> apply(OverAllState t) throws Exception {
+						return null;
+					}
+				})) // 调用llm
 				.addConditionalEdges( // 条件边，在agent节点之后
-						"agent", edge_async(AgentExecutor.this::shouldContinue), // 根据agent的结果，进行条件判断
+						"agent", edge_async(new EdgeAction() {
+							@Override
+							public String apply(OverAllState t) throws Exception {
+								return null;
+							}
+						}), // 根据agent的结果，进行条件判断
 						Map.of("continue", END, "end", END) // 不同分支，使action不再独立
 				);
 

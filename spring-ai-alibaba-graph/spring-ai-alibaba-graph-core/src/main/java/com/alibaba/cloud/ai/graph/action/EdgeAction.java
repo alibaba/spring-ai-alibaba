@@ -1,5 +1,6 @@
 package com.alibaba.cloud.ai.graph.action;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.state.NodeState;
 
 /**
@@ -15,6 +16,6 @@ public interface EdgeAction {
 	 * @return a result of the action
 	 * @throws Exception if an error occurs during the action
 	 */
-	String apply(NodeState t) throws Exception;
+	String apply(OverAllState t) throws Exception;
 
 }

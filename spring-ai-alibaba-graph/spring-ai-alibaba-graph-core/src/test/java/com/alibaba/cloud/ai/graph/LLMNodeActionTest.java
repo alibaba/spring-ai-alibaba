@@ -30,14 +30,14 @@ public class LLMNodeActionTest {
 	@Autowired
 	private ApplicationContext applicationContext;
 
-	static class MockState extends NodeState {
+	static class MockState extends OverAllState {
 
 		/**
 		 * Constructs an AgentState with the given initial data.
 		 * @param initData the initial data for the agent state
 		 */
 		public MockState(Map<String, Object> initData) {
-			super(initData);
+			super();
 		}
 
 	}
