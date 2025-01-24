@@ -5,6 +5,7 @@ import com.alibaba.cloud.ai.dashscope.rag.DashScopeCloudStore;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentCloudReader;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeStoreOptions;
 import com.alibaba.cloud.ai.graph.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.node.rag.DocumentRetrieverNodeAction;
 import com.alibaba.cloud.ai.graph.state.NodeState;
 import org.junit.jupiter.api.Test;
@@ -33,14 +34,14 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ
 
 class DocumentRetrieverNodeActionTest {
 
-	static class MockState extends NodeState {
+	static class MockState extends OverAllState {
 
 		/**
 		 * Constructs an AgentState with the given initial data.
 		 * @param initData the initial data for the agent state
 		 */
 		public MockState(Map<String, Object> initData) {
-			super(initData);
+			super();
 		}
 
 	}
@@ -92,7 +93,7 @@ class DocumentRetrieverNodeActionTest {
 	@Test
 	void testApplyWithInvalidQuery() {
 		Map<String, Object> initData = new HashMap<>();
-		NodeState mockState = new MockState(initData);
+		OverAllState mockState = new MockState(initData);
 		var mockVectorStore = mock(VectorStore.class);
 
 		DocumentRetrieverNodeAction nodeAction = DocumentRetrieverNodeAction.builder()

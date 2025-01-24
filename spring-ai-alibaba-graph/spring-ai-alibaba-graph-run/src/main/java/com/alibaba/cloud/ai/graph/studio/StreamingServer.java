@@ -1,11 +1,6 @@
 package com.alibaba.cloud.ai.graph.studio;
 
-import com.alibaba.cloud.ai.graph.CompileConfig;
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.GraphRepresentation;
-import com.alibaba.cloud.ai.graph.NodeOutput;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
@@ -118,146 +113,146 @@ public interface StreamingServer {
 		@Override
 		protected void doPost(HttpServletRequest request, HttpServletResponse response)
 				throws ServletException, IOException {
-			response.setHeader("Accept", "application/json");
-			response.setContentType("text/plain");
-			response.setCharacterEncoding("UTF-8");
-
-			var session = request.getSession(true);
-			Objects.requireNonNull(session, "session cannot be null");
-
-			var threadId = ofNullable(request.getParameter("thread"))
-				.orElseThrow(() -> new IllegalStateException("Missing thread id!"));
-
-			var resume = ofNullable(request.getParameter("resume")).map(Boolean::parseBoolean).orElse(false);
-
-			final PrintWriter writer = response.getWriter();
-
-			// Start asynchronous processing
-			var asyncContext = request.startAsync();
-			asyncContext.setTimeout(60000 * 20); // 设置超时时间为60秒
-
-			try {
-
-				AsyncGenerator<? extends NodeOutput> generator;
-
-				var persistentConfig = new PersistentConfig(session.getId(), threadId);
-
-				var compiledGraph = graphCache.get(persistentConfig);
-
-				final Map<String, Object> dataMap;
-				if (resume && stateGraph.getStateSerializer() instanceof PlainTextStateSerializer textSerializer) {
-
-					dataMap = textSerializer.read(new InputStreamReader(request.getInputStream())).data();
-				}
-				else {
-					dataMap = objectMapper.readValue(request.getInputStream(), new TypeReference<>() {
-					});
-				}
-
-				if (resume) {
-
-					log.trace("RESUME REQUEST PREPARE");
-
-					if (compiledGraph == null) {
-						throw new IllegalStateException("Missing CompiledGraph in session!");
-					}
-
-					var checkpointId = ofNullable(request.getParameter("checkpoint"))
-						.orElseThrow(() -> new IllegalStateException("Missing checkpoint id!"));
-
-					var node = request.getParameter("node");
-					var config = RunnableConfig.builder().threadId(threadId).checkPointId(checkpointId).build();
-
-					var stateSnapshot = compiledGraph.getState(config);
-
-					config = stateSnapshot.config();
-
-					log.trace("RESUME UPDATE STATE FORM {} USING CONFIG {}\n{}", node, config, dataMap);
-
-					config = compiledGraph.updateState(config, dataMap, node);
-
-					log.trace("RESUME REQUEST STREAM {}", config);
-
-					generator = compiledGraph.streamSnapshots(null, config);
-
-				}
-				else {
-
-					log.trace("dataMap: {}", dataMap);
-
-					if (compiledGraph == null) {
-						compiledGraph = stateGraph.compile(compileConfig(persistentConfig));
-						graphCache.put(persistentConfig, compiledGraph);
-					}
-
-					generator = compiledGraph.streamSnapshots(dataMap, runnableConfig(persistentConfig));
-				}
-
-				generator.forEachAsync(s -> {
-					try {
-						try {
-							if (s.state().data().containsKey(NodeState.SUB_GRAPH)) {
-								CompiledGraph.AsyncNodeGenerator<NodeOutput> subGenerator = (CompiledGraph.AsyncNodeGenerator) s
-									.state()
-									.data()
-									.get(NodeState.SUB_GRAPH);
-								subGenerator.forEach(subS -> {
-									writer.printf("[ \"%s\",", threadId);
-									writer.println();
-									String outputAsString = null;
-									try {
-										NodeOutput output = subGenerator
-											.buildNodeOutput(subGenerator.getCurrentNodeId());
-										outputAsString = objectMapper.writeValueAsString(output);
-									}
-									catch (IOException e) {
-										log.warn("error serializing state", e);
-									}
-									catch (Exception e) {
-										throw new RuntimeException(e);
-									}
-									writer.println(outputAsString);
-									writer.println("]");
-									writer.flush();
-									try {
-										TimeUnit.SECONDS.sleep(1);
-									}
-									catch (InterruptedException e) {
-										throw new CompletionException(e);
-									}
-								});
-							}
-							else {
-								writer.printf("[ \"%s\",", threadId);
-								writer.println();
-								var outputAsString = objectMapper.writeValueAsString(s);
-								writer.println(outputAsString);
-								writer.println("]");
-							}
-						}
-						catch (IOException e) {
-							log.warn("error serializing state", e);
-						}
-						writer.flush();
-						TimeUnit.SECONDS.sleep(1);
-					}
-					catch (InterruptedException e) {
-						throw new CompletionException(e);
-					}
-
-				}).thenAccept(v -> writer.close()).thenAccept(v -> asyncContext.complete()).exceptionally(e -> {
-					log.error("Error streaming", e);
-					writer.close();
-					asyncContext.complete();
-					return null;
-				});
-
-			}
-			catch (Throwable e) {
-				log.error("Error streaming", e);
-				throw new ServletException(e);
-			}
-		}
+//			response.setHeader("Accept", "application/json");
+//			response.setContentType("text/plain");
+//			response.setCharacterEncoding("UTF-8");
+//
+//			var session = request.getSession(true);
+//			Objects.requireNonNull(session, "session cannot be null");
+//
+//			var threadId = ofNullable(request.getParameter("thread"))
+//				.orElseThrow(() -> new IllegalStateException("Missing thread id!"));
+//
+//			var resume = ofNullable(request.getParameter("resume")).map(Boolean::parseBoolean).orElse(false);
+//
+//			final PrintWriter writer = response.getWriter();
+//
+//			// Start asynchronous processing
+//			var asyncContext = request.startAsync();
+//			asyncContext.setTimeout(60000 * 20); // 设置超时时间为60秒
+//
+//			try {
+//
+//				AsyncGenerator<? extends NodeOutput> generator;
+//
+//				var persistentConfig = new PersistentConfig(session.getId(), threadId);
+//
+//				var compiledGraph = graphCache.get(persistentConfig);
+//
+//				final Map<String, Object> dataMap;
+//				if (resume && stateGraph.getStateSerializer() instanceof PlainTextStateSerializer textSerializer) {
+//
+//					dataMap = textSerializer.read(new InputStreamReader(request.getInputStream())).data();
+//				}
+//				else {
+//					dataMap = objectMapper.readValue(request.getInputStream(), new TypeReference<>() {
+//					});
+//				}
+//
+//				if (resume) {
+//
+//					log.trace("RESUME REQUEST PREPARE");
+//
+//					if (compiledGraph == null) {
+//						throw new IllegalStateException("Missing CompiledGraph in session!");
+//					}
+//
+//					var checkpointId = ofNullable(request.getParameter("checkpoint"))
+//						.orElseThrow(() -> new IllegalStateException("Missing checkpoint id!"));
+//
+//					var node = request.getParameter("node");
+//					var config = RunnableConfig.builder().threadId(threadId).checkPointId(checkpointId).build();
+//
+//					var stateSnapshot = compiledGraph.getState(config);
+//
+//					config = stateSnapshot.config();
+//
+//					log.trace("RESUME UPDATE STATE FORM {} USING CONFIG {}\n{}", node, config, dataMap);
+//
+//					config = compiledGraph.updateState(config, dataMap, node);
+//
+//					log.trace("RESUME REQUEST STREAM {}", config);
+//
+//					generator = compiledGraph.streamSnapshots(null, config);
+//
+//				}
+//				else {
+//
+//					log.trace("dataMap: {}", dataMap);
+//
+//					if (compiledGraph == null) {
+//						compiledGraph = stateGraph.compile(compileConfig(persistentConfig));
+//						graphCache.put(persistentConfig, compiledGraph);
+//					}
+//
+//					generator = compiledGraph.streamSnapshots(dataMap, runnableConfig(persistentConfig));
+//				}
+//
+//				generator.forEachAsync(s -> {
+//					try {
+//						try {
+//							if (s.state().data().containsKey(NodeState.SUB_GRAPH)) {
+//								CompiledGraph.AsyncNodeGenerator<OverAllState> subGenerator = (CompiledGraph.AsyncNodeGenerator) s
+//									.state()
+//									.data()
+//									.get(NodeState.SUB_GRAPH);
+//								subGenerator.forEach(subS -> {
+//									writer.printf("[ \"%s\",", threadId);
+//									writer.println();
+//									String outputAsString = null;
+//									try {
+////										NodeOutput output = subGenerator
+////											.buildNodeOutput(subGenerator.getCurrentNodeId());
+////										outputAsString = objectMapper.writeValueAsString(output);
+//									}
+//									catch (IOException e) {
+//										log.warn("error serializing state", e);
+//									}
+//									catch (Exception e) {
+//										throw new RuntimeException(e);
+//									}
+//									writer.println(outputAsString);
+//									writer.println("]");
+//									writer.flush();
+//									try {
+//										TimeUnit.SECONDS.sleep(1);
+//									}
+//									catch (InterruptedException e) {
+//										throw new CompletionException(e);
+//									}
+//								});
+//							}
+//							else {
+//								writer.printf("[ \"%s\",", threadId);
+//								writer.println();
+//								var outputAsString = objectMapper.writeValueAsString(s);
+//								writer.println(outputAsString);
+//								writer.println("]");
+//							}
+//						}
+//						catch (IOException e) {
+//							log.warn("error serializing state", e);
+//						}
+//						writer.flush();
+//						TimeUnit.SECONDS.sleep(1);
+//					}
+//					catch (InterruptedException e) {
+//						throw new CompletionException(e);
+//					}
+//
+//				}).thenAccept(v -> writer.close()).thenAccept(v -> asyncContext.complete()).exceptionally(e -> {
+//					log.error("Error streaming", e);
+//					writer.close();
+//					asyncContext.complete();
+//					return null;
+//				});
+//
+//			}
+//			catch (Throwable e) {
+//				log.error("Error streaming", e);
+//				throw new ServletException(e);
+//			}
+}
 
 	}
 
