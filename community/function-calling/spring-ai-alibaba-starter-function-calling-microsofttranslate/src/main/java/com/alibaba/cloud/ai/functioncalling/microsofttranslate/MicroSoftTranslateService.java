@@ -33,7 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-public class MicroSoftTranslateService implements Function<MicroSoftTranslateService.Request, MicroSoftTranslateService.Response> {
+public class MicroSoftTranslateService
+		implements Function<MicroSoftTranslateService.Request, MicroSoftTranslateService.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(MicroSoftTranslateService.class);
 
@@ -43,7 +44,7 @@ public class MicroSoftTranslateService implements Function<MicroSoftTranslateSer
 
 	private final WebClient webClient;
 
-	public MicroSoftTranslateService (MicroSoftTranslateProperties properties) {
+	public MicroSoftTranslateService(MicroSoftTranslateProperties properties) {
 		assert StringUtils.hasText(properties.getApiKey());
 		this.webClient = WebClient.builder()
 			.defaultHeader(MicroSoftTranslateProperties.OCP_APIM_SUBSCRIPTION_KEY, properties.getApiKey())

@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.dashscope;
 
+import java.util.List;
+
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
@@ -34,7 +36,6 @@ import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -42,6 +43,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Scope;
 import org.springframework.util.StringUtils;
 
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DASHSCOPE_API_KEY;
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
 
 @SpringBootConfiguration
@@ -93,7 +95,7 @@ public class DashscopeAiTestConfiguration {
 	}
 
 	private String getApiKey() {
-		String apiKey = System.getenv("DASHSCOPE_API_KEY");
+		String apiKey = System.getenv(DASHSCOPE_API_KEY);
 		if (!StringUtils.hasText(apiKey)) {
 			throw new IllegalArgumentException(
 					"You must provide an API key.  Put it in an environment variable under the name DASHSCOPE_API_KEY");
@@ -104,7 +106,7 @@ public class DashscopeAiTestConfiguration {
 	@Bean
 	public ChatModel dashscopeChatModel(DashScopeApi dashscopeChatApi, TestObservationRegistry observationRegistry) {
 		return new DashScopeChatModel(dashscopeChatApi,
-				DashScopeChatOptions.builder().withModel(DashScopeApi.DEFAULT_CHAT_MODEL).build(), null,
+				DashScopeChatOptions.builder().withModel(DashScopeApi.DEFAULT_CHAT_MODEL).build(), null, List.of(),
 				RetryUtils.DEFAULT_RETRY_TEMPLATE, observationRegistry);
 	}
 

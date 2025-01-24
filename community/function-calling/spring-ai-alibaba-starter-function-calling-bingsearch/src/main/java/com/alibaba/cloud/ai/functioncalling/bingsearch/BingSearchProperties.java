@@ -19,10 +19,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 /**
- * @author: KrakenZJC
+ * @author KrakenZJC
  **/
 @EnableConfigurationProperties
-@ConfigurationProperties(prefix = "spring.ai.alibaba.plugin.bing")
+@ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.bingsearch")
 public class BingSearchProperties {
 
 	public static final String OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";

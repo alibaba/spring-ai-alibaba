@@ -388,7 +388,7 @@ public class DashScopeChatClientIT {
 
 		// Step 2 - Create embeddings and save to vector store
 		logger.info("Creating Embeddings...");
-		VectorStore vectorStore = new SimpleVectorStore(dashscopeEmbeddingModel);
+		VectorStore vectorStore = SimpleVectorStore.builder(dashscopeEmbeddingModel).build();
 		vectorStore.add(documents);
 
 		// Step3 - Retrieve and llm generate
