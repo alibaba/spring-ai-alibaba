@@ -23,16 +23,17 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.yuque")
 public class YuqueProperties {
 
-    public static String BASE_URL = "https://www.yuque.com/api/v2/repo";
+	public static String BASE_URL = "https://www.yuque.com/api/v2/repo";
 
-    private String authToken;
+	private String authToken;
 
-    public String getAuthToken () {
-        return authToken;
-    }
+	public String getAuthToken() {
+		return authToken;
+	}
 
-    public YuqueProperties setAuthToken (String authToken) {
-        this.authToken = authToken;
-        return this;
-    }
+	public YuqueProperties setAuthToken(String authToken) {
+		this.authToken = authToken;
+		return this;
+	}
+
 }
