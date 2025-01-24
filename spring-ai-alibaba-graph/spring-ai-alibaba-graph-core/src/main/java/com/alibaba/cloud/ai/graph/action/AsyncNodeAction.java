@@ -1,6 +1,6 @@
 package com.alibaba.cloud.ai.graph.action;
 
-import com.alibaba.cloud.ai.graph.state.NodeState;
+import com.alibaba.cloud.ai.graph.OverAllState;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -12,14 +12,14 @@ import java.util.function.Function;
  *
  */
 @FunctionalInterface
-public interface AsyncNodeAction extends Function<NodeState, CompletableFuture<Map<String, Object>>> {
+public interface AsyncNodeAction extends Function<OverAllState, CompletableFuture<Map<String, Object>>> {
 
 	/**
 	 * Applies this action to the given agent state.
 	 * @param t the agent state
 	 * @return a CompletableFuture representing the result of the action
 	 */
-	CompletableFuture<Map<String, Object>> apply(NodeState t);
+	CompletableFuture<Map<String, Object>> apply(OverAllState t);
 
 	/**
 	 * Creates an asynchronous node action from a synchronous node action.
