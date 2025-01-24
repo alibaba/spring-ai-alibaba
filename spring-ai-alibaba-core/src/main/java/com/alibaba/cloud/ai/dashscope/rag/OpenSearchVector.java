@@ -21,7 +21,10 @@ import java.util.stream.Collectors;
  *
  * @author fuyou.lxm
  * @since 1.0.0-M3
+ * @deprecated Since 1.0.0-5, use
+ * {@link com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchVector} instead.
  */
+@Deprecated(since = "1.0.0-M5", forRemoval = true)
 public class OpenSearchVector implements VectorStore {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenSearchVector.class);
