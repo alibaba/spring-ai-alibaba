@@ -2,17 +2,12 @@ package com.alibaba.cloud.ai.graph;
 
 
 import com.alibaba.cloud.ai.graph.state.KeyStrategy;
-import com.alibaba.cloud.ai.graph.state.NodeState;
 import lombok.Data;
 import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Optional.ofNullable;
@@ -22,19 +17,39 @@ import static java.util.Optional.ofNullable;
 public class OverAllState {
     private final Map<String, Object> data;
     private final Map<String, KeyStrategy> keyStrategies;
+    private final Boolean isResume;
+
+
+    public OverAllState(boolean isResume) {
+        this.data = new HashMap<>();
+        this.keyStrategies = new HashMap<>();
+        this.isResume = isResume;
+    }
 
     public OverAllState() {
         this.data = new HashMap<>();
         this.keyStrategies = new HashMap<>();
+        this.isResume = false;
+    }
+
+    private OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean isResume) {
+        this.data = data;
+        this.keyStrategies = keyStrategies;
+        this.isResume = isResume;
     }
 
 
-    public boolean isResume(){
-        return data.isEmpty();
+    public OverAllState resumeStateCopy() {
+        return new OverAllState(this.data, this.keyStrategies, true);
     }
 
 
-    public OverAllState initData(Map<String,Object> input){
+    public boolean isResume() {
+        return this.isResume;
+    }
+
+
+    public OverAllState inputs(Map<String, Object> input) {
         if (CollectionUtils.isEmpty(input)) return this;
         this.data.putAll(input);
         return this;
@@ -52,8 +67,10 @@ public class OverAllState {
                 .stream()
                 .filter(key -> keyStrategies.containsKey(key))
                 .forEach(key -> {
-                    Object apply = keyStrategies.get(key).apply(value(key, null), partialState.get(key));
-                    this.data.put(key, apply);
+                    this.data.put(
+                            key,
+                            keyStrategies.get(key).apply(value(key, null), partialState.get(key))
+                    );
                 });
         return data();
     }
@@ -62,7 +79,7 @@ public class OverAllState {
         return this.keyStrategies.get(key);
     }
 
-    public final Map<String,KeyStrategy> keyStrategies(){
+    public final Map<String, KeyStrategy> keyStrategies() {
         return unmodifiableMap(keyStrategies);
     }
 
@@ -77,7 +94,6 @@ public class OverAllState {
     public final <T> T value(String key, T defaultValue) {
         return (T) value(key).orElse(defaultValue);
     }
-
 
 
 }
