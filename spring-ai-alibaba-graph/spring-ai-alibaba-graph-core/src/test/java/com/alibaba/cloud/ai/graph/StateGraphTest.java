@@ -10,7 +10,6 @@ import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -24,7 +23,7 @@ public class StateGraphTest {
     public void graphTest() throws Exception {
         // ....node1 -> node2 -> node3 -> END
         OverAllState overAllState = new OverAllState()
-                .initData(Map.of("key1", "input text"))
+                .inputs(Map.of("key1", "input text"))
                 .addKeyStrategy("key1", (o, o2) -> o2)
                 .addKeyStrategy("key2", (o, o2) -> Lists.newArrayList(o,o2))
                 .addKeyStrategy("key3", (o, o2) -> o.toString() + o2.toString());
@@ -61,6 +60,11 @@ public class StateGraphTest {
 
     @Test
     public void resumeGraphTest() throws Exception {
+        OverAllState overAllState = new OverAllState()
+                .inputs(Map.of("input", "start"))
+                .addKeyStrategy("input", (o, o2) -> o2)
+                .addKeyStrategy("key2", (o, o2) -> Lists.newArrayList(o,o2))
+                .addKeyStrategy("key3", (o, o2) -> o.toString() + o2.toString());
         StateGraph stateGraph = new StateGraph(new JSONStateSerializer());
         CompileConfig config = CompileConfig.builder()
                 .saverConfig(SaverConfig.builder()
@@ -87,14 +91,15 @@ public class StateGraphTest {
         RunnableConfig runnableConfig = RunnableConfig.builder()
                 .threadId("thread1")
                 .build();
-        Optional invoke = compile.invoke(input, runnableConfig);
+        Optional invoke = compile.invoke(overAllState);
         System.out.println("invoke = " + invoke);
 
         RunnableConfig resumeRunnableConfig = RunnableConfig.builder()
                 .threadId("thread1")
                 .build();
-//        Optional invoke1 = compile.invoke();
-//        System.out.println("invoke1 = " + invoke1);
+
+        Optional invoke1 = compile.invoke(overAllState.resumeStateCopy());
+        System.out.println("invoke1 = " + invoke1);
 
     }
 }
