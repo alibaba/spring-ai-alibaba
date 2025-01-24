@@ -46,7 +46,7 @@ public class OverAllState {
     }
 
 
-    public Map<String, Object> updateState(Map<String, Object> partialState) {
+    protected Map<String, Object> updateState(Map<String, Object> partialState) {
         Map<String, KeyStrategy> keyStrategies = keyStrategies();
         partialState.keySet()
                 .stream()
