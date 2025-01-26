@@ -26,7 +26,9 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.util.StringUtils;
@@ -149,22 +151,24 @@ public class ElasticsearchDocumentReader implements DocumentReader {
     }
 
     private ElasticsearchClient createClient() {
-        // Build the REST client with optional authentication
-        RestClient.Builder builder = RestClient.builder(
-                new HttpHost(config.getHost(), config.getPort()));
+        // Create RestClient configuration
+        HttpHost httpHost = new HttpHost(config.getHost(), config.getPort());
+        RestClientBuilder restClientBuilder = RestClient.builder(httpHost);
 
         // Add authentication if credentials are provided
         if (StringUtils.hasText(config.getUsername()) && StringUtils.hasText(config.getPassword())) {
             CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
             credentialsProvider.setCredentials(AuthScope.ANY,
                     new UsernamePasswordCredentials(config.getUsername(), config.getPassword()));
-            builder.setHttpClientConfigCallback(httpClientBuilder ->
-                    httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
+
+            restClientBuilder.setHttpClientConfigCallback(
+                    (HttpAsyncClientBuilder clientBuilder) -> clientBuilder
+                            .setDefaultCredentialsProvider(credentialsProvider));
         }
 
         // Create the transport and client
         ElasticsearchTransport transport = new RestClientTransport(
-                builder.build(), new JacksonJsonpMapper());
+                restClientBuilder.build(), new JacksonJsonpMapper());
         return new ElasticsearchClient(transport);
     }
 }
