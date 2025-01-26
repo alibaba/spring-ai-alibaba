@@ -90,10 +90,25 @@ public class ElasticsearchDocumentReaderTest {
     }
 
     @Test
-    void testReadAllDocuments() {
-        List<Document> documents = reader.read();
+    void testGet() {
+        List<Document> documents = reader.get();
         assertThat(documents).hasSize(2);
         assertThat(documents.get(0).getContent()).contains("test document");
+        assertThat(documents.get(1).getContent()).contains("second test");
+    }
+
+    @Test
+    void testGetById() {
+        Document document = reader.getById(TEST_DOC_ID);
+        assertThat(document).isNotNull();
+        assertThat(document.getContent()).contains("test document");
+        assertThat(document.getMetadata()).containsEntry("title", "Test 1");
+    }
+
+    @Test
+    void testGetByIdNonExistent() {
+        Document document = reader.getById("non-existent-id");
+        assertThat(document).isNull();
     }
 
     @Test
@@ -101,20 +116,6 @@ public class ElasticsearchDocumentReaderTest {
         List<Document> documents = reader.readWithQuery("second");
         assertThat(documents).hasSize(1);
         assertThat(documents.get(0).getContent()).contains("second test");
-    }
-
-    @Test
-    void testGetDocument() {
-        Document document = reader.get(TEST_DOC_ID);
-        assertThat(document).isNotNull();
-        assertThat(document.getContent()).contains("test document");
-        assertThat(document.getMetadata()).containsEntry("title", "Test 1");
-    }
-
-    @Test
-    void testGetNonExistentDocument() {
-        Document document = reader.get("non-existent-id");
-        assertThat(document).isNull();
     }
 
     private static void indexTestDocuments() throws IOException {
