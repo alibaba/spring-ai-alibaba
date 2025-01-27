@@ -161,7 +161,7 @@ public class OneNoteDocumentReader implements DocumentReader {
         String text = parseDoc.text();
 
         // Return title and content in a readable format
-        return title + (title.isEmpty() ? "" : "\n") + text;
+        return title + (StringUtils.hasText(title) ? "" : "\n") + text;
     }
 
     /**
