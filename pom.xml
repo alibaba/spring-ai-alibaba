@@ -25,12 +25,6 @@
 
     <packaging>pom</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-core</artifactId>
-        </dependency>
-    </dependencies>
 
     <name>Spring AI Alibaba</name>
     <description>Building AI applications with Spring Boot</description>
