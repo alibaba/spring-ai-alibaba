@@ -16,14 +16,11 @@
 package com.alibaba.cloud.ai.dashscope.image;
 
 import com.alibaba.cloud.ai.dashscope.DashscopeAiTestConfiguration;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.observation.conventions.AiProvider;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
-import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.image.*;
 import org.springframework.ai.image.observation.DefaultImageModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
@@ -34,15 +31,21 @@ import org.springframework.boot.test.context.SpringBootTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = DashscopeAiTestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "DASHSCOPE_HTTP_BASE_URL", matches = ".+")
-public class DashScopeImageModelIT {
+@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+/**
+ * @author 北极星
+ */
+public class DashScopeImageModelObservationIT {
 
 	@Autowired
-	protected ImageModel imageModel;
+	ImageModel imageModel;
+
+	@Autowired
+	TestObservationRegistry observationRegistry;
 
 	@Test
-	void imageAsUrlTest() {
+	void imageModelObservationTest() {
+
 		var options = ImageOptionsBuilder.builder()
 			.model("wanx2.1-t2i-turbo")
 			.withHeight(1024)
@@ -65,7 +68,20 @@ public class DashScopeImageModelIT {
 		var generation = imageResponse.getResult();
 		Image image = generation.getOutput();
 		assertThat(image.getUrl()).isNotEmpty();
-		assertThat(image.getB64Json()).isNotEmpty();
+
+		TestObservationRegistryAssert.assertThat(this.observationRegistry)
+			.doesNotHaveAnyRemainingCurrentObservation()
+			.hasObservationWithNameEqualTo(DefaultImageModelObservationConvention.DEFAULT_NAME)
+			.that()
+			.hasContextualNameEqualTo("image " + "wanx2.1-t2i-turbo")
+			.hasHighCardinalityKeyValue(
+					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_SIZE.asString(),
+					"1024x1024")
+			.hasLowCardinalityKeyValue(ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
+					AiProvider.DASHSCOPE.value())
+			.hasLowCardinalityKeyValue(
+					ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
+					AiOperationType.IMAGE.value());
 	}
 
 }

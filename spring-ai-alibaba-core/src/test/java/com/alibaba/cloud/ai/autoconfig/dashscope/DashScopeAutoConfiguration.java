@@ -22,14 +22,17 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
+import com.alibaba.cloud.ai.dashscope.image.observation.DashScopeImageModelObservationConvention;
 import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
 import com.alibaba.dashscope.audio.asr.transcription.Transcription;
 import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
+import io.micrometer.observation.ObservationRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -74,6 +77,39 @@ import java.util.Objects;
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
 		WebClientAutoConfiguration.class })
 public class DashScopeAutoConfiguration {
+
+	private static @NotNull ResolvedConnectionProperties resolveConnectionProperties(
+			DashScopeParentProperties commonProperties, DashScopeParentProperties modelProperties, String modelType) {
+
+		String baseUrl = StringUtils.hasText(modelProperties.getBaseUrl()) ? modelProperties.getBaseUrl()
+				: commonProperties.getBaseUrl();
+		String apiKey = StringUtils.hasText(modelProperties.getApiKey()) ? modelProperties.getApiKey()
+				: commonProperties.getApiKey();
+		String workspaceId = StringUtils.hasText(modelProperties.getWorkspaceId()) ? modelProperties.getWorkspaceId()
+				: commonProperties.getWorkspaceId();
+
+		Map<String, List<String>> connectionHeaders = new HashMap<>();
+		if (StringUtils.hasText(workspaceId)) {
+			connectionHeaders.put("DashScope-Workspace", List.of(workspaceId));
+		}
+
+		// get apikey from system env.
+		if (Objects.isNull(apiKey)) {
+			if (Objects.nonNull(System.getenv(DashScopeApiConstants.DASHSCOPE_API_KEY))) {
+				apiKey = System.getenv(DashScopeApiConstants.DASHSCOPE_API_KEY);
+			}
+		}
+
+		Assert.hasText(baseUrl,
+				"DashScope base URL must be set.  Use the connection property: spring.ai.dashscope.base-url or spring.ai.dashscope."
+						+ modelType + ".base-url property.");
+		Assert.hasText(apiKey,
+				"DashScope API key must be set. Use the connection property: spring.ai.dashscope.api-key or spring.ai.dashscope."
+						+ modelType + ".api-key property.");
+
+		return new ResolvedConnectionProperties(baseUrl, apiKey, workspaceId,
+				CollectionUtils.toMultiValueMap(connectionHeaders));
+	}
 
 	@Bean
 	@Scope("prototype")
@@ -202,15 +238,21 @@ public class DashScopeAutoConfiguration {
 			matchIfMissing = true)
 	public DashScopeImageModel dashScopeImageModel(DashScopeConnectionProperties commonProperties,
 			DashScopeImageProperties imageProperties, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler) {
+			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<DashScopeImageModelObservationConvention> observationConvention) {
 
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, imageProperties, "image");
 
 		var dashScopeImageApi = new DashScopeImageApi(resolved.baseUrl(), resolved.apiKey(), resolved.workspaceId(),
 				restClientBuilder, webClientBuilder, responseErrorHandler);
 
-		return new DashScopeImageModel(dashScopeImageApi, imageProperties.getOptions(), retryTemplate);
+		var dashScopeImageModel = new DashScopeImageModel(dashScopeImageApi, imageProperties.getOptions(),
+				retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+
+		observationConvention.ifAvailable(dashScopeImageModel::setObservationConvention);
+
+		return dashScopeImageModel;
 	}
 
 	@Bean
@@ -274,39 +316,6 @@ public class DashScopeAutoConfiguration {
 
 	private record ResolvedConnectionProperties(String baseUrl, String apiKey, String workspaceId,
 			MultiValueMap<String, String> headers) {
-	}
-
-	private static @NotNull ResolvedConnectionProperties resolveConnectionProperties(
-			DashScopeParentProperties commonProperties, DashScopeParentProperties modelProperties, String modelType) {
-
-		String baseUrl = StringUtils.hasText(modelProperties.getBaseUrl()) ? modelProperties.getBaseUrl()
-				: commonProperties.getBaseUrl();
-		String apiKey = StringUtils.hasText(modelProperties.getApiKey()) ? modelProperties.getApiKey()
-				: commonProperties.getApiKey();
-		String workspaceId = StringUtils.hasText(modelProperties.getWorkspaceId()) ? modelProperties.getWorkspaceId()
-				: commonProperties.getWorkspaceId();
-
-		Map<String, List<String>> connectionHeaders = new HashMap<>();
-		if (StringUtils.hasText(workspaceId)) {
-			connectionHeaders.put("DashScope-Workspace", List.of(workspaceId));
-		}
-
-		// get apikey from system env.
-		if (Objects.isNull(apiKey)) {
-			if (Objects.nonNull(System.getenv(DashScopeApiConstants.DASHSCOPE_API_KEY))) {
-				apiKey = System.getenv(DashScopeApiConstants.DASHSCOPE_API_KEY);
-			}
-		}
-
-		Assert.hasText(baseUrl,
-				"DashScope base URL must be set.  Use the connection property: spring.ai.dashscope.base-url or spring.ai.dashscope."
-						+ modelType + ".base-url property.");
-		Assert.hasText(apiKey,
-				"DashScope API key must be set. Use the connection property: spring.ai.dashscope.api-key or spring.ai.dashscope."
-						+ modelType + ".api-key property.");
-
-		return new ResolvedConnectionProperties(baseUrl, apiKey, workspaceId,
-				CollectionUtils.toMultiValueMap(connectionHeaders));
 	}
 
 }
