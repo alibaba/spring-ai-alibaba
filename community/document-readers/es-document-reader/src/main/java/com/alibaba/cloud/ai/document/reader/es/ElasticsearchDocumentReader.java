@@ -25,150 +25,165 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import javax.net.ssl.SSLContext;
+import javax.validation.constraints.NotNull;
 import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 /**
- * A DocumentReader implementation that reads documents from Elasticsearch.
- * Supports basic authentication and customizable query field.
+ * A DocumentReader implementation that reads documents from Elasticsearch. Supports basic
+ * authentication and customizable query field.
  *
- * @author xiadong
+ * @author brianxiadong
  * @since 0.0.1
  */
 public class ElasticsearchDocumentReader implements DocumentReader {
 
-    private final ElasticsearchConfig config;
-    private final ElasticsearchClient client;
+	private final ElasticsearchConfig config;
 
-    /**
-     * Constructor that initializes the Elasticsearch client with the provided configuration.
-     *
-     * @param config The Elasticsearch configuration
-     */
-    public ElasticsearchDocumentReader(ElasticsearchConfig config) {
-        this.config = config;
-        this.client = createClient();
-    }
+	private final ElasticsearchClient client;
 
-    @Override
-    public List<Document> get() {
-        try {
-            // Get all documents
-            SearchResponse<Map> response = client.search(s -> s
-                    .index(config.getIndex())
-                    .query(q -> q
-                            .matchAll(m -> m))
-                    .size(config.getMaxResults()), Map.class);
+	/**
+	 * Constructor that initializes the Elasticsearch client with the provided
+	 * configuration.
+	 * @param config The Elasticsearch configuration
+	 */
+	public ElasticsearchDocumentReader(ElasticsearchConfig config) {
+		this.config = config;
+		try {
+			this.client = createClient();
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Failed to create Elasticsearch client", e);
+		}
+	}
 
-            List<Document> documents = new ArrayList<>();
-            response.hits().hits().forEach(hit -> {
-                Map<String, Object> source = hit.source();
-                if (source != null) {
-                    Document document = new Document(
-                            source.getOrDefault(config.getQueryField(), "").toString(),
-                            source
-                    );
-                    documents.add(document);
-                }
-            });
-            return documents;
-        }
-        catch (IOException e) {
-            throw new RuntimeException("Failed to get documents from Elasticsearch", e);
-        }
-    }
+	@Override
+	public List<Document> get() {
+		try {
+			// Get all documents
+			SearchResponse<Map> response = client.search(
+					s -> s.index(config.getIndex()).query(q -> q.matchAll(m -> m)).size(config.getMaxResults()),
+					Map.class);
 
-    /**
-     * Get a document by its ID.
-     *
-     * @param id The document ID
-     * @return The document if found, null otherwise
-     */
-    public Document getById(String id) {
-        try {
-            var response = client.get(g -> g
-                    .index(config.getIndex())
-                    .id(id), Map.class);
+			return getDocuments(response);
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Failed to get documents from Elasticsearch", e);
+		}
+	}
 
-            if (!response.found() || response.source() == null) {
-                return null;
-            }
+	@NotNull
+	private List<Document> getDocuments(SearchResponse<Map> response) {
+		List<Document> documents = new ArrayList<>();
+		response.hits().hits().forEach(hit -> {
+			Map<String, Object> source = hit.source();
+			if (source != null) {
+				Document document = new Document(source.getOrDefault(config.getQueryField(), "").toString(), source);
+				documents.add(document);
+			}
+		});
+		return documents;
+	}
 
-            return new Document(
-                    response.source().getOrDefault(config.getQueryField(), "").toString(),
-                    response.source()
-            );
-        }
-        catch (IOException e) {
-            throw new RuntimeException("Failed to get document from Elasticsearch with id: " + id, e);
-        }
-    }
+	/**
+	 * Get a document by its ID.
+	 * @param id The document ID
+	 * @return The document if found, null otherwise
+	 */
+	public Document getById(String id) {
+		try {
+			var response = client.get(g -> g.index(config.getIndex()).id(id), Map.class);
 
-    /**
-     * Read documents matching the specified query.
-     *
-     * @param query The search query
-     * @return List of matching documents
-     */
-    public List<Document> readWithQuery(String query) {
-        try {
-            // Build the search request with query
-            SearchResponse<Map> response = client.search(s -> s
-                    .index(config.getIndex())
-                    .query(q -> q
-                            .match(new MatchQuery.Builder()
-                                    .field(config.getQueryField())
-                                    .query(query)
-                                    .build()))
-                    .size(config.getMaxResults()), Map.class);
+			if (!response.found() || response.source() == null) {
+				return null;
+			}
 
-            List<Document> documents = new ArrayList<>();
-            response.hits().hits().forEach(hit -> {
-                Map<String, Object> source = hit.source();
-                if (source != null) {
-                    Document document = new Document(
-                            source.getOrDefault(config.getQueryField(), "").toString(),
-                            source
-                    );
-                    documents.add(document);
-                }
-            });
-            return documents;
-        }
-        catch (IOException e) {
-            throw new RuntimeException("Failed to read documents from Elasticsearch with query: " + query, e);
-        }
-    }
+			return new Document(response.source().getOrDefault(config.getQueryField(), "").toString(),
+					response.source());
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Failed to get document from Elasticsearch with id: " + id, e);
+		}
+	}
 
-    private ElasticsearchClient createClient() {
-        // Create RestClient configuration
-        HttpHost httpHost = new HttpHost(config.getHost(), config.getPort());
-        RestClientBuilder restClientBuilder = RestClient.builder(httpHost);
+	/**
+	 * Read documents matching the specified query.
+	 * @param query The search query
+	 * @return List of matching documents
+	 */
+	public List<Document> readWithQuery(String query) {
+		try {
+			// Build the search request with query
+			SearchResponse<Map> response = client.search(s -> s.index(config.getIndex())
+				.query(q -> q.match(new MatchQuery.Builder().field(config.getQueryField()).query(query).build()))
+				.size(config.getMaxResults()), Map.class);
 
-        // Add authentication if credentials are provided
-        if (StringUtils.hasText(config.getUsername()) && StringUtils.hasText(config.getPassword())) {
-            CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-            credentialsProvider.setCredentials(AuthScope.ANY,
-                    new UsernamePasswordCredentials(config.getUsername(), config.getPassword()));
+			return getDocuments(response);
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Failed to read documents from Elasticsearch with query: " + query, e);
+		}
+	}
 
-            restClientBuilder.setHttpClientConfigCallback(
-                    (HttpAsyncClientBuilder clientBuilder) -> clientBuilder
-                            .setDefaultCredentialsProvider(credentialsProvider));
-        }
+	private ElasticsearchClient createClient()
+			throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+		// Create HttpHosts for all nodes
+		HttpHost[] httpHosts;
+		if (!CollectionUtils.isEmpty(config.getNodes())) {
+			httpHosts = config.getNodes().stream().map(node -> {
+				String[] parts = node.split(":");
+				return new HttpHost(parts[0], Integer.parseInt(parts[1]), config.getScheme());
+			}).toArray(HttpHost[]::new);
+		}
+		else {
+			// Fallback to single node configuration
+			httpHosts = new HttpHost[] { new HttpHost(config.getHost(), config.getPort(), config.getScheme()) };
+		}
 
-        // Create the transport and client
-        ElasticsearchTransport transport = new RestClientTransport(
-                restClientBuilder.build(), new JacksonJsonpMapper());
-        return new ElasticsearchClient(transport);
-    }
+		var restClientBuilder = RestClient.builder(httpHosts);
+
+		// Add authentication if credentials are provided
+		if (StringUtils.hasText(config.getUsername()) && StringUtils.hasText(config.getPassword())) {
+			CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+			credentialsProvider.setCredentials(AuthScope.ANY,
+					new UsernamePasswordCredentials(config.getUsername(), config.getPassword()));
+
+			// Create SSL context if using HTTPS
+			if ("https".equalsIgnoreCase(config.getScheme())) {
+				SSLContext sslContext = SSLContextBuilder.create()
+					.loadTrustMaterial(null, (chains, authType) -> true)
+					.build();
+
+				restClientBuilder.setHttpClientConfigCallback(
+						httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)
+							.setSSLContext(sslContext)
+							.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE));
+			}
+			else {
+				restClientBuilder.setHttpClientConfigCallback(
+						httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
+			}
+		}
+
+		// Create the transport and client
+		ElasticsearchTransport transport = new RestClientTransport(restClientBuilder.build(), new JacksonJsonpMapper());
+		return new ElasticsearchClient(transport);
+	}
+
 }
