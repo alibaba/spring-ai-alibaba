@@ -25,6 +25,12 @@
 
     <packaging>pom</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-core</artifactId>
+        </dependency>
+    </dependencies>
 
     <name>Spring AI Alibaba</name>
     <description>Building AI applications with Spring Boot</description>
@@ -63,6 +69,7 @@
         <module>community/document-readers/feishu-document-reader</module>
         <module>community/document-readers/yuque-document-reader</module>
         <module>community/document-readers/obsidian-document-reader</module>
+        <module>community/document-readers/onenote-document-reader</module>
         <module>community/document-readers/notion-document-reader</module>
         <module>community/document-readers/arxiv-document-reader</module>
         <module>community/document-readers/chatgpt-data-document-reader</module>
