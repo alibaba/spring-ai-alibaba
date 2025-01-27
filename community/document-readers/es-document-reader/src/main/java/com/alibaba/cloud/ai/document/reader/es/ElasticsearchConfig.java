@@ -15,104 +15,134 @@
  */
 package com.alibaba.cloud.ai.document.reader.es;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Configuration class for Elasticsearch document reader.
- * Contains all necessary settings to connect to and query Elasticsearch.
+ * Configuration class for Elasticsearch document reader. Contains all necessary settings
+ * to connect to and query Elasticsearch.
  *
- * @author xiadong
+ * @author brianxiadong
  * @since 0.0.1
  */
 public class ElasticsearchConfig {
 
-    /**
-     * Elasticsearch host URL
-     */
-    private String host;
+	/**
+	 * Elasticsearch host URL
+	 */
+	private String host = "localhost";
 
-    /**
-     * Elasticsearch port
-     */
-    private int port = 9200;
+	/**
+	 * Elasticsearch port
+	 */
+	private int port = 9200;
 
-    /**
-     * Index name to query
-     */
-    private String index;
+	/**
+	 * List of cluster nodes in format: hostname:port
+	 */
+	private List<String> nodes = new ArrayList<>();
 
-    /**
-     * Query field to search in
-     */
-    private String queryField = "content";
+	/**
+	 * Index name to query
+	 */
+	private String index;
 
-    /**
-     * Username for authentication (optional)
-     */
-    private String username;
+	/**
+	 * Query field to search in
+	 */
+	private String queryField = "content";
 
-    /**
-     * Password for authentication (optional)
-     */
-    private String password;
+	/**
+	 * Username for authentication (optional)
+	 */
+	private String username;
 
-    /**
-     * Maximum number of documents to retrieve
-     */
-    private int maxResults = 10;
+	/**
+	 * Password for authentication (optional)
+	 */
+	private String password;
 
-    // Getters and Setters
-    public String getHost() {
-        return host;
-    }
+	/**
+	 * Maximum number of documents to retrieve
+	 */
+	private int maxResults = 10;
 
-    public void setHost(String host) {
-        this.host = host;
-    }
+	/**
+	 * Connection scheme (http/https)
+	 */
+	private String scheme = "http";
 
-    public int getPort() {
-        return port;
-    }
+	// Getters and Setters
+	public String getHost() {
+		return host;
+	}
 
-    public void setPort(int port) {
-        this.port = port;
-    }
+	public void setHost(String host) {
+		this.host = host;
+	}
 
-    public String getIndex() {
-        return index;
-    }
+	public int getPort() {
+		return port;
+	}
 
-    public void setIndex(String index) {
-        this.index = index;
-    }
+	public void setPort(int port) {
+		this.port = port;
+	}
 
-    public String getQueryField() {
-        return queryField;
-    }
+	public List<String> getNodes() {
+		return nodes;
+	}
 
-    public void setQueryField(String queryField) {
-        this.queryField = queryField;
-    }
+	public void setNodes(List<String> nodes) {
+		this.nodes = nodes;
+	}
 
-    public String getUsername() {
-        return username;
-    }
+	public String getIndex() {
+		return index;
+	}
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
+	public void setIndex(String index) {
+		this.index = index;
+	}
 
-    public String getPassword() {
-        return password;
-    }
+	public String getQueryField() {
+		return queryField;
+	}
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+	public void setQueryField(String queryField) {
+		this.queryField = queryField;
+	}
 
-    public int getMaxResults() {
-        return maxResults;
-    }
+	public String getUsername() {
+		return username;
+	}
 
-    public void setMaxResults(int maxResults) {
-        this.maxResults = maxResults;
-    }
-} 
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	public int getMaxResults() {
+		return maxResults;
+	}
+
+	public void setMaxResults(int maxResults) {
+		this.maxResults = maxResults;
+	}
+
+	public String getScheme() {
+		return scheme;
+	}
+
+	public void setScheme(String scheme) {
+		this.scheme = scheme;
+	}
+
+}
