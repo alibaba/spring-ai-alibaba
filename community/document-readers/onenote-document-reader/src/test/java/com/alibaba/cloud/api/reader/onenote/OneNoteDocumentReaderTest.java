@@ -52,11 +52,10 @@ public class OneNoteDocumentReaderTest {
 
     @Test
     public void test_load_section(){
-        String testSectionId = "0-4F3ACAF53591DCC0!2862";
 
         // Create page reader
         OneNoteResource oneNoteResource = OneNoteResource.builder()
-                .resourceId(testSectionId)
+                .resourceId(TEST_SECTION_ID)
                 .resourceType(OneNoteResource.ResourceType.SECTION)
                 .build();
         OneNoteDocumentReader oneNoteDocumentReader = new OneNoteDocumentReader(TEST_ACCESS_TOKEN, oneNoteResource);
@@ -79,11 +78,10 @@ public class OneNoteDocumentReaderTest {
 
     @Test
     public void test_load_notebook(){
-        String testNoteBookId = "0-4F3ACAF53591DCC0!2860";
 
         // Create page reader
         OneNoteResource oneNoteResource = OneNoteResource.builder()
-                .resourceId(testNoteBookId)
+                .resourceId(TEST_NOTEBOOK_ID)
                 .resourceType(OneNoteResource.ResourceType.NOTEBOOK)
                 .build();
         OneNoteDocumentReader oneNoteDocumentReader = new OneNoteDocumentReader(TEST_ACCESS_TOKEN, oneNoteResource);
