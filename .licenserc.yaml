@@ -63,6 +63,8 @@ header:
     - '**/*.imports'
     - '**/*.bib'
     - '**/*.st'
+    - '**/*.eml'
+    - '**/*.mbox'
 
   # When a license check fails, the check result is displayed on the PR
   comment: on-failure

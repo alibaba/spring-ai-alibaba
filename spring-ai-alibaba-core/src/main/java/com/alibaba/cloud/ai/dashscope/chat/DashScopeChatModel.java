@@ -198,7 +198,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 				return response;
 			});
 
-		if (isToolCall(chatResponse,
+		if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(chatResponse,
 				Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
 			var toolCallConversation = handleToolCalls(prompt, chatResponse);
 			// Recursively call the call method with the tool call message
@@ -276,9 +276,8 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-
-				if (isToolCall(response,
-						Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
+				if (!isProxyToolCalls(prompt, this.defaultOptions) &&
+						isToolCall(response, Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
 					var toolCallConversation = handleToolCalls(prompt, response);
 					// Recursively call the stream method with the tool call message
 					// conversation that contains the call responses.
