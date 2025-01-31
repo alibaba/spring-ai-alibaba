@@ -68,7 +68,7 @@ public class OneNoteDocumentReader implements DocumentReader {
                 + "+eq+" + "'" + notebookId + "'";
 
         // Get the page IDs from the notebook by querying the API
-        List<String> pageIdsFromNotebook = getOneNotePageIdsByURI(uri);
+        List<String> pageIdsFromNotebook = getOneNotePageIdsByURI(accessToken, uri);
 
         // Fetch the content for each page by its ID
         return pageIdsFromNotebook.stream()
@@ -85,7 +85,7 @@ public class OneNoteDocumentReader implements DocumentReader {
                 + "+eq+" + "'" + sectionId + "'";
 
         // Get the page IDs from the notebook by querying the API
-        List<String> pageIdsBySection = getOneNotePageIdsByURI(uri);
+        List<String> pageIdsBySection = getOneNotePageIdsByURI(accessToken, uri);
 
         // Fetch the content for each page by its ID
         return pageIdsBySection.stream()
@@ -93,7 +93,7 @@ public class OneNoteDocumentReader implements DocumentReader {
                 .toList();
     }
 
-    private List<String> getOneNotePageIdsByURI(String uri) {
+    private List<String> getOneNotePageIdsByURI(String accessToken, String uri) {
         HttpRequest request = HttpRequest.newBuilder()
                 .header("Authorization", accessToken)
                 .header("Content-Type", "application/json")
@@ -151,6 +151,11 @@ public class OneNoteDocumentReader implements DocumentReader {
         OneNoteResource.ResourceType resourceType = this.oneNoteResource.getResourceType();
         String resourceId = this.oneNoteResource.getResourceId();
 
+        // Parameters check
+        Assert.notNull(accessToken, "token must not be null");
+        Assert.notNull(resourceType, "resource type must not be null");
+        Assert.notNull(resourceId, "resource id must not be null");
+
         // Fetch content based on the resource type (Notebook, Section, or Page)
         List<String> content = switch (resourceType) {
             case NOTEBOOK -> getNoteBookContent(accessToken, resourceId);
@@ -159,7 +164,7 @@ public class OneNoteDocumentReader implements DocumentReader {
         };
 
         // Build metadata for the resource
-        Map<String, Object> metaData = buildMetadata(accessToken);
+        Map<String, Object> metaData = buildMetadata();
 
         // Construct a list of Document objects
         return content.stream()
@@ -176,15 +181,15 @@ public class OneNoteDocumentReader implements DocumentReader {
         String text = parseDoc.text();
 
         // Return title and content in a readable format
-        return title + (StringUtils.hasText(title) ? "" : "\n") + text;
+        return (StringUtils.hasText(title) ? title : "") + "\n" + text;
     }
 
     /**
      * Builds metadata for a given OneNote resource (Notebook, Section, or Page) by querying the Microsoft Graph API.
      */
-    private Map<String, Object> buildMetadata(String accessToken) {
+    private Map<String, Object> buildMetadata() {
         Map<String, Object> metadata = new HashMap<>();
-
+        String accessToken = this.accessToken;
         String resourceId = this.oneNoteResource.getResourceId();
         OneNoteResource.ResourceType resourceType = this.oneNoteResource.getResourceType();
         String endpoint = switch (resourceType) {
