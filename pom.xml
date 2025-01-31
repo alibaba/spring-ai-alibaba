@@ -63,6 +63,7 @@
         <module>community/document-readers/feishu-document-reader</module>
         <module>community/document-readers/yuque-document-reader</module>
         <module>community/document-readers/obsidian-document-reader</module>
+        <module>community/document-readers/onenote-document-reader</module>
         <module>community/document-readers/notion-document-reader</module>
         <module>community/document-readers/arxiv-document-reader</module>
         <module>community/document-readers/chatgpt-data-document-reader</module>
