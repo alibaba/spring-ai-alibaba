@@ -28,7 +28,6 @@ import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.retry.TransientAiException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -46,207 +45,196 @@ import java.util.Objects;
  */
 public class DashScopeImageModel implements ImageModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(DashScopeImageModel.class);
+    private static final Logger logger = LoggerFactory.getLogger(DashScopeImageModel.class);
 
-	/**
-	 * The default model used for the image completion requests.
-	 */
-	private static final String DEFAULT_MODEL = DashScopeImageApi.DEFAULT_IMAGE_MODEL;
+    /**
+     * The default model used for the image completion requests.
+     */
+    private static final String DEFAULT_MODEL = DashScopeImageApi.DEFAULT_IMAGE_MODEL;
 
-	/**
-	 * Low-level access to the DashScope Image API.
-	 */
-	private final DashScopeImageApi dashScopeImageApi;
+    /**
+     * Low-level access to the DashScope Image API.
+     */
+    private final DashScopeImageApi dashScopeImageApi;
 
-	/**
-	 * Observation registry used for instrumentation.
-	 */
-	private final ObservationRegistry observationRegistry;
+    /**
+     * Observation registry used for instrumentation.
+     */
+    private final ObservationRegistry observationRegistry;
 
-	/**
-	 * The default options used for the image completion requests.
-	 */
-	private final DashScopeImageOptions defaultOptions;
+    /**
+     * The default options used for the image completion requests.
+     */
+    private final DashScopeImageOptions defaultOptions;
 
-	/**
-	 * The retry template used to retry the OpenAI Image API calls.
-	 */
-	private final RetryTemplate retryTemplate;
+    /**
+     * The retry template used to retry the OpenAI Image API calls.
+     */
+    private final RetryTemplate retryTemplate;
 
-	/**
-	 * Conventions to use for generating observations.
-	 */
-	private ImageModelObservationConvention observationConvention = new DefaultImageModelObservationConvention();
+    /**
+     * Conventions to use for generating observations.
+     */
+    private ImageModelObservationConvention observationConvention = new DefaultImageModelObservationConvention();
 
-	public DashScopeImageModel(DashScopeImageApi dashScopeImageApi) {
-		this(dashScopeImageApi,
-				DashScopeImageOptions.builder().withModel(DashScopeImageApi.DEFAULT_IMAGE_MODEL).build(),
-				RetryUtils.DEFAULT_RETRY_TEMPLATE, ObservationRegistry.NOOP);
-	}
+    public DashScopeImageModel (DashScopeImageApi dashScopeImageApi) {
+        this(dashScopeImageApi, DashScopeImageOptions.builder().withModel(DashScopeImageApi.DEFAULT_IMAGE_MODEL).build(), RetryUtils.DEFAULT_RETRY_TEMPLATE, ObservationRegistry.NOOP);
+    }
 
-	public DashScopeImageModel(DashScopeImageApi dashScopeImageApi, DashScopeImageOptions options) {
-		this(dashScopeImageApi, options, RetryUtils.DEFAULT_RETRY_TEMPLATE, ObservationRegistry.NOOP);
-	}
+    public DashScopeImageModel (DashScopeImageApi dashScopeImageApi, DashScopeImageOptions options) {
+        this(dashScopeImageApi, options, RetryUtils.DEFAULT_RETRY_TEMPLATE, ObservationRegistry.NOOP);
+    }
 
-	public DashScopeImageModel(DashScopeImageApi dashScopeImageApi, ObservationRegistry observationRegistry) {
-		this(dashScopeImageApi,
-				DashScopeImageOptions.builder().withModel(DashScopeImageApi.DEFAULT_IMAGE_MODEL).build(),
-				RetryUtils.DEFAULT_RETRY_TEMPLATE, observationRegistry);
-	}
+    public DashScopeImageModel (DashScopeImageApi dashScopeImageApi, ObservationRegistry observationRegistry) {
+        this(dashScopeImageApi, DashScopeImageOptions.builder().withModel(DashScopeImageApi.DEFAULT_IMAGE_MODEL).build(), RetryUtils.DEFAULT_RETRY_TEMPLATE, observationRegistry);
+    }
 
-	public DashScopeImageModel(DashScopeImageApi dashScopeImageApi, ObservationRegistry observationRegistry,
-			DashScopeImageOptions options) {
-		this(dashScopeImageApi, options, RetryUtils.DEFAULT_RETRY_TEMPLATE, observationRegistry);
-	}
+    public DashScopeImageModel (DashScopeImageApi dashScopeImageApi, ObservationRegistry observationRegistry, DashScopeImageOptions options) {
+        this(dashScopeImageApi, options, RetryUtils.DEFAULT_RETRY_TEMPLATE, observationRegistry);
+    }
 
-	public DashScopeImageModel(DashScopeImageApi dashScopeImageApi, DashScopeImageOptions options,
-			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
+    public DashScopeImageModel (DashScopeImageApi dashScopeImageApi, DashScopeImageOptions options, RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
 
-		Assert.notNull(dashScopeImageApi, "DashScopeImageApi must not be null");
-		Assert.notNull(options, "options must not be null");
-		Assert.notNull(retryTemplate, "retryTemplate must not be null");
-		Assert.notNull(observationRegistry, "observationRegistry must not be null");
+        Assert.notNull(dashScopeImageApi, "DashScopeImageApi must not be null");
+        Assert.notNull(options, "options must not be null");
+        Assert.notNull(retryTemplate, "retryTemplate must not be null");
+        Assert.notNull(observationRegistry, "observationRegistry must not be null");
 
-		this.dashScopeImageApi = dashScopeImageApi;
-		this.defaultOptions = options;
-		this.retryTemplate = retryTemplate;
-		this.observationRegistry = observationRegistry;
-	}
+        this.dashScopeImageApi = dashScopeImageApi;
+        this.defaultOptions = options;
+        this.retryTemplate = retryTemplate;
+        this.observationRegistry = observationRegistry;
+    }
 
-	@Override
-	public ImageResponse call(ImagePrompt prompt) {
+    @Override
+    public ImageResponse call (ImagePrompt prompt) {
 
-		String taskId = submitImageGenTask(prompt);
-		if (taskId == null) {
-			return new ImageResponse(List.of());
-		}
+        String taskId = submitImageGenTask(prompt);
+        if (taskId == null) {
+            return new ImageResponse(List.of());
+        }
 
-		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
-			.imagePrompt(prompt)
-			.provider(DashScopeApiConstants.PROVIDER_NAME)
-			.requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions)
-			.build();
+        ImageModelObservationContext observationContext = ImageModelObservationContext.builder().imagePrompt(prompt).provider(DashScopeApiConstants.PROVIDER_NAME).requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions).build();
 
-		Observation observation = ImageModelObservationDocumentation.IMAGE_MODEL_OPERATION.observation(
-				observationConvention, new DefaultImageModelObservationConvention(), () -> observationContext,
-				this.observationRegistry);
+        Observation observation = ImageModelObservationDocumentation
+                .IMAGE_MODEL_OPERATION
+                .observation(observationConvention, new DefaultImageModelObservationConvention(),
+                        () -> observationContext, this.observationRegistry);
 
-		return observation.observe(() -> {
-			ImageResponse imageResponse = new ImageResponse(List.of());
+        return observation.observe(() -> {
+            ImageResponse imageResponse = new ImageResponse(List.of());
 
-			imageResponse = this.retryTemplate.execute(ctx -> {
+            try {
+                imageResponse = this.retryTemplate.execute(ctx -> {
 
-				DashScopeImageApi.DashScopeImageAsyncReponse getResultResponse = getImageGenTask(taskId);
+                    DashScopeImageApi.DashScopeImageAsyncReponse getResultResponse = getImageGenTask(taskId);
 
-				if (!isTaskCompleted(getResultResponse)) {
-					logger.warn("Image generation task is not completed yet, taskId: {}", taskId);
-					throw new TransientAiException("Image generation task is not completed yet, taskId: " + taskId);
-				}
+                    int retryCount = 0;
+                    while (!isTaskCompleted(getResultResponse)) {
 
-				getResultResponse = getImageGenTask(taskId);
+                        logger.warn("Image generation task is not completed yet, taskId: {}", taskId);
 
-				DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput output = getResultResponse
-					.output();
-				logger.info("current imageModel generated result --> {}", getResultResponse.output());
+                        if (retryCount > 5) {
+                            logger.error("Image generation task failure, taskId: {}", taskId);
+                            break;
+                        }
 
-				return !CollectionUtils.isEmpty(getResultResponse.output().results()) ? toImageResponse(output)
-						: new ImageResponse(List.of());
-			}, (ctx) -> {
-				logger.error("Image generation failed after {} retries", ctx.getRetryCount());
-				return new ImageResponse(List.of());
-			});
+                        Thread.sleep(10000L);
+                        getResultResponse = getImageGenTask(taskId);
+                        retryCount++;
+                    }
 
-			observationContext.setResponse(imageResponse);
-			return imageResponse;
-		});
-	}
+                    DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput output = getResultResponse.output();
+                    logger.info("current imageModel generated result --> {}", getResultResponse.output());
 
-	/**
-	 * Merge Image options. Notice: Programmatically set options parameters take
-	 * precedence
-	 */
-	private DashScopeImageOptions toImageOptions(ImageOptions runtimeOptions) {
+                    return !CollectionUtils.isEmpty(getResultResponse.output().results()) ? toImageResponse(output) : new ImageResponse(List.of());
 
-		// set default image model
-		var currentOptions = DashScopeImageOptions.builder().withModel(DEFAULT_MODEL).build();
+                }, (ctx) -> {
+                    logger.error("Image generation failed after {} retries", ctx.getRetryCount());
+                    return new ImageResponse(List.of());
+                });
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
 
-		if (Objects.nonNull(runtimeOptions)) {
-			currentOptions = ModelOptionsUtils.copyToTarget(runtimeOptions, ImageOptions.class,
-					DashScopeImageOptions.class);
-		}
+            observationContext.setResponse(imageResponse);
+            return imageResponse;
+        });
+    }
 
-		currentOptions = ModelOptionsUtils.merge(currentOptions, this.defaultOptions, DashScopeImageOptions.class);
+    /**
+     * Merge Image options. Notice: Programmatically set options parameters take
+     * precedence
+     */
+    private DashScopeImageOptions toImageOptions (ImageOptions runtimeOptions) {
 
-		return currentOptions;
-	}
+        // set default image model
+        var currentOptions = DashScopeImageOptions.builder().withModel(DEFAULT_MODEL).build();
 
-	private ImageResponse toImageResponse(
-			DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput output) {
-		List<DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseResult> genImageList = output
-			.results();
-		if (genImageList == null || genImageList.isEmpty()) {
-			return new ImageResponse(List.of());
-		}
-		List<ImageGeneration> imageGenerationList = genImageList.stream()
-			.map(entry -> new ImageGeneration(
-					new Image(entry.url(), Base64.getEncoder().encodeToString(entry.url().getBytes()))))
-			.toList();
+        if (Objects.nonNull(runtimeOptions)) {
+            currentOptions = ModelOptionsUtils.copyToTarget(runtimeOptions, ImageOptions.class, DashScopeImageOptions.class);
+        }
 
-		return new ImageResponse(imageGenerationList);
-	}
+        currentOptions = ModelOptionsUtils.merge(currentOptions, this.defaultOptions, DashScopeImageOptions.class);
 
-	private DashScopeImageApi.DashScopeImageRequest constructImageRequest(ImagePrompt imagePrompt,
-			DashScopeImageOptions options) {
+        return currentOptions;
+    }
 
-		return new DashScopeImageApi.DashScopeImageRequest(options.getModel(),
-				new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestInput(
-						imagePrompt.getInstructions().get(0).getText(), options.getNegativePrompt(),
-						options.getRefImg()),
-				new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestParameter(options.getStyle(),
-						options.getSize(), options.getN(), options.getSeed(), options.getRefStrength(),
-						options.getRefMode()));
-	}
+    private ImageResponse toImageResponse (DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput output) {
+        List<DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseResult> genImageList = output.results();
+        if (genImageList == null || genImageList.isEmpty()) {
+            return new ImageResponse(List.of());
+        }
+        List<ImageGeneration> imageGenerationList = genImageList.stream().map(entry -> new ImageGeneration(new Image(entry.url(), Base64.getEncoder().encodeToString(entry.url().getBytes())))).toList();
 
-	/**
-	 * Use the provided convention for reporting observation data
-	 * @param observationConvention The provided convention
-	 */
-	public void setObservationConvention(ImageModelObservationConvention observationConvention) {
-		Assert.notNull(observationConvention, "observationConvention cannot be null");
-		this.observationConvention = observationConvention;
-	}
+        return new ImageResponse(imageGenerationList);
+    }
 
-	public String submitImageGenTask(ImagePrompt request) {
+    private DashScopeImageApi.DashScopeImageRequest constructImageRequest (ImagePrompt imagePrompt, DashScopeImageOptions options) {
 
-		DashScopeImageOptions imageOptions = toImageOptions(request.getOptions());
-		logger.debug("Image options: {}", imageOptions);
+        return new DashScopeImageApi.DashScopeImageRequest(options.getModel(), new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestInput(imagePrompt.getInstructions().get(0).getText(), options.getNegativePrompt(), options.getRefImg()), new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestParameter(options.getStyle(), options.getSize(), options.getN(), options.getSeed(), options.getRefStrength(), options.getRefMode()));
+    }
 
-		DashScopeImageApi.DashScopeImageRequest dashScopeImageRequest = constructImageRequest(request, imageOptions);
+    /**
+     * Use the provided convention for reporting observation data
+     *
+     * @param observationConvention The provided convention
+     */
+    public void setObservationConvention (ImageModelObservationConvention observationConvention) {
+        Assert.notNull(observationConvention, "observationConvention cannot be null");
+        this.observationConvention = observationConvention;
+    }
 
-		ResponseEntity<DashScopeImageApi.DashScopeImageAsyncReponse> submitResponse = dashScopeImageApi
-			.submitImageGenTask(dashScopeImageRequest);
+    public String submitImageGenTask (ImagePrompt request) {
 
-		if (submitResponse == null || submitResponse.getBody() == null) {
-			logger.warn("Submit imageGen error,request: {}", request);
-			return null;
-		}
+        DashScopeImageOptions imageOptions = toImageOptions(request.getOptions());
+        logger.debug("Image options: {}", imageOptions);
 
-		return submitResponse.getBody().output().taskId();
-	}
+        DashScopeImageApi.DashScopeImageRequest dashScopeImageRequest = constructImageRequest(request, imageOptions);
 
-	public DashScopeImageApi.DashScopeImageAsyncReponse getImageGenTask(String taskId) {
-		ResponseEntity<DashScopeImageApi.DashScopeImageAsyncReponse> getImageGenResponse = dashScopeImageApi
-			.getImageGenTaskResult(taskId);
-		if (getImageGenResponse == null || getImageGenResponse.getBody() == null) {
-			logger.warn("No image response returned for taskId: {}", taskId);
-			return null;
-		}
-		return getImageGenResponse.getBody();
-	}
+        ResponseEntity<DashScopeImageApi.DashScopeImageAsyncReponse> submitResponse = dashScopeImageApi.submitImageGenTask(dashScopeImageRequest);
 
-	private boolean isTaskCompleted(DashScopeImageApi.DashScopeImageAsyncReponse response) {
-		List<String> checkedTaskStatus = List.of("SUCCEEDED", "FAILED");
-		return checkedTaskStatus.contains(response.output().taskStatus());
-	}
+        if (submitResponse == null || submitResponse.getBody() == null) {
+            logger.warn("Submit imageGen error,request: {}", request);
+            return null;
+        }
+
+        return submitResponse.getBody().output().taskId();
+    }
+
+    public DashScopeImageApi.DashScopeImageAsyncReponse getImageGenTask (String taskId) {
+        ResponseEntity<DashScopeImageApi.DashScopeImageAsyncReponse> getImageGenResponse = dashScopeImageApi.getImageGenTaskResult(taskId);
+        if (getImageGenResponse == null || getImageGenResponse.getBody() == null) {
+            logger.warn("No image response returned for taskId: {}", taskId);
+            return null;
+        }
+        return getImageGenResponse.getBody();
+    }
+
+    private boolean isTaskCompleted (DashScopeImageApi.DashScopeImageAsyncReponse response) {
+        List<String> checkedTaskStatus = List.of("SUCCEEDED", "FAILED");
+        return checkedTaskStatus.contains(response.output().taskStatus());
+    }
 
 }

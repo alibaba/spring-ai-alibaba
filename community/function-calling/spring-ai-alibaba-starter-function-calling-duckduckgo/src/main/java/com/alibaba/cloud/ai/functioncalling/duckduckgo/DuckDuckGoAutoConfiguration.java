@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.functioncalling.alitranslate;
+package com.alibaba.cloud.ai.functioncalling.duckduckgo;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -24,20 +23,18 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 /**
- * @author yunlong
+ * @author 北极星
  */
 @Configuration
-@ConditionalOnClass(AliTranslateService.class)
-@EnableConfigurationProperties(com.alibaba.cloud.ai.functioncalling.alitranslate.AliTranslateProperties.class)
+@EnableConfigurationProperties(DuckDuckGoProperties.class)
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.duckduckgo", name = "enabled",
-		havingValue = "true")
-public class AliTranslateAutoConfiguration {
+        havingValue = "true", matchIfMissing = true)
+public class DuckDuckGoAutoConfiguration {
 
-	@Bean
-	@ConditionalOnMissingBean
-	@Description("Implement natural language translation capabilities.")
-	public AliTranslateService aliTranslateFunction(AliTranslateProperties properties) {
-		return new AliTranslateService(properties);
-	}
-
+    @ConditionalOnMissingBean
+    @Bean
+    @Description("use duckduckgo engine to search news.")
+    public DuckDuckGoQueryNewsService duckDuckGoQueryNewsFunction (DuckDuckGoProperties duckDuckGoProperties) {
+        return new DuckDuckGoQueryNewsService(duckDuckGoProperties);
+    }
 }

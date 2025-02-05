@@ -1,0 +1,77 @@
+autoDetectedPackages:
+- com.alibaba.cloud.ai.advisor
+- com.alibaba.cloud.ai.agent
+- com.alibaba.cloud.ai.autoconfig.dashscope
+- com.alibaba.cloud.ai.autoconfig.prompt
+- com.alibaba.cloud.ai.autoconfigure.dashscope
+- com.alibaba.cloud.ai.autoconfigure.prompt
+- com.alibaba.cloud.ai.dashscope
+- com.alibaba.cloud.ai.document
+- com.alibaba.cloud.ai.evaluation
+- com.alibaba.cloud.ai.functioncalling.alitranslate
+- com.alibaba.cloud.ai.functioncalling.amp
+- com.alibaba.cloud.ai.functioncalling.baidumap
+- com.alibaba.cloud.ai.functioncalling.baidusearch
+- com.alibaba.cloud.ai.functioncalling.baidutranslate
+- com.alibaba.cloud.ai.functioncalling.bingsearch
+- com.alibaba.cloud.ai.functioncalling.crawler
+- com.alibaba.cloud.ai.functioncalling.dingtalk
+- com.alibaba.cloud.ai.functioncalling.duckduckgo
+- com.alibaba.cloud.ai.functioncalling.githubtoolkit
+- com.alibaba.cloud.ai.functioncalling.googletranslate
+- com.alibaba.cloud.ai.functioncalling.jsonprocessor
+- com.alibaba.cloud.ai.functioncalling.kuaidi100
+- com.alibaba.cloud.ai.functioncalling.larksuite
+- com.alibaba.cloud.ai.functioncalling.microsofttranslate
+- com.alibaba.cloud.ai.functioncalling.regex
+- com.alibaba.cloud.ai.functioncalling.serpapi
+- com.alibaba.cloud.ai.functioncalling.sinanews
+- com.alibaba.cloud.ai.functioncalling.time
+- com.alibaba.cloud.ai.functioncalling.toutiaonews
+- com.alibaba.cloud.ai.functioncalling.weather
+- com.alibaba.cloud.ai.functioncalling.webstarter
+- com.alibaba.cloud.ai.functioncalling.youdaotranslate
+- com.alibaba.cloud.ai.functioncalling.yuque
+- com.alibaba.cloud.ai.model
+- com.alibaba.cloud.ai.parser.apache.pdfbox
+- com.alibaba.cloud.ai.parser.bibtex
+- com.alibaba.cloud.ai.parser.bshtml
+- com.alibaba.cloud.ai.parser.markdown
+- com.alibaba.cloud.ai.parser.pdf.tables
+- com.alibaba.cloud.ai.parser.tika
+- com.alibaba.cloud.ai.prompt
+- com.alibaba.cloud.ai.reader.arxiv
+- com.alibaba.cloud.ai.reader.chatgpt.data
+- com.alibaba.cloud.ai.reader.email.eml
+- com.alibaba.cloud.ai.reader.feishu
+- com.alibaba.cloud.ai.reader.gitbook
+- com.alibaba.cloud.ai.reader.github
+- com.alibaba.cloud.ai.reader.gitlab
+- com.alibaba.cloud.ai.reader.gptrepo
+- com.alibaba.cloud.ai.reader.huggingface.fs
+- com.alibaba.cloud.ai.reader.mbox
+- com.alibaba.cloud.ai.reader.mysql
+- com.alibaba.cloud.ai.reader.notion
+- com.alibaba.cloud.ai.reader.obsidian
+- com.alibaba.cloud.ai.reader.poi
+- com.alibaba.cloud.ai.reader.tencent.cos
+- com.alibaba.cloud.ai.reader.yuque
+- com.alibaba.cloud.ai.transformer.splitter
+enableAutoDetect: true
+funcDisplayConfig:
+  skipConstructors: false
+  skipFieldAccess: true
+  skipFieldChange: true
+  skipGetters: true
+  skipNonProjectPackages: true
+  skipPrivateMethods: false
+  skipSetters: true
+ignoreSameClassCall: null
+ignoreSamePackageCall: null
+includedPackagePrefixes: null
+includedParentClasses: null
+name: xcodemap-filter
+recordMode: smart
+sourceDisplayConfig:
+  color: blue
+startOnDebug: false
