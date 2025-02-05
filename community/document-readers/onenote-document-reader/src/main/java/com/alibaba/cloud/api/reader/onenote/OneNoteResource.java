@@ -28,106 +28,111 @@ import java.net.URL;
  * @author sparkle6979l
  */
 public class OneNoteResource implements Resource {
-    public static final String SOURCE = "source";
 
-    public enum ResourceType {
-        NOTEBOOK, SECTION, PAGE
+	public static final String SOURCE = "source";
 
-    }
-    private final ResourceType resourceType;
-    private final String resourceId;
+	public enum ResourceType {
 
-    public ResourceType getResourceType() {
-        return resourceType;
-    }
+		NOTEBOOK, SECTION, PAGE
 
-    public String getResourceId() {
-        return resourceId;
-    }
+	}
 
-    public OneNoteResource(String resourceId, ResourceType resourceType) {
-        Assert.hasText(resourceId, "ResourceId must not be empty");
-        Assert.notNull(resourceType, "ResourceType must not be null");
+	private final ResourceType resourceType;
 
-        this.resourceId = resourceId;
-        this.resourceType = resourceType;
-    }
+	private final String resourceId;
 
-    public static Builder builder() {
-        return new Builder();
-    }
+	public ResourceType getResourceType() {
+		return resourceType;
+	}
 
-    public static class Builder {
+	public String getResourceId() {
+		return resourceId;
+	}
 
-        private ResourceType resourceType;
+	public OneNoteResource(String resourceId, ResourceType resourceType) {
+		Assert.hasText(resourceId, "ResourceId must not be empty");
+		Assert.notNull(resourceType, "ResourceType must not be null");
 
-        private String resourceId;
+		this.resourceId = resourceId;
+		this.resourceType = resourceType;
+	}
 
-        public Builder resourceType(ResourceType resourceType) {
-            this.resourceType = resourceType;
-            return this;
-        }
+	public static Builder builder() {
+		return new Builder();
+	}
 
-        public Builder resourceId(String resourceId) {
-            this.resourceId = resourceId;
-            return this;
-        }
+	public static class Builder {
 
-        public OneNoteResource build() {
-            Assert.hasText(resourceId, "ResourceId must not be empty");
-            Assert.notNull(resourceType, "ResourceType must not be null");
-            return new OneNoteResource(resourceId, resourceType);
-        }
+		private ResourceType resourceType;
 
-    }
+		private String resourceId;
 
-    @Override
-    public boolean exists() {
-        return false;
-    }
+		public Builder resourceType(ResourceType resourceType) {
+			this.resourceType = resourceType;
+			return this;
+		}
 
-    @Override
-    public URL getURL() throws IOException {
-        return null;
-    }
+		public Builder resourceId(String resourceId) {
+			this.resourceId = resourceId;
+			return this;
+		}
 
-    @Override
-    public URI getURI() throws IOException {
-        return null;
-    }
+		public OneNoteResource build() {
+			Assert.hasText(resourceId, "ResourceId must not be empty");
+			Assert.notNull(resourceType, "ResourceType must not be null");
+			return new OneNoteResource(resourceId, resourceType);
+		}
 
-    @Override
-    public File getFile() throws IOException {
-        return null;
-    }
+	}
 
-    @Override
-    public long contentLength() throws IOException {
-        return 0;
-    }
+	@Override
+	public boolean exists() {
+		return false;
+	}
 
-    @Override
-    public long lastModified() throws IOException {
-        return 0;
-    }
+	@Override
+	public URL getURL() throws IOException {
+		return null;
+	}
 
-    @Override
-    public Resource createRelative(String relativePath) throws IOException {
-        return null;
-    }
+	@Override
+	public URI getURI() throws IOException {
+		return null;
+	}
 
-    @Override
-    public String getFilename() {
-        return null;
-    }
+	@Override
+	public File getFile() throws IOException {
+		return null;
+	}
 
-    @Override
-    public String getDescription() {
-        return null;
-    }
+	@Override
+	public long contentLength() throws IOException {
+		return 0;
+	}
 
-    @Override
-    public InputStream getInputStream() throws IOException {
-        return null;
-    }
+	@Override
+	public long lastModified() throws IOException {
+		return 0;
+	}
+
+	@Override
+	public Resource createRelative(String relativePath) throws IOException {
+		return null;
+	}
+
+	@Override
+	public String getFilename() {
+		return null;
+	}
+
+	@Override
+	public String getDescription() {
+		return null;
+	}
+
+	@Override
+	public InputStream getInputStream() throws IOException {
+		return null;
+	}
+
 }
