@@ -80,6 +80,10 @@
         <module>community/document-parsers/document-parser-pdf-tables</module>
         <module>community/document-parsers/document-parser-bshtml</module>
         <module>community/document-parsers/document-parser-bibtex</module>
+        <module>community/document-parsers/document-parser-multi-modality
+        </module>
+        <module>community/document-parsers/document-parser-directory</module>
+        <module>community/document-readers/360-document-reader</module>
     </modules>
 
     <properties>
