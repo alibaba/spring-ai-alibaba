@@ -75,6 +75,7 @@
         <module>community/document-readers/mysql-document-reader</module>
         <module>community/document-readers/bilibili-document-reader</module>
         <module>community/document-readers/youtube-document-reader</module>
+        <module>community/document-readers/es-document-reader</module>
 
 
         <module>community/document-parsers/document-parser-apache-pdfbox</module>
