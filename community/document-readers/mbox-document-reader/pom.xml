@@ -25,7 +25,7 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-mbox-document-reader</artifactId>
+    <artifactId>mbox-document-reader</artifactId>
     <name>Spring AI Document Reader - Mbox</name>
     <description>Spring AI Document Reader implementation for Mbox format emails</description>
 
