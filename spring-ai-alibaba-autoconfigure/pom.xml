@@ -28,7 +28,7 @@
 	<artifactId>spring-ai-alibaba-autoconfigure</artifactId>
 	<description>Spring AI Alibaba Autoconfiguration</description>
 
-	<name>spring-ai-autoconfig</name>
+	<name>Spring AI Alibaba Autoconfig</name>
 	<url>https://github.com/alibaba/spring-ai-alibaba</url>
 	<scm>
 		<url>https://github.com/alibaba/spring-ai-alibaba</url>
