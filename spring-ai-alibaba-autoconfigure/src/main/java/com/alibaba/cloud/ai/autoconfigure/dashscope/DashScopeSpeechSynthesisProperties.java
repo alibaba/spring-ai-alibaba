@@ -52,9 +52,9 @@ public class DashScopeSpeechSynthesisProperties extends DashScopeParentPropertie
 
 	@NestedConfigurationProperty
 	private DashScopeSpeechSynthesisOptions options = DashScopeSpeechSynthesisOptions.builder()
-			.withModel("cosyvoice-v1")
-			.withVoice("longhua")
-			.build();
+		.withModel("cosyvoice-v1")
+		.withVoice("longhua")
+		.build();
 
 	public DashScopeSpeechSynthesisProperties() {
 		super.setBaseUrl(DEFAULT_BASE_URL);
