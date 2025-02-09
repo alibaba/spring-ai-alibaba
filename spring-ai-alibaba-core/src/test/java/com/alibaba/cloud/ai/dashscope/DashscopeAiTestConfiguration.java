@@ -102,10 +102,10 @@ public class DashscopeAiTestConfiguration {
 	}
 
 	private String getApiKey() {
-		String apiKey = System.getenv("DASHSCOPE_API_KEY");
+		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
 		if (!StringUtils.hasText(apiKey)) {
 			throw new IllegalArgumentException(
-					"You must provide an API key.  Put it in an environment variable under the name DASHSCOPE_API_KEY");
+					"You must provide an API key. Put it in an environment variable under the name DASHSCOPE_API_KEY");
 		}
 		return apiKey;
 	}
