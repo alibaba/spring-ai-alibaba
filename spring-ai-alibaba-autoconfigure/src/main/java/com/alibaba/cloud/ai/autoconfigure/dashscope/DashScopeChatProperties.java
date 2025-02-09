@@ -70,9 +70,9 @@ public class DashScopeChatProperties extends DashScopeParentProperties {
 
 	@NestedConfigurationProperty
 	private DashScopeChatOptions options = DashScopeChatOptions.builder()
-			.withModel(DEFAULT_DEPLOYMENT_NAME)
-			.withTemperature(DEFAULT_TEMPERATURE)
-			.build();
+		.withModel(DEFAULT_DEPLOYMENT_NAME)
+		.withTemperature(DEFAULT_TEMPERATURE)
+		.build();
 
 	public DashScopeChatProperties() {
 		super.setBaseUrl(DEFAULT_BASE_URL);
