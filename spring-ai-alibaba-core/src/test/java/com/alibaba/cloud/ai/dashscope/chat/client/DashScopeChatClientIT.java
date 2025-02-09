@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.dashscope.chat.client;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.alibaba.cloud.ai.advisor.DocumentRetrievalAdvisor;
 import com.alibaba.cloud.ai.advisor.RetrievalRerankAdvisor;
-import com.alibaba.cloud.ai.autoconfig.dashscope.DashScopeAutoConfiguration;
+import com.alibaba.cloud.ai.dashscope.DashscopeAiTestConfiguration;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
@@ -25,12 +35,20 @@ import com.alibaba.cloud.ai.dashscope.chat.tool.DashScopeFunctionTestConfigurati
 import com.alibaba.cloud.ai.dashscope.chat.tool.MockOrderService;
 import com.alibaba.cloud.ai.dashscope.chat.tool.MockWeatherService;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
-import com.alibaba.cloud.ai.dashscope.rag.*;
+import com.alibaba.cloud.ai.dashscope.rag.DashScopeCloudStore;
+import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentCloudReader;
+import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetrievalAdvisor;
+import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetriever;
+import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetrieverOptions;
+import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentTransformer;
+import com.alibaba.cloud.ai.dashscope.rag.DashScopeStoreOptions;
 import com.alibaba.cloud.ai.model.RerankModel;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
@@ -48,16 +66,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
 import org.springframework.test.context.TestPropertySource;
-import reactor.core.publisher.Flux;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
@@ -71,7 +79,7 @@ import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvis
  */
 
 @TestPropertySource("classpath:application.yml")
-@SpringBootTest(classes = { DashScopeAutoConfiguration.class, DashScopeFunctionTestConfiguration.class,
+@SpringBootTest(classes = { DashscopeAiTestConfiguration.class, DashScopeFunctionTestConfiguration.class,
 		MockOrderService.class })
 public class DashScopeChatClientIT {
 
@@ -388,7 +396,7 @@ public class DashScopeChatClientIT {
 
 		// Step 2 - Create embeddings and save to vector store
 		logger.info("Creating Embeddings...");
-		VectorStore vectorStore = SimpleVectorStore.builder(dashscopeEmbeddingModel).build();
+		VectorStore vectorStore = new SimpleVectorStore(dashscopeEmbeddingModel);
 		vectorStore.add(documents);
 
 		// Step3 - Retrieve and llm generate

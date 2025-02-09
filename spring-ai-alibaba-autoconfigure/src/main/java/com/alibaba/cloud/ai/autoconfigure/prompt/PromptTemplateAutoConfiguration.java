@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,28 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.autoconfigure.prompt;
 
 import com.alibaba.cloud.ai.prompt.ConfigurablePromptTemplateFactory;
+
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 /**
- * .
- *
- * @since 2024-09-20
  * @author KrakenZJC
  **/
 
+@AutoConfiguration
+@EnableConfigurationProperties(NacosPromptTmplProperties.class)
 public class PromptTemplateAutoConfiguration {
-
-	private final static String TEMPLATE_PREFIX = "spring.ai.nacos.prompt.template";
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = TEMPLATE_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
+	@ConditionalOnProperty(prefix = NacosPromptTmplProperties.TEMPLATE_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
 	public ConfigurablePromptTemplateFactory configurablePromptTemplateFactory() {
+
 		return new ConfigurablePromptTemplateFactory();
 	}
 

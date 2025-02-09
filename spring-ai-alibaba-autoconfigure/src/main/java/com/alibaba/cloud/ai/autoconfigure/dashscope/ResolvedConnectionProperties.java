@@ -16,46 +16,18 @@
 
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
-class DashScopeParentProperties {
+import org.springframework.util.MultiValueMap;
 
-	private String apiKey;
+/**
+ * @author yuluo
+ * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
+ */
 
-	private String secretKey;
-
-	private String baseUrl;
-
-	private String workspaceId;
-
-	public String getApiKey() {
-		return apiKey;
-	}
-
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
-	}
-
-	public String getSecretKey() {
-		return secretKey;
-	}
-
-	public void setSecretKey(String secretKey) {
-		this.secretKey = secretKey;
-	}
-
-	public String getBaseUrl() {
-		return baseUrl;
-	}
-
-	public void setBaseUrl(String baseUrl) {
-		this.baseUrl = baseUrl;
-	}
-
-	public String getWorkspaceId() {
-		return workspaceId;
-	}
-
-	public void setWorkspaceId(String workspaceId) {
-		this.workspaceId = workspaceId;
-	}
-
-}
+// @formatter:off
+public record ResolvedConnectionProperties(
+		String baseUrl,
+		String apiKey,
+		String workspaceId,
+		MultiValueMap<String, String> headers
+) { }
+// @formatter:on

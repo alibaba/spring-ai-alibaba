@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
@@ -53,9 +54,9 @@ public class DashScopeChatProperties extends DashScopeParentProperties {
 
 	@NestedConfigurationProperty
 	private DashScopeChatOptions options = DashScopeChatOptions.builder()
-		.withModel(DEFAULT_DEPLOYMENT_NAME)
-		.withTemperature(DEFAULT_TEMPERATURE)
-		.build();
+			.withModel(DEFAULT_DEPLOYMENT_NAME)
+			.withTemperature(DEFAULT_TEMPERATURE)
+			.build();
 
 	public DashScopeChatProperties() {
 		super.setBaseUrl(DEFAULT_BASE_URL);
