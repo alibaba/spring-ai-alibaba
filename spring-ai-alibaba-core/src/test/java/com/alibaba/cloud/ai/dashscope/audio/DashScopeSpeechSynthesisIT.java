@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.dashscope.audio;
 
-import com.alibaba.cloud.ai.autoconfig.dashscope.DashScopeAutoConfiguration;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
+
+import com.alibaba.cloud.ai.dashscope.DashscopeAiTestConfiguration;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisPrompt;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisResponse;
-
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
-import reactor.core.publisher.Flux;
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.util.concurrent.CountDownLatch;
 
 @TestPropertySource("classpath:application.yml")
-@SpringBootTest(classes = DashScopeAutoConfiguration.class)
+@SpringBootTest(classes = DashscopeAiTestConfiguration.class)
 public class DashScopeSpeechSynthesisIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeSpeechSynthesisIT.class);
