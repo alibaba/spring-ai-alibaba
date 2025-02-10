@@ -34,22 +34,12 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ
 
 class DocumentRetrieverNodeActionTest {
 
-	static class MockState extends OverAllState {
-
-		/**
-		 * Constructs an AgentState with the given initial data.
-		 * @param initData the initial data for the agent state
-		 */
-		public MockState(Map<String, Object> initData) {
-			super();
-		}
-
-	}
 
 	@Test
 	void testApplyWithValidQuery() throws Exception {
-		Map<String, Object> initData = Map.of(DocumentRetrieverNodeAction.QUERY_KEY, "test query");
-		MockState mockState = new MockState(initData);
+
+		OverAllState overAllState = new OverAllState().inputs(Map.of(DocumentRetrieverNodeAction.QUERY_KEY, "test query"))
+				.addKeyAndStrategy(DocumentRetrieverNodeAction.QUERY_KEY, null);
 
 		var mockVectorStore = mock(VectorStore.class);
 		DocumentRetrieverNodeAction nodeAction = DocumentRetrieverNodeAction.builder()
@@ -57,7 +47,7 @@ class DocumentRetrieverNodeActionTest {
 			.withSimilarityThreshold(0.7)
 			.withTopK(3)
 			.build();
-		Map<String, Object> result = nodeAction.apply(mockState);
+		Map<String, Object> result = nodeAction.apply(overAllState);
 		assertEquals(1, result.size());
 		for (String outputKey : result.keySet()) {
 			assertEquals("retrievedDocuments", outputKey);
@@ -76,14 +66,14 @@ class DocumentRetrieverNodeActionTest {
 				new DashScopeStoreOptions("test index"));
 		dashScopeCloudStore.add(documentList);
 
-		Map<String, Object> initData = Map.of(DocumentRetrieverNodeAction.QUERY_KEY, "M5");
-		MockState mockState = new MockState(initData);
+		OverAllState overAllState = new OverAllState().inputs(Map.of(DocumentRetrieverNodeAction.QUERY_KEY, "M5"))
+				.addKeyAndStrategy(DocumentRetrieverNodeAction.QUERY_KEY, null);
 		DocumentRetrieverNodeAction nodeAction = DocumentRetrieverNodeAction.builder()
 			.withVectorStore(dashScopeCloudStore)
 			.withSimilarityThreshold(0.7)
 			.withTopK(3)
 			.build();
-		Map<String, Object> result = nodeAction.apply(mockState);
+		Map<String, Object> result = nodeAction.apply(overAllState);
 		for (String outputKey : result.keySet()) {
 			assertEquals("retrievedDocuments", outputKey);
 		}
@@ -92,8 +82,7 @@ class DocumentRetrieverNodeActionTest {
 
 	@Test
 	void testApplyWithInvalidQuery() {
-		Map<String, Object> initData = new HashMap<>();
-		OverAllState mockState = new MockState(initData);
+		OverAllState overAllState = new OverAllState();
 		var mockVectorStore = mock(VectorStore.class);
 
 		DocumentRetrieverNodeAction nodeAction = DocumentRetrieverNodeAction.builder()
@@ -102,7 +91,7 @@ class DocumentRetrieverNodeActionTest {
 			.withTopK(3)
 			.build();
 
-		Exception exception = assertThrows(GraphRunnerException.class, () -> nodeAction.apply(mockState));
+		Exception exception = assertThrows(GraphRunnerException.class, () -> nodeAction.apply(overAllState));
 		assertThat(exception.getMessage()).isEqualTo("Query cannot be null");
 	}
 
@@ -125,15 +114,15 @@ class DocumentRetrieverNodeActionTest {
 						.build())
 			.build();
 
-		Map<String, Object> initData = Map.of(DocumentRetrieverNodeAction.QUERY_KEY, "query");
-		MockState mockState = new MockState(initData);
+		OverAllState overAllState = new OverAllState().inputs(Map.of(DocumentRetrieverNodeAction.QUERY_KEY, "query"))
+				.addKeyAndStrategy(DocumentRetrieverNodeAction.QUERY_KEY, null);
 
 		TenantContextHolder.setTenantIdentifier("tenant1");
-		nodeAction.apply(mockState);
+		nodeAction.apply(overAllState);
 		TenantContextHolder.clear();
 
 		TenantContextHolder.setTenantIdentifier("tenant2");
-		nodeAction.apply(mockState);
+		nodeAction.apply(overAllState);
 		TenantContextHolder.clear();
 
 		var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);

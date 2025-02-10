@@ -3,6 +3,7 @@ package com.alibaba.cloud.ai.graph;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.node.llm.LLMNodeAction;
+import com.alibaba.cloud.ai.graph.state.KeyStrategy;
 import com.alibaba.cloud.ai.graph.state.NodeState;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -30,17 +31,6 @@ public class LLMNodeActionTest {
 	@Autowired
 	private ApplicationContext applicationContext;
 
-	static class MockState extends OverAllState {
-
-		/**
-		 * Constructs an AgentState with the given initial data.
-		 * @param initData the initial data for the agent state
-		 */
-		public MockState(Map<String, Object> initData) {
-			super();
-		}
-
-	}
 
 	@TestConfiguration
 	static class MockLawyer {
@@ -62,16 +52,16 @@ public class LLMNodeActionTest {
 
 	}
 
-	private MockState mockState() {
-		Map<String, Object> initData = new HashMap<>();
-		initData.put("type", "law");
-		initData.put("llmName", "Law-Breaker");
-		return new MockState(initData);
+	private OverAllState mockState() {
+		return new OverAllState()
+				.inputs(Map.of("type", "law", "llmName", "Law-Breaker"))
+				.addKeyAndStrategy("type", (o, o2) -> o2)
+				.addKeyAndStrategy("llmName", (o, o2) -> o2);
 	}
 
 	@Test
 	public void testVariableRender() throws Exception {
-		LLMNodeAction node = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("${API_KEY}")))
+		LLMNodeAction node = LLMNodeAction.builder(new DashScopeChatModel(new DashScopeApi("sk-eba9e46456704338bf72c40342b1c9ad ")))
 			.withPromptTemplates(List.of(new SystemPromptTemplate("You're a helpful {type} assistant"),
 					new PromptTemplate("If I step on an ant and kill it, am I breaking the law?")))
 			.build();
