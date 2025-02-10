@@ -4,7 +4,6 @@ import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
-import com.alibaba.cloud.ai.graph.state.KeyStrategy;
 import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import lombok.Getter;
@@ -220,8 +219,8 @@ public class CompiledGraph {
 
         return compileConfig.checkpointSaver()
                 .flatMap(saver -> saver.get(config))
-                .map(cp -> NodeState.updateState(cp.getState(), inputs))
-                .orElseGet(() -> NodeState.updateState(getInitialStateFromSchema(), inputs));
+                .map(cp -> OverAllState.updateState(cp.getState(), inputs))
+                .orElseGet(() -> OverAllState.updateState(getInitialStateFromSchema(), inputs));
     }
 
     OverAllState useCurrentState(Map<String, Object> data) throws ClassNotFoundException {
@@ -388,7 +387,12 @@ public class CompiledGraph {
 
                 log.trace("START");
                 Map<String, Object> inputs = overAllState.data();
-                Map<String, Object> initState = getInitialState(inputs, config);
+                boolean verify = overAllState.keyVerify();
+                Map<String, Object> initState;
+                if (!verify){
+                     throw new GraphInitKeyErrorException(Arrays.toString(inputs.keySet().toArray()) +" isn't included in the keyStrategies");
+                }
+                initState = getInitialState(inputs, config);
                 // patch for backward support of AppendableValue
                 this.currentState = initState;
                 this.overAllState = overAllState;

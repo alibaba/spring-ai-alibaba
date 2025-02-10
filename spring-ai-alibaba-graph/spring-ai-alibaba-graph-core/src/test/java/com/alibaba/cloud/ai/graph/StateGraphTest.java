@@ -21,18 +21,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class StateGraphTest {
     @Test
     public void graphTest() throws Exception {
+        //d llm1 -> node2 -> llm2
         // ....node1 -> node2 -> node3 -> END
+        // 1.预定义OverAllState对象
+         //   a.inputs 用户输入（key1）
+        //    b.add key strategy
         OverAllState overAllState = new OverAllState()
                 .inputs(Map.of("key1", "input text"))
-                .addKeyStrategy("key1", (o, o2) -> o2)
-                .addKeyStrategy("key2", (o, o2) -> Lists.newArrayList(o,o2))
-                .addKeyStrategy("key3", (o, o2) -> o.toString() + o2.toString());
+                .addKeyAndStrategy("key1", (o, o2) -> o2)
+                .addKeyAndStrategy("key2", (o, o2) -> Lists.newArrayList(o, o2))
+                .addKeyAndStrategy("key3", (o, o2) -> o.toString() + o2.toString());
 
+        //1.overAllState 去处理key会策略的执行
         StateGraph workflow = new StateGraph(new JSONStateSerializer())
                 .addEdge(START, "agent_1")
                 .addNode("agent_1", AsyncNodeActionWithConfig.node_async((state, config) -> {
                     System.out.print("agent_1");
                     System.out.println(state);
+                    System.out.println(state.value("key1"));
                     return Map.of("key1", "test");
                 }))
                 .addNode("agent_2", node_async(state -> {
@@ -43,7 +49,7 @@ public class StateGraphTest {
                 .addNode("agent_3", node_async(state -> {
                     System.out.print("agent_3");
                     System.out.println(state);
-                    return Map.of("key4", "test2");
+                    return Map.of("key2", "test2");
                 }))
                 .addEdge("agent_1", "agent_2")
                 .addEdge("agent_2", "agent_3")
@@ -62,9 +68,9 @@ public class StateGraphTest {
     public void resumeGraphTest() throws Exception {
         OverAllState overAllState = new OverAllState()
                 .inputs(Map.of("input", "start"))
-                .addKeyStrategy("input", (o, o2) -> o2)
-                .addKeyStrategy("key2", (o, o2) -> Lists.newArrayList(o,o2))
-                .addKeyStrategy("key3", (o, o2) -> o.toString() + o2.toString());
+                .addKeyAndStrategy("input", (o, o2) -> o2)
+                .addKeyAndStrategy("key2", (o, o2) -> Lists.newArrayList(o, o2))
+                .addKeyAndStrategy("key3", (o, o2) -> o.toString() + o2.toString());
         StateGraph stateGraph = new StateGraph(new JSONStateSerializer());
         CompileConfig config = CompileConfig.builder()
                 .saverConfig(SaverConfig.builder()
@@ -88,17 +94,9 @@ public class StateGraphTest {
         CompiledGraph compile = stateGraph.compile(config);
         HashMap<String, Object> input = new HashMap<>();
         input.put("input", "start");
-        RunnableConfig runnableConfig = RunnableConfig.builder()
-                .threadId("thread1")
-                .build();
         Optional invoke = compile.invoke(overAllState);
         System.out.println("invoke = " + invoke);
-
-        RunnableConfig resumeRunnableConfig = RunnableConfig.builder()
-                .threadId("thread1")
-                .build();
-
-        Optional invoke1 = compile.invoke(overAllState.resumeStateCopy());
+        Optional invoke1 = compile.invoke(overAllState.copyWithResume());
         System.out.println("invoke1 = " + invoke1);
 
     }
