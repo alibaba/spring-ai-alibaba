@@ -53,6 +53,7 @@ public final class OverAllState {
     public OverAllState inputs(Map<String, Object> input) {
         if (CollectionUtils.isEmpty(input)) return this;
         this.data.putAll(input);
+        addKeyAndStrategy(DEFAULT_INPUT_KEY, (oldValue, newValue) -> newValue);
         return this;
     }
 
@@ -60,6 +61,7 @@ public final class OverAllState {
     public OverAllState inputs(Object value) {
         if (value == null) return this;
         this.data.put(DEFAULT_INPUT_KEY, value);
+        addKeyAndStrategy(DEFAULT_INPUT_KEY, (oldValue, newValue) -> newValue);
         return this;
     }
 
