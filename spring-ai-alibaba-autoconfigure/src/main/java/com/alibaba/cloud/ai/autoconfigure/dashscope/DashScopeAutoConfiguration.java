@@ -33,8 +33,6 @@ import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
 import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
-import com.alibaba.dashscope.audio.asr.transcription.Transcription;
-import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
 import io.micrometer.observation.ObservationRegistry;
 import org.jetbrains.annotations.NotNull;
 
@@ -58,7 +56,6 @@ import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
 import org.springframework.boot.web.client.RestClientCustomizer;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Scope;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -83,19 +80,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
 		WebClientAutoConfiguration.class })
 public class DashScopeAutoConfiguration {
-
-	@Bean
-	@Scope("prototype")
-	@ConditionalOnMissingBean
-	public SpeechSynthesizer speechSynthesizer() {
-		return new SpeechSynthesizer();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	public Transcription transcription() {
-		return new Transcription();
-	}
 
 	@Bean
 	@ConditionalOnMissingBean
