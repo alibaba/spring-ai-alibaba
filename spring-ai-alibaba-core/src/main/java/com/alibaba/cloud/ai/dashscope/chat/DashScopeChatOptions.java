@@ -27,7 +27,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
 
 /**
@@ -123,7 +122,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    * enableFunctions to set the functions from the registry to be used by the ChatClient chat
    * completion requests.
    */
-  @NestedConfigurationProperty @JsonIgnore
+  @JsonIgnore
   private List<FunctionCallback> functionCallbacks = new ArrayList<>();
 
   /**
@@ -137,7 +136,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    * prompt options, then the enabled functions are only active for the duration of this prompt
    * execution.
    */
-  @NestedConfigurationProperty @JsonIgnore private Set<String> functions = new HashSet<>();
+  @JsonIgnore private Set<String> functions = new HashSet<>();
 
   /**
    * Indicate if the request is multi model
@@ -152,7 +151,6 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   @JsonIgnore
   private Boolean proxyToolCalls;
 
-  @NestedConfigurationProperty
   @JsonIgnore
   private Map<String, Object> toolContext;
 

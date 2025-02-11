@@ -15,12 +15,6 @@
  */
 package com.alibaba.cloud.ai.reader.notion;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import org.springframework.core.io.Resource;
-import org.springframework.util.Assert;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +24,13 @@ import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Objects;
+import java.util.Iterator;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.springframework.core.io.Resource;
+import org.springframework.util.Assert;
 
 /**
  * Notion Resource class Supports accessing Notion pages and databases
@@ -38,6 +38,7 @@ import java.util.Objects;
  * @author xiadong
  * @since 2024-01-06
  */
+
 public class NotionResource implements Resource {
 
 	public static final String SOURCE = "source";
@@ -63,7 +64,7 @@ public class NotionResource implements Resource {
 
 	private final String resourceId;
 
-	private JSONObject metadata;
+	private JsonNode metadata;
 
 	/**
 	 * Constructor
@@ -133,17 +134,18 @@ public class NotionResource implements Resource {
 			Assert.isTrue(pageResponse.statusCode() == 200, "Failed to fetch page content");
 
 			// 2. Parse page content
-			JSONObject pageJson = JSON.parseObject(pageResponse.body());
+			ObjectMapper objectMapper = new ObjectMapper();
+			JsonNode pageJson = objectMapper.readTree(pageResponse.body());
 			StringBuilder content = new StringBuilder();
 
 			// Extract page title
-			JSONObject properties = pageJson.getJSONObject("properties");
-			if (properties != null && properties.containsKey("title")) {
-				JSONObject titleProp = properties.getJSONObject("title");
-				JSONArray titleArray = titleProp.getJSONArray("title");
-				if (titleArray != null && !titleArray.isEmpty()) {
-					for (int i = 0; i < titleArray.size(); i++) {
-						content.append(titleArray.getJSONObject(i).getString("plain_text"));
+			JsonNode properties = pageJson.get("properties");
+			if (properties != null && properties.has("title")) {
+				JsonNode titleProp = properties.get("title");
+				JsonNode titleArray = titleProp.get("title");
+				if (titleArray != null && titleArray.isArray()) {
+					for (JsonNode titleNode : titleArray) {
+						content.append(titleNode.get("plain_text").asText());
 					}
 					content.append("\n\n");
 				}
@@ -163,21 +165,22 @@ public class NotionResource implements Resource {
 			Assert.isTrue(blocksResponse.statusCode() == 200, "Failed to fetch page blocks");
 
 			// 4. Parse block content
-			JSONObject blocksJson = JSON.parseObject(blocksResponse.body());
-			JSONArray blocks = blocksJson.getJSONArray("results");
+			JsonNode blocksJson = objectMapper.readTree(blocksResponse.body());
+			JsonNode blocks = blocksJson.get("results");
 
 			// 5. Extract text content
-			for (int i = 0; i < blocks.size(); i++) {
-				JSONObject block = blocks.getJSONObject(i);
-				String type = block.getString("type");
-				if (block.containsKey(type)) {
-					JSONObject typeObj = block.getJSONObject(type);
-					if (typeObj.containsKey("rich_text")) {
-						JSONArray richText = typeObj.getJSONArray("rich_text");
-						for (int j = 0; j < richText.size(); j++) {
-							content.append(richText.getJSONObject(j).getString("plain_text"));
+			if (blocks != null && blocks.isArray()) {
+				for (JsonNode block : blocks) {
+					String type = block.get("type").asText();
+					if (block.has(type)) {
+						JsonNode typeObj = block.get(type);
+						if (typeObj.has("rich_text")) {
+							JsonNode richText = typeObj.get("rich_text");
+							for (JsonNode textNode : richText) {
+								content.append(textNode.get("plain_text").asText());
+							}
+							content.append("\n");
 						}
-						content.append("\n");
 					}
 				}
 			}
@@ -207,36 +210,37 @@ public class NotionResource implements Resource {
 			Assert.isTrue(response.statusCode() == 200, "Failed to fetch database content");
 
 			// 2. Parse database content
-			JSONObject jsonResponse = JSON.parseObject(response.body());
-			JSONArray results = jsonResponse.getJSONArray("results");
+			ObjectMapper objectMapper = new ObjectMapper();
+			JsonNode jsonResponse = objectMapper.readTree(response.body());
+			JsonNode results = jsonResponse.get("results");
 
 			// 3. Extract property values
 			StringBuilder content = new StringBuilder();
-			for (int i = 0; i < results.size(); i++) {
-				JSONObject row = results.getJSONObject(i);
-				JSONObject properties = row.getJSONObject("properties");
+			if (results != null && results.isArray()) {
+				for (JsonNode row : results) {
+					JsonNode properties = row.get("properties");
 
-				for (String propertyName : properties.keySet()) {
-					JSONObject property = properties.getJSONObject(propertyName);
-					String type = property.getString("type");
+					for (Iterator<String> it = properties.fieldNames(); it.hasNext();) {
+						String propertyName = it.next();
+						JsonNode property = properties.get(propertyName);
+						String type = property.get("type").asText();
 
-					if (property.containsKey(type)) {
-						Object value = property.get(type);
-						if (value instanceof JSONArray) {
-							JSONArray array = (JSONArray) value;
-							for (int j = 0; j < array.size(); j++) {
-								JSONObject item = array.getJSONObject(j);
-								if (item.containsKey("plain_text")) {
-									content.append(propertyName)
-										.append(": ")
-										.append(item.getString("plain_text"))
-										.append("\n");
+						if (property.has(type)) {
+							JsonNode value = property.get(type);
+							if (value.isArray()) {
+								for (JsonNode item : value) {
+									if (item.has("plain_text")) {
+										content.append(propertyName)
+											.append(": ")
+											.append(item.get("plain_text").asText())
+											.append("\n");
+									}
 								}
 							}
 						}
 					}
+					content.append("---\n");
 				}
-				content.append("---\n");
 			}
 			return content.toString();
 		}
@@ -248,7 +252,7 @@ public class NotionResource implements Resource {
 	/**
 	 * Get resource metadata
 	 */
-	private JSONObject getResourceMetadata(String notionToken, String resourceId, ResourceType resourceType) {
+	private JsonNode getResourceMetadata(String notionToken, String resourceId, ResourceType resourceType) {
 		try {
 			String endpoint = switch (resourceType) {
 				case PAGE -> "/pages/";
@@ -266,7 +270,8 @@ public class NotionResource implements Resource {
 			HttpResponse<String> response = this.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 			Assert.isTrue(response.statusCode() == 200, "Failed to fetch resource metadata");
 
-			return JSON.parseObject(response.body());
+			ObjectMapper objectMapper = new ObjectMapper();
+			return objectMapper.readTree(response.body());
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to get resource metadata", e);
@@ -276,7 +281,7 @@ public class NotionResource implements Resource {
 	/**
 	 * Get resource metadata
 	 */
-	public JSONObject getMetadata() {
+	public JsonNode getMetadata() {
 		return metadata;
 	}
 

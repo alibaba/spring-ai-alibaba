@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageOptions;
-import com.alibaba.dashscope.aigc.imagesynthesis.ImageSynthesis;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -39,7 +39,7 @@ public class DashScopeImageProperties extends DashScopeParentProperties {
 	/**
 	 * Default DashScope Chat model.
 	 */
-	public static final String DEFAULT_IMAGES_MODEL_NAME = ImageSynthesis.Models.WANX_V1;
+	public static final String DEFAULT_IMAGES_MODEL_NAME = "wanx-v1";
 
 	/**
 	 * Enable DashScope ai images client.
