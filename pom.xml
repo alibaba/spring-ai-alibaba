@@ -78,7 +78,6 @@
         <module>community/document-readers/youtube-document-reader</module>
         <module>community/document-readers/es-document-reader</module>
 
-
         <module>community/document-parsers/document-parser-apache-pdfbox</module>
         <module>community/document-parsers/document-parser-markdown</module>
         <module>community/document-parsers/document-parser-tika</module>
