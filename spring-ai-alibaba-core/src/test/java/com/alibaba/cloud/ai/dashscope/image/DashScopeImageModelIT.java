@@ -16,15 +16,18 @@
 package com.alibaba.cloud.ai.dashscope.image;
 
 import com.alibaba.cloud.ai.dashscope.DashscopeAiTestConfiguration;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
+import com.alibaba.cloud.ai.dashscope.observation.conventions.AiProvider;
+import io.micrometer.observation.tck.TestObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
-import org.springframework.ai.image.Image;
-import org.springframework.ai.image.ImageModel;
-import org.springframework.ai.image.ImageOptionsBuilder;
-import org.springframework.ai.image.ImagePrompt;
-import org.springframework.ai.image.ImageResponse;
-import org.springframework.ai.image.ImageResponseMetadata;
+import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
+import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
+import org.springframework.ai.image.*;
+import org.springframework.ai.image.observation.DefaultImageModelObservationConvention;
+import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
+import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -40,7 +43,12 @@ public class DashScopeImageModelIT {
 
 	@Test
 	void imageAsUrlTest() {
-		var options = ImageOptionsBuilder.builder().withHeight(1024).withWidth(1024).build();
+		var options = ImageOptionsBuilder.builder()
+			.model("wanx2.1-t2i-turbo")
+			.withHeight(1024)
+			.withWidth(1024)
+			.N(1)
+			.build();
 
 		var instructions = """
 				A light cream colored mini golden doodle with a sign that contains the message "I'm on my way to BARCADE!".""";
@@ -57,7 +65,7 @@ public class DashScopeImageModelIT {
 		var generation = imageResponse.getResult();
 		Image image = generation.getOutput();
 		assertThat(image.getUrl()).isNotEmpty();
-		assertThat(image.getB64Json()).isNull();
+		assertThat(image.getB64Json()).isNotEmpty();
 	}
 
 }

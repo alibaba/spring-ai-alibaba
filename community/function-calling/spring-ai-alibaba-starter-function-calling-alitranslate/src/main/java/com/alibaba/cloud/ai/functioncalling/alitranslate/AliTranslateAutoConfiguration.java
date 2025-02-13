@@ -28,8 +28,8 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @ConditionalOnClass(AliTranslateService.class)
-@EnableConfigurationProperties(AliTranslateProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.alitranslate", name = "enabled",
+@EnableConfigurationProperties(com.alibaba.cloud.ai.functioncalling.alitranslate.AliTranslateProperties.class)
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.duckduckgo", name = "enabled",
 		havingValue = "true")
 public class AliTranslateAutoConfiguration {
 

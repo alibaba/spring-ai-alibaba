@@ -18,12 +18,12 @@ package com.alibaba.cloud.ai.dashscope;
 import java.util.List;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioTranscriptionApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioTranscriptionApi;
+import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionModel;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisOptions;
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
@@ -32,7 +32,6 @@ import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
 import com.alibaba.cloud.ai.model.RerankModel;
 import com.alibaba.dashscope.audio.asr.transcription.Transcription;
 import com.alibaba.dashscope.audio.tts.SpeechSynthesizer;
-
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -116,8 +115,9 @@ public class DashscopeAiTestConfiguration {
 	}
 
 	@Bean
-	public DashScopeImageModel dashscopeImageModel(DashScopeImageApi dashscopeImageApi) {
-		return new DashScopeImageModel(dashscopeImageApi);
+	public DashScopeImageModel dashscopeImageModel(DashScopeImageApi dashscopeImageApi,
+			TestObservationRegistry observationRegistry) {
+		return new DashScopeImageModel(dashscopeImageApi, observationRegistry);
 	}
 
 	@Bean

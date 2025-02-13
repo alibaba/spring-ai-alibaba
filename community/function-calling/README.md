@@ -15,4 +15,4 @@
     public class BaidusearchProperties {}
     ```
 4. 请在根目录 pom.xml 中添加 module 配置，如 `<module>community/function-calling/spring-ai-alibaba-starter-functioncalling-baidusearch</module>`
-5. 请在插件 pom.xml 文件中只保留必须的传递依赖，插件版本应与 Spring AI Alibaba 统一,插件依赖规范为：序列化与反序列化依赖统一使用 `com.fasterxml.jackson.core:jackson`，日志依赖统一使用 `org.slf4j`，HTTP 客户端依赖统一使用 `org.springframework.boot::webClient`,其余依赖尽可能少引用或不引用
+5. 请在插件 pom.xml 文件中只保留必须的传递依赖，插件版本应与 Spring AI Alibaba 统一,插件依赖规范为：序列化与反序列化依赖统一使用 `com.fasterxml.jackson.core:jackson`，日志依赖统一使用 `org.slf4j.LoggerFactory:logger`，HTTP 客户端依赖统一使用 `org.springframework.boot:webClient`,其余依赖尽可能少引用或不引用

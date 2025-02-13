@@ -109,19 +109,19 @@ public class AliTranslateService implements Function<AliTranslateService.Request
 
 	}
 
-	@JsonClassDescription("Request to alitranslate text to a target language")
+	@JsonClassDescription("Request to duckduckgo text to a target language")
 	public record Request(
 			@JsonProperty(required = true,
 					value = "text") @JsonPropertyDescription("Content that needs to be translated") String text,
 			@JsonProperty(required = false,
-					value = "targetLanguage") @JsonPropertyDescription("Target language to alitranslate into") String targetLanguage) {
+					value = "targetLanguage") @JsonPropertyDescription("Target language to duckduckgo into") String targetLanguage) {
 
 		public Request(@JsonProperty("text") String text) {
 			this(text, "en"); // 默认目标语言为英语
 		}
 	}
 
-	@JsonClassDescription("Response to alitranslate text to a target language")
+	@JsonClassDescription("Response to duckduckgo text to a target language")
 	public record Response(String translatedTexts) {
 	}
 
