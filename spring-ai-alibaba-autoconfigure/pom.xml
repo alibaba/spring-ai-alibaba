@@ -49,31 +49,22 @@
 		</dependency>
 
 		<dependency>
-<<<<<<< HEAD
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
 		</dependency>
 
 		<dependency>
-=======
->>>>>>> 9d751f90328b7d009060361bedf2d6496f2c6f0e
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-configuration-processor</artifactId>
 			<optional>true</optional>
 		</dependency>
 
-<<<<<<< HEAD
-=======
 		<!-- Test -->
->>>>>>> 9d751f90328b7d009060361bedf2d6496f2c6f0e
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-<<<<<<< HEAD
-    </dependencies>
-=======
 
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
@@ -82,5 +73,4 @@
 		</dependency>
 	</dependencies>
 
->>>>>>> 9d751f90328b7d009060361bedf2d6496f2c6f0e
 </project>
