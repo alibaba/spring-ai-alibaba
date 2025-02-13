@@ -83,6 +83,7 @@
         <hutool-version>5.8.32</hutool-version>
         <hutool-extra.version>5.8.20</hutool-extra.version>
         <pinyin4j.version>2.5.1</pinyin4j.version>
+        <commons-io.version>2.13.0</commons-io.version>
     </properties>
 
     <organization>
@@ -283,6 +284,11 @@
                 <version>${spring-ai.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
