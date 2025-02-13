@@ -150,7 +150,7 @@ public class DashScopeSpeechSynthesisOptions implements SpeechSynthesisOptions {
 		this.pitch = pitch;
 	}
 
-	Boolean getEnableWordTimestamp() {
+	public Boolean getEnableWordTimestamp() {
 		return enableWordTimestamp;
 	}
 
@@ -174,11 +174,11 @@ public class DashScopeSpeechSynthesisOptions implements SpeechSynthesisOptions {
 		this.enablePhonemeTimestamp = enablePhonemeTimestamp;
 	}
 
-	DashScopeSpeechSynthesisApi.ResponseFormat getResponseFormat() {
+	public DashScopeSpeechSynthesisApi.ResponseFormat getResponseFormat() {
 		return responseFormat;
 	}
 
-	void setResponseFormat(DashScopeSpeechSynthesisApi.ResponseFormat responseFormat) {
+	public void setResponseFormat(DashScopeSpeechSynthesisApi.ResponseFormat responseFormat) {
 		this.responseFormat = responseFormat;
 	}
 
