@@ -72,5 +72,7 @@ header:
     - '**/*.st'
     - '**/*.eml'
     - '**/*.mbox'
+    - '**/resource/**'
+    - '**/pom.xml'
 
   comment: never
