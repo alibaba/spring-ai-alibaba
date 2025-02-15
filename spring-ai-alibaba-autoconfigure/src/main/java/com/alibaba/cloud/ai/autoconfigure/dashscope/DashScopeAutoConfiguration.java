@@ -423,8 +423,8 @@ public class DashScopeAutoConfiguration {
 	public RestClientCustomizer restClientCustomizer(DashScopeConnectionProperties commonProperties) {
 
 		return restClientBuilder -> restClientBuilder
-			.requestFactory(ClientHttpRequestFactories.get(ClientHttpRequestFactorySettings.DEFAULTS
-				.withReadTimeout(Duration.ofSeconds(commonProperties.getReadTimeout()))));
+				.requestFactory(ClientHttpRequestFactories.get(ClientHttpRequestFactorySettings.DEFAULTS
+						.withReadTimeout(Duration.ofSeconds(commonProperties.getReadTimeout()))));
 	}
 
 	@Bean

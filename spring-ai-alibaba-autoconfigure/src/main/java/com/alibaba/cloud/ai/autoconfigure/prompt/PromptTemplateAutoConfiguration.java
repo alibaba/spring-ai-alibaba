@@ -32,13 +32,18 @@ import org.springframework.context.annotation.Bean;
 @EnableConfigurationProperties(NacosPromptTmplProperties.class)
 public class PromptTemplateAutoConfiguration {
 
+	// @formatter:off
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = NacosPromptTmplProperties.TEMPLATE_PREFIX, name = "enabled", havingValue = "true",
-			matchIfMissing = true)
+	@ConditionalOnProperty(
+			prefix = NacosPromptTmplProperties.TEMPLATE_PREFIX,
+			name = "enabled",
+			havingValue = "true"
+	)
 	public ConfigurablePromptTemplateFactory configurablePromptTemplateFactory() {
 
 		return new ConfigurablePromptTemplateFactory();
 	}
+	// @formatter:on
 
 }

@@ -15,15 +15,6 @@
  */
 package com.alibaba.cloud.ai.reader.chatgpt.data;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.document.DocumentReader;
-import org.springframework.core.io.Resource;
-import org.springframework.util.StreamUtils;
-
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -32,12 +23,20 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentReader;
 
 /**
  * Document reader for loading exported ChatGPT conversation data
@@ -50,46 +49,30 @@ public class ChatGptDataDocumentReader implements DocumentReader {
 
 	private final int numLogs;
 
-	/**
-	 * Initialize ChatGPT data loader with file path
-	 * @param logFilePath The path to the log file
-	 * @param numLogs Number of logs to load, load all if 0
-	 */
+	private final ObjectMapper objectMapper = new ObjectMapper();
+
 	public ChatGptDataDocumentReader(String logFilePath, int numLogs) {
 		this.logFilePath = logFilePath;
 		this.numLogs = numLogs;
 	}
 
-	/**
-	 * Initialize ChatGPT data loader with file path, load all logs
-	 * @param logFilePath The path to the log file
-	 */
 	public ChatGptDataDocumentReader(String logFilePath) {
 		this(logFilePath, 0);
 	}
 
-	/**
-	 * Format message content into readable string
-	 * @param message Message object to format
-	 * @param title Conversation title
-	 * @return Formatted message string
-	 */
-	private String concatenateRows(JSONObject message, String title) {
+	private String concatenateRows(JsonNode message, String title) {
 		if (message == null || message.isEmpty()) {
 			return "";
 		}
 
-		// Get sender role
-		JSONObject author = message.getJSONObject("author");
-		String sender = author != null ? author.getString("role") : "unknown";
+		JsonNode author = message.get("author");
+		String sender = author != null ? author.get("role").asText() : "unknown";
 
-		// Get message content
-		JSONObject content = message.getJSONObject("content");
-		JSONArray parts = content.getJSONArray("parts");
-		String text = parts.getString(0);
+		JsonNode content = message.get("content");
+		JsonNode parts = content.get("parts");
+		String text = parts.get(0).asText();
 
-		// Get and format timestamp
-		long createTime = message.getLongValue("create_time");
+		long createTime = message.get("create_time").asLong();
 		LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochSecond(createTime), ZoneId.systemDefault());
 		String formattedDate = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
@@ -99,37 +82,34 @@ public class ChatGptDataDocumentReader implements DocumentReader {
 	@Override
 	public List<Document> get() {
 		try {
-			// Read JSON file content
 			String jsonContent = Files.readString(Paths.get(logFilePath), StandardCharsets.UTF_8);
-			JSONArray data = JSON.parseArray(jsonContent);
-			List<Document> documents = new ArrayList<>();
+			JsonNode data = objectMapper.readTree(jsonContent);
+			List<Document> documents;
 
-			// Limit number of logs if specified
 			int limit = numLogs > 0 ? Math.min(numLogs, data.size()) : data.size();
 
-			// Process first limit entries using Stream API
 			documents = IntStream.range(0, limit).mapToObj(i -> {
-				// Get conversation data
-				JSONObject conversation = data.getJSONObject(i);
-				String title = conversation.getString("title");
-				JSONObject messages = conversation.getJSONObject("mapping");
+				JsonNode conversation = data.get(i);
+				String title = conversation.get("title").asText();
+				JsonNode messages = conversation.get("mapping");
 
-				// Process messages using Stream
-				String text = messages.keySet().stream().map(key -> {
-					JSONObject messageWrapper = messages.getJSONObject(key);
-					JSONObject message = messageWrapper.getJSONObject("message");
+				String text = StreamSupport
+					.stream(Spliterators.spliteratorUnknownSize(messages.fieldNames(), Spliterator.ORDERED), false)
+					.map(key -> {
+						JsonNode messageWrapper = messages.get(key);
+						JsonNode message = messageWrapper.get("message");
 
-					// Skip first system role message
-					if ("0".equals(key) && "system".equals(message.getJSONObject("author").getString("role"))) {
-						return "";
-					}
-					return concatenateRows(message, title);
-				}).filter(s -> !s.isEmpty()).collect(Collectors.joining());
+						if ("0".equals(key) && "system".equals(message.get("author").get("role").asText())) {
+							return "";
+						}
+						return concatenateRows(message, title);
+					})
+					.filter(s -> !s.isEmpty())
+					.collect(Collectors.joining());
 
 				// Create document metadata
 				Map<String, Object> metadata = new HashMap<>();
 				metadata.put("source", logFilePath);
-
 				// Return new Document object
 				return new Document(text, metadata);
 			}).collect(Collectors.toList());
