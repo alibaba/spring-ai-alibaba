@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.dashscope.audio.synthesis;
 
 import org.springframework.ai.model.ModelResult;
-import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisResultMetadata;
 
 /**
  * @author kevinlin09
