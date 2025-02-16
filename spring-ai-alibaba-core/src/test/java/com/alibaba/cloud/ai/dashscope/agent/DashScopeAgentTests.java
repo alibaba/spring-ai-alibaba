@@ -16,12 +16,15 @@
 
 package com.alibaba.cloud.ai.dashscope.agent;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
+ * Title Dashscope Agent test cases.<br>
+ * Description Dashscope Agent test cases.<br>
+ *
  * @author yuluo
- * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
+ * @author linkesheng.lks
+ * @since 1.0.0-M2
  */
+
 class DashScopeAgentTests {
 
 }
