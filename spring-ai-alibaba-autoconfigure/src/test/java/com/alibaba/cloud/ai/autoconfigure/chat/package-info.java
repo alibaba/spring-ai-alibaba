@@ -15,8 +15,8 @@
  */
 
 /**
- * Spring AI Alibaba Autoconfigure Chat Test.
- * It is possible to validate and test the basic functionality of autoconfigure.
+ * Spring AI Alibaba Autoconfigure Chat Test. It is possible to validate and test the
+ * basic functionality of autoconfigure.
  *
  * @author yuluo
  */
