@@ -33,14 +33,13 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 class PromptTemplateAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withUserConfiguration(PromptTemplateAutoConfiguration.class);
+		.withUserConfiguration(PromptTemplateAutoConfiguration.class);
 
 	@Test
 	void whenEnabledPropertyIsTrue_thenBeanShouldBeCreated() {
 
-		this.contextRunner
-				.withPropertyValues("spring.ai.nacos.prompt.template.enabled=true")
-				.run(context -> assertThat(context).hasSingleBean(ConfigurablePromptTemplateFactory.class));
+		this.contextRunner.withPropertyValues("spring.ai.nacos.prompt.template.enabled=true")
+			.run(context -> assertThat(context).hasSingleBean(ConfigurablePromptTemplateFactory.class));
 	}
 
 	/**
@@ -49,16 +48,14 @@ class PromptTemplateAutoConfigurationTests {
 	@Test
 	void whenNoPropertiesConfigured_thenBeanShouldNotBeCreated() {
 
-		this.contextRunner
-				.run(context -> assertThat(context).doesNotHaveBean(ConfigurablePromptTemplateFactory.class));
+		this.contextRunner.run(context -> assertThat(context).doesNotHaveBean(ConfigurablePromptTemplateFactory.class));
 	}
 
 	@Test
 	void whenEnabledPropertyIsFalse_thenBeanShouldNotBeCreated() {
 
-		this.contextRunner
-				.withPropertyValues("spring.ai.nacos.prompt.template.enabled=false")
-				.run(context -> assertThat(context).doesNotHaveBean(ConfigurablePromptTemplateFactory.class));
+		this.contextRunner.withPropertyValues("spring.ai.nacos.prompt.template.enabled=false")
+			.run(context -> assertThat(context).doesNotHaveBean(ConfigurablePromptTemplateFactory.class));
 	}
 
 }

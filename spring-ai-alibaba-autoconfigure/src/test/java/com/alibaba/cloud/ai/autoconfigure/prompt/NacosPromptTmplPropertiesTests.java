@@ -46,5 +46,7 @@ class NacosPromptTmplPropertiesTests {
 	@Configuration
 	@EnableConfigurationProperties(NacosPromptTmplProperties.class)
 	static class TestConfig {
+
 	}
+
 }
