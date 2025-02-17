@@ -27,7 +27,7 @@ public class OverAllStateGraphTest {
          //   a.inputs 用户输入（key1）
         //    b.add key strategy
         OverAllState overAllState = new OverAllState()
-                .inputs(Map.of("key1", "input text"))
+                .inputs(Map.of(OverAllState.DEFAULT_INPUT_KEY, "input text"))
                 .addKeyAndStrategy("key1", (o, o2) -> o2)
                 .addKeyAndStrategy("key2", (o, o2) -> Lists.newArrayList(o, o2))
                 .addKeyAndStrategy("key3", (o, o2) -> o.toString() + o2.toString());
