@@ -18,7 +18,7 @@ public final class OverAllState {
     private final Map<String, Object> data;
     private final Map<String, KeyStrategy> keyStrategies;
     private final Boolean isResume;
-    private final String DEFAULT_INPUT_KEY = "inputs";
+    public static final String DEFAULT_INPUT_KEY = "inputs";
 
 
     public OverAllState(boolean isResume) {
