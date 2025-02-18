@@ -1,5 +1,7 @@
 package com.alibaba.cloud.ai.graph.state;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
+
 import java.util.Map;
 import java.util.function.Function;
 
@@ -7,6 +9,6 @@ import java.util.function.Function;
  * A factory interface for creating instances of {@link NodeState}.
  *
  */
-public interface AgentStateFactory extends Function<Map<String, Object>, NodeState> {
+public interface AgentStateFactory extends Function<Map<String, Object>, OverAllState> {
 
 }

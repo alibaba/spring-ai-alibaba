@@ -18,7 +18,7 @@ class SubgraphNodeAction implements AsyncNodeActionWithConfig {
 	}
 
 	@Override
-	public CompletableFuture<Map<String, Object>> apply(NodeState state, RunnableConfig config) {
+	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
 		CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
 
 		try {

@@ -1,6 +1,7 @@
 package com.alibaba.cloud.ai.graph.state;
 
 import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import lombok.NonNull;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
@@ -35,7 +36,7 @@ public final class StateSnapshot extends NodeOutput {
 		return next();
 	}
 
-	private StateSnapshot(@NonNull String node, @NonNull NodeState state, @NonNull RunnableConfig config) {
+	private StateSnapshot(@NonNull String node, @NonNull OverAllState state, @NonNull RunnableConfig config) {
 		super(node, state);
 		this.config = config;
 	}

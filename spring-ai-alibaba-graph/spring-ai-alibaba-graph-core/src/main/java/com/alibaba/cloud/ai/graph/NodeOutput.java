@@ -7,11 +7,11 @@ import static java.lang.String.format;
 /**
  * Represents the output of a node in a graph.
  *
- * @param <State> the type of the state associated with the node output
+ * @param <> the type of the state associated with the node output
  */
 public class NodeOutput {
 
-	public static NodeOutput of(String node, NodeState state) {
+	public static NodeOutput of(String node, OverAllState state) {
 		return new NodeOutput(node, state);
 	}
 
@@ -23,13 +23,13 @@ public class NodeOutput {
 	/**
 	 * The state associated with the node.
 	 */
-	private final NodeState state;
+	private final OverAllState state;
 
 	public String node() {
 		return node;
 	}
 
-	public NodeState state() {
+	public OverAllState state() {
 		return state;
 	}
 
@@ -37,11 +37,11 @@ public class NodeOutput {
 	 * @deprecated Use {@link #state()} instead.
 	 */
 	@Deprecated
-	public NodeState getState() {
+	public OverAllState getState() {
 		return state();
 	}
 
-	protected NodeOutput(String node, NodeState state) {
+	protected NodeOutput(String node, OverAllState state) {
 		this.node = node;
 		this.state = state;
 	}
