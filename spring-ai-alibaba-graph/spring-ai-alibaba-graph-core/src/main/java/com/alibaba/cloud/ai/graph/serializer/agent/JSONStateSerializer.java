@@ -1,6 +1,8 @@
 package com.alibaba.cloud.ai.graph.serializer.agent;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
+import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.state.NodeState;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -11,6 +13,7 @@ import lombok.NonNull;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Map;
 
 public class JSONStateSerializer extends PlainTextStateSerializer {
 
@@ -23,7 +26,7 @@ public class JSONStateSerializer extends PlainTextStateSerializer {
 	}
 
 	public JSONStateSerializer(@NonNull ObjectMapper objectMapper) {
-		super(NodeState::new);
+		super(stringObjectMap -> null);
 		this.objectMapper = objectMapper;
 		this.objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
@@ -42,15 +45,15 @@ public class JSONStateSerializer extends PlainTextStateSerializer {
 	}
 
 	@Override
-	public void write(NodeState object, ObjectOutput out) throws IOException {
+	public void write(OverAllState object, ObjectOutput out) throws IOException {
 		var json = objectMapper.writeValueAsString(object);
 		out.writeUTF(json);
 	}
 
 	@Override
-	public NodeState read(ObjectInput in) throws IOException, ClassNotFoundException {
+	public OverAllState read(ObjectInput in) throws IOException, ClassNotFoundException {
 		var json = in.readUTF();
-		return objectMapper.readValue(json, NodeState.class);
+		return objectMapper.readValue(json, OverAllState.class);
 	}
 
 }
