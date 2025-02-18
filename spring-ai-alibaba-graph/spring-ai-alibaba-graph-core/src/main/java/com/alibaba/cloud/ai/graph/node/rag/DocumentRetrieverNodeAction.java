@@ -2,6 +2,7 @@ package com.alibaba.cloud.ai.graph.node.rag;
 
 import com.alibaba.cloud.ai.graph.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.NodeActionDescriptor;
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.node.AbstractNode;
 import com.alibaba.cloud.ai.graph.state.NodeState;
@@ -41,7 +42,7 @@ public class DocumentRetrieverNodeAction extends AbstractNode implements NodeAct
 	}
 
 	@Override
-	public Map<String, Object> apply(NodeState state) throws Exception {
+	public Map<String, Object> apply(OverAllState state) throws Exception {
 		Optional<Object> queryOptional = state.value(QUERY_KEY);
 		if (!queryOptional.isPresent()) {
 			throw new GraphRunnerException("Query cannot be null");

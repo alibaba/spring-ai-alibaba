@@ -3,6 +3,9 @@ package com.alibaba.cloud.ai.graph;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.state.NodeState;
@@ -322,7 +325,10 @@ public class StateGraph {
 	 * @throws GraphStateException if there are errors related to the graph state
 	 */
 	public CompiledGraph compile() throws GraphStateException {
-		return compile(CompileConfig.builder().build());
+		return compile(CompileConfig.builder()
+				.saverConfig(SaverConfig.builder()
+				.register(SaverConstant.MEMORY, new MemorySaver())
+				.build()).build());
 	}
 
 	/**
