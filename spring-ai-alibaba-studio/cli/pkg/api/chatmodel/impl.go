@@ -1,0 +1,245 @@
+// Copyright 2024 the original author or authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package chatmodel
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/alibaba/spring-ai-alibaba/pkg/api"
+	"github.com/alibaba/spring-ai-alibaba/pkg/constant"
+	"github.com/go-resty/resty/v2"
+	"github.com/spf13/viper"
+)
+
+type ChatModelAPIImpl struct {
+	restClient *resty.Client
+}
+
+func NewChatModelAPI() ChatModelAPI {
+	rc := resty.New()
+	baseURL := viper.GetString(constant.BaseURLFlag)
+	rc.SetBaseURL(baseURL + api.CommonPrefix)
+	return &ChatModelAPIImpl{restClient: rc}
+}
+
+type ChatModel struct {
+	Name      string `json:"name" yaml:"name"`
+	Model     string `json:"model" yaml:"model"`
+	ModelType string `json:"modelType" yaml:"modelType"`
+}
+
+type ChatOptions struct {
+	Model             string  `json:"model" yaml:"model"`
+	ProxyToolCalls    bool    `json:"proxyToolCalls" yaml:"proxyToolCalls"`
+	Temperature       float32 `json:"temperature" yaml:"temperature"`
+	EnableSearch      bool    `json:"enable_search" yaml:"enableSearch"`
+	IncrementalOutput bool    `json:"incremental_output" yaml:"incrementalOutput"`
+	MultiModel        bool    `json:"multi_model" yaml:"multiModel"`
+}
+
+type ImageOptions struct {
+	Model string `json:"model"`
+	N     int    `json:"n"`
+}
+
+type ListChatModelsReq struct{}
+
+type ListChatModelsRsp []*ChatModel
+
+func (c *ChatModelAPIImpl) ListChatModels(req *ListChatModelsReq) (ListChatModelsRsp, error) {
+	const path = "/chat-models"
+	r := c.restClient.R()
+	rsp := &api.Resp[ListChatModelsRsp]{}
+	if _, err := r.SetResult(rsp).Get(path); err != nil {
+		return nil, err
+	}
+	if err := api.ValidateResp(rsp); err != nil {
+		return nil, err
+	}
+	return rsp.Data, nil
+}
+
+type GetChatModelReq struct {
+	ModelName string
+}
+
+type GetChatModelRsp struct {
+	*ChatModel
+	ChatOptions  *ChatOptions  `json:"chatOptions" yaml:"chatOptions"`
+	ImageOptions *ImageOptions `json:"imageOptions" yaml:"imageOptions"`
+}
+
+func (c *ChatModelAPIImpl) GetChatModel(req *GetChatModelReq) (*GetChatModelRsp, error) {
+	path := "/chat-models/" + req.ModelName
+	r := c.restClient.R()
+	rsp := &api.Resp[*GetChatModelRsp]{}
+	if _, err := r.SetResult(rsp).Get(path); err != nil {
+		return nil, err
+	}
+	if err := api.ValidateResp(rsp); err != nil {
+		return nil, err
+	}
+	return rsp.Data, nil
+}
+
+type RunChatModelReq struct {
+	Key          string        `json:"key"`
+	Input        string        `json:"input"`
+	Prompt       string        `json:"prompt"`
+	UseChatModel bool          `json:"useChatModel"`
+	Stream       bool          `json:"stream"`
+	ChatOptions  *ChatOptions  `json:"chatOptions"`
+	ImageOptions *ImageOptions `json:"imageOptions"`
+}
+
+// RunChatModelRsp
+type RunChatModelRsp struct {
+	Input     *RunActionParam  `json:"input,omitempty"`
+	Result    *ActionResult    `json:"result,omitempty"`
+	Telemetry *TelemetryResult `json:"telemetry,omitempty"`
+}
+
+// RunActionParam
+type RunActionParam struct {
+	ChatOptions  *DashScopeChatOptions  `json:"chatOptions"`
+	ImageOptions *DashScopeImageOptions `json:"imageOptions"`
+	// user input
+	Input *string `json:"input,omitempty"`
+	// action key, bean name
+	Key *string `json:"key,omitempty"`
+	// system prompt
+	Prompt *string `json:"prompt,omitempty"`
+	// use stream response
+	Stream *bool `json:"stream,omitempty"`
+	// use chat model, is use, will be enable chat memory
+	UseChatModel *bool `json:"useChatModel,omitempty"`
+}
+
+type DashScopeChatOptions struct {
+	EnableSearch           *bool                    `json:"enable_search,omitempty"`
+	FrequencyPenalty       *float64                 `json:"frequencyPenalty,omitempty"`
+	IncrementalOutput      *bool                    `json:"incremental_output,omitempty"`
+	MaxTokens              *int64                   `json:"maxTokens,omitempty"`
+	Model                  *string                  `json:"model,omitempty"`
+	MultiModel             *bool                    `json:"multi_model,omitempty"`
+	PresencePenalty        *float64                 `json:"presencePenalty,omitempty"`
+	ProxyToolCalls         *bool                    `json:"proxyToolCalls,omitempty"`
+	RepetitionPenalty      *float64                 `json:"repetition_penalty,omitempty"`
+	Seed                   *int64                   `json:"seed,omitempty"`
+	Stop                   []map[string]interface{} `json:"stop,omitempty"`
+	StopSequences          []string                 `json:"stopSequences,omitempty"`
+	Temperature            *float64                 `json:"temperature,omitempty"`
+	ToolChoice             map[string]interface{}   `json:"tool_choice,omitempty"`
+	Tools                  []FunctionTool           `json:"tools,omitempty"`
+	TopK                   *int64                   `json:"top_k,omitempty"`
+	TopP                   *float64                 `json:"top_p,omitempty"`
+	VlHighResolutionImages *bool                    `json:"vl_high_resolution_images,omitempty"`
+}
+
+type ToolType string
+
+const (
+	Function ToolType = "function"
+)
+
+// FunctionTool
+type FunctionTool struct {
+	Function *FunctionClass `json:"function,omitempty"`
+	Type     *ToolType      `json:"type,omitempty"`
+}
+
+// Function
+type FunctionClass struct {
+	Description *string                           `json:"description,omitempty"`
+	Name        *string                           `json:"name,omitempty"`
+	Parameters  map[string]map[string]interface{} `json:"parameters,omitempty"`
+}
+
+type DashScopeImageOptions struct {
+	Model          *string  `json:"model,omitempty"`
+	N              *int64   `json:"n,omitempty"`
+	NegativePrompt *string  `json:"negative_prompt,omitempty"`
+	RefImg         *string  `json:"ref_img,omitempty"`
+	RefMode        *string  `json:"ref_mode,omitempty"`
+	RefStrength    *float64 `json:"ref_strength,omitempty"`
+	ResponseFormat *string  `json:"responseFormat,omitempty"`
+	Seed           *int64   `json:"seed,omitempty"`
+	Size           *string  `json:"size,omitempty"`
+	SizeHeight     *int64   `json:"size_height,omitempty"`
+	SizeWidth      *int64   `json:"size_width,omitempty"`
+	Style          *string  `json:"style,omitempty"`
+}
+
+// ActionResult
+type ActionResult struct {
+	Response string `json:"response"`
+	// stream response
+	StreamResponse []*string `json:"streamResponse"`
+}
+
+// TelemetryResult
+type TelemetryResult struct {
+	TraceID string `json:"traceId"`
+}
+
+// RunChatModel
+func (c *ChatModelAPIImpl) RunChatModel(req *RunChatModelReq) (*RunChatModelRsp, error) {
+	path := "/chat-models"
+	r := c.restClient.R()
+	rsp := &api.Resp[*RunChatModelRsp]{}
+	if _, err := r.SetResult(rsp).SetBody(req).Post(path); err != nil {
+		return nil, err
+	}
+	if err := api.ValidateResp(rsp); err != nil {
+		return nil, err
+	}
+	return rsp.Data, nil
+}
+
+type RunImageModelReq struct {
+	Key          string        `json:"key"`
+	Input        string        `json:"input"`
+	Prompt       string        `json:"prompt"`
+	UseChatModel bool          `json:"useChatModel"`
+	Stream       bool          `json:"stream"`
+	ChatOptions  *ChatOptions  `json:"chatOptions"`
+	ImageOptions *ImageOptions `json:"imageOptions"`
+}
+
+type RunImageModelRsp struct{}
+
+// RunImageModel
+//
+// use hyper function and return the standard API function type
+func (c *ChatModelAPIImpl) RunImageModelFunc(outputFileName string) func(req *RunImageModelReq) (*RunImageModelRsp, error) {
+	return func(req *RunImageModelReq) (*RunImageModelRsp, error) {
+		path := "/chat-models/run/image-gen"
+		r := c.restClient.R()
+		// Ensure the output directory exists
+		outputDir := filepath.Dir(outputFileName)
+		if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
+			return nil, fmt.Errorf("failed to create output directory: %w", err)
+		}
+		// Set the output file
+		r.SetOutput(outputFileName)
+		// Send the request
+		if _, err := r.SetBody(req).Post(path); err != nil {
+			return nil, fmt.Errorf("failed to send request: %w", err)
+		}
+		return nil, nil
+	}
+}
