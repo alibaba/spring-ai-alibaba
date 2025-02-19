@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dashscope.chat;
 
 import java.util.ArrayList;
@@ -66,7 +65,8 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -123,17 +123,30 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 	}
 
 	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions options,
-			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
-		this(dashscopeApi, options, functionCallbackContext, retryTemplate, ObservationRegistry.NOOP);
+			FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate) {
+		this(dashscopeApi, options, functionCallbackResolver, List.of(), retryTemplate);
 	}
 
 	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions options,
-			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate,
-			ObservationRegistry observationRegistry) {
-		super(functionCallbackContext);
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
+			RetryTemplate retryTemplate) {
+
+		this(dashscopeApi, options, functionCallbackResolver, toolFunctionCallbacks, retryTemplate,
+				ObservationRegistry.NOOP);
+	}
+
+	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions options,
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
+			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
+
+		super(functionCallbackResolver, options, toolFunctionCallbacks);
+
 		Assert.notNull(dashscopeApi, "DashScopeApi must not be null");
 		Assert.notNull(options, "Options must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+		Assert.isTrue(CollectionUtils.isEmpty(options.getFunctionCallbacks()),
+				"The default function callbacks must be set via the toolFunctionCallbacks constructor parameter");
+		Assert.notNull(observationRegistry, "ObservationRegistry must not be null");
 
 		this.dashscopeApi = dashscopeApi;
 		this.defaultOptions = options;
@@ -185,7 +198,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 				return response;
 			});
 
-		if (isToolCall(chatResponse,
+		if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(chatResponse,
 				Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
 			var toolCallConversation = handleToolCalls(prompt, chatResponse);
 			// Recursively call the call method with the tool call message
@@ -263,9 +276,8 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-
-				if (isToolCall(response,
-						Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
+				if (!isProxyToolCalls(prompt, this.defaultOptions) &&
+						isToolCall(response, Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
 					var toolCallConversation = handleToolCalls(prompt, response);
 					// Recursively call the stream method with the tool call message
 					// conversation that contains the call responses.
@@ -294,7 +306,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 
 		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
-		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
+		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
 		return new Generation(assistantMessage, generationMetadata);
 	}
 
@@ -311,9 +323,9 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 	private ChatResponseMetadata from(ChatCompletion result) {
 		Assert.notNull(result, "DashScopeAi ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
-			.withId(result.requestId())
-			.withUsage(DashScopeAiUsage.from(result.usage()))
-			.withModel("")
+			.id(result.requestId())
+			.usage(DashScopeAiUsage.from(result.usage()))
+			.model("")
 			.build();
 	}
 
@@ -344,7 +356,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
 			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
-				Object content = message.getContent();
+				Object content = message.getText();
 				if (message instanceof UserMessage userMessage) {
 					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 						content = convertMediaContent(userMessage);

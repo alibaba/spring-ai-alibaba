@@ -1,11 +1,11 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
-import com.alibaba.dashscope.aigc.generation.Generation;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -40,7 +40,7 @@ public class DashScopeChatProperties extends DashScopeParentProperties {
 	/**
 	 * Default DashScope Chat model.
 	 */
-	public static final String DEFAULT_DEPLOYMENT_NAME = Generation.Models.QWEN_PLUS;
+	public static final String DEFAULT_DEPLOYMENT_NAME = "qwen-plus";
 
 	/**
 	 * Default temperature speed.

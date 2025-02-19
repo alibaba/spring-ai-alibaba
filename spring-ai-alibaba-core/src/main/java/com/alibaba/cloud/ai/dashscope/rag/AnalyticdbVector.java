@@ -1,6 +1,29 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.dashscope.rag;
 
-import com.alibaba.fastjson.JSONObject;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import com.aliyun.gpdb20160503.Client;
 import com.aliyun.gpdb20160503.models.CreateCollectionRequest;
 import com.aliyun.gpdb20160503.models.CreateNamespaceRequest;
@@ -14,22 +37,19 @@ import com.aliyun.gpdb20160503.models.QueryCollectionDataRequest;
 import com.aliyun.gpdb20160503.models.QueryCollectionDataResponse;
 import com.aliyun.gpdb20160503.models.QueryCollectionDataResponseBody;
 import com.aliyun.gpdb20160503.models.UpsertCollectionDataRequest;
-import com.aliyun.teaopenapi.models.Config;
 import com.aliyun.tea.TeaException;
+import com.aliyun.teaopenapi.models.Config;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.alibaba.fastjson.JSON;
+
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * @author HeYQ
@@ -45,12 +65,19 @@ public class AnalyticdbVector implements VectorStore {
 
 	private Client client;
 
-	public AnalyticdbVector(String collectionName, AnalyticdbConfig config) throws Exception {
+	private final EmbeddingModel embeddingModel;
+
+	private final ObjectMapper objectMapper;
+
+	public AnalyticdbVector(String collectionName, AnalyticdbConfig config, EmbeddingModel embeddingModel)
+			throws Exception {
 		// collection_name must be updated every time
 		this.collectionName = collectionName.toLowerCase();
 		this.config = config;
 		Config clientConfig = Config.build(this.config.toAnalyticdbClientParams());
 		this.client = new Client(clientConfig);
+		this.embeddingModel = embeddingModel;
+		this.objectMapper = new ObjectMapper();
 		initialize();
 		logger.debug("created AnalyticdbVector client success");
 	}
@@ -116,9 +143,11 @@ public class AnalyticdbVector implements VectorStore {
 		catch (TeaException e) {
 			if (Objects.equals(e.getStatusCode(), 404)) {
 				// Collection does not exist, create it
-				String metadata = JSON.toJSONString(new JSONObject().fluentPut("refDocId", "text")
-					.fluentPut("content", "text")
-					.fluentPut("metadata", "jsonb"));
+				ObjectNode metadataNode = objectMapper.createObjectNode();
+				metadataNode.put("refDocId", "text");
+				metadataNode.put("content", "text");
+				metadataNode.put("metadata", "jsonb");
+				String metadata = objectMapper.writeValueAsString(metadataNode);
 				String fullTextRetrievalFields = "content";
 				CreateCollectionRequest createRequest = new CreateCollectionRequest()
 					.setDBInstanceId(this.config.getDBInstanceId())
@@ -145,15 +174,23 @@ public class AnalyticdbVector implements VectorStore {
 	public void add(List<Document> documents) {
 		List<UpsertCollectionDataRequest.UpsertCollectionDataRequestRows> rows = new ArrayList<>(10);
 		for (Document doc : documents) {
-			float[] floatEmbeddings = doc.getEmbedding();
-			List<Double> embedding = new ArrayList<>(floatEmbeddings.length);
-			for (float floatEmbedding : floatEmbeddings) {
-				embedding.add((double) floatEmbedding);
-			}
+			logger.info("Calling EmbeddingModel for document id = {}", doc.getId());
+			float[] floatEmbeddings = this.embeddingModel.embed(doc);
 			Map<String, String> metadata = new HashMap<>();
 			metadata.put("refDocId", (String) doc.getMetadata().get("docId"));
-			metadata.put("content", doc.getContent());
-			metadata.put("metadata", JSON.toJSONString(doc.getMetadata()));
+			metadata.put("content", doc.getText());
+
+			try {
+				metadata.put("metadata", objectMapper.writeValueAsString(doc.getMetadata()));
+			}
+			catch (JsonProcessingException e) {
+				throw new RuntimeException(e);
+			}
+
+			List<Double> embedding = IntStream.range(0, floatEmbeddings.length)
+				.mapToObj(i -> (double) floatEmbeddings[i]) // 将每个 float 转为 Double
+				.toList();
+
 			rows.add(new UpsertCollectionDataRequest.UpsertCollectionDataRequestRows().setVector(embedding)
 				.setMetadata(metadata));
 		}
@@ -199,7 +236,7 @@ public class AnalyticdbVector implements VectorStore {
 	@Override
 	public List<Document> similaritySearch(String query) {
 
-		return similaritySearch(SearchRequest.query(query));
+		return this.similaritySearch(SearchRequest.builder().query(query).build());
 
 	}
 
@@ -218,7 +255,7 @@ public class AnalyticdbVector implements VectorStore {
 			.setIncludeValues(includeValues)
 			.setMetrics(this.config.getMetrics())
 			.setVector(null)
-			.setContent(searchRequest.query)
+			.setContent(searchRequest.getQuery())
 			.setTopK((long) topK)
 			.setFilter(null);
 		try {
@@ -230,7 +267,9 @@ public class AnalyticdbVector implements VectorStore {
 				if (match.getScore() != null && match.getScore() > scoreThreshold) {
 					Map<String, String> metadata = match.getMetadata();
 					String pageContent = metadata.get("content");
-					Map<String, Object> metadataJson = JSONObject.parseObject(metadata.get("metadata"), HashMap.class);
+					Map<String, Object> metadataJson = objectMapper.readValue(metadata.get("metadata"),
+							new TypeReference<HashMap<String, Object>>() {
+							});
 					Document doc = new Document(pageContent, metadataJson);
 					documents.add(doc);
 				}

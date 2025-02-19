@@ -1,11 +1,11 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,16 +15,18 @@
  */
 package com.alibaba.cloud.ai.dashscope.chat.observation;
 
+import java.util.List;
+import java.util.Objects;
+
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
-import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
+
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.util.CollectionUtils;
-
-import java.util.*;
 
 /**
  * Dashscope conventions to populate observations for chat model operations.
@@ -37,6 +39,8 @@ public class DashScopeChatModelObservationConvention extends DefaultChatModelObs
 	public static final String DEFAULT_NAME = "gen_ai.client.operation";
 
 	private static final String ILLEGAL_STOP_CONTENT = "<illegal_stop_content>";
+
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	@Override
 	public String getName() {
@@ -56,7 +60,7 @@ public class DashScopeChatModelObservationConvention extends DefaultChatModelObs
 
 			String stopSequences;
 			try {
-				stopSequences = JSON.toJSONString(stop);
+				stopSequences = objectMapper.writeValueAsString(stop);
 			}
 			catch (Exception e) {
 				stopSequences = ILLEGAL_STOP_CONTENT;

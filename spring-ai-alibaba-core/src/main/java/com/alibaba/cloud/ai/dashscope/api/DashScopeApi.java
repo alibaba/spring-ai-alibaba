@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.dashscope.api;
 
 import java.io.File;
@@ -27,7 +42,6 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpEntity;
@@ -468,7 +482,7 @@ public class DashScopeApi {
 
 	public ResponseEntity<DocumentSplitResponse> documentSplit(Document document,
 			DashScopeDocumentTransformerOptions options) {
-		DocumentSplitRequest request = new DocumentSplitRequest(document.getContent(), options.getChunkSize(),
+		DocumentSplitRequest request = new DocumentSplitRequest(document.getText(), options.getChunkSize(),
 				options.getOverlapSize(), options.getFileType(), options.getLanguage(), options.getSeparator());
 		return this.restClient.post()
 			.uri("/api/v1/indices/component/configed_transformations/spliter")
@@ -764,7 +778,6 @@ public class DashScopeApi {
 		 * Create a tool of type 'function' and the given function definition.
 		 * @param function function definition.
 		 */
-		@ConstructorBinding
 		public FunctionTool(Function function) {
 			this(Type.FUNCTION, function);
 		}
@@ -802,7 +815,6 @@ public class DashScopeApi {
 			 * @param name tool function name.
 			 * @param jsonSchema tool function schema as json.
 			 */
-			@ConstructorBinding
 			public Function(String description, String name, String jsonSchema) {
 				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
 			}

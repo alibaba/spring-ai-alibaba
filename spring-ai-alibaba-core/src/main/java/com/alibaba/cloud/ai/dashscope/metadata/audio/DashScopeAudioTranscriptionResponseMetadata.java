@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,30 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dashscope.metadata.audio;
 
-import com.alibaba.dashscope.audio.asr.transcription.TranscriptionResult;
-import com.google.gson.JsonObject;
-
+import org.springframework.ai.audio.transcription.AudioTranscriptionResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
-import org.springframework.ai.model.MutableResponseMetadata;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
+ * Audio transcription metadata implementation for {@literal DashScope}.
+ *
  * @author yuluo
- * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
- * @since 2023.0.1.0
+ * @see RateLimit
  */
+public class DashScopeAudioTranscriptionResponseMetadata extends AudioTranscriptionResponseMetadata {
 
-public class DashScopeAudioTranscriptionResponseMetadata extends MutableResponseMetadata {
-
-	/**
-	 * NULL objects.
-	 */
 	public static final DashScopeAudioTranscriptionResponseMetadata NULL = new DashScopeAudioTranscriptionResponseMetadata() {
+
 	};
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s, rateLimit: %4$s }";
@@ -44,51 +38,32 @@ public class DashScopeAudioTranscriptionResponseMetadata extends MutableResponse
 	@Nullable
 	private RateLimit rateLimit;
 
-	private JsonObject usage;
-
 	protected DashScopeAudioTranscriptionResponseMetadata() {
-
-		this(null, new JsonObject());
+		this(null);
 	}
 
-	protected DashScopeAudioTranscriptionResponseMetadata(JsonObject usage) {
-
-		this(null, usage);
-	}
-
-	protected DashScopeAudioTranscriptionResponseMetadata(@Nullable RateLimit rateLimit, JsonObject usage) {
-
+	protected DashScopeAudioTranscriptionResponseMetadata(@Nullable RateLimit rateLimit) {
 		this.rateLimit = rateLimit;
-		this.usage = usage;
 	}
 
-	public static DashScopeAudioTranscriptionResponseMetadata from(TranscriptionResult result) {
-
-		Assert.notNull(result, "DashScope Transcription must not be null");
-		return new DashScopeAudioTranscriptionResponseMetadata(result.getUsage());
+	public static DashScopeAudioTranscriptionResponseMetadata from(String result) {
+		Assert.notNull(result, "OpenAI Transcription must not be null");
+		return new DashScopeAudioTranscriptionResponseMetadata();
 	}
 
 	@Nullable
 	public RateLimit getRateLimit() {
-
-		return this.rateLimit != null ? this.rateLimit : new EmptyRateLimit();
+		RateLimit rateLimit = this.rateLimit;
+		return rateLimit != null ? rateLimit : new EmptyRateLimit();
 	}
 
-	public void setRateLimit(@Nullable RateLimit rateLimit) {
+	public DashScopeAudioTranscriptionResponseMetadata withRateLimit(RateLimit rateLimit) {
 		this.rateLimit = rateLimit;
-	}
-
-	public JsonObject getUsage() {
-		return usage;
-	}
-
-	public void setUsage(JsonObject usage) {
-		this.usage = usage;
+		return this;
 	}
 
 	@Override
 	public String toString() {
-
 		return AI_METADATA_STRING.formatted(getClass().getName(), getRateLimit());
 	}
 
