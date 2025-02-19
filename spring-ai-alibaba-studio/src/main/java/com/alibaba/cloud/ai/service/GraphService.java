@@ -15,19 +15,21 @@
  */
 package com.alibaba.cloud.ai.service;
 
-import com.alibaba.cloud.ai.graph.InitData;
+import com.alibaba.cloud.ai.graph.GraphInitData;
 import com.alibaba.cloud.ai.param.GraphStreamParam;
 import org.springframework.http.codec.ServerSentEvent;
 import reactor.core.publisher.Flux;
 
 import java.io.InputStream;
-import java.util.Map;
 
 public interface GraphService {
 
-    InitData init();
+	/**
+	 * @return Init printable graph data (of MERMAID or PlantUML format) using StateGraph
+	 * definition
+	 */
+	GraphInitData getPrintableGraphData();
 
-    Flux<ServerSentEvent<String>> stream(GraphStreamParam param, InputStream inputStream) throws Exception;
+	Flux<ServerSentEvent<String>> stream(GraphStreamParam param, InputStream inputStream) throws Exception;
 
-    void userInput(Map<String, Object> dataMap);
 }
