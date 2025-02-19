@@ -1,7 +1,7 @@
 /**
- * The {@code org.bsc.langgraph4j} package provides classes and interfaces for building
- * stateful, multi-agent applications with LLMs. It includes core components such as
- * {@link com.alibaba.cloud.ai.graph.StateGraph},
+ * The {@code com.alibaba.cloud.ai.graph} package provides classes and interfaces for
+ * building stateful, multi-agent applications with LLMs. It includes core components such
+ * as {@link com.alibaba.cloud.ai.graph.StateGraph},
  * {@link com.alibaba.cloud.ai.graph.CompiledGraph},
  * {@link com.alibaba.cloud.ai.graph.internal.node.Node}, and
  * {@link com.alibaba.cloud.ai.graph.internal.edge.Edge}, which facilitate the creation
