@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.LogManager;
 
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import lombok.extern.slf4j.Slf4j;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
@@ -164,15 +166,15 @@ public class SubGraphTest {
 		var B_B2 = SubGraphNode.formatId("B", "B2");
 		var B_C = SubGraphNode.formatId("B", "C");
 
-		var saver = new MemorySaver();
+		SaverConfig saver = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
 
-		var withSaver = workflowParent.compile(CompileConfig.builder().checkpointSaver(saver).build());
+		var withSaver = workflowParent.compile(CompileConfig.builder().saverConfig(saver).build());
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, "C", END), _execute(withSaver, Map.of()));
 
 		// INTERRUPT AFTER B1
 		var interruptAfterB1 = workflowParent
-			.compile(CompileConfig.builder().checkpointSaver(saver).interruptAfter(B_B1).build());
+			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B1).build());
 		assertIterableEquals(List.of(START, "A", B_B1), _execute(interruptAfterB1, Map.of()));
 
 		// RESUME AFTER B1
@@ -180,7 +182,7 @@ public class SubGraphTest {
 
 		// INTERRUPT AFTER B2
 		var interruptAfterB2 = workflowParent
-			.compile(CompileConfig.builder().checkpointSaver(saver).interruptAfter(B_B2).build());
+			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B2).build());
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2), _execute(interruptAfterB2, Map.of()));
 
@@ -189,7 +191,7 @@ public class SubGraphTest {
 
 		// INTERRUPT BEFORE C
 		var interruptBeforeC = workflowParent
-			.compile(CompileConfig.builder().checkpointSaver(saver).interruptBefore("C").build());
+			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("C").build());
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C), _execute(interruptBeforeC, Map.of()));
 
@@ -198,7 +200,7 @@ public class SubGraphTest {
 
 		// INTERRUPT BEFORE SUBGRAPH B
 		var interruptBeforeSubgraphB = workflowParent
-			.compile(CompileConfig.builder().checkpointSaver(saver).interruptBefore("B").build());
+			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("B").build());
 		assertIterableEquals(List.of(START, "A"), _execute(interruptBeforeSubgraphB, Map.of()));
 
 		// RESUME AFTER SUBGRAPH B
@@ -206,7 +208,7 @@ public class SubGraphTest {
 
 		// INTERRUPT AFTER SUBGRAPH B
 		var exception = assertThrows(GraphStateException.class, () -> workflowParent
-			.compile(CompileConfig.builder().checkpointSaver(saver).interruptAfter("B").build()));
+			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter("B").build()));
 
 		assertEquals(
 				"'interruption after' on subgraph is not supported yet! consider to use 'interruption before' node: 'C'",
@@ -281,15 +283,15 @@ public class SubGraphTest {
 		var B_B2 = SubGraphNode.formatId("B", "B2");
 		var B_C = SubGraphNode.formatId("B", "C");
 
-		var saver = new MemorySaver();
+		SaverConfig saver = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
 
-		var withSaver = workflowParent.compile(CompileConfig.builder().checkpointSaver(saver).build());
+		var withSaver = workflowParent.compile(CompileConfig.builder().saverConfig(saver).build());
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, "C1", "C", END), _execute(withSaver, Map.of()));
 
 		// INTERRUPT AFTER B1
 		var interruptAfterB1 = workflowParent
-			.compile(CompileConfig.builder().checkpointSaver(saver).interruptAfter(B_B1).build());
+			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B1).build());
 		assertIterableEquals(List.of(START, "A", B_B1), _execute(interruptAfterB1, Map.of()));
 
 		// RESUME AFTER B1
@@ -297,7 +299,7 @@ public class SubGraphTest {
 
 		// INTERRUPT AFTER B2
 		var interruptAfterB2 = workflowParent
-			.compile(CompileConfig.builder().checkpointSaver(saver).interruptAfter(B_B2).build());
+			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B2).build());
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2), _execute(interruptAfterB2, Map.of()));
 
@@ -306,7 +308,7 @@ public class SubGraphTest {
 
 		// INTERRUPT BEFORE C
 		var interruptBeforeC = workflowParent
-			.compile(CompileConfig.builder().checkpointSaver(saver).interruptBefore("C").build());
+			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("C").build());
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, "C1"), _execute(interruptBeforeC, Map.of()));
 
@@ -315,7 +317,7 @@ public class SubGraphTest {
 
 		// INTERRUPT BEFORE SUBGRAPH B
 		var interruptBeforeB = workflowParent
-			.compile(CompileConfig.builder().checkpointSaver(saver).interruptBefore("B").build());
+			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("B").build());
 		assertIterableEquals(List.of(START, "A"), _execute(interruptBeforeB, Map.of()));
 
 		// RESUME BEFORE SUBGRAPH B
@@ -325,7 +327,7 @@ public class SubGraphTest {
 		// INTERRUPT AFTER SUBGRAPH B
 		//
 		var exception = assertThrows(GraphStateException.class, () -> workflowParent
-			.compile(CompileConfig.builder().checkpointSaver(saver).interruptAfter("B").build()));
+			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter("B").build()));
 
 		assertEquals("'interruption after' on subgraph is not supported yet!", exception.getMessage());
 
@@ -334,7 +336,9 @@ public class SubGraphTest {
 	@Test
 	public void testCheckpointWithSubgraph() throws Exception {
 
-		var compileConfig = CompileConfig.builder().checkpointSaver(new MemorySaver()).build();
+		SaverConfig saver = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
+
+		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
 
 		var workflowChild = new MessagesStateGraph<String>().addNode("step_1", _makeNode("child:step1"))
 			.addNode("step_2", _makeNode("child:step2"))
