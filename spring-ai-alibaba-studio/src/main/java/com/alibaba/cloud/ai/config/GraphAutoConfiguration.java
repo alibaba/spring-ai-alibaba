@@ -27,7 +27,6 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
