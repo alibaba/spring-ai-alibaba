@@ -1,5 +1,13 @@
 package com.alibaba.cloud.ai.graph.checkpoint.savers;
 
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
+
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
@@ -8,12 +16,7 @@ import org.redisson.api.RBucket;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
-
 import static java.lang.String.format;
-import static java.util.Collections.unmodifiableCollection;
 
 /**
  * The type Redis saver.
