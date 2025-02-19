@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import lombok.extern.slf4j.Slf4j;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.FileSystemSaver;
 import com.alibaba.cloud.ai.graph.prebuilt.MessagesState;
@@ -64,7 +67,9 @@ public class StateGraphFileSystemPersistenceTest {
 		FileSystemSaver saver = new FileSystemSaver(Paths.get(rootPath, "testCheckpointSaverResubmit"),
 				workflow.getStateSerializer());
 
-		CompileConfig compileConfig = CompileConfig.builder().checkpointSaver(saver).build();
+		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.FILE, saver).build();
+
+		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 
 		CompiledGraph<State> app = workflow.compile(compileConfig);
 

@@ -6,6 +6,8 @@ import java.util.Optional;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import lombok.extern.slf4j.Slf4j;
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -92,8 +94,9 @@ public class StateGraphPersistenceTest {
 			.addEdge("agent_1", END);
 
 		var saver = new MemorySaver();
+		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, saver).build();
 
-		var compileConfig = CompileConfig.builder().checkpointSaver(saver).build();
+		var compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 
 		var runnableConfig = RunnableConfig.builder().build();
 		var app = workflow.compile(compileConfig);
@@ -167,8 +170,9 @@ public class StateGraphPersistenceTest {
 		;
 
 		var saver = new MemorySaver();
+		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, saver).build();
 
-		var compileConfig = CompileConfig.builder().checkpointSaver(saver).build();
+		var compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 
 		var app = workflow.compile(compileConfig);
 
@@ -235,8 +239,9 @@ public class StateGraphPersistenceTest {
 			.addEdge("tools", "agent");
 
 		var saver = new MemorySaver();
+		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, saver).build();
 
-		var compileConfig = CompileConfig.builder().checkpointSaver(saver).build();
+		var compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 
 		var app = workflow.compile(compileConfig);
 
@@ -311,8 +316,9 @@ public class StateGraphPersistenceTest {
 			.addEdge("tools", "agent");
 
 		var saver = new MemorySaver();
+		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, saver).build();
 
-		var compileConfig = CompileConfig.builder().checkpointSaver(saver).interruptBefore("tools").build();
+		var compileConfig = CompileConfig.builder().saverConfig(saverConfig).interruptBefore("tools").build();
 
 		var app = workflow.compile(compileConfig);
 
