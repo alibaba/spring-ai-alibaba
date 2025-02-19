@@ -26,7 +26,6 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
 import org.springframework.ai.model.function.TypeResolverHelper;
 import org.springframework.util.Assert;
 
@@ -54,7 +53,7 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 	private final BiFunction<I, ToolContext, O> biFunction;
 
 	protected AgentFunctionCallbackWrapper(String name, String description, String inputTypeSchema, Class<I> inputType,
-                                           Function<O, String> responseConverter, ObjectMapper objectMapper, BiFunction<I, ToolContext, O> function) {
+			Function<O, String> responseConverter, ObjectMapper objectMapper, BiFunction<I, ToolContext, O> function) {
 		Assert.notNull(name, "Name must not be null");
 		Assert.notNull(description, "Description must not be null");
 		Assert.notNull(inputType, "InputType must not be null");
@@ -131,7 +130,7 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 
 		private final Function<I, O> function;
 
-		private FunctionCallbackContext.SchemaType schemaType;
+		private FunctionCallback.SchemaType schemaType;
 
 		private Function<O, String> responseConverter;
 
@@ -140,7 +139,7 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 		private ObjectMapper objectMapper;
 
 		public Builder(BiFunction<I, ToolContext, O> biFunction) {
-			this.schemaType = FunctionCallbackContext.SchemaType.JSON_SCHEMA;
+			this.schemaType = FunctionCallback.SchemaType.JSON_SCHEMA;
 			this.responseConverter = ModelOptionsUtils::toJsonString;
 			this.objectMapper = (new ObjectMapper()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 				.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
@@ -151,7 +150,7 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 		}
 
 		public Builder(Function<I, O> function) {
-			this.schemaType = FunctionCallbackContext.SchemaType.JSON_SCHEMA;
+			this.schemaType = FunctionCallback.SchemaType.JSON_SCHEMA;
 			this.responseConverter = ModelOptionsUtils::toJsonString;
 			this.objectMapper = (new ObjectMapper()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 				.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
@@ -196,7 +195,7 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 			return this;
 		}
 
-		public Builder<I, O> withSchemaType(FunctionCallbackContext.SchemaType schemaType) {
+		public Builder<I, O> withSchemaType(FunctionCallback.SchemaType schemaType) {
 			Assert.notNull(schemaType, "SchemaType must not be null");
 			this.schemaType = schemaType;
 			return this;
@@ -217,7 +216,7 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 			}
 
 			if (inputTypeSchema == null) {
-				boolean upperCaseTypeValues = schemaType == FunctionCallbackContext.SchemaType.OPEN_API_SCHEMA;
+				boolean upperCaseTypeValues = schemaType == FunctionCallback.SchemaType.OPEN_API_SCHEMA;
 				inputTypeSchema = ModelOptionsUtils.getJsonSchema(inputType, upperCaseTypeValues);
 			}
 

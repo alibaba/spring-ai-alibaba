@@ -26,14 +26,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("studio/api/graph")
 public class GraphAPIController implements GraphAPI {
 
-    private final GraphService graphService;
+	private final GraphService graphService;
 
-    public GraphAPIController(GraphService graphService) {
-        this.graphService = graphService;
-    }
+	public GraphAPIController(GraphService graphService) {
+		this.graphService = graphService;
+	}
 
-    @Override
-    public GraphService graphService() {
-        return graphService;
-    }
+	@Override
+	public GraphService graphService() {
+		return graphService;
+	}
+
 }
