@@ -26,10 +26,10 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
-import com.alibaba.cloud.ai.graph.state.NodeState;
+import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.param.GraphStreamParam;
 import com.alibaba.cloud.ai.service.GraphService;
-import com.alibaba.cloud.ai.graph.InitData;
+import com.alibaba.cloud.ai.graph.GraphInitData;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -42,143 +42,139 @@ import reactor.core.publisher.Sinks;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
+import static java.util.Optional.ofNullable;
 
 @Service
 @Slf4j
 public class GraphServiceImpl implements GraphService {
 
-    private final ObjectMapper objectMapper;
+	private final ObjectMapper objectMapper;
 
-    private final StateGraph stateGraph;
+	private final StateGraph stateGraph;
 
-    private InitData initData;
+	private GraphInitData initData;
 
-    private final Map<PersistentConfig, CompiledGraph> graphCache = new ConcurrentHashMap<>();
+	private final Map<PersistentConfig, CompiledGraph> graphCache = new ConcurrentHashMap<>();
 
-    public static final Map<String, Object> USER_INPUT = new HashMap<>();
+	public static final Map<String, Object> USER_INPUT = new HashMap<>();
 
-    public GraphServiceImpl(ObjectMapper objectMapper, InitData initData, StateGraph stateGraph) {
-        this.objectMapper = objectMapper;
-        this.initData = initData;
-        this.stateGraph = stateGraph;
-    }
+	public GraphServiceImpl(ObjectMapper objectMapper, GraphInitData initData, StateGraph stateGraph) {
+		this.objectMapper = objectMapper;
+		this.initData = initData;
+		this.stateGraph = stateGraph;
+	}
 
-    @Override
-    public InitData init() {
-        return initData;
-    }
+	@Override
+	public GraphInitData getPrintableGraphData() {
+		return initData;
+	}
 
-    @Override
-    public Flux<ServerSentEvent<String>> stream(GraphStreamParam param, InputStream inputStream) throws Exception {
-        var threadId = param.getThread();
-        var resume = param.isResume();
-        var persistentConfig = new PersistentConfig(param.getSessionId(), threadId);
-        var compiledGraph = graphCache.get(persistentConfig);
+	/**
+	 * Serializes the output to the given writer.
+	 * @param threadId the ID of the thread.
+	 * @param output the output to serialize.
+	 */
+	private String serializeOutput(String threadId, NodeOutput<? extends AgentState> output) {
+		try {
+			StringBuilder sb = new StringBuilder();
+			sb.append("[ \"").append(threadId).append("\",\n");
+			var outputAsString = objectMapper.writeValueAsString(output);
+			sb.append(outputAsString).append("\n]");
+			return sb.toString();
+		}
+		catch (IOException e) {
+			log.error("error serializing state", e);
+			return "";
+		}
+	}
 
-        final Map<String, Object> dataMap;
-        if (resume && stateGraph.getStateSerializer() instanceof PlainTextStateSerializer textSerializer) {
-            dataMap = textSerializer.read(new InputStreamReader(inputStream)).data();
-        } else {
-            dataMap = objectMapper.readValue(inputStream, new TypeReference<>() {});
-        }
+	@Override
+	public Flux<ServerSentEvent<String>> stream(GraphStreamParam param, InputStream inputStream) throws Exception {
+		var threadId = param.getThread();
+		var resume = param.isResume();
+		var persistentConfig = new PersistentConfig(param.getSessionId(), threadId);
+		var compiledGraph = graphCache.get(persistentConfig);
 
-        AsyncGenerator<? extends NodeOutput> generator;
-        if (resume) {
-            log.trace("RESUME REQUEST PREPARE");
+		final Map<String, Object> dataMap;
+		if (resume && stateGraph.getStateSerializer() instanceof PlainTextStateSerializer textSerializer) {
+			dataMap = textSerializer.read(new InputStreamReader(inputStream)).data();
+		}
+		else {
+			dataMap = objectMapper.readValue(inputStream, new TypeReference<>() {
+			});
+		}
 
-            if (compiledGraph == null) {
-                throw new IllegalStateException("Missing CompiledGraph in session!");
-            }
+		AsyncGenerator<? extends NodeOutput<? extends AgentState>> generator = null;
 
-            var checkpointId = param.getCheckpoint();
-            var node = param.getNode();
-            var config = RunnableConfig.builder()
-                    .threadId(threadId)
-                    .checkPointId(checkpointId)
-                    .build();
-            var stateSnapshot = compiledGraph.getState(config);
+		if (resume) {
+			log.trace("RESUME REQUEST PREPARE");
 
-            config = stateSnapshot.config();
-            log.trace("RESUME UPDATE STATE FORM {} USING CONFIG {}\n{}", node, config, dataMap);
-            config = compiledGraph.updateState(config, dataMap, node);
-            log.trace("RESUME REQUEST STREAM {}", config);
+			if (compiledGraph == null) {
+				throw new IllegalStateException("Missing CompiledGraph in session!");
+			}
 
-            generator = compiledGraph.streamSnapshots(null, config);
-        } else {
-            log.trace("dataMap: {}", dataMap);
-            if (compiledGraph == null) {
-                compiledGraph = stateGraph.compile(compileConfig(persistentConfig));
-                graphCache.put(persistentConfig, compiledGraph);
-            }
-            generator = compiledGraph.streamSnapshots(dataMap, runnableConfig(persistentConfig));
-        }
+			var checkpointId = param.getCheckpoint();
+			var node = param.getNode();
+			var config = RunnableConfig.builder().threadId(threadId).checkPointId(checkpointId).build();
 
-        Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
-        Flux<ServerSentEvent<String>> flux = sink.asFlux();
-        generator
-                .forEachAsync(s -> {
-                    try {
-                        if (s.state().data().containsKey(NodeState.SUB_GRAPH)) {
-                            CompiledGraph.AsyncNodeGenerator<NodeOutput> subGenerator =
-                                    (CompiledGraph.AsyncNodeGenerator)
-                                            s.state().data().get(NodeState.SUB_GRAPH);
-                            subGenerator.forEach(subS -> {
-                                try {
-                                    NodeOutput output = subGenerator.buildNodeOutput(subGenerator.getCurrentNodeId());
-                                    sink.tryEmitNext(ServerSentEvent.<String>builder()
-                                            .id(threadId)
-                                            .data(objectMapper.writeValueAsString(output))
-                                            .build());
-                                } catch (IOException e) {
-                                    log.warn("error serializing state", e);
-                                } catch (Exception e) {
-                                    log.warn("error state", e);
-                                    sink.tryEmitError(e);
-                                }
-                            });
-                        } else {
-                            sink.tryEmitNext(ServerSentEvent.<String>builder()
-                                    .id(threadId)
-                                    .data(objectMapper.writeValueAsString(s))
-                                    .build());
-                        }
-                    } catch (IOException e) {
-                        log.warn("error state", e);
-                        sink.tryEmitError(e);
-                    }
-                })
-                .whenComplete((unused, throwable) -> {
-                    if (throwable != null) {
-                        log.error("Error streaming", throwable);
-                        sink.tryEmitError(throwable);
-                    } else {
-                        sink.tryEmitComplete();
-                    }
-                });
+			var stateSnapshot = compiledGraph.getState(config);
 
-        return flux;
-    }
+			config = stateSnapshot.config();
 
-    @Override
-    public void userInput(Map<String, Object> dataMap) {
-        USER_INPUT.putAll(dataMap);
-        synchronized (USER_INPUT) {
-            USER_INPUT.notify();
-        }
-    }
+			log.trace("RESUME UPDATE STATE FORM {} USING CONFIG {}\n{}", node, config, dataMap);
 
-    private CompileConfig compileConfig(PersistentConfig config) {
-        return CompileConfig.builder()
-                .saverConfig(SaverConfig.builder()
-                        .register(SaverConstant.MEMORY, new MemorySaver())
-                        .build()) // .stateSerializer(stateSerializer)
-                .build();
-    }
+			config = compiledGraph.updateState(config, dataMap, node);
 
-    RunnableConfig runnableConfig(PersistentConfig config) {
-        return RunnableConfig.builder().threadId(config.threadId()).build();
-    }
+			log.trace("RESUME REQUEST STREAM {}", config);
+
+			generator = compiledGraph.streamSnapshots(null, config);
+		}
+		else {
+			log.trace("dataMap: {}", dataMap);
+
+			if (compiledGraph == null) {
+				compiledGraph = stateGraph.compile(compileConfig(persistentConfig));
+				graphCache.put(persistentConfig, compiledGraph);
+			}
+
+			generator = compiledGraph.streamSnapshots(dataMap, runnableConfig(persistentConfig));
+		}
+
+		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
+		Flux<ServerSentEvent<String>> flux = sink.asFlux();
+		generator.forEachAsync(s -> {
+			try {
+				String output = serializeOutput(threadId, s);
+				sink.tryEmitNext(ServerSentEvent.builder(output).build());
+				TimeUnit.SECONDS.sleep(1);
+			}
+			catch (InterruptedException e) {
+				throw new CompletionException(e);
+			}
+		}).thenAccept(v -> sink.tryEmitComplete()).exceptionally(e -> {
+			log.error("Error streaming", e);
+			sink.tryEmitError(e);
+			return null;
+		});
+
+		return flux;
+	}
+
+	private CompileConfig compileConfig(PersistentConfig config) {
+		return CompileConfig.builder()
+			.saverConfig(SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build()) // .stateSerializer(stateSerializer)
+			.build();
+	}
+
+	RunnableConfig runnableConfig(PersistentConfig config) {
+		return RunnableConfig.builder().threadId(config.threadId()).build();
+	}
+
 }
