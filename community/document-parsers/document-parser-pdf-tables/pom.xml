@@ -29,6 +29,15 @@
 
 	<artifactId>document-parser-pdf-tables</artifactId>
 
+	<name>document-parser-pdf-tables</name>
+	<description>document-parser-pdf-tables for Spring AI Alibaba</description>
+	<url>https://github.com/alibaba/spring-ai-alibaba</url>
+	<scm>
+		<url>https://github.com/alibaba/spring-ai-alibaba</url>
+		<connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+		<developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+	</scm>
+
 	<properties>
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
