@@ -30,6 +30,12 @@
     <artifactId>spring-ai-alibaba-starter-function-calling-youdaotranslate</artifactId>
     <name>spring-ai-alibaba-starter-function-calling-youdaotranslate</name>
     <description>youdao translate tool for Spring AI Alibaba</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+    </scm>
 
     <dependencies>
 
