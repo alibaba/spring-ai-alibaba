@@ -1,6 +1,6 @@
 /**
- * Provides classes and interfaces for managing the state of agents in the langgraph4j
- * framework.
+ * Provides classes and interfaces for managing the state of agents in the Spring AI
+ * Alibaba framework.
  * <p>
  * This package includes:
  * <ul>

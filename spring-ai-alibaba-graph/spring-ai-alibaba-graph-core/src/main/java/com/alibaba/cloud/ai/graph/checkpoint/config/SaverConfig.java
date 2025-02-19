@@ -35,6 +35,9 @@ public class SaverConfig {
 	}
 
 	public BaseCheckpointSaver get() {
+		if (savers.size() == 1) {
+			return savers.values().iterator().next();
+		}
 		return savers.get(this.type);
 	}
 

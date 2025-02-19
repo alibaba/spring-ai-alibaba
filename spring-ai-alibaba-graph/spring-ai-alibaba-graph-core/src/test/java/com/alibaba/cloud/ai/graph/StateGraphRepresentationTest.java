@@ -50,7 +50,7 @@ public class StateGraphRepresentationTest {
 				title "Graph Diagram"
 				footer
 
-				powered by langgraph4j
+				powered by spring-ai-alibaba
 				end footer
 				circle start<<input>> as __START__
 				circle stop as __END__
@@ -92,7 +92,7 @@ public class StateGraphRepresentationTest {
 				title "Graph Diagram"
 				footer
 
-				powered by langgraph4j
+				powered by spring-ai-alibaba
 				end footer
 				circle start<<input>> as __START__
 				circle stop as __END__
@@ -137,7 +137,7 @@ public class StateGraphRepresentationTest {
 				title "Graph Diagram"
 				footer
 
-				powered by langgraph4j
+				powered by spring-ai-alibaba
 				end footer
 				circle start<<input>> as __START__
 				circle stop as __END__
@@ -185,7 +185,7 @@ public class StateGraphRepresentationTest {
 				title "Graph Diagram"
 				footer
 
-				powered by langgraph4j
+				powered by spring-ai-alibaba
 				end footer
 				circle start<<input>> as __START__
 				circle stop as __END__
@@ -272,7 +272,7 @@ public class StateGraphRepresentationTest {
 				title "testWithParallelBranch"
 				footer
 
-				powered by langgraph4j
+				powered by spring-ai-alibaba
 				end footer
 				circle start<<input>> as __START__
 				circle stop as __END__
@@ -352,7 +352,7 @@ public class StateGraphRepresentationTest {
 				title "testWithParallelBranchOnStart"
 				footer
 
-				powered by langgraph4j
+				powered by spring-ai-alibaba
 				end footer
 				circle start<<input>> as __START__
 				circle stop as __END__

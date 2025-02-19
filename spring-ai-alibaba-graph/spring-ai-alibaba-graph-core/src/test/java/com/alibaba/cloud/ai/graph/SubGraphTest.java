@@ -207,8 +207,8 @@ public class SubGraphTest {
 		assertIterableEquals(List.of(B_B1, B_B2, B_C, "C", END), _execute(interruptBeforeSubgraphB, null));
 
 		// INTERRUPT AFTER SUBGRAPH B
-		var exception = assertThrows(GraphStateException.class, () -> workflowParent
-			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter("B").build()));
+		var exception = assertThrows(GraphStateException.class,
+				() -> workflowParent.compile(CompileConfig.builder().saverConfig(saver).interruptAfter("B").build()));
 
 		assertEquals(
 				"'interruption after' on subgraph is not supported yet! consider to use 'interruption before' node: 'C'",
@@ -326,8 +326,8 @@ public class SubGraphTest {
 		//
 		// INTERRUPT AFTER SUBGRAPH B
 		//
-		var exception = assertThrows(GraphStateException.class, () -> workflowParent
-			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter("B").build()));
+		var exception = assertThrows(GraphStateException.class,
+				() -> workflowParent.compile(CompileConfig.builder().saverConfig(saver).interruptAfter("B").build()));
 
 		assertEquals("'interruption after' on subgraph is not supported yet!", exception.getMessage());
 
