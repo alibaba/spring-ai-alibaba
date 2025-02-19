@@ -1,23 +1,24 @@
 package com.alibaba.cloud.ai.graph.checkpoint;
 
-import com.alibaba.cloud.ai.graph.state.NodeState;
-import lombok.Data;
-import lombok.ToString;
-
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.Channel;
+import lombok.Data;
+import lombok.ToString;
+
 /**
  * Represents a checkpoint of an agent state.
  *
- * The checkpoint is an immutable object that holds an {@link NodeState} and a
+ * The checkpoint is an immutable object that holds an {@link AgentState} and a
  * {@code String} that represents the next state.
  *
  * The checkpoint is serializable and can be persisted and restored.
  *
- * @see NodeState
+ * @see AgentState
  */
 @Data
 @ToString
@@ -54,7 +55,7 @@ public class Checkpoint implements Serializable {
 			return this;
 		}
 
-		public Builder state(NodeState state) {
+		public Builder state(AgentState state) {
 			result.state = state.data();
 			return this;
 		}
@@ -86,10 +87,10 @@ public class Checkpoint implements Serializable {
 
 	}
 
-	public Checkpoint updateState(Map<String, Object> values) {
+	public Checkpoint updateState(Map<String, Object> values, Map<String, Channel<?>> channels) {
 
 		Checkpoint result = new Checkpoint(this);
-		result.state = NodeState.updateState(state, values);
+		result.state = AgentState.updateState(state, values, channels);
 		return result;
 	}
 

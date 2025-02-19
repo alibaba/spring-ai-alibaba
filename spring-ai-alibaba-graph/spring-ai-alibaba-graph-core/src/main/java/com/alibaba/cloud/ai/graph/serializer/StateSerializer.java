@@ -1,30 +1,29 @@
 package com.alibaba.cloud.ai.graph.serializer;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
-import lombok.NonNull;
-import com.alibaba.cloud.ai.graph.state.NodeState;
-
 import java.io.IOException;
 import java.util.Map;
 
-public abstract class StateSerializer implements Serializer<OverAllState> {
+import lombok.NonNull;
+import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
-	private final AgentStateFactory stateFactory;
+public abstract class StateSerializer<State extends AgentState> implements Serializer<State> {
 
-	protected StateSerializer(@NonNull AgentStateFactory stateFactory) {
+	private final AgentStateFactory<State> stateFactory;
+
+	protected StateSerializer(@NonNull AgentStateFactory<State> stateFactory) {
 		this.stateFactory = stateFactory;
 	}
 
-	public final AgentStateFactory stateFactory() {
+	public final AgentStateFactory<State> stateFactory() {
 		return stateFactory;
 	}
 
-	public final OverAllState stateOf(@NonNull Map<String, Object> data) {
+	public final State stateOf(@NonNull Map<String, Object> data) {
 		return stateFactory.apply(data);
 	}
 
-	public final OverAllState cloneObject(@NonNull Map<String, Object> data) throws IOException, ClassNotFoundException {
+	public final State cloneObject(@NonNull Map<String, Object> data) throws IOException, ClassNotFoundException {
 		return cloneObject(stateFactory().apply(data));
 	}
 

@@ -21,38 +21,39 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 import java.io.IOException;
 
-public class InitDataSerializer extends StdSerializer<InitData> {
+public class InitDataSerializer extends StdSerializer<GraphInitData> {
 
-    public InitDataSerializer(Class<InitData> t) {
-        super(t);
-    }
+	public InitDataSerializer(Class<GraphInitData> t) {
+		super(t);
+	}
 
-    @Override
-    public void serialize(InitData initData, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
-            throws IOException {
-        jsonGenerator.writeStartObject();
+	/**
+	 * Serializes the InitData object to JSON.
+	 * @param initData the InitData object to serialize.
+	 * @param jsonGenerator the JSON generator.
+	 * @param serializerProvider the serializer provider.
+	 * @throws IOException if an I/O error occurs.
+	 */
+	@Override
+	public void serialize(GraphInitData initData, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+			throws IOException {
+		jsonGenerator.writeStartObject();
 
-        jsonGenerator.writeStringField("graph", initData.graph());
-        jsonGenerator.writeStringField("title", initData.title());
-        jsonGenerator.writeObjectField("args", initData.args());
+		jsonGenerator.writeStringField("graph", initData.graph());
+		jsonGenerator.writeStringField("title", initData.title());
+		jsonGenerator.writeObjectField("args", initData.args());
 
-        // jsonGenerator.writeArrayFieldStart("nodes" );
-        // for( var node : initData.nodes() ) {
-        // jsonGenerator.writeString(node);
-        // }
-        // jsonGenerator.writeEndArray();
+		jsonGenerator.writeArrayFieldStart("threads");
+		for (var thread : initData.threads()) {
+			jsonGenerator.writeStartArray();
+			jsonGenerator.writeString(thread.id());
+			jsonGenerator.writeStartArray(thread.entries());
+			jsonGenerator.writeEndArray();
+			jsonGenerator.writeEndArray();
+		}
+		jsonGenerator.writeEndArray();
 
-        jsonGenerator.writeArrayFieldStart("threads");
-        for (var thread : initData.threads()) {
-            jsonGenerator.writeStartArray();
-            jsonGenerator.writeString(thread.id());
-            jsonGenerator.writeStartArray(thread.entries());
-            jsonGenerator.writeEndArray();
-            jsonGenerator.writeEndArray();
-        }
-        jsonGenerator.writeEndArray();
-
-        jsonGenerator.writeEndObject();
-    }
+		jsonGenerator.writeEndObject();
+	}
 
 }

@@ -35,7 +35,7 @@
         <module>spring-ai-alibaba-autoconfigure</module>
         <module>spring-ai-alibaba-studio</module>
         <module>spring-ai-alibaba-graph</module>
-        <module>spring-ai-alibaba-examples/cli-debug-example</module>
+<!--        <module>spring-ai-alibaba-examples/cli-debug-example</module>-->
 
 
         <module>community/function-calling/spring-ai-alibaba-starter-function-calling-time</module>

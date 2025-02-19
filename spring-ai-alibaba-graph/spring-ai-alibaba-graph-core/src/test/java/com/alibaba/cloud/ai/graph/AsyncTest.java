@@ -1,17 +1,19 @@
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
-import org.bsc.async.AsyncGenerator;
-import org.bsc.async.AsyncGeneratorQueue;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.bsc.async.AsyncGenerator;
+import org.bsc.async.AsyncGeneratorQueue;
+import org.junit.jupiter.api.Test;
+
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.listOf;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AsyncTest {
 
@@ -48,7 +50,7 @@ public class AsyncTest {
 		System.out.println("Finished");
 
 		assertEquals(myArray.length, result.size());
-		assertIterableEquals(CollectionsUtils.listOf(myArray), result);
+		assertIterableEquals(listOf(myArray), result);
 	}
 
 	@Test
@@ -68,8 +70,7 @@ public class AsyncTest {
 		}).join();
 
 		assertEquals(10, result.size());
-		assertIterableEquals(CollectionsUtils.listOf("e0", "e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8", "e9"),
-				result);
+		assertIterableEquals(listOf("e0", "e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8", "e9"), result);
 
 	}
 
