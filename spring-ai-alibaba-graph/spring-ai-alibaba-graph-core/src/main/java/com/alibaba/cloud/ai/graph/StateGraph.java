@@ -10,6 +10,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import lombok.NonNull;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
@@ -392,7 +395,8 @@ public class StateGraph<State extends AgentState> {
 	 * @throws GraphStateException if there are errors related to the graph state
 	 */
 	public CompiledGraph<State> compile() throws GraphStateException {
-		return compile(CompileConfig.builder().build());
+		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
+		return compile(CompileConfig.builder().saverConfig(saverConfig).build());
 	}
 
 	/**
