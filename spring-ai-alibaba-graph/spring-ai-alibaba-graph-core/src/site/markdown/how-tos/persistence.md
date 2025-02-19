@@ -87,7 +87,7 @@ In the example, since [`AiMessage`] from Langchain4j is not Serialzable we have 
 
 ```java
 
-import org.bsc.langgraph4j.serializer.NullableObjectSerializer;
+import com.alibaba.cloud.ai.graph.serializer.NullableObjectSerializer;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 

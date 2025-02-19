@@ -1,8 +1,12 @@
 package com.alibaba.cloud.ai.graph.checkpoint;
 
-import com.alibaba.cloud.ai.graph.RunnableConfig;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
-import java.util.*;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 
 import static java.util.Optional.ofNullable;
 
