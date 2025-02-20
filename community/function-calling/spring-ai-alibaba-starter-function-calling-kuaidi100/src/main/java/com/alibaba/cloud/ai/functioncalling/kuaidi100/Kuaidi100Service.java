@@ -33,8 +33,8 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Function;
 
 /**
- * @Author: XiaoYunTao
- * @Date: 2024/12/25
+ * @author XiaoYunTao
+ * @since 2024/12/25
  */
 public class Kuaidi100Service implements Function<Kuaidi100Service.Request, QueryTrackResp> {
 
