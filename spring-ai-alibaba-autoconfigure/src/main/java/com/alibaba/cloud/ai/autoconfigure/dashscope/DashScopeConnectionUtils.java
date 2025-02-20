@@ -32,6 +32,8 @@ import org.springframework.util.StringUtils;
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
+
+// formatter:off
 public final class DashScopeConnectionUtils {
 
 	private DashScopeConnectionUtils() {
@@ -71,3 +73,4 @@ public final class DashScopeConnectionUtils {
 	}
 
 }
+// formatter:on
