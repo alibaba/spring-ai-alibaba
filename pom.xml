@@ -91,7 +91,8 @@
     </modules>
 
     <properties>
-        <revision>1.0.0-M6</revision>
+
+        <revision>1.0.0-M5.1</revision>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
