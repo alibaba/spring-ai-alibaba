@@ -31,14 +31,14 @@ public class GetCurrentTimeByTimeZoneIdService
 	@Override
 	public GetCurrentTimeByTimeZoneIdService.Response apply(GetCurrentTimeByTimeZoneIdService.Request request) {
 		String timeZoneId = request.timeZoneId;
-		return new Response(String.format("The current time zone is %s and the current time is %s", timeZoneId,
+		return new Response(String.format("The current time zone is %s and the current time is " + "%s", timeZoneId,
 				ZoneUtils.getTimeByZoneId(timeZoneId)));
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonClassDescription("Get the current time based on time zone id")
-	public record Request(@JsonProperty(required = true,
-			value = "timeZoneId") @JsonPropertyDescription("Time zone id, such as Asia/Shanghai") String timeZoneId) {
+	public record Request(@JsonProperty(required = true, value = "timeZoneId") @JsonPropertyDescription("Time "
+			+ "zone id, such as Asia/Shanghai") String timeZoneId) {
 	}
 
 	public record Response(String description) {
