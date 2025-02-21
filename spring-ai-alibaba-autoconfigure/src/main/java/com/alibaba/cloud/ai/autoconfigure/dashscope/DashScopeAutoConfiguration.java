@@ -52,6 +52,7 @@ import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
 import org.springframework.boot.web.client.RestClientCustomizer;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -89,6 +90,7 @@ public class DashScopeAutoConfiguration {
 	/**
 	 * Spring AI Alibaba DashScope Chat Configuration.
 	 */
+	@Configuration
 	@ConditionalOnProperty(
 			prefix = DashScopeChatProperties.CONFIG_PREFIX,
 			name = "enabled",
@@ -133,8 +135,7 @@ public class DashScopeAutoConfiguration {
 			return dashscopeModel;
 		}
 
-		@Bean
-		public DashScopeApi dashscopeChatApi(
+		private DashScopeApi dashscopeChatApi(
 				DashScopeConnectionProperties commonProperties,
 				DashScopeChatProperties chatProperties,
 				RestClient.Builder restClientBuilder,
@@ -179,6 +180,7 @@ public class DashScopeAutoConfiguration {
 	/**
 	 * Spring AI Alibaba DashScope Image Configuration.
 	 */
+	@Configuration
 	@ConditionalOnProperty(
 			prefix = DashScopeImageProperties.CONFIG_PREFIX,
 			name = "enabled",
@@ -224,6 +226,7 @@ public class DashScopeAutoConfiguration {
 	/**
 	 * Spring AI Alibaba DashScope Embedding Configuration.
 	 */
+	@Configuration
 	@ConditionalOnProperty(
 			prefix = DashScopeEmbeddingProperties.CONFIG_PREFIX,
 			name = "enabled",
@@ -266,8 +269,7 @@ public class DashScopeAutoConfiguration {
 			return embeddingModel;
 		}
 
-		@Bean
-		public DashScopeApi dashscopeEmbeddingApi(
+		private DashScopeApi dashscopeEmbeddingApi(
 				DashScopeConnectionProperties commonProperties,
 				DashScopeEmbeddingProperties embeddingProperties,
 				RestClient.Builder restClientBuilder,
@@ -286,6 +288,7 @@ public class DashScopeAutoConfiguration {
 	/**
 	 * Spring AI Alibaba DashScope Speech Synthesis Configuration.
 	 */
+	@Configuration
 	@ConditionalOnProperty(
 			prefix = DashScopeSpeechSynthesisProperties.CONFIG_PREFIX,
 			name = "enabled",
@@ -313,8 +316,7 @@ public class DashScopeAutoConfiguration {
 			);
 		}
 
-		@Bean
-		public DashScopeSpeechSynthesisApi dashScopeSpeechSynthesisApi(
+		private DashScopeSpeechSynthesisApi dashScopeSpeechSynthesisApi(
 				DashScopeConnectionProperties commonProperties,
 				DashScopeSpeechSynthesisProperties speechSynthesisProperties
 		) {
@@ -333,6 +335,7 @@ public class DashScopeAutoConfiguration {
 	/**
 	 * Spring AI Alibaba DashScope Audio Transcription Configuration.
 	 */
+	@Configuration
 	@ConditionalOnProperty(
 			prefix = DashScopeAudioTranscriptionProperties.CONFIG_PREFIX,
 			name = "enabled",
@@ -360,8 +363,7 @@ public class DashScopeAutoConfiguration {
 			);
 		}
 
-		@Bean
-		public DashScopeAudioTranscriptionApi dashScopeAudioTranscriptionApi(
+		private DashScopeAudioTranscriptionApi dashScopeAudioTranscriptionApi(
 				DashScopeConnectionProperties commonProperties,
 				DashScopeAudioTranscriptionProperties audioTranscriptionProperties
 		) {
@@ -377,6 +379,7 @@ public class DashScopeAutoConfiguration {
 	/**
 	 * Spring AI Alibaba DashScope Rerank Configuration.
 	 */
+	@Configuration
 	@ConditionalOnProperty(
 			prefix = DashScopeRerankProperties.CONFIG_PREFIX,
 			name = "enabled",

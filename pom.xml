@@ -73,6 +73,7 @@
         <module>community/document-readers/huggingface-fs-document-reader</module>
         <module>community/document-readers/email-document-reader</module>
         <module>community/document-readers/mbox-document-reader</module>
+        <module>community/document-readers/mongodb-document-reader</module>
         <module>community/document-readers/mysql-document-reader</module>
         <module>community/document-readers/bilibili-document-reader</module>
         <module>community/document-readers/youtube-document-reader</module>
@@ -90,6 +91,7 @@
     </modules>
 
     <properties>
+
         <revision>1.0.0-M5.1</revision>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
