@@ -56,6 +56,7 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-googletranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-alitranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-youdaotranslate</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-duckduckgo</module>
 
         <module>community/document-readers/github-document-reader</module>
         <module>community/document-readers/poi-document-reader</module>
