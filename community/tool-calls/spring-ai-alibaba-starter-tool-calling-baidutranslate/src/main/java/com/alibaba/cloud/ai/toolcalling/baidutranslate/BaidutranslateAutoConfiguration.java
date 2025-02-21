@@ -28,8 +28,7 @@ import org.springframework.context.annotation.Description;
  */
 @ConditionalOnClass(BaidutranslateService.class)
 @EnableConfigurationProperties(BaidutranslateProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.baidutranslate", name = "enabled",
-		havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.baidutranslate", name = "enabled", havingValue = "true")
 public class BaidutranslateAutoConfiguration {
 
 	@Bean(name = "baiduTranslateFunction")

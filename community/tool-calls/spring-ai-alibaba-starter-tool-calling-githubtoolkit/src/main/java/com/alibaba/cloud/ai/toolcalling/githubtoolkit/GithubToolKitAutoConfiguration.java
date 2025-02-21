@@ -29,8 +29,7 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @EnableConfigurationProperties(GithubToolKitProperties.class)
 @ConditionalOnClass(GithubToolKitProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.githubtoolkit", name = "enabled",
-		havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.githubtoolkit", name = "enabled", havingValue = "true")
 public class GithubToolKitAutoConfiguration {
 
 	@Bean

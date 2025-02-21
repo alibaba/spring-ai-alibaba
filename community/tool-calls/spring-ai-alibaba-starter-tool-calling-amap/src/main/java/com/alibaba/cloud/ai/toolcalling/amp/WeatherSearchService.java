@@ -27,47 +27,44 @@ import java.util.function.Function;
 /**
  * @author YunLong
  */
-public class WeatherSearchService implements Function<WeatherSearchService.Request,
-        WeatherSearchService.Response> {
+public class WeatherSearchService implements Function<WeatherSearchService.Request, WeatherSearchService.Response> {
 
-    private final WeatherTools weatherTools;
+	private final WeatherTools weatherTools;
 
-    public WeatherSearchService (AmapProperties amapProperties) {
-        this.weatherTools = new WeatherTools(amapProperties);
-    }
+	public WeatherSearchService(AmapProperties amapProperties) {
+		this.weatherTools = new WeatherTools(amapProperties);
+	}
 
-    @Override
-    public Response apply (Request request) {
+	@Override
+	public Response apply(Request request) {
 
-        String responseBody = weatherTools.getAddressCityCode(request.address);
+		String responseBody = weatherTools.getAddressCityCode(request.address);
 
-        String adcode = "";
+		String adcode = "";
 
-        try {
-            JsonObject jsonObject = JsonParser.parseString(responseBody)
-                    .getAsJsonObject();
-            JsonArray geocodesArray = jsonObject.getAsJsonArray("geocodes");
-            if (geocodesArray != null && !geocodesArray.isEmpty()) {
-                JsonObject firstGeocode = geocodesArray.get(0)
-                        .getAsJsonObject();
-                adcode = firstGeocode.get("adcode")
-                        .getAsString();
-            }
-        }
-        catch (Exception e) {
-            return new Response("Error occurred while processing the request.");
-        }
+		try {
+			JsonObject jsonObject = JsonParser.parseString(responseBody).getAsJsonObject();
+			JsonArray geocodesArray = jsonObject.getAsJsonArray("geocodes");
+			if (geocodesArray != null && !geocodesArray.isEmpty()) {
+				JsonObject firstGeocode = geocodesArray.get(0).getAsJsonObject();
+				adcode = firstGeocode.get("adcode").getAsString();
+			}
+		}
+		catch (Exception e) {
+			return new Response("Error occurred while processing the request.");
+		}
 
-        String weather = weatherTools.getWeather(adcode);
+		String weather = weatherTools.getWeather(adcode);
 
-        return new Response(weather);
-    }
+		return new Response(weather);
+	}
 
-    @JsonClassDescription("Get the weather conditions for a specified address.")
-    public record Request(
-            @JsonProperty(required = true, value = "address") @JsonPropertyDescription("The " +
-                    "address") String address) {}
+	@JsonClassDescription("Get the weather conditions for a specified address.")
+	public record Request(@JsonProperty(required = true,
+			value = "address") @JsonPropertyDescription("The " + "address") String address) {
+	}
 
-    public record Response(String message) {}
+	public record Response(String message) {
+	}
 
 }

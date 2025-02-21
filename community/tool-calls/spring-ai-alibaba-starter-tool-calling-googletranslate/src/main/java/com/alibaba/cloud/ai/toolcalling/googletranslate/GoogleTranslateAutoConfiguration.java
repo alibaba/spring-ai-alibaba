@@ -27,8 +27,7 @@ import org.springframework.context.annotation.Description;
  */
 @ConditionalOnClass({ GoogleTranslateService.class })
 @EnableConfigurationProperties(GoogleTranslateProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.googletranslate", name = "enabled",
-		havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.googletranslate", name = "enabled", havingValue = "true")
 public class GoogleTranslateAutoConfiguration {
 
 	@Bean

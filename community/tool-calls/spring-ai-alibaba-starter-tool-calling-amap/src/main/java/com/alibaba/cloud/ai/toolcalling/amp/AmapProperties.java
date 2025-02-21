@@ -23,17 +23,18 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "spring.ai.alibaba.functioncalling.amap")
 public class AmapProperties {
 
-    private String webApiKey;
+	private String webApiKey;
 
-    public AmapProperties (String webApiKey) {
-        this.webApiKey = webApiKey;
-    }
+	public AmapProperties(String webApiKey) {
+		this.webApiKey = webApiKey;
+	}
 
-    public String getWebApiKey () {
-        return webApiKey;
-    }
+	public String getWebApiKey() {
+		return webApiKey;
+	}
 
-    public void setWebApiKey (String webApiKey) {
-        this.webApiKey = webApiKey;
-    }
+	public void setWebApiKey(String webApiKey) {
+		this.webApiKey = webApiKey;
+	}
+
 }

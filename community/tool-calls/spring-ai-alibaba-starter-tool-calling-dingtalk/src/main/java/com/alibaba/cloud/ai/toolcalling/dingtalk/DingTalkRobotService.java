@@ -33,7 +33,7 @@ public class DingTalkRobotService implements Function<DingTalkRobotService.Reque
 
 	private final DingTalkProperties dingTalkProperties;
 
-	public DingTalkRobotService (DingTalkProperties dingTalkProperties) {
+	public DingTalkRobotService(DingTalkProperties dingTalkProperties) {
 		this.dingTalkProperties = dingTalkProperties;
 	}
 
