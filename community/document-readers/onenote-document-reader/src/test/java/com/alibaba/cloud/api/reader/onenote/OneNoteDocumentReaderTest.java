@@ -15,10 +15,11 @@
  */
 package com.alibaba.cloud.api.reader.onenote;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.document.Document;
-
 import java.util.List;
+
+import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.document.Document;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -82,7 +83,7 @@ public class OneNoteDocumentReaderTest {
 		// Verify metadata
 		assertThat(document.getMetadata()).containsKey(OneNoteResource.SOURCE);
 		assertThat(document.getMetadata().get("resourceType")).isEqualTo(OneNoteResource.ResourceType.SECTION.name());
-		assertThat(document.getMetadata().get("resourceId")).isEqualTo(testSectionId);
+		assertThat(document.getMetadata().get("resourceId")).isEqualTo(TEST_SECTION_ID);
 
 		// Verify content
 		String content = document.getContent();
@@ -107,7 +108,7 @@ public class OneNoteDocumentReaderTest {
 		// Verify metadata
 		assertThat(document.getMetadata()).containsKey(OneNoteResource.SOURCE);
 		assertThat(document.getMetadata().get("resourceType")).isEqualTo(OneNoteResource.ResourceType.NOTEBOOK.name());
-		assertThat(document.getMetadata().get("resourceId")).isEqualTo(testNoteBookId);
+		assertThat(document.getMetadata().get("resourceId")).isEqualTo(TEST_NOTEBOOK_ID);
 
 		// Verify content
 		String content = document.getContent();
