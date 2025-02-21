@@ -5,8 +5,8 @@
   * 插件命名为：`spring-ai-alibaba-starter-tool-calling-${name}`，例如：`spring-ai-alibaba-starter-tool-calling-baidusearch`
   * 包名前缀命名为：`com.alibaba.cloud.ai.toolcalling.${name}`，例如：`com.alibaba.cloud.ai.toolcalling.baidusearch`
   * AutoConfiguration 配置类命名为：`${name}AutoConfiguration`，例如：`BaidusearchAutoConfiguration`
-  * Function Impl name 命名为：`${name}Service`，通常是由声明 Bean 注解的方法名确定，如 `baiduSearchService`（建议，请根据插件实际情况确定）
-  * function bean name 命名为：`${xx}Function`,通常使用 动词+修饰词的方式确定，如`getCurrentLocationUseBaiduMapFunction`(建议，请根据插件实际情况确定)
+  * ToolFunction Impl name 命名为：`${name}Service`，通常是由声明 Bean 注解的方法名确定，如 `baiduSearchService`（建议，请根据插件实际情况确定）
+  * ToolFunction bean name 命名为：`${xx}Function`,通常使用 动词+修饰词的方式确定，如`getCurrentLocationUseBaiduMapFunction`(建议，请根据插件实际情况确定)
 2. 使用 **org.springframework.context.annotation.Description** `@Description("xxx")` 注解描述插件的功能，应提供对插件功能清晰明确的描述，例如：`@Description("百度搜索插件，用于查询百度上的新闻事件等信息")`
 3. 如果 Function Impl 实现较为复杂，需要使用一些自定义函数，方法命名规范为：`${name}Tool`，例如：`BaiduSearchTool`, 目录层级和实现类保持一致
 4 . 如插件自身有配置参数，请使用 `@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.${name}")` 注解，例如：
