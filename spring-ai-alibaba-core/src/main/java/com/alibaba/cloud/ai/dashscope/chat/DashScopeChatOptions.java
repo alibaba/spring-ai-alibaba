@@ -92,6 +92,13 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   private @JsonProperty("response_format") DashScopeResponseFormat responseFormat;
 
   /**
+   * @param maxTokens The maximum number of tokens to generate in the chat completion.
+   * 	 * The total length of input tokens and generated tokens is limited by the model's
+   * 	 * context length.
+   */
+  @JsonProperty("max_tokens") Integer maxTokens;
+
+  /**
    * 控制在流式输出模式下是否开启增量输出，即后续输出内容是否包含已输出的内容。设置为True时，将开启增量输出模式，后面输出不会包含已经输出的内容，您需要自行拼接整体输出；设置为False则会包含已输出的内容。
    */
   private @JsonProperty("incremental_output") Boolean incrementalOutput = true;
@@ -168,6 +175,10 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   @Override
   public Integer getMaxTokens() {
     return null;
+  }
+
+  public Integer setMaxTokens() {
+    return this.maxTokens;
   }
 
   @Override
