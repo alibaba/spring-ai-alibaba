@@ -34,28 +34,29 @@
         <module>spring-ai-alibaba-starter</module>
         <module>spring-ai-alibaba-autoconfigure</module>
 
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-time</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-baidusearch</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-baidutranslate</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-baidumap</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-bingsearch</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-dingtalk</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-amap</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-weather</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-larksuite</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-microsofttranslate</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-crawler</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-regex</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-jsonprocessor</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-serpapi</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-githubtoolkit</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-sinanews</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-toutiaonews</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-yuque</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-kuaidi100</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-googletranslate</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-alitranslate</module>
-        <module>community/function-calling/spring-ai-alibaba-starter-function-calling-youdaotranslate</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-time</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidusearch</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidutranslate</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidumap</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-bingsearch</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-dingtalk</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-amap</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-weather</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-larksuite</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-microsofttranslate</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-crawler</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-regex</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-jsonprocessor</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-serpapi</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-githubtoolkit</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-sinanews</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-toutiaonews</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-yuque</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-kuaidi100</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-googletranslate</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-alitranslate</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-youdaotranslate</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-duckduckgo</module>
 
         <module>community/document-readers/github-document-reader</module>
         <module>community/document-readers/poi-document-reader</module>
