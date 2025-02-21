@@ -45,95 +45,91 @@ import static com.alibaba.cloud.ai.toolcalling.serpapi.SerpApiProperties.USER_AG
  */
 public class SerpApiService implements Function<SerpApiService.Request, SerpApiService.Response> {
 
-    private static final Logger logger = LoggerFactory.getLogger(SerpApiService.class);
+	private static final Logger logger = LoggerFactory.getLogger(SerpApiService.class);
 
-    private final WebClient webClient;
+	private final WebClient webClient;
 
-    private final String apikey;
+	private final String apikey;
 
-    private final String engine;
+	private final String engine;
 
-    public SerpApiService (SerpApiProperties properties) {
-        this.apikey = properties.getApikey();
-        this.engine = properties.getEngine();
-        this.webClient = WebClient.builder()
-                .baseUrl(SERP_API_URL)
-                .defaultHeader(HttpHeaders.USER_AGENT, USER_AGENT_VALUE)
-                .codecs(configurer -> configurer.defaultCodecs()
-                        .maxInMemorySize(5 * 1024 * 1024))
-                .build();
-    }
+	public SerpApiService(SerpApiProperties properties) {
+		this.apikey = properties.getApikey();
+		this.engine = properties.getEngine();
+		this.webClient = WebClient.builder()
+			.baseUrl(SERP_API_URL)
+			.defaultHeader(HttpHeaders.USER_AGENT, USER_AGENT_VALUE)
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024))
+			.build();
+	}
 
-    /**
-     * 使用serpai API 搜索数据
-     *
-     * @param request the function argument
-     * @return responseMono
-     */
-    @Override
-    public Response apply (Request request) {
-        if (request == null || !StringUtils.hasText(request.query)) {
-            return null;
-        }
-        try {
-            Mono<String> responseMono = webClient.method(HttpMethod.GET)
-                    .uri(uriBuilder -> uriBuilder.queryParam("api_key", apikey)
-                            .queryParam("engine", engine)
-                            .queryParam("q", request.query)
-                            .build())
-                    .retrieve()
-                    .bodyToMono(String.class);
-            String response = responseMono.block();
-            assert response != null;
-            logger.info("serpapi search: {},result:{}", request.query, response);
-            List<SearchResult> resultList = parseJson(response);
-            for (SearchResult result : resultList) {
-                logger.info("{}\n{}", result.title(), result.text());
-            }
-            return new Response(resultList);
-        }
-        catch (Exception e) {
-            logger.error("failed to invoke serpapi search, caused by:{}", e.getMessage());
-            return null;
-        }
-    }
+	/**
+	 * 使用serpai API 搜索数据
+	 * @param request the function argument
+	 * @return responseMono
+	 */
+	@Override
+	public Response apply(Request request) {
+		if (request == null || !StringUtils.hasText(request.query)) {
+			return null;
+		}
+		try {
+			Mono<String> responseMono = webClient.method(HttpMethod.GET)
+				.uri(uriBuilder -> uriBuilder.queryParam("api_key", apikey)
+					.queryParam("engine", engine)
+					.queryParam("q", request.query)
+					.build())
+				.retrieve()
+				.bodyToMono(String.class);
+			String response = responseMono.block();
+			assert response != null;
+			logger.info("serpapi search: {},result:{}", request.query, response);
+			List<SearchResult> resultList = parseJson(response);
+			for (SearchResult result : resultList) {
+				logger.info("{}\n{}", result.title(), result.text());
+			}
+			return new Response(resultList);
+		}
+		catch (Exception e) {
+			logger.error("failed to invoke serpapi search, caused by:{}", e.getMessage());
+			return null;
+		}
+	}
 
-    private List<SearchResult> parseJson (String jsonResponse) {
-        Gson gson = new Gson();
-        JsonObject object = gson.fromJson(jsonResponse, JsonObject.class);
-        JsonArray jsonArray = object.getAsJsonArray("organic_results");
-        List<SearchResult> resultList = new ArrayList<>();
+	private List<SearchResult> parseJson(String jsonResponse) {
+		Gson gson = new Gson();
+		JsonObject object = gson.fromJson(jsonResponse, JsonObject.class);
+		JsonArray jsonArray = object.getAsJsonArray("organic_results");
+		List<SearchResult> resultList = new ArrayList<>();
 
-        for (JsonElement jsonElement : jsonArray) {
-            JsonObject resultObject = jsonElement.getAsJsonObject();
-            String title = resultObject.get("title")
-                    .getAsString();
-            String link = resultObject.get("link")
-                    .getAsString();
+		for (JsonElement jsonElement : jsonArray) {
+			JsonObject resultObject = jsonElement.getAsJsonObject();
+			String title = resultObject.get("title").getAsString();
+			String link = resultObject.get("link").getAsString();
 
-            try {
-                Document document = Jsoup.connect(link)
-                        .userAgent(USER_AGENT_VALUE)
-                        .get();
-                String textContent = document.body()
-                        .text();
-                resultList.add(new SearchResult(title, textContent));
-            }
-            catch (Exception e) {
-                logger.error("Failed to parse SERP API search link, caused by: {}", e.getMessage());
-            }
-        }
-        return resultList;
-    }
+			try {
+				Document document = Jsoup.connect(link).userAgent(USER_AGENT_VALUE).get();
+				String textContent = document.body().text();
+				resultList.add(new SearchResult(title, textContent));
+			}
+			catch (Exception e) {
+				logger.error("Failed to parse SERP API search link, caused by: {}", e.getMessage());
+			}
+		}
+		return resultList;
+	}
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    @JsonClassDescription("serpapi search request")
-    record Request(
-            @JsonProperty(required = true, value = "query") @JsonPropertyDescription("The query " +
-                    "keyword e.g. Alibaba") String query) {}
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonClassDescription("serpapi search request")
+	record Request(@JsonProperty(required = true,
+			value = "query") @JsonPropertyDescription("The query " + "keyword e.g. Alibaba") String query) {
+	}
 
-    @JsonClassDescription("serpapi search response")
-    record Response(List<SearchResult> results) {}
+	@JsonClassDescription("serpapi search response")
+	record Response(List<SearchResult> results) {
+	}
 
-    record SearchResult(String title, String text) {}
+	record SearchResult(String title, String text) {
+	}
+
 }

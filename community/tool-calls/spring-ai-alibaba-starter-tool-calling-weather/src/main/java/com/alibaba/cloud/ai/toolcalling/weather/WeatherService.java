@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.toolcalling.weather;
 
-
 import cn.hutool.extra.pinyin.PinyinUtil;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
