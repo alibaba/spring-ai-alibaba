@@ -15,11 +15,11 @@
  */
 package com.alibaba.cloud.ai.dashscope.audio;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.ai.audio.transcription.AudioTranscriptionOptions;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
-
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.springframework.ai.audio.transcription.AudioTranscriptionOptions;
 
 /**
  * @author xYLiu
@@ -47,7 +47,6 @@ public class DashScopeAudioTranscriptionOptions implements AudioTranscriptionOpt
 	@JsonProperty("format")
 	private AudioFormat format;
 
-    @NestedConfigurationProperty
     @JsonProperty("channel_id")
     private List<Integer> channelId = List.of(0);
 

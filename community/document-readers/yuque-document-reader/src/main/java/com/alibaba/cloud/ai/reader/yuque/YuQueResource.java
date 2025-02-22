@@ -15,12 +15,6 @@
  */
 package com.alibaba.cloud.ai.reader.yuque;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import org.springframework.core.io.Resource;
-import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -33,6 +27,13 @@ import java.net.http.HttpResponse;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.springframework.core.io.Resource;
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * @author YunLong
@@ -83,26 +84,26 @@ public class YuQueResource implements Resource {
 		try {
 			HttpResponse<String> response = this.httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 			String body = response.body();
-			// Parse the JSON response using FastJSON
-			JSONObject jsonObject = JSON.parseObject(body);
-			JSONObject dataObject = jsonObject.getJSONObject("data");
+			// Parse the JSON response using Jackson
+			ObjectMapper objectMapper = new ObjectMapper();
+			JsonNode jsonObject = objectMapper.readTree(body);
+			JsonNode dataObject = jsonObject.get("data");
 
-			if (dataObject == null) {
+			if (dataObject == null || !dataObject.isObject()) {
 				throw new RuntimeException("Invalid response format: 'data' is not an object");
 			}
 
-			if (!Objects.equals(dataObject.getString("type"), SUPPORT_TYPE)) {
+			if (!Objects.equals(dataObject.get("type").asText(), SUPPORT_TYPE)) {
 				throw new RuntimeException("Unsupported resource type, only support " + SUPPORT_TYPE);
 			}
 
-			inputStream = new ByteArrayInputStream(dataObject.getString("body_html").getBytes());
+			inputStream = new ByteArrayInputStream(dataObject.get("body_html").asText().getBytes());
 			uri = URI.create(resourcePath);
 
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-
 	}
 
 	/**

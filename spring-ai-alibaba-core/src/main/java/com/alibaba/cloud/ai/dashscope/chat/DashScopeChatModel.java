@@ -73,6 +73,7 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
+import org.springframework.util.StringUtils;
 
 /**
  * {@link ChatModel} implementation for {@literal Alibaba DashScope} backed by
@@ -186,7 +187,8 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 						Map<String, Object> metadata = Map.of(
 								"id", chatCompletion.requestId(),
 								"role", choice.message().role() != null ? choice.message().role().name() : "",
-								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
+								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
+								"reasoningContent", StringUtils.hasText(choice.message().reasoningContent()) ? choice.message().reasoningContent() : "");
 						// @formatter:on
 					return buildGeneration(choice, metadata);
 				}).toList();
@@ -255,7 +257,8 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 								Map<String, Object> metadata = Map.of(
 										"id", chatCompletion2.requestId(),
 										"role", roleMap.getOrDefault(requestId, ""),
-										"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
+										"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
+										"reasoningContent", StringUtils.hasText(choice.message().reasoningContent()) ? choice.message().reasoningContent() : "");
 								return buildGeneration(choice, metadata);
 							}).toList();
 							// @formatter:on
@@ -376,7 +379,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 					}).toList();
 				}
 				return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls));
+						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
@@ -389,7 +392,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 				return toolMessage.getResponses()
 					.stream()
 					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
-							tr.id(), null))
+							tr.id(), null, null))
 					.toList();
 			}
 			else {
