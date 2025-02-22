@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.dashscope.chat;
 
 import java.util.*;
@@ -27,7 +28,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
 
 /**
@@ -92,6 +92,12 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   private @JsonProperty("response_format") DashScopeResponseFormat responseFormat;
 
   /**
+   * @param maxTokens The maximum number of tokens to generate in the chat completion.
+   * 	 * The total length of input tokens and generated tokens is limited by the model's context length.
+   */
+  private @JsonProperty("max_tokens") Integer maxTokens;
+
+  /**
    * 控制在流式输出模式下是否开启增量输出，即后续输出内容是否包含已输出的内容。设置为True时，将开启增量输出模式，后面输出不会包含已经输出的内容，您需要自行拼接整体输出；设置为False则会包含已输出的内容。
    */
   private @JsonProperty("incremental_output") Boolean incrementalOutput = true;
@@ -123,7 +129,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    * enableFunctions to set the functions from the registry to be used by the ChatClient chat
    * completion requests.
    */
-  @NestedConfigurationProperty @JsonIgnore
+  @JsonIgnore
   private List<FunctionCallback> functionCallbacks = new ArrayList<>();
 
   /**
@@ -137,7 +143,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    * prompt options, then the enabled functions are only active for the duration of this prompt
    * execution.
    */
-  @NestedConfigurationProperty @JsonIgnore private Set<String> functions = new HashSet<>();
+  @JsonIgnore private Set<String> functions = new HashSet<>();
 
   /**
    * Indicate if the request is multi model
@@ -152,7 +158,6 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   @JsonIgnore
   private Boolean proxyToolCalls;
 
-  @NestedConfigurationProperty
   @JsonIgnore
   private Map<String, Object> toolContext;
 
@@ -169,6 +174,10 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   @Override
   public Integer getMaxTokens() {
     return null;
+  }
+
+  public Integer setMaxTokens() {
+    return this.maxTokens;
   }
 
   @Override

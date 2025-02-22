@@ -15,22 +15,41 @@
  */
 package com.alibaba.cloud.ai.dashscope.rag;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import com.aliyun.gpdb20160503.Client;
-import com.aliyun.gpdb20160503.models.*;
+import com.aliyun.gpdb20160503.models.CreateCollectionRequest;
+import com.aliyun.gpdb20160503.models.CreateNamespaceRequest;
+import com.aliyun.gpdb20160503.models.DeleteCollectionDataRequest;
+import com.aliyun.gpdb20160503.models.DeleteCollectionDataResponse;
+import com.aliyun.gpdb20160503.models.DescribeCollectionRequest;
+import com.aliyun.gpdb20160503.models.DescribeNamespaceRequest;
+import com.aliyun.gpdb20160503.models.InitVectorDatabaseRequest;
+import com.aliyun.gpdb20160503.models.InitVectorDatabaseResponse;
+import com.aliyun.gpdb20160503.models.QueryCollectionDataRequest;
+import com.aliyun.gpdb20160503.models.QueryCollectionDataResponse;
+import com.aliyun.gpdb20160503.models.QueryCollectionDataResponseBody;
+import com.aliyun.gpdb20160503.models.UpsertCollectionDataRequest;
 import com.aliyun.tea.TeaException;
 import com.aliyun.teaopenapi.models.Config;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * @author HeYQ
@@ -48,6 +67,8 @@ public class AnalyticdbVector implements VectorStore {
 
 	private final EmbeddingModel embeddingModel;
 
+	private final ObjectMapper objectMapper;
+
 	public AnalyticdbVector(String collectionName, AnalyticdbConfig config, EmbeddingModel embeddingModel)
 			throws Exception {
 		// collection_name must be updated every time
@@ -56,6 +77,7 @@ public class AnalyticdbVector implements VectorStore {
 		Config clientConfig = Config.build(this.config.toAnalyticdbClientParams());
 		this.client = new Client(clientConfig);
 		this.embeddingModel = embeddingModel;
+		this.objectMapper = new ObjectMapper();
 		initialize();
 		logger.debug("created AnalyticdbVector client success");
 	}
@@ -121,9 +143,11 @@ public class AnalyticdbVector implements VectorStore {
 		catch (TeaException e) {
 			if (Objects.equals(e.getStatusCode(), 404)) {
 				// Collection does not exist, create it
-				String metadata = JSON.toJSONString(new JSONObject().fluentPut("refDocId", "text")
-					.fluentPut("content", "text")
-					.fluentPut("metadata", "jsonb"));
+				ObjectNode metadataNode = objectMapper.createObjectNode();
+				metadataNode.put("refDocId", "text");
+				metadataNode.put("content", "text");
+				metadataNode.put("metadata", "jsonb");
+				String metadata = objectMapper.writeValueAsString(metadataNode);
 				String fullTextRetrievalFields = "content";
 				CreateCollectionRequest createRequest = new CreateCollectionRequest()
 					.setDBInstanceId(this.config.getDBInstanceId())
@@ -155,7 +179,13 @@ public class AnalyticdbVector implements VectorStore {
 			Map<String, String> metadata = new HashMap<>();
 			metadata.put("refDocId", (String) doc.getMetadata().get("docId"));
 			metadata.put("content", doc.getText());
-			metadata.put("metadata", JSON.toJSONString(doc.getMetadata()));
+
+			try {
+				metadata.put("metadata", objectMapper.writeValueAsString(doc.getMetadata()));
+			}
+			catch (JsonProcessingException e) {
+				throw new RuntimeException(e);
+			}
 
 			List<Double> embedding = IntStream.range(0, floatEmbeddings.length)
 				.mapToObj(i -> (double) floatEmbeddings[i]) // 将每个 float 转为 Double
@@ -237,7 +267,9 @@ public class AnalyticdbVector implements VectorStore {
 				if (match.getScore() != null && match.getScore() > scoreThreshold) {
 					Map<String, String> metadata = match.getMetadata();
 					String pageContent = metadata.get("content");
-					Map<String, Object> metadataJson = JSONObject.parseObject(metadata.get("metadata"), HashMap.class);
+					Map<String, Object> metadataJson = objectMapper.readValue(metadata.get("metadata"),
+							new TypeReference<HashMap<String, Object>>() {
+							});
 					Document doc = new Document(pageContent, metadataJson);
 					documents.add(doc);
 				}
