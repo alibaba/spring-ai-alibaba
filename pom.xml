@@ -87,8 +87,9 @@
         <module>community/document-parsers/document-parser-bshtml</module>
         <module>community/document-parsers/document-parser-bibtex</module>
         <module>community/document-parsers/document-parser-multi-modality
-        </module>
         <module>community/document-parsers/document-parser-directory</module>
+          
+        <module>vector-stores</module>
     </modules>
 
     <properties>
