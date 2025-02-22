@@ -27,7 +27,10 @@ import java.util.Map;
  *
  * @author ming（fuyou.lxm）
  * @since 1.0.0-M3
+ * @deprecated Since 1.0.0-5, use
+ * {@link com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi} instead.
  */
+@Deprecated(since = "1.0.0-M5", forRemoval = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OpenSearchConfig {
 
