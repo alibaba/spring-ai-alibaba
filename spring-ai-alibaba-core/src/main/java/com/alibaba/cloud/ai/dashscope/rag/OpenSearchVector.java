@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,24 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dashscope.rag;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import com.aliyun.ha3engine.vector.Client;
-import com.aliyun.ha3engine.vector.models.*;
+import com.aliyun.ha3engine.vector.models.Config;
+import com.aliyun.ha3engine.vector.models.PushDocumentsRequest;
+import com.aliyun.ha3engine.vector.models.PushDocumentsResponse;
+import com.aliyun.ha3engine.vector.models.QueryRequest;
+import com.aliyun.ha3engine.vector.models.SearchResponse;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.util.Assert;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Implementation of the VectorStore interface for Alibaba OpenSearch.
@@ -61,6 +71,8 @@ public class OpenSearchVector implements VectorStore {
 
 	private final OpenSearchClientWrapper openSearchClient;
 
+	private final ObjectMapper objectMapper;
+
 	/**
 	 * Constructs a new instance of OpenSearchVector with the specified table name and
 	 * OpenSearch configuration. This constructor initializes the output fields to include
@@ -85,6 +97,7 @@ public class OpenSearchVector implements VectorStore {
 		this.tableName = tableName;
 		this.outputFields = outputFields;
 		this.pKField = ID_FIELD_NAME;
+		this.objectMapper = new ObjectMapper();
 
 		try {
 			// init OpenSearch client
@@ -116,7 +129,14 @@ public class OpenSearchVector implements VectorStore {
 			documentFields.put(ID_FIELD_NAME, document.getId());
 			documentFields.put(CONTENT_FIELD_NAME, document.getText());
 			// Convert metadata to JSON
-			documentFields.put(METADATA_FIELD_NAME, JSON.toJSONString(document.getMetadata()));
+			String metadataJson;
+			try {
+				metadataJson = objectMapper.writeValueAsString(document.getMetadata());
+			}
+			catch (JsonProcessingException e) {
+				throw new RuntimeException(e);
+			}
+			documentFields.put(METADATA_FIELD_NAME, metadataJson);
 
 			// Add document content to documentEntry structure.
 			documentMap.put("fields", documentFields);
@@ -181,9 +201,7 @@ public class OpenSearchVector implements VectorStore {
 	/**
 	 * Represents the response body from a search operation.
 	 */
-	private record SearchResponseBody(String errorCode, String errorMessage,
-
-			Integer totalCount, JSONArray result) {
+	private record SearchResponseBody(String errorCode, String errorMessage, Integer totalCount, ArrayNode result) {
 
 		private static final String TOTAL_COUNT_KEY = "totalCount";
 
@@ -193,13 +211,15 @@ public class OpenSearchVector implements VectorStore {
 
 		private static final String RESULT_KEY = "result";
 
-		public SearchResponseBody(String searchResponseBodyString) {
-			this(JSON.parseObject(searchResponseBodyString));
+		private static final ObjectMapper objectMapper = new ObjectMapper();
+
+		public SearchResponseBody(String searchResponseBodyString) throws IOException {
+			this(objectMapper.readTree(searchResponseBodyString));
 		}
 
-		public SearchResponseBody(JSONObject jsonObject) {
-			this(jsonObject.getString(ERROR_CODE_KEY), jsonObject.getString(ERROR_MESSAGE_KEY),
-					jsonObject.getInteger(TOTAL_COUNT_KEY), jsonObject.getJSONArray(RESULT_KEY));
+		public SearchResponseBody(JsonNode jsonNode) {
+			this(jsonNode.get(ERROR_CODE_KEY).asText(), jsonNode.get(ERROR_MESSAGE_KEY).asText(),
+					jsonNode.get(TOTAL_COUNT_KEY).asInt(), (ArrayNode) jsonNode.get(RESULT_KEY));
 		}
 
 		public boolean hasError() {
@@ -228,16 +248,16 @@ public class OpenSearchVector implements VectorStore {
 		 * response body.
 		 */
 		public ResponseBody(String pushDocumentsResponseBodyString) {
-			this(JSON.parseObject(pushDocumentsResponseBodyString));
+			this(parseJson(pushDocumentsResponseBodyString));
 		}
 
 		/**
 		 * Constructs a ResponseBody instance from a JSONObject.
-		 * @param jsonObject The JSONObject representing the response body.
+		 * @param jsonNode The JSONObject representing the response body.
 		 */
-		public ResponseBody(JSONObject jsonObject) {
-			this(jsonObject.getInteger(CODE_KEY), jsonObject.getString(STATUS_KEY),
-					jsonObject.getString(ERROR_CODE_KEY), jsonObject.getString(ERROR_MESSAGE_KEY));
+		public ResponseBody(JsonNode jsonNode) {
+			this(jsonNode.get(CODE_KEY).asInt(), jsonNode.get(STATUS_KEY).asText(),
+					jsonNode.get(ERROR_CODE_KEY).asText(), jsonNode.get(ERROR_MESSAGE_KEY).asText());
 		}
 
 		/**
@@ -246,6 +266,16 @@ public class OpenSearchVector implements VectorStore {
 		 */
 		public boolean isSuccess() {
 			return SUCCESS_CODE.equals(code);
+		}
+	}
+
+	private static JsonNode parseJson(String jsonString) {
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			return objectMapper.readTree(jsonString);
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Failed to parse JSON string", e);
 		}
 	}
 
@@ -375,7 +405,7 @@ public class OpenSearchVector implements VectorStore {
 		 * @throws RuntimeException If the search response contains an error.
 		 */
 		@NotNull
-		private SearchResponseBody getSearchResponseBody(SearchResponse searchResponse) {
+		private SearchResponseBody getSearchResponseBody(SearchResponse searchResponse) throws IOException {
 			SearchResponseBody responseBody = new SearchResponseBody(searchResponse.getBody());
 
 			if (responseBody.hasError()) {
@@ -421,10 +451,10 @@ public class OpenSearchVector implements VectorStore {
 				return documents;
 			}
 
-			JSONArray resultArray = responseBody.result;
-			if (resultArray != null && !resultArray.isEmpty()) {
-				for (Object item : resultArray) {
-					documents.add(parse((JSONObject) item));
+			ArrayNode resultArray = responseBody.result;
+			if (resultArray != null && resultArray.size() > 0) {
+				for (JsonNode item : resultArray) {
+					documents.add(parse(item));
 				}
 			}
 			return documents;
@@ -436,7 +466,7 @@ public class OpenSearchVector implements VectorStore {
 		 * @param jsonDocument The JSON object containing the document details.
 		 * @return A {@link SimilarityResult} object extracted from the JSON document.
 		 */
-		private static SimilarityResult parse(JSONObject jsonDocument) {
+		private static SimilarityResult parse(JsonNode jsonDocument) {
 			String id = extractId(jsonDocument);
 			String content = extractContent(jsonDocument);
 			double score = extractScore(jsonDocument);
@@ -450,10 +480,10 @@ public class OpenSearchVector implements VectorStore {
 		 * @param jsonDocument The JSON object containing the document details.
 		 * @return The content of the document, or empty string if not found or empty.
 		 */
-		private static String extractContent(JSONObject jsonDocument) {
-			if (jsonDocument.containsKey(FIELDS_KEY)) {
-				JSONObject fields = jsonDocument.getJSONObject(FIELDS_KEY);
-				String content = fields.getString(CONTENT_FIELD_NAME);
+		private static String extractContent(JsonNode jsonDocument) {
+			if (jsonDocument.has(FIELDS_KEY)) {
+				JsonNode fields = jsonDocument.get(FIELDS_KEY);
+				String content = fields.get(CONTENT_FIELD_NAME).asText();
 				if (content == null || content.isEmpty()) {
 					return EMPTY_TEXT;
 				}
@@ -468,8 +498,8 @@ public class OpenSearchVector implements VectorStore {
 		 * @param jsonDocument The JSON object containing the document details.
 		 * @return The ID of the document, or empty string if not found or empty.
 		 */
-		private static String extractId(JSONObject jsonDocument) {
-			String id = jsonDocument.getString(ID_FIELD_NAME);
+		private static String extractId(JsonNode jsonDocument) {
+			String id = jsonDocument.get(ID_FIELD_NAME).asText();
 			if (id == null || id.isEmpty()) {
 				return EMPTY_TEXT;
 			}
@@ -481,8 +511,8 @@ public class OpenSearchVector implements VectorStore {
 		 * @param jsonDocument The JSON object containing the document details.
 		 * @return The score of the document.
 		 */
-		private static double extractScore(JSONObject jsonDocument) {
-			return jsonDocument.getDouble(SCORE_KEY);
+		private static double extractScore(JsonNode jsonDocument) {
+			return jsonDocument.get(SCORE_KEY).asDouble();
 		}
 
 		/**
@@ -491,13 +521,17 @@ public class OpenSearchVector implements VectorStore {
 		 * @return A map of metadata extracted from the document, or an empty map if not
 		 * found.
 		 */
-		@SuppressWarnings("unchecked")
-		private static Map<String, Object> extractMetadata(JSONObject jsonDocument) {
-			if (jsonDocument.containsKey(FIELDS_KEY)) {
-				JSONObject fields = jsonDocument.getJSONObject(FIELDS_KEY);
-				String metadataStr = fields.getString(METADATA_FIELD_NAME);
+		private static Map<String, Object> extractMetadata(JsonNode jsonDocument) {
+			if (jsonDocument.has(FIELDS_KEY)) {
+				JsonNode fields = jsonDocument.get(FIELDS_KEY);
+				String metadataStr = fields.get(METADATA_FIELD_NAME).asText();
 
-				return JSONObject.parseObject(metadataStr, HashMap.class);
+				try {
+					return new ObjectMapper().readValue(metadataStr, HashMap.class);
+				}
+				catch (IOException e) {
+					throw new RuntimeException("Failed to parse metadata JSON string", e);
+				}
 			}
 			else {
 				return new HashMap<>();

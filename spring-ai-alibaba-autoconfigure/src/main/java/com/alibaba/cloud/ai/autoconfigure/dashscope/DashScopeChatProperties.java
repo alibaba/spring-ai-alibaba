@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
-import com.alibaba.dashscope.aigc.generation.Generation;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -39,7 +39,7 @@ public class DashScopeChatProperties extends DashScopeParentProperties {
 	/**
 	 * Default DashScope Chat model.
 	 */
-	public static final String DEFAULT_DEPLOYMENT_NAME = Generation.Models.QWEN_PLUS;
+	public static final String DEFAULT_DEPLOYMENT_NAME = "qwen-plus";
 
 	/**
 	 * Default temperature speed.

@@ -15,11 +15,6 @@
  */
 package com.alibaba.cloud.ai.reader.notion;
 
-import com.alibaba.fastjson.JSONObject;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.document.DocumentReader;
-import org.springframework.util.StringUtils;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -29,17 +24,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentReader;
+import org.springframework.util.StringUtils;
+
 /**
  * Notion Document Reader Implements DocumentReader interface to read content from Notion
  *
  * @author xiadong
  * @since 2024-01-06
  */
+
 public class NotionDocumentReader implements DocumentReader {
 
 	private final NotionResource notionResource;
 
-	private final JSONObject pageMetadata;
+	private final JsonNode pageMetadata;
 
 	/**
 	 * Constructor
@@ -81,21 +83,21 @@ public class NotionDocumentReader implements DocumentReader {
 		// Add metadata from Notion API
 		if (pageMetadata != null) {
 			// Creation and update times
-			String createdTime = pageMetadata.getString("created_time");
+			String createdTime = pageMetadata.get("created_time").asText();
 			if (StringUtils.hasText(createdTime)) {
 				metadata.put("createdTime", Instant.parse(createdTime).toEpochMilli());
 			}
 
-			String lastEditedTime = pageMetadata.getString("last_edited_time");
+			String lastEditedTime = pageMetadata.get("last_edited_time").asText();
 			if (StringUtils.hasText(lastEditedTime)) {
 				metadata.put("lastEditedTime", Instant.parse(lastEditedTime).toEpochMilli());
 			}
 
 			// Creator and last editor
-			JSONObject createdBy = pageMetadata.getJSONObject("created_by");
+			JsonNode createdBy = pageMetadata.get("created_by");
 			if (createdBy != null) {
-				String creatorName = createdBy.getString("name");
-				String creatorId = createdBy.getString("id");
+				String creatorName = createdBy.get("name").asText();
+				String creatorId = createdBy.get("id").asText();
 				if (StringUtils.hasText(creatorName)) {
 					metadata.put("createdBy", creatorName);
 				}
@@ -104,10 +106,10 @@ public class NotionDocumentReader implements DocumentReader {
 				}
 			}
 
-			JSONObject lastEditedBy = pageMetadata.getJSONObject("last_edited_by");
+			JsonNode lastEditedBy = pageMetadata.get("last_edited_by");
 			if (lastEditedBy != null) {
-				String editorName = lastEditedBy.getString("name");
-				String editorId = lastEditedBy.getString("id");
+				String editorName = lastEditedBy.get("name").asText();
+				String editorId = lastEditedBy.get("id").asText();
 				if (StringUtils.hasText(editorName)) {
 					metadata.put("lastEditedBy", editorName);
 				}
@@ -117,18 +119,18 @@ public class NotionDocumentReader implements DocumentReader {
 			}
 
 			// URL
-			String url = pageMetadata.getString("url");
+			String url = pageMetadata.get("url").asText();
 			if (StringUtils.hasText(url)) {
 				metadata.put("url", url);
 			}
 
 			// Parent information
-			JSONObject parent = pageMetadata.getJSONObject("parent");
+			JsonNode parent = pageMetadata.get("parent");
 			if (parent != null) {
-				String parentType = parent.getString("type");
+				String parentType = parent.get("type").asText();
 				if (StringUtils.hasText(parentType)) {
 					metadata.put("parentType", parentType);
-					String parentId = parent.getString(parentType + "_id");
+					String parentId = parent.get(parentType + "_id").asText();
 					if (StringUtils.hasText(parentId)) {
 						metadata.put("parentId", parentId);
 					}
@@ -136,10 +138,10 @@ public class NotionDocumentReader implements DocumentReader {
 			}
 
 			// Icon
-			JSONObject icon = pageMetadata.getJSONObject("icon");
+			JsonNode icon = pageMetadata.get("icon");
 			if (icon != null) {
-				String iconType = icon.getString("type");
-				String iconUrl = icon.getString("url");
+				String iconType = icon.get("type").asText();
+				String iconUrl = icon.get("url").asText();
 				if (StringUtils.hasText(iconType)) {
 					metadata.put("iconType", iconType);
 				}
@@ -149,10 +151,10 @@ public class NotionDocumentReader implements DocumentReader {
 			}
 
 			// Cover
-			JSONObject cover = pageMetadata.getJSONObject("cover");
+			JsonNode cover = pageMetadata.get("cover");
 			if (cover != null) {
-				String coverType = cover.getString("type");
-				String coverUrl = cover.getString("url");
+				String coverType = cover.get("type").asText();
+				String coverUrl = cover.get("url").asText();
 				if (StringUtils.hasText(coverType)) {
 					metadata.put("coverType", coverType);
 				}
