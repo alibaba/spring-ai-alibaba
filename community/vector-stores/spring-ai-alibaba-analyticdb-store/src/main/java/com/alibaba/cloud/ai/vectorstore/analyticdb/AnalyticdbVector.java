@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.dashscope.rag;
+package com.alibaba.cloud.ai.vectorstore.analyticdb;
 
 import java.util.ArrayList;
 import java.util.HashMap;
