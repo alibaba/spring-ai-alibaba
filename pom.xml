@@ -86,10 +86,12 @@
         <module>community/document-parsers/document-parser-pdf-tables</module>
         <module>community/document-parsers/document-parser-bshtml</module>
         <module>community/document-parsers/document-parser-bibtex</module>
-        <module>community/document-parsers/document-parser-multi-modality
+        <module>community/document-parsers/document-parser-multi-modality</module>
         <module>community/document-parsers/document-parser-directory</module>
-          
-        <module>vector-stores</module>
+
+        <module>community/vector-stores/spring-ai-alibaba-tair-store</module>
+        <module>community/vector-stores/spring-ai-alibaba-analyticdb-store</module>
+
     </modules>
 
     <properties>

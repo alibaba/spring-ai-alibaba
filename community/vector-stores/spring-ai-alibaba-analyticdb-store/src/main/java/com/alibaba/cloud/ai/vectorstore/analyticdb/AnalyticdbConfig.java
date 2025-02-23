@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.dashscope.rag;
+package com.alibaba.cloud.ai.vectorstore.analyticdb;
 
 /**
  * @author HeYQ
  * @since 2024-10-23 20:22
  */
-import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.HashMap;
 import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AnalyticdbConfig {
