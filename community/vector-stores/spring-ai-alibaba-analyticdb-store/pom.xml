@@ -22,10 +22,10 @@
         <groupId>com.alibaba.cloud.ai</groupId>
         <artifactId>spring-ai-alibaba</artifactId>
         <version>${revision}</version>
-        <relativePath>../../pom.xml</relativePath>
+        <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-opensearch-store</artifactId>
+    <artifactId>spring-ai-alibaba-analyticdb-store</artifactId>
     <packaging>jar</packaging>
 
     <properties>
@@ -33,11 +33,12 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.aliyun</groupId>
-            <artifactId>aliyun-sdk-ha3engine-vector</artifactId>
-            <version>1.1.8</version>
+            <artifactId>gpdb20160503</artifactId>
+            <version>3.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.ai</groupId>
@@ -49,5 +50,4 @@
             <version>1.2.75</version>
         </dependency>
     </dependencies>
-
 </project>
