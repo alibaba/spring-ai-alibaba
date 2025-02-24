@@ -123,6 +123,7 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(request)
 			.provider(DashScopeApiConstants.PROVIDER_NAME)
+				// @Deprecated(since = "1.0.0-m6")
 			.requestOptions(requestOptions)
 			.build();
 

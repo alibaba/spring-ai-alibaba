@@ -15,62 +15,60 @@
  */
 package com.alibaba.cloud.ai.dashscope.chat.observation;
 
-import java.util.List;
-import java.util.Objects;
-
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
-
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.util.CollectionUtils;
 
+import java.util.List;
+import java.util.Objects;
+
 /**
  * Dashscope conventions to populate observations for chat model operations.
  *
- * @author Lumian
+ * @author Lumian,北极星
  * @since 1.0.0
  */
 public class DashScopeChatModelObservationConvention extends DefaultChatModelObservationConvention {
 
-	public static final String DEFAULT_NAME = "gen_ai.client.operation";
+    public static final String DEFAULT_NAME = "gen_ai.client.operation";
 
-	private static final String ILLEGAL_STOP_CONTENT = "<illegal_stop_content>";
+    private static final String ILLEGAL_STOP_CONTENT = "<illegal_stop_content>";
 
-	private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-	@Override
-	public String getName() {
-		return DEFAULT_NAME;
-	}
+    @Override
+    public String getName () {
+        return DEFAULT_NAME;
+    }
 
-	// Request
+    // Request
+    protected KeyValues requestStopSequences (KeyValues keyValues,
+                                              ChatModelObservationContext context) {
+        if (context.getRequest()
+                .getOptions() instanceof DashScopeChatOptions) {
+            List<Object> stop = ((DashScopeChatOptions) context.getRequest()
+                    .getOptions()).getStop();
+            if (CollectionUtils.isEmpty(stop)) {
+                return keyValues;
+            }
+            KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES, stop, Objects::nonNull);
 
-	protected KeyValues requestStopSequences(KeyValues keyValues, ChatModelObservationContext context) {
-		if (context.getRequestOptions() instanceof DashScopeChatOptions) {
-			List<Object> stop = ((DashScopeChatOptions) context.getRequestOptions()).getStop();
-			if (CollectionUtils.isEmpty(stop)) {
-				return keyValues;
-			}
-			KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES, stop,
-					Objects::nonNull);
+            String stopSequences;
+            try {
+                stopSequences = objectMapper.writeValueAsString(stop);
+            }
+            catch (Exception e) {
+                stopSequences = ILLEGAL_STOP_CONTENT;
+            }
+            return keyValues.and(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(), stopSequences);
+        }
 
-			String stopSequences;
-			try {
-				stopSequences = objectMapper.writeValueAsString(stop);
-			}
-			catch (Exception e) {
-				stopSequences = ILLEGAL_STOP_CONTENT;
-			}
-			return keyValues.and(
-					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
-					stopSequences);
-		}
-
-		return super.requestStopSequences(keyValues, context);
-	}
+        return super.requestStopSequences(keyValues, context);
+    }
 
 }
