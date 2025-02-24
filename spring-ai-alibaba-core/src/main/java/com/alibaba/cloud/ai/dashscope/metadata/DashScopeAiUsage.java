@@ -26,56 +26,55 @@ import org.springframework.util.Assert;
  */
 public class DashScopeAiUsage implements Usage {
 
-    private final TokenUsage usage;
+	private final TokenUsage usage;
 
-    protected DashScopeAiUsage (TokenUsage usage) {
-        Assert.notNull(usage, "Dashscope Usage must not be null");
-        this.usage = usage;
-    }
+	protected DashScopeAiUsage(TokenUsage usage) {
+		Assert.notNull(usage, "Dashscope Usage must not be null");
+		this.usage = usage;
+	}
 
-    public static DashScopeAiUsage from (TokenUsage usage) {
-        return new DashScopeAiUsage(usage);
-    }
+	public static DashScopeAiUsage from(TokenUsage usage) {
+		return new DashScopeAiUsage(usage);
+	}
 
-    protected TokenUsage getUsage () {
-        return this.usage;
-    }
+	protected TokenUsage getUsage() {
+		return this.usage;
+	}
 
-    @Override
-    public Integer getPromptTokens () {
-        return getUsage().inputTokens();
-    }
+	@Override
+	public Integer getPromptTokens() {
+		return getUsage().inputTokens();
+	}
 
-    @Override
-    public Long getGenerationTokens () {
-        return getUsage().outputTokens()
-                .longValue();
-    }
+	@Override
+	public Long getGenerationTokens() {
+		return getUsage().outputTokens().longValue();
+	}
 
-    @Override
-    public Integer getCompletionTokens () {
-        return 0;
-    }
+	@Override
+	public Integer getCompletionTokens() {
+		return 0;
+	}
 
-    @Override
-    public Integer getTotalTokens () {
-        Integer totalTokens = getUsage().totalTokens();
-        if (totalTokens != null) {
-            return totalTokens;
-        }
-        else {
-            return getPromptTokens() + getGenerationTokens().intValue();
-        }
-    }
+	@Override
+	public Integer getTotalTokens() {
+		Integer totalTokens = getUsage().totalTokens();
+		if (totalTokens != null) {
+			return totalTokens;
+		}
+		else {
+			return getPromptTokens() + getGenerationTokens().intValue();
+		}
+	}
 
-    @Override
-    public Object getNativeUsage () {
-        return null;
-    }
+	@Override
+	public Object getNativeUsage() {
+		return null;
+	}
 
-    @Override
-    public String toString () {
-        return getUsage().toString();
-    }
+	@Override
+	public String toString() {
+		return getUsage().toString();
+	}
 
 }
