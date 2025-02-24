@@ -1,13 +1,7 @@
 package com.alibaba.cloud.ai.graph;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
@@ -27,6 +21,7 @@ import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import org.springframework.util.CollectionUtils;
 
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -38,10 +33,9 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
  * Represents a compiled graph of nodes and edges. This class manage the StateGraph
  * execution
  *
- * @param <State> the type of the state associated with the graph
  */
 @Slf4j
-public class CompiledGraph<State extends AgentState> {
+public class CompiledGraph {
 
 	public enum StreamMode {
 
@@ -49,13 +43,13 @@ public class CompiledGraph<State extends AgentState> {
 
 	}
 
-	public final StateGraph<State> stateGraph;
+	public final StateGraph stateGraph;
 
-	final Map<String, AsyncNodeActionWithConfig<State>> nodes = new LinkedHashMap<>();
+	final Map<String, AsyncNodeActionWithConfig> nodes = new LinkedHashMap<>();
 
-	final Map<String, EdgeValue<State>> edges = new LinkedHashMap<>();
+	final Map<String, EdgeValue> edges = new LinkedHashMap<>();
 
-	private final ProcessedNodesEdgesAndConfig<State> processedData;
+	private final ProcessedNodesEdgesAndConfig processedData;
 
 	private int maxIterations = 25;
 
@@ -65,7 +59,7 @@ public class CompiledGraph<State extends AgentState> {
 	 * Constructs a CompiledGraph with the given StateGraph.
 	 * @param stateGraph the StateGraph to be used in this CompiledGraph
 	 */
-	protected CompiledGraph(StateGraph<State> stateGraph, CompileConfig compileConfig) throws GraphStateException {
+	protected CompiledGraph(StateGraph stateGraph, CompileConfig compileConfig) throws GraphStateException {
 		this.stateGraph = stateGraph;
 
 		this.processedData = ProcessedNodesEdgesAndConfig.process(stateGraph, compileConfig);
@@ -102,11 +96,11 @@ public class CompiledGraph<State extends AgentState> {
 				edges.put(e.sourceId(), targets.get(0));
 			}
 			else {
-				Supplier<Stream<EdgeValue<State>>> parallelNodeStream = () -> targets.stream()
+				Supplier<Stream<EdgeValue>> parallelNodeStream = () -> targets.stream()
 					.filter(target -> nodes.containsKey(target.id()));
 
 				var parallelNodeEdges = parallelNodeStream.get()
-					.map(target -> new Edge<State>(target.id()))
+					.map(target -> new Edge(target.id()))
 					.filter(ee -> processedData.edges().elements.contains(ee))
 					.map(ee -> processedData.edges().elements.indexOf(ee))
 					.map(index -> processedData.edges().elements.get(index))
@@ -134,20 +128,20 @@ public class CompiledGraph<State extends AgentState> {
 					.map(target -> nodes.get(target.id()))
 					.toList();
 
-				var parallelNode = new ParallelNode<>(e.sourceId(), actions, stateGraph.getChannels());
+				var parallelNode = new ParallelNode(e.sourceId(), actions, stateGraph.keyStrategies());
 
 				nodes.put(parallelNode.id(), parallelNode.actionFactory().apply(compileConfig));
 
-				edges.put(e.sourceId(), new EdgeValue<>(parallelNode.id()));
+				edges.put(e.sourceId(), new EdgeValue(parallelNode.id()));
 
-				edges.put(parallelNode.id(), new EdgeValue<>(parallelNodeTargets.iterator().next()));
+				edges.put(parallelNode.id(), new EdgeValue(parallelNodeTargets.iterator().next()));
 
 			}
 
 		}
 	}
 
-	public Collection<StateSnapshot<State>> getStateHistory(RunnableConfig config) {
+	public Collection<StateSnapshot> getStateHistory(RunnableConfig config) {
 		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
 			.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
 
@@ -165,7 +159,7 @@ public class CompiledGraph<State extends AgentState> {
 	 * @throws IllegalStateException if the saver is not defined, or no checkpoint is
 	 * found
 	 */
-	public StateSnapshot<State> getState(RunnableConfig config) {
+	public StateSnapshot getState(RunnableConfig config) {
 		return stateOf(config).orElseThrow(() -> (new IllegalStateException("Missing Checkpoint!")));
 	}
 
@@ -175,7 +169,7 @@ public class CompiledGraph<State extends AgentState> {
 	 * @return an Optional of StateSnapshot of the given RunnableConfig
 	 * @throws IllegalStateException if the saver is not defined
 	 */
-	public Optional<StateSnapshot<State>> stateOf(RunnableConfig config) {
+	public Optional<StateSnapshot> stateOf(RunnableConfig config) {
 		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
 			.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
 
@@ -201,7 +195,7 @@ public class CompiledGraph<State extends AgentState> {
 		// merge values with checkpoint values
 		Checkpoint branchCheckpoint = saver.get(config)
 			.map(Checkpoint::new)
-			.map(cp -> cp.updateState(values, stateGraph.getChannels()))
+			.map(cp -> cp.updateState(values, stateGraph.getOverAllState().keyStrategies()))
 			.orElseThrow(() -> (new IllegalStateException("Missing Checkpoint!")));
 
 		String nextNodeId = null;
@@ -237,7 +231,7 @@ public class CompiledGraph<State extends AgentState> {
 		this.maxIterations = maxIterations;
 	}
 
-	private String nextNodeId(EdgeValue<State> route, Map<String, Object> state, String nodeId) throws Exception {
+	private String nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId) throws Exception {
 
 		if (route == null) {
 			throw StateGraph.RunnableErrors.missingEdge.exception(nodeId);
@@ -246,8 +240,8 @@ public class CompiledGraph<State extends AgentState> {
 			return route.id();
 		}
 		if (route.value() != null) {
-			State derefState = stateGraph.getStateFactory().apply(state);
-			com.alibaba.cloud.ai.graph.action.AsyncEdgeAction<State> condition = route.value().action();
+			OverAllState derefState = stateGraph.getStateFactory().apply(state);
+			com.alibaba.cloud.ai.graph.action.AsyncEdgeAction condition = route.value().action();
 			String newRoute = condition.apply(derefState).get();
 			String result = route.value().mappings().get(newRoute);
 			if (result == null) {
@@ -301,25 +295,18 @@ public class CompiledGraph<State extends AgentState> {
 
 	}
 
-	Map<String, Object> getInitialStateFromSchema() {
-		return stateGraph.getChannels()
-			.entrySet()
-			.stream()
-			.filter(c -> c.getValue().getDefault().isPresent())
-			.collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getDefault().get().get()));
-	}
 
 	Map<String, Object> getInitialState(Map<String, Object> inputs, RunnableConfig config) {
 
 		return compileConfig.checkpointSaver()
 			.flatMap(saver -> saver.get(config))
-			.map(cp -> AgentState.updateState(cp.getState(), inputs, stateGraph.getChannels()))
-			.orElseGet(() -> AgentState.updateState(getInitialStateFromSchema(), inputs, stateGraph.getChannels()));
+			.map(cp -> OverAllState.updateState(cp.getState(), inputs, stateGraph.keyStrategies()))
+			.orElseGet(() -> OverAllState.updateState(new HashMap<>(), inputs, stateGraph.keyStrategies()));
 	}
 
-	State cloneState(Map<String, Object> data)
+	OverAllState cloneState(Map<String, Object> data)
 			throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
-		return stateGraph.getStateSerializer().cloneObject(data);
+		return new OverAllState(data);
 	}
 
 	/**
@@ -328,9 +315,18 @@ public class CompiledGraph<State extends AgentState> {
 	 * @param config the invoke configuration
 	 * @return an AsyncGenerator stream of NodeOutput
 	 */
-	public AsyncGenerator<NodeOutput<State>> stream(Map<String, Object> inputs, RunnableConfig config) {
+	@Deprecated
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
-		final AsyncNodeGenerator<NodeOutput<State>> generator = new AsyncNodeGenerator<>(inputs, config);
+		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(inputs, config);
+
+		return new AsyncGenerator.WithEmbed<>(generator);
+	}
+
+
+	public AsyncGenerator<NodeOutput> stream(OverAllState overAllState, RunnableConfig config) {
+		Objects.requireNonNull(config, "config cannot be null");
+		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(overAllState, config);
 
 		return new AsyncGenerator.WithEmbed<>(generator);
 	}
@@ -340,8 +336,19 @@ public class CompiledGraph<State extends AgentState> {
 	 * @param inputs the input map
 	 * @return an AsyncGenerator stream of NodeOutput
 	 */
-	public AsyncGenerator<NodeOutput<State>> stream(Map<String, Object> inputs) {
+	@Deprecated
+	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs) {
 		return this.stream(inputs, RunnableConfig.builder().build());
+	}
+
+
+	@Deprecated
+	public AsyncGenerator<NodeOutput> stream(OverAllState overAllState) {
+		return this.stream(overAllState, RunnableConfig.builder().build());
+	}
+
+	public AsyncGenerator<NodeOutput> stream() {
+		return this.stream(stateGraph.getOverAllState(), RunnableConfig.builder().build());
 	}
 
 	/**
@@ -351,9 +358,24 @@ public class CompiledGraph<State extends AgentState> {
 	 * @return an Optional containing the final state if present, otherwise an empty
 	 * Optional
 	 */
-	public Optional<State> invoke(Map<String, Object> inputs, RunnableConfig config) {
+	@Deprecated
+	public Optional invoke(Map<String, Object> inputs, RunnableConfig config) {
 
 		return stream(inputs, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
+	}
+
+	public Optional invoke(OverAllState overAllState, RunnableConfig config) {
+
+		return stream(overAllState, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
+	}
+
+	public Optional invoke(RunnableConfig config) {
+		return stream(stateGraph.getOverAllState(), config).stream().reduce((a, b) -> b).map(NodeOutput::state);
+	}
+
+
+	public void resetOverAllState(){
+		stateGraph.getOverAllState().reset();
 	}
 
 	/**
@@ -362,9 +384,15 @@ public class CompiledGraph<State extends AgentState> {
 	 * @return an Optional containing the final state if present, otherwise an empty
 	 * Optional
 	 */
-	public Optional<State> invoke(Map<String, Object> inputs) {
+	@Deprecated
+	public Optional invoke(Map<String, Object> inputs) {
 		return this.invoke(inputs, RunnableConfig.builder().build());
 	}
+
+	public Optional invoke() {
+		return this.invoke(stateGraph.getOverAllState(), RunnableConfig.builder().build());
+	}
+
 
 	/**
 	 * Creates an AsyncGenerator stream of NodeOutput based on the provided inputs.
@@ -373,10 +401,10 @@ public class CompiledGraph<State extends AgentState> {
 	 * @return an AsyncGenerator stream of NodeOutput
 	 * @throws Exception if there is an error creating the stream
 	 */
-	public AsyncGenerator<NodeOutput<State>> streamSnapshots(Map<String, Object> inputs, RunnableConfig config) {
+	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
 
-		final AsyncNodeGenerator<NodeOutput<State>> generator = new AsyncNodeGenerator<>(inputs,
+		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(inputs,
 				config.withStreamMode(StreamMode.SNAPSHOTS));
 		return new AsyncGenerator.WithEmbed<>(generator);
 	}
@@ -423,7 +451,7 @@ public class CompiledGraph<State extends AgentState> {
 	 *
 	 * @param <Output> the type of the output
 	 */
-	public class AsyncNodeGenerator<Output extends NodeOutput<State>> implements AsyncGenerator<Output> {
+	public class AsyncNodeGenerator<Output extends NodeOutput> implements AsyncGenerator<Output> {
 
 		Map<String, Object> currentState;
 
@@ -431,11 +459,50 @@ public class CompiledGraph<State extends AgentState> {
 
 		String nextNodeId;
 
+		OverAllState overAllState;
+
 		int iteration = 0;
 
 		RunnableConfig config;
 
 		boolean resumedFromEmbed = false;
+
+		protected AsyncNodeGenerator(OverAllState overAllState, RunnableConfig config) {
+
+			if (overAllState.isResume()) {
+
+				log.trace("RESUME REQUEST");
+
+				BaseCheckpointSaver saver = compileConfig.checkpointSaver()
+						.orElseThrow(() -> (new IllegalStateException(
+								"inputs cannot be null (ie. resume request) if no checkpoint saver is configured")));
+				Checkpoint startCheckpoint = saver.get(config)
+						.orElseThrow(() -> (new IllegalStateException("Resume request without a saved checkpoint!")));
+
+				this.currentState = startCheckpoint.getState();
+
+				// Reset checkpoint id
+				this.config = config.withCheckPointId(null);
+				this.overAllState = overAllState;
+				this.nextNodeId = startCheckpoint.getNextNodeId();
+				this.currentNodeId = null;
+				log.trace("RESUME FROM {}", startCheckpoint.getNodeId());
+			} else {
+
+				log.trace("START");
+				Map<String, Object> inputs = overAllState.data();
+				boolean verify = overAllState.keyVerify();
+				if (!CollectionUtils.isEmpty(inputs) && !verify) {
+					throw new GraphInitKeyErrorException(Arrays.toString(inputs.keySet().toArray()) +" isn't included in the keyStrategies");
+				}
+				// patch for backward support of AppendableValue
+				this.currentState = getInitialState(inputs, config);
+				this.overAllState = overAllState;
+				this.nextNodeId = null;
+				this.currentNodeId = StateGraph.START;
+				this.config = config;
+			}
+		}
 
 		protected AsyncNodeGenerator(Map<String, Object> inputs, RunnableConfig config) {
 			final boolean isResumeRequest = (inputs == null);
@@ -465,7 +532,7 @@ public class CompiledGraph<State extends AgentState> {
 
 				Map<String, Object> initState = getInitialState(inputs, config);
 				// patch for backward support of AppendableValue
-				State initializedState = stateGraph.getStateFactory().apply(initState);
+				OverAllState initializedState = stateGraph.getStateFactory().apply(initState);
 				this.currentState = initializedState.data();
 				this.nextNodeId = null;
 				this.currentNodeId = START;
@@ -475,7 +542,7 @@ public class CompiledGraph<State extends AgentState> {
 
 		@SuppressWarnings("unchecked")
 		protected Output buildNodeOutput(String nodeId) throws Exception {
-			return (Output) NodeOutput.of(nodeId, cloneState(currentState));
+			return (Output) NodeOutput.of(nodeId, overAllState);
 		}
 
 		@SuppressWarnings("unchecked")
@@ -500,8 +567,8 @@ public class CompiledGraph<State extends AgentState> {
 
 							if (data instanceof Map<?, ?>) {
 								// Assume that subgraph return complete state
-								currentState = AgentState.updateState(new HashMap<>(), (Map<String, Object>) data,
-										stateGraph.getChannels());
+								currentState = OverAllState.updateState(new HashMap<>(), (Map<String, Object>) data,
+										stateGraph.keyStrategies());
 							}
 							else {
 								throw new IllegalArgumentException("Embedded generator must return a Map");
@@ -514,8 +581,8 @@ public class CompiledGraph<State extends AgentState> {
 				});
 		}
 
-		private CompletableFuture<Data<Output>> evaluateAction(AsyncNodeActionWithConfig<State> action,
-				State withState) {
+		private CompletableFuture<Data<Output>> evaluateAction(AsyncNodeActionWithConfig action,
+				OverAllState withState) {
 
 			return action.apply(withState, config).thenApply(partialState -> {
 				try {
@@ -525,7 +592,7 @@ public class CompiledGraph<State extends AgentState> {
 						return embed.get();
 					}
 
-					currentState = AgentState.updateState(currentState, partialState, stateGraph.getChannels());
+					currentState = overAllState.updateState(partialState);
 					nextNodeId = nextNodeId(currentNodeId, currentState);
 
 					return Data.of(getNodeOutput());
@@ -540,11 +607,11 @@ public class CompiledGraph<State extends AgentState> {
 		/**
 		 * evaluate Action without nested support
 		 */
-		private CompletableFuture<Output> evaluateActionWithoutNested(AsyncNodeAction<State> action, State withState) {
+		private CompletableFuture<Output> evaluateActionWithoutNested(AsyncNodeAction action, OverAllState withState) {
 
 			return action.apply(withState).thenApply(partialState -> {
 				try {
-					currentState = AgentState.updateState(currentState, partialState, stateGraph.getChannels());
+					currentState = OverAllState.updateState(currentState, partialState, stateGraph.keyStrategies());
 					nextNodeId = nextNodeId(currentNodeId, currentState);
 
 					Optional<Checkpoint> cp = addCheckpoint(config, currentNodeId, currentState, nextNodeId);
@@ -607,12 +674,12 @@ public class CompiledGraph<State extends AgentState> {
 
 				currentNodeId = nextNodeId;
 
-				AsyncNodeActionWithConfig<State> action = nodes.get(currentNodeId);
+				AsyncNodeActionWithConfig action = nodes.get(currentNodeId);
 
 				if (action == null)
 					throw StateGraph.RunnableErrors.missingNode.exception(currentNodeId);
 
-				return evaluateAction(action, cloneState(currentState)).get();
+				return evaluateAction(action, overAllState).get();
 			}
 			catch (Exception e) {
 				log.error(e.getMessage(), e);
@@ -625,26 +692,26 @@ public class CompiledGraph<State extends AgentState> {
 
 }
 
-record ProcessedNodesEdgesAndConfig<State extends AgentState>(StateGraph.Nodes<State> nodes,
-		StateGraph.Edges<State> edges, Set<String> interruptsBefore, Set<String> interruptsAfter) {
+record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes,
+		StateGraph.Edges edges, Set<String> interruptsBefore, Set<String> interruptsAfter) {
 
-	ProcessedNodesEdgesAndConfig(StateGraph<State> stateGraph, CompileConfig config) {
+	ProcessedNodesEdgesAndConfig(StateGraph stateGraph, CompileConfig config) {
 		this(stateGraph.nodes, stateGraph.edges, config.interruptsBefore(), config.interruptsAfter());
 	}
 
-	static <State extends AgentState> ProcessedNodesEdgesAndConfig<State> process(StateGraph<State> stateGraph,
+	static <State extends AgentState> ProcessedNodesEdgesAndConfig process(StateGraph stateGraph,
 			CompileConfig config) throws GraphStateException {
 
 		var subgraphNodes = stateGraph.nodes.onlySubStateGraphNodes();
 
 		if (subgraphNodes.isEmpty()) {
-			return new ProcessedNodesEdgesAndConfig<>(stateGraph, config);
+			return new ProcessedNodesEdgesAndConfig(stateGraph, config);
 		}
 
 		var interruptsBefore = config.interruptsBefore();
 		var interruptsAfter = config.interruptsAfter();
-		var nodes = new StateGraph.Nodes<>(stateGraph.nodes.exceptSubStateGraphNodes());
-		var edges = new StateGraph.Edges<>(stateGraph.edges.elements);
+		var nodes = new StateGraph.Nodes(stateGraph.nodes.exceptSubStateGraphNodes());
+		var edges = new StateGraph.Edges(stateGraph.edges.elements);
 
 		for (var subgraphNode : subgraphNodes) {
 
@@ -682,7 +749,7 @@ record ProcessedNodesEdgesAndConfig<State extends AgentState>(StateGraph.Nodes<S
 			for (var edgeWithSubgraphTargetId : edgesWithSubgraphTargetId) {
 
 				var newEdge = edgeWithSubgraphTargetId.withSourceAndTargetIdsUpdated(subgraphNode, Function.identity(),
-						id -> new EdgeValue<>((Objects.equals(id, subgraphNode.id())
+						id -> new EdgeValue((Objects.equals(id, subgraphNode.id())
 								? subgraphNode.formatId(sgEdgeStartTarget.id()) : id)));
 				edges.elements.remove(edgeWithSubgraphTargetId);
 				edges.elements.add(newEdge);
@@ -713,7 +780,7 @@ record ProcessedNodesEdgesAndConfig<State extends AgentState>(StateGraph.Nodes<S
 			sgEdgesEnd.stream()
 				.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
 						id -> (Objects.equals(id, END) ? edgeWithSubgraphSourceId.target()
-								: new EdgeValue<>(subgraphNode.formatId(id)))))
+								: new EdgeValue(subgraphNode.formatId(id)))))
 				.forEach(edges.elements::add);
 			edges.elements.remove(edgeWithSubgraphSourceId);
 
@@ -724,7 +791,7 @@ record ProcessedNodesEdgesAndConfig<State extends AgentState>(StateGraph.Nodes<S
 				.filter(e -> !Objects.equals(e.sourceId(), START))
 				.filter(e -> !e.anyMatchByTargetId(END))
 				.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
-						id -> new EdgeValue<>(subgraphNode.formatId(id))))
+						id -> new EdgeValue(subgraphNode.formatId(id))))
 				.forEach(edges.elements::add);
 
 			//
@@ -736,7 +803,7 @@ record ProcessedNodesEdgesAndConfig<State extends AgentState>(StateGraph.Nodes<S
 
 		}
 
-		return new ProcessedNodesEdgesAndConfig<>(nodes, edges, interruptsBefore, interruptsAfter);
+		return new ProcessedNodesEdgesAndConfig(nodes, edges, interruptsBefore, interruptsAfter);
 
 	}
 

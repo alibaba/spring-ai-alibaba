@@ -1,8 +1,9 @@
 package com.alibaba.cloud.ai.graph;
 
-import lombok.Data;
+import lombok.ToString;
 import org.springframework.util.CollectionUtils;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -14,19 +15,22 @@ import static java.util.Optional.ofNullable;
 /**
  * The type Over all state.
  */
-public final class OverAllState {
+@ToString
+public final class OverAllState implements Serializable {
     private final Map<String, Object> data;
     private final Map<String, KeyStrategy> keyStrategies;
-    private final Boolean isResume;
-    private boolean subGraph;
+    private  Boolean isResume;
     /**
      * The constant DEFAULT_INPUT_KEY.
      */
-    public static final String DEFAULT_INPUT_KEY = "inputs";
+    public static final String DEFAULT_INPUT_KEY = "input";
 
+    public void reset(){
+        this.data.clear();
+    }
 
-    public void setSubGraph(boolean subGraph) {
-        this.subGraph = subGraph;
+    public Optional<OverAllState> snapShot(){
+        return Optional.of(new OverAllState(new HashMap<>(this.data), new HashMap<>(this.keyStrategies), this.isResume));
     }
 
     /**
@@ -38,6 +42,17 @@ public final class OverAllState {
         this.data = new HashMap<>();
         this.keyStrategies = new HashMap<>();
         this.isResume = isResume;
+    }
+
+    /**
+     * Instantiates a new Over all state.
+     *
+     * @param data the data
+     */
+    public OverAllState(Map<String, Object> data) {
+        this.data = data;
+        this.keyStrategies = new HashMap<>();
+        this.isResume = false;
     }
 
     /**
@@ -66,6 +81,16 @@ public final class OverAllState {
     }
 
 
+    public void withResume(){
+        this.isResume = true;
+    }
+
+
+    public void withOutResume(){
+        this.isResume = false;
+    }
+
+
     /**
      * Is resume boolean.
      *
@@ -82,7 +107,7 @@ public final class OverAllState {
      * @param input the input
      * @return the over all state
      */
-    public OverAllState inputs(Map<String, Object> input) {
+    public OverAllState input(Map<String, Object> input) {
         if (CollectionUtils.isEmpty(input)) return this;
         this.data.putAll(input);
         addKeyAndStrategy(DEFAULT_INPUT_KEY, (oldValue, newValue) -> newValue);
@@ -96,7 +121,7 @@ public final class OverAllState {
      * @param value the value
      * @return the over all state
      */
-    public OverAllState inputs(Object value) {
+    public OverAllState input(Object value) {
         if (value == null) return this;
         this.data.put(DEFAULT_INPUT_KEY, value);
         addKeyAndStrategy(DEFAULT_INPUT_KEY, (oldValue, newValue) -> newValue);
@@ -122,7 +147,7 @@ public final class OverAllState {
      * @param partialState the partial state
      * @return the map
      */
-    protected Map<String, Object> updateState(Map<String, Object> partialState) {
+    public Map<String, Object> updateState(Map<String, Object> partialState) {
         Map<String, KeyStrategy> keyStrategies = keyStrategies();
         partialState.keySet()
                 .stream()
@@ -176,6 +201,25 @@ public final class OverAllState {
 
         return Stream.concat(state.entrySet().stream(), partialState.entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, OverAllState::mergeFunction));
+    }
+
+
+    public static Map<String, Object> updateState(Map<String, Object> state, Map<String, Object> partialState, Map<String, KeyStrategy> keyStrategies) {
+        Objects.requireNonNull(state, "state cannot be null");
+        if (partialState == null || partialState.isEmpty()) {
+            return state;
+        }
+
+        return Stream.concat(state.entrySet().stream(), partialState.entrySet().stream())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> {
+                    String key = ((Map.Entry<String, Object>) Stream.of(state.entrySet(), partialState.entrySet())
+                            .flatMap(Set::stream)
+                            .filter(entry -> entry.getValue() == oldValue || entry.getValue() == newValue)
+                            .findFirst()
+                            .orElseThrow()).getKey();
+                    KeyStrategy strategy = keyStrategies.getOrDefault(key, OverAllState::mergeFunction);
+                    return strategy.apply(oldValue, newValue);
+                }));
     }
 
     /**

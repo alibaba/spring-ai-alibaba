@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.NonNull;
@@ -15,18 +16,17 @@ import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
  * Base Implementation of {@link PlainTextStateSerializer} using GSON library . Need to be
  * extended from specific state implementation
  *
- * @param <State> The type of the agent state to be serialized/deserialized.
  */
-public abstract class GsonStateSerializer<State extends AgentState> extends PlainTextStateSerializer<State> {
+public abstract class GsonStateSerializer extends PlainTextStateSerializer<OverAllState> {
 
 	protected final Gson gson;
 
-	protected GsonStateSerializer(@NonNull AgentStateFactory<State> stateFactory, Gson gson) {
+	protected GsonStateSerializer(@NonNull AgentStateFactory<OverAllState> stateFactory, Gson gson) {
 		super(stateFactory);
 		this.gson = gson;
 	}
 
-	protected GsonStateSerializer(@NonNull AgentStateFactory<State> stateFactory) {
+	protected GsonStateSerializer(@NonNull AgentStateFactory<OverAllState> stateFactory) {
 		this(stateFactory, new GsonBuilder().serializeNulls().create());
 	}
 
@@ -36,14 +36,14 @@ public abstract class GsonStateSerializer<State extends AgentState> extends Plai
 	}
 
 	@Override
-	public void write(State object, ObjectOutput out) throws IOException {
+	public void write(OverAllState object, ObjectOutput out) throws IOException {
 		String json = gson.toJson(object);
 		out.writeUTF(json);
 
 	}
 
 	@Override
-	public State read(ObjectInput in) throws IOException, ClassNotFoundException {
+	public OverAllState read(ObjectInput in) throws IOException, ClassNotFoundException {
 		return gson.fromJson(in.readUTF(), getStateType());
 	}
 
