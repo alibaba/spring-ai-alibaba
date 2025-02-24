@@ -26,7 +26,6 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
-import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
@@ -209,9 +208,7 @@ public class DashScopeAutoConfiguration {
 				RestClient.Builder restClientBuilder,
 				WebClient.Builder webClientBuilder,
 				RetryTemplate retryTemplate,
-				ResponseErrorHandler responseErrorHandler,
-				ObjectProvider<ObservationRegistry> observationRegistry,
-				ObjectProvider<ImageModelObservationConvention> observationConvention
+				ResponseErrorHandler responseErrorHandler
 		) {
 
 			ResolvedConnectionProperties resolved = resolveConnectionProperties(
@@ -229,18 +226,12 @@ public class DashScopeAutoConfiguration {
 					responseErrorHandler
 			);
 
-			DashScopeImageModel dashScopeImageModel = new DashScopeImageModel(
+			return new DashScopeImageModel(
 					dashScopeImageApi,
 					imageProperties.getOptions(),
-					retryTemplate,
-					observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP
-			));
-
-			observationConvention.ifAvailable(dashScopeImageModel::setObservationConvention);
-
-			return dashScopeImageModel;
+					retryTemplate
+			);
 		}
-
 	}
 
 	/**
