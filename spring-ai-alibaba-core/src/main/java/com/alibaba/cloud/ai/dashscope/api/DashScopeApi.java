@@ -210,12 +210,22 @@ public class DashScopeApi {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record EmbeddingUsage(@JsonProperty("total_tokens") Long totalTokens) implements Usage {
 		@Override
-		public Long getPromptTokens() {
+		public Integer getPromptTokens() {
 			return null;
 		}
 
 		@Override
 		public Long getGenerationTokens() {
+			return null;
+		}
+
+		@Override
+		public Integer getCompletionTokens () {
+			return 0;
+		}
+
+		@Override
+		public Object getNativeUsage () {
 			return null;
 		}
 	}
