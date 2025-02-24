@@ -96,7 +96,7 @@
 
     <properties>
 
-        <revision>1.0.0-M6.1</revision>
+        <revision>1.0.0-M5.1</revision>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -107,7 +107,7 @@
         <spring-boot.version>3.3.3</spring-boot.version>
 
         <!-- Spring AI -->
-        <spring-ai.version>1.0.0-M6</spring-ai.version>
+        <spring-ai.version>1.0.0-M5</spring-ai.version>
         <dashscope-sdk-java.version>2.15.1</dashscope-sdk-java.version>
 
         <!-- plugin versions -->
@@ -368,7 +368,7 @@
                             <overview>${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
                             <detectJavaApiLink>false</detectJavaApiLink>
                             <doclint>none</doclint>
-                            <!-- <doclint>all,-missing</doclint> -->
+                            <!--							<doclint>all,-missing</doclint>-->
                             <quiet>true</quiet>
                         </configuration>
                         <executions>
