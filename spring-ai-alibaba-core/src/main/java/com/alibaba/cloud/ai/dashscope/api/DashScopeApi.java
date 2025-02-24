@@ -220,12 +220,12 @@ public class DashScopeApi {
 		}
 
 		@Override
-		public Integer getCompletionTokens () {
+		public Integer getCompletionTokens() {
 			return 0;
 		}
 
 		@Override
-		public Object getNativeUsage () {
+		public Object getNativeUsage() {
 			return null;
 		}
 	}
