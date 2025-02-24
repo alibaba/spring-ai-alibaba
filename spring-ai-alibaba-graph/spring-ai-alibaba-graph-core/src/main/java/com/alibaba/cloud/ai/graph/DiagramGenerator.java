@@ -156,8 +156,8 @@ public abstract class DiagramGenerator {
 	 * @param printConditionalEdge Whether to print the conditional edge condition.
 	 * @return A string representation of the graph.
 	 */
-	public final <State extends AgentState> String generate(StateGraph.Nodes<State> nodes,
-			StateGraph.Edges<State> edges, String title, boolean printConditionalEdge) {
+	public final  String generate(StateGraph.Nodes nodes,
+			StateGraph.Edges edges, String title, boolean printConditionalEdge) {
 
 		return generate(nodes, edges,
 				Context.builder().title(title).isSubGraph(false).printConditionalEdge(printConditionalEdge).build())
@@ -167,7 +167,6 @@ public abstract class DiagramGenerator {
 
 	/**
 	 * Generates a context based on the given state graph.
-	 * @param <State> the type of agent state, constrained to extend {@link AgentState}
 	 * @param nodes the state graph nodes used to generate the context, which must not be
 	 * null
 	 * @param edges the state graph edges used to generate the context, which must not be
@@ -175,17 +174,17 @@ public abstract class DiagramGenerator {
 	 * @param ctx the initial context, which must not be null
 	 * @return the generated context, which will not be null
 	 */
-	protected final <State extends AgentState> Context generate(StateGraph.Nodes<State> nodes,
-			StateGraph.Edges<State> edges, Context ctx) {
+	protected final  Context generate(StateGraph.Nodes nodes,
+			StateGraph.Edges edges, Context ctx) {
 
 		appendHeader(ctx);
 
 		for (var n : nodes.elements) {
 
-			if (n instanceof SubGraphNode<?> subGraphNode) {
+			if (n instanceof SubGraphNode subGraphNode) {
 
 				@SuppressWarnings("unchecked")
-				var subGraph = (StateGraph<State>) subGraphNode.subGraph();
+				var subGraph = (StateGraph) subGraphNode.subGraph();
 				Context subgraphCtx = generate(subGraph.nodes, subGraph.edges,
 						Context.builder()
 							.title(n.id())
@@ -259,13 +258,12 @@ public abstract class DiagramGenerator {
 
 	/**
 	 * Evaluates an edge condition based on the given context and condition.
-	 * @param <State> the type of state extending {@link AgentState}
 	 * @param ctx the current context used for evaluation
 	 * @param condition the condition to be evaluated
 	 * @param k a string identifier for the condition
 	 * @param conditionName the name of the condition being processed
 	 */
-	private <State extends AgentState> void edgeCondition(Context ctx, EdgeCondition<State> condition, String k,
+	private void edgeCondition(Context ctx, EdgeCondition condition, String k,
 			String conditionName) {
 		commentLine(ctx, !ctx.printConditionalEdge());
 		call(ctx, k, conditionName, CallStyle.CONDITIONAL);

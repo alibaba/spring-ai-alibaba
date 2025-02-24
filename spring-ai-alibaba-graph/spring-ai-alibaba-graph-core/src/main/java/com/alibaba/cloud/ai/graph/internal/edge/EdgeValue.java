@@ -7,21 +7,20 @@ import java.util.stream.Collectors;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 
 /**
- * @param <State>
  * @param id The unique identifier for the edge value.
  * @param value The condition associated with the edge value.
  */
-public record EdgeValue<State extends AgentState>(String id, EdgeCondition<State> value) {
+public record EdgeValue(String id, EdgeCondition value) {
 
 	public EdgeValue(String id) {
 		this(id, null);
 	}
 
-	public EdgeValue(EdgeCondition<State> value) {
+	public EdgeValue(EdgeCondition value) {
 		this(null, value);
 	}
 
-	EdgeValue<State> withTargetIdsUpdated(Function<String, EdgeValue<State>> target) {
+	EdgeValue withTargetIdsUpdated(Function<String, EdgeValue> target) {
 		if (id != null) {
 			return target.apply(id);
 		}
@@ -31,7 +30,7 @@ public record EdgeValue<State extends AgentState>(String id, EdgeCondition<State
 			return (v.id() != null) ? v.id() : e.getValue();
 		}));
 
-		return new EdgeValue<>(null, new EdgeCondition<>(value.action(), newMappings));
+		return new EdgeValue(null, new EdgeCondition(value.action(), newMappings));
 
 	}
 

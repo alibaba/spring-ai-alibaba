@@ -166,10 +166,10 @@ public class SerializeTest {
 		System.out.println(deserializedData);
 	}
 
-	static class JacksonSerializer extends JacksonStateSerializer<AgentState> {
+	static class JacksonSerializer extends JacksonStateSerializer {
 
 		public JacksonSerializer() {
-			super(AgentState::new);
+			super(OverAllState::new);
 		}
 
 		ObjectMapper getObjectMapper() {
@@ -183,7 +183,7 @@ public class SerializeTest {
 
 		JacksonSerializer serializer = new JacksonSerializer();
 
-		NodeOutput<AgentState> output = NodeOutput.of("node", null);
+		NodeOutput output = NodeOutput.of("node", null);
 		output.setSubGraph(true);
 		String json = serializer.getObjectMapper().writeValueAsString(output);
 
@@ -195,10 +195,10 @@ public class SerializeTest {
 		assertEquals("{\"node\":\"node\",\"state\":null,\"subGraph\":false}", json);
 	}
 
-	static class GsonSerializer extends GsonStateSerializer<AgentState> {
+	static class GsonSerializer extends GsonStateSerializer {
 
 		public GsonSerializer() {
-			super(AgentState::new, new GsonBuilder().serializeNulls().create());
+			super(OverAllState::new, new GsonBuilder().serializeNulls().create());
 		}
 
 		Gson getGson() {
@@ -212,7 +212,7 @@ public class SerializeTest {
 
 		GsonSerializer serializer = new GsonSerializer();
 
-		NodeOutput<AgentState> output = NodeOutput.of("node", null);
+		NodeOutput output = NodeOutput.of("node", null);
 		output.setSubGraph(true);
 		String json = serializer.getGson().toJson(output);
 

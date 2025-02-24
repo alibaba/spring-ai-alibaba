@@ -143,7 +143,7 @@ public class AppenderChannel<T> implements Channel<List<T>> {
 	 *
 	 * @param <T> the type of elements in the old values list
 	 */
-	record RemoveData<T>(List<T> oldValues, List<?> newValues) {
+	public record RemoveData<T>(List<T> oldValues, List<? extends Object> newValues) {
 
 		// copy constructor. make sure to copy the list to make them modifiable
 		public RemoveData {
