@@ -19,13 +19,12 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 /**
  * Represents an edge in a graph with a source ID and a target value.
  *
- * @param <State> the type of the state associated with the edge
  * @param sourceId The ID of the source node.
  * @param targets The targets value associated with the edge.
  */
-public record Edge<State extends AgentState>(String sourceId, List<EdgeValue<State>> targets) {
+public record Edge(String sourceId, List<EdgeValue> targets) {
 
-	public Edge(String sourceId, EdgeValue<State> target) {
+	public Edge(String sourceId, EdgeValue target) {
 		this(sourceId, List.of(target));
 	}
 
@@ -37,7 +36,7 @@ public record Edge<State extends AgentState>(String sourceId, List<EdgeValue<Sta
 		return targets.size() > 1;
 	}
 
-	public EdgeValue<State> target() {
+	public EdgeValue target() {
 		if (isParallel()) {
 			throw new IllegalStateException(format("Edge '%s' is parallel", sourceId));
 		}
@@ -52,15 +51,15 @@ public record Edge<State extends AgentState>(String sourceId, List<EdgeValue<Sta
 			);
 	}
 
-	public Edge<State> withSourceAndTargetIdsUpdated(Node<State> node, Function<String, String> newSourceId,
-			Function<String, EdgeValue<State>> newTarget) {
+	public Edge withSourceAndTargetIdsUpdated(Node node, Function<String, String> newSourceId,
+			Function<String, EdgeValue> newTarget) {
 
 		var newTargets = targets().stream().map(t -> t.withTargetIdsUpdated(newTarget)).toList();
-		return new Edge<>(newSourceId.apply(sourceId), newTargets);
+		return new Edge(newSourceId.apply(sourceId), newTargets);
 
 	}
 
-	public void validate(@NonNull StateGraph.Nodes<State> nodes) throws GraphStateException {
+	public void validate(@NonNull StateGraph.Nodes nodes) throws GraphStateException {
 		if (!Objects.equals(sourceId(), START) && !nodes.anyMatchById(sourceId())) {
 			throw StateGraph.Errors.missingNodeReferencedByEdge.exception(sourceId());
 		}
@@ -84,13 +83,13 @@ public record Edge<State extends AgentState>(String sourceId, List<EdgeValue<Sta
 			}
 		}
 
-		for (EdgeValue<State> target : targets) {
+		for (EdgeValue target : targets) {
 			validate(target, nodes);
 		}
 
 	}
 
-	private void validate(EdgeValue<State> target, StateGraph.Nodes<State> nodes) throws GraphStateException {
+	private void validate(EdgeValue target, StateGraph.Nodes nodes) throws GraphStateException {
 		if (target.id() != null) {
 			if (!Objects.equals(target.id(), StateGraph.END) && !nodes.anyMatchById(target.id())) {
 				throw StateGraph.Errors.missingNodeReferencedByEdge.exception(target.id());
@@ -120,7 +119,7 @@ public record Edge<State extends AgentState>(String sourceId, List<EdgeValue<Sta
 			return true;
 		if (o == null || getClass() != o.getClass())
 			return false;
-		Edge<?> node = (Edge<?>) o;
+		Edge node = (Edge) o;
 		return Objects.equals(sourceId, node.sourceId);
 	}
 
