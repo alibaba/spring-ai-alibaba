@@ -26,8 +26,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Test cases for DashScopeEmbeddingOptions. Tests cover builder pattern, getters/setters,
  * and JSON properties.
  *
+ * @author yuluo
+ * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  * @author brianxiadong
- * @since 2025-02-24
+ * @since 1.0.0-M5.1
  */
 class DashScopeEmbeddingOptionsTests {
 

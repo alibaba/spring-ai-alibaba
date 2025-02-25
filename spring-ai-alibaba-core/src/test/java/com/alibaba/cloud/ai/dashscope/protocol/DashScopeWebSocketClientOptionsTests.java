@@ -25,7 +25,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Test cases for DashScopeWebSocketClientOptions. Tests cover builder pattern, default
  * values, and property setters.
  *
+ * @author yuluo
+ * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  * @author brianxiadong
+ * @since 1.0.0-M5.1
  */
 class DashScopeWebSocketClientOptionsTests {
 

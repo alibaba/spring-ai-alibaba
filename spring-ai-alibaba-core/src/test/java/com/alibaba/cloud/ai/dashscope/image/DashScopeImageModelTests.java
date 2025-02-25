@@ -41,8 +41,10 @@ import static org.mockito.Mockito.when;
  * Test cases for DashScopeImageModel. Tests cover basic image generation, custom options,
  * async task handling, error handling, and edge cases.
  *
+ * @author yuluo
+ * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  * @author brianxiadong
- * @since 2025-02-24
+ * @since 1.0.0-M5.1
  */
 class DashScopeImageModelTests {
 

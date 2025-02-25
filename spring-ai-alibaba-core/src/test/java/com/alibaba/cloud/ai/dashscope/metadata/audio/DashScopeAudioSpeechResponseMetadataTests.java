@@ -29,8 +29,10 @@ import static org.mockito.Mockito.mock;
  * Test cases for DashScopeAudioSpeechResponseMetadata. Tests cover constructor, factory
  * methods, rate limit handling, and toString representation.
  *
+ * @author yuluo
+ * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  * @author brianxiadong
- * @since 2025-02-24
+ * @since 1.0.0-M5.1
  */
 class DashScopeAudioSpeechResponseMetadataTests {
 

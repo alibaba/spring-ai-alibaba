@@ -37,7 +37,10 @@ import static org.mockito.Mockito.*;
  * Test cases for DashScopeWebSocketClient. Tests cover WebSocket connection, message
  * handling, and event processing.
  *
+ * @author yuluo
+ * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  * @author brianxiadong
+ * @since 1.0.0-M5.1
  */
 class DashScopeWebSocketClientTests {
 
