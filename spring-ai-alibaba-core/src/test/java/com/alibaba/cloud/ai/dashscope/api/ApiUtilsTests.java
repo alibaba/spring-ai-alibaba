@@ -29,98 +29,100 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Test cases for ApiUtils
- * 
+ *
  * @author brianxiadong
  * @since 2025-02-24
  */
 class ApiUtilsTests {
 
-    private static final String TEST_API_KEY = "test-api-key";
-    private static final String TEST_WORKSPACE_ID = "test-workspace";
+	private static final String TEST_API_KEY = "test-api-key";
 
-    @Test
-    void testGetJsonContentHeadersWithApiKeyOnly() {
-        // Test getting JSON content headers with API key only
-        HttpHeaders headers = new HttpHeaders();
-        ApiUtils.getJsonContentHeaders(TEST_API_KEY).accept(headers);
+	private static final String TEST_WORKSPACE_ID = "test-workspace";
 
-        assertThat(headers.getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer " + TEST_API_KEY);
-        assertThat(headers.getFirst(HEADER_OPENAPI_SOURCE)).isEqualTo(SOURCE_FLAG);
-        assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
-        assertThat(headers.getFirst("user-agent")).contains(SDK_FLAG);
-    }
+	@Test
+	void testGetJsonContentHeadersWithApiKeyOnly() {
+		// Test getting JSON content headers with API key only
+		HttpHeaders headers = new HttpHeaders();
+		ApiUtils.getJsonContentHeaders(TEST_API_KEY).accept(headers);
 
-    @Test
-    void testGetJsonContentHeadersWithWorkspaceId() {
-        // Test getting JSON content headers with workspace ID
-        HttpHeaders headers = new HttpHeaders();
-        ApiUtils.getJsonContentHeaders(TEST_API_KEY, TEST_WORKSPACE_ID).accept(headers);
+		assertThat(headers.getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer " + TEST_API_KEY);
+		assertThat(headers.getFirst(HEADER_OPENAPI_SOURCE)).isEqualTo(SOURCE_FLAG);
+		assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
+		assertThat(headers.getFirst("user-agent")).contains(SDK_FLAG);
+	}
 
-        assertThat(headers.getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer " + TEST_API_KEY);
-        assertThat(headers.getFirst(HEADER_OPENAPI_SOURCE)).isEqualTo(SOURCE_FLAG);
-        assertThat(headers.getFirst(HEADER_WORK_SPACE_ID)).isEqualTo(TEST_WORKSPACE_ID);
-        assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
-        assertThat(headers.getFirst("user-agent")).contains(SDK_FLAG);
-    }
+	@Test
+	void testGetJsonContentHeadersWithWorkspaceId() {
+		// Test getting JSON content headers with workspace ID
+		HttpHeaders headers = new HttpHeaders();
+		ApiUtils.getJsonContentHeaders(TEST_API_KEY, TEST_WORKSPACE_ID).accept(headers);
 
-    @Test
-    void testGetJsonContentHeadersWithStream() {
-        // Test getting JSON content headers with stream enabled
-        HttpHeaders headers = new HttpHeaders();
-        ApiUtils.getJsonContentHeaders(TEST_API_KEY, TEST_WORKSPACE_ID, true).accept(headers);
+		assertThat(headers.getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer " + TEST_API_KEY);
+		assertThat(headers.getFirst(HEADER_OPENAPI_SOURCE)).isEqualTo(SOURCE_FLAG);
+		assertThat(headers.getFirst(HEADER_WORK_SPACE_ID)).isEqualTo(TEST_WORKSPACE_ID);
+		assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
+		assertThat(headers.getFirst("user-agent")).contains(SDK_FLAG);
+	}
 
-        assertThat(headers.getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer " + TEST_API_KEY);
-        assertThat(headers.getFirst(HEADER_OPENAPI_SOURCE)).isEqualTo(SOURCE_FLAG);
-        assertThat(headers.getFirst(HEADER_WORK_SPACE_ID)).isEqualTo(TEST_WORKSPACE_ID);
-        assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
-        assertThat(headers.getFirst("X-DashScope-SSE")).isEqualTo("enable");
-        assertThat(headers.getFirst("user-agent")).contains(SDK_FLAG);
-    }
+	@Test
+	void testGetJsonContentHeadersWithStream() {
+		// Test getting JSON content headers with stream enabled
+		HttpHeaders headers = new HttpHeaders();
+		ApiUtils.getJsonContentHeaders(TEST_API_KEY, TEST_WORKSPACE_ID, true).accept(headers);
 
-    @Test
-    void testGetMapContentHeaders() {
-        // Test getting map content headers
-        Map<String, String> customHeaders = new HashMap<>();
-        customHeaders.put("Custom-Header", "custom-value");
+		assertThat(headers.getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer " + TEST_API_KEY);
+		assertThat(headers.getFirst(HEADER_OPENAPI_SOURCE)).isEqualTo(SOURCE_FLAG);
+		assertThat(headers.getFirst(HEADER_WORK_SPACE_ID)).isEqualTo(TEST_WORKSPACE_ID);
+		assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
+		assertThat(headers.getFirst("X-DashScope-SSE")).isEqualTo("enable");
+		assertThat(headers.getFirst("user-agent")).contains(SDK_FLAG);
+	}
 
-        Map<String, String> headers = ApiUtils.getMapContentHeaders(TEST_API_KEY, true, TEST_WORKSPACE_ID,
-                customHeaders);
+	@Test
+	void testGetMapContentHeaders() {
+		// Test getting map content headers
+		Map<String, String> customHeaders = new HashMap<>();
+		customHeaders.put("Custom-Header", "custom-value");
 
-        assertThat(headers.get("Authorization")).isEqualTo("bearer " + TEST_API_KEY);
-        assertThat(headers.get("X-DashScope-WorkSpace")).isEqualTo(TEST_WORKSPACE_ID);
-        assertThat(headers.get("X-DashScope-DataInspection")).isEqualTo("enable");
-        assertThat(headers.get("Custom-Header")).isEqualTo("custom-value");
-        assertThat(headers.get("user-agent")).contains(SDK_FLAG);
-    }
+		Map<String, String> headers = ApiUtils.getMapContentHeaders(TEST_API_KEY, true, TEST_WORKSPACE_ID,
+				customHeaders);
 
-    @Test
-    void testGetAudioTranscriptionHeaders() {
-        // Test getting audio transcription headers
-        HttpHeaders headers = new HttpHeaders();
-        ApiUtils.getAudioTranscriptionHeaders(TEST_API_KEY, TEST_WORKSPACE_ID, true, true, true).accept(headers);
+		assertThat(headers.get("Authorization")).isEqualTo("bearer " + TEST_API_KEY);
+		assertThat(headers.get("X-DashScope-WorkSpace")).isEqualTo(TEST_WORKSPACE_ID);
+		assertThat(headers.get("X-DashScope-DataInspection")).isEqualTo("enable");
+		assertThat(headers.get("Custom-Header")).isEqualTo("custom-value");
+		assertThat(headers.get("user-agent")).contains(SDK_FLAG);
+	}
 
-        assertThat(headers.getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer " + TEST_API_KEY);
-        assertThat(headers.getFirst("X-DashScope-WorkSpace")).isEqualTo(TEST_WORKSPACE_ID);
-        assertThat(headers.getFirst("X-DashScope-DataInspection")).isEqualTo("enable");
-        assertThat(headers.getFirst("X-DashScope-Async")).isEqualTo("enable");
-        assertThat(headers.getFirst("X-DashScope-SSE")).isEqualTo("enable");
-        assertThat(headers.getFirst("Cache-Control")).isEqualTo("no-cache");
-        assertThat(headers.getFirst("X-Accel-Buffering")).isEqualTo("no");
-        assertThat(headers.getFirst(HttpHeaders.ACCEPT)).isEqualTo("text/event-stream");
-        assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
-    }
+	@Test
+	void testGetAudioTranscriptionHeaders() {
+		// Test getting audio transcription headers
+		HttpHeaders headers = new HttpHeaders();
+		ApiUtils.getAudioTranscriptionHeaders(TEST_API_KEY, TEST_WORKSPACE_ID, true, true, true).accept(headers);
 
-    @Test
-    void testGetFileUploadHeaders() {
-        // Test getting file upload headers
-        Map<String, String> input = new HashMap<>();
-        input.put("Content-Type", "multipart/form-data");
-        input.put("Custom-Header", "custom-value");
+		assertThat(headers.getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer " + TEST_API_KEY);
+		assertThat(headers.getFirst("X-DashScope-WorkSpace")).isEqualTo(TEST_WORKSPACE_ID);
+		assertThat(headers.getFirst("X-DashScope-DataInspection")).isEqualTo("enable");
+		assertThat(headers.getFirst("X-DashScope-Async")).isEqualTo("enable");
+		assertThat(headers.getFirst("X-DashScope-SSE")).isEqualTo("enable");
+		assertThat(headers.getFirst("Cache-Control")).isEqualTo("no-cache");
+		assertThat(headers.getFirst("X-Accel-Buffering")).isEqualTo("no");
+		assertThat(headers.getFirst(HttpHeaders.ACCEPT)).isEqualTo("text/event-stream");
+		assertThat(headers.getContentType()).isEqualTo(MediaType.APPLICATION_JSON);
+	}
 
-        HttpHeaders headers = new HttpHeaders();
-        ApiUtils.getFileUploadHeaders(input).accept(headers);
+	@Test
+	void testGetFileUploadHeaders() {
+		// Test getting file upload headers
+		Map<String, String> input = new HashMap<>();
+		input.put("Content-Type", "multipart/form-data");
+		input.put("Custom-Header", "custom-value");
 
-        assertThat(Objects.requireNonNull(headers.getContentType()).toString()).isEqualTo("multipart/form-data");
-        assertThat(headers.getFirst("Custom-Header")).isEqualTo("custom-value");
-    }
+		HttpHeaders headers = new HttpHeaders();
+		ApiUtils.getFileUploadHeaders(input).accept(headers);
+
+		assertThat(Objects.requireNonNull(headers.getContentType()).toString()).isEqualTo("multipart/form-data");
+		assertThat(headers.getFirst("Custom-Header")).isEqualTo("custom-value");
+	}
+
 }

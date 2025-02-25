@@ -156,6 +156,8 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
+		Assert.notNull(prompt, "Prompt must not be null");
+		Assert.isTrue(!CollectionUtils.isEmpty(prompt.getInstructions()), "Prompt messages must not be empty");
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
@@ -216,6 +218,8 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+		Assert.notNull(prompt, "Prompt must not be null");
+		Assert.isTrue(!CollectionUtils.isEmpty(prompt.getInstructions()), "Prompt messages must not be empty");
 
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);
