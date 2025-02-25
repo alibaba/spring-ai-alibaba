@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,17 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
-import java.time.Duration;
-import java.util.List;
-
-import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioTranscriptionApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
+import com.alibaba.cloud.ai.dashscope.api.*;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionModel;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
@@ -31,10 +23,10 @@ import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
 import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
 import io.micrometer.observation.ObservationRegistry;
-
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
+import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
@@ -52,10 +44,14 @@ import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
 import org.springframework.boot.web.client.RestClientCustomizer;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import java.time.Duration;
+import java.util.List;
 
 import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUtils.resolveConnectionProperties;
 
@@ -86,9 +82,28 @@ import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUt
 })
 public class DashScopeAutoConfiguration {
 
+	@Bean
+	public RestClientCustomizer restClientCustomizer(DashScopeConnectionProperties commonProperties) {
+
+		return restClientBuilder -> restClientBuilder
+				.requestFactory(ClientHttpRequestFactories.get(ClientHttpRequestFactorySettings.DEFAULTS
+						.withReadTimeout(Duration.ofSeconds(commonProperties.getReadTimeout()))));
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
+
+		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
+		manager.setApplicationContext(context);
+
+		return manager;
+	}
+
 	/**
 	 * Spring AI Alibaba DashScope Chat Configuration.
 	 */
+	@Configuration
 	@ConditionalOnProperty(
 			prefix = DashScopeChatProperties.CONFIG_PREFIX,
 			name = "enabled",
@@ -133,8 +148,7 @@ public class DashScopeAutoConfiguration {
 			return dashscopeModel;
 		}
 
-		@Bean
-		public DashScopeApi dashscopeChatApi(
+		private DashScopeApi dashscopeChatApi(
 				DashScopeConnectionProperties commonProperties,
 				DashScopeChatProperties chatProperties,
 				RestClient.Builder restClientBuilder,
@@ -179,6 +193,7 @@ public class DashScopeAutoConfiguration {
 	/**
 	 * Spring AI Alibaba DashScope Image Configuration.
 	 */
+	@Configuration
 	@ConditionalOnProperty(
 			prefix = DashScopeImageProperties.CONFIG_PREFIX,
 			name = "enabled",
@@ -194,7 +209,9 @@ public class DashScopeAutoConfiguration {
 				RestClient.Builder restClientBuilder,
 				WebClient.Builder webClientBuilder,
 				RetryTemplate retryTemplate,
-				ResponseErrorHandler responseErrorHandler
+				ResponseErrorHandler responseErrorHandler,
+				ObjectProvider<ObservationRegistry> observationRegistry,
+				ObjectProvider<ImageModelObservationConvention> observationConvention
 		) {
 
 			ResolvedConnectionProperties resolved = resolveConnectionProperties(
@@ -212,18 +229,23 @@ public class DashScopeAutoConfiguration {
 					responseErrorHandler
 			);
 
-			return new DashScopeImageModel(
+			DashScopeImageModel dashScopeImageModel = new DashScopeImageModel(
 					dashScopeImageApi,
 					imageProperties.getOptions(),
-					retryTemplate
-			);
-		}
+					retryTemplate,
+					observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP
+			));
 
+			observationConvention.ifAvailable(dashScopeImageModel::setObservationConvention);
+
+			return dashScopeImageModel;
+		}
 	}
 
 	/**
 	 * Spring AI Alibaba DashScope Embedding Configuration.
 	 */
+	@Configuration
 	@ConditionalOnProperty(
 			prefix = DashScopeEmbeddingProperties.CONFIG_PREFIX,
 			name = "enabled",
@@ -266,8 +288,7 @@ public class DashScopeAutoConfiguration {
 			return embeddingModel;
 		}
 
-		@Bean
-		public DashScopeApi dashscopeEmbeddingApi(
+		private DashScopeApi dashscopeEmbeddingApi(
 				DashScopeConnectionProperties commonProperties,
 				DashScopeEmbeddingProperties embeddingProperties,
 				RestClient.Builder restClientBuilder,
@@ -286,6 +307,7 @@ public class DashScopeAutoConfiguration {
 	/**
 	 * Spring AI Alibaba DashScope Speech Synthesis Configuration.
 	 */
+	@Configuration
 	@ConditionalOnProperty(
 			prefix = DashScopeSpeechSynthesisProperties.CONFIG_PREFIX,
 			name = "enabled",
@@ -313,8 +335,7 @@ public class DashScopeAutoConfiguration {
 			);
 		}
 
-		@Bean
-		public DashScopeSpeechSynthesisApi dashScopeSpeechSynthesisApi(
+		private DashScopeSpeechSynthesisApi dashScopeSpeechSynthesisApi(
 				DashScopeConnectionProperties commonProperties,
 				DashScopeSpeechSynthesisProperties speechSynthesisProperties
 		) {
@@ -333,6 +354,7 @@ public class DashScopeAutoConfiguration {
 	/**
 	 * Spring AI Alibaba DashScope Audio Transcription Configuration.
 	 */
+	@Configuration
 	@ConditionalOnProperty(
 			prefix = DashScopeAudioTranscriptionProperties.CONFIG_PREFIX,
 			name = "enabled",
@@ -360,8 +382,7 @@ public class DashScopeAutoConfiguration {
 			);
 		}
 
-		@Bean
-		public DashScopeAudioTranscriptionApi dashScopeAudioTranscriptionApi(
+		private DashScopeAudioTranscriptionApi dashScopeAudioTranscriptionApi(
 				DashScopeConnectionProperties commonProperties,
 				DashScopeAudioTranscriptionProperties audioTranscriptionProperties
 		) {
@@ -377,6 +398,7 @@ public class DashScopeAutoConfiguration {
 	/**
 	 * Spring AI Alibaba DashScope Rerank Configuration.
 	 */
+	@Configuration
 	@ConditionalOnProperty(
 			prefix = DashScopeRerankProperties.CONFIG_PREFIX,
 			name = "enabled",
@@ -417,24 +439,6 @@ public class DashScopeAutoConfiguration {
 			);
 		}
 
-	}
-
-	@Bean
-	public RestClientCustomizer restClientCustomizer(DashScopeConnectionProperties commonProperties) {
-
-		return restClientBuilder -> restClientBuilder
-				.requestFactory(ClientHttpRequestFactories.get(ClientHttpRequestFactorySettings.DEFAULTS
-						.withReadTimeout(Duration.ofSeconds(commonProperties.getReadTimeout()))));
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
-
-		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
-		manager.setApplicationContext(context);
-
-		return manager;
 	}
 
 }
