@@ -185,7 +185,7 @@ public class ArxivDocumentReader implements DocumentReader {
 						metadata.putAll(createMetadata(result));
 
 						// Create new Document instance with complete metadata
-						documents.add(new Document(doc.getContent(), metadata));
+						documents.add(new Document(doc.getText(), metadata));
 					}
 				}
 				catch (IOException e) {

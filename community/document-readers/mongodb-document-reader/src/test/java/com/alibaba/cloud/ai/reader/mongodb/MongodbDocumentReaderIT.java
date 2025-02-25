@@ -78,7 +78,7 @@ public class MongodbDocumentReaderIT {
 
 		System.out.println("Found " + documents.size() + " documents:");
 		for (Document doc : documents) {
-			System.out.println("- " + doc.getContent());
+			System.out.println("- " + doc.getText());
 			System.out.println("  Metadata: " + doc.getMetadata());
 		}
 	}
