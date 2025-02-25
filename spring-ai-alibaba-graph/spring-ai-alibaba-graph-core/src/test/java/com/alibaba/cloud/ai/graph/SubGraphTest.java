@@ -132,7 +132,7 @@ public class SubGraphTest {
     @Test
     public void testMergeSubgraph01() throws Exception {
 
-        var workflowChild = new StateGraph(getOverAllState())
+        var workflowChild = new StateGraph()
                 .addNode("B1", _makeNode("B1"))
                 .addNode("B2", _makeNode("B2"))
                 .addEdge(START, "B1")
@@ -195,7 +195,7 @@ public class SubGraphTest {
     @Test
     public void testMergeSubgraph03() throws Exception {
 
-        var workflowChild = new StateGraph(getOverAllState()).addNode("B1", _makeNode("B1"))
+        var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
                 .addNode("B2", _makeNode("B2"))
                 .addNode("C", _makeNode("subgraph(C)"))
                 .addEdge(START, "B1")
@@ -233,7 +233,7 @@ public class SubGraphTest {
     @Test
     public void testMergeSubgraph03WithInterruption() throws Exception {
         OverAllState overAllState = getOverAllState();
-        var workflowChild = new StateGraph(overAllState).addNode("B1", _makeNode("B1"))
+        var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
                 .addNode("B2", _makeNode("B2"))
                 .addNode("C", _makeNode("subgraph(C)"))
                 .addEdge(START, "B1")
@@ -321,7 +321,7 @@ public class SubGraphTest {
     @Test
     public void testMergeSubgraph04() throws Exception {
         OverAllState overAllState = getOverAllState();
-        var workflowChild = new StateGraph(overAllState).addNode("B1", _makeNode("B1"))
+        var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
                 .addNode("B2", _makeNode("B2"))
                 .addNode("C", _makeNode("subgraph(C)"))
                 .addEdge(START, "B1")
@@ -360,7 +360,7 @@ public class SubGraphTest {
 	@Test
 	public void testMergeSubgraph04WithInterruption() throws Exception {
         OverAllState overAllState = getOverAllState();
-        var workflowChild = new StateGraph(overAllState).addNode("B1", _makeNode("B1"))
+        var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
 			.addNode("B2", _makeNode("B2"))
 			.addNode("C", _makeNode("subgraph(C)"))
 			.addEdge(START, "B1")
@@ -456,7 +456,7 @@ public class SubGraphTest {
 
 		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
         OverAllState overAllState = getOverAllState();
-        var workflowChild = new StateGraph(overAllState).addNode("step_1", _makeNode("child:step1"))
+        var workflowChild = new StateGraph().addNode("step_1", _makeNode("child:step1"))
 			.addNode("step_2", _makeNode("child:step2"))
 			.addNode("step_3", _makeNode("child:step3"))
 			.addEdge(START, "step_1")

@@ -180,6 +180,7 @@ public class StateGraphFileSystemPersistenceTest {
 				log.info("SNAPSHOT:\n{}\n", snapshot);
 
 				// SUBMIT NEW THREAD 2
+                overAllState.reset();
 				state = app.invoke(runnableConfig_2);
 
 				assertTrue(state.isPresent());
@@ -191,6 +192,7 @@ public class StateGraphFileSystemPersistenceTest {
 				assertEquals(expectedSteps + execution, messages.size());
 
 				// RE-SUBMIT THREAD 1
+                overAllState.reset();
 				state = app.invoke( runnableConfig_1);
 
 				assertTrue(state.isPresent());
