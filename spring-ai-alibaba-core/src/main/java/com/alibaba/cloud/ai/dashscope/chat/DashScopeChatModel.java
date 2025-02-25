@@ -161,6 +161,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(DashScopeApiConstants.PROVIDER_NAME)
+			// @deprecated since 1.0.0-m6
 			.requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions)
 			.build();
 
@@ -378,7 +379,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 						return new ToolCall(toolCall.id(), toolCall.type(), function);
 					}).toList();
 				}
-				return List.of(new ChatCompletionMessage(assistantMessage.getContent(),
+				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
 						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
@@ -413,7 +414,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 
 		List<MediaContent> contentList = new ArrayList<>();
 		if (format == MessageFormat.VIDEO) {
-			MediaContent mediaContent = new MediaContent(message.getContent());
+			MediaContent mediaContent = new MediaContent(message.getText());
 			contentList.add(mediaContent);
 
 			List<String> mediaList = message.getMedia()
@@ -424,7 +425,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 			contentList.add(new MediaContent("video", null, null, mediaList));
 		}
 		else {
-			MediaContent mediaContent = new MediaContent(message.getContent());
+			MediaContent mediaContent = new MediaContent(message.getText());
 			contentList.add(mediaContent);
 
 			contentList.addAll(message.getMedia()

@@ -240,7 +240,6 @@ public class DashScopeAutoConfiguration {
 
 			return dashScopeImageModel;
 		}
-
 	}
 
 	/**
