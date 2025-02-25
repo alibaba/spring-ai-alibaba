@@ -656,13 +656,14 @@ public class CompiledGraph {
 					return Data.of(buildNodeOutput(START));
 				}
 
-				if (END.equals(nextNodeId)) {
-					nextNodeId = null;
-					currentNodeId = null;
-					OverAllState snapshotState = overAllState.snapShot().get();
-					overAllState.reset();
-					return Data.of((Output) NodeOutput.of(END, snapshotState));
-				}
+                if (END.equals(nextNodeId)) {
+                    nextNodeId = null;
+                    currentNodeId = null;
+					return Data.of(buildNodeOutput(END));
+//                    OverAllState snapshotState = overAllState.snapShot().get();
+//                    overAllState.reset();
+//                    return Data.of((Output) NodeOutput.of(END, snapshotState));
+                }
 
 				// check on previous node
 				if (shouldInterruptAfter(currentNodeId, nextNodeId))
@@ -698,7 +699,7 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes,
 		this(stateGraph.nodes, stateGraph.edges, config.interruptsBefore(), config.interruptsAfter());
 	}
 
-	static <State extends AgentState> ProcessedNodesEdgesAndConfig process(StateGraph stateGraph,
+	static ProcessedNodesEdgesAndConfig process(StateGraph stateGraph,
 			CompileConfig config) throws GraphStateException {
 
 		var subgraphNodes = stateGraph.nodes.onlySubStateGraphNodes();

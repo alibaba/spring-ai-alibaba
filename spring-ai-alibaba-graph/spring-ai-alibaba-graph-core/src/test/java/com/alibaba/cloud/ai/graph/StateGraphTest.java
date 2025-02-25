@@ -314,7 +314,8 @@ public class StateGraphTest {
 
         var childStep3 = node_async((OverAllState state) -> Map.of("messages", "child:step3"));
 
-        var workflowChild = new StateGraph(overAllState).addNode("child:step_1", childStep1)
+        var workflowChild = new StateGraph()
+                .addNode("child:step_1", childStep1)
                 .addNode("child:step_2", childStep2)
                 .addNode("child:step_3", childStep3)
                 .addEdge(START, "child:step_1")
