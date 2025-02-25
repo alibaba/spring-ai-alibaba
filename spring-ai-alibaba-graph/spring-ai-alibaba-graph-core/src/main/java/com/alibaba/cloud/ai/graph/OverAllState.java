@@ -25,7 +25,7 @@ public final class OverAllState implements Serializable {
      */
     public static final String DEFAULT_INPUT_KEY = "input";
 
-    public void reset(){
+    protected void reset(){
         this.data.clear();
     }
 

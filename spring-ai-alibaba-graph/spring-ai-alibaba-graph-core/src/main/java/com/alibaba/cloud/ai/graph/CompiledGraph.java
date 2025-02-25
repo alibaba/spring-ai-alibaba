@@ -374,9 +374,6 @@ public class CompiledGraph {
 	}
 
 
-	public void resetOverAllState(){
-		stateGraph.getOverAllState().reset();
-	}
 
 	/**
 	 * Invokes the graph execution with the provided inputs and returns the final state.
@@ -662,7 +659,9 @@ public class CompiledGraph {
 				if (END.equals(nextNodeId)) {
 					nextNodeId = null;
 					currentNodeId = null;
-					return Data.of(buildNodeOutput(END));
+					OverAllState snapshotState = overAllState.snapShot().get();
+					overAllState.reset();
+					return Data.of((Output) NodeOutput.of(END, snapshotState));
 				}
 
 				// check on previous node
