@@ -157,6 +157,9 @@ public class StateGraph {
 		this.overAllState = overAllState;
 	}
 
+	public StateGraph() {
+	}
+
 	public Map<String,KeyStrategy> keyStrategies() {
 		return overAllState.keyStrategies();
 	}
@@ -292,6 +295,7 @@ public class StateGraph {
 		}
 
 		subGraph.validateGraph();
+		subGraph.setOverAllState(getOverAllState());
 
 		var node = new SubStateGraphNode(id, subGraph);
 

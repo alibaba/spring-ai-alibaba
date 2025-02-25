@@ -25,7 +25,7 @@ public final class OverAllState implements Serializable {
      */
     public static final String DEFAULT_INPUT_KEY = "input";
 
-    protected void reset(){
+    public void reset(){
         this.data.clear();
     }
 
@@ -212,7 +212,7 @@ public final class OverAllState implements Serializable {
 
         return Stream.concat(state.entrySet().stream(), partialState.entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> {
-                    String key = ((Map.Entry<String, Object>) Stream.of(state.entrySet(), partialState.entrySet())
+                    String key = (Stream.of(state.entrySet(), partialState.entrySet())
                             .flatMap(Set::stream)
                             .filter(entry -> entry.getValue() == oldValue || entry.getValue() == newValue)
                             .findFirst()
