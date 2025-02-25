@@ -33,7 +33,7 @@ public class DashScopeAudioTranscriptionResponseMetadata extends AudioTranscript
 
 	};
 
-	protected static final String AI_METADATA_STRING = "{ @type: %1$s, rateLimit: %4$s }";
+	protected static final String AI_METADATA_STRING = "{ @type: %1$s, rateLimit: %2$s }";
 
 	@Nullable
 	private RateLimit rateLimit;

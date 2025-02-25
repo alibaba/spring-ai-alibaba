@@ -49,14 +49,13 @@ public class DashScopeChatModelObservationConvention extends DefaultChatModelObs
 
 	// Request
 
+	@Override
 	protected KeyValues requestStopSequences(KeyValues keyValues, ChatModelObservationContext context) {
 		if (context.getRequestOptions() instanceof DashScopeChatOptions) {
 			List<Object> stop = ((DashScopeChatOptions) context.getRequestOptions()).getStop();
 			if (CollectionUtils.isEmpty(stop)) {
 				return keyValues;
 			}
-			KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES, stop,
-					Objects::nonNull);
 
 			String stopSequences;
 			try {

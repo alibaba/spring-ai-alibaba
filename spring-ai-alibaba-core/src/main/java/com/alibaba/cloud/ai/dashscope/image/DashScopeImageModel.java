@@ -33,6 +33,7 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 /**
  * @author nuocheng.lxm
@@ -83,6 +84,8 @@ public class DashScopeImageModel implements ImageModel {
 
 	@Override
 	public ImageResponse call(ImagePrompt request) {
+		Assert.notNull(request, "Prompt must not be null");
+		Assert.isTrue(!CollectionUtils.isEmpty(request.getInstructions()), "Prompt messages must not be empty");
 
 		String taskId = submitImageGenTask(request);
 		if (taskId == null) {
