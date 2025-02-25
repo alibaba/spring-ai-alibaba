@@ -55,8 +55,10 @@ import static org.mockito.Mockito.mock;
  * Test cases for DashScopeChatModel. Tests cover basic chat completion, streaming, tool
  * calls, error handling, and various edge cases.
  *
+ * @author yuluo
+ * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  * @author brianxiadong
- * @since 2025-02-24
+ * @since 1.0.0-M5.1
  */
 class DashScopeChatModelTests {
 

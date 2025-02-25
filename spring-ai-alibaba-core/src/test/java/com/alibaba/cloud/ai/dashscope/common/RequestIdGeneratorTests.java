@@ -30,8 +30,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * format 2. Verify uniqueness of generated IDs 3. Test ID generation with different
  * parameters
  *
+ * @author yuluo
+ * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  * @author brianxiadong
- * @since 2025-02-24
+ * @since 1.0.0-M5.1
  */
 class RequestIdGeneratorTests {
 

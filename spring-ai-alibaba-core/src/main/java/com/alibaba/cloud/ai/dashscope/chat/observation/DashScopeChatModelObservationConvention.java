@@ -57,6 +57,9 @@ public class DashScopeChatModelObservationConvention extends DefaultChatModelObs
 				return keyValues;
 			}
 
+			KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES, stop,
+					Objects::nonNull);
+
 			String stopSequences;
 			try {
 				stopSequences = objectMapper.writeValueAsString(stop);

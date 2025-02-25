@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * Test cases for TextDocumentParser
  *
  * @author brianxiadong
- * @since 2025-02-24
+ * @since 1.0.0-M5.1
  */
 class TextDocumentParserTests {
 

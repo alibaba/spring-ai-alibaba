@@ -26,8 +26,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Test cases for DashScopeAiUsage. Tests cover factory method, token calculations, and
  * null handling.
  *
+ * @author yuluo
+ * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  * @author brianxiadong
- * @since 2025-02-24
+ * @since 1.0.0-M5.1
  */
 class DashScopeAiUsageTests {
 
