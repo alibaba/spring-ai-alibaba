@@ -252,10 +252,10 @@ public class EmailParser {
 		String htmlContent = null;
 		String textContent = null;
 
-		Object content = part.getContent();
+		Object content = part.getText();
 		if (content instanceof String) {
 			// Check if content is HTML
-			String contentType = part.getContentType().toLowerCase();
+			String contentType = part.getTextType().toLowerCase();
 			if (contentType.contains("text/html")) {
 				htmlContent = (String) content;
 			}
@@ -267,7 +267,7 @@ public class EmailParser {
 			Multipart multipart = (Multipart) content;
 			for (int i = 0; i < multipart.getCount(); i++) {
 				Part bodyPart = multipart.getBodyPart(i);
-				String contentType = bodyPart.getContentType().toLowerCase();
+				String contentType = bodyPart.getTextType().toLowerCase();
 
 				if (contentType.contains("text/html")) {
 					htmlContent = new String(bodyPart.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
@@ -310,7 +310,7 @@ public class EmailParser {
 		try (InputStream is = new ByteArrayInputStream(htmlContent.getBytes(StandardCharsets.UTF_8))) {
 			List<Document> docs = htmlParser.parse(is);
 			if (!docs.isEmpty()) {
-				return docs.get(0).getContent();
+				return docs.get(0).getText();
 			}
 		}
 		return htmlContent;

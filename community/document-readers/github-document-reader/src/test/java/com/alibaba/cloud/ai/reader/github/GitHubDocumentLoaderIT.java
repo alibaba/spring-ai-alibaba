@@ -50,7 +50,7 @@ class GitHubDocumentLoaderIT {
 	@Test
 	public void should_load_file() {
 		List<Document> document = reader.get();
-		String content = document.get(0).getContent();
+		String content = document.get(0).getText();
 		System.out.println(System.getenv("GITHUB_TOKEN"));
 		System.out.println(content);
 		// assertThat(content).contains("<groupId>com.alibaba.cloud</groupId>");

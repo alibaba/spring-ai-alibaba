@@ -281,7 +281,7 @@ public class ArxivResult {
 			this.rel = rel;
 		}
 
-		public String getContentType() {
+		public String getTextType() {
 			return contentType;
 		}
 

@@ -117,7 +117,7 @@ public class MySQLResource {
 		return query;
 	}
 
-	public List<String> getContentColumns() {
+	public List<String> getTextColumns() {
 		return contentColumns;
 	}
 

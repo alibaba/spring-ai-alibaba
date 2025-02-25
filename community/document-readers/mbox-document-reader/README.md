@@ -68,7 +68,7 @@ List<Document> documents = reader.get();
 for (Document doc : documents) {
     // Get formatted content
     // 获取格式化的内容
-    String content = doc.getContent();
+    String content = doc.getText();
     
     // Access metadata
     // 访问元数据

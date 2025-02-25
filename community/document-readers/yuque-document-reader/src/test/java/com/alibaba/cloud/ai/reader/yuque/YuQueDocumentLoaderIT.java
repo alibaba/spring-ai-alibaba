@@ -40,7 +40,7 @@ class YuQueDocumentLoaderIT {
 	@Test
 	public void should_load_file() {
 		List<Document> document = reader.get();
-		String content = document.get(0).getContent();
+		String content = document.get(0).getText();
 
 		System.out.println(content);
 	}

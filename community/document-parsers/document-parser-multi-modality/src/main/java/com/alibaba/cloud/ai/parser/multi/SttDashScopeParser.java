@@ -94,7 +94,7 @@ public class SttDashScopeParser implements DocumentParser {
 				.build();
 			MultiModalConversationResult result = conversation.call(param);
 			return List.of(new Document(
-					result.getOutput().getChoices().get(0).getMessage().getContent().get(0).get("text").toString()));
+					result.getOutput().getChoices().get(0).getMessage().getText().get(0).get("text").toString()));
 
 		}
 		catch (ApiException | NoApiKeyException | UploadFileException e) {

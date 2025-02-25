@@ -61,7 +61,7 @@ class HuggingFaceFSDocumentReaderTests {
 		Document firstDoc = documents.get(0);
 		assertNotNull(firstDoc);
 		assertEquals(testFile.toString(), firstDoc.getMetadata().get(HuggingFaceFSDocumentReader.SOURCE));
-		assertTrue(firstDoc.getContent().contains("Hello world"));
+		assertTrue(firstDoc.getText().contains("Hello world"));
 	}
 
 	@Test
@@ -84,7 +84,7 @@ class HuggingFaceFSDocumentReaderTests {
 		Document doc = documents.get(0);
 		assertNotNull(doc);
 		assertEquals(testFile.toString(), doc.getMetadata().get(HuggingFaceFSDocumentReader.SOURCE));
-		assertTrue(doc.getContent().contains("Compressed content"));
+		assertTrue(doc.getText().contains("Compressed content"));
 	}
 
 	private byte[] createGzippedContent(String content) throws Exception {

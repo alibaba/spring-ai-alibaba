@@ -61,7 +61,7 @@ public class OneNoteDocumentReaderTest {
 		assertThat(document.getMetadata().get("resourceId")).isEqualTo(TEST_PAGE_ID);
 
 		// Verify content
-		String content = document.getContent();
+		String content = document.getText();
 		assertThat(content).isNotEmpty();
 	}
 
@@ -86,7 +86,7 @@ public class OneNoteDocumentReaderTest {
 		assertThat(document.getMetadata().get("resourceId")).isEqualTo(TEST_SECTION_ID);
 
 		// Verify content
-		String content = document.getContent();
+		String content = document.getText();
 		assertThat(content).isNotEmpty();
 	}
 
@@ -111,7 +111,7 @@ public class OneNoteDocumentReaderTest {
 		assertThat(document.getMetadata().get("resourceId")).isEqualTo(TEST_NOTEBOOK_ID);
 
 		// Verify content
-		String content = document.getContent();
+		String content = document.getText();
 		assertThat(content).isNotEmpty();
 	}
 
