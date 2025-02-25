@@ -201,14 +201,14 @@ public class DashScopeDocumentRetrievalAdvisor implements CallAroundAdvisor, Str
 			.valueOf(response.getResult().getMetadata().getFinishReason());
 		if (finishReason == ChatCompletionFinishReason.NULL) {
 			String fullContent = context.getOrDefault("full_content", "").toString()
-					+ response.getResult().getOutput().getContent();
+					+ response.getResult().getOutput().getText();
 			context.put("full_content", fullContent);
 			return advisedResponse;
 		}
 
 		String content = context.getOrDefault("full_content", "").toString();
 		if ("".equalsIgnoreCase(content)) {
-			content = response.getResult().getOutput().getContent();
+			content = response.getResult().getOutput().getText();
 		}
 
 		Map<String, Document> documentMap = (Map<String, Document>) context.get(RETRIEVED_DOCUMENTS);
