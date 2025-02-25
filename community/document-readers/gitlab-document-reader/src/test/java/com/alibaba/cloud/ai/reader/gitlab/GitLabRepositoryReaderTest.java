@@ -59,7 +59,7 @@ class GitLabRepositoryReaderTest {
 		assertThat(documents).hasSize(1);
 		Document doc = documents.get(0);
 		assertThat(doc.getId()).isNotNull();
-		assertThat(doc.getContent()).isNotBlank();
+		assertThat(doc.getText()).isNotBlank();
 		assertThat(doc.getMetadata()).containsKey("file_path")
 			.containsKey("file_name")
 			.containsKey("url")

@@ -59,14 +59,14 @@ class ObsidianDocumentReaderIT {
 			assertThat(source).isNotEmpty().endsWith(ObsidianResource.MARKDOWN_EXTENSION);
 
 			// Verify content
-			assertThat(doc.getContent()).isNotEmpty();
+			assertThat(doc.getText()).isNotEmpty();
 
 			// Print for debugging
 			System.out.println("Document source: " + source);
 			if (doc.getMetadata().containsKey("category")) {
 				System.out.println("Document category: " + doc.getMetadata().get("category"));
 			}
-			System.out.println("Document content: " + doc.getContent());
+			System.out.println("Document content: " + doc.getText());
 			System.out.println("---");
 		}
 	}

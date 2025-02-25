@@ -73,7 +73,7 @@ public class GitHubDocumentReader implements DocumentReader {
 		try {
 			List<Document> documentList = parser.parse(gitHubResource.getInputStream());
 			for (Document document : documentList) {
-				GHContent ghContent = gitHubResource.getContent();
+				GHContent ghContent = gitHubResource.getText();
 				Map<String, Object> metadata = document.getMetadata();
 				metadata.put("github_git_url", ghContent.getGitUrl());
 				metadata.put("github_download_url", ghContent.getDownloadUrl());
