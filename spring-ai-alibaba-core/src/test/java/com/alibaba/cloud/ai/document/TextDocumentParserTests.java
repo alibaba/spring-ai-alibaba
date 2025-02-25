@@ -30,69 +30,66 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Test cases for TextDocumentParser
- * 
+ *
  * @author brianxiadong
  * @since 2025-02-24
  */
 class TextDocumentParserTests {
 
-    @Test
-    void testParseWithDefaultCharset() {
-        // Test parsing text with default UTF-8 charset
-        String text = "Sample text content";
-        TextDocumentParser parser = new TextDocumentParser();
+	@Test
+	void testParseWithDefaultCharset() {
+		// Test parsing text with default UTF-8 charset
+		String text = "Sample text content";
+		TextDocumentParser parser = new TextDocumentParser();
 
-        List<Document> documents = parser.parse(toInputStream(text));
+		List<Document> documents = parser.parse(toInputStream(text));
 
-        assertThat(documents).hasSize(1);
-        assertThat(documents.get(0).getText()).isEqualTo(text);
-    }
+		assertThat(documents).hasSize(1);
+		assertThat(documents.get(0).getText()).isEqualTo(text);
+	}
 
-    @Test
-    void testParseWithCustomCharset() {
-        // Test parsing text with custom charset (e.g., ISO-8859-1)
-        String text = "Sample text with special characters: é, à, ç";
-        TextDocumentParser parser = new TextDocumentParser(StandardCharsets.ISO_8859_1);
+	@Test
+	void testParseWithCustomCharset() {
+		// Test parsing text with custom charset (e.g., ISO-8859-1)
+		String text = "Sample text with special characters: é, à, ç";
+		TextDocumentParser parser = new TextDocumentParser(StandardCharsets.ISO_8859_1);
 
-        List<Document> documents = parser.parse(
-                new ByteArrayInputStream(text.getBytes(StandardCharsets.ISO_8859_1)));
+		List<Document> documents = parser.parse(new ByteArrayInputStream(text.getBytes(StandardCharsets.ISO_8859_1)));
 
-        assertThat(documents).hasSize(1);
-        assertThat(documents.get(0).getText()).isEqualTo(text);
-    }
+		assertThat(documents).hasSize(1);
+		assertThat(documents.get(0).getText()).isEqualTo(text);
+	}
 
-    @Test
-    void testParseEmptyText() {
-        // Test parsing empty text should throw exception
-        String text = "";
-        TextDocumentParser parser = new TextDocumentParser();
+	@Test
+	void testParseEmptyText() {
+		// Test parsing empty text should throw exception
+		String text = "";
+		TextDocumentParser parser = new TextDocumentParser();
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> parser.parse(toInputStream(text)));
+		RuntimeException exception = assertThrows(RuntimeException.class, () -> parser.parse(toInputStream(text)));
 
-        assertThat(exception).hasRootCauseInstanceOf(Exception.class);
-    }
+		assertThat(exception).hasRootCauseInstanceOf(Exception.class);
+	}
 
-    @Test
-    void testParseBlankText() {
-        // Test parsing blank text (only whitespace) should throw exception
-        String text = "   \n\t   ";
-        TextDocumentParser parser = new TextDocumentParser();
+	@Test
+	void testParseBlankText() {
+		// Test parsing blank text (only whitespace) should throw exception
+		String text = "   \n\t   ";
+		TextDocumentParser parser = new TextDocumentParser();
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> parser.parse(toInputStream(text)));
+		RuntimeException exception = assertThrows(RuntimeException.class, () -> parser.parse(toInputStream(text)));
 
-        assertThat(exception).hasRootCauseInstanceOf(Exception.class);
-    }
+		assertThat(exception).hasRootCauseInstanceOf(Exception.class);
+	}
 
-    @Test
-    void testConstructorWithNullCharset() {
-        // Test constructor with null charset should throw exception
-        assertThrows(IllegalArgumentException.class,
-                () -> new TextDocumentParser(null));
-    }
+	@Test
+	void testConstructorWithNullCharset() {
+		// Test constructor with null charset should throw exception
+		assertThrows(IllegalArgumentException.class, () -> new TextDocumentParser(null));
+	}
 
-    private InputStream toInputStream(String content) {
-        return new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
-    }
+	private InputStream toInputStream(String content) {
+		return new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
+	}
+
 }
