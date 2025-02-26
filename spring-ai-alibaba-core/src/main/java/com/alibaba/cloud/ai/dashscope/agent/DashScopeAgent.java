@@ -19,13 +19,17 @@ import com.alibaba.cloud.ai.agent.Agent;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi.DashScopeAgentRequest;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi.DashScopeAgentResponse;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi.DashScopeAgentRequest.DashScopeAgentRequestInput.DashScopeAgentRequestMessage;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi.DashScopeAgentRequest.DashScopeAgentRequestParameters.DashScopeAgentRequestRagOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
@@ -63,6 +67,7 @@ public final class DashScopeAgent extends Agent {
 			.withMemoryId(null)
 			.withIncrementalOutput(false)
 			.withHasThoughts(false)
+			.withImages(null)
 			.withBizParams(null)
 			.build();
 	}
@@ -98,24 +103,30 @@ public final class DashScopeAgent extends Agent {
 	}
 
 	private DashScopeAgentRequest toRequest(Prompt prompt, Boolean stream) {
-		if (prompt == null || prompt.getOptions() == null) {
+		if (prompt == null) {
 			throw new IllegalArgumentException("option is null");
 		}
 
-		String appId = null;
-		if (prompt.getOptions() instanceof DashScopeAgentOptions options) {
-			appId = options.getAppId();
-		}
+		DashScopeAgentOptions runtimeOptions = mergeOptions(prompt.getOptions());
+		String appId = runtimeOptions.getAppId();
 
 		if (appId == null) {
 			throw new IllegalArgumentException("appId must be set");
 		}
 
+		DashScopeAgentRagOptions ragOptions = runtimeOptions.getRagOptions();
 		return new DashScopeAgentRequest(appId,
-				new DashScopeAgentRequest.DashScopeAgentRequestInput(prompt.getContents(), this.options.getSessionId(),
-						this.options.getMemoryId(), this.options.getBizParams()),
-				new DashScopeAgentRequest.DashScopeAgentRequestParameters(this.options.getHasThoughts(),
-						stream && this.options.getIncrementalOutput()));
+				new DashScopeAgentRequest.DashScopeAgentRequestInput(null, prompt.getInstructions()
+					.stream()
+					.map(msg -> new DashScopeAgentRequestMessage(msg.getMessageType().getValue(), msg.getText()))
+					.toList(), runtimeOptions.getSessionId(), runtimeOptions.getMemoryId(), runtimeOptions.getImages(),
+						runtimeOptions.getBizParams()),
+				new DashScopeAgentRequest.DashScopeAgentRequestParameters(runtimeOptions.getHasThoughts(),
+						stream && runtimeOptions.getIncrementalOutput(),
+						ragOptions == null ? null
+								: new DashScopeAgentRequestRagOptions(ragOptions.getPipelineIds(),
+										ragOptions.getFileIds(), ragOptions.getMetadataFilter(), ragOptions.getTags(),
+										ragOptions.getStructuredFilter(), ragOptions.getSessionFileIds())));
 	}
 
 	private ChatResponse toChatResponse(DashScopeAgentResponse response) {
@@ -137,6 +148,12 @@ public final class DashScopeAgent extends Agent {
 		Generation generation = new Generation(assistantMessage, generationMetadata);
 
 		return new ChatResponse(List.of(generation));
+	}
+
+	private DashScopeAgentOptions mergeOptions(ChatOptions chatOptions) {
+		DashScopeAgentOptions agentOptions = ModelOptionsUtils.copyToTarget(chatOptions, ChatOptions.class,
+				DashScopeAgentOptions.class);
+		return ModelOptionsUtils.merge(agentOptions, this.options, DashScopeAgentOptions.class);
 	}
 
 }
