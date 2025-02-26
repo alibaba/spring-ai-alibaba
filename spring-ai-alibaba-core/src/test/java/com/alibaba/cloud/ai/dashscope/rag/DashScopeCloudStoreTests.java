@@ -59,32 +59,32 @@ class DashScopeCloudStoreTests {
 
     @BeforeEach
     void setUp() {
-        // 初始化 Mockito 注解
+        // Initialize Mockito annotations
         MockitoAnnotations.openMocks(this);
 
-        // 设置基本配置
+        // Set up basic configuration
         options = new DashScopeStoreOptions(TEST_INDEX_NAME);
         cloudStore = new DashScopeCloudStore(dashScopeApi, options);
 
-        // 设置基本的 mock 行为
+        // Set up basic mock behavior
         when(dashScopeApi.getPipelineIdByName(TEST_INDEX_NAME)).thenReturn(TEST_PIPELINE_ID);
     }
 
     @Test
     void testAddDocumentsWithNullList() {
-        // 测试添加空文档列表
+        // Test adding null document list
         assertThrows(DashScopeException.class, () -> cloudStore.add(null));
     }
 
     @Test
     void testAddDocumentsWithEmptyList() {
-        // 测试添加空文档列表
+        // Test adding empty document list
         assertThrows(DashScopeException.class, () -> cloudStore.add(new ArrayList<>()));
     }
 
     @Test
     void testAddDocumentsSuccessfully() {
-        // 创建测试文档
+        // Create test documents
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("key", "value");
 
@@ -92,47 +92,47 @@ class DashScopeCloudStoreTests {
                 new Document("id1", "content1", metadata),
                 new Document("id2", "content2", metadata));
 
-        // 执行添加操作
+        // Execute add operation
         cloudStore.add(documents);
 
-        // 验证 API 调用
+        // Verify API call
         verify(dashScopeApi).upsertPipeline(eq(documents), eq(options));
     }
 
     @Test
     void testDeleteDocumentsWithNonExistentIndex() {
-        // 模拟索引不存在的情况
+        // Mock non-existent index scenario
         when(dashScopeApi.getPipelineIdByName(TEST_INDEX_NAME)).thenReturn(null);
 
-        // 测试删除文档
+        // Test document deletion
         List<String> ids = Arrays.asList("id1", "id2");
         assertThrows(DashScopeException.class, () -> cloudStore.delete(ids));
     }
 
     @Test
     void testDeleteDocumentsSuccessfully() {
-        // 准备测试数据
+        // Prepare test data
         List<String> ids = Arrays.asList("id1", "id2");
 
-        // 执行删除操作
+        // Execute delete operation
         cloudStore.delete(ids);
 
-        // 验证 API 调用
+        // Verify API call
         verify(dashScopeApi).deletePipelineDocument(TEST_PIPELINE_ID, ids);
     }
 
     @Test
     void testSimilaritySearchWithNonExistentIndex() {
-        // 模拟索引不存在的情况
+        // Mock non-existent index scenario
         when(dashScopeApi.getPipelineIdByName(TEST_INDEX_NAME)).thenReturn(null);
 
-        // 测试相似度搜索
+        // Test similarity search
         assertThrows(DashScopeException.class, () -> cloudStore.similaritySearch(TEST_QUERY));
     }
 
     @Test
     void testSimilaritySearchSuccessfully() {
-        // 准备测试数据
+        // Prepare test data
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("key", "value");
 
@@ -141,17 +141,17 @@ class DashScopeCloudStoreTests {
                 new Document("id2", "result2", metadata));
         when(dashScopeApi.retriever(anyString(), anyString(), any())).thenReturn(expectedResults);
 
-        // 执行搜索
+        // Execute search
         List<Document> results = cloudStore.similaritySearch(TEST_QUERY);
 
-        // 验证结果
+        // Verify results
         assertThat(results).isEqualTo(expectedResults);
         verify(dashScopeApi).retriever(eq(TEST_PIPELINE_ID), eq(TEST_QUERY), any());
     }
 
     @Test
     void testSimilaritySearchWithSearchRequest() {
-        // 准备测试数据
+        // Prepare test data
         SearchRequest request = SearchRequest.builder()
                 .query(TEST_QUERY)
                 .topK(5)
@@ -165,17 +165,17 @@ class DashScopeCloudStoreTests {
                 new Document("id2", "result2", metadata));
         when(dashScopeApi.retriever(anyString(), anyString(), any())).thenReturn(expectedResults);
 
-        // 执行搜索
+        // Execute search
         List<Document> results = cloudStore.similaritySearch(request);
 
-        // 验证结果
+        // Verify results
         assertThat(results).isEqualTo(expectedResults);
         verify(dashScopeApi).retriever(eq(TEST_PIPELINE_ID), eq(TEST_QUERY), any());
     }
 
     @Test
     void testGetName() {
-        // 测试获取名称
+        // Test getting name
         String name = cloudStore.getName();
         assertThat(name).isEqualTo("DashScopeCloudStore");
     }

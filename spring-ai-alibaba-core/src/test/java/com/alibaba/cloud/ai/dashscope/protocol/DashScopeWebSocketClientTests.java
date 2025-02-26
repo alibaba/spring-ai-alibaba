@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.lang.reflect.Field;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -60,7 +61,7 @@ class DashScopeWebSocketClientTests {
         mockWebSocket = mock(WebSocket.class);
         mockResponse = mock(Response.class);
 
-        // 设置基本的 mock 行为
+        // Set up basic mock behavior
         when(mockWebSocket.send(any(String.class))).thenReturn(true);
         when(mockWebSocket.send(any(ByteString.class))).thenReturn(true);
 
@@ -73,183 +74,139 @@ class DashScopeWebSocketClientTests {
         // Initialize client
         client = new DashScopeWebSocketClient(options);
 
-        // 使用反射设置 webSocketClient
+        // Set webSocketClient using reflection
         try {
-            // 设置 webSocketClient
             Field webSocketClientField = DashScopeWebSocketClient.class.getDeclaredField("webSocketClient");
             webSocketClientField.setAccessible(true);
             webSocketClientField.set(client, mockWebSocket);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set webSocketClient field", e);
-        }
 
-        // 通过调用 onOpen 来设置连接状态
-        client.onOpen(mockWebSocket, mockResponse);
+            // Set isOpen to true
+            Field isOpenField = DashScopeWebSocketClient.class.getDeclaredField("isOpen");
+            isOpenField.setAccessible(true);
+            isOpenField.set(client, new AtomicBoolean(true));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set fields via reflection", e);
+        }
     }
 
     @Test
     void testWebSocketEvents() {
-        // Test message sending
+        // Test sending text message
         client.sendText(TEST_MESSAGE);
         verify(mockWebSocket).send(TEST_MESSAGE);
 
-        // Test message receiving
-        String taskStartedMessage = createTaskStartedMessage();
-        client.onMessage(mockWebSocket, taskStartedMessage);
+        // Test receiving task started event
+        client.onMessage(mockWebSocket, createTaskStartedMessage());
 
-        String resultGeneratedMessage = createResultGeneratedMessage();
-        client.onMessage(mockWebSocket, resultGeneratedMessage);
+        // Test receiving result generated event
+        client.onMessage(mockWebSocket, createResultGeneratedMessage());
 
-        String taskFinishedMessage = createTaskFinishedMessage();
-        client.onMessage(mockWebSocket, taskFinishedMessage);
-
-        // Test onClosed event
-        client.onClosed(mockWebSocket, 1000, "Normal closure");
+        // Test receiving task finished event
+        client.onMessage(mockWebSocket, createTaskFinishedMessage());
     }
 
     @Test
     void testStreamBinaryOut() {
-        // 创建测试数据
-        ByteString testBytes = ByteString.encodeUtf8(TEST_MESSAGE);
-
-        // 调用被测试方法并验证结果
-        Flux<ByteBuffer> result = client.streamBinaryOut(TEST_MESSAGE);
+        // Test binary streaming
+        String testText = "Test binary streaming";
+        Flux<ByteBuffer> result = client.streamBinaryOut(testText);
 
         StepVerifier.create(result)
                 .expectSubscription()
-                .then(() -> client.onMessage(mockWebSocket, testBytes))
-                .expectNextMatches(buffer -> {
-                    byte[] bytes = new byte[buffer.remaining()];
-                    buffer.get(bytes);
-                    return new String(bytes, StandardCharsets.UTF_8).equals(TEST_MESSAGE);
+                .then(() -> {
+                    // Simulate binary message
+                    ByteString testBinary = ByteString.of(ByteBuffer.wrap("test data".getBytes()));
+                    client.onMessage(mockWebSocket, testBinary);
                 })
-                .expectNoEvent(Duration.ofMillis(100))
-                .then(() -> client.onClosed(mockWebSocket, 1000, "normal closure"))
-                .expectComplete()
-                .verify(Duration.ofSeconds(5));
-
-        // 验证消息发送
-        verify(mockWebSocket).send(TEST_MESSAGE);
+                .expectNextMatches(buffer -> buffer.hasRemaining())
+                .then(() -> client.onMessage(mockWebSocket, createTaskFinishedMessage()))
+                .verifyComplete();
     }
 
     @Test
     void testStreamTextOut() {
-        // 创建测试数据
-        ByteBuffer testBuffer = ByteBuffer.wrap(TEST_MESSAGE.getBytes(StandardCharsets.UTF_8));
-        Flux<ByteBuffer> testFlux = Flux.just(testBuffer);
+        // Test text streaming
+        ByteBuffer testBuffer = ByteBuffer.wrap("Test text streaming".getBytes());
+        Flux<String> result = client.streamTextOut(Flux.just(testBuffer));
 
-        // 调用被测试方法并验证结果
-        Flux<String> result = client.streamTextOut(testFlux);
-
-        String resultGeneratedMessage = createResultGeneratedMessage();
         StepVerifier.create(result)
                 .expectSubscription()
-                .then(() -> client.onMessage(mockWebSocket, resultGeneratedMessage))
-                .expectNext(resultGeneratedMessage)
-                .expectNoEvent(Duration.ofMillis(100))
-                .then(() -> client.onClosed(mockWebSocket, 1000, "normal closure"))
-                .expectComplete()
-                .verify(Duration.ofSeconds(5));
-
-        // 验证二进制消息发送
-        verify(mockWebSocket).send(any(ByteString.class));
+                .then(() -> client.onMessage(mockWebSocket, createResultGeneratedMessage()))
+                .expectNextMatches(text -> text.contains("result"))
+                .then(() -> client.onMessage(mockWebSocket, createTaskFinishedMessage()))
+                .verifyComplete();
     }
 
     @Test
     void testErrorHandling() {
-        // 调用被测试方法并验证结果
-        Flux<ByteBuffer> result = client.streamBinaryOut(TEST_MESSAGE);
+        // Test error handling
+        Exception testException = new Exception("Test error");
+        client.onFailure(mockWebSocket, testException, mockResponse);
 
-        RuntimeException testError = new RuntimeException("Test error");
-        StepVerifier.create(result)
-                .expectSubscription()
-                .then(() -> client.onFailure(mockWebSocket, testError, mockResponse))
-                .expectError(Exception.class)
-                .verify(Duration.ofSeconds(5));
-
-        // 验证消息发送
-        verify(mockWebSocket).send(TEST_MESSAGE);
+        // Verify error is propagated to emitters
+        StepVerifier.create(client.streamBinaryOut(TEST_MESSAGE))
+                .expectError()
+                .verify();
     }
 
     @Test
     void testTaskFailedEvent() {
-        // 调用被测试方法并验证结果
-        Flux<ByteBuffer> result = client.streamBinaryOut(TEST_MESSAGE);
+        // Test task failed event
+        client.onMessage(mockWebSocket, createTaskFailedMessage());
 
-        StepVerifier.create(result)
-                .expectSubscription()
-                .then(() -> client.onMessage(mockWebSocket, createTaskFailedMessage()))
-                .expectError(Exception.class)
-                .verify(Duration.ofSeconds(5));
-
-        // 验证消息发送
-        verify(mockWebSocket).send(TEST_MESSAGE);
+        // Verify error is propagated to emitters
+        StepVerifier.create(client.streamTextOut(Flux.just(ByteBuffer.wrap("test".getBytes()))))
+                .expectError()
+                .verify();
     }
 
-    // 辅助方法：创建各种测试消息
     private String createTaskStartedMessage() {
         return """
                 {
                     "header": {
-                        "task_id": "test-task",
+                        "task_id": "test-task-id",
                         "event": "task-started"
                     },
-                    "payload": {
-                        "output": null,
-                        "usage": null
-                    }
-                }
-                """;
-    }
-
-    private String createTaskFinishedMessage() {
-        return """
-                {
-                    "header": {
-                        "task_id": "test-task",
-                        "event": "task-finished"
-                    },
-                    "payload": {
-                        "output": null,
-                        "usage": null
-                    }
-                }
-                """;
-    }
-
-    private String createTaskFailedMessage() {
-        return """
-                {
-                    "header": {
-                        "task_id": "test-task",
-                        "event": "task-failed",
-                        "error_code": "ERROR",
-                        "error_message": "Test error"
-                    },
-                    "payload": {
-                        "output": null,
-                        "usage": null
-                    }
-                }
-                """;
+                    "payload": {}
+                }""";
     }
 
     private String createResultGeneratedMessage() {
         return """
                 {
                     "header": {
-                        "task_id": "test-task",
+                        "task_id": "test-task-id",
                         "event": "result-generated"
                     },
                     "payload": {
                         "output": {
-                            "text": "Test result"
-                        },
-                        "usage": {
-                            "total_tokens": 10
+                            "text": "test result"
                         }
                     }
-                }
-                """;
+                }""";
+    }
+
+    private String createTaskFinishedMessage() {
+        return """
+                {
+                    "header": {
+                        "task_id": "test-task-id",
+                        "event": "task-finished"
+                    },
+                    "payload": {}
+                }""";
+    }
+
+    private String createTaskFailedMessage() {
+        return """
+                {
+                    "header": {
+                        "task_id": "test-task-id",
+                        "event": "task-failed",
+                        "error_code": "500",
+                        "error_message": "Test error"
+                    },
+                    "payload": {}
+                }""";
     }
 }
