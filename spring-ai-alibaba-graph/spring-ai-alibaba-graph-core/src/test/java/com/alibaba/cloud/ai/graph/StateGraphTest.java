@@ -337,7 +337,7 @@ public class StateGraphTest {
                 .addEdge("step_3", END)
                 .compile();
         //todo：
-        var result = workflowParent.stream()
+        var result = workflowParent.stream(Map.of())
                 .stream()
                 .peek(nodeOutput -> System.out.println("node = " + nodeOutput.node() + "     message = " + nodeOutput.state().value("messages").get()))
                 .reduce((a, b) -> b)

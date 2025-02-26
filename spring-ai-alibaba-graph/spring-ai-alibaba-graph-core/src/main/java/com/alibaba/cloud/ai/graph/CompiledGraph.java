@@ -315,10 +315,9 @@ public class CompiledGraph {
 	 * @param config the invoke configuration
 	 * @return an AsyncGenerator stream of NodeOutput
 	 */
-	@Deprecated
 	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
-		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(inputs, config);
+		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(stateGraph.getOverAllState().input(inputs), config);
 
 		return new AsyncGenerator.WithEmbed<>(generator);
 	}
@@ -338,7 +337,7 @@ public class CompiledGraph {
 	 */
 	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs) {
 		stateGraph.getOverAllState().input(inputs);
-		return this.stream(inputs, RunnableConfig.builder().build());
+		return this.stream(stateGraph.getOverAllState(), RunnableConfig.builder().build());
 	}
 
 
