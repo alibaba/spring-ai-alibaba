@@ -30,6 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 /**
  * Test cases for JsonDocumentParser
  *
+ * @author yuluo
+ * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  * @author brianxiadong
  * @since 1.0.0-M5.1
  */

@@ -28,9 +28,13 @@ import reactor.test.StepVerifier;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.lang.reflect.Field;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Test cases for DashScopeWebSocketClient. Tests cover WebSocket connection, message
@@ -42,5 +46,167 @@ import static org.mockito.Mockito.*;
  * @since 1.0.0-M5.1
  */
 class DashScopeWebSocketClientTests {
+
+	private static final String TEST_API_KEY = "test-api-key";
+
+	private static final String TEST_WORKSPACE_ID = "test-workspace";
+
+	private static final String TEST_MESSAGE = "Hello, WebSocket!";
+
+	private DashScopeWebSocketClient client;
+
+	private WebSocket mockWebSocket;
+
+	private Response mockResponse;
+
+	@BeforeEach
+	void setUp() {
+		// Initialize mocks
+		mockWebSocket = mock(WebSocket.class);
+		mockResponse = mock(Response.class);
+
+		// Set up basic mock behavior
+		when(mockWebSocket.send(any(String.class))).thenReturn(true);
+		when(mockWebSocket.send(any(ByteString.class))).thenReturn(true);
+
+		// Configure client options
+		DashScopeWebSocketClientOptions options = DashScopeWebSocketClientOptions.builder()
+			.withApiKey(TEST_API_KEY)
+			.withWorkSpaceId(TEST_WORKSPACE_ID)
+			.build();
+
+		// Initialize client
+		client = new DashScopeWebSocketClient(options);
+
+		// Set webSocketClient using reflection
+		try {
+			Field webSocketClientField = DashScopeWebSocketClient.class.getDeclaredField("webSocketClient");
+			webSocketClientField.setAccessible(true);
+			webSocketClientField.set(client, mockWebSocket);
+
+			// Set isOpen to true
+			Field isOpenField = DashScopeWebSocketClient.class.getDeclaredField("isOpen");
+			isOpenField.setAccessible(true);
+			isOpenField.set(client, new AtomicBoolean(true));
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Failed to set fields via reflection", e);
+		}
+	}
+
+	@Test
+	void testWebSocketEvents() {
+		// Test sending text message
+		client.sendText(TEST_MESSAGE);
+		verify(mockWebSocket).send(TEST_MESSAGE);
+
+		// Test receiving task started event
+		client.onMessage(mockWebSocket, createTaskStartedMessage());
+
+		// Test receiving result generated event
+		client.onMessage(mockWebSocket, createResultGeneratedMessage());
+
+		// Test receiving task finished event
+		client.onMessage(mockWebSocket, createTaskFinishedMessage());
+	}
+
+	@Test
+	void testStreamBinaryOut() {
+		// Test binary streaming
+		String testText = "Test binary streaming";
+		Flux<ByteBuffer> result = client.streamBinaryOut(testText);
+
+		StepVerifier.create(result).expectSubscription().then(() -> {
+			// Simulate binary message
+			ByteString testBinary = ByteString.of(ByteBuffer.wrap("test data".getBytes()));
+			client.onMessage(mockWebSocket, testBinary);
+		})
+			.expectNextMatches(buffer -> buffer.hasRemaining())
+			.then(() -> client.onMessage(mockWebSocket, createTaskFinishedMessage()))
+			.verifyComplete();
+	}
+
+	@Test
+	void testStreamTextOut() {
+		// Test text streaming
+		ByteBuffer testBuffer = ByteBuffer.wrap("Test text streaming".getBytes());
+		Flux<String> result = client.streamTextOut(Flux.just(testBuffer));
+
+		StepVerifier.create(result)
+			.expectSubscription()
+			.then(() -> client.onMessage(mockWebSocket, createResultGeneratedMessage()))
+			.expectNextMatches(text -> text.contains("result"))
+			.then(() -> client.onMessage(mockWebSocket, createTaskFinishedMessage()))
+			.verifyComplete();
+	}
+
+	@Test
+	void testErrorHandling() {
+		// Test error handling
+		Exception testException = new Exception("Test error");
+		client.onFailure(mockWebSocket, testException, mockResponse);
+
+		// Verify error is propagated to emitters
+		StepVerifier.create(client.streamBinaryOut(TEST_MESSAGE)).expectError().verify();
+	}
+
+	@Test
+	void testTaskFailedEvent() {
+		// Test task failed event
+		client.onMessage(mockWebSocket, createTaskFailedMessage());
+
+		// Verify error is propagated to emitters
+		StepVerifier.create(client.streamTextOut(Flux.just(ByteBuffer.wrap("test".getBytes())))).expectError().verify();
+	}
+
+	private String createTaskStartedMessage() {
+		return """
+				{
+				    "header": {
+				        "task_id": "test-task-id",
+				        "event": "task-started"
+				    },
+				    "payload": {}
+				}""";
+	}
+
+	private String createResultGeneratedMessage() {
+		return """
+				{
+				    "header": {
+				        "task_id": "test-task-id",
+				        "event": "result-generated"
+				    },
+				    "payload": {
+				        "output": {
+				            "text": "test result"
+				        }
+				    }
+				}""";
+	}
+
+	private String createTaskFinishedMessage() {
+		return """
+				{
+				    "header": {
+				        "task_id": "test-task-id",
+				        "event": "task-finished"
+				    },
+				    "payload": {}
+				}""";
+	}
+
+	private String createTaskFailedMessage() {
+		return """
+				{
+				    "header": {
+				        "task_id": "test-task-id",
+				        "event": "task-failed",
+				        "error_code": "500",
+				        "error_message": "Test error"
+				    },
+				    "payload": {}
+				}""";
+	}
 
 }
