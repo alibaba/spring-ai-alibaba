@@ -19,7 +19,9 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Test cases for DashScopeDocumentCloudReaderOptions.
+ * Test cases for DashScopeDocumentCloudReaderOptions. Tests cover default
+ * constructor
+ * and parameterized constructor behavior.
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
@@ -30,20 +32,20 @@ class DashScopeDocumentCloudReaderOptionsTests {
 
     @Test
     void testDefaultConstructor() {
-        // 测试默认构造函数
+        // Test default constructor
         DashScopeDocumentCloudReaderOptions options = new DashScopeDocumentCloudReaderOptions();
 
-        // 验证默认值是否为 "default"
+        // Verify default value is "default"
         assertThat(options.getCategoryId()).isEqualTo("default");
     }
 
     @Test
     void testParameterizedConstructor() {
-        // 测试带参数的构造函数
+        // Test parameterized constructor
         String customCategoryId = "custom-category";
         DashScopeDocumentCloudReaderOptions options = new DashScopeDocumentCloudReaderOptions(customCategoryId);
 
-        // 验证自定义值是否正确设置
+        // Verify custom value is set correctly
         assertThat(options.getCategoryId()).isEqualTo(customCategoryId);
     }
 }
