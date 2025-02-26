@@ -41,9 +41,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 /**
- * Test cases for DashScopeRerankModel.
- * Tests cover constructor validation, reranking functionality, error handling,
- * and response processing.
+ * Test cases for DashScopeRerankModel. Tests cover constructor validation, reranking
+ * functionality, error handling, and response processing.
  *
  * @author yuanci.ytb
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
@@ -53,167 +52,166 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class DashScopeRerankModelTests {
 
-    // Test constants
-    private static final String TEST_MODEL = "gte-rerank";
-    private static final String TEST_QUERY = "test query";
-    private static final String TEST_DOC_TEXT = "test document text";
-    private static final Double TEST_SCORE = 0.85;
+	// Test constants
+	private static final String TEST_MODEL = "gte-rerank";
 
-    @Mock
-    private DashScopeApi dashScopeApi;
+	private static final String TEST_QUERY = "test query";
 
-    private DashScopeRerankModel rerankModel;
-    private DashScopeRerankOptions defaultOptions;
+	private static final String TEST_DOC_TEXT = "test document text";
 
-    @BeforeEach
-    void setUp() {
-        // Initialize default options
-        defaultOptions = DashScopeRerankOptions.builder()
-                .withModel(TEST_MODEL)
-                .withTopN(3)
-                .withReturnDocuments(false)
-                .build();
+	private static final Double TEST_SCORE = 0.85;
 
-        // Initialize rerank model
-        rerankModel = new DashScopeRerankModel(dashScopeApi, defaultOptions);
-    }
+	@Mock
+	private DashScopeApi dashScopeApi;
 
-    /**
-     * Test constructor with null DashScopeApi.
-     * Verifies that constructor throws IllegalArgumentException when DashScopeApi
-     * is null.
-     */
-    @Test
-    void testConstructorWithNullApi() {
-        assertThatThrownBy(() -> new DashScopeRerankModel(null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("DashScopeApi must not be null");
-    }
+	private DashScopeRerankModel rerankModel;
 
-    /**
-     * Test constructor with null options.
-     * Verifies that constructor throws IllegalArgumentException when options is
-     * null.
-     */
-    @Test
-    void testConstructorWithNullOptions() {
-        assertThatThrownBy(() -> new DashScopeRerankModel(dashScopeApi, null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Options must not be null");
-    }
+	private DashScopeRerankOptions defaultOptions;
 
-    /**
-     * Test reranking with null query.
-     * Verifies that reranking throws IllegalArgumentException when query is null.
-     */
-    @Test
-    void testRerankWithNullQuery() {
-        List<Document> documents = Collections.singletonList(new Document(TEST_DOC_TEXT));
-        RerankRequest request = new RerankRequest(null, documents);
+	@BeforeEach
+	void setUp() {
+		// Initialize default options
+		defaultOptions = DashScopeRerankOptions.builder()
+			.withModel(TEST_MODEL)
+			.withTopN(3)
+			.withReturnDocuments(false)
+			.build();
 
-        assertThatThrownBy(() -> rerankModel.call(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("query must not be null");
-    }
+		// Initialize rerank model
+		rerankModel = new DashScopeRerankModel(dashScopeApi, defaultOptions);
+	}
 
-    /**
-     * Test reranking with null documents.
-     * Verifies that reranking throws IllegalArgumentException when documents list
-     * is null.
-     */
-    @Test
-    void testRerankWithNullDocuments() {
-        RerankRequest request = new RerankRequest(TEST_QUERY, null);
+	/**
+	 * Test constructor with null DashScopeApi. Verifies that constructor throws
+	 * IllegalArgumentException when DashScopeApi is null.
+	 */
+	@Test
+	void testConstructorWithNullApi() {
+		assertThatThrownBy(() -> new DashScopeRerankModel(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("DashScopeApi must not be null");
+	}
 
-        assertThatThrownBy(() -> rerankModel.call(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("documents must not be null");
-    }
+	/**
+	 * Test constructor with null options. Verifies that constructor throws
+	 * IllegalArgumentException when options is null.
+	 */
+	@Test
+	void testConstructorWithNullOptions() {
+		assertThatThrownBy(() -> new DashScopeRerankModel(dashScopeApi, null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Options must not be null");
+	}
 
-    /**
-     * Test successful reranking.
-     * Verifies that reranking returns correct scores and documents.
-     */
-    @Test
-    void testSuccessfulRerank() {
-        // Prepare test data
-        Document doc1 = new Document(TEST_DOC_TEXT + "1");
-        Document doc2 = new Document(TEST_DOC_TEXT + "2");
-        List<Document> documents = Arrays.asList(doc1, doc2);
+	/**
+	 * Test reranking with null query. Verifies that reranking throws
+	 * IllegalArgumentException when query is null.
+	 */
+	@Test
+	void testRerankWithNullQuery() {
+		List<Document> documents = Collections.singletonList(new Document(TEST_DOC_TEXT));
+		RerankRequest request = new RerankRequest(null, documents);
 
-        // Mock API response
-        RerankResponseOutputResult result1 = new RerankResponseOutputResult(0, 0.9, new HashMap<>());
-        RerankResponseOutputResult result2 = new RerankResponseOutputResult(1, 0.7, new HashMap<>());
-        RerankResponseOutput output = new RerankResponseOutput(Arrays.asList(result1, result2));
-        TokenUsage usage = new TokenUsage(10, 20, 30);
-        RerankResponse apiResponse = new RerankResponse(output, usage, "test-request-id");
+		assertThatThrownBy(() -> rerankModel.call(request)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("query must not be null");
+	}
 
-        when(dashScopeApi.rerankEntity(any())).thenReturn(ResponseEntity.ok(apiResponse));
+	/**
+	 * Test reranking with null documents. Verifies that reranking throws
+	 * IllegalArgumentException when documents list is null.
+	 */
+	@Test
+	void testRerankWithNullDocuments() {
+		RerankRequest request = new RerankRequest(TEST_QUERY, null);
 
-        // Execute rerank
-        RerankRequest request = new RerankRequest(TEST_QUERY, documents);
-        com.alibaba.cloud.ai.model.RerankResponse response = rerankModel.call(request);
+		assertThatThrownBy(() -> rerankModel.call(request)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("documents must not be null");
+	}
 
-        // Verify results
-        List<DocumentWithScore> results = response.getResults();
-        assertThat(results).hasSize(2);
-        assertThat(results.get(0).getScore()).isEqualTo(0.9);
-        assertThat(results.get(1).getScore()).isEqualTo(0.7);
-        assertThat(results.get(0).getOutput()).isEqualTo(doc1);
-        assertThat(results.get(1).getOutput()).isEqualTo(doc2);
-    }
+	/**
+	 * Test successful reranking. Verifies that reranking returns correct scores and
+	 * documents.
+	 */
+	@Test
+	void testSuccessfulRerank() {
+		// Prepare test data
+		Document doc1 = new Document(TEST_DOC_TEXT + "1");
+		Document doc2 = new Document(TEST_DOC_TEXT + "2");
+		List<Document> documents = Arrays.asList(doc1, doc2);
 
-    /**
-     * Test reranking with empty response.
-     * Verifies that reranking handles empty API response correctly.
-     */
-    @Test
-    void testEmptyResponse() {
-        // Prepare test data
-        Document doc = new Document(TEST_DOC_TEXT);
-        List<Document> documents = Collections.singletonList(doc);
+		// Mock API response
+		RerankResponseOutputResult result1 = new RerankResponseOutputResult(0, 0.9, new HashMap<>());
+		RerankResponseOutputResult result2 = new RerankResponseOutputResult(1, 0.7, new HashMap<>());
+		RerankResponseOutput output = new RerankResponseOutput(Arrays.asList(result1, result2));
+		TokenUsage usage = new TokenUsage(10, 20, 30);
+		RerankResponse apiResponse = new RerankResponse(output, usage, "test-request-id");
 
-        // Mock empty API response
-        when(dashScopeApi.rerankEntity(any())).thenReturn(ResponseEntity.ok(null));
+		when(dashScopeApi.rerankEntity(any())).thenReturn(ResponseEntity.ok(apiResponse));
 
-        // Execute rerank
-        RerankRequest request = new RerankRequest(TEST_QUERY, documents);
-        com.alibaba.cloud.ai.model.RerankResponse response = rerankModel.call(request);
+		// Execute rerank
+		RerankRequest request = new RerankRequest(TEST_QUERY, documents);
+		com.alibaba.cloud.ai.model.RerankResponse response = rerankModel.call(request);
 
-        // Verify empty results
-        assertThat(response.getResults()).isEmpty();
-    }
+		// Verify results
+		List<DocumentWithScore> results = response.getResults();
+		assertThat(results).hasSize(2);
+		assertThat(results.get(0).getScore()).isEqualTo(0.9);
+		assertThat(results.get(1).getScore()).isEqualTo(0.7);
+		assertThat(results.get(0).getOutput()).isEqualTo(doc1);
+		assertThat(results.get(1).getOutput()).isEqualTo(doc2);
+	}
 
-    /**
-     * Test reranking with custom options.
-     * Verifies that reranking uses custom options correctly.
-     */
-    @Test
-    void testCustomOptions() {
-        // Prepare test data
-        Document doc = new Document(TEST_DOC_TEXT);
-        List<Document> documents = Collections.singletonList(doc);
+	/**
+	 * Test reranking with empty response. Verifies that reranking handles empty API
+	 * response correctly.
+	 */
+	@Test
+	void testEmptyResponse() {
+		// Prepare test data
+		Document doc = new Document(TEST_DOC_TEXT);
+		List<Document> documents = Collections.singletonList(doc);
 
-        // Create custom options
-        DashScopeRerankOptions customOptions = DashScopeRerankOptions.builder()
-                .withModel("custom-model")
-                .withTopN(5)
-                .withReturnDocuments(true)
-                .build();
+		// Mock empty API response
+		when(dashScopeApi.rerankEntity(any())).thenReturn(ResponseEntity.ok(null));
 
-        // Mock API response
-        RerankResponseOutputResult result = new RerankResponseOutputResult(0, TEST_SCORE, new HashMap<>());
-        RerankResponseOutput output = new RerankResponseOutput(Collections.singletonList(result));
-        RerankResponse apiResponse = new RerankResponse(output, new TokenUsage(10, 20, 30), "test-request-id");
+		// Execute rerank
+		RerankRequest request = new RerankRequest(TEST_QUERY, documents);
+		com.alibaba.cloud.ai.model.RerankResponse response = rerankModel.call(request);
 
-        when(dashScopeApi.rerankEntity(any())).thenReturn(ResponseEntity.ok(apiResponse));
+		// Verify empty results
+		assertThat(response.getResults()).isEmpty();
+	}
 
-        // Execute rerank with custom options
-        RerankRequest request = new RerankRequest(TEST_QUERY, documents, customOptions);
-        com.alibaba.cloud.ai.model.RerankResponse response = rerankModel.call(request);
+	/**
+	 * Test reranking with custom options. Verifies that reranking uses custom options
+	 * correctly.
+	 */
+	@Test
+	void testCustomOptions() {
+		// Prepare test data
+		Document doc = new Document(TEST_DOC_TEXT);
+		List<Document> documents = Collections.singletonList(doc);
 
-        // Verify results
-        assertThat(response.getResults()).hasSize(1);
-        assertThat(response.getResults().get(0).getScore()).isEqualTo(TEST_SCORE);
-    }
+		// Create custom options
+		DashScopeRerankOptions customOptions = DashScopeRerankOptions.builder()
+			.withModel("custom-model")
+			.withTopN(5)
+			.withReturnDocuments(true)
+			.build();
+
+		// Mock API response
+		RerankResponseOutputResult result = new RerankResponseOutputResult(0, TEST_SCORE, new HashMap<>());
+		RerankResponseOutput output = new RerankResponseOutput(Collections.singletonList(result));
+		RerankResponse apiResponse = new RerankResponse(output, new TokenUsage(10, 20, 30), "test-request-id");
+
+		when(dashScopeApi.rerankEntity(any())).thenReturn(ResponseEntity.ok(apiResponse));
+
+		// Execute rerank with custom options
+		RerankRequest request = new RerankRequest(TEST_QUERY, documents, customOptions);
+		com.alibaba.cloud.ai.model.RerankResponse response = rerankModel.call(request);
+
+		// Verify results
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResults().get(0).getScore()).isEqualTo(TEST_SCORE);
+	}
+
 }

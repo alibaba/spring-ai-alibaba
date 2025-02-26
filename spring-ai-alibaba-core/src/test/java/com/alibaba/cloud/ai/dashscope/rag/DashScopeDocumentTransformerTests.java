@@ -36,9 +36,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 /**
- * Test cases for DashScopeDocumentTransformer.
- * Tests cover constructor validation, document splitting, error handling, and
- * successful transformations.
+ * Test cases for DashScopeDocumentTransformer. Tests cover constructor validation,
+ * document splitting, error handling, and successful transformations.
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
@@ -47,161 +46,151 @@ import static org.mockito.Mockito.when;
  */
 class DashScopeDocumentTransformerTests {
 
-    // Test constants
-    private static final String TEST_DOC_ID = "test_doc_1";
-    private static final String TEST_CONTENT = "This is a test document content";
-    private static final String TEST_CHUNK_CONTENT = "This is a test chunk content";
-    private static final int TEST_CHUNK_ID = 1;
+	// Test constants
+	private static final String TEST_DOC_ID = "test_doc_1";
 
-    @Mock
-    private DashScopeApi dashScopeApi;
+	private static final String TEST_CONTENT = "This is a test document content";
 
-    private DashScopeDocumentTransformer transformer;
-    private DashScopeDocumentTransformerOptions options;
+	private static final String TEST_CHUNK_CONTENT = "This is a test chunk content";
 
-    @BeforeEach
-    void setUp() {
-        // Initialize mocks
-        MockitoAnnotations.openMocks(this);
+	private static final int TEST_CHUNK_ID = 1;
 
-        // Create default options
-        options = DashScopeDocumentTransformerOptions.builder()
-                .withChunkSize(500)
-                .withOverlapSize(100)
-                .withSeparator("|,|，|。|？|！|\\n|\\\\?|\\\\!")
-                .withFileType("idp")
-                .withLanguage("cn")
-                .build();
+	@Mock
+	private DashScopeApi dashScopeApi;
 
-        // Create transformer instance
-        transformer = new DashScopeDocumentTransformer(dashScopeApi, options);
-    }
+	private DashScopeDocumentTransformer transformer;
 
-    /**
-     * Test constructor with null DashScopeApi.
-     * Should throw IllegalArgumentException.
-     */
-    @Test
-    void testConstructorWithNullApi() {
-        assertThatThrownBy(() -> new DashScopeDocumentTransformer(null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("DashScopeApi must not be null");
-    }
+	private DashScopeDocumentTransformerOptions options;
 
-    /**
-     * Test constructor with null options.
-     * Should throw IllegalArgumentException.
-     */
-    @Test
-    void testConstructorWithNullOptions() {
-        assertThatThrownBy(() -> new DashScopeDocumentTransformer(dashScopeApi, null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("DashScopeDocumentTransformerOptions must not be null");
-    }
+	@BeforeEach
+	void setUp() {
+		// Initialize mocks
+		MockitoAnnotations.openMocks(this);
 
-    /**
-     * Test applying transformation with null documents list.
-     * Should throw RuntimeException.
-     */
-    @Test
-    void testApplyWithNullDocuments() {
-        assertThatThrownBy(() -> transformer.apply(null))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Documents must not be null");
-    }
+		// Create default options
+		options = DashScopeDocumentTransformerOptions.builder()
+			.withChunkSize(500)
+			.withOverlapSize(100)
+			.withSeparator("|,|，|。|？|！|\\n|\\\\?|\\\\!")
+			.withFileType("idp")
+			.withLanguage("cn")
+			.build();
 
-    /**
-     * Test applying transformation with empty documents list.
-     * Should throw RuntimeException.
-     */
-    @Test
-    void testApplyWithEmptyDocuments() {
-        assertThatThrownBy(() -> transformer.apply(Collections.emptyList()))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Documents must not be null");
-    }
+		// Create transformer instance
+		transformer = new DashScopeDocumentTransformer(dashScopeApi, options);
+	}
 
-    /**
-     * Test applying transformation with multiple documents.
-     * Should throw RuntimeException as only one document is supported.
-     */
-    @Test
-    void testApplyWithMultipleDocuments() {
-        Map<String, Object> metadata = new HashMap<>();
-        List<Document> documents = List.of(
-                new Document(TEST_DOC_ID, TEST_CONTENT, metadata),
-                new Document("test_doc_2", "Another test content", metadata));
+	/**
+	 * Test constructor with null DashScopeApi. Should throw IllegalArgumentException.
+	 */
+	@Test
+	void testConstructorWithNullApi() {
+		assertThatThrownBy(() -> new DashScopeDocumentTransformer(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("DashScopeApi must not be null");
+	}
 
-        assertThatThrownBy(() -> transformer.apply(documents))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Just support one Document");
-    }
+	/**
+	 * Test constructor with null options. Should throw IllegalArgumentException.
+	 */
+	@Test
+	void testConstructorWithNullOptions() {
+		assertThatThrownBy(() -> new DashScopeDocumentTransformer(dashScopeApi, null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("DashScopeDocumentTransformerOptions must not be null");
+	}
 
-    /**
-     * Test successful document splitting.
-     * Should return list of document chunks with correct IDs and content.
-     */
-    @Test
-    void testSuccessfulSplit() {
-        // Create test document
-        Map<String, Object> metadata = new HashMap<>();
-        Document document = new Document(TEST_DOC_ID, TEST_CONTENT, metadata);
+	/**
+	 * Test applying transformation with null documents list. Should throw
+	 * RuntimeException.
+	 */
+	@Test
+	void testApplyWithNullDocuments() {
+		assertThatThrownBy(() -> transformer.apply(null)).isInstanceOf(RuntimeException.class)
+			.hasMessageContaining("Documents must not be null");
+	}
 
-        // Mock API response
-        DashScopeApi.DocumentSplitResponse.DocumentChunk chunk = new DashScopeApi.DocumentSplitResponse.DocumentChunk(
-                TEST_CHUNK_ID, TEST_CHUNK_CONTENT, null, null, null, null);
-        DashScopeApi.DocumentSplitResponse.DocumentSplitResponseData chunkService = new DashScopeApi.DocumentSplitResponse.DocumentSplitResponseData(
-                List.of(chunk));
-        DashScopeApi.DocumentSplitResponse response = new DashScopeApi.DocumentSplitResponse(chunkService);
+	/**
+	 * Test applying transformation with empty documents list. Should throw
+	 * RuntimeException.
+	 */
+	@Test
+	void testApplyWithEmptyDocuments() {
+		assertThatThrownBy(() -> transformer.apply(Collections.emptyList())).isInstanceOf(RuntimeException.class)
+			.hasMessageContaining("Documents must not be null");
+	}
 
-        when(dashScopeApi.documentSplit(any(), any()))
-                .thenReturn(ResponseEntity.ok(response));
+	/**
+	 * Test applying transformation with multiple documents. Should throw RuntimeException
+	 * as only one document is supported.
+	 */
+	@Test
+	void testApplyWithMultipleDocuments() {
+		Map<String, Object> metadata = new HashMap<>();
+		List<Document> documents = List.of(new Document(TEST_DOC_ID, TEST_CONTENT, metadata),
+				new Document("test_doc_2", "Another test content", metadata));
 
-        // Perform transformation
-        List<Document> result = transformer.apply(List.of(document));
+		assertThatThrownBy(() -> transformer.apply(documents)).isInstanceOf(RuntimeException.class)
+			.hasMessageContaining("Just support one Document");
+	}
 
-        // Verify results
-        assertThat(result).isNotNull()
-                .hasSize(1);
-        Document resultDoc = result.get(0);
-        assertThat(resultDoc.getId()).isEqualTo(TEST_DOC_ID + "_" + TEST_CHUNK_ID);
-        assertThat(resultDoc.getText()).isEqualTo(TEST_CHUNK_CONTENT);
-        assertThat(resultDoc.getMetadata()).isEqualTo(metadata);
-    }
+	/**
+	 * Test successful document splitting. Should return list of document chunks with
+	 * correct IDs and content.
+	 */
+	@Test
+	void testSuccessfulSplit() {
+		// Create test document
+		Map<String, Object> metadata = new HashMap<>();
+		Document document = new Document(TEST_DOC_ID, TEST_CONTENT, metadata);
 
-    /**
-     * Test split with null API response.
-     * Should throw DashScopeException.
-     */
-    @Test
-    void testSplitWithNullResponse() {
-        Map<String, Object> metadata = new HashMap<>();
-        Document document = new Document(TEST_DOC_ID, TEST_CONTENT, metadata);
+		// Mock API response
+		DashScopeApi.DocumentSplitResponse.DocumentChunk chunk = new DashScopeApi.DocumentSplitResponse.DocumentChunk(
+				TEST_CHUNK_ID, TEST_CHUNK_CONTENT, null, null, null, null);
+		DashScopeApi.DocumentSplitResponse.DocumentSplitResponseData chunkService = new DashScopeApi.DocumentSplitResponse.DocumentSplitResponseData(
+				List.of(chunk));
+		DashScopeApi.DocumentSplitResponse response = new DashScopeApi.DocumentSplitResponse(chunkService);
 
-        when(dashScopeApi.documentSplit(any(), any()))
-                .thenReturn(null);
+		when(dashScopeApi.documentSplit(any(), any())).thenReturn(ResponseEntity.ok(response));
 
-        assertThatThrownBy(() -> transformer.apply(List.of(document)))
-                .isInstanceOf(DashScopeException.class);
-    }
+		// Perform transformation
+		List<Document> result = transformer.apply(List.of(document));
 
-    /**
-     * Test split with empty chunks in response.
-     * Should throw DashScopeException.
-     */
-    @Test
-    void testSplitWithEmptyChunks() {
-        Map<String, Object> metadata = new HashMap<>();
-        Document document = new Document(TEST_DOC_ID, TEST_CONTENT, metadata);
+		// Verify results
+		assertThat(result).isNotNull().hasSize(1);
+		Document resultDoc = result.get(0);
+		assertThat(resultDoc.getId()).isEqualTo(TEST_DOC_ID + "_" + TEST_CHUNK_ID);
+		assertThat(resultDoc.getText()).isEqualTo(TEST_CHUNK_CONTENT);
+		assertThat(resultDoc.getMetadata()).isEqualTo(metadata);
+	}
 
-        DashScopeApi.DocumentSplitResponse.DocumentSplitResponseData chunkService = new DashScopeApi.DocumentSplitResponse.DocumentSplitResponseData(
-                Collections.emptyList());
-        DashScopeApi.DocumentSplitResponse response = new DashScopeApi.DocumentSplitResponse(chunkService);
+	/**
+	 * Test split with null API response. Should throw DashScopeException.
+	 */
+	@Test
+	void testSplitWithNullResponse() {
+		Map<String, Object> metadata = new HashMap<>();
+		Document document = new Document(TEST_DOC_ID, TEST_CONTENT, metadata);
 
-        when(dashScopeApi.documentSplit(any(), any()))
-                .thenReturn(ResponseEntity.ok(response));
+		when(dashScopeApi.documentSplit(any(), any())).thenReturn(null);
 
-        assertThatThrownBy(() -> transformer.apply(List.of(document)))
-                .isInstanceOf(DashScopeException.class);
-    }
+		assertThatThrownBy(() -> transformer.apply(List.of(document))).isInstanceOf(DashScopeException.class);
+	}
+
+	/**
+	 * Test split with empty chunks in response. Should throw DashScopeException.
+	 */
+	@Test
+	void testSplitWithEmptyChunks() {
+		Map<String, Object> metadata = new HashMap<>();
+		Document document = new Document(TEST_DOC_ID, TEST_CONTENT, metadata);
+
+		DashScopeApi.DocumentSplitResponse.DocumentSplitResponseData chunkService = new DashScopeApi.DocumentSplitResponse.DocumentSplitResponseData(
+				Collections.emptyList());
+		DashScopeApi.DocumentSplitResponse response = new DashScopeApi.DocumentSplitResponse(chunkService);
+
+		when(dashScopeApi.documentSplit(any(), any())).thenReturn(ResponseEntity.ok(response));
+
+		assertThatThrownBy(() -> transformer.apply(List.of(document))).isInstanceOf(DashScopeException.class);
+	}
+
 }

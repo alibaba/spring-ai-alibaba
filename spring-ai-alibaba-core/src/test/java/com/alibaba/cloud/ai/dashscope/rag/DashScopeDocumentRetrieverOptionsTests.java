@@ -19,8 +19,8 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Test cases for DashScopeDocumentRetrieverOptions.
- * Tests cover builder pattern, getters/setters, and default values.
+ * Test cases for DashScopeDocumentRetrieverOptions. Tests cover builder pattern,
+ * getters/setters, and default values.
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
@@ -29,106 +29,113 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class DashScopeDocumentRetrieverOptionsTests {
 
-    // Test constants
-    private static final String TEST_INDEX_NAME = "test-index";
-    private static final int TEST_DENSE_TOP_K = 50;
-    private static final int TEST_SPARSE_TOP_K = 30;
-    private static final String TEST_REWRITE_MODEL = "test-rewrite-model";
-    private static final String TEST_RERANK_MODEL = "test-rerank-model";
-    private static final float TEST_RERANK_MIN_SCORE = 0.5f;
-    private static final int TEST_RERANK_TOP_N = 10;
+	// Test constants
+	private static final String TEST_INDEX_NAME = "test-index";
 
-    @Test
-    void testDefaultValues() {
-        // Test default constructor and default values
-        DashScopeDocumentRetrieverOptions options = new DashScopeDocumentRetrieverOptions();
+	private static final int TEST_DENSE_TOP_K = 50;
 
-        // Verify default values
-        assertThat(options.getIndexName()).isNull();
-        assertThat(options.getDenseSimilarityTopK()).isEqualTo(100);
-        assertThat(options.getSparseSimilarityTopK()).isEqualTo(100);
-        assertThat(options.isEnableRewrite()).isFalse();
-        assertThat(options.getRewriteModelName()).isEqualTo("conv-rewrite-qwen-1.8b");
-        assertThat(options.isEnableReranking()).isTrue();
-        assertThat(options.getRerankModelName()).isEqualTo("gte-rerank-hybrid");
-        assertThat(options.getRerankMinScore()).isEqualTo(0.01f);
-        assertThat(options.getRerankTopN()).isEqualTo(5);
-    }
+	private static final int TEST_SPARSE_TOP_K = 30;
 
-    @Test
-    void testBuilderPattern() {
-        // Test builder pattern with all properties set
-        DashScopeDocumentRetrieverOptions options = DashScopeDocumentRetrieverOptions.builder()
-                .withIndexName(TEST_INDEX_NAME)
-                .withDenseSimilarityTopK(TEST_DENSE_TOP_K)
-                .withSparseSimilarityTopK(TEST_SPARSE_TOP_K)
-                .withEnableRewrite(true)
-                .withRewriteModelName(TEST_REWRITE_MODEL)
-                .withEnableReranking(false)
-                .withRerankModelName(TEST_RERANK_MODEL)
-                .withRerankMinScore(TEST_RERANK_MIN_SCORE)
-                .withRerankTopN(TEST_RERANK_TOP_N)
-                .build();
+	private static final String TEST_REWRITE_MODEL = "test-rewrite-model";
 
-        // Verify all properties are set correctly
-        assertThat(options.getIndexName()).isEqualTo(TEST_INDEX_NAME);
-        assertThat(options.getDenseSimilarityTopK()).isEqualTo(TEST_DENSE_TOP_K);
-        assertThat(options.getSparseSimilarityTopK()).isEqualTo(TEST_SPARSE_TOP_K);
-        assertThat(options.isEnableRewrite()).isTrue();
-        assertThat(options.getRewriteModelName()).isEqualTo(TEST_REWRITE_MODEL);
-        assertThat(options.isEnableReranking()).isFalse();
-        assertThat(options.getRerankModelName()).isEqualTo(TEST_RERANK_MODEL);
-        assertThat(options.getRerankMinScore()).isEqualTo(TEST_RERANK_MIN_SCORE);
-        assertThat(options.getRerankTopN()).isEqualTo(TEST_RERANK_TOP_N);
-    }
+	private static final String TEST_RERANK_MODEL = "test-rerank-model";
 
-    @Test
-    void testSettersAndGetters() {
-        // Test setters and getters
-        DashScopeDocumentRetrieverOptions options = new DashScopeDocumentRetrieverOptions();
+	private static final float TEST_RERANK_MIN_SCORE = 0.5f;
 
-        // Set values using setters
-        options.setIndexName(TEST_INDEX_NAME);
-        options.setDenseSimilarityTopk(TEST_DENSE_TOP_K);
-        options.setSparseSimilarityTopk(TEST_SPARSE_TOP_K);
-        options.setEnableRewrite(true);
-        options.setRewriteModelName(TEST_REWRITE_MODEL);
-        options.setEnableReranking(false);
-        options.setRerankModelName(TEST_RERANK_MODEL);
-        options.setRerankMinScore(TEST_RERANK_MIN_SCORE);
-        options.setRerankTopN(TEST_RERANK_TOP_N);
+	private static final int TEST_RERANK_TOP_N = 10;
 
-        // Verify values using getters
-        assertThat(options.getIndexName()).isEqualTo(TEST_INDEX_NAME);
-        assertThat(options.getDenseSimilarityTopK()).isEqualTo(TEST_DENSE_TOP_K);
-        assertThat(options.getSparseSimilarityTopK()).isEqualTo(TEST_SPARSE_TOP_K);
-        assertThat(options.isEnableRewrite()).isTrue();
-        assertThat(options.getRewriteModelName()).isEqualTo(TEST_REWRITE_MODEL);
-        assertThat(options.isEnableReranking()).isFalse();
-        assertThat(options.getRerankModelName()).isEqualTo(TEST_RERANK_MODEL);
-        assertThat(options.getRerankMinScore()).isEqualTo(TEST_RERANK_MIN_SCORE);
-        assertThat(options.getRerankTopN()).isEqualTo(TEST_RERANK_TOP_N);
-    }
+	@Test
+	void testDefaultValues() {
+		// Test default constructor and default values
+		DashScopeDocumentRetrieverOptions options = new DashScopeDocumentRetrieverOptions();
 
-    @Test
-    void testBuilderWithPartialValues() {
-        // Test builder with only some properties set
-        DashScopeDocumentRetrieverOptions options = DashScopeDocumentRetrieverOptions.builder()
-                .withIndexName(TEST_INDEX_NAME)
-                .withDenseSimilarityTopK(TEST_DENSE_TOP_K)
-                .build();
+		// Verify default values
+		assertThat(options.getIndexName()).isNull();
+		assertThat(options.getDenseSimilarityTopK()).isEqualTo(100);
+		assertThat(options.getSparseSimilarityTopK()).isEqualTo(100);
+		assertThat(options.isEnableRewrite()).isFalse();
+		assertThat(options.getRewriteModelName()).isEqualTo("conv-rewrite-qwen-1.8b");
+		assertThat(options.isEnableReranking()).isTrue();
+		assertThat(options.getRerankModelName()).isEqualTo("gte-rerank-hybrid");
+		assertThat(options.getRerankMinScore()).isEqualTo(0.01f);
+		assertThat(options.getRerankTopN()).isEqualTo(5);
+	}
 
-        // Verify set values
-        assertThat(options.getIndexName()).isEqualTo(TEST_INDEX_NAME);
-        assertThat(options.getDenseSimilarityTopK()).isEqualTo(TEST_DENSE_TOP_K);
+	@Test
+	void testBuilderPattern() {
+		// Test builder pattern with all properties set
+		DashScopeDocumentRetrieverOptions options = DashScopeDocumentRetrieverOptions.builder()
+			.withIndexName(TEST_INDEX_NAME)
+			.withDenseSimilarityTopK(TEST_DENSE_TOP_K)
+			.withSparseSimilarityTopK(TEST_SPARSE_TOP_K)
+			.withEnableRewrite(true)
+			.withRewriteModelName(TEST_REWRITE_MODEL)
+			.withEnableReranking(false)
+			.withRerankModelName(TEST_RERANK_MODEL)
+			.withRerankMinScore(TEST_RERANK_MIN_SCORE)
+			.withRerankTopN(TEST_RERANK_TOP_N)
+			.build();
 
-        // Verify unset values remain at defaults
-        assertThat(options.getSparseSimilarityTopK()).isEqualTo(100);
-        assertThat(options.isEnableRewrite()).isFalse();
-        assertThat(options.getRewriteModelName()).isEqualTo("conv-rewrite-qwen-1.8b");
-        assertThat(options.isEnableReranking()).isTrue();
-        assertThat(options.getRerankModelName()).isEqualTo("gte-rerank-hybrid");
-        assertThat(options.getRerankMinScore()).isEqualTo(0.01f);
-        assertThat(options.getRerankTopN()).isEqualTo(5);
-    }
+		// Verify all properties are set correctly
+		assertThat(options.getIndexName()).isEqualTo(TEST_INDEX_NAME);
+		assertThat(options.getDenseSimilarityTopK()).isEqualTo(TEST_DENSE_TOP_K);
+		assertThat(options.getSparseSimilarityTopK()).isEqualTo(TEST_SPARSE_TOP_K);
+		assertThat(options.isEnableRewrite()).isTrue();
+		assertThat(options.getRewriteModelName()).isEqualTo(TEST_REWRITE_MODEL);
+		assertThat(options.isEnableReranking()).isFalse();
+		assertThat(options.getRerankModelName()).isEqualTo(TEST_RERANK_MODEL);
+		assertThat(options.getRerankMinScore()).isEqualTo(TEST_RERANK_MIN_SCORE);
+		assertThat(options.getRerankTopN()).isEqualTo(TEST_RERANK_TOP_N);
+	}
+
+	@Test
+	void testSettersAndGetters() {
+		// Test setters and getters
+		DashScopeDocumentRetrieverOptions options = new DashScopeDocumentRetrieverOptions();
+
+		// Set values using setters
+		options.setIndexName(TEST_INDEX_NAME);
+		options.setDenseSimilarityTopk(TEST_DENSE_TOP_K);
+		options.setSparseSimilarityTopk(TEST_SPARSE_TOP_K);
+		options.setEnableRewrite(true);
+		options.setRewriteModelName(TEST_REWRITE_MODEL);
+		options.setEnableReranking(false);
+		options.setRerankModelName(TEST_RERANK_MODEL);
+		options.setRerankMinScore(TEST_RERANK_MIN_SCORE);
+		options.setRerankTopN(TEST_RERANK_TOP_N);
+
+		// Verify values using getters
+		assertThat(options.getIndexName()).isEqualTo(TEST_INDEX_NAME);
+		assertThat(options.getDenseSimilarityTopK()).isEqualTo(TEST_DENSE_TOP_K);
+		assertThat(options.getSparseSimilarityTopK()).isEqualTo(TEST_SPARSE_TOP_K);
+		assertThat(options.isEnableRewrite()).isTrue();
+		assertThat(options.getRewriteModelName()).isEqualTo(TEST_REWRITE_MODEL);
+		assertThat(options.isEnableReranking()).isFalse();
+		assertThat(options.getRerankModelName()).isEqualTo(TEST_RERANK_MODEL);
+		assertThat(options.getRerankMinScore()).isEqualTo(TEST_RERANK_MIN_SCORE);
+		assertThat(options.getRerankTopN()).isEqualTo(TEST_RERANK_TOP_N);
+	}
+
+	@Test
+	void testBuilderWithPartialValues() {
+		// Test builder with only some properties set
+		DashScopeDocumentRetrieverOptions options = DashScopeDocumentRetrieverOptions.builder()
+			.withIndexName(TEST_INDEX_NAME)
+			.withDenseSimilarityTopK(TEST_DENSE_TOP_K)
+			.build();
+
+		// Verify set values
+		assertThat(options.getIndexName()).isEqualTo(TEST_INDEX_NAME);
+		assertThat(options.getDenseSimilarityTopK()).isEqualTo(TEST_DENSE_TOP_K);
+
+		// Verify unset values remain at defaults
+		assertThat(options.getSparseSimilarityTopK()).isEqualTo(100);
+		assertThat(options.isEnableRewrite()).isFalse();
+		assertThat(options.getRewriteModelName()).isEqualTo("conv-rewrite-qwen-1.8b");
+		assertThat(options.isEnableReranking()).isTrue();
+		assertThat(options.getRerankModelName()).isEqualTo("gte-rerank-hybrid");
+		assertThat(options.getRerankMinScore()).isEqualTo(0.01f);
+		assertThat(options.getRerankTopN()).isEqualTo(5);
+	}
+
 }
