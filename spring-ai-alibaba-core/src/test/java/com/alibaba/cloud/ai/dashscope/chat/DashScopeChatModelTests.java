@@ -116,7 +116,7 @@ class DashScopeChatModelTests {
 		assertThat(response).isNotNull();
 		assertThat(response.getResult()).isNotNull();
 		assertThat(response.getResult().getOutput()).isInstanceOf(AssistantMessage.class);
-		assertThat(response.getResult().getOutput().getContent()).isEqualTo(TEST_RESPONSE);
+		assertThat(response.getResult().getOutput().getText()).isEqualTo(TEST_RESPONSE);
 		assertThat(response.getMetadata().getId()).isEqualTo(TEST_REQUEST_ID);
 	}
 
@@ -151,11 +151,11 @@ class DashScopeChatModelTests {
 
 		// Verify results
 		StepVerifier.create(responseFlux).assertNext(response -> {
-			assertThat(response.getResult().getOutput().getContent()).isEqualTo("I'm ");
+			assertThat(response.getResult().getOutput().getText()).isEqualTo("I'm ");
 		}).assertNext(response -> {
-			assertThat(response.getResult().getOutput().getContent()).isEqualTo("doing ");
+			assertThat(response.getResult().getOutput().getText()).isEqualTo("doing ");
 		}).assertNext(response -> {
-			assertThat(response.getResult().getOutput().getContent()).isEqualTo("well!");
+			assertThat(response.getResult().getOutput().getText()).isEqualTo("well!");
 			assertThat(response.getMetadata().getUsage()).isNotNull();
 		}).verifyComplete();
 	}
@@ -185,7 +185,7 @@ class DashScopeChatModelTests {
 		ChatResponse chatResponse = chatModel.call(prompt);
 
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResults().get(0).getOutput().getContent()).isEqualTo(response);
+		assertThat(chatResponse.getResults().get(0).getOutput().getText()).isEqualTo(response);
 	}
 
 	@Test
@@ -223,7 +223,7 @@ class DashScopeChatModelTests {
 		ChatResponse response = toolChatModel.call(prompt);
 
 		assertThat(response).isNotNull();
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("get_weather");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("get_weather");
 	}
 
 	@Test
@@ -270,9 +270,9 @@ class DashScopeChatModelTests {
 
 		assertThat(responses).isNotNull();
 		assertThat(responses).hasSize(3);
-		assertThat(responses.get(0).getResults().get(0).getOutput().getContent()).isEqualTo(chunk1);
-		assertThat(responses.get(1).getResults().get(0).getOutput().getContent()).isEqualTo(chunk2);
-		assertThat(responses.get(2).getResults().get(0).getOutput().getContent()).isEqualTo(chunk3);
+		assertThat(responses.get(0).getResults().get(0).getOutput().getText()).isEqualTo(chunk1);
+		assertThat(responses.get(1).getResults().get(0).getOutput().getText()).isEqualTo(chunk2);
+		assertThat(responses.get(2).getResults().get(0).getOutput().getText()).isEqualTo(chunk3);
 	}
 
 	@Test
@@ -395,7 +395,7 @@ class DashScopeChatModelTests {
 		ChatResponse response = chatModel.call(prompt);
 
 		assertThat(response).isNotNull();
-		assertThat(response.getResult().getOutput().getContent()).isEqualTo("It's sunny today!");
+		assertThat(response.getResult().getOutput().getText()).isEqualTo("It's sunny today!");
 	}
 
 }

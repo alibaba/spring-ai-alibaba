@@ -15,12 +15,35 @@
  */
 package com.alibaba.cloud.ai.dashscope.rag;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
+ * Test cases for DashScopeDocumentCloudReaderOptions.
+ *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
+ * @author brianxiadong
+ * @since 1.0.0-M5.1
  */
 class DashScopeDocumentCloudReaderOptionsTests {
 
+    @Test
+    void testDefaultConstructor() {
+        // 测试默认构造函数
+        DashScopeDocumentCloudReaderOptions options = new DashScopeDocumentCloudReaderOptions();
+
+        // 验证默认值是否为 "default"
+        assertThat(options.getCategoryId()).isEqualTo("default");
+    }
+
+    @Test
+    void testParameterizedConstructor() {
+        // 测试带参数的构造函数
+        String customCategoryId = "custom-category";
+        DashScopeDocumentCloudReaderOptions options = new DashScopeDocumentCloudReaderOptions(customCategoryId);
+
+        // 验证自定义值是否正确设置
+        assertThat(options.getCategoryId()).isEqualTo(customCategoryId);
+    }
 }
