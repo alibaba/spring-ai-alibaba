@@ -115,7 +115,7 @@ public class MySQLDocumentReader implements DocumentReader {
 	 */
 	private String buildContent(Map<String, Object> rowData) {
 		StringBuilder contentBuilder = new StringBuilder();
-		List<String> contentColumns = mysqlResource.getContentColumns();
+		List<String> contentColumns = mysqlResource.getTextColumns();
 
 		if (contentColumns == null || contentColumns.isEmpty()) {
 			// If no content columns specified, use all columns

@@ -46,7 +46,7 @@ public class ArxivDocumentReaderTest {
 
 		// 验证第一个文档的元数据
 		Document firstDoc = documents.get(0);
-		assertNotNull(firstDoc.getContent(), "文档内容不应为空");
+		assertNotNull(firstDoc.getText(), "文档内容不应为空");
 
 		// 验证元数据
 		var metadata = firstDoc.getMetadata();
@@ -79,8 +79,8 @@ public class ArxivDocumentReaderTest {
 		Document firstDoc = documents.get(0);
 
 		// 验证内容（摘要）
-		assertNotNull(firstDoc.getContent(), "文档内容（摘要）不应为空");
-		assertFalse(firstDoc.getContent().trim().isEmpty(), "文档内容（摘要）不应为空字符串");
+		assertNotNull(firstDoc.getText(), "文档内容（摘要）不应为空");
+		assertFalse(firstDoc.getText().trim().isEmpty(), "文档内容（摘要）不应为空字符串");
 
 		// 验证元数据
 		var metadata = firstDoc.getMetadata();
@@ -93,7 +93,7 @@ public class ArxivDocumentReaderTest {
 		assertNotNull(metadata.get(ArxivResource.PDF_URL), "应包含PDF URL");
 
 		// 验证摘要内容与元数据中的摘要一致
-		assertEquals(firstDoc.getContent(), metadata.get(ArxivResource.SUMMARY), "文档内容应该与元数据中的摘要一致");
+		assertEquals(firstDoc.getText(), metadata.get(ArxivResource.SUMMARY), "文档内容应该与元数据中的摘要一致");
 	}
 
 }

@@ -97,7 +97,7 @@ public class MsgEmailElement {
 		this.date = date;
 	}
 
-	public String getContentType() {
+	public String getTextType() {
 		return contentType;
 	}
 
@@ -105,7 +105,7 @@ public class MsgEmailElement {
 		this.contentType = contentType;
 	}
 
-	public String getContent() {
+	public String getText() {
 		return content;
 	}
 

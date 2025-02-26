@@ -44,7 +44,7 @@ public class ParagraphPdfDocumentParserTests {
 			.withPagesPerDocument(1)
 			.build()).parse(new DefaultResourceLoader().getResource("classpath:/sample1.pdf").getInputStream())
 			.get(0)
-			.getContent();
+			.getText();
 		System.out.println(content);
 	}
 

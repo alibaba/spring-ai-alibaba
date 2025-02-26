@@ -39,7 +39,7 @@ class ApacheTikaDocumentParserTest {
 
 		Document document = parser.parse(inputStream).get(0);
 
-		assertThat(document.getContent()).isEqualToIgnoringWhitespace("test content");
+		assertThat(document.getText()).isEqualToIgnoringWhitespace("test content");
 		assertThat(document.getMetadata()).isEmpty();
 	}
 
@@ -52,7 +52,7 @@ class ApacheTikaDocumentParserTest {
 
 		Document document = parser.parse(inputStream).get(0);
 
-		assertThat(document.getContent()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
+		assertThat(document.getText()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
 		assertThat(document.getMetadata()).isEmpty();
 	}
 
@@ -66,8 +66,8 @@ class ApacheTikaDocumentParserTest {
 		Document document1 = parser.parse(inputStream1).get(0);
 		Document document2 = parser.parse(inputStream2).get(0);
 
-		assertThat(document1.getContent()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
-		assertThat(document2.getContent()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
+		assertThat(document1.getText()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
+		assertThat(document2.getText()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
 		assertThat(document1.getMetadata()).isEmpty();
 		assertThat(document2.getMetadata()).isEmpty();
 	}
