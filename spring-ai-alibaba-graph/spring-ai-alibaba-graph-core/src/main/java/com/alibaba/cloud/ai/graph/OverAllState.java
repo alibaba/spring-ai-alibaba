@@ -61,12 +61,14 @@ public final class OverAllState implements Serializable {
     public OverAllState() {
         this.data = new HashMap<>();
         this.keyStrategies = new HashMap<>();
+        this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, (o, o2) -> o2);
         this.isResume = false;
     }
 
     private OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean isResume) {
         this.data = data;
         this.keyStrategies = keyStrategies;
+        this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, (o, o2) -> o2);
         this.isResume = isResume;
     }
 
@@ -110,23 +112,14 @@ public final class OverAllState implements Serializable {
     public OverAllState input(Map<String, Object> input) {
         if (CollectionUtils.isEmpty(input)) return this;
         this.data.putAll(input);
-        addKeyAndStrategy(DEFAULT_INPUT_KEY, (oldValue, newValue) -> newValue);
+        for (Map.Entry<String, Object> entry : input.entrySet()) {
+            String key = entry.getKey();
+            registerKeyAndStrategy(key, (o, o2) -> o2);
+        }
         return this;
     }
 
 
-    /**
-     * Inputs over all state.
-     *
-     * @param value the value
-     * @return the over all state
-     */
-    public OverAllState input(Object value) {
-        if (value == null) return this;
-        this.data.put(DEFAULT_INPUT_KEY, value);
-        addKeyAndStrategy(DEFAULT_INPUT_KEY, (oldValue, newValue) -> newValue);
-        return this;
-    }
 
     /**
      * Add key and strategy over all state.
@@ -135,7 +128,7 @@ public final class OverAllState implements Serializable {
      * @param strategy the strategy
      * @return the over all state
      */
-    public OverAllState addKeyAndStrategy(String key, KeyStrategy strategy) {
+    public OverAllState registerKeyAndStrategy(String key, KeyStrategy strategy) {
         this.keyStrategies.put(key, strategy);
         return this;
     }

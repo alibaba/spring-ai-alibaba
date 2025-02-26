@@ -7,7 +7,6 @@ import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import lombok.extern.slf4j.Slf4j;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.FileSystemSaver;
@@ -16,7 +15,6 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import static java.lang.String.format;
-import static java.util.Collections.emptyMap;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
@@ -67,8 +65,8 @@ public class StateGraphFileSystemPersistenceTest {
     private static OverAllState getOverAllState() {
         return new OverAllState()
                 .input(Map.of())
-                .addKeyAndStrategy("steps", (o, o2) -> o2)
-                .addKeyAndStrategy("messages", (oldValue, newValue) -> {
+                .registerKeyAndStrategy("steps", (o, o2) -> o2)
+                .registerKeyAndStrategy("messages", (oldValue, newValue) -> {
                     if (newValue == null) {
                         return oldValue;
                     }
@@ -159,7 +157,7 @@ public class StateGraphFileSystemPersistenceTest {
 
 			for (int execution = 0; execution < 2; execution++) {
 
-				Optional<OverAllState> state = app.invoke(runnableConfig_1);
+				Optional<OverAllState> state = app.invoke(Map.of(),runnableConfig_1);
 
 				assertTrue(state.isPresent());
 				assertEquals(expectedSteps + (execution * 2), (Integer) state.get().value("steps").get());
@@ -181,7 +179,7 @@ public class StateGraphFileSystemPersistenceTest {
 
 				// SUBMIT NEW THREAD 2
                 overAllState.reset();
-				state = app.invoke(runnableConfig_2);
+				state = app.invoke(Map.of(),runnableConfig_2);
 
 				assertTrue(state.isPresent());
 				assertEquals(expectedSteps  + execution, (Integer) state.get().value("steps").get());
@@ -193,7 +191,7 @@ public class StateGraphFileSystemPersistenceTest {
 
 				// RE-SUBMIT THREAD 1
                 overAllState.reset();
-				state = app.invoke( runnableConfig_1);
+				state = app.invoke(Map.of(), runnableConfig_1);
 
 				assertTrue(state.isPresent());
 				assertEquals(expectedSteps  + 1 + execution * 2, (Integer) state.get().value("steps").get());

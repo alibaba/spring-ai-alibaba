@@ -75,11 +75,11 @@ public class SubGraphTest {
     private static OverAllState getOverAllState() {
         return new OverAllState()
                 .input(Map.of())
-                .addKeyAndStrategy("a", (o, o2) -> o2)
-                .addKeyAndStrategy("b", (o, o2) -> o2)
-                .addKeyAndStrategy("c", (o, o2) -> o2)
-                .addKeyAndStrategy("steps", (o, o2) -> o2)
-                .addKeyAndStrategy("messages", (oldValue, newValue) -> {
+                .registerKeyAndStrategy("a", (o, o2) -> o2)
+                .registerKeyAndStrategy("b", (o, o2) -> o2)
+                .registerKeyAndStrategy("c", (o, o2) -> o2)
+                .registerKeyAndStrategy("steps", (o, o2) -> o2)
+                .registerKeyAndStrategy("messages", (oldValue, newValue) -> {
                     if (newValue == null) {
                         return oldValue;
                     }
