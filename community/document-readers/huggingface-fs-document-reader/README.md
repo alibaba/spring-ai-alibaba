@@ -34,7 +34,7 @@ List<Document> documents = reader.get();
 // 处理文档
 for (Document doc : documents) {
     // 获取文档内容
-    String content = doc.getContent();
+    String content = doc.getText();
     
     // 获取源文件路径（元数据）
     String source = doc.getMetadata().get(HuggingFaceFSDocumentReader.SOURCE);

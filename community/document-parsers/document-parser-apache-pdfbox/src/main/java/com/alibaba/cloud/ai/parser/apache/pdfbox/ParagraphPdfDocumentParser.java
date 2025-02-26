@@ -106,7 +106,7 @@ public class ParagraphPdfDocumentParser implements DocumentParser {
 					while (itr.hasNext()) {
 						var next = itr.next();
 						Document document = toDocument(current, next, pdDocument);
-						if (document != null && StringUtils.hasText(document.getContent())) {
+						if (document != null && StringUtils.hasText(document.getText())) {
 							documents.add(toDocument(current, next, pdDocument));
 						}
 						current = next;

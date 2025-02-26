@@ -95,7 +95,7 @@ class TencentCosDocumentLoaderIT {
 		Document document = loader.get().get(0);
 
 		// then
-		assertThat(document.getContent()).isEqualTo(TEST_CONTENT);
+		assertThat(document.getText()).isEqualTo(TEST_CONTENT);
 		assertThat(document.getMetadata()).hasSize(1);
 		assertThat(document.getMetadata().get("source")).isEqualTo(String.format("cos://%s/%s", TEST_BUCKET, TEST_KEY));
 	}
@@ -127,12 +127,12 @@ class TencentCosDocumentLoaderIT {
 		// then
 		assertThat(documents).hasSize(2);
 
-		assertThat(documents.get(0).getContent()).isEqualTo(TEST_CONTENT_2);
+		assertThat(documents.get(0).getText()).isEqualTo(TEST_CONTENT_2);
 		assertThat(documents.get(0).getMetadata()).hasSize(1);
 		assertThat(documents.get(0).getMetadata().get("source"))
 			.isEqualTo(String.format("cos://%s/%s", TEST_BUCKET, TEST_KEY_2));
 
-		assertThat(documents.get(1).getContent()).isEqualTo(TEST_CONTENT);
+		assertThat(documents.get(1).getText()).isEqualTo(TEST_CONTENT);
 		assertThat(documents.get(1).getMetadata()).hasSize(1);
 		assertThat(documents.get(1).getMetadata().get("source"))
 			.isEqualTo(String.format("cos://%s/%s", TEST_BUCKET, TEST_KEY));
@@ -169,8 +169,8 @@ class TencentCosDocumentLoaderIT {
 
 		// then
 		assertThat(documents).hasSize(2);
-		assertThat(documents.get(0).getContent()).isEqualTo(TEST_CONTENT_2);
-		assertThat(documents.get(1).getContent()).isEqualTo(TEST_CONTENT);
+		assertThat(documents.get(0).getText()).isEqualTo(TEST_CONTENT_2);
+		assertThat(documents.get(1).getText()).isEqualTo(TEST_CONTENT);
 	}
 
 }

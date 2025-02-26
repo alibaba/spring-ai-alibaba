@@ -79,12 +79,12 @@ public class MsgEmailParser {
 			metadata.put("date", element.getDate());
 		}
 
-		if (StringUtils.hasText(element.getContentType())) {
-			metadata.put("content_type", element.getContentType());
+		if (StringUtils.hasText(element.getTextType())) {
+			metadata.put("content_type", element.getTextType());
 		}
 
 		// Create Document object with content null check
-		String content = StringUtils.hasText(element.getContent()) ? element.getContent() : "";
+		String content = StringUtils.hasText(element.getText()) ? element.getText() : "";
 		return new Document(content, metadata);
 	}
 

@@ -77,7 +77,7 @@ class GptRepoDocumentReaderTest {
 		boolean foundPythonFile = false;
 
 		for (Document doc : documents) {
-			String content = doc.getContent();
+			String content = doc.getText();
 			if (content.contains("TestFile.java")) {
 				foundJavaFile = true;
 				assertTrue(content.contains(TEST_FILE_CONTENT));
@@ -106,7 +106,7 @@ class GptRepoDocumentReaderTest {
 		Document doc = documents.get(0);
 
 		// Verify concatenated document contains all file contents
-		String content = doc.getContent();
+		String content = doc.getText();
 		assertTrue(content.contains(TEST_FILE_CONTENT));
 		assertTrue(content.contains(TEST_PYTHON_CONTENT));
 		assertTrue(content.contains("----")); // Verify separator exists
@@ -127,8 +127,8 @@ class GptRepoDocumentReaderTest {
 		assertEquals(1, documents.size(), "Should only find one Java file");
 
 		Document doc = documents.get(0);
-		assertTrue(doc.getContent().contains("TestFile.java"));
-		assertFalse(doc.getContent().contains("test.py"));
+		assertTrue(doc.getText().contains("TestFile.java"));
+		assertFalse(doc.getText().contains("test.py"));
 	}
 
 	/**
@@ -144,7 +144,7 @@ class GptRepoDocumentReaderTest {
 
 		// Verify .log file is ignored
 		for (Document doc : documents) {
-			assertFalse(doc.getContent().contains("test.log"), "Should not contain ignored .log file");
+			assertFalse(doc.getText().contains("test.log"), "Should not contain ignored .log file");
 		}
 	}
 
@@ -196,7 +196,7 @@ class GptRepoDocumentReaderTest {
 		List<Document> documents = reader.get();
 		assertFalse(documents.isEmpty());
 		Document doc = documents.get(0);
-		assertTrue(doc.getContent().startsWith(customPreamble));
+		assertTrue(doc.getText().startsWith(customPreamble));
 	}
 
 	/**
@@ -211,7 +211,7 @@ class GptRepoDocumentReaderTest {
 
 		// Find Java file document
 		Optional<Document> javaDoc = documents.stream()
-			.filter(doc -> doc.getContent().contains("TestFile.java"))
+			.filter(doc -> doc.getText().contains("TestFile.java"))
 			.findFirst();
 
 		assertTrue(javaDoc.isPresent());
@@ -235,7 +235,7 @@ class GptRepoDocumentReaderTest {
 		List<Document> documents = reader.get();
 		assertFalse(documents.isEmpty());
 		Document doc = documents.get(0);
-		assertTrue(doc.getContent().startsWith(customPreamble));
+		assertTrue(doc.getText().startsWith(customPreamble));
 
 		// Print document count and first document metadata
 		System.out.println("Total documents: " + documents.size());
@@ -263,12 +263,12 @@ class GptRepoDocumentReaderTest {
 
 		// Find Chinese file document
 		Optional<Document> chineseDoc = documents.stream()
-			.filter(doc -> doc.getContent().contains("chinese.txt"))
+			.filter(doc -> doc.getText().contains("chinese.txt"))
 			.findFirst();
 
 		assertTrue(chineseDoc.isPresent());
 		Document doc = chineseDoc.get();
-		assertTrue(doc.getContent().contains(chineseContent));
+		assertTrue(doc.getText().contains(chineseContent));
 
 		// Read with wrong encoding (should throw exception)
 		reader = new GptRepoDocumentReader(repoPath.toString(), false, Collections.singletonList("txt"), "UTF-8");

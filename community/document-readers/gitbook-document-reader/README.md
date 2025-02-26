@@ -99,7 +99,7 @@ public class GitbookReaderExample {
         // Process document content and metadata
         for (Document doc : documents) {
             System.out.println("Document ID: " + doc.getId());
-            System.out.println("Content: " + doc.getContent());
+            System.out.println("Content: " + doc.getText());
             System.out.println("Metadata: " + doc.getMetadata());
         }
     }
