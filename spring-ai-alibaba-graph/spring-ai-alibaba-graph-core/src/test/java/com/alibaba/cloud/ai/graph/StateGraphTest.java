@@ -1,14 +1,11 @@
 package com.alibaba.cloud.ai.graph;
 
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
-import com.alibaba.cloud.ai.graph.state.Channel;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -86,8 +83,7 @@ public class StateGraphTest {
     @Test
     public void testRunningOneNode() throws Exception {
         OverAllState overAllState = new OverAllState()
-                .input(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"))
-                .addKeyAndStrategy("prop1", (o, o2) -> o2);
+                .registerKeyAndStrategy("prop1", (o, o2) -> o2);
         StateGraph workflow = new StateGraph(overAllState).addEdge(START, "agent_1")
                 .addNode("agent_1", node_async(state -> {
                     log.info("agent_1\n{}", state);
@@ -97,7 +93,7 @@ public class StateGraphTest {
 
         CompiledGraph app = workflow.compile();
 
-        Optional<OverAllState> result = app.invoke();
+        Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
         System.out.println("result = " + result);
         assertTrue(result.isPresent());
 
@@ -137,7 +133,7 @@ public class StateGraphTest {
 
         CompiledGraph app = workflow.compile();
 
-        Optional<OverAllState> result = app.invoke();
+        Optional<OverAllState> result = app.invoke(Map.of());
 
         assertTrue(result.isPresent());
         System.out.println(result.get().data());
@@ -200,7 +196,7 @@ public class StateGraphTest {
 
         CompiledGraph app = workflow.compile();
 
-        Optional<OverAllState> result = app.invoke();
+        Optional<OverAllState> result = app.invoke(Map.of());
 
         assertTrue(result.isPresent());
         log.info("{}", result.get().data());
@@ -238,7 +234,7 @@ public class StateGraphTest {
 
         CompiledGraph app = workflow.compile();
 
-        Optional<OverAllState> result = app.invoke();
+        Optional<OverAllState> result = app.invoke(Map.of());
 
         assertTrue(result.isPresent());
 
@@ -253,9 +249,8 @@ public class StateGraphTest {
     @NotNull
     private static OverAllState getOverAllState() {
         return new OverAllState()
-                .input(Map.of())
-                .addKeyAndStrategy("steps", (o, o2) -> o2)
-                .addKeyAndStrategy("messages", (oldValue, newValue) -> {
+                .registerKeyAndStrategy("steps", (o, o2) -> o2)
+                .registerKeyAndStrategy("messages", (oldValue, newValue) -> {
                     if (newValue == null) {
                         return oldValue;
                     }
@@ -307,6 +302,7 @@ public class StateGraphTest {
 
     @Test
     public void testWithSubgraph() throws Exception {
+        //todo: invoke 传入 inputs 内容
         OverAllState overAllState = getOverAllState();
         var childStep1 = node_async((OverAllState state) -> Map.of("messages", "child:step1"));
 
@@ -340,7 +336,7 @@ public class StateGraphTest {
                 .addEdge("subgraph", "step_3")
                 .addEdge("step_3", END)
                 .compile();
-
+        //todo：
         var result = workflowParent.stream()
                 .stream()
                 .peek(nodeOutput -> System.out.println("node = " + nodeOutput.node() + "     message = " + nodeOutput.state().value("messages").get()))

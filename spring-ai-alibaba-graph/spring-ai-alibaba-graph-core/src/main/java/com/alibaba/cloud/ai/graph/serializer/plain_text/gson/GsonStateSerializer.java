@@ -17,7 +17,7 @@ import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
  * extended from specific state implementation
  *
  */
-public abstract class GsonStateSerializer extends PlainTextStateSerializer<OverAllState> {
+public abstract class GsonStateSerializer extends PlainTextStateSerializer {
 
 	protected final Gson gson;
 

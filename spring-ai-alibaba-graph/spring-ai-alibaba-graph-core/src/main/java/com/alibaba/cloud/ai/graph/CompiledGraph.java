@@ -336,16 +336,12 @@ public class CompiledGraph {
 	 * @param inputs the input map
 	 * @return an AsyncGenerator stream of NodeOutput
 	 */
-	@Deprecated
 	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs) {
+		stateGraph.getOverAllState().input(inputs);
 		return this.stream(inputs, RunnableConfig.builder().build());
 	}
 
 
-	@Deprecated
-	public AsyncGenerator<NodeOutput> stream(OverAllState overAllState) {
-		return this.stream(overAllState, RunnableConfig.builder().build());
-	}
 
 	public AsyncGenerator<NodeOutput> stream() {
 		return this.stream(stateGraph.getOverAllState(), RunnableConfig.builder().build());
@@ -358,19 +354,13 @@ public class CompiledGraph {
 	 * @return an Optional containing the final state if present, otherwise an empty
 	 * Optional
 	 */
-	@Deprecated
 	public Optional invoke(Map<String, Object> inputs, RunnableConfig config) {
-
+		stateGraph.getOverAllState().input(inputs);
 		return stream(inputs, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
 
-	public Optional invoke(OverAllState overAllState, RunnableConfig config) {
-
+	private Optional invoke(OverAllState overAllState, RunnableConfig config) {
 		return stream(overAllState, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
-	}
-
-	public Optional invoke(RunnableConfig config) {
-		return stream(stateGraph.getOverAllState(), config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
 
 
@@ -381,13 +371,8 @@ public class CompiledGraph {
 	 * @return an Optional containing the final state if present, otherwise an empty
 	 * Optional
 	 */
-	@Deprecated
 	public Optional invoke(Map<String, Object> inputs) {
-		return this.invoke(inputs, RunnableConfig.builder().build());
-	}
-
-	public Optional invoke() {
-		return this.invoke(stateGraph.getOverAllState(), RunnableConfig.builder().build());
+		return this.invoke(stateGraph.getOverAllState().input(inputs), RunnableConfig.builder().build());
 	}
 
 
@@ -401,7 +386,7 @@ public class CompiledGraph {
 	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
 
-		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(inputs,
+		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(stateGraph.getOverAllState().input(inputs),
 				config.withStreamMode(StreamMode.SNAPSHOTS));
 		return new AsyncGenerator.WithEmbed<>(generator);
 	}
@@ -660,9 +645,6 @@ public class CompiledGraph {
                     nextNodeId = null;
                     currentNodeId = null;
 					return Data.of(buildNodeOutput(END));
-//                    OverAllState snapshotState = overAllState.snapShot().get();
-//                    overAllState.reset();
-//                    return Data.of((Output) NodeOutput.of(END, snapshotState));
                 }
 
 				// check on previous node

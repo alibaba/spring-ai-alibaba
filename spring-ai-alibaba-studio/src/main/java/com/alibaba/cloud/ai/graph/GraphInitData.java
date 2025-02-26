@@ -55,7 +55,7 @@ public record GraphInitData(String title, String graph, List<ArgumentMetadata> a
 	 * @param id the ID of the thread.
 	 * @param entries the outputs of the thread.
 	 */
-	public record ThreadEntry(String id, List<? extends NodeOutput<? extends AgentState>> entries) {
+	public record ThreadEntry(String id, List<? extends NodeOutput> entries) {
 	}
 
 }

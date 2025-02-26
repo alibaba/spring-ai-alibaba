@@ -18,7 +18,7 @@ import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
  * be extended from specific state implementation
  *
  */
-public abstract class JacksonStateSerializer extends PlainTextStateSerializer<OverAllState> {
+public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 	protected final ObjectMapper objectMapper;
 

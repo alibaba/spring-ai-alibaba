@@ -11,14 +11,15 @@ import java.io.Reader;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
 import lombok.NonNull;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
-public abstract class PlainTextStateSerializer<State> extends StateSerializer<State> {
+public abstract class PlainTextStateSerializer extends StateSerializer<OverAllState> {
 
-	protected PlainTextStateSerializer(@NonNull AgentStateFactory<State> stateFactory) {
+	protected PlainTextStateSerializer(@NonNull AgentStateFactory<OverAllState> stateFactory) {
 		super(stateFactory);
 	}
 
@@ -28,19 +29,19 @@ public abstract class PlainTextStateSerializer<State> extends StateSerializer<St
 	}
 
 	@SuppressWarnings("unchecked")
-	public Class<State> getStateType() {
+	public Class<OverAllState> getStateType() {
 		Type superClass = getClass().getGenericSuperclass();
 		if (superClass instanceof ParameterizedType) {
 			ParameterizedType parameterizedType = (ParameterizedType) superClass;
 			Type[] typeArguments = parameterizedType.getActualTypeArguments();
 			if (typeArguments.length > 0) {
-				return (Class<State>) typeArguments[0];
+				return (Class<OverAllState>) typeArguments[0];
 			}
 		}
 		throw new IllegalStateException("Unable to determine state type");
 	}
 
-	public State read(String data) throws IOException, ClassNotFoundException {
+	public OverAllState read(String data) throws IOException, ClassNotFoundException {
 		ByteArrayOutputStream bytesStream = new ByteArrayOutputStream();
 
 		try (ObjectOutputStream out = new ObjectOutputStream(bytesStream)) {
@@ -54,7 +55,7 @@ public abstract class PlainTextStateSerializer<State> extends StateSerializer<St
 
 	}
 
-	public State read(Reader reader) throws IOException, ClassNotFoundException {
+	public OverAllState read(Reader reader) throws IOException, ClassNotFoundException {
 		StringBuilder sb = new StringBuilder();
 		try (BufferedReader bufferedReader = new BufferedReader(reader)) {
 			String line;
