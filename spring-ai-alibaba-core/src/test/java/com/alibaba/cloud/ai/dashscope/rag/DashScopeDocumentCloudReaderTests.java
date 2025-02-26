@@ -40,9 +40,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 /**
- * Test cases for DashScopeDocumentCloudReader. Tests cover file handling,
- * document parsing,
- * and error scenarios.
+ * Test cases for DashScopeDocumentCloudReader. Tests cover file handling, document
+ * parsing, and error scenarios.
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
@@ -51,120 +50,109 @@ import static org.mockito.Mockito.when;
  */
 class DashScopeDocumentCloudReaderTests {
 
-    private static final String TEST_CATEGORY_ID = "test-category";
-    private static final String TEST_FILE_ID = "test-file-id";
-    private static final String TEST_CONTENT = "Test content";
-    private static final String TEST_FILE_NAME = "test.txt";
-    private static final String TEST_FILE_TYPE = "txt";
-    private static final long TEST_FILE_SIZE = 1024L;
-    private static final String TEST_UPLOAD_TIME = "2024-01-01 00:00:00";
+	private static final String TEST_CATEGORY_ID = "test-category";
 
-    @Mock
-    private DashScopeApi dashScopeApi;
+	private static final String TEST_FILE_ID = "test-file-id";
 
-    @TempDir
-    Path tempDir;
+	private static final String TEST_CONTENT = "Test content";
 
-    private DashScopeDocumentCloudReader reader;
-    private File testFile;
+	private static final String TEST_FILE_NAME = "test.txt";
 
-    @BeforeEach
-    void setUp() throws IOException {
-        // Initialize mocks and test objects
-        MockitoAnnotations.openMocks(this);
+	private static final String TEST_FILE_TYPE = "txt";
 
-        // Create test file
-        testFile = tempDir.resolve(TEST_FILE_NAME).toFile();
-        Files.writeString(testFile.toPath(), TEST_CONTENT);
+	private static final long TEST_FILE_SIZE = 1024L;
 
-        // Set up reader with options
-        DashScopeDocumentCloudReaderOptions options = new DashScopeDocumentCloudReaderOptions(TEST_CATEGORY_ID);
-        reader = new DashScopeDocumentCloudReader(testFile.getAbsolutePath(), dashScopeApi, options);
+	private static final String TEST_UPLOAD_TIME = "2024-01-01 00:00:00";
 
-        // Mock successful file upload
-        mockSuccessfulUpload();
-    }
+	@Mock
+	private DashScopeApi dashScopeApi;
 
-    @Test
-    void testConstructorWithNonExistentFile() {
-        // Test constructor with non-existent file
-        String nonExistentPath = tempDir.resolve("nonexistent.txt").toString();
-        assertThatThrownBy(() -> new DashScopeDocumentCloudReader(nonExistentPath, dashScopeApi,
-                new DashScopeDocumentCloudReaderOptions()))
-                .isInstanceOf(RuntimeException.class);
-    }
+	@TempDir
+	Path tempDir;
 
-    @Test
-    void testSuccessfulDocumentParsing() throws IOException {
-        // Test successful document parsing
-        mockSuccessfulParsing();
+	private DashScopeDocumentCloudReader reader;
 
-        List<Document> documents = reader.get();
+	private File testFile;
 
-        assertThat(documents).hasSize(1);
-        assertThat(documents.get(0).getText()).isEqualTo(TEST_CONTENT);
-    }
+	@BeforeEach
+	void setUp() throws IOException {
+		// Initialize mocks and test objects
+		MockitoAnnotations.openMocks(this);
 
-    @Test
-    void testParseFailure() throws IOException {
-        // Test parse failure
-        mockFailedParsing();
+		// Create test file
+		testFile = tempDir.resolve(TEST_FILE_NAME).toFile();
+		Files.writeString(testFile.toPath(), TEST_CONTENT);
 
-        assertThatThrownBy(() -> reader.get())
-                .isInstanceOf(RuntimeException.class);
-    }
+		// Set up reader with options
+		DashScopeDocumentCloudReaderOptions options = new DashScopeDocumentCloudReaderOptions(TEST_CATEGORY_ID);
+		reader = new DashScopeDocumentCloudReader(testFile.getAbsolutePath(), dashScopeApi, options);
 
-    private void mockSuccessfulUpload() {
-        DashScopeApi.UploadRequest request = new DashScopeApi.UploadRequest(TEST_CATEGORY_ID, TEST_FILE_NAME,
-                TEST_FILE_SIZE, "md5");
-        when(dashScopeApi.upload(any(File.class), any(DashScopeApi.UploadRequest.class))).thenReturn(TEST_FILE_ID);
-    }
+		// Mock successful file upload
+		mockSuccessfulUpload();
+	}
 
-    private void mockSuccessfulParsing() {
-        DashScopeApi.QueryFileResponseData successResponse = new DashScopeApi.QueryFileResponseData(
-                TEST_CATEGORY_ID,
-                TEST_FILE_ID,
-                TEST_FILE_NAME,
-                TEST_FILE_TYPE,
-                TEST_FILE_SIZE,
-                "PARSE_SUCCESS",
-                TEST_UPLOAD_TIME);
-        DashScopeApi.CommonResponse<DashScopeApi.QueryFileResponseData> response = new DashScopeApi.CommonResponse<>(
-                "SUCCESS", "OK", successResponse);
-        when(dashScopeApi.queryFileInfo(eq(TEST_CATEGORY_ID), any(DashScopeApi.UploadRequest.QueryFileRequest.class)))
-                .thenReturn(ResponseEntity.ok(response));
-        when(dashScopeApi.getFileParseResult(eq(TEST_CATEGORY_ID),
-                any(DashScopeApi.UploadRequest.QueryFileRequest.class)))
-                .thenReturn(TEST_CONTENT);
-    }
+	@Test
+	void testConstructorWithNonExistentFile() {
+		// Test constructor with non-existent file
+		String nonExistentPath = tempDir.resolve("nonexistent.txt").toString();
+		assertThatThrownBy(() -> new DashScopeDocumentCloudReader(nonExistentPath, dashScopeApi,
+				new DashScopeDocumentCloudReaderOptions()))
+			.isInstanceOf(RuntimeException.class);
+	}
 
-    private void mockFailedParsing() {
-        DashScopeApi.QueryFileResponseData failedResponse = new DashScopeApi.QueryFileResponseData(
-                TEST_CATEGORY_ID,
-                TEST_FILE_ID,
-                TEST_FILE_NAME,
-                TEST_FILE_TYPE,
-                TEST_FILE_SIZE,
-                "PARSE_FAILED",
-                TEST_UPLOAD_TIME);
-        DashScopeApi.CommonResponse<DashScopeApi.QueryFileResponseData> response = new DashScopeApi.CommonResponse<>(
-                "FAILED", "Parse failed", failedResponse);
-        when(dashScopeApi.queryFileInfo(eq(TEST_CATEGORY_ID), any(DashScopeApi.UploadRequest.QueryFileRequest.class)))
-                .thenReturn(ResponseEntity.ok(response));
-    }
+	@Test
+	void testSuccessfulDocumentParsing() throws IOException {
+		// Test successful document parsing
+		mockSuccessfulParsing();
 
-    private void mockPollingTimeout() {
-        DashScopeApi.QueryFileResponseData processingResponse = new DashScopeApi.QueryFileResponseData(
-                TEST_CATEGORY_ID,
-                TEST_FILE_ID,
-                TEST_FILE_NAME,
-                TEST_FILE_TYPE,
-                TEST_FILE_SIZE,
-                "PROCESSING",
-                TEST_UPLOAD_TIME);
-        DashScopeApi.CommonResponse<DashScopeApi.QueryFileResponseData> response = new DashScopeApi.CommonResponse<>(
-                "SUCCESS", "Processing", processingResponse);
-        when(dashScopeApi.queryFileInfo(eq(TEST_CATEGORY_ID), any(DashScopeApi.UploadRequest.QueryFileRequest.class)))
-                .thenReturn(ResponseEntity.ok(response));
-    }
+		List<Document> documents = reader.get();
+
+		assertThat(documents).hasSize(1);
+		assertThat(documents.get(0).getText()).isEqualTo(TEST_CONTENT);
+	}
+
+	@Test
+	void testParseFailure() throws IOException {
+		// Test parse failure
+		mockFailedParsing();
+
+		assertThatThrownBy(() -> reader.get()).isInstanceOf(RuntimeException.class);
+	}
+
+	private void mockSuccessfulUpload() {
+		DashScopeApi.UploadRequest request = new DashScopeApi.UploadRequest(TEST_CATEGORY_ID, TEST_FILE_NAME,
+				TEST_FILE_SIZE, "md5");
+		when(dashScopeApi.upload(any(File.class), any(DashScopeApi.UploadRequest.class))).thenReturn(TEST_FILE_ID);
+	}
+
+	private void mockSuccessfulParsing() {
+		DashScopeApi.QueryFileResponseData successResponse = new DashScopeApi.QueryFileResponseData(TEST_CATEGORY_ID,
+				TEST_FILE_ID, TEST_FILE_NAME, TEST_FILE_TYPE, TEST_FILE_SIZE, "PARSE_SUCCESS", TEST_UPLOAD_TIME);
+		DashScopeApi.CommonResponse<DashScopeApi.QueryFileResponseData> response = new DashScopeApi.CommonResponse<>(
+				"SUCCESS", "OK", successResponse);
+		when(dashScopeApi.queryFileInfo(eq(TEST_CATEGORY_ID), any(DashScopeApi.UploadRequest.QueryFileRequest.class)))
+			.thenReturn(ResponseEntity.ok(response));
+		when(dashScopeApi.getFileParseResult(eq(TEST_CATEGORY_ID),
+				any(DashScopeApi.UploadRequest.QueryFileRequest.class)))
+			.thenReturn(TEST_CONTENT);
+	}
+
+	private void mockFailedParsing() {
+		DashScopeApi.QueryFileResponseData failedResponse = new DashScopeApi.QueryFileResponseData(TEST_CATEGORY_ID,
+				TEST_FILE_ID, TEST_FILE_NAME, TEST_FILE_TYPE, TEST_FILE_SIZE, "PARSE_FAILED", TEST_UPLOAD_TIME);
+		DashScopeApi.CommonResponse<DashScopeApi.QueryFileResponseData> response = new DashScopeApi.CommonResponse<>(
+				"FAILED", "Parse failed", failedResponse);
+		when(dashScopeApi.queryFileInfo(eq(TEST_CATEGORY_ID), any(DashScopeApi.UploadRequest.QueryFileRequest.class)))
+			.thenReturn(ResponseEntity.ok(response));
+	}
+
+	private void mockPollingTimeout() {
+		DashScopeApi.QueryFileResponseData processingResponse = new DashScopeApi.QueryFileResponseData(TEST_CATEGORY_ID,
+				TEST_FILE_ID, TEST_FILE_NAME, TEST_FILE_TYPE, TEST_FILE_SIZE, "PROCESSING", TEST_UPLOAD_TIME);
+		DashScopeApi.CommonResponse<DashScopeApi.QueryFileResponseData> response = new DashScopeApi.CommonResponse<>(
+				"SUCCESS", "Processing", processingResponse);
+		when(dashScopeApi.queryFileInfo(eq(TEST_CATEGORY_ID), any(DashScopeApi.UploadRequest.QueryFileRequest.class)))
+			.thenReturn(ResponseEntity.ok(response));
+	}
+
 }

@@ -37,8 +37,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 /**
- * Test cases for DashScopeDocumentRetriever.
- * Tests cover document retrieval functionality, error handling, and edge cases.
+ * Test cases for DashScopeDocumentRetriever. Tests cover document retrieval
+ * functionality, error handling, and edge cases.
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
@@ -48,48 +48,51 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class DashScopeDocumentRetrieverTests {
 
-    // Test constants
-    private static final String TEST_INDEX_NAME = "test-index";
-    private static final String TEST_PIPELINE_ID = "test-pipeline-id";
-    private static final String TEST_QUERY = "test query";
-    private static final String TEST_DOC_ID = "test-doc-id";
-    private static final String TEST_DOC_TEXT = "test document text";
+	// Test constants
+	private static final String TEST_INDEX_NAME = "test-index";
 
-    @Mock
-    private DashScopeApi dashScopeApi;
+	private static final String TEST_PIPELINE_ID = "test-pipeline-id";
 
-    private DashScopeDocumentRetriever retriever;
-    private DashScopeDocumentRetrieverOptions options;
+	private static final String TEST_QUERY = "test query";
 
-    @BeforeEach
-    void setUp() {
-        // Initialize options with test values
-        options = DashScopeDocumentRetrieverOptions.builder()
-                .withIndexName(TEST_INDEX_NAME)
-                .build();
+	private static final String TEST_DOC_ID = "test-doc-id";
 
-        // Create retriever instance
-        retriever = new DashScopeDocumentRetriever(dashScopeApi, options);
-    }
+	private static final String TEST_DOC_TEXT = "test document text";
 
-    @Test
-    void testConstructorWithNullOptions() {
-        // Test constructor with null options
-        assertThatThrownBy(() -> new DashScopeDocumentRetriever(dashScopeApi, null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("RetrieverOptions must not be null");
-    }
+	@Mock
+	private DashScopeApi dashScopeApi;
 
-    @Test
-    void testConstructorWithNullIndexName() {
-        // Test constructor with null index name
-        DashScopeDocumentRetrieverOptions optionsWithNullIndex = new DashScopeDocumentRetrieverOptions();
-        assertThatThrownBy(() -> new DashScopeDocumentRetriever(dashScopeApi, optionsWithNullIndex))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("IndexName must not be null");
-    }
+	private DashScopeDocumentRetriever retriever;
 
-    @Test
+	private DashScopeDocumentRetrieverOptions options;
+
+	@BeforeEach
+	void setUp() {
+		// Initialize options with test values
+		options = DashScopeDocumentRetrieverOptions.builder().withIndexName(TEST_INDEX_NAME).build();
+
+		// Create retriever instance
+		retriever = new DashScopeDocumentRetriever(dashScopeApi, options);
+	}
+
+	@Test
+	void testConstructorWithNullOptions() {
+		// Test constructor with null options
+		assertThatThrownBy(() -> new DashScopeDocumentRetriever(dashScopeApi, null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("RetrieverOptions must not be null");
+	}
+
+	@Test
+	void testConstructorWithNullIndexName() {
+		// Test constructor with null index name
+		DashScopeDocumentRetrieverOptions optionsWithNullIndex = new DashScopeDocumentRetrieverOptions();
+		assertThatThrownBy(() -> new DashScopeDocumentRetriever(dashScopeApi, optionsWithNullIndex))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("IndexName must not be null");
+	}
+
+	@Test
     void testRetrieveWithNonExistentIndex() {
         // Mock API response for non-existent index
         when(dashScopeApi.getPipelineIdByName(TEST_INDEX_NAME)).thenReturn(null);
@@ -100,34 +103,33 @@ class DashScopeDocumentRetrieverTests {
                 .hasMessageContaining("Index:" + TEST_INDEX_NAME + " NotExist");
     }
 
-    @Test
-    void testSuccessfulRetrieval() {
-        // Create test document with metadata
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("doc_name", "test.txt");
-        metadata.put("title", "Test Document");
-        Document testDoc = new Document(TEST_DOC_ID, TEST_DOC_TEXT, metadata);
-        List<Document> expectedDocs = List.of(testDoc);
+	@Test
+	void testSuccessfulRetrieval() {
+		// Create test document with metadata
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("doc_name", "test.txt");
+		metadata.put("title", "Test Document");
+		Document testDoc = new Document(TEST_DOC_ID, TEST_DOC_TEXT, metadata);
+		List<Document> expectedDocs = List.of(testDoc);
 
-        // Mock API responses
-        when(dashScopeApi.getPipelineIdByName(TEST_INDEX_NAME)).thenReturn(TEST_PIPELINE_ID);
-        when(dashScopeApi.retriever(eq(TEST_PIPELINE_ID), eq(TEST_QUERY), any(DashScopeDocumentRetrieverOptions.class)))
-                .thenReturn(expectedDocs);
+		// Mock API responses
+		when(dashScopeApi.getPipelineIdByName(TEST_INDEX_NAME)).thenReturn(TEST_PIPELINE_ID);
+		when(dashScopeApi.retriever(eq(TEST_PIPELINE_ID), eq(TEST_QUERY), any(DashScopeDocumentRetrieverOptions.class)))
+			.thenReturn(expectedDocs);
 
-        // Test successful document retrieval
-        List<Document> retrievedDocs = retriever.retrieve(new Query(TEST_QUERY));
+		// Test successful document retrieval
+		List<Document> retrievedDocs = retriever.retrieve(new Query(TEST_QUERY));
 
-        // Verify retrieved documents
-        assertThat(retrievedDocs).isNotNull().hasSize(1);
-        Document retrievedDoc = retrievedDocs.get(0);
-        assertThat(retrievedDoc.getId()).isEqualTo(TEST_DOC_ID);
-        assertThat(retrievedDoc.getText()).isEqualTo(TEST_DOC_TEXT);
-        assertThat(retrievedDoc.getMetadata())
-                .containsEntry("doc_name", "test.txt")
-                .containsEntry("title", "Test Document");
-    }
+		// Verify retrieved documents
+		assertThat(retrievedDocs).isNotNull().hasSize(1);
+		Document retrievedDoc = retrievedDocs.get(0);
+		assertThat(retrievedDoc.getId()).isEqualTo(TEST_DOC_ID);
+		assertThat(retrievedDoc.getText()).isEqualTo(TEST_DOC_TEXT);
+		assertThat(retrievedDoc.getMetadata()).containsEntry("doc_name", "test.txt")
+			.containsEntry("title", "Test Document");
+	}
 
-    @Test
+	@Test
     void testEmptyRetrieval() {
         // Mock API responses for empty result
         when(dashScopeApi.getPipelineIdByName(TEST_INDEX_NAME)).thenReturn(TEST_PIPELINE_ID);
@@ -141,35 +143,35 @@ class DashScopeDocumentRetrieverTests {
         assertThat(retrievedDocs).isNotNull().isEmpty();
     }
 
-    @Test
-    void testRetrievalWithMultipleDocuments() {
-        // Create multiple test documents
-        List<Document> expectedDocs = new ArrayList<>();
-        for (int i = 0; i < 3; i++) {
-            Map<String, Object> metadata = new HashMap<>();
-            metadata.put("doc_name", "test" + i + ".txt");
-            metadata.put("title", "Test Document " + i);
-            Document doc = new Document("doc-" + i, "content " + i, metadata);
-            expectedDocs.add(doc);
-        }
+	@Test
+	void testRetrievalWithMultipleDocuments() {
+		// Create multiple test documents
+		List<Document> expectedDocs = new ArrayList<>();
+		for (int i = 0; i < 3; i++) {
+			Map<String, Object> metadata = new HashMap<>();
+			metadata.put("doc_name", "test" + i + ".txt");
+			metadata.put("title", "Test Document " + i);
+			Document doc = new Document("doc-" + i, "content " + i, metadata);
+			expectedDocs.add(doc);
+		}
 
-        // Mock API responses
-        when(dashScopeApi.getPipelineIdByName(TEST_INDEX_NAME)).thenReturn(TEST_PIPELINE_ID);
-        when(dashScopeApi.retriever(eq(TEST_PIPELINE_ID), eq(TEST_QUERY), any(DashScopeDocumentRetrieverOptions.class)))
-                .thenReturn(expectedDocs);
+		// Mock API responses
+		when(dashScopeApi.getPipelineIdByName(TEST_INDEX_NAME)).thenReturn(TEST_PIPELINE_ID);
+		when(dashScopeApi.retriever(eq(TEST_PIPELINE_ID), eq(TEST_QUERY), any(DashScopeDocumentRetrieverOptions.class)))
+			.thenReturn(expectedDocs);
 
-        // Test retrieval with multiple documents
-        List<Document> retrievedDocs = retriever.retrieve(new Query(TEST_QUERY));
+		// Test retrieval with multiple documents
+		List<Document> retrievedDocs = retriever.retrieve(new Query(TEST_QUERY));
 
-        // Verify retrieved documents
-        assertThat(retrievedDocs).isNotNull().hasSize(3);
-        for (int i = 0; i < retrievedDocs.size(); i++) {
-            Document doc = retrievedDocs.get(i);
-            assertThat(doc.getId()).isEqualTo("doc-" + i);
-            assertThat(doc.getText()).isEqualTo("content " + i);
-            assertThat(doc.getMetadata())
-                    .containsEntry("doc_name", "test" + i + ".txt")
-                    .containsEntry("title", "Test Document " + i);
-        }
-    }
+		// Verify retrieved documents
+		assertThat(retrievedDocs).isNotNull().hasSize(3);
+		for (int i = 0; i < retrievedDocs.size(); i++) {
+			Document doc = retrievedDocs.get(i);
+			assertThat(doc.getId()).isEqualTo("doc-" + i);
+			assertThat(doc.getText()).isEqualTo("content " + i);
+			assertThat(doc.getMetadata()).containsEntry("doc_name", "test" + i + ".txt")
+				.containsEntry("title", "Test Document " + i);
+		}
+	}
+
 }

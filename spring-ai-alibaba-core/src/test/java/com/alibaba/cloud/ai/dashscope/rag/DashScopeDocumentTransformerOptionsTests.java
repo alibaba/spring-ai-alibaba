@@ -19,9 +19,8 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Test cases for DashScopeDocumentTransformerOptions.
- * Tests cover default values, builder pattern, setters/getters, and partial
- * value settings.
+ * Test cases for DashScopeDocumentTransformerOptions. Tests cover default values, builder
+ * pattern, setters/getters, and partial value settings.
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
@@ -30,94 +29,97 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class DashScopeDocumentTransformerOptionsTests {
 
-    // Test constants for validation
-    private static final int TEST_CHUNK_SIZE = 1000;
-    private static final int TEST_OVERLAP_SIZE = 200;
-    private static final String TEST_SEPARATOR = "|,|，|。|？|！|\\n";
-    private static final String TEST_FILE_TYPE = "txt";
-    private static final String TEST_LANGUAGE = "en";
+	// Test constants for validation
+	private static final int TEST_CHUNK_SIZE = 1000;
 
-    /**
-     * Test default values when creating a new instance.
-     * Verifies that all properties have their expected default values.
-     */
-    @Test
-    void testDefaultValues() {
-        DashScopeDocumentTransformerOptions options = new DashScopeDocumentTransformerOptions();
+	private static final int TEST_OVERLAP_SIZE = 200;
 
-        // Verify default values
-        assertThat(options.getChunkSize()).isEqualTo(500);
-        assertThat(options.getOverlapSize()).isEqualTo(100);
-        assertThat(options.getSeparator()).isEqualTo("|,|，|。|？|！|\\n|\\\\?|\\\\!");
-        assertThat(options.getFileType()).isEqualTo("idp");
-        assertThat(options.getLanguage()).isEqualTo("cn");
-    }
+	private static final String TEST_SEPARATOR = "|,|，|。|？|！|\\n";
 
-    /**
-     * Test the builder pattern for setting all properties.
-     * Verifies that all properties can be set using the builder pattern.
-     */
-    @Test
-    void testBuilderPattern() {
-        DashScopeDocumentTransformerOptions options = DashScopeDocumentTransformerOptions.builder()
-                .withChunkSize(TEST_CHUNK_SIZE)
-                .withOverlapSize(TEST_OVERLAP_SIZE)
-                .withSeparator(TEST_SEPARATOR)
-                .withFileType(TEST_FILE_TYPE)
-                .withLanguage(TEST_LANGUAGE)
-                .build();
+	private static final String TEST_FILE_TYPE = "txt";
 
-        // Verify all properties are set correctly
-        assertThat(options.getChunkSize()).isEqualTo(TEST_CHUNK_SIZE);
-        assertThat(options.getOverlapSize()).isEqualTo(TEST_OVERLAP_SIZE);
-        assertThat(options.getSeparator()).isEqualTo(TEST_SEPARATOR);
-        assertThat(options.getFileType()).isEqualTo(TEST_FILE_TYPE);
-        assertThat(options.getLanguage()).isEqualTo(TEST_LANGUAGE);
-    }
+	private static final String TEST_LANGUAGE = "en";
 
-    /**
-     * Test all setter and getter methods.
-     * Verifies that all properties can be set and retrieved correctly using setters
-     * and getters.
-     */
-    @Test
-    void testSettersAndGetters() {
-        DashScopeDocumentTransformerOptions options = new DashScopeDocumentTransformerOptions();
+	/**
+	 * Test default values when creating a new instance. Verifies that all properties have
+	 * their expected default values.
+	 */
+	@Test
+	void testDefaultValues() {
+		DashScopeDocumentTransformerOptions options = new DashScopeDocumentTransformerOptions();
 
-        // Set values using setters
-        options.setChunkSize(TEST_CHUNK_SIZE);
-        options.setOverlapSize(TEST_OVERLAP_SIZE);
-        options.setSeparator(TEST_SEPARATOR);
-        options.setFileType(TEST_FILE_TYPE);
-        options.setLanguage(TEST_LANGUAGE);
+		// Verify default values
+		assertThat(options.getChunkSize()).isEqualTo(500);
+		assertThat(options.getOverlapSize()).isEqualTo(100);
+		assertThat(options.getSeparator()).isEqualTo("|,|，|。|？|！|\\n|\\\\?|\\\\!");
+		assertThat(options.getFileType()).isEqualTo("idp");
+		assertThat(options.getLanguage()).isEqualTo("cn");
+	}
 
-        // Verify values using getters
-        assertThat(options.getChunkSize()).isEqualTo(TEST_CHUNK_SIZE);
-        assertThat(options.getOverlapSize()).isEqualTo(TEST_OVERLAP_SIZE);
-        assertThat(options.getSeparator()).isEqualTo(TEST_SEPARATOR);
-        assertThat(options.getFileType()).isEqualTo(TEST_FILE_TYPE);
-        assertThat(options.getLanguage()).isEqualTo(TEST_LANGUAGE);
-    }
+	/**
+	 * Test the builder pattern for setting all properties. Verifies that all properties
+	 * can be set using the builder pattern.
+	 */
+	@Test
+	void testBuilderPattern() {
+		DashScopeDocumentTransformerOptions options = DashScopeDocumentTransformerOptions.builder()
+			.withChunkSize(TEST_CHUNK_SIZE)
+			.withOverlapSize(TEST_OVERLAP_SIZE)
+			.withSeparator(TEST_SEPARATOR)
+			.withFileType(TEST_FILE_TYPE)
+			.withLanguage(TEST_LANGUAGE)
+			.build();
 
-    /**
-     * Test builder with partial values set.
-     * Verifies that when only some properties are set, others retain their default
-     * values.
-     */
-    @Test
-    void testBuilderWithPartialValues() {
-        DashScopeDocumentTransformerOptions options = DashScopeDocumentTransformerOptions.builder()
-                .withChunkSize(TEST_CHUNK_SIZE)
-                .withLanguage(TEST_LANGUAGE)
-                .build();
+		// Verify all properties are set correctly
+		assertThat(options.getChunkSize()).isEqualTo(TEST_CHUNK_SIZE);
+		assertThat(options.getOverlapSize()).isEqualTo(TEST_OVERLAP_SIZE);
+		assertThat(options.getSeparator()).isEqualTo(TEST_SEPARATOR);
+		assertThat(options.getFileType()).isEqualTo(TEST_FILE_TYPE);
+		assertThat(options.getLanguage()).isEqualTo(TEST_LANGUAGE);
+	}
 
-        // Verify set values
-        assertThat(options.getChunkSize()).isEqualTo(TEST_CHUNK_SIZE);
-        assertThat(options.getLanguage()).isEqualTo(TEST_LANGUAGE);
+	/**
+	 * Test all setter and getter methods. Verifies that all properties can be set and
+	 * retrieved correctly using setters and getters.
+	 */
+	@Test
+	void testSettersAndGetters() {
+		DashScopeDocumentTransformerOptions options = new DashScopeDocumentTransformerOptions();
 
-        // Verify default values for unset properties
-        assertThat(options.getOverlapSize()).isEqualTo(100);
-        assertThat(options.getSeparator()).isEqualTo("|,|，|。|？|！|\\n|\\\\?|\\\\!");
-        assertThat(options.getFileType()).isEqualTo("idp");
-    }
+		// Set values using setters
+		options.setChunkSize(TEST_CHUNK_SIZE);
+		options.setOverlapSize(TEST_OVERLAP_SIZE);
+		options.setSeparator(TEST_SEPARATOR);
+		options.setFileType(TEST_FILE_TYPE);
+		options.setLanguage(TEST_LANGUAGE);
+
+		// Verify values using getters
+		assertThat(options.getChunkSize()).isEqualTo(TEST_CHUNK_SIZE);
+		assertThat(options.getOverlapSize()).isEqualTo(TEST_OVERLAP_SIZE);
+		assertThat(options.getSeparator()).isEqualTo(TEST_SEPARATOR);
+		assertThat(options.getFileType()).isEqualTo(TEST_FILE_TYPE);
+		assertThat(options.getLanguage()).isEqualTo(TEST_LANGUAGE);
+	}
+
+	/**
+	 * Test builder with partial values set. Verifies that when only some properties are
+	 * set, others retain their default values.
+	 */
+	@Test
+	void testBuilderWithPartialValues() {
+		DashScopeDocumentTransformerOptions options = DashScopeDocumentTransformerOptions.builder()
+			.withChunkSize(TEST_CHUNK_SIZE)
+			.withLanguage(TEST_LANGUAGE)
+			.build();
+
+		// Verify set values
+		assertThat(options.getChunkSize()).isEqualTo(TEST_CHUNK_SIZE);
+		assertThat(options.getLanguage()).isEqualTo(TEST_LANGUAGE);
+
+		// Verify default values for unset properties
+		assertThat(options.getOverlapSize()).isEqualTo(100);
+		assertThat(options.getSeparator()).isEqualTo("|,|，|。|？|！|\\n|\\\\?|\\\\!");
+		assertThat(options.getFileType()).isEqualTo("idp");
+	}
+
 }
