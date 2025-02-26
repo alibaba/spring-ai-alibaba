@@ -32,7 +32,7 @@ public class ApachePoiDocumentParserTest {
 		DocumentReader reader = new PoiDocumentReader(fileName);
 		List<Document> documents = reader.get();
 		Document document = documents.get(0);
-		assertThat(document.getContent()).isEqualToIgnoringWhitespace("test content");
+		assertThat(document.getText()).isEqualToIgnoringWhitespace("test content");
 		System.out.println(document.getMetadata());
 	}
 
@@ -44,7 +44,7 @@ public class ApachePoiDocumentParserTest {
 		List<Document> documents = reader.get();
 		Document document = documents.get(0);
 
-		assertThat(document.getContent()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
+		assertThat(document.getText()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
 		System.out.println(document.getMetadata());
 	}
 

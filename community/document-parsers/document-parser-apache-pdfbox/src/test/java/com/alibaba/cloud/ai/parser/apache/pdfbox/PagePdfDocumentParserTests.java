@@ -52,7 +52,7 @@ class PagePdfDocumentParserTests {
 
 		assertThat(docs).hasSize(4);
 
-		String allText = docs.stream().map(Document::getContent).collect(Collectors.joining(System.lineSeparator()));
+		String allText = docs.stream().map(Document::getText).collect(Collectors.joining(System.lineSeparator()));
 		System.out.println(allText);
 
 		// assertThat(allText).doesNotContain(

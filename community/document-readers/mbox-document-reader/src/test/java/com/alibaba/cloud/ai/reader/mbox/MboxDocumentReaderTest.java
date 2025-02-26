@@ -96,7 +96,7 @@ public class MboxDocumentReaderTest {
 		assertEquals("<test123@example.com>", doc.getId());
 
 		// Verify plain text message content
-		String content = doc.getContent();
+		String content = doc.getText();
 		assertTrue(content.contains("This is a plain text email message"));
 		assertTrue(content.contains("Best regards"));
 	}
@@ -125,7 +125,7 @@ public class MboxDocumentReaderTest {
 		assertEquals("<test124@example.com>", doc.getId());
 
 		// Verify HTML content was correctly parsed to text
-		String content = doc.getContent();
+		String content = doc.getText();
 
 		// Verify heading was correctly extracted
 		assertTrue(content.contains("HTML Email Test"), "Should contain the h1 heading text");
@@ -171,7 +171,7 @@ public class MboxDocumentReaderTest {
 		assertEquals("<test125@example.com>", doc.getId());
 
 		// Verify content - should prefer HTML part
-		String content = doc.getContent();
+		String content = doc.getText();
 		assertTrue(content.contains("Multipart Email Test"));
 		assertTrue(content.contains("This is the HTML version"));
 		// Should not contain plain text part
@@ -209,7 +209,7 @@ public class MboxDocumentReaderTest {
 
 		// Read first email
 		Document doc = reader.get().get(0);
-		String content = doc.getContent();
+		String content = doc.getText();
 
 		// Verify custom format
 		assertTrue(content.startsWith("Email Details:"));
