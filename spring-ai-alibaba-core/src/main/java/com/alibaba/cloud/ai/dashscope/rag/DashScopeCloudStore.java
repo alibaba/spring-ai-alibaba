@@ -86,7 +86,7 @@ public class DashScopeCloudStore implements VectorStore {
 	@Override
 	public List<Document> similaritySearch(String query) {
 
-		return similaritySearch(SearchRequest.builder().query(query).toString());
+		return similaritySearch(SearchRequest.builder().query(query).build());
 
 	}
 
