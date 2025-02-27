@@ -79,7 +79,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    * 模型内置了互联网搜索服务，该参数控制模型在生成文本时是否参考使用互联网搜索结果。取值如下：
    *
    * <ul>
-   *   <li>true：启用互联网搜索，模型会将搜索结果作为文本生成过程中的参考信息，但模型会基于其内部逻辑“自行判断”是否使用互联网搜索结果。
+   *   <li>true：启用互联网搜索，模型会将搜索结果作为文本生成过程中的参考信息，但模型会基于其内部逻辑"自行判断"是否使用互联网搜索结果。
    *   <li>false（默认）：关闭互联网搜索。
    * </ul>
    */
@@ -114,7 +114,8 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    * "auto"表示模型判断是否调用工具，可能调用也可能不调用。tools参数不为空时，默认值为"auto"。
    * object结构可以指定模型调用指定工具。例如tool_choice={"type": "function", "function": {"name": "user_function"}}
    */
-  private @JsonProperty("tool_choice") Object toolChoice;
+  @JsonProperty("tool_choice")
+  private Object toolChoice;
 
   /**
    * this is to change token limitation to 16384 for vl model, only support for vl models
