@@ -3,6 +3,7 @@ package com.alibaba.cloud.ai.graph.plain_text.jackson;
 import java.io.IOException;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 import org.junit.jupiter.api.Test;
@@ -36,9 +37,9 @@ public class JacksonSerializerTest {
 	@Test
 	public void serializeWithTypeInferenceTest() throws IOException, ClassNotFoundException {
 
-		State state = new State(mapOf("prop1", "value1"));
+		OverAllState state = new OverAllState(mapOf("prop1", "value1"));
 
-		JacksonStateSerializer<State> serializer = new JacksonStateSerializer<State>(State::new) {
+		JacksonStateSerializer serializer = new JacksonStateSerializer(OverAllState::new) {
 		};
 
 		Class<?> type = serializer.getStateType();
@@ -50,7 +51,7 @@ public class JacksonSerializerTest {
 		assertNotNull(bytes);
 		assertTrue(bytes.length > 0);
 
-		AgentState deserializedState = serializer.readObject(bytes);
+		OverAllState deserializedState = serializer.readObject(bytes);
 
 		assertNotNull(deserializedState);
 		assertEquals(1, deserializedState.data().size());

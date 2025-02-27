@@ -3,6 +3,7 @@ package com.alibaba.cloud.ai.graph.plain_text.gson;
 import java.io.IOException;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.gson.GsonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 import org.junit.jupiter.api.Test;
@@ -29,9 +30,9 @@ public class GSonSerializerTest {
 	@Test
 	public void serializeWithTypeInferenceTest() throws IOException, ClassNotFoundException {
 
-		State state = new State(mapOf("prop1", "value1"));
+		OverAllState state = new OverAllState(mapOf("prop1", "value1"));
 
-		GsonStateSerializer<State> serializer = new GsonStateSerializer<State>(State::new) {
+		GsonStateSerializer serializer = new GsonStateSerializer(OverAllState::new) {
 		};
 
 		Class<?> type = serializer.getStateType();
@@ -43,7 +44,7 @@ public class GSonSerializerTest {
 		assertNotNull(bytes);
 		assertTrue(bytes.length > 0);
 
-		AgentState deserializedState = serializer.readObject(bytes);
+		OverAllState deserializedState = serializer.readObject(bytes);
 
 		assertNotNull(deserializedState);
 		assertEquals(1, deserializedState.data().size());
