@@ -59,7 +59,7 @@ public class DashScopeDocumentRetrieverOptions {
 		return denseSimilarityTopK;
 	}
 
-	public void setDenseSimilarityTopk(int denseSimilarityTopK) {
+	public void setDenseSimilarityTopK(int denseSimilarityTopK) {
 		this.denseSimilarityTopK = denseSimilarityTopK;
 	}
 
@@ -67,7 +67,7 @@ public class DashScopeDocumentRetrieverOptions {
 		return sparseSimilarityTopK;
 	}
 
-	public void setSparseSimilarityTopk(int sparseSimilarityTopK) {
+	public void setSparseSimilarityTopK(int sparseSimilarityTopK) {
 		this.sparseSimilarityTopK = sparseSimilarityTopK;
 	}
 
@@ -133,12 +133,12 @@ public class DashScopeDocumentRetrieverOptions {
 		}
 
 		public DashScopeDocumentRetrieverOptions.Builder withDenseSimilarityTopK(Integer denseSimilarityTopK) {
-			this.options.setDenseSimilarityTopk(denseSimilarityTopK);
+			this.options.setDenseSimilarityTopK(denseSimilarityTopK);
 			return this;
 		}
 
 		public DashScopeDocumentRetrieverOptions.Builder withSparseSimilarityTopK(int sparseSimilarityTopK) {
-			this.options.setSparseSimilarityTopk(sparseSimilarityTopK);
+			this.options.setSparseSimilarityTopK(sparseSimilarityTopK);
 			return this;
 		}
 
