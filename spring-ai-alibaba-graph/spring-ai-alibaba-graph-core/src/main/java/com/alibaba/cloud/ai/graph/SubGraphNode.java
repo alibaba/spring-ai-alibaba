@@ -7,7 +7,7 @@ import static java.lang.String.format;
 /**
  * Defines the interface for a sub-graph node in an agent's state graph.
  */
-public interface SubGraphNode<State extends AgentState> {
+public interface SubGraphNode {
 
 	String PREFIX_FORMAT = "%s-%s";
 
@@ -22,7 +22,7 @@ public interface SubGraphNode<State extends AgentState> {
 	 * the current state.
 	 * @return {@code StateGraph<State>} representation of the subgraph.
 	 */
-	StateGraph<State> subGraph();
+	StateGraph subGraph();
 
 	default String formatId(String nodeId) {
 		return format(PREFIX_FORMAT, id(), nodeId);

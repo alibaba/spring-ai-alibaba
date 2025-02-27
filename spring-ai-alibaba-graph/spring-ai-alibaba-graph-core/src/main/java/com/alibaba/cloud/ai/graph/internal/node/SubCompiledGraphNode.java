@@ -6,16 +6,16 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.SubGraphNode;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 
-public class SubCompiledGraphNode<State extends AgentState> extends Node<State> implements SubGraphNode<State> {
+public class SubCompiledGraphNode extends Node implements SubGraphNode {
 
-	private final CompiledGraph<State> subGraph;
+	private final CompiledGraph subGraph;
 
-	public SubCompiledGraphNode(@NonNull String id, @NonNull CompiledGraph<State> subGraph) {
-		super(id, (config) -> new SubCompiledGraphNodeAction<>(subGraph));
+	public SubCompiledGraphNode(@NonNull String id, @NonNull CompiledGraph subGraph) {
+		super(id, (config) -> new SubCompiledGraphNodeAction(subGraph));
 		this.subGraph = subGraph;
 	}
 
-	public StateGraph<State> subGraph() {
+	public StateGraph subGraph() {
 		return subGraph.stateGraph;
 	}
 

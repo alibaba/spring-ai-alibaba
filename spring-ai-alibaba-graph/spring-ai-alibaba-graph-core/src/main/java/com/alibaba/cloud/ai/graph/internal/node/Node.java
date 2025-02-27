@@ -14,23 +14,22 @@ import static java.lang.String.format;
  * creating actions to be executed by the node. This is a generic record where the state
  * type is specified by the type parameter {@code State}.
  *
- * @param <State> the type of the state associated with the node; it must extend
- * {@link AgentState}.
+ * {@link OverAllState}.
  *
  */
-public class Node<State extends AgentState> {
+public class Node {
 
-	public interface ActionFactory<State extends AgentState> {
+	public interface ActionFactory {
 
-		AsyncNodeActionWithConfig<State> apply(CompileConfig config) throws GraphStateException;
+		AsyncNodeActionWithConfig apply(CompileConfig config) throws GraphStateException;
 
 	}
 
 	private final String id;
 
-	private final ActionFactory<State> actionFactory;
+	private final ActionFactory actionFactory;
 
-	public Node(String id, ActionFactory<State> actionFactory) {
+	public Node(String id, ActionFactory actionFactory) {
 		this.id = id;
 		this.actionFactory = actionFactory;
 	}
@@ -56,7 +55,7 @@ public class Node<State extends AgentState> {
 	 * @return a factory function that takes a {@link CompileConfig} and returns an
 	 * {@link AsyncNodeActionWithConfig} instance for the specified {@code State}.
 	 */
-	public ActionFactory<State> actionFactory() {
+	public ActionFactory actionFactory() {
 		return actionFactory;
 	}
 
@@ -65,8 +64,8 @@ public class Node<State extends AgentState> {
 		return false;
 	}
 
-	public Node<State> withIdUpdated(Function<String, String> newId) {
-		return new Node<>(newId.apply(id), actionFactory);
+	public Node withIdUpdated(Function<String, String> newId) {
+		return new Node(newId.apply(id), actionFactory);
 	}
 
 	/**
@@ -80,7 +79,7 @@ public class Node<State extends AgentState> {
 			return true;
 		if (o == null)
 			return false;
-		if (o instanceof Node<?> node) {
+		if (o instanceof Node node) {
 			return Objects.equals(id, node.id);
 		}
 		return false;
