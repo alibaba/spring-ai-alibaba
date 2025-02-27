@@ -80,12 +80,12 @@ public class DashScopeAgentApi {
 	}
 
 	public ResponseEntity<DashScopeAgentResponse> call(DashScopeAgentRequest request) {
-		String uri = "/api/v1/apps/" + request.app_id() + "/completion";
+		String uri = "/api/v1/apps/" + request.appId() + "/completion";
 		return restClient.post().uri(uri).body(request).retrieve().toEntity(DashScopeAgentResponse.class);
 	}
 
 	public Flux<DashScopeAgentResponse> stream(DashScopeAgentRequest request) {
-		String uri = "/api/v1/apps/" + request.app_id() + "/completion";
+		String uri = "/api/v1/apps/" + request.appId() + "/completion";
 		return webClient.post()
 			.uri(uri)
 			.body(Mono.just(request), DashScopeAgentResponse.class)
@@ -96,47 +96,82 @@ public class DashScopeAgentApi {
 			});
 	}
 
+	// @formatter:off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record DashScopeAgentRequest(String app_id, @JsonProperty("input") DashScopeAgentRequestInput input,
+	public record DashScopeAgentRequest(
+			@JsonProperty("app_id") String appId,
+			@JsonProperty("input") DashScopeAgentRequestInput input,
 			@JsonProperty("parameters") DashScopeAgentRequestParameters parameters) {
 		@JsonInclude(JsonInclude.Include.NON_NULL)
-		public record DashScopeAgentRequestInput(@JsonProperty("prompt") String prompt,
-				@JsonProperty("session_id") String sessionId, @JsonProperty("memory_id") String memoryId,
+		public record DashScopeAgentRequestInput(
+				@JsonProperty("prompt") String prompt,
+				@JsonProperty("messages") List<DashScopeAgentRequestMessage> messages,
+				@JsonProperty("session_id") String sessionId,
+				@JsonProperty("memory_id") String memoryId,
+				@JsonProperty("image_list") List<String> images,
 				@JsonProperty("biz_params") JsonNode bizParams) {
+			@JsonInclude(JsonInclude.Include.NON_NULL)
+			public record DashScopeAgentRequestMessage(
+					@JsonProperty("role") String role,
+					@JsonProperty("content") String content) {
+			}
 		}
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
-		public record DashScopeAgentRequestParameters(@JsonProperty("has_thoughts") Boolean hasThoughts,
-				@JsonProperty("incremental_output") Boolean incrementalOutput
-
+		public record DashScopeAgentRequestParameters(
+				@JsonProperty("has_thoughts") Boolean hasThoughts,
+				@JsonProperty("incremental_output") Boolean incrementalOutput,
+				@JsonProperty("rag_options") DashScopeAgentRequestRagOptions ragOptions
 		) {
+			@JsonInclude(JsonInclude.Include.NON_NULL)
+			public record DashScopeAgentRequestRagOptions(
+					@JsonProperty("pipeline_ids") List<String> pipelineIds,
+					@JsonProperty("file_ids") List<String> fileIds,
+					@JsonProperty("metadata_filter") JsonNode metadataFilter,
+					@JsonProperty("tags") List<String> tags,
+					@JsonProperty("structured_filter") JsonNode structuredFilter,
+					@JsonProperty("session_file_ids") List<String> sessionFileIds) {
+			}
 		}
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record DashScopeAgentResponse(@JsonProperty("status_code") Integer statusCode,
-			@JsonProperty("request_id") String requestId, @JsonProperty("code") String code,
-			@JsonProperty("message") String message, @JsonProperty("output") DashScopeAgentResponseOutput output,
+	public record DashScopeAgentResponse(
+			@JsonProperty("status_code") Integer statusCode,
+			@JsonProperty("request_id") String requestId,
+			@JsonProperty("code") String code,
+			@JsonProperty("message") String message,
+			@JsonProperty("output") DashScopeAgentResponseOutput output,
 			@JsonProperty("usage") DashScopeAgentResponseUsage usage) {
 		@JsonInclude(JsonInclude.Include.NON_NULL)
-		public record DashScopeAgentResponseOutput(@JsonProperty("text") String text,
-				@JsonProperty("finish_reason") String finishReason, @JsonProperty("session_id") String sessionId,
+		public record DashScopeAgentResponseOutput(
+				@JsonProperty("text") String text,
+				@JsonProperty("finish_reason") String finishReason,
+				@JsonProperty("session_id") String sessionId,
 				@JsonProperty("thoughts") List<DashScopeAgentResponseOutputThoughts> thoughts,
 				@JsonProperty("doc_references") List<DashScopeAgentResponseOutputDocReference> docReferences) {
 			@JsonInclude(JsonInclude.Include.NON_NULL)
-			public record DashScopeAgentResponseOutputThoughts(@JsonProperty("thought") String thought,
-					@JsonProperty("action_type") String actionType, @JsonProperty("action_name") String actionName,
+			public record DashScopeAgentResponseOutputThoughts(
+					@JsonProperty("thought") String thought,
+					@JsonProperty("action_type") String actionType,
+					@JsonProperty("action_name") String actionName,
 					@JsonProperty("action") String action,
 					@JsonProperty("action_input_stream") String actionInputStream,
-					@JsonProperty("action_input") String actionInput, @JsonProperty("response") String response,
-					@JsonProperty("observation") String observation) {
+					@JsonProperty("action_input") String actionInput,
+					@JsonProperty("response") String response,
+					@JsonProperty("observation") String observation,
+					@JsonProperty("reasoning_content") String reasoningContent) {
 			}
 
 			@JsonInclude(JsonInclude.Include.NON_NULL)
-			public record DashScopeAgentResponseOutputDocReference(@JsonProperty("index_id") String indexId,
-					@JsonProperty("title") String title, @JsonProperty("doc_id") String docId,
-					@JsonProperty("doc_name") String docName, @JsonProperty("text") String text,
-					@JsonProperty("images") List<String> images) {
+			public record DashScopeAgentResponseOutputDocReference(
+					@JsonProperty("index_id") String indexId,
+					@JsonProperty("title") String title,
+					@JsonProperty("doc_id") String docId,
+					@JsonProperty("doc_name") String docName,
+					@JsonProperty("text") String text,
+					@JsonProperty("images") List<String> images,
+					@JsonProperty("page_number") List<Integer> pageNumber) {
 			}
 		}
 
@@ -144,7 +179,8 @@ public class DashScopeAgentApi {
 		public record DashScopeAgentResponseUsage(
 				@JsonProperty("models") List<DashScopeAgentResponseUsageModels> models) {
 			@JsonInclude(JsonInclude.Include.NON_NULL)
-			public record DashScopeAgentResponseUsageModels(@JsonProperty("model_id") String modelId,
+			public record DashScopeAgentResponseUsageModels(
+					@JsonProperty("model_id") String modelId,
 					@JsonProperty("input_tokens") Integer inputTokens,
 					@JsonProperty("output_tokens") Integer outputTokens) {
 			}
