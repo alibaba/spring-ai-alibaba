@@ -81,7 +81,7 @@ public class GraphServiceImpl implements GraphService {
 	 * @param threadId the ID of the thread.
 	 * @param output the output to serialize.
 	 */
-	private String serializeOutput(String threadId, NodeOutput<? extends AgentState> output) {
+	private String serializeOutput(String threadId, NodeOutput output) {
 		try {
 			StringBuilder sb = new StringBuilder();
 			sb.append("[ \"").append(threadId).append("\",\n");
@@ -111,7 +111,7 @@ public class GraphServiceImpl implements GraphService {
 			});
 		}
 
-		AsyncGenerator<? extends NodeOutput<? extends AgentState>> generator = null;
+		AsyncGenerator<? extends NodeOutput> generator = null;
 
 		if (resume) {
 			log.trace("RESUME REQUEST PREPARE");

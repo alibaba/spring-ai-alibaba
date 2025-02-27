@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.state.AgentState;
@@ -18,14 +19,13 @@ import com.alibaba.cloud.ai.graph.state.AgentState;
  * that the execution is handled asynchronously with the ability to configure settings.
  * </p>
  *
- * @param <State> The type of state the subgraph operates on, which must extend
- * {@link AgentState}.
+ * {@link OverAllState}.
  * @param subGraph sub graph instance
  * @see CompiledGraph
  * @see AsyncNodeActionWithConfig
  */
-public record SubCompiledGraphNodeAction<State extends AgentState>(
-		CompiledGraph<State> subGraph) implements AsyncNodeActionWithConfig<State> {
+public record SubCompiledGraphNodeAction(
+		CompiledGraph subGraph) implements AsyncNodeActionWithConfig {
 
 	/**
 	 * Executes the given graph with the provided state and configuration.
@@ -37,7 +37,7 @@ public record SubCompiledGraphNodeAction<State extends AgentState>(
 	 * will be completed exceptionally.
 	 */
 	@Override
-	public CompletableFuture<Map<String, Object>> apply(State state, RunnableConfig config) {
+	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
 		CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
 
 		try {

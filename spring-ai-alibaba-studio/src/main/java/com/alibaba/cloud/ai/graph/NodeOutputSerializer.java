@@ -44,7 +44,7 @@ public class NodeOutputSerializer extends StdSerializer<NodeOutput> {
 			throws IOException {
 		log.trace("NodeOutputSerializer start! {}", nodeOutput.getClass());
 		gen.writeStartObject();
-		if (nodeOutput instanceof StateSnapshot<?> snapshot) {
+		if (nodeOutput instanceof StateSnapshot snapshot) {
 			var checkpoint = snapshot.config().checkPointId();
 			log.trace("checkpoint: {}", checkpoint);
 			if (checkpoint.isPresent()) {

@@ -1,13 +1,13 @@
 package com.alibaba.cloud.ai.graph.action;
 
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.OverAllState;
+
 import java.util.Map;
 
-import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.state.AgentState;
-
 @FunctionalInterface
-public interface NodeActionWithConfig<S extends AgentState> {
+public interface NodeActionWithConfig {
 
-	Map<String, Object> apply(S t, RunnableConfig config) throws Exception;
+	Map<String, Object> apply(OverAllState t, RunnableConfig config) throws Exception;
 
 }
