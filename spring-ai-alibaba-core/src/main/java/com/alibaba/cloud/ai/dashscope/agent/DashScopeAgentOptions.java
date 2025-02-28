@@ -167,6 +167,7 @@ public class DashScopeAgentOptions implements ChatOptions {
 		return DashScopeAgentOptions.builder()
 			.withAppId(options.getAppId())
 			.withSessionId(options.getSessionId())
+			.withMemoryId(options.getMemoryId())
 			.withIncrementalOutput(options.getIncrementalOutput())
 			.withHasThoughts(options.getHasThoughts())
 			.withBizParams(options.getBizParams())
