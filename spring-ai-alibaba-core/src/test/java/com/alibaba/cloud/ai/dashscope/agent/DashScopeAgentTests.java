@@ -154,7 +154,7 @@ class DashScopeAgentTests {
 	@Test
 	void testCallWithNullAppId() {
 		// Prepare test data with null appId
-		DashScopeAgentOptions optionsWithNullAppId = DashScopeAgentOptions.builder().build();
+		DashScopeAgentOptions optionsWithNullAppId = DashScopeAgentOptions.builder().withAppId("").build();
 		Message message = new UserMessage(TEST_USER_MESSAGE);
 		Prompt prompt = new Prompt(List.of(message), optionsWithNullAppId);
 
@@ -234,7 +234,8 @@ class DashScopeAgentTests {
 	private DashScopeAgentResponse createMockResponse() {
 		// Create thoughts list
 		var thought = new DashScopeAgentResponse.DashScopeAgentResponseOutput.DashScopeAgentResponseOutputThoughts(
-				"test thought", null, null, null, null, null, null, null);
+				"test thought", "test action type", "test action name", "test action", "test input stream",
+				"test input", "test response", "test observation", "test reasoning content");
 		List<DashScopeAgentResponse.DashScopeAgentResponseOutput.DashScopeAgentResponseOutputThoughts> thoughts = List
 			.of(thought);
 
