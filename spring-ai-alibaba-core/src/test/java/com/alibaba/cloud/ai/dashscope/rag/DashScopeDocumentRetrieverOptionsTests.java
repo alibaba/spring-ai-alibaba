@@ -95,8 +95,8 @@ class DashScopeDocumentRetrieverOptionsTests {
 
 		// Set values using setters
 		options.setIndexName(TEST_INDEX_NAME);
-		options.setDenseSimilarityTopk(TEST_DENSE_TOP_K);
-		options.setSparseSimilarityTopk(TEST_SPARSE_TOP_K);
+		options.setDenseSimilarityTopK(TEST_DENSE_TOP_K);
+		options.setSparseSimilarityTopK(TEST_SPARSE_TOP_K);
 		options.setEnableRewrite(true);
 		options.setRewriteModelName(TEST_REWRITE_MODEL);
 		options.setEnableReranking(false);
