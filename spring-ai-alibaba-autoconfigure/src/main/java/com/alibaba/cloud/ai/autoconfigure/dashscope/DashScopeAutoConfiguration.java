@@ -209,9 +209,7 @@ public class DashScopeAutoConfiguration {
 				RestClient.Builder restClientBuilder,
 				WebClient.Builder webClientBuilder,
 				RetryTemplate retryTemplate,
-				ResponseErrorHandler responseErrorHandler,
-				ObjectProvider<ObservationRegistry> observationRegistry,
-				ObjectProvider<ImageModelObservationConvention> observationConvention
+				ResponseErrorHandler responseErrorHandler
 		) {
 
 			ResolvedConnectionProperties resolved = resolveConnectionProperties(
@@ -232,11 +230,8 @@ public class DashScopeAutoConfiguration {
 			DashScopeImageModel dashScopeImageModel = new DashScopeImageModel(
 					dashScopeImageApi,
 					imageProperties.getOptions(),
-					retryTemplate,
-					observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP
-			));
-
-			observationConvention.ifAvailable(dashScopeImageModel::setObservationConvention);
+					retryTemplate
+			);
 
 			return dashScopeImageModel;
 		}
