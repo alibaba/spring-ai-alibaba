@@ -98,12 +98,12 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 	 * @param customObservationConvention Custom observation convention for metrics.
 	 * @param batchingStrategy The batching strategy used for processing documents.
 	 */
-	public OpenSearchVector(com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi openSearchApi, EmbeddingModel embeddingModel,
-			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention,
-			BatchingStrategy batchingStrategy) {
+	public OpenSearchVector(com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi openSearchApi,
+			EmbeddingModel embeddingModel, ObservationRegistry observationRegistry,
+			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 		this(builder(openSearchApi, embeddingModel).observationRegistry(observationRegistry)
-				.customObservationConvention(customObservationConvention)
-				.batchingStrategy(batchingStrategy));
+			.customObservationConvention(customObservationConvention)
+			.batchingStrategy(batchingStrategy));
 	}
 
 	/**
@@ -111,7 +111,8 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 	 * @param openSearchApi The API client used to interact with OpenSearch.
 	 * @param embeddingModel The embedding model used for vector operations.
 	 */
-	public OpenSearchVector(com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi openSearchApi, EmbeddingModel embeddingModel) {
+	public OpenSearchVector(com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi openSearchApi,
+			EmbeddingModel embeddingModel) {
 		this(builder(openSearchApi, embeddingModel));
 	}
 
@@ -139,7 +140,8 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 	 * @param embeddingModel The embedding model used for vector operations.
 	 * @return A new Builder instance.
 	 */
-	public static Builder builder(com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi openSearchApi, EmbeddingModel embeddingModel) {
+	public static Builder builder(com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi openSearchApi,
+			EmbeddingModel embeddingModel) {
 		return new Builder(openSearchApi, embeddingModel);
 	}
 
@@ -205,12 +207,13 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 		queryRequest.setOutputFields(this.options.getOutputFields());
 
 		try {
-			List<com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi.SimilarityResult> similarityResults = openSearchApi.search(queryRequest, itemConverter);
+			List<com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi.SimilarityResult> similarityResults = openSearchApi
+				.search(queryRequest, itemConverter);
 
 			return similarityResults.stream()
-					.filter(result -> result.score() >= similarityThreshold)
-					.map(result -> new Document(result.id(), result.content(), result.metadata()))
-					.collect(Collectors.toList());
+				.filter(result -> result.score() >= similarityThreshold)
+				.map(result -> new Document(result.id(), result.content(), result.metadata()))
+				.collect(Collectors.toList());
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -240,7 +243,8 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 		 * @param openSearchApi The API client used to interact with OpenSearch.
 		 * @param embeddingModel The embedding model used for vector operations.
 		 */
-		public Builder(com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi openSearchApi, EmbeddingModel embeddingModel) {
+		public Builder(com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi openSearchApi,
+				EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			this.openSearchApi = openSearchApi;
 		}
@@ -288,7 +292,8 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 	 * response from an OpenSearch similarity search query and convert it into a more
 	 * usable format.
 	 */
-	public static class SimilarityResultConverter implements Converter<JSONObject, com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi.SimilarityResult> {
+	public static class SimilarityResultConverter implements
+			Converter<JSONObject, com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi.SimilarityResult> {
 
 		private static final String EMPTY_TEXT = "";
 
@@ -304,13 +309,15 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 		 * document.
 		 */
 		@Override
-		public com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi.SimilarityResult convert(JSONObject jsonDocument) {
+		public com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi.SimilarityResult convert(
+				JSONObject jsonDocument) {
 			String id = extractId(jsonDocument);
 			String content = extractContent(jsonDocument);
 			double score = extractScore(jsonDocument);
 			Map<String, Object> metadata = extractMetadata(jsonDocument);
 
-			return new com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi.SimilarityResult(id, score, content, metadata);
+			return new com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi.SimilarityResult(id, score, content,
+					metadata);
 		}
 
 		/**
