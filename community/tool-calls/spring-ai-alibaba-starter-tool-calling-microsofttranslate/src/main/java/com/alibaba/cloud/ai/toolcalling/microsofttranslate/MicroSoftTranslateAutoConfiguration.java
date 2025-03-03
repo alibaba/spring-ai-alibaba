@@ -29,8 +29,8 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @ConditionalOnClass(MicroSoftTranslateService.class)
 @EnableConfigurationProperties(MicroSoftTranslateProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.microsofttranslate", name = "enabled",
-		havingValue = "true")
+//@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.microsofttranslate", name = "enabled",
+//		havingValue = "true")
 public class MicroSoftTranslateAutoConfiguration {
 
 	@Bean
