@@ -91,8 +91,8 @@ public class TairVectorStore extends AbstractObservationVectorStore {
 			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 		this(builder(tairVectorApi, embeddingModel).observationRegistry(observationRegistry)
-				.customObservationConvention(customObservationConvention)
-				.batchingStrategy(batchingStrategy));
+			.customObservationConvention(customObservationConvention)
+			.batchingStrategy(batchingStrategy));
 	}
 
 	/**
@@ -168,11 +168,11 @@ public class TairVectorStore extends AbstractObservationVectorStore {
 				(long) request.getTopK(), embeddingString);
 
 		return result.getKnnResults()
-				.stream()
-				.filter(item -> item.getScore() >= request.getSimilarityThreshold())
-				.map(this::mapToDocument)
-				.limit(request.getTopK())
-				.toList();
+			.stream()
+			.filter(item -> item.getScore() >= request.getSimilarityThreshold())
+			.map(this::mapToDocument)
+			.limit(request.getTopK())
+			.toList();
 	}
 
 	/**
