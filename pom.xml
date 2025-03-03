@@ -91,6 +91,7 @@
 
         <module>community/vector-stores/spring-ai-alibaba-tair-store</module>
         <module>community/vector-stores/spring-ai-alibaba-analyticdb-store</module>
+        <module>community/vector-stores/spring-ai-alibaba-opensearch-store</module>
 
     </modules>
 
