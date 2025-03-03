@@ -170,7 +170,7 @@ public class EmlEmailDocumentReader implements DocumentReader {
 	 */
 	private void processMessageContent(Part part, Map<String, Object> metadata, List<Document> documents)
 			throws Exception {
-		Object content = part.getText();
+		Object content = part.getContent();
 
 		if (content instanceof Multipart) {
 			// Handle multipart content
@@ -179,11 +179,11 @@ public class EmlEmailDocumentReader implements DocumentReader {
 			for (int i = 0; i < multipart.getCount(); i++) {
 				Part bodyPart = multipart.getBodyPart(i);
 				String disposition = bodyPart.getDisposition();
-				String contentType = bodyPart.getTextType().toLowerCase();
+				String contentType = bodyPart.getContentType().toLowerCase();
 
 				if (disposition == null) {
 					// This could be main content or nested multipart
-					if (bodyPart.getText() instanceof Multipart) {
+					if (bodyPart.getContent() instanceof Multipart) {
 						processMessageContent(bodyPart, metadata, documents);
 					}
 					else if (contentType.contains("text/plain") || contentType.contains("text/html")) {
@@ -204,7 +204,7 @@ public class EmlEmailDocumentReader implements DocumentReader {
 			// Handle simple text/html content
 			String mainContent = emailParser.getEmailContent(part, preferHtml);
 			Map<String, Object> mainMetadata = new HashMap<>(metadata);
-			mainMetadata.put("content_type", part.getTextType().toLowerCase());
+			mainMetadata.put("content_type", part.getContentType().toLowerCase());
 			documents.add(new Document(mainContent, mainMetadata));
 		}
 	}
@@ -224,12 +224,12 @@ public class EmlEmailDocumentReader implements DocumentReader {
 		// Create attachment metadata
 		Map<String, Object> attachmentMetadata = new HashMap<>(metadata);
 		attachmentMetadata.put("filename", filename);
-		attachmentMetadata.put("content_type", part.getTextType());
+		attachmentMetadata.put("content_type", part.getContentType());
 		attachmentMetadata.put("size", part.getSize());
 
 		// Choose appropriate parser based on content type
 		try (InputStream is = part.getInputStream()) {
-			String contentType = part.getTextType().toLowerCase();
+			String contentType = part.getContentType().toLowerCase();
 			List<Document> parsedDocuments;
 
 			if (contentType.contains("text/html") || contentType.contains("application/html")) {
