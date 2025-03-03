@@ -50,12 +50,14 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 
 /**
  * @author HeYQ
  * @since 2024-10-23 20:29
  */
-public class AnalyticdbVector implements VectorStore {
+public class AnalyticdbVector extends AbstractObservationVectorStore {
 
 	private static final Logger logger = LoggerFactory.getLogger(AnalyticdbVector.class);
 
@@ -71,6 +73,8 @@ public class AnalyticdbVector implements VectorStore {
 
 	public AnalyticdbVector(String collectionName, AnalyticdbConfig config, EmbeddingModel embeddingModel)
 			throws Exception {
+		// FIXME
+		super(null);
 		// collection_name must be updated every time
 		this.collectionName = collectionName.toLowerCase();
 		this.config = config;
@@ -171,7 +175,7 @@ public class AnalyticdbVector implements VectorStore {
 	}
 
 	@Override
-	public void add(List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		List<UpsertCollectionDataRequest.UpsertCollectionDataRequestRows> rows = new ArrayList<>(10);
 		for (Document doc : documents) {
 			logger.info("Calling EmbeddingModel for document id = {}", doc.getId());
@@ -210,9 +214,9 @@ public class AnalyticdbVector implements VectorStore {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> ids) {
+	public void doDelete(List<String> ids) {
 		if (ids.isEmpty()) {
-			return Optional.of(false);
+			return;
 		}
 		String idsStr = ids.stream().map(id -> "'" + id + "'").collect(Collectors.joining(", ", "(", ")"));
 		DeleteCollectionDataRequest request = new DeleteCollectionDataRequest()
@@ -225,8 +229,8 @@ public class AnalyticdbVector implements VectorStore {
 			.setCollectionDataFilter("refDocId IN " + idsStr);
 		try {
 			DeleteCollectionDataResponse deleteCollectionDataResponse = this.client.deleteCollectionData(request);
-			return deleteCollectionDataResponse.statusCode.equals(200) ? Optional.of(true) : Optional.of(false);
 			// Handle response if needed
+			logger.debug("delete collection data response:{}", deleteCollectionDataResponse.getBody());
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to delete collection data by IDs: " + e.getMessage(), e);
@@ -234,14 +238,7 @@ public class AnalyticdbVector implements VectorStore {
 	}
 
 	@Override
-	public List<Document> similaritySearch(String query) {
-
-		return this.similaritySearch(SearchRequest.builder().query(query).build());
-
-	}
-
-	@Override
-	public List<Document> similaritySearch(SearchRequest searchRequest) {
+	public List<Document> doSimilaritySearch(SearchRequest searchRequest) {
 		double scoreThreshold = searchRequest.getSimilarityThreshold();
 		boolean includeValues = searchRequest.hasFilterExpression();
 		int topK = searchRequest.getTopK();
@@ -279,6 +276,11 @@ public class AnalyticdbVector implements VectorStore {
 		catch (Exception e) {
 			throw new RuntimeException("Failed to search by full text: " + e.getMessage(), e);
 		}
+	}
+
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+		return null;
 	}
 
 }
