@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class ChatGptDataDocumentReaderTests {
 
 	// Path to test file
-	private static final String TEST_FILE_PATH = "/path/to/conversations.json";
+	private static final String TEST_FILE_PATH = "src/test/resources/conversations.json";
 
 	@Test
 	void shouldLoadAllDocuments() {

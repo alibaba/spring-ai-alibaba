@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.reader.gitbook;
 import com.alibaba.cloud.ai.reader.gitbook.model.GitbookPage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -39,16 +40,41 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class GitbookDocumentReaderTest {
 
-	private static final String API_TOKEN = "test-token";
+	// Get API token from environment variable, use test value if not set
+	private static final String API_TOKEN = System.getenv("GITBOOK_API_TOKEN") != null
+			? System.getenv("GITBOOK_API_TOKEN") : "test-token";
 
-	private static final String SPACE_ID = "test-space";
+	// Get space ID from environment variable, use test value if not set
+	private static final String SPACE_ID = System.getenv("GITBOOK_SPACE_ID") != null ? System.getenv("GITBOOK_SPACE_ID")
+			: "test-space";
 
 	private static final String CUSTOM_API_URL = "https://api.custom-gitbook.com";
+
+	// Flag to indicate if Gitbook credentials are available
+	private static final boolean gitbookCredentialsAvailable = isGitbookCredentialsAvailable();
 
 	@Mock
 	private GitbookClient mockGitbookClient;
 
 	private GitbookDocumentReader reader;
+
+	/**
+	 * Check if Gitbook credentials are available
+	 * @return true if both API token and space ID are available, false otherwise
+	 */
+	public static boolean isGitbookCredentialsAvailable() {
+		String apiToken = System.getenv("GITBOOK_API_TOKEN");
+		String spaceId = System.getenv("GITBOOK_SPACE_ID");
+
+		boolean available = apiToken != null && !apiToken.isEmpty() && spaceId != null && !spaceId.isEmpty();
+
+		if (!available) {
+			System.out.println(
+					"Gitbook credentials not available. Set GITBOOK_API_TOKEN and GITBOOK_SPACE_ID environment variables to run these tests.");
+		}
+
+		return available;
+	}
 
 	@BeforeEach
 	void setUp() {
@@ -56,12 +82,14 @@ class GitbookDocumentReaderTest {
 	}
 
 	@Test
+	@EnabledIf("isGitbookCredentialsAvailable")
 	void constructorWithMinimalParameters() {
 		GitbookDocumentReader reader = new GitbookDocumentReader(API_TOKEN, SPACE_ID);
 		assertThat(reader).isNotNull();
 	}
 
 	@Test
+	@EnabledIf("isGitbookCredentialsAvailable")
 	void constructorWithAllParameters() {
 		List<String> metadataFields = Arrays.asList("title", "description");
 		GitbookDocumentReader reader = new GitbookDocumentReader(API_TOKEN, SPACE_ID, CUSTOM_API_URL, metadataFields);
@@ -81,6 +109,7 @@ class GitbookDocumentReaderTest {
 	}
 
 	@Test
+	@EnabledIf("isGitbookCredentialsAvailable")
 	void getShouldReturnEmptyListWhenNoPages() {
 		GitbookDocumentReader reader = new GitbookDocumentReader(API_TOKEN, SPACE_ID);
 		List<Document> documents = reader.get();
