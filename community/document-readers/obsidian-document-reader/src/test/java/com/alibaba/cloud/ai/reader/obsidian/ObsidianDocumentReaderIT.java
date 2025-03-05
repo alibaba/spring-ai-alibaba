@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.reader.obsidian;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -27,6 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for Obsidian Document Reader
+ * 
+ * Tests are only run if OBSIDIAN_VAULT_PATH environment variable is set.
  *
  * @author xiadong
  * @since 2024-01-06
@@ -34,41 +37,54 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OBSIDIAN_VAULT_PATH", matches = ".+")
 class ObsidianDocumentReaderIT {
 
-	private static final String VAULT_PATH = System.getenv("OBSIDIAN_VAULT_PATH");
+    private static final String VAULT_PATH = System.getenv("OBSIDIAN_VAULT_PATH");
 
-	ObsidianDocumentReader reader;
+    // Static initializer to log a message if environment variable is not set
+    static {
+        if (VAULT_PATH == null || VAULT_PATH.isEmpty()) {
+            System.out.println("Skipping Obsidian tests because OBSIDIAN_VAULT_PATH environment variable is not set.");
+        }
+    }
 
-	@BeforeEach
-	void setUp() {
-		reader = ObsidianDocumentReader.builder().vaultPath(Path.of(VAULT_PATH)).build();
-	}
+    ObsidianDocumentReader reader;
 
-	@Test
-	void should_read_markdown_files() {
-		// when
-		List<Document> documents = reader.get();
+    @BeforeEach
+    void setUp() {
+        // Only initialize if VAULT_PATH is set
+        if (VAULT_PATH != null && !VAULT_PATH.isEmpty()) {
+            reader = ObsidianDocumentReader.builder().vaultPath(Path.of(VAULT_PATH)).build();
+        }
+    }
 
-		// then
-		assertThat(documents).isNotEmpty();
+    @Test
+    void should_read_markdown_files() {
+        // Skip test if reader is null
+        Assumptions.assumeTrue(reader != null, "Skipping test because ObsidianDocumentReader could not be initialized");
 
-		// Verify document content and metadata
-		for (Document doc : documents) {
-			// Verify source metadata
-			assertThat(doc.getMetadata()).containsKey(ObsidianResource.SOURCE);
-			String source = doc.getMetadata().get(ObsidianResource.SOURCE).toString();
-			assertThat(source).isNotEmpty().endsWith(ObsidianResource.MARKDOWN_EXTENSION);
+        // when
+        List<Document> documents = reader.get();
 
-			// Verify content
-			assertThat(doc.getText()).isNotEmpty();
+        // then
+        assertThat(documents).isNotEmpty();
 
-			// Print for debugging
-			System.out.println("Document source: " + source);
-			if (doc.getMetadata().containsKey("category")) {
-				System.out.println("Document category: " + doc.getMetadata().get("category"));
-			}
-			System.out.println("Document content: " + doc.getText());
-			System.out.println("---");
-		}
-	}
+        // Verify document content and metadata
+        for (Document doc : documents) {
+            // Verify source metadata
+            assertThat(doc.getMetadata()).containsKey(ObsidianResource.SOURCE);
+            String source = doc.getMetadata().get(ObsidianResource.SOURCE).toString();
+            assertThat(source).isNotEmpty().endsWith(ObsidianResource.MARKDOWN_EXTENSION);
+
+            // Verify content
+            assertThat(doc.getText()).isNotEmpty();
+
+            // Print for debugging
+            System.out.println("Document source: " + source);
+            if (doc.getMetadata().containsKey("category")) {
+                System.out.println("Document category: " + doc.getMetadata().get("category"));
+            }
+            System.out.println("Document content: " + doc.getText());
+            System.out.println("---");
+        }
+    }
 
 }

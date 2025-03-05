@@ -29,12 +29,17 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -44,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Test class for ElasticsearchDocumentReader. Uses local Elasticsearch instance for
@@ -52,21 +58,26 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author xiadong
  * @since 0.0.1
  */
+@EnabledIfEnvironmentVariable(named = "ES_HOST", matches = ".+")
 public class ElasticsearchDocumentReaderTest {
 
 	private static final String TEST_INDEX = "spring-ai-test";
 
 	private static final String TEST_DOC_ID = "1";
 
-	private static final String ES_HOST = "localhost";
+	// Get ES configuration from environment variables, use defaults if not set
+	private static final String ES_HOST = System.getenv("ES_HOST") != null ? System.getenv("ES_HOST") : "localhost";
 
-	private static final int ES_PORT = 9200;
+	private static final int ES_PORT = System.getenv("ES_PORT") != null ? Integer.parseInt(System.getenv("ES_PORT"))
+			: 9200;
 
-	private static final String ES_USERNAME = "elastic";
+	private static final String ES_USERNAME = System.getenv("ES_USERNAME") != null ? System.getenv("ES_USERNAME")
+			: "elastic";
 
-	private static final String ES_PASSWORD = "r-tooRd7RgrX_uZV0klZ";
+	private static final String ES_PASSWORD = System.getenv("ES_PASSWORD") != null ? System.getenv("ES_PASSWORD")
+			: "r-tooRd7RgrX_uZV0klZ";
 
-	private static final String ES_SCHEME = "https";
+	private static final String ES_SCHEME = System.getenv("ES_SCHEME") != null ? System.getenv("ES_SCHEME") : "https";
 
 	private static ElasticsearchClient client;
 
@@ -74,72 +85,137 @@ public class ElasticsearchDocumentReaderTest {
 
 	private static ElasticsearchDocumentReader clusterReader;
 
+	// Flag to indicate if ES is available
+	private static boolean esAvailable = false;
+
+	static {
+		if (System.getenv("ES_HOST") == null) {
+			System.out.println("ES_HOST environment variable is not set. Tests will be skipped.");
+		}
+	}
+
+	/**
+	 * Check if Elasticsearch is available
+	 * @return true if ES is available, false otherwise
+	 */
+	public static boolean isElasticsearchAvailable() {
+		return esAvailable;
+	}
+
+	/**
+	 * Try to connect to Elasticsearch
+	 * @return true if connection successful, false otherwise
+	 */
+	private static boolean canConnectToElasticsearch() {
+		try (Socket socket = new Socket()) {
+			socket.connect(new InetSocketAddress(ES_HOST, ES_PORT), 1000);
+			return true;
+		}
+		catch (Exception e) {
+			System.out.println("Cannot connect to Elasticsearch: " + e.getMessage());
+			return false;
+		}
+	}
+
 	@BeforeAll
 	static void setUp() throws IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
-		// Create SSL context that trusts all certificates
-		SSLContext sslContext = SSLContextBuilder.create().loadTrustMaterial(null, (chains, authType) -> true).build();
+		// Check if ES_HOST environment variable is set
+		String esHost = System.getenv("ES_HOST");
+		assumeTrue(esHost != null && !esHost.isEmpty(),
+				"Skipping test because ES_HOST environment variable is not set");
 
-		// Create client with authentication and SSL
-		CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-		credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(ES_USERNAME, ES_PASSWORD));
+		// Check if we can connect to ES
+		esAvailable = canConnectToElasticsearch();
 
-		RestClient restClient = RestClient.builder(new HttpHost(ES_HOST, ES_PORT, ES_SCHEME))
-			.setHttpClientConfigCallback(
-					httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)
-						.setSSLContext(sslContext)
-						.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE))
-			.build();
-
-		client = new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper()));
-
-		// Delete index if exists
-		boolean indexExists = client.indices().exists(e -> e.index(TEST_INDEX)).value();
-		if (indexExists) {
-			DeleteIndexResponse deleteResponse = client.indices().delete(c -> c.index(TEST_INDEX));
-			assertThat(deleteResponse.acknowledged()).isTrue();
+		// Skip setup if ES is not available
+		if (!esAvailable) {
+			System.out
+				.println("Skipping Elasticsearch tests because ES server is not available: " + ES_HOST + ":" + ES_PORT);
+			return;
 		}
 
-		// Create test index with mapping
-		CreateIndexResponse createResponse = client.indices()
-			.create(c -> c.index(TEST_INDEX)
-				.mappings(m -> m.properties("content", p -> p.text(t -> t.analyzer("standard")))
-					.properties("title", p -> p.keyword(k -> k))));
-		assertThat(createResponse.acknowledged()).isTrue();
+		try {
+			// Create SSL context that trusts all certificates
+			SSLContext sslContext = SSLContextBuilder.create()
+				.loadTrustMaterial(null, (chains, authType) -> true)
+				.build();
 
-		// Configure and create single node reader
-		ElasticsearchConfig config = new ElasticsearchConfig();
-		config.setHost(ES_HOST);
-		config.setPort(ES_PORT);
-		config.setIndex(TEST_INDEX);
-		config.setQueryField("content");
-		config.setUsername(ES_USERNAME);
-		config.setPassword(ES_PASSWORD);
-		config.setScheme(ES_SCHEME);
-		reader = new ElasticsearchDocumentReader(config);
+			// Create client with authentication and SSL
+			CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+			credentialsProvider.setCredentials(AuthScope.ANY,
+					new UsernamePasswordCredentials(ES_USERNAME, ES_PASSWORD));
 
-		// Configure and create cluster reader
-		ElasticsearchConfig clusterConfig = new ElasticsearchConfig();
-		clusterConfig.setNodes(Arrays.asList(ES_HOST + ":" + ES_PORT, ES_HOST + ":9201", ES_HOST + ":9202"));
-		clusterConfig.setIndex(TEST_INDEX);
-		clusterConfig.setQueryField("content");
-		clusterConfig.setUsername(ES_USERNAME);
-		clusterConfig.setPassword(ES_PASSWORD);
-		clusterConfig.setScheme(ES_SCHEME);
-		clusterReader = new ElasticsearchDocumentReader(clusterConfig);
+			RestClient restClient = RestClient.builder(new HttpHost(ES_HOST, ES_PORT, ES_SCHEME))
+				.setHttpClientConfigCallback(
+						httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)
+							.setSSLContext(sslContext)
+							.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE))
+				.build();
 
-		// Index test documents
-		indexTestDocuments();
+			client = new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper()));
+
+			// Delete index if exists
+			boolean indexExists = client.indices().exists(e -> e.index(TEST_INDEX)).value();
+			if (indexExists) {
+				DeleteIndexResponse deleteResponse = client.indices().delete(c -> c.index(TEST_INDEX));
+				assertThat(deleteResponse.acknowledged()).isTrue();
+			}
+
+			// Create test index with mapping
+			CreateIndexResponse createResponse = client.indices()
+				.create(c -> c.index(TEST_INDEX)
+					.mappings(m -> m.properties("content", p -> p.text(t -> t.analyzer("standard")))
+						.properties("title", p -> p.keyword(k -> k))));
+			assertThat(createResponse.acknowledged()).isTrue();
+
+			// Configure and create single node reader
+			ElasticsearchConfig config = new ElasticsearchConfig();
+			config.setHost(ES_HOST);
+			config.setPort(ES_PORT);
+			config.setIndex(TEST_INDEX);
+			config.setQueryField("content");
+			config.setUsername(ES_USERNAME);
+			config.setPassword(ES_PASSWORD);
+			config.setScheme(ES_SCHEME);
+			reader = new ElasticsearchDocumentReader(config);
+
+			// Configure and create cluster reader
+			ElasticsearchConfig clusterConfig = new ElasticsearchConfig();
+			clusterConfig.setNodes(Arrays.asList(ES_HOST + ":" + ES_PORT, ES_HOST + ":9201", ES_HOST + ":9202"));
+			clusterConfig.setIndex(TEST_INDEX);
+			clusterConfig.setQueryField("content");
+			clusterConfig.setUsername(ES_USERNAME);
+			clusterConfig.setPassword(ES_PASSWORD);
+			clusterConfig.setScheme(ES_SCHEME);
+			clusterReader = new ElasticsearchDocumentReader(clusterConfig);
+
+			// Index test documents
+			indexTestDocuments();
+		}
+		catch (Exception e) {
+			System.out.println("Failed to set up Elasticsearch test environment: " + e.getMessage());
+			esAvailable = false;
+		}
 	}
 
 	@AfterAll
 	static void tearDown() throws IOException {
-		if (client != null) {
+		// Skip cleanup if ES is not available or client is null
+		if (!esAvailable || client == null) {
+			return;
+		}
+
+		try {
 			DeleteIndexResponse deleteResponse = client.indices().delete(c -> c.index(TEST_INDEX));
 			assertThat(deleteResponse.acknowledged()).isTrue();
+		}
+		catch (Exception e) {
+			System.out.println("Failed to clean up Elasticsearch test environment: " + e.getMessage());
 		}
 	}
 
 	@Test
+	@EnabledIf("isElasticsearchAvailable")
 	void testGet() {
 		List<Document> documents = reader.get();
 		assertThat(documents).hasSize(3);
@@ -148,6 +224,7 @@ public class ElasticsearchDocumentReaderTest {
 	}
 
 	@Test
+	@EnabledIf("isElasticsearchAvailable")
 	void testGetWithCluster() {
 		List<Document> documents = clusterReader.get();
 		assertThat(documents).hasSize(3);
@@ -156,6 +233,7 @@ public class ElasticsearchDocumentReaderTest {
 	}
 
 	@Test
+	@EnabledIf("isElasticsearchAvailable")
 	void testGetById() {
 		Document document = reader.getById(TEST_DOC_ID);
 		assertThat(document).isNotNull();
@@ -164,6 +242,7 @@ public class ElasticsearchDocumentReaderTest {
 	}
 
 	@Test
+	@EnabledIf("isElasticsearchAvailable")
 	void testGetByIdWithCluster() {
 		Document document = clusterReader.getById(TEST_DOC_ID);
 		assertThat(document).isNotNull();
@@ -172,12 +251,14 @@ public class ElasticsearchDocumentReaderTest {
 	}
 
 	@Test
+	@EnabledIf("isElasticsearchAvailable")
 	void testGetByIdNonExistent() {
 		Document document = reader.getById("non-existent-id");
 		assertThat(document).isNull();
 	}
 
 	@Test
+	@EnabledIf("isElasticsearchAvailable")
 	void testReadWithQuery() {
 		List<Document> documents = reader.readWithQuery("spring");
 		assertThat(documents).hasSize(2);
@@ -187,6 +268,7 @@ public class ElasticsearchDocumentReaderTest {
 	}
 
 	@Test
+	@EnabledIf("isElasticsearchAvailable")
 	void testReadWithQueryWithCluster() {
 		List<Document> documents = clusterReader.readWithQuery("spring");
 		assertThat(documents).hasSize(2);
