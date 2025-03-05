@@ -23,7 +23,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * arXiv文档阅读器测试类
+ * Test class for arXiv document reader
  *
  * @author brianxiadong
  */
@@ -35,65 +35,66 @@ public class ArxivDocumentReaderTest {
 
 	@Test
 	public void testDocumentReader() {
-		// 创建文档阅读器
+		// Create document reader
 		ArxivDocumentReader reader = new ArxivDocumentReader(TEST_QUERY, MAX_SIZE);
 
-		// 获取文档
+		// Get documents
 		List<Document> documents = reader.get();
 
-		// 验证结果
-		assertFalse(documents.isEmpty(), "应该返回至少一个文档");
+		// Verify results
+		assertFalse(documents.isEmpty(), "Should return at least one document");
 
-		// 验证第一个文档的元数据
+		// Verify metadata of the first document
 		Document firstDoc = documents.get(0);
-		assertNotNull(firstDoc.getText(), "文档内容不应为空");
+		assertNotNull(firstDoc.getText(), "Document content should not be null");
 
-		// 验证元数据
+		// Verify metadata
 		var metadata = firstDoc.getMetadata();
-		assertNotNull(metadata.get(ArxivResource.ENTRY_ID), "应包含文章ID");
-		assertNotNull(metadata.get(ArxivResource.TITLE), "应包含标题");
-		assertNotNull(metadata.get(ArxivResource.AUTHORS), "应包含作者");
-		assertNotNull(metadata.get(ArxivResource.SUMMARY), "应包含摘要");
-		assertNotNull(metadata.get(ArxivResource.CATEGORIES), "应包含分类");
-		assertNotNull(metadata.get(ArxivResource.PRIMARY_CATEGORY), "应包含主分类");
-		assertNotNull(metadata.get(ArxivResource.PDF_URL), "应包含PDF URL");
+		assertNotNull(metadata.get(ArxivResource.ENTRY_ID), "Should contain article ID");
+		assertNotNull(metadata.get(ArxivResource.TITLE), "Should contain title");
+		assertNotNull(metadata.get(ArxivResource.AUTHORS), "Should contain authors");
+		assertNotNull(metadata.get(ArxivResource.SUMMARY), "Should contain summary");
+		assertNotNull(metadata.get(ArxivResource.CATEGORIES), "Should contain categories");
+		assertNotNull(metadata.get(ArxivResource.PRIMARY_CATEGORY), "Should contain primary category");
+		assertNotNull(metadata.get(ArxivResource.PDF_URL), "Should contain PDF URL");
 
-		// 验证分类
+		// Verify categories
 		@SuppressWarnings("unchecked")
 		List<String> categories = (List<String>) metadata.get(ArxivResource.CATEGORIES);
-		assertTrue(categories.contains("cs.AI"), "应该包含cs.AI分类");
+		assertTrue(categories.contains("cs.AI"), "Should contain cs.AI category");
 	}
 
 	@Test
 	public void testGetSummaries() {
-		// 创建文档阅读器
+		// Create document reader
 		ArxivDocumentReader reader = new ArxivDocumentReader(TEST_QUERY, MAX_SIZE);
 
-		// 获取摘要文档列表
+		// Get summary documents
 		List<Document> documents = reader.getSummaries();
 
-		// 验证结果
-		assertFalse(documents.isEmpty(), "应该返回至少一个文档");
+		// Verify results
+		assertFalse(documents.isEmpty(), "Should return at least one document");
 
-		// 验证第一个文档
+		// Verify the first document
 		Document firstDoc = documents.get(0);
 
-		// 验证内容（摘要）
-		assertNotNull(firstDoc.getText(), "文档内容（摘要）不应为空");
-		assertFalse(firstDoc.getText().trim().isEmpty(), "文档内容（摘要）不应为空字符串");
+		// Verify content (summary)
+		assertNotNull(firstDoc.getText(), "Document content (summary) should not be null");
+		assertFalse(firstDoc.getText().trim().isEmpty(), "Document content (summary) should not be empty string");
 
-		// 验证元数据
+		// Verify metadata
 		var metadata = firstDoc.getMetadata();
-		assertNotNull(metadata.get(ArxivResource.ENTRY_ID), "应包含文章ID");
-		assertNotNull(metadata.get(ArxivResource.TITLE), "应包含标题");
-		assertNotNull(metadata.get(ArxivResource.AUTHORS), "应包含作者");
-		assertNotNull(metadata.get(ArxivResource.SUMMARY), "应包含摘要");
-		assertNotNull(metadata.get(ArxivResource.CATEGORIES), "应包含分类");
-		assertNotNull(metadata.get(ArxivResource.PRIMARY_CATEGORY), "应包含主分类");
-		assertNotNull(metadata.get(ArxivResource.PDF_URL), "应包含PDF URL");
+		assertNotNull(metadata.get(ArxivResource.ENTRY_ID), "Should contain article ID");
+		assertNotNull(metadata.get(ArxivResource.TITLE), "Should contain title");
+		assertNotNull(metadata.get(ArxivResource.AUTHORS), "Should contain authors");
+		assertNotNull(metadata.get(ArxivResource.SUMMARY), "Should contain summary");
+		assertNotNull(metadata.get(ArxivResource.CATEGORIES), "Should contain categories");
+		assertNotNull(metadata.get(ArxivResource.PRIMARY_CATEGORY), "Should contain primary category");
+		assertNotNull(metadata.get(ArxivResource.PDF_URL), "Should contain PDF URL");
 
-		// 验证摘要内容与元数据中的摘要一致
-		assertEquals(firstDoc.getText(), metadata.get(ArxivResource.SUMMARY), "文档内容应该与元数据中的摘要一致");
+		// Verify summary content matches the summary in metadata
+		assertEquals(firstDoc.getText(), metadata.get(ArxivResource.SUMMARY),
+				"Document content should match the summary in metadata");
 	}
 
 }

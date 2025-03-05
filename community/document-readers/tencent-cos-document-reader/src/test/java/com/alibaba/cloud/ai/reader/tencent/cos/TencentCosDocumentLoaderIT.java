@@ -21,6 +21,7 @@ import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;
 import com.qcloud.cos.model.PutObjectRequest;
 import com.qcloud.cos.region.Region;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -34,143 +35,192 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author HeYQ
+ * @author brianxiadong
  * @since 2024-11-27 21:41
  */
 @EnabledIfEnvironmentVariable(named = "TENCENT_SECRET_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "TENCENT_SECRET_ID", matches = ".+")
 class TencentCosDocumentLoaderIT {
 
-	private static final String TEST_BUCKET = "test-buket";
+    private static final String TEST_BUCKET = "test-buket";
 
-	private static final String TEST_KEY = "test-file.txt";
+    private static final String TEST_KEY = "test-file.txt";
 
-	private static final String TEST_KEY_2 = "test-directory/test-file-2.txt";
+    private static final String TEST_KEY_2 = "test-directory/test-file-2.txt";
 
-	private static final String TEST_CONTENT = "Hello, World!";
+    private static final String TEST_CONTENT = "Hello, World!";
 
-	private static final String TEST_CONTENT_2 = "Hello again!";
+    private static final String TEST_CONTENT_2 = "Hello again!";
 
-	static TencentCosDocumentReader loader;
+    static TencentCosDocumentReader loader;
 
-	static TencentCosDocumentReader batchLoader;
+    static TencentCosDocumentReader batchLoader;
 
-	static COSClient cosClient;
+    static COSClient cosClient;
 
-	DocumentParser parser = new TextDocumentParser();
+    DocumentParser parser = new TextDocumentParser();
 
-	@BeforeAll
-	public static void beforeAll() {
-		TencentCredentials tencentCredentials = new TencentCredentials(System.getenv("TENCENT_SECRET_ID"),
-				System.getenv("TENCENT_SECRET_KEY"), null);
-		cosClient = new COSClient(tencentCredentials.toCredentialsProvider(),
-				new ClientConfig(new Region("ap-shanghai")));
-	}
+    static {
+        if (System.getenv("TENCENT_SECRET_ID") == null || System.getenv("TENCENT_SECRET_KEY") == null) {
+            System.out.println(
+                    "TENCENT_SECRET_ID or TENCENT_SECRET_KEY environment variable is not set. Tests will be skipped.");
+        }
+    }
 
-	@Test
-	void should_load_single_document() {
+    @BeforeAll
+    public static void beforeAll() {
+        // Ensure environment variables are set, otherwise skip the test
+        String secretId = System.getenv("TENCENT_SECRET_ID");
+        String secretKey = System.getenv("TENCENT_SECRET_KEY");
 
-		URL url = getClass().getClassLoader().getResource("test.txt");
-		// given
-		cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY, new File(url.getFile())));
+        Assumptions.assumeTrue(secretId != null && !secretId.isEmpty(),
+                "Skipping test because TENCENT_SECRET_ID is not set");
+        Assumptions.assumeTrue(secretKey != null && !secretKey.isEmpty(),
+                "Skipping test because TENCENT_SECRET_KEY is not set");
 
-		TencentCosResource tencentCosResource = TencentCosResource.builder()
-			.secretId(System.getenv("TENCENT_SECRET_ID"))
-			.secretKey(System.getenv("TENCENT_SECRET_KEY"))
-			.region(new Region("ap-shanghai"))
-			.bucket(TEST_BUCKET)
-			.key(TEST_KEY)
-			.build();
-		// or
-		TencentCosResource tencentCosResource2 = TencentCosResource.builder()
-			.tencentCredentials(new TencentCredentials(System.getenv("TENCENT_SECRET_ID"),
-					System.getenv("TENCENT_SECRET_KEY"), null))
-			.region(new Region("ap-shanghai"))
-			.bucket(TEST_BUCKET)
-			.key(TEST_KEY)
-			.build();
+        TencentCredentials tencentCredentials = new TencentCredentials(secretId, secretKey, null);
+        cosClient = new COSClient(tencentCredentials.toCredentialsProvider(),
+                new ClientConfig(new Region("ap-shanghai")));
+    }
 
-		TencentCosResource tencentCosResource3 = TencentCosResource.builder().cosClient(cosClient).build();
+    @Test
+    void should_load_single_document() {
+        // Ensure cosClient is initialized, otherwise skip the test
+        Assumptions.assumeTrue(cosClient != null, "Skipping test because cosClient is not initialized");
 
-		loader = new TencentCosDocumentReader(tencentCosResource, parser);
-		// when
-		Document document = loader.get().get(0);
+        URL url = getClass().getClassLoader().getResource("test.txt");
+        // given
+        cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY, new File(url.getFile())));
 
-		// then
-		assertThat(document.getText()).isEqualTo(TEST_CONTENT);
-		assertThat(document.getMetadata()).hasSize(1);
-		assertThat(document.getMetadata().get("source")).isEqualTo(String.format("cos://%s/%s", TEST_BUCKET, TEST_KEY));
-	}
+        // Get environment variables that have been validated in beforeAll
+        String secretId = System.getenv("TENCENT_SECRET_ID");
+        String secretKey = System.getenv("TENCENT_SECRET_KEY");
 
-	@Test
-	void should_load_multiple_documents() {
+        // Skip test if environment variables are not set
+        Assumptions.assumeTrue(secretId != null && !secretId.isEmpty() &&
+                secretKey != null && !secretKey.isEmpty(),
+                "Skipping test because TENCENT_SECRET_ID or TENCENT_SECRET_KEY is not set");
 
-		// given
-		URL url = getClass().getClassLoader().getResource("test.txt");
-		assert url != null;
-		cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY, new File(url.getFile())));
+        TencentCosResource tencentCosResource = TencentCosResource.builder()
+                .secretId(secretId)
+                .secretKey(secretKey)
+                .region(new Region("ap-shanghai"))
+                .bucket(TEST_BUCKET)
+                .key(TEST_KEY)
+                .build();
+        // or
+        TencentCosResource tencentCosResource2 = TencentCosResource.builder()
+                .tencentCredentials(new TencentCredentials(secretId, secretKey, null))
+                .region(new Region("ap-shanghai"))
+                .bucket(TEST_BUCKET)
+                .key(TEST_KEY)
+                .build();
 
-		URL url2 = getClass().getClassLoader().getResource("test2.txt");
-		assert url2 != null;
-		cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY_2, new File(url2.getFile())));
+        TencentCosResource tencentCosResource3 = TencentCosResource.builder().cosClient(cosClient).build();
 
-		List<TencentCosResource> tencentCosResourceList = TencentCosResource.builder()
-			.secretId(System.getenv("TENCENT_SECRET_ID"))
-			.secretKey(System.getenv("TENCENT_SECRET_KEY"))
-			.region(new Region("ap-shanghai"))
-			.bucket(TEST_BUCKET)
-			.buildBatch();
+        loader = new TencentCosDocumentReader(tencentCosResource, parser);
+        // when
+        Document document = loader.get().get(0);
 
-		batchLoader = new TencentCosDocumentReader(tencentCosResourceList, parser);
+        // then
+        assertThat(document.getText()).isEqualTo(TEST_CONTENT);
+        assertThat(document.getMetadata()).hasSize(1);
+        assertThat(document.getMetadata().get("source")).isEqualTo(String.format("cos://%s/%s", TEST_BUCKET, TEST_KEY));
+    }
 
-		// when
-		List<Document> documents = batchLoader.get();
+    @Test
+    void should_load_multiple_documents() {
+        // Ensure cosClient is initialized, otherwise skip the test
+        Assumptions.assumeTrue(cosClient != null, "Skipping test because cosClient is not initialized");
 
-		// then
-		assertThat(documents).hasSize(2);
+        // given
+        URL url = getClass().getClassLoader().getResource("test.txt");
+        assert url != null;
+        cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY, new File(url.getFile())));
 
-		assertThat(documents.get(0).getText()).isEqualTo(TEST_CONTENT_2);
-		assertThat(documents.get(0).getMetadata()).hasSize(1);
-		assertThat(documents.get(0).getMetadata().get("source"))
-			.isEqualTo(String.format("cos://%s/%s", TEST_BUCKET, TEST_KEY_2));
+        URL url2 = getClass().getClassLoader().getResource("test2.txt");
+        assert url2 != null;
+        cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY_2, new File(url2.getFile())));
 
-		assertThat(documents.get(1).getText()).isEqualTo(TEST_CONTENT);
-		assertThat(documents.get(1).getMetadata()).hasSize(1);
-		assertThat(documents.get(1).getMetadata().get("source"))
-			.isEqualTo(String.format("cos://%s/%s", TEST_BUCKET, TEST_KEY));
-	}
+        // Get environment variables that have been validated in beforeAll
+        String secretId = System.getenv("TENCENT_SECRET_ID");
+        String secretKey = System.getenv("TENCENT_SECRET_KEY");
 
-	@Test
-	void should_load_multiple_documents_with_prefix() {
+        // Skip test if environment variables are not set
+        Assumptions.assumeTrue(secretId != null && !secretId.isEmpty() &&
+                secretKey != null && !secretKey.isEmpty(),
+                "Skipping test because TENCENT_SECRET_ID or TENCENT_SECRET_KEY is not set");
 
-		// given
-		URL otherUrl = getClass().getClassLoader().getResource("other.txt");
-		assert otherUrl != null;
-		cosClient
-			.putObject(new PutObjectRequest(TEST_BUCKET, "other_directory/file.txt", new File(otherUrl.getFile())));
+        List<TencentCosResource> tencentCosResourceList = TencentCosResource.builder()
+                .secretId(secretId)
+                .secretKey(secretKey)
+                .region(new Region("ap-shanghai"))
+                .bucket(TEST_BUCKET)
+                .buildBatch();
 
-		URL url = getClass().getClassLoader().getResource("test.txt");
-		assert url != null;
-		cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY, new File(url.getFile())));
+        batchLoader = new TencentCosDocumentReader(tencentCosResourceList, parser);
 
-		URL url2 = getClass().getClassLoader().getResource("test2.txt");
-		assert url2 != null;
-		cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY_2, new File(url2.getFile())));
+        // when
+        List<Document> documents = batchLoader.get();
 
-		List<TencentCosResource> tencentCosResourceList = TencentCosResource.builder()
-			.secretId(System.getenv("TENCENT_SECRET_ID"))
-			.secretKey(System.getenv("TENCENT_SECRET_KEY"))
-			.region(new Region("ap-shanghai"))
-			.bucket(TEST_BUCKET)
-			.prefix("test")
-			.buildBatch();
+        // then
+        assertThat(documents).hasSize(2);
 
-		batchLoader = new TencentCosDocumentReader(tencentCosResourceList, parser);
-		// when
-		List<Document> documents = batchLoader.get();
+        assertThat(documents.get(0).getText()).isEqualTo(TEST_CONTENT_2);
+        assertThat(documents.get(0).getMetadata()).hasSize(1);
+        assertThat(documents.get(0).getMetadata().get("source"))
+                .isEqualTo(String.format("cos://%s/%s", TEST_BUCKET, TEST_KEY_2));
 
-		// then
-		assertThat(documents).hasSize(2);
-		assertThat(documents.get(0).getText()).isEqualTo(TEST_CONTENT_2);
-		assertThat(documents.get(1).getText()).isEqualTo(TEST_CONTENT);
-	}
+        assertThat(documents.get(1).getText()).isEqualTo(TEST_CONTENT);
+        assertThat(documents.get(1).getMetadata()).hasSize(1);
+        assertThat(documents.get(1).getMetadata().get("source"))
+                .isEqualTo(String.format("cos://%s/%s", TEST_BUCKET, TEST_KEY));
+    }
+
+    @Test
+    void should_load_multiple_documents_with_prefix() {
+        // Ensure cosClient is initialized, otherwise skip the test
+        Assumptions.assumeTrue(cosClient != null, "Skipping test because cosClient is not initialized");
+
+        // given
+        URL otherUrl = getClass().getClassLoader().getResource("other.txt");
+        assert otherUrl != null;
+        cosClient
+                .putObject(new PutObjectRequest(TEST_BUCKET, "other_directory/file.txt", new File(otherUrl.getFile())));
+
+        URL url = getClass().getClassLoader().getResource("test.txt");
+        assert url != null;
+        cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY, new File(url.getFile())));
+
+        URL url2 = getClass().getClassLoader().getResource("test2.txt");
+        assert url2 != null;
+        cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY_2, new File(url2.getFile())));
+
+        // Get environment variables that have been validated in beforeAll
+        String secretId = System.getenv("TENCENT_SECRET_ID");
+        String secretKey = System.getenv("TENCENT_SECRET_KEY");
+
+        // Skip test if environment variables are not set
+        Assumptions.assumeTrue(secretId != null && !secretId.isEmpty() &&
+                secretKey != null && !secretKey.isEmpty(),
+                "Skipping test because TENCENT_SECRET_ID or TENCENT_SECRET_KEY is not set");
+
+        List<TencentCosResource> tencentCosResourceList = TencentCosResource.builder()
+                .secretId(secretId)
+                .secretKey(secretKey)
+                .region(new Region("ap-shanghai"))
+                .bucket(TEST_BUCKET)
+                .prefix("test")
+                .buildBatch();
+
+        batchLoader = new TencentCosDocumentReader(tencentCosResourceList, parser);
+        // when
+        List<Document> documents = batchLoader.get();
+
+        // then
+        assertThat(documents).hasSize(2);
+        assertThat(documents.get(0).getText()).isEqualTo(TEST_CONTENT_2);
+        assertThat(documents.get(1).getText()).isEqualTo(TEST_CONTENT);
+    }
 
 }

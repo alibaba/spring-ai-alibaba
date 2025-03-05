@@ -45,80 +45,99 @@ import org.springframework.ai.document.DocumentReader;
  */
 public class ChatGptDataDocumentReader implements DocumentReader {
 
-	private final String logFilePath;
+    private final String logFilePath;
 
-	private final int numLogs;
+    private final int numLogs;
 
-	private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-	public ChatGptDataDocumentReader(String logFilePath, int numLogs) {
-		this.logFilePath = logFilePath;
-		this.numLogs = numLogs;
-	}
+    /**
+     * Constructor with file path and limit
+     * 
+     * @param logFilePath path to the JSON file containing ChatGPT conversations
+     * @param numLogs     maximum number of conversations to load (0 for all)
+     */
+    public ChatGptDataDocumentReader(String logFilePath, int numLogs) {
+        this.logFilePath = logFilePath;
+        this.numLogs = numLogs;
+    }
 
-	public ChatGptDataDocumentReader(String logFilePath) {
-		this(logFilePath, 0);
-	}
+    /**
+     * Constructor with file path only
+     * 
+     * @param logFilePath path to the JSON file containing ChatGPT conversations
+     */
+    public ChatGptDataDocumentReader(String logFilePath) {
+        this(logFilePath, 0);
+    }
 
-	private String concatenateRows(JsonNode message, String title) {
-		if (message == null || message.isEmpty()) {
-			return "";
-		}
+    /**
+     * Process a message from the conversation
+     * 
+     * @param messageNode the JSON node containing the message
+     * @param title       the title of the conversation
+     * @return formatted message text
+     */
+    private String processMessage(JsonNode messageNode, String title) {
+        if (messageNode == null || messageNode.isEmpty()) {
+            return "";
+        }
 
-		JsonNode author = message.get("author");
-		String sender = author != null ? author.get("role").asText() : "unknown";
+        String role = messageNode.get("role").asText();
 
-		JsonNode content = message.get("content");
-		JsonNode parts = content.get("parts");
-		String text = parts.get(0).asText();
+        JsonNode content = messageNode.get("content");
+        JsonNode parts = content.get("parts");
+        String text = parts.get(0).asText();
 
-		long createTime = message.get("create_time").asLong();
-		LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochSecond(createTime), ZoneId.systemDefault());
-		String formattedDate = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        String createTimeStr = messageNode.get("create_time").asText();
+        LocalDateTime dateTime = LocalDateTime.parse(createTimeStr, DateTimeFormatter.ISO_DATE_TIME);
+        String formattedDate = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
-		return String.format("%s - %s on %s: %s\n\n", title, sender, formattedDate, text);
-	}
+        return String.format("%s - %s on %s: %s\n\n", title, role, formattedDate, text);
+    }
 
-	@Override
-	public List<Document> get() {
-		try {
-			String jsonContent = Files.readString(Paths.get(logFilePath), StandardCharsets.UTF_8);
-			JsonNode data = objectMapper.readTree(jsonContent);
-			List<Document> documents;
+    @Override
+    public List<Document> get() {
+        try {
+            String jsonContent = Files.readString(Paths.get(logFilePath), StandardCharsets.UTF_8);
+            JsonNode data = objectMapper.readTree(jsonContent);
 
-			int limit = numLogs > 0 ? Math.min(numLogs, data.size()) : data.size();
+            // Determine how many conversations to process
+            int limit = numLogs > 0 ? Math.min(numLogs, data.size()) : data.size();
 
-			documents = IntStream.range(0, limit).mapToObj(i -> {
-				JsonNode conversation = data.get(i);
-				String title = conversation.get("title").asText();
-				JsonNode messages = conversation.get("mapping");
+            // Process each conversation
+            return IntStream.range(0, limit).mapToObj(i -> {
+                JsonNode conversation = data.get(i);
+                String title = conversation.get("title").asText();
+                JsonNode mapping = conversation.get("mapping");
 
-				String text = StreamSupport
-					.stream(Spliterators.spliteratorUnknownSize(messages.fieldNames(), Spliterator.ORDERED), false)
-					.map(key -> {
-						JsonNode messageWrapper = messages.get(key);
-						JsonNode message = messageWrapper.get("message");
+                // Build the conversation text by processing each message
+                StringBuilder conversationText = new StringBuilder();
 
-						if ("0".equals(key) && "system".equals(message.get("author").get("role").asText())) {
-							return "";
-						}
-						return concatenateRows(message, title);
-					})
-					.filter(s -> !s.isEmpty())
-					.collect(Collectors.joining());
+                // Iterate through all messages in the mapping
+                StreamSupport
+                        .stream(Spliterators.spliteratorUnknownSize(mapping.fieldNames(), Spliterator.ORDERED), false)
+                        .forEach(key -> {
+                            JsonNode messageNode = mapping.get(key);
+                            String messageText = processMessage(messageNode, title);
+                            if (!messageText.isEmpty()) {
+                                conversationText.append(messageText);
+                            }
+                        });
 
-				// Create document metadata
-				Map<String, Object> metadata = new HashMap<>();
-				metadata.put("source", logFilePath);
-				// Return new Document object
-				return new Document(text, metadata);
-			}).collect(Collectors.toList());
+                // Create document metadata
+                Map<String, Object> metadata = new HashMap<>();
+                metadata.put("source", logFilePath);
+                metadata.put("title", title);
+                metadata.put("id", conversation.get("id").asText());
+                metadata.put("create_time", conversation.get("create_time").asText());
 
-			return documents;
-		}
-		catch (IOException e) {
-			throw new RuntimeException("Failed to load ChatGPT data from file: " + logFilePath, e);
-		}
-	}
+                // Return new Document object
+                return new Document(conversationText.toString(), metadata);
+            }).collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load ChatGPT data from file: " + logFilePath, e);
+        }
+    }
 
 }
