@@ -227,21 +227,45 @@ class GptRepoDocumentReaderTest {
 	}
 
 	@Test
-	void testLocalRepo() {
+	void testLocalRepo() throws IOException {
+		// Create a specific test file for this test
+		Path localRepoPath = tempDir.resolve("local-test-repo");
+		Files.createDirectories(localRepoPath);
+
+		// Create a sample file with specific content
+		String sampleFileContent = "# Sample Repository\n\nThis is a sample repository file for testing.\n\n## Features\n\n- Feature 1\n- Feature 2\n- Feature 3";
+		createTestFile(localRepoPath.resolve("README.md"), sampleFileContent);
+
+		// Create a Java file
+		String javaFileContent = "package com.example;\n\n/**\n * Sample Java class\n */\npublic class Sample {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, World!\");\n    }\n}";
+		createTestFile(localRepoPath.resolve("src/main/java/com/example/Sample.java"), javaFileContent);
+
+		// Create a custom preamble
 		String customPreamble = "Repository content analysis:\n";
-		GptRepoDocumentReader reader = new GptRepoDocumentReader("/path/to/repo", true,
-				Collections.singletonList("your_file_extention"), "UTF-8", null);
 
+		// Initialize the reader with the local repository path
+		GptRepoDocumentReader reader = new GptRepoDocumentReader(localRepoPath.toString(), true,
+				Arrays.asList("md", "java"), "UTF-8", customPreamble);
+
+		// Get documents
 		List<Document> documents = reader.get();
-		assertFalse(documents.isEmpty());
-		Document doc = documents.get(0);
-		assertTrue(doc.getText().startsWith(customPreamble));
 
-		// Print document count and first document metadata
+		// Verify results
+		assertFalse(documents.isEmpty());
+		assertEquals(1, documents.size(), "Should have one concatenated document");
+
+		Document doc = documents.get(0);
+		assertTrue(doc.getText().startsWith(customPreamble), "Document should start with custom preamble");
+		assertTrue(doc.getText().contains(sampleFileContent), "Document should contain README.md content");
+		assertTrue(doc.getText().contains(javaFileContent), "Document should contain Sample.java content");
+
+		// Verify metadata
+		assertNotNull(doc.getMetadata());
+		assertEquals(localRepoPath.toString(), doc.getMetadata().get("source"));
+
+		// Print document information for debugging
 		System.out.println("Total documents: " + documents.size());
-		if (!documents.isEmpty()) {
-			System.out.println("First document metadata: " + doc.getMetadata());
-		}
+		System.out.println("Document metadata: " + doc.getMetadata());
 	}
 
 	/**

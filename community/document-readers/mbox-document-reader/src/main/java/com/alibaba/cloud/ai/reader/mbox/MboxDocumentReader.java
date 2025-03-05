@@ -114,6 +114,7 @@ public class MboxDocumentReader implements DocumentReader {
 		int count = 0;
 		StringBuilder currentMessage = new StringBuilder();
 		boolean isFirstMessage = true;
+		boolean foundValidFromLine = false;
 
 		try (LineIterator it = FileUtils.lineIterator(mboxFile, StandardCharsets.UTF_8.name())) {
 			while (it.hasNext()) {
@@ -121,6 +122,7 @@ public class MboxDocumentReader implements DocumentReader {
 
 				// Check if this is a new message
 				if (FROM_LINE_PATTERN.matcher(line).matches()) {
+					foundValidFromLine = true;
 					// Process previous message if exists
 					if (!isFirstMessage && !currentMessage.isEmpty()) {
 						Document doc = parseMessage(currentMessage.toString());
@@ -142,6 +144,12 @@ public class MboxDocumentReader implements DocumentReader {
 					// Append line to current message
 					currentMessage.append(line).append("\n");
 				}
+			}
+
+			// If no valid From line was found, this is not a valid mbox file
+			if (!foundValidFromLine) {
+				logger.warn("No valid From line found in file: {}", mboxFile.getAbsolutePath());
+				return Collections.emptyList();
 			}
 
 			// Process the last message
@@ -167,6 +175,7 @@ public class MboxDocumentReader implements DocumentReader {
 		boolean inHtmlPart = false;
 		boolean skipCurrentPart = false;
 		StringBuilder currentPart = new StringBuilder();
+		boolean foundValidHeaders = false;
 
 		for (int i = 0; i < lines.length; i++) {
 			String line = lines[i];
@@ -190,6 +199,7 @@ public class MboxDocumentReader implements DocumentReader {
 					String name = m.group(1).trim();
 					String value = m.group(2).trim();
 					headers.put(name, value);
+					foundValidHeaders = true;
 				}
 				continue;
 			}
@@ -253,6 +263,12 @@ public class MboxDocumentReader implements DocumentReader {
 			}
 		}
 
+		// If no valid headers were found, this is not a valid message
+		if (!foundValidHeaders) {
+			logger.warn("No valid headers found in message");
+			return null;
+		}
+
 		// Extract metadata
 		metadata.put("subject", headers.getOrDefault("Subject", ""));
 		metadata.put("from", headers.getOrDefault("From", ""));
@@ -270,8 +286,9 @@ public class MboxDocumentReader implements DocumentReader {
 		// Check if content is empty
 		String contentStr = content.toString().trim();
 		if (contentStr.isEmpty()) {
-			throw new RuntimeException(
-					"Empty content found for message: " + headers.getOrDefault("Message-ID", "unknown"));
+			// Instead of throwing an exception, provide a default message
+			logger.warn("Empty content found for message: {}", headers.getOrDefault("Message-ID", "unknown"));
+			contentStr = "[No content available]";
 		}
 
 		// Format the content
@@ -280,8 +297,9 @@ public class MboxDocumentReader implements DocumentReader {
 
 		// Check if formatted content is empty
 		if (formattedContent.trim().isEmpty()) {
-			throw new RuntimeException(
-					"Empty formatted content for message: " + headers.getOrDefault("Message-ID", "unknown"));
+			// Instead of throwing an exception, provide a default formatted content
+			logger.warn("Empty formatted content for message: {}", headers.getOrDefault("Message-ID", "unknown"));
+			formattedContent = String.format("Empty email with ID: %s", headers.getOrDefault("Message-ID", "unknown"));
 		}
 
 		// Use Message-ID as document ID
