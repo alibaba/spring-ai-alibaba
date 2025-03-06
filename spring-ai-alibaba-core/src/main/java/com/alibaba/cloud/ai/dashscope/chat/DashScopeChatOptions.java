@@ -371,6 +371,11 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
       return this;
     }
 
+    public DashscopeChatOptionsBuilder withMaxToken(Integer maxTokens) {
+      this.options.maxTokens = maxTokens;
+      return this;
+    }
+
     public DashscopeChatOptionsBuilder withTemperature(Double temperature) {
       this.options.temperature = temperature;
       return this;
@@ -483,6 +488,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
     return DashScopeChatOptions.builder()
         .withModel(fromOptions.getModel())
         .withTemperature(fromOptions.getTemperature())
+        .withMaxToken(fromOptions.getMaxTokens())
         .withTopP(fromOptions.getTopP())
         .withTopK(fromOptions.getTopK())
         .withSeed(fromOptions.getSeed())

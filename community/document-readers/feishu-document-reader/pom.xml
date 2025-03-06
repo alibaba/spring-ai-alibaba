@@ -23,7 +23,7 @@
 		<version>${revision}</version>
 		<relativePath>../../../pom.xml</relativePath>
 	</parent>
-	<groupId>com.alibaba.cloud.ai.reader.feishu</groupId>
+
 	<artifactId>feishu-document-reader</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>feishu-document-reader</name>
