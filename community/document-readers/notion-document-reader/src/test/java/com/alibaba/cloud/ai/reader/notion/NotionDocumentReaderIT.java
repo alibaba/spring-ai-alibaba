@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.reader.notion;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -27,9 +28,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Integration tests for Notion Document Reader
  *
+ * Tests are only run if NOTION_TOKEN environment variable is set.
+ *
  * @author xiadong
  * @since 2024-01-06
  */
+@EnabledIfEnvironmentVariable(named = "NOTION_TOKEN", matches = ".+")
 class NotionDocumentReaderIT {
 
 	private static final String NOTION_TOKEN = System.getenv("NOTION_TOKEN");
@@ -40,31 +44,45 @@ class NotionDocumentReaderIT {
 	// Test database ID
 	private static final String TEST_DATABASE_ID = "${databaseId}";
 
+	// Static initializer to log a message if environment variable is not set
+	static {
+		if (NOTION_TOKEN == null || NOTION_TOKEN.isEmpty()) {
+			System.out.println("Skipping Notion tests because NOTION_TOKEN environment variable is not set.");
+		}
+	}
+
 	NotionDocumentReader pageReader;
 
 	NotionDocumentReader databaseReader;
 
 	@BeforeEach
 	public void beforeEach() {
-		// Create page reader
-		NotionResource pageResource = NotionResource.builder()
-			.notionToken(NOTION_TOKEN)
-			.resourceId(TEST_PAGE_ID)
-			.resourceType(NotionResource.ResourceType.PAGE)
-			.build();
-		pageReader = new NotionDocumentReader(pageResource);
+		// Only initialize if NOTION_TOKEN is set
+		if (NOTION_TOKEN != null && !NOTION_TOKEN.isEmpty()) {
+			// Create page reader
+			NotionResource pageResource = NotionResource.builder()
+				.notionToken(NOTION_TOKEN)
+				.resourceId(TEST_PAGE_ID)
+				.resourceType(NotionResource.ResourceType.PAGE)
+				.build();
+			pageReader = new NotionDocumentReader(pageResource);
 
-		// Create database reader
-		NotionResource databaseResource = NotionResource.builder()
-			.notionToken(NOTION_TOKEN)
-			.resourceId(TEST_DATABASE_ID)
-			.resourceType(NotionResource.ResourceType.DATABASE)
-			.build();
-		databaseReader = new NotionDocumentReader(databaseResource);
+			// Create database reader
+			NotionResource databaseResource = NotionResource.builder()
+				.notionToken(NOTION_TOKEN)
+				.resourceId(TEST_DATABASE_ID)
+				.resourceType(NotionResource.ResourceType.DATABASE)
+				.build();
+			databaseReader = new NotionDocumentReader(databaseResource);
+		}
 	}
 
 	@Test
 	void should_load_page() {
+		// Skip test if pageReader is null
+		Assumptions.assumeTrue(pageReader != null,
+				"Skipping test because NotionDocumentReader could not be initialized");
+
 		// when
 		List<Document> documents = pageReader.get();
 
@@ -86,6 +104,10 @@ class NotionDocumentReaderIT {
 
 	@Test
 	void should_load_database() {
+		// Skip test if databaseReader is null
+		Assumptions.assumeTrue(databaseReader != null,
+				"Skipping test because NotionDocumentReader could not be initialized");
+
 		// when
 		List<Document> documents = databaseReader.get();
 

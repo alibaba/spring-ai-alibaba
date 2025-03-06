@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -38,52 +37,80 @@ import com.aliyun.gpdb20160503.models.QueryCollectionDataResponse;
 import com.aliyun.gpdb20160503.models.QueryCollectionDataResponseBody;
 import com.aliyun.gpdb20160503.models.UpsertCollectionDataRequest;
 import com.aliyun.tea.TeaException;
-import com.aliyun.teaopenapi.models.Config;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 /**
  * @author HeYQ
  * @since 2024-10-23 20:29
  */
-public class AnalyticdbVector extends AbstractObservationVectorStore {
+public class AnalyticDbVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnalyticdbVector.class);
+	private static final Logger logger = LoggerFactory.getLogger(AnalyticDbVectorStore.class);
+
+	private static final String DATA_BASE_SYSTEM = "analytic_db";
+
+	private static final String REF_DOC_NAME = "refDocId";
+
+	private static final String METADATA_FIELD_NAME = "metadata";
+
+	private static final String CONTENT_FIELD_NAME = "content";
+
+	private static final String DOC_NAME = "docId";
+
+	private static final int DEFAULT_TOP_K = 4;
+
+	private static final Double DEFAULT_SIMILARITY_THRESHOLD = 0.0;
+
+	public final FilterExpressionConverter filterExpressionConverter = new AdVectorFilterExpressionConverter();
+
+	// private final boolean initializeSchema;
 
 	private final String collectionName;
 
-	private AnalyticdbConfig config;
+	private final AnalyticDbConfig config;
 
-	private Client client;
-
-	private final EmbeddingModel embeddingModel;
+	private final Client client;
 
 	private final ObjectMapper objectMapper;
 
-	public AnalyticdbVector(String collectionName, AnalyticdbConfig config, EmbeddingModel embeddingModel)
-			throws Exception {
-		// FIXME
-		super(null);
+	private final Integer defaultTopK;
+
+	private final Double defaultSimilarityThreshold;
+
+	protected AnalyticDbVectorStore(Builder builder) throws Exception {
+		super(builder);
 		// collection_name must be updated every time
-		this.collectionName = collectionName.toLowerCase();
-		this.config = config;
-		Config clientConfig = Config.build(this.config.toAnalyticdbClientParams());
-		this.client = new Client(clientConfig);
-		this.embeddingModel = embeddingModel;
-		this.objectMapper = new ObjectMapper();
-		initialize();
-		logger.debug("created AnalyticdbVector client success");
+		this.collectionName = builder.collectionName;
+		this.config = builder.config;
+		this.client = builder.client;
+		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+		this.defaultSimilarityThreshold = builder.defaultSimilarityThreshold;
+		this.defaultTopK = builder.defaultTopK;
+	}
+
+	public static Builder builder(String collectionName, AnalyticDbConfig config, Client client,
+			EmbeddingModel embeddingModel) {
+		return new Builder(collectionName, config, client, embeddingModel);
 	}
 
 	/**
@@ -92,11 +119,11 @@ public class AnalyticdbVector extends AbstractObservationVectorStore {
 	private void initialize() throws Exception {
 		initializeVectorDataBase();
 		createNameSpaceIfNotExists();
-		createCollectionIfNotExists(this.config.getEmbeddingDimension());
+		createCollectionIfNotExists((long) this.embeddingModel.dimensions());
 	}
 
 	private void initializeVectorDataBase() throws Exception {
-		InitVectorDatabaseRequest request = new InitVectorDatabaseRequest().setDBInstanceId(config.getDBInstanceId())
+		InitVectorDatabaseRequest request = new InitVectorDatabaseRequest().setDBInstanceId(config.getDbInstanceId())
 			.setRegionId(config.getRegionId())
 			.setManagerAccount(config.getManagerAccount())
 			.setManagerAccountPassword(config.getManagerAccountPassword());
@@ -108,7 +135,7 @@ public class AnalyticdbVector extends AbstractObservationVectorStore {
 	private void createNameSpaceIfNotExists() throws Exception {
 		try {
 			DescribeNamespaceRequest request = new DescribeNamespaceRequest()
-				.setDBInstanceId(this.config.getDBInstanceId())
+				.setDBInstanceId(this.config.getDbInstanceId())
 				.setRegionId(this.config.getRegionId())
 				.setNamespace(this.config.getNamespace())
 				.setManagerAccount(this.config.getManagerAccount())
@@ -118,7 +145,7 @@ public class AnalyticdbVector extends AbstractObservationVectorStore {
 		catch (TeaException e) {
 			if (Objects.equals(e.getStatusCode(), 404)) {
 				CreateNamespaceRequest request = new CreateNamespaceRequest()
-					.setDBInstanceId(this.config.getDBInstanceId())
+					.setDBInstanceId(this.config.getDbInstanceId())
 					.setRegionId(this.config.getRegionId())
 					.setNamespace(this.config.getNamespace())
 					.setManagerAccount(this.config.getManagerAccount())
@@ -136,7 +163,7 @@ public class AnalyticdbVector extends AbstractObservationVectorStore {
 		try {
 			// Describe the collection to check if it exists
 			DescribeCollectionRequest describeRequest = new DescribeCollectionRequest()
-				.setDBInstanceId(this.config.getDBInstanceId())
+				.setDBInstanceId(this.config.getDbInstanceId())
 				.setRegionId(this.config.getRegionId())
 				.setNamespace(this.config.getNamespace())
 				.setNamespacePassword(this.config.getNamespacePassword())
@@ -148,13 +175,12 @@ public class AnalyticdbVector extends AbstractObservationVectorStore {
 			if (Objects.equals(e.getStatusCode(), 404)) {
 				// Collection does not exist, create it
 				ObjectNode metadataNode = objectMapper.createObjectNode();
-				metadataNode.put("refDocId", "text");
-				metadataNode.put("content", "text");
-				metadataNode.put("metadata", "jsonb");
+				metadataNode.put(REF_DOC_NAME, "text");
+				metadataNode.put(CONTENT_FIELD_NAME, "text");
+				metadataNode.put(METADATA_FIELD_NAME, "jsonb");
 				String metadata = objectMapper.writeValueAsString(metadataNode);
-				String fullTextRetrievalFields = "content";
 				CreateCollectionRequest createRequest = new CreateCollectionRequest()
-					.setDBInstanceId(this.config.getDBInstanceId())
+					.setDBInstanceId(this.config.getDbInstanceId())
 					.setRegionId(this.config.getRegionId())
 					.setManagerAccount(this.config.getManagerAccount())
 					.setManagerAccountPassword(this.config.getManagerAccountPassword())
@@ -163,7 +189,7 @@ public class AnalyticdbVector extends AbstractObservationVectorStore {
 					.setDimension(embeddingDimension)
 					.setMetrics(this.config.getMetrics())
 					.setMetadata(metadata)
-					.setFullTextRetrievalFields(fullTextRetrievalFields);
+					.setFullTextRetrievalFields(CONTENT_FIELD_NAME);
 				this.client.createCollection(createRequest);
 				logger.debug("collection" + this.collectionName + "created");
 			}
@@ -176,30 +202,42 @@ public class AnalyticdbVector extends AbstractObservationVectorStore {
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		List<UpsertCollectionDataRequest.UpsertCollectionDataRequestRows> rows = new ArrayList<>(10);
-		for (Document doc : documents) {
-			logger.info("Calling EmbeddingModel for document id = {}", doc.getId());
-			float[] floatEmbeddings = this.embeddingModel.embed(doc);
-			Map<String, String> metadata = new HashMap<>();
-			metadata.put("refDocId", (String) doc.getMetadata().get("docId"));
-			metadata.put("content", doc.getText());
+		Assert.notNull(documents, "The document list should not be null.");
+		if (CollectionUtils.isEmpty(documents)) {
+			return; // nothing to do;
+		}
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
 
+		List<UpsertCollectionDataRequest.UpsertCollectionDataRequestRows> rows = new ArrayList<>(10);
+		for (int i = 0; i < documents.size(); i++) {
+			Document doc = documents.get(i);
+			logger.info("Processing document id = {}", doc.getId());
+
+			Map<String, String> metadata = new HashMap<>();
+			String refDocId;
+			Map<String, Object> docMetadata = doc.getMetadata();
+			String docName = (String) docMetadata.get(DOC_NAME);
+			refDocId = docName != null && !docName.isEmpty() ? docName : doc.getId();
+			metadata.put(REF_DOC_NAME, refDocId);
+			metadata.put(CONTENT_FIELD_NAME, doc.getText());
 			try {
-				metadata.put("metadata", objectMapper.writeValueAsString(doc.getMetadata()));
+				metadata.put(METADATA_FIELD_NAME, objectMapper.writeValueAsString(doc.getMetadata()));
 			}
 			catch (JsonProcessingException e) {
-				throw new RuntimeException(e);
+				throw new RuntimeException("Failed to serialize metadata for document id = " + doc.getId(), e);
 			}
 
+			float[] floatEmbeddings = embeddings.get(i);
 			List<Double> embedding = IntStream.range(0, floatEmbeddings.length)
-				.mapToObj(i -> (double) floatEmbeddings[i]) // 将每个 float 转为 Double
+				.mapToObj(j -> (double) floatEmbeddings[j])
 				.toList();
 
 			rows.add(new UpsertCollectionDataRequest.UpsertCollectionDataRequestRows().setVector(embedding)
 				.setMetadata(metadata));
 		}
 		UpsertCollectionDataRequest request = new UpsertCollectionDataRequest()
-			.setDBInstanceId(this.config.getDBInstanceId())
+			.setDBInstanceId(this.config.getDbInstanceId())
 			.setRegionId(this.config.getRegionId())
 			.setNamespace(this.config.getNamespace())
 			.setNamespacePassword(this.config.getNamespacePassword())
@@ -220,7 +258,7 @@ public class AnalyticdbVector extends AbstractObservationVectorStore {
 		}
 		String idsStr = ids.stream().map(id -> "'" + id + "'").collect(Collectors.joining(", ", "(", ")"));
 		DeleteCollectionDataRequest request = new DeleteCollectionDataRequest()
-			.setDBInstanceId(this.config.getDBInstanceId())
+			.setDBInstanceId(this.config.getDbInstanceId())
 			.setRegionId(this.config.getRegionId())
 			.setNamespace(this.config.getNamespace())
 			.setNamespacePassword(this.config.getNamespacePassword())
@@ -229,7 +267,6 @@ public class AnalyticdbVector extends AbstractObservationVectorStore {
 			.setCollectionDataFilter("refDocId IN " + idsStr);
 		try {
 			DeleteCollectionDataResponse deleteCollectionDataResponse = this.client.deleteCollectionData(request);
-			// Handle response if needed
 			logger.debug("delete collection data response:{}", deleteCollectionDataResponse.getBody());
 		}
 		catch (Exception e) {
@@ -238,13 +275,47 @@ public class AnalyticdbVector extends AbstractObservationVectorStore {
 	}
 
 	@Override
+	public void doDelete(Filter.Expression filterExpression) {
+		String nativeFilterExpression = this.filterExpressionConverter.convertExpression(filterExpression);
+		DeleteCollectionDataRequest request = new DeleteCollectionDataRequest()
+			.setDBInstanceId(this.config.getDbInstanceId())
+			.setRegionId(this.config.getRegionId())
+			.setNamespace(this.config.getNamespace())
+			.setNamespacePassword(this.config.getNamespacePassword())
+			.setCollection(this.collectionName)
+			.setCollectionData(null)
+			.setCollectionDataFilter(nativeFilterExpression);
+		try {
+			DeleteCollectionDataResponse deleteCollectionDataResponse = this.client.deleteCollectionData(request);
+			logger.debug("delete collection data response:{}", deleteCollectionDataResponse.getBody());
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Failed to delete collection data by filterExpression: " + e.getMessage(), e);
+		}
+	}
+
+	@Override
+	public List<Document> similaritySearch(String query) {
+		return this.similaritySearch(SearchRequest.builder()
+			.query(query)
+			.topK(this.defaultTopK)
+			.similarityThreshold(this.defaultSimilarityThreshold)
+			.build());
+	}
+
+	@Override
 	public List<Document> doSimilaritySearch(SearchRequest searchRequest) {
 		double scoreThreshold = searchRequest.getSimilarityThreshold();
 		boolean includeValues = searchRequest.hasFilterExpression();
 		int topK = searchRequest.getTopK();
+		String filterExpress = null;
+		if (includeValues) {
+			filterExpress = (searchRequest.getFilterExpression() != null)
+					? this.filterExpressionConverter.convertExpression(searchRequest.getFilterExpression()) : "";
+		}
 
 		QueryCollectionDataRequest request = new QueryCollectionDataRequest()
-			.setDBInstanceId(this.config.getDBInstanceId())
+			.setDBInstanceId(this.config.getDbInstanceId())
 			.setRegionId(this.config.getRegionId())
 			.setNamespace(this.config.getNamespace())
 			.setNamespacePassword(this.config.getNamespacePassword())
@@ -254,7 +325,7 @@ public class AnalyticdbVector extends AbstractObservationVectorStore {
 			.setVector(null)
 			.setContent(searchRequest.getQuery())
 			.setTopK((long) topK)
-			.setFilter(null);
+			.setFilter(filterExpress);
 		try {
 			QueryCollectionDataResponse response = this.client.queryCollectionData(request);
 			List<Document> documents = new ArrayList<>();
@@ -263,8 +334,8 @@ public class AnalyticdbVector extends AbstractObservationVectorStore {
 				.getMatch()) {
 				if (match.getScore() != null && match.getScore() > scoreThreshold) {
 					Map<String, String> metadata = match.getMetadata();
-					String pageContent = metadata.get("content");
-					Map<String, Object> metadataJson = objectMapper.readValue(metadata.get("metadata"),
+					String pageContent = metadata.get(CONTENT_FIELD_NAME);
+					Map<String, Object> metadataJson = objectMapper.readValue(metadata.get(METADATA_FIELD_NAME),
 							new TypeReference<HashMap<String, Object>>() {
 							});
 					Document doc = new Document(pageContent, metadataJson);
@@ -279,8 +350,86 @@ public class AnalyticdbVector extends AbstractObservationVectorStore {
 	}
 
 	@Override
+	public void afterPropertiesSet() throws Exception {
+		initialize();
+		logger.debug("created AnalyticdbVector client success");
+	}
+
+	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
-		return null;
+
+		return VectorStoreObservationContext.builder(DATA_BASE_SYSTEM, operationName)
+			.collectionName(this.collectionName)
+			.dimensions(this.embeddingModel.dimensions())
+			.namespace(this.config.getNamespace())
+			.similarityMetric(this.config.getMetrics());
+	}
+
+	/**
+	 * Builder class for creating {@link AnalyticDbVectorStore} instances.
+	 * <p>
+	 * Provides a fluent API for configuring all aspects of the Analyticdb vector store.
+	 *
+	 * @since 1.0.0
+	 */
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
+
+		private final String collectionName;
+
+		private final AnalyticDbConfig config;
+
+		private final Client client;
+
+		private int defaultTopK = DEFAULT_TOP_K;
+
+		private Double defaultSimilarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
+
+		private Builder(String collectionName, AnalyticDbConfig config, Client client, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
+			Assert.notNull(client, "Client must not be null");
+			this.client = client;
+			Assert.notNull(collectionName, "Collection name must not be null");
+			this.collectionName = collectionName.toLowerCase();
+			this.config = config;
+		}
+
+		/**
+		 * Sets the default maximum number of similar documents to return.
+		 * @param defaultTopK the maximum number of documents
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if defaultTopK is negative
+		 */
+		public Builder defaultTopK(int defaultTopK) {
+			Assert.isTrue(defaultTopK >= 0, "The topK should be positive value.");
+			this.defaultTopK = defaultTopK;
+			return this;
+		}
+
+		/**
+		 * Sets the default similarity threshold for returned documents.
+		 * @param defaultSimilarityThreshold the similarity threshold (must be between 0.0
+		 * and 1.0)
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if defaultSimilarityThreshold is not between
+		 * 0.0 and 1.0
+		 */
+		public Builder defaultSimilarityThreshold(Double defaultSimilarityThreshold) {
+			Assert.isTrue(defaultSimilarityThreshold >= 0.0 && defaultSimilarityThreshold <= 1.0,
+					"The similarity threshold must be in range [0.0:1.00].");
+			this.defaultSimilarityThreshold = defaultSimilarityThreshold;
+			return this;
+		}
+
+		@Override
+		public AnalyticDbVectorStore build() {
+			try {
+				return new AnalyticDbVectorStore(this);
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+
 	}
 
 }
