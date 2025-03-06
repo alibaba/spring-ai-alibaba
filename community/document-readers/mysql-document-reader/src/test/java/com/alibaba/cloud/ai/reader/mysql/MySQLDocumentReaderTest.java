@@ -32,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author brianxiadong
  **/
-@Disabled("Manual MySQL configuration required to run this test. Use -Dmysql.host=your_host to enable")
 @EnabledIfSystemProperty(named = "mysql.host", matches = ".+")
 public class MySQLDocumentReaderTest {
 
