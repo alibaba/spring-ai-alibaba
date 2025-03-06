@@ -82,7 +82,6 @@ import org.springframework.util.StringUtils;
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  * @see ChatModel
- * @see com.alibaba.dashscope.aigc.generation
  */
 public class DashScopeChatModel extends AbstractToolCallSupport implements ChatModel {
 

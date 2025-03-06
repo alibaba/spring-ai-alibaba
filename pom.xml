@@ -93,11 +93,14 @@
         <module>community/vector-stores/spring-ai-alibaba-analyticdb-store</module>
         <module>community/vector-stores/spring-ai-alibaba-opensearch-store</module>
 
+        <module>community/memory/spring-ai-alibaba-redis-memory</module>
+        <module>community/memory/spring-ai-alibaba-mysql-memory</module>
+
     </modules>
 
     <properties>
 
-        <revision>1.0.0-M6.1-SNAPSHOT</revision>
+        <revision>1.0.0-M6.1</revision>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
