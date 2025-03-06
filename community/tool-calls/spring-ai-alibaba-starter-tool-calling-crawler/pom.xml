@@ -27,8 +27,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-tool-calling-crawler</artifactId>
-    <packaging>jar</packaging>
-    <name>Spring Ai Alibaba Starter Tool Calling Crawler</name>
+    <name>Spring AI Alibaba Starter Tool Calling Crawler</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <url>https://github.com/alibaba/spring-ai-alibaba</url>

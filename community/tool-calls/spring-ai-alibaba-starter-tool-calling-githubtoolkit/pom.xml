@@ -24,8 +24,9 @@
         <version>${revision}</version>
         <relativePath>../../../pom.xml</relativePath>
     </parent>
+
     <artifactId>spring-ai-alibaba-starter-tool-calling-githubtoolkit</artifactId>
-    <name>spring-ai-alibaba-starter-function-calling-githubtoolkit</name>
+    <name>Spring AI Alibaba Starter Tool Calling GithubToolKit</name>
     <description>github toolkit for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>

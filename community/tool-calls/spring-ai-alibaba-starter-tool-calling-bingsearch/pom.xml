@@ -24,8 +24,9 @@
         <version>${revision}</version>
         <relativePath>../../../pom.xml</relativePath>
     </parent>
+
     <artifactId>spring-ai-alibaba-starter-tool-calling-bingsearch</artifactId>
-    <name>spring-ai-alibaba-starter-tool-calling-bingsearch</name>
+    <name>Spring AI Alibaba Starter Tool Calling BingSearch</name>
     <description>Bing search tool for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
