@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author brianxiadong
  **/
+@Disabled("Manual MySQL configuration required to run this test. Use -Dmysql.host=your_host to enable")
 @EnabledIfSystemProperty(named = "mysql.host", matches = ".+")
 public class MySQLDocumentReaderTest {
 
@@ -41,20 +42,22 @@ public class MySQLDocumentReaderTest {
 
 	@BeforeEach
 	void setUp() {
-		// 从系统属性中读取 MySQL 连接信息
+		// Read MySQL connection information from system properties
 		String host = System.getProperty("mysql.host", "localhost");
 		int port = Integer.parseInt(System.getProperty("mysql.port", "3306"));
-		String database = System.getProperty("mysql.database", "mysql"); // 使用默认的 mysql
-																			// 数据库
+		String database = System.getProperty("mysql.database", "mysql"); // Use default
+																			// mysql
+																			// database
 		String username = System.getProperty("mysql.username", "root");
 		String password = System.getProperty("mysql.password", "root");
-		String query = System.getProperty("mysql.query", "SELECT * FROM user LIMIT 10;"); // 使用
-																							// mysql
-																							// 数据库中的
+		String query = System.getProperty("mysql.query", "SELECT * FROM user LIMIT 10;"); // Use
 																							// user
-																							// 表
+																							// table
+																							// in
+																							// mysql
+																							// database
 
-		// 从系统属性中读取内容列和元数据列
+		// Read content and metadata columns from system properties
 		String contentColumnsStr = System.getProperty("mysql.content.columns", "User,Host");
 		String metadataColumnsStr = System.getProperty("mysql.metadata.columns", "User,Host");
 
