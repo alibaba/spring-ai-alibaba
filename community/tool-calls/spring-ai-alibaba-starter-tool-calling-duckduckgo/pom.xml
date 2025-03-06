@@ -28,7 +28,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-tool-calling-duckduckgo</artifactId>
-    <name>spring-ai-alibaba-starter-tool-calling-duckduckgo</name>
+    <name>Spring AI Alibaba Starter Tool Calling DuckDuckGo</name>
     <description>Web Search tool for Spring AI Alibaba</description>
 
     <dependencies>

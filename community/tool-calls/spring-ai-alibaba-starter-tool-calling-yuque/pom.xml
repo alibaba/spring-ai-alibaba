@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-tool-calling-yuque</artifactId>
-    <name>spring-ai-alibaba-starter-tool-calling-yuque</name>
+    <name>Spring AI Alibaba Starter Tool Calling Yuque</name>
     <description>Yuque tool for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>

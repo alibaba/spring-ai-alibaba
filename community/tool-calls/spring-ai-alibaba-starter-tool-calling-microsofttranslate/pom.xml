@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-tool-calling-microsofttranslate</artifactId>
-    <name>spring-ai-alibaba-starter-tool-calling-microsofttranslate</name>
+    <name>Spring AI Alibaba Starter Tool Calling MicrosoftTranslate</name>
     <description>Translate tool for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>

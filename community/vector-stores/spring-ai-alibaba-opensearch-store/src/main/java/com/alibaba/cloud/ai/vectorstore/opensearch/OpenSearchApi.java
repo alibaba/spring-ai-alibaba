@@ -63,9 +63,9 @@ public class OpenSearchApi {
 			this.instanceId = openSearchConfiguration.getInstanceId();
 			this.client = new Client(openSearchConfiguration);
 		}
-		catch (Exception e) {
-			logger.error("init OpenSearch client error", e);
-			throw new RuntimeException(e);
+		catch (Exception exception) {
+			logger.error("init OpenSearch client error", exception);
+			throw new RuntimeException(exception);
 		}
 	}
 
