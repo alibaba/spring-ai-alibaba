@@ -24,8 +24,9 @@
         <version>${revision}</version>
         <relativePath>../../../pom.xml</relativePath>
     </parent>
+
     <artifactId>spring-ai-alibaba-starter-tool-calling-baidumap</artifactId>
-    <name>spring-ai-alibaba-starter-tool-calling-baidumap</name>
+    <name>Spring AI Alibaba Starter Tool Calling Baidu Map</name>
     <description>Bai Du Map tool for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>

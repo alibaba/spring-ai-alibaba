@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-tool-calling-amap</artifactId>
-    <name>spring-ai-alibaba-starter-tool-calling-amap</name>
+    <name>Spring AI Alibaba Starter Tool Calling Amap</name>
     <description>Gao De Map tool for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
