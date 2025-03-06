@@ -112,10 +112,6 @@ public final class OverAllState implements Serializable {
     public OverAllState input(Map<String, Object> input) {
         if (CollectionUtils.isEmpty(input)) return this;
         this.data.putAll(input);
-        for (Map.Entry<String, Object> entry : input.entrySet()) {
-            String key = entry.getKey();
-            registerKeyAndStrategy(key, (o, o2) -> o2);
-        }
         return this;
     }
 
@@ -131,6 +127,17 @@ public final class OverAllState implements Serializable {
     public OverAllState registerKeyAndStrategy(String key, KeyStrategy strategy) {
         this.keyStrategies.put(key, strategy);
         return this;
+    }
+
+
+    /**
+     * Is contain strategy boolean.
+     *
+     * @param key the key
+     * @return the boolean
+     */
+    public boolean containStrategy(String key) {
+        return this.keyStrategies.containsKey(key);
     }
 
 
