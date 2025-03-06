@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import lombok.extern.slf4j.Slf4j;
@@ -217,7 +218,7 @@ public class StateGraphTest {
                         node_async(state -> Map.of("messages", List.of("message3", RemoveByHash.of("message2")))))
                 .addNode("agent_4", node_async(state -> {
                     System.out.println("agent_3");
-                    List<String> messages = Optional.ofNullable(state.value("messages").get())
+                    List messages = Optional.of(state.value("messages").get())
                             .filter(List.class::isInstance)
                             .map(List.class::cast)
                             .orElse(new ArrayList<>());
@@ -492,5 +493,34 @@ public class StateGraphTest {
 		assertEquals("edge [A] has duplicate targets [A2]!", exception.getMessage());
 
 	}
+
+
+    @Test
+    public void testWithSubSerialize() throws Exception {
+        OverAllState overAllState = new OverAllState()
+                .registerKeyAndStrategy("prop1", (o, o2) -> o2);
+        String input = "jackson1";
+        PlainTextStateSerializer plainTextStateSerializer;
+        if (input.equals("jackson")){
+            plainTextStateSerializer = new StateGraph.JacksonSerializer();
+        }else{
+            plainTextStateSerializer = new StateGraph.GsonSerializer();
+        }
+        StateGraph workflow = new StateGraph(overAllState, plainTextStateSerializer).addEdge(START, "agent_1")
+                .addNode("agent_1", node_async(state -> {
+                    log.info("agent_1\n{}", state);
+                    return Map.of("prop1", "test");
+                }))
+                .addEdge("agent_1", END);
+
+        CompiledGraph app = workflow.compile();
+
+        Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+        System.out.println("result = " + result);
+        assertTrue(result.isPresent());
+
+        Map<String, String> expected = Map.of("input", "test1", "prop1", "test");
+        assertIterableEquals(sortMap(expected), sortMap(result.get().data()));
+    }
 
 }
