@@ -47,7 +47,8 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-core</artifactId>
-            <version>${project.parent.version}</version>
+<!--            <version>${project.parent.version}</version>-->
+            <version>1.0.0-M5.1</version>
         </dependency>
 
         <dependency>

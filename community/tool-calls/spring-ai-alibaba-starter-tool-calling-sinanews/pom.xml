@@ -26,7 +26,7 @@
 	</parent>
 
 	<artifactId>spring-ai-alibaba-starter-tool-calling-sinanews</artifactId>
-	<name>spring-ai-alibaba-starter-tool-calling-sinanews</name>
+	<name>Spring AI Alibaba Starter Tool Calling SinaNews</name>
 	<description>Sina News tool for Spring AI Alibaba</description>
 	<url>https://github.com/alibaba/spring-ai-alibaba</url>
 	<scm>
