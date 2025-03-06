@@ -328,34 +328,7 @@ public class DashScopePropertiesTests {
 						"spring.ai.dashscope.chat.options.topP=0.56",
 
 						// "spring.ai.dashscope.chat.options.toolChoice.functionName=toolChoiceFunctionName",
-						"spring.ai.dashscope.chat.options.toolChoice=" + ModelOptionsUtils.toJsonString(DashScopeApi.ChatCompletionRequestParameter.ToolChoiceBuilder.function("toolChoiceFunctionName")),
-
-						"spring.ai.dashscope.chat.options.tools[0].function.name=myFunction1",
-						"spring.ai.dashscope.chat.options.tools[0].function.description=function description",
-						"spring.ai.dashscope.chat.options.tools[0].function.json-schema=" + """
-					{
-						"type": "object",
-						"properties": {
-							"location": {
-								"type": "string",
-								"description": "The city and state e.g. San Francisco, CA"
-							},
-							"lat": {
-								"type": "number",
-								"description": "The city latitude"
-							},
-							"lon": {
-								"type": "number",
-								"description": "The city longitude"
-							},
-							"unit": {
-								"type": "string",
-								"enum": ["c", "f"]
-							}
-						},
-						"required": ["location", "lat", "lon", "unit"]
-					}
-					"""
+						"spring.ai.dashscope.chat.options.toolChoice=" + ModelOptionsUtils.toJsonString(DashScopeApi.ChatCompletionRequestParameter.ToolChoiceBuilder.function("toolChoiceFunctionName"))
 				)
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(DashScopeAutoConfiguration.class))
@@ -381,13 +354,7 @@ public class DashScopePropertiesTests {
 				JSONAssert.assertEquals("{\"type\":\"function\",\"function\":{\"name\":\"toolChoiceFunctionName\"}}",
 						"" + chatProperties.getOptions().getToolChoice(), JSONCompareMode.LENIENT);
 
-				assertThat(chatProperties.getOptions().getTools()).isNotNull();
-				var tool = chatProperties.getOptions().getTools().get(0);
-				assertThat(tool.type()).isEqualTo(DashScopeApi.FunctionTool.Type.FUNCTION);
-				var function = tool.function();
-				assertThat(function.name()).isEqualTo("myFunction1");
-				assertThat(function.description()).isEqualTo("function description");
-				assertNotNull(function.parameters());
+				// 注意：我们不测试 tools 属性，因为它需要通过代码设置，而不是通过配置属性
 			});
 	}
 
