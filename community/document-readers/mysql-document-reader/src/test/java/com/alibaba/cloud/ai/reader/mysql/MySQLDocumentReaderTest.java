@@ -16,7 +16,9 @@
 package com.alibaba.cloud.ai.reader.mysql;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.ai.document.Document;
 
 import java.util.Arrays;
@@ -30,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author brianxiadong
  **/
+@EnabledIfSystemProperty(named = "mysql.host", matches = ".+")
 public class MySQLDocumentReaderTest {
 
 	private MySQLResource mysqlResource;
@@ -38,13 +41,29 @@ public class MySQLDocumentReaderTest {
 
 	@BeforeEach
 	void setUp() {
+		// 从系统属性中读取 MySQL 连接信息
+		String host = System.getProperty("mysql.host", "localhost");
+		int port = Integer.parseInt(System.getProperty("mysql.port", "3306"));
+		String database = System.getProperty("mysql.database", "mysql"); // 使用默认的 mysql
+																			// 数据库
+		String username = System.getProperty("mysql.username", "root");
+		String password = System.getProperty("mysql.password", "root");
+		String query = System.getProperty("mysql.query", "SELECT * FROM user LIMIT 10;"); // 使用
+																							// mysql
+																							// 数据库中的
+																							// user
+																							// 表
+
+		// 从系统属性中读取内容列和元数据列
+		String contentColumnsStr = System.getProperty("mysql.content.columns", "User,Host");
+		String metadataColumnsStr = System.getProperty("mysql.metadata.columns", "User,Host");
+
+		List<String> contentColumns = Arrays.asList(contentColumnsStr.split(","));
+		List<String> metadataColumns = Arrays.asList(metadataColumnsStr.split(","));
+
 		// Setup test MySQL resource
-		// Note: These are test credentials, change them according to your environment
-		mysqlResource = new MySQLResource("localhost", 3306, "demo1", "root", "root",
-				"SELECT * FROM user_table LIMIT 10;", Arrays.asList("username", "email"), // content
-																							// columns
-				Arrays.asList("username", "email") // metadata columns
-		);
+		mysqlResource = new MySQLResource(host, port, database, username, password, query, contentColumns,
+				metadataColumns);
 
 		reader = new MySQLDocumentReader(mysqlResource);
 	}
@@ -52,7 +71,10 @@ public class MySQLDocumentReaderTest {
 	@Test
 	void testGetDocuments() {
 		// This test requires a running MySQL instance with test data
-		// You may need to modify the connection details and query in setUp()
+		// You may need to modify the connection details and query using system
+		// properties:
+		// -Dmysql.host=your_host -Dmysql.port=your_port -Dmysql.database=your_db
+		// -Dmysql.username=your_user -Dmysql.password=your_pass
 
 		List<Document> documents = reader.get();
 
@@ -67,7 +89,6 @@ public class MySQLDocumentReaderTest {
 		// Test document content
 		String content = firstDoc.getText();
 		assertNotNull(content);
-
 	}
 
 	@Test
