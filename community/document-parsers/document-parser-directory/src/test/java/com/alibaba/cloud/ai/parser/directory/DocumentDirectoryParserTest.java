@@ -24,6 +24,7 @@ import java.util.List;
 
 /**
  * @author HeYQ
+ * @author brianxiadong
  * @since 2025-02-07 19:21
  */
 
@@ -32,7 +33,7 @@ public class DocumentDirectoryParserTest {
 	// Load all non-hidden files in a directory.
 	@Test
 	public void testAllNoHidden() {
-		String path = "D:\\code\\paper_impl_and_git_code\\ai_framework\\spring-ai-alibaba\\community\\document-parsers\\document-parser-directory\\src\\test\\resources";
+		String path = "src/test/resources";
 
 		DocumentDirectoryParser parser = new DocumentDirectoryParser.Builder(path)
 			.documentParser(new TextDocumentParser())
@@ -46,7 +47,7 @@ public class DocumentDirectoryParserTest {
 	// Load all text files in a directory without recursion.
 	@Test
 	public void testAllTextNoHidden() {
-		String path = "D:\\code\\paper_impl_and_git_code\\ai_framework\\spring-ai-alibaba\\community\\document-parsers\\document-parser-directory\\src\\test\\resources";
+		String path = "src/test/resources";
 
 		DocumentDirectoryParser parser = new DocumentDirectoryParser.Builder(path)
 			.documentParser(new TextDocumentParser())
@@ -61,7 +62,7 @@ public class DocumentDirectoryParserTest {
 	// Recursively load all text files in a directory.
 	@Test
 	public void testAllTextRecursive() {
-		String path = "D:\\code\\paper_impl_and_git_code\\ai_framework\\spring-ai-alibaba\\community\\document-parsers\\document-parser-directory\\src\\test\\resources";
+		String path = "src/test/resources";
 		DocumentDirectoryParser parser = new DocumentDirectoryParser.Builder(path)
 			.documentParser(new TextDocumentParser())
 			.glob("*.txt")
@@ -76,7 +77,7 @@ public class DocumentDirectoryParserTest {
 	// Load all files in a directory, except for py files.
 	@Test
 	public void testExceptNoHidden() {
-		String path = "D:\\code\\paper_impl_and_git_code\\ai_framework\\spring-ai-alibaba\\community\\document-parsers\\document-parser-directory\\src\\test\\resources";
+		String path = "src/test/resources";
 
 		DocumentDirectoryParser parser = new DocumentDirectoryParser.Builder(path)
 			.documentParser(new TextDocumentParser())

@@ -110,7 +110,7 @@ public final class DashScopeAgent extends Agent {
 		DashScopeAgentOptions runtimeOptions = mergeOptions(prompt.getOptions());
 		String appId = runtimeOptions.getAppId();
 
-		if (appId == null) {
+		if (appId == null || appId.isEmpty()) {
 			throw new IllegalArgumentException("appId must be set");
 		}
 
