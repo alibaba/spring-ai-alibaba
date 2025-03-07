@@ -44,7 +44,7 @@ public class JacksonSerializerTest {
 
 		Class<?> type = serializer.getStateType();
 
-		assertEquals(State.class, type);
+		assertEquals(OverAllState.class, type);
 
 		byte[] bytes = serializer.writeObject(state);
 
