@@ -33,8 +33,7 @@ public final class OverAllState implements Serializable {
 	}
 
 	public Optional<OverAllState> snapShot() {
-		return Optional
-			.of(new OverAllState(new HashMap<>(this.data), new HashMap<>(this.keyStrategies), this.resume));
+		return Optional.of(new OverAllState(new HashMap<>(this.data), new HashMap<>(this.keyStrategies), this.resume));
 	}
 
 	/**
