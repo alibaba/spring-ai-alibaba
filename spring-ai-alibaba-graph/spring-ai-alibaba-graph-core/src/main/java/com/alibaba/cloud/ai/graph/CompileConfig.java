@@ -122,10 +122,8 @@ public class CompileConfig {
 			return this;
 		}
 
-
 		/**
 		 * Plain text state serializer builder.
-		 *
 		 * @param plainTextStateSerializer the plain text state serializer
 		 * @return The current {@code Builder} instance for method chaining.
 		 */
