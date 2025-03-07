@@ -128,7 +128,6 @@ public class StateGraph {
 
 	private final GsonSerializer stateSerializer = new GsonSerializer();
 
-
 	static class JacksonSerializer extends JacksonStateSerializer {
 
 		public JacksonSerializer() {
@@ -160,7 +159,7 @@ public class StateGraph {
 	public StateGraph() {
 	}
 
-	public Map<String,KeyStrategy> keyStrategies() {
+	public Map<String, KeyStrategy> keyStrategies() {
 		return overAllState.keyStrategies();
 	}
 
@@ -171,7 +170,6 @@ public class StateGraph {
 	public final AgentStateFactory<OverAllState> getStateFactory() {
 		return stateSerializer.stateFactory();
 	}
-
 
 	@Deprecated(forRemoval = true)
 	public EdgeValue getEntryPoint() {
@@ -239,8 +237,7 @@ public class StateGraph {
 	 * @throws GraphStateException if the node identifier is invalid or the node already
 	 * exists
 	 */
-	public StateGraph addNode(String id, AsyncNodeActionWithConfig actionWithConfig)
-			throws GraphStateException {
+	public StateGraph addNode(String id, AsyncNodeActionWithConfig actionWithConfig) throws GraphStateException {
 		if (Objects.equals(id, END)) {
 			throw Errors.invalidNodeIdentifier.exception(END);
 		}
@@ -347,8 +344,8 @@ public class StateGraph {
 	 * @throws GraphStateException if the edge identifier is invalid, the mappings are
 	 * empty, or the edge already exists
 	 */
-	public StateGraph addConditionalEdges(String sourceId, AsyncEdgeAction condition,
-			Map<String, String> mappings) throws GraphStateException {
+	public StateGraph addConditionalEdges(String sourceId, AsyncEdgeAction condition, Map<String, String> mappings)
+			throws GraphStateException {
 		if (Objects.equals(sourceId, END)) {
 			throw Errors.invalidEdgeIdentifier.exception(END);
 		}
@@ -397,9 +394,7 @@ public class StateGraph {
 		return new CompiledGraph(this, config);
 	}
 
-
-
-	public CompiledGraph compile(OverAllState overAllState,CompileConfig config) throws GraphStateException {
+	public CompiledGraph compile(OverAllState overAllState, CompileConfig config) throws GraphStateException {
 		Objects.requireNonNull(config, "config cannot be null");
 
 		validateGraph();

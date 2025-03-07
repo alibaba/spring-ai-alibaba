@@ -162,7 +162,7 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 			Message userMessage = new UserMessage(input);
 			messages.add(userMessage);
 			ChatResponse response = chatModel.call(new Prompt(messages));
-			String resp = response.getResult().getOutput().getContent();
+			String resp = response.getResult().getOutput().getText();
 			return ChatModelRunResult.builder()
 				.input(runActionParam)
 				.result(ActionResult.builder().Response(resp).build())
@@ -201,11 +201,11 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 					.build();
 			}
 			ImageOptions options = ImageOptionsBuilder.builder()
-				.withModel(imageOptions.getModel())
-				.withN(imageOptions.getN())
-				.withWidth(imageOptions.getWidth())
-				.withHeight(imageOptions.getHeight())
-				.withStyle(imageOptions.getStyle())
+				.model(imageOptions.getModel())
+				.N(imageOptions.getN())
+				.width(imageOptions.getWidth())
+				.height(imageOptions.getHeight())
+				.style(imageOptions.getStyle())
 				.build();
 			List<ImageMessage> messages = new ArrayList<>();
 			if (StringUtils.hasText(prompt)) {

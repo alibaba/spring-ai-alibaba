@@ -26,7 +26,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.TypeResolverHelper;
+import org.springframework.ai.tool.resolution.TypeResolverHelper;
 import org.springframework.util.Assert;
 
 import java.util.function.BiFunction;

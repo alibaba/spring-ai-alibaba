@@ -19,70 +19,71 @@ import static org.mockito.Mockito.*;
 
 public class OverAllStateSerializerTest {
 
-    @Mock
-    private AgentStateFactory<OverAllState> stateFactory;
+	@Mock
+	private AgentStateFactory<OverAllState> stateFactory;
 
-    @Mock
-    private ObjectOutput objectOutput;
+	@Mock
+	private ObjectOutput objectOutput;
 
-    @Mock
-    private ObjectInput objectInput;
+	@Mock
+	private ObjectInput objectInput;
 
-    @InjectMocks
-    private OverAllStateSerializer serializer;
+	@InjectMocks
+	private OverAllStateSerializer serializer;
 
-    @Before
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
-    }
+	@Before
+	public void setUp() {
+		MockitoAnnotations.initMocks(this);
+	}
 
-    @Test(expected = IllegalArgumentException.class)
-    public void write_ObjectIsNull_ShouldThrowIllegalArgumentException() throws IOException {
-        serializer.write(null, objectOutput);
-    }
+	@Test(expected = IllegalArgumentException.class)
+	public void write_ObjectIsNull_ShouldThrowIllegalArgumentException() throws IOException {
+		serializer.write(null, objectOutput);
+	}
 
-    @Test(expected = IllegalArgumentException.class)
-    public void write_OutputIsNull_ShouldThrowIllegalArgumentException() throws IOException {
-        OverAllState state = mock(OverAllState.class);
-        serializer.write(state, null);
-    }
+	@Test(expected = IllegalArgumentException.class)
+	public void write_OutputIsNull_ShouldThrowIllegalArgumentException() throws IOException {
+		OverAllState state = mock(OverAllState.class);
+		serializer.write(state, null);
+	}
 
-    @Test
-    public void write_ValidInputs_ShouldWriteObject() throws IOException {
-        OverAllState state = mock(OverAllState.class);
-        serializer.write(state, objectOutput);
-        verify(objectOutput).writeObject(state);
-    }
+	@Test
+	public void write_ValidInputs_ShouldWriteObject() throws IOException {
+		OverAllState state = mock(OverAllState.class);
+		serializer.write(state, objectOutput);
+		verify(objectOutput).writeObject(state);
+	}
 
-    @Test(expected = IllegalArgumentException.class)
-    public void read_InputIsNull_ShouldThrowIllegalArgumentException() throws IOException, ClassNotFoundException {
-        serializer.read(null);
-    }
+	@Test(expected = IllegalArgumentException.class)
+	public void read_InputIsNull_ShouldThrowIllegalArgumentException() throws IOException, ClassNotFoundException {
+		serializer.read(null);
+	}
 
-    @Test(expected = IllegalStateException.class)
+	@Test(expected = IllegalStateException.class)
     public void read_DeserializedObjectIsNull_ShouldThrowIllegalStateException() throws IOException, ClassNotFoundException {
         when(objectInput.readObject()).thenReturn(null);
         serializer.read(objectInput);
     }
 
-    @Test
-    public void read_ValidInputs_ShouldReturnOverAllState() throws IOException, ClassNotFoundException {
-        OverAllState state = mock(OverAllState.class);
-        when(objectInput.readObject()).thenReturn(state);
-        OverAllState result = serializer.read(objectInput);
-        assertEquals(state, result);
-    }
+	@Test
+	public void read_ValidInputs_ShouldReturnOverAllState() throws IOException, ClassNotFoundException {
+		OverAllState state = mock(OverAllState.class);
+		when(objectInput.readObject()).thenReturn(state);
+		OverAllState result = serializer.read(objectInput);
+		assertEquals(state, result);
+	}
 
-    @Test(expected = IOException.class)
+	@Test(expected = IOException.class)
     public void read_ClassNotFoundException_ShouldThrowIOException() throws IOException, ClassNotFoundException {
         when(objectInput.readObject()).thenThrow(new ClassNotFoundException());
         OverAllState read = serializer.read(objectInput);
         System.out.println("read = " + read);
     }
 
-    @Test(expected = IOException.class)
+	@Test(expected = IOException.class)
     public void read_IOException_ShouldThrowIOException() throws IOException, ClassNotFoundException {
         when(objectInput.readObject()).thenThrow(new IOException());
         serializer.read(objectInput);
     }
+
 }

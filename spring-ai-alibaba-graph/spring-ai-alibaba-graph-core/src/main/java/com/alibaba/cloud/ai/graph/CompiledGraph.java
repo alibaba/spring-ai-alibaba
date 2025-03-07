@@ -295,7 +295,6 @@ public class CompiledGraph {
 
 	}
 
-
 	Map<String, Object> getInitialState(Map<String, Object> inputs, RunnableConfig config) {
 
 		return compileConfig.checkpointSaver()
@@ -317,11 +316,11 @@ public class CompiledGraph {
 	 */
 	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
-		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(stateGraph.getOverAllState().input(inputs), config);
+		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(
+				stateGraph.getOverAllState().input(inputs), config);
 
 		return new AsyncGenerator.WithEmbed<>(generator);
 	}
-
 
 	public AsyncGenerator<NodeOutput> stream(OverAllState overAllState, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
@@ -339,8 +338,6 @@ public class CompiledGraph {
 		stateGraph.getOverAllState().input(inputs);
 		return this.stream(stateGraph.getOverAllState(), RunnableConfig.builder().build());
 	}
-
-
 
 	public AsyncGenerator<NodeOutput> stream() {
 		return this.stream(stateGraph.getOverAllState(), RunnableConfig.builder().build());
@@ -362,8 +359,6 @@ public class CompiledGraph {
 		return stream(overAllState, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
 
-
-
 	/**
 	 * Invokes the graph execution with the provided inputs and returns the final state.
 	 * @param inputs the input map
@@ -373,7 +368,6 @@ public class CompiledGraph {
 	public Optional invoke(Map<String, Object> inputs) {
 		return this.invoke(stateGraph.getOverAllState().input(inputs), RunnableConfig.builder().build());
 	}
-
 
 	/**
 	 * Creates an AsyncGenerator stream of NodeOutput based on the provided inputs.
@@ -385,8 +379,8 @@ public class CompiledGraph {
 	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
 
-		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(stateGraph.getOverAllState().input(inputs),
-				config.withStreamMode(StreamMode.SNAPSHOTS));
+		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(
+				stateGraph.getOverAllState().input(inputs), config.withStreamMode(StreamMode.SNAPSHOTS));
 		return new AsyncGenerator.WithEmbed<>(generator);
 	}
 
@@ -455,10 +449,10 @@ public class CompiledGraph {
 				log.trace("RESUME REQUEST");
 
 				BaseCheckpointSaver saver = compileConfig.checkpointSaver()
-						.orElseThrow(() -> (new IllegalStateException(
-								"inputs cannot be null (ie. resume request) if no checkpoint saver is configured")));
+					.orElseThrow(() -> (new IllegalStateException(
+							"inputs cannot be null (ie. resume request) if no checkpoint saver is configured")));
 				Checkpoint startCheckpoint = saver.get(config)
-						.orElseThrow(() -> (new IllegalStateException("Resume request without a saved checkpoint!")));
+					.orElseThrow(() -> (new IllegalStateException("Resume request without a saved checkpoint!")));
 
 				this.currentState = startCheckpoint.getState();
 
@@ -468,13 +462,15 @@ public class CompiledGraph {
 				this.nextNodeId = startCheckpoint.getNextNodeId();
 				this.currentNodeId = null;
 				log.trace("RESUME FROM {}", startCheckpoint.getNodeId());
-			} else {
+			}
+			else {
 
 				log.trace("START");
 				Map<String, Object> inputs = overAllState.data();
 				boolean verify = overAllState.keyVerify();
 				if (!CollectionUtils.isEmpty(inputs) && !verify) {
-					throw new GraphInitKeyErrorException(Arrays.toString(inputs.keySet().toArray()) +" isn't included in the keyStrategies");
+					throw new GraphInitKeyErrorException(
+							Arrays.toString(inputs.keySet().toArray()) + " isn't included in the keyStrategies");
 				}
 				// patch for backward support of AppendableValue
 				this.currentState = getInitialState(inputs, config);
@@ -640,11 +636,11 @@ public class CompiledGraph {
 					return Data.of(buildNodeOutput(START));
 				}
 
-                if (END.equals(nextNodeId)) {
-                    nextNodeId = null;
-                    currentNodeId = null;
+				if (END.equals(nextNodeId)) {
+					nextNodeId = null;
+					currentNodeId = null;
 					return Data.of(buildNodeOutput(END));
-                }
+				}
 
 				// check on previous node
 				if (shouldInterruptAfter(currentNodeId, nextNodeId))
@@ -673,15 +669,15 @@ public class CompiledGraph {
 
 }
 
-record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes,
-		StateGraph.Edges edges, Set<String> interruptsBefore, Set<String> interruptsAfter) {
+record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edges, Set<String> interruptsBefore,
+		Set<String> interruptsAfter) {
 
 	ProcessedNodesEdgesAndConfig(StateGraph stateGraph, CompileConfig config) {
 		this(stateGraph.nodes, stateGraph.edges, config.interruptsBefore(), config.interruptsAfter());
 	}
 
-	static ProcessedNodesEdgesAndConfig process(StateGraph stateGraph,
-			CompileConfig config) throws GraphStateException {
+	static ProcessedNodesEdgesAndConfig process(StateGraph stateGraph, CompileConfig config)
+			throws GraphStateException {
 
 		var subgraphNodes = stateGraph.nodes.onlySubStateGraphNodes();
 

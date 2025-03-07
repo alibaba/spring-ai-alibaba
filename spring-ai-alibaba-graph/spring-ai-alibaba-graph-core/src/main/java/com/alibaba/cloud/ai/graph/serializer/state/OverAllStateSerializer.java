@@ -12,35 +12,37 @@ import java.io.ObjectOutput;
 
 public class OverAllStateSerializer extends StateSerializer<OverAllState> {
 
-    public OverAllStateSerializer(@NonNull AgentStateFactory<OverAllState> stateFactory) {
-        super(stateFactory);
-    }
+	public OverAllStateSerializer(@NonNull AgentStateFactory<OverAllState> stateFactory) {
+		super(stateFactory);
+	}
 
-    @Override
-    public void write(OverAllState object, ObjectOutput out) throws IOException {
-        if (object == null || out == null) {
-            throw new IllegalArgumentException("Input parameters cannot be null");
-        }
-        out.writeObject(JSON.toJSONString(object));
-    }
+	@Override
+	public void write(OverAllState object, ObjectOutput out) throws IOException {
+		if (object == null || out == null) {
+			throw new IllegalArgumentException("Input parameters cannot be null");
+		}
+		out.writeObject(JSON.toJSONString(object));
+	}
 
-    @Override
-    public OverAllState read(ObjectInput in) throws IOException, ClassNotFoundException {
-        if (in == null) {
-            throw new IllegalArgumentException("Input parameter cannot be null");
-        }
-        try {
-            String json = (String) in.readObject();
-            if (json == null) {
-                throw new IllegalStateException("Deserialized object is null");
-            }
-            OverAllState state = JSON.parseObject(json, OverAllState.class);
-            if (state == null) {
-                throw new IllegalStateException("Deserialized object is null");
-            }
-            return state;
-        } catch (ClassNotFoundException | IOException e) {
-            throw new IOException("Failed to deserialize OverAllState", e);
-        }
-    }
+	@Override
+	public OverAllState read(ObjectInput in) throws IOException, ClassNotFoundException {
+		if (in == null) {
+			throw new IllegalArgumentException("Input parameter cannot be null");
+		}
+		try {
+			String json = (String) in.readObject();
+			if (json == null) {
+				throw new IllegalStateException("Deserialized object is null");
+			}
+			OverAllState state = JSON.parseObject(json, OverAllState.class);
+			if (state == null) {
+				throw new IllegalStateException("Deserialized object is null");
+			}
+			return state;
+		}
+		catch (ClassNotFoundException | IOException e) {
+			throw new IOException("Failed to deserialize OverAllState", e);
+		}
+	}
+
 }
