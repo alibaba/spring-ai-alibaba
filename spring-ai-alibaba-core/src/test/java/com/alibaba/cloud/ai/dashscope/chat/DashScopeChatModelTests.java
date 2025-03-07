@@ -402,10 +402,10 @@ class DashScopeChatModelTests {
 
 	@Test
 	@Tag("integration")
-	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	void testDeepseekR1Integration() {
 		// Create real DashScope API instance with actual API key
-		String apiKey = System.getenv("DASHSCOPE_API_KEY");
+		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
 		if (apiKey == null || apiKey.isEmpty()) {
 			// Skip test if API key is not available
 			return;

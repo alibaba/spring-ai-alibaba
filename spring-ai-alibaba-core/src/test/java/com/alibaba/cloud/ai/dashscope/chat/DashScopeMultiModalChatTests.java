@@ -262,10 +262,10 @@ public class DashScopeMultiModalChatTests {
 	 */
 	@Test
 	@Tag("integration")
-	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	void integrationTestImageWithUrl() throws Exception {
 		// Create real API client
-		String apiKey = System.getenv("DASHSCOPE_API_KEY");
+		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
 		DashScopeApi realApi = new DashScopeApi(apiKey);
 
 		// Create real chat model
@@ -298,10 +298,10 @@ public class DashScopeMultiModalChatTests {
 	 */
 	@Test
 	@Tag("integration")
-	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	void integrationTestImageWithBinaryResource() throws IOException {
 		// Create real API client
-		String apiKey = System.getenv("DASHSCOPE_API_KEY");
+		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
 		DashScopeApi realApi = new DashScopeApi(apiKey);
 
 		// Create real chat model
@@ -331,10 +331,10 @@ public class DashScopeMultiModalChatTests {
 	 */
 	@Test
 	@Tag("integration")
-	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	void integrationTestVideoWithMultipleFrames() throws IOException {
 		// Create real API client
-		String apiKey = System.getenv("DASHSCOPE_API_KEY");
+		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
 		DashScopeApi realApi = new DashScopeApi(apiKey);
 
 		// Create real chat model
@@ -369,10 +369,10 @@ public class DashScopeMultiModalChatTests {
 	 */
 	@Test
 	@Tag("integration")
-	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	void integrationTestStreamImageResponse() throws IOException {
 		// Create real API client
-		String apiKey = System.getenv("DASHSCOPE_API_KEY");
+		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
 		DashScopeApi realApi = new DashScopeApi(apiKey);
 
 		// Create real chat model
@@ -412,10 +412,10 @@ public class DashScopeMultiModalChatTests {
 	 */
 	@Test
 	@Tag("integration")
-	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	void integrationTestImageAnalysisWithCustomPrompt() throws IOException {
 		// Create real API client
-		String apiKey = System.getenv("DASHSCOPE_API_KEY");
+		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
 		DashScopeApi realApi = new DashScopeApi(apiKey);
 
 		// Create real chat model
