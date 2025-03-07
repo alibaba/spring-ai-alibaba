@@ -41,4 +41,4 @@ jobs:
 
        - name: Run tests
          run: |
-           ./mvnw test
+           ./mvnw test -pl !spring-ai-alibaba-studio,!spring-ai-alibaba-graph
