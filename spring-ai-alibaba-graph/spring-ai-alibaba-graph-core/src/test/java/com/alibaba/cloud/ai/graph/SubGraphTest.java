@@ -160,7 +160,7 @@ public class SubGraphTest {
     @Test
     public void testMergeSubgraph02() throws Exception {
 
-        var workflowChild = new StateGraph(getOverAllState()).addNode("B1", _makeNode("B1"))
+        var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
                 .addNode("B2", _makeNode("B2"))
                 .addEdge(START, "B1")
                 .addEdge("B1", "B2")
