@@ -47,7 +47,7 @@ import static org.mockito.Mockito.when;
 class DashScopeAgentApiTests {
 
 	// Get values from environment variables with default values
-	private static final String TEST_API_KEY = System.getenv().getOrDefault("DASHSCOPE_API_KEY", "test-api-key");
+	private static final String TEST_API_KEY = System.getenv().getOrDefault("AI_DASHSCOPE_API_KEY", "test-api-key");
 
 	private static final String TEST_WORKSPACE_ID = System.getenv()
 		.getOrDefault("DASHSCOPE_WORKSPACE_ID", "test-workspace-id");

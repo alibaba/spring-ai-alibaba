@@ -33,7 +33,7 @@ public class SttDashScopeParserTest {
 	@Test
 	public void testSttDashScope() {
 		try {
-			SttDashScopeParser sttDashScopeParser = new SttDashScopeParser(System.getenv("DASHSCOPE_API_KEY"));
+			SttDashScopeParser sttDashScopeParser = new SttDashScopeParser(System.getenv("AI_DASHSCOPE_API_KEY"));
 			List<Document> documents = sttDashScopeParser
 				.parse("https://dashscope.oss-cn-beijing.aliyuncs.com/audios/welcome.mp3");
 			System.out.println(documents.get(0).getText());
