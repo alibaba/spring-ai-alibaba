@@ -30,15 +30,7 @@ public abstract class PlainTextStateSerializer extends StateSerializer<OverAllSt
 
 	@SuppressWarnings("unchecked")
 	public Class<OverAllState> getStateType() {
-		Type superClass = getClass().getGenericSuperclass();
-		if (superClass instanceof ParameterizedType) {
-			ParameterizedType parameterizedType = (ParameterizedType) superClass;
-			Type[] typeArguments = parameterizedType.getActualTypeArguments();
-			if (typeArguments.length > 0) {
-				return (Class<OverAllState>) typeArguments[0];
-			}
-		}
-		throw new IllegalStateException("Unable to determine state type");
+		return OverAllState.class;
 	}
 
 	public OverAllState read(String data) throws IOException, ClassNotFoundException {

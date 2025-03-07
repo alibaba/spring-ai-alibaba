@@ -21,7 +21,7 @@ public final class OverAllState implements Serializable {
 
 	private final Map<String, KeyStrategy> keyStrategies;
 
-	private Boolean isResume;
+	private Boolean resume;
 
 	/**
 	 * The constant DEFAULT_INPUT_KEY.
@@ -34,17 +34,17 @@ public final class OverAllState implements Serializable {
 
 	public Optional<OverAllState> snapShot() {
 		return Optional
-			.of(new OverAllState(new HashMap<>(this.data), new HashMap<>(this.keyStrategies), this.isResume));
+			.of(new OverAllState(new HashMap<>(this.data), new HashMap<>(this.keyStrategies), this.resume));
 	}
 
 	/**
 	 * Instantiates a new Over all state.
-	 * @param isResume the is resume
+	 * @param resume the is resume
 	 */
-	public OverAllState(boolean isResume) {
+	public OverAllState(boolean resume) {
 		this.data = new HashMap<>();
 		this.keyStrategies = new HashMap<>();
-		this.isResume = isResume;
+		this.resume = resume;
 	}
 
 	/**
@@ -54,7 +54,7 @@ public final class OverAllState implements Serializable {
 	public OverAllState(Map<String, Object> data) {
 		this.data = data;
 		this.keyStrategies = new HashMap<>();
-		this.isResume = false;
+		this.resume = false;
 	}
 
 	/**
@@ -64,14 +64,14 @@ public final class OverAllState implements Serializable {
 		this.data = new HashMap<>();
 		this.keyStrategies = new HashMap<>();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, (o, o2) -> o2);
-		this.isResume = false;
+		this.resume = false;
 	}
 
-	private OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean isResume) {
+	private OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean resume) {
 		this.data = data;
 		this.keyStrategies = keyStrategies;
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, (o, o2) -> o2);
-		this.isResume = isResume;
+		this.resume = resume;
 	}
 
 	/**
@@ -83,11 +83,11 @@ public final class OverAllState implements Serializable {
 	}
 
 	public void withResume() {
-		this.isResume = true;
+		this.resume = true;
 	}
 
 	public void withOutResume() {
-		this.isResume = false;
+		this.resume = false;
 	}
 
 	/**
@@ -95,7 +95,7 @@ public final class OverAllState implements Serializable {
 	 * @return the boolean
 	 */
 	public boolean isResume() {
-		return this.isResume;
+		return this.resume;
 	}
 
 	/**
