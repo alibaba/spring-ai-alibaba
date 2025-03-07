@@ -12,14 +12,14 @@ import org.springframework.test.context.TestPropertySource;
 
 //@TestPropertySource("classpath:application.yml")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-//@ComponentScan({"com.alibaba.cloud.ai"})
+// @ComponentScan({"com.alibaba.cloud.ai"})
 class GraphStudioTests {
 
 	@LocalServerPort
 	private int port;
 
 	@Test
-	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY" , matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	void contextLoads() throws IOException {
 		System.in.read();
 	}

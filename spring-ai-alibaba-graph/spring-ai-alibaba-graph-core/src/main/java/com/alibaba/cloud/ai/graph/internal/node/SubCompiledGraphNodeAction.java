@@ -20,12 +20,12 @@ import com.alibaba.cloud.ai.graph.state.AgentState;
  * </p>
  *
  * {@link OverAllState}.
+ *
  * @param subGraph sub graph instance
  * @see CompiledGraph
  * @see AsyncNodeActionWithConfig
  */
-public record SubCompiledGraphNodeAction(
-		CompiledGraph subGraph) implements AsyncNodeActionWithConfig {
+public record SubCompiledGraphNodeAction(CompiledGraph subGraph) implements AsyncNodeActionWithConfig {
 
 	/**
 	 * Executes the given graph with the provided state and configuration.

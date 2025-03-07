@@ -32,108 +32,107 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Slf4j
 public class StateGraphFileSystemPersistenceTest {
 
-
-
 	final String rootPath = Paths.get("target", "checkpoint").toString();
 
-    private static void removeFromList(List<Object> result, AppenderChannel.RemoveIdentifier<Object> removeIdentifier) {
-        for (int i = 0; i < result.size(); i++) {
-            if (removeIdentifier.compareTo(result.get(i), i) == 0) {
-                result.remove(i);
-                break;
-            }
-        }
-    }
+	private static void removeFromList(List<Object> result, AppenderChannel.RemoveIdentifier<Object> removeIdentifier) {
+		for (int i = 0; i < result.size(); i++) {
+			if (removeIdentifier.compareTo(result.get(i), i) == 0) {
+				result.remove(i);
+				break;
+			}
+		}
+	}
 
+	private static AppenderChannel.RemoveData<Object> evaluateRemoval(List<Object> oldValues, List<?> newValues) {
 
-    private static AppenderChannel.RemoveData<Object> evaluateRemoval(List<Object> oldValues, List<?> newValues) {
+		final var result = new AppenderChannel.RemoveData<>(oldValues, newValues);
 
-        final var result = new AppenderChannel.RemoveData<>(oldValues, newValues);
+		newValues.stream().filter(value -> value instanceof AppenderChannel.RemoveIdentifier<?>).forEach(value -> {
+			result.newValues().remove(value);
+			var removeIdentifier = (AppenderChannel.RemoveIdentifier<Object>) value;
+			removeFromList(result.oldValues(), removeIdentifier);
 
-        newValues.stream()
-                .filter(value -> value instanceof AppenderChannel.RemoveIdentifier<?>)
-                .forEach(value -> {
-                    result.newValues().remove(value);
-                    var removeIdentifier = (AppenderChannel.RemoveIdentifier<Object>) value;
-                    removeFromList(result.oldValues(), removeIdentifier);
+		});
+		return result;
 
-                });
-        return result;
+	}
 
-    }
-    @NotNull
-    private static OverAllState getOverAllState() {
-        return new OverAllState()
-                .input(Map.of())
-                .registerKeyAndStrategy("steps", (o, o2) -> o2)
-                .registerKeyAndStrategy("messages", (oldValue, newValue) -> {
-                    if (newValue == null) {
-                        return oldValue;
-                    }
+	@NotNull
+	private static OverAllState getOverAllState() {
+		return new OverAllState().input(Map.of())
+			.registerKeyAndStrategy("steps", (o, o2) -> o2)
+			.registerKeyAndStrategy("messages", (oldValue, newValue) -> {
+				if (newValue == null) {
+					return oldValue;
+				}
 
+				boolean oldValueIsList = oldValue instanceof List<?>;
 
-                    boolean oldValueIsList = oldValue instanceof List<?>;
+				if (oldValueIsList && newValue instanceof AppenderChannel.RemoveIdentifier<?>) {
+					var result = new ArrayList<>((List<Object>) oldValue);
+					removeFromList(result, (AppenderChannel.RemoveIdentifier) newValue);
+					return unmodifiableList(result);
+				}
 
-                    if (oldValueIsList && newValue instanceof AppenderChannel.RemoveIdentifier<?>) {
-                        var result = new ArrayList<>((List<Object>) oldValue);
-                        removeFromList(result, (AppenderChannel.RemoveIdentifier) newValue);
-                        return unmodifiableList(result);
-                    }
+				List<Object> list = null;
+				if (newValue instanceof List) {
+					list = new ArrayList<>((List<?>) newValue);
+				}
+				else if (newValue.getClass().isArray()) {
+					list = new ArrayList<>(Arrays.asList((Object[]) newValue));
+				}
+				else if (newValue instanceof Collection) {
+					list = new ArrayList<>((Collection<?>) newValue);
+				}
 
-                    List<Object> list = null;
-                    if (newValue instanceof List) {
-                        list = new ArrayList<>((List<?>) newValue);
-                    } else if (newValue.getClass().isArray()) {
-                        list = new ArrayList<>(Arrays.asList((Object[]) newValue));
-                    } else if (newValue instanceof Collection) {
-                        list = new ArrayList<>((Collection<?>) newValue);
-                    }
-
-
-                    if (oldValueIsList) {
-                        List<Object> oldList = (List<Object>) oldValue;
-                        if (list != null) {
-                            if (list.isEmpty()) {
-                                return oldValue;
-                            }
-                            if (oldValueIsList) {
-                                var result = evaluateRemoval((List<Object>) oldValue, list);
-                                List<Object> mergedList = Stream.concat(result.oldValues().stream(), result.newValues().stream())
-                                        .distinct()
-                                        .collect(Collectors.toList());
-                                return mergedList;
-                            }
-                            oldList.addAll(list);
-                        } else {
-                            oldList.add(newValue);
-                        }
-                        return oldList;
-                    } else {
-                        ArrayList<Object> arrayResult = new ArrayList<>();
-                        arrayResult.add(newValue);
-                        return arrayResult;
-                    }
-                });
-    }
+				if (oldValueIsList) {
+					List<Object> oldList = (List<Object>) oldValue;
+					if (list != null) {
+						if (list.isEmpty()) {
+							return oldValue;
+						}
+						if (oldValueIsList) {
+							var result = evaluateRemoval((List<Object>) oldValue, list);
+							List<Object> mergedList = Stream
+								.concat(result.oldValues().stream(), result.newValues().stream())
+								.distinct()
+								.collect(Collectors.toList());
+							return mergedList;
+						}
+						oldList.addAll(list);
+					}
+					else {
+						oldList.add(newValue);
+					}
+					return oldList;
+				}
+				else {
+					ArrayList<Object> arrayResult = new ArrayList<>();
+					arrayResult.add(newValue);
+					return arrayResult;
+				}
+			});
+	}
 
 	@Test
 	public void testCheckpointSaverResubmit() throws Exception {
 		int expectedSteps = 5;
-        OverAllState overAllState = getOverAllState();
-        StateGraph workflow = new StateGraph(overAllState).addEdge(START, "agent_1")
+		OverAllState overAllState = getOverAllState();
+		StateGraph workflow = new StateGraph(overAllState).addEdge(START, "agent_1")
 			.addNode("agent_1", node_async(state -> {
-                Integer o = null;
-                if (state.value("steps").isPresent()){
-                    o = (Integer) state.value("steps").get();
-                }else {
-                    o = 0;
-                }
-                int steps = o + 1;
+				Integer o = null;
+				if (state.value("steps").isPresent()) {
+					o = (Integer) state.value("steps").get();
+				}
+				else {
+					o = 0;
+				}
+				int steps = o + 1;
 				log.info("agent_1: step: {}", steps);
 				return mapOf("steps", steps, "messages", format("agent_1:step %d", steps));
 			}))
 			.addConditionalEdges("agent_1", edge_async(state -> {
-                Integer steps = (Integer) state.value("steps").get();
+				Integer steps = (Integer) state.value("steps").get();
 				if (steps >= expectedSteps) {
 					return "exit";
 				}
@@ -157,7 +156,7 @@ public class StateGraphFileSystemPersistenceTest {
 
 			for (int execution = 0; execution < 2; execution++) {
 
-				Optional<OverAllState> state = app.invoke(Map.of(),runnableConfig_1);
+				Optional<OverAllState> state = app.invoke(Map.of(), runnableConfig_1);
 
 				assertTrue(state.isPresent());
 				assertEquals(expectedSteps + (execution * 2), (Integer) state.get().value("steps").get());
@@ -178,24 +177,26 @@ public class StateGraphFileSystemPersistenceTest {
 				log.info("SNAPSHOT:\n{}\n", snapshot);
 
 				// SUBMIT NEW THREAD 2
-                overAllState.reset();
-				state = app.invoke(Map.of(),runnableConfig_2);
+				overAllState.reset();
+				state = app.invoke(Map.of(), runnableConfig_2);
 
 				assertTrue(state.isPresent());
-				assertEquals(expectedSteps  + execution, (Integer) state.get().value("steps").get());
-				messages = (List<String>) state.get().value("messages").get();;
+				assertEquals(expectedSteps + execution, (Integer) state.get().value("steps").get());
+				messages = (List<String>) state.get().value("messages").get();
+				;
 
 				log.info("thread_2: execution: {} messages:\n{}\n", execution, messages);
 
 				assertEquals(expectedSteps + execution, messages.size());
 
 				// RE-SUBMIT THREAD 1
-                overAllState.reset();
+				overAllState.reset();
 				state = app.invoke(Map.of(), runnableConfig_1);
 
 				assertTrue(state.isPresent());
-				assertEquals(expectedSteps  + 1 + execution * 2, (Integer) state.get().value("steps").get());
-				messages = (List<String>) state.get().value("messages").get();;
+				assertEquals(expectedSteps + 1 + execution * 2, (Integer) state.get().value("steps").get());
+				messages = (List<String>) state.get().value("messages").get();
+				;
 
 				log.info("thread_1: execution: {} messages:\n{}\n", execution, messages);
 

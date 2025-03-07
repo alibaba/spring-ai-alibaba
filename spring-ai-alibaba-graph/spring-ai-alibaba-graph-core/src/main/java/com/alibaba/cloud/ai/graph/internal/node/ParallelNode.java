@@ -24,7 +24,7 @@ public class ParallelNode extends Node {
 		@Override
 		public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
 			var futures = actions.stream().map(action -> action.apply(state, config).thenApply(partialState -> {
-				 state.updateState(partialState);
+				state.updateState(partialState);
 				return action;
 			}))
 				// .map( future -> supplyAsync(future::join) )
