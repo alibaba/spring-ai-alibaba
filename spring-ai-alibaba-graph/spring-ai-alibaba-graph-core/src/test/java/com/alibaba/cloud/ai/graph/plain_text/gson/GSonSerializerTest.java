@@ -15,17 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GSonSerializerTest {
 
-	static class State extends AgentState {
-
-		/**
-		 * Constructs an AgentState with the given initial data.
-		 * @param initData the initial data for the agent state
-		 */
-		public State(Map<String, Object> initData) {
-			super(initData);
-		}
-
-	}
 
 	@Test
 	public void serializeWithTypeInferenceTest() throws IOException, ClassNotFoundException {
