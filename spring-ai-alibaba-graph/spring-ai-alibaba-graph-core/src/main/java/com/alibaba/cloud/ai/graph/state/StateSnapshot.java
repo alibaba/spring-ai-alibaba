@@ -47,7 +47,7 @@ public final class StateSnapshot extends NodeOutput {
 		return format("StateSnapshot{node=%s, state=%s, config=%s}", node(), state(), config());
 	}
 
-	public static  StateSnapshot of(Checkpoint checkpoint, RunnableConfig config,
+	public static StateSnapshot of(Checkpoint checkpoint, RunnableConfig config,
 			AgentStateFactory<OverAllState> factory) {
 
 		RunnableConfig newConfig = RunnableConfig.builder(config)

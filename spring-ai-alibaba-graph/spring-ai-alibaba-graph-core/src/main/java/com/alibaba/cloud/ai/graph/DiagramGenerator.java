@@ -156,8 +156,8 @@ public abstract class DiagramGenerator {
 	 * @param printConditionalEdge Whether to print the conditional edge condition.
 	 * @return A string representation of the graph.
 	 */
-	public final  String generate(StateGraph.Nodes nodes,
-			StateGraph.Edges edges, String title, boolean printConditionalEdge) {
+	public final String generate(StateGraph.Nodes nodes, StateGraph.Edges edges, String title,
+			boolean printConditionalEdge) {
 
 		return generate(nodes, edges,
 				Context.builder().title(title).isSubGraph(false).printConditionalEdge(printConditionalEdge).build())
@@ -174,8 +174,7 @@ public abstract class DiagramGenerator {
 	 * @param ctx the initial context, which must not be null
 	 * @return the generated context, which will not be null
 	 */
-	protected final  Context generate(StateGraph.Nodes nodes,
-			StateGraph.Edges edges, Context ctx) {
+	protected final Context generate(StateGraph.Nodes nodes, StateGraph.Edges edges, Context ctx) {
 
 		appendHeader(ctx);
 
@@ -263,8 +262,7 @@ public abstract class DiagramGenerator {
 	 * @param k a string identifier for the condition
 	 * @param conditionName the name of the condition being processed
 	 */
-	private void edgeCondition(Context ctx, EdgeCondition condition, String k,
-			String conditionName) {
+	private void edgeCondition(Context ctx, EdgeCondition condition, String k, String conditionName) {
 		commentLine(ctx, !ctx.printConditionalEdge());
 		call(ctx, k, conditionName, CallStyle.CONDITIONAL);
 

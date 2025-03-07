@@ -13,7 +13,7 @@ import static java.lang.String.format;
  */
 public class NodeOutput {
 
-	public static  NodeOutput of(String node, OverAllState state) {
+	public static NodeOutput of(String node, OverAllState state) {
 		return new NodeOutput(node, state);
 	}
 

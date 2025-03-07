@@ -35,8 +35,6 @@
         <module>spring-ai-alibaba-autoconfigure</module>
         <module>spring-ai-alibaba-studio</module>
         <module>spring-ai-alibaba-graph</module>
-<!--        <module>spring-ai-alibaba-examples/cli-debug-example</module>-->
-
 
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-time</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidusearch</module>
