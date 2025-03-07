@@ -13,6 +13,7 @@ import java.util.Set;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.gson.GsonStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.state.OverAllStateSerializer;
@@ -126,8 +127,12 @@ public class StateGraph {
 	@Setter
 	private OverAllState overAllState;
 
-	private final GsonSerializer stateSerializer = new GsonSerializer();
+	private final PlainTextStateSerializer stateSerializer;
 
+
+	/**
+	 * The type Jackson serializer.
+	 */
 	static class JacksonSerializer extends JacksonStateSerializer {
 
 		public JacksonSerializer() {
@@ -140,6 +145,9 @@ public class StateGraph {
 
 	}
 
+	/**
+	 * The type Gson serializer.
+	 */
 	static class GsonSerializer extends GsonStateSerializer {
 
 		public GsonSerializer() {
@@ -152,24 +160,61 @@ public class StateGraph {
 
 	}
 
+	/**
+	 * Instantiates a new State graph.
+	 *
+	 * @param overAllState             the over all state
+	 * @param plainTextStateSerializer the plain text state serializer
+	 */
+	public StateGraph(OverAllState overAllState, PlainTextStateSerializer plainTextStateSerializer) {
+		this.overAllState = overAllState;
+		this.stateSerializer = plainTextStateSerializer;
+	}
+
+	/**
+	 * Instantiates a new State graph.
+	 *
+	 * @param overAllState the over all state
+	 */
 	public StateGraph(OverAllState overAllState) {
 		this.overAllState = overAllState;
+		this.stateSerializer = new GsonSerializer();
 	}
 
+	/**
+	 * Instantiates a new State graph.
+	 */
 	public StateGraph() {
+		this.stateSerializer = new GsonSerializer();
 	}
 
-	public Map<String, KeyStrategy> keyStrategies() {
+	/**
+	 * Key strategies map.
+	 *
+	 * @return the map
+	 */
+	public Map<String,KeyStrategy> keyStrategies() {
 		return overAllState.keyStrategies();
 	}
 
+	/**
+	 * Gets state serializer.
+	 *
+	 * @return the state serializer
+	 */
 	public StateSerializer getStateSerializer() {
 		return stateSerializer;
 	}
 
+	/**
+	 * Gets state factory.
+	 *
+	 * @return the state factory
+	 */
 	public final AgentStateFactory<OverAllState> getStateFactory() {
 		return stateSerializer.stateFactory();
 	}
+
 
 	@Deprecated(forRemoval = true)
 	public EdgeValue getEntryPoint() {
@@ -237,7 +282,8 @@ public class StateGraph {
 	 * @throws GraphStateException if the node identifier is invalid or the node already
 	 * exists
 	 */
-	public StateGraph addNode(String id, AsyncNodeActionWithConfig actionWithConfig) throws GraphStateException {
+	public StateGraph addNode(String id, AsyncNodeActionWithConfig actionWithConfig)
+			throws GraphStateException {
 		if (Objects.equals(id, END)) {
 			throw Errors.invalidNodeIdentifier.exception(END);
 		}
@@ -292,7 +338,18 @@ public class StateGraph {
 		}
 
 		subGraph.validateGraph();
+		OverAllState subGraphOverAllState = subGraph.getOverAllState();
+		OverAllState superOverAllState = getOverAllState();
+		if (subGraphOverAllState != null) {
+			Map<String, KeyStrategy> strategies = subGraphOverAllState.keyStrategies();
+			for (Map.Entry<String, KeyStrategy> strategyEntry : strategies.entrySet()) {
+				if (!superOverAllState.containStrategy(strategyEntry.getKey())){
+					superOverAllState.registerKeyAndStrategy(strategyEntry.getKey(), strategyEntry.getValue());
+				}
+			}
+		}
 		subGraph.setOverAllState(getOverAllState());
+
 
 		var node = new SubStateGraphNode(id, subGraph);
 
@@ -344,8 +401,8 @@ public class StateGraph {
 	 * @throws GraphStateException if the edge identifier is invalid, the mappings are
 	 * empty, or the edge already exists
 	 */
-	public StateGraph addConditionalEdges(String sourceId, AsyncEdgeAction condition, Map<String, String> mappings)
-			throws GraphStateException {
+	public StateGraph addConditionalEdges(String sourceId, AsyncEdgeAction condition,
+			Map<String, String> mappings) throws GraphStateException {
 		if (Objects.equals(sourceId, END)) {
 			throw Errors.invalidEdgeIdentifier.exception(END);
 		}
@@ -394,15 +451,6 @@ public class StateGraph {
 		return new CompiledGraph(this, config);
 	}
 
-	public CompiledGraph compile(OverAllState overAllState, CompileConfig config) throws GraphStateException {
-		Objects.requireNonNull(config, "config cannot be null");
-
-		validateGraph();
-
-		this.overAllState = overAllState;
-
-		return new CompiledGraph(this, config);
-	}
 
 	/**
 	 * Compiles the state graph into a compiled graph.
@@ -411,7 +459,7 @@ public class StateGraph {
 	 */
 	public CompiledGraph compile() throws GraphStateException {
 		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
-		return compile(CompileConfig.builder().saverConfig(saverConfig).build());
+		return compile(CompileConfig.builder().plainTextStateSerializer(new JacksonSerializer()).saverConfig(saverConfig).build());
 	}
 
 	/**
