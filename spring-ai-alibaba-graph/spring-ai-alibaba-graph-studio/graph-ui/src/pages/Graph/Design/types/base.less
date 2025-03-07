@@ -1,0 +1,110 @@
+.graph-node__handle {
+  border: none;
+  background: var(--xy-theme-selected) !important;
+  border-radius: 1px;
+  height: 8px;
+  width: 1px;
+
+  &.source {
+    right: -2px;
+  }
+
+  &.target {
+    left: -2px;
+  }
+}
+
+.type-icon {
+  font-size: 20px;
+  margin-bottom: -4px;
+  &.start {
+    color: var(--ant-green);
+  }
+  &.end {
+    color: var(--ant-red);
+  }
+}
+
+.react-flow__node {
+  border-radius: 12px;
+
+  &:hover {
+    border: 1px solid var(--ant-color-info-bg-hover) !important;
+  }
+
+  .toolbar-wrapper {
+    display: none;
+    position: absolute;
+    margin-top: -40px;
+    padding-bottom: 40px;
+    top: 0;
+    right: 0;
+
+    &:hover {
+      display: block;
+    }
+  }
+
+  &:hover .toolbar-wrapper {
+    display: block;
+  }
+
+  &.selected {
+    border: 1px solid var(--ant-color-primary) !important;
+  }
+}
+
+.flow-read-only {
+  .react-flow__node {
+    &:hover {
+      border: var(--xy-node-border-default) !important;
+    }
+
+    &.selected {
+      border: var(--xy-node-border-default) !important;
+    }
+  }
+}
+
+.react-flow__handle.connectionindicator:hover {
+  pointer-events: all;
+  border-color: var(--xy-theme-edge-hover);
+  background: var(--ant-color-info-bg-hover);
+}
+
+.node-type {
+  width: 100%;
+  margin-bottom: 10px;
+  line-height: 12px;
+  vertical-align: middle;
+  font-size: 20px;
+
+  svg {
+    margin-bottom: -2px;
+    margin-right: 2px;
+  }
+}
+
+.cust-node-wrapper {
+  align-items: center;
+  height: 100%;
+
+  &.center {
+    justify-content: center;
+  }
+
+  &.end {
+    align-items: flex-end;
+  }
+
+  .body {
+    font-size: 16px;
+  }
+
+  .node-body-tag {
+    padding: 2px;
+    border: none;
+    font-size: 16px;
+    color: var(--ant-color-bg-solid-hover);
+  }
+}

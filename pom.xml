@@ -33,6 +33,10 @@
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-starter</module>
         <module>spring-ai-alibaba-autoconfigure</module>
+        <module>spring-ai-alibaba-studio</module>
+        <module>spring-ai-alibaba-graph</module>
+<!--        <module>spring-ai-alibaba-examples/cli-debug-example</module>-->
+
 
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-time</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidusearch</module>
@@ -109,6 +113,7 @@
         <maven.compiler.target>17</maven.compiler.target>
 
         <spring-boot.version>3.3.3</spring-boot.version>
+        <springdoc-openapi.version>2.6.0</springdoc-openapi.version>
 
         <!-- Spring AI -->
         <spring-ai.version>1.0.0-M6</spring-ai.version>
