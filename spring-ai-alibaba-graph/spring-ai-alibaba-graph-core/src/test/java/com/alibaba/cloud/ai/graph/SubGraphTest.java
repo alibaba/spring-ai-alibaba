@@ -28,7 +28,6 @@ import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import lombok.extern.slf4j.Slf4j;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -83,7 +82,6 @@ public class SubGraphTest {
 
 	}
 
-	@NotNull
 	private static OverAllState getOverAllState() {
 		return new OverAllState().input(Map.of())
 			.registerKeyAndStrategy("a", (o, o2) -> o2)
