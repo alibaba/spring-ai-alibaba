@@ -45,9 +45,10 @@ public class CustomDSLAdapterTest {
 			.setMode("workflow");
 		Map<String, Object> metadataMap = customDSLAdapter.metadataToMap(metadata);
 		assertNotNull(metadataMap);
-		assertEquals("test-workflow", metadataMap.get("name"));
-		assertEquals("this is a workflow only for test", metadataMap.get("description"));
-		assertEquals("workflow", metadataMap.get("mode"));
+		Map metadataInMap = (Map) metadataMap.get("metadata");
+		assertEquals("test-workflow", metadataInMap.get("name"));
+		assertEquals("this is a workflow only for test", metadataInMap.get("description"));
+		assertEquals("workflow", metadataInMap.get("mode"));
 	}
 
 	// TODO
