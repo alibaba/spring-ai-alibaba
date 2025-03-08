@@ -9,7 +9,6 @@ import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -237,7 +236,6 @@ public class StateGraphTest {
 
 	}
 
-	@NotNull
 	private static OverAllState getOverAllState() {
 		return new OverAllState().registerKeyAndStrategy("steps", (o, o2) -> o2)
 			.registerKeyAndStrategy("messages", (oldValue, newValue) -> {
