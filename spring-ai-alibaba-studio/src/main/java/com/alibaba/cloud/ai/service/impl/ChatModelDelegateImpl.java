@@ -31,7 +31,8 @@ import com.alibaba.cloud.ai.utils.SpringApplicationUtil;
 import com.alibaba.cloud.ai.vo.ActionResult;
 import com.alibaba.cloud.ai.vo.ChatModelRunResult;
 import com.alibaba.cloud.ai.vo.TelemetryResult;
-import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.tracing.Tracer;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,8 +58,11 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 
 	private final Tracer tracer;
 
+	private final ObjectMapper objectMapper;
+
 	public ChatModelDelegateImpl(Tracer tracer) {
 		this.tracer = tracer;
+		this.objectMapper = new ObjectMapper();
 	}
 
 	@Override
@@ -150,7 +154,12 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 			if (chatModel.getClass() == DashScopeChatModel.class) {
 				DashScopeChatModel dashScopeChatModel = (DashScopeChatModel) chatModel;
 				if (chatOptions != null) {
-					log.info("set chat options, {}", JSON.toJSONString(chatOptions));
+					try {
+						log.info("set chat options, {}", objectMapper.writeValueAsString(chatOptions));
+					}
+					catch (JsonProcessingException e) {
+						throw new RuntimeException("Failed to serialize JSON", e);
+					}
 					dashScopeChatModel.setDashScopeChatOptions(chatOptions);
 				}
 			}
@@ -186,7 +195,12 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 			if (imageModel.getClass() == DashScopeImageModel.class) {
 				DashScopeImageModel dashScopeImageModel = (DashScopeImageModel) imageModel;
 				if (imageOptions != null) {
-					log.info("set image options, {}", JSON.toJSONString(imageOptions));
+					try {
+						log.info("set image options, {}", objectMapper.writeValueAsString(imageOptions));
+					}
+					catch (JsonProcessingException e) {
+						throw new RuntimeException("Failed to serialize JSON", e);
+					}
 					dashScopeImageModel.setOptions(imageOptions);
 				}
 				else {

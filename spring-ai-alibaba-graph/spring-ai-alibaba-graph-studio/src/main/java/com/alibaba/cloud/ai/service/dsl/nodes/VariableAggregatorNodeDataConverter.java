@@ -6,7 +6,9 @@ import com.alibaba.cloud.ai.model.workflow.nodedata.VariableAggregatorNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
-import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
@@ -46,8 +48,15 @@ public class VariableAggregatorNodeDataConverter extends AbstractNodeDataConvert
 				Map<String, Object> advanced_settings = (Map<String, Object>) data.get("advanced_settings");
 				VariableAggregatorNodeData.AdvancedSettings advancedSettings = new VariableAggregatorNodeData.AdvancedSettings();
 				advancedSettings.setGroupEnabled((Boolean) advanced_settings.get("group_enabled"));
-				advancedSettings.setGroups(JSON.parseArray(JSON.toJSONString(advanced_settings.get("groups")),
-						VariableAggregatorNodeData.Groups.class));
+				ObjectMapper objectMapper = new ObjectMapper();
+				try {
+					String groups = objectMapper.writeValueAsString(advanced_settings.get("groups"));
+					advancedSettings.setGroups(objectMapper.readValue(groups, new TypeReference<>() {
+					}));
+				}
+				catch (JsonProcessingException e) {
+					throw new RuntimeException("Failed to parse JSON", e);
+				}
 				return VariableAggregatorNodeData.builder()
 					.variables((List<List<String>>) data.get("variables"))
 					.outputType((String) data.get("output_type"))
