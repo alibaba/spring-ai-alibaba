@@ -110,13 +110,6 @@
             <optional>true</optional>
         </dependency>
 
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.75</version>
-            <scope>compile</scope>
-        </dependency>
-
       <dependency>
           <groupId>com.google.code.gson</groupId>
           <artifactId>gson</artifactId>
