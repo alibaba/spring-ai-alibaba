@@ -12,7 +12,8 @@ import java.util.stream.IntStream;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
-import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.BasicDBObject;
 import com.mongodb.ClientSessionOptions;
 import com.mongodb.TransactionOptions;
@@ -44,6 +45,8 @@ public class MongoSaver implements BaseCheckpointSaver {
 
 	private TransactionOptions txnOptions;
 
+	private final ObjectMapper objectMapper;
+
 	private static final String DB_NAME = "check_point_db";
 
 	private static final String COLLECTION_NAME = "checkpoint_collection";
@@ -60,6 +63,7 @@ public class MongoSaver implements BaseCheckpointSaver {
 		this.client = client;
 		this.database = client.getDatabase(DB_NAME);
 		this.txnOptions = TransactionOptions.builder().writeConcern(WriteConcern.MAJORITY).build();
+		this.objectMapper = new ObjectMapper();
 		Runtime.getRuntime().addShutdownHook(new Thread(client::close));
 	}
 
@@ -79,7 +83,8 @@ public class MongoSaver implements BaseCheckpointSaver {
 				if (document == null)
 					return Collections.emptyList();
 				String checkpointsStr = document.getString(DOCUMENT_CONTENT_KEY);
-				checkpoints = JSON.parseArray(checkpointsStr, Checkpoint.class);
+				checkpoints = objectMapper.readValue(checkpointsStr, new TypeReference<>() {
+				});
 				clientSession.commitTransaction();
 			}
 			catch (Exception e) {
@@ -112,7 +117,8 @@ public class MongoSaver implements BaseCheckpointSaver {
 				if (document == null)
 					return Optional.empty();
 				String checkpointsStr = document.getString(DOCUMENT_CONTENT_KEY);
-				checkpoints = JSON.parseArray(checkpointsStr, Checkpoint.class);
+				checkpoints = objectMapper.readValue(checkpointsStr, new TypeReference<>() {
+				});
 				clientSession.commitTransaction();
 				if (config.checkPointId().isPresent()) {
 					List<Checkpoint> finalCheckpoints = checkpoints;
@@ -151,7 +157,8 @@ public class MongoSaver implements BaseCheckpointSaver {
 				LinkedList<Checkpoint> checkpointLinkedList = null;
 				if (Objects.nonNull(document)) {
 					String checkpointsStr = document.getString(DOCUMENT_CONTENT_KEY);
-					List<Checkpoint> checkpoints = JSON.parseArray(checkpointsStr, Checkpoint.class);
+					List<Checkpoint> checkpoints = objectMapper.readValue(checkpointsStr, new TypeReference<>() {
+					});
 					checkpointLinkedList = getLinkedList(checkpoints);
 					if (config.checkPointId().isPresent()) { // Replace Checkpoint
 						String checkPointId = config.checkPointId().get();
@@ -162,7 +169,7 @@ public class MongoSaver implements BaseCheckpointSaver {
 									format("Checkpoint with id %s not found!", checkPointId))));
 						checkpointLinkedList.set(index, checkpoint);
 						Document tempDocument = new Document().append("_id", DOCUMENT_PREFIX + configOption.get())
-							.append(DOCUMENT_CONTENT_KEY, JSON.toJSONString(checkpointLinkedList));
+							.append(DOCUMENT_CONTENT_KEY, objectMapper.writeValueAsString(checkpointLinkedList));
 						collection.replaceOne(Filters.eq("_id", DOCUMENT_PREFIX + configOption.get()), tempDocument);
 						clientSession.commitTransaction();
 						clientSession.close();
@@ -173,14 +180,14 @@ public class MongoSaver implements BaseCheckpointSaver {
 					checkpointLinkedList = new LinkedList<>();
 					checkpointLinkedList.push(checkpoint); // Add Checkpoint
 					Document tempDocument = new Document().append("_id", DOCUMENT_PREFIX + configOption.get())
-						.append(DOCUMENT_CONTENT_KEY, JSON.toJSONString(checkpointLinkedList));
+						.append(DOCUMENT_CONTENT_KEY, objectMapper.writeValueAsString(checkpointLinkedList));
 					InsertOneResult insertOneResult = collection.insertOne(tempDocument);
 					insertOneResult.wasAcknowledged();
 				}
 				else {
 					checkpointLinkedList.push(checkpoint); // Add Checkpoint
 					Document tempDocument = new Document().append("_id", DOCUMENT_PREFIX + configOption.get())
-						.append(DOCUMENT_CONTENT_KEY, JSON.toJSONString(checkpointLinkedList));
+						.append(DOCUMENT_CONTENT_KEY, objectMapper.writeValueAsString(checkpointLinkedList));
 					ReplaceOptions opts = new ReplaceOptions().upsert(true);
 					collection.replaceOne(Filters.eq("_id", DOCUMENT_PREFIX + configOption.get()), tempDocument, opts);
 				}

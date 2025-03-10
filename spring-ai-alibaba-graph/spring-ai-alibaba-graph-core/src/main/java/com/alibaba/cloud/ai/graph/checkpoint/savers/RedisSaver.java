@@ -11,7 +11,10 @@ import java.util.stream.IntStream;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
-import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.redisson.api.RBucket;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -28,6 +31,8 @@ public class RedisSaver implements BaseCheckpointSaver {
 
 	private RedissonClient redisson;
 
+	private final ObjectMapper objectMapper;
+
 	private static final String PREFIX = "graph:checkpoint:content:";
 
 	private static final String LOCK_PREFIX = "graph:checkpoint:lock:";
@@ -38,6 +43,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 	 */
 	public RedisSaver(RedissonClient redisson) {
 		this.redisson = redisson;
+		this.objectMapper = new ObjectMapper();
 	}
 
 	@Override
@@ -51,7 +57,8 @@ public class RedisSaver implements BaseCheckpointSaver {
 				if (tryLock) {
 					RBucket<String> bucket = redisson.getBucket(PREFIX + configOption.get());
 					// or CheckPointSerializer?
-					return JSON.parseArray(bucket.get(), Checkpoint.class);
+					return objectMapper.readValue(bucket.get(), new TypeReference<>() {
+					});
 				}
 				else {
 					return List.of();
@@ -59,6 +66,12 @@ public class RedisSaver implements BaseCheckpointSaver {
 			}
 			catch (InterruptedException e) {
 				throw new RuntimeException(e);
+			}
+			catch (JsonMappingException e) {
+				throw new RuntimeException("Failed to parse JSON", e);
+			}
+			catch (JsonProcessingException e) {
+				throw new RuntimeException("Failed to parse JSON", e);
 			}
 			finally {
 				if (tryLock) {
@@ -82,7 +95,8 @@ public class RedisSaver implements BaseCheckpointSaver {
 				if (tryLock) {
 					RBucket<String> bucket = redisson.getBucket(PREFIX + configOption.get());
 					// or CheckPointSerializer?
-					List<Checkpoint> checkpoints = JSON.parseArray(bucket.get(), Checkpoint.class);
+					List<Checkpoint> checkpoints = objectMapper.readValue(bucket.get(), new TypeReference<>() {
+					});
 					if (config.checkPointId().isPresent()) {
 						return config.checkPointId()
 							.flatMap(id -> checkpoints.stream()
@@ -97,6 +111,12 @@ public class RedisSaver implements BaseCheckpointSaver {
 			}
 			catch (InterruptedException e) {
 				throw new RuntimeException(e);
+			}
+			catch (JsonMappingException e) {
+				throw new RuntimeException("Failed to parse JSON", e);
+			}
+			catch (JsonProcessingException e) {
+				throw new RuntimeException("Failed to parse JSON", e);
 			}
 			finally {
 				if (tryLock) {
@@ -119,7 +139,8 @@ public class RedisSaver implements BaseCheckpointSaver {
 				tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
 				if (tryLock) {
 					RBucket<String> bucket = redisson.getBucket(PREFIX + configOption.get());
-					List<Checkpoint> checkpoints = JSON.parseArray(bucket.get(), Checkpoint.class);
+					List<Checkpoint> checkpoints = objectMapper.readValue(bucket.get(), new TypeReference<>() {
+					});
 					LinkedList<Checkpoint> linkedList = getLinkedList(checkpoints);
 					if (config.checkPointId().isPresent()) { // Replace Checkpoint
 						String checkPointId = config.checkPointId().get();
@@ -129,11 +150,11 @@ public class RedisSaver implements BaseCheckpointSaver {
 							.orElseThrow(() -> (new NoSuchElementException(
 									format("Checkpoint with id %s not found!", checkPointId))));
 						linkedList.set(index, checkpoint);
-						bucket.set(JSON.toJSONString(linkedList));
+						bucket.set(objectMapper.writeValueAsString(linkedList));
 						return config;
 					}
 					linkedList.push(checkpoint); // Add Checkpoint
-					bucket.set(JSON.toJSONString(linkedList));
+					bucket.set(objectMapper.writeValueAsString(linkedList));
 				}
 				return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 			}
@@ -161,13 +182,16 @@ public class RedisSaver implements BaseCheckpointSaver {
 				tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
 				if (tryLock) {
 					RBucket<String> bucket = redisson.getBucket(PREFIX + configOption.get());
-					bucket.getAndSet(JSON.toJSONString(List.of()));
+					bucket.getAndSet(objectMapper.writeValueAsString(List.of()));
 					return tryLock;
 				}
 				return false;
 			}
 			catch (InterruptedException e) {
 				throw new RuntimeException(e);
+			}
+			catch (JsonProcessingException e) {
+				throw new RuntimeException("Failed to serialize JSON", e);
 			}
 			finally {
 				if (tryLock) {
