@@ -28,6 +28,12 @@
     <artifactId>mbox-document-reader</artifactId>
     <name>Spring AI Document Reader - Mbox</name>
     <description>Spring AI Document Reader implementation for Mbox format emails</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+    </scm>
 
     <dependencies>
         <!-- Spring AI Core -->

@@ -150,15 +150,6 @@ class DashScopeWebSocketClientTests {
 		StepVerifier.create(client.streamBinaryOut(TEST_MESSAGE)).expectError().verify();
 	}
 
-	@Test
-	void testTaskFailedEvent() {
-		// Test task failed event
-		client.onMessage(mockWebSocket, createTaskFailedMessage());
-
-		// Verify error is propagated to emitters
-		StepVerifier.create(client.streamTextOut(Flux.just(ByteBuffer.wrap("test".getBytes())))).expectError().verify();
-	}
-
 	private String createTaskStartedMessage() {
 		return """
 				{

@@ -25,7 +25,6 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <groupId>com.alibaba.cloud.ai.reader.mongodb</groupId>
     <artifactId>mongodb-document-reader</artifactId>
     <name>mongodb-document-reader</name>
     <description>mongodb reader for Spring AI Alibaba</description>

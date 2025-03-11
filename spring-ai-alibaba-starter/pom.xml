@@ -54,6 +54,12 @@
 			<artifactId>spring-ai-alibaba-core</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>com.alibaba.cloud.ai</groupId>
+			<artifactId>spring-ai-alibaba-studio</artifactId>
+			<version>${revision}</version>
+		</dependency>
+
 	</dependencies>
 
 </project>

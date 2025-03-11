@@ -28,7 +28,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-tool-calling-time</artifactId>
-    <name>Spring Ai Alibaba Starter Time</name>
+    <name>Spring AI Alibaba Starter Tool Calling Time</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <url>https://github.com/alibaba/spring-ai-alibaba</url>

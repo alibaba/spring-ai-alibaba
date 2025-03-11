@@ -21,6 +21,7 @@ import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;
 import com.qcloud.cos.model.PutObjectRequest;
 import com.qcloud.cos.region.Region;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -34,9 +35,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author HeYQ
+ * @author brianxiadong
  * @since 2024-11-27 21:41
  */
 @EnabledIfEnvironmentVariable(named = "TENCENT_SECRET_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "TENCENT_SECRET_ID", matches = ".+")
 class TencentCosDocumentLoaderIT {
 
 	private static final String TEST_BUCKET = "test-buket";
@@ -57,32 +60,56 @@ class TencentCosDocumentLoaderIT {
 
 	DocumentParser parser = new TextDocumentParser();
 
+	static {
+		if (System.getenv("TENCENT_SECRET_ID") == null || System.getenv("TENCENT_SECRET_KEY") == null) {
+			System.out.println(
+					"TENCENT_SECRET_ID or TENCENT_SECRET_KEY environment variable is not set. Tests will be skipped.");
+		}
+	}
+
 	@BeforeAll
 	public static void beforeAll() {
-		TencentCredentials tencentCredentials = new TencentCredentials(System.getenv("TENCENT_SECRET_ID"),
-				System.getenv("TENCENT_SECRET_KEY"), null);
+		// Ensure environment variables are set, otherwise skip the test
+		String secretId = System.getenv("TENCENT_SECRET_ID");
+		String secretKey = System.getenv("TENCENT_SECRET_KEY");
+
+		Assumptions.assumeTrue(secretId != null && !secretId.isEmpty(),
+				"Skipping test because TENCENT_SECRET_ID is not set");
+		Assumptions.assumeTrue(secretKey != null && !secretKey.isEmpty(),
+				"Skipping test because TENCENT_SECRET_KEY is not set");
+
+		TencentCredentials tencentCredentials = new TencentCredentials(secretId, secretKey, null);
 		cosClient = new COSClient(tencentCredentials.toCredentialsProvider(),
 				new ClientConfig(new Region("ap-shanghai")));
 	}
 
 	@Test
 	void should_load_single_document() {
+		// Ensure cosClient is initialized, otherwise skip the test
+		Assumptions.assumeTrue(cosClient != null, "Skipping test because cosClient is not initialized");
 
 		URL url = getClass().getClassLoader().getResource("test.txt");
 		// given
 		cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY, new File(url.getFile())));
 
+		// Get environment variables that have been validated in beforeAll
+		String secretId = System.getenv("TENCENT_SECRET_ID");
+		String secretKey = System.getenv("TENCENT_SECRET_KEY");
+
+		// Skip test if environment variables are not set
+		Assumptions.assumeTrue(secretId != null && !secretId.isEmpty() && secretKey != null && !secretKey.isEmpty(),
+				"Skipping test because TENCENT_SECRET_ID or TENCENT_SECRET_KEY is not set");
+
 		TencentCosResource tencentCosResource = TencentCosResource.builder()
-			.secretId(System.getenv("TENCENT_SECRET_ID"))
-			.secretKey(System.getenv("TENCENT_SECRET_KEY"))
+			.secretId(secretId)
+			.secretKey(secretKey)
 			.region(new Region("ap-shanghai"))
 			.bucket(TEST_BUCKET)
 			.key(TEST_KEY)
 			.build();
 		// or
 		TencentCosResource tencentCosResource2 = TencentCosResource.builder()
-			.tencentCredentials(new TencentCredentials(System.getenv("TENCENT_SECRET_ID"),
-					System.getenv("TENCENT_SECRET_KEY"), null))
+			.tencentCredentials(new TencentCredentials(secretId, secretKey, null))
 			.region(new Region("ap-shanghai"))
 			.bucket(TEST_BUCKET)
 			.key(TEST_KEY)
@@ -102,6 +129,8 @@ class TencentCosDocumentLoaderIT {
 
 	@Test
 	void should_load_multiple_documents() {
+		// Ensure cosClient is initialized, otherwise skip the test
+		Assumptions.assumeTrue(cosClient != null, "Skipping test because cosClient is not initialized");
 
 		// given
 		URL url = getClass().getClassLoader().getResource("test.txt");
@@ -112,9 +141,17 @@ class TencentCosDocumentLoaderIT {
 		assert url2 != null;
 		cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY_2, new File(url2.getFile())));
 
+		// Get environment variables that have been validated in beforeAll
+		String secretId = System.getenv("TENCENT_SECRET_ID");
+		String secretKey = System.getenv("TENCENT_SECRET_KEY");
+
+		// Skip test if environment variables are not set
+		Assumptions.assumeTrue(secretId != null && !secretId.isEmpty() && secretKey != null && !secretKey.isEmpty(),
+				"Skipping test because TENCENT_SECRET_ID or TENCENT_SECRET_KEY is not set");
+
 		List<TencentCosResource> tencentCosResourceList = TencentCosResource.builder()
-			.secretId(System.getenv("TENCENT_SECRET_ID"))
-			.secretKey(System.getenv("TENCENT_SECRET_KEY"))
+			.secretId(secretId)
+			.secretKey(secretKey)
 			.region(new Region("ap-shanghai"))
 			.bucket(TEST_BUCKET)
 			.buildBatch();
@@ -140,6 +177,8 @@ class TencentCosDocumentLoaderIT {
 
 	@Test
 	void should_load_multiple_documents_with_prefix() {
+		// Ensure cosClient is initialized, otherwise skip the test
+		Assumptions.assumeTrue(cosClient != null, "Skipping test because cosClient is not initialized");
 
 		// given
 		URL otherUrl = getClass().getClassLoader().getResource("other.txt");
@@ -155,9 +194,17 @@ class TencentCosDocumentLoaderIT {
 		assert url2 != null;
 		cosClient.putObject(new PutObjectRequest(TEST_BUCKET, TEST_KEY_2, new File(url2.getFile())));
 
+		// Get environment variables that have been validated in beforeAll
+		String secretId = System.getenv("TENCENT_SECRET_ID");
+		String secretKey = System.getenv("TENCENT_SECRET_KEY");
+
+		// Skip test if environment variables are not set
+		Assumptions.assumeTrue(secretId != null && !secretId.isEmpty() && secretKey != null && !secretKey.isEmpty(),
+				"Skipping test because TENCENT_SECRET_ID or TENCENT_SECRET_KEY is not set");
+
 		List<TencentCosResource> tencentCosResourceList = TencentCosResource.builder()
-			.secretId(System.getenv("TENCENT_SECRET_ID"))
-			.secretKey(System.getenv("TENCENT_SECRET_KEY"))
+			.secretId(secretId)
+			.secretKey(secretKey)
 			.region(new Region("ap-shanghai"))
 			.bucket(TEST_BUCKET)
 			.prefix("test")

@@ -189,13 +189,14 @@ public class MboxDocumentReaderTest {
 		// Get all emails
 		List<Document> documents = reader.get();
 
-		// Verify total count
-		assertEquals(3, documents.size(), "Should read all four emails");
+		// Verify total count - there are 4 emails in the sample file
+		assertEquals(4, documents.size(), "Should read all four emails");
 
 		// Verify email IDs in order
 		assertEquals("<test123@example.com>", documents.get(0).getId());
 		assertEquals("<test124@example.com>", documents.get(1).getId());
 		assertEquals("<test125@example.com>", documents.get(2).getId());
+		assertEquals("<test126@example.com>", documents.get(3).getId());
 	}
 
 	/**
@@ -241,6 +242,34 @@ public class MboxDocumentReaderTest {
 		assertThrows(IllegalArgumentException.class, () -> {
 			new MboxDocumentReader("non_existent.mbox");
 		});
+	}
+
+	/**
+	 * Test reading email with attachment
+	 */
+	@Test
+	void testEmailWithAttachment() {
+		// Create reader instance to read all emails
+		MboxDocumentReader reader = new MboxDocumentReader(sampleMboxFile.getAbsolutePath());
+
+		// Get all emails
+		List<Document> documents = reader.get();
+
+		// Verify we have at least 4 emails
+		assertTrue(documents.size() >= 4, "Should have at least 4 emails");
+
+		// Get the fourth email (index 3)
+		Document doc = documents.get(3);
+		Map<String, Object> metadata = doc.getMetadata();
+
+		// Verify metadata
+		assertEquals("Email with Attachment", metadata.get("subject"));
+		assertEquals("<test126@example.com>", doc.getId());
+
+		// Verify content contains the text part
+		String content = doc.getText();
+		assertTrue(content.contains("This is the main email content") || content.contains("[No content available]"),
+				"Should contain either the text content or a placeholder");
 	}
 
 }
