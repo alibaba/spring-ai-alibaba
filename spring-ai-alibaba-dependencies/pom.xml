@@ -157,6 +157,12 @@
             </dependency>
 
             <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>cn.hutool</groupId>
                 <artifactId>hutool-extra</artifactId>
                 <version>${hutool-extra.version}</version>
