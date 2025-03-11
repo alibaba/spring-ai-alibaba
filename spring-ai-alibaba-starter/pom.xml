@@ -56,11 +56,6 @@
 			<version>${revision}</version>
 		</dependency>
 
-		<dependency>
-			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>spring-ai-alibaba-studio</artifactId>
-			<version>${revision}</version>
-		</dependency>
 
 	</dependencies>
 
