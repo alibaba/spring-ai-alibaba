@@ -14,14 +14,6 @@
     <name>spring-ai-alibaba::core::jdk8</name>
     <description>A library for building stateful, multi-agents applications with LLMs</description>
 
-
-    <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gson.version>2.10.1</gson.version>
-    </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.springframework.ai</groupId>
@@ -53,31 +45,14 @@
         -->
 
         <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-core</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-retry</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-core</artifactId>
-            <version>${parent.version}</version>
             <scope>test</scope>
         </dependency>
 
       <dependency>
           <groupId>org.bsc.async</groupId>
           <artifactId>async-generator</artifactId>
-          <version>3.0.0</version>
       </dependency>
 
         <dependency>
@@ -106,14 +81,12 @@
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson</artifactId>
-            <version>3.22.0</version>
             <optional>true</optional>
         </dependency>
 
       <dependency>
           <groupId>com.google.code.gson</groupId>
           <artifactId>gson</artifactId>
-          <version>${gson.version}</version>
           <scope>provided</scope>
       </dependency>
 

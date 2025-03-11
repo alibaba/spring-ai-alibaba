@@ -40,7 +40,6 @@
 		<dependency>
 			<groupId>com.alibaba.cloud.ai</groupId>
 			<artifactId>spring-ai-alibaba-core</artifactId>
-			<version>${revision}</version>
 		</dependency>
 
 		<dependency>

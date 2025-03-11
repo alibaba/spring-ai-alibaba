@@ -75,8 +75,8 @@ public class PagePdfDocumentParser implements DocumentParser {
 			int startPageNumber = pageNumber;
 
 			List<String> pageTextGroupList = new ArrayList<>();
-			PDFParser pdfParser = new PDFParser(new org.apache.pdfbox.io.RandomAccessReadBuffer(inputStream));
-			PDDocument document = pdfParser.parse();
+			PDFParser pdfParser = new PDFParser(new org.apache.pdfbox.io.RandomAccessBuffer(inputStream));
+			PDDocument document = pdfParser.getPDDocument();
 
 			int totalPages = document.getDocumentCatalog().getPages().getCount();
 			// if less than 10

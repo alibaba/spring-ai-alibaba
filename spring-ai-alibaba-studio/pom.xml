@@ -29,13 +29,13 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-core</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-graph-core</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -53,13 +53,11 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>${springdoc-openapi.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.30</version>
             <scope>provided</scope>
         </dependency>
 
@@ -107,7 +105,6 @@
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
-            <version>5.0.0</version>
             <scope>provided</scope>
         </dependency>
 
@@ -126,7 +123,6 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-autoconfigure</artifactId>
-            <version>${project.parent.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
