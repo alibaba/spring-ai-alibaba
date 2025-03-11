@@ -47,13 +47,11 @@
 		<dependency>
 			<groupId>com.alibaba.cloud.ai</groupId>
 			<artifactId>spring-ai-alibaba-autoconfigure</artifactId>
-			<version>${revision}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.alibaba.cloud.ai</groupId>
 			<artifactId>spring-ai-alibaba-core</artifactId>
-			<version>${revision}</version>
 		</dependency>
 
 	</dependencies>
