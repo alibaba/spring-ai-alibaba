@@ -84,8 +84,8 @@ public class ParagraphPdfDocumentParser implements DocumentParser {
 	public List<Document> parse(InputStream inputStream) {
 
 		try {
-			PDFParser pdfParser = new PDFParser(new org.apache.pdfbox.io.RandomAccessReadBuffer(inputStream));
-			PDDocument pdDocument = pdfParser.parse();
+			PDFParser pdfParser = new PDFParser(new org.apache.pdfbox.io.RandomAccessBuffer(inputStream));
+			PDDocument pdDocument = pdfParser.getPDDocument();
 
 			ParagraphManager paragraphTextExtractor = new ParagraphManager(pdDocument);
 
