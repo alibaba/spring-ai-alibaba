@@ -91,6 +91,7 @@
         <pinyin4j.version>2.5.1</pinyin4j.version>
         <commons-io.version>2.13.0</commons-io.version>
         <commons-codec.version>1.17.0</commons-codec.version>
+        <gson.version>2.10.1</gson.version>
     </properties>
 
     <organization>
@@ -293,6 +294,13 @@
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
                 <version>${commons-codec.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>${gson.version}</version>
+                <scope>provided</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
