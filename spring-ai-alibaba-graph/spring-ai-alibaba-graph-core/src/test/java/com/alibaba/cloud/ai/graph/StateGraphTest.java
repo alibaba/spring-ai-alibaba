@@ -380,8 +380,7 @@ public class StateGraphTest {
 		assertIterableEquals(List.of("A", "A1", "A2", "A3", "B", "C"),
 				(List<String>) result.get().value("messages").get());
 
-		workflow = new StateGraph(getOverAllState())
-			// .addNode("A", makeNode("A"))
+		workflow = new StateGraph(getOverAllState()).addNode("A", makeNode("A"))
 			.addNode("A1", makeNode("A1"))
 			.addNode("A2", makeNode("A2"))
 			.addNode("A3", makeNode("A3"))

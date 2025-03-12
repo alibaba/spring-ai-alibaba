@@ -15,9 +15,10 @@
  */
 package com.alibaba.cloud.ai.vectorstore.opensearch;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.aliyun.ha3engine.vector.models.QueryRequest;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -88,7 +89,9 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 	 * Converter that transforms a JSON object representing a document into a
 	 * {@link OpenSearchApi.SimilarityResult} object.
 	 */
-	private final Converter<JSONObject, com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi.SimilarityResult> itemConverter = new SimilarityResultConverter();
+	private final Converter<JsonNode, com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi.SimilarityResult> itemConverter = new SimilarityResultConverter();
+
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
 	 * Constructs a new instance of OpenSearchVector with the specified parameters.
@@ -161,7 +164,12 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 			documentFields.put(ID_FIELD_NAME, document.getId());
 			documentFields.put(CONTENT_FIELD_NAME, document.getText());
 			// Convert metadata to JSON
-			documentFields.put(METADATA_FIELD_NAME, JSON.toJSONString(document.getMetadata()));
+			try {
+				documentFields.put(METADATA_FIELD_NAME, objectMapper.writeValueAsString(document.getMetadata()));
+			}
+			catch (JsonProcessingException e) {
+				throw new RuntimeException("Failed to serialize JSON", e);
+			}
 
 			// Add document content to documentEntry structure.
 			documentMap.put("fields", documentFields);
@@ -292,8 +300,8 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 	 * response from an OpenSearch similarity search query and convert it into a more
 	 * usable format.
 	 */
-	public static class SimilarityResultConverter implements
-			Converter<JSONObject, com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi.SimilarityResult> {
+	public static class SimilarityResultConverter
+			implements Converter<JsonNode, com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi.SimilarityResult> {
 
 		private static final String EMPTY_TEXT = "";
 
@@ -310,7 +318,7 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 		 */
 		@Override
 		public com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi.SimilarityResult convert(
-				JSONObject jsonDocument) {
+				JsonNode jsonDocument) {
 			String id = extractId(jsonDocument);
 			String content = extractContent(jsonDocument);
 			double score = extractScore(jsonDocument);
@@ -325,10 +333,10 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 		 * @param jsonDocument The JSON object containing the document details.
 		 * @return The content of the document, or empty string if not found or empty.
 		 */
-		private static String extractContent(JSONObject jsonDocument) {
-			if (jsonDocument.containsKey(FIELDS_KEY)) {
-				JSONObject fields = jsonDocument.getJSONObject(FIELDS_KEY);
-				String content = fields.getString(CONTENT_FIELD_NAME);
+		private static String extractContent(JsonNode jsonDocument) {
+			if (jsonDocument.has(FIELDS_KEY)) {
+				JsonNode fields = jsonDocument.get(FIELDS_KEY);
+				String content = fields.path(CONTENT_FIELD_NAME).asText();
 				if (content == null || content.isEmpty()) {
 					return EMPTY_TEXT;
 				}
@@ -343,8 +351,8 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 		 * @param jsonDocument The JSON object containing the document details.
 		 * @return The ID of the document, or empty string if not found or empty.
 		 */
-		private static String extractId(JSONObject jsonDocument) {
-			String id = jsonDocument.getString(ID_FIELD_NAME);
+		private static String extractId(JsonNode jsonDocument) {
+			String id = jsonDocument.path(ID_FIELD_NAME).asText();
 			if (id == null || id.isEmpty()) {
 				return EMPTY_TEXT;
 			}
@@ -356,8 +364,8 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 		 * @param jsonDocument The JSON object containing the document details.
 		 * @return The score of the document.
 		 */
-		private static double extractScore(JSONObject jsonDocument) {
-			return jsonDocument.getDouble(SCORE_KEY);
+		private static double extractScore(JsonNode jsonDocument) {
+			return jsonDocument.path(SCORE_KEY).asDouble();
 		}
 
 		/**
@@ -367,12 +375,16 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 		 * found.
 		 */
 		@SuppressWarnings("unchecked")
-		private static Map<String, Object> extractMetadata(JSONObject jsonDocument) {
-			if (jsonDocument.containsKey(FIELDS_KEY)) {
-				JSONObject fields = jsonDocument.getJSONObject(FIELDS_KEY);
-				String metadataStr = fields.getString(METADATA_FIELD_NAME);
-
-				return JSONObject.parseObject(metadataStr, HashMap.class);
+		private static Map<String, Object> extractMetadata(JsonNode jsonDocument) {
+			if (jsonDocument.has(FIELDS_KEY)) {
+				JsonNode fields = jsonDocument.get(FIELDS_KEY);
+				String metadataStr = fields.path(METADATA_FIELD_NAME).asText();
+				try {
+					return new ObjectMapper().readValue(metadataStr, HashMap.class);
+				}
+				catch (JsonProcessingException e) {
+					return new HashMap<>();
+				}
 			}
 			else {
 				return new HashMap<>();

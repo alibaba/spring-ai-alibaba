@@ -15,11 +15,12 @@
  */
 package com.alibaba.cloud.ai.vectorstore.opensearch;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import com.aliyun.ha3engine.vector.Client;
 import com.aliyun.ha3engine.vector.models.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.convert.converter.Converter;
@@ -146,7 +147,7 @@ public class OpenSearchApi {
 	 * response.
 	 * @throws RuntimeException if an exception occurs during the search query execution.
 	 */
-	public <T> List<T> search(QueryRequest queryRequest, Converter<JSONObject, T> itemConverter) {
+	public <T> List<T> search(QueryRequest queryRequest, Converter<JsonNode, T> itemConverter) {
 		try {
 			SearchResponse searchResponse = client.inferenceQuery(queryRequest);
 			SearchResponseBody responseBody = getSearchResponseBody(searchResponse);
@@ -158,10 +159,10 @@ public class OpenSearchApi {
 				return new ArrayList<>();
 			}
 
-			JSONArray resultArray = responseBody.result;
+			ArrayNode resultArray = responseBody.result;
 			if (resultArray != null && !resultArray.isEmpty()) {
-				for (Object item : resultArray) {
-					documents.add(itemConverter.convert((JSONObject) item));
+				for (JsonNode item : resultArray) {
+					documents.add(itemConverter.convert(item));
 				}
 			}
 			return documents;
@@ -220,16 +221,16 @@ public class OpenSearchApi {
 		 * response body.
 		 */
 		public ResponseBody(String pushDocumentsResponseBodyString) {
-			this(JSON.parseObject(pushDocumentsResponseBodyString));
+			this(parseJson(pushDocumentsResponseBodyString));
 		}
 
 		/**
 		 * Constructs a ResponseBody instance from a JSONObject.
 		 * @param jsonObject The JSONObject representing the response body.
 		 */
-		public ResponseBody(JSONObject jsonObject) {
-			this(jsonObject.getInteger(CODE_KEY), jsonObject.getString(STATUS_KEY),
-					jsonObject.getString(ERROR_CODE_KEY), jsonObject.getString(ERROR_MESSAGE_KEY));
+		public ResponseBody(JsonNode jsonObject) {
+			this(jsonObject.path(CODE_KEY).asInt(), jsonObject.path(STATUS_KEY).asText(),
+					jsonObject.path(ERROR_CODE_KEY).asText(), jsonObject.path(ERROR_MESSAGE_KEY).asText());
 		}
 
 		/**
@@ -238,6 +239,15 @@ public class OpenSearchApi {
 		 */
 		public boolean isSuccess() {
 			return SUCCESS_CODE.equals(code);
+		}
+
+		private static JsonNode parseJson(String jsonString) {
+			try {
+				return new ObjectMapper().readTree(jsonString);
+			}
+			catch (JsonProcessingException e) {
+				throw new RuntimeException("Failed to parse JSON", e);
+			}
 		}
 	}
 
@@ -272,7 +282,7 @@ public class OpenSearchApi {
 
 			Integer totalCount,
 
-			JSONArray result) {
+			ArrayNode result) {
 
 		private static final String TOTAL_COUNT_KEY = "totalCount";
 
@@ -283,17 +293,27 @@ public class OpenSearchApi {
 		private static final String RESULT_KEY = "result";
 
 		public SearchResponseBody(String searchResponseBodyString) {
-			this(JSON.parseObject(searchResponseBodyString));
+			this(parseJson(searchResponseBodyString));
 		}
 
-		public SearchResponseBody(JSONObject jsonObject) {
-			this(jsonObject.getString(ERROR_CODE_KEY), jsonObject.getString(ERROR_MESSAGE_KEY),
-					jsonObject.getInteger(TOTAL_COUNT_KEY), jsonObject.getJSONArray(RESULT_KEY));
+		public SearchResponseBody(JsonNode jsonObject) {
+			this(jsonObject.path(ERROR_CODE_KEY).asText(), jsonObject.path(ERROR_MESSAGE_KEY).asText(),
+					jsonObject.path(TOTAL_COUNT_KEY).asInt(), (ArrayNode) jsonObject.path(RESULT_KEY));
 		}
 
 		public boolean hasError() {
 			return errorCode != null && !errorCode.isEmpty();
 		}
+
+		private static JsonNode parseJson(String jsonString) {
+			try {
+				return new ObjectMapper().readTree(jsonString);
+			}
+			catch (JsonProcessingException e) {
+				throw new RuntimeException("Failed to parse JSON", e);
+			}
+		}
+
 	}
 
 }
