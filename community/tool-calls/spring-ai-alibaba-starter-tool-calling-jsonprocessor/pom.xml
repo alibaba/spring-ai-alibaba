@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-tool-calling-jsonprocessor</artifactId>
-    <name>Spring Ai Alibaba Starter jsonprocessor</name>
+    <name>Spring AI Alibaba Starter Tool Calling JsonProcessor</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <url>https://github.com/alibaba/spring-ai-alibaba</url>
