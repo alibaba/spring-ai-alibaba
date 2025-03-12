@@ -1,0 +1,97 @@
+autoDetectedPackages:
+- com.alibaba.cloud.ai.advisor
+- com.alibaba.cloud.ai.agent
+- com.alibaba.cloud.ai.autoconfigure.dashscope
+- com.alibaba.cloud.ai.autoconfigure.prompt
+- com.alibaba.cloud.ai.dashscope.agent
+- com.alibaba.cloud.ai.dashscope.api
+- com.alibaba.cloud.ai.dashscope.audio
+- com.alibaba.cloud.ai.dashscope.chat
+- com.alibaba.cloud.ai.dashscope.common
+- com.alibaba.cloud.ai.dashscope.embedding
+- com.alibaba.cloud.ai.dashscope.image
+- com.alibaba.cloud.ai.dashscope.metadata
+- com.alibaba.cloud.ai.dashscope.observation.conventions
+- com.alibaba.cloud.ai.dashscope.protocol
+- com.alibaba.cloud.ai.dashscope.rag
+- com.alibaba.cloud.ai.dashscope.rerank
+- com.alibaba.cloud.ai.document
+- com.alibaba.cloud.ai.evaluation
+- com.alibaba.cloud.ai.functioncalling.duckduckgo
+- com.alibaba.cloud.ai.memory.mysql
+- com.alibaba.cloud.ai.memory.redis
+- com.alibaba.cloud.ai.model
+- com.alibaba.cloud.ai.parser.apache.pdfbox
+- com.alibaba.cloud.ai.parser.bibtex
+- com.alibaba.cloud.ai.parser.bshtml
+- com.alibaba.cloud.ai.parser.directory
+- com.alibaba.cloud.ai.parser.markdown
+- com.alibaba.cloud.ai.parser.multi
+- com.alibaba.cloud.ai.parser.pdf.tables
+- com.alibaba.cloud.ai.parser.tika
+- com.alibaba.cloud.ai.prompt
+- com.alibaba.cloud.ai.reader.arxiv
+- com.alibaba.cloud.ai.reader.bilibili
+- com.alibaba.cloud.ai.reader.chatgpt.data
+- com.alibaba.cloud.ai.reader.email.eml
+- com.alibaba.cloud.ai.reader.email.msg
+- com.alibaba.cloud.ai.reader.feishu
+- com.alibaba.cloud.ai.reader.gitbook
+- com.alibaba.cloud.ai.reader.github
+- com.alibaba.cloud.ai.reader.gitlab
+- com.alibaba.cloud.ai.reader.gptrepo
+- com.alibaba.cloud.ai.reader.huggingface.fs
+- com.alibaba.cloud.ai.reader.mbox
+- com.alibaba.cloud.ai.reader.mongodb
+- com.alibaba.cloud.ai.reader.mysql
+- com.alibaba.cloud.ai.reader.notion
+- com.alibaba.cloud.ai.reader.obsidian
+- com.alibaba.cloud.ai.reader.poi
+- com.alibaba.cloud.ai.reader.tencent.cos
+- com.alibaba.cloud.ai.reader.youtube
+- com.alibaba.cloud.ai.reader.yuque
+- com.alibaba.cloud.ai.toolcalling.alitranslate
+- com.alibaba.cloud.ai.toolcalling.amp
+- com.alibaba.cloud.ai.toolcalling.baidumap
+- com.alibaba.cloud.ai.toolcalling.baidusearch
+- com.alibaba.cloud.ai.toolcalling.baidutranslate
+- com.alibaba.cloud.ai.toolcalling.bingsearch
+- com.alibaba.cloud.ai.toolcalling.crawler
+- com.alibaba.cloud.ai.toolcalling.dingtalk
+- com.alibaba.cloud.ai.toolcalling.githubtoolkit
+- com.alibaba.cloud.ai.toolcalling.googletranslate
+- com.alibaba.cloud.ai.toolcalling.jsonprocessor
+- com.alibaba.cloud.ai.toolcalling.kuaidi100
+- com.alibaba.cloud.ai.toolcalling.larksuite
+- com.alibaba.cloud.ai.toolcalling.microsofttranslate
+- com.alibaba.cloud.ai.toolcalling.regex
+- com.alibaba.cloud.ai.toolcalling.serpapi
+- com.alibaba.cloud.ai.toolcalling.sinanews
+- com.alibaba.cloud.ai.toolcalling.time
+- com.alibaba.cloud.ai.toolcalling.toutiaonews
+- com.alibaba.cloud.ai.toolcalling.weather
+- com.alibaba.cloud.ai.toolcalling.youdaotranslate
+- com.alibaba.cloud.ai.toolcalling.yuque
+- com.alibaba.cloud.ai.transformer.splitter
+- com.alibaba.cloud.ai.vectorstore.analyticdb
+- com.alibaba.cloud.ai.vectorstore.opensearch
+- com.alibaba.cloud.ai.vectorstore.tair
+- com.alibaba.cloud.api.reader.onenote
+enableAutoDetect: true
+funcDisplayConfig:
+  skipConstructors: false
+  skipFieldAccess: true
+  skipFieldChange: true
+  skipGetters: true
+  skipNonProjectPackages: true
+  skipPrivateMethods: false
+  skipSetters: true
+ignoreSameClassCall: null
+ignoreSamePackageCall: null
+includedPackagePrefixes: null
+includedParentClasses: null
+name: xcodemap-filter
+recordMode: smart
+sourceDisplayConfig:
+  color: blue
+startOnDebug: false
