@@ -41,6 +41,8 @@ import org.springframework.ai.document.Document;
 
 public class ImageDashScopeParser implements DocumentParser {
 
+	private static final String OS = System.getProperty("os.name").toLowerCase();
+
 	private final String model;
 
 	private final String maxPixels;
@@ -72,12 +74,11 @@ public class ImageDashScopeParser implements DocumentParser {
 				filePath = path;
 			}
 			else {
-				String os = System.getProperty("os.name").toLowerCase();
 
-				if (os.contains("win")) {
+				if (OS.contains("win")) {
 					filePath = "file:///" + path;
 				}
-				else if (os.contains("nix") || os.contains("nux") || os.contains("mac")) {
+				else if (OS.contains("nix") || OS.contains("nux") || OS.contains("mac")) {
 					filePath = "file://" + path;
 				}
 			}

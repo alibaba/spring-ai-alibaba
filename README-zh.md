@@ -16,7 +16,7 @@
 	<dependency>
 		<groupId>com.alibaba.cloud.ai</groupId>
 		<artifactId>spring-ai-alibaba-starter</artifactId>
-		<version>1.0.0-M3.2</version>
+		<version>1.0.0-M5.1</version>
 	</dependency>
 	```
 
@@ -106,6 +106,10 @@ Spring AI Alibaba 提供 AI 开源框架以及与阿里巴巴整体开源生态�
 
 ![ai-native-architecture](./docs/imgs/spring-ai-alibaba-arch.png)
 
+## 贡献指南
+
+请参考 [贡献指南](./CONTRIBUTING.md) 了解如何参与 Spring AI Alibaba 的开发。
+
 ## 参考资料
 
 * [Spring AI](https://docs.spring.io/spring-ai/reference/index.html)
@@ -118,3 +122,11 @@ Spring AI Alibaba 提供 AI 开源框架以及与阿里巴巴整体开源生态�
 * 微信公众号：请扫描一下二维码关注公众号
 
 <img src="./docs/imgs/wechat-account.png" style="max-width:200px;"/>
+
+## Credit
+
+本项目的一些想法和代码受到以下项目的启发或重写于以下项目，非常感谢那些创建和开源这些项目的开发者。
+
+*[Spring AI](https://github.com/spring-projects/spring-ai)，一款面向 Spring 开发者的 AI 智能体应用开发框架，提供 Spring 友好的 API 和抽象。基于 Apache License V2 开源协议。
+*[Langgraph](https://github.com/langchain-ai/langgraph)，一个用于使用LLM构建有状态、多参与者应用程序的库，用于创建代理和多代理工作流。基于 MIT 开源协议。
+*[Langgraph4J](https://github.com/bsorrentino/langgraph4j)，[LangGraph]项目的 Java 移植版本。基于 MIT 开源协议。

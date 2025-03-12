@@ -28,8 +28,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-tool-calling-regex</artifactId>
-
-    <name>Spring Ai Alibaba Starter regex</name>
+    <name>Spring AI Alibaba Starter Tool Calling Regex</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <url>https://github.com/alibaba/spring-ai-alibaba</url>

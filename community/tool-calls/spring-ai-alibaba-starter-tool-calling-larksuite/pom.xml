@@ -29,7 +29,7 @@
 
     <artifactId>spring-ai-alibaba-starter-tool-calling-larksuite</artifactId>
 
-    <name>Spring Ai Alibaba Starter LarkSuite</name>
+    <name>Spring AI Alibaba Starter Tool Calling LarkSuite</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <url>https://github.com/alibaba/spring-ai-alibaba</url>

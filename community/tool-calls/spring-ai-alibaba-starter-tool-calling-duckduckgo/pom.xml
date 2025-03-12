@@ -28,8 +28,14 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-tool-calling-duckduckgo</artifactId>
-    <name>spring-ai-alibaba-starter-tool-calling-duckduckgo</name>
+    <name>Spring AI Alibaba Starter Tool Calling DuckDuckGo</name>
     <description>Web Search tool for Spring AI Alibaba</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+    </scm>
 
     <dependencies>
         <dependency>
