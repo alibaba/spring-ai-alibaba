@@ -15,10 +15,11 @@
  */
 package com.alibaba.cloud.ai.vectorstore.tair;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.aliyun.tair.tairvector.factory.VectorBuilderFactory;
 import com.aliyun.tair.tairvector.factory.VectorBuilderFactory.KnnItem;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,6 +79,8 @@ public class TairVectorStore extends AbstractObservationVectorStore {
 	protected TairVectorStoreOptions options;
 
 	protected final BatchingStrategy batchingStrategy;
+
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
 	 * Constructs a new instance of TairVectorStore with the specified parameters.
@@ -140,18 +143,23 @@ public class TairVectorStore extends AbstractObservationVectorStore {
 		for (Document document : documents) {
 			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
 			float[] embedding = this.embeddingModel.embed(document);
-			String embeddingString = JSON.toJSONString(embedding);
+			String embeddingString = null;
+			try {
+				embeddingString = objectMapper.writeValueAsString(embedding);
 
-			List<String> params = new ArrayList<>();
-			params.add(ID_FIELD_NAME);
-			params.add(document.getId());
-			params.add(CONTENT_FIELD_NAME);
-			params.add(document.getText());
-			params.add(METADATA_FIELD_NAME);
-			params.add(JSON.toJSONString(document.getMetadata()));
-
-			this.tairVectorApi.tvshset(options.getIndexName(), document.getId(), embeddingString,
-					params.toArray(new String[0]));
+				List<String> params = new ArrayList<>();
+				params.add(ID_FIELD_NAME);
+				params.add(document.getId());
+				params.add(CONTENT_FIELD_NAME);
+				params.add(document.getText());
+				params.add(METADATA_FIELD_NAME);
+				params.add(objectMapper.writeValueAsString(document.getMetadata()));
+				this.tairVectorApi.tvshset(options.getIndexName(), document.getId(), embeddingString,
+						params.toArray(new String[0]));
+			}
+			catch (JsonProcessingException e) {
+				throw new RuntimeException("Error serializing message", e);
+			}
 		}
 	}
 
@@ -163,7 +171,13 @@ public class TairVectorStore extends AbstractObservationVectorStore {
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
 		float[] userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
-		String embeddingString = JSON.toJSONString(userQueryEmbedding);
+		String embeddingString = null;
+		try {
+			embeddingString = objectMapper.writeValueAsString(userQueryEmbedding);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException("Failed to serialize JSON", e);
+		}
 		VectorBuilderFactory.Knn<String> result = this.tairVectorApi.tvsknnsearch(options.getIndexName(),
 				(long) request.getTopK(), embeddingString);
 
@@ -186,7 +200,14 @@ public class TairVectorStore extends AbstractObservationVectorStore {
 		String id = detail.get(0);
 		String content = detail.get(1);
 		String metadataStr = detail.get(2);
-		Map<String, Object> metaData = JSONObject.parseObject(metadataStr, HashMap.class);
+		Map<String, Object> metaData = null;
+		try {
+			metaData = objectMapper.readValue(metadataStr, new TypeReference<Map<String, Object>>() {
+			});
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException("Failed to parse JSON", e);
+		}
 		return new Document(id, content, metaData);
 	}
 

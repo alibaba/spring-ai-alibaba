@@ -1,0 +1,47 @@
+{
+  "private": true,
+  "author": "helltab <helltab@163.com>",
+  "scripts": {
+    "build": "max build",
+    "dev": "max dev",
+    "format": "prettier --cache --write .",
+    "postinstall": "max setup",
+    "prepare": "husky",
+    "setup": "max setup",
+    "start": "npm run dev"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.0.1",
+    "@ant-design/pro-components": "^2.8.2",
+    "@ant-design/x": "^1.0.2",
+    "@formily/antd-v5": "^1.2.3",
+    "@formily/core": "^2.3.2",
+    "@formily/react": "^2.3.2",
+    "@szhsin/react-menu": "^4.2.3",
+    "@types/js-yaml": "^4.0.9",
+    "@types/lodash": "^4.17.13",
+    "@umijs/max": "^4.3.35",
+    "@xyflow/react": "^12.3.5",
+    "@xyflow/system": "^0.0.47",
+    "ahooks": "^3.8.4",
+    "antd": "^5.22.3",
+    "dayjs": "^1.11.13",
+    "immer": "^10.1.1",
+    "js-yaml": "^4.1.0",
+    "lodash": "^4.17.21",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "@iconify/react": "^5.0.2",
+    "@types/react": "^18.0.33",
+    "@types/react-dom": "^18.0.11",
+    "code-inspector-plugin": "^0.18.3",
+    "husky": "^9",
+    "lint-staged": "^13.2.0",
+    "prettier": "^2.8.7",
+    "prettier-plugin-organize-imports": "^3.2.2",
+    "prettier-plugin-packagejson": "^2.4.3",
+    "raw-loader": "^4.0.2",
+    "typescript": "^5.0.3"
+  }
+}

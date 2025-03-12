@@ -1,0 +1,10 @@
+{
+  "github": "Github",
+  "document": "Document",
+  "run": "Run",
+  "traces": "Traces",
+  "evaluate": "Evaluate",
+  "chinese": "zh",
+  "english": "en",
+  "gotoDebug": "Debug"
+}
