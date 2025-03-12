@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import com.alibaba.cloud.ai.graph.action.*;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
@@ -20,8 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.Getter;
-
-import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
+import lombok.NonNull;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
@@ -286,6 +286,28 @@ public class StateGraph {
 	}
 
 	/**
+	 * @param id the identifier of the node
+	 * @param actionWithConfig the action to be performed by the node
+	 * @return this
+	 * @throws GraphStateException if the node identifier is invalid or the node already
+	 * exists
+	 */
+	public StateGraph addCommandNode(String id, CommandNodeActionWithConfig actionWithConfig) throws GraphStateException {
+		if (Objects.equals(id, END)) {
+			throw Errors.invalidNodeIdentifier.exception(END);
+		}
+		Node node = new Node(id, (config) -> AsyncNodeActionWithConfig.node_async(actionWithConfig));
+
+		if (nodes.elements.contains(node)) {
+			throw Errors.duplicateNodeError.exception(id);
+		}
+
+		nodes.elements.add(node);
+		return this;
+	}
+
+
+	/**
 	 * Adds a subgraph to the state graph by creating a node with the specified
 	 * identifier. This implies that Subgraph share the same state with parent graph
 	 * @param id the identifier of the node representing the subgraph
@@ -326,16 +348,7 @@ public class StateGraph {
 		}
 
 		subGraph.validateGraph();
-		OverAllState subGraphOverAllState = subGraph.getOverAllState();
-		OverAllState superOverAllState = getOverAllState();
-		if (subGraphOverAllState != null) {
-			Map<String, KeyStrategy> strategies = subGraphOverAllState.keyStrategies();
-			for (Map.Entry<String, KeyStrategy> strategyEntry : strategies.entrySet()) {
-				if (!superOverAllState.containStrategy(strategyEntry.getKey())) {
-					superOverAllState.registerKeyAndStrategy(strategyEntry.getKey(), strategyEntry.getValue());
-				}
-			}
-		}
+		mergeStrategy(subGraph);
 		subGraph.setOverAllState(getOverAllState());
 
 		var node = new SubStateGraphNode(id, subGraph);
@@ -347,6 +360,20 @@ public class StateGraph {
 		nodes.elements.add(node);
 		return this;
 	}
+
+	private void mergeStrategy(StateGraph subGraph) {
+		OverAllState subGraphOverAllState = subGraph.getOverAllState();
+		OverAllState superOverAllState = getOverAllState();
+		if (subGraphOverAllState != null) {
+			Map<String, KeyStrategy> strategies = subGraphOverAllState.keyStrategies();
+			for (Map.Entry<String, KeyStrategy> strategyEntry : strategies.entrySet()) {
+				if (!superOverAllState.containStrategy(strategyEntry.getKey())) {
+					superOverAllState.registerKeyAndStrategy(strategyEntry.getKey(), strategyEntry.getValue());
+				}
+			}
+		}
+	}
+
 
 	/**
 	 * Adds an edge to the graph.

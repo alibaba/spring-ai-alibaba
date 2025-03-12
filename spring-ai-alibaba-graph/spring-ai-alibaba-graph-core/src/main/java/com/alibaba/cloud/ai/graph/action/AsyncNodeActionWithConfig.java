@@ -30,6 +30,19 @@ public interface AsyncNodeActionWithConfig
 		};
 	}
 
+	static AsyncNodeActionWithConfig node_async(CommandNodeActionWithConfig commandNodeActionWithConfig) {
+		return (t, config) -> {
+			CompletableFuture<Map<String, Object>> result = new CompletableFuture<>();
+			try {
+				result.complete(commandNodeActionWithConfig.apply(t, config));
+			}
+			catch (Exception e) {
+				result.completeExceptionally(e);
+			}
+			return result;
+		};
+	}
+
 	/**
 	 * Adapts a simple AsyncNodeAction to an AsyncNodeActionWithConfig.
 	 * @param action the simple AsyncNodeAction to be adapted

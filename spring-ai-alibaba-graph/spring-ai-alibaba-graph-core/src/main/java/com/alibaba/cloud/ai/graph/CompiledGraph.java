@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import ch.qos.logback.core.util.StringUtil;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.async.AsyncGenerator;
@@ -19,7 +20,6 @@ import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
-import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import org.springframework.util.CollectionUtils;
 
@@ -563,7 +563,31 @@ public class CompiledGraph {
 
 			return action.apply(withState, config).thenApply(partialState -> {
 				try {
-
+					if (partialState instanceof Command command){
+						String jump = command.getEdge();
+						Command.GraphType graph = command.getGraph();
+						String nodeId = command.getNodeId();
+						if (jump != null && graph != null) {
+							Optional<Data<Output>> embed = getEmbedGenerator(command);
+							if (embed.isPresent()) {
+								return embed.get();
+							}
+							currentState = overAllState.updateState(command);
+							if (Command.GraphType.PARENT.equals(graph)) {
+								if (!nodes.containsKey(jump))
+									throw new GraphStateException(jump + " parent graph not found");
+								nextNodeId = jump;
+							} else {
+								String formatId = StringUtil.isNullOrEmpty(nodeId) ?
+										SubGraphNode.formatId(currentNodeId.split("-")[0], jump) :
+										SubGraphNode.formatId(nodeId, jump);
+								if (!nodes.containsKey(formatId))
+									throw new GraphStateException(formatId + " sub graph not found");
+								nextNodeId = formatId;
+							}
+							return Data.of(getNodeOutput());
+						}
+					}
 					Optional<Data<Output>> embed = getEmbedGenerator(partialState);
 					if (embed.isPresent()) {
 						return embed.get();
