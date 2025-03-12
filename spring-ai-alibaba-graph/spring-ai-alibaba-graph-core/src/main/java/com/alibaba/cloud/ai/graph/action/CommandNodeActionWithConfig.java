@@ -6,8 +6,7 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 
 @FunctionalInterface
 public interface CommandNodeActionWithConfig {
-    Command apply(OverAllState t, RunnableConfig config) throws Exception;
+
+	Command apply(OverAllState t, RunnableConfig config) throws Exception;
+
 }
-
-
-

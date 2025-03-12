@@ -292,7 +292,8 @@ public class StateGraph {
 	 * @throws GraphStateException if the node identifier is invalid or the node already
 	 * exists
 	 */
-	public StateGraph addCommandNode(String id, CommandNodeActionWithConfig actionWithConfig) throws GraphStateException {
+	public StateGraph addCommandNode(String id, CommandNodeActionWithConfig actionWithConfig)
+			throws GraphStateException {
 		if (Objects.equals(id, END)) {
 			throw Errors.invalidNodeIdentifier.exception(END);
 		}
@@ -305,7 +306,6 @@ public class StateGraph {
 		nodes.elements.add(node);
 		return this;
 	}
-
 
 	/**
 	 * Adds a subgraph to the state graph by creating a node with the specified
@@ -373,7 +373,6 @@ public class StateGraph {
 			}
 		}
 	}
-
 
 	/**
 	 * Adds an edge to the graph.
