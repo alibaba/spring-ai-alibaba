@@ -30,6 +30,8 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.*;
  */
 public class ApiUtils {
 
+	private static final String USER_AGENT = userAgent();
+
 	public static Consumer<HttpHeaders> getJsonContentHeaders(String apiKey) {
 		return getJsonContentHeaders(apiKey, null);
 	}
@@ -43,7 +45,7 @@ public class ApiUtils {
 			headers.setBearerAuth(apiKey);
 			headers.set(HEADER_OPENAPI_SOURCE, SOURCE_FLAG);
 
-			headers.set("user-agent", userAgent());
+			headers.set("user-agent", USER_AGENT);
 			if (workspaceId != null) {
 				headers.set(HEADER_WORK_SPACE_ID, workspaceId);
 			}
@@ -58,7 +60,7 @@ public class ApiUtils {
 			Map<String, String> customHeaders) {
 		Map<String, String> headers = new HashMap<>();
 		headers.put("Authorization", "bearer " + apiKey);
-		headers.put("user-agent", userAgent());
+		headers.put("user-agent", USER_AGENT);
 		if (workspace != null && !workspace.isEmpty()) {
 			headers.put("X-DashScope-WorkSpace", workspace);
 		}
@@ -75,7 +77,7 @@ public class ApiUtils {
 			Boolean isAsyncTask, Boolean isSecurityCheck, Boolean isSSE) {
 		return (headers) -> {
 			headers.setBearerAuth(apiKey);
-			headers.set("user-agent", userAgent());
+			headers.set("user-agent", USER_AGENT);
 			if (isSecurityCheck) {
 				headers.set("X-DashScope-DataInspection", "enable");
 			}
