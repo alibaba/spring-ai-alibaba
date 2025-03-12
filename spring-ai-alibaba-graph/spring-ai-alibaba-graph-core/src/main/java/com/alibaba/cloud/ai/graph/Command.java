@@ -6,48 +6,52 @@ import static com.alibaba.cloud.ai.graph.Command.GraphType.CHILD;
 import static com.alibaba.cloud.ai.graph.Command.GraphType.PARENT;
 
 public class Command extends HashMap<String, Object> {
-    String edge;
-    String nodeId;
-    GraphType graph;
 
-    public String getNodeId() {
-        return nodeId;
-    }
+	String edge;
 
-    public void setNodeId(String nodeId) {
-        this.nodeId = nodeId;
-    }
+	String nodeId;
 
-    public void setEdge(String edge) {
-        this.edge = edge;
-    }
+	GraphType graph;
 
-    public void setGraph(GraphType graph) {
-        this.graph = graph;
-    }
+	public String getNodeId() {
+		return nodeId;
+	}
 
-    public String getEdge() {
-        return edge;
-    }
+	public void setNodeId(String nodeId) {
+		this.nodeId = nodeId;
+	}
 
-    public GraphType getGraph() {
-        return graph;
-    }
+	public void setEdge(String edge) {
+		this.edge = edge;
+	}
 
-    public boolean isChild() {
-        return graph == CHILD;
-    }
+	public void setGraph(GraphType graph) {
+		this.graph = graph;
+	}
 
-    public boolean isParent() {
-        return graph == PARENT;
-    }
-    public enum GraphType {
-        CHILD,
-        PARENT;
+	public String getEdge() {
+		return edge;
+	}
 
-        GraphType() {
-        }
+	public GraphType getGraph() {
+		return graph;
+	}
 
+	public boolean isChild() {
+		return graph == CHILD;
+	}
 
-    }
+	public boolean isParent() {
+		return graph == PARENT;
+	}
+
+	public enum GraphType {
+
+		CHILD, PARENT;
+
+		GraphType() {
+		}
+
+	}
+
 }

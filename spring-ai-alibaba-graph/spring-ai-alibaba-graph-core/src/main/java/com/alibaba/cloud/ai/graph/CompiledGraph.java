@@ -579,7 +579,7 @@ public class CompiledGraph {
 
 			return action.apply(withState, config).thenApply(partialState -> {
 				try {
-					if (partialState instanceof Command command){
+					if (partialState instanceof Command command) {
 						String jump = command.getEdge();
 						Command.GraphType graph = command.getGraph();
 						String nodeId = command.getNodeId();
@@ -593,10 +593,11 @@ public class CompiledGraph {
 								if (!nodes.containsKey(jump))
 									throw new GraphStateException(jump + " parent graph not found");
 								nextNodeId = jump;
-							} else {
-								String formatId = StringUtil.isNullOrEmpty(nodeId) ?
-										SubGraphNode.formatId(currentNodeId.split("-")[0], jump) :
-										SubGraphNode.formatId(nodeId, jump);
+							}
+							else {
+								String formatId = StringUtil.isNullOrEmpty(nodeId)
+										? SubGraphNode.formatId(currentNodeId.split("-")[0], jump)
+										: SubGraphNode.formatId(nodeId, jump);
 								if (!nodes.containsKey(formatId))
 									throw new GraphStateException(formatId + " sub graph not found");
 								nextNodeId = formatId;
