@@ -31,8 +31,7 @@ on:
 permissions:
   contents: read
 
-job:
-
+jobs:
   linter:
     runs-on: ubuntu-22.04
     steps:
