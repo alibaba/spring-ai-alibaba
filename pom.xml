@@ -60,27 +60,27 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-youdaotranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-duckduckgo</module>
 
-        <module>community/document-readers/github-document-reader</module>
-        <module>community/document-readers/poi-document-reader</module>
-        <module>community/document-readers/tencent-cos-document-reader</module>
-        <module>community/document-readers/feishu-document-reader</module>
-        <module>community/document-readers/yuque-document-reader</module>
-        <module>community/document-readers/obsidian-document-reader</module>
-        <module>community/document-readers/onenote-document-reader</module>
-        <module>community/document-readers/notion-document-reader</module>
-        <module>community/document-readers/arxiv-document-reader</module>
-        <module>community/document-readers/chatgpt-data-document-reader</module>
-        <module>community/document-readers/gpt-repo-document-reader</module>
-        <module>community/document-readers/gitlab-document-reader</module>
-        <module>community/document-readers/gitbook-document-reader</module>
-        <module>community/document-readers/huggingface-fs-document-reader</module>
-        <module>community/document-readers/email-document-reader</module>
-        <module>community/document-readers/mbox-document-reader</module>
-        <module>community/document-readers/mongodb-document-reader</module>
-        <module>community/document-readers/mysql-document-reader</module>
-        <module>community/document-readers/bilibili-document-reader</module>
-        <module>community/document-readers/youtube-document-reader</module>
-        <module>community/document-readers/es-document-reader</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-github-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-poi-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-tencent-cos-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-feishu-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-yuque-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-obsidian-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-onenote-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-notion-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-arxiv-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-chatgpt-data-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-gpt-repo-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-gitlab-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-gitbook-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-huggingface-fs-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-email-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-mbox-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-mongodb-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-mysql-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-bilibili-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-youtube-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-reader-es-document</module>
 
         <module>community/document-parsers/document-parser-apache-pdfbox</module>
         <module>community/document-parsers/document-parser-markdown</module>
