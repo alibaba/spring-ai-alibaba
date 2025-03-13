@@ -25,8 +25,8 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>arxiv-document-reader</artifactId>
-    <name>arxiv-document-reader</name>
+    <artifactId>spring-ai-alibaba-starter-reader-arxiv-document</artifactId>
+    <name>Spring AI Alibaba Starter Arxiv Document Reader</name>
     <description>arxiv reader for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
@@ -81,14 +81,14 @@
             <artifactId>micrometer-observation-test</artifactId>
             <scope>test</scope>
         </dependency>
-        
+
         <!-- SLF4J API -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.7.32</version>
         </dependency>
-        
+
         <!-- JUnit Jupiter API for testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -96,7 +96,7 @@
             <version>5.8.2</version>
             <scope>test</scope>
         </dependency>
-        
+
         <!-- JUnit Jupiter Engine for testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

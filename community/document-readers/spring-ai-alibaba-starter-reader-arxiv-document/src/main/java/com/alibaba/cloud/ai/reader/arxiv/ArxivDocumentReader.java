@@ -64,7 +64,7 @@ public class ArxivDocumentReader implements DocumentReader {
 
 		this.queryString = queryString;
 		this.maxSize = maxSize;
-		this.parser = new PagePdfDocumentParser();
+		this.parser = (DocumentParser) new PagePdfDocumentParser();
 		this.arxivClient = new ArxivClient();
 		this.arxivResource = new ArxivResource(queryString, maxSize);
 	}
