@@ -1,0 +1,72 @@
+#
+# Copyright 2024-2026 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+---
+
+ignore: |
+  # This directory fails checks since many files
+  # are templated. Instead, we run the linter
+  # after running `make generate-manifests` which creates
+  # the Install YAML in bin/
+
+rules:
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 0
+    min-spaces-inside-empty: -1
+    max-spaces-inside-empty: -1
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+    min-spaces-inside-empty: -1
+    max-spaces-inside-empty: -1
+  colons:
+    max-spaces-before: 0
+    max-spaces-after: 1
+  commas:
+    max-spaces-before: 1
+    min-spaces-after: 1
+    max-spaces-after: 1
+  comments:
+    level: warning
+    require-starting-space: true
+    min-spaces-from-content: 1
+  comments-indentation:
+    level: warning
+  document-end: disable
+  document-start: disable
+  empty-lines:
+    max: 2
+    max-start: 0
+    max-end: 1
+  empty-values:
+    forbid-in-block-mappings: false
+    forbid-in-flow-mappings: true
+  hyphens:
+    max-spaces-after: 1
+  indentation:
+    spaces: 2
+    indent-sequences: consistent  # be consistent: don't mix indentation styles in one file.
+    check-multi-line-strings: false
+  key-duplicates: enable
+  key-ordering: disable
+  new-line-at-end-of-file: enable
+  new-lines:
+    type: unix
+  trailing-spaces: enable
+  truthy:
+    check-keys: false   # GitHub Actions uses "on:" as a key
+    level: warning

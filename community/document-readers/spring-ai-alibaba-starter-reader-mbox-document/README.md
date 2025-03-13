@@ -98,6 +98,7 @@ List<Document> documents = reader.get();
 ## Message Format / 消息格式
 
 The default message format is / 默认消息格式为：
+
 ```
 Date: %s
 From: %s
@@ -107,6 +108,7 @@ Content: %s
 ```
 
 Format parameters / 格式参数：
+
 1. `%1$s` - Date / 日期
 2. `%2$s` - From address / 发件人地址
 3. `%3$s` - To address / 收件人地址
@@ -116,12 +118,14 @@ Format parameters / 格式参数：
 ## Error Handling / 错误处理
 
 The reader uses runtime exceptions for error handling / 读取器使用运行时异常进行错误处理：
+
 - Invalid file path or format / 无效的文件路径或格式
 - Empty or malformed content / 空或格式错误的内容
 - HTML parsing errors / HTML解析错误
 - Date parsing errors / 日期解析错误
 
 Example / 示例：
+
 ```java
 try {
     List<Document> documents = reader.get();

@@ -3,6 +3,7 @@
 [English](#english) | [中文](#chinese)
 
 <a name="english"></a>
+
 ## English
 
 GitLab Document Reader is a Spring AI document reader implementation that allows you to read issues and repository files from GitLab projects and convert them into documents. It supports both public repositories and provides flexible filtering options.
@@ -10,6 +11,7 @@ GitLab Document Reader is a Spring AI document reader implementation that allows
 ### Features
 
 #### GitLab Issue Reader
+
 - Read issues from GitLab projects or groups
 - Filter issues by:
   - State (open, closed, all)
@@ -28,6 +30,7 @@ GitLab Document Reader is a Spring AI document reader implementation that allows
   - Assignee
 
 #### GitLab Repository Reader
+
 - Read files from GitLab repositories
 - Support for:
   - Single file reading
@@ -47,6 +50,7 @@ GitLab Document Reader is a Spring AI document reader implementation that allows
 #### Reading Issues
 
 Basic usage to read all open issues:
+
 ```java
 GitLabIssueReader reader = new GitLabIssueReader(
     "https://gitlab.com",
@@ -57,6 +61,7 @@ List<Document> documents = reader.get();
 ```
 
 Advanced filtering with configuration:
+
 ```java
 GitLabIssueConfig config = GitLabIssueConfig.builder()
     .state(GitLabIssueState.CLOSED)
@@ -77,6 +82,7 @@ List<Document> documents = reader.get();
 #### Reading Repository Files
 
 Basic usage to read a single file:
+
 ```java
 GitLabRepositoryReader reader = new GitLabRepositoryReader(
     "https://gitlab.com",
@@ -89,6 +95,7 @@ List<Document> documents = reader.setRef("main")
 ```
 
 Reading all markdown files recursively:
+
 ```java
 GitLabRepositoryReader reader = new GitLabRepositoryReader(
     "https://gitlab.com",
@@ -128,6 +135,7 @@ This project is licensed under the Apache License 2.0 - see the LICENSE file for
 ---
 
 <a name="chinese"></a>
+
 ## 中文
 
 GitLab Document Reader 是一个 Spring AI 文档读取器实现，可以从 GitLab 项目中读取 issues 和仓库文件并将它们转换为文档。它支持公开仓库访问，并提供灵活的过滤选项。
@@ -135,6 +143,7 @@ GitLab Document Reader 是一个 Spring AI 文档读取器实现，可以从 Git
 ### 功能特性
 
 #### GitLab Issue 读取器
+
 - 从 GitLab 项目或群组中读取 issues
 - 支持多种过滤条件：
   - 状态（开放、关闭、全部）
@@ -153,6 +162,7 @@ GitLab Document Reader 是一个 Spring AI 文档读取器实现，可以从 Git
   - 指派人
 
 #### GitLab 仓库读取器
+
 - 读取 GitLab 仓库中的文件
 - 支持功能：
   - 单文件读取
@@ -172,6 +182,7 @@ GitLab Document Reader 是一个 Spring AI 文档读取器实现，可以从 Git
 #### 读取 Issues
 
 基本用法（读取所有开放的 issues）：
+
 ```java
 GitLabIssueReader reader = new GitLabIssueReader(
     "https://gitlab.com",
@@ -182,6 +193,7 @@ List<Document> documents = reader.get();
 ```
 
 使用高级配置进行过滤：
+
 ```java
 GitLabIssueConfig config = GitLabIssueConfig.builder()
     .state(GitLabIssueState.CLOSED)
@@ -202,6 +214,7 @@ List<Document> documents = reader.get();
 #### 读取仓库文件
 
 基本用法（读取单个文件）：
+
 ```java
 GitLabRepositoryReader reader = new GitLabRepositoryReader(
     "https://gitlab.com",
@@ -214,6 +227,7 @@ List<Document> documents = reader.setRef("main")
 ```
 
 递归读取所有 markdown 文件：
+
 ```java
 GitLabRepositoryReader reader = new GitLabRepositoryReader(
     "https://gitlab.com",

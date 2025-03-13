@@ -86,6 +86,7 @@ target/
 - `directory`: 文件所在目录
 
 示例：
+
 ```java
 Document doc = documents.get(0);
 Map<String, Object> metadata = doc.getMetadata();
@@ -127,7 +128,6 @@ GptRepoDocumentReader reader = new GptRepoDocumentReader(
 2. 建议使用 `.gptignore` 排除不需要的文件和目录
 3. 对于大型仓库，建议使用文件扩展名过滤
 4. 合并模式可能会产生较大的文档对象
-
 
 ## 许可证
 
