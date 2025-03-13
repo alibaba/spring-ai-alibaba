@@ -53,8 +53,8 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>document-parser-apache-pdfbox</artifactId>
-            <version>${project.version}</version>
+            <artifactId>spring-ai-alibaba-starter-document-parser-apache-pdfbox</artifactId>
+            <version>${project.parent.version}</version>
         </dependency>
 
         <!-- test dependencies -->
