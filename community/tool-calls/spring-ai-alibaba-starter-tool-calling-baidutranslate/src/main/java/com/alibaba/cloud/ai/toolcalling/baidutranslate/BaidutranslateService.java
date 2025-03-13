@@ -133,7 +133,7 @@ public class BaidutranslateService implements Function<BaidutranslateService.Req
 	@JsonClassDescription("Request to translate text to a target language")
 	public record Request(
 			@JsonProperty(required = true,
-					value = "p") @JsonPropertyDescription("Content that needs to be translated") String q,
+					value = "q") @JsonPropertyDescription("Content that needs to be translated") String q,
 			@JsonProperty(required = true,
 					value = "from") @JsonPropertyDescription("Source language that needs to be translated") String from,
 			@JsonProperty(required = true,
