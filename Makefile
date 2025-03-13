@@ -1,5 +1,5 @@
 #
-# Copyright 2024-2025 the original author or authors.
+# Copyright 2024-2026 the original author or authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,21 +14,14 @@
 # limitations under the License.
 #
 
-name: License Check
+_run:
+	@$(MAKE) --warn-undefined-variables \
+		-f tools/make/common.mk \
+		-f tools/make/java.mk \
+		-f tools/make/linter.mk \
+		-f tools/make/tools.mk \
+		$(MAKECMDGOALS)
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+.PHONY: _run
 
-jobs:
-  license-check:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - uses: ./tools/github-actions/setup-deps
-      - run: make tools
-      - run: make license-check
+$(if $(MAKECMDGOALS),$(MAKECMDGOALS): %: _run)

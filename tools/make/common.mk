@@ -1,5 +1,5 @@
 #
-# Copyright 2024-2025 the original author or authors.
+# Copyright 2024-2026 the original author or authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,21 +14,17 @@
 # limitations under the License.
 #
 
-name: License Check
+SHELL:=/bin/bash
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+DATETIME = $(shell date +"%Y%m%d%H%M%S")
 
-jobs:
-  license-check:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - uses: ./tools/github-actions/setup-deps
-      - run: make tools
-      - run: make license-check
+# Log the running target
+LOG_TARGET = echo -e "\033[0;32m==================> Running $@ ============> ... \033[0m"
+# Log debugging info
+define log
+echo -e "\033[36m==================>$1\033[0m"
+endef
+# Log error info
+define errorLog
+echo -e "\033[0;31m==================>$1\033[0m"
+endef
