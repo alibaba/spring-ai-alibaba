@@ -20,7 +20,8 @@ import org.springframework.ai.chat.client.advisor.api.*;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.document.DocumentRetriever;
+import org.springframework.ai.rag.Query;
+import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -156,7 +157,7 @@ public class DashScopeDocumentRetrievalAdvisor implements CallAroundAdvisor, Str
 
 		var context = new HashMap<>(request.adviseContext());
 
-		List<Document> documents = retriever.retrieve(request.userText());
+		List<Document> documents = retriever.retrieve(new Query(request.userText()));
 
 		Map<String, Document> documentMap = new HashMap<>();
 		StringBuffer documentContext = new StringBuffer();
@@ -168,7 +169,7 @@ public class DashScopeDocumentRetrievalAdvisor implements CallAroundAdvisor, Str
 					【标题】%s
 					【正文】%s
 					""", indexId, document.getMetadata().get("doc_name"), document.getMetadata().get("title"),
-					document.getContent());
+					document.getText());
 
 			documentContext.append(docInfo);
 			documentContext.append(System.lineSeparator());
@@ -183,9 +184,9 @@ public class DashScopeDocumentRetrievalAdvisor implements CallAroundAdvisor, Str
 		advisedUserParams.put(RETRIEVED_DOCUMENTS, documentContext);
 
 		return AdvisedRequest.from(request)
-			.withUserText(request.userText() + System.lineSeparator() + this.userTextAdvise)
-			.withUserParams(advisedUserParams)
-			.withAdviseContext(context)
+			.userText(request.userText() + System.lineSeparator() + this.userTextAdvise)
+			.userParams(advisedUserParams)
+			.adviseContext(context)
 			.build();
 	}
 
@@ -200,14 +201,14 @@ public class DashScopeDocumentRetrievalAdvisor implements CallAroundAdvisor, Str
 			.valueOf(response.getResult().getMetadata().getFinishReason());
 		if (finishReason == ChatCompletionFinishReason.NULL) {
 			String fullContent = context.getOrDefault("full_content", "").toString()
-					+ response.getResult().getOutput().getContent();
+					+ response.getResult().getOutput().getText();
 			context.put("full_content", fullContent);
 			return advisedResponse;
 		}
 
 		String content = context.getOrDefault("full_content", "").toString();
 		if ("".equalsIgnoreCase(content)) {
-			content = response.getResult().getOutput().getContent();
+			content = response.getResult().getOutput().getText();
 		}
 
 		Map<String, Document> documentMap = (Map<String, Document>) context.get(RETRIEVED_DOCUMENTS);
@@ -233,19 +234,19 @@ public class DashScopeDocumentRetrievalAdvisor implements CallAroundAdvisor, Str
 		// model, usage, etc. This will
 		// be changed once new version of spring ai core is updated.
 		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder();
-		metadataBuilder.withKeyValue(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
+		metadataBuilder.keyValue(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
 
 		ChatResponseMetadata metadata = advisedResponse.response().getMetadata();
 		if (metadata != null) {
-			metadataBuilder.withId(metadata.getId());
-			metadataBuilder.withModel(metadata.getModel());
-			metadataBuilder.withUsage(metadata.getUsage());
-			metadataBuilder.withPromptMetadata(metadata.getPromptMetadata());
-			metadataBuilder.withRateLimit(metadata.getRateLimit());
+			metadataBuilder.id(metadata.getId());
+			metadataBuilder.model(metadata.getModel());
+			metadataBuilder.usage(metadata.getUsage());
+			metadataBuilder.promptMetadata(metadata.getPromptMetadata());
+			metadataBuilder.rateLimit(metadata.getRateLimit());
 
 			Set<Map.Entry<String, Object>> entries = metadata.entrySet();
 			for (Map.Entry<String, Object> entry : entries) {
-				metadataBuilder.withKeyValue(entry.getKey(), entry.getValue());
+				metadataBuilder.keyValue(entry.getKey(), entry.getValue());
 			}
 		}
 

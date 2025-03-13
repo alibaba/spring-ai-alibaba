@@ -15,20 +15,19 @@
  */
 package com.alibaba.cloud.ai.dashscope.rag;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.alibaba.cloud.ai.dashscope.image.DashScopeImageOptions;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @author nuocheng.lxm
@@ -47,10 +46,14 @@ public class DashScopeCloudStore implements VectorStore {
 		this.dashScopeApi = dashScopeApi;
 	}
 
+	@Override
+	public String getName() {
+		return VectorStore.super.getName();
+	}
+
 	/**
 	 * @param documents the list of documents to store. Current document must be
 	 * DashScopeDocumentReader's Result
-	 *
 	 */
 	@Override
 	public void add(List<Document> documents) {
@@ -68,19 +71,28 @@ public class DashScopeCloudStore implements VectorStore {
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public void delete(List<String> idList) {
 		String pipelineId = dashScopeApi.getPipelineIdByName(options.getIndexName());
 		if (pipelineId == null) {
 			throw new DashScopeException("Index:" + options.getIndexName() + " NotExist");
 		}
-		return Optional.of(dashScopeApi.deletePipelineDocument(pipelineId, idList));
+		dashScopeApi.deletePipelineDocument(pipelineId, idList);
+	}
+
+	@Override
+	public void delete(Filter.Expression filterExpression) {
 	}
 
 	@Override
 	public List<Document> similaritySearch(String query) {
 
-		return similaritySearch(SearchRequest.query(query));
+		return similaritySearch(SearchRequest.builder().query(query).build());
 
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		return VectorStore.super.getNativeClient();
 	}
 
 	@Override
@@ -94,7 +106,7 @@ public class DashScopeCloudStore implements VectorStore {
 			searchOption = new DashScopeDocumentRetrieverOptions();
 		}
 		searchOption.setRerankTopN(request.getTopK());
-		return dashScopeApi.retriever(pipelineId, request.query, searchOption);
+		return dashScopeApi.retriever(pipelineId, request.getQuery(), searchOption);
 	}
 
 }

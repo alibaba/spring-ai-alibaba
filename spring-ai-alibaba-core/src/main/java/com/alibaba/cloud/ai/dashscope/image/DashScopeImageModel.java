@@ -33,6 +33,7 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 /**
  * @author nuocheng.lxm
@@ -56,7 +57,7 @@ public class DashScopeImageModel implements ImageModel {
 	/**
 	 * The default options used for the image completion requests.
 	 */
-	private final DashScopeImageOptions defaultOptions;
+	private DashScopeImageOptions defaultOptions;
 
 	/**
 	 * The retry template used to retry the OpenAI Image API calls.
@@ -83,6 +84,8 @@ public class DashScopeImageModel implements ImageModel {
 
 	@Override
 	public ImageResponse call(ImagePrompt request) {
+		Assert.notNull(request, "Prompt must not be null");
+		Assert.isTrue(!CollectionUtils.isEmpty(request.getInstructions()), "Prompt messages must not be empty");
 
 		String taskId = submitImageGenTask(request);
 		if (taskId == null) {
@@ -161,6 +164,14 @@ public class DashScopeImageModel implements ImageModel {
 			return null;
 		}
 		return getImageGenResponse.getBody();
+	}
+
+	public DashScopeImageOptions getOptions() {
+		return this.defaultOptions;
+	}
+
+	public void setOptions(DashScopeImageOptions options) {
+		this.defaultOptions = options;
 	}
 
 	private ImageResponse toImageResponse(

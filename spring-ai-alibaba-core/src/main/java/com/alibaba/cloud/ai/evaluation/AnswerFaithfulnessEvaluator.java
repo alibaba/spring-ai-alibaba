@@ -53,7 +53,7 @@ public class AnswerFaithfulnessEvaluator extends LaajEvaluator {
 			请逐步解释您的推理，以确保您的推理和结论正确，避免简单地陈述正确答案。
 
 			最终答案按照标准的json格式输出,不要使用markdown的格式, 比如:
-			{"score": 0.7, "feedback": "STUDENT ANSWER的内容超出了FACTS的事实内容。"}
+			\\{"score": 0.7, "feedback": "STUDENT ANSWER的内容超出了FACTS的事实内容。"\\}
 
 			FACTS: {context}
 			STUDENT ANSWER: {student_answer}
@@ -78,6 +78,9 @@ public class AnswerFaithfulnessEvaluator extends LaajEvaluator {
 
 	@Override
 	public EvaluationResponse evaluate(EvaluationRequest evaluationRequest) {
+		if (evaluationRequest == null) {
+			throw new IllegalArgumentException("EvaluationRequest must not be null");
+		}
 		var response = doGetResponse(evaluationRequest);
 		var context = doGetSupportingData(evaluationRequest);
 

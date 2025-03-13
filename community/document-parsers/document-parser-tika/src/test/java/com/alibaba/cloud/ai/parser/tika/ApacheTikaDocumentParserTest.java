@@ -28,6 +28,10 @@ import java.io.InputStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+/**
+ * @author HeYQ
+ * @author brianxiadong
+ */
 class ApacheTikaDocumentParserTest {
 
 	@ParameterizedTest
@@ -39,7 +43,7 @@ class ApacheTikaDocumentParserTest {
 
 		Document document = parser.parse(inputStream).get(0);
 
-		assertThat(document.getContent()).isEqualToIgnoringWhitespace("test content");
+		assertThat(document.getText()).isEqualToIgnoringWhitespace("test content");
 		assertThat(document.getMetadata()).isEmpty();
 	}
 
@@ -52,7 +56,7 @@ class ApacheTikaDocumentParserTest {
 
 		Document document = parser.parse(inputStream).get(0);
 
-		assertThat(document.getContent()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
+		assertThat(document.getText()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
 		assertThat(document.getMetadata()).isEmpty();
 	}
 
@@ -66,14 +70,14 @@ class ApacheTikaDocumentParserTest {
 		Document document1 = parser.parse(inputStream1).get(0);
 		Document document2 = parser.parse(inputStream2).get(0);
 
-		assertThat(document1.getContent()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
-		assertThat(document2.getContent()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
+		assertThat(document1.getText()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
+		assertThat(document2.getText()).isEqualToIgnoringWhitespace("Sheet1\ntest content\nSheet2\ntest content");
 		assertThat(document1.getMetadata()).isEmpty();
 		assertThat(document2.getMetadata()).isEmpty();
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = { "empty-file.txt", "blank-file.txt", "blank-file.docx", "blank-file.pptx"
+	@ValueSource(strings = { "empty-file.txt", "blank-file.txt"
 	// "blank-file.xlsx" TODO
 	})
 	void should_throw_BlankDocumentException(String fileName) {
@@ -81,7 +85,53 @@ class ApacheTikaDocumentParserTest {
 		DocumentParser parser = new TikaDocumentParser();
 		InputStream inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
 
-		assertThatThrownBy(() -> parser.parse(inputStream)).isExactlyInstanceOf(ZeroByteFileException.class);
+		assertThatThrownBy(() -> parser.parse(inputStream)).isExactlyInstanceOf(RuntimeException.class);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "example-utf8.html" })
+	void should_parse_html_file(String fileName) {
+
+		DocumentParser parser = new TikaDocumentParser(AutoDetectParser::new, null, null, null);
+		InputStream inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
+
+		Document document = parser.parse(inputStream).get(0);
+
+		System.out.println(document.getText());
+
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "factbook.xml" })
+	void should_parse_xml_file(String fileName) {
+
+		DocumentParser parser = new TikaDocumentParser(AutoDetectParser::new, null, null, null);
+		InputStream inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
+
+		Document document = parser.parse(inputStream).get(0);
+		System.out.println(document.getText());
+		assertThat(document.getMetadata()).isEmpty();
+	}
+
+	/**
+	 * Test blank document files that contain newline characters. These files appear to be
+	 * blank but actually contain special characters like newlines. This requires separate
+	 * handling from completely empty files.
+	 */
+	@ParameterizedTest
+	@ValueSource(strings = { "blank-file.docx", "blank-file.pptx" })
+	void should_handle_blank_files_with_newlines(String fileName) {
+		DocumentParser parser = new TikaDocumentParser();
+		InputStream inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
+
+		// These files will be successfully parsed, but content only contains whitespace
+		// and newlines
+		Document document = parser.parse(inputStream).get(0);
+
+		// Verify that document content only contains whitespace characters (spaces,
+		// tabs, newlines, etc.)
+		assertThat(document.getText().trim()).isEmpty();
+		assertThat(document.getMetadata()).isEmpty();
 	}
 
 }

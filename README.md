@@ -18,7 +18,7 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 	<dependency>
 		<groupId>com.alibaba.cloud.ai</groupId>
 		<artifactId>spring-ai-alibaba-starter</artifactId>
-		<version>1.0.0-M3.2</version>
+		<version>1.0.0-M5.1</version>
 	</dependency>
 	```
 
@@ -100,6 +100,11 @@ Spring AI Alibaba aims to reduce the complexity of building ai native java appli
 
 ![ai-native-architecture](./docs/imgs/spring-ai-alibaba-arch.png)
 
+## Contribution Guide
+
+Please refer to the [Contribution Guide](./CONTRIBUTING.md) to learn how to participate in the development of Spring AI Alibaba.
+
+
 ## References
 * [Spring AI](https://docs.spring.io/spring-ai/reference/index.html)
 * [Spring AI Alibaba](https://java2ai.com/docs/dev/overview/)
@@ -110,3 +115,11 @@ Spring AI Alibaba aims to reduce the complexity of building ai native java appli
 * Wechat Group (微信公众号), scan the QR code below and follow us.
 
 <img src="./docs/imgs/wechat-account.png" style="width:260px;"/>
+
+## Credit
+
+Some of this project's ideas and codes are inspired by or rewrote from the following projects. Great thanks to those who have created and open-sourced these projects.
+
+* [Spring AI](https://github.com/spring-projects/spring-ai), a Spring-friendly API and abstractions for developing AI applications licensed under the Apache License 2.0.
+* [Langgraph](https://github.com/langchain-ai/langgraph), a library for building stateful, multi-actor applications with LLMs, used to create agent and multi-agent workflows licensed under the MIT license.
+* [Langgraph4J](https://github.com/bsorrentino/langgraph4j), a porting of original [LangGraph](https://github.com/langchain-ai/langgraph) from the [LangChain AI project](https://github.com/langchain-ai) in Java fashion.

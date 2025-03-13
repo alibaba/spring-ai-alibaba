@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.dashscope.chat;
 
 import java.util.*;
@@ -27,7 +28,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
 
 /**
@@ -79,7 +79,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    * 模型内置了互联网搜索服务，该参数控制模型在生成文本时是否参考使用互联网搜索结果。取值如下：
    *
    * <ul>
-   *   <li>true：启用互联网搜索，模型会将搜索结果作为文本生成过程中的参考信息，但模型会基于其内部逻辑“自行判断”是否使用互联网搜索结果。
+   *   <li>true：启用互联网搜索，模型会将搜索结果作为文本生成过程中的参考信息，但模型会基于其内部逻辑"自行判断"是否使用互联网搜索结果。
    *   <li>false（默认）：关闭互联网搜索。
    * </ul>
    */
@@ -90,6 +90,12 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    * {@link DashScopeResponseFormat}
    */
   private @JsonProperty("response_format") DashScopeResponseFormat responseFormat;
+
+  /**
+   * @param maxTokens The maximum number of tokens to generate in the chat completion.
+   * 	 * The total length of input tokens and generated tokens is limited by the model's context length.
+   */
+  private @JsonProperty("max_tokens") Integer maxTokens;
 
   /**
    * 控制在流式输出模式下是否开启增量输出，即后续输出内容是否包含已输出的内容。设置为True时，将开启增量输出模式，后面输出不会包含已经输出的内容，您需要自行拼接整体输出；设置为False则会包含已输出的内容。
@@ -108,7 +114,8 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    * "auto"表示模型判断是否调用工具，可能调用也可能不调用。tools参数不为空时，默认值为"auto"。
    * object结构可以指定模型调用指定工具。例如tool_choice={"type": "function", "function": {"name": "user_function"}}
    */
-  private @JsonProperty("tool_choice") Object toolChoice;
+  @JsonProperty("tool_choice")
+  private Object toolChoice;
 
   /**
    * this is to change token limitation to 16384 for vl model, only support for vl models
@@ -123,7 +130,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    * enableFunctions to set the functions from the registry to be used by the ChatClient chat
    * completion requests.
    */
-  @NestedConfigurationProperty @JsonIgnore
+  @JsonIgnore
   private List<FunctionCallback> functionCallbacks = new ArrayList<>();
 
   /**
@@ -137,14 +144,21 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    * prompt options, then the enabled functions are only active for the duration of this prompt
    * execution.
    */
-  @NestedConfigurationProperty @JsonIgnore private Set<String> functions = new HashSet<>();
+  @JsonIgnore private Set<String> functions = new HashSet<>();
 
   /**
    * Indicate if the request is multi model
    */
   private @JsonProperty("multi_model") Boolean multiModel = false;
 
-  @NestedConfigurationProperty
+  /**
+   * If true, the Spring AI will not handle the function calls internally, but will proxy them to the client.
+   * It is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results.
+   * If false, the Spring AI will handle the function calls internally.
+   */
+  @JsonIgnore
+  private Boolean proxyToolCalls;
+
   @JsonIgnore
   private Map<String, Object> toolContext;
 
@@ -161,6 +175,10 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   @Override
   public Integer getMaxTokens() {
     return null;
+  }
+
+  public Integer setMaxTokens() {
+    return this.maxTokens;
   }
 
   @Override
@@ -275,6 +293,15 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   }
 
   @Override
+  public Boolean getProxyToolCalls() {
+    return this.proxyToolCalls;
+  }
+
+  public void setProxyToolCalls(Boolean proxyToolCalls) {
+    this.proxyToolCalls = proxyToolCalls;
+  }
+
+  @Override
   public List<FunctionCallback> getFunctionCallbacks() {
     return this.functionCallbacks;
   }
@@ -341,6 +368,11 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
 
     public DashscopeChatOptionsBuilder withModel(String model) {
       this.options.model = model;
+      return this;
+    }
+
+    public DashscopeChatOptionsBuilder withMaxToken(Integer maxTokens) {
+      this.options.maxTokens = maxTokens;
       return this;
     }
 
@@ -412,6 +444,11 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
       return this;
     }
 
+    public DashscopeChatOptionsBuilder withProxyToolCalls(Boolean proxyToolCalls) {
+      this.options.proxyToolCalls = proxyToolCalls;
+      return this;
+    }
+
     public DashscopeChatOptionsBuilder withSeed(Integer seed) {
       this.options.seed = seed;
       return this;
@@ -451,6 +488,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
     return DashScopeChatOptions.builder()
         .withModel(fromOptions.getModel())
         .withTemperature(fromOptions.getTemperature())
+        .withMaxToken(fromOptions.getMaxTokens())
         .withTopP(fromOptions.getTopP())
         .withTopK(fromOptions.getTopK())
         .withSeed(fromOptions.getSeed())
@@ -465,6 +503,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
         .withTools(fromOptions.getTools())
         .withToolContext(fromOptions.getToolContext())
         .withMultiModel(fromOptions.getMultiModel())
+        .withProxyToolCalls(fromOptions.getProxyToolCalls())
         .withVlHighResolutionImages(fromOptions.getVlHighResolutionImages())
         .build();
   }
@@ -476,13 +515,13 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
 	if (o == null || getClass() != o.getClass()) return false;
 	DashScopeChatOptions that = (DashScopeChatOptions) o;
 
-	return Objects.equals(model, that.model) && Objects.equals(stream, that.stream) && Objects.equals(temperature, that.temperature) && Objects.equals(seed, that.seed) && Objects.equals(topP, that.topP) && Objects.equals(topK, that.topK) && Objects.equals(stop, that.stop) && Objects.equals(enableSearch, that.enableSearch) && Objects.equals(responseFormat, that.responseFormat) && Objects.equals(incrementalOutput, that.incrementalOutput) && Objects.equals(repetitionPenalty, that.repetitionPenalty) && Objects.equals(tools, that.tools) && Objects.equals(toolChoice, that.toolChoice) && Objects.equals(vlHighResolutionImages, that.vlHighResolutionImages) && Objects.equals(functionCallbacks, that.functionCallbacks) && Objects.equals(functions, that.functions) && Objects.equals(multiModel, that.multiModel) && Objects.equals(toolContext, that.toolContext);
+    return Objects.equals(model, that.model) && Objects.equals(stream, that.stream) && Objects.equals(temperature, that.temperature) && Objects.equals(seed, that.seed) && Objects.equals(topP, that.topP) && Objects.equals(topK, that.topK) && Objects.equals(stop, that.stop) && Objects.equals(enableSearch, that.enableSearch) && Objects.equals(responseFormat, that.responseFormat) && Objects.equals(incrementalOutput, that.incrementalOutput) && Objects.equals(repetitionPenalty, that.repetitionPenalty) && Objects.equals(tools, that.tools) && Objects.equals(toolChoice, that.toolChoice) && Objects.equals(vlHighResolutionImages, that.vlHighResolutionImages) && Objects.equals(functionCallbacks, that.functionCallbacks) && Objects.equals(functions, that.functions) && Objects.equals(multiModel, that.multiModel) && Objects.equals(toolContext, that.toolContext) && Objects.equals(proxyToolCalls, that.proxyToolCalls);
   }
 
   @Override
   public int hashCode() {
 
-	return Objects.hash(model, stream, temperature, seed, topP, topK, stop, enableSearch, responseFormat, incrementalOutput, repetitionPenalty, tools, toolChoice, vlHighResolutionImages, functionCallbacks, functions, multiModel, toolContext);
+    return Objects.hash(model, stream, temperature, seed, topP, topK, stop, enableSearch, responseFormat, incrementalOutput, repetitionPenalty, tools, toolChoice, vlHighResolutionImages, functionCallbacks, functions, multiModel, toolContext, proxyToolCalls);
   }
 
   @Override

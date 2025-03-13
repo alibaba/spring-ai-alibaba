@@ -72,7 +72,7 @@ public class GitHubResource implements Resource {
 		return new GitHubResource(content);
 	}
 
-	public GHContent getContent() {
+	public GHContent getText() {
 		return content;
 	}
 

@@ -1,0 +1,290 @@
+# Copyright 2024-2026 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+metadata:
+  id: 09b80596-2028-43ce-81b8-fcdbcc8cb200
+  name: test-workflow
+  description: ''
+  mode: workflow
+spec:
+  graph:
+    edges:
+      - id: 1733474977788-source-1734837608715-target
+        source: '1733474977788'
+        target: '1734837608715'
+        sourceHandle: source
+        targetHandle: target
+        data:
+          isInIteration: false
+          sourceType: start
+          targetType: if-else
+        zindex: 0
+      - id: 1734837608715-true-1733475527328-target
+        source: '1734837608715'
+        target: '1733475527328'
+        sourceHandle: 'true'
+        targetHandle: target
+        data:
+          isInIteration: false
+          sourceType: if-else
+          targetType: llm
+        zindex: 0
+      - id: 1734837608715-false-1734858239193-target
+        source: '1734837608715'
+        target: '1734858239193'
+        sourceHandle: 'false'
+        targetHandle: target
+        data:
+          isInIteration: false
+          sourceType: if-else
+          targetType: if-else
+        zindex: 0
+      - id: 1733475527328-source-1734858239193-target
+        source: '1733475527328'
+        target: '1734858239193'
+        sourceHandle: source
+        targetHandle: target
+        data:
+          isInIteration: false
+          sourceType: llm
+          targetType: if-else
+        zindex: 0
+      - id: 1734858239193-true-1733476526658-target
+        source: '1734858239193'
+        target: '1733476526658'
+        sourceHandle: 'true'
+        targetHandle: target
+        data:
+          isInIteration: false
+          sourceType: if-else
+          targetType: end
+        zindex: 0
+      - id: 1734858239193-false-1734940166720-target
+        source: '1734858239193'
+        target: '1734940166720'
+        sourceHandle: 'false'
+        targetHandle: target
+        data:
+          isInIteration: false
+          sourceType: if-else
+          targetType: end
+        zindex: 0
+    nodes:
+      - id: '1733474977788'
+        type: start
+        title: Start
+        desc: ''
+        width: 243.0
+        height: 107.0
+        position:
+          x: -632.3047
+          y: 378.79843
+        positionAbsolute:
+          x: -632.3047
+          y: 378.79843
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        data:
+          inputs: []
+          outputs:
+            - name: user_query
+              value: null
+              valueType: Object
+              description: null
+              extraProperties: null
+            - name: useLLM
+              value: null
+              valueType: Object
+              description: null
+              extraProperties: null
+          startInputs:
+            - label: user_query
+              type: paragraph
+              variable: user_query
+              maxLength: 200
+              options: []
+              required: true
+            - label: useLLM
+              type: select
+              variable: useLLM
+              maxLength: 48
+              options:
+                - 'yes'
+                - 'no'
+              required: true
+        zindex: 0
+      - id: '1733475527328'
+        type: llm
+        title: LLM
+        desc: ''
+        width: 243.0
+        height: 91.0
+        position:
+          x: 105.52394
+          y: 288.6472
+        positionAbsolute:
+          x: 105.52394
+          y: 288.6472
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        data:
+          inputs:
+            - namespace: '1733474977788'
+              name: user_query
+              label: arg
+          outputs:
+            - name: text
+              value: null
+              valueType: String
+              description: null
+              extraProperties: null
+
+          model:
+            mode: chat
+            name: qwen-plus-latest
+            provider: tongyi
+            completionParams:
+              maxTokens: null
+              repetitionPenalty: null
+              responseFormat: null
+              seed: null
+              stop: null
+              temperature: 0.7
+              topP: null
+              topK: null
+          promptTemplate:
+            - role: system
+              text: you're a helpful assistant
+            - role: user
+              text: '{1733474977788.user_query}'
+          memoryConfig: null
+        zindex: 0
+      - id: '1733476526658'
+        type: end
+        title: End
+        desc: ''
+        width: 243.0
+        height: 83.0
+        position:
+          x: 757.32764
+          y: 363.19177
+        positionAbsolute:
+          x: 757.32764
+          y: 363.19177
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        data:
+          inputs:
+            - namespace: '1733475527328'
+              name: text
+              label: output
+          outputs:
+            - name: output
+              value: null
+              valueType: String
+              description: null
+              extraProperties: null
+        zindex: 0
+      - id: '1734837608715'
+        type: branch
+        title: IF/ELSE
+        desc: ''
+        width: 243.0
+        height: 117.0
+        position:
+          x: -228.53102
+          y: 421.1956
+        positionAbsolute:
+          x: -228.53102
+          y: 421.1956
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        data:
+          inputs: []
+          outputs: []
+          cases:
+            - id: 'true'
+              logicalOperator: and
+              conditions:
+                - value: 'yes'
+                  varType: String
+                  comparisonOperator: is
+                  variableSelector:
+                    namespace: '1733474977788'
+                    name: useLLM
+                    label: null
+        zindex: 0
+      - id: '1734858239193'
+        type: branch
+        title: IF/ELSE 2
+        desc: ''
+        width: 243.0
+        height: 117.0
+        position:
+          x: 365.97662
+          y: 456.27206
+        positionAbsolute:
+          x: 365.97662
+          y: 456.27206
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        data:
+          inputs: []
+          outputs: []
+          cases:
+            - id: 'true'
+              logicalOperator: and
+              conditions:
+                - value: 'yes'
+                  varType: String
+                  comparisonOperator: is
+                  variableSelector:
+                    namespace: '1733474977788'
+                    name: useLLM
+                    label: null
+        zindex: 0
+      - id: '1734940166720'
+        type: end
+        title: End 2
+        desc: ''
+        width: 243.0
+        height: 83.0
+        position:
+          x: 741.6106
+          y: 588.1279
+        positionAbsolute:
+          x: 741.6106
+          y: 588.1279
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        data:
+          inputs:
+            - namespace: '1733474977788'
+              name: useLLM
+              label: useLLM
+          outputs:
+            - name: output
+              value: null
+              valueType: String
+              description: null
+              extraProperties: null
+        zindex: 0
+  workflowVars: []
+  envVars: []
