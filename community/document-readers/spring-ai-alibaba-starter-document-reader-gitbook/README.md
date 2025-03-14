@@ -60,6 +60,7 @@ GitbookDocumentReader reader = new GitbookDocumentReader(
 | metadataFields | List of metadata fields to include | No | null |
 
 ### Available Metadata Fields
+
 - `title`: The page title
 - `description`: The page description
 - `parent`: The parent page information
