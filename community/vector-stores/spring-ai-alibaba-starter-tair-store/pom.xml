@@ -25,7 +25,8 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-tair-store</artifactId>
+    <name>Spring AI Alibaba Starter Tair Store</name>
+    <artifactId>spring-ai-alibaba-starter-tair-store</artifactId>
     <packaging>jar</packaging>
 
     <properties>

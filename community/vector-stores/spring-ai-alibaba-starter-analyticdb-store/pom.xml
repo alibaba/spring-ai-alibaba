@@ -25,7 +25,8 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-analyticdb-store</artifactId>
+    <name>Spring AI Alibaba Starter AnalyticDB Store</name>
+    <artifactId>spring-ai-alibaba-starter-analyticdb-store</artifactId>
     <packaging>jar</packaging>
 
     <properties>
@@ -89,6 +90,5 @@
             <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 </project>
