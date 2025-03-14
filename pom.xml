@@ -60,43 +60,43 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-youdaotranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-duckduckgo</module>
 
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-github-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-poi-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-tencent-cos-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-feishu-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-yuque-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-obsidian-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-onenote-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-notion-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-arxiv-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-chatgpt-data-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-gpt-repo-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-gitlab-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-gitbook-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-huggingface-fs-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-email-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-mbox-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-mongodb-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-mysql-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-bilibili-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-youtube-document</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-reader-es-document</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-arxiv</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-github</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-poi</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-encent-cos</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-larksuite</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-yuque</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-obsidian</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-onenote</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-notion</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-chatgpt-data</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-gpt-repo</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-gitlab</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-gitbook</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-huggingface-fs</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-email</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-mbox</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-mongodb</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-mysql</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-bilibili</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-youtube</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-elasticsearch</module>
 
-        <module>community/document-parsers/document-parser-apache-pdfbox</module>
-        <module>community/document-parsers/document-parser-markdown</module>
-        <module>community/document-parsers/document-parser-tika</module>
-        <module>community/document-parsers/document-parser-pdf-tables</module>
-        <module>community/document-parsers/document-parser-bshtml</module>
-        <module>community/document-parsers/document-parser-bibtex</module>
-        <module>community/document-parsers/document-parser-multi-modality</module>
-        <module>community/document-parsers/document-parser-directory</module>
+        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-apache-pdfbox</module>
+        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-markdown</module>
+        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-tika</module>
+        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-pdf-tables</module>
+        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-bshtml</module>
+        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-bibtex</module>
+        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-multi-modality</module>
+        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-directory</module>
 
-        <module>community/vector-stores/spring-ai-alibaba-tair-store</module>
-        <module>community/vector-stores/spring-ai-alibaba-analyticdb-store</module>
-        <module>community/vector-stores/spring-ai-alibaba-opensearch-store</module>
+        <module>community/vector-stores/spring-ai-alibaba-starter-tair-store</module>
+        <module>community/vector-stores/spring-ai-alibaba-starter-analyticdb-store</module>
+        <module>community/vector-stores/spring-ai-alibaba-starter-opensearch-store</module>
 
-        <module>community/memory/spring-ai-alibaba-redis-memory</module>
-        <module>community/memory/spring-ai-alibaba-mysql-memory</module>
+        <module>community/memories/spring-ai-alibaba-redis-memory</module>
+        <module>community/memories/spring-ai-alibaba-mysql-memory</module>
 
     </modules>
 
