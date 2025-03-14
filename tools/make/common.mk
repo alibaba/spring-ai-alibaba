@@ -29,8 +29,6 @@ define errorLog
 echo -e "\033[0;31m==================>$1\033[0m"
 endef
 
-##@ Common
-
 .PHONY: help
 help:
 	@echo -e "\033[1;3;34mAn Application Framework for Java Developers.\033[0m\n"
