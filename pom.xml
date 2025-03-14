@@ -91,8 +91,8 @@
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-multi-modality</module>
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-directory</module>
 
-        <module>community/vector-stores/spring-ai-alibaba-tair-store</module>
-        <module>community/vector-stores/spring-ai-alibaba-analyticdb-store</module>
+        <module>community/vector-stores/spring-ai-alibaba-starter-tair-store</module>
+        <module>community/vector-stores/spring-ai-alibaba-starter-analyticdb-store</module>
         <module>community/vector-stores/spring-ai-alibaba-starter-opensearch-store</module>
 
         <module>community/memories/spring-ai-alibaba-redis-memory</module>
