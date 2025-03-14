@@ -1,5 +1,5 @@
 #
-# Copyright 2024-2025 the original author or authors.
+# Copyright 2024-2026 the original author or authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,21 +14,24 @@
 # limitations under the License.
 #
 
-name: License Check
+##@ Java
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+.PHONY: test
+test: ## Run tests
+	@$(LOG_TARGET)
+	mvn test -pl !spring-ai-alibaba-studio,!spring-ai-alibaba-graph
 
-jobs:
-  license-check:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - uses: ./tools/github-actions/setup-deps
-      - run: make tools
-      - run: make licenses-check
+.PHONY: build
+build: ## Build the project
+	@$(LOG_TARGET)
+	mvn -B package --file pom.xml
+
+.PHONY: format-fix
+format-fix: ## Format the code
+	@$(LOG_TARGET)
+	mvn spring-javaformat:apply
+
+.PHONY: format-check
+format-check: ## Format Check the code
+	@$(LOG_TARGET)
+	mvn spring-javaformat:validate

@@ -46,12 +46,14 @@ for (Document doc : documents) {
 ### 支持的文件格式
 
 1. 普通JSONL文件：
+
 ```json
 {"text": "文档内容1", "label": "标签1"}
 {"text": "文档内容2", "label": "标签2"}
 ```
 
 2. GZIP压缩的JSONL文件：
+
 - 文件扩展名为`.gz`
 - 包含压缩的JSONL内容
 
