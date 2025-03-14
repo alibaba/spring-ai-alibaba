@@ -18,13 +18,13 @@ public class SendEdgeGraphTest {
         var workflowChild = new StateGraph()
                 .addNode("B1", _makeNode("B1"))
                 .addNode("B2", _makeNode("B2"))
-                .addConditionalEdges(START, AsyncSendEdgeAction.edge_async(t -> {
+                .addEdge(START, "B1")
+                .addConditionalEdges("B1",AsyncSendEdgeAction.edge_async(t -> {
                     Send send = new Send();
                     send.setGraph(Command.GraphType.PARENT);
                     send.setEdge("C");
                     return send;
                 }))
-                .addEdge("B1", "B2")
                 .addEdge("B2", END);
 
         var workflowParent = new StateGraph(getOverAllState())

@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.alibaba.cloud.ai.graph.action.AsyncSendEdgeAction;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 
 /**
@@ -39,6 +40,10 @@ public record EdgeValue(String id, EdgeCondition value) {
 	EdgeValue withTargetIdsUpdated(Function<String, EdgeValue> target) {
 		if (id != null) {
 			return target.apply(id);
+		}
+
+		if (value instanceof SendEdgeCondition) {
+			return new EdgeValue(null, value);
 		}
 
 		var newMappings = value.mappings().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> {

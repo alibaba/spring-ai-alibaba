@@ -260,7 +260,7 @@ public class CompiledGraph {
 		if (route.value() != null) {
 			OverAllState derefState = stateGraph.getStateFactory().apply(state);
 			com.alibaba.cloud.ai.graph.action.AsyncEdgeAction condition = route.value().action();
-			if (condition instanceof SendEdgeCondition sendEdgeCondition){
+			if (route.value() instanceof SendEdgeCondition sendEdgeCondition){
 				AsyncSendEdgeAction asyncSendEdgeAction = sendEdgeCondition.sendEdgeAction();
 				Send send = asyncSendEdgeAction.apply(derefState).get();
 				String jump = send.getEdge();
@@ -615,50 +615,7 @@ public class CompiledGraph {
 								return embed.get();
 							}
 							currentState = overAllState.updateState(command);
-							String[] split = currentNodeId.split("-");
-							if (Command.GraphType.PARENT.equals(graph)) {
-								if (split.length > 2) {
-									int i = currentNodeId.lastIndexOf("-");
-									nextNodeId = SubGraphNode.formatId(currentNodeId.substring(0, i), jump);
-								} else {
-									nextNodeId = jump;
-								}
-								if (!nodes.containsKey(nextNodeId))
-									throw new GraphStateException(jump + " parent graph not found");
-							} else if (Command.GraphType.CHILD.equals(graph)) {
-								String formatId = null;
-								if (StringUtil.isNullOrEmpty(nodeId)) {
-									if (split.length > 2) {
-										int i = currentNodeId.lastIndexOf("-");
-										formatId = SubGraphNode.formatId(currentNodeId.substring(0, i), jump);
-									} else {
-										formatId = SubGraphNode.formatId(split[0], jump);
-									}
-								} else {
-									if (currentNodeId.startsWith(nodeId)){
-										formatId = SubGraphNode.formatId(nodeId, jump);
-									}else{
-										for (String node : split) {
-											if (!node.equals(nodeId)){
-												formatId = node + "-";
-											}else {
-												break;
-											}
-										}
-										formatId = formatId+ jump;
-									}
-								}
-								if (!nodes.containsKey(formatId))
-									throw new GraphStateException(formatId + " sub graph not found");
-								nextNodeId = formatId;
-							} else {
-								if (split.length >= 2) {
-									int i = currentNodeId.lastIndexOf("-");
-									nextNodeId = SubGraphNode.formatId(currentNodeId.substring(0, i), jump);
-								}else {
-									nextNodeId = jump;
-								}
-							}
+							nextIdHandler(graph, jump, nodeId);
 							return Data.of(getNodeOutput());
 						}
 					}
@@ -677,6 +634,53 @@ public class CompiledGraph {
 				}
 
 			});
+		}
+
+		private void nextIdHandler(Command.GraphType graph, String jump, String nodeId) throws GraphStateException {
+			String[] split = currentNodeId.split("-");
+			if (Command.GraphType.PARENT.equals(graph)) {
+				if (split.length > 2) {
+					int i = currentNodeId.lastIndexOf("-");
+					nextNodeId = SubGraphNode.formatId(currentNodeId.substring(0, i), jump);
+				} else {
+					nextNodeId = jump;
+				}
+				if (!nodes.containsKey(nextNodeId))
+					throw new GraphStateException(jump + " parent graph not found");
+			} else if (Command.GraphType.CHILD.equals(graph)) {
+				String formatId = null;
+				if (StringUtil.isNullOrEmpty(nodeId)) {
+					if (split.length > 2) {
+						int i = currentNodeId.lastIndexOf("-");
+						formatId = SubGraphNode.formatId(currentNodeId.substring(0, i), jump);
+					} else {
+						formatId = SubGraphNode.formatId(split[0], jump);
+					}
+				} else {
+					if (currentNodeId.startsWith(nodeId)){
+						formatId = SubGraphNode.formatId(nodeId, jump);
+					}else{
+						for (String node : split) {
+							if (!node.equals(nodeId)){
+								formatId = node + "-";
+							}else {
+								break;
+							}
+						}
+						formatId = formatId+ jump;
+					}
+				}
+				if (!nodes.containsKey(formatId))
+					throw new GraphStateException(formatId + " sub graph not found");
+				nextNodeId = formatId;
+			} else {
+				if (split.length >= 2) {
+					int i = currentNodeId.lastIndexOf("-");
+					nextNodeId = SubGraphNode.formatId(currentNodeId.substring(0, i), jump);
+				}else {
+					nextNodeId = jump;
+				}
+			}
 		}
 
 		/**
@@ -803,7 +807,6 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 
 			var sgEdgeStartTarget = sgEdgeStart.target();
 
-			if (sgEdgeStartTarget.value() instanceof SendEdgeCondition) continue;
 
 			if (sgEdgeStartTarget.id() == null) {
 				throw new GraphStateException(format("the target for node '%s' is null!", subgraphNode.id()));
