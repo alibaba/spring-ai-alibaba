@@ -1,6 +1,7 @@
 package com.alibaba.cloud.ai.graph;
 
 import java.util.HashMap;
+import java.util.Objects;
 
 import static com.alibaba.cloud.ai.graph.Command.GraphType.CHILD;
 import static com.alibaba.cloud.ai.graph.Command.GraphType.PARENT;
@@ -47,11 +48,32 @@ public class Command extends HashMap<String, Object> {
 
 	public enum GraphType {
 
-		CHILD, PARENT;
+		CHILD, PARENT,CURRENT;
 
 		GraphType() {
 		}
 
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof Command command)) return false;
+		if (!super.equals(o)) return false;
+        return Objects.equals(getEdge(), command.getEdge()) && Objects.equals(getNodeId(), command.getNodeId()) && getGraph() == command.getGraph();
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), getEdge(), getNodeId(), getGraph());
+	}
+
+	@Override
+	public String toString() {
+		return "Command{" +
+				"edge='" + edge + '\'' +
+				", nodeId='" + nodeId + '\'' +
+				", graph=" + graph +
+				'}';
+	}
 }

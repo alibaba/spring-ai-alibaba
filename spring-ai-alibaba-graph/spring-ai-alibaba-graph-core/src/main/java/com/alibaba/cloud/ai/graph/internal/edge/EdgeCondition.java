@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.graph.internal.edge;
 
+import java.util.Collections;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
@@ -25,12 +26,47 @@ import static java.lang.String.format;
 
 /**
  * Represents a condition associated with an edge in a graph.
- *
- * @param action The action to be performed asynchronously when the edge condition is met.
- * @param mappings A map of string key-value pairs representing additional mappings for
+ * <p>
  * the edge condition.
  */
-public record EdgeCondition(AsyncEdgeAction action, Map<String, String> mappings) {
+public class EdgeCondition {
+	/**
+	 * The action to be performed asynchronously when the edge condition is met.
+	 */
+	private AsyncEdgeAction action;
+	/**
+	 * A map of string key-value pairs representing additional mappings for
+	 */
+	private Map<String, String> mappings;
+
+	/**
+	 * Mappings map.
+	 *
+	 * @return the map
+	 */
+	public Map<String, String> mappings() {
+		return Collections.unmodifiableMap(mappings);
+	}
+
+	/**
+	 * Action async edge action.
+	 *
+	 * @return the async edge action
+	 */
+	public AsyncEdgeAction action() {
+		return action;
+	}
+
+	/**
+	 * Instantiates a new Edge condition.
+	 *
+	 * @param action   the action
+	 * @param mappings the mappings
+	 */
+	public EdgeCondition(AsyncEdgeAction action, Map<String, String> mappings) {
+		this.action = action;
+		this.mappings = mappings;
+	}
 
 	@Override
 	public String toString() {

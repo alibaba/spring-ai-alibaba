@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.graph.action.*;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.internal.edge.SendEdgeCondition;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.gson.GsonStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSerializer;
@@ -445,6 +446,38 @@ public class StateGraph {
 		// }
 
 		var newEdge = new Edge(sourceId, new EdgeValue(new EdgeCondition(condition, mappings)));
+
+		if (edges.elements.contains(newEdge)) {
+			throw Errors.duplicateConditionalEdgeError.exception(sourceId);
+		}
+		else {
+			edges.elements.add(newEdge);
+		}
+		return this;
+	}
+
+	/**
+	 * Adds conditional edges to the graph.
+	 * @param sourceId the identifier of the source node
+	 * @param condition the condition to determine the target node
+	 * @throws GraphStateException if the edge identifier is invalid, the mappings are
+	 * empty, or the edge already exists
+	 */
+	public StateGraph addConditionalEdges(String sourceId, AsyncSendEdgeAction condition)
+			throws GraphStateException {
+		if (Objects.equals(sourceId, END)) {
+			throw Errors.invalidEdgeIdentifier.exception(END);
+		}
+//		if (mappings == null || mappings.isEmpty()) {
+//			throw Errors.edgeMappingIsEmpty.exception(sourceId);
+//		}
+
+		// if (Objects.equals(sourceId, START)) {
+		// this.entryPoint = new EdgeValue<>(new EdgeCondition<>(condition, mappings));
+		// return this;
+		// }
+
+		var newEdge = new Edge(sourceId, new EdgeValue(new SendEdgeCondition(condition, Map.of())));
 
 		if (edges.elements.contains(newEdge)) {
 			throw Errors.duplicateConditionalEdgeError.exception(sourceId);

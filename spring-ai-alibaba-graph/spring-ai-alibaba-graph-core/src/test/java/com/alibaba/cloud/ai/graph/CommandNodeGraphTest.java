@@ -9,7 +9,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.SubGraphTest.*;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
-public class CommandGraphTest {
+public class CommandNodeGraphTest {
 
 	@Test
 	public void testCommandSubgraph01() throws Exception {
@@ -20,7 +20,7 @@ public class CommandGraphTest {
 				Command command = new Command();
 				// If nodeid is not set, the nodeid of the current subgraph is obtained by
 				// default
-				// command.setNodeId("B");
+				command.setNodeId("command");
 				command.setGraph(Command.GraphType.CHILD);
 				command.setEdge("B1");
 				// Additional parameters can be added to the command object
