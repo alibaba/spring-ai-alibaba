@@ -79,5 +79,7 @@ header:
     - '**/*.lintstagedrc'
     - '**/*.npmrc'
     - '**/*.mts'
+    - 'tools/linter/codespell/.codespell.ignorewords'
+    - 'tools/linter/codespell/.codespell.skip'
 
   comment: never
