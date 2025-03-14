@@ -35,21 +35,21 @@ public class GithubToolKitAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("implement the function of get a GitHub issue operation")
-	public GetIssueService getIssueService(GithubToolKitProperties properties) {
+	public GetIssueService getIssueFunction(GithubToolKitProperties properties) {
 		return new GetIssueService(properties);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("implement the function of create GitHub pull request operation")
-	public CreatePullRequestService createPullRequestService(GithubToolKitProperties properties) {
+	public CreatePullRequestService createPullRequestFunction(GithubToolKitProperties properties) {
 		return new CreatePullRequestService(properties);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("implement the function of search the list of repositories operation")
-	public SearchRepositoryService SearchRepositoryService(GithubToolKitProperties properties) {
+	public SearchRepositoryService SearchRepositoryFunction(GithubToolKitProperties properties) {
 		return new SearchRepositoryService(properties);
 	}
 
