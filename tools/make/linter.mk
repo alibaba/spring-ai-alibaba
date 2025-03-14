@@ -44,8 +44,8 @@ licenses-fix: ## Fix the licenses
 .PHONY: licenses-check
 licenses-check: ## Check the licenses
 	@$(LOG_TARGET)
-	licenses-eye --version
-	licenses-eye -c ./tools/linter/license/.licenserc.yaml header check
+	license-eye --version
+	license-eye -c ./tools/linter/license/.licenserc.yaml header check
 
 .PHONY: markdown-lint
 markdown-lint: ## Check the markdown files.
