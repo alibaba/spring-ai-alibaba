@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 
+##@ Java
+
 .PHONY: test
 test: ## Run tests
 	@$(LOG_TARGET)
@@ -24,12 +26,12 @@ build: ## Build the project
 	@$(LOG_TARGET)
 	mvnw -B package --file pom.xml
 
-.PHONY: format-check
-format-check: ## Format Check the code
-	@$(LOG_TARGET)
-	mvnw spring-javaformat:validate
-
 .PHONY: format-fix
 format-fix: ## Format the code
 	@$(LOG_TARGET)
 	mvnw spring-javaformat:apply
+
+.PHONY: format-check
+format-check: ## Format Check the code
+	@$(LOG_TARGET)
+	mvnw spring-javaformat:validate

@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 
+##@ Tools
+
 .PHONY: tools
 tools: ## Install ci tools
 

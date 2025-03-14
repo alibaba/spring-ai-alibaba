@@ -14,17 +14,13 @@
 # limitations under the License.
 #
 
-.PHONY: licenses-check
-licenses-check: ## Check the licenses
-	@$(LOG_TARGET)
-	licenses-eye --version
-	licenses-eye -c ./tools/linter/license/.licenserc.yaml header check
+##@ Linter
 
-.PHONY: licenses-fix
-licenses-fix: ## Fix the licenses
-	@$(LOG_TARGET)
-	licenses-eye --version
-	licenses-eye -c ./tools/linter/license/.licenserc.yaml header fix
+.PHONY: lint
+lint: ## Check files
+# md 文件错误太多了，暂时关闭
+# lint: markdown-lint yaml-lint code-spell licenses-check
+lint: yaml-lint codespell licenses-check
 
 .PHONY: codespell
 codespell: CODESPELL_SKIP := $(shell cat tools/linter/codespell/.codespell.skip | tr \\n ',')
@@ -32,6 +28,24 @@ codespell: ## Check the code-spell
 	@$(LOG_TARGET)
 	codespell --version
 	codespell --skip $(CODESPELL_SKIP) --ignore-words ./tools/linter/codespell/.codespell.ignorewords
+
+.PHONY: yaml-lint
+yaml-lint: ## Check the yaml lint
+	@$(LOG_TARGET)
+	yamllint --version
+	yamllint -c ./tools/linter/yamllint/.yamllint .
+
+.PHONY: licenses-fix
+licenses-fix: ## Fix the licenses
+	@$(LOG_TARGET)
+	licenses-eye --version
+	licenses-eye -c ./tools/linter/license/.licenserc.yaml header fix
+
+.PHONY: licenses-check
+licenses-check: ## Check the licenses
+	@$(LOG_TARGET)
+	licenses-eye --version
+	licenses-eye -c ./tools/linter/license/.licenserc.yaml header check
 
 .PHONY: markdown-lint
 markdown-lint: ## Check the markdown files.
@@ -44,15 +58,3 @@ markdown-lint-fix: ## Fix the markdown files style.
 	@$(LOG_TARGET)
 	markdownlint --version
 	markdownlint --config ./tools/linter/markdownlint/markdown_lint_config.yaml --fix .
-
-.PHONY: yaml-lint
-yaml-lint: ## Check the yaml lint
-	@$(LOG_TARGET)
-	yamllint --version
-	yamllint -c ./tools/linter/yamllint/.yamllint .
-
-.PHONY: lint
-lint: ## Check files
-# md 文件错误太多了，暂时关闭
-# lint: markdown-lint yaml-lint code-spell licenses-check
-lint: yaml-lint codespell licenses-check
