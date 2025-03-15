@@ -14,31 +14,43 @@
 # limitations under the License.
 #
 
-name: PR Check
+name: Build and Test
 
 on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+
+permissions:
+  contents: read
 
 jobs:
+  format:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ./tools/github-actions/setup-deps
+      - run: make format-check
+
   build:
-     name: Build branch
-     runs-on: ubuntu-latest
-     steps:
-       - name: Checkout source code
-         uses: actions/checkout@v4
-  
-       - name: Set up JDK 17
-         uses: actions/setup-java@v4
-         with:
-           java-version: '17'
-           distribution: 'temurin'
-           cache: 'maven'
+    runs-on: ubuntu-22.04
+    needs: [format]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ./tools/github-actions/setup-deps
+      - run: make build
 
-       - name: Build with Maven
-         run: ./mvnw -B package --file pom.xml
-
-       - name: Run tests
-         run: |
-           ./mvnw test -pl !spring-ai-alibaba-studio,!spring-ai-alibaba-graph
+  test:
+    runs-on: ubuntu-22.04
+    needs: [format, build]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ./tools/github-actions/setup-deps
+      - run: make test
