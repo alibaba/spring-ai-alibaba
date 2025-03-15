@@ -6,4 +6,4 @@ dignissim.
 
 ### Header 3
 
-Aenean eu leo eu nibh tristique _posuere quis quis massa_. 
+Aenean eu leo eu nibh tristique *posuere quis quis massa*. 

@@ -1,6 +1,6 @@
 ## Ordered list
 
-1. Lorem ipsum dolor sit *amet*, consectetur adipiscing elit. **Curabitur** diam eros, laoreet sit _amet_ cursus vitae,
+1. Lorem ipsum dolor sit *amet*, consectetur adipiscing elit. **Curabitur** diam eros, laoreet sit *amet* cursus vitae,
    varius sed nisi.
 2. Cras sit amet quam quis velit commodo porta consectetur id nisi. Phasellus tincidunt pulvinar augue.
 3. Proin vel laoreet leo, sed luctus augue. Sed et ligula commodo, commodo lacus at, consequat turpis. Maecenas eget
@@ -14,4 +14,4 @@
 * Aenean eu leo eu nibh tristique posuere quis quis massa.
 * Aenean imperdiet libero dui, nec malesuada dui maximus vel. Vestibulum sed dui condimentum, cursus libero in, dapibus
   tortor.
-    * Etiam facilisis enim in egestas dictum.
+  * Etiam facilisis enim in egestas dictum.

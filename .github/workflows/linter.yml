@@ -14,31 +14,28 @@
 # limitations under the License.
 #
 
-name: Source Code Format
+name: Linter
 
 on:
-  pull_request:
-    branches:
-      - main
   push:
     branches:
       - main
+    paths-ignore:
+      - '**.java'
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**.java'
+
+permissions:
+  contents: read
 
 jobs:
-  build:
-    name: Build branch
-    runs-on: ubuntu-latest
+  linter:
+    runs-on: ubuntu-22.04
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Source code formatting check
-        run: |
-          ./mvnw spring-javaformat:validate
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: ./tools/github-actions/setup-deps
+      - run: make tools
+      - run: make lint
