@@ -121,42 +121,42 @@ public class CommandNodeGraphTest {
 	public void testCommandSubgraph04() throws Exception {
 
 		var workflowChild = new StateGraph().addNode("C1", _makeNode("C1"))
-				.addNode("C2", _makeNode("C2"))
-				.addCommandNode("command", (t, config) -> {
-					Command command = new Command();
-					// If graph is of the parent type, nodeId is not required
-					command.setGraph(GraphType.CURRENT);
-					command.setEdge("C1");
-					// Additional parameters can be added to the command object
-					command.put("messages", "command");
-					return command;
-				})
-				.addEdge(START, "command")
-				.addEdge("C1", END);
+			.addNode("C2", _makeNode("C2"))
+			.addCommandNode("command", (t, config) -> {
+				Command command = new Command();
+				// If graph is of the parent type, nodeId is not required
+				command.setGraph(GraphType.CURRENT);
+				command.setEdge("C1");
+				// Additional parameters can be added to the command object
+				command.put("messages", "command");
+				return command;
+			})
+			.addEdge(START, "command")
+			.addEdge("C1", END);
 
 		var workflowChild2 = new StateGraph().addNode("B1", _makeNode("B1"))
-				.addNode("B2", _makeNode("B2"))
-				.addCommandNode("command", (t, config) -> {
-					Command command = new Command();
-					// If graph is of the parent type, nodeId is not required
-					command.setGraph(GraphType.CURRENT);
-					command.setEdge("B1");
-					// Additional parameters can be added to the command object
-					command.put("messages", "command");
-					return command;
-				})
-				.addEdge(START, "command")
-				.addEdge("B1", END);
+			.addNode("B2", _makeNode("B2"))
+			.addCommandNode("command", (t, config) -> {
+				Command command = new Command();
+				// If graph is of the parent type, nodeId is not required
+				command.setGraph(GraphType.CURRENT);
+				command.setEdge("B1");
+				// Additional parameters can be added to the command object
+				command.put("messages", "command");
+				return command;
+			})
+			.addEdge(START, "command")
+			.addEdge("B1", END);
 
 		var workflowParent = new StateGraph(getOverAllState()).addNode("A", _makeNode("A"))
-				.addSubgraph("B", workflowChild)
-				.addNode("C", _makeNode("C"))
-				.addSubgraph("D", workflowChild2)
-				.addEdge(START, "C")
-				.addEdge("C", "B")
-				.addEdge("B", "A")
-				.addEdge("A", "D")
-				.addEdge("D", END);
+			.addSubgraph("B", workflowChild)
+			.addNode("C", _makeNode("C"))
+			.addSubgraph("D", workflowChild2)
+			.addEdge(START, "C")
+			.addEdge("C", "B")
+			.addEdge("B", "A")
+			.addEdge("A", "D")
+			.addEdge("D", END);
 
 		var app = workflowParent.compile();
 		_execute(app, Map.of());

@@ -3,54 +3,54 @@ package com.alibaba.cloud.ai.graph;
 import java.util.Objects;
 
 public class Send {
-    String edge;
 
-    String nodeId;
+	String edge;
 
-    GraphType graph;
+	String nodeId;
 
-    public String getEdge() {
-        return edge;
-    }
+	GraphType graph;
 
-    public void setEdge(String edge) {
-        this.edge = edge;
-    }
+	public String getEdge() {
+		return edge;
+	}
 
-    public String getNodeId() {
-        return nodeId;
-    }
+	public void setEdge(String edge) {
+		this.edge = edge;
+	}
 
-    public void setNodeId(String nodeId) {
-        this.nodeId = nodeId;
-    }
+	public String getNodeId() {
+		return nodeId;
+	}
 
-    public GraphType getGraph() {
-        return graph;
-    }
+	public void setNodeId(String nodeId) {
+		this.nodeId = nodeId;
+	}
 
-    public void setGraph(GraphType graph) {
-        this.graph = graph;
-    }
+	public GraphType getGraph() {
+		return graph;
+	}
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Send send)) return false;
-        return Objects.equals(edge, send.edge) && Objects.equals(nodeId, send.nodeId) && graph == send.graph;
-    }
+	public void setGraph(GraphType graph) {
+		this.graph = graph;
+	}
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(edge, nodeId, graph);
-    }
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (!(o instanceof Send send))
+			return false;
+		return Objects.equals(edge, send.edge) && Objects.equals(nodeId, send.nodeId) && graph == send.graph;
+	}
 
-    @Override
-    public String toString() {
-        return "Send{" +
-                "edge='" + edge + '\'' +
-                ", nodeId='" + nodeId + '\'' +
-                ", graph=" + graph +
-                '}';
-    }
+	@Override
+	public int hashCode() {
+		return Objects.hash(edge, nodeId, graph);
+	}
+
+	@Override
+	public String toString() {
+		return "Send{" + "edge='" + edge + '\'' + ", nodeId='" + nodeId + '\'' + ", graph=" + graph + '}';
+	}
+
 }

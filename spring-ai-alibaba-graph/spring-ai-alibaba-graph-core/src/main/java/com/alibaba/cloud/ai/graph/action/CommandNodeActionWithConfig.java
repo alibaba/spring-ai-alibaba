@@ -13,8 +13,7 @@ public interface CommandNodeActionWithConfig {
 
 	/**
 	 * Apply command.
-	 *
-	 * @param t      the t
+	 * @param t the t
 	 * @param config the config
 	 * @return the command
 	 * @throws Exception the exception

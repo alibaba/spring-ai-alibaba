@@ -95,53 +95,53 @@ public class SubGraphTest {
 					return oldValue;
 				}
 
-                    boolean oldValueIsList = oldValue instanceof List<?>;
+				boolean oldValueIsList = oldValue instanceof List<?>;
 
-                    if (oldValueIsList && newValue instanceof AppenderChannel.RemoveIdentifier<?>) {
-                        var result = new ArrayList<>((List<Object>) oldValue);
-                        removeFromList(result, (AppenderChannel.RemoveIdentifier) newValue);
-                        return unmodifiableList(result);
-                    }
+				if (oldValueIsList && newValue instanceof AppenderChannel.RemoveIdentifier<?>) {
+					var result = new ArrayList<>((List<Object>) oldValue);
+					removeFromList(result, (AppenderChannel.RemoveIdentifier) newValue);
+					return unmodifiableList(result);
+				}
 
-                    List<Object> list = null;
-                    if (newValue instanceof List) {
-                        list = new ArrayList<>((List<?>) newValue);
-                    }
-                    else if (newValue.getClass().isArray()) {
-                        list = new ArrayList<>(Arrays.asList((Object[]) newValue));
-                    }
-                    else if (newValue instanceof Collection) {
-                        list = new ArrayList<>((Collection<?>) newValue);
-                    }
+				List<Object> list = null;
+				if (newValue instanceof List) {
+					list = new ArrayList<>((List<?>) newValue);
+				}
+				else if (newValue.getClass().isArray()) {
+					list = new ArrayList<>(Arrays.asList((Object[]) newValue));
+				}
+				else if (newValue instanceof Collection) {
+					list = new ArrayList<>((Collection<?>) newValue);
+				}
 
-                    if (oldValueIsList) {
-                        List<Object> oldList = (List<Object>) oldValue;
-                        if (list != null) {
-                            if (list.isEmpty()) {
-                                return oldValue;
-                            }
-                            if (oldValueIsList) {
-                                var result = evaluateRemoval((List<Object>) oldValue, list);
-                                List<Object> mergedList = Stream
-                                        .concat(result.oldValues().stream(), result.newValues().stream())
-                                        .distinct()
-                                        .collect(Collectors.toList());
-                                return mergedList;
-                            }
-                            oldList.addAll(list);
-                        }
-                        else {
-                            oldList.add(newValue);
-                        }
-                        return oldList;
-                    }
-                    else {
-                        ArrayList<Object> arrayResult = new ArrayList<>();
-                        arrayResult.add(newValue);
-                        return arrayResult;
-                    }
-                });
-    }
+				if (oldValueIsList) {
+					List<Object> oldList = (List<Object>) oldValue;
+					if (list != null) {
+						if (list.isEmpty()) {
+							return oldValue;
+						}
+						if (oldValueIsList) {
+							var result = evaluateRemoval((List<Object>) oldValue, list);
+							List<Object> mergedList = Stream
+								.concat(result.oldValues().stream(), result.newValues().stream())
+								.distinct()
+								.collect(Collectors.toList());
+							return mergedList;
+						}
+						oldList.addAll(list);
+					}
+					else {
+						oldList.add(newValue);
+					}
+					return oldList;
+				}
+				else {
+					ArrayList<Object> arrayResult = new ArrayList<>();
+					arrayResult.add(newValue);
+					return arrayResult;
+				}
+			});
+	}
 
 	@Test
 	public void testMergeSubgraph01() throws Exception {

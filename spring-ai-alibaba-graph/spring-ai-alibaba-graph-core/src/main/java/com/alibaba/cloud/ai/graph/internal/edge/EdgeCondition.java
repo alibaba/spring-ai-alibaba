@@ -30,10 +30,12 @@ import static java.lang.String.format;
  * the edge condition.
  */
 public class EdgeCondition {
+
 	/**
 	 * The action to be performed asynchronously when the edge condition is met.
 	 */
 	private AsyncEdgeAction action;
+
 	/**
 	 * A map of string key-value pairs representing additional mappings for
 	 */
@@ -41,7 +43,6 @@ public class EdgeCondition {
 
 	/**
 	 * Mappings map.
-	 *
 	 * @return the map
 	 */
 	public Map<String, String> mappings() {
@@ -50,7 +51,6 @@ public class EdgeCondition {
 
 	/**
 	 * Action async edge action.
-	 *
 	 * @return the async edge action
 	 */
 	public AsyncEdgeAction action() {
@@ -59,8 +59,7 @@ public class EdgeCondition {
 
 	/**
 	 * Instantiates a new Edge condition.
-	 *
-	 * @param action   the action
+	 * @param action the action
 	 * @param mappings the mappings
 	 */
 	public EdgeCondition(AsyncEdgeAction action, Map<String, String> mappings) {

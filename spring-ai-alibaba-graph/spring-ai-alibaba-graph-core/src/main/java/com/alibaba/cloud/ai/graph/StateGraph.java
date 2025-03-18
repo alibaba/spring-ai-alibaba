@@ -463,14 +463,13 @@ public class StateGraph {
 	 * @throws GraphStateException if the edge identifier is invalid, the mappings are
 	 * empty, or the edge already exists
 	 */
-	public StateGraph addConditionalEdges(String sourceId, AsyncSendEdgeAction condition)
-			throws GraphStateException {
+	public StateGraph addConditionalEdges(String sourceId, AsyncSendEdgeAction condition) throws GraphStateException {
 		if (Objects.equals(sourceId, END)) {
 			throw Errors.invalidEdgeIdentifier.exception(END);
 		}
-//		if (mappings == null || mappings.isEmpty()) {
-//			throw Errors.edgeMappingIsEmpty.exception(sourceId);
-//		}
+		// if (mappings == null || mappings.isEmpty()) {
+		// throw Errors.edgeMappingIsEmpty.exception(sourceId);
+		// }
 
 		// if (Objects.equals(sourceId, START)) {
 		// this.entryPoint = new EdgeValue<>(new EdgeCondition<>(condition, mappings));

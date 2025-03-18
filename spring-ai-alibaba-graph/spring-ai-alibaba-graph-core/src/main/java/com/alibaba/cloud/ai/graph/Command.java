@@ -6,7 +6,6 @@ import java.util.Objects;
 import static com.alibaba.cloud.ai.graph.GraphType.CHILD;
 import static com.alibaba.cloud.ai.graph.GraphType.PARENT;
 
-
 public class Command extends HashMap<String, Object> {
 
 	String edge;
@@ -47,14 +46,16 @@ public class Command extends HashMap<String, Object> {
 		return graph == PARENT;
 	}
 
-
-
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (!(o instanceof Command command)) return false;
-		if (!super.equals(o)) return false;
-        return Objects.equals(getEdge(), command.getEdge()) && Objects.equals(getNodeId(), command.getNodeId()) && getGraph() == command.getGraph();
+		if (this == o)
+			return true;
+		if (!(o instanceof Command command))
+			return false;
+		if (!super.equals(o))
+			return false;
+		return Objects.equals(getEdge(), command.getEdge()) && Objects.equals(getNodeId(), command.getNodeId())
+				&& getGraph() == command.getGraph();
 	}
 
 	@Override
@@ -64,10 +65,7 @@ public class Command extends HashMap<String, Object> {
 
 	@Override
 	public String toString() {
-		return "Command{" +
-				"edge='" + edge + '\'' +
-				", nodeId='" + nodeId + '\'' +
-				", graph=" + graph +
-				'}';
+		return "Command{" + "edge='" + edge + '\'' + ", nodeId='" + nodeId + '\'' + ", graph=" + graph + '}';
 	}
+
 }
