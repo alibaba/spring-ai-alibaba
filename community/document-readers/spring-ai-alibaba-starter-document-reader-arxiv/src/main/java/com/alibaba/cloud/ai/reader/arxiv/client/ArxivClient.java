@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -272,16 +273,12 @@ public class ArxivClient {
 			if (search.getMaxResults() != null && returnedResults >= search.getMaxResults()) {
 				return false;
 			}
-			return currentPage != null && (currentIndex < currentPage.getLength() || offset < totalResults);
-		}
-
-		@Override
-		public ArxivResult next() {
-			if (!hasNext()) {
-				throw new NoSuchElementException();
-			}
-
-			if (currentIndex >= currentPage.getLength()) {
+			// Check if we have a valid current page and haven't exceeded page size
+			if (currentPage == null || currentIndex >= currentPage.getLength()) {
+				// Check if there are more results to fetch
+				if (offset >= totalResults) {
+					return false;
+				}
 				try {
 					fetchNextPage(false);
 					currentIndex = 0;
@@ -289,6 +286,16 @@ public class ArxivClient {
 				catch (IOException e) {
 					throw new RuntimeException("Failed to fetch next page", e);
 				}
+			}
+			// Check if we have a valid current page and haven't exceeded page size
+			return currentPage != null && currentIndex < currentPage.getLength()
+					&& (search.getMaxResults() == null || returnedResults < search.getMaxResults());
+		}
+
+		@Override
+		public ArxivResult next() {
+			if (!hasNext()) {
+				throw new NoSuchElementException();
 			}
 
 			returnedResults++; // Increment counter
@@ -322,8 +329,22 @@ public class ArxivClient {
 						search.getMaxResults() != null ? search.getMaxResults() : "unlimited");
 			}
 
-			currentPage = doc.getElementsByTagName("entry");
-			offset += currentPage.getLength();
+			NodeList entries = doc.getElementsByTagName("entry");
+			// Ensure we don't return more results than requested
+			final int numEntries = Math.min(entries.getLength(), adjustedPageSize);
+			// Create a wrapper NodeList that limits the number of entries to pageSize
+			currentPage = new NodeList() {
+				@Override
+				public Node item(int index) {
+					return index < numEntries ? entries.item(index) : null;
+				}
+
+				@Override
+				public int getLength() {
+					return numEntries;
+				}
+			};
+			offset += numEntries;
 		}
 
 	}
