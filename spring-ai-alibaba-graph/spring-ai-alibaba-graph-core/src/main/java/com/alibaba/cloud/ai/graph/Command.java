@@ -3,8 +3,9 @@ package com.alibaba.cloud.ai.graph;
 import java.util.HashMap;
 import java.util.Objects;
 
-import static com.alibaba.cloud.ai.graph.Command.GraphType.CHILD;
-import static com.alibaba.cloud.ai.graph.Command.GraphType.PARENT;
+import static com.alibaba.cloud.ai.graph.GraphType.CHILD;
+import static com.alibaba.cloud.ai.graph.GraphType.PARENT;
+
 
 public class Command extends HashMap<String, Object> {
 
@@ -46,14 +47,7 @@ public class Command extends HashMap<String, Object> {
 		return graph == PARENT;
 	}
 
-	public enum GraphType {
 
-		CHILD, PARENT,CURRENT;
-
-		GraphType() {
-		}
-
-	}
 
 	@Override
 	public boolean equals(Object o) {

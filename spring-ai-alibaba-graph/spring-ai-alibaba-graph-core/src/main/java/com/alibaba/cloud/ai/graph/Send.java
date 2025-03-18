@@ -7,7 +7,7 @@ public class Send {
 
     String nodeId;
 
-    Command.GraphType graph;
+    GraphType graph;
 
     public String getEdge() {
         return edge;
@@ -25,11 +25,11 @@ public class Send {
         this.nodeId = nodeId;
     }
 
-    public Command.GraphType getGraph() {
+    public GraphType getGraph() {
         return graph;
     }
 
-    public void setGraph(Command.GraphType graph) {
+    public void setGraph(GraphType graph) {
         this.graph = graph;
     }
 
