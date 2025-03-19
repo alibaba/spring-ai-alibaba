@@ -35,7 +35,7 @@ public class CommandNodeGraphTest {
 				Command command = new Command();
 				// If nodeid is not set, the nodeid of the current subgraph is obtained by
 				// default
-				command.setNodeId("command");
+				command.setNodeId("B");
 				command.setGraph(GraphType.CHILD);
 				command.setEdge("B1");
 				// Additional parameters can be added to the command object
