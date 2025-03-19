@@ -22,8 +22,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -111,13 +114,15 @@ public class ArxivClientTest {
 
 	@Test
 	public void testPagination() throws IOException {
-		ArxivClient client = new ArxivClient();
+		// Create client with longer delay to avoid rate limiting
+		ArxivClient client = new ArxivClient(20, 5.0f, 3); // Set page size to 20
 
 		ArxivSearch search = new ArxivSearch();
 		// Use a more specific and reliable query that should always return results
 		search.setQuery("cat:cs.AI AND ti:\"machine learning\"");
-		// Set max results to match what the API actually returns
-		search.setMaxResults(40); // Request more to ensure we get enough for two pages
+		// Set max results to a number larger than page size to ensure we get multiple
+		// pages
+		search.setMaxResults(50); // Request more than one page
 		// Set sort order to ensure consistent results
 		search.setSortBy(ArxivSortCriterion.RELEVANCE);
 		search.setSortOrder(ArxivSortOrder.DESCENDING);
@@ -125,37 +130,46 @@ public class ArxivClientTest {
 		// Get first page
 		Iterator<ArxivResult> firstPage = client.results(search, 0);
 		List<ArxivResult> firstPageResults = new ArrayList<>();
-		firstPage.forEachRemaining(firstPageResults::add);
+
+		// Only take at most pageSize (20) items from the iterator
+		int count = 0;
+		while (firstPage.hasNext() && count < 20) {
+			firstPageResults.add(firstPage.next());
+			count++;
+		}
 
 		// Print debug information
 		System.out.println("First page results count: " + firstPageResults.size());
 
-		// Determine the actual page size returned by the API
-		int actualPageSize = firstPageResults.size();
+		// Verify we have results from first page
+		assertTrue(firstPageResults.size() > 0, "First page should return results");
+		assertTrue(firstPageResults.size() <= 20, "First page should not exceed page size");
 
-		// Get second page based on the actual page size
-		Iterator<ArxivResult> secondPage = client.results(search, actualPageSize);
+		// Get second page
+		Iterator<ArxivResult> secondPage = client.results(search, firstPageResults.size());
 		List<ArxivResult> secondPageResults = new ArrayList<>();
-		secondPage.forEachRemaining(secondPageResults::add);
+
+		// Take only up to 20 results from second page
+		count = 0;
+		while (secondPage.hasNext() && count < 20) {
+			secondPageResults.add(secondPage.next());
+			count++;
+		}
 
 		System.out.println("Second page results count: " + secondPageResults.size());
 
-		// Verify we have results
-		assertTrue(firstPageResults.size() > 0, "First page should return results");
+		// Verify we have results from second page
 		assertTrue(secondPageResults.size() > 0, "Second page should return results");
+		assertTrue(secondPageResults.size() <= 20, "Second page should not exceed page size");
 
-		// Verify the page sizes are consistent (or at least the first page has the
-		// expected size)
-		assertEquals(actualPageSize, firstPageResults.size(),
-				"First page should return " + actualPageSize + " results");
+		// Verify results are different
+		Set<String> firstPageIds = firstPageResults.stream().map(ArxivResult::getEntryId).collect(Collectors.toSet());
+		Set<String> secondPageIds = secondPageResults.stream().map(ArxivResult::getEntryId).collect(Collectors.toSet());
 
-		// Verify results from different pages are not duplicated
-		for (ArxivResult firstPageResult : firstPageResults) {
-			for (ArxivResult secondPageResult : secondPageResults) {
-				assertNotEquals(firstPageResult.getEntryId(), secondPageResult.getEntryId(),
-						"Results from different pages should not be duplicated");
-			}
-		}
+		// Check for any overlap between pages
+		Set<String> intersection = new HashSet<>(firstPageIds);
+		intersection.retainAll(secondPageIds);
+		assertTrue(intersection.isEmpty(), "Pages should not have overlapping results");
 	}
 
 	@Test
