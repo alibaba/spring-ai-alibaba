@@ -115,7 +115,7 @@ Please refer to the [Contribution Guide](./CONTRIBUTING.md) to learn how to part
 
 ## Contact Us
 
-* Dingtalk Group (钉钉群), search `64485010179` and join.
+* Dingtalk Group (钉钉群), search `61290041831` and join.
 * Wechat Group (微信公众号), scan the QR code below and follow us.
 
 <img src="./docs/imgs/wechat-account.png" style="width:260px;"/>
