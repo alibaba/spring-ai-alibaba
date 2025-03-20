@@ -98,6 +98,8 @@
         <module>community/memory/spring-ai-alibaba-redis-memory</module>
         <module>community/memory/spring-ai-alibaba-mysql-memory</module>
 
+        <module>community/openmanus</module>
+
     </modules>
 
     <properties>
