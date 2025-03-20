@@ -1,4 +1,5 @@
 # Governance
+
 Below is the organizational structure of the Spring AI Alibaba project.
 
 <img alt="project-governance" style="max-width:600px;height:auto;" src="./docs/imgs/governance.png"/>
@@ -10,9 +11,11 @@ The Spring AI Alibaba project belongs to the Alibaba Github organization, so it 
 As the only commission of the Alibaba Github organization for this project, PMC is responsible for managing and monitoring the Spring AI Alibaba open source project and ensuring that all development activities comply with the Alibaba organization's open source specifications.
 
 ## Project Management Committee (PMC)
+
 The Spring AI Alibaba project management committee (PMC), is the only governance body of the project and is responsible for the healthy development of the entire project, including the development activities, technical oversight, and committer management.
 
 ### Roles and Responsibilities
+
 1. Define, evolve, and promote the vision, values, and mission of the project.
 2. Set the overall technical direction and roadmap of the project.
 3. Define and evolve project governance structures and policies, including
@@ -48,6 +51,7 @@ New committers can be added to the project by receiving at least 3 votes from th
 A committer may step down by submitting an issue stating their intent.
 
 ### PMC Member
+
 Existing PMC members can initiate a vote for a new committer. The vote is conducted in a non-public mailing list or chatting group. To become a committer there must have at least 3 +1 votes from the existing PMC members. New committers can be added to the [COMMITTERS](./COMMITTERS.md) file in the form of pull regexRequest.
 
 Existing PMC members can initiate a vote for a new PMC member. The vote is conducted in a non-public mailing list or chatting group. A committer can become a PMC member if at least 3 existing PMC members vote in favor. New members can be added to the [PMC_MEMBERS](./PMC_MEMBERS.md) file in the form of pull regexRequest.
