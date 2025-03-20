@@ -28,7 +28,7 @@
 
     <artifactId>spring-ai-alibaba-graph-core</artifactId>
     <packaging>jar</packaging>
-    <name>spring-ai-alibaba::core::jdk8</name>
+    <name>Spring AI Alibaba Graph Core</name>
     <description>A library for building stateful, multi-agents applications with LLMs</description>
 
 
@@ -40,22 +40,6 @@
     </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>org.springframework.ai</groupId>
-      <artifactId>spring-ai-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.ai</groupId>
-      <artifactId>spring-ai-retry</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.ai</groupId>
-      <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
-    </dependency>
-
-
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
@@ -87,7 +71,7 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-core</artifactId>
-            <version>${parent.version}</version>
+            <version>${project.parent.version}</version>
             <scope>test</scope>
         </dependency>
 
