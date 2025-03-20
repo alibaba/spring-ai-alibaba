@@ -25,7 +25,6 @@
 	</parent>
 
 	<artifactId>feishu-document-reader</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
 	<name>feishu-document-reader</name>
 	<description>FeiShu Reader for Spring AI Alibaba</description>
 	<packaging>jar</packaging>
