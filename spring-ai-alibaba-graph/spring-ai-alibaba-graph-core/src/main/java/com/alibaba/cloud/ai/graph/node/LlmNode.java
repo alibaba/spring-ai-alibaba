@@ -29,6 +29,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.StringUtils;
 
@@ -36,7 +37,7 @@ public class LlmNode implements NodeAction {
 	public static final String LLM_RESPONSE_KEY = "llm_response";
 
 	private String prompt;
-	private Map<String, String> params = new HashMap<>();
+	private Map<String, Object> params = new HashMap<>();
 	private List<Message> messages = new ArrayList<>();
 	private List<Advisor> advisors = new ArrayList<>();
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
@@ -45,7 +46,6 @@ public class LlmNode implements NodeAction {
 	private String paramsKey;
 	private String messagesKey;
 	private String toolsKey;
-	private String advisorsKey;
 	private String outputKey;
 
 	private ChatClient chatClient;
@@ -59,6 +59,8 @@ public class LlmNode implements NodeAction {
 
 		String outputKey = StringUtils.hasLength(this.outputKey) ? this.outputKey : LLM_RESPONSE_KEY;
 
+
+
 		return Map.of(outputKey, response.getResult().getOutput());
 	}
 
@@ -67,7 +69,7 @@ public class LlmNode implements NodeAction {
 			this.prompt = (String) state.value(templateKey).orElse(this.prompt);
 		}
 		if (StringUtils.hasLength(paramsKey)) {
-			this.params = (Map<String, String>) state.value(paramsKey).orElse(this.params);
+			this.params = (Map<String, Object>) state.value(paramsKey).orElse(this.params);
 		}
 		if (StringUtils.hasLength(messagesKey)) {
 			this.messages = (List<Message>) state.value(messagesKey).orElse(this.messages);
@@ -75,13 +77,14 @@ public class LlmNode implements NodeAction {
 		if (StringUtils.hasLength(toolsKey)) {
 			this.toolCallbacks = (List<ToolCallback>) state.value(toolsKey).orElse(this.toolCallbacks);
 		}
-		if (StringUtils.hasLength(advisorsKey)) {
-			this.advisors = (List<Advisor>) state.value(advisorsKey).orElse(this.advisors);
-		}
-
 		if (StringUtils.hasLength(prompt) && !params.isEmpty()) {
 			this.prompt = renderPromptTemplate(prompt, params);
 		}
+	}
+
+	private String renderPromptTemplate(String prompt, Map<String, Object> params) {
+		PromptTemplate promptTemplate = new PromptTemplate(prompt);
+		return promptTemplate.render(params);
 	}
 
 	public Flux<ChatResponse> stream() {
@@ -112,7 +115,7 @@ public class LlmNode implements NodeAction {
 		private String messagesKey;
 
 		private String prompt;
-		private Map<String, String> params;
+		private Map<String, Object> params;
 		private List<Message> messages;
 
 		public Builder template(String template) {

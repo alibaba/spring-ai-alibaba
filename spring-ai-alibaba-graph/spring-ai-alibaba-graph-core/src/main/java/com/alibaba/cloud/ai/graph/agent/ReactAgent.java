@@ -22,6 +22,7 @@ import java.util.Optional;
 
 import javax.tools.Tool;
 
+import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -40,54 +41,55 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 public class ReactAgent {
 	private LlmNode llmNode;
 	private ToolNode toolNode;
+
+	private String prompt;
+	private List<String> tools;
 	private int max_iterations = 10;
 	private int iterations = 0;
-
-	public static void main(String[] args) {
-		LlmNode llmNode = LlmNode.builder().build();
-		ToolNode toolNode = ToolNode.builder().build();
-		ReactAgent agent = new ReactAgent(llmNode, toolNode);
-		// streaming 与 non-streaming 的区分
-		var result = agent.run(inputs);
-		String content = result
-				.flatMap((overAllState -> overAllState.value(LlmNode.LLM_RESPONSE_KEY)))
-				.map(obj -> {
-					AssistantMessage message = (AssistantMessage) obj;
-					return message.getText();
-				})
-				.orElseThrow();
-		System.out.println(content);
-	}
+	private CompileConfig compileConfig;
+	private OverAllState state;
 
 	ReactAgent(LlmNode llmNode, ToolNode toolNode) {
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
 	}
 
-	ReactAgent(LlmNode llmNode, ToolNode toolNode, int maxIterations) {
+	ReactAgent(LlmNode llmNode, ToolNode toolNode, int maxIterations, OverAllState state, CompileConfig compileConfig) {
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
 		this.max_iterations = maxIterations;
+		this.state = state;
+		this.compileConfig = compileConfig;
 	}
 
-	public Optional<OverAllState> run() throws GraphStateException {
+	ReactAgent(String prompt, List<String> tools, int maxIterations, OverAllState state, CompileConfig compileConfig) {
+		this.llmNode = LlmNode.builder().withPrompt(prompt).build();
+		this.toolNode = ToolNode.builder().withTools(tools).build();
+		this.max_iterations = maxIterations;
+		this.state = state;
+		this.compileConfig = compileConfig;
+	}
+
+	public CompiledGraph init() throws GraphStateException {
 		StateGraph graph = initGraph();
-		CompiledGraph compiledGraph = graph.compile();
-		return compiledGraph.invoke(inputs);
+		return graph.compile(compileConfig);
 	}
 
 	private StateGraph initGraph() throws GraphStateException {
-		OverAllState state = new OverAllState();
-		state.input(Map.of("query", "user input"));
-		state.registerKeyAndStrategy(ToolNode.TOOL_RESPONSE_KEY, ToolResponseMessage.class, List::of);
-		state.registerKeyAndStrategy(LlmNode.LLM_RESPONSE_KEY, AssistantMessage.class, (o1, o2) -> o2);
+		if (state == null) {
+			OverAllState defaultState = new OverAllState();
+			defaultState.input(Map.of("query", "user input"));
+			defaultState.registerKeyAndStrategy(ToolNode.TOOL_RESPONSE_KEY, List::of);
+			defaultState.registerKeyAndStrategy(LlmNode.LLM_RESPONSE_KEY, (o1, o2) -> o2);
+			this.state = defaultState;
+		}
 
 		StateGraph graph = new StateGraph(state)
-				.addNode("llm", node_async(this.llmNode))
+				.addNode("agent", node_async(this.llmNode))
 				.addNode("tool", node_async(this.toolNode))
-				.addEdge(START, "llm")
-				.addConditionalEdges("llm", edge_async(this::think), Map.of("continue", "tool", "end", END))
-				.addEdge("tool", "llm");
+				.addEdge(START, "agent")
+				.addConditionalEdges("agent", edge_async(this::think), Map.of("continue", "tool", "end", END))
+				.addEdge("tool", "agent");
 
 		return graph;
 	}
@@ -97,14 +99,12 @@ public class ReactAgent {
 			return "end";
 		}
 
-		AssistantMessage message = (AssistantMessage) state.value("llm_response").orElseThrow();
+		AssistantMessage message = (AssistantMessage) state.value(LlmNode.LLM_RESPONSE_KEY).orElseThrow();
 		if (message.hasToolCalls()) {
 			return "continue";
 		}
 
 		return "end";
 	}
-
-
 
 }
