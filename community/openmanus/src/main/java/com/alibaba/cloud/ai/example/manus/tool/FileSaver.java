@@ -15,18 +15,18 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.TypeReference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.Function;
+
+import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -69,6 +69,7 @@ public class FileSaver implements Function<String, ToolExecuteResult> {
 			});
 			String content = (String) toolInputMap.get("content");
 			String filePath = (String) toolInputMap.get("file_path");
+			System.out.println(filePath + "filePath");
 			File file = new File(filePath);
 			File directory = file.getParentFile();
 			if (directory != null && !directory.exists()) {
