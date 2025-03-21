@@ -64,27 +64,24 @@ public class OpenManusSpringBootApplication {
 	public RestClient.Builder createRestClient() {
 		// 1. 配置超时时间（单位：毫秒）
 		int connectionTimeout = 600000; // 连接超时时间
-		int readTimeout = 600000;      // 响应读取超时时间
-		int writeTimeout = 600000;     // 请求写入超时时间
+		int readTimeout = 600000; // 响应读取超时时间
+		int writeTimeout = 600000; // 请求写入超时时间
 
 		// 2. 创建 RequestConfig 并设置超时
 		RequestConfig requestConfig = RequestConfig.custom()
-				.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
-				.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
-				.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
-				.build();
+			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
+			.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
+			.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
+			.build();
 
 		// 3. 创建 CloseableHttpClient 并应用配置
-		HttpClient httpClient = HttpClients.custom()
-				.setDefaultRequestConfig(requestConfig)
-				.build();
+		HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
 
 		// 4. 使用 HttpComponentsClientHttpRequestFactory 包装 HttpClient
 		HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
 
 		// 5. 创建 RestClient 并设置请求工厂
-		return RestClient.builder()
-				.requestFactory(requestFactory);
+		return RestClient.builder().requestFactory(requestFactory);
 	}
 
 	public static void initDriver() {
