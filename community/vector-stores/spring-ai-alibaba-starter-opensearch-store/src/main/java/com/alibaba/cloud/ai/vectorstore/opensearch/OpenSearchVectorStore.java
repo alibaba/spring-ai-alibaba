@@ -32,10 +32,12 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.util.Assert;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -46,9 +48,9 @@ import java.util.stream.Collectors;
  * @author fuyou.lxm
  * @since 1.0.0-M3
  */
-public class OpenSearchVector extends AbstractObservationVectorStore {
+public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenSearchVector.class);
+	private static final Logger logger = LoggerFactory.getLogger(OpenSearchVectorStore.class);
 
 	/**
 	 * The field name for the document ID.
@@ -94,37 +96,37 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
-	 * Constructs a new instance of OpenSearchVector with the specified parameters.
+	 * Constructs a new instance of OpenSearchVectorStore with the specified parameters.
 	 * @param openSearchApi The API client used to interact with OpenSearch.
 	 * @param embeddingModel The embedding model used for vector operations.
 	 * @param observationRegistry The observation registry for metrics.
 	 * @param customObservationConvention Custom observation convention for metrics.
 	 * @param batchingStrategy The batching strategy used for processing documents.
 	 */
-	public OpenSearchVector(com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi openSearchApi,
-			EmbeddingModel embeddingModel, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
+	public OpenSearchVectorStore (com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi openSearchApi,
+								  EmbeddingModel embeddingModel, ObservationRegistry observationRegistry,
+								  VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
 		this(builder(openSearchApi, embeddingModel).observationRegistry(observationRegistry)
 			.customObservationConvention(customObservationConvention)
 			.batchingStrategy(batchingStrategy));
 	}
 
 	/**
-	 * Constructs a new instance of OpenSearchVector with the specified parameters.
+	 * Constructs a new instance of OpenSearchVectorStore with the specified parameters.
 	 * @param openSearchApi The API client used to interact with OpenSearch.
 	 * @param embeddingModel The embedding model used for vector operations.
 	 */
-	public OpenSearchVector(com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi openSearchApi,
-			EmbeddingModel embeddingModel) {
+	public OpenSearchVectorStore (com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi openSearchApi,
+								  EmbeddingModel embeddingModel) {
 		this(builder(openSearchApi, embeddingModel));
 	}
 
 	/**
-	 * Protected constructor for building instances of OpenSearchVector using the Builder
+	 * Protected constructor for building instances of OpenSearchVectorStore using the Builder
 	 * pattern.
 	 * @param builder The builder instance containing configuration options.
 	 */
-	protected OpenSearchVector(Builder builder) {
+	protected OpenSearchVectorStore (Builder builder) {
 		super(builder);
 
 		Assert.notNull(builder.openSearchApi, "The openSearchApi cannot be null");
@@ -138,7 +140,7 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 	}
 
 	/**
-	 * Creates a new Builder instance for constructing OpenSearchVector objects.
+	 * Creates a new Builder instance for constructing OpenSearchVectorStore objects.
 	 * @param openSearchApi The API client used to interact with OpenSearch.
 	 * @param embeddingModel The embedding model used for vector operations.
 	 * @return A new Builder instance.
@@ -233,8 +235,39 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 		return null;
 	}
 
+	@Override
+	public void afterPropertiesSet () throws Exception {
+
+	}
+
+	@Override
+	public String getName () {
+		return super.getName();
+	}
+
+	@Override
+	public List<Document> similaritySearch (String query) {
+		return super.similaritySearch(query);
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient () {
+		return super.getNativeClient();
+	}
+
+	@Override
+	public void write (List<Document> documents) {
+		super.write(documents);
+	}
+
+	@NotNull
+	@Override
+	public Consumer<List<Document>> andThen (@NotNull Consumer<? super List<Document>> after) {
+		return super.andThen(after);
+	}
+
 	/**
-	 * A builder class for constructing instances of {@link OpenSearchVector}. This class
+	 * A builder class for constructing instances of {@link OpenSearchVectorStore}. This class
 	 * extends {@link AbstractVectorStoreBuilder} and provides methods to configure the
 	 * options and batching strategy for the OpenSearch vector store.
 	 */
@@ -282,14 +315,14 @@ public class OpenSearchVector extends AbstractObservationVectorStore {
 		}
 
 		/**
-		 * Builds and returns a new instance of {@link OpenSearchVector} configured with
+		 * Builds and returns a new instance of {@link OpenSearchVectorStore} configured with
 		 * the current settings.
-		 * @return A new instance of OpenSearchVector.
+		 * @return A new instance of OpenSearchVectorStore.
 		 */
 		@NotNull
 		@Override
-		public OpenSearchVector build() {
-			return new OpenSearchVector(this);
+		public OpenSearchVectorStore build() {
+			return new OpenSearchVectorStore(this);
 		}
 
 	}

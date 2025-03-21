@@ -36,6 +36,8 @@
         <module>spring-ai-alibaba-studio</module>
         <module>spring-ai-alibaba-graph</module>
 
+        <module>spring-ai-alibaba-tool-calling-bom</module>
+
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-time</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidusearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidutranslate</module>
@@ -134,6 +136,9 @@
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
         <spring-javaformat-maven-plugin.version>0.0.39</spring-javaformat-maven-plugin.version>
         <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
+
+        <!-- Spring AI Alibaba Tool Calling Versions -->
+        <spring-ai-alibaba-tool-calling-bom.version>1.0.0-M6</spring-ai-alibaba-tool-calling-bom.version>
     </properties>
 
     <dependencyManagement>
@@ -164,6 +169,13 @@
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-bom</artifactId>
                 <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-tool-calling-bom</artifactId>
+                <version>${spring-ai-alibaba-tool-calling-bom.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
