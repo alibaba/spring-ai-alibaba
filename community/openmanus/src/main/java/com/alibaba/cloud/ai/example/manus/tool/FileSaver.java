@@ -69,7 +69,6 @@ public class FileSaver implements Function<String, ToolExecuteResult> {
 			});
 			String content = (String) toolInputMap.get("content");
 			String filePath = (String) toolInputMap.get("file_path");
-			System.out.println(filePath + "filePath");
 			File file = new File(filePath);
 			File directory = file.getParentFile();
 			if (directory != null && !directory.exists()) {
