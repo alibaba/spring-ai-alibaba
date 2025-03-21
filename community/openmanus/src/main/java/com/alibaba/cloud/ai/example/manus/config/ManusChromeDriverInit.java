@@ -41,7 +41,8 @@ public class ManusChromeDriverInit implements ApplicationRunner {
 
 		if (checkOS()) {
 			chromedriverPath = getChromedriverPath("data/chromedriver.exe");
-		} else {
+		}
+		else {
 			chromedriverPath = getChromedriverPath("data/chromedriver");
 		}
 
@@ -64,12 +65,15 @@ public class ManusChromeDriverInit implements ApplicationRunner {
 
 		if (os.contains("win")) {
 			return true;
-		} else if (os.contains("mac")) {
+		}
+		else if (os.contains("mac")) {
 			return false;
-		} else if (os.contains("nix") || os.contains("nux") || os.contains("aix")) {
+		}
+		else if (os.contains("nix") || os.contains("nux") || os.contains("aix")) {
 			System.out.println("Operating System: Unix/Linux");
 			return false;
-		} else {
+		}
+		else {
 			System.out.println("Operating System: Unknown");
 			return false;
 		}
