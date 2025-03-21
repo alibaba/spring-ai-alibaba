@@ -14,7 +14,6 @@
         <spring-ai.version>1.0.0-M6</spring-ai.version>
         <spring-boot.version>3.2.0</spring-boot.version>
         <jsoup-version>1.18.1</jsoup-version>
-        <selenium.version>4.16.0</selenium.version>
 
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <spring-javaformat-maven-plugin.version>0.0.39</spring-javaformat-maven-plugin.version>
