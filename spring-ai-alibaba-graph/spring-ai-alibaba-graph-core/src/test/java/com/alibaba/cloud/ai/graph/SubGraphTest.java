@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import lombok.extern.slf4j.Slf4j;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -51,11 +52,11 @@ public class SubGraphTest {
 		}
 	}
 
-	private AsyncNodeAction _makeNode(String id) {
+	public static AsyncNodeAction _makeNode(String id) {
 		return node_async(state -> Map.of("messages", id));
 	}
 
-	private List<String> _execute(CompiledGraph workflow, Map<String, Object> input) throws Exception {
+	public static List<String> _execute(CompiledGraph workflow, Map<String, Object> input) throws Exception {
 		return workflow.stream().stream().peek(System.out::println).map(NodeOutput::node).toList();
 	}
 
@@ -82,7 +83,8 @@ public class SubGraphTest {
 
 	}
 
-	private static OverAllState getOverAllState() {
+	@NotNull
+	public static OverAllState getOverAllState() {
 		return new OverAllState().input(Map.of())
 			.registerKeyAndStrategy("a", (o, o2) -> o2)
 			.registerKeyAndStrategy("b", (o, o2) -> o2)
