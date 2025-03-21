@@ -2,6 +2,12 @@
 
 The Spring AI implementation of <a href="https://github.com/mannaandpoem/OpenManus/" target="_blank">OpenManus</a>.
 
+
+
+https://github.com/user-attachments/assets/fc8153bc-8353-4d5c-8789-755d2fd7c4f3
+
+
+
 ## How to Run
 
 ### Prerequisites
