@@ -18,7 +18,7 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
  <dependency>
   <groupId>com.alibaba.cloud.ai</groupId>
   <artifactId>spring-ai-alibaba-starter</artifactId>
-  <version>1.0.0-M5.1</version>
+  <version>1.0.0-M6.1</version>
  </dependency>
  ```
 
@@ -37,16 +37,16 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
  > </repositories>
  > ```
 >
-	> Addendum: If the mirrorOf tag in your local Maven settings. xml is configured with the wildcard *, please modify it according to the following example.
+> Addendum: If the mirrorOf tag in your local Maven settings. xml is configured with the wildcard *, please modify it according to the following example.
 >
-	> ```xml
- > <mirror>
- >   <id>xxxx</id>
- >   <mirrorOf>*,!spring-milestones</mirrorOf>
- >   <name>xxxx</name>
- >   <url>xxxx</url>
- > </mirror>
- > ```
+> ```xml
+> <mirror>
+>   <id>xxxx</id>
+>   <mirrorOf>*,!spring-milestones</mirrorOf>
+>   <name>xxxx</name>
+>   <url>xxxx</url>
+> </mirror>
+> ```
 
 2. Inject `ChatClient`
 
@@ -115,7 +115,7 @@ Please refer to the [Contribution Guide](./CONTRIBUTING.md) to learn how to part
 
 ## Contact Us
 
-* Dingtalk Group (钉钉群), search `64485010179` and join.
+* Dingtalk Group (钉钉群), search `61290041831` and join.
 * Wechat Group (微信公众号), scan the QR code below and follow us.
 
 <img src="./docs/imgs/wechat-account.png" style="width:260px;"/>
