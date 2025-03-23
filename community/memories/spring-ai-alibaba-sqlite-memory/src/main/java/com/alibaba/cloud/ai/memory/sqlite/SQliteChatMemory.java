@@ -36,6 +36,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 
+/**
+ * SQLite database implementation of {@link ChatMemory}.
+ * @author yuluo
+ * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
+ */
+
 public class SQliteChatMemory implements ChatMemory, AutoCloseable {
 
 	private static final Logger logger = LoggerFactory.getLogger(SQliteChatMemory.class);
@@ -57,7 +63,8 @@ public class SQliteChatMemory implements ChatMemory, AutoCloseable {
 		try {
 			this.connection = DriverManager.getConnection("jdbc:sqlite:" + databaseName);
 			checkAndCreateTable();
-		} catch (SQLException e) {
+		}
+		catch (SQLException e) {
 			throw new RuntimeException("Error connecting to the database", e);
 		}
 
@@ -68,11 +75,8 @@ public class SQliteChatMemory implements ChatMemory, AutoCloseable {
 
 	private void checkAndCreateTable() throws SQLException {
 
-		String createTableSQL = "CREATE TABLE IF NOT EXISTS " + DEFAULT_TABLE_NAME + " (" +
-				"id INTEGER PRIMARY KEY AUTOINCREMENT," +
-				"conversation_id TEXT UNIQUE," +
-				"messages TEXT" +
-				")";
+		String createTableSQL = "CREATE TABLE IF NOT EXISTS " + DEFAULT_TABLE_NAME + " ("
+				+ "id INTEGER PRIMARY KEY AUTOINCREMENT," + "conversation_id TEXT UNIQUE," + "messages TEXT" + ")";
 
 		try (Statement stmt = connection.createStatement()) {
 			stmt.execute(createTableSQL);
@@ -89,7 +93,8 @@ public class SQliteChatMemory implements ChatMemory, AutoCloseable {
 			all.addAll(messages);
 
 			this.updateMessageById(conversationId, this.objectMapper.writeValueAsString(all));
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 
 			logger.error("Error adding messages to SQLite chat memory", e);
 			throw new RuntimeException(e);
@@ -103,7 +108,8 @@ public class SQliteChatMemory implements ChatMemory, AutoCloseable {
 
 		try {
 			all = this.selectMessageById(conversationId);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Error getting messages from SQLite chat memory", e);
 			throw new RuntimeException(e);
 		}
@@ -119,7 +125,8 @@ public class SQliteChatMemory implements ChatMemory, AutoCloseable {
 		try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
 			pstmt.setString(1, conversationId);
 			pstmt.executeUpdate();
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 
 			throw new RuntimeException("Error executing delete", e);
 		}
@@ -139,14 +146,14 @@ public class SQliteChatMemory implements ChatMemory, AutoCloseable {
 			List<Message> all = this.selectMessageById(conversationId);
 
 			if (all.size() >= maxLimit) {
-				List<Message> messagesToKeep = all.stream()
-						.skip(Math.max(0, deleteSize))
-						.toList();
+				List<Message> messagesToKeep = all.stream().skip(Math.max(0, deleteSize)).toList();
 
 				this.updateMessageById(conversationId, this.objectMapper.writeValueAsString(messagesToKeep));
-				logger.info("Cleared messages for conversationId: " + conversationId + ", retained: " + messagesToKeep.size());
+				logger.info("Cleared messages for conversationId: " + conversationId + ", retained: "
+						+ messagesToKeep.size());
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 
 			logger.error("Error clearing messages from SQLite chat memory", e);
 			throw new RuntimeException(e);
@@ -168,12 +175,14 @@ public class SQliteChatMemory implements ChatMemory, AutoCloseable {
 				oldMessage = resultSet.getString("messages");
 
 				if (oldMessage != null && !oldMessage.isEmpty()) {
-					List<Message> data = this.objectMapper.readValue(oldMessage, new TypeReference<>() { });
+					List<Message> data = this.objectMapper.readValue(oldMessage, new TypeReference<>() {
+					});
 					System.out.println("data: " + data);
 					totalMessage.addAll(data);
 				}
 			}
-		} catch (SQLException | JsonProcessingException e) {
+		}
+		catch (SQLException | JsonProcessingException e) {
 
 			logger.error("Select message by SQLite error, sql:{}", sql, e);
 			throw new RuntimeException(e);
@@ -188,7 +197,8 @@ public class SQliteChatMemory implements ChatMemory, AutoCloseable {
 
 		if (this.selectMessageById(conversationId).isEmpty()) {
 			sql = "INSERT INTO " + DEFAULT_TABLE_NAME + " (conversation_id, messages) VALUES (?, ?)";
-		} else {
+		}
+		else {
 			sql = "UPDATE " + DEFAULT_TABLE_NAME + " SET messages = ? WHERE conversation_id = ?";
 		}
 
@@ -197,12 +207,14 @@ public class SQliteChatMemory implements ChatMemory, AutoCloseable {
 			if (this.selectMessageById(conversationId).isEmpty()) {
 				pstmt.setString(1, conversationId);
 				pstmt.setString(2, messages);
-			} else {
+			}
+			else {
 				pstmt.setString(1, messages);
 				pstmt.setString(2, conversationId);
 			}
 			pstmt.executeUpdate();
-		} catch (SQLException e) {
+		}
+		catch (SQLException e) {
 
 			logger.error("Update message by SQLite error, sql:{}", sql, e);
 			throw new RuntimeException(e);

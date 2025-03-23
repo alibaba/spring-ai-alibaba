@@ -27,6 +27,11 @@ import org.springframework.ai.chat.messages.UserMessage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * @author yuluo
+ * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
+ */
+
 class SQLiteChatMemoryTest {
 
 	private SQliteChatMemory chatMemory;
