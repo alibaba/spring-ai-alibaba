@@ -97,6 +97,7 @@
 
         <module>community/memories/spring-ai-alibaba-redis-memory</module>
         <module>community/memories/spring-ai-alibaba-mysql-memory</module>
+        <module>community/memories/spring-ai-alibaba-sqlite-memory</module>
 
         <module>community/openmanus</module>
 
