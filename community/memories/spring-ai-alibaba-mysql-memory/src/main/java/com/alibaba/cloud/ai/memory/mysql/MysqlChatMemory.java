@@ -26,11 +26,14 @@ import java.sql.Connection;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
+
+import com.alibaba.cloud.ai.memory.mysql.serializer.MessageDeserializer;
 
 public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 
@@ -56,6 +59,10 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 	}
 
 	public MysqlChatMemory(String username, String password, String url) {
+		// 配置ObjectMapper以支持接口反序列化
+		SimpleModule module = new SimpleModule();
+		module.addDeserializer(Message.class, new MessageDeserializer());
+		this.objectMapper.registerModule(module);
 
 		try {
 			this.connection = DriverManager.getConnection(
@@ -68,6 +75,10 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 	}
 
 	public MysqlChatMemory(Connection connection) {
+		// 配置ObjectMapper以支持接口反序列化
+		SimpleModule module = new SimpleModule();
+		module.addDeserializer(Message.class, new MessageDeserializer());
+		this.objectMapper.registerModule(module);
 
 		this.connection = connection;
 
