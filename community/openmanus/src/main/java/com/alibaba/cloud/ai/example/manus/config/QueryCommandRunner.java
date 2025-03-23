@@ -35,10 +35,21 @@ public class QueryCommandRunner implements CommandLineRunner {
 	public void run(String... args) throws Exception {
 
 		Scanner scanner = new Scanner(System.in);
-		String query = scanner.next();
+		while (true) {
 
-		planningFlow.setActivePlanId("plan_" + System.currentTimeMillis());
-		planningFlow.execute(query);
+			System.out.println("Enter your query (or type 'exit' to quit): ");
+			String query = scanner.nextLine();
+
+			if ("exit".equalsIgnoreCase(query)) {
+				System.out.println("Exiting...");
+				break;
+			}
+
+			planningFlow.setActivePlanId("plan_" + System.currentTimeMillis());
+			planningFlow.execute(query);
+		}
+
+		scanner.close();
 	}
 
 }
