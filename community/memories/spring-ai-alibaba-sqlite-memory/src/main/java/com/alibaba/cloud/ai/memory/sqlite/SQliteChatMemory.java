@@ -25,9 +25,11 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.alibaba.cloud.ai.memory.sqlite.serializer.MessageDeserializer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +60,10 @@ public class SQliteChatMemory implements ChatMemory, AutoCloseable {
 		} catch (SQLException e) {
 			throw new RuntimeException("Error connecting to the database", e);
 		}
+
+		SimpleModule module = new SimpleModule();
+		module.addDeserializer(Message.class, new MessageDeserializer());
+		this.objectMapper.registerModule(module);
 	}
 
 	private void checkAndCreateTable() throws SQLException {
