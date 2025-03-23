@@ -38,6 +38,7 @@ import org.springframework.ai.chat.messages.Message;
 
 /**
  * SQLite database implementation of {@link ChatMemory}.
+ *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
