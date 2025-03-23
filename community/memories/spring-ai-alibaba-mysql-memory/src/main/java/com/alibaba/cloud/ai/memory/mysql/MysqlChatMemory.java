@@ -59,7 +59,7 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 	}
 
 	public MysqlChatMemory(String username, String password, String url) {
-		// 配置ObjectMapper以支持接口反序列化
+		// Configure ObjectMapper to support interface deserialization
 		SimpleModule module = new SimpleModule();
 		module.addDeserializer(Message.class, new MessageDeserializer());
 		this.objectMapper.registerModule(module);
@@ -75,7 +75,7 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 	}
 
 	public MysqlChatMemory(Connection connection) {
-		// 配置ObjectMapper以支持接口反序列化
+		// Configure ObjectMapper to support interface deserialization
 		SimpleModule module = new SimpleModule();
 		module.addDeserializer(Message.class, new MessageDeserializer());
 		this.objectMapper.registerModule(module);
