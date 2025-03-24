@@ -22,6 +22,7 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -181,7 +182,7 @@ public class LlmService {
 
 	private final ChatModel chatModel;
 
-	public LlmService(ChatModel chatModel) {
+	public LlmService(ChatModel chatModel, ToolCallbackProvider toolCallbackProvider) {
 		this.chatModel = chatModel;
 
 		this.planningChatClient = ChatClient.builder(chatModel)
@@ -189,6 +190,7 @@ public class LlmService {
 			.defaultAdvisors(new MessageChatMemoryAdvisor(planningMemory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.defaultTools(ToolBuilder.getPlanningAgentToolCallbacks())
+			.defaultTools(toolCallbackProvider)
 			.build();
 
 		this.chatClient = ChatClient.builder(chatModel)
@@ -196,6 +198,7 @@ public class LlmService {
 			.defaultAdvisors(new MessageChatMemoryAdvisor(memory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.defaultTools(ToolBuilder.getManusAgentToolCalls())
+			.defaultTools(toolCallbackProvider)
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();
 
@@ -204,7 +207,7 @@ public class LlmService {
 			.defaultAdvisors(new MessageChatMemoryAdvisor(finalizeMemory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.build();
-	}
+    }
 
 	public ChatClient getChatClient() {
 		return chatClient;
