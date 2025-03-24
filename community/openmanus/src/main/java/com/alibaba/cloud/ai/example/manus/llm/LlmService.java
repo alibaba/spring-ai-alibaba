@@ -181,21 +181,24 @@ public class LlmService {
 
 	private final ChatModel chatModel;
 
-	public LlmService(ChatModel chatModel) {
+	private final ToolBuilder toolBuilder;
+
+	public LlmService(ChatModel chatModel, ToolBuilder toolBuilder) {
 		this.chatModel = chatModel;
+		this.toolBuilder = toolBuilder;
 
 		this.planningChatClient = ChatClient.builder(chatModel)
 			.defaultSystem(PLANNING_SYSTEM_PROMPT)
 			.defaultAdvisors(new MessageChatMemoryAdvisor(planningMemory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultTools(ToolBuilder.getPlanningAgentToolCallbacks())
+			.defaultTools(toolBuilder.getPlanningAgentToolCallbacks())
 			.build();
 
 		this.chatClient = ChatClient.builder(chatModel)
 			.defaultSystem(MANUS_SYSTEM_PROMPT)
 			.defaultAdvisors(new MessageChatMemoryAdvisor(memory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultTools(ToolBuilder.getManusAgentToolCalls())
+			.defaultTools(toolBuilder.getManusAgentToolCalls())
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();
 

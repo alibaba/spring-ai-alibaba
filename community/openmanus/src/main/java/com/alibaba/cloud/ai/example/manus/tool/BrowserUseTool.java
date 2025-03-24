@@ -15,13 +15,12 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
+import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 
 import org.openqa.selenium.*;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +35,17 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseTool.class);
 
-	private WebDriver driver;
+	private final ChromeDriverService chromeDriverService;
+
+	private static BrowserUseTool instance;
+
+	public BrowserUseTool(ChromeDriverService chromeDriverService) {
+		this.chromeDriverService = chromeDriverService;
+	}
+
+	private WebDriver getDriver() {
+		return chromeDriverService.getDriver();
+	}
 
 	private static final int MAX_LENGTH = 3000;
 
@@ -147,26 +156,19 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		return functionTool;
 	}
 
-	public static FunctionToolCallback getFunctionToolCallback() {
-		return FunctionToolCallback.builder(name, browserUseTool)
+	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService) {
+		if (instance == null) {
+			instance = new BrowserUseTool(chromeDriverService);
+		}
+		return instance;
+	}
+
+	public static FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService) {
+		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
 			.description(description)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
 			.build();
-	}
-
-	private static final BrowserUseTool browserUseTool = new BrowserUseTool();
-
-	public BrowserUseTool() {
-		ChromeOptions options = new ChromeOptions();
-		options.addArguments("--remote-allow-origins=*");
-		// options.setPageLoadStrategy(PageLoadStrategy.EAGER);
-		// options.addArguments("--headless");
-		// options.addArguments("--incognito");
-		// options.addArguments("--no-sandbox");
-		// options.addArguments("--disable-extensions");
-		// options.addArguments("--start-maximized");
-		driver = new ChromeDriver(options);
 	}
 
 	public ToolExecuteResult run(String toolInput) {
@@ -203,6 +205,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			tabId = (Integer) toolInputMap.get("tab_id");
 		}
 		try {
+			WebDriver driver = getDriver();
 			switch (action) {
 				case "navigate":
 					if (url == null) {
@@ -335,21 +338,6 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		}
 	}
 
-	public void close() {
-		if (driver != null) {
-			driver.quit();
-			driver = null;
-		}
-		System.out.println("Browser resources have been cleaned up.");
-	}
-
-	public WebDriver getDriver() {
-		return driver;
-	}
-
-	public void setDriver(WebDriver driver) {
-		this.driver = driver;
-	}
 
 	@Override
 	public ToolExecuteResult apply(String s) {

@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.llm.ToolBuilder;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,8 +31,8 @@ public class ManusAgent extends ToolCallAgent {
 
 	private String description = "A versatile agent that can solve various tasks using multiple tools";
 
-	public ManusAgent(LlmService llmService, ToolCallingManager toolCallingManager) {
-		super(llmService, toolCallingManager);
+	public ManusAgent(LlmService llmService, ToolCallingManager toolCallingManager, ToolBuilder toolBuilder) {
+		super(llmService, toolCallingManager,toolBuilder);
 	}
 
 	@Override

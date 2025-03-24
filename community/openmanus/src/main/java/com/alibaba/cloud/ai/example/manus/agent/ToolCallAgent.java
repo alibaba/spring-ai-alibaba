@@ -51,13 +51,16 @@ public class ToolCallAgent extends ReActAgent {
 
 	private final ToolCallingManager toolCallingManager;
 
+	private final ToolBuilder toolBuilder;
+
 	private ChatResponse response;
 
 	private Prompt userPrompt;
 
-	public ToolCallAgent(LlmService llmService, ToolCallingManager toolCallingManager) {
+	public ToolCallAgent(LlmService llmService, ToolCallingManager toolCallingManager, ToolBuilder toolBuilder) {
 		super(llmService);
 		this.toolCallingManager = toolCallingManager;
+		this.toolBuilder = toolBuilder;
 	}
 
 	@Override
@@ -81,7 +84,7 @@ public class ToolCallAgent extends ReActAgent {
 
 			PromptTemplate promptTemplate = new PromptTemplate(stepPrompt);
 			ChatOptions chatOptions = ToolCallingChatOptions.builder()
-				.toolCallbacks(ToolBuilder.getManusAgentToolCalls(this, llmService.getMemory(), getConversationId()))
+				.toolCallbacks(toolBuilder.getManusAgentToolCalls(this, llmService.getMemory(), getConversationId()))
 				.internalToolExecutionEnabled(false)
 				.build();
 			userPrompt = promptTemplate.create(getData(), chatOptions);

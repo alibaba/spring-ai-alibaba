@@ -69,7 +69,7 @@ public class DocLoaderTool implements Function<String, ToolExecuteResult> {
 	}
 
 	public static FunctionToolCallback getFunctionToolCallback() {
-		return FunctionToolCallback.builder(name, new BrowserUseTool())
+		return FunctionToolCallback.builder(name, new DocLoaderTool())  // 修改为正确的工具类
 			.description(description)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
