@@ -33,55 +33,42 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ManusChromeDriverInit implements ApplicationRunner {
+    
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
+        String chromedriverPath = getChromedriverPath(checkOS() ? 
+            "data/chromedriver.exe" : "data/chromedriver");
+        System.setProperty("webdriver.chrome.driver", chromedriverPath);
+    }
 
-	@Override
-	public void run(ApplicationArguments args) throws Exception {
+    private String getChromedriverPath(String resourcePath) throws URISyntaxException {
 
-		String chromedriverPath;
+        URL resource = OpenManusSpringBootApplication.class.getClassLoader().getResource(resourcePath);
+        if (resource == null) {
+            throw new IllegalStateException("Chromedriver not found: " + resourcePath);
+        }
 
-		if (checkOS()) {
-			chromedriverPath = getChromedriverPath("data/chromedriver.exe");
-		}
-		else {
-			chromedriverPath = getChromedriverPath("data/chromedriver");
-		}
+        return Paths.get(resource.toURI()).toFile().getAbsolutePath();
+    }
 
-		setChromeDriver(chromedriverPath);
-	}
+    private static Boolean checkOS() {
 
-	private String getChromedriverPath(String resourcePath) throws URISyntaxException {
+        String os = System.getProperty("os.name").toLowerCase();
 
-		URL resource = OpenManusSpringBootApplication.class.getClassLoader().getResource(resourcePath);
-		if (resource == null) {
-			throw new IllegalStateException("Chromedriver not found: " + resourcePath);
-		}
-
-		return Paths.get(resource.toURI()).toFile().getAbsolutePath();
-	}
-
-	private static Boolean checkOS() {
-
-		String os = System.getProperty("os.name").toLowerCase();
-
-		if (os.contains("win")) {
-			return true;
-		}
-		else if (os.contains("mac")) {
-			return false;
-		}
-		else if (os.contains("nix") || os.contains("nux") || os.contains("aix")) {
-			System.out.println("Operating System: Unix/Linux");
-			return false;
-		}
-		else {
-			System.out.println("Operating System: Unknown");
-			return false;
-		}
-	}
-
-	private static void setChromeDriver(String path) {
-
-		System.setProperty("webdriver.chrome.driver", path);
-	}
+        if (os.contains("win")) {
+            return true;
+        }
+        else if (os.contains("mac")) {
+            return false;
+        }
+        else if (os.contains("nix") || os.contains("nux") || os.contains("aix")) {
+            System.out.println("Operating System: Unix/Linux");
+            return false;
+        }
+        else {
+            System.out.println("Operating System: Unknown");
+            return false;
+        }
+    }
 
 }
