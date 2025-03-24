@@ -12,3 +12,7 @@ spring:
       chat:
         options:
           model: qwen-max-latest
+
+manus:
+  browser:
+    headless: false  # 设置为 true 则启用无头模式
