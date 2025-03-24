@@ -12,4 +12,5 @@ public class ToolConfiguration {
     public ToolBuilder toolBuilder(ChromeDriverService chromeDriverService) {
         return new ToolBuilder(chromeDriverService);
     }
+    
 }
