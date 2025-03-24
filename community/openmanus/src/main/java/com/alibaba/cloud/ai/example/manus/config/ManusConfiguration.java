@@ -24,6 +24,8 @@ import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.agent.ManusAgent;
 import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.llm.ToolBuilder;
+
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -44,8 +46,8 @@ import org.springframework.web.client.RestClient;
 public class ManusConfiguration {
 
 	@Bean
-	public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager) {
-		ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager);
+	public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager, ToolBuilder toolBuilder) {
+		ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager, toolBuilder);
 
 		Map<String, BaseAgent> agentMap = new HashMap<>() {
 			{
