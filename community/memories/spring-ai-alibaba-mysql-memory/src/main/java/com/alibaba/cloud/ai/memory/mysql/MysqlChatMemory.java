@@ -15,13 +15,9 @@
  */
 package com.alibaba.cloud.ai.memory.mysql;
 
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.sql.Connection;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -109,7 +105,7 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 		try (Statement stmt = connection.createStatement()) {
 			stmt.execute("USE spring_ai_alibaba_mysql");
 			stmt.execute(
-					"CREATE TABLE chat_memory( id BIGINT AUTO_INCREMENT PRIMARY KEY,conversation_id  VARBINARY(256)  NULL,messages VARBINARY(6144) NULL,UNIQUE (conversation_id));");
+					"CREATE TABLE chat_memory( id BIGINT AUTO_INCREMENT PRIMARY KEY,conversation_id  VARBINARY(256)  NULL,messages TEXT NULL,UNIQUE (conversation_id));");
 			logger.info("Table " + DEFAULT_TABLE_NAME + " created successfully.");
 		}
 		catch (Exception e) {
@@ -208,23 +204,27 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 	}
 
 	public void updateMessageById(String conversationId, String messages) {
-		StringBuilder sql;
+		// Remove newlines and escape single quotes
+		messages = messages.replaceAll("[\\r\\n]", "").replace("'", "''");
+
+		String sql;
 		if (this.selectMessageById(conversationId).isEmpty()) {
-			sql = new StringBuilder("INSERT INTO " + DEFAULT_TABLE_NAME + " (conversation_id, messages) VALUES ('");
-			sql.append(conversationId);
-			sql.append("', '");
-			sql.append(messages);
-			sql.append("')");
+			sql = "INSERT INTO chat_memory (messages, conversation_id) VALUES (?, ?)";
 		}
 		else {
-			sql = new StringBuilder("UPDATE " + DEFAULT_TABLE_NAME + " SET messages = '");
-			sql.append(messages);
-			sql.append("' WHERE conversation_id = '");
-			sql.append(conversationId);
-			sql.append("'");
+			sql = "UPDATE chat_memory SET messages = ? WHERE conversation_id = ?";
 		}
-		try (Statement stmt = connection.createStatement()) {
-			stmt.executeUpdate(sql.toString());
+
+		try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
+			if (this.selectMessageById(conversationId).isEmpty()) {
+				stmt.setString(1, messages);
+				stmt.setString(2, conversationId);
+			}
+			else {
+				stmt.setString(1, messages);
+				stmt.setString(2, conversationId);
+			}
+			stmt.executeUpdate();
 		}
 		catch (SQLException e) {
 			logger.error("update message by mysql error，sql:{}", sql, e);
