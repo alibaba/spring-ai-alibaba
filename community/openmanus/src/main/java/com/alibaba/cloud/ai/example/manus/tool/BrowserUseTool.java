@@ -21,11 +21,14 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 
 import org.openqa.selenium.*;
+import org.openqa.selenium.interactions.Actions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.function.Function;
 
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -47,7 +50,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		return chromeDriverService.getDriver();
 	}
 
-	private static final int MAX_LENGTH = 3000;
+	private static final int MAX_LENGTH = 7000;
 
 	private static final String PARAMETERS = """
     {
@@ -171,6 +174,37 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			.build();
 	}
 
+	private void simulateHumanBehavior(WebElement element) {
+		try {
+			// 模拟人类移动鼠标
+			Actions actions = new Actions(getDriver());
+			actions.moveToElement(element)
+					.pause(Duration.ofMillis(new Random().nextInt(500) + 200))
+					.build()
+					.perform();
+
+			// 添加随机延迟
+			Thread.sleep(new Random().nextInt(1000) + 500);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
+	}
+
+	private void typeWithHumanDelay(WebElement element, String text) {
+		simulateHumanBehavior(element);
+
+		// 模拟人类输入速度
+		Random random = new Random();
+		for (char c : text.toCharArray()) {
+			element.sendKeys(String.valueOf(c));
+			try {
+				Thread.sleep(random.nextInt(100) + 50);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		}
+	}
+
 	public ToolExecuteResult run(String toolInput) {
 		log.info("BrowserUseTool toolInput:" + toolInput);
 		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
@@ -205,6 +239,9 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			tabId = (Integer) toolInputMap.get("tab_id");
 		}
 		try {
+			if (action == null) {
+				return new ToolExecuteResult("Action parameter is required");
+			}
 			WebDriver driver = getDriver();
 			switch (action) {
 				case "navigate":
@@ -223,7 +260,9 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					if (index < 0 || index >= elements.size()) {
 						return new ToolExecuteResult("Element with index " + index + " not found");
 					}
-					elements.get(index).click();
+					WebElement element = elements.get(index);
+					simulateHumanBehavior(element);
+					element.click();
 					return new ToolExecuteResult("Clicked element at index " + index);
 
 				case "input_text":
@@ -231,7 +270,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 						return new ToolExecuteResult("Index and text are required for 'input_text' action");
 					}
 					WebElement inputElement = driver.findElements(By.cssSelector("input, textarea")).get(index);
-					inputElement.sendKeys(text);
+					typeWithHumanDelay(inputElement, text);
 					return new ToolExecuteResult("Successfully input '" + text + "' into element at index " + index);
 
 				case "key_enter":
