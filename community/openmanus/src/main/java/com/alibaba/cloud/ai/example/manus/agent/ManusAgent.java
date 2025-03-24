@@ -32,7 +32,7 @@ public class ManusAgent extends ToolCallAgent {
 	private String description = "A versatile agent that can solve various tasks using multiple tools";
 
 	public ManusAgent(LlmService llmService, ToolCallingManager toolCallingManager, ToolBuilder toolBuilder) {
-		super(llmService, toolCallingManager,toolBuilder);
+		super(llmService, toolCallingManager, toolBuilder);
 	}
 
 	@Override

@@ -178,14 +178,12 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		try {
 			// 模拟人类移动鼠标
 			Actions actions = new Actions(getDriver());
-			actions.moveToElement(element)
-					.pause(Duration.ofMillis(new Random().nextInt(500) + 200))
-					.build()
-					.perform();
+			actions.moveToElement(element).pause(Duration.ofMillis(new Random().nextInt(500) + 200)).build().perform();
 
 			// 添加随机延迟
 			Thread.sleep(new Random().nextInt(1000) + 500);
-		} catch (InterruptedException e) {
+		}
+		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
 	}
@@ -199,7 +197,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			element.sendKeys(String.valueOf(c));
 			try {
 				Thread.sleep(random.nextInt(100) + 50);
-			} catch (InterruptedException e) {
+			}
+			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
 		}
@@ -376,7 +375,6 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			return new ToolExecuteResult("Browser action '" + action + "' failed: " + e.getMessage());
 		}
 	}
-
 
 	@Override
 	public ToolExecuteResult apply(String s) {

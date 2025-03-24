@@ -46,7 +46,8 @@ import org.springframework.web.client.RestClient;
 public class ManusConfiguration {
 
 	@Bean
-	public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager, ToolBuilder toolBuilder) {
+	public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager,
+			ToolBuilder toolBuilder) {
 		ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager, toolBuilder);
 
 		Map<String, BaseAgent> agentMap = new HashMap<>() {

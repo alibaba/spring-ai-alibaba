@@ -7,10 +7,10 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class ToolConfiguration {
-    
-    @Bean
-    public ToolBuilder toolBuilder(ChromeDriverService chromeDriverService) {
-        return new ToolBuilder(chromeDriverService);
-    }
-    
+
+	@Bean
+	public ToolBuilder toolBuilder(ChromeDriverService chromeDriverService) {
+		return new ToolBuilder(chromeDriverService);
+	}
+
 }

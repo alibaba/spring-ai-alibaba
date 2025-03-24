@@ -6,13 +6,15 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "manus.browser")
 public class BrowserProperties {
-    private boolean headless = false;
 
-    public boolean isHeadless() {
-        return headless;
-    }
+	private boolean headless = false;
 
-    public void setHeadless(boolean headless) {
-        this.headless = headless;
-    }
+	public boolean isHeadless() {
+		return headless;
+	}
+
+	public void setHeadless(boolean headless) {
+		this.headless = headless;
+	}
+
 }

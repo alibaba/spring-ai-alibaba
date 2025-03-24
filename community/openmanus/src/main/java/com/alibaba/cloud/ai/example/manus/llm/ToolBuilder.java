@@ -41,22 +41,21 @@ public class ToolBuilder {
 		this.chromeDriverService = chromeDriverService;
 	}
 
-	public  List<FunctionCallback> getManusAgentToolCalls(BaseAgent agent, ChatMemory memory,
-			String conversationId) {
-		return List.of(GoogleSearch.getFunctionToolCallback(), BrowserUseTool.getFunctionToolCallback(chromeDriverService),
-				FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback(),
-				Summary.getFunctionToolCallback(agent, memory, conversationId),
+	public List<FunctionCallback> getManusAgentToolCalls(BaseAgent agent, ChatMemory memory, String conversationId) {
+		return List.of(GoogleSearch.getFunctionToolCallback(),
+				BrowserUseTool.getFunctionToolCallback(chromeDriverService), FileSaver.getFunctionToolCallback(),
+				PythonExecute.getFunctionToolCallback(), Summary.getFunctionToolCallback(agent, memory, conversationId),
 				DocLoaderTool.getFunctionToolCallback());
 	}
 
-	public  List<ToolCallback> getManusAgentToolCalls() {
-		return List.of(GoogleSearch.getFunctionToolCallback(), BrowserUseTool.getFunctionToolCallback(chromeDriverService),
-				FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback(),
-				DocLoaderTool.getFunctionToolCallback());
+	public List<ToolCallback> getManusAgentToolCalls() {
+		return List.of(GoogleSearch.getFunctionToolCallback(),
+				BrowserUseTool.getFunctionToolCallback(chromeDriverService), FileSaver.getFunctionToolCallback(),
+				PythonExecute.getFunctionToolCallback(), DocLoaderTool.getFunctionToolCallback());
 	}
 
-    public List<ToolCallback> getPlanningAgentToolCallbacks() {
-        return List.of(PlanningTool.getFunctionToolCallback());
-    }
+	public List<ToolCallback> getPlanningAgentToolCallbacks() {
+		return List.of(PlanningTool.getFunctionToolCallback());
+	}
 
 }

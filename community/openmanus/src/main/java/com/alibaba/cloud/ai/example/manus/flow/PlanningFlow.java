@@ -53,9 +53,7 @@ public class PlanningFlow extends BaseFlow {
 	private LlmService llmService;
 
 	@Autowired
-	private ChromeDriverService chromeDriverService;	
-
-
+	private ChromeDriverService chromeDriverService;
 
 	// shared result state between agents.
 	private Map<String, Object> resultState;
@@ -144,7 +142,7 @@ public class PlanningFlow extends BaseFlow {
 			log.error("Error in PlanningFlow", e);
 			return "Execution failed: " + e.getMessage();
 		}
-		finally{
+		finally {
 			chromeDriverService.cleanup();
 		}
 	}
