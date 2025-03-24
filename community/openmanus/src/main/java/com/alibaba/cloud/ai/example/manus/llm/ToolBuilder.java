@@ -19,6 +19,7 @@ import java.util.List;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
+import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
 import com.alibaba.cloud.ai.example.manus.tool.GoogleSearch;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
@@ -35,12 +36,12 @@ public class ToolBuilder {
 			String conversationId) {
 		return List.of(GoogleSearch.getFunctionToolCallback(), BrowserUseTool.getFunctionToolCallback(),
 				FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback(),
-				Summary.getFunctionToolCallback(agent, memory, conversationId));
+				Summary.getFunctionToolCallback(agent, memory, conversationId), DocLoaderTool.getFunctionToolCallback());
 	}
 
 	public static List<ToolCallback> getManusAgentToolCalls() {
 		return List.of(GoogleSearch.getFunctionToolCallback(), BrowserUseTool.getFunctionToolCallback(),
-				FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback());
+				FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback(), DocLoaderTool.getFunctionToolCallback());
 	}
 
 	public static List<ToolCallback> getPlanningAgentToolCallbacks() {
