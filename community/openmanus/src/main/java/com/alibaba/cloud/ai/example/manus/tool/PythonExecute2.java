@@ -40,23 +40,23 @@ public class PythonExecute2 implements Function<String, ToolExecuteResult> {
 	public static final String LLMMATH_PYTHON_CODE = "import sys; import math; import numpy as np; import numexpr as ne; input = '%s'; res = ne.evaluate(input); print(res)";
 
 	private static String PARAMETERS = """
-        {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "description": "The Python code to execute."
-                }
-            },
-            "required": ["code"]
-        }
-        """;
+			{
+			    "type": "object",
+			    "properties": {
+			        "code": {
+			            "type": "string",
+			            "description": "The Python code to execute."
+			        }
+			    },
+			    "required": ["code"]
+			}
+			""";
 
 	private static final String name = "python_execute";
 
 	private static final String description = """
-        Executes Python code string. Note: Only print outputs are visible, function return values are not captured. Use print statements to see results.
-        """;
+			Executes Python code string. Note: Only print outputs are visible, function return values are not captured. Use print statements to see results.
+			""";
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
