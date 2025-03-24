@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 public class DocLoaderTool implements Function<String, ToolExecuteResult> {
@@ -68,8 +69,8 @@ public class DocLoaderTool implements Function<String, ToolExecuteResult> {
 		return functionTool;
 	}
 
-	public static FunctionToolCallback getFunctionToolCallback() {
-		return FunctionToolCallback.builder(name, new BrowserUseTool())
+	public static ToolCallback getFunctionToolCallback() {
+		return FunctionToolCallback.builder(name, new DocLoaderTool())
 			.description(description)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
