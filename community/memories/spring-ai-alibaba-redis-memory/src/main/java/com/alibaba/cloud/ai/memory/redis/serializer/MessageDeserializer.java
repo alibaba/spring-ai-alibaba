@@ -35,34 +35,35 @@ import java.util.Map;
 
 public class MessageDeserializer extends JsonDeserializer<Message> {
 
-    private static final Logger logger = LoggerFactory.getLogger(MessageDeserializer.class);
+	private static final Logger logger = LoggerFactory.getLogger(MessageDeserializer.class);
 
-    public Message deserialize(JsonParser p, DeserializationContext ctxt) {
-        ObjectMapper mapper = (ObjectMapper) p.getCodec();
-        JsonNode node = null;
-        Message message = null;
-        try {
-            node = mapper.readTree(p);
-            String messageType = node.get("messageType").asText();
-            switch (messageType) {
-                case "USER" -> message = new UserMessage(node.get("text").asText(),
-                        mapper.convertValue(node.get("media"), new TypeReference<Collection<Media>>() {
-                        }), mapper.convertValue(node.get("metadata"), new TypeReference<Map<String, Object>>() {
-                }));
-                case "ASSISTANT" -> message = new AssistantMessage(node.get("text").asText(),
-                        mapper.convertValue(node.get("metadata"), new TypeReference<Map<String, Object>>() {
-                        }), (List<AssistantMessage.ToolCall>) mapper.convertValue(node.get("toolCalls"),
-                        new TypeReference<Collection<AssistantMessage.ToolCall>>() {
-                        }),
-                        (List<Media>) mapper.convertValue(node.get("media"), new TypeReference<Collection<Media>>() {
-                        }));
-                default -> throw new IllegalArgumentException("Unknown message type: " + messageType);
-            }
-            ;
-        } catch (IOException e) {
-            logger.error("Error deserializing message", e);
-        }
-        return message;
-    }
+	public Message deserialize(JsonParser p, DeserializationContext ctxt) {
+		ObjectMapper mapper = (ObjectMapper) p.getCodec();
+		JsonNode node = null;
+		Message message = null;
+		try {
+			node = mapper.readTree(p);
+			String messageType = node.get("messageType").asText();
+			switch (messageType) {
+				case "USER" -> message = new UserMessage(node.get("text").asText(),
+						mapper.convertValue(node.get("media"), new TypeReference<Collection<Media>>() {
+						}), mapper.convertValue(node.get("metadata"), new TypeReference<Map<String, Object>>() {
+						}));
+				case "ASSISTANT" -> message = new AssistantMessage(node.get("text").asText(),
+						mapper.convertValue(node.get("metadata"), new TypeReference<Map<String, Object>>() {
+						}), (List<AssistantMessage.ToolCall>) mapper.convertValue(node.get("toolCalls"),
+								new TypeReference<Collection<AssistantMessage.ToolCall>>() {
+								}),
+						(List<Media>) mapper.convertValue(node.get("media"), new TypeReference<Collection<Media>>() {
+						}));
+				default -> throw new IllegalArgumentException("Unknown message type: " + messageType);
+			}
+			;
+		}
+		catch (IOException e) {
+			logger.error("Error deserializing message", e);
+		}
+		return message;
+	}
 
 }
