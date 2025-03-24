@@ -161,6 +161,8 @@ public class LlmService {
 
 			Summary: Record the result summary of the task.
 
+			DocLoader: List all the files in a directory or get the content of a local file at a specified path. Use this tool when you want to get some related information at a directory or file asked by the user.
+
 			Based on user needs, proactively select the most appropriate tool or combination of tools. For complex tasks, you can break down the problem and use different tools step by step to solve it. After using each tool, clearly explain the execution results and suggest the next steps.
 
 			When you are done with the task, you can finalize the plan by summarizing the steps taken and the output of each step, call Summary tool to record the result.

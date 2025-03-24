@@ -20,6 +20,7 @@ import java.util.List;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
+import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
 import com.alibaba.cloud.ai.example.manus.tool.GoogleSearch;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
@@ -33,31 +34,26 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ToolBuilder {
-    private final ChromeDriverService chromeDriverService;
 
-    public ToolBuilder(ChromeDriverService chromeDriverService) {
-        this.chromeDriverService = chromeDriverService;
-    }
+	private final ChromeDriverService chromeDriverService;
 
-    public List<FunctionCallback> getManusAgentToolCalls(BaseAgent agent, ChatMemory memory,
-            String conversationId) {
-        return List.of(
-            //GoogleSearch.getFunctionToolCallback(), 
-            BrowserUseTool.getFunctionToolCallback(chromeDriverService),
-            FileSaver.getFunctionToolCallback(), 
-            PythonExecute.getFunctionToolCallback(),
-            Summary.getFunctionToolCallback(agent, memory, conversationId)
-        );
-    }
+	public ToolBuilder(ChromeDriverService chromeDriverService) {
+		this.chromeDriverService = chromeDriverService;
+	}
 
-    public List<ToolCallback> getManusAgentToolCalls() {
-        return List.of(
-            //GoogleSearch.getFunctionToolCallback(), 
-            BrowserUseTool.getFunctionToolCallback(chromeDriverService),
-            FileSaver.getFunctionToolCallback(), 
-            PythonExecute.getFunctionToolCallback()
-        );
-    }
+	public  List<FunctionCallback> getManusAgentToolCalls(BaseAgent agent, ChatMemory memory,
+			String conversationId) {
+		return List.of(GoogleSearch.getFunctionToolCallback(), BrowserUseTool.getFunctionToolCallback(chromeDriverService),
+				FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback(),
+				Summary.getFunctionToolCallback(agent, memory, conversationId),
+				DocLoaderTool.getFunctionToolCallback());
+	}
+
+	public  List<ToolCallback> getManusAgentToolCalls() {
+		return List.of(GoogleSearch.getFunctionToolCallback(), BrowserUseTool.getFunctionToolCallback(chromeDriverService),
+				FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback(),
+				DocLoaderTool.getFunctionToolCallback());
+	}
 
     public List<ToolCallback> getPlanningAgentToolCallbacks() {
         return List.of(PlanningTool.getFunctionToolCallback());

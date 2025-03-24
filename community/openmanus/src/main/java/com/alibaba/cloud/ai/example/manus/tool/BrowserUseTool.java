@@ -53,105 +53,105 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 	private static final int MAX_LENGTH = 7000;
 
 	private static final String PARAMETERS = """
-    {
-        "type": "object",
-        "properties": {
-            "action": {
-                "type": "string",
-                "enum": [
-                    "navigate",
-                    "click",
-                    "input_text",
-                    "key_enter",
-                    "screenshot",
-                    "get_html",
-                    "get_text",
-                    "execute_js",
-                    "scroll",
-                    "switch_tab",
-                    "new_tab",
-                    "close_tab",
-                    "refresh"
-                ],
-                "description": "The browser action to perform"
-            },
-            "url": {
-                "type": "string",
-                "description": "URL for 'navigate' or 'new_tab' actions"
-            },
-            "index": {
-                "type": "integer",
-                "description": "Element index for 'click' or 'input_text' actions"
-            },
-            "text": {
-                "type": "string",
-                "description": "Text for 'input_text' action"
-            },
-            "script": {
-                "type": "string",
-                "description": "JavaScript code for 'execute_js' action"
-            },
-            "scroll_amount": {
-                "type": "integer",
-                "description": "Pixels to scroll (positive for down, negative for up) for 'scroll' action"
-            },
-            "tab_id": {
-                "type": "integer",
-                "description": "Tab ID for 'switch_tab' action"
-            }
-        },
-        "required": [
-            "action"
-        ],
-        "dependencies": {
-            "navigate": [
-                "url"
-            ],
-            "click": [
-                "index"
-            ],
-            "input_text": [
-                "index",
-                "text"
-            ],
-            "key_enter": [
-                "index"
-            ],
-            "execute_js": [
-                "script"
-            ],
-            "switch_tab": [
-                "tab_id"
-            ],
-            "new_tab": [
-                "url"
-            ],
-            "scroll": [
-                "scroll_amount"
-            ]
-        }
-    }
-    """;
+			{
+			    "type": "object",
+			    "properties": {
+			        "action": {
+			            "type": "string",
+			            "enum": [
+			                "navigate",
+			                "click",
+			                "input_text",
+			                "key_enter",
+			                "screenshot",
+			                "get_html",
+			                "get_text",
+			                "execute_js",
+			                "scroll",
+			                "switch_tab",
+			                "new_tab",
+			                "close_tab",
+			                "refresh"
+			            ],
+			            "description": "The browser action to perform"
+			        },
+			        "url": {
+			            "type": "string",
+			            "description": "URL for 'navigate' or 'new_tab' actions"
+			        },
+			        "index": {
+			            "type": "integer",
+			            "description": "Element index for 'click' or 'input_text' actions"
+			        },
+			        "text": {
+			            "type": "string",
+			            "description": "Text for 'input_text' action"
+			        },
+			        "script": {
+			            "type": "string",
+			            "description": "JavaScript code for 'execute_js' action"
+			        },
+			        "scroll_amount": {
+			            "type": "integer",
+			            "description": "Pixels to scroll (positive for down, negative for up) for 'scroll' action"
+			        },
+			        "tab_id": {
+			            "type": "integer",
+			            "description": "Tab ID for 'switch_tab' action"
+			        }
+			    },
+			    "required": [
+			        "action"
+			    ],
+			    "dependencies": {
+			        "navigate": [
+			            "url"
+			        ],
+			        "click": [
+			            "index"
+			        ],
+			        "input_text": [
+			            "index",
+			            "text"
+			        ],
+			        "key_enter": [
+			            "index"
+			        ],
+			        "execute_js": [
+			            "script"
+			        ],
+			        "switch_tab": [
+			            "tab_id"
+			        ],
+			        "new_tab": [
+			            "url"
+			        ],
+			        "scroll": [
+			            "scroll_amount"
+			        ]
+			    }
+			}
+			""";
 
 	private static final String name = "browser_use";
 
 	private static final String description = """
-    Interact with a web browser to perform various actions such as navigation, element interaction,搜索类优先考虑此工具
-    content extraction, and tab management. Supported actions include:
-    - 'navigate': Go to a specific URL, use https://baidu.com by default
-    - 'click': Click an element by index
-    - 'input_text': Input text into an element, for 百度(Baidu), the index of the input button is 
-    - 'key_enter': Hit the Enter key
-    - 'screenshot': Capture a screenshot
-    - 'get_html': Get page HTML content
-    - 'get_text': Get text content of the page
-    - 'execute_js': Execute JavaScript code
-    - 'scroll': Scroll the page
-    - 'switch_tab': Switch to a specific tab
-    - 'new_tab': Open a new tab
-    - 'close_tab': Close the current tab
-    - 'refresh': Refresh the current page
-    """;
+			Interact with a web browser to perform various actions such as navigation, element interaction,搜索类优先考虑此工具
+			content extraction, and tab management. Supported actions include:
+			- 'navigate': Go to a specific URL, use https://baidu.com by default
+			- 'click': Click an element by index
+			- 'input_text': Input text into an element, for 百度(Baidu), the index of the input button is
+			- 'key_enter': Hit the Enter key
+			- 'screenshot': Capture a screenshot
+			- 'get_html': Get page HTML content
+			- 'get_text': Get text content of the page
+			- 'execute_js': Execute JavaScript code
+			- 'scroll': Scroll the page
+			- 'switch_tab': Switch to a specific tab
+			- 'new_tab': Open a new tab
+			- 'close_tab': Close the current tab
+			- 'refresh': Refresh the current page
+			""";
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
