@@ -69,10 +69,10 @@ public class Bash implements Function<String, ToolExecuteResult> {
 
 	public static FunctionToolCallback getFunctionToolCallback(String workingDirectoryPath) {
 		return FunctionToolCallback.builder(name, new Bash(workingDirectoryPath))
-				.description(description)
-				.inputSchema(PARAMETERS)
-				.inputType(String.class)
-				.build();
+			.description(description)
+			.inputSchema(PARAMETERS)
+			.inputType(String.class)
+			.build();
 	}
 
 	public Bash(String workingDirectoryPath) {
