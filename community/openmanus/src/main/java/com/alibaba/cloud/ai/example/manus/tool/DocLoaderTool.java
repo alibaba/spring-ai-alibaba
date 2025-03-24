@@ -38,29 +38,29 @@ public class DocLoaderTool implements Function<String, ToolExecuteResult> {
 	private static final Logger log = LoggerFactory.getLogger(DocLoaderTool.class);
 
 	private static String PARAMETERS = """
-    {
-        "type": "object",
-        "properties": {
-            "file_type": {
-                "type": "string",
-                "description": "(required) File type, such as pdf, text, docx, xlsx, csv, etc.."
-            },
-            "file_path": {
-                "type": "string",
-                "description": "(required) Get the absolute path of the file from the user request."
-            }
-        },
-        "required": ["file_type","file_path"]
-    }
-    """;
+			{
+			    "type": "object",
+			    "properties": {
+			        "file_type": {
+			            "type": "string",
+			            "description": "(required) File type, such as pdf, text, docx, xlsx, csv, etc.."
+			        },
+			        "file_path": {
+			            "type": "string",
+			            "description": "(required) Get the absolute path of the file from the user request."
+			        }
+			    },
+			    "required": ["file_type","file_path"]
+			}
+			""";
 
 	private static final String name = "doc_loader";
 
 	private static final String description = """
-    Get the content information of a local file at a specified path. 
-    Use this tool when you want to get some related information asked by the user. 
-    This tool accepts the file path and gets the related information content.
-    """;
+			Get the content information of a local file at a specified path.
+			Use this tool when you want to get some related information asked by the user.
+			This tool accepts the file path and gets the related information content.
+			""";
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);

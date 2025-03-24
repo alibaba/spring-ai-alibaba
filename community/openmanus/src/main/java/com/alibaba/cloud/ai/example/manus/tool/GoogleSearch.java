@@ -42,30 +42,30 @@ public class GoogleSearch implements BiFunction<String, ToolContext, ToolExecute
 	private SerpApiService service;
 
 	private static String PARAMETERS = """
-        {
-            "type": "object",
-            "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "(required) The search query to submit to Google."
-                },
-                "num_results": {
-                    "type": "integer",
-                    "description": "(optional) The number of search results to return. Default is 10.",
-                    "default": 10
-                }
-            },
-            "required": ["query"]
-        }
-        """;
+			{
+			    "type": "object",
+			    "properties": {
+			        "query": {
+			            "type": "string",
+			            "description": "(required) The search query to submit to Google."
+			        },
+			        "num_results": {
+			            "type": "integer",
+			            "description": "(optional) The number of search results to return. Default is 10.",
+			            "default": 10
+			        }
+			    },
+			    "required": ["query"]
+			}
+			""";
 
 	private static final String name = "google_search";
 
 	private static final String description = """
-        Perform a Google search and return a list of relevant links.
-        Use this tool when you need to find information on the web, get up-to-date data, or research specific topics.
-        The tool returns a list of URLs that match the search query.
-        """;
+			Perform a Google search and return a list of relevant links.
+			Use this tool when you need to find information on the web, get up-to-date data, or research specific topics.
+			The tool returns a list of URLs that match the search query.
+			""";
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
