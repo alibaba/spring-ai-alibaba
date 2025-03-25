@@ -21,24 +21,21 @@ import java.util.Map;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 
-public class HumanNode implements NodeAction {
+public class StateAdaptorNode implements NodeAction {
 
-	private boolean shouldInterrupt = false;
+	NodeAction nodeAction;
 
-   //
-	@Override
-	public Map<String, Object> apply(OverAllState t) throws GraphInterruptException {
-		Map<String, Object> userInput = interrupt();
-
-		// userInput update State
-		// Command, node 跳转、state更新
-		return Map.of();
+	public StateAdaptorNode(NodeAction nodeAction) {
+		this.nodeAction = nodeAction;
 	}
 
-	private Map<String, Object> interrupt() throws GraphInterruptException {
-		if (shouldInterrupt) {
-			throw new GraphInterruptException("interrupt");
-		}
-		return null;
+	@Override
+	public Map<String, Object> apply(OverAllState t) throws Exception {
+		// parent state to current state;
+		OverAllState subState = t;
+
+		Map<String, Object> updatedSubState = nodeAction.apply(subState);
+
+		return updatedSubState;
 	}
 }

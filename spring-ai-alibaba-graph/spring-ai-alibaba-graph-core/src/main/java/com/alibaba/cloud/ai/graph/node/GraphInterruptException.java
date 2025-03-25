@@ -16,29 +16,8 @@
  */
 package com.alibaba.cloud.ai.graph.node;
 
-import java.util.Map;
-
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
-
-public class HumanNode implements NodeAction {
-
-	private boolean shouldInterrupt = false;
-
-   //
-	@Override
-	public Map<String, Object> apply(OverAllState t) throws GraphInterruptException {
-		Map<String, Object> userInput = interrupt();
-
-		// userInput update State
-		// Command, node 跳转、state更新
-		return Map.of();
-	}
-
-	private Map<String, Object> interrupt() throws GraphInterruptException {
-		if (shouldInterrupt) {
-			throw new GraphInterruptException("interrupt");
-		}
-		return null;
+public class GraphInterruptException extends Exception {
+	public GraphInterruptException(String message) {
+		super(message);
 	}
 }

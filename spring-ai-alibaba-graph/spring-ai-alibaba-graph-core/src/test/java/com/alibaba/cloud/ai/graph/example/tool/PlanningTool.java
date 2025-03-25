@@ -14,31 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.node;
+package com.alibaba.cloud.ai.graph.example.tool;
 
 import java.util.Map;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
+public class PlanningTool {
 
-public class HumanNode implements NodeAction {
+	private Map<String, Plan> plans;
 
-	private boolean shouldInterrupt = false;
-
-   //
-	@Override
-	public Map<String, Object> apply(OverAllState t) throws GraphInterruptException {
-		Map<String, Object> userInput = interrupt();
-
-		// userInput update State
-		// Command, node 跳转、state更新
-		return Map.of();
+	public PlanningTool(Map<String, Plan> plans) {
+		this.plans = plans;
 	}
 
-	private Map<String, Object> interrupt() throws GraphInterruptException {
-		if (shouldInterrupt) {
-			throw new GraphInterruptException("interrupt");
-		}
-		return null;
+	public void createPlan() {
+		// create plan
+	}
+
+	public void updatePlan() {
+		// update plan
+	}
+
+	public Plan getPlans(String id) {
+		return plans.get(id);
 	}
 }
