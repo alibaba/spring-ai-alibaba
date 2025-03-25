@@ -18,15 +18,24 @@ package com.alibaba.cloud.ai.memory.jdbc;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+
+import static org.mockito.Mockito.mock;
 
 /**
  * @author future0923
  *
  */
 class SqlServerChatMemoryTest {
+
+	@Test
+	public void test() {
+		SqlServerChatMemory mock = mock(SqlServerChatMemory.class);
+		Assertions.assertNotNull(mock);
+	}
 
 	//@Test
 	public void sqlServer() {

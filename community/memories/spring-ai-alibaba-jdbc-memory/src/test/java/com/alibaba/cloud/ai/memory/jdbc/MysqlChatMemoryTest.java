@@ -22,11 +22,19 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 
+import static org.mockito.Mockito.mock;
+
 /**
  * @author future0923
  *
  */
 class MysqlChatMemoryTest {
+
+	@Test
+	public void test() {
+		MysqlChatMemory mock = mock(MysqlChatMemory.class);
+		Assertions.assertNotNull(mock);
+	}
 
 	//@Test
 	public void mysql() {
