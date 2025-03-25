@@ -126,11 +126,6 @@ public class ToolCallAgent extends ReActAgent {
 				.get(toolExecutionResult.conversationHistory().size() - 1);
 			llmService.getMemory().add(getConversationId(), toolResponseMessage);
 			results.add(toolResponseMessage.getText());
-			List<ToolResponseMessage.ToolResponse> responses = toolResponseMessage.getResponses();
-			//打印responses所有的信息
-			for (ToolResponseMessage.ToolResponse response : responses) {
-				log.info(String.format("🔧 Tool %s's executing result: %s", getName(), response.responseData()));
-			}
 			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), toolResponseMessage.getText()));
 			return String.join("\n\n", results);
 		}
