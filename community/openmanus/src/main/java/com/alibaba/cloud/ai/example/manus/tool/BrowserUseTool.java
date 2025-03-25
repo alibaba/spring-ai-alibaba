@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.ArrayList;
 
@@ -384,15 +385,19 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 	private static final String INTERACTIVE_ELEMENTS_SELECTOR = "a, button, input, select, textarea, [role='button'], [role='link']";
 
 	private String getElementText(WebElement element) {
-		// 获取所有可能的文本并过滤出非空值
-		List<String> validTexts = Stream.of(
-				element.getText().trim(),
-				element.getAttribute("placeholder"),
-				element.getAttribute("value"),
-				element.getAttribute("aria-label"),
-				element.getAttribute("name"),
-				element.getAttribute("id"))
-				.filter(text -> text != null && !text.trim().isEmpty())
+		// 定义要获取的属性及其描述
+		Map<String, String> attributeMap = new LinkedHashMap<>(); // 使用LinkedHashMap保持顺序
+		attributeMap.put("text", element.getText().trim());
+		attributeMap.put("placeholder", element.getAttribute("placeholder"));
+		attributeMap.put("value", element.getAttribute("value"));
+		attributeMap.put("aria-label", element.getAttribute("aria-label"));
+		attributeMap.put("name", element.getAttribute("name"));
+		attributeMap.put("id", element.getAttribute("id"));
+
+		// 过滤出非空值并格式化为"key=value"形式
+		List<String> validTexts = attributeMap.entrySet().stream()
+				.filter(entry -> entry.getValue() != null && !entry.getValue().trim().isEmpty())
+				.map(entry -> entry.getKey() + "=\"" + entry.getValue().trim() + "\"")
 				.limit(3) // 只取前3个非空值
 				.collect(Collectors.toList());
 
@@ -477,14 +482,6 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					debugInfo.append("\n");
 				}
 
-				// 特别关注百度搜索框
-				if (id != null && id.equals("kw")) {
-					debugInfo.append("*** 发现百度搜索框 ***\n");
-					debugInfo.append(String.format("  完整HTML: %s\n", element.getAttribute("outerHTML")));
-					debugInfo.append(String.format("  位置: %s\n", element.getRect().toString()));
-					debugInfo.append(String.format("  是否启用: %s\n", element.isEnabled()));
-					debugInfo.append(String.format("  是否显示: %s\n", element.isDisplayed()));
-				}
 			}
 
 			// 打印详细调试信息

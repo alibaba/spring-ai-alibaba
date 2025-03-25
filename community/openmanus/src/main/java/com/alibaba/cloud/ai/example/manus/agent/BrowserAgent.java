@@ -22,7 +22,42 @@ public class BrowserAgent extends ToolCallAgent {
         super(llmService, toolCallingManager, toolBuilder);
     }
 
-    private final AtomicReference<Map<String,Object>> needsFreshData = new AtomicReference<>();
+    private final AtomicReference<Map<String, Object>> currentStepBrowserCache = new AtomicReference<>();
+
+    @Override
+    protected boolean think() {
+        // 在开始思考前清空缓存
+        currentStepBrowserCache.set(null);
+        return super.think();
+    }
+
+    private Map<String, Object> getBrowserState() {
+        try {
+            // 首先尝试从缓存获取
+            Map<String, Object> cachedState = currentStepBrowserCache.get();
+            if (cachedState != null) {
+                log.debug("Using cached browser state");
+                return cachedState;
+            }
+
+            // 如果缓存为空，则获取新状态
+            BrowserUseTool browserTool = BrowserUseTool.getInstance(toolBuilder.getChromeDriverService());
+            if (browserTool == null) {
+                log.error("Failed to get browser tool instance");
+                return null;
+            }
+
+            Map<String, Object> newState = browserTool.getCurrentState();
+            // 更新缓存
+            currentStepBrowserCache.set(newState);
+            log.debug("Updated browser state cache");
+
+            return newState;
+        } catch (Exception e) {
+            log.error("Failed to get browser state", e);
+            return null;
+        }
+    }
 
     protected Message getNextStepMessage() {
 
@@ -188,20 +223,5 @@ public class BrowserAgent extends ToolCallAgent {
         }
 
         return data;
-    }
-    private Map<String, Object> getBrowserState() {
-        try {
-            BrowserUseTool browserTool = BrowserUseTool.getInstance(toolBuilder.getChromeDriverService());
-            if (browserTool == null) {
-                log.error("Failed to get browser tool instance");
-                return null;
-            }
-            Map<String, Object> state = browserTool.getCurrentState();
-
-            return state;
-        } catch (Exception e) {
-            log.error("Failed to get browser state", e);
-            return null;
-        }
     }
 }
