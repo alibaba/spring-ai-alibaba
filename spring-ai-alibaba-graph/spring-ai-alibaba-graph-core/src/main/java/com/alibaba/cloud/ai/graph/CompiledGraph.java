@@ -366,12 +366,12 @@ public class CompiledGraph {
 	 * @return an Optional containing the final state if present, otherwise an empty
 	 * Optional
 	 */
-	public Optional invoke(Map<String, Object> inputs, RunnableConfig config) {
+	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config) {
 		stateGraph.getOverAllState().input(inputs);
 		return stream(inputs, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
 
-	private Optional invoke(OverAllState overAllState, RunnableConfig config) {
+	private Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) {
 		return stream(overAllState, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
 
@@ -381,7 +381,7 @@ public class CompiledGraph {
 	 * @return an Optional containing the final state if present, otherwise an empty
 	 * Optional
 	 */
-	public Optional invoke(Map<String, Object> inputs) {
+	public Optional<OverAllState> invoke(Map<String, Object> inputs) {
 		return this.invoke(stateGraph.getOverAllState().input(inputs), RunnableConfig.builder().build());
 	}
 

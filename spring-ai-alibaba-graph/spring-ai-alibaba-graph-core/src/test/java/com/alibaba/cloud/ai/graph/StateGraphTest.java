@@ -335,7 +335,7 @@ public class StateGraphTest {
 		var workflowParent = new StateGraph(overAllState).addNode("step_1", step1)
 			.addNode("step_2", step2)
 			.addNode("step_3", step3)
-			.addSubgraph("subgraph", workflowChild)
+			.addNode("subgraph", workflowChild)
 			.addEdge(START, "step_1")
 			.addEdge("step_1", "step_2")
 			.addEdge("step_2", "subgraph")
