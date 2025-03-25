@@ -29,7 +29,7 @@ import org.springframework.ai.chat.memory.ChatMemory;
  */
 class OracleChatMemoryTest {
 
-	@Test
+	//@Test
 	public void oracle() {
 		ChatMemory chatMemory = new OracleChatMemory("system", "123456", "jdbc:oracle:thin:@localhost:1521/XEPDB1");
 		ChatClient chatClient = ChatClient.create(new DashScopeChatModel(new DashScopeApi("")));
