@@ -37,7 +37,7 @@ class SqlServerChatMemoryTest {
 		Assertions.assertNotNull(mock);
 	}
 
-	//@Test
+	// @Test
 	public void sqlServer() {
 		ChatMemory chatMemory = new SqlServerChatMemory("sa", "qWeR124563",
 				"jdbc:sqlserver://localhost:1433;database=spring_ai_alibaba_chat_memory;encrypt=true;trustServerCertificate=true");

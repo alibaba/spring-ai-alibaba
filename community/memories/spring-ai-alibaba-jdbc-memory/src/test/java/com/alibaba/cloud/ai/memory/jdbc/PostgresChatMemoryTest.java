@@ -37,7 +37,7 @@ class PostgresChatMemoryTest {
 		Assertions.assertNotNull(mock);
 	}
 
-	//@Test
+	// @Test
 	public void postgresql() {
 		ChatMemory chatMemory = new PostgresChatMemory("root", "123456",
 				"jdbc:postgresql://127.0.0.1:5432/spring_ai_alibaba_chat_memory");

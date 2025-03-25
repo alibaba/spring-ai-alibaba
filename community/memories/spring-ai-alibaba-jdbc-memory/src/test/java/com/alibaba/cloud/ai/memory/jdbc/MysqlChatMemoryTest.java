@@ -36,7 +36,7 @@ class MysqlChatMemoryTest {
 		Assertions.assertNotNull(mock);
 	}
 
-	//@Test
+	// @Test
 	public void mysql() {
 		MysqlChatMemory chatMemory = new MysqlChatMemory("root", "123456",
 				"jdbc:mysql://127.0.0.1:3306/spring_ai_alibaba_chat_memory");
