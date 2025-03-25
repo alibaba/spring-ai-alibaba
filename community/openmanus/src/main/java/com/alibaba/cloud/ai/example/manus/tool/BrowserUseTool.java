@@ -30,6 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.ArrayList;
@@ -56,105 +59,105 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 	private static final int MAX_LENGTH = 7000;
 
 	private static final String PARAMETERS = """
-    {
-        "type": "object",
-        "properties": {
-            "action": {
-                "type": "string",
-                "enum": [
-                    "navigate",
-                    "click",
-                    "input_text",
-                    "key_enter",
-                    "screenshot",
-                    "get_html",
-                    "get_text",
-                    "execute_js",
-                    "scroll",
-                    "switch_tab",
-                    "new_tab",
-                    "close_tab",
-                    "refresh"
-                ],
-                "description": "The browser action to perform"
-            },
-            "url": {
-                "type": "string",
-                "description": "URL for 'navigate' or 'new_tab' actions"
-            },
-            "index": {
-                "type": "integer",
-                "description": "Element index for 'click' or 'input_text' actions"
-            },
-            "text": {
-                "type": "string",
-                "description": "Text for 'input_text' action"
-            },
-            "script": {
-                "type": "string",
-                "description": "JavaScript code for 'execute_js' action"
-            },
-            "scroll_amount": {
-                "type": "integer",
-                "description": "Pixels to scroll (positive for down, negative for up) for 'scroll' action"
-            },
-            "tab_id": {
-                "type": "integer",
-                "description": "Tab ID for 'switch_tab' action"
-            }
-        },
-        "required": [
-            "action"
-        ],
-        "dependencies": {
-            "navigate": [
-                "url"
-            ],
-            "click": [
-                "index"
-            ],
-            "input_text": [
-                "index",
-                "text"
-            ],
-            "key_enter": [
-                "index"
-            ],
-            "execute_js": [
-                "script"
-            ],
-            "switch_tab": [
-                "tab_id"
-            ],
-            "new_tab": [
-                "url"
-            ],
-            "scroll": [
-                "scroll_amount"
-            ]
-        }
-    }
-    """;
+			{
+			    "type": "object",
+			    "properties": {
+			        "action": {
+			            "type": "string",
+			            "enum": [
+			                "navigate",
+			                "click",
+			                "input_text",
+			                "key_enter",
+			                "screenshot",
+			                "get_html",
+			                "get_text",
+			                "execute_js",
+			                "scroll",
+			                "switch_tab",
+			                "new_tab",
+			                "close_tab",
+			                "refresh"
+			            ],
+			            "description": "The browser action to perform"
+			        },
+			        "url": {
+			            "type": "string",
+			            "description": "URL for 'navigate' or 'new_tab' actions"
+			        },
+			        "index": {
+			            "type": "integer",
+			            "description": "Element index for 'click' or 'input_text' actions"
+			        },
+			        "text": {
+			            "type": "string",
+			            "description": "Text for 'input_text' action"
+			        },
+			        "script": {
+			            "type": "string",
+			            "description": "JavaScript code for 'execute_js' action"
+			        },
+			        "scroll_amount": {
+			            "type": "integer",
+			            "description": "Pixels to scroll (positive for down, negative for up) for 'scroll' action"
+			        },
+			        "tab_id": {
+			            "type": "integer",
+			            "description": "Tab ID for 'switch_tab' action"
+			        }
+			    },
+			    "required": [
+			        "action"
+			    ],
+			    "dependencies": {
+			        "navigate": [
+			            "url"
+			        ],
+			        "click": [
+			            "index"
+			        ],
+			        "input_text": [
+			            "index",
+			            "text"
+			        ],
+			        "key_enter": [
+			            "index"
+			        ],
+			        "execute_js": [
+			            "script"
+			        ],
+			        "switch_tab": [
+			            "tab_id"
+			        ],
+			        "new_tab": [
+			            "url"
+			        ],
+			        "scroll": [
+			            "scroll_amount"
+			        ]
+			    }
+			}
+			""";
 
 	private static final String name = "browser_use";
 
 	private static final String description = """
-    Interact with a web browser to perform various actions such as navigation, element interaction,搜索类优先考虑此工具
-    content extraction, and tab management. Supported actions include:
-    - 'navigate': Go to a specific URL, use https://baidu.com by default
-    - 'click': Click an element by index
-    - 'input_text': Input text into an element, for 百度(Baidu), the index of the input button is 
-    - 'key_enter': Hit the Enter key
-    - 'screenshot': Capture a screenshot
-    - 'get_html': Get page HTML content
-    - 'get_text': Get text content of the page
-    - 'execute_js': Execute JavaScript code
-    - 'scroll': Scroll the page
-    - 'switch_tab': Switch to a specific tab
-    - 'new_tab': Open a new tab
-    - 'close_tab': Close the current tab
-    - 'refresh': Refresh the current page
-    """;
+			Interact with a web browser to perform various actions such as navigation, element interaction,搜索类优先考虑此工具
+			content extraction, and tab management. Supported actions include:
+			- 'navigate': Go to a specific URL, use https://baidu.com by default
+			- 'click': Click an element by index
+			- 'input_text': Input text into an element, for 百度(Baidu), the index of the input button is
+			- 'key_enter': Hit the Enter key
+			- 'screenshot': Capture a screenshot
+			- 'get_html': Get page HTML content
+			- 'get_text': Get text content of the page
+			- 'execute_js': Execute JavaScript code
+			- 'scroll': Scroll the page
+			- 'switch_tab': Switch to a specific tab
+			- 'new_tab': Open a new tab
+			- 'close_tab': Close the current tab
+			- 'refresh': Refresh the current page
+			""";
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
@@ -171,10 +174,10 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 
 	public static FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService) {
 		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.build();
+				.description(description)
+				.inputSchema(PARAMETERS)
+				.inputType(String.class)
+				.build();
 	}
 
 	private void simulateHumanBehavior(WebElement element) {
@@ -320,8 +323,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					Object result = jsExecutor.executeScript(script);
 					if (result == null) {
 						return new ToolExecuteResult("Successfully executed JavaScript code.");
-					}
-					else {
+					} else {
 						return new ToolExecuteResult(result.toString());
 					}
 				case "scroll":
@@ -358,8 +360,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 				default:
 					return new ToolExecuteResult("Unknown action: " + action);
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			if (e instanceof ElementNotInteractableException) {
 				String errorMessage = String.format(
 						"""
@@ -380,20 +381,138 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		}
 	}
 
+	private static final String INTERACTIVE_ELEMENTS_SELECTOR = "a, button, input, select, textarea, [role='button'], [role='link']";
+
+	private String getElementText(WebElement element) {
+		// 获取所有可能的文本并过滤出非空值
+		List<String> validTexts = Stream.of(
+				element.getText().trim(),
+				element.getAttribute("placeholder"),
+				element.getAttribute("value"),
+				element.getAttribute("aria-label"),
+				element.getAttribute("name"),
+				element.getAttribute("id"))
+				.filter(text -> text != null && !text.trim().isEmpty())
+				.limit(3) // 只取前3个非空值
+				.collect(Collectors.toList());
+
+		// 将非空值用空格连接
+		return String.join(" ", validTexts);
+	}
+
+	private String formatElementInfo(int index, WebElement element) {
+		String tagName = element.getTagName();
+		String type = element.getAttribute("type");
+		String role = element.getAttribute("role");
+		String elementText = getElementText(element);
+
+		if (elementText.isEmpty() || !isElementVisible(element)) {
+			return "";
+		}
+
+		return String.format("[%d] <%s%s%s>%s</%s>\n",
+				index,
+				tagName,
+				type != null ? " type=\"" + type + "\"" : "",
+				role != null ? " role=\"" + role + "\"" : "",
+				elementText,
+				tagName);
+	}
+
+	private String getInteractiveElementsInfo(WebDriver driver) {
+		try {
+			log.info("开始获取可交互元素信息");
+
+			// 1. 先获取所有可能的交互元素
+			List<WebElement> interactiveElements = driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR));
+			log.info("找到 {} 个潜在的交互元素", interactiveElements.size());
+
+			// 2. 详细记录每个元素的属性
+			StringBuilder debugInfo = new StringBuilder();
+			StringBuilder resultInfo = new StringBuilder();
+
+			for (int i = 0; i < interactiveElements.size(); i++) {
+				WebElement element = interactiveElements.get(i);
+
+				// // 收集元素的所有重要属性
+				// String tagName = element.getTagName();
+				// String id = element.getAttribute("id");
+				// String name = element.getAttribute("name");
+				// String className = element.getAttribute("class");
+				// String type = element.getAttribute("type");
+				// String role = element.getAttribute("role");
+				// String value = element.getAttribute("value");
+				// String placeholder = element.getAttribute("placeholder");
+
+				// // 构建调试信息
+				// debugInfo.append(String.format("\n元素 [%d]:\n", i));
+				// debugInfo.append(String.format("  标签: %s\n", tagName));
+				// debugInfo.append(String.format("  ID: %s\n", id));
+				// debugInfo.append(String.format("  Name: %s\n", name));
+				// debugInfo.append(String.format("  Class: %s\n", className));
+				// debugInfo.append(String.format("  Type: %s\n", type));
+				// debugInfo.append(String.format("  Role: %s\n", role));
+				// debugInfo.append(String.format("  Value: %s\n", value));
+				// debugInfo.append(String.format("  Placeholder: %s\n", placeholder));
+				// debugInfo.append(String.format("  可见性: %s\n", isElementVisible(element)));
+
+				// 获取元素的显示文本
+				String elementText = getElementText(element);
+				debugInfo.append(String.format("  显示文本: %s\n", elementText));
+
+				// 判断是否应该包含在最终结果中
+				if (!elementText.isEmpty() && isElementVisible(element)) {
+					String formattedInfo = formatElementInfo(i, element);
+					if (!formattedInfo.isEmpty()) {
+						resultInfo.append(formattedInfo);
+					}
+				} else {
+					debugInfo.append("  原因: ");
+					if (elementText.isEmpty()) {
+						debugInfo.append("文本为空 ");
+					}
+					if (!isElementVisible(element)) {
+						debugInfo.append("元素不可见 ");
+					}
+					debugInfo.append("\n");
+				}
+
+				// 特别关注百度搜索框
+				if (id != null && id.equals("kw")) {
+					debugInfo.append("*** 发现百度搜索框 ***\n");
+					debugInfo.append(String.format("  完整HTML: %s\n", element.getAttribute("outerHTML")));
+					debugInfo.append(String.format("  位置: %s\n", element.getRect().toString()));
+					debugInfo.append(String.format("  是否启用: %s\n", element.isEnabled()));
+					debugInfo.append(String.format("  是否显示: %s\n", element.isDisplayed()));
+				}
+			}
+
+			// 打印详细调试信息
+			log.info("交互元素详细信息:\n{}", debugInfo.toString());
+			log.info("最终返回的可交互元素列表:\n{}", resultInfo.toString());
+
+			return resultInfo.toString();
+
+		} catch (Exception e) {
+			log.error("获取可交互元素信息时发生错误", e);
+			return "Error: " + e.getMessage();
+		}
+	}
+
 	public Map<String, Object> getCurrentState() {
 		WebDriver driver = getDriver();
 		Map<String, Object> state = new HashMap<>();
-		
+
 		try {
 			// 等待页面加载完成
 			driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(10));
-			
+
 			// 获取基本信息
 			String currentUrl = driver.getCurrentUrl();
 			String title = driver.getTitle();
 			state.put("url", currentUrl);
 			state.put("title", title);
-			
+
 			// 获取标签页信息
 			Set<String> windowHandles = driver.getWindowHandles();
 			List<Map<String, Object>> tabs = new ArrayList<>();
@@ -401,78 +520,93 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			for (String handle : windowHandles) {
 				driver.switchTo().window(handle);
 				tabs.add(Map.of(
-					"url", driver.getCurrentUrl(),
-					"title", driver.getTitle(),
-					"id", handle
-				));
+						"url", driver.getCurrentUrl(),
+						"title", driver.getTitle(),
+						"id", handle));
 			}
-			driver.switchTo().window(currentHandle);  // 切回原始标签页
+			driver.switchTo().window(currentHandle); // 切回原始标签页
 			state.put("tabs", tabs);
-			
+
 			// 获取viewport和滚动信息
 			JavascriptExecutor js = (JavascriptExecutor) driver;
 			Long scrollTop = (Long) js.executeScript("return window.pageYOffset;");
 			Long scrollHeight = (Long) js.executeScript("return document.documentElement.scrollHeight;");
 			Long viewportHeight = (Long) js.executeScript("return window.innerHeight;");
-			
+
 			Map<String, Object> scrollInfo = new HashMap<>();
 			scrollInfo.put("pixels_above", scrollTop);
 			scrollInfo.put("pixels_below", Math.max(0, scrollHeight - (scrollTop + viewportHeight)));
 			scrollInfo.put("total_height", scrollHeight);
 			scrollInfo.put("viewport_height", viewportHeight);
 			state.put("scroll_info", scrollInfo);
-			
+
 			// 获取可交互元素
-			List<WebElement> interactiveElements = driver.findElements(
-				By.cssSelector("a, button, input, select, textarea, [role='button'], [role='link']")
-			);
-			StringBuilder elementsInfo = new StringBuilder();
-			for (int i = 0; i < interactiveElements.size(); i++) {
-				WebElement element = interactiveElements.get(i);
-				String elementText = element.getText().trim();
-				String tagName = element.getTagName();
-				String type = element.getAttribute("type");
-				String role = element.getAttribute("role");
-				
-				// 如果文本为空，尝试获取其他属性
-				if (elementText.isEmpty()) {
-					elementText = element.getAttribute("placeholder");
-					if (elementText.isEmpty()) {
-						elementText = element.getAttribute("value");
-						if (elementText.isEmpty()) {
-							elementText = element.getAttribute("aria-label");
-						}
-					}
-				}
-				
-				if (!elementText.isEmpty()) {
-					elementsInfo.append(String.format("[%d] <%s%s%s>%s</%s>\n", 
-						i,
-						tagName,
-						type != null ? " type=\"" + type + "\"" : "",
-						role != null ? " role=\"" + role + "\"" : "",
-						elementText,
-						tagName
-					));
-				}
-			}
-			state.put("interactive_elements", elementsInfo.toString());
-			
+			String elementsInfo = getInteractiveElementsInfo(driver);
+			state.put("interactive_elements", elementsInfo);
+
 			// 捕获截图
 			TakesScreenshot screenshot = (TakesScreenshot) driver;
 			String base64Screenshot = screenshot.getScreenshotAs(OutputType.BASE64);
 			state.put("screenshot", base64Screenshot);
-			
+
 			// 添加帮助信息
-			state.put("help", "[0], [1], [2], etc., represent clickable indices corresponding to the elements listed. " +
+			state.put("help", "[0], [1], [2], etc., represent clickable indices corresponding to the elements listed. "
+					+
 					"Clicking on these indices will navigate to or interact with the respective content behind them.");
-					
+
 			return state;
-			
+
 		} catch (Exception e) {
 			log.error("Failed to get browser state", e);
 			state.put("error", "Failed to get browser state: " + e.getMessage());
 			return state;
+		}
+	}
+
+	// 增加一个更详细的元素可见性检查方法
+	private boolean isElementVisible(WebElement element) {
+		try {
+			JavascriptExecutor js = (JavascriptExecutor) getDriver();
+
+			// 获取元素的各种样式属性
+			Map<String, String> styles = new HashMap<>();
+			String[] styleProperties = {
+					"display", "visibility", "opacity",
+					"position", "width", "height",
+					"clip", "overflow"
+			};
+
+			for (String prop : styleProperties) {
+				String value = (String) js.executeScript(
+						"return window.getComputedStyle(arguments[0]).getPropertyValue(arguments[1])",
+						element, prop);
+				styles.put(prop, value);
+			}
+
+			// 检查元素是否在视口内
+			Boolean inViewport = (Boolean) js.executeScript(
+					"var rect = arguments[0].getBoundingClientRect();" +
+							"return (rect.top >= 0 && rect.left >= 0 && " +
+							"rect.bottom <= window.innerHeight && " +
+							"rect.right <= window.innerWidth);",
+					element);
+
+			log.debug("元素样式检查 - ID: {}, Tag: {}, Styles: {}, InViewport: {}",
+					element.getAttribute("id"),
+					element.getTagName(),
+					styles,
+					inViewport);
+
+			return element.isDisplayed() &&
+					!"none".equals(styles.get("display")) &&
+					!"hidden".equals(styles.get("visibility")) &&
+					!"0".equals(styles.get("opacity")) &&
+					(styles.get("width") != null && !styles.get("width").equals("0px")) &&
+					(styles.get("height") != null && !styles.get("height").equals("0px"));
+
+		} catch (Exception e) {
+			log.error("检查元素可见性时发生错误: {}", e.getMessage());
+			return false;
 		}
 	}
 
