@@ -18,8 +18,10 @@ package com.alibaba.cloud.ai.memory.redis;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.alibaba.cloud.ai.memory.redis.serializer.MessageDeserializer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
@@ -59,6 +61,9 @@ public class RedisChatMemory implements ChatMemory, AutoCloseable {
 		this.jedisPool = new JedisPool(poolConfig, host, port, 2000, password);
 		this.jedis = jedisPool.getResource();
 		this.objectMapper = new ObjectMapper();
+		SimpleModule module = new SimpleModule();
+		module.addDeserializer(Message.class, new MessageDeserializer());
+		this.objectMapper.registerModule(module);
 
 		logger.info("Connected to Redis at {}:{}", host, port);
 	}
@@ -147,6 +152,18 @@ public class RedisChatMemory implements ChatMemory, AutoCloseable {
 		catch (Exception e) {
 			logger.error("Error clearing messages from Redis chat memory", e);
 			throw new RuntimeException(e);
+		}
+	}
+
+	public void updateMessageById(String conversationId, String messages) {
+		String key = "spring_ai_alibaba_chat_memory:" + conversationId;
+		try {
+			this.jedis.del(key);
+			this.jedis.rpush(key, new String[] { messages });
+		}
+		catch (Exception var6) {
+			logger.error("Error updating messages from Redis chat memory", var6);
+			throw new RuntimeException(var6);
 		}
 	}
 

@@ -54,7 +54,8 @@
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
-            <version>3.6.3</version>
+            <version>5.2.0</version>
+            <optional>true</optional>
         </dependency>
 
         <!-- test dependencies -->
