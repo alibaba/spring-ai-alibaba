@@ -23,36 +23,22 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.model.tool.ToolCallingManager;
 
-public class ManusAgent extends ToolCallAgent {
+public class ManusAgent extends BrowserAgent {
 
-	private static final Logger log = LoggerFactory.getLogger(ManusAgent.class);
-
-	private String name = "Manus";
-
-	private String description = "A versatile agent that can solve various tasks using multiple tools";
+;
 
 	public ManusAgent(LlmService llmService, ToolCallingManager toolCallingManager, ToolBuilder toolBuilder) {
-		super(llmService, toolCallingManager,toolBuilder);
+		super(llmService, toolCallingManager, toolBuilder);
 	}
 
 	@Override
 	public String getName() {
-		return name;
+		return "Manus";
 	}
-
-	@Override
-	public void setName(String name) {
-		this.name = name;
-	}
-
 	@Override
 	public String getDescription() {
-		return description;
+		return "A versatile agent that can solve various tasks using multiple tools";
 	}
 
-	@Override
-	public void setDescription(String description) {
-		this.description = description;
-	}
 
 }

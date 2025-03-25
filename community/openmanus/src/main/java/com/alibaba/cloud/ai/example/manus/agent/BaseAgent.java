@@ -29,15 +29,7 @@ public abstract class BaseAgent {
 	private final ReentrantLock lock = new ReentrantLock();
 
 	private String conversationId;
-
-	private String name = "Unique name of the agent";
-
-	private String description = "Optional agent description";
-
-	private String systemPrompt = "Default system-level instruction prompt";
-
-	private String nextStepPrompt = "Default prompt for determining next action";
-
+	
 	private AgentState state = AgentState.IDLE;
 
 	protected LlmService llmService;
@@ -47,6 +39,11 @@ public abstract class BaseAgent {
 	private int currentStep = 0;
 
 	private Map<String, Object> data = new HashMap<>();
+
+	public abstract String getName();
+	public abstract String getDescription();
+	public abstract String getSystemPromptTemplate();
+	public abstract String getNextStepPromptTemplate();
 
 	public BaseAgent(LlmService llmService) {
 		this.llmService = llmService;
@@ -88,8 +85,9 @@ public abstract class BaseAgent {
 
 	private void handleStuckState() {
 		String stuckPrompt = "Observed duplicate responses. Consider new strategies and avoid repeating ineffective paths already attempted.";
-		nextStepPrompt = stuckPrompt + "\n" + nextStepPrompt;
+		String nextStepPrompt = stuckPrompt + "\n" + getNextStepPromptTemplate();
 		log.warn("Agent detected stuck state. Added prompt: " + stuckPrompt);
+		//TODO Implement logic to handle the stuck state
 	}
 
 	/**
@@ -99,23 +97,6 @@ public abstract class BaseAgent {
 	private boolean isStuck() {
 		return false;
 	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getDescription() {
-		return description;
-	}
-
-	public void setDescription(String description) {
-		this.description = description;
-	}
-
 	public void setState(AgentState state) {
 		this.state = state;
 	}
