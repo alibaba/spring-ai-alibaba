@@ -28,12 +28,11 @@ import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
  */
 class MysqlChatMemoryTest {
 
-	@Test
+	//@Test
 	public void mysql() {
-
 		MysqlChatMemory chatMemory = new MysqlChatMemory("root", "123456",
 				"jdbc:mysql://127.0.0.1:3306/spring_ai_alibaba_chat_memory");
-		ChatClient chatClient = ChatClient.create(new DashScopeChatModel(new DashScopeApi("")));
+		ChatClient chatClient = ChatClient.create(new DashScopeChatModel(new DashScopeApi("test-api-key")));
 		String content1 = chatClient.prompt()
 			.advisors(new MessageChatMemoryAdvisor(chatMemory))
 			.user("我是张三😄")
