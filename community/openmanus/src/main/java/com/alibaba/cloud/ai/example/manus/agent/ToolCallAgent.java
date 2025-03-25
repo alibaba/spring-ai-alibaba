@@ -15,10 +15,10 @@
  */
 package com.alibaba.cloud.ai.example.manus.agent;
 
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
+import org.springframework.ai.chat.messages.Message;
 
 import com.alibaba.cloud.ai.example.manus.llm.ToolBuilder;
 import com.alibaba.cloud.ai.example.manus.tool.Summary;
@@ -35,6 +35,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -51,7 +52,7 @@ public class ToolCallAgent extends ReActAgent {
 
 	private final ToolCallingManager toolCallingManager;
 
-	private final ToolBuilder toolBuilder;
+	protected final ToolBuilder toolBuilder;
 
 	private ChatResponse response;
 
@@ -68,26 +69,61 @@ public class ToolCallAgent extends ReActAgent {
 		int retry = 0;
 		return _think(retry);
 	}
+	@Override
+	public String getDescription() {
+		return "ToolCallAgent: A class responsible for managing tool calls in the ReAct agent.";
+	}
+
+	@Override
+	public String getName() {
+		return "ToolCallAgent";
+	}
+
+	public String getSystemPromptTemplate()
+	{
+		return """
+			CURRENT PLAN STATUS:
+			{planStatus}
+
+			YOUR CURRENT TASK:
+			You are now working on step {currentStepIndex}: {stepText}
+
+			Please execute this step using the appropriate tools.
+			When you're done with current step, provide the result data of this step, call Summary tool to record the result of current step.
+			""";
+	}
+
+	@Override
+	public String getNextStepPromptTemplate() {
+		
+		return "Please provide the next step for the task.";	
+	}
 
 	private boolean _think(int retry) {
 		try {
-			String stepPrompt = """
-					CURRENT PLAN STATUS:
-					{planStatus}
+			String stepPrompt = getSystemPromptTemplate();
 
-					YOUR CURRENT TASK:
-					You are now working on step {currentStepIndex}: {stepText}
+			SystemPromptTemplate promptTemplate = new SystemPromptTemplate(stepPrompt);
 
-					Please execute this step using the appropriate tools.
-					When you're done with current step, provide the result data of this step, call Summary tool to record the result of current step.
-					""";
-
-			PromptTemplate promptTemplate = new PromptTemplate(stepPrompt);
+			//calltool with mem 
 			ChatOptions chatOptions = ToolCallingChatOptions.builder()
 				.toolCallbacks(toolBuilder.getManusAgentToolCalls(this, llmService.getMemory(), getConversationId()))
 				.internalToolExecutionEnabled(false)
 				.build();
-			userPrompt = promptTemplate.create(getData(), chatOptions);
+
+
+			Message systemMessage = promptTemplate.createMessage(getData());
+			
+			List<Message> messages = new ArrayList<>();
+			messages.add(systemMessage);
+
+			Message nextStepMessage = new PromptTemplate(getNextStepPromptTemplate()).createMessage(getData());
+			messages.add(nextStepMessage);
+
+
+			log.debug("Messages prepared for the prompt: {}", messages);
+
+			userPrompt = new Prompt(messages, chatOptions);
 
 			response = llmService.getChatClient()
 				.prompt(userPrompt)
@@ -143,7 +179,7 @@ public class ToolCallAgent extends ReActAgent {
 		}
 	}
 
-	private List<ToolCallback> getFunctionToolCallbacks() {
+	protected List<ToolCallback> getFunctionToolCallbacks() {
 		return List.of(Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId()));
 	}
 

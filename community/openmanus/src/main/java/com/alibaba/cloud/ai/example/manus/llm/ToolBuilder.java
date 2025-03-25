@@ -63,4 +63,8 @@ public class ToolBuilder {
         return List.of(PlanningTool.getFunctionToolCallback());
     }
 
+	public ChromeDriverService getChromeDriverService() {
+		return chromeDriverService;
+	}
+
 }

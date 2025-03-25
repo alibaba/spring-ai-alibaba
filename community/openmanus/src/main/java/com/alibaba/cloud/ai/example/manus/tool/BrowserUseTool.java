@@ -30,6 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.ArrayList;
 
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -377,6 +380,80 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		}
 	}
 
+	public Map<String, Object> getCurrentState() {
+		WebDriver driver = getDriver();
+		Map<String, Object> state = new HashMap<>();
+		
+		try {
+			// 收集基本信息
+			state.put("url", driver.getCurrentUrl());
+			state.put("title", driver.getTitle());
+			
+			// 获取标签页信息
+			Set<String> windowHandles = driver.getWindowHandles();
+			List<Map<String, String>> tabs = new ArrayList<>();
+			for (String handle : windowHandles) {
+				String currentHandle = driver.getWindowHandle();
+				driver.switchTo().window(handle);
+				tabs.add(Map.of(
+					"url", driver.getCurrentUrl(),
+					"title", driver.getTitle()
+				));
+				driver.switchTo().window(currentHandle);
+			}
+			state.put("tabs", tabs);
+			
+			// 获取页面滚动信息
+			JavascriptExecutor js = (JavascriptExecutor) driver;
+			Long scrollTop = (Long) js.executeScript("return window.pageYOffset;");
+			Long scrollHeight = (Long) js.executeScript("return document.documentElement.scrollHeight;");
+			Long clientHeight = (Long) js.executeScript("return document.documentElement.clientHeight;");
+			
+			Map<String, Object> scrollInfo = new HashMap<>();
+			scrollInfo.put("content_above", scrollTop);
+			scrollInfo.put("content_below", scrollHeight - (scrollTop + clientHeight));
+			scrollInfo.put("total_height", scrollHeight);
+			scrollInfo.put("viewport_height", clientHeight);
+			state.put("scroll_info", scrollInfo);
+			
+			// 获取可交互元素
+			List<WebElement> interactiveElements = driver.findElements(
+				By.cssSelector("a, button, input, select, textarea")
+			);
+			StringBuilder interactiveElementsStr = new StringBuilder();
+			for (int i = 0; i < interactiveElements.size(); i++) {
+				WebElement element = interactiveElements.get(i);
+				String text = element.getText();
+				String type = element.getTagName();
+				if (text.isEmpty()) {
+					text = element.getAttribute("placeholder");
+				}
+				if (text.isEmpty()) {
+					text = element.getAttribute("value");
+				}
+				if (!text.isEmpty()) {
+					interactiveElementsStr.append(String.format("[%d] %s (%s)\n", i, text, type));
+				}
+			}
+			state.put("interactive_elements", interactiveElementsStr.toString());
+			
+			// 获取截图
+			TakesScreenshot screenshot = (TakesScreenshot) driver;
+			String base64Screenshot = screenshot.getScreenshotAs(OutputType.BASE64);
+			state.put("screenshot", base64Screenshot);
+			
+			// 添加帮助信息
+			state.put("help", "[0], [1], [2], etc., represent clickable indices corresponding to the elements listed. " +
+					"Clicking on these indices will navigate to or interact with the respective content behind them.");
+					
+			return state;
+			
+		} catch (Exception e) {
+			log.error("Error getting browser state", e);
+			state.put("error", e.getMessage());
+			return state;
+		}
+	}
 
 	@Override
 	public ToolExecuteResult apply(String s) {
