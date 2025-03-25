@@ -13,61 +13,60 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.memory.mysql;
+package com.alibaba.cloud.ai.memory.jdbc;
 
-import java.sql.DriverManager;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.PreparedStatement;
-import java.util.ArrayList;
-import java.util.List;
-
+import com.alibaba.cloud.ai.memory.jdbc.serializer.MessageDeserializer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 
-import com.alibaba.cloud.ai.memory.mysql.serializer.MessageDeserializer;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
-public class MysqlChatMemory implements ChatMemory, AutoCloseable {
+/**
+ * @author future0923
+ */
+public abstract class JdbcChatMemory implements ChatMemory, AutoCloseable {
 
-	private static final Logger logger = LoggerFactory.getLogger(MysqlChatMemory.class);
-
-	private static final String DEFAULT_DATABASE = "spring_ai_alibaba_mysql";
+	private static final Logger logger = LoggerFactory.getLogger(JdbcChatMemory.class);
 
 	private static final String DEFAULT_TABLE_NAME = "chat_memory";
 
-	private static final String DEFAULT_URL = "127.0.0.1:3306";
-
-	private static final String DEFAULT_USERNAME = "root";
-
-	private static final String DEFAULT_PASSWORD = "root";
-
 	private final Connection connection;
+
+	private final String tableName;
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
-	public MysqlChatMemory() {
+	protected abstract String jdbcType();
 
-		this(DEFAULT_USERNAME, DEFAULT_PASSWORD, DEFAULT_URL);
+	protected abstract String hasTableSql(String tableName);
+
+	protected abstract String createTableSql(String tableName);
+
+	protected JdbcChatMemory(String username, String password, String jdbcUrl) {
+		this(username, password, jdbcUrl, DEFAULT_TABLE_NAME);
 	}
 
-	public MysqlChatMemory(String username, String password, String url) {
+	protected JdbcChatMemory(String username, String password, String jdbcUrl, String tableName) {
 		// Configure ObjectMapper to support interface deserialization
 		SimpleModule module = new SimpleModule();
 		module.addDeserializer(Message.class, new MessageDeserializer());
 		this.objectMapper.registerModule(module);
-
+		this.tableName = tableName;
 		try {
-			this.connection = DriverManager.getConnection(
-					String.format("jdbc:mysql://%s/%s?serverTimezone=UTC", url, DEFAULT_DATABASE), username, password);
+			this.connection = DriverManager.getConnection(jdbcUrl, username, password);
 			checkAndCreateTable();
 		}
 		catch (SQLException e) {
@@ -75,14 +74,17 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 		}
 	}
 
-	public MysqlChatMemory(Connection connection) {
+	protected JdbcChatMemory(Connection connection) {
+		this(connection, DEFAULT_TABLE_NAME);
+	}
+
+	protected JdbcChatMemory(Connection connection, String tableName) {
 		// Configure ObjectMapper to support interface deserialization
 		SimpleModule module = new SimpleModule();
 		module.addDeserializer(Message.class, new MessageDeserializer());
 		this.objectMapper.registerModule(module);
-
 		this.connection = connection;
-
+		this.tableName = tableName;
 		try {
 			checkAndCreateTable();
 		}
@@ -92,15 +94,13 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 	}
 
 	private void checkAndCreateTable() throws SQLException {
-
-		String checkTableQuery = String.format("SHOW TABLES LIKE '%s'", DEFAULT_TABLE_NAME);
+		String checkTableQuery = hasTableSql(tableName);
 		try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(checkTableQuery)) {
-
 			if (rs.next()) {
-				logger.info("Table " + DEFAULT_TABLE_NAME + " exists.");
+				logger.info("Table {} exists.", tableName);
 			}
 			else {
-				logger.info("Table " + DEFAULT_TABLE_NAME + " does not exist. Creating table...");
+				logger.info("Table {} does not exist. Creating table...", tableName);
 				createTable();
 			}
 		}
@@ -108,13 +108,11 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 
 	private void createTable() {
 		try (Statement stmt = connection.createStatement()) {
-			stmt.execute("USE spring_ai_alibaba_mysql");
-			stmt.execute(
-					"CREATE TABLE chat_memory( id BIGINT AUTO_INCREMENT PRIMARY KEY,conversation_id  VARBINARY(256)  NULL,messages TEXT NULL,UNIQUE (conversation_id));");
-			logger.info("Table " + DEFAULT_TABLE_NAME + " created successfully.");
+			stmt.execute(createTableSql(tableName));
+			logger.info("Table {} created successfully.", tableName);
 		}
 		catch (Exception e) {
-			throw new RuntimeException("Error creating table " + DEFAULT_TABLE_NAME + " ", e);
+			throw new RuntimeException("Error creating table " + tableName + " ", e);
 		}
 	}
 
@@ -122,13 +120,11 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 	public void add(String conversationId, List<Message> messages) {
 		try {
 			List<Message> all = this.selectMessageById(conversationId);
-
 			all.addAll(messages);
-
 			this.updateMessageById(conversationId, this.objectMapper.writeValueAsString(all));
 		}
 		catch (Exception e) {
-			logger.error("Error adding messages to MySQL chat memory", e);
+			logger.error("Error adding messages to {} chat memory", jdbcType(), e);
 			throw new RuntimeException(e);
 		}
 	}
@@ -140,7 +136,7 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 			all = this.selectMessageById(conversationId);
 		}
 		catch (Exception e) {
-			logger.error("Error getting messages from MySQL chat memory", e);
+			logger.error("Error getting messages from {} chat memory", jdbcType(), e);
 			throw new RuntimeException(e);
 		}
 		return all != null ? all.stream().skip(Math.max(0, all.size() - lastN)).toList() : List.of();
@@ -148,7 +144,7 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 
 	@Override
 	public void clear(String conversationId) {
-		StringBuilder sql = new StringBuilder("DELETE FROM " + DEFAULT_TABLE_NAME + " WHERE conversation_id = '");
+		StringBuilder sql = new StringBuilder("DELETE FROM " + tableName + " WHERE conversation_id = '");
 		sql.append(conversationId);
 		sql.append("'");
 		try (Statement stmt = connection.createStatement()) {
@@ -162,7 +158,6 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 
 	@Override
 	public void close() throws Exception {
-
 		if (connection != null) {
 			connection.close();
 		}
@@ -171,22 +166,20 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 	public void clearOverLimit(String conversationId, int maxLimit, int deleteSize) {
 		try {
 			List<Message> all = this.selectMessageById(conversationId);
-
 			if (all.size() >= maxLimit) {
 				all = all.stream().skip(Math.max(0, deleteSize)).toList();
 				this.updateMessageById(conversationId, this.objectMapper.writeValueAsString(all));
 			}
 		}
 		catch (Exception e) {
-			logger.error("Error clearing messages from MySQL chat memory", e);
+			logger.error("Error clearing messages from {} chat memory", jdbcType(), e);
 			throw new RuntimeException(e);
 		}
 	}
 
 	public List<Message> selectMessageById(String conversationId) {
 		List<Message> totalMessage = new ArrayList<>();
-		StringBuilder sql = new StringBuilder(
-				"SELECT messages FROM " + DEFAULT_TABLE_NAME + " WHERE conversation_id = '");
+		StringBuilder sql = new StringBuilder("SELECT messages FROM " + tableName + " WHERE conversation_id = '");
 		sql.append(conversationId);
 		sql.append("'");
 		try (Statement stmt = connection.createStatement()) {
@@ -202,7 +195,7 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 			}
 		}
 		catch (SQLException | JsonProcessingException e) {
-			logger.error("select message by mysql error，sql:{}", sql, e);
+			logger.error("select message by {} error，sql:{}", jdbcType(), sql, e);
 			throw new RuntimeException(e);
 		}
 		return totalMessage;
@@ -211,7 +204,6 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 	public void updateMessageById(String conversationId, String messages) {
 		// Remove newlines and escape single quotes
 		messages = messages.replaceAll("[\\r\\n]", "").replace("'", "''");
-
 		String sql;
 		if (this.selectMessageById(conversationId).isEmpty()) {
 			sql = "INSERT INTO chat_memory (messages, conversation_id) VALUES (?, ?)";
@@ -219,7 +211,6 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 		else {
 			sql = "UPDATE chat_memory SET messages = ? WHERE conversation_id = ?";
 		}
-
 		try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
 			if (this.selectMessageById(conversationId).isEmpty()) {
 				stmt.setString(1, messages);
@@ -232,7 +223,7 @@ public class MysqlChatMemory implements ChatMemory, AutoCloseable {
 			stmt.executeUpdate();
 		}
 		catch (SQLException e) {
-			logger.error("update message by mysql error，sql:{}", sql, e);
+			logger.error("update message by {} error，sql:{}", sql, jdbcType(), e);
 			throw new RuntimeException(e);
 		}
 	}

@@ -25,9 +25,9 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-mysql-memory</artifactId>
-    <name>spring-ai-alibaba-mysql-memory</name>
-    <description>Mysql ChatMemory implementation for Spring AI Alibaba</description>
+    <artifactId>spring-ai-alibaba-jdbc-memory</artifactId>
+    <name>spring-ai-alibaba-jdbc-memory</name>
+    <description>Jdbc ChatMemory implementation for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
@@ -55,8 +55,27 @@
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.32</version>
-            <optional>true</optional>
+            <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.oracle.database.jdbc</groupId>
+            <artifactId>ojdbc8</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc</artifactId>
+            <scope>test</scope>
+        </dependency>
+
 
         <!-- test dependencies -->
         <dependency>
@@ -80,22 +99,6 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-observation-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- JUnit Jupiter API for testing -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>5.8.2</version>
-            <scope>test</scope>
-        </dependency>
-        
-        <!-- JUnit Jupiter Engine for testing -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.8.2</version>
             <scope>test</scope>
         </dependency>
 
