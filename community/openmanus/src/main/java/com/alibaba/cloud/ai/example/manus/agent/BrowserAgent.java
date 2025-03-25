@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.tool.ToolCallingManager;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class BrowserAgent extends ToolCallAgent {
@@ -116,17 +117,62 @@ public class BrowserAgent extends ToolCallAgent {
 
     @Override
     Map<String, Object> getData() {
-        Map<String, Object> newReturnData = new HashMap<>();
-        Map<String,Object> parentData =  super.getData();
-        if(parentData != null) {
-            newReturnData.putAll(parentData);
-        }
-        Map<String, Object> browserState = getBrowserState();
-        if(browserState != null) {
-            newReturnData.putAll(browserState);
+        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> parentData = super.getData();
+        if (parentData != null) {
+            data.putAll(parentData);
         }
 
-        return newReturnData;
+        Map<String, Object> browserState = getBrowserState();
+        if (browserState != null) {
+            // 格式化 URL 和标题信息
+            String urlInfo = String.format("\n   URL: %s\n   Title: %s",
+                    browserState.get("url"),
+                    browserState.get("title"));
+            data.put("url_placeholder", urlInfo);
+
+            // 格式化标签页信息
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> tabs = (List<Map<String, Object>>) browserState.get("tabs");
+            if (tabs != null && !tabs.isEmpty()) {
+                data.put("tabs_placeholder", String.format("\n   %d tab(s) available", tabs.size()));
+            } else {
+                data.put("tabs_placeholder", "");
+            }
+
+            // 格式化滚动信息
+            @SuppressWarnings("unchecked")
+            Map<String, Object> scrollInfo = (Map<String, Object>) browserState.get("scroll_info");
+            if (scrollInfo != null) {
+                Long pixelsAbove = (Long) scrollInfo.get("pixels_above");
+                Long pixelsBelow = (Long) scrollInfo.get("pixels_below");
+                
+                data.put("content_above_placeholder", 
+                    pixelsAbove > 0 ? String.format(" (%d pixels)", pixelsAbove) : "");
+                data.put("content_below_placeholder", 
+                    pixelsBelow > 0 ? String.format(" (%d pixels)", pixelsBelow) : "");
+            }
+
+            // 添加交互元素信息
+            String interactiveElements = (String) browserState.get("interactive_elements");
+            if (interactiveElements != null && !interactiveElements.isEmpty()) {
+                data.put("interactive_elements", interactiveElements);
+            }
+
+            // 添加结果信息占位符
+            data.put("results_placeholder", "");
+
+            // 添加帮助信息
+            data.put("help", browserState.get("help"));
+
+            // 保存截图信息（如果需要）
+            String screenshot = (String) browserState.get("screenshot");
+            if (screenshot != null) {
+                data.put("screenshot", screenshot);
+            }
+        }
+
+        return data;
     }
 
     private Map<String, Object> getBrowserState() {

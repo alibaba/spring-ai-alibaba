@@ -385,59 +385,80 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		Map<String, Object> state = new HashMap<>();
 		
 		try {
-			// 收集基本信息
-			state.put("url", driver.getCurrentUrl());
-			state.put("title", driver.getTitle());
+			// 等待页面加载完成
+			driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(10));
+			
+			// 获取基本信息
+			String currentUrl = driver.getCurrentUrl();
+			String title = driver.getTitle();
+			state.put("url", currentUrl);
+			state.put("title", title);
 			
 			// 获取标签页信息
 			Set<String> windowHandles = driver.getWindowHandles();
-			List<Map<String, String>> tabs = new ArrayList<>();
+			List<Map<String, Object>> tabs = new ArrayList<>();
+			String currentHandle = driver.getWindowHandle();
 			for (String handle : windowHandles) {
-				String currentHandle = driver.getWindowHandle();
 				driver.switchTo().window(handle);
 				tabs.add(Map.of(
 					"url", driver.getCurrentUrl(),
-					"title", driver.getTitle()
+					"title", driver.getTitle(),
+					"id", handle
 				));
-				driver.switchTo().window(currentHandle);
 			}
+			driver.switchTo().window(currentHandle);  // 切回原始标签页
 			state.put("tabs", tabs);
 			
-			// 获取页面滚动信息
+			// 获取viewport和滚动信息
 			JavascriptExecutor js = (JavascriptExecutor) driver;
 			Long scrollTop = (Long) js.executeScript("return window.pageYOffset;");
 			Long scrollHeight = (Long) js.executeScript("return document.documentElement.scrollHeight;");
-			Long clientHeight = (Long) js.executeScript("return document.documentElement.clientHeight;");
+			Long viewportHeight = (Long) js.executeScript("return window.innerHeight;");
 			
 			Map<String, Object> scrollInfo = new HashMap<>();
-			scrollInfo.put("content_above", scrollTop);
-			scrollInfo.put("content_below", scrollHeight - (scrollTop + clientHeight));
+			scrollInfo.put("pixels_above", scrollTop);
+			scrollInfo.put("pixels_below", Math.max(0, scrollHeight - (scrollTop + viewportHeight)));
 			scrollInfo.put("total_height", scrollHeight);
-			scrollInfo.put("viewport_height", clientHeight);
+			scrollInfo.put("viewport_height", viewportHeight);
 			state.put("scroll_info", scrollInfo);
 			
 			// 获取可交互元素
 			List<WebElement> interactiveElements = driver.findElements(
-				By.cssSelector("a, button, input, select, textarea")
+				By.cssSelector("a, button, input, select, textarea, [role='button'], [role='link']")
 			);
-			StringBuilder interactiveElementsStr = new StringBuilder();
+			StringBuilder elementsInfo = new StringBuilder();
 			for (int i = 0; i < interactiveElements.size(); i++) {
 				WebElement element = interactiveElements.get(i);
-				String text = element.getText();
-				String type = element.getTagName();
-				if (text.isEmpty()) {
-					text = element.getAttribute("placeholder");
+				String elementText = element.getText().trim();
+				String tagName = element.getTagName();
+				String type = element.getAttribute("type");
+				String role = element.getAttribute("role");
+				
+				// 如果文本为空，尝试获取其他属性
+				if (elementText.isEmpty()) {
+					elementText = element.getAttribute("placeholder");
+					if (elementText.isEmpty()) {
+						elementText = element.getAttribute("value");
+						if (elementText.isEmpty()) {
+							elementText = element.getAttribute("aria-label");
+						}
+					}
 				}
-				if (text.isEmpty()) {
-					text = element.getAttribute("value");
-				}
-				if (!text.isEmpty()) {
-					interactiveElementsStr.append(String.format("[%d] %s (%s)\n", i, text, type));
+				
+				if (!elementText.isEmpty()) {
+					elementsInfo.append(String.format("[%d] <%s%s%s>%s</%s>\n", 
+						i,
+						tagName,
+						type != null ? " type=\"" + type + "\"" : "",
+						role != null ? " role=\"" + role + "\"" : "",
+						elementText,
+						tagName
+					));
 				}
 			}
-			state.put("interactive_elements", interactiveElementsStr.toString());
+			state.put("interactive_elements", elementsInfo.toString());
 			
-			// 获取截图
+			// 捕获截图
 			TakesScreenshot screenshot = (TakesScreenshot) driver;
 			String base64Screenshot = screenshot.getScreenshotAs(OutputType.BASE64);
 			state.put("screenshot", base64Screenshot);
@@ -449,8 +470,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			return state;
 			
 		} catch (Exception e) {
-			log.error("Error getting browser state", e);
-			state.put("error", e.getMessage());
+			log.error("Failed to get browser state", e);
+			state.put("error", "Failed to get browser state: " + e.getMessage());
 			return state;
 		}
 	}
