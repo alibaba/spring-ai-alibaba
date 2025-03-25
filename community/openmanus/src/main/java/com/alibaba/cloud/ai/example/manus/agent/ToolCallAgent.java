@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -69,6 +70,7 @@ public class ToolCallAgent extends ReActAgent {
 		int retry = 0;
 		return _think(retry);
 	}
+
 	@Override
 	public String getDescription() {
 		return "ToolCallAgent: A class responsible for managing tool calls in the ReAct agent.";
@@ -79,59 +81,62 @@ public class ToolCallAgent extends ReActAgent {
 		return "ToolCallAgent";
 	}
 
-	public String getSystemPromptTemplate()
-	{
-		return """
-			CURRENT PLAN STATUS:
-			{planStatus}
+	protected Message addThinkPrompt(List<Message> messages) {
+		super.addThinkPrompt(messages);
+		String stepPrompt = """
+				CURRENT PLAN STATUS:
+				{planStatus}
 
-			YOUR CURRENT TASK:
-			You are now working on step {currentStepIndex}: {stepText}
+				YOUR CURRENT TASK:
+				You are now working on step {currentStepIndex}: {stepText}
 
-			Please execute this step using the appropriate tools.
-			When you're done with current step, provide the result data of this step, call Summary tool to record the result of current step.
-			""";
+				Please execute this step using the appropriate tools.
+				When you're done with current step, provide the result data of this step, call Summary tool to record the result of current step.
+				""";
+
+		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(stepPrompt);
+
+		Message systemMessage = promptTemplate.createMessage(getData());
+
+		messages.add(systemMessage);
+		return systemMessage;
 	}
 
-	@Override
-	public String getNextStepPromptTemplate() {
-		
-		return "Please provide the next step for the task.";	
+	protected Message getNextStepMessage() {
+
+		String nextStepPrompt = """
+				What is the next step you would like to take?
+				Please provide the step number or the name of the next step.
+				""";
+
+		return new UserMessage(nextStepPrompt);
 	}
 
 	private boolean _think(int retry) {
 		try {
-			String stepPrompt = getSystemPromptTemplate();
-
-			SystemPromptTemplate promptTemplate = new SystemPromptTemplate(stepPrompt);
-
-			//calltool with mem 
-			ChatOptions chatOptions = ToolCallingChatOptions.builder()
-				.toolCallbacks(toolBuilder.getManusAgentToolCalls(this, llmService.getMemory(), getConversationId()))
-				.internalToolExecutionEnabled(false)
-				.build();
-
-
-			Message systemMessage = promptTemplate.createMessage(getData());
-			
 			List<Message> messages = new ArrayList<>();
-			messages.add(systemMessage);
+			addThinkPrompt(messages);
 
-			Message nextStepMessage = new PromptTemplate(getNextStepPromptTemplate()).createMessage(getData());
+			// calltool with mem
+			ChatOptions chatOptions = ToolCallingChatOptions.builder()
+					.toolCallbacks(
+							toolBuilder.getManusAgentToolCalls(this, llmService.getMemory(), getConversationId()))
+					.internalToolExecutionEnabled(false)
+					.build();
+			Message nextStepMessage = getNextStepMessage();
 			messages.add(nextStepMessage);
-
 
 			log.debug("Messages prepared for the prompt: {}", messages);
 
 			userPrompt = new Prompt(messages, chatOptions);
 
 			response = llmService.getChatClient()
-				.prompt(userPrompt)
-				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
-					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
-				.tools(getFunctionToolCallbacks())
-				.call()
-				.chatResponse();
+					.prompt(userPrompt)
+					.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
+							.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
+					.tools(getFunctionToolCallbacks())
+					.call()
+					.chatResponse();
 
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 
@@ -144,8 +149,7 @@ public class ToolCallAgent extends ReActAgent {
 			}
 
 			return !toolCalls.isEmpty();
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()));
 			// 异常重试
 			if (retry < REPLY_MAX) {
@@ -162,13 +166,12 @@ public class ToolCallAgent extends ReActAgent {
 
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
-				.get(toolExecutionResult.conversationHistory().size() - 1);
+					.get(toolExecutionResult.conversationHistory().size() - 1);
 			llmService.getMemory().add(getConversationId(), toolResponseMessage);
 			results.add(toolResponseMessage.getText());
 			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), toolResponseMessage.getText()));
 			return String.join("\n\n", results);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
 			ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse(toolCall.id(),
 					toolCall.name(), "Error: " + e.getMessage());
