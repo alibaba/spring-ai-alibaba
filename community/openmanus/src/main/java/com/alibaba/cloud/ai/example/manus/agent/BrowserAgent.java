@@ -65,11 +65,19 @@ public class BrowserAgent extends ToolCallAgent {
                 What should I do next to achieve my goal?
 
                 When you see [Current state starts here], focus on the following:
-                - Current URL and page title{url_placeholder}
-                - Available tabs{tabs_placeholder}
+                - Current URL and page title
+                {url_placeholder}
+
+                - Available tabs
+                {tabs_placeholder}
+
                 - Interactive elements and their indices
+                {interactive_elements}
+
                 - Content above {content_above_placeholder} or below {content_below_placeholder} the viewport (if indicated)
-                - Any action results or errors{results_placeholder}
+                
+                - Any action results or errors
+                {results_placeholder}
 
                 For browser interactions:
                 - To navigate: browser_use with action="go_to_url", url="..."
@@ -207,6 +215,8 @@ public class BrowserAgent extends ToolCallAgent {
             String interactiveElements = (String) browserState.get("interactive_elements");
             if (interactiveElements != null && !interactiveElements.isEmpty()) {
                 data.put("interactive_elements", interactiveElements);
+            }else{
+                data.put("interactive_elements", "");
             }
 
             // 添加结果信息占位符

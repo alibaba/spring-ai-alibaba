@@ -439,28 +439,6 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			for (int i = 0; i < interactiveElements.size(); i++) {
 				WebElement element = interactiveElements.get(i);
 
-				// // 收集元素的所有重要属性
-				// String tagName = element.getTagName();
-				// String id = element.getAttribute("id");
-				// String name = element.getAttribute("name");
-				// String className = element.getAttribute("class");
-				// String type = element.getAttribute("type");
-				// String role = element.getAttribute("role");
-				// String value = element.getAttribute("value");
-				// String placeholder = element.getAttribute("placeholder");
-
-				// // 构建调试信息
-				// debugInfo.append(String.format("\n元素 [%d]:\n", i));
-				// debugInfo.append(String.format("  标签: %s\n", tagName));
-				// debugInfo.append(String.format("  ID: %s\n", id));
-				// debugInfo.append(String.format("  Name: %s\n", name));
-				// debugInfo.append(String.format("  Class: %s\n", className));
-				// debugInfo.append(String.format("  Type: %s\n", type));
-				// debugInfo.append(String.format("  Role: %s\n", role));
-				// debugInfo.append(String.format("  Value: %s\n", value));
-				// debugInfo.append(String.format("  Placeholder: %s\n", placeholder));
-				// debugInfo.append(String.format("  可见性: %s\n", isElementVisible(element)));
-
 				// 获取元素的显示文本
 				String elementText = getElementText(element);
 				debugInfo.append(String.format("  显示文本: %s\n", elementText));
