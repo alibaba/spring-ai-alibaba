@@ -53,7 +53,9 @@ public class SerpApiService {
 	private final String engine;
 
 	private static final int MEMORY_SIZE = 5;
+
 	private static final int BYTE_SIZE = 1024;
+
 	private static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
 
 	public SerpApiService(SerpApiProperties properties) {
