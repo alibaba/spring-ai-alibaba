@@ -14,22 +14,23 @@ import org.springframework.ai.chat.memory.ChatMemory;
  */
 class OracleChatMemoryTest {
 
-    @Test
-    public void oracle() {
-        ChatMemory chatMemory = new OracleChatMemory("system", "123456", "jdbc:oracle:thin:@localhost:1521/XEPDB1");
-        ChatClient chatClient = ChatClient.create(new DashScopeChatModel(new DashScopeApi("")));
-        String content1 = chatClient.prompt()
-                .advisors(new MessageChatMemoryAdvisor(chatMemory))
-                .user("我是张三😄")
-                .call()
-                .content();
-        System.out.println(content1);
-        String content2 = chatClient.prompt()
-                .advisors(new MessageChatMemoryAdvisor(chatMemory))
-                .user("我是谁")
-                .call()
-                .content();
-        System.out.println(content2);
-        Assertions.assertTrue(content2.contains("张三"));
-    }
+	@Test
+	public void oracle() {
+		ChatMemory chatMemory = new OracleChatMemory("system", "123456", "jdbc:oracle:thin:@localhost:1521/XEPDB1");
+		ChatClient chatClient = ChatClient.create(new DashScopeChatModel(new DashScopeApi("")));
+		String content1 = chatClient.prompt()
+			.advisors(new MessageChatMemoryAdvisor(chatMemory))
+			.user("我是张三😄")
+			.call()
+			.content();
+		System.out.println(content1);
+		String content2 = chatClient.prompt()
+			.advisors(new MessageChatMemoryAdvisor(chatMemory))
+			.user("我是谁")
+			.call()
+			.content();
+		System.out.println(content2);
+		Assertions.assertTrue(content2.contains("张三"));
+	}
+
 }
