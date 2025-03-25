@@ -14,22 +14,24 @@ import org.springframework.ai.chat.memory.ChatMemory;
  */
 class SqlServerChatMemoryTest {
 
-    @Test
-    public void sqlServer() {
-        ChatMemory chatMemory = new SqlServerChatMemory("sa", "qWeR124563", "jdbc:sqlserver://localhost:1433;database=spring_ai_alibaba_chat_memory;encrypt=true;trustServerCertificate=true");
-        ChatClient chatClient = ChatClient.create(new DashScopeChatModel(new DashScopeApi("")));
-        String content1 = chatClient.prompt()
-                .advisors(new MessageChatMemoryAdvisor(chatMemory))
-                .user("我是张三😄")
-                .call()
-                .content();
-        System.out.println(content1);
-        String content2 = chatClient.prompt()
-                .advisors(new MessageChatMemoryAdvisor(chatMemory))
-                .user("我是谁")
-                .call()
-                .content();
-        System.out.println(content2);
-        Assertions.assertTrue(content2.contains("张三"));
-    }
+	@Test
+	public void sqlServer() {
+		ChatMemory chatMemory = new SqlServerChatMemory("sa", "qWeR124563",
+				"jdbc:sqlserver://localhost:1433;database=spring_ai_alibaba_chat_memory;encrypt=true;trustServerCertificate=true");
+		ChatClient chatClient = ChatClient.create(new DashScopeChatModel(new DashScopeApi("")));
+		String content1 = chatClient.prompt()
+			.advisors(new MessageChatMemoryAdvisor(chatMemory))
+			.user("我是张三😄")
+			.call()
+			.content();
+		System.out.println(content1);
+		String content2 = chatClient.prompt()
+			.advisors(new MessageChatMemoryAdvisor(chatMemory))
+			.user("我是谁")
+			.call()
+			.content();
+		System.out.println(content2);
+		Assertions.assertTrue(content2.contains("张三"));
+	}
+
 }
