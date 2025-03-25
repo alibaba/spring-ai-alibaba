@@ -33,14 +33,14 @@ public class ToolBuilder {
 
 	public static List<FunctionCallback> getManusAgentToolCalls(BaseAgent agent, ChatMemory memory,
 			String conversationId) {
-		return List.of(GoogleSearch.getFunctionToolCallback(),
-				FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback(),
+		return List.of(GoogleSearch.getFunctionToolCallback(), FileSaver.getFunctionToolCallback(),
+				PythonExecute.getFunctionToolCallback(),
 				Summary.getFunctionToolCallback(agent, memory, conversationId));
 	}
 
 	public static List<ToolCallback> getManusAgentToolCalls() {
-		return List.of(GoogleSearch.getFunctionToolCallback(),
-				FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback());
+		return List.of(GoogleSearch.getFunctionToolCallback(), FileSaver.getFunctionToolCallback(),
+				PythonExecute.getFunctionToolCallback());
 	}
 
 	public static List<ToolCallback> getPlanningAgentToolCallbacks() {
