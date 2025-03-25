@@ -18,9 +18,6 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-
-import javax.tools.Tool;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
@@ -30,8 +27,11 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -48,31 +48,59 @@ public class ReactAgent {
 	private int iterations = 0;
 	private CompileConfig compileConfig;
 	private OverAllState state;
+	private StateGraph graph;
 
-	ReactAgent(LlmNode llmNode, ToolNode toolNode) {
-		this.llmNode = llmNode;
-		this.toolNode = toolNode;
-	}
-
-	ReactAgent(LlmNode llmNode, ToolNode toolNode, int maxIterations, OverAllState state, CompileConfig compileConfig) {
+	public ReactAgent(LlmNode llmNode, ToolNode toolNode, int maxIterations, OverAllState state, CompileConfig compileConfig) throws GraphStateException {
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
 		this.max_iterations = maxIterations;
 		this.state = state;
 		this.compileConfig = compileConfig;
+		this.graph = initGraph();
 	}
 
-	ReactAgent(String prompt, List<String> tools, int maxIterations, OverAllState state, CompileConfig compileConfig) {
-		this.llmNode = LlmNode.builder().withPrompt(prompt).build();
-		this.toolNode = ToolNode.builder().withTools(tools).build();
+	public ReactAgent(String prompt, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations) throws GraphStateException {
+		this.llmNode = LlmNode.builder().chatClient(chatClient).promptTemplate(prompt).build();
+		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
+		this.max_iterations = maxIterations;
+		this.graph = initGraph();
+	}
+
+	public ReactAgent(String prompt, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations, OverAllState state, CompileConfig compileConfig) throws GraphStateException {
+		this.llmNode = LlmNode.builder().chatClient(chatClient).promptTemplate(prompt).build();
+		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		this.max_iterations = maxIterations;
 		this.state = state;
 		this.compileConfig = compileConfig;
+		this.graph = initGraph();
 	}
 
-	public CompiledGraph init() throws GraphStateException {
-		StateGraph graph = initGraph();
-		return graph.compile(compileConfig);
+	public ReactAgent(String prompt, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations) throws GraphStateException {
+		this.llmNode = LlmNode.builder().chatClient(chatClient).promptTemplate(prompt).build();
+		this.toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
+		this.max_iterations = maxIterations;
+		this.graph = initGraph();
+	}
+
+	public ReactAgent(String prompt, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations, OverAllState state, CompileConfig compileConfig) throws GraphStateException {
+		this.llmNode = LlmNode.builder().chatClient(chatClient).promptTemplate(prompt).build();
+		this.toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
+		this.max_iterations = maxIterations;
+		this.state = state;
+		this.compileConfig = compileConfig;
+		this.graph = initGraph();
+	}
+
+	public StateGraph getStateGraph()  {
+		return graph;
+	}
+
+	public CompiledGraph getAndCompileGraph(CompileConfig compileConfig) throws GraphStateException {
+		return getStateGraph().compile(compileConfig);
+	}
+
+	public CompiledGraph getAndCompileGraph() throws GraphStateException {
+		return getStateGraph().compile(this.compileConfig);
 	}
 
 	private StateGraph initGraph() throws GraphStateException {

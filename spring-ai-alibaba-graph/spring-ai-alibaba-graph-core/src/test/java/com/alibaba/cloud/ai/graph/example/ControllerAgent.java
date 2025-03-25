@@ -14,31 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.node;
+package com.alibaba.cloud.ai.graph.example;
 
+import java.util.List;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.example.tool.Plan;
 
-public class HumanNode implements NodeAction {
+import org.springframework.ai.chat.messages.Message;
 
-	private boolean shouldInterrupt = false;
+public class ControllerAgent implements NodeAction {
 
-   //
 	@Override
-	public Map<String, Object> apply(OverAllState t) throws GraphInterruptException {
-		Map<String, Object> userInput = interrupt();
-
-		// userInput update State
-		// Command, node 跳转、state更新
+	public Map<String, Object> apply(OverAllState t) throws Exception {
+		Plan plan = (Plan)t.value("plan").orElseThrow();
+		List<Message> messages = (List<Message>) t.value("step_result").orElseThrow();
+		String promptForNextStep = "Plan completed.";
+		if (!plan.isFinished()) {
+			String step = plan.nextStep();
+			promptForNextStep = "What is the next step for " + step + "?";
+		}
+		t.value("prompt_for_next_step", promptForNextStep);
 		return Map.of();
 	}
 
-	private Map<String, Object> interrupt() throws GraphInterruptException {
-		if (shouldInterrupt) {
-			throw new GraphInterruptException("interrupt");
-		}
-		return null;
-	}
+
 }

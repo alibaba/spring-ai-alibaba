@@ -45,10 +45,20 @@ public class LlmNode implements NodeAction {
 	private String templateKey;
 	private String paramsKey;
 	private String messagesKey;
-	private String toolsKey;
 	private String outputKey;
 
 	private ChatClient chatClient;
+
+	public LlmNode() {}
+
+	public LlmNode(String prompt, Map<String, Object> params, List<Message> messages, List<Advisor> advisors, List<ToolCallback> toolCallbacks, ChatClient chatClient) {
+		this.prompt = prompt;
+		this.params = params;
+		this.messages = messages;
+		this.advisors = advisors;
+		this.toolCallbacks = toolCallbacks;
+		this.chatClient = chatClient;
+	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
@@ -57,11 +67,12 @@ public class LlmNode implements NodeAction {
 		// add streaming support later
 		ChatResponse response = call();
 
-		String outputKey = StringUtils.hasLength(this.outputKey) ? this.outputKey : LLM_RESPONSE_KEY;
-
-
-
-		return Map.of(outputKey, response.getResult().getOutput());
+		Map<String, Object> updatedState = new HashMap<>();
+		updatedState.put("messages", response.getResult().getOutput());
+		if (StringUtils.hasLength(this.outputKey)) {
+			updatedState.put(this.outputKey, response.getResult().getOutput());
+		}
+		return updatedState;
 	}
 
 	private void initNodeWithState(OverAllState state) {
@@ -73,9 +84,6 @@ public class LlmNode implements NodeAction {
 		}
 		if (StringUtils.hasLength(messagesKey)) {
 			this.messages = (List<Message>) state.value(messagesKey).orElse(this.messages);
-		}
-		if (StringUtils.hasLength(toolsKey)) {
-			this.toolCallbacks = (List<ToolCallback>) state.value(toolsKey).orElse(this.toolCallbacks);
 		}
 		if (StringUtils.hasLength(prompt) && !params.isEmpty()) {
 			this.prompt = renderPromptTemplate(prompt, params);
@@ -109,22 +117,31 @@ public class LlmNode implements NodeAction {
 				.chatResponse();
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	public static class Builder {
-		private String templateKey;
+		private String promptTemplateKey;
 		private String paramsKey;
 		private String messagesKey;
+		private String outputKey;
 
-		private String prompt;
+		private ChatClient chatClient;
+
+		private String promptTemplate;
 		private Map<String, Object> params;
 		private List<Message> messages;
+		private List<Advisor> advisors;
+		private List<ToolCallback> toolCallbacks;
 
-		public Builder template(String template) {
-			this.prompt = template;
+		public Builder promptTemplate(String promptTemplate) {
+			this.promptTemplate = promptTemplate;
 			return this;
 		}
 
-		public Builder templateKey(String templateKey) {
-			this.templateKey = templateKey;
+		public Builder promptTemplateKey(String promptTemplateKey) {
+			this.promptTemplateKey = promptTemplateKey;
 			return this;
 		}
 
@@ -148,12 +165,38 @@ public class LlmNode implements NodeAction {
 			return this;
 		}
 
+		public Builder outputKey(String outputKey) {
+			this.outputKey = outputKey;
+			return this;
+		}
+
+		public Builder advisors(List<Advisor> advisors) {
+			this.advisors = advisors;
+			return this;
+		}
+
+		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
+			this.toolCallbacks = toolCallbacks;
+			return this;
+		}
+
+		public Builder chatClient(ChatClient chatClient) {
+			this.chatClient = chatClient;
+			return this;
+		}
+
 		public LlmNode build() {
 			LlmNode llmNode = new LlmNode();
-			llmNode.prompt = this.prompt;
+			llmNode.prompt = this.promptTemplate;
 			llmNode.params = this.params;
-			llmNode.templateKey = this.templateKey;
+			llmNode.templateKey = this.promptTemplateKey;
 			llmNode.paramsKey = this.paramsKey;
+			llmNode.messages = this.messages;
+			llmNode.messagesKey = this.messagesKey;
+			llmNode.outputKey = this.outputKey;
+			llmNode.advisors = this.advisors;
+			llmNode.toolCallbacks = this.toolCallbacks;
+			llmNode.chatClient = this.chatClient;
 			return llmNode;
 		}
 	}
