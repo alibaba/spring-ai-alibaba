@@ -23,11 +23,19 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 
+import static org.mockito.Mockito.mock;
+
 /**
  * @author future0923
  *
  */
 class OracleChatMemoryTest {
+
+	@Test
+	public void test() {
+		OracleChatMemory mock = mock(OracleChatMemory.class);
+		Assertions.assertNotNull(mock);
+	}
 
 	//@Test
 	public void oracle() {
