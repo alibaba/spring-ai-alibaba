@@ -12,3 +12,8 @@ spring:
       chat:
         options:
           model: qwen-max-latest
+    mcp:
+      client:
+        request-timeout: 60000
+        stdio:
+          servers-configuration: classpath:/mcp-servers-config.json
