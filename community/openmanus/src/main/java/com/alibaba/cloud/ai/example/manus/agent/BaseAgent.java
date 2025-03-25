@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.agent;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.Message;
 
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
@@ -42,8 +43,17 @@ public abstract class BaseAgent {
 
 	public abstract String getName();
 	public abstract String getDescription();
-	public abstract String getSystemPromptTemplate();
-	public abstract String getNextStepPromptTemplate();
+	/**
+	 * 递归的增加思考提示，形成一个自上而下的思考链条
+	 * @param messages
+	 * @return
+	 */
+	protected abstract Message addThinkPrompt(List<Message> messages);
+	/**
+	 * 获取下一步提示词模板，这个跟着具体的agent走，因为每个agent不一样，也不需要继承
+	 * @return
+	 */
+	protected abstract Message getNextStepMessage();
 
 	public BaseAgent(LlmService llmService) {
 		this.llmService = llmService;
@@ -85,8 +95,8 @@ public abstract class BaseAgent {
 
 	private void handleStuckState() {
 		String stuckPrompt = "Observed duplicate responses. Consider new strategies and avoid repeating ineffective paths already attempted.";
-		String nextStepPrompt = stuckPrompt + "\n" + getNextStepPromptTemplate();
-		log.warn("Agent detected stuck state. Added prompt: " + stuckPrompt);
+		// String nextStepPrompt = stuckPrompt + "\n" + getNextStepPromptTemplate();
+		// log.warn("Agent detected stuck state. Added prompt: " + stuckPrompt);
 		//TODO Implement logic to handle the stuck state
 	}
 
