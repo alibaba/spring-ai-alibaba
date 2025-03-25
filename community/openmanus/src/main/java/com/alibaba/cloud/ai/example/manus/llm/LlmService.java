@@ -207,7 +207,7 @@ public class LlmService {
 			.defaultAdvisors(new MessageChatMemoryAdvisor(finalizeMemory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.build();
-    }
+	}
 
 	public ChatClient getChatClient() {
 		return chatClient;
