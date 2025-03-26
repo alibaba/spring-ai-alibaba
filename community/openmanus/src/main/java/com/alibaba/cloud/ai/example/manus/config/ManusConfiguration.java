@@ -16,11 +16,14 @@
 
 package com.alibaba.cloud.ai.example.manus.config;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.example.manus.agent.BrowserAgent;
 import com.alibaba.cloud.ai.example.manus.agent.FileAgent;
 import com.alibaba.cloud.ai.example.manus.agent.ManusAgent;
 import com.alibaba.cloud.ai.example.manus.agent.PythonAgent;
@@ -57,18 +60,19 @@ public class ManusConfiguration {
 	@Bean
 	public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager) {
 
-		ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager, chromeDriverService);
+		ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager, chromeDriverService, CodeUtils.WORKING_DIR);
+		BrowserAgent browserAgent = new BrowserAgent(llmService, toolCallingManager, chromeDriverService);
+		
 		FileAgent fileAgent = new FileAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR);
 		PythonAgent pythonAgent = new PythonAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR);
-		Map<String, BaseAgent> agentMap = new HashMap<>() {
-			{
-				put("manus", manusAgent);
-				put("file", fileAgent);
-				put("python", pythonAgent);
-			}
-		};
+		List<BaseAgent> agentList = new ArrayList<>();
+		agentList.add(manusAgent);
+		agentList.add(browserAgent);
+		agentList.add(fileAgent);
+		agentList.add(pythonAgent);
+		
 		Map<String, Object> data = new HashMap<>();
-		return new PlanningFlow(agentMap, data);
+		return new PlanningFlow(agentList, data);
 	}
 
 	@Bean
