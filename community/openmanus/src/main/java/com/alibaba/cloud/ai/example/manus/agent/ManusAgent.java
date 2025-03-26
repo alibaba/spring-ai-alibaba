@@ -22,9 +22,10 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 
 public class ManusAgent extends BrowserAgent {
 
-;
+	;
 
-	public ManusAgent(LlmService llmService, ToolCallingManager toolCallingManager, ChromeDriverService chromeDriverService) {
+	public ManusAgent(LlmService llmService, ToolCallingManager toolCallingManager,
+			ChromeDriverService chromeDriverService) {
 		super(llmService, toolCallingManager, chromeDriverService);
 	}
 
@@ -32,10 +33,10 @@ public class ManusAgent extends BrowserAgent {
 	public String getName() {
 		return "Manus";
 	}
+
 	@Override
 	public String getDescription() {
 		return "A versatile agent that can solve various tasks using multiple tools";
 	}
-
 
 }

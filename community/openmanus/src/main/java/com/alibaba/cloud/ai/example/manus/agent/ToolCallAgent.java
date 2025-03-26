@@ -44,7 +44,6 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 
-
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
 
@@ -139,9 +138,7 @@ public class ToolCallAgent extends ReActAgent {
 			addThinkPrompt(messages);
 
 			// calltool with mem
-			ChatOptions chatOptions = ToolCallingChatOptions.builder()
-					.internalToolExecutionEnabled(false)
-					.build();
+			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
 			Message nextStepMessage = getNextStepMessage();
 			messages.add(nextStepMessage);
 
@@ -150,12 +147,12 @@ public class ToolCallAgent extends ReActAgent {
 			userPrompt = new Prompt(messages, chatOptions);
 
 			response = llmService.getChatClient()
-					.prompt(userPrompt)
-					.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
-							.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
-					.tools(getToolCallList())
-					.call()
-					.chatResponse();
+				.prompt(userPrompt)
+				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
+					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
+				.tools(getToolCallList())
+				.call()
+				.chatResponse();
 
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 
@@ -171,7 +168,8 @@ public class ToolCallAgent extends ReActAgent {
 			}
 
 			return !toolCalls.isEmpty();
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()));
 			// 异常重试
 			if (retry < REPLY_MAX) {
@@ -188,13 +186,14 @@ public class ToolCallAgent extends ReActAgent {
 
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
-					.get(toolExecutionResult.conversationHistory().size() - 1);
+				.get(toolExecutionResult.conversationHistory().size() - 1);
 			llmService.getMemory().add(getConversationId(), toolResponseMessage);
 			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
 			results.add(llmCallResponse);
 			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), llmCallResponse));
 			return String.join("\n\n", results);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
 			ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse(toolCall.id(),
 					toolCall.name(), "Error: " + e.getMessage());
@@ -205,13 +204,10 @@ public class ToolCallAgent extends ReActAgent {
 		}
 	}
 
-
 	public List<ToolCallback> getToolCallList() {
-        return List.of(
-            GoogleSearch.getFunctionToolCallback(), 
-            FileSaver.getFunctionToolCallback(), 
-            PythonExecute.getFunctionToolCallback(),
-            Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId())
-        );
+		return List.of(GoogleSearch.getFunctionToolCallback(), FileSaver.getFunctionToolCallback(),
+				PythonExecute.getFunctionToolCallback(),
+				Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId()));
 	}
+
 }

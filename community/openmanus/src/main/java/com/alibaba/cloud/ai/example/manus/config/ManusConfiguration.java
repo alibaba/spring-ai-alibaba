@@ -44,6 +44,7 @@ import org.springframework.web.client.RestClient;
 
 @Configuration
 public class ManusConfiguration {
+
 	private final ChromeDriverService chromeDriverService;
 
 	public ManusConfiguration(ChromeDriverService chromeDriverService) {
@@ -52,7 +53,7 @@ public class ManusConfiguration {
 
 	@Bean
 	public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager) {
-		ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager,chromeDriverService);
+		ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager, chromeDriverService);
 
 		Map<String, BaseAgent> agentMap = new HashMap<>() {
 			{
@@ -72,10 +73,10 @@ public class ManusConfiguration {
 
 		// 2. 创建 RequestConfig 并设置超时
 		RequestConfig requestConfig = RequestConfig.custom()
-				.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
-				.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
-				.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
-				.build();
+			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
+			.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
+			.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
+			.build();
 
 		// 3. 创建 CloseableHttpClient 并应用配置
 		HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
