@@ -79,7 +79,14 @@ public class BrowserAgent extends ToolCallAgent {
                 - Any action results or errors:
                 {results_placeholder}
 
-        
+
+                Remember:
+                1. Use 'get_text' action to obtain page content instead of scrolling
+                2. Don't worry about content visibility or viewport position
+                3. Focus on text-based information extraction
+                4. Process the obtained text data directly
+            
+                
                 Consider both what's visible and what might be beyond the current viewport.
                 Be methodical - remember your progress and what you've learned so far.
                 """;
