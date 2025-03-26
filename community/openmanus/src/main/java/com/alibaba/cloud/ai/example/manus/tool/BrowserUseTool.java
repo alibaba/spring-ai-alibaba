@@ -144,7 +144,6 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			- 'get_html': Get page HTML content
 			- 'get_text': Get text content of the page
 			- 'execute_js': Execute JavaScript code
-			- 'scroll': Scroll the page
 			- 'switch_tab': Switch to a specific tab
 			- 'new_tab': Open a new tab
 			- 'close_tab': Close the current tab
@@ -260,7 +259,6 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					// 记录点击前的窗口状态
 					Set<String> beforeWindowHandles = driver.getWindowHandles();
 					String currentUrl = driver.getCurrentUrl();
-					String currentHandle = driver.getWindowHandle();
 
 					// 执行点击操作
 					simulateHumanBehavior(element);
