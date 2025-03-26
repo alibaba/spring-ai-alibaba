@@ -16,10 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.llm.ToolBuilder;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
 
 import org.springframework.ai.model.tool.ToolCallingManager;
 
@@ -27,8 +24,8 @@ public class ManusAgent extends BrowserAgent {
 
 ;
 
-	public ManusAgent(LlmService llmService, ToolCallingManager toolCallingManager, ToolBuilder toolBuilder) {
-		super(llmService, toolCallingManager, toolBuilder);
+	public ManusAgent(LlmService llmService, ToolCallingManager toolCallingManager, ChromeDriverService chromeDriverService) {
+		super(llmService, toolCallingManager, chromeDriverService);
 	}
 
 	@Override

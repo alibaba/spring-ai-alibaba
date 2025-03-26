@@ -20,10 +20,37 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.tool.ToolCallback;
 
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * An abstract base class for implementing AI agents that can execute multi-step tasks.
+ * This class provides the core functionality for managing agent state, conversation flow,
+ * and step-by-step execution of tasks.
+ *
+ * <p>The agent supports a finite number of execution steps and includes mechanisms for:
+ * <ul>
+ *   <li>State management (idle, running, finished)</li>
+ *   <li>Conversation tracking</li>
+ *   <li>Step limitation and monitoring</li>
+ *   <li>Thread-safe execution</li>
+ *   <li>Stuck-state detection and handling</li>
+ * </ul>
+ *
+ * <p>Implementing classes must define:
+ * <ul>
+ *   <li>{@link #getName()} - Returns the agent's name</li>
+ *   <li>{@link #getDescription()} - Returns the agent's description</li>
+ *   <li>{@link #addThinkPrompt(List)} - Implements the thinking chain logic</li>
+ *   <li>{@link #getNextStepMessage()} - Provides the next step's prompt template</li>
+ *   <li>{@link #step()} - Implements the core logic for each execution step</li>
+ * </ul>
+ *
+ * @see AgentState
+ * @see LlmService
+ */
 public abstract class BaseAgent {
 
 	private static final Logger log = LoggerFactory.getLogger(BaseAgent.class);
@@ -55,6 +82,8 @@ public abstract class BaseAgent {
 	 * @return
 	 */
 	protected abstract Message getNextStepMessage();
+
+	public abstract List<ToolCallback> getToolCallList();
 
 	public BaseAgent(LlmService llmService) {
 		this.llmService = llmService;
