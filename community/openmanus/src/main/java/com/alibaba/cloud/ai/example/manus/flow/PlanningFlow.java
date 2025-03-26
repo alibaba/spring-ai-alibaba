@@ -30,9 +30,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
@@ -150,7 +152,7 @@ public class PlanningFlow extends BaseFlow {
 		String prompt_template = """
 				Create a reasonable plan with clear steps to accomplish the task:
 
-				            {query}
+				{query}
 
 				You can use the planning tool to help you create the plan, assign {plan_id} as the plan id.
 				""";
@@ -159,6 +161,7 @@ public class PlanningFlow extends BaseFlow {
 		Prompt userPrompt = promptTemplate.create(Map.of("plan_id", activePlanId, "query", request));
 		ChatResponse response = llmService.getPlanningChatClient()
 				.prompt(userPrompt)
+				.tools(getToolCallList())
 				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
 						.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
 				.user(request)
@@ -431,6 +434,10 @@ public class PlanningFlow extends BaseFlow {
 			log.error("Error finalizing plan with LLM: " + e.getMessage());
 			return "Plan completed. Error generating summary.";
 		}
+	}
+	public List<ToolCallback> getToolCallList()
+	{
+		return List.of(PlanningTool.getFunctionToolCallback());
 	}
 
 	public void setActivePlanId(String activePlanId) {

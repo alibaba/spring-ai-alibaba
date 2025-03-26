@@ -1,14 +1,20 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.llm.ToolBuilder;
+import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
+import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
+import com.alibaba.cloud.ai.example.manus.tool.GoogleSearch;
+import com.alibaba.cloud.ai.example.manus.tool.PythonExecute;
+import com.alibaba.cloud.ai.example.manus.tool.Summary;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.tool.ToolCallback;
 
 import java.util.HashMap;
 import java.util.List;
@@ -18,8 +24,10 @@ import java.util.concurrent.atomic.AtomicReference;
 public class BrowserAgent extends ToolCallAgent {
     private static final Logger log = LoggerFactory.getLogger(BrowserAgent.class);
 
-    public BrowserAgent(LlmService llmService, ToolCallingManager toolCallingManager, ToolBuilder toolBuilder) {
-        super(llmService, toolCallingManager, toolBuilder);
+    private final ChromeDriverService chromeService;
+    public BrowserAgent(LlmService llmService, ToolCallingManager toolCallingManager, ChromeDriverService chromeService) {
+        super(llmService, toolCallingManager);
+        this.chromeService = chromeService;
     }
 
     private final AtomicReference<Map<String, Object>> currentStepBrowserCache = new AtomicReference<>();
@@ -41,7 +49,7 @@ public class BrowserAgent extends ToolCallAgent {
             }
 
             // 如果缓存为空，则获取新状态
-            BrowserUseTool browserTool = BrowserUseTool.getInstance(toolBuilder.getChromeDriverService());
+            BrowserUseTool browserTool = BrowserUseTool.getInstance(chromeService);
             if (browserTool == null) {
                 log.error("Failed to get browser tool instance");
                 return null;
@@ -184,6 +192,18 @@ public class BrowserAgent extends ToolCallAgent {
     public String getDescription() {
         return "A browser agent that can control a browser to accomplish tasks";
     }
+
+
+
+	public List<ToolCallback> getToolCallList() {
+        return List.of(
+            GoogleSearch.getFunctionToolCallback(), 
+            FileSaver.getFunctionToolCallback(), 
+            PythonExecute.getFunctionToolCallback(),
+            BrowserUseTool.getFunctionToolCallback(chromeService),
+            Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId())
+        );
+	}
 
     @Override
     Map<String, Object> getData() {
