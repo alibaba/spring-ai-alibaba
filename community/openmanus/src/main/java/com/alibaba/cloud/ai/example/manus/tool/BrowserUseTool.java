@@ -175,10 +175,10 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 	@SuppressWarnings("rawtypes")
 	public static FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService) {
 		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
-				.description(description)
-				.inputSchema(PARAMETERS)
-				.inputType(String.class)
-				.build();
+			.description(description)
+			.inputSchema(PARAMETERS)
+			.inputType(String.class)
+			.build();
 	}
 
 	private void simulateHumanBehavior(WebElement element) {
@@ -186,7 +186,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 
 			// 添加随机延迟
 			Thread.sleep(new Random().nextInt(1000) + 500);
-		} catch (InterruptedException e) {
+		}
+		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
 	}
@@ -200,7 +201,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			element.sendKeys(String.valueOf(c));
 			try {
 				Thread.sleep(random.nextInt(100) + 50);
-			} catch (InterruptedException e) {
+			}
+			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
 		}
@@ -273,7 +275,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					simulateHumanBehavior(element);
 					try {
 						element.click();
-					} catch (ElementClickInterceptedException e) {
+					}
+					catch (ElementClickInterceptedException e) {
 						// 如果普通点击失败，尝试使用 JavaScript 点击
 						JavascriptExecutor js = (JavascriptExecutor) driver;
 						js.executeScript("arguments[0].click();", element);
@@ -306,7 +309,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 						// 如果没有明显变化，返回普通点击成功消息
 						return new ToolExecuteResult("Clicked element at index " + index);
 
-					} catch (TimeoutException e) {
+					}
+					catch (TimeoutException e) {
 						// 如果超时，检查是否仍在原页面
 						if (!driver.getCurrentUrl().equals(currentUrl)) {
 							return new ToolExecuteResult("Clicked and page changed to: " + driver.getCurrentUrl());
@@ -365,7 +369,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					Object result = jsExecutor.executeScript(script);
 					if (result == null) {
 						return new ToolExecuteResult("Successfully executed JavaScript code.");
-					} else {
+					}
+					else {
 						return new ToolExecuteResult(result.toString());
 					}
 				case "scroll":
@@ -402,7 +407,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 				default:
 					return new ToolExecuteResult("Unknown action: " + action);
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			if (e instanceof ElementNotInteractableException) {
 				String errorMessage = String.format(
 						"""
@@ -423,182 +429,171 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		}
 	}
 
+	private static final String INTERACTIVE_ELEMENTS_SELECTOR = "a, button, input, select, textarea, [role='button'], [role='link']";
 
+	private String formatElementInfo(int index, WebElement element) {
+		try {
+			JavascriptExecutor js = (JavascriptExecutor) getDriver();
+			@SuppressWarnings("unchecked")
+			// 为了提速 getAttribute做多了太慢了
+			Map<String, Object> props = (Map<String, Object>) js.executeScript("""
+					function getElementInfo(el) {
+					    const style = window.getComputedStyle(el);
+					    return {
+					        tagName: el.tagName.toLowerCase(),
+					        type: el.getAttribute('type'),
+					        role: el.getAttribute('role'),
+					        text: el.textContent.trim(),
+					        value: el.value,
+					        placeholder: el.getAttribute('placeholder'),
+					        name: el.getAttribute('name'),
+					        id: el.getAttribute('id'),
+					        'aria-label': el.getAttribute('aria-label'),
+					        isVisible: (
+					            el.offsetWidth > 0 &&
+					            el.offsetHeight > 0 &&
+					            style.visibility !== 'hidden' &&
+					            style.display !== 'none'
+					        )
+					    };
+					}
+					return getElementInfo(arguments[0]);
+					""", element);
 
+			if (!(Boolean) props.get("isVisible")) {
+				return "";
+			}
 
-    private static final String INTERACTIVE_ELEMENTS_SELECTOR = "a, button, input, select, textarea, [role='button'], [role='link']";
+			// 构建HTML属性字符串
+			StringBuilder attributes = new StringBuilder();
 
-    private String formatElementInfo(int index, WebElement element) {
-        try {
-            JavascriptExecutor js = (JavascriptExecutor) getDriver();
-            @SuppressWarnings("unchecked")
-            // 为了提速 getAttribute做多了太慢了
-            Map<String, Object> props = (Map<String, Object>) js.executeScript("""
-                    function getElementInfo(el) {
-                        const style = window.getComputedStyle(el);
-                        return {
-                            tagName: el.tagName.toLowerCase(),
-                            type: el.getAttribute('type'),
-                            role: el.getAttribute('role'),
-                            text: el.textContent.trim(),
-                            value: el.value,
-                            placeholder: el.getAttribute('placeholder'),
-                            name: el.getAttribute('name'),
-                            id: el.getAttribute('id'),
-                            'aria-label': el.getAttribute('aria-label'),
-                            isVisible: (
-                                el.offsetWidth > 0 &&
-                                el.offsetHeight > 0 &&
-                                style.visibility !== 'hidden' &&
-                                style.display !== 'none'
-                            )
-                        };
-                    }
-                    return getElementInfo(arguments[0]);
-                    """, element);
+			// 添加基本属性
+			if (props.get("type") != null) {
+				attributes.append(" type=\"").append(props.get("type")).append("\"");
+			}
+			if (props.get("role") != null) {
+				attributes.append(" role=\"").append(props.get("role")).append("\"");
+			}
+			if (props.get("placeholder") != null) {
+				attributes.append(" placeholder=\"").append(props.get("placeholder")).append("\"");
+			}
+			if (props.get("name") != null) {
+				attributes.append(" name=\"").append(props.get("name")).append("\"");
+			}
+			if (props.get("id") != null) {
+				attributes.append(" id=\"").append(props.get("id")).append("\"");
+			}
+			if (props.get("aria-label") != null) {
+				attributes.append(" aria-label=\"").append(props.get("aria-label")).append("\"");
+			}
+			if (props.get("value") != null) {
+				attributes.append(" value=\"").append(props.get("value")).append("\"");
+			}
 
-            if (!(Boolean) props.get("isVisible")) {
-                return "";
-            }
+			String tagName = (String) props.get("tagName");
+			String text = (String) props.get("text");
 
-            // 构建HTML属性字符串
-            StringBuilder attributes = new StringBuilder();
+			// 生成标准HTML格式输出
+			return String.format("[%d] <%s%s>%s</%s>\n", index, tagName, attributes.toString(), text, tagName);
 
-            // 添加基本属性
-            if (props.get("type") != null) {
-                attributes.append(" type=\"").append(props.get("type")).append("\"");
-            }
-            if (props.get("role") != null) {
-                attributes.append(" role=\"").append(props.get("role")).append("\"");
-            }
-            if (props.get("placeholder") != null) {
-                attributes.append(" placeholder=\"").append(props.get("placeholder")).append("\"");
-            }
-            if (props.get("name") != null) {
-                attributes.append(" name=\"").append(props.get("name")).append("\"");
-            }
-            if (props.get("id") != null) {
-                attributes.append(" id=\"").append(props.get("id")).append("\"");
-            }
-            if (props.get("aria-label") != null) {
-                attributes.append(" aria-label=\"").append(props.get("aria-label")).append("\"");
-            }
-            if (props.get("value") != null) {
-                attributes.append(" value=\"").append(props.get("value")).append("\"");
-            }
+		}
+		catch (Exception e) {
+			log.warn("格式化元素信息失败 ,应该是页面某些元素过期了， 跳过当前元素格式化: {}", e.getMessage());
+			return "";
+		}
+	}
 
-            String tagName = (String) props.get("tagName");
-            String text = (String) props.get("text");
+	// 添加新的方法获取可交互元素
+	private List<WebElement> getInteractiveElements(WebDriver driver) {
+		return driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR))
+			.stream()
+			.filter(this::isElementVisible)
+			.collect(Collectors.toList());
+	}
 
-            // 生成标准HTML格式输出
-            return String.format("[%d] <%s%s>%s</%s>\n",
-                    index,
-                    tagName,
-                    attributes.toString(),
-                    text,
-                    tagName);
+	private String getInteractiveElementsInfo(WebDriver driver) {
+		StringBuilder resultInfo = new StringBuilder();
+		List<WebElement> interactiveElements = getInteractiveElements(driver);
 
-        } catch (Exception e) {
-            log.warn("格式化元素信息失败 ,应该是页面某些元素过期了， 跳过当前元素格式化: {}", e.getMessage());
-            return "";
-        }
-    }
+		for (int i = 0; i < interactiveElements.size(); i++) {
+			String formattedInfo = formatElementInfo(i, interactiveElements.get(i));
+			if (!formattedInfo.isEmpty()) {
+				resultInfo.append(formattedInfo);
+			}
+		}
 
+		return resultInfo.toString();
+	}
 
+	public Map<String, Object> getCurrentState() {
+		WebDriver driver = getDriver();
+		Map<String, Object> state = new HashMap<>();
 
-    // 添加新的方法获取可交互元素
-    private List<WebElement> getInteractiveElements(WebDriver driver) {
-        return driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR))
-                .stream()
-                .filter(this::isElementVisible)
-                .collect(Collectors.toList());
-    }
+		try {
+			// 等待页面加载完成
+			driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(10));
 
-    private String getInteractiveElementsInfo(WebDriver driver) {
-        StringBuilder resultInfo = new StringBuilder();
-        List<WebElement> interactiveElements = getInteractiveElements(driver);
+			// 获取基本信息
+			String currentUrl = driver.getCurrentUrl();
+			String title = driver.getTitle();
+			state.put("url", currentUrl);
+			state.put("title", title);
 
-        for (int i = 0; i < interactiveElements.size(); i++) {
-            String formattedInfo = formatElementInfo(i, interactiveElements.get(i));
-            if (!formattedInfo.isEmpty()) {
-                resultInfo.append(formattedInfo);
-            }
-        }
+			// 获取标签页信息
+			Set<String> windowHandles = driver.getWindowHandles();
+			List<Map<String, Object>> tabs = new ArrayList<>();
+			String currentHandle = driver.getWindowHandle();
+			for (String handle : windowHandles) {
+				driver.switchTo().window(handle);
+				tabs.add(Map.of("url", driver.getCurrentUrl(), "title", driver.getTitle(), "id", handle));
+			}
+			driver.switchTo().window(currentHandle); // 切回原始标签页
+			state.put("tabs", tabs);
 
-        return resultInfo.toString();
-    }
+			// 获取viewport和滚动信息
+			JavascriptExecutor js = (JavascriptExecutor) driver;
+			Long scrollTop = (Long) js.executeScript("return window.pageYOffset;");
+			Long scrollHeight = (Long) js.executeScript("return document.documentElement.scrollHeight;");
+			Long viewportHeight = (Long) js.executeScript("return window.innerHeight;");
 
-    public Map<String, Object> getCurrentState() {
-        WebDriver driver = getDriver();
-        Map<String, Object> state = new HashMap<>();
+			Map<String, Object> scrollInfo = new HashMap<>();
+			scrollInfo.put("pixels_above", scrollTop);
+			scrollInfo.put("pixels_below", Math.max(0, scrollHeight - (scrollTop + viewportHeight)));
+			scrollInfo.put("total_height", scrollHeight);
+			scrollInfo.put("viewport_height", viewportHeight);
+			state.put("scroll_info", scrollInfo);
 
-        try {
-            // 等待页面加载完成
-            driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(10));
+			// 获取可交互元素
+			String elementsInfo = getInteractiveElementsInfo(driver);
+			state.put("interactive_elements", elementsInfo);
 
-            // 获取基本信息
-            String currentUrl = driver.getCurrentUrl();
-            String title = driver.getTitle();
-            state.put("url", currentUrl);
-            state.put("title", title);
+			// 捕获截图
+			TakesScreenshot screenshot = (TakesScreenshot) driver;
+			String base64Screenshot = screenshot.getScreenshotAs(OutputType.BASE64);
+			state.put("screenshot", base64Screenshot);
 
-            // 获取标签页信息
-            Set<String> windowHandles = driver.getWindowHandles();
-            List<Map<String, Object>> tabs = new ArrayList<>();
-            String currentHandle = driver.getWindowHandle();
-            for (String handle : windowHandles) {
-                driver.switchTo().window(handle);
-                tabs.add(Map.of(
-                        "url", driver.getCurrentUrl(),
-                        "title", driver.getTitle(),
-                        "id", handle));
-            }
-            driver.switchTo().window(currentHandle); // 切回原始标签页
-            state.put("tabs", tabs);
+			// 添加帮助信息
+			state.put("help", "[0], [1], [2], etc., represent clickable indices corresponding to the elements listed. "
+					+ "Clicking on these indices will navigate to or interact with the respective content behind them.");
 
-            // 获取viewport和滚动信息
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            Long scrollTop = (Long) js.executeScript("return window.pageYOffset;");
-            Long scrollHeight = (Long) js.executeScript("return document.documentElement.scrollHeight;");
-            Long viewportHeight = (Long) js.executeScript("return window.innerHeight;");
+			return state;
 
-            Map<String, Object> scrollInfo = new HashMap<>();
-            scrollInfo.put("pixels_above", scrollTop);
-            scrollInfo.put("pixels_below", Math.max(0, scrollHeight - (scrollTop + viewportHeight)));
-            scrollInfo.put("total_height", scrollHeight);
-            scrollInfo.put("viewport_height", viewportHeight);
-            state.put("scroll_info", scrollInfo);
+		}
+		catch (Exception e) {
+			log.error("Failed to get browser state", e);
+			state.put("error", "Failed to get browser state: " + e.getMessage());
+			return state;
+		}
+	}
 
-            // 获取可交互元素
-            String elementsInfo = getInteractiveElementsInfo(driver);
-            state.put("interactive_elements", elementsInfo);
-
-            // 捕获截图
-            TakesScreenshot screenshot = (TakesScreenshot) driver;
-            String base64Screenshot = screenshot.getScreenshotAs(OutputType.BASE64);
-            state.put("screenshot", base64Screenshot);
-
-            // 添加帮助信息
-            state.put("help", "[0], [1], [2], etc., represent clickable indices corresponding to the elements listed. "
-                    +
-                    "Clicking on these indices will navigate to or interact with the respective content behind them.");
-
-            return state;
-
-        } catch (Exception e) {
-            log.error("Failed to get browser state", e);
-            state.put("error", "Failed to get browser state: " + e.getMessage());
-            return state;
-        }
-    }
-    private boolean isElementVisible(WebElement element) {
-        try {
-            return element.isDisplayed() && element.isEnabled();
-        } catch (NoSuchElementException e) {
-            return false;
-        }
-    }
-
+	private boolean isElementVisible(WebElement element) {
+		try {
+			return element.isDisplayed() && element.isEnabled();
+		}
+		catch (NoSuchElementException e) {
+			return false;
+		}
+	}
 
 	@Override
 	public ToolExecuteResult apply(String s) {
