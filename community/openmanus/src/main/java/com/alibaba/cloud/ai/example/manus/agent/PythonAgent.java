@@ -126,12 +126,20 @@ public class PythonAgent extends ToolCallAgent {
       }
 
     @Override
+    protected String act() {
+        String result = super.act();
+        updateExecutionState(result);
+        return result;
+    }
+
+    @Override
     public List<ToolCallback> getToolCallList() {
         return List.of(
             PythonExecute.getFunctionToolCallback(),
             Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId())
         );
     }
+
 
     @Override
     Map<String, Object> getData() {
@@ -147,12 +155,8 @@ public class PythonAgent extends ToolCallAgent {
         Map<String, Object> state = currentExecutionState.get();
         if (state != null) {
             data.put("last_result", state.get("result"));
-            data.put("last_error", state.get("error"));
-            data.put("execution_status", state.get("status"));
         } else {
             data.put("last_result", "No previous execution");
-            data.put("last_error", null);
-            data.put("execution_status", "initial");
         }
 
         return data;
@@ -161,11 +165,9 @@ public class PythonAgent extends ToolCallAgent {
     /**
      * 更新执行状态
      */
-    public void updateExecutionState(String result, String error, String status) {
+    public void updateExecutionState(String result) {
         Map<String, Object> state = new HashMap<>();
         state.put("result", result);
-        state.put("error", error);
-        state.put("status", status);
         currentExecutionState.set(state);
     }
 }
