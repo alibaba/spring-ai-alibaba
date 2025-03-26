@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.toolcalling.weather;
+package com.alibaba.cloud.ai.plugin.weather;
 
 import cn.hutool.extra.pinyin.PinyinUtil;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
