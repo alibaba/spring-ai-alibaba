@@ -21,6 +21,13 @@ https://github.com/user-attachments/assets/fc8153bc-8353-4d5c-8789-755d2fd7c4f3
  export SERP_API_KEY=xxxx
  ```
 
+4. [Optional] Set <a href="https://lbsyun.baidu.com/apiconsole/key" target="_blank">Baidu Map key</a>. Modify the "ak" in the mcp-servers-config.json file.
+
+
+ ```shell
+ "BAIDU_MAP_API_KEY": "your_baidu_AK"
+ ```
+
 ### Run with IDE
 
 Import the this module as an independent project into your favorite IDE.
@@ -34,5 +41,5 @@ mvn spring-boot:run
 ```
 
 ## Architecture
-![aaa](https://github.com/user-attachments/assets/4ad14a72-667b-456e-85c1-b05eef8fd414)
 
+![aaa](https://github.com/user-attachments/assets/4ad14a72-667b-456e-85c1-b05eef8fd414)
