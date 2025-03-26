@@ -96,10 +96,6 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			            "type": "string",
 			            "description": "JavaScript code for 'execute_js' action"
 			        },
-			        "scroll_amount": {
-			            "type": "integer",
-			            "description": "Pixels to scroll (positive for down, negative for up) for 'scroll' action"
-			        },
 			        "tab_id": {
 			            "type": "integer",
 			            "description": "Tab ID for 'switch_tab' action"
@@ -130,9 +126,6 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			        ],
 			        "new_tab": [
 			            "url"
-			        ],
-			        "scroll": [
-			            "scroll_amount"
 			        ]
 			    }
 			}
@@ -205,15 +198,6 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		}
 	}
 
-	// 添加新的方法获取可交互元素
-	private List<WebElement> getInteractiveElements(WebDriver driver) {
-		return driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR))
-				.stream()
-				.filter(this::isElementVisible)
-				.filter(element -> !getElementText(element).isEmpty())
-				.collect(Collectors.toList());
-	}
-
 	public ToolExecuteResult run(String toolInput) {
 		log.info("BrowserUseTool toolInput:" + toolInput);
 		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
@@ -262,22 +246,22 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					driver.get(url);
 					return new ToolExecuteResult("Navigated to " + url);
 
-					case "click":
+				case "click":
 					if (index == null) {
 						return new ToolExecuteResult("Index is required for 'click' action");
 					}
 					if (index < 0 || index >= interactiveElements.size()) {
 						return new ToolExecuteResult("Element with index " + index + " not found");
 					}
-				
+
 					WebElement element = interactiveElements.get(index);
 					log.info("Clicking element: {}", getElementText(element));
-				
+
 					// 记录点击前的窗口状态
 					Set<String> beforeWindowHandles = driver.getWindowHandles();
 					String currentUrl = driver.getCurrentUrl();
 					String currentHandle = driver.getWindowHandle();
-				
+
 					// 执行点击操作
 					simulateHumanBehavior(element);
 					try {
@@ -287,7 +271,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 						JavascriptExecutor js = (JavascriptExecutor) driver;
 						js.executeScript("arguments[0].click();", element);
 					}
-				
+
 					// 等待页面变化（最多等待10秒）
 					WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 					try {
@@ -297,29 +281,31 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 							// 找出新打开的窗口
 							afterWindowHandles.removeAll(beforeWindowHandles);
 							String newHandle = afterWindowHandles.iterator().next();
-							
+
 							// 切换到新窗口
 							driver.switchTo().window(newHandle);
 							log.info("New tab detected, switched to: {}", driver.getCurrentUrl());
-							return new ToolExecuteResult("Clicked element and opened in new tab: " + driver.getCurrentUrl());
+							return new ToolExecuteResult(
+									"Clicked element and opened in new tab: " + driver.getCurrentUrl());
 						}
-				
+
 						// 检查URL是否发生变化
 						boolean urlChanged = wait.until(d -> !d.getCurrentUrl().equals(currentUrl));
 						if (urlChanged) {
 							log.info("Page navigated to: {}", driver.getCurrentUrl());
 							return new ToolExecuteResult("Clicked element and navigated to: " + driver.getCurrentUrl());
 						}
-				
+
 						// 如果没有明显变化，返回普通点击成功消息
 						return new ToolExecuteResult("Clicked element at index " + index);
-				
+
 					} catch (TimeoutException e) {
 						// 如果超时，检查是否仍在原页面
 						if (!driver.getCurrentUrl().equals(currentUrl)) {
 							return new ToolExecuteResult("Clicked and page changed to: " + driver.getCurrentUrl());
 						}
-						return new ToolExecuteResult("Clicked element at index " + index + " (no visible navigation occurred)");
+						return new ToolExecuteResult(
+								"Clicked element at index " + index + " (no visible navigation occurred)");
 					}
 
 				case "input_text":
@@ -528,6 +514,17 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		}
 	}
 
+
+
+	// 添加新的方法获取可交互元素
+	private List<WebElement> getInteractiveElements(WebDriver driver) {
+		return driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR))
+				.stream()
+				.filter(this::isElementVisible)
+				.filter(element -> !getElementText(element).isEmpty())
+				.collect(Collectors.toList());
+	}
+
 	private String getInteractiveElementsInfo(WebDriver driver) {
 		StringBuilder resultInfo = new StringBuilder();
 		List<WebElement> interactiveElements = getInteractiveElements(driver);
@@ -605,50 +602,10 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			return state;
 		}
 	}
-
-	// 增加一个更详细的元素可见性检查方法
 	private boolean isElementVisible(WebElement element) {
 		try {
-			JavascriptExecutor js = (JavascriptExecutor) getDriver();
-
-			// 获取元素的各种样式属性
-			Map<String, String> styles = new HashMap<>();
-			String[] styleProperties = {
-					"display", "visibility", "opacity",
-					"position", "width", "height",
-					"clip", "overflow"
-			};
-
-			for (String prop : styleProperties) {
-				String value = (String) js.executeScript(
-						"return window.getComputedStyle(arguments[0]).getPropertyValue(arguments[1])",
-						element, prop);
-				styles.put(prop, value);
-			}
-
-			// 检查元素是否在视口内
-			Boolean inViewport = (Boolean) js.executeScript(
-					"var rect = arguments[0].getBoundingClientRect();" +
-							"return (rect.top >= 0 && rect.left >= 0 && " +
-							"rect.bottom <= window.innerHeight && " +
-							"rect.right <= window.innerWidth);",
-					element);
-
-			log.debug("元素样式检查 - ID: {}, Tag: {}, Styles: {}, InViewport: {}",
-					element.getAttribute("id"),
-					element.getTagName(),
-					styles,
-					inViewport);
-
-			return element.isDisplayed() &&
-					!"none".equals(styles.get("display")) &&
-					!"hidden".equals(styles.get("visibility")) &&
-					!"0".equals(styles.get("opacity")) &&
-					(styles.get("width") != null && !styles.get("width").equals("0px")) &&
-					(styles.get("height") != null && !styles.get("height").equals("0px"));
-
-		} catch (Exception e) {
-			log.error("检查元素可见性时发生错误: {}", e.getMessage());
+			return element.isDisplayed() && element.isEnabled();
+		} catch (NoSuchElementException e) {
 			return false;
 		}
 	}
