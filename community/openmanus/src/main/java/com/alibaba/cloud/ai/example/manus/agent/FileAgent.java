@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.tool.Bash;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
 import com.alibaba.cloud.ai.example.manus.tool.Summary;
@@ -44,13 +45,6 @@ public class FileAgent extends ToolCallAgent {
     }
 
     @Override
-    protected boolean think() {
-        // 在开始思考前清空缓存
-        currentFileState.set(null);
-        return super.think();
-    }
-
-    @Override
     protected Message getNextStepMessage() {
         String nextStepPrompt = """
                 What should I do next to achieve my goal?
@@ -59,10 +53,7 @@ public class FileAgent extends ToolCallAgent {
                 - Working Directory: {working_directory}
                 - Last File Operation: {last_operation}
                 - Last Operation Result: {operation_result}
-                - Available Tools:
-                  1. DocLoader: Read content from various file types
-                  2. FileSaver: Save content to files
-                  3. Summary: Create operation summary
+              
 
                 Remember:
                 1. Check file existence before operations
@@ -85,25 +76,19 @@ public class FileAgent extends ToolCallAgent {
     }
 
     @Override
+    protected String act() {
+        String result = super.act();
+        updateFileState("file_operation", result);
+        return result;
+    }
+
+    @Override
     protected Message addThinkPrompt(List<Message> messages) {
         super.addThinkPrompt(messages);
         String systemPrompt = """
                 You are an AI agent specialized in file operations. Your goal is to handle file-related tasks effectively and safely.
 
                 # Response Rules
-                1. RESPONSE FORMAT: You must ALWAYS respond with valid JSON in this exact format:
-                {"current_state": {"evaluation": "Success|Failed|Unknown - Analyze the current file operation results",
-                "memory": "Description of what has been done and what needs to be remembered",
-                "next_goal": "What needs to be done in the next immediate action"},
-                "action":[{"tool_name": {"parameters": "specific parameters"}}]}
-
-                2. AVAILABLE TOOLS:
-                - Document Loading:
-                  {"doc_loader": {"file_type": "pdf|docx|txt", "file_path": "/path/to/file"}}
-                - File Saving:
-                  {"file_saver": {"content": "content to save", "file_path": "/path/to/save"}}
-                - Summary Creation:
-                  {"summary": {"summary": "operation_summary_here"}}
 
                 3. FILE OPERATIONS:
                 - Always validate file paths
@@ -149,6 +134,7 @@ public class FileAgent extends ToolCallAgent {
     @Override
     public List<ToolCallback> getToolCallList() {
         return List.of(
+            Bash.getFunctionToolCallback(workingDirectory),
             DocLoaderTool.getFunctionToolCallback(),
             FileSaver.getFunctionToolCallback(),
             Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId())
@@ -170,11 +156,9 @@ public class FileAgent extends ToolCallAgent {
         if (state != null) {
             data.put("last_operation", state.get("operation"));
             data.put("operation_result", state.get("result"));
-            data.put("operation_status", state.get("status"));
         } else {
             data.put("last_operation", "No previous operation");
             data.put("operation_result", null);
-            data.put("operation_status", "initial");
         }
 
         return data;
@@ -183,11 +167,10 @@ public class FileAgent extends ToolCallAgent {
     /**
      * 更新文件操作状态
      */
-    public void updateFileState(String operation, String result, String status) {
+    public void updateFileState(String operation, String result) {
         Map<String, Object> state = new HashMap<>();
         state.put("operation", operation);
         state.put("result", result);
-        state.put("status", status);
         currentFileState.set(state);
     }
 }

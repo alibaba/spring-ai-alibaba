@@ -30,7 +30,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -61,7 +60,7 @@ public class PlanningFlow extends BaseFlow {
 	// shared result state between agents.
 	private Map<String, Object> resultState;
 
-	public PlanningFlow(Map<String, BaseAgent> agents, Map<String, Object> data) {
+	public PlanningFlow(List<BaseAgent> agents, Map<String, Object> data) {
 		super(agents, data);
 
 		executorKeys = new ArrayList<>();
@@ -85,24 +84,45 @@ public class PlanningFlow extends BaseFlow {
 		}
 
 		if (executorKeys.isEmpty()) {
-			executorKeys.addAll(agents.keySet());
+			for (BaseAgent agent : agents) {
+				executorKeys.add(agent.getName().toUpperCase());
+			}
 		}
 
 		this.resultState = new HashMap<>();
 	}
 
 	public BaseAgent getExecutor(String stepType) {
-		if (stepType != null && agents.containsKey(stepType)) {
-			return agents.get(stepType);
-		}
+        BaseAgent defaultAgent = null;
+        
+        if (stepType != null) {
+            stepType = stepType.toUpperCase();
+            for (BaseAgent agent : agents) {
+                String agentUpper = agent.getName().toUpperCase();
+                if (agentUpper.equals(stepType)) {
+                    return agent;
+                }
+                if (agentUpper.equals("MANUS")) {
+                    defaultAgent = agent;
+                }
+            }
+        }
 
-		for (String key : executorKeys) {
-			if (agents.containsKey(key)) {
-				return agents.get(key);
-			}
-		}
-		throw new RuntimeException("agent not found");
-	}
+        if (defaultAgent == null) {
+            log.warn("Agent not found for type: {}. No MANUS agent found as fallback.", stepType);
+            // 继续尝试获取第一个可用的 agent
+            if (!agents.isEmpty()) {
+                defaultAgent = agents.get(0);
+                log.warn("Using first available agent as fallback: {}", defaultAgent.getName());
+            } else {
+                throw new RuntimeException("No agents available in the system");
+            }
+        } else {
+            log.info("Agent not found for type: {}. Using MANUS agent as fallback.", stepType);
+        }
+        
+        return defaultAgent;
+    }
 
 	@Override
 	public String execute(String inputText) {
@@ -155,8 +175,8 @@ public class PlanningFlow extends BaseFlow {
 
 		// 构建agents信息
 		StringBuilder agentsInfo = new StringBuilder("Available Agents:\n");
-		agents.forEach((key, agent) -> {
-			agentsInfo.append("- Agent Name ").append(": ").append(agent.getName()).append("\n")
+		agents.forEach(agent -> {
+			agentsInfo.append("- Agent Name ").append(": ").append(agent.getName().toUpperCase()).append("\n")
 					.append("  Description: ").append(agent.getDescription()).append("\n");
 		});
 

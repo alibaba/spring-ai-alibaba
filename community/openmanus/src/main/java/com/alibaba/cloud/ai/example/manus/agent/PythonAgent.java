@@ -36,7 +36,7 @@ public class PythonAgent extends ToolCallAgent {
 
     private static final Logger log = LoggerFactory.getLogger(PythonAgent.class);
     private final String workingDirectory;
-    private final AtomicReference<Map<String, Object>> currentExecutionState = new AtomicReference<>();
+    private String lastResult;
 
     public PythonAgent(LlmService llmService, ToolCallingManager toolCallingManager, String workingDirectory) {
         super(llmService, toolCallingManager);
@@ -46,7 +46,6 @@ public class PythonAgent extends ToolCallAgent {
     @Override
     protected boolean think() {
         // 在开始思考前清空缓存
-        currentExecutionState.set(null);
         return super.think();
     }
 
@@ -123,7 +122,7 @@ public class PythonAgent extends ToolCallAgent {
             Agent Input: What you want this Python code to do.
             Agent Output: The execution results of the Python code.
             """;
-      }
+    }
 
     @Override
     protected String act() {
@@ -150,14 +149,7 @@ public class PythonAgent extends ToolCallAgent {
         }
 
         data.put("working_directory", workingDirectory);
-
-        // 获取最后一次执行结果
-        Map<String, Object> state = currentExecutionState.get();
-        if (state != null) {
-            data.put("last_result", state.get("result"));
-        } else {
-            data.put("last_result", "No previous execution");
-        }
+        data.put("last_result", lastResult != null ? lastResult : "No previous execution");
 
         return data;
     }
@@ -166,8 +158,6 @@ public class PythonAgent extends ToolCallAgent {
      * 更新执行状态
      */
     public void updateExecutionState(String result) {
-        Map<String, Object> state = new HashMap<>();
-        state.put("result", result);
-        currentExecutionState.set(state);
+        this.lastResult = result;
     }
 }
