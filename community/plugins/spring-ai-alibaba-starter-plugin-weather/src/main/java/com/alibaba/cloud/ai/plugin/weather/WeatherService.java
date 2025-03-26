@@ -1,12 +1,11 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Copyright 2024-2025 the original author or authors.
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.plugin.weather;
 
 import cn.hutool.extra.pinyin.PinyinUtil;
@@ -24,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import net.sourceforge.pinyin4j.PinyinHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -37,6 +36,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+/**
+ * @author 31445
+ */
 public class WeatherService implements Function<WeatherService.Request, WeatherService.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(WeatherService.class);
@@ -63,6 +65,15 @@ public class WeatherService implements Function<WeatherService.Request, WeatherS
 			.defaultHeader("key", properties.getApiKey())
 			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_MEMORY_SIZE))
 			.build();
+	}
+
+	public static Response fromJson(Map<String, Object> json) {
+		Map<String, Object> location = (Map<String, Object>) json.get("location");
+		Map<String, Object> current = (Map<String, Object>) json.get("current");
+		Map<String, Object> forecast = (Map<String, Object>) json.get("forecast");
+		List<Map<String, Object>> forecastDays = (List<Map<String, Object>>) forecast.get("forecastday");
+		String city = (String) location.get("name");
+		return new Response(city, current, forecastDays);
 	}
 
 	@Override
@@ -102,15 +113,6 @@ public class WeatherService implements Function<WeatherService.Request, WeatherS
 
 	private boolean containsChinese(String str) {
 		return str.matches(".*[\u4e00-\u9fa5].*");
-	}
-
-	public static Response fromJson(Map<String, Object> json) {
-		Map<String, Object> location = (Map<String, Object>) json.get("location");
-		Map<String, Object> current = (Map<String, Object>) json.get("current");
-		Map<String, Object> forecast = (Map<String, Object>) json.get("forecast");
-		List<Map<String, Object>> forecastDays = (List<Map<String, Object>>) forecast.get("forecastday");
-		String city = (String) location.get("name");
-		return new Response(city, current, forecastDays);
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)

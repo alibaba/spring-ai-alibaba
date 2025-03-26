@@ -1,13 +1,11 @@
-package com.alibaba.cloud.ai.plugin.bing;
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Copyright 2024-2025 the original author or authors.
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +13,9 @@ package com.alibaba.cloud.ai.plugin.bing;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.alibaba.cloud.ai.plugin.bing;
 
+import com.alibaba.cloud.ai.plugin.bing.BingSearchProperties;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -36,12 +36,8 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * .
- *
- * @author: KrakenZJC
- * @since : 2024-11-18
+ * @author KrakenZJC
  **/
-
 public class BingSearchService implements Function<BingSearchService.Request, BingSearchService.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(BingSearchService.class);
