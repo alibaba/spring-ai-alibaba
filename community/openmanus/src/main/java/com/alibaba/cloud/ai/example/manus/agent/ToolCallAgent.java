@@ -87,11 +87,18 @@ public class ToolCallAgent extends ReActAgent {
 				CURRENT PLAN STATUS:
 				{planStatus}
 
-				YOUR CURRENT TASK:
+				YOUR CURRENT STEP:
 				You are now working on step {currentStepIndex}: {stepText}
 
 				Please execute this step using the appropriate tools.
-				When you're done with current step, provide the result data of this step, call Summary tool to record the result of current step.
+
+				When you have completed the current step:
+					1. Call Summary tool to record the step's result
+					2. This will mark the current step as complete
+					3. System will then proceed to the next step automatically
+
+				IMPORTANT: Only call Summary tool when you are completely done with the current step and ready to move forward.
+
 				""";
 
 		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(stepPrompt);
@@ -119,8 +126,6 @@ public class ToolCallAgent extends ReActAgent {
 
 			// calltool with mem
 			ChatOptions chatOptions = ToolCallingChatOptions.builder()
-					.toolCallbacks(
-							toolBuilder.getManusAgentToolCalls(this, llmService.getMemory(), getConversationId()))
 					.internalToolExecutionEnabled(false)
 					.build();
 			Message nextStepMessage = getNextStepMessage();
@@ -168,8 +173,9 @@ public class ToolCallAgent extends ReActAgent {
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
 					.get(toolExecutionResult.conversationHistory().size() - 1);
 			llmService.getMemory().add(getConversationId(), toolResponseMessage);
-			results.add(toolResponseMessage.getText());
-			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), toolResponseMessage.getText()));
+			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
+			results.add(llmCallResponse);
+			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), llmCallResponse));
 			return String.join("\n\n", results);
 		} catch (Exception e) {
 			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
@@ -183,7 +189,7 @@ public class ToolCallAgent extends ReActAgent {
 	}
 
 	protected List<ToolCallback> getFunctionToolCallbacks() {
-		return List.of(Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId()));
+		return toolBuilder.getManusAgentToolCalls(this, llmService.getMemory(), getConversationId());
 	}
 
 }

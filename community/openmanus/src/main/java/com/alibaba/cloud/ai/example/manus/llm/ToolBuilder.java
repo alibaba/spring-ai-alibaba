@@ -39,7 +39,7 @@ public class ToolBuilder {
         this.chromeDriverService = chromeDriverService;
     }
 
-    public List<FunctionCallback> getManusAgentToolCalls(BaseAgent agent, ChatMemory memory,
+    public List<ToolCallback> getManusAgentToolCalls(BaseAgent agent, ChatMemory memory,
             String conversationId) {
         return List.of(
             //GoogleSearch.getFunctionToolCallback(), 
