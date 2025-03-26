@@ -29,6 +29,7 @@ import com.alibaba.cloud.ai.graph.node.ToolNode;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
@@ -106,9 +107,8 @@ public class ReactAgent {
 	private StateGraph initGraph() throws GraphStateException {
 		if (state == null) {
 			OverAllState defaultState = new OverAllState();
-			defaultState.input(Map.of("query", "user input"));
-			defaultState.registerKeyAndStrategy(ToolNode.TOOL_RESPONSE_KEY, List::of);
-			defaultState.registerKeyAndStrategy(LlmNode.LLM_RESPONSE_KEY, (o1, o2) -> o2);
+			defaultState.registerKeyAndStrategy("messages", List::of);
+			defaultState.registerKeyAndStrategy("react_output", (o1, o2) -> o1);
 			this.state = defaultState;
 		}
 
@@ -127,7 +127,8 @@ public class ReactAgent {
 			return "end";
 		}
 
-		AssistantMessage message = (AssistantMessage) state.value(LlmNode.LLM_RESPONSE_KEY).orElseThrow();
+		List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
+		AssistantMessage message = (AssistantMessage)messages.get(messages.size() - 1);
 		if (message.hasToolCalls()) {
 			return "continue";
 		}

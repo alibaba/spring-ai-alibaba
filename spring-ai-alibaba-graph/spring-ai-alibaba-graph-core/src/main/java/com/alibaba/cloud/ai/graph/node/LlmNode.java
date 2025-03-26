@@ -188,14 +188,22 @@ public class LlmNode implements NodeAction {
 		public LlmNode build() {
 			LlmNode llmNode = new LlmNode();
 			llmNode.prompt = this.promptTemplate;
-			llmNode.params = this.params;
 			llmNode.templateKey = this.promptTemplateKey;
 			llmNode.paramsKey = this.paramsKey;
-			llmNode.messages = this.messages;
 			llmNode.messagesKey = this.messagesKey;
 			llmNode.outputKey = this.outputKey;
-			llmNode.advisors = this.advisors;
-			llmNode.toolCallbacks = this.toolCallbacks;
+			if (this.params != null) {
+				llmNode.params = this.params;
+			}
+			if (this.messages != null) {
+				llmNode.messages = this.messages;
+			}
+			if (this.advisors != null) {
+				llmNode.advisors = this.advisors;
+			}
+			if (this.toolCallbacks != null) {
+				llmNode.toolCallbacks = this.toolCallbacks;
+			}
 			llmNode.chatClient = this.chatClient;
 			return llmNode;
 		}
