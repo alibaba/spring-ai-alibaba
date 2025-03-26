@@ -30,22 +30,24 @@ import java.util.concurrent.locks.ReentrantLock;
  * This class provides the core functionality for managing agent state, conversation flow,
  * and step-by-step execution of tasks.
  *
- * <p>The agent supports a finite number of execution steps and includes mechanisms for:
+ * <p>
+ * The agent supports a finite number of execution steps and includes mechanisms for:
  * <ul>
- *   <li>State management (idle, running, finished)</li>
- *   <li>Conversation tracking</li>
- *   <li>Step limitation and monitoring</li>
- *   <li>Thread-safe execution</li>
- *   <li>Stuck-state detection and handling</li>
+ * <li>State management (idle, running, finished)</li>
+ * <li>Conversation tracking</li>
+ * <li>Step limitation and monitoring</li>
+ * <li>Thread-safe execution</li>
+ * <li>Stuck-state detection and handling</li>
  * </ul>
  *
- * <p>Implementing classes must define:
+ * <p>
+ * Implementing classes must define:
  * <ul>
- *   <li>{@link #getName()} - Returns the agent's name</li>
- *   <li>{@link #getDescription()} - Returns the agent's description</li>
- *   <li>{@link #addThinkPrompt(List)} - Implements the thinking chain logic</li>
- *   <li>{@link #getNextStepMessage()} - Provides the next step's prompt template</li>
- *   <li>{@link #step()} - Implements the core logic for each execution step</li>
+ * <li>{@link #getName()} - Returns the agent's name</li>
+ * <li>{@link #getDescription()} - Returns the agent's description</li>
+ * <li>{@link #addThinkPrompt(List)} - Implements the thinking chain logic</li>
+ * <li>{@link #getNextStepMessage()} - Provides the next step's prompt template</li>
+ * <li>{@link #step()} - Implements the core logic for each execution step</li>
  * </ul>
  *
  * @see AgentState
@@ -58,7 +60,7 @@ public abstract class BaseAgent {
 	private final ReentrantLock lock = new ReentrantLock();
 
 	private String conversationId;
-	
+
 	private AgentState state = AgentState.IDLE;
 
 	protected LlmService llmService;
@@ -70,13 +72,16 @@ public abstract class BaseAgent {
 	private Map<String, Object> data = new HashMap<>();
 
 	public abstract String getName();
+
 	public abstract String getDescription();
+
 	/**
 	 * 递归的增加思考提示，形成一个自上而下的思考链条
 	 * @param messages
 	 * @return
 	 */
 	protected abstract Message addThinkPrompt(List<Message> messages);
+
 	/**
 	 * 获取下一步提示词模板，这个跟着具体的agent走，因为每个agent不一样，也不需要继承
 	 * @return
@@ -125,26 +130,25 @@ public abstract class BaseAgent {
 
 	private void handleStuckState() {
 		log.warn("Agent stuck detected - Missing tool calls");
-		
+
 		// End current step
 		setState(AgentState.FINISHED);
-		
+
 		String stuckPrompt = """
-			Agent response detected missing required tool calls.
-			Please ensure each response includes at least one tool call to progress the task.
-			Current step: %d
-			Execution status: Force terminated
-			""".formatted(currentStep);
-			
+				Agent response detected missing required tool calls.
+				Please ensure each response includes at least one tool call to progress the task.
+				Current step: %d
+				Execution status: Force terminated
+				""".formatted(currentStep);
+
 		log.error(stuckPrompt);
 	}
 
-	
-    /**
-     * 检查是否处于卡住状态
-     */
-    protected boolean isStuck() {
-        //目前判断是如果三次没有调用工具就认为是卡住了，就退出当前step。
+	/**
+	 * 检查是否处于卡住状态
+	 */
+	protected boolean isStuck() {
+		// 目前判断是如果三次没有调用工具就认为是卡住了，就退出当前step。
 		List<Message> memoryEntries = llmService.getMemory().get(conversationId, 6);
 		int zeroToolCallCount = 0;
 		for (Message msg : memoryEntries) {
@@ -156,7 +160,8 @@ public abstract class BaseAgent {
 			}
 		}
 		return zeroToolCallCount >= 3;
-    }
+	}
+
 	public void setState(AgentState state) {
 		this.state = state;
 	}

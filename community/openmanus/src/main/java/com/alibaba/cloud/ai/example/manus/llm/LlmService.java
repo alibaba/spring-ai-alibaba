@@ -184,7 +184,6 @@ public class LlmService {
 
 	private final ChatModel chatModel;
 
-
 	public LlmService(ChatModel chatModel, ToolCallbackProvider toolCallbackProvider) {
 		this.chatModel = chatModel;
 
