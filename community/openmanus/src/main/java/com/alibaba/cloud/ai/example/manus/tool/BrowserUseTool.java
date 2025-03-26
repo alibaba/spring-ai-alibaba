@@ -262,50 +262,64 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					driver.get(url);
 					return new ToolExecuteResult("Navigated to " + url);
 
-				case "click":
+					case "click":
 					if (index == null) {
 						return new ToolExecuteResult("Index is required for 'click' action");
 					}
 					if (index < 0 || index >= interactiveElements.size()) {
 						return new ToolExecuteResult("Element with index " + index + " not found");
 					}
-
+				
 					WebElement element = interactiveElements.get(index);
 					log.info("Clicking element: {}", getElementText(element));
-
-					// 获取当前窗口数量
-					int initialWindowCount = driver.getWindowHandles().size();
-
-					// 使用 JavaScript 在新标签页中打开链接
-					JavascriptExecutor js = (JavascriptExecutor) driver;
-					String href = element.getAttribute("href");
-					if (href != null && !href.isEmpty()) {
-						js.executeScript("window.open(arguments[0], '_blank');", href);
-					} else {
-						// 如果没有 href 属性，模拟 Ctrl+Click 行为
-						Actions actions = new Actions(driver);
-						actions.keyDown(Keys.COMMAND) // Mac 上使用 COMMAND，Windows 上使用 CONTROL
-								.click(element)
-								.keyUp(Keys.COMMAND)
-								.perform();
+				
+					// 记录点击前的窗口状态
+					Set<String> beforeWindowHandles = driver.getWindowHandles();
+					String currentUrl = driver.getCurrentUrl();
+					String currentHandle = driver.getWindowHandle();
+				
+					// 执行点击操作
+					simulateHumanBehavior(element);
+					try {
+						element.click();
+					} catch (ElementClickInterceptedException e) {
+						// 如果普通点击失败，尝试使用 JavaScript 点击
+						JavascriptExecutor js = (JavascriptExecutor) driver;
+						js.executeScript("arguments[0].click();", element);
 					}
-
-					// 等待新窗口打开
+				
+					// 等待页面变化（最多等待10秒）
 					WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-					wait.until(d -> d.getWindowHandles().size() > initialWindowCount);
-
-					// 切换到新标签页
-					String newTab = driver.getWindowHandles()
-							.stream()
-							.reduce((first, second) -> second)
-							.orElse(null);
-
-					if (newTab != null) {
-						driver.switchTo().window(newTab);
-						log.info("Switched to new tab: {}", driver.getCurrentUrl());
-						return new ToolExecuteResult("Clicked element at index " + index + " and opened in new tab");
-					} else {
-						return new ToolExecuteResult("Failed to open new tab after clicking element at index " + index);
+					try {
+						// 检查是否有新窗口打开
+						Set<String> afterWindowHandles = driver.getWindowHandles();
+						if (afterWindowHandles.size() > beforeWindowHandles.size()) {
+							// 找出新打开的窗口
+							afterWindowHandles.removeAll(beforeWindowHandles);
+							String newHandle = afterWindowHandles.iterator().next();
+							
+							// 切换到新窗口
+							driver.switchTo().window(newHandle);
+							log.info("New tab detected, switched to: {}", driver.getCurrentUrl());
+							return new ToolExecuteResult("Clicked element and opened in new tab: " + driver.getCurrentUrl());
+						}
+				
+						// 检查URL是否发生变化
+						boolean urlChanged = wait.until(d -> !d.getCurrentUrl().equals(currentUrl));
+						if (urlChanged) {
+							log.info("Page navigated to: {}", driver.getCurrentUrl());
+							return new ToolExecuteResult("Clicked element and navigated to: " + driver.getCurrentUrl());
+						}
+				
+						// 如果没有明显变化，返回普通点击成功消息
+						return new ToolExecuteResult("Clicked element at index " + index);
+				
+					} catch (TimeoutException e) {
+						// 如果超时，检查是否仍在原页面
+						if (!driver.getCurrentUrl().equals(currentUrl)) {
+							return new ToolExecuteResult("Clicked and page changed to: " + driver.getCurrentUrl());
+						}
+						return new ToolExecuteResult("Clicked element at index " + index + " (no visible navigation occurred)");
 					}
 
 				case "input_text":
