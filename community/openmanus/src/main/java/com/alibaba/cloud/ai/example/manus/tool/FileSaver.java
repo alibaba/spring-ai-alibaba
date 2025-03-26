@@ -36,29 +36,29 @@ public class FileSaver implements Function<String, ToolExecuteResult> {
 	private static final Logger log = LoggerFactory.getLogger(FileSaver.class);
 
 	private static String PARAMETERS = """
-        {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string",
-                    "description": "(required) The content to save to the file."
-                },
-                "file_path": {
-                    "type": "string",
-                    "description": "(required) The path where the file should be saved, including filename and extension."
-                }
-            },
-            "required": ["content", "file_path"]
-        }
-        """;
+			{
+			    "type": "object",
+			    "properties": {
+			        "content": {
+			            "type": "string",
+			            "description": "(required) The content to save to the file."
+			        },
+			        "file_path": {
+			            "type": "string",
+			            "description": "(required) The path where the file should be saved, including filename and extension."
+			        }
+			    },
+			    "required": ["content", "file_path"]
+			}
+			""";
 
 	private static final String name = "file_saver";
 
 	private static final String description = """
-        Save content to a local file at a specified path.
-        Use this tool when you need to save text, code, or generated content to a file on the local filesystem.
-        The tool accepts content and a file path, and saves the content to that location.
-        """;
+			Save content to a local file at a specified path.
+			Use this tool when you need to save text, code, or generated content to a file on the local filesystem.
+			The tool accepts content and a file path, and saves the content to that location.
+			""";
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);

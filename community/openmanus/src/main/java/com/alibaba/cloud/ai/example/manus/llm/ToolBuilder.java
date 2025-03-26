@@ -20,6 +20,7 @@ import java.util.List;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
+import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
 import com.alibaba.cloud.ai.example.manus.tool.GoogleSearch;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
@@ -42,7 +43,7 @@ public class ToolBuilder {
     public List<ToolCallback> getManusAgentToolCalls(BaseAgent agent, ChatMemory memory,
             String conversationId) {
         return List.of(
-            //GoogleSearch.getFunctionToolCallback(), 
+            GoogleSearch.getFunctionToolCallback(), 
             BrowserUseTool.getFunctionToolCallback(chromeDriverService),
             FileSaver.getFunctionToolCallback(), 
             PythonExecute.getFunctionToolCallback(),
@@ -50,14 +51,11 @@ public class ToolBuilder {
         );
     }
 
-    public List<ToolCallback> getManusAgentToolCalls() {
-        return List.of(
-            //GoogleSearch.getFunctionToolCallback(), 
-            BrowserUseTool.getFunctionToolCallback(chromeDriverService),
-            FileSaver.getFunctionToolCallback(), 
-            PythonExecute.getFunctionToolCallback()
-        );
-    }
+	public static List<ToolCallback> getManusAgentToolCalls() {
+		return List.of(GoogleSearch.getFunctionToolCallback(), BrowserUseTool.getFunctionToolCallback(),
+				FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback(),
+				DocLoaderTool.getFunctionToolCallback());
+	}
 
     public List<ToolCallback> getPlanningAgentToolCallbacks() {
         return List.of(PlanningTool.getFunctionToolCallback());
