@@ -71,20 +71,69 @@ public abstract class BaseAgent {
 
 	private Map<String, Object> data = new HashMap<>();
 
+	/**
+	 * 获取智能体的名称
+	 * 
+	 * 实现要求：
+	 * 1. 返回一个简短但具有描述性的名称
+	 * 2. 名称应该反映该智能体的主要功能或特性
+	 * 3. 名称应该是唯一的，便于日志和调试
+	 * 
+	 * 示例实现：
+	 * - ToolCallAgent 返回 "ToolCallAgent"
+	 * - BrowserAgent 返回 "BrowserAgent"
+	 * 
+	 * @return 智能体的名称
+	 */
 	public abstract String getName();
 
+	/**
+	 * 获取智能体的详细描述
+	 * 
+	 * 实现要求：
+	 * 1. 返回对该智能体功能的详细描述
+	 * 2. 描述应包含智能体的主要职责和能力
+	 * 3. 应说明该智能体与其他智能体的区别
+	 * 
+	 * 示例实现：
+	 * - ToolCallAgent: "负责管理和执行工具调用的智能体，支持多工具组合调用"
+	 * - ReActAgent: "实现思考(Reasoning)和行动(Acting)交替执行的智能体"
+	 * 
+	 * @return 智能体的详细描述文本
+	 */
 	public abstract String getDescription();
 
 	/**
-	 * 递归的增加思考提示，形成一个自上而下的思考链条
-	 * @param messages
-	 * @return
+	 * 添加思考提示到消息列表中，构建智能体的思考链
+	 * 
+	 * 实现要求：
+	 * 1. 根据当前上下文和状态生成合适的系统提示词
+	 * 2. 提示词应该指导智能体如何思考和决策
+	 * 3. 可以递归地构建提示链，形成层次化的思考过程
+	 * 4. 返回添加的系统提示消息对象
+	 * 
+	 * 子类实现参考：
+	 * 1. ReActAgent: 实现基础的思考-行动循环提示
+	 * 2. ToolCallAgent: 添加工具选择和执行相关的提示
+	 * 
+	 * @param messages 当前的消息列表，用于构建上下文
+	 * @return 添加的系统提示消息对象
 	 */
 	protected abstract Message addThinkPrompt(List<Message> messages);
 
 	/**
-	 * 获取下一步提示词模板，这个跟着具体的agent走，因为每个agent不一样，也不需要继承
-	 * @return
+	 * 获取下一步操作的提示消息
+	 * 
+	 * 实现要求：
+	 * 1. 生成引导智能体执行下一步操作的提示消息
+	 * 2. 提示内容应该基于当前执行状态和上下文
+	 * 3. 消息应该清晰指导智能体要执行什么任务
+	 * 
+	 * 子类实现参考：
+	 * 1. ToolCallAgent：返回工具选择和调用相关的提示
+	 * 2. ReActAgent：返回思考或行动决策相关的提示
+	 * 
+	 * @return 下一步操作的提示消息对象
 	 */
 	protected abstract Message getNextStepMessage();
 
@@ -174,6 +223,25 @@ public abstract class BaseAgent {
 		this.conversationId = conversationId;
 	}
 
+	/**
+	 * 获取智能体的数据上下文
+	 * 
+	 * 使用说明：
+	 * 1. 返回智能体在执行过程中需要的所有上下文数据
+	 * 2. 数据可包含：
+	 *    - 当前执行状态
+	 *    - 步骤信息
+	 *    - 中间结果
+	 *    - 配置参数
+	 * 3. 数据在run()方法执行时通过setData()设置
+	 * 
+	 * 访问控制：
+	 * - 包级私有访问权限
+	 * - 仅允许同包内的类访问
+	 * - 主要供子类在实现过程中使用
+	 * 
+	 * @return 包含智能体上下文数据的Map对象
+	 */
 	Map<String, Object> getData() {
 		return data;
 	}
