@@ -198,7 +198,6 @@ public class LlmService {
 			.defaultSystem(MANUS_SYSTEM_PROMPT)
 			.defaultAdvisors(new MessageChatMemoryAdvisor(memory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultTools(toolBuilder.getManusAgentToolCalls())
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();
 

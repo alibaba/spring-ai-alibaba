@@ -52,7 +52,6 @@ public abstract class ReActAgent extends BaseAgent {
 			2. Goal: What are we trying to achieve?
 			3. Options: What tools and actions are available?
 			4. Decision: What's the best next step?
-			5. Validation: How will we know if it works?
 			""";
 
 		messages.add(new SystemMessage(prompt));
