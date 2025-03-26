@@ -238,7 +238,10 @@ public final class OverAllState implements Serializable {
 	}
 
 	public final <T> Optional<T> value(String key, Class<T> type) {
-		return ofNullable(type.cast(data().get(key)));
+		if (type != null) {
+			return ofNullable(type.cast(data().get(key)));
+		}
+		return value(key);
 	}
 
 	/**

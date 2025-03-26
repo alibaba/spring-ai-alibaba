@@ -38,7 +38,7 @@ public class ToolNode implements NodeAction {
 	private String llmResponseKey;
 	private String outputKey;
 
-	private List<FunctionCallback> toolCallbacks;
+	private List<FunctionCallback> toolCallbacks = new ArrayList<>();
 
 	private AssistantMessage assistantMessage;
 	private ToolCallbackResolver toolCallbackResolver;
