@@ -22,6 +22,7 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -161,6 +162,8 @@ public class LlmService {
 
 			Summary: Record the result summary of the task.
 
+			DocLoader: List all the files in a directory or get the content of a local file at a specified path. Use this tool when you want to get some related information at a directory or file asked by the user.
+
 			Based on user needs, proactively select the most appropriate tool or combination of tools. For complex tasks, you can break down the problem and use different tools step by step to solve it. After using each tool, clearly explain the execution results and suggest the next steps.
 
 			When you are done with the task, you can finalize the plan by summarizing the steps taken and the output of each step, call Summary tool to record the result.
@@ -181,23 +184,23 @@ public class LlmService {
 
 	private final ChatModel chatModel;
 
-	private final ToolBuilder toolBuilder;
 
-	public LlmService(ChatModel chatModel, ToolBuilder toolBuilder) {
+	public LlmService(ChatModel chatModel, ToolCallbackProvider toolCallbackProvider) {
 		this.chatModel = chatModel;
-		this.toolBuilder = toolBuilder;
 
 		this.planningChatClient = ChatClient.builder(chatModel)
 			.defaultSystem(PLANNING_SYSTEM_PROMPT)
 			.defaultAdvisors(new MessageChatMemoryAdvisor(planningMemory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultTools(toolBuilder.getPlanningAgentToolCallbacks())
+			.defaultTools(toolCallbackProvider)
 			.build();
 
 		this.chatClient = ChatClient.builder(chatModel)
 			.defaultSystem(MANUS_SYSTEM_PROMPT)
 			.defaultAdvisors(new MessageChatMemoryAdvisor(memory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.defaultTools(ToolBuilder.getManusAgentToolCalls())
+			.defaultTools(toolCallbackProvider)
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();
 

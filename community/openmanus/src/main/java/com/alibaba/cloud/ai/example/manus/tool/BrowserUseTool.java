@@ -73,6 +73,10 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			                "get_html",
 			                "get_text",
 			                "execute_js",
+<<<<<<< HEAD
+=======
+			                "scroll",
+>>>>>>> upstream/main
 			                "switch_tab",
 			                "new_tab",
 			                "close_tab",
