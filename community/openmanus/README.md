@@ -41,5 +41,5 @@ mvn spring-boot:run
 ```
 
 ## Architecture
-![aaa](https://github.com/user-attachments/assets/4ad14a72-667b-456e-85c1-b05eef8fd414)
 
+![aaa](https://github.com/user-attachments/assets/4ad14a72-667b-456e-85c1-b05eef8fd414)
