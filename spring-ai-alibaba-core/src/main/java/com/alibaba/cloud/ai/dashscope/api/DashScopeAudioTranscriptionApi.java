@@ -327,14 +327,14 @@ public class DashScopeAudioTranscriptionApi {
 
 		UNKNOWN("UNKNOWN"),;
 
-		private final String value;
+		private final String status;
 
-		TaskStatus(String value) {
-			this.value = value;
+		TaskStatus(String status) {
+			this.status = status;
 		}
 
 		public String getValue() {
-			return value;
+			return status;
 		}
 
 	}
