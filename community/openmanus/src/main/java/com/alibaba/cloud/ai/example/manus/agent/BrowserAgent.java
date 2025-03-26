@@ -79,13 +79,7 @@ public class BrowserAgent extends ToolCallAgent {
                 - Any action results or errors:
                 {results_placeholder}
 
-                For browser interactions:
-                - To navigate: browser_use with action="go_to_url", url="..."
-                - To click: browser_use with action="click_element", index=N
-                - To type: browser_use with action="input_text", index=N, text="..."
-                - To get page source: browser_use with action="get_html"
-                - To get visible text: browser_use with action="get_text"  , if you need to extract text from the page, use this action first
-                
+        
                 Consider both what's visible and what might be beyond the current viewport.
                 Be methodical - remember your progress and what you've learned so far.
                 """;
@@ -94,6 +88,14 @@ public class BrowserAgent extends ToolCallAgent {
         return userMessage;
     }
 
+    /**
+     *         - To navigate: browser_use with action="go_to_url", url="..."
+                - To click: browser_use with action="click_element", index=N
+                - To type: browser_use with action="input_text", index=N, text="..."
+                - To get page source: browser_use with action="get_html"
+                - To get visible text: browser_use with action="get_text"  , if you need to extract text from the page, use this action first
+                
+     */
     @Override
     protected Message addThinkPrompt(List<Message> messages) {
         super.addThinkPrompt(messages);
