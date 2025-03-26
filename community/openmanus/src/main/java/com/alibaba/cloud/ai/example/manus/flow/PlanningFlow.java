@@ -420,6 +420,8 @@ public class PlanningFlow extends BaseFlow {
 			ChatResponse response = llmService.getFinalizeChatClient()
 					.prompt()
 					.advisors(new MessageChatMemoryAdvisor(llmService.getMemory()))
+					.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
+					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
 					.user(prompt)
 					.call()
 					.chatResponse();
