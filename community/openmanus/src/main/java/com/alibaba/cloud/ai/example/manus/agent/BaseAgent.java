@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.agent;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 
 import java.util.*;
@@ -94,19 +95,39 @@ public abstract class BaseAgent {
 	protected abstract String step();
 
 	private void handleStuckState() {
-		String stuckPrompt = "Observed duplicate responses. Consider new strategies and avoid repeating ineffective paths already attempted.";
-		// String nextStepPrompt = stuckPrompt + "\n" + getNextStepPromptTemplate();
-		// log.warn("Agent detected stuck state. Added prompt: " + stuckPrompt);
-		//TODO Implement logic to handle the stuck state
+		log.warn("Agent stuck detected - Missing tool calls");
+		
+		// End current step
+		setState(AgentState.FINISHED);
+		
+		String stuckPrompt = """
+			Agent response detected missing required tool calls.
+			Please ensure each response includes at least one tool call to progress the task.
+			Current step: %d
+			Execution status: Force terminated
+			""".formatted(currentStep);
+			
+		log.error(stuckPrompt);
 	}
 
-	/**
-	 * TODO check stuck status
-	 * @return whether the agent is stuck
-	 */
-	private boolean isStuck() {
-		return false;
-	}
+	
+    /**
+     * 检查是否处于卡住状态
+     */
+    protected boolean isStuck() {
+        //目前判断是如果三次没有调用工具就认为是卡住了，就退出当前step。
+		List<Message> memoryEntries = llmService.getMemory().get(conversationId, 6);
+		int zeroToolCallCount = 0;
+		for (Message msg : memoryEntries) {
+			if (msg instanceof AssistantMessage) {
+				AssistantMessage assistantMsg = (AssistantMessage) msg;
+				if (assistantMsg.getToolCalls() == null || assistantMsg.getToolCalls().isEmpty()) {
+					zeroToolCallCount++;
+				}
+			}
+		}
+		return zeroToolCallCount >= 3;
+    }
 	public void setState(AgentState state) {
 		this.state = state;
 	}
