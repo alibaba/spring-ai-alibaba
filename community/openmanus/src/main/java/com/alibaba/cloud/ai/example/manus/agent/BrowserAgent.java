@@ -64,6 +64,8 @@ public class BrowserAgent extends ToolCallAgent {
         String nextStepPrompt = """
                 What should I do next to achieve my goal?
 
+            
+
                 When you see [Current state starts here], focus on the following:
                 - Current URL and page title:
                 {url_placeholder}
@@ -85,6 +87,7 @@ public class BrowserAgent extends ToolCallAgent {
                 2. Don't worry about content visibility or viewport position
                 3. Focus on text-based information extraction
                 4. Process the obtained text data directly
+                5. IMPORTANT: You MUST use at least one tool in your response to make progress!
             
                 
                 Consider both what's visible and what might be beyond the current viewport.
