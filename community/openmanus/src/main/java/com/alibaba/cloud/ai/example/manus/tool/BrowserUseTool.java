@@ -22,6 +22,7 @@ import com.alibaba.fastjson.TypeReference;
 
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +73,6 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			                "get_html",
 			                "get_text",
 			                "execute_js",
-			                "scroll",
 			                "switch_tab",
 			                "new_tab",
 			                "close_tab",
@@ -171,6 +171,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		return instance;
 	}
 
+	@SuppressWarnings("rawtypes")
 	public static FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService) {
 		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
 				.description(description)
@@ -181,12 +182,6 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 
 	private void simulateHumanBehavior(WebElement element) {
 		try {
-			// 模拟人类移动鼠标
-			Actions actions = new Actions(getDriver());
-			actions.moveToElement(element)
-					.pause(Duration.ofMillis(new Random().nextInt(500) + 200))
-					.build()
-					.perform();
 
 			// 添加随机延迟
 			Thread.sleep(new Random().nextInt(1000) + 500);
@@ -274,10 +269,44 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					if (index < 0 || index >= interactiveElements.size()) {
 						return new ToolExecuteResult("Element with index " + index + " not found");
 					}
+
 					WebElement element = interactiveElements.get(index);
-					simulateHumanBehavior(element);
-					element.click();
-					return new ToolExecuteResult("Clicked element at index " + index);
+					log.info("Clicking element: {}", getElementText(element));
+
+					// 获取当前窗口数量
+					int initialWindowCount = driver.getWindowHandles().size();
+
+					// 使用 JavaScript 在新标签页中打开链接
+					JavascriptExecutor js = (JavascriptExecutor) driver;
+					String href = element.getAttribute("href");
+					if (href != null && !href.isEmpty()) {
+						js.executeScript("window.open(arguments[0], '_blank');", href);
+					} else {
+						// 如果没有 href 属性，模拟 Ctrl+Click 行为
+						Actions actions = new Actions(driver);
+						actions.keyDown(Keys.COMMAND) // Mac 上使用 COMMAND，Windows 上使用 CONTROL
+								.click(element)
+								.keyUp(Keys.COMMAND)
+								.perform();
+					}
+
+					// 等待新窗口打开
+					WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+					wait.until(d -> d.getWindowHandles().size() > initialWindowCount);
+
+					// 切换到新标签页
+					String newTab = driver.getWindowHandles()
+							.stream()
+							.reduce((first, second) -> second)
+							.orElse(null);
+
+					if (newTab != null) {
+						driver.switchTo().window(newTab);
+						log.info("Switched to new tab: {}", driver.getCurrentUrl());
+						return new ToolExecuteResult("Clicked element at index " + index + " and opened in new tab");
+					} else {
+						return new ToolExecuteResult("Failed to open new tab after clicking element at index " + index);
+					}
 
 				case "input_text":
 					if (index == null || text == null) {
@@ -413,38 +442,38 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		try {
 			JavascriptExecutor js = (JavascriptExecutor) getDriver();
 			@SuppressWarnings("unchecked")
-			//为了提速 getAttribute做多了太慢了
+			// 为了提速 getAttribute做多了太慢了
 			Map<String, Object> props = (Map<String, Object>) js.executeScript("""
-				function getElementInfo(el) {
-					const style = window.getComputedStyle(el);
-					return {
-						tagName: el.tagName.toLowerCase(),
-						type: el.getAttribute('type'),
-						role: el.getAttribute('role'),
-						text: el.textContent.trim(),
-						value: el.value,
-						placeholder: el.getAttribute('placeholder'),
-						name: el.getAttribute('name'),
-						id: el.getAttribute('id'),
-						'aria-label': el.getAttribute('aria-label'),
-						isVisible: (
-							el.offsetWidth > 0 &&
-							el.offsetHeight > 0 &&
-							style.visibility !== 'hidden' &&
-							style.display !== 'none'
-						)
-					};
-				}
-				return getElementInfo(arguments[0]);
-				""", element);
-	
+					function getElementInfo(el) {
+						const style = window.getComputedStyle(el);
+						return {
+							tagName: el.tagName.toLowerCase(),
+							type: el.getAttribute('type'),
+							role: el.getAttribute('role'),
+							text: el.textContent.trim(),
+							value: el.value,
+							placeholder: el.getAttribute('placeholder'),
+							name: el.getAttribute('name'),
+							id: el.getAttribute('id'),
+							'aria-label': el.getAttribute('aria-label'),
+							isVisible: (
+								el.offsetWidth > 0 &&
+								el.offsetHeight > 0 &&
+								style.visibility !== 'hidden' &&
+								style.display !== 'none'
+							)
+						};
+					}
+					return getElementInfo(arguments[0]);
+					""", element);
+
 			if (!(Boolean) props.get("isVisible")) {
 				return "";
 			}
-	
+
 			// 构建HTML属性字符串
 			StringBuilder attributes = new StringBuilder();
-			
+
 			// 添加基本属性
 			if (props.get("type") != null) {
 				attributes.append(" type=\"").append(props.get("type")).append("\"");
@@ -467,10 +496,10 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			if (props.get("value") != null) {
 				attributes.append(" value=\"").append(props.get("value")).append("\"");
 			}
-	
+
 			String tagName = (String) props.get("tagName");
 			String text = (String) props.get("text");
-	
+
 			// 生成标准HTML格式输出
 			return String.format("[%d] <%s%s>%s</%s>\n",
 					index,
@@ -478,7 +507,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					attributes.toString(),
 					text,
 					tagName);
-	
+
 		} catch (Exception e) {
 			log.warn("格式化元素信息失败: {}", e.getMessage());
 			return "";

@@ -29,6 +29,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -412,8 +413,9 @@ public class PlanningFlow extends BaseFlow {
 		try {
 			String prompt = "The plan has been completed. Here is the final plan status:\n\n" + planText
 					+ "\n\nPlease provide a summary of what was accomplished and any final thoughts.";
-
-			ChatResponse response = llmService.getFinalizeChatClient().prompt().user(prompt).call().chatResponse();
+			//共享记忆：
+			
+			ChatResponse response = llmService.getFinalizeChatClient().prompt().advisors(new MessageChatMemoryAdvisor(llmService.getMemory())).user(prompt).call().chatResponse();
 			return "Plan completed:\n\n" + response.getResult().getOutput().getText();
 		}
 		catch (Exception e) {

@@ -87,17 +87,31 @@ public class ToolCallAgent extends ReActAgent {
 				CURRENT PLAN STATUS:
 				{planStatus}
 
-				YOUR CURRENT STEP:
-				You are now working on step {currentStepIndex}: {stepText}
+				FOCUS ON CURRENT STEP:
+				You are now working on step {currentStepIndex} : {stepText}
 
-				Please execute this step using the appropriate tools.
+				EXECUTION GUIDELINES:
+				1. Focus ONLY on completing the current step's requirements
+				2. Use appropriate tools to accomplish the task
+				3. DO NOT proceed to next steps until current step is fully complete
+				4. Verify all requirements are met before marking as complete
 
-				When you have completed the current step:
-					1. Call Summary tool to record the step's result
-					2. This will mark the current step as complete
-					3. System will then proceed to the next step automatically
+				COMPLETION PROTOCOL:
+				Once you have FULLY completed the current step:
+				1. MUST call Summary tool with following information:
+				- Detailed results of what was accomplished
+				- Any relevant data or metrics
+				- Status confirmation
+				2. The Summary tool call will automatically:
+				- Mark this step as complete
+				- Save the results
+				- Enable progression to next step
 
-				IMPORTANT: Only call Summary tool when you are completely done with the current step and ready to move forward.
+				⚠️ IMPORTANT:
+				- Stay focused on current step only
+				- Do not skip or combine steps
+				- Only call Summary tool when current step is 100% complete
+				- Provide comprehensive summary before moving forward
 
 				""";
 
@@ -147,7 +161,10 @@ public class ToolCallAgent extends ReActAgent {
 
 			log.info(String.format("✨ %s's thoughts: %s", getName(), response.getResult().getOutput().getText()));
 			log.info(String.format("🛠️ %s selected %d tools to use", getName(), toolCalls.size()));
-
+			String responseByLLm = response.getResult().getOutput().getText();
+			if (responseByLLm != null && !responseByLLm.isEmpty()) {
+				log.info(String.format("💬 %s's response: %s", getName(), responseByLLm));
+			}
 			if (!toolCalls.isEmpty()) {
 				log.info(String.format("🧰 Tools being prepared: %s",
 						toolCalls.stream().map(ToolCall::name).collect(Collectors.toList())));
