@@ -16,10 +16,9 @@
 
 package com.alibaba.cloud.ai.dashscope.api;
 
+import com.alibaba.cloud.ai.dashscope.util.JsonUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.alibaba.cloud.ai.dashscope.protocol.DashScopeWebSocketClient;
@@ -97,13 +96,8 @@ public class DashScopeSpeechSynthesisApi {
     // @formatter:on
 
 	public Flux<ByteBuffer> streamOut(Request request) {
-		try {
-			String message = (new ObjectMapper()).writeValueAsString(request);
-			return this.webSocketClient.streamBinaryOut(message);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		String message = JsonUtils.toJson(request);
+		return this.webSocketClient.streamBinaryOut(message);
 	}
 
 	public enum RequestTextType {
