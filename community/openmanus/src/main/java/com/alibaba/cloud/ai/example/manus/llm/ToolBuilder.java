@@ -51,8 +51,8 @@ public class ToolBuilder {
         );
     }
 
-	public static List<ToolCallback> getManusAgentToolCalls() {
-		return List.of(GoogleSearch.getFunctionToolCallback(), BrowserUseTool.getFunctionToolCallback(),
+	public  List<ToolCallback> getManusAgentToolCalls() {
+		return List.of(GoogleSearch.getFunctionToolCallback(), BrowserUseTool.getFunctionToolCallback(chromeDriverService),
 				FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback(),
 				DocLoaderTool.getFunctionToolCallback());
 	}
