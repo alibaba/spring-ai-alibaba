@@ -16,7 +16,9 @@
 
 package com.alibaba.cloud.ai.dashscope.api;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -30,6 +32,51 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.*;
  * @since 1.0.0-M2
  */
 public class ApiUtils {
+
+	public interface HeaderStrategy {
+
+		void applyHeaders(HttpHeaders headers);
+
+	}
+
+	public static class SecurityCheckHeaders implements HeaderStrategy {
+
+		@Override
+		public void applyHeaders(HttpHeaders headers) {
+			headers.set("X-DashScope-DataInspection", "enable");
+		}
+
+	}
+
+	public static class AsyncTaskHeaders implements HeaderStrategy {
+
+		@Override
+		public void applyHeaders(HttpHeaders headers) {
+			headers.set("X-DashScope-Async", "enable");
+		}
+
+	}
+
+	public static class SSEHeaders implements HeaderStrategy {
+
+		@Override
+		public void applyHeaders(HttpHeaders headers) {
+			headers.set("Cache-Control", "no-cache");
+			headers.set("Accept", "text/event-stream");
+			headers.set("X-Accel-Buffering", "no");
+			headers.set("X-DashScope-SSE", "enable");
+		}
+
+	}
+
+	public static class DefaultHeaders implements HeaderStrategy {
+
+		@Override
+		public void applyHeaders(HttpHeaders headers) {
+			headers.set("Accept", "application/json; charset=utf-8");
+		}
+
+	}
 
 	public static Consumer<HttpHeaders> getJsonContentHeaders(String apiKey) {
 		return getJsonContentHeaders(apiKey, null);
@@ -74,31 +121,23 @@ public class ApiUtils {
 
 	public static Consumer<HttpHeaders> getAudioTranscriptionHeaders(String apiKey, String workspace,
 			Boolean isAsyncTask, Boolean isSecurityCheck, Boolean isSSE) {
-		return (headers) -> {
+		List<HeaderStrategy> strategies = new ArrayList<>();
+
+		if (isSecurityCheck)
+			strategies.add(new SecurityCheckHeaders());
+		if (isAsyncTask)
+			strategies.add(new AsyncTaskHeaders());
+		strategies.add(isSSE ? new SSEHeaders() : new DefaultHeaders());
+
+		return headers -> {
 			headers.setBearerAuth(apiKey);
 			headers.set("user-agent", userAgent());
-			if (isSecurityCheck) {
-				headers.set("X-DashScope-DataInspection", "enable");
-			}
-
 			if (workspace != null && !workspace.isEmpty()) {
 				headers.set("X-DashScope-WorkSpace", workspace);
 			}
-
-			if (isAsyncTask) {
-				headers.set("X-DashScope-Async", "enable");
-			}
-
 			headers.set("Content-Type", "application/json");
-			if (isSSE) {
-				headers.set("Cache-Control", "no-cache");
-				headers.set("Accept", "text/event-stream");
-				headers.set("X-Accel-Buffering", "no");
-				headers.set("X-DashScope-SSE", "enable");
-			}
-			else {
-				headers.set("Accept", "application/json; charset=utf-8");
-			}
+
+			strategies.forEach(strategy -> strategy.applyHeaders(headers));
 		};
 	}
 
