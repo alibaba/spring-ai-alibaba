@@ -24,7 +24,7 @@ import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.agent.ManusAgent;
 import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.llm.ToolBuilder;
+import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
 
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -44,10 +44,15 @@ import org.springframework.web.client.RestClient;
 
 @Configuration
 public class ManusConfiguration {
+	private final ChromeDriverService chromeDriverService;
+
+	public ManusConfiguration(ChromeDriverService chromeDriverService) {
+		this.chromeDriverService = chromeDriverService;
+	}
 
 	@Bean
-	public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager, ToolBuilder toolBuilder) {
-		ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager, toolBuilder);
+	public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager) {
+		ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager,chromeDriverService);
 
 		Map<String, BaseAgent> agentMap = new HashMap<>() {
 			{
@@ -67,10 +72,10 @@ public class ManusConfiguration {
 
 		// 2. 创建 RequestConfig 并设置超时
 		RequestConfig requestConfig = RequestConfig.custom()
-			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
-			.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
-			.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
-			.build();
+				.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
+				.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
+				.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
+				.build();
 
 		// 3. 创建 CloseableHttpClient 并应用配置
 		HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();

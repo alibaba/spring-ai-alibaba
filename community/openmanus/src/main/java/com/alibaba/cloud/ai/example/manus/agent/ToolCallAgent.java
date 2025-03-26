@@ -19,8 +19,10 @@ import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.Message;
-
-import com.alibaba.cloud.ai.example.manus.llm.ToolBuilder;
+import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
+import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
+import com.alibaba.cloud.ai.example.manus.tool.GoogleSearch;
+import com.alibaba.cloud.ai.example.manus.tool.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.Summary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +44,7 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 
+
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
 
@@ -53,16 +56,13 @@ public class ToolCallAgent extends ReActAgent {
 
 	private final ToolCallingManager toolCallingManager;
 
-	protected final ToolBuilder toolBuilder;
-
 	private ChatResponse response;
 
 	private Prompt userPrompt;
 
-	public ToolCallAgent(LlmService llmService, ToolCallingManager toolCallingManager, ToolBuilder toolBuilder) {
+	public ToolCallAgent(LlmService llmService, ToolCallingManager toolCallingManager) {
 		super(llmService);
 		this.toolCallingManager = toolCallingManager;
-		this.toolBuilder = toolBuilder;
 	}
 
 	@Override
@@ -153,7 +153,7 @@ public class ToolCallAgent extends ReActAgent {
 					.prompt(userPrompt)
 					.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
 							.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
-					.tools(getFunctionToolCallbacks())
+					.tools(getToolCallList())
 					.call()
 					.chatResponse();
 
@@ -205,8 +205,13 @@ public class ToolCallAgent extends ReActAgent {
 		}
 	}
 
-	protected List<ToolCallback> getFunctionToolCallbacks() {
-		return toolBuilder.getManusAgentToolCalls(this, llmService.getMemory(), getConversationId());
-	}
 
+	public List<ToolCallback> getToolCallList() {
+        return List.of(
+            GoogleSearch.getFunctionToolCallback(), 
+            FileSaver.getFunctionToolCallback(), 
+            PythonExecute.getFunctionToolCallback(),
+            Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId())
+        );
+	}
 }
