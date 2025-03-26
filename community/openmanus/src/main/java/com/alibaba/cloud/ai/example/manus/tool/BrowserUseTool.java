@@ -31,8 +31,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Set;
@@ -57,7 +55,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		return chromeDriverService.getDriver();
 	}
 
-	private static final int MAX_LENGTH = 7000;
+	private static final int MAX_LENGTH = 20000;
 
 	private static final String PARAMETERS = """
 			{
@@ -212,6 +210,15 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		}
 	}
 
+	// 添加新的方法获取可交互元素
+	private List<WebElement> getInteractiveElements(WebDriver driver) {
+		return driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR))
+				.stream()
+				.filter(this::isElementVisible)
+				.filter(element -> !getElementText(element).isEmpty())
+				.collect(Collectors.toList());
+	}
+
 	public ToolExecuteResult run(String toolInput) {
 		log.info("BrowserUseTool toolInput:" + toolInput);
 		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
@@ -250,12 +257,13 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 				return new ToolExecuteResult("Action parameter is required");
 			}
 			WebDriver driver = getDriver();
+			List<WebElement> interactiveElements = getInteractiveElements(driver);
+
 			switch (action) {
 				case "navigate":
 					if (url == null) {
 						return new ToolExecuteResult("URL is required for 'navigate' action");
 					}
-					// driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(30));
 					driver.get(url);
 					return new ToolExecuteResult("Navigated to " + url);
 
@@ -263,11 +271,10 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					if (index == null) {
 						return new ToolExecuteResult("Index is required for 'click' action");
 					}
-					List<WebElement> elements = driver.findElements(By.cssSelector("*"));
-					if (index < 0 || index >= elements.size()) {
+					if (index < 0 || index >= interactiveElements.size()) {
 						return new ToolExecuteResult("Element with index " + index + " not found");
 					}
-					WebElement element = elements.get(index);
+					WebElement element = interactiveElements.get(index);
 					simulateHumanBehavior(element);
 					element.click();
 					return new ToolExecuteResult("Clicked element at index " + index);
@@ -276,16 +283,25 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					if (index == null || text == null) {
 						return new ToolExecuteResult("Index and text are required for 'input_text' action");
 					}
-					WebElement inputElement = driver.findElements(By.cssSelector("input, textarea")).get(index);
+					if (index < 0 || index >= interactiveElements.size()) {
+						return new ToolExecuteResult("Element with index " + index + " not found");
+					}
+					WebElement inputElement = interactiveElements.get(index);
+					if (!inputElement.getTagName().equals("input") && !inputElement.getTagName().equals("textarea")) {
+						return new ToolExecuteResult("Element at index " + index + " is not an input element");
+					}
 					typeWithHumanDelay(inputElement, text);
 					return new ToolExecuteResult("Successfully input '" + text + "' into element at index " + index);
 
 				case "key_enter":
 					if (index == null) {
-						return new ToolExecuteResult("Index are required for 'key_enter' action");
+						return new ToolExecuteResult("Index is required for 'key_enter' action");
 					}
-					WebElement inputElement2 = driver.findElements(By.cssSelector("input, textarea")).get(index);
-					inputElement2.sendKeys(Keys.RETURN);
+					if (index < 0 || index >= interactiveElements.size()) {
+						return new ToolExecuteResult("Element with index " + index + " not found");
+					}
+					WebElement enterElement = interactiveElements.get(index);
+					enterElement.sendKeys(Keys.RETURN);
 					return new ToolExecuteResult("Hit the enter key at index " + index);
 
 				case "screenshot":
@@ -300,20 +316,9 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 							html.length() > MAX_LENGTH ? html.substring(0, MAX_LENGTH) + "..." : html);
 
 				case "get_text":
-					int counter = 0;
 					String body = driver.findElement(By.tagName("body")).getText();
 					log.info("get_text body is {}", body);
-					if (body != null && body.contains("我们的系统检测到您的计算机网络中存在异常流量")) {
-						while (counter++ < 5) {
-							Thread.sleep(10000);
-							body = driver.findElement(By.tagName("body")).getText();
-							log.info("retry {} get_text body is {}", counter, body);
-							if (body != null && body.contains("我们的系统检测到您的计算机网络中存在异常流量")) {
-								continue;
-							}
-							return new ToolExecuteResult(body);
-						}
-					}
+
 					return new ToolExecuteResult(body);
 
 				case "execute_js":
@@ -390,7 +395,6 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		attributeMap.put("text", element.getText().trim());
 		attributeMap.put("placeholder", element.getAttribute("placeholder"));
 		attributeMap.put("value", element.getAttribute("value"));
-		attributeMap.put("aria-label", element.getAttribute("aria-label"));
 		attributeMap.put("name", element.getAttribute("name"));
 		attributeMap.put("id", element.getAttribute("id"));
 
@@ -406,72 +410,93 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 	}
 
 	private String formatElementInfo(int index, WebElement element) {
-		String tagName = element.getTagName();
-		String type = element.getAttribute("type");
-		String role = element.getAttribute("role");
-		String elementText = getElementText(element);
-
-		if (elementText.isEmpty() || !isElementVisible(element)) {
+		try {
+			JavascriptExecutor js = (JavascriptExecutor) getDriver();
+			@SuppressWarnings("unchecked")
+			//为了提速 getAttribute做多了太慢了
+			Map<String, Object> props = (Map<String, Object>) js.executeScript("""
+				function getElementInfo(el) {
+					const style = window.getComputedStyle(el);
+					return {
+						tagName: el.tagName.toLowerCase(),
+						type: el.getAttribute('type'),
+						role: el.getAttribute('role'),
+						text: el.textContent.trim(),
+						value: el.value,
+						placeholder: el.getAttribute('placeholder'),
+						name: el.getAttribute('name'),
+						id: el.getAttribute('id'),
+						'aria-label': el.getAttribute('aria-label'),
+						isVisible: (
+							el.offsetWidth > 0 &&
+							el.offsetHeight > 0 &&
+							style.visibility !== 'hidden' &&
+							style.display !== 'none'
+						)
+					};
+				}
+				return getElementInfo(arguments[0]);
+				""", element);
+	
+			if (!(Boolean) props.get("isVisible")) {
+				return "";
+			}
+	
+			// 构建HTML属性字符串
+			StringBuilder attributes = new StringBuilder();
+			
+			// 添加基本属性
+			if (props.get("type") != null) {
+				attributes.append(" type=\"").append(props.get("type")).append("\"");
+			}
+			if (props.get("role") != null) {
+				attributes.append(" role=\"").append(props.get("role")).append("\"");
+			}
+			if (props.get("placeholder") != null) {
+				attributes.append(" placeholder=\"").append(props.get("placeholder")).append("\"");
+			}
+			if (props.get("name") != null) {
+				attributes.append(" name=\"").append(props.get("name")).append("\"");
+			}
+			if (props.get("id") != null) {
+				attributes.append(" id=\"").append(props.get("id")).append("\"");
+			}
+			if (props.get("aria-label") != null) {
+				attributes.append(" aria-label=\"").append(props.get("aria-label")).append("\"");
+			}
+			if (props.get("value") != null) {
+				attributes.append(" value=\"").append(props.get("value")).append("\"");
+			}
+	
+			String tagName = (String) props.get("tagName");
+			String text = (String) props.get("text");
+	
+			// 生成标准HTML格式输出
+			return String.format("[%d] <%s%s>%s</%s>\n",
+					index,
+					tagName,
+					attributes.toString(),
+					text,
+					tagName);
+	
+		} catch (Exception e) {
+			log.warn("格式化元素信息失败: {}", e.getMessage());
 			return "";
 		}
-
-		return String.format("[%d] <%s%s%s>%s</%s>\n",
-				index,
-				tagName,
-				type != null ? " type=\"" + type + "\"" : "",
-				role != null ? " role=\"" + role + "\"" : "",
-				elementText,
-				tagName);
 	}
 
 	private String getInteractiveElementsInfo(WebDriver driver) {
-		try {
-			log.info("开始获取可交互元素信息");
+		StringBuilder resultInfo = new StringBuilder();
+		List<WebElement> interactiveElements = getInteractiveElements(driver);
 
-			// 1. 先获取所有可能的交互元素
-			List<WebElement> interactiveElements = driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR));
-			log.info("找到 {} 个潜在的交互元素", interactiveElements.size());
-
-			// 2. 详细记录每个元素的属性
-			StringBuilder debugInfo = new StringBuilder();
-			StringBuilder resultInfo = new StringBuilder();
-
-			for (int i = 0; i < interactiveElements.size(); i++) {
-				WebElement element = interactiveElements.get(i);
-
-				// 获取元素的显示文本
-				String elementText = getElementText(element);
-				debugInfo.append(String.format("  显示文本: %s\n", elementText));
-
-				// 判断是否应该包含在最终结果中
-				if (!elementText.isEmpty() && isElementVisible(element)) {
-					String formattedInfo = formatElementInfo(i, element);
-					if (!formattedInfo.isEmpty()) {
-						resultInfo.append(formattedInfo);
-					}
-				} else {
-					debugInfo.append("  原因: ");
-					if (elementText.isEmpty()) {
-						debugInfo.append("文本为空 ");
-					}
-					if (!isElementVisible(element)) {
-						debugInfo.append("元素不可见 ");
-					}
-					debugInfo.append("\n");
-				}
-
+		for (int i = 0; i < interactiveElements.size(); i++) {
+			String formattedInfo = formatElementInfo(i, interactiveElements.get(i));
+			if (!formattedInfo.isEmpty()) {
+				resultInfo.append(formattedInfo);
 			}
-
-			// 打印详细调试信息
-			log.info("交互元素详细信息:\n{}", debugInfo.toString());
-			log.info("最终返回的可交互元素列表:\n{}", resultInfo.toString());
-
-			return resultInfo.toString();
-
-		} catch (Exception e) {
-			log.error("获取可交互元素信息时发生错误", e);
-			return "Error: " + e.getMessage();
 		}
+
+		return resultInfo.toString();
 	}
 
 	public Map<String, Object> getCurrentState() {
