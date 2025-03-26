@@ -21,10 +21,13 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.example.manus.agent.FileAgent;
 import com.alibaba.cloud.ai.example.manus.agent.ManusAgent;
+import com.alibaba.cloud.ai.example.manus.agent.PythonAgent;
 import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
+import com.alibaba.cloud.ai.example.manus.tool.support.CodeUtils;
 
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -53,11 +56,15 @@ public class ManusConfiguration {
 
 	@Bean
 	public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager) {
-		ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager, chromeDriverService);
 
+		ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager, chromeDriverService);
+		FileAgent fileAgent = new FileAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR);
+		PythonAgent pythonAgent = new PythonAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR);
 		Map<String, BaseAgent> agentMap = new HashMap<>() {
 			{
 				put("manus", manusAgent);
+				put("file", fileAgent);
+				put("python", pythonAgent);
 			}
 		};
 		Map<String, Object> data = new HashMap<>();

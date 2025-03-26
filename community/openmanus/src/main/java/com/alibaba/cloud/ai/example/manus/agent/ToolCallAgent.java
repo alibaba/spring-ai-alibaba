@@ -47,6 +47,10 @@ import org.springframework.ai.tool.ToolCallback;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
 
+/**
+ * 工具调用智能体，专门负责管理和执行工具调用的智能体实现
+ * 继承自ReActAgent，实现了基于工具调用的思考-行动模式
+ */
 public class ToolCallAgent extends ReActAgent {
 
 	private static final Logger log = LoggerFactory.getLogger(ToolCallAgent.class);
@@ -70,16 +74,44 @@ public class ToolCallAgent extends ReActAgent {
 		return _think(retry);
 	}
 
+	/**
+	 * 工具调用智能体的功能描述
+	 * 实现说明：提供该智能体的核心功能说明
+	 * 描述包含工具调用管理和执行能力等关键特性
+	 * 
+	 * @return 智能体的功能描述文本
+	 */
 	@Override
 	public String getDescription() {
 		return "ToolCallAgent: A class responsible for managing tool calls in the ReAct agent.";
 	}
 
+	/**
+	 * 工具调用智能体的名称
+	 * 实现说明：返回固定的智能体标识符"ToolCallAgent"
+	 * 用于在日志和调试中标识该类型的智能体
+	 * 
+	 * @return "ToolCallAgent"
+	 */
 	@Override
 	public String getName() {
 		return "ToolCallAgent";
 	}
 
+	/**
+	 * 添加工具调用相关的思考提示
+	 * 实现说明：
+	 * 1. 首先调用父类的addThinkPrompt添加基础提示
+	 * 2. 构建特定的工具调用相关提示，包括：
+	 *    - 当前计划状态
+	 *    - 当前步骤信息
+	 *    - 执行指南
+	 *    - 完成协议
+	 * 3. 返回包含完整提示信息的系统消息
+	 *
+	 * @param messages 当前的消息列表
+	 * @return 添加了工具调用相关提示的系统消息
+	 */
 	protected Message addThinkPrompt(List<Message> messages) {
 		super.addThinkPrompt(messages);
 		String stepPrompt = """
@@ -97,21 +129,23 @@ public class ToolCallAgent extends ReActAgent {
 
 				COMPLETION PROTOCOL:
 				Once you have FULLY completed the current step:
+
 				1. MUST call Summary tool with following information:
 				- Detailed results of what was accomplished
 				- Any relevant data or metrics
 				- Status confirmation
+
 				2. The Summary tool call will automatically:
 				- Mark this step as complete
 				- Save the results
 				- Enable progression to next step
+				- terminate the current step
 
 				⚠️ IMPORTANT:
 				- Stay focused on current step only
 				- Do not skip or combine steps
 				- Only call Summary tool when current step is 100% complete
-				- Provide comprehensive summary before moving forward
-
+				- Provide comprehensive summary before moving forward, including: all facts, data, and metrics
 				""";
 
 		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(stepPrompt);
@@ -122,6 +156,17 @@ public class ToolCallAgent extends ReActAgent {
 		return systemMessage;
 	}
 
+	/**
+	 * 获取下一步执行的提示消息
+	 * 实现说明：
+	 * 1. 返回引导工具选择和执行的提示消息
+	 * 2. 提示内容包括：
+	 *    - 询问下一步操作的计划
+	 *    - 请求提供步骤编号或名称
+	 * 3. 使用UserMessage封装提示内容
+	 *
+	 * @return 下一步执行提示的用户消息对象
+	 */
 	protected Message getNextStepMessage() {
 
 		String nextStepPrompt = """
@@ -132,6 +177,18 @@ public class ToolCallAgent extends ReActAgent {
 		return new UserMessage(nextStepPrompt);
 	}
 
+	/**
+	 * 执行思考过程
+	 * 实现说明：
+	 * 1. 准备思考所需的消息列表
+	 * 2. 设置工具调用选项
+	 * 3. 构建提示并获取LLM响应
+	 * 4. 分析响应中的工具调用
+	 * 5. 记录思考过程和工具选择
+	 *
+	 * @param retry 当前重试次数
+	 * @return true 如果有工具需要调用，false 如果不需要执行任何工具
+	 */
 	private boolean _think(int retry) {
 		try {
 			List<Message> messages = new ArrayList<>();

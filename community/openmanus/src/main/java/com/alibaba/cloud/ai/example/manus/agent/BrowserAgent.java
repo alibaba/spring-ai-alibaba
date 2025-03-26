@@ -204,12 +204,12 @@ public class BrowserAgent extends ToolCallAgent {
 
 	@Override
 	public String getName() {
-		return "browser";
+		return "BROWSER_AGENT";
 	}
 
 	@Override
 	public String getDescription() {
-		return "A browser agent that can control a browser to accomplish tasks";
+		return "A browser agent that can control a browser to accomplish tasks ";
 	}
 
 	public List<ToolCallback> getToolCallList() {

@@ -153,16 +153,33 @@ public class PlanningFlow extends BaseFlow {
 	public void createInitialPlan(String request) {
 		log.info("Creating initial plan with ID: " + activePlanId);
 
-		String prompt_template = """
-				Create a reasonable plan with clear steps to accomplish the task:
+		// 构建agents信息
+		StringBuilder agentsInfo = new StringBuilder("Available Agents:\n");
+		agents.forEach((key, agent) -> {
+			agentsInfo.append("- Agent Name ").append(": ").append(agent.getName()).append("\n")
+					.append("  Description: ").append(agent.getDescription()).append("\n");
+		});
 
+		String prompt_template = """
+				Create a reasonable plan with clear steps to accomplish the task.
+				
+				Available Agents Information:
+				{agents_info}
+				
+				Task to accomplish:
 				{query}
 
 				You can use the planning tool to help you create the plan, assign {plan_id} as the plan id.
+				
+				Important: For each step in the plan, start with [AGENT_NAME] where AGENT_NAME is one of the available agents listed above.
+				For example: "[BROWSER_AGENT] Search for relevant information" or "[REACT_AGENT] Process the search results"
 				""";
 
 		PromptTemplate promptTemplate = new PromptTemplate(prompt_template);
-		Prompt userPrompt = promptTemplate.create(Map.of("plan_id", activePlanId, "query", request));
+		Prompt userPrompt = promptTemplate.create(Map.of(
+				"plan_id", activePlanId,
+				"query", request,
+				"agents_info", agentsInfo.toString()));
 		ChatResponse response = llmService.getPlanningChatClient()
 			.prompt(userPrompt)
 			.tools(getToolCallList())

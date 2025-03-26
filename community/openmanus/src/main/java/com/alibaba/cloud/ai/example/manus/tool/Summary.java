@@ -51,7 +51,7 @@ public class Summary implements BiFunction<String, ToolContext, ToolExecuteResul
 
 	private static final String name = "summary";
 
-	private static final String description = "Record the summary of current step.";
+	private static final String description = "Record the summary of current step. and terminate the current step .";
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
