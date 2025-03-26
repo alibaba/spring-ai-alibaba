@@ -46,16 +46,9 @@ public abstract class ReActAgent extends BaseAgent {
 	 * @return 返回适用于当前状态的思考提示词
 	 */
 	protected Message addThinkPrompt(List<Message> messages) {
-		String prompt =  """
-			Given the current state and available tools, let's think step by step:
-			1. Analyze: What is the current situation?
-			2. Goal: What are we trying to achieve?
-			3. Options: What tools and actions are available?
-			4. Decision: What's the best next step?
-			""";
+		String prompt = "";
 
-		messages.add(new SystemMessage(prompt));
-		return new SystemMessage(prompt);
+		return null;
 	}
 
 }
