@@ -8,6 +8,7 @@ import org.springframework.ai.reader.ExtractedTextFormatter;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StringUtils;
+import com.alibaba.cloud.ai.reader.poi.AbstractDocumentReader;
 
 import java.io.IOException;
 import java.util.List;
@@ -22,7 +23,7 @@ import java.util.Objects;
  * @author HeYQ
  * @since 1.0.0
  */
-public class PoiDocumentReader implements DocumentReader {
+public class PoiDocumentReader extends AbstractDocumentReader implements DocumentReader {
 
 	/**
 	 * Metadata key representing the source of the document.
@@ -46,6 +47,7 @@ public class PoiDocumentReader implements DocumentReader {
 	}
 
 	public PoiDocumentReader(Resource resource, ExtractedTextFormatter textFormatter) {
+		super(resource);
 		this.resource = resource;
 		this.textFormatter = textFormatter;
 	}
@@ -76,24 +78,6 @@ public class PoiDocumentReader implements DocumentReader {
 		Document doc = new Document(docText);
 		doc.getMetadata().put(METADATA_SOURCE, resourceName());
 		return doc;
-	}
-
-	/**
-	 * Returns the name of the resource. If the filename is not present, it returns the
-	 * URI of the resource.
-	 * @return Name or URI of the resource
-	 */
-	private String resourceName() {
-		try {
-			var resourceName = this.resource.getFilename();
-			if (!StringUtils.hasText(resourceName)) {
-				resourceName = this.resource.getURI().toString();
-			}
-			return resourceName;
-		}
-		catch (IOException e) {
-			return String.format("Invalid source URI: %s", e.getMessage());
-		}
 	}
 
 }
