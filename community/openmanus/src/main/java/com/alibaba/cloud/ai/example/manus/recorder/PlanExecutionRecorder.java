@@ -60,4 +60,11 @@ public interface PlanExecutionRecorder {
      * 此方法会遍历所有计划记录并调用它们的 save 方法
      */
     void saveAllExecutionRecords();
+
+    /**
+     * 获取指定计划的当前活动智能体执行记录
+     * @param planId 计划ID
+     * @return 当前活动的智能体执行记录，如果没有则返回null
+     */
+    AgentExecutionRecord getCurrentAgentExecutionRecord(String planId);
 }

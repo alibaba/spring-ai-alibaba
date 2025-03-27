@@ -6,6 +6,7 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -88,5 +89,20 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
         for (Map.Entry<String, PlanExecutionRecord> entry : planRecords.entrySet()) {
             entry.getValue().save();
         }
+    }
+
+
+    @Override
+    public AgentExecutionRecord getCurrentAgentExecutionRecord(String planId) {
+        PlanExecutionRecord planRecord = planRecords.get(planId);
+        if (planRecord != null) {
+            List<AgentExecutionRecord> agentExecutionSequence = planRecord.getAgentExecutionSequence();
+            int currentIndex = planRecord.getCurrentStepIndex();
+            if (!agentExecutionSequence.isEmpty()) {
+
+                return agentExecutionSequence.get(currentIndex);
+            }
+        }
+        return null;
     }
 }
