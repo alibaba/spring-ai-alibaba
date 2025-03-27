@@ -45,7 +45,7 @@ public class CodeUtils {
 
 	private static final int DEFAULT_TIMEOUT = 600;
 
-	private static final String WORKING_DIR = Paths.get(System.getProperty("user.dir"), "extensions").toString();
+	public static final String WORKING_DIR = Paths.get(System.getProperty("user.dir"), "extensions").toString();
 
 	public static List<Pair<String, String>> extractCode(String text, boolean detectSingleLineCode) {
 		List<Pair<String, String>> extracted = new ArrayList<>();
