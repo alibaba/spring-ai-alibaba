@@ -48,8 +48,7 @@ import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvis
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
 
 /**
- * 工具调用智能体，专门负责管理和执行工具调用的智能体实现
- * 继承自ReActAgent，实现了基于工具调用的思考-行动模式
+ * 工具调用智能体，专门负责管理和执行工具调用的智能体实现 继承自ReActAgent，实现了基于工具调用的思考-行动模式
  */
 public class ToolCallAgent extends ReActAgent {
 
@@ -75,10 +74,7 @@ public class ToolCallAgent extends ReActAgent {
 	}
 
 	/**
-	 * 工具调用智能体的功能描述
-	 * 实现说明：提供该智能体的核心功能说明
-	 * 描述包含工具调用管理和执行能力等关键特性
-	 * 
+	 * 工具调用智能体的功能描述 实现说明：提供该智能体的核心功能说明 描述包含工具调用管理和执行能力等关键特性
 	 * @return 智能体的功能描述文本
 	 */
 	@Override
@@ -87,10 +83,7 @@ public class ToolCallAgent extends ReActAgent {
 	}
 
 	/**
-	 * 工具调用智能体的名称
-	 * 实现说明：返回固定的智能体标识符"ToolCallAgent"
-	 * 用于在日志和调试中标识该类型的智能体
-	 * 
+	 * 工具调用智能体的名称 实现说明：返回固定的智能体标识符"ToolCallAgent" 用于在日志和调试中标识该类型的智能体
 	 * @return "ToolCallAgent"
 	 */
 	@Override
@@ -99,16 +92,8 @@ public class ToolCallAgent extends ReActAgent {
 	}
 
 	/**
-	 * 添加工具调用相关的思考提示
-	 * 实现说明：
-	 * 1. 首先调用父类的addThinkPrompt添加基础提示
-	 * 2. 构建特定的工具调用相关提示，包括：
-	 *    - 当前计划状态
-	 *    - 当前步骤信息
-	 *    - 执行指南
-	 *    - 完成协议
-	 * 3. 返回包含完整提示信息的系统消息
-	 *
+	 * 添加工具调用相关的思考提示 实现说明： 1. 首先调用父类的addThinkPrompt添加基础提示 2. 构建特定的工具调用相关提示，包括： - 当前计划状态 -
+	 * 当前步骤信息 - 执行指南 - 完成协议 3. 返回包含完整提示信息的系统消息
 	 * @param messages 当前的消息列表
 	 * @return 添加了工具调用相关提示的系统消息
 	 */
@@ -157,14 +142,8 @@ public class ToolCallAgent extends ReActAgent {
 	}
 
 	/**
-	 * 获取下一步执行的提示消息
-	 * 实现说明：
-	 * 1. 返回引导工具选择和执行的提示消息
-	 * 2. 提示内容包括：
-	 *    - 询问下一步操作的计划
-	 *    - 请求提供步骤编号或名称
-	 * 3. 使用UserMessage封装提示内容
-	 *
+	 * 获取下一步执行的提示消息 实现说明： 1. 返回引导工具选择和执行的提示消息 2. 提示内容包括： - 询问下一步操作的计划 - 请求提供步骤编号或名称 3.
+	 * 使用UserMessage封装提示内容
 	 * @return 下一步执行提示的用户消息对象
 	 */
 	protected Message getNextStepMessage() {
@@ -178,14 +157,8 @@ public class ToolCallAgent extends ReActAgent {
 	}
 
 	/**
-	 * 执行思考过程
-	 * 实现说明：
-	 * 1. 准备思考所需的消息列表
-	 * 2. 设置工具调用选项
-	 * 3. 构建提示并获取LLM响应
-	 * 4. 分析响应中的工具调用
-	 * 5. 记录思考过程和工具选择
-	 *
+	 * 执行思考过程 实现说明： 1. 准备思考所需的消息列表 2. 设置工具调用选项 3. 构建提示并获取LLM响应 4. 分析响应中的工具调用 5.
+	 * 记录思考过程和工具选择
 	 * @param retry 当前重试次数
 	 * @return true 如果有工具需要调用，false 如果不需要执行任何工具
 	 */

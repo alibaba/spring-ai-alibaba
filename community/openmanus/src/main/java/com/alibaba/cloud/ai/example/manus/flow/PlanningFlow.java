@@ -93,36 +93,38 @@ public class PlanningFlow extends BaseFlow {
 	}
 
 	public BaseAgent getExecutor(String stepType) {
-        BaseAgent defaultAgent = null;
-        
-        if (stepType != null) {
-            stepType = stepType.toUpperCase();
-            for (BaseAgent agent : agents) {
-                String agentUpper = agent.getName().toUpperCase();
-                if (agentUpper.equals(stepType)) {
-                    return agent;
-                }
-                if (agentUpper.equals("MANUS")) {
-                    defaultAgent = agent;
-                }
-            }
-        }
+		BaseAgent defaultAgent = null;
 
-        if (defaultAgent == null) {
-            log.warn("Agent not found for type: {}. No MANUS agent found as fallback.", stepType);
-            // 继续尝试获取第一个可用的 agent
-            if (!agents.isEmpty()) {
-                defaultAgent = agents.get(0);
-                log.warn("Using first available agent as fallback: {}", defaultAgent.getName());
-            } else {
-                throw new RuntimeException("No agents available in the system");
-            }
-        } else {
-            log.info("Agent not found for type: {}. Using MANUS agent as fallback.", stepType);
-        }
-        
-        return defaultAgent;
-    }
+		if (stepType != null) {
+			stepType = stepType.toUpperCase();
+			for (BaseAgent agent : agents) {
+				String agentUpper = agent.getName().toUpperCase();
+				if (agentUpper.equals(stepType)) {
+					return agent;
+				}
+				if (agentUpper.equals("MANUS")) {
+					defaultAgent = agent;
+				}
+			}
+		}
+
+		if (defaultAgent == null) {
+			log.warn("Agent not found for type: {}. No MANUS agent found as fallback.", stepType);
+			// 继续尝试获取第一个可用的 agent
+			if (!agents.isEmpty()) {
+				defaultAgent = agents.get(0);
+				log.warn("Using first available agent as fallback: {}", defaultAgent.getName());
+			}
+			else {
+				throw new RuntimeException("No agents available in the system");
+			}
+		}
+		else {
+			log.info("Agent not found for type: {}. Using MANUS agent as fallback.", stepType);
+		}
+
+		return defaultAgent;
+	}
 
 	@Override
 	public String execute(String inputText) {
@@ -176,30 +178,33 @@ public class PlanningFlow extends BaseFlow {
 		// 构建agents信息
 		StringBuilder agentsInfo = new StringBuilder("Available Agents:\n");
 		agents.forEach(agent -> {
-			agentsInfo.append("- Agent Name ").append(": ").append(agent.getName().toUpperCase()).append("\n")
-					.append("  Description: ").append(agent.getDescription()).append("\n");
+			agentsInfo.append("- Agent Name ")
+				.append(": ")
+				.append(agent.getName().toUpperCase())
+				.append("\n")
+				.append("  Description: ")
+				.append(agent.getDescription())
+				.append("\n");
 		});
 
 		String prompt_template = """
 				Create a reasonable plan with clear steps to accomplish the task.
-				
+
 				Available Agents Information:
 				{agents_info}
-				
+
 				Task to accomplish:
 				{query}
 
 				You can use the planning tool to help you create the plan, assign {plan_id} as the plan id.
-				
+
 				Important: For each step in the plan, start with [AGENT_NAME] where AGENT_NAME is one of the available agents listed above.
 				For example: "[BROWSER_AGENT] Search for relevant information" or "[REACT_AGENT] Process the search results"
 				""";
 
 		PromptTemplate promptTemplate = new PromptTemplate(prompt_template);
-		Prompt userPrompt = promptTemplate.create(Map.of(
-				"plan_id", activePlanId,
-				"query", request,
-				"agents_info", agentsInfo.toString()));
+		Prompt userPrompt = promptTemplate
+			.create(Map.of("plan_id", activePlanId, "query", request, "agents_info", agentsInfo.toString()));
 		ChatResponse response = llmService.getPlanningChatClient()
 			.prompt(userPrompt)
 			.tools(getToolCallList())

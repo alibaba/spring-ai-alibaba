@@ -35,142 +35,143 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class FileAgent extends ToolCallAgent {
 
-    private static final Logger log = LoggerFactory.getLogger(FileAgent.class);
-    private final String workingDirectory;
-    private final AtomicReference<Map<String, Object>> currentFileState = new AtomicReference<>();
+	private static final Logger log = LoggerFactory.getLogger(FileAgent.class);
 
-    public FileAgent(LlmService llmService, ToolCallingManager toolCallingManager, String workingDirectory) {
-        super(llmService, toolCallingManager);
-        this.workingDirectory = workingDirectory;
-    }
+	private final String workingDirectory;
 
-    @Override
-    protected Message getNextStepMessage() {
-        String nextStepPrompt = """
-                What should I do next to achieve my goal?
+	private final AtomicReference<Map<String, Object>> currentFileState = new AtomicReference<>();
 
-                Current File Operation State:
-                - Working Directory: {working_directory}
-                - Last File Operation: {last_operation}
-                - Last Operation Result: {operation_result}
-              
+	public FileAgent(LlmService llmService, ToolCallingManager toolCallingManager, String workingDirectory) {
+		super(llmService, toolCallingManager);
+		this.workingDirectory = workingDirectory;
+	}
 
-                Remember:
-                1. Check file existence before operations
-                2. Handle different file types appropriately
-                3. Validate file paths and content
-                4. Keep track of file operations
-                5. Handle potential errors
-                6. IMPORTANT: You MUST use at least one tool in your response to make progress!
+	@Override
+	protected Message getNextStepMessage() {
+		String nextStepPrompt = """
+				What should I do next to achieve my goal?
 
-                Think step by step:
-                1. What file operation is needed?
-                2. Which tool is most appropriate?
-                3. How to handle potential errors?
-                4. What's the expected outcome?
-                """;
+				Current File Operation State:
+				- Working Directory: {working_directory}
+				- Last File Operation: {last_operation}
+				- Last Operation Result: {operation_result}
 
-        PromptTemplate promptTemplate = new PromptTemplate(nextStepPrompt);
-        Message userMessage = promptTemplate.createMessage(getData());
-        return userMessage;
-    }
 
-    @Override
-    protected String act() {
-        String result = super.act();
-        updateFileState("file_operation", result);
-        return result;
-    }
+				Remember:
+				1. Check file existence before operations
+				2. Handle different file types appropriately
+				3. Validate file paths and content
+				4. Keep track of file operations
+				5. Handle potential errors
+				6. IMPORTANT: You MUST use at least one tool in your response to make progress!
 
-    @Override
-    protected Message addThinkPrompt(List<Message> messages) {
-        super.addThinkPrompt(messages);
-        String systemPrompt = """
-                You are an AI agent specialized in file operations. Your goal is to handle file-related tasks effectively and safely.
+				Think step by step:
+				1. What file operation is needed?
+				2. Which tool is most appropriate?
+				3. How to handle potential errors?
+				4. What's the expected outcome?
+				""";
 
-                # Response Rules
+		PromptTemplate promptTemplate = new PromptTemplate(nextStepPrompt);
+		Message userMessage = promptTemplate.createMessage(getData());
+		return userMessage;
+	}
 
-                3. FILE OPERATIONS:
-                - Always validate file paths
-                - Check file existence
-                - Handle different file types
-                - Process content appropriately
+	@Override
+	protected String act() {
+		String result = super.act();
+		updateFileState("file_operation", result);
+		return result;
+	}
 
-                4. ERROR HANDLING:
-                - Check file permissions
-                - Handle missing files
-                - Validate content format
-                - Monitor operation status
+	@Override
+	protected Message addThinkPrompt(List<Message> messages) {
+		super.addThinkPrompt(messages);
+		String systemPrompt = """
+				You are an AI agent specialized in file operations. Your goal is to handle file-related tasks effectively and safely.
 
-                5. TASK COMPLETION:
-                - Track progress in memory
-                - Verify file operations
-                - Clean up if necessary
-                - Provide clear summaries
+				# Response Rules
 
-                6. BEST PRACTICES:
-                - Use absolute paths when possible
-                - Handle large files carefully
-                - Maintain operation logs
-                - Follow file naming conventions
-                """;
+				3. FILE OPERATIONS:
+				- Always validate file paths
+				- Check file existence
+				- Handle different file types
+				- Process content appropriately
 
-        SystemPromptTemplate promptTemplate = new SystemPromptTemplate(systemPrompt);
-        Message systemMessage = promptTemplate.createMessage(getData());
-        messages.add(systemMessage);
-        return systemMessage;
-    }
+				4. ERROR HANDLING:
+				- Check file permissions
+				- Handle missing files
+				- Validate content format
+				- Monitor operation status
 
-    @Override
-    public String getName() {
-        return "FILE_AGENT";
-    }
+				5. TASK COMPLETION:
+				- Track progress in memory
+				- Verify file operations
+				- Clean up if necessary
+				- Provide clear summaries
 
-    @Override
-    public String getDescription() {
-        return "A file operations agent that can read and write various types of files";
-    }
+				6. BEST PRACTICES:
+				- Use absolute paths when possible
+				- Handle large files carefully
+				- Maintain operation logs
+				- Follow file naming conventions
+				""";
 
-    @Override
-    public List<ToolCallback> getToolCallList() {
-        return List.of(
-            Bash.getFunctionToolCallback(workingDirectory),
-            DocLoaderTool.getFunctionToolCallback(),
-            FileSaver.getFunctionToolCallback(),
-            Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId())
-        );
-    }
+		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(systemPrompt);
+		Message systemMessage = promptTemplate.createMessage(getData());
+		messages.add(systemMessage);
+		return systemMessage;
+	}
 
-    @Override
-    Map<String, Object> getData() {
-        Map<String, Object> data = new HashMap<>();
-        Map<String, Object> parentData = super.getData();
-        if (parentData != null) {
-            data.putAll(parentData);
-        }
+	@Override
+	public String getName() {
+		return "FILE_AGENT";
+	}
 
-        data.put("working_directory", workingDirectory);
+	@Override
+	public String getDescription() {
+		return "A file operations agent that can read and write various types of files";
+	}
 
-        // 获取当前文件操作状态
-        Map<String, Object> state = currentFileState.get();
-        if (state != null) {
-            data.put("last_operation", state.get("operation"));
-            data.put("operation_result", state.get("result"));
-        } else {
-            data.put("last_operation", "No previous operation");
-            data.put("operation_result", null);
-        }
+	@Override
+	public List<ToolCallback> getToolCallList() {
+		return List.of(Bash.getFunctionToolCallback(workingDirectory), DocLoaderTool.getFunctionToolCallback(),
+				FileSaver.getFunctionToolCallback(),
+				Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId()));
+	}
 
-        return data;
-    }
+	@Override
+	Map<String, Object> getData() {
+		Map<String, Object> data = new HashMap<>();
+		Map<String, Object> parentData = super.getData();
+		if (parentData != null) {
+			data.putAll(parentData);
+		}
 
-    /**
-     * 更新文件操作状态
-     */
-    public void updateFileState(String operation, String result) {
-        Map<String, Object> state = new HashMap<>();
-        state.put("operation", operation);
-        state.put("result", result);
-        currentFileState.set(state);
-    }
+		data.put("working_directory", workingDirectory);
+
+		// 获取当前文件操作状态
+		Map<String, Object> state = currentFileState.get();
+		if (state != null) {
+			data.put("last_operation", state.get("operation"));
+			data.put("operation_result", state.get("result"));
+		}
+		else {
+			data.put("last_operation", "No previous operation");
+			data.put("operation_result", null);
+		}
+
+		return data;
+	}
+
+	/**
+	 * 更新文件操作状态
+	 */
+	public void updateFileState(String operation, String result) {
+		Map<String, Object> state = new HashMap<>();
+		state.put("operation", operation);
+		state.put("result", result);
+		currentFileState.set(state);
+	}
+
 }

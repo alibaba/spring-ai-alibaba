@@ -60,9 +60,10 @@ public class ManusConfiguration {
 	@Bean
 	public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager) {
 
-		ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager, chromeDriverService, CodeUtils.WORKING_DIR);
+		ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager, chromeDriverService,
+				CodeUtils.WORKING_DIR);
 		BrowserAgent browserAgent = new BrowserAgent(llmService, toolCallingManager, chromeDriverService);
-		
+
 		FileAgent fileAgent = new FileAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR);
 		PythonAgent pythonAgent = new PythonAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR);
 		List<BaseAgent> agentList = new ArrayList<>();
@@ -70,7 +71,7 @@ public class ManusConfiguration {
 		agentList.add(browserAgent);
 		agentList.add(fileAgent);
 		agentList.add(pythonAgent);
-		
+
 		Map<String, Object> data = new HashMap<>();
 		return new PlanningFlow(agentList, data);
 	}
