@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -61,6 +63,8 @@ public abstract class BaseAgent {
 
 	private String conversationId;
 
+	private String planId = null;
+
 	private AgentState state = AgentState.IDLE;
 
 	protected LlmService llmService;
@@ -70,6 +74,11 @@ public abstract class BaseAgent {
 	private int currentStep = 0;
 
 	private Map<String, Object> data = new HashMap<>();
+
+
+
+	protected PlanExecutionRecorder planExecutionRecorder;
+
 
 	/**
 	 * 获取智能体的名称
@@ -116,8 +125,9 @@ public abstract class BaseAgent {
 
 	public abstract List<ToolCallback> getToolCallList();
 
-	public BaseAgent(LlmService llmService) {
+	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder) {
 		this.llmService = llmService;
+		this.planExecutionRecorder = planExecutionRecorder;
 	}
 
 	public String run(Map<String, Object> data) {
@@ -200,6 +210,13 @@ public abstract class BaseAgent {
 		this.conversationId = conversationId;
 	}
 
+	public String getPlanId() {
+		return planId;
+	}
+
+	public void setPlanId(String planId) {
+		this.planId = planId;
+	}
 	/**
 	 * 获取智能体的数据上下文
 	 *

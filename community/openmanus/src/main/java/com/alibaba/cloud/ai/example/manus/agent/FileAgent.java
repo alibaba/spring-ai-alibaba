@@ -20,6 +20,8 @@ import com.alibaba.cloud.ai.example.manus.tool.Bash;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
 import com.alibaba.cloud.ai.example.manus.tool.Summary;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.Message;
@@ -41,11 +43,10 @@ public class FileAgent extends ToolCallAgent {
 
 	private final AtomicReference<Map<String, Object>> currentFileState = new AtomicReference<>();
 
-	public FileAgent(LlmService llmService, ToolCallingManager toolCallingManager, String workingDirectory) {
-		super(llmService, toolCallingManager);
+	public FileAgent(LlmService llmService, ToolCallingManager toolCallingManager, String workingDirectory, PlanExecutionRecorder record) {
+		super(llmService, toolCallingManager, record);
 		this.workingDirectory = workingDirectory;
 	}
-
 	@Override
 	protected Message getNextStepMessage() {
 		String nextStepPrompt = """

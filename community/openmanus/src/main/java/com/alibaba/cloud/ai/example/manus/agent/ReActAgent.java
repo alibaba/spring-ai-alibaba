@@ -20,6 +20,7 @@ import java.util.List;
 import org.springframework.ai.chat.messages.Message;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
 /**
  * ReAct（Reasoning + Acting）模式的智能体基类 实现了思考(Reasoning)和行动(Acting)交替执行的智能体模式
@@ -29,9 +30,10 @@ public abstract class ReActAgent extends BaseAgent {
 	/**
 	 * 构造函数
 	 * @param llmService LLM服务实例，用于处理自然语言交互
+	 * @param planExecutionRecorder 计划执行记录器，用于记录执行过程
 	 */
-	public ReActAgent(LlmService llmService) {
-		super(llmService);
+	public ReActAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder) {
+		super(llmService, planExecutionRecorder);
 	}
 
 	/**
