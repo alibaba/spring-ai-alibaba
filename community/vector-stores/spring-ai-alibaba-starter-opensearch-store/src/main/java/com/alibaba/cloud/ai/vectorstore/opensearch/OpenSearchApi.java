@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.vectorstore.opensearch;
 
 import com.aliyun.ha3engine.vector.Client;
 import com.aliyun.ha3engine.vector.models.*;
+import com.aliyun.teautil.models.RuntimeOptions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,7 +33,7 @@ import java.util.*;
  * deleting, and searching documents.
  *
  * @author fuyou.lxm
- * @since 1.0.0-M3
+ * @since 1.0.0-M6
  */
 public class OpenSearchApi {
 
@@ -41,6 +42,12 @@ public class OpenSearchApi {
 	private final Client client;
 
 	private final String instanceId;
+
+	private final String endpoint;
+
+	private final String accessUserName;
+
+	private final String accessPassWord;
 
 	/**
 	 * Initializes a new instance of the OpenSearchApi class.
@@ -53,6 +60,10 @@ public class OpenSearchApi {
 	 * the underlying error.
 	 */
 	public OpenSearchApi(String instanceId, String endpoint, String accessUserName, String accessPassWord) {
+		this.endpoint = endpoint;
+		this.accessUserName = accessUserName;
+		this.accessPassWord = accessPassWord;
+
 		try {
 			Map<String, Object> params = new HashMap<>();
 			params.put("instanceId", instanceId);
@@ -70,8 +81,60 @@ public class OpenSearchApi {
 		}
 	}
 
+	public OpenSearchApi(OpenSearchApi openSearchApi) {
+		this.client = openSearchApi.client;
+		this.instanceId = openSearchApi.instanceId;
+		this.endpoint = openSearchApi.endpoint;
+		this.accessUserName = openSearchApi.accessUserName;
+		this.accessPassWord = openSearchApi.accessPassWord;
+	}
+
+	public OpenSearchApi(OpenSearchVectorStoreProperties properties) throws Exception {
+		this.instanceId = properties.getInstanceId();
+		this.endpoint = properties.getEndpoint();
+		this.accessUserName = properties.getAccessUserName();
+		this.accessPassWord = properties.getAccessPassWord();
+		Config openSearchConfiguration = Config.build(properties.toClientParams());
+		this.client = new Client(openSearchConfiguration);
+	}
+
 	private String getFullTableName(String tableName) {
 		return this.instanceId + "_" + tableName;
+	}
+
+	public void createCollectionAndIndex() throws Exception {
+
+		String queryUri = "/openapi/ha3/instances/" + instanceId + "/tables";
+		Map<String, ?> ansMap = client._request("POST", queryUri, new HashMap<>(), new HashMap<>(), new HashMap<>(),
+				new RuntimeOptions());
+
+		if (null == ansMap.get("requestId")) {
+			throw new RuntimeException(
+					"OpenSearch autoInitializeIndex failed. Error message:{} " + ansMap.get("message"));
+		}
+
+		logger.info("OpenSearch autoInitializeIndex success. requestId:{}", ansMap.get("requestId"));
+	}
+
+	public void createCollectionAndIndex(Map<String, ?> fieldSchema, List<Map<String, ?>> vectorIndex)
+			throws Exception {
+		HashMap<String, ?> bodyMap = new HashMap<>() {
+			{
+				put("fieldSchema", fieldSchema);
+				put("vectorIndex", vectorIndex);
+			}
+		};
+
+		String queryUri = "/openapi/ha3/instances/" + instanceId + "/tables";
+		Map<String, ?> ansMap = client._request("POST", queryUri, new HashMap<>(), new HashMap<>(), bodyMap,
+				new RuntimeOptions());
+
+		if (null == ansMap.get("requestId")) {
+			throw new RuntimeException(
+					"OpenSearch autoInitializeIndex failed. Error message:{} " + ansMap.get("message"));
+		}
+
+		logger.info("OpenSearch autoInitializeIndex success. requestId:{}", ansMap.get("requestId"));
 	}
 
 	/**
@@ -233,14 +296,6 @@ public class OpenSearchApi {
 					jsonObject.path(ERROR_CODE_KEY).asText(), jsonObject.path(ERROR_MESSAGE_KEY).asText());
 		}
 
-		/**
-		 * Checks if the response is successful based on the code.
-		 * @return true if the code is equal to SUCCESS_CODE, false otherwise.
-		 */
-		public boolean isSuccess() {
-			return SUCCESS_CODE.equals(code);
-		}
-
 		private static JsonNode parseJson(String jsonString) {
 			try {
 				return new ObjectMapper().readTree(jsonString);
@@ -248,6 +303,14 @@ public class OpenSearchApi {
 			catch (JsonProcessingException e) {
 				throw new RuntimeException("Failed to parse JSON", e);
 			}
+		}
+
+		/**
+		 * Checks if the response is successful based on the code.
+		 * @return true if the code is equal to SUCCESS_CODE, false otherwise.
+		 */
+		public boolean isSuccess() {
+			return SUCCESS_CODE.equals(code);
 		}
 	}
 
@@ -301,10 +364,6 @@ public class OpenSearchApi {
 					jsonObject.path(TOTAL_COUNT_KEY).asInt(), (ArrayNode) jsonObject.path(RESULT_KEY));
 		}
 
-		public boolean hasError() {
-			return errorCode != null && !errorCode.isEmpty();
-		}
-
 		private static JsonNode parseJson(String jsonString) {
 			try {
 				return new ObjectMapper().readTree(jsonString);
@@ -314,6 +373,9 @@ public class OpenSearchApi {
 			}
 		}
 
+		public boolean hasError() {
+			return errorCode != null && !errorCode.isEmpty();
+		}
 	}
 
 }
