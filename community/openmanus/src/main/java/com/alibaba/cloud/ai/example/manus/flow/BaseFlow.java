@@ -24,7 +24,7 @@ import org.springframework.ai.tool.ToolCallback;
 
 public abstract class BaseFlow {
 
-	protected List<BaseAgent>  agents;
+	protected List<BaseAgent> agents;
 
 	public BaseFlow(List<BaseAgent> agents, Map<String, Object> data) {
 		this.agents = agents;
