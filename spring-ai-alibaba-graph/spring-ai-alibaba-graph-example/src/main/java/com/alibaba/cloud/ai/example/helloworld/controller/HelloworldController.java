@@ -91,9 +91,7 @@ public class HelloworldController {
 	@GetMapping("/simple/chat")
 	public String simpleChat(@RequestParam(value = "query", defaultValue = "你好，很高兴认识你，能简单介绍一下自己吗？")String query) throws GraphStateException {
 		OverAllState state = new OverAllState();
-		// prompt_for_next_step
-		// result
-		// messages
+//		state.registerKeyAndStrategy()
 
 		ControllerAgent controllerAgent = new ControllerAgent();
 		ReactAgent planningAgent = new ReactAgent(planningPrompt, planningClient, resolver, 10);
