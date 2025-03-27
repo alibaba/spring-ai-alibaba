@@ -68,9 +68,55 @@ public class ToolCallAgent extends ReActAgent {
 	}
 
 	@Override
+
+	/**
+	 * 执行思考过程 实现说明： 1. 准备思考所需的消息列表 2. 设置工具调用选项 3. 构建提示并获取LLM响应 4. 分析响应中的工具调用 5.
+	 * 记录思考过程和工具选择
+	 * @param retry 当前重试次数
+	 * @return true 如果有工具需要调用，false 如果不需要执行任何工具
+	 */
+
 	protected boolean think() {
-		int retry = 0;
-		return _think(retry);
+		try {
+			List<Message> messages = new ArrayList<>();
+			addThinkPrompt(messages);
+
+			// calltool with mem
+			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
+			Message nextStepMessage = getNextStepMessage();
+			messages.add(nextStepMessage);
+
+			log.debug("Messages prepared for the prompt: {}", messages);
+
+			userPrompt = new Prompt(messages, chatOptions);
+
+			response = llmService.getChatClient()
+				.prompt(userPrompt)
+				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
+					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
+				.tools(getToolCallList())
+				.call()
+				.chatResponse();
+
+			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
+
+			log.info(String.format("✨ %s's thoughts: %s", getName(), response.getResult().getOutput().getText()));
+			log.info(String.format("🛠️ %s selected %d tools to use", getName(), toolCalls.size()));
+			String responseByLLm = response.getResult().getOutput().getText();
+			if (responseByLLm != null && !responseByLLm.isEmpty()) {
+				log.info(String.format("💬 %s's response: %s", getName(), responseByLLm));
+			}
+			if (!toolCalls.isEmpty()) {
+				log.info(String.format("🧰 Tools being prepared: %s",
+						toolCalls.stream().map(ToolCall::name).collect(Collectors.toList())));
+			}
+
+			return !toolCalls.isEmpty();
+		}
+		catch (Exception e) {
+			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()));
+			return false;
+		}
 	}
 
 	/**
@@ -154,59 +200,6 @@ public class ToolCallAgent extends ReActAgent {
 				""";
 
 		return new UserMessage(nextStepPrompt);
-	}
-
-	/**
-	 * 执行思考过程 实现说明： 1. 准备思考所需的消息列表 2. 设置工具调用选项 3. 构建提示并获取LLM响应 4. 分析响应中的工具调用 5.
-	 * 记录思考过程和工具选择
-	 * @param retry 当前重试次数
-	 * @return true 如果有工具需要调用，false 如果不需要执行任何工具
-	 */
-	private boolean _think(int retry) {
-		try {
-			List<Message> messages = new ArrayList<>();
-			addThinkPrompt(messages);
-
-			// calltool with mem
-			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
-			Message nextStepMessage = getNextStepMessage();
-			messages.add(nextStepMessage);
-
-			log.debug("Messages prepared for the prompt: {}", messages);
-
-			userPrompt = new Prompt(messages, chatOptions);
-
-			response = llmService.getChatClient()
-				.prompt(userPrompt)
-				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
-					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
-				.tools(getToolCallList())
-				.call()
-				.chatResponse();
-
-			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
-
-			log.info(String.format("✨ %s's thoughts: %s", getName(), response.getResult().getOutput().getText()));
-			log.info(String.format("🛠️ %s selected %d tools to use", getName(), toolCalls.size()));
-			String responseByLLm = response.getResult().getOutput().getText();
-			if (responseByLLm != null && !responseByLLm.isEmpty()) {
-				log.info(String.format("💬 %s's response: %s", getName(), responseByLLm));
-			}
-			if (!toolCalls.isEmpty()) {
-				log.info(String.format("🧰 Tools being prepared: %s",
-						toolCalls.stream().map(ToolCall::name).collect(Collectors.toList())));
-			}
-
-			return !toolCalls.isEmpty();
-		}
-		catch (Exception e) {
-			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()));
-			// 异常重试
-			if (retry < REPLY_MAX) {
-				return _think(retry + 1);
-			}
-			return false;
-		}
 	}
 
 	@Override
