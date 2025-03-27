@@ -38,8 +38,6 @@ public class ThinkActRecord implements JsonSerializable {
     // 记录的唯一标识符
     private Long id;
     
-    // 在执行过程中的步骤编号
-    private int stepNumber;
     
     // 父执行记录的ID，关联到AgentExecutionRecord
     private Long parentExecutionId;
@@ -88,8 +86,7 @@ public class ThinkActRecord implements JsonSerializable {
     }
     
     // 带父执行ID的构造函数
-    public ThinkActRecord(int stepNumber, Long parentExecutionId) {
-        this.stepNumber = stepNumber;
+    public ThinkActRecord(Long parentExecutionId) {
         this.parentExecutionId = parentExecutionId;
         this.thinkStartTime = LocalDateTime.now();
     }
@@ -157,14 +154,6 @@ public class ThinkActRecord implements JsonSerializable {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public int getStepNumber() {
-        return stepNumber;
-    }
-
-    public void setStepNumber(int stepNumber) {
-        this.stepNumber = stepNumber;
     }
 
     public Long getParentExecutionId() {
@@ -283,7 +272,6 @@ public class ThinkActRecord implements JsonSerializable {
     public String toString() {
         return "ThinkActRecord{" +
                 "id='" + id + '\'' +
-                ", stepNumber=" + stepNumber +
                 ", parentExecutionId='" + parentExecutionId + '\'' +
                 ", actionNeeded=" + actionNeeded +
                 ", status='" + status + '\'' +
@@ -296,7 +284,6 @@ public class ThinkActRecord implements JsonSerializable {
         json.append("{");
         
         appendField(json, "id", id, true);
-        appendField(json, "stepNumber", stepNumber, false);
         appendField(json, "parentExecutionId", parentExecutionId, true);
         
         if (thinkStartTime != null) {
