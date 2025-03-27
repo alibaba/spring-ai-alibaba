@@ -13,26 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.flow;
+package com.alibaba.cloud.ai.example.manus.config;
 
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
+@Component
+@ConfigurationProperties(prefix = "manus.browser")
+public class BrowserProperties {
 
-import org.springframework.ai.tool.ToolCallback;
+	private boolean headless = false;
 
-public abstract class BaseFlow {
-
-	protected List<BaseAgent> agents;
-
-	public BaseFlow(List<BaseAgent> agents, Map<String, Object> data) {
-		this.agents = agents;
-		data.put("agents", agents);
+	public boolean isHeadless() {
+		return headless;
 	}
 
-	public abstract String execute(String inputText);
-
-	public abstract List<ToolCallback> getToolCallList();
+	public void setHeadless(boolean headless) {
+		this.headless = headless;
+	}
 
 }
