@@ -20,3 +20,5 @@ spring:
 manus:
   browser:
     headless: false # 设置为 true 则启用无头模式
+  openbrowser: true # 设置为 false 则禁用自动打开浏览器
+  consolequery: false # 设置为 true 则启用控制台交互模式
