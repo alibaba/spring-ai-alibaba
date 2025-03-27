@@ -24,6 +24,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import ch.qos.logback.core.util.StringUtil;
+import com.alibaba.cloud.ai.graph.action.AsyncSendEdgeAction;
+import com.alibaba.cloud.ai.graph.internal.edge.SendEdgeCondition;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.async.AsyncGenerator;
@@ -34,7 +37,6 @@ import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
-import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import org.springframework.util.CollectionUtils;
 
@@ -268,6 +270,107 @@ public class CompiledGraph {
 			.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 	}
 
+	private String nextNodeId(String currentNodeId, EdgeValue route, Map<String, Object> state, String nodeId)
+			throws Exception {
+
+		if (route == null) {
+			throw StateGraph.RunnableErrors.missingEdge.exception(nodeId);
+		}
+		if (route.id() != null) {
+			return route.id();
+		}
+		if (route.value() != null) {
+			OverAllState derefState = stateGraph.getStateFactory().apply(state);
+			com.alibaba.cloud.ai.graph.action.AsyncEdgeAction condition = route.value().action();
+			if (route.value() instanceof SendEdgeCondition sendEdgeCondition) {
+				AsyncSendEdgeAction asyncSendEdgeAction = sendEdgeCondition.sendEdgeAction();
+				Send send = asyncSendEdgeAction.apply(derefState).get();
+				String jump = send.getEdge();
+				GraphType graph = send.getGraph();
+				String sendNodeId = send.getNodeId();
+				if (jump != null && graph != null) {
+					return nextIdHandler(currentNodeId, graph, jump, sendNodeId);
+				}
+			}
+			String newRoute = condition.apply(derefState).get();
+			String result = route.value().mappings().get(newRoute);
+			if (result == null) {
+				throw StateGraph.RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
+			}
+			return result;
+		}
+		throw StateGraph.RunnableErrors.executionError
+			.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
+	}
+
+	private String nextIdHandler(String currentNodeId, GraphType graph, String jump, String nodeId)
+			throws GraphStateException {
+		String[] split = currentNodeId.split("-");
+		String nextNodeId = null;
+		if (GraphType.PARENT.equals(graph)) {
+			if (split.length > 2) {
+				int i = currentNodeId.lastIndexOf("-");
+				nextNodeId = SubGraphNode.formatId(currentNodeId.substring(0, i), jump);
+			}
+			else {
+				nextNodeId = jump;
+			}
+			if (!nodes.containsKey(nextNodeId))
+				throw new GraphStateException(jump + " parent graph not found");
+		}
+		else if (GraphType.CHILD.equals(graph)) {
+			String formatId = "";
+			if (StringUtil.isNullOrEmpty(nodeId)) {
+				if (split.length > 2) {
+					int i = currentNodeId.lastIndexOf("-");
+					formatId = SubGraphNode.formatId(currentNodeId.substring(0, i), jump);
+				}
+				else {
+					formatId = SubGraphNode.formatId(split[0], jump);
+				}
+			}
+			else {
+				if (currentNodeId.startsWith(nodeId)) {
+					formatId = SubGraphNode.formatId(nodeId, jump);
+				}
+				else {
+					if (currentNodeId.contentEquals(nodeId)) {
+						formatId = formatNodeId(jump, nodeId, split, formatId);
+					}
+					else {
+						formatId = SubGraphNode.formatId(nodeId, jump);
+					}
+				}
+			}
+			if (!nodes.containsKey(formatId))
+				throw new GraphStateException(formatId + " sub graph not found");
+			nextNodeId = formatId;
+		}
+		else {
+			if (split.length >= 2) {
+				int i = currentNodeId.lastIndexOf("-");
+				nextNodeId = SubGraphNode.formatId(currentNodeId.substring(0, i), jump);
+			}
+			else {
+				nextNodeId = jump;
+			}
+		}
+		return nextNodeId;
+	}
+
+	private static String formatNodeId(String jump, String nodeId, String[] split, String formatId) {
+		for (String node : split) {
+			if (!node.equals(nodeId)) {
+				formatId = formatId + node + "-";
+			}
+			else {
+				break;
+			}
+		}
+		formatId = formatId + jump;
+		return formatId;
+	}
+
 	/**
 	 * Determines the next node ID based on the current node ID and state.
 	 * @param nodeId the current node ID
@@ -276,7 +379,7 @@ public class CompiledGraph {
 	 * @throws Exception if there is an error determining the next node ID
 	 */
 	private String nextNodeId(String nodeId, Map<String, Object> state) throws Exception {
-		return nextNodeId(edges.get(nodeId), state, nodeId);
+		return nextNodeId(nodeId, edges.get(nodeId), state, nodeId);
 
 	}
 
@@ -578,7 +681,20 @@ public class CompiledGraph {
 
 			return action.apply(withState, config).thenApply(partialState -> {
 				try {
-
+					if (partialState instanceof Command command) {
+						String jump = command.getEdge();
+						GraphType graph = command.getGraph();
+						String nodeId = command.getNodeId();
+						if (jump != null && graph != null) {
+							Optional<Data<Output>> embed = getEmbedGenerator(command);
+							if (embed.isPresent()) {
+								return embed.get();
+							}
+							currentState = overAllState.updateState(command);
+							nextIdHandler(graph, jump, nodeId);
+							return Data.of(getNodeOutput());
+						}
+					}
 					Optional<Data<Output>> embed = getEmbedGenerator(partialState);
 					if (embed.isPresent()) {
 						return embed.get();
@@ -594,6 +710,58 @@ public class CompiledGraph {
 				}
 
 			});
+		}
+
+		private void nextIdHandler(GraphType graph, String jump, String nodeId) throws GraphStateException {
+			String[] split = currentNodeId.split("-");
+			if (GraphType.PARENT.equals(graph)) {
+				if (split.length > 2) {
+					int i = currentNodeId.lastIndexOf("-");
+					nextNodeId = SubGraphNode.formatId(currentNodeId.substring(0, i), jump);
+				}
+				else {
+					nextNodeId = jump;
+				}
+				if (!nodes.containsKey(nextNodeId))
+					throw new GraphStateException(jump + " parent graph not found");
+			}
+			else if (GraphType.CHILD.equals(graph)) {
+				String formatId = "";
+				if (StringUtil.isNullOrEmpty(nodeId)) {
+					if (split.length > 2) {
+						int i = currentNodeId.lastIndexOf("-");
+						formatId = SubGraphNode.formatId(currentNodeId.substring(0, i), jump);
+					}
+					else {
+						formatId = SubGraphNode.formatId(split[0], jump);
+					}
+				}
+				else {
+					if (currentNodeId.startsWith(nodeId)) {
+						formatId = SubGraphNode.formatId(nodeId, jump);
+					}
+					else {
+						if (currentNodeId.contentEquals(nodeId)) {
+							formatId = formatNodeId(jump, nodeId, split, formatId);
+						}
+						else {
+							formatId = SubGraphNode.formatId(nodeId, jump);
+						}
+					}
+				}
+				if (!nodes.containsKey(formatId))
+					throw new GraphStateException(formatId + " sub graph not found");
+				nextNodeId = formatId;
+			}
+			else {
+				if (split.length >= 2) {
+					int i = currentNodeId.lastIndexOf("-");
+					nextNodeId = SubGraphNode.formatId(currentNodeId.substring(0, i), jump);
+				}
+				else {
+					nextNodeId = jump;
+				}
+			}
 		}
 
 		/**
