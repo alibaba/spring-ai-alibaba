@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,16 +25,20 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.tool.ToolCallback;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * An abstract base class for implementing AI agents that can execute multi-step tasks.
- * This class provides the core functionality for managing agent state, conversation flow,
+ * An abstract base class for implementing AI agents that can execute multi-step
+ * tasks.
+ * This class provides the core functionality for managing agent state,
+ * conversation flow,
  * and step-by-step execution of tasks.
  *
  * <p>
- * The agent supports a finite number of execution steps and includes mechanisms for:
+ * The agent supports a finite number of execution steps and includes mechanisms
+ * for:
  * <ul>
  * <li>State management (idle, running, finished)</li>
  * <li>Conversation tracking</li>
@@ -48,7 +53,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>{@link #getName()} - Returns the agent's name</li>
  * <li>{@link #getDescription()} - Returns the agent's description</li>
  * <li>{@link #addThinkPrompt(List)} - Implements the thinking chain logic</li>
- * <li>{@link #getNextStepMessage()} - Provides the next step's prompt template</li>
+ * <li>{@link #getNextStepMessage()} - Provides the next step's prompt
+ * template</li>
  * <li>{@link #step()} - Implements the core logic for each execution step</li>
  * </ul>
  *
@@ -75,10 +81,7 @@ public abstract class BaseAgent {
 
 	private Map<String, Object> data = new HashMap<>();
 
-
-
 	protected PlanExecutionRecorder planExecutionRecorder;
-
 
 	/**
 	 * 获取智能体的名称
@@ -86,6 +89,7 @@ public abstract class BaseAgent {
 	 * 实现要求： 1. 返回一个简短但具有描述性的名称 2. 名称应该反映该智能体的主要功能或特性 3. 名称应该是唯一的，便于日志和调试
 	 *
 	 * 示例实现： - ToolCallAgent 返回 "ToolCallAgent" - BrowserAgent 返回 "BrowserAgent"
+	 * 
 	 * @return 智能体的名称
 	 */
 	public abstract String getName();
@@ -97,6 +101,7 @@ public abstract class BaseAgent {
 	 *
 	 * 示例实现： - ToolCallAgent: "负责管理和执行工具调用的智能体，支持多工具组合调用" - ReActAgent:
 	 * "实现思考(Reasoning)和行动(Acting)交替执行的智能体"
+	 * 
 	 * @return 智能体的详细描述文本
 	 */
 	public abstract String getDescription();
@@ -104,10 +109,12 @@ public abstract class BaseAgent {
 	/**
 	 * 添加思考提示到消息列表中，构建智能体的思考链
 	 *
-	 * 实现要求： 1. 根据当前上下文和状态生成合适的系统提示词 2. 提示词应该指导智能体如何思考和决策 3. 可以递归地构建提示链，形成层次化的思考过程 4.
+	 * 实现要求： 1. 根据当前上下文和状态生成合适的系统提示词 2. 提示词应该指导智能体如何思考和决策 3. 可以递归地构建提示链，形成层次化的思考过程
+	 * 4.
 	 * 返回添加的系统提示消息对象
 	 *
 	 * 子类实现参考： 1. ReActAgent: 实现基础的思考-行动循环提示 2. ToolCallAgent: 添加工具选择和执行相关的提示
+	 * 
 	 * @param messages 当前的消息列表，用于构建上下文
 	 * @return 添加的系统提示消息对象
 	 */
@@ -119,6 +126,7 @@ public abstract class BaseAgent {
 	 * 实现要求： 1. 生成引导智能体执行下一步操作的提示消息 2. 提示内容应该基于当前执行状态和上下文 3. 消息应该清晰指导智能体要执行什么任务
 	 *
 	 * 子类实现参考： 1. ToolCallAgent：返回工具选择和调用相关的提示 2. ReActAgent：返回思考或行动决策相关的提示
+	 * 
 	 * @return 下一步操作的提示消息对象
 	 */
 	protected abstract Message getNextStepMessage();
@@ -138,33 +146,60 @@ public abstract class BaseAgent {
 
 		setData(data);
 
+		// Create agent execution record
+		AgentExecutionRecord agentRecord = new AgentExecutionRecord(
+				getConversationId(),
+				getName(),
+				getDescription());
+		agentRecord.setMaxSteps(maxSteps);
+		agentRecord.setStatus(state.toString());
+		// Record execution in recorder if we have a plan ID
+		if (planId != null && planExecutionRecorder != null) {
+			planExecutionRecorder.recordAgentExecution(planId, agentRecord);
+		}
 		List<String> results = new ArrayList<>();
 		lock.lock();
 		try {
 			state = AgentState.RUNNING;
+			agentRecord.setStatus(state.toString());
+
 			while (currentStep < maxSteps && !state.equals(AgentState.FINISHED)) {
 				currentStep++;
 				log.info("Executing round " + currentStep + "/" + maxSteps);
+
 				String stepResult = step();
+
 				if (isStuck()) {
-					handleStuckState();
+					handleStuckState(agentRecord);
 				}
+
 				results.add("Round " + currentStep + ": " + stepResult);
+
+				// Update agent record after each step
+				agentRecord.setCurrentStep(currentStep);
 			}
+
 			if (currentStep >= maxSteps) {
 				results.add("Terminated: Reached max rounds (" + maxSteps + ")");
 			}
-		}
-		finally {
+
+			// Set final state in record
+			agentRecord.setEndTime(LocalDateTime.now());
+			agentRecord.setStatus(AgentState.IDLE.toString());
+			agentRecord.setCompleted(state.equals(AgentState.FINISHED));
+			agentRecord.setResult(String.join("\n", results));
+
+		} finally {
 			lock.unlock();
 			state = AgentState.IDLE; // Reset state after execution
+			agentRecord.setStatus(state.toString());
 		}
 		return String.join("\n", results);
 	}
 
 	protected abstract String step();
 
-	private void handleStuckState() {
+	private void handleStuckState(AgentExecutionRecord agentRecord) {
 		log.warn("Agent stuck detected - Missing tool calls");
 
 		// End current step
@@ -176,6 +211,11 @@ public abstract class BaseAgent {
 				Current step: %d
 				Execution status: Force terminated
 				""".formatted(currentStep);
+
+		// Update agent record
+		agentRecord.setStuck(true);
+		agentRecord.setErrorMessage(stuckPrompt);
+		agentRecord.setStatus(state.toString());
 
 		log.error(stuckPrompt);
 	}
@@ -217,6 +257,7 @@ public abstract class BaseAgent {
 	public void setPlanId(String planId) {
 		this.planId = planId;
 	}
+
 	/**
 	 * 获取智能体的数据上下文
 	 *
@@ -224,6 +265,7 @@ public abstract class BaseAgent {
 	 * 数据在run()方法执行时通过setData()设置
 	 *
 	 * 访问控制： - 包级私有访问权限 - 仅允许同包内的类访问 - 主要供子类在实现过程中使用
+	 * 
 	 * @return 包含智能体上下文数据的Map对象
 	 */
 	Map<String, Object> getData() {
