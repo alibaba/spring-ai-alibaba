@@ -19,7 +19,7 @@ The Spring AI Alibaba project management committee (PMC), is the only governance
 1. Define, evolve, and promote the vision, values, and mission of the project.
 2. Set the overall technical direction and roadmap of the project.
 3. Define and evolve project governance structures and policies, including
-   project roles and how collaborators become members, approvers, committers and admistrators and the responsibilities of the release team.
+   project roles and how collaborators become members, approvers, committers and adminstrators and the responsibilities of the release team.
 4. Steward, control access, delegate access, and establish processes regarding
    all Spring AI Alibaba project resources and has the final say in the disposition of
    those resources.
