@@ -1,0 +1,14 @@
+/* layout.css - 应用整体布局 */
+.app-container {
+    display: flex;
+    height: 100vh;
+    background-color: #fff; /* 主应用背景 */
+}
+
+/* 主内容区域 */
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+}
