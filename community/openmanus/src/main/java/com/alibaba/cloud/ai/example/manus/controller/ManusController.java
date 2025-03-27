@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.controller;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusConfiguration.PlanningFlowManager;
 import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,15 +27,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/manus")
 public class ManusController {
 
-	private final PlanningFlow planningFlow;
+	private final PlanningFlowManager planningFlowManager;
 
-	ManusController(PlanningFlow planningFlow) {
-		this.planningFlow = planningFlow;
+	ManusController(PlanningFlowManager planningFlowManager) {
+		this.planningFlowManager = planningFlowManager;
 	}
 
 	@GetMapping("/chat")
 	public String simpleChat(@RequestParam(value = "query", defaultValue = "你好，很高兴认识你，能简单介绍一下自己吗？") String query) {
-		planningFlow.setActivePlanId("plan_" + System.currentTimeMillis());
+		String planId = "plan_" + System.currentTimeMillis();
+		PlanningFlow planningFlow = planningFlowManager.getOrCreatePlanningFlow(planId);
 		return planningFlow.execute(query);
 	}
 

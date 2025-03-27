@@ -16,11 +16,15 @@
 package com.alibaba.cloud.ai.example.manus.flow;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.time.LocalDateTime;
 
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -59,9 +64,9 @@ public class PlanningFlow extends BaseFlow {
 
 	// shared result state between agents.
 	private Map<String, Object> resultState;
-
-	public PlanningFlow(List<BaseAgent> agents, Map<String, Object> data) {
-		super(agents, data);
+	
+	public PlanningFlow(List<BaseAgent> agents, Map<String, Object> data, PlanExecutionRecorder recorder) {
+		super(agents, data, recorder);
 
 		executorKeys = new ArrayList<>();
 
@@ -90,8 +95,9 @@ public class PlanningFlow extends BaseFlow {
 		}
 
 		this.resultState = new HashMap<>();
+		
 	}
-
+	
 	public BaseAgent getExecutor(String stepType) {
 		BaseAgent defaultAgent = null;
 
@@ -129,47 +135,140 @@ public class PlanningFlow extends BaseFlow {
 	@Override
 	public String execute(String inputText) {
 		try {
+			// Record plan start with input text
+			recordPlanStart(inputText);
+			
 			if (inputText != null && !inputText.isEmpty()) {
 				createInitialPlan(inputText);
 
 				if (!planningTool.getPlans().containsKey(activePlanId)) {
 					log.error("Plan creation failed. Plan ID " + activePlanId + " not found in planning tool.");
 					return "Failed to create plan for: " + inputText;
-				}
+					}
+				
+				// Update plan record with created plan details
+				updatePlanRecordWithPlanDetails();
 			}
 
 			StringBuilder result = new StringBuilder();
 			while (true) {
 				Map.Entry<Integer, Map<String, String>> stepInfoEntry = getCurrentStepInfo();
 				if (stepInfoEntry == null) {
-					result.append(finalizePlan());
+					String summary = finalizePlan();
+					result.append(summary);
+					
+					// Record plan completion
+					recordPlanCompletion(summary);
 					break;
 				}
 				currentStepIndex = stepInfoEntry.getKey();
 				Map<String, String> stepInfo = stepInfoEntry.getValue();
 
 				if (currentStepIndex == null) {
-					result.append(finalizePlan());
+					String summary = finalizePlan();
+					result.append(summary);
+					
+					// Record plan completion
+					recordPlanCompletion(summary);
 					break;
 				}
 
 				String stepType = stepInfo != null ? stepInfo.get("type") : null;
 				BaseAgent executor = getExecutor(stepType);
 				executor.setConversationId(activePlanId);
+				executor.setPlanId(activePlanId);
 				String stepResult = executeStep(executor, stepInfo);
+				
 				result.append(stepResult).append("\n");
-
 			}
 
 			return result.toString();
 		}
 		catch (Exception e) {
 			log.error("Error in PlanningFlow", e);
+			
+			// Record failure in plan execution
+			PlanExecutionRecord record = getRecorder().getExecutionRecord(activePlanId);
+			if (record != null) {
+				record.setSummary(e.getMessage());
+				getRecorder().recordPlanExecution(record);
+			}
+			
 			return "Execution failed: " + e.getMessage();
 		}
 		finally {
 			chromeDriverService.cleanup();
 		}
+	}
+
+
+	/**
+	 * Initialize the plan execution record
+	 */
+	private PlanExecutionRecord getOrCreatePlanExecutionRecord() {
+		PlanExecutionRecord record = getRecorder().getExecutionRecord(activePlanId);
+		if (record == null) {
+			record = new PlanExecutionRecord();
+			record.setPlanId(activePlanId);
+			record.setStartTime(LocalDateTime.now());
+			getRecorder().recordPlanExecution(record);
+		}
+		return record;	
+
+	}
+	
+	/**
+	 * Record the start of plan execution
+	 * 
+	 * @param inputText The input text that initiated the plan
+	 */
+	private void recordPlanStart(String inputText) {
+		PlanExecutionRecord record = getOrCreatePlanExecutionRecord();
+		record.setUserRequest(inputText);
+		record.setTitle("Plan for: " + 
+			(inputText != null ? 
+				inputText.substring(0, Math.min(inputText.length(), 50)) + 
+				(inputText.length() > 50 ? "..." : "") : 
+				"Unknown request"));
+		
+		// Record initial plan execution
+		getRecorder().recordPlanExecution(record);
+	}
+	
+	/**
+	 * Update plan record with details from the created plan
+	 */
+	private void updatePlanRecordWithPlanDetails() {
+		if (planningTool.getPlans().containsKey(activePlanId)) {
+			Map<String, Object> planData = planningTool.getPlans().get(activePlanId);
+			PlanExecutionRecord record = getRecorder().getExecutionRecord(activePlanId);
+			
+			if (record != null) {
+				if (planData.containsKey("title")) {
+					record.setTitle((String) planData.get("title"));
+				}
+				
+				if (planData.containsKey("steps")) {
+					@SuppressWarnings("unchecked")
+					List<String> steps = (List<String>) planData.get("steps");
+					record.setSteps(steps);
+				}
+				
+				// Record updated plan execution
+				getRecorder().recordPlanExecution(record);
+			}
+		}
+	}
+	
+
+	
+	/**
+	 * Record plan completion
+	 * 
+	 * @param summary The summary of the plan execution
+	 */
+	private void recordPlanCompletion(String summary) {
+		getRecorder().recordPlanCompletion(activePlanId, summary);
 	}
 
 	public void createInitialPlan(String request) {
