@@ -500,7 +500,6 @@ public class SubGraphTest {
 
 	}
 
-
 	@Test
 	public void testOtherCreateSubgraph2() throws Exception {
 		SaverConfig saver = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
@@ -508,35 +507,35 @@ public class SubGraphTest {
 		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
 		OverAllState overAllState = getOverAllState();
 		var workflowChild = new StateGraph().addNode("step_1", _makeNode("child:step1"))
-				.addNode("step_2", _makeNode("child:step2"))
-				.addNode("step_3", _makeNode("child:step3"))
-				.addEdge(START, "step_1")
-				.addEdge("step_1", "step_2")
-				.addEdge("step_2", "step_3")
-				.addEdge("step_3", END)
-				// .compile(compileConfig)
-				;
+			.addNode("step_2", _makeNode("child:step2"))
+			.addNode("step_3", _makeNode("child:step3"))
+			.addEdge(START, "step_1")
+			.addEdge("step_1", "step_2")
+			.addEdge("step_2", "step_3")
+			.addEdge("step_3", END)
+		// .compile(compileConfig)
+		;
 
 		var workflowParent = new StateGraph(overAllState).addNode("step_1", _makeNode("step1"))
-				.addNode("step_2", _makeNode("step2"))
-				.addNode("step_3", _makeNode("step3"))
-				.addNode("subgraph", AsyncNodeActionWithConfig.node_async((t, config) -> {
-                    //Reference the parent class Overallstate or create a new one
-                    workflowChild.setOverAllState(t);
-					return workflowChild.compile().invoke(Map.of()).orElseThrow().data();
-                }))
-				.addEdge(START, "step_1")
-				.addEdge("step_1", "step_2")
-				.addEdge("step_2", "subgraph")
-				.addEdge("subgraph", "step_3")
-				.addEdge("step_3", END)
-				.compile(compileConfig);
+			.addNode("step_2", _makeNode("step2"))
+			.addNode("step_3", _makeNode("step3"))
+			.addNode("subgraph", AsyncNodeActionWithConfig.node_async((t, config) -> {
+				// Reference the parent class Overallstate or create a new one
+				workflowChild.setOverAllState(t);
+				return workflowChild.compile().invoke(Map.of()).orElseThrow().data();
+			}))
+			.addEdge(START, "step_1")
+			.addEdge("step_1", "step_2")
+			.addEdge("step_2", "subgraph")
+			.addEdge("subgraph", "step_3")
+			.addEdge("step_3", END)
+			.compile(compileConfig);
 
 		var result = workflowParent.stream()
-				.stream()
-				.peek(n -> log.info("{}", n))
-				.reduce((a, b) -> b)
-				.map(NodeOutput::state);
+			.stream()
+			.peek(n -> log.info("{}", n))
+			.reduce((a, b) -> b)
+			.map(NodeOutput::state);
 
 		assertTrue(result.isPresent());
 	}

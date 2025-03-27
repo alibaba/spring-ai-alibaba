@@ -215,8 +215,6 @@ public class StateGraph {
 		return stateSerializer.stateFactory();
 	}
 
-
-
 	/**
 	 * /** Adds a node to the graph.
 	 * @param id the identifier of the node
