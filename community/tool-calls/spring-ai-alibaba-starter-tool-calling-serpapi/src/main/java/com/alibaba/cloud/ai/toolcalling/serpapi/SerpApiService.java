@@ -53,13 +53,19 @@ public class SerpApiService implements Function<SerpApiService.Request, SerpApiS
 
 	private final String engine;
 
+	private static final int MEMORY_SIZE = 5;
+
+	private static final int BYTE_SIZE = 1024;
+
+	private static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
+
 	public SerpApiService(SerpApiProperties properties) {
 		this.apikey = properties.getApikey();
 		this.engine = properties.getEngine();
 		this.webClient = WebClient.builder()
 			.baseUrl(SERP_API_URL)
 			.defaultHeader(HttpHeaders.USER_AGENT, USER_AGENT_VALUE)
-			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024))
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_MEMORY_SIZE))
 			.build();
 	}
 

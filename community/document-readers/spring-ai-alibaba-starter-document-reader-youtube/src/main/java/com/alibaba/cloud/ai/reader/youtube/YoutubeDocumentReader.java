@@ -49,9 +49,15 @@ public class YoutubeDocumentReader implements DocumentReader {
 
 	private final String resourcePath;
 
+	private static final int MEMORY_SIZE = 5;
+
+	private static final int BYTE_SIZE = 1024;
+
+	private static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
+
 	private static final WebClient WEB_CLIENT = WebClient.builder()
 		.defaultHeader("Accept-Language", "en-US")
-		.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024))
+		.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_MEMORY_SIZE))
 		.build();
 
 	public YoutubeDocumentReader(String resourcePath) {

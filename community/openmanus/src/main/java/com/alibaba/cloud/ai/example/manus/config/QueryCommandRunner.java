@@ -46,7 +46,8 @@ public class QueryCommandRunner implements CommandLineRunner {
 			}
 
 			planningFlow.setActivePlanId("plan_" + System.currentTimeMillis());
-			planningFlow.execute(query);
+			String result = planningFlow.execute(query);
+			System.out.println("plan : " + planningFlow.getConversationId() + " Result: " + result);
 		}
 
 		scanner.close();
