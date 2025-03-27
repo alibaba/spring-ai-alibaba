@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.example.helloworld.tool.Plan;
+import com.alibaba.cloud.ai.example.helloworld.tool.PlanningTool;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
@@ -29,14 +30,21 @@ import org.springframework.ai.chat.messages.Message;
 
 public class ControllerAgent implements NodeAction {
 
+	private PlanningTool planningTool;
+
 	@Override
 	public Map<String, Object> apply(OverAllState t) throws Exception {
-		Plan plan = (Plan)t.value("plan").orElseThrow();
-		List<Message> messages = (List<Message>) t.value("messages").orElseThrow();
-		String promptForNextStep = "Plan completed.";
+
+		List<Message> messages = (List<Message>)t.value("messages").orElseThrow();
+		AssistantMessage assistantMessage = (AssistantMessage)messages.get(messages.size() - 1);
+		String planId = assistantMessage.getText();
+		Plan plan = planningTool.getPlans(planId);
+		String promptForNextStep;
 		if (!plan.isFinished()) {
 			String step = plan.nextStep();
 			promptForNextStep = "What is the next step for " + step + "?";
+		} else {
+			promptForNextStep = "Plan completed.";
 		}
 		t.value("prompt_for_next_step", promptForNextStep);
 		return Map.of();
@@ -44,6 +52,7 @@ public class ControllerAgent implements NodeAction {
 
 	public String think(OverAllState state) {
 		Plan plan = (Plan)state.value("plan").orElseThrow();
+
 		if (plan.isFinished()) {
 			return "end";
 		}

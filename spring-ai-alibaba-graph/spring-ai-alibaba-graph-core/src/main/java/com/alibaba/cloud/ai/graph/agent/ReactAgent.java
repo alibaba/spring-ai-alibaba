@@ -108,7 +108,6 @@ public class ReactAgent {
 		if (state == null) {
 			OverAllState defaultState = new OverAllState();
 			defaultState.registerKeyAndStrategy("messages", List::of);
-			defaultState.registerKeyAndStrategy("react_output", (o1, o2) -> o1);
 			this.state = defaultState;
 		}
 
