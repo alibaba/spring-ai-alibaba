@@ -47,13 +47,19 @@ public class BingSearchService implements Function<BingSearchService.Request, Bi
 
 	private final WebClient webClient;
 
+	private static final int MEMORY_SIZE = 5;
+
+	private static final int BYTE_SIZE = 1024;
+
+	private static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
+
 	public BingSearchService(BingSearchProperties properties) {
 		assert StringUtils.hasText(properties.getToken()) && properties.getToken().length() == 32;
 		this.webClient = WebClient.builder()
 			.defaultHeader(HttpHeaders.USER_AGENT,
 					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
 			.defaultHeader(BingSearchProperties.OCP_APIM_SUBSCRIPTION_KEY, properties.getToken())
-			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024))
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_MEMORY_SIZE))
 			.build();
 	}
 

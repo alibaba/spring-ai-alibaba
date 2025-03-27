@@ -54,31 +54,48 @@ public class DashScopeDocumentTransformer implements DocumentTransformer {
 	}
 
 	private List<Document> doSplitDocuments(List<Document> documents) {
+		validateDocuments(documents);
+		Document document = documents.get(0);
+
+		ResponseEntity<DashScopeApi.DocumentSplitResponse> splitResponseEntity = dashScopeApi.documentSplit(document,
+				options);
+		validateSplitResponse(splitResponseEntity);
+
+		DashScopeApi.DocumentSplitResponse splitResponse = splitResponseEntity.getBody();
+		validateChunkResult(splitResponse);
+
+		List<DashScopeApi.DocumentSplitResponse.DocumentChunk> chunkList = splitResponse.chunkService().chunkResult();
+		List<Document> documentList = new ArrayList<>();
+
+		chunkList.forEach(e -> {
+			Document chunk = new Document(document.getId() + "_" + e.chunkId(), e.content(), document.getMetadata());
+			documentList.add(chunk);
+		});
+
+		return documentList;
+	}
+
+	private void validateDocuments(List<Document> documents) {
 		if (CollectionUtils.isEmpty(documents)) {
 			throw new RuntimeException("Documents must not be null");
 		}
 		if (documents.size() > 1) {
 			throw new RuntimeException("Just support one Document");
 		}
-		Document document = documents.get(0);
-		ResponseEntity<DashScopeApi.DocumentSplitResponse> splitResponseEntity = dashScopeApi.documentSplit(document,
-				options);
+	}
+
+	private void validateSplitResponse(ResponseEntity<DashScopeApi.DocumentSplitResponse> splitResponseEntity) {
 		if (splitResponseEntity == null) {
 			throw new DashScopeException(ErrorCodeEnum.SPLIT_DOCUMENT_ERROR);
 		}
-		DashScopeApi.DocumentSplitResponse splitResponse = splitResponseEntity.getBody();
+	}
+
+	private void validateChunkResult(DashScopeApi.DocumentSplitResponse splitResponse) {
 		if (splitResponse == null || splitResponse.chunkService() == null
 				|| CollectionUtils.isEmpty(splitResponse.chunkService().chunkResult())) {
 			logger.error("DashScopeDocumentTransformer NoSplitResult");
 			throw new DashScopeException(ErrorCodeEnum.SPLIT_DOCUMENT_ERROR);
 		}
-		List<DashScopeApi.DocumentSplitResponse.DocumentChunk> chunkList = splitResponse.chunkService().chunkResult();
-		List<Document> documentList = new ArrayList<>();
-		chunkList.forEach(e -> {
-			Document chunk = new Document(document.getId() + "_" + e.chunkId(), e.content(), document.getMetadata());
-			documentList.add(chunk);
-		});
-		return documentList;
 	}
 
 	@Override
