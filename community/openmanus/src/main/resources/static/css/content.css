@@ -1,0 +1,64 @@
+/* content.css - 主要内容区域样式 */
+
+/* 内容头部 */
+.content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* 将项目对齐到顶部 */
+    padding: 16px 24px;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #fafafa; /* 头部略微不同的背景色 */
+}
+
+.header-title-section h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #1f1f1f;
+}
+
+.knowledge-suggestion {
+    font-size: 12px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.knowledge-suggestion .icon {
+    margin-right: 4px;
+    color: #fbbc05; /* 黄色灯泡图标 */
+}
+
+.knowledge-suggestion .badge {
+    background-color: #e8f0fe;
+    color: #1967d2;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    font-weight: 500;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* 按钮间距 */
+    margin-top: 4px; /* 与标题对齐（如需要） */
+}
+
+.action-btn {
+    background: none;
+    border: 1px solid #dcdcdc;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.action-btn:hover {
+    background-color: #f5f5f5;
+}
