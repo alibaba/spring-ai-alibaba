@@ -1,0 +1,124 @@
+/* sidebar.css - 左侧边栏样式 */
+
+/* 侧边栏容器 */
+.sidebar {
+    width: 260px;
+    background-color: #f7f7f7; /* 略微偏白的侧边栏 */
+    border-right: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    padding: 15px 8px;
+}
+
+/* 顶部图标 */
+.sidebar-top-icons {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0;
+    margin-bottom: 15px;
+}
+
+.sidebar-top-icons .icon {
+    font-size: 18px;
+    color: #555;
+}
+
+/* 新建任务按钮 */
+.new-task-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* 快捷键右对齐 */
+    background-color: #fff;
+    border: 1px solid #dcdcdc;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    margin-bottom: 15px;
+    transition: background-color 0.2s ease;
+}
+
+.new-task-btn:hover {
+    background-color: #f5f5f5;
+}
+
+.new-task-btn .plus-icon {
+    font-size: 16px;
+    margin-right: 8px;
+    font-weight: bold;
+}
+
+.new-task-btn .shortcut {
+    color: #888;
+    font-size: 12px;
+}
+
+/* 任务列表 */
+.task-list {
+    list-style: none;
+    flex-grow: 1; /* 占据剩余空间 */
+    overflow-y: auto; /* 列表过长时允许滚动 */
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 8px;
+    margin-bottom: 4px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.task-item:hover {
+    background-color: #ededed;
+}
+
+.task-item.selected {
+    background-color: #e6e6e6; /* 选中项的高亮颜色 */
+}
+
+.task-icon {
+    margin-right: 10px;
+    font-size: 18px;
+    flex-shrink: 0;
+    width: 24px;
+    text-align: center;
+}
+
+.task-details {
+    flex-grow: 1;
+    overflow: hidden; /* 防止长文本破坏布局 */
+}
+
+.task-title {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.task-preview {
+    font-size: 12px;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.task-time {
+    font-size: 11px;
+    color: #888;
+    margin-left: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* 侧边栏底部 */
+.sidebar-bottom {
+    /* 侧边栏底部样式（如有需要） */
+}
