@@ -218,19 +218,6 @@ public class StateGraph {
 
 
 	/**
-	 * Sets a conditional entry point of the graph.
-	 * @param condition the edge condition
-	 * @param mappings the edge mappings
-	 * @throws GraphStateException if the edge mappings is null or empty
-	 * @deprecated use addConditionalEdge(START, consition, mappings)
-	 */
-	@Deprecated(forRemoval = true)
-	public void setConditionalEntryPoint(AsyncEdgeAction condition, Map<String, String> mappings)
-			throws GraphStateException {
-		addConditionalEdges(START, condition, mappings);
-	}
-
-	/**
 	 * /** Adds a node to the graph.
 	 * @param id the identifier of the node
 	 * @param action the action to be performed by the node
