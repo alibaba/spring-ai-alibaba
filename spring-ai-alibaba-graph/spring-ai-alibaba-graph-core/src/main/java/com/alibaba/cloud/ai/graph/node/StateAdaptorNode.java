@@ -18,12 +18,15 @@ package com.alibaba.cloud.ai.graph.node;
 
 import java.util.Map;
 
+import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 
 public class StateAdaptorNode implements NodeAction {
 
 	NodeAction nodeAction;
+	CompiledGraph compiledGraph;
 
 	public StateAdaptorNode(NodeAction nodeAction) {
 		this.nodeAction = nodeAction;
