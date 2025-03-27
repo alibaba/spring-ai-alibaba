@@ -98,7 +98,6 @@ public class DashScopeDocumentTransformer implements DocumentTransformer {
 		}
 	}
 
-
 	@Override
 	public List<Document> apply(List<Document> documents) {
 		return this.doSplitDocuments(documents);
