@@ -82,7 +82,7 @@ public class DashScopeDocumentCloudReader implements DocumentReader {
 					DashScopeApi.QueryFileResponseData queryFileResponseData = response.getBody().data();
 					String fileStatus = queryFileResponseData.status();
 					if ("PARSE_SUCCESS".equals(fileStatus)) {
-						// downloadn files
+						// download files
 						String parseResult = dashScopeApi.getFileParseResult(readerConfig.getCategoryId(),
 								new DashScopeApi.UploadRequest.QueryFileRequest(fileId));
 						return List.of(toDocument(fileId, parseResult));
