@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.flow;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
 import java.util.List;
 import java.util.Map;
@@ -23,10 +24,13 @@ import java.util.Map;
 import org.springframework.ai.tool.ToolCallback;
 
 public abstract class BaseFlow {
-
+	
 	protected List<BaseAgent> agents;
 
-	public BaseFlow(List<BaseAgent> agents, Map<String, Object> data) {
+	protected PlanExecutionRecorder recorder;
+
+	public BaseFlow(List<BaseAgent> agents, Map<String, Object> data, PlanExecutionRecorder recorder) {
+		this.recorder = recorder;
 		this.agents = agents;
 		data.put("agents", agents);
 	}
@@ -35,4 +39,7 @@ public abstract class BaseFlow {
 
 	public abstract List<ToolCallback> getToolCallList();
 
+	protected PlanExecutionRecorder getRecorder() {
+		return recorder;
+	}
 }

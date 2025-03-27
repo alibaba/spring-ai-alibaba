@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.tool.Bash;
 import com.alibaba.cloud.ai.example.manus.tool.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.Summary;
 import org.slf4j.Logger;
@@ -26,6 +25,9 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
+
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 
 import java.util.HashMap;
 import java.util.List;
@@ -40,8 +42,10 @@ public class PythonAgent extends ToolCallAgent {
 
 	private String lastResult;
 
-	public PythonAgent(LlmService llmService, ToolCallingManager toolCallingManager, String workingDirectory) {
-		super(llmService, toolCallingManager);
+	// New constructor with PlanExecutionRecorder
+	public PythonAgent(LlmService llmService, ToolCallingManager toolCallingManager, 
+			String workingDirectory, PlanExecutionRecorder record) {
+		super(llmService, toolCallingManager,record);
 		this.workingDirectory = workingDirectory;
 	}
 

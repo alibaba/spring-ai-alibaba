@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.Message;
@@ -62,12 +63,10 @@ public class ToolCallAgent extends ReActAgent {
 
 	private Prompt userPrompt;
 
-	public ToolCallAgent(LlmService llmService, ToolCallingManager toolCallingManager) {
-		super(llmService);
+	public ToolCallAgent(LlmService llmService, ToolCallingManager toolCallingManager, PlanExecutionRecorder planExecutionRecorder) {
+		super(llmService, planExecutionRecorder);
 		this.toolCallingManager = toolCallingManager;
 	}
-
-	@Override
 
 	/**
 	 * 执行思考过程 实现说明： 1. 准备思考所需的消息列表 2. 设置工具调用选项 3. 构建提示并获取LLM响应 4. 分析响应中的工具调用 5.
@@ -76,6 +75,7 @@ public class ToolCallAgent extends ReActAgent {
 	 * @return true 如果有工具需要调用，false 如果不需要执行任何工具
 	 */
 
+	 @Override
 	protected boolean think() {
 		try {
 			List<Message> messages = new ArrayList<>();
@@ -228,7 +228,7 @@ public class ToolCallAgent extends ReActAgent {
 	}
 
 	public List<ToolCallback> getToolCallList() {
-		return List.of(GoogleSearch.getFunctionToolCallback(), FileSaver.getFunctionToolCallback(),
+		return List.of(FileSaver.getFunctionToolCallback(),
 				PythonExecute.getFunctionToolCallback(),
 				Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId()));
 	}

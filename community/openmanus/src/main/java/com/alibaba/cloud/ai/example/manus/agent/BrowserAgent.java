@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
@@ -42,9 +43,11 @@ public class BrowserAgent extends ToolCallAgent {
 
 	private final ChromeDriverService chromeService;
 
+
+	// New constructor with PlanExecutionRecord
 	public BrowserAgent(LlmService llmService, ToolCallingManager toolCallingManager,
-			ChromeDriverService chromeService) {
-		super(llmService, toolCallingManager);
+			ChromeDriverService chromeService, PlanExecutionRecorder record) {
+		super(llmService, toolCallingManager,record);
 		this.chromeService = chromeService;
 	}
 
@@ -213,7 +216,7 @@ public class BrowserAgent extends ToolCallAgent {
 	}
 
 	public List<ToolCallback> getToolCallList() {
-		return List.of(GoogleSearch.getFunctionToolCallback(), FileSaver.getFunctionToolCallback(),
+		return List.of( FileSaver.getFunctionToolCallback(),
 				PythonExecute.getFunctionToolCallback(), BrowserUseTool.getFunctionToolCallback(chromeService),
 				Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId()));
 	}
