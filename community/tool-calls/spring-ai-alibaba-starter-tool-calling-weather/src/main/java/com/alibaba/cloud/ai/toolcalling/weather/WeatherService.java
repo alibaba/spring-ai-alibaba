@@ -49,6 +49,12 @@ public class WeatherService implements Function<WeatherService.Request, WeatherS
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
+	private static final int MEMORY_SIZE = 5;
+
+	private static final int BYTE_SIZE = 1024;
+
+	private static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
+
 	public WeatherService(WeatherProperties properties) {
 		this.webClient = WebClient.builder()
 			.defaultHeader(HttpHeaders.USER_AGENT, HttpHeaders.USER_AGENT)
@@ -57,7 +63,7 @@ public class WeatherService implements Function<WeatherService.Request, WeatherS
 			.defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
 			.defaultHeader(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9,ja;q=0.8")
 			.defaultHeader("key", properties.getApiKey())
-			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024))
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_MEMORY_SIZE))
 			.build();
 	}
 
