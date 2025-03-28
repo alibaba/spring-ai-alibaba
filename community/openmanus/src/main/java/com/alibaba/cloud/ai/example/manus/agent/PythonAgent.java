@@ -15,10 +15,13 @@
  */
 package com.alibaba.cloud.ai.example.manus.agent;
 
+import com.alibaba.cloud.ai.example.manus.tool.support.PromptLoader;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.tool.Bash;
 import com.alibaba.cloud.ai.example.manus.tool.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.Summary;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.Message;
@@ -26,11 +29,6 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class PythonAgent extends ToolCallAgent {
 
@@ -53,19 +51,7 @@ public class PythonAgent extends ToolCallAgent {
 
 	@Override
 	protected Message getNextStepMessage() {
-		String nextStepPrompt = """
-				What should I do next to achieve my goal?
-
-				Current Execution State:
-				- Working Directory: {working_directory}
-				- Last Execution Result: {last_result}
-
-				Remember:
-				1. Use PythonExecute for direct Python code execution
-				2. IMPORTANT: You MUST use at least one tool in your response to make progress!
-
-
-				""";
+		String nextStepPrompt = PromptLoader.loadPromptFromClasspath("prompts/python_agent_next_step_prompt.md");
 
 		PromptTemplate promptTemplate = new PromptTemplate(nextStepPrompt);
 		Message userMessage = promptTemplate.createMessage(getData());
@@ -75,34 +61,7 @@ public class PythonAgent extends ToolCallAgent {
 	@Override
 	protected Message addThinkPrompt(List<Message> messages) {
 		super.addThinkPrompt(messages);
-		String systemPrompt = """
-				You are an AI agent specialized in Python programming and execution. Your goal is to accomplish Python-related tasks effectively and safely.
-
-				# Response Rules
-				1. CODE EXECUTION:
-				- Always validate inputs
-				- Handle exceptions properly
-				- Use appropriate Python libraries
-				- Follow Python best practices
-
-				2. ERROR HANDLING:
-				- Catch and handle exceptions
-				- Validate inputs and outputs
-				- Check for required dependencies
-				- Monitor execution state
-
-				3. TASK COMPLETION:
-				- Track progress in memory
-				- Verify results
-				- Clean up resources
-				- Provide clear summaries
-
-				4. BEST PRACTICES:
-				- Use virtual environments when needed
-				- Install required packages
-				- Follow PEP 8 guidelines
-				- Document code properly
-				""";
+		String systemPrompt = PromptLoader.loadPromptFromClasspath("prompts/python_agent_think_prompt.md");
 
 		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(systemPrompt);
 		Message systemMessage = promptTemplate.createMessage(getData());

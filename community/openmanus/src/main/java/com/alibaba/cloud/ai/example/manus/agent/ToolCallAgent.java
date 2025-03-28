@@ -15,11 +15,11 @@
  */
 package com.alibaba.cloud.ai.example.manus.agent;
 
+import com.alibaba.cloud.ai.example.manus.tool.support.PromptLoader;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.Message;
-import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
 import com.alibaba.cloud.ai.example.manus.tool.GoogleSearch;
 import com.alibaba.cloud.ai.example.manus.tool.PythonExecute;
@@ -37,7 +37,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -99,39 +98,7 @@ public class ToolCallAgent extends ReActAgent {
 	 */
 	protected Message addThinkPrompt(List<Message> messages) {
 		super.addThinkPrompt(messages);
-		String stepPrompt = """
-				CURRENT PLAN STATUS:
-				{planStatus}
-
-				FOCUS ON CURRENT STEP:
-				You are now working on step {currentStepIndex} : {stepText}
-
-				EXECUTION GUIDELINES:
-				1. Focus ONLY on completing the current step's requirements
-				2. Use appropriate tools to accomplish the task
-				3. DO NOT proceed to next steps until current step is fully complete
-				4. Verify all requirements are met before marking as complete
-
-				COMPLETION PROTOCOL:
-				Once you have FULLY completed the current step:
-
-				1. MUST call Summary tool with following information:
-				- Detailed results of what was accomplished
-				- Any relevant data or metrics
-				- Status confirmation
-
-				2. The Summary tool call will automatically:
-				- Mark this step as complete
-				- Save the results
-				- Enable progression to next step
-				- terminate the current step
-
-				⚠️ IMPORTANT:
-				- Stay focused on current step only
-				- Do not skip or combine steps
-				- Only call Summary tool when current step is 100% complete
-				- Provide comprehensive summary before moving forward, including: all facts, data, and metrics
-				""";
+		String stepPrompt = PromptLoader.loadPromptFromClasspath("prompts/toolcall_agent_think_prompt.md");
 
 		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(stepPrompt);
 
@@ -148,10 +115,7 @@ public class ToolCallAgent extends ReActAgent {
 	 */
 	protected Message getNextStepMessage() {
 
-		String nextStepPrompt = """
-				What is the next step you would like to take?
-				Please provide the step number or the name of the next step.
-				""";
+		String nextStepPrompt = PromptLoader.loadPromptFromClasspath("prompts/toolcall_agent_next_step_prompt.md");
 
 		return new UserMessage(nextStepPrompt);
 	}

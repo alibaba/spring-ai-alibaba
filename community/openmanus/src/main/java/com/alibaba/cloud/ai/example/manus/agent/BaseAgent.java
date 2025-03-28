@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.tool.support.PromptLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -160,12 +161,8 @@ public abstract class BaseAgent {
 		// End current step
 		setState(AgentState.FINISHED);
 
-		String stuckPrompt = """
-				Agent response detected missing required tool calls.
-				Please ensure each response includes at least one tool call to progress the task.
-				Current step: %d
-				Execution status: Force terminated
-				""".formatted(currentStep);
+		String stuckPrompt = PromptLoader
+			.loadPromptFromClasspath("prompts/base_agent_handle_stuck_prompt.md").formatted(currentStep);
 
 		log.error(stuckPrompt);
 	}
