@@ -32,26 +32,6 @@ const ManusAPI = (() => {
     };
 
     /**
-     * 获取任务执行状态
-     * @param {string} planId - 计划ID
-     * @returns {Promise<Object>} - 包含执行状态和进度的响应
-     */
-    const getStatus = async (planId) => {
-        try {
-            const response = await fetch(`${BASE_URL}/status/${planId}`);
-
-            if (!response.ok) {
-                throw new Error(`获取状态失败: ${response.status}`);
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('获取状态失败:', error);
-            throw error;
-        }
-    };
-
-    /**
      * 获取详细的执行记录
      * @param {string} planId - 计划ID
      * @returns {Promise<Object>} - 包含详细执行记录的响应
@@ -74,7 +54,6 @@ const ManusAPI = (() => {
     // 返回公开的方法
     return {
         sendMessage,
-        getStatus,
         getDetails
     };
 })();
