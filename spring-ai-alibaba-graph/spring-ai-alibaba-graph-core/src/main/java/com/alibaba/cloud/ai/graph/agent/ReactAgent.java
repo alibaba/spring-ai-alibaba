@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
@@ -40,8 +41,11 @@ import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public class ReactAgent {
+
 	private LlmNode llmNode;
 	private ToolNode toolNode;
+	private StateGraph graph;
+
 
 	private String prompt;
 	private List<String> tools;
@@ -49,25 +53,29 @@ public class ReactAgent {
 	private int iterations = 0;
 	private CompileConfig compileConfig;
 	private OverAllState state;
-	private StateGraph graph;
+	private Function<OverAllState, Boolean> shouldContinueFunc;
 
-	public ReactAgent(LlmNode llmNode, ToolNode toolNode, int maxIterations, OverAllState state, CompileConfig compileConfig) throws GraphStateException {
+	public ReactAgent(LlmNode llmNode, ToolNode toolNode, int maxIterations, OverAllState state,
+			CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
 		this.max_iterations = maxIterations;
 		this.state = state;
 		this.compileConfig = compileConfig;
+		this.shouldContinueFunc = shouldContinueFunc;
 		this.graph = initGraph();
 	}
 
-	public ReactAgent(String prompt, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations) throws GraphStateException {
+	public ReactAgent(String prompt, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations)
+			throws GraphStateException {
 		this.llmNode = LlmNode.builder().chatClient(chatClient).promptTemplate(prompt).build();
 		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		this.max_iterations = maxIterations;
 		this.graph = initGraph();
 	}
 
-	public ReactAgent(String prompt, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations, OverAllState state, CompileConfig compileConfig) throws GraphStateException {
+	public ReactAgent(String prompt, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations,
+			OverAllState state, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
 		this.llmNode = LlmNode.builder().chatClient(chatClient).promptTemplate(prompt).build();
 		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		this.max_iterations = maxIterations;
@@ -76,23 +84,26 @@ public class ReactAgent {
 		this.graph = initGraph();
 	}
 
-	public ReactAgent(String prompt, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations) throws GraphStateException {
+	public ReactAgent(String prompt, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations)
+			throws GraphStateException {
 		this.llmNode = LlmNode.builder().chatClient(chatClient).promptTemplate(prompt).build();
 		this.toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
 		this.max_iterations = maxIterations;
 		this.graph = initGraph();
 	}
 
-	public ReactAgent(String prompt, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations, OverAllState state, CompileConfig compileConfig) throws GraphStateException {
+	public ReactAgent(String prompt, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations,
+			OverAllState state, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
 		this.llmNode = LlmNode.builder().chatClient(chatClient).promptTemplate(prompt).build();
 		this.toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
 		this.max_iterations = maxIterations;
 		this.state = state;
 		this.compileConfig = compileConfig;
+		this.shouldContinueFunc = shouldContinueFunc;
 		this.graph = initGraph();
 	}
 
-	public StateGraph getStateGraph()  {
+	public StateGraph getStateGraph() {
 		return graph;
 	}
 
@@ -101,6 +112,9 @@ public class ReactAgent {
 	}
 
 	public CompiledGraph getAndCompileGraph() throws GraphStateException {
+		if (this.compileConfig == null) {
+			return getStateGraph().compile();
+		}
 		return getStateGraph().compile(this.compileConfig);
 	}
 
@@ -112,11 +126,11 @@ public class ReactAgent {
 		}
 
 		StateGraph graph = new StateGraph(state)
-				.addNode("agent", node_async(this.llmNode))
-				.addNode("tool", node_async(this.toolNode))
-				.addEdge(START, "agent")
-				.addConditionalEdges("agent", edge_async(this::think), Map.of("continue", "tool", "end", END))
-				.addEdge("tool", "agent");
+			.addNode("agent", node_async(this.llmNode))
+			.addNode("tool", node_async(this.toolNode))
+			.addEdge(START, "agent")
+			.addConditionalEdges("agent", edge_async(this::think), Map.of("continue", "tool", "end", END))
+			.addEdge("tool", "agent");
 
 		return graph;
 	}
@@ -126,13 +140,137 @@ public class ReactAgent {
 			return "end";
 		}
 
+		if (shouldContinueFunc != null && !shouldContinueFunc.apply(state)) {
+			return "end";
+		}
+
 		List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
-		AssistantMessage message = (AssistantMessage)messages.get(messages.size() - 1);
+		AssistantMessage message = (AssistantMessage) messages.get(messages.size() - 1);
 		if (message.hasToolCalls()) {
 			return "continue";
 		}
 
 		return "end";
+	}
+
+	String getPrompt() {
+		return prompt;
+	}
+
+	void setPrompt(String prompt) {
+		this.prompt = prompt;
+	}
+
+	List<String> getTools() {
+		return tools;
+	}
+
+	void setTools(List<String> tools) {
+		this.tools = tools;
+	}
+
+	int getMax_iterations() {
+		return max_iterations;
+	}
+
+	void setMax_iterations(int max_iterations) {
+		this.max_iterations = max_iterations;
+	}
+
+	int getIterations() {
+		return iterations;
+	}
+
+	void setIterations(int iterations) {
+		this.iterations = iterations;
+	}
+
+	CompileConfig getCompileConfig() {
+		return compileConfig;
+	}
+
+	void setCompileConfig(CompileConfig compileConfig) {
+		this.compileConfig = compileConfig;
+	}
+
+	OverAllState getState() {
+		return state;
+	}
+
+	void setState(OverAllState state) {
+		this.state = state;
+	}
+
+	Function<OverAllState, Boolean> getShouldContinueFunc() {
+		return shouldContinueFunc;
+	}
+
+	void setShouldContinueFunc(Function<OverAllState, Boolean> shouldContinueFunc) {
+		this.shouldContinueFunc = shouldContinueFunc;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+		private ChatClient chatClient;
+		private String prompt;
+		private List<FunctionCallback> tools;
+		private ToolCallbackResolver resolver;
+		private int maxIterations = 10;
+		private CompileConfig compileConfig;
+		private OverAllState state;
+		private Function<OverAllState, Boolean> shouldContinueFunc;
+
+		public Builder chatClient(ChatClient chatClient) {
+			this.chatClient = chatClient;
+			return this;
+		}
+
+		public Builder prompt(String prompt) {
+			this.prompt = prompt;
+			return this;
+		}
+
+		public Builder tools(List<FunctionCallback> tools) {
+			this.tools = tools;
+			return this;
+		}
+
+		public Builder resolver(ToolCallbackResolver resolver) {
+			this.resolver = resolver;
+			return this;
+		}
+
+		public Builder maxIterations(int maxIterations) {
+			this.maxIterations = maxIterations;
+			return this;
+		}
+
+		public Builder state(OverAllState state) {
+			this.state = state;
+			return this;
+		}
+
+		public Builder compileConfig(CompileConfig compileConfig) {
+			this.compileConfig = compileConfig;
+			return this;
+		}
+
+		public Builder shouldContinueFunction(Function<OverAllState, Boolean> shouldContinueFunc) {
+			this.shouldContinueFunc = shouldContinueFunc;
+			return this;
+		}
+
+		public ReactAgent build() throws GraphStateException {
+			if (resolver != null) {
+				return new ReactAgent(prompt, chatClient, resolver, maxIterations, state, compileConfig, shouldContinueFunc);
+			} else if (tools != null) {
+				return new ReactAgent(prompt, chatClient, tools, maxIterations, state, compileConfig, shouldContinueFunc);
+			}
+			throw new IllegalArgumentException("Either tools or resolver must be provided");
+		}
 	}
 
 }

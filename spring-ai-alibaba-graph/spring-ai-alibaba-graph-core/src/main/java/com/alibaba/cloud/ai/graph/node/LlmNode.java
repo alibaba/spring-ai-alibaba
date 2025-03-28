@@ -34,24 +34,34 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.StringUtils;
 
 public class LlmNode implements NodeAction {
+
 	public static final String LLM_RESPONSE_KEY = "llm_response";
 
 	private String prompt;
+
 	private Map<String, Object> params = new HashMap<>();
+
 	private List<Message> messages = new ArrayList<>();
+
 	private List<Advisor> advisors = new ArrayList<>();
+
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	private String templateKey;
+
 	private String paramsKey;
+
 	private String messagesKey;
+
 	private String outputKey;
 
 	private ChatClient chatClient;
 
-	public LlmNode() {}
+	public LlmNode() {
+	}
 
-	public LlmNode(String prompt, Map<String, Object> params, List<Message> messages, List<Advisor> advisors, List<ToolCallback> toolCallbacks, ChatClient chatClient) {
+	public LlmNode(String prompt, Map<String, Object> params, List<Message> messages, List<Advisor> advisors,
+			List<ToolCallback> toolCallbacks, ChatClient chatClient) {
 		this.prompt = prompt;
 		this.params = params;
 		this.messages = messages;
@@ -96,25 +106,23 @@ public class LlmNode implements NodeAction {
 	}
 
 	public Flux<ChatResponse> stream() {
-		return chatClient
-				.prompt()
-				.user(prompt)
-				.messages(messages)
-				.advisors(advisors)
-				.tools(toolCallbacks)
-				.stream()
-				.chatResponse();
+		return chatClient.prompt()
+			.user(prompt)
+			.messages(messages)
+			.advisors(advisors)
+			.tools(toolCallbacks)
+			.stream()
+			.chatResponse();
 	}
 
 	public ChatResponse call() {
-		return chatClient
-				.prompt()
-				.user(prompt)
-				.messages(messages)
-				.advisors(advisors)
-				.tools(toolCallbacks)
-				.call()
-				.chatResponse();
+		return chatClient.prompt()
+			.user(prompt)
+			.messages(messages)
+			.advisors(advisors)
+			.tools(toolCallbacks)
+			.call()
+			.chatResponse();
 	}
 
 	public static Builder builder() {
@@ -122,17 +130,25 @@ public class LlmNode implements NodeAction {
 	}
 
 	public static class Builder {
+
 		private String promptTemplateKey;
+
 		private String paramsKey;
+
 		private String messagesKey;
+
 		private String outputKey;
 
 		private ChatClient chatClient;
 
 		private String promptTemplate;
+
 		private Map<String, Object> params;
+
 		private List<Message> messages;
+
 		private List<Advisor> advisors;
+
 		private List<ToolCallback> toolCallbacks;
 
 		public Builder promptTemplate(String promptTemplate) {
@@ -207,5 +223,7 @@ public class LlmNode implements NodeAction {
 			llmNode.chatClient = this.chatClient;
 			return llmNode;
 		}
+
 	}
+
 }

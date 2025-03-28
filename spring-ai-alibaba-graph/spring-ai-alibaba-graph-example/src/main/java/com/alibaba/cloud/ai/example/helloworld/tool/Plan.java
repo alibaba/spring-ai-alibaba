@@ -19,8 +19,11 @@ package com.alibaba.cloud.ai.example.helloworld.tool;
 import java.util.List;
 
 public class Plan {
+
 	private int currentStep = 0;
+
 	private String planId;
+
 	private List<String> steps;
 
 	public Plan(String planId, List<String> steps) {
@@ -33,6 +36,7 @@ public class Plan {
 	}
 
 	public boolean isFinished() {
-		return currentStep == steps.size()-1;
+		return currentStep == steps.size() - 1;
 	}
+
 }

@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 public class StateAdaptorNode implements NodeAction {
 
 	NodeAction nodeAction;
+
 	CompiledGraph compiledGraph;
 
 	public StateAdaptorNode(NodeAction nodeAction) {
@@ -41,4 +42,5 @@ public class StateAdaptorNode implements NodeAction {
 
 		return updatedSubState;
 	}
+
 }
