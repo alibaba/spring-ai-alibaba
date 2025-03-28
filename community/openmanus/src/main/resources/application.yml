@@ -4,7 +4,6 @@ server:
 spring:
   application:
     name: spring-ai-alibaba-openmanus
-
   ai:
     openai:
       base-url: https://dashscope.aliyuncs.com/compatible-mode
@@ -12,3 +11,12 @@ spring:
       chat:
         options:
           model: qwen-max-latest
+    mcp:
+      client:
+        request-timeout: 60000
+        stdio:
+          servers-configuration: classpath:/mcp-servers-config.json
+
+manus:
+  browser:
+    headless: false # 设置为 true 则启用无头模式
