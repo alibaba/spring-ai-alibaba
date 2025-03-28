@@ -37,11 +37,6 @@ import java.util.Map;
  *    - completed: 是否完成
  *    - progress: 执行进度（百分比）
  *    - summary: 执行总结
- *    - statusCounts: 各状态的统计数据
- * 
- * @see PlanningFlow
- * @see AgentExecutionRecord
- * @see JsonSerializable
  */
 public class PlanExecutionRecord implements JsonSerializable {
     
@@ -66,35 +61,14 @@ public class PlanExecutionRecord implements JsonSerializable {
     // 计划的步骤列表
     private List<String> steps;
     
-    // 步骤状态列表（NOT_STARTED, IN_PROGRESS, COMPLETED, BLOCKED）
-    private List<String> stepStatuses;
-    
-    // 步骤备注列表
-    private List<String> stepNotes;
-    
-    // 与每个步骤关联的智能体名称
-    private List<String> stepAgents;
-    
     // 当前执行的步骤索引
     private Integer currentStepIndex;
-
-    // 执行者键列表
-    private List<String> executorKeys;
-    
-    // 共享结果状态
-    private Map<String, Object> resultState;
     
     // 是否完成
     private boolean completed;
     
-    // 执行进度（百分比）
-    private double progress;
-    
     // 执行总结
     private String summary;
-    
-    // 各状态的统计数据
-    private Map<String, Integer> statusCounts;
 
     // List to maintain the sequence of agent executions
     private List<AgentExecutionRecord> agentExecutionSequence;
@@ -104,14 +78,7 @@ public class PlanExecutionRecord implements JsonSerializable {
      */
     public PlanExecutionRecord() {
         this.steps = new ArrayList<>();
-        this.stepStatuses = new ArrayList<>();
-        this.stepNotes = new ArrayList<>();
-        this.stepAgents = new ArrayList<>();
-        this.executorKeys = new ArrayList<>();
-        this.resultState = new HashMap<>();
-        this.statusCounts = new HashMap<>();
         this.startTime = LocalDateTime.now();
-        this.progress = 0.0;
         this.completed = false;
         this.agentExecutionSequence = new ArrayList<>();
     }
@@ -136,40 +103,8 @@ public class PlanExecutionRecord implements JsonSerializable {
      */
     public void addStep(String step, String agentName) {
         this.steps.add(step);
-        this.stepStatuses.add(PlanStepStatus.NOT_STARTED.getValue());
-        this.stepNotes.add("");
-        this.stepAgents.add(agentName);
-        updateProgress();
     }
     
-    /**
-     * 更新步骤状态
-     * @param stepIndex 步骤索引
-     * @param status 新状态
-     */
-    public void updateStepStatus(int stepIndex, String status) {
-        if (stepIndex >= 0 && stepIndex < stepStatuses.size()) {
-            stepStatuses.set(stepIndex, status);
-            updateProgress();
-            updateStatusCounts();
-        }
-    }
-    
-    /**
-     * 添加步骤备注
-     * @param stepIndex 步骤索引
-     * @param note 备注内容
-     */
-    public void addStepNote(int stepIndex, String note) {
-        if (stepIndex >= 0 && stepIndex < stepNotes.size()) {
-            String existingNote = stepNotes.get(stepIndex);
-            if (existingNote == null || existingNote.isEmpty()) {
-                stepNotes.set(stepIndex, note);
-            } else {
-                stepNotes.set(stepIndex, existingNote + "\n" + note);
-            }
-        }
-    }
     
     /**
      * 添加智能体执行记录
@@ -191,52 +126,6 @@ public class PlanExecutionRecord implements JsonSerializable {
     public void setAgentExecutionSequence(List<AgentExecutionRecord> agentExecutionSequence) {
         this.agentExecutionSequence = agentExecutionSequence;
     }
-
-    /**
-     * 设置共享结果状态的值
-     * @param key 键
-     * @param value 值
-     */
-    public void setResultState(String key, Object value) {
-        this.resultState.put(key, value);
-    }
-    
-    /**
-     * 获取共享结果状态的值
-     * @param key 键
-     * @return 值
-     */
-    public Object getResultState(String key) {
-        return this.resultState.get(key);
-    }
-    
-    /**
-     * 计算和更新进度
-     */
-    private void updateProgress() {
-        int completed = 0;
-        for (String status : stepStatuses) {
-            if (PlanStepStatus.COMPLETED.getValue().equals(status)) {
-                completed++;
-            }
-        }
-        
-        this.progress = steps.size() > 0 ? (completed / (double) steps.size()) * 100.0 : 0.0;
-        this.completed = completed == steps.size() && !steps.isEmpty();
-    }
-    
-    /**
-     * 更新状态统计数据
-     */
-    private void updateStatusCounts() {
-        for (String status : PlanStepStatus.getAllStatuses()) {
-            statusCounts.put(status, 0);
-        }
-        
-        for (String status : stepStatuses) {
-            statusCounts.put(status, statusCounts.getOrDefault(status, 0) + 1);
-        }
-    }
     
     /**
      * 完成执行，设置结束时间
@@ -245,58 +134,6 @@ public class PlanExecutionRecord implements JsonSerializable {
         this.endTime = LocalDateTime.now();
         this.completed = true;
         this.summary = summary;
-    }
-    
-    /**
-     * 生成计划文本表示
-     * @return 计划的文本表示
-     */
-    public String generatePlanText() {
-        StringBuilder planText = new StringBuilder();
-        planText.append("Plan: ").append(title).append(" (ID: ").append(planId).append(")\n");
-        
-        for (int i = 0; i < planText.length() - 1; i++) {
-            planText.append("=");
-        }
-        planText.append("\n\n");
-        
-        int completed = statusCounts.getOrDefault(PlanStepStatus.COMPLETED.getValue(), 0);
-        int total = steps.size();
-        
-        planText.append(String.format("Progress: %d/%d steps completed (%.1f%%)\n", completed, total, progress));
-        planText.append(String.format("Status: %d completed, %d in progress, ", 
-                statusCounts.getOrDefault(PlanStepStatus.COMPLETED.getValue(), 0),
-                statusCounts.getOrDefault(PlanStepStatus.IN_PROGRESS.getValue(), 0)));
-        planText.append(String.format("%d blocked, %d not started\n\n", 
-                statusCounts.getOrDefault(PlanStepStatus.BLOCKED.getValue(), 0),
-                statusCounts.getOrDefault(PlanStepStatus.NOT_STARTED.getValue(), 0)));
-        planText.append("Steps:\n");
-        
-        Map<String, String> statusMarks = PlanStepStatus.getStatusMarks();
-        
-        for (int i = 0; i < steps.size(); i++) {
-            String step = steps.get(i);
-            String status = i < stepStatuses.size() ? stepStatuses.get(i) : PlanStepStatus.NOT_STARTED.getValue();
-            String notes = i < stepNotes.size() ? stepNotes.get(i) : "";
-            String agent = i < stepAgents.size() ? stepAgents.get(i) : "";
-            String statusMark = statusMarks.getOrDefault(status, statusMarks.get(PlanStepStatus.NOT_STARTED.getValue()));
-            
-            planText.append(String.format("%d. %s %s", i, statusMark, step));
-            if (!agent.isEmpty()) {
-                planText.append(" [Agent: ").append(agent).append("]");
-            }
-            planText.append("\n");
-            
-            if (notes != null && !notes.isEmpty()) {
-                planText.append("   Notes: ").append(notes).append("\n");
-            }
-        }
-        
-        if (summary != null && !summary.isEmpty()) {
-            planText.append("\nSummary:\n").append(summary);
-        }
-        
-        return planText.toString();
     }
 
     /**
@@ -380,33 +217,6 @@ public class PlanExecutionRecord implements JsonSerializable {
 
     public void setSteps(List<String> steps) {
         this.steps = steps;
-        updateProgress();
-    }
-
-    public List<String> getStepStatuses() {
-        return stepStatuses;
-    }
-
-    public void setStepStatuses(List<String> stepStatuses) {
-        this.stepStatuses = stepStatuses;
-        updateProgress();
-        updateStatusCounts();
-    }
-
-    public List<String> getStepNotes() {
-        return stepNotes;
-    }
-
-    public void setStepNotes(List<String> stepNotes) {
-        this.stepNotes = stepNotes;
-    }
-
-    public List<String> getStepAgents() {
-        return stepAgents;
-    }
-
-    public void setStepAgents(List<String> stepAgents) {
-        this.stepAgents = stepAgents;
     }
 
     public Integer getCurrentStepIndex() {
@@ -415,21 +225,6 @@ public class PlanExecutionRecord implements JsonSerializable {
 
     public void setCurrentStepIndex(Integer currentStepIndex) {
         this.currentStepIndex = currentStepIndex;
-    }
-    public List<String> getExecutorKeys() {
-        return executorKeys;
-    }
-
-    public void setExecutorKeys(List<String> executorKeys) {
-        this.executorKeys = executorKeys;
-    }
-
-    public Map<String, Object> getResultState() {
-        return resultState;
-    }
-
-    public void setResultState(Map<String, Object> resultState) {
-        this.resultState = resultState;
     }
 
     public boolean isCompleted() {
@@ -440,13 +235,6 @@ public class PlanExecutionRecord implements JsonSerializable {
         this.completed = completed;
     }
 
-    public double getProgress() {
-        return progress;
-    }
-
-    public void setProgress(double progress) {
-        this.progress = progress;
-    }
 
     public String getSummary() {
         return summary;
@@ -456,37 +244,47 @@ public class PlanExecutionRecord implements JsonSerializable {
         this.summary = summary;
     }
 
-    public Map<String, Integer> getStatusCounts() {
-        return statusCounts;
-    }
-
-    public void setStatusCounts(Map<String, Integer> statusCounts) {
-        this.statusCounts = statusCounts;
-    }
-
+    /**
+     * 返回此记录的字符串表示形式，包含关键字段信息
+     * 
+     * @return 包含记录关键信息的字符串
+     */
     @Override
     public String toString() {
-        return "PlanExecutionRecord{" +
-                "id='" + id + '\'' +
-                ", planId='" + planId + '\'' +
-                ", title='" + title + '\'' +
-                ", currentStepIndex=" + currentStepIndex +
-                ", steps=" + steps.size() +
-                ", progress=" + progress +
-                ", completed=" + completed +
-                '}';
+        return String.format("PlanExecutionRecord{id=%d, planId='%s', title='%s', steps=%d, currentStep=%d/%d, completed=%b}",
+            id,
+            planId,
+            title,
+            steps.size(),
+            currentStepIndex != null ? currentStepIndex + 1 : 0,
+            steps.size(),
+            completed
+        );
     }
 
+    /**
+     * 将记录转换为JSON格式的字符串
+     * 包含所有关键字段，包括：
+     * - 基本信息（id, planId, title等）
+     * - 时间信息（startTime, endTime）
+     * - 执行状态（currentStepIndex, completed等）
+     * - 步骤信息（steps）
+     * - 智能体执行记录（agentExecutionSequence）
+     *
+     * @return JSON格式的字符串
+     */
     @Override
     public String toJson() {
         StringBuilder json = new StringBuilder();
         json.append("{");
         
+        // 基本信息
         appendField(json, "id", id, true);
         appendField(json, "planId", planId, true);
         appendField(json, "title", title, true);
         appendField(json, "userRequest", userRequest, true);
         
+        // 时间信息
         if (startTime != null) {
             appendField(json, "startTime", startTime.toString(), true);
         }
@@ -494,78 +292,34 @@ public class PlanExecutionRecord implements JsonSerializable {
             appendField(json, "endTime", endTime.toString(), true);
         }
         
+        // 执行状态
         appendField(json, "currentStepIndex", currentStepIndex, false);
-        appendField(json, "progress", progress, false);
         appendField(json, "completed", completed, false);
         appendField(json, "summary", summary, true);
         
-        // Add steps array
+        // 步骤信息
         if (steps != null && !steps.isEmpty()) {
             json.append("\"steps\":[");
             for (int i = 0; i < steps.size(); i++) {
+                if (i > 0) json.append(",");
                 json.append("\"").append(escapeJson(steps.get(i))).append("\"");
-                if (i < steps.size() - 1) {
-                    json.append(",");
-                }
             }
             json.append("],");
         }
         
-        // Add stepStatuses array
-        if (stepStatuses != null && !stepStatuses.isEmpty()) {
-            json.append("\"stepStatuses\":[");
-            for (int i = 0; i < stepStatuses.size(); i++) {
-                json.append("\"").append(escapeJson(stepStatuses.get(i))).append("\"");
-                if (i < stepStatuses.size() - 1) {
-                    json.append(",");
-                }
-            }
-            json.append("],");
-        }
-        
-        // Add stepAgents array
-        if (stepAgents != null && !stepAgents.isEmpty()) {
-            json.append("\"stepAgents\":[");
-            for (int i = 0; i < stepAgents.size(); i++) {
-                json.append("\"").append(escapeJson(stepAgents.get(i))).append("\"");
-                if (i < stepAgents.size() - 1) {
-                    json.append(",");
-                }
-            }
-            json.append("],");
-        }
-        
-        
-        // Add agentExecutionSequence as a JSON array
+        // 智能体执行记录
         if (agentExecutionSequence != null && !agentExecutionSequence.isEmpty()) {
             json.append("\"agentExecutionSequence\":[");
             for (int i = 0; i < agentExecutionSequence.size(); i++) {
+                if (i > 0) json.append(",");
                 json.append(agentExecutionSequence.get(i).toJson());
-                if (i < agentExecutionSequence.size() - 1) {
-                    json.append(",");
-                }
             }
             json.append("],");
         }
 
-        // Add statusCounts object
-        if (statusCounts != null && !statusCounts.isEmpty()) {
-            json.append("\"statusCounts\":{");
-            boolean first = true;
-            for (Map.Entry<String, Integer> entry : statusCounts.entrySet()) {
-                if (!first) {
-                    json.append(",");
-                }
-                json.append("\"").append(escapeJson(entry.getKey())).append("\":");
-                json.append(entry.getValue());
-                first = false;
-            }
-            json.append("},");
-        }
-        
-        // Remove trailing comma if present
+        // 移除末尾多余的逗号
         if (json.charAt(json.length() - 1) == ',') {
-            json.deleteCharAt(json.length() - 1);
+            json.setLength(json.length() - 1);
         }
         
         json.append("}");
