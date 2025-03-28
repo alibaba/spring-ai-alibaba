@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -131,7 +132,6 @@ public class DocumentRetrievalAdvisor implements CallAroundAdvisor, StreamAround
 	private AdvisedRequest before(AdvisedRequest request) {
 
 		var context = new HashMap<>(request.adviseContext());
-
 		List<Document> documents = retriever.retrieve(new Query(request.userText()));
 
 		context.put(RETRIEVED_DOCUMENTS, documents);
