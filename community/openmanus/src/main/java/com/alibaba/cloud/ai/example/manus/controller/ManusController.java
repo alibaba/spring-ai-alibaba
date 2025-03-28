@@ -41,9 +41,6 @@ public class ManusController {
     @Autowired
     private PlanExecutionRecorder planExecutionRecorder;
     
-    // 存储正在执行中的任务
-    private final Map<String, CompletableFuture<String>> runningTasks = new ConcurrentHashMap<>();
-
     /**
      * 异步执行 Manus 请求
      * 
@@ -73,75 +70,11 @@ public class ManusController {
             }
         });
         
-        // 存储任务以便后续查询
-        runningTasks.put(planId, future);
-        
         // 返回任务ID及初始状态
         Map<String, Object> response = new HashMap<>();
         response.put("planId", planId);
         response.put("status", "processing");
         response.put("message", "任务已提交，正在处理中");
-        
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * 获取任务执行状态
-     * 
-     * @param planId 计划ID
-     * @return 任务执行状态及结果
-     */
-    @GetMapping("/status/{planId}")
-    public ResponseEntity<Map<String, Object>> getExecutionStatus(@PathVariable String planId) {
-        Map<String, Object> response = new HashMap<>();
-        
-        // 获取执行记录
-        PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId);
-        
-        if (planRecord == null) {
-            return ResponseEntity.notFound().build();
-        }
-        
-        // 检查任务是否完成
-        CompletableFuture<String> future = runningTasks.get(planId);
-        boolean isCompleted = future != null && future.isDone();
-        
-        response.put("planId", planId);
-        response.put("title", planRecord.getTitle());
-        response.put("progress", planRecord.getProgress());
-        response.put("completed", isCompleted);
-        response.put("startTime", planRecord.getStartTime());
-        
-        if (planRecord.getEndTime() != null) {
-            response.put("endTime", planRecord.getEndTime());
-        }
-        
-        if (isCompleted) {
-            try {
-                String result = future.get();
-                response.put("result", result);
-                response.put("status", "completed");
-                
-                // 完成后从运行中任务列表删除
-                runningTasks.remove(planId);
-            } catch (Exception e) {
-                response.put("status", "error");
-                response.put("error", e.getMessage());
-            }
-        } else {
-            response.put("status", "processing");
-        }
-
-        // 添加步骤信息
-        response.put("steps", planRecord.getSteps());
-        response.put("stepStatuses", planRecord.getStepStatuses());
-        response.put("stepNotes", planRecord.getStepNotes());
-        response.put("currentStepIndex", planRecord.getCurrentStepIndex());
-        
-        // 添加执行细节
-        if (planRecord.getAgentExecutionSequence() != null && !planRecord.getAgentExecutionSequence().isEmpty()) {
-            response.put("agentExecutions", planRecord.getAgentExecutionSequence());
-        }
         
         return ResponseEntity.ok(response);
     }
