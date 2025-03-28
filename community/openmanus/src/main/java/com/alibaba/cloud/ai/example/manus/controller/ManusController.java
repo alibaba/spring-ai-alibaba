@@ -59,7 +59,7 @@ public class ManusController {
         PlanningFlow planningFlow = planningFlowManager.getOrCreatePlanningFlow(planId);
         
         // 异步执行任务
-        CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+        CompletableFuture.supplyAsync(() -> {
             try {
                 return planningFlow.execute(query);
             } catch (Exception e) {
@@ -78,48 +78,19 @@ public class ManusController {
     }
 
     /**
-     * 获取详细的执行记录，包括思考-行动记录
+     * 获取详细的执行记录
      * 
      * @param planId 计划ID
-     * @return 完整的执行记录
+     * @return 执行记录的 JSON 表示
      */
     @GetMapping("/details/{planId}")
-    public ResponseEntity<Map<String, Object>> getExecutionDetails(@PathVariable String planId) {
+    public ResponseEntity<String> getExecutionDetails(@PathVariable String planId) {
         PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId);
         
         if (planRecord == null) {
             return ResponseEntity.notFound().build();
         }
         
-        Map<String, Object> response = new HashMap<>();
-        response.put("planRecord", planRecord);
-        
-        // 获取所有智能体执行记录
-        if (planRecord.getAgentExecutionSequence() != null) {
-            Map<String, Object> agentRecords = new HashMap<>();
-            
-            for (AgentExecutionRecord agentRecord : planRecord.getAgentExecutionSequence()) {
-                Map<String, Object> agentDetails = new HashMap<>();
-                agentDetails.put("id", agentRecord.getId());
-                agentDetails.put("agentName", agentRecord.getAgentName());
-                agentDetails.put("status", agentRecord.getStatus());
-                agentDetails.put("startTime", agentRecord.getStartTime());
-                
-                if (agentRecord.getEndTime() != null) {
-                    agentDetails.put("endTime", agentRecord.getEndTime());
-                }
-                
-                // 添加思考-行动步骤
-                if (agentRecord.getThinkActSteps() != null) {
-                    agentDetails.put("thinkActSteps", agentRecord.getThinkActSteps());
-                }
-                
-                agentRecords.put("agent_" + agentRecord.getId(), agentDetails);
-            }
-            
-            response.put("agentRecords", agentRecords);
-        }
-        
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(planRecord.toJson());
     }
 }
