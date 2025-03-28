@@ -19,9 +19,8 @@ import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.tool.Bash;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
-import com.alibaba.cloud.ai.example.manus.tool.Summary;
+import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.Message;
@@ -138,7 +137,7 @@ public class FileAgent extends ToolCallAgent {
 	public List<ToolCallback> getToolCallList() {
 		return List.of(Bash.getFunctionToolCallback(workingDirectory), DocLoaderTool.getFunctionToolCallback(),
 				FileSaver.getFunctionToolCallback(),
-				Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId()));
+				TerminateTool.getFunctionToolCallback(this));
 	}
 
 	@Override
