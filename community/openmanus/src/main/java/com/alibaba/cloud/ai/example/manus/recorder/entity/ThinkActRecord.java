@@ -142,7 +142,13 @@ public class ThinkActRecord implements JsonSerializable {
      * @return 保存后的记录ID
      */
     public Long save() {
-        // Empty implementation
+        // 如果ID为空，生成一个随机ID
+        if (this.id == null) {
+            // 使用时间戳和随机数组合生成ID
+            long timestamp = System.currentTimeMillis();
+            int random = (int) (Math.random() * 1000000);
+            this.id = timestamp * 1000 + random;
+        }
         return this.id;
     }
 
