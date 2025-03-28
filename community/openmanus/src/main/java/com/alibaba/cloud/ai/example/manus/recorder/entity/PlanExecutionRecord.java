@@ -46,7 +46,7 @@ import java.util.Map;
 public class PlanExecutionRecord implements JsonSerializable {
     
     // 记录的唯一标识符
-    private String id;
+    private Long id;
     
     // 计划的唯一标识符
     private String planId;
@@ -306,24 +306,31 @@ public class PlanExecutionRecord implements JsonSerializable {
      * 
      * @return 保存后的记录ID
      */
-    public String save() {
-        // Empty implementation - will be overridden by storage implementation
+    public Long save() {
+        // 如果ID为空，生成一个随机ID
+        if (this.id == null) {
+            // 使用时间戳和随机数组合生成ID
+            long timestamp = System.currentTimeMillis();
+            int random = (int) (Math.random() * 1000000);
+            this.id = timestamp * 1000 + random;
+        }
+        
         // Save all AgentExecutionRecords
         if (agentExecutionSequence != null) {
             for (AgentExecutionRecord agentRecord : agentExecutionSequence) {
                 agentRecord.save();
             }
         }
-        return this.planId;
+        return this.id;
     }
 
     // Getters and Setters
 
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
