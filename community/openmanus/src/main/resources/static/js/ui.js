@@ -9,8 +9,6 @@ const ManusUI = (() => {
     
     // 当前活动的任务ID
     let activePlanId = null;
-    // 轮询计时器
-    let statusPollingTimer = null;
     
     /**
      * 初始化UI组件
@@ -55,52 +53,11 @@ const ManusUI = (() => {
             // 更新任务ID
             activePlanId = response.planId;
             
-            // 开始轮询状态
-            startStatusPolling();
         } catch (error) {
             updateLatestAIMessage(`发送失败: ${error.message}`);
         }
     };
     
-    /**
-     * 开始轮询任务状态
-     */
-    const startStatusPolling = () => {
-        // 清除任何现有的轮询
-        if (statusPollingTimer) {
-            clearInterval(statusPollingTimer);
-        }
-        
-        // 设置轮询间隔 (2秒)
-        statusPollingTimer = setInterval(pollTaskStatus, 2000);
-    };
-    
-    /**
-     * 轮询任务状态
-     */
-    const pollTaskStatus = async () => {
-        if (!activePlanId) return;
-        
-        try {
-            const status = await ManusAPI.getStatus(activePlanId);
-            
-            // 更新消息状态
-            updateExecutionStatus(status);
-            
-            // 如果任务完成，停止轮询
-            if (status.completed || status.status === 'completed' || status.status === 'error') {
-                clearInterval(statusPollingTimer);
-                statusPollingTimer = null;
-                
-                // 更新最终结果
-                if (status.result) {
-                    updateLatestAIMessage(status.result, true);
-                }
-            }
-        } catch (error) {
-            console.error('获取状态失败:', error);
-        }
-    };
     
     /**
      * 添加用户消息到聊天区域
@@ -155,62 +112,6 @@ const ManusUI = (() => {
         scrollToBottom();
     };
     
-    /**
-     * 更新执行状态
-     */
-    const updateExecutionStatus = (status) => {
-        const aiMessages = document.querySelectorAll('.ai-message');
-        if (aiMessages.length === 0) return;
-        
-        const latestMessage = aiMessages[aiMessages.length - 1];
-        
-        // 检查是否已有状态部分，如果没有则创建
-        let statusSection = latestMessage.querySelector('.ai-section');
-        if (!statusSection) {
-            statusSection = document.createElement('div');
-            statusSection.className = 'ai-section';
-            latestMessage.appendChild(statusSection);
-        }
-        
-        // 更新状态部分内容
-        let statusHTML = '';
-        
-        // 添加标题和进度
-        statusHTML += `<div class="section-header">
-            <span class="icon">[${status.completed ? '✔' : '⏳'}]</span> 
-            ${status.title || '任务执行中'} 
-            <span class="progress">(${Math.round(status.progress)}%)</span>
-            <span class="toggle-arrow">^</span>
-        </div>`;
-        
-        // 添加步骤信息
-        if (status.steps && status.steps.length > 0) {
-            statusHTML += '<div class="section-content">';
-            
-            status.steps.forEach((step, index) => {
-                const stepStatus = status.stepStatuses && status.stepStatuses[index] ? status.stepStatuses[index] : 'not_started';
-                const statusIcon = getStatusIcon(stepStatus);
-                
-                statusHTML += `<div class="step ${stepStatus}">
-                    <span class="icon">[${statusIcon}]</span> ${escapeHTML(step)}
-                </div>`;
-                
-                // 如果是当前步骤，显示执行中状态
-                if (status.currentStepIndex === index) {
-                    statusHTML += '<div class="status-update searching">';
-                    statusHTML += '<span class="icon">[🔍]</span> 正在执行此步骤...';
-                    statusHTML += '</div>';
-                }
-            });
-            
-            statusHTML += '</div>';
-        }
-        
-        // 更新状态部分
-        statusSection.innerHTML = statusHTML;
-        
-        scrollToBottom();
-    };
     
     /**
      * 获取步骤状态对应的图标
