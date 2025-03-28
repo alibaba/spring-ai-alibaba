@@ -1,0 +1,36 @@
+#
+# Copyright 2024-2026 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+name: setup-deps
+description: Install host system dependencies
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: 'maven'
+    - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34  # v5.0.1
+      with:
+        go-version: '1.23'
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'

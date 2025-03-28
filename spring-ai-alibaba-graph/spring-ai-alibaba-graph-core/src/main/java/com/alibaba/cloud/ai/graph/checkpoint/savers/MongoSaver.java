@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.graph.checkpoint.savers;
 
 import java.util.Collection;
@@ -12,7 +27,8 @@ import java.util.stream.IntStream;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
-import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.BasicDBObject;
 import com.mongodb.ClientSessionOptions;
 import com.mongodb.TransactionOptions;
@@ -44,6 +60,8 @@ public class MongoSaver implements BaseCheckpointSaver {
 
 	private TransactionOptions txnOptions;
 
+	private final ObjectMapper objectMapper;
+
 	private static final String DB_NAME = "check_point_db";
 
 	private static final String COLLECTION_NAME = "checkpoint_collection";
@@ -60,6 +78,7 @@ public class MongoSaver implements BaseCheckpointSaver {
 		this.client = client;
 		this.database = client.getDatabase(DB_NAME);
 		this.txnOptions = TransactionOptions.builder().writeConcern(WriteConcern.MAJORITY).build();
+		this.objectMapper = new ObjectMapper();
 		Runtime.getRuntime().addShutdownHook(new Thread(client::close));
 	}
 
@@ -79,7 +98,8 @@ public class MongoSaver implements BaseCheckpointSaver {
 				if (document == null)
 					return Collections.emptyList();
 				String checkpointsStr = document.getString(DOCUMENT_CONTENT_KEY);
-				checkpoints = JSON.parseArray(checkpointsStr, Checkpoint.class);
+				checkpoints = objectMapper.readValue(checkpointsStr, new TypeReference<>() {
+				});
 				clientSession.commitTransaction();
 			}
 			catch (Exception e) {
@@ -112,7 +132,8 @@ public class MongoSaver implements BaseCheckpointSaver {
 				if (document == null)
 					return Optional.empty();
 				String checkpointsStr = document.getString(DOCUMENT_CONTENT_KEY);
-				checkpoints = JSON.parseArray(checkpointsStr, Checkpoint.class);
+				checkpoints = objectMapper.readValue(checkpointsStr, new TypeReference<>() {
+				});
 				clientSession.commitTransaction();
 				if (config.checkPointId().isPresent()) {
 					List<Checkpoint> finalCheckpoints = checkpoints;
@@ -151,7 +172,8 @@ public class MongoSaver implements BaseCheckpointSaver {
 				LinkedList<Checkpoint> checkpointLinkedList = null;
 				if (Objects.nonNull(document)) {
 					String checkpointsStr = document.getString(DOCUMENT_CONTENT_KEY);
-					List<Checkpoint> checkpoints = JSON.parseArray(checkpointsStr, Checkpoint.class);
+					List<Checkpoint> checkpoints = objectMapper.readValue(checkpointsStr, new TypeReference<>() {
+					});
 					checkpointLinkedList = getLinkedList(checkpoints);
 					if (config.checkPointId().isPresent()) { // Replace Checkpoint
 						String checkPointId = config.checkPointId().get();
@@ -162,7 +184,7 @@ public class MongoSaver implements BaseCheckpointSaver {
 									format("Checkpoint with id %s not found!", checkPointId))));
 						checkpointLinkedList.set(index, checkpoint);
 						Document tempDocument = new Document().append("_id", DOCUMENT_PREFIX + configOption.get())
-							.append(DOCUMENT_CONTENT_KEY, JSON.toJSONString(checkpointLinkedList));
+							.append(DOCUMENT_CONTENT_KEY, objectMapper.writeValueAsString(checkpointLinkedList));
 						collection.replaceOne(Filters.eq("_id", DOCUMENT_PREFIX + configOption.get()), tempDocument);
 						clientSession.commitTransaction();
 						clientSession.close();
@@ -173,14 +195,14 @@ public class MongoSaver implements BaseCheckpointSaver {
 					checkpointLinkedList = new LinkedList<>();
 					checkpointLinkedList.push(checkpoint); // Add Checkpoint
 					Document tempDocument = new Document().append("_id", DOCUMENT_PREFIX + configOption.get())
-						.append(DOCUMENT_CONTENT_KEY, JSON.toJSONString(checkpointLinkedList));
+						.append(DOCUMENT_CONTENT_KEY, objectMapper.writeValueAsString(checkpointLinkedList));
 					InsertOneResult insertOneResult = collection.insertOne(tempDocument);
 					insertOneResult.wasAcknowledged();
 				}
 				else {
 					checkpointLinkedList.push(checkpoint); // Add Checkpoint
 					Document tempDocument = new Document().append("_id", DOCUMENT_PREFIX + configOption.get())
-						.append(DOCUMENT_CONTENT_KEY, JSON.toJSONString(checkpointLinkedList));
+						.append(DOCUMENT_CONTENT_KEY, objectMapper.writeValueAsString(checkpointLinkedList));
 					ReplaceOptions opts = new ReplaceOptions().upsert(true);
 					collection.replaceOne(Filters.eq("_id", DOCUMENT_PREFIX + configOption.get()), tempDocument, opts);
 				}

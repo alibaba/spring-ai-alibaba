@@ -17,18 +17,18 @@
 name: License Check
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
 
 jobs:
-  license-header:
-    name: License header
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+  license-check:
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: true
-      - name: Check license header
-        uses: apache/skywalking-eyes@5b7ee1731d036b5aac68f8bd3fc9e6f98ada082e
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: ./tools/github-actions/setup-deps
+      - run: make tools
+      - run: make licenses-check

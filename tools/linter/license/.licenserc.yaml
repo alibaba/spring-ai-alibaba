@@ -1,0 +1,85 @@
+# Copyright 2024-2026 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+header:
+  license:
+    copyright-owner: Spring AI Alibaba Community
+    software-name: Spring AI Alibaba
+    copyright-year: '2024-2026'
+
+    content: |
+      Copyright 2024-2026 the original author or authors.
+
+      Licensed under the Apache License, Version 2.0 (the "License");
+      you may not use this file except in compliance with the License.
+      You may obtain a copy of the License at
+
+          https://www.apache.org/licenses/LICENSE-2.0
+
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      See the License for the specific language governing permissions and
+      limitations under the License.
+
+    pattern: |
+
+      Licensed under the Apache License, Version 2.0 \(the "License"\);
+      you may not use this file except in compliance with the License.
+      You may obtain a copy of the License at
+
+          http[s]?://www\.apache\.org/licenses/LICENSE-2\.0
+
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      See the License for the specific language governing permissions and
+      limitations under the License.
+
+  paths:
+    - "**"
+
+  paths-ignore:
+    - '.github/ISSUE_TEMPLATE'
+    - '.github/PULL_REQUEST_TEMPLATE'
+    - '**/.gitignore'
+    - '.mvn'
+    - 'docker/.env'
+    - 'licenses'
+    - '**/*.md'
+    - '**/*.json'
+    - '**/*.ftl'
+    - '**/target/**'
+    - '**/*.iml'
+    - '**/*.key'
+    - '**/*.txt'
+    - 'LICENSE'
+    - '**/*.imports'
+    - '**/*.bib'
+    - '**/*.st'
+    - '**/*.eml'
+    - '**/*.mbox'
+    - '**/resources/**'
+    - '**/resource/**'
+    - '**/pom.xml'
+    - '**/*.less'
+    - '**/*.browserslistrc'
+    - '**/*.prettierrc'
+    - '**/*.lintstagedrc'
+    - '**/*.npmrc'
+    - '**/*.mts'
+    - 'tools/linter/codespell/.codespell.ignorewords'
+    - 'tools/linter/codespell/.codespell.skip'
+
+  comment: never

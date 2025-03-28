@@ -205,8 +205,9 @@ public class DashScopeAudioTranscriptionModel implements AudioTranscriptionModel
 				new DashScopeAudioTranscriptionApi.RealtimeRequest.Header(action, UUID.randomUUID().toString(),
 						"duplex"),
 				new DashScopeAudioTranscriptionApi.RealtimeRequest.Payload(options.getModel(), "audio", "asr",
-						"recognition", null, new DashScopeAudioTranscriptionApi.RealtimeRequest.Payload.Parameters(
-								options.getSampleRate(), options.getFormat(), options.getDisfluencyRemovalEnabled())));
+						"recognition", new DashScopeAudioTranscriptionApi.RealtimeRequest.Payload.Input(),
+						new DashScopeAudioTranscriptionApi.RealtimeRequest.Payload.Parameters(options.getSampleRate(),
+								options.getFormat(), options.getDisfluencyRemovalEnabled())));
 	}
 
 	private DashScopeAudioTranscriptionOptions mergeOptions(AudioTranscriptionPrompt prompt) {

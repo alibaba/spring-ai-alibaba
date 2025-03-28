@@ -52,6 +52,12 @@ public class YoudaoTranslateService
 
 	private final WebClient webClient;
 
+	private static final int MEMORY_SIZE = 5;
+
+	private static final int BYTE_SIZE = 1024;
+
+	private static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
+
 	public YoudaoTranslateService(YoudaoTranslateProperties properties) {
 		this.appKey = properties.getAppKey();
 		this.appSecret = properties.getAppSecret();
@@ -61,7 +67,7 @@ public class YoudaoTranslateService
 			.defaultHeader(HttpHeaders.ACCEPT_ENCODING, "gzip, deflate")
 			.defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
 			.defaultHeader(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9,ja;q=0.8")
-			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024))
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_MEMORY_SIZE))
 			.build();
 	}
 
