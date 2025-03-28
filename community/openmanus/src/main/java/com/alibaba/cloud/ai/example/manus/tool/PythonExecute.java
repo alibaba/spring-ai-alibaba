@@ -100,14 +100,6 @@ public class PythonExecute implements BiFunction<String, ToolContext, ToolExecut
 		return new ToolExecuteResult(result);
 	}
 
-	public Boolean getArm64() {
-		return arm64;
-	}
-
-	public void setArm64(Boolean arm64) {
-		this.arm64 = arm64;
-	}
-
 	@Override
 	public ToolExecuteResult apply(String s, ToolContext toolContext) {
 		return run(s);

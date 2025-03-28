@@ -20,15 +20,19 @@ import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.tool.ToolCallback;
+
 public abstract class BaseFlow {
 
-	protected Map<String, BaseAgent> agents;
+	protected List<BaseAgent> agents;
 
-	public BaseFlow(Map<String, BaseAgent> agents, Map<String, Object> data) {
+	public BaseFlow(List<BaseAgent> agents, Map<String, Object> data) {
 		this.agents = agents;
 		data.put("agents", agents);
 	}
 
 	public abstract String execute(String inputText);
+
+	public abstract List<ToolCallback> getToolCallList();
 
 }

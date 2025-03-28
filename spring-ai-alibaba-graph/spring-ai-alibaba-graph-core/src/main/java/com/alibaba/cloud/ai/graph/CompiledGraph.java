@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2026 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.graph;
 
 import java.io.IOException;
@@ -366,12 +365,12 @@ public class CompiledGraph {
 	 * @return an Optional containing the final state if present, otherwise an empty
 	 * Optional
 	 */
-	public Optional invoke(Map<String, Object> inputs, RunnableConfig config) {
+	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config) {
 		stateGraph.getOverAllState().input(inputs);
 		return stream(inputs, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
 
-	private Optional invoke(OverAllState overAllState, RunnableConfig config) {
+	private Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) {
 		return stream(overAllState, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
 
@@ -381,7 +380,7 @@ public class CompiledGraph {
 	 * @return an Optional containing the final state if present, otherwise an empty
 	 * Optional
 	 */
-	public Optional invoke(Map<String, Object> inputs) {
+	public Optional<OverAllState> invoke(Map<String, Object> inputs) {
 		return this.invoke(stateGraph.getOverAllState().input(inputs), RunnableConfig.builder().build());
 	}
 
