@@ -33,14 +33,17 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.util.StringUtils;
 
 public class ToolNode implements NodeAction {
+
 	public static final String TOOL_RESPONSE_KEY = "tool_response";
 
 	private String llmResponseKey;
+
 	private String outputKey;
 
 	private List<FunctionCallback> toolCallbacks = new ArrayList<>();
 
 	private AssistantMessage assistantMessage;
+
 	private ToolCallbackResolver toolCallbackResolver;
 
 	public ToolNode(ToolCallbackResolver resolver) {
@@ -68,7 +71,7 @@ public class ToolNode implements NodeAction {
 
 		this.assistantMessage = (AssistantMessage) state.value(this.llmResponseKey).orElseGet(() -> {
 			// if key not set, use 'messages' as default
-			List<Message> messages = (List<Message>)state.value("messages").orElseThrow();
+			List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
 			return messages.get(messages.size() - 1);
 		});
 
@@ -100,8 +103,9 @@ public class ToolNode implements NodeAction {
 
 	private FunctionCallback resolve(String toolName) {
 		return toolCallbacks.stream()
-				.filter(callback -> callback.getName().equals(toolName))
-				.findFirst().orElseGet(() -> toolCallbackResolver.resolve(toolName));
+			.filter(callback -> callback.getName().equals(toolName))
+			.findFirst()
+			.orElseGet(() -> toolCallbackResolver.resolve(toolName));
 
 	}
 
@@ -110,10 +114,15 @@ public class ToolNode implements NodeAction {
 	}
 
 	public static class Builder {
+
 		private String llmResponseKey;
+
 		private String outputKey;
+
 		private List<FunctionCallback> toolCallbacks = new ArrayList<>();
+
 		private List<String> toolNames = new ArrayList<>();
+
 		private ToolCallbackResolver toolCallbackResolver;
 
 		private Builder() {
@@ -152,6 +161,7 @@ public class ToolNode implements NodeAction {
 			toolNode.setToolCallbackResolver(this.toolCallbackResolver);
 			return toolNode;
 		}
+
 	}
 
 }

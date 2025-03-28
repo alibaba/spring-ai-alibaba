@@ -17,7 +17,9 @@
 package com.alibaba.cloud.ai.graph.node;
 
 public class GraphInterruptException extends Exception {
+
 	public GraphInterruptException(String message) {
 		super(message);
 	}
+
 }

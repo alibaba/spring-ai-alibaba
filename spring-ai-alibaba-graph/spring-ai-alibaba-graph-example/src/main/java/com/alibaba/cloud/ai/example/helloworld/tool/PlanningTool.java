@@ -16,6 +16,7 @@
  */
 package com.alibaba.cloud.ai.example.helloworld.tool;
 
+import java.util.List;
 import java.util.Map;
 
 public class PlanningTool {
@@ -35,6 +36,8 @@ public class PlanningTool {
 	}
 
 	public Plan getPlans(String id) {
-		return plans.get(id);
+		return new Plan("1", List.of("step1", "step2", "step3"));
+//		return plans.get(id);
 	}
+
 }
