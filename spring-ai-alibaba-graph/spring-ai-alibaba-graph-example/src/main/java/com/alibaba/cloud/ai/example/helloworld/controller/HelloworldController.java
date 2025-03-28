@@ -22,16 +22,21 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.alibaba.cloud.ai.example.helloworld.ControllerAgent;
+import com.alibaba.cloud.ai.example.helloworld.tool.Plan;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiChatOptions;
@@ -60,56 +65,96 @@ import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvis
 public class HelloworldController {
 
 	String planningPrompt = "Your are a task planner, please analyze the task and plan the steps.";
+
 	String stepPrompt = "Tools available: xxx";
 
 	private final ChatClient planningClient;
+
 	private final ChatClient stepClient;
 
 	@Autowired
 	private ToolCallbackResolver resolver;
 
 	// 也可以使用如下的方式注入 ChatClient
-	 public HelloworldController(ChatModel chatModel) {
-		 this.planningClient = ChatClient.builder(chatModel)
-				 .defaultSystem(planningPrompt)
-				 .defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
-				 .defaultAdvisors(new SimpleLoggerAdvisor())
-				 .defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
-				 .build();
+	public HelloworldController(ChatModel chatModel) {
+		this.planningClient = ChatClient.builder(chatModel)
+			.defaultSystem(planningPrompt)
+			.defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
+			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.build();
 
-	  	this.stepClient = ChatClient.builder(chatModel)
-				.defaultSystem(stepPrompt)
-				 .defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
-				 .defaultAdvisors(new SimpleLoggerAdvisor())
-				.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
-				.build();
-	 }
+		this.stepClient = ChatClient.builder(chatModel)
+			.defaultSystem(stepPrompt)
+			.defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
+			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.build();
+	}
 
 	/**
 	 * ChatClient 简单调用
 	 */
 	@GetMapping("/simple/chat")
-	public String simpleChat(@RequestParam(value = "query", defaultValue = "你好，很高兴认识你，能简单介绍一下自己吗？")String query) throws GraphStateException {
+	public String simpleChat(@RequestParam(value = "query", defaultValue = "你好，很高兴认识你，能简单介绍一下自己吗？") String query)
+			throws GraphStateException {
 		OverAllState state = new OverAllState();
-//		state.registerKeyAndStrategy()
+		state.registerKeyAndStrategy("plan", (o1, o2) -> o2);
+		state.registerKeyAndStrategy("step_prompt", (o1, o2) -> o2);
+		state.registerKeyAndStrategy("step_output", (o1, o2) -> o2);
+		state.registerKeyAndStrategy("final_output", (o1, o2) -> o2);
 
 		ControllerAgent controllerAgent = new ControllerAgent();
 		ReactAgent planningAgent = new ReactAgent(planningPrompt, planningClient, resolver, 10);
 		ReactAgent stepAgent = new ReactAgent(stepPrompt, stepClient, resolver, 10);
 
 		StateGraph graph2 = new StateGraph(state)
-				.addSubgraph("planning_agent", planningAgent.getStateGraph())
-				.addNode("controller_agent", node_async(controllerAgent))
-				.addSubgraph("step_executing_agent", stepAgent.getStateGraph())
+			.addNode("planning_agent", node_async(new SubGraphNodeAdapter("input", "plan", planningAgent.getAndCompileGraph())))
+			.addNode("controller_agent", node_async(controllerAgent))
+			.addNode("step_executing_agent", node_async(new SubGraphNodeAdapter("step_prompt", "step_output", stepAgent.getAndCompileGraph())))
 
-				.addEdge(START, "planning_agent")
-				.addEdge("planning_agent", "controller_agent")
-				.addConditionalEdges("controller_agent", edge_async(controllerAgent::think), Map.of("continue", "step_executing_agent", "end", END))
-				.addEdge("step_executing_agent", "controller_agent");
+			.addEdge(START, "planning_agent")
+			.addEdge("planning_agent", "controller_agent")
+			.addConditionalEdges("controller_agent", edge_async(controllerAgent::think),
+					Map.of("continue", "step_executing_agent", "end", END))
+			.addEdge("step_executing_agent", "controller_agent");
 
 		CompiledGraph compiledGraph = graph2.compile();
-		Optional<OverAllState> result = compiledGraph.invoke(Map.of());
+		Optional<OverAllState> result = compiledGraph.invoke(Map.of("input", "你好"));
 		return result.get().data().toString();
+	}
+
+	public static class SubGraphNodeAdapter implements NodeAction {
+
+		private String inputKeyFromParent;
+		private String outputKeyToParent;
+		private CompiledGraph childGraph;
+
+		SubGraphNodeAdapter(String inputKeyFromParent, String outputKeyToParent, CompiledGraph childGraph) {
+			this.inputKeyFromParent = inputKeyFromParent;
+			this.outputKeyToParent = outputKeyToParent;
+			this.childGraph = childGraph;
+		}
+
+		@Override
+		public Map<String, Object> apply(OverAllState parentState) throws Exception {
+
+			// prepare input for child graph
+			String input = (String) parentState.value(inputKeyFromParent).orElseThrow();
+			Message message = new UserMessage(input);
+			List<Message> messages = List.of(message);
+
+			// invoke child graph
+			OverAllState childState = childGraph.invoke(Map.of("messages", messages)).get();
+
+			// extract output from child graph
+			List<Message> reactMessages = (List<Message>) childState.value("messages").orElseThrow();
+			AssistantMessage assistantMessage = (AssistantMessage) reactMessages.get(reactMessages.size() - 1);
+			String planId = assistantMessage.getText();
+
+			// update parent state
+			return Map.of(outputKeyToParent, planId);
+		}
 	}
 
 }

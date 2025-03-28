@@ -29,7 +29,7 @@ public class ControllerAgent implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState t) throws Exception {
-		Plan plan = (Plan)t.value("plan").orElseThrow();
+		Plan plan = (Plan) t.value("plan").orElseThrow();
 		List<Message> messages = (List<Message>) t.value("step_result").orElseThrow();
 		String promptForNextStep = "Plan completed.";
 		if (!plan.isFinished()) {
@@ -39,6 +39,5 @@ public class ControllerAgent implements NodeAction {
 		t.value("prompt_for_next_step", promptForNextStep);
 		return Map.of();
 	}
-
 
 }

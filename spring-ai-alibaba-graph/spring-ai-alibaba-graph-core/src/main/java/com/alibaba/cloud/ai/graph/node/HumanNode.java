@@ -25,7 +25,7 @@ public class HumanNode implements NodeAction {
 
 	private boolean shouldInterrupt = false;
 
-   //
+	//
 	@Override
 	public Map<String, Object> apply(OverAllState t) throws GraphInterruptException {
 		Map<String, Object> userInput = interrupt();
@@ -41,4 +41,5 @@ public class HumanNode implements NodeAction {
 		}
 		return null;
 	}
+
 }
