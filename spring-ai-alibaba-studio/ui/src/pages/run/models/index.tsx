@@ -19,12 +19,12 @@ import { Empty, Flex } from 'antd';
 import { useParams } from 'ice';
 import { ChatModelData, ChatModelRunResult, ModelType } from '@/types/chat_model';
 import { RightPanelValues } from '@/components/right_panel/types';
-import Chat from '@/components/chat';
+import Chat from '@/components/Chat';
 import Setup from '@/components/right_panel';
 import { ChatOptions, ImageOptions } from '@/types/options';
 import styles from './index.module.css';
 import chatModelsService from '@/services/chat_models';
-import { ChatRunResult } from '@/components/chat/types';
+import { ChatRunResult } from '@/components/Chat/types';
 
 type Props = {
   modelData: ChatModelData;

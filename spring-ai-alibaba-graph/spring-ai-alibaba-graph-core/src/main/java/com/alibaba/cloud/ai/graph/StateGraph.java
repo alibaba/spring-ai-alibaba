@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.graph;
 
 import java.util.ArrayList;
@@ -114,11 +129,6 @@ public class StateGraph {
 
 	final Edges edges = new Edges();
 
-	private EdgeValue entryPoint;
-
-	@Deprecated(forRemoval = true)
-	private String finishPoint;
-
 	@Getter
 	@Setter
 	private OverAllState overAllState;
@@ -205,54 +215,6 @@ public class StateGraph {
 		return stateSerializer.stateFactory();
 	}
 
-	@Deprecated(forRemoval = true)
-	public EdgeValue getEntryPoint() {
-		return edges.edgeBySourceId(START).map(Edge::target).orElse(null);
-	}
-
-	@Deprecated(forRemoval = true)
-	public String getFinishPoint() {
-		return finishPoint;
-	}
-
-	/**
-	 * Sets the entry point of the graph.
-	 * @param entryPoint the nodeId of the graph's entry-point
-	 * @deprecated use addEdge(START, nodeId)
-	 */
-	@Deprecated(forRemoval = true)
-	public void setEntryPoint(String entryPoint) {
-		try {
-			addEdge(START, entryPoint);
-		}
-		catch (GraphStateException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	/**
-	 * Sets a conditional entry point of the graph.
-	 * @param condition the edge condition
-	 * @param mappings the edge mappings
-	 * @throws GraphStateException if the edge mappings is null or empty
-	 * @deprecated use addConditionalEdge(START, consition, mappings)
-	 */
-	@Deprecated(forRemoval = true)
-	public void setConditionalEntryPoint(AsyncEdgeAction condition, Map<String, String> mappings)
-			throws GraphStateException {
-		addConditionalEdges(START, condition, mappings);
-	}
-
-	/**
-	 * Sets the identifier of the node that represents the end of the graph execution.
-	 * @param finishPoint the identifier of the finish point node
-	 * @deprecated use use addEdge(nodeId, END)
-	 */
-	@Deprecated
-	public void setFinishPoint(String finishPoint) {
-		this.finishPoint = finishPoint;
-	}
-
 	/**
 	 * /** Adds a node to the graph.
 	 * @param id the identifier of the node
@@ -294,7 +256,7 @@ public class StateGraph {
 	 * @throws GraphStateException if the node identifier is invalid or the node already
 	 * exists
 	 */
-	public StateGraph addSubgraph(String id, CompiledGraph subGraph) throws GraphStateException {
+	public StateGraph addNode(String id, CompiledGraph subGraph) throws GraphStateException {
 		if (Objects.equals(id, END)) {
 			throw Errors.invalidNodeIdentifier.exception(END);
 		}
@@ -320,7 +282,7 @@ public class StateGraph {
 	 * @throws GraphStateException if the node identifier is invalid or the node already
 	 * exists
 	 */
-	public StateGraph addSubgraph(String id, StateGraph subGraph) throws GraphStateException {
+	public StateGraph addNode(String id, StateGraph subGraph) throws GraphStateException {
 		if (Objects.equals(id, END)) {
 			throw Errors.invalidNodeIdentifier.exception(END);
 		}
@@ -396,11 +358,6 @@ public class StateGraph {
 		if (mappings == null || mappings.isEmpty()) {
 			throw Errors.edgeMappingIsEmpty.exception(sourceId);
 		}
-
-		// if (Objects.equals(sourceId, START)) {
-		// this.entryPoint = new EdgeValue<>(new EdgeCondition<>(condition, mappings));
-		// return this;
-		// }
 
 		var newEdge = new Edge(sourceId, new EdgeValue(new EdgeCondition(condition, mappings)));
 
