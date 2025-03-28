@@ -187,7 +187,15 @@ public abstract class BaseAgent {
 			agentRecord.setEndTime(LocalDateTime.now());
 			agentRecord.setStatus(AgentState.IDLE.toString());
 			agentRecord.setCompleted(state.equals(AgentState.FINISHED));
-			agentRecord.setResult(String.join("\n", results));
+
+			// Calculate execution time in seconds
+			long executionTimeSeconds = java.time.Duration.between(agentRecord.getStartTime(), agentRecord.getEndTime()).getSeconds();
+			String status = agentRecord.isCompleted() ? "成功" : (agentRecord.isStuck() ? "执行卡住" : "未完成");
+			agentRecord.setResult(String.format("执行%s [耗时%d秒] [消耗步骤%d] ", 
+				status, 
+				executionTimeSeconds,
+				currentStep
+				));
 
 		} finally {
 			lock.unlock();

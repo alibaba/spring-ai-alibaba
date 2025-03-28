@@ -22,11 +22,10 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.Message;
-import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
-import com.alibaba.cloud.ai.example.manus.tool.GoogleSearch;
 import com.alibaba.cloud.ai.example.manus.tool.PythonExecute;
-import com.alibaba.cloud.ai.example.manus.tool.Summary;
+import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +39,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -180,12 +178,12 @@ public class ToolCallAgent extends ReActAgent {
 				COMPLETION PROTOCOL:
 				Once you have FULLY completed the current step:
 
-				1. MUST call Summary tool with following information:
+				1. MUST call Terminate tool with following information:
 				- Detailed results of what was accomplished
 				- Any relevant data or metrics
 				- Status confirmation
 
-				2. The Summary tool call will automatically:
+				2. The Terminate tool call will automatically:
 				- Mark this step as complete
 				- Save the results
 				- Enable progression to next step
@@ -194,8 +192,8 @@ public class ToolCallAgent extends ReActAgent {
 				⚠️ IMPORTANT:
 				- Stay focused on current step only
 				- Do not skip or combine steps
-				- Only call Summary tool when current step is 100% complete
-				- Provide comprehensive summary before moving forward, including: all facts, data, and metrics
+				- Only call Terminate tool when current step is 100% complete
+				- Provide comprehensive Terminate before moving forward, including: all facts, data, and metrics
 				""";
 
 		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(stepPrompt);
@@ -264,7 +262,7 @@ public class ToolCallAgent extends ReActAgent {
 	public List<ToolCallback> getToolCallList() {
 		return List.of(FileSaver.getFunctionToolCallback(),
 				PythonExecute.getFunctionToolCallback(),
-				Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId()));
+				TerminateTool.getFunctionToolCallback(this));
 	}
 
 }
