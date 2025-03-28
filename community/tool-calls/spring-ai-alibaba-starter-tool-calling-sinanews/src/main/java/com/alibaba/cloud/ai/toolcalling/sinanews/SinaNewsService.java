@@ -45,13 +45,19 @@ public class SinaNewsService implements Function<SinaNewsService.Request, SinaNe
 
 	private static final String CONTENT_TYPE = "application/json";
 
+	private static final int MEMORY_SIZE = 5;
+
+	private static final int BYTE_SIZE = 1024;
+
+	private static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
+
 	private static final WebClient WEB_CLIENT = WebClient.builder()
 		.defaultHeader(HttpHeaders.USER_AGENT, USER_AGENT)
 		.defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
 		.defaultHeader(HttpHeaders.ACCEPT_ENCODING, ACCEPT_ENCODING)
 		.defaultHeader(HttpHeaders.CONTENT_TYPE, CONTENT_TYPE)
 		.defaultHeader(HttpHeaders.ACCEPT_LANGUAGE, ACCEPT_LANGUAGE)
-		.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024))
+		.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_MEMORY_SIZE))
 		.build();
 
 	@Override

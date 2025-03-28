@@ -1,12 +1,12 @@
-/*
- * Copyright 2025 the original author or authors.
- *
+/**
+ * Copyright (C) 2024 AIDC-AI
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,7 +45,7 @@ public class CodeUtils {
 
 	private static final int DEFAULT_TIMEOUT = 600;
 
-	private static final String WORKING_DIR = Paths.get(System.getProperty("user.dir"), "extensions").toString();
+	public static final String WORKING_DIR = Paths.get(System.getProperty("user.dir"), "extensions").toString();
 
 	public static List<Pair<String, String>> extractCode(String text, boolean detectSingleLineCode) {
 		List<Pair<String, String>> extracted = new ArrayList<>();
