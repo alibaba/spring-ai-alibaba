@@ -22,7 +22,7 @@ import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
 import com.alibaba.cloud.ai.example.manus.tool.GoogleSearch;
 import com.alibaba.cloud.ai.example.manus.tool.PythonExecute;
-import com.alibaba.cloud.ai.example.manus.tool.Summary;
+import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -216,9 +216,9 @@ public class BrowserAgent extends ToolCallAgent {
 	}
 
 	public List<ToolCallback> getToolCallList() {
-		return List.of( FileSaver.getFunctionToolCallback(),
+		return List.of(FileSaver.getFunctionToolCallback(),
 				PythonExecute.getFunctionToolCallback(), BrowserUseTool.getFunctionToolCallback(chromeService),
-				Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId()));
+				TerminateTool.getFunctionToolCallback(this));
 	}
 
 	@Override

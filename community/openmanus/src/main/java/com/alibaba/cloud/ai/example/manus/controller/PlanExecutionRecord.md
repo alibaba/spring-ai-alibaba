@@ -112,4 +112,3 @@ PlanExecutionRecord 包含四个主要部分：
 
 1. 总是检查 `completed` 字段来确定执行是否完成
 2. 使用 `currentStepIndex` 和 `steps.length` 来计算进度
-3. 多使用 `summary` 字段获取执行的最终结果或当前状态描述

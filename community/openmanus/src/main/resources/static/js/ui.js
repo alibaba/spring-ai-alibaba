@@ -10,6 +10,9 @@ const ManusUI = (() => {
     // 当前活动的任务ID
     let activePlanId = null;
     
+    // 记录上一次sequence的大小
+    let lastSequenceSize = 0;
+    
     // 轮询间隔（毫秒）
     const POLL_INTERVAL = 2000;
     
@@ -74,18 +77,123 @@ const ManusUI = (() => {
         console.log('Manus UI 初始化完成');
     };
     
+    // UI更新相关的事件类型
+    const UI_EVENTS = {
+        MESSAGE_UPDATE: 'ui:message:update',
+        MESSAGE_COMPLETE: 'ui:message:complete',
+        SECTION_ADD: 'ui:section:add'
+    };
+    
     /**
      * 初始化事件监听器
      */
     const initializeEventListeners = () => {
-        // 监听计划更新
-        EventSystem.on('plan-update', handlePlanUpdate);
-        // 监听智能体执行
-        EventSystem.on('agent-execution', handleAgentExecution);
-        // 监听计划完成
-        EventSystem.on('plan-completed', handlePlanCompleted);
+        // 计划相关事件
+        EventSystem.on('plan-update', (details) => {
+            if (!details) return;
+            
+            // 发出UI更新事件
+            if (details.title) {
+                EventSystem.emit(UI_EVENTS.MESSAGE_UPDATE, {
+                    content: `正在执行: ${details.title}`,
+                    type: 'status'
+                });
+            }
+            
+            if (details.steps && details.currentStepIndex !== null) {
+                const currentStep = details.steps[details.currentStepIndex];
+                if (currentStep) {
+                    EventSystem.emit(UI_EVENTS.MESSAGE_UPDATE, {
+                        content: `[${details.currentStepIndex + 1}/${details.steps.length}] ${currentStep}`,
+                        type: 'step'
+                    });
+                }
+            }
+        });
+
+        // 智能体执行事件
+        EventSystem.on('agent-execution', (record) => {
+            if (!record) return;
+            
+            // 发出添加section事件
+            EventSystem.emit(UI_EVENTS.SECTION_ADD, {
+                agentName: record.agentName,
+                agentDescription: record.agentDescription,
+                request: record.agentRequest,
+                result: record.result
+            });
+
+            if (record.isCompleted) {
+                EventSystem.emit(UI_EVENTS.MESSAGE_COMPLETE);
+            }
+        });
+
+        // 计划完成事件
+        EventSystem.on('plan-completed', (details) => {
+            if (!details) return;
+            EventSystem.emit(UI_EVENTS.MESSAGE_UPDATE, {
+                content: details.summary ? `执行完成: ${details.summary}` : '执行完成',
+                type: 'completion'
+            });
+            EventSystem.emit(UI_EVENTS.MESSAGE_COMPLETE);
+            stopPolling();
+        });
+
+        // 注册UI更新监听器
+        EventSystem.on(UI_EVENTS.MESSAGE_UPDATE, ({content, type}) => {
+            if (!content) return;
+            
+            const aiMessages = document.querySelectorAll('.ai-message');
+            if (aiMessages.length === 0) return;
+            
+            const latestMessage = aiMessages[aiMessages.length - 1];
+            
+            // 获取或创建消息段落
+            let paragraph = latestMessage.querySelector('p:not(.ai-header)');
+            if (!paragraph) {
+                paragraph = document.createElement('p');
+                latestMessage.appendChild(paragraph);
+            }
+            
+            paragraph.innerHTML = escapeHTML(content);
+            paragraph.dataset.type = type;
+        });
+
+        // 注册section添加监听器
+        EventSystem.on(UI_EVENTS.SECTION_ADD, ({agentName, agentDescription, request, result}) => {
+            const aiMessages = document.querySelectorAll('.ai-message');
+            if (aiMessages.length === 0) return;
+            
+            const latestMessage = aiMessages[aiMessages.length - 1];
+            
+            const section = document.createElement('div');
+            section.className = 'ai-section';
+            section.innerHTML = `
+                <div class="section-header">
+                    <span class="icon">▶</span>
+                    <span>${agentName} - ${agentDescription}</span>
+                </div>
+                <div class="section-content">
+                    <div class="status-update">
+                        <span class="icon">🔄</span>
+                        执行请求: ${request}
+                    </div>
+                    ${result ? `<div class="result">${result}</div>` : ''}
+                </div>
+            `;
+            latestMessage.appendChild(section);
+        });
+
+        // 注册消息完成监听器
+        EventSystem.on(UI_EVENTS.MESSAGE_COMPLETE, () => {
+            const aiMessages = document.querySelectorAll('.ai-message');
+            if (aiMessages.length === 0) return;
+            
+            const latestMessage = aiMessages[aiMessages.length - 1];
+            latestMessage.classList.add('completed');
+        });
     };
-    
+
     /**
      * 处理发送消息
      */
@@ -116,6 +224,43 @@ const ManusUI = (() => {
     };
     
     /**
+     * 轮询计划执行状态
+     */
+    const pollPlanStatus = async () => {
+        if (!activePlanId) return;
+        
+        try {
+            const details = await ManusAPI.getDetails(activePlanId);
+            
+            // 发送计划更新事件
+            EventSystem.emit('plan-update', details);
+            
+            // 如果有新的智能体执行记录，且sequence size增加了，才发送对应事件
+            if (details.agentExecutionSequence) {
+                const currentSize = details.agentExecutionSequence.length;
+                if (currentSize > lastSequenceSize) {
+                    // 只处理新增的记录
+                    const newRecords = details.agentExecutionSequence.slice(lastSequenceSize);
+                    newRecords.forEach(record => {
+                        EventSystem.emit('agent-execution', record);
+                    });
+                    lastSequenceSize = currentSize;
+                }
+            }
+            
+            // 如果计划已完成，发送完成事件，重置sequence size并停止轮询
+            if (details.completed) {
+                EventSystem.emit('plan-completed', details);
+                lastSequenceSize = 0; // 只在计划完成时重置
+                stopPolling();
+            }
+            
+        } catch (error) {
+            console.error('轮询计划状态失败:', error);
+        }
+    };
+    
+    /**
      * 开始轮询计划执行状态
      */
     const startPolling = () => {
@@ -137,36 +282,6 @@ const ManusUI = (() => {
         if (pollTimer) {
             clearInterval(pollTimer);
             pollTimer = null;
-        }
-    };
-    
-    /**
-     * 轮询计划执行状态
-     */
-    const pollPlanStatus = async () => {
-        if (!activePlanId) return;
-        
-        try {
-            const details = await ManusAPI.getDetails(activePlanId);
-            
-            // 发送计划更新事件
-            EventSystem.emit('plan-update', details);
-            
-            // 如果有新的智能体执行记录，发送对应事件
-            if (details.agentExecutionSequence) {
-                details.agentExecutionSequence.forEach(record => {
-                    EventSystem.emit('agent-execution', record);
-                });
-            }
-            
-            // 如果计划已完成，发送完成事件并停止轮询
-            if (details.completed) {
-                EventSystem.emit('plan-completed', details);
-                stopPolling();
-            }
-            
-        } catch (error) {
-            console.error('轮询计划状态失败:', error);
         }
     };
     
@@ -255,50 +370,6 @@ const ManusUI = (() => {
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;')
             .replace(/\n/g, '<br>');
-    };
-    
-    /**
-     * 处理计划更新事件
-     */
-    const handlePlanUpdate = (details) => {
-        if (!details) return;
-        
-        // 更新执行状态
-        updateLatestAIMessage(`正在执行: ${details.title || ''}`, false);
-        
-        // 显示当前步骤
-        if (details.steps && details.currentStepIndex !== null) {
-            const currentStep = details.steps[details.currentStepIndex];
-            if (currentStep) {
-                updateLatestAIMessage(`[${details.currentStepIndex + 1}/${details.steps.length}] ${currentStep}`, false);
-            }
-        }
-    };
-    
-    /**
-     * 处理智能体执行事件
-     */
-    const handleAgentExecution = (record) => {
-        if (!record) return;
-        
-        let message = `${record.agentName}: ${record.agentRequest}`;
-        if (record.result) {
-            message += `\n结果: ${record.result}`;
-        }
-        updateLatestAIMessage(message, record.isCompleted);
-    };
-    
-    /**
-     * 处理计划完成事件
-     */
-    const handlePlanCompleted = (details) => {
-        if (!details) return;
-        if (details.summary) {
-            updateLatestAIMessage(`执行完成: ${details.summary}`, true);
-        } else {
-            updateLatestAIMessage('执行完成', true);
-        }
-        stopPolling();
     };
 
     // 返回公开的方法和事件系统
