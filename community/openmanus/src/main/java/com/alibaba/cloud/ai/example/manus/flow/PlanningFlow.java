@@ -64,7 +64,7 @@ public class PlanningFlow extends BaseFlow {
 
 	// shared result state between agents.
 	private Map<String, Object> resultState;
-	
+
 	public PlanningFlow(List<BaseAgent> agents, Map<String, Object> data, PlanExecutionRecorder recorder) {
 		super(agents, data, recorder);
 
@@ -76,15 +76,13 @@ public class PlanningFlow extends BaseFlow {
 
 		if (data.containsKey("plan_id")) {
 			activePlanId = (String) data.remove("plan_id");
-		}
-		else {
+		} else {
 			activePlanId = "plan_" + System.currentTimeMillis();
 		}
 
 		if (!data.containsKey("planning_tool")) {
 			this.planningTool = PlanningTool.INSTANCE;
-		}
-		else {
+		} else {
 			this.planningTool = (PlanningTool) data.get("planning_tool");
 		}
 
@@ -95,9 +93,9 @@ public class PlanningFlow extends BaseFlow {
 		}
 
 		this.resultState = new HashMap<>();
-		
+
 	}
-	
+
 	public BaseAgent getExecutor(String stepType) {
 		BaseAgent defaultAgent = null;
 
@@ -120,12 +118,10 @@ public class PlanningFlow extends BaseFlow {
 			if (!agents.isEmpty()) {
 				defaultAgent = agents.get(0);
 				log.warn("Using first available agent as fallback: {}", defaultAgent.getName());
-			}
-			else {
+			} else {
 				throw new RuntimeException("No agents available in the system");
 			}
-		}
-		else {
+		} else {
 			log.info("Agent not found for type: {}. Using MANUS agent as fallback.", stepType);
 		}
 
@@ -137,15 +133,15 @@ public class PlanningFlow extends BaseFlow {
 		try {
 			// Record plan start with input text
 			recordPlanStart(inputText);
-			
+
 			if (inputText != null && !inputText.isEmpty()) {
 				createInitialPlan(inputText);
 
 				if (!planningTool.getPlans().containsKey(activePlanId)) {
 					log.error("Plan creation failed. Plan ID " + activePlanId + " not found in planning tool.");
 					return "Failed to create plan for: " + inputText;
-					}
-				
+				}
+
 				// Update plan record with created plan details
 				updatePlanRecordWithPlanDetails();
 			}
@@ -156,7 +152,7 @@ public class PlanningFlow extends BaseFlow {
 				if (stepInfoEntry == null) {
 					String summary = finalizePlan();
 					result.append(summary);
-					
+
 					// Record plan completion
 					recordPlanCompletion(summary);
 					break;
@@ -167,7 +163,7 @@ public class PlanningFlow extends BaseFlow {
 				if (currentStepIndex == null) {
 					String summary = finalizePlan();
 					result.append(summary);
-					
+
 					// Record plan completion
 					recordPlanCompletion(summary);
 					break;
@@ -178,29 +174,26 @@ public class PlanningFlow extends BaseFlow {
 				executor.setConversationId(activePlanId);
 				executor.setPlanId(activePlanId);
 				String stepResult = executeStep(executor, stepInfo);
-				
+
 				result.append(stepResult).append("\n");
 			}
 
 			return result.toString();
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("Error in PlanningFlow", e);
-			
+
 			// Record failure in plan execution
 			PlanExecutionRecord record = getRecorder().getExecutionRecord(activePlanId);
 			if (record != null) {
 				record.setSummary(e.getMessage());
 				getRecorder().recordPlanExecution(record);
 			}
-			
+
 			return "Execution failed: " + e.getMessage();
-		}
-		finally {
+		} finally {
 			chromeDriverService.cleanup();
 		}
 	}
-
 
 	/**
 	 * Initialize the plan execution record
@@ -213,10 +206,10 @@ public class PlanningFlow extends BaseFlow {
 			record.setStartTime(LocalDateTime.now());
 			getRecorder().recordPlanExecution(record);
 		}
-		return record;	
+		return record;
 
 	}
-	
+
 	/**
 	 * Record the start of plan execution
 	 * 
@@ -225,16 +218,14 @@ public class PlanningFlow extends BaseFlow {
 	private void recordPlanStart(String inputText) {
 		PlanExecutionRecord record = getOrCreatePlanExecutionRecord();
 		record.setUserRequest(inputText);
-		record.setTitle("Plan for: " + 
-			(inputText != null ? 
-				inputText.substring(0, Math.min(inputText.length(), 50)) + 
-				(inputText.length() > 50 ? "..." : "") : 
-				"Unknown request"));
-		
+		record.setTitle("Plan for: " +
+				(inputText != null ? inputText.substring(0, Math.min(inputText.length(), 50)) +
+						(inputText.length() > 50 ? "..." : "") : "Unknown request"));
+
 		// Record initial plan execution
 		getRecorder().recordPlanExecution(record);
 	}
-	
+
 	/**
 	 * Update plan record with details from the created plan
 	 */
@@ -242,26 +233,24 @@ public class PlanningFlow extends BaseFlow {
 		if (planningTool.getPlans().containsKey(activePlanId)) {
 			Map<String, Object> planData = planningTool.getPlans().get(activePlanId);
 			PlanExecutionRecord record = getRecorder().getExecutionRecord(activePlanId);
-			
+
 			if (record != null) {
 				if (planData.containsKey("title")) {
 					record.setTitle((String) planData.get("title"));
 				}
-				
+
 				if (planData.containsKey("steps")) {
 					@SuppressWarnings("unchecked")
 					List<String> steps = (List<String>) planData.get("steps");
 					record.setSteps(steps);
 				}
-				
+
 				// Record updated plan execution
 				getRecorder().recordPlanExecution(record);
 			}
 		}
 	}
-	
 
-	
 	/**
 	 * Record plan completion
 	 * 
@@ -278,12 +267,12 @@ public class PlanningFlow extends BaseFlow {
 		StringBuilder agentsInfo = new StringBuilder("Available Agents:\n");
 		agents.forEach(agent -> {
 			agentsInfo.append("- Agent Name ")
-				.append(": ")
-				.append(agent.getName().toUpperCase())
-				.append("\n")
-				.append("  Description: ")
-				.append(agent.getDescription())
-				.append("\n");
+					.append(": ")
+					.append(agent.getName().toUpperCase())
+					.append("\n")
+					.append("  Description: ")
+					.append(agent.getDescription())
+					.append("\n");
 		});
 
 		String prompt_template = """
@@ -303,20 +292,19 @@ public class PlanningFlow extends BaseFlow {
 
 		PromptTemplate promptTemplate = new PromptTemplate(prompt_template);
 		Prompt userPrompt = promptTemplate
-			.create(Map.of("plan_id", activePlanId, "query", request, "agents_info", agentsInfo.toString()));
+				.create(Map.of("plan_id", activePlanId, "query", request, "agents_info", agentsInfo.toString()));
 		ChatResponse response = llmService.getPlanningChatClient()
-			.prompt(userPrompt)
-			.tools(getToolCallList())
-			.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
-				.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
-			.user(request)
-			.call()
-			.chatResponse();
+				.prompt(userPrompt)
+				.tools(getToolCallList())
+				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
+						.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
+				.user(request)
+				.call()
+				.chatResponse();
 
 		if (response != null && response.getResult() != null) {
 			log.info("Plan creation result: " + response.getResult().getOutput().getText());
-		}
-		else {
+		} else {
 			log.warn("Creating default plan");
 
 			Map<String, Object> defaultArgumentMap = new HashMap<>();
@@ -344,8 +332,7 @@ public class PlanningFlow extends BaseFlow {
 				String status;
 				if (i >= stepStatuses.size()) {
 					status = PlanStepStatus.NOT_STARTED.getValue();
-				}
-				else {
+				} else {
 					status = stepStatuses.get(i);
 				}
 
@@ -370,13 +357,12 @@ public class PlanningFlow extends BaseFlow {
 							}
 						};
 						planningTool.run(JSON.toJSONString(argsMap));
-					}
-					catch (Exception e) {
+
+					} catch (Exception e) {
 						log.error("Error marking step as in_progress", e);
 						if (i < stepStatuses.size()) {
 							stepStatuses.set(i, PlanStepStatus.IN_PROGRESS.getValue());
-						}
-						else {
+						} else {
 							while (stepStatuses.size() < i) {
 								stepStatuses.add(PlanStepStatus.NOT_STARTED.getValue());
 							}
@@ -391,8 +377,7 @@ public class PlanningFlow extends BaseFlow {
 
 			return null;
 
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("Error finding current step index: " + e.getMessage());
 			return null;
 		}
@@ -405,19 +390,24 @@ public class PlanningFlow extends BaseFlow {
 
 			try {
 
+				// 更新 PlanExecutionRecord 中的当前步骤索引
+				PlanExecutionRecord record = getRecorder().getExecutionRecord(activePlanId);
+				if (record != null) {
+					record.setCurrentStepIndex(currentStepIndex);
+					getRecorder().recordPlanExecution(record);
+				}
 				String stepResult = executor
-					.run(Map.of("planStatus", planStatus, "currentStepIndex", currentStepIndex, "stepText", stepText));
+						.run(Map.of("planStatus", planStatus, "currentStepIndex", currentStepIndex, "stepText",
+								stepText));
 
 				markStepCompleted();
 
 				return stepResult;
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				log.error("Error executing step " + currentStepIndex + ": " + e.getMessage());
 				return "Error executing step " + currentStepIndex + ": " + e.getMessage();
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("Error preparing execution context: " + e.getMessage());
 			return "Error preparing execution context: " + e.getMessage();
 		}
@@ -439,8 +429,7 @@ public class PlanningFlow extends BaseFlow {
 			};
 			ToolExecuteResult result = planningTool.run(JSON.toJSONString(argsMap));
 			log.info("Marked step " + currentStepIndex + " as completed in plan " + activePlanId);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("Failed to update plan status: " + e.getMessage());
 
 			Map<String, Map<String, Object>> plans = planningTool.getPlans();
@@ -470,8 +459,7 @@ public class PlanningFlow extends BaseFlow {
 			ToolExecuteResult result = planningTool.run(JSON.toJSONString(argsMap));
 
 			return result.getOutput() != null ? result.getOutput() : result.toString();
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("Error getting plan: " + e.getMessage());
 			return generatePlanTextFromStorage();
 		}
@@ -543,8 +531,7 @@ public class PlanningFlow extends BaseFlow {
 			}
 
 			return planText.toString();
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("Error generating plan text from storage: " + e.getMessage());
 			return "Error: Unable to retrieve plan with ID " + activePlanId;
 		}
@@ -575,17 +562,16 @@ public class PlanningFlow extends BaseFlow {
 					""".formatted(planText);
 
 			ChatResponse response = llmService.getFinalizeChatClient()
-				.prompt()
-				.advisors(new MessageChatMemoryAdvisor(llmService.getMemory()))
-				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
-					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
-				.user(prompt)
-				.call()
-				.chatResponse();
+					.prompt()
+					.advisors(new MessageChatMemoryAdvisor(llmService.getMemory()))
+					.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
+							.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
+					.user(prompt)
+					.call()
+					.chatResponse();
 
 			return "Plan Summary:\n\n" + response.getResult().getOutput().getText();
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("Error finalizing plan with LLM: " + e.getMessage());
 			return "Plan completed. Error generating summary.";
 		}
