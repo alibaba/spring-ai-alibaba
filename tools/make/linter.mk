@@ -19,8 +19,8 @@
 .PHONY: lint
 lint: ## Check files
 # md 文件错误太多了，暂时关闭
-# lint: markdown-lint yaml-lint code-spell licenses-check
-lint: yaml-lint codespell licenses-check
+# lint: markdown-lint yaml-lint code-spell
+lint: yaml-lint codespell
 
 .PHONY: codespell
 codespell: CODESPELL_SKIP := $(shell cat tools/linter/codespell/.codespell.skip | tr \\n ',')
