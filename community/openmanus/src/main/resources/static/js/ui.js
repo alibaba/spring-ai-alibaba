@@ -137,6 +137,12 @@ const ManusUI = (() => {
             });
             EventSystem.emit(UI_EVENTS.MESSAGE_COMPLETE);
             stopPolling();
+            
+            // 清空活动计划ID
+            activePlanId = null;
+            
+            // 更新UI状态，启用发送按钮
+            updateInputState(true);
         });
     };
 
@@ -147,6 +153,15 @@ const ManusUI = (() => {
         const query = inputField.value.trim();
         if (!query) return;
         
+        // 如果当前有活动的计划正在执行，则不允许提交新任务
+        if (activePlanId) {
+            EventSystem.emit(UI_EVENTS.MESSAGE_UPDATE, {
+                content: `当前有任务正在执行，请等待完成后再提交新任务`,
+                type: 'error'
+            });
+            return;
+        }
+        
         // 清空输入框
         inputField.value = '';
         
@@ -154,6 +169,9 @@ const ManusUI = (() => {
         ChatHandler.handleUserMessage(query);
         
         try {
+            // 禁用输入区域，防止重复提交
+            updateInputState(false);
+            
             // 发送到API
             const response = await ManusAPI.sendMessage(query);
             
@@ -166,6 +184,26 @@ const ManusUI = (() => {
                 content: `发送失败: ${error.message}`,
                 type: 'error'
             });
+            
+            // 发生错误时，确保可以再次提交
+            updateInputState(true);
+        }
+    };
+    
+    /**
+     * 更新输入区域状态（启用/禁用）
+     * @param {boolean} enabled - 是否启用输入
+     */
+    const updateInputState = (enabled) => {
+        inputField.disabled = !enabled;
+        sendButton.disabled = !enabled;
+        
+        if (!enabled) {
+            sendButton.classList.add('disabled');
+            inputField.setAttribute('placeholder', '正在处理中，请稍候...');
+        } else {
+            sendButton.classList.remove('disabled');
+            inputField.setAttribute('placeholder', '向 Manus 发送消息');
         }
     };
     

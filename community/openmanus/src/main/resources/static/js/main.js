@@ -21,10 +21,10 @@ function initializeSidebars() {
     const mainContent = document.getElementById('mainContent');
     
     // 左侧边栏切换按钮事件
-    document.getElementById('toggleLeftSidebarBtn').addEventListener('click', () => {
+    /*document.getElementById('toggleLeftSidebarBtn').addEventListener('click', () => {
         leftSidebar.classList.toggle('collapsed');
         mainContent.classList.toggle('left-expanded');
-    });
+    });*/
     
     // 右侧边栏切换按钮事件
     document.getElementById('toggleRightSidebarBtn').addEventListener('click', () => {
