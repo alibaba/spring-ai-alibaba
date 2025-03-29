@@ -13,11 +13,14 @@ const ManusUI = (() => {
     // 记录上一次sequence的大小
     let lastSequenceSize = 0;
     
-    // 轮询间隔（毫秒）
-    const POLL_INTERVAL = 2000;
+    // 轮询间隔（毫秒） - 从2秒增加到6秒
+    const POLL_INTERVAL = 6000;
     
     // 轮询定时器
     let pollTimer = null;
+    
+    // 轮询并发控制标志
+    let isPolling = false;
     
     // 事件监听器集合
     const eventListeners = {
@@ -213,7 +216,15 @@ const ManusUI = (() => {
     const pollPlanStatus = async () => {
         if (!activePlanId) return;
         
+        // 如果已经在轮询中，跳过本次轮询
+        if (isPolling) {
+            console.log('上一次轮询尚未完成，跳过本次轮询');
+            return;
+        }
+        
         try {
+            isPolling = true; // 设置轮询状态为进行中
+            
             const details = await ManusAPI.getDetails(activePlanId);
             
             // 发送计划更新事件
@@ -241,6 +252,8 @@ const ManusUI = (() => {
             
         } catch (error) {
             console.error('轮询计划状态失败:', error);
+        } finally {
+            isPolling = false; // 无论成功或失败，都重置轮询状态
         }
     };
     
@@ -255,7 +268,7 @@ const ManusUI = (() => {
         // 立即执行一次
         pollPlanStatus();
         
-        // 设置定时轮询
+        // 设置定时轮询，间隔已增加到6秒
         pollTimer = setInterval(pollPlanStatus, POLL_INTERVAL);
     };
     
