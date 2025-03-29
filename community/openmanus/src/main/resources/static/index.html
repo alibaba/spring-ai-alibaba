@@ -80,7 +80,7 @@
                         <span class="icon-collapse-left"></span>
                     </button>
                     <div class="header-title-section">
-                        <h1>JTask</h1>
+                        <h1>JTaskPilot</h1>
                         <div class="knowledge-suggestion">
                             <span class="icon-lightbulb"></span> 知识建议 <span class="badge">1 待处理 ></span>
                         </div>
@@ -110,21 +110,12 @@
         <!-- 右侧边栏 -->
         <aside class="sidebar right-sidebar" id="rightSidebar">
             <div class="right-sidebar-header">
-                <h3>Java TaskPilot 的电脑</h3>
+                <h3>执行详情</h3>
             </div>
             <div class="right-sidebar-content">
-                <div class="terminal-status">
-                    <span class="icon-terminal"></span>
-                    <span>Java TaskPilot 正在使用终端</span>
-                </div>
-                <div class="status-detail">
-                    正在执行命令 <code class="code-inline">cd /home/ubuntu && mkdir -p /home/ubuntu/screenplay/fin...</code>
-                </div>
-
-                <div class="terminal-output">
-                    <div class="terminal-header">workspace</div>
-                    <pre><code>ubuntu@sandbox:~$ cd /home/ubuntu && mkdir -p /home/ubuntu/screenplay/final/new_poster
-ubuntu@sandbox:~$ </code></pre>
+                <!-- 执行详情将在这里动态填充 -->
+                <div class="no-selection-message">
+                    <p>请在左侧聊天区域点击任意执行步骤查看详情</p>
                 </div>
             </div>
             <div class="right-sidebar-footer">
@@ -140,8 +131,8 @@ ubuntu@sandbox:~$ </code></pre>
                 </span>
             </div>
             <div class="right-sidebar-status-bar">
-                <span>JTaskPilot 正在工作: 向用户呈现最终成果</span>
-                <span>10 / 10 <span class="icon-up-arrow"></span></span>
+                <span id="execution-status">未选择执行步骤</span>
+                <span id="execution-progress">0 / 0 <span class="icon-up-arrow"></span></span>
             </div>
         </aside>
     </div>
@@ -149,6 +140,7 @@ ubuntu@sandbox:~$ </code></pre>
     <!-- 引入模块化JavaScript文件 -->
     <script src="js/api.js"></script>
     <script src="js/chat-handler.js"></script>
+    <script src="js/right-sidebar.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/main.js"></script>
 </body>

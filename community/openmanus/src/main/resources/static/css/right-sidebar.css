@@ -10,6 +10,9 @@
     padding: 15px;
     background-color: #fdfdfd; /* 略微不同的背景色 */
     transition: width 0.3s ease-in-out, padding 0.3s ease-in-out, border-width 0.3s ease-in-out; /* 平滑过渡 */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 /* 收起状态的右侧边栏 */
@@ -44,6 +47,8 @@
     overflow-y: auto; /* 允许内容滚动 */
     overflow-x: hidden; /* 防止水平滚动 */
     font-size: 13px;
+    padding-right: 5px; /* 为滚动条留空间 */
+    margin-bottom: 10px;
 }
 
 /* 终端状态 */
@@ -157,3 +162,155 @@
     text-overflow: ellipsis;
 }
 .right-sidebar-status-bar .icon-up-arrow { font-size: 10px; margin-left: 2px; }
+
+/* 新增 - 执行详情样式 */
+.no-selection-message {
+    text-align: center;
+    color: #5f6368;
+    padding: 40px 10px;
+    font-size: 14px;
+}
+
+.step-info {
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #e8eaed;
+}
+
+.step-info h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #202124;
+    margin-bottom: 12px;
+}
+
+.agent-info {
+    display: flex;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: #3c4043;
+    line-height: 1.4;
+}
+
+.agent-info .label {
+    min-width: 70px;
+    font-weight: 500;
+    color: #5f6368;
+}
+
+.agent-info .value {
+    flex: 1;
+}
+
+.agent-info .value.success {
+    color: #1a73e8;
+}
+
+.think-act-steps h4 {
+    font-size: 13px;
+    font-weight: 500;
+    color: #202124;
+    margin-bottom: 10px;
+}
+
+.steps-container {
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+}
+
+.think-act-step {
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid #e8eaed;
+    border-radius: 4px;
+    background-color: #ffffff;
+}
+
+.step-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 11px;
+}
+
+.step-number {
+    font-weight: 500;
+    color: #202124;
+}
+
+.step-status {
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    text-transform: uppercase;
+    background-color: #f1f3f4;
+}
+
+.step-status.completed {
+    background-color: #e6f4ea;
+    color: #137333;
+}
+
+.step-status.in_progress {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+}
+
+.step-status.error {
+    background-color: #fce8e6;
+    color: #c5221f;
+}
+
+.think-section, .action-section {
+    margin-bottom: 10px;
+}
+
+.think-section h5, .action-section h5 {
+    font-size: 12px;
+    font-weight: 500;
+    color: #3c4043;
+    padding-bottom: 5px;
+    margin-bottom: 8px;
+    border-bottom: 1px dashed #e0e0e0;
+}
+
+.think-content, .action-content {
+    font-size: 12px;
+}
+
+.input, .output, .tool-info, .tool-params, .action-desc, .action-result {
+    margin-bottom: 8px;
+}
+
+.input .label, .output .label, .tool-info .label, .tool-params .label, .action-desc .label, .action-result .label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: #5f6368;
+}
+
+.think-content pre, .action-content pre {
+    font-family: monospace;
+    background-color: #f8f9fa;
+    padding: 8px;
+    border-radius: 4px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    color: #3c4043;
+    font-size: 11px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.params {
+    color: #188038;
+}
+
+.no-steps-message {
+    text-align: center;
+    color: #5f6368;
+    padding: 15px 10px;
+    font-style: italic;
+    font-size: 12px;
+}
