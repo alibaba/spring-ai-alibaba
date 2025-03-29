@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.agent;
 
+import com.alibaba.cloud.ai.example.manus.tool.support.PromptLoader;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.tool.Bash;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
@@ -48,29 +49,7 @@ public class FileAgent extends ToolCallAgent {
 
 	@Override
 	protected Message getNextStepMessage() {
-		String nextStepPrompt = """
-				What should I do next to achieve my goal?
-
-				Current File Operation State:
-				- Working Directory: {working_directory}
-				- Last File Operation: {last_operation}
-				- Last Operation Result: {operation_result}
-
-
-				Remember:
-				1. Check file existence before operations
-				2. Handle different file types appropriately
-				3. Validate file paths and content
-				4. Keep track of file operations
-				5. Handle potential errors
-				6. IMPORTANT: You MUST use at least one tool in your response to make progress!
-
-				Think step by step:
-				1. What file operation is needed?
-				2. Which tool is most appropriate?
-				3. How to handle potential errors?
-				4. What's the expected outcome?
-				""";
+		String nextStepPrompt = PromptLoader.loadPromptFromClasspath("prompts/file_agent_next_step_prompt.md");
 
 		PromptTemplate promptTemplate = new PromptTemplate(nextStepPrompt);
 		Message userMessage = promptTemplate.createMessage(getData());
@@ -87,35 +66,7 @@ public class FileAgent extends ToolCallAgent {
 	@Override
 	protected Message addThinkPrompt(List<Message> messages) {
 		super.addThinkPrompt(messages);
-		String systemPrompt = """
-				You are an AI agent specialized in file operations. Your goal is to handle file-related tasks effectively and safely.
-
-				# Response Rules
-
-				3. FILE OPERATIONS:
-				- Always validate file paths
-				- Check file existence
-				- Handle different file types
-				- Process content appropriately
-
-				4. ERROR HANDLING:
-				- Check file permissions
-				- Handle missing files
-				- Validate content format
-				- Monitor operation status
-
-				5. TASK COMPLETION:
-				- Track progress in memory
-				- Verify file operations
-				- Clean up if necessary
-				- Provide clear summaries
-
-				6. BEST PRACTICES:
-				- Use absolute paths when possible
-				- Handle large files carefully
-				- Maintain operation logs
-				- Follow file naming conventions
-				""";
+		String systemPrompt = PromptLoader.loadPromptFromClasspath("prompts/file_agent_think_prompt.md");
 
 		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(systemPrompt);
 		Message systemMessage = promptTemplate.createMessage(getData());
