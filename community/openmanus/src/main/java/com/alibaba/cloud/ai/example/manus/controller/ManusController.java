@@ -84,7 +84,7 @@ public class ManusController {
      * @return 执行记录的 JSON 表示
      */
     @GetMapping("/details/{planId}")
-    public ResponseEntity<String> getExecutionDetails(@PathVariable String planId) {
+    public synchronized ResponseEntity<String> getExecutionDetails(@PathVariable String planId) {
         PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId);
         
         if (planRecord == null) {

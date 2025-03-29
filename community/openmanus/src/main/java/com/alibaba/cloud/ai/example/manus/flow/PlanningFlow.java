@@ -399,7 +399,7 @@ public class PlanningFlow extends BaseFlow {
 					getRecorder().recordPlanExecution(record);
 				}
 				String stepResult = executor
-						.run(Map.of("planStatus", planStatus, "currentStepIndex", currentStepIndex, "stepText",
+							.run(Map.of("planStatus", planStatus, "currentStepIndex", currentStepIndex, "stepText",
 								stepText));
 
 				markStepCompleted();
