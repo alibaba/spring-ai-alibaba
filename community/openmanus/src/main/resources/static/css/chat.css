@@ -175,3 +175,33 @@
 .page-indicator .toggle-arrow {
     margin-left: 4px;
 }
+
+/* Action Info 样式 */
+.action-info {
+    margin-top: 8px;
+    margin-left: 22px;
+    font-size: 12px;
+    color: #666;
+    background-color: #f8f9fa;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 8px 12px;
+}
+
+.action-info .action-description,
+.action-info .tool-params {
+    display: flex;
+    align-items: center;
+    line-height: 1.4;
+}
+
+.action-info .tool-params {
+    margin-top: 4px;
+    color: #888;
+    font-family: monospace;
+}
+
+.action-info .icon {
+    margin-right: 8px;
+    font-size: 14px;
+}
