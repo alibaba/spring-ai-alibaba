@@ -90,14 +90,6 @@ public class Bash implements Function<String, ToolExecuteResult> {
 		return new ToolExecuteResult(JSON.toJSONString(result));
 	}
 
-	public String getWorkingDirectoryPath() {
-		return workingDirectoryPath;
-	}
-
-	public void setWorkingDirectoryPath(String workingDirectoryPath) {
-		this.workingDirectoryPath = workingDirectoryPath;
-	}
-
 	@Override
 	public ToolExecuteResult apply(String s) {
 		return run(s);
