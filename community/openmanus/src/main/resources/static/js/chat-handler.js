@@ -11,15 +11,17 @@ const ChatHandler = (() => {
     const init = () => {
         chatArea = document.querySelector('.chat-area');
         
-        // 订阅事件
+        // // 订阅UI相关事件
+        
+        // 订阅业务事件
         ManusUI.EventSystem.on('plan-update', handlePlanUpdate);
-        ManusUI.EventSystem.on('agent-execution', handleAgentExecution);
+        // ManusUI.EventSystem.on('agent-execution', handleAgentExecution);
         ManusUI.EventSystem.on('plan-completed', handlePlanComplete);
     };
     
+    
     /**
      * 处理用户输入消息
-     * @param {string} message 用户输入的消息
      */
     const handleUserMessage = (message) => {
         const messageElement = createMessageElement('user-message', message);
@@ -29,41 +31,117 @@ const ChatHandler = (() => {
     
     /**
      * 处理计划更新
-     * @param {Object} planDetails 计划详情数据
      */
     const handlePlanUpdate = (planDetails) => {
         if (!planDetails.steps || !planDetails.steps.length) return;
-        
-        // 更新步骤展示
-        updateStepsDisplay(planDetails.steps, planDetails.currentStepIndex);
+        updateStepsDisplay(planDetails);
     };
-    
+
     /**
-     * 处理智能体执行
-     * @param {Object} agentExecution 智能体执行记录
+     * 更新步骤显示
      */
-    const handleAgentExecution = (agentExecution) => {
-        // 避免重复显示相同的执行记录
-        if (lastAgentExecutionId === agentExecution.id) return;
-        lastAgentExecutionId = agentExecution.id;
+    const updateStepsDisplay = (planDetails) => {
+        if (!planDetails.steps || !planDetails.steps.length) return;
         
-        const messageElement = createAgentExecutionElement(agentExecution);
-        chatArea.appendChild(messageElement);
-    };
-    
-    /**
-     * 处理计划完成
-     * @param {Object} planDetails 计划完成的详情
-     */
-    const handlePlanComplete = (planDetails) => {
-        if (planDetails.summary) {
+        let stepsContainer = document.querySelector('.ai-steps-container');
+        if (!stepsContainer) {
+            stepsContainer = document.createElement('div');
+            stepsContainer.className = 'message ai-message ai-steps-container';
+            chatArea.appendChild(stepsContainer);
         }
+
+        // 初始化存储每个步骤的最后执行动作
+        if (!window.lastStepActions) {
+            window.lastStepActions = new Array(planDetails.steps.length).fill(null);
+        }
+        
+        // 遍历所有执行序列，匹配步骤并更新动作
+        if (planDetails.agentExecutionSequence?.length > 0) {
+            let index = 0;
+            planDetails.agentExecutionSequence.forEach(execution => {
+                // 使用stepIndex属性确定此执行记录属于哪个步骤
+                if (execution?.thinkActSteps?.length > 0) {
+                    const latestThinkAct = execution.thinkActSteps[execution.thinkActSteps.length - 1];
+                    if (latestThinkAct?.actionDescription && latestThinkAct?.toolParameters) {
+                        // 保存此步骤的最后执行动作
+                        window.lastStepActions[index] = {
+                            actionDescription: latestThinkAct.actionDescription,
+                            toolParameters: latestThinkAct.toolParameters
+                        };
+                    }else{
+                        window.lastStepActions[index] = {
+                            actionDescription: latestThinkAct.thinkOutput,
+                            toolParameters: "无工具"
+                        };
+                    }
+                }
+                index++;
+            });
+        }
+        
+        // 渲染所有步骤
+        const stepsContent = planDetails.steps.map((step, index) => {
+            const stepDiv = document.createElement('div');
+            stepDiv.className = `ai-section ${index === planDetails.currentStepIndex ? 'current' : ''}`;
+            
+            // 创建步骤标题
+            stepDiv.innerHTML = `
+                <div class="section-header">
+                    <span class="icon">${index < planDetails.currentStepIndex ? '✓' : index === planDetails.currentStepIndex ? '▶' : '○'}</span>
+                    <span>${escapeHtml(step)}</span>
+                </div>
+            `;
+
+            // 获取该步骤的最后执行动作
+            const lastAction = window.lastStepActions[index];
+            
+            // 如果是当前步骤且有执行动作，显示动作信息
+            if (index === planDetails.currentStepIndex && planDetails.agentExecutionSequence?.length > 0) {
+                const latestExecution = planDetails.agentExecutionSequence.find(e => e.stepIndex === index);
+                if (latestExecution?.thinkActSteps?.length > 0) {
+                    const latestThinkAct = latestExecution.thinkActSteps[latestExecution.thinkActSteps.length - 1];
+                    if (latestThinkAct?.actionDescription && latestThinkAct?.toolParameters) {
+                        const actionInfoDiv = document.createElement('div');
+                        actionInfoDiv.className = 'action-info';
+                        actionInfoDiv.innerHTML = `
+                            <div class="action-description">
+                                <span class="icon">🔄</span>
+                                ${escapeHtml(latestThinkAct.actionDescription)}
+                            </div>
+                            <div class="tool-params">
+                                <span class="icon">⚙️</span>
+                                参数: ${escapeHtml(latestThinkAct.toolParameters)}
+                            </div>
+                        `;
+                        stepDiv.appendChild(actionInfoDiv);
+                    }
+                }
+            } 
+            // 如果是已完成的步骤且有保存的最后执行动作，显示该动作
+            else if (index < planDetails.currentStepIndex && lastAction) {
+                const actionInfoDiv = document.createElement('div');
+                actionInfoDiv.className = 'action-info';
+                actionInfoDiv.innerHTML = `
+                    <div class="action-description">
+                        <span class="icon">✓</span>
+                        ${escapeHtml(lastAction.actionDescription)}
+                    </div>
+                    <div class="tool-params">
+                        <span class="icon">⚙️</span>
+                        参数: ${escapeHtml(lastAction.toolParameters)}
+                    </div>
+                `;
+                stepDiv.appendChild(actionInfoDiv);
+            }
+
+            return stepDiv.outerHTML;
+        }).join('');
+        
+        stepsContainer.innerHTML = stepsContent;
     };
     
     /**
      * 创建消息元素
-     * @param {string} className 消息类名
-     * @param {string} content 消息内容
      */
     const createMessageElement = (className, content) => {
         const div = document.createElement('div');
@@ -73,88 +151,7 @@ const ChatHandler = (() => {
     };
     
     /**
-     * 创建智能体执行展示元素
-     * @param {Object} execution 执行记录
-     */
-    const createAgentExecutionElement = (execution) => {
-        const div = document.createElement('div');
-        div.className = 'message ai-message';
-        
-        let content = `
-            <div class="ai-section">
-                <div class="section-header ${execution.isCompleted ? 'checked' : ''}">
-                    <span class="icon">${execution.isCompleted ? '✓' : '▶'}</span>
-                    <span>${escapeHtml(execution.agentName)} - ${escapeHtml(execution.agentDescription || '')}</span>
-                </div>
-                <div class="section-content">
-                    <div class="status-update">
-                        <span class="icon">🔄</span>
-                        执行请求: ${escapeHtml(execution.agentRequest)}
-                    </div>
-                    ${execution.result ? `
-                        <div class="action-report">
-                            <span class="icon">✓</span>
-                            执行结果: ${escapeHtml(execution.result)}
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-        
-        div.innerHTML = content;
-        return div;
-    };
-    
-    /**
-     * 创建总结元素
-     * @param {string} summary 总结内容
-     */
-    const createSummaryElement = (summary) => {
-        const div = document.createElement('div');
-        div.className = 'message ai-message';
-        div.innerHTML = `
-            <div class="ai-section">
-                <div class="section-header checked">
-                    <span class="icon">✓</span>
-                    <span>执行完成</span>
-                </div>
-                <div class="section-content">
-                    ${escapeHtml(summary)}
-                </div>
-            </div>
-        `;
-        return div;
-    };
-    
-    /**
-     * 更新步骤显示
-     * @param {Array} steps 步骤列表
-     * @param {number} currentIndex 当前步骤索引
-     */
-    const updateStepsDisplay = (steps, currentIndex) => {
-        // 查找或创建步骤容器
-        let stepsContainer = document.querySelector('.ai-steps-container');
-        if (!stepsContainer) {
-            stepsContainer = document.createElement('div');
-            stepsContainer.className = 'message ai-message ai-steps-container';
-            chatArea.appendChild(stepsContainer);
-        }
-        
-        const stepsContent = steps.map((step, index) => `
-            <div class="ai-section ${index === currentIndex ? 'current' : ''}">
-                <div class="section-header">
-                    <span class="icon">${index < currentIndex ? '✓' : index === currentIndex ? '▶' : '○'}</span>
-                    <span>${escapeHtml(step)}</span>
-                </div>
-            </div>
-        `).join('');
-        
-        stepsContainer.innerHTML = stepsContent;
-    };
-    
-    /**
      * HTML转义
-     * @param {string} text 需要转义的文本
      */
     const escapeHtml = (text) => {
         if (!text) return '';
@@ -170,6 +167,7 @@ const ChatHandler = (() => {
         chatArea.scrollTop = chatArea.scrollHeight;
     };
     
+    // 返回公开方法
     return {
         init,
         handleUserMessage
