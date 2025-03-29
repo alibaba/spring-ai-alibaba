@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 初始化聊天处理器
     ChatHandler.init();
     
+    // 初始化右侧边栏
+    RightSidebar.init();
+    
     // 初始化侧边栏切换
     initializeSidebars();
 });
