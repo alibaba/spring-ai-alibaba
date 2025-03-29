@@ -38,6 +38,62 @@ const ChatHandler = (() => {
     };
 
     /**
+     * 处理计划完成
+     */
+    const handlePlanComplete = (details) => {
+        // 首先调用handlePlanUpdate进行最后的执行状态更新
+        handlePlanUpdate(details);
+        
+        // 如果有总结内容，显示为系统反馈消息
+        if (details && details.summary) {
+            const aiMessageElement = document.createElement('div');
+            aiMessageElement.className = 'message ai-message';
+            
+            // 创建AI消息头部
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'ai-header';
+            headerDiv.innerHTML = '<span class="ai-logo">M</span> Manus AI';
+            
+            // 创建消息内容区域
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'ai-content';
+            contentDiv.innerHTML = `<p>${formatSummaryContent(details.summary)}</p>`;
+            
+            // 组装消息元素
+            aiMessageElement.appendChild(headerDiv);
+            aiMessageElement.appendChild(contentDiv);
+            
+            // 添加到聊天区域
+            chatArea.appendChild(aiMessageElement);
+            scrollToBottom();
+        }
+    };
+
+    /**
+     * 格式化总结内容
+     * 处理可能包含的markdown、代码块等格式
+     */
+    const formatSummaryContent = (summary) => {
+        if (!summary) return '';
+        
+        // 替换换行符为HTML换行
+        let formattedText = summary.replace(/\n/g, '<br>');
+        
+        // 处理markdown格式的代码块
+        formattedText = formattedText.replace(/```(\w*)\n([\s\S]*?)```/g, (match, language, code) => {
+            return `<pre><code class="language-${language || 'text'}">${escapeHtml(code)}</code></pre>`;
+        });
+        
+        // 处理粗体文本
+        formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        
+        // 处理斜体文本
+        formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        return formattedText;
+    };
+
+    /**
      * 更新步骤显示
      */
     const updateStepsDisplay = (planDetails) => {
@@ -50,10 +106,8 @@ const ChatHandler = (() => {
             chatArea.appendChild(stepsContainer);
         }
 
-        // 初始化存储每个步骤的最后执行动作
-        if (!window.lastStepActions) {
-            window.lastStepActions = new Array(planDetails.steps.length).fill(null);
-        }
+        // 初始化存储每个步骤的最后执行动作（现在是方法级变量）
+        let lastStepActions = new Array(planDetails.steps.length).fill(null);
         
         // 遍历所有执行序列，匹配步骤并更新动作
         if (planDetails.agentExecutionSequence?.length > 0) {
@@ -64,12 +118,12 @@ const ChatHandler = (() => {
                     const latestThinkAct = execution.thinkActSteps[execution.thinkActSteps.length - 1];
                     if (latestThinkAct?.actionDescription && latestThinkAct?.toolParameters) {
                         // 保存此步骤的最后执行动作
-                        window.lastStepActions[index] = {
+                        lastStepActions[index] = {
                             actionDescription: latestThinkAct.actionDescription,
                             toolParameters: latestThinkAct.toolParameters
                         };
                     }else{
-                        window.lastStepActions[index] = {
+                        lastStepActions[index] = {
                             actionDescription: latestThinkAct.thinkOutput,
                             toolParameters: "无工具"
                         };
@@ -92,38 +146,16 @@ const ChatHandler = (() => {
                 </div>
             `;
 
-            // 获取该步骤的最后执行动作
-            const lastAction = window.lastStepActions[index];
+            // 获取该步骤的最后执行动作（现在使用局部变量）
+            const lastAction = lastStepActions[index];
             
-            // 如果是当前步骤且有执行动作，显示动作信息
-            if (index === planDetails.currentStepIndex && planDetails.agentExecutionSequence?.length > 0) {
-                const latestExecution = planDetails.agentExecutionSequence.find(e => e.stepIndex === index);
-                if (latestExecution?.thinkActSteps?.length > 0) {
-                    const latestThinkAct = latestExecution.thinkActSteps[latestExecution.thinkActSteps.length - 1];
-                    if (latestThinkAct?.actionDescription && latestThinkAct?.toolParameters) {
-                        const actionInfoDiv = document.createElement('div');
-                        actionInfoDiv.className = 'action-info';
-                        actionInfoDiv.innerHTML = `
-                            <div class="action-description">
-                                <span class="icon">🔄</span>
-                                ${escapeHtml(latestThinkAct.actionDescription)}
-                            </div>
-                            <div class="tool-params">
-                                <span class="icon">⚙️</span>
-                                参数: ${escapeHtml(latestThinkAct.toolParameters)}
-                            </div>
-                        `;
-                        stepDiv.appendChild(actionInfoDiv);
-                    }
-                }
-            } 
-            // 如果是已完成的步骤且有保存的最后执行动作，显示该动作
-            else if (index < planDetails.currentStepIndex && lastAction) {
+            // 简化逻辑：如果有lastAction就显示动作信息，不区分是否是当前步骤
+            if (lastAction) {
                 const actionInfoDiv = document.createElement('div');
                 actionInfoDiv.className = 'action-info';
                 actionInfoDiv.innerHTML = `
                     <div class="action-description">
-                        <span class="icon">✓</span>
+                        <span class="icon">${index === planDetails.currentStepIndex ? '🔄' : '✓'}</span>
                         ${escapeHtml(lastAction.actionDescription)}
                     </div>
                     <div class="tool-params">
