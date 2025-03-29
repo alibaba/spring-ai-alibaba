@@ -22,9 +22,7 @@ import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,9 +33,12 @@ import java.util.regex.Pattern;
 import java.time.LocalDateTime;
 
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -146,26 +147,27 @@ public class PlanningFlow extends BaseFlow {
 				updatePlanRecordWithPlanDetails();
 			}
 
-			StringBuilder result = new StringBuilder();
+			StringBuilder outputStringBuilder = new StringBuilder();
+			String returnResult = "";
 			while (true) {
 				Map.Entry<Integer, Map<String, String>> stepInfoEntry = getCurrentStepInfo();
 				if (stepInfoEntry == null) {
-					String summary = finalizePlan();
-					result.append(summary);
+					returnResult = finalizePlan(inputText);
+					outputStringBuilder.append(returnResult);
 
 					// Record plan completion
-					recordPlanCompletion(summary);
+					recordPlanCompletion(returnResult);
 					break;
 				}
 				currentStepIndex = stepInfoEntry.getKey();
 				Map<String, String> stepInfo = stepInfoEntry.getValue();
 
 				if (currentStepIndex == null) {
-					String summary = finalizePlan();
-					result.append(summary);
+					returnResult = finalizePlan(inputText);
+					outputStringBuilder.append(returnResult);
 
 					// Record plan completion
-					recordPlanCompletion(summary);
+					recordPlanCompletion(returnResult);
 					break;
 				}
 
@@ -175,10 +177,10 @@ public class PlanningFlow extends BaseFlow {
 				executor.setPlanId(activePlanId);
 				String stepResult = executeStep(executor, stepInfo);
 
-				result.append(stepResult).append("\n");
+				outputStringBuilder.append(stepResult).append("\n");
 			}
-
-			return result.toString();
+			log.info("Plan execution completed. result flow is \n: " + outputStringBuilder.toString());
+			return returnResult;
 		} catch (Exception e) {
 			log.error("Error in PlanningFlow", e);
 
@@ -537,40 +539,34 @@ public class PlanningFlow extends BaseFlow {
 		}
 	}
 
-	public String finalizePlan() {
+	public String finalizePlan(String userRequest) {
 		String planText = getPlanText();
 		try {
-			String prompt = """
-					Based on the execution history and the final plan status:
 
-					Plan Status:
-					%s
-
-					Please analyze:
-					1. What was the original user request?
-					2. What steps were executed successfully?
-					3. Were there any challenges or failures?
-					4. What specific results were achieved?
-
-					Provide a clear and concise response addressing:
-					- Direct answer to the user's original question
-					- Key accomplishments and findings
-					- Any relevant data or metrics collected
-					- Recommendations or next steps (if applicable)
-
-					Format your response in a user-friendly way.
-					""".formatted(planText);
+			SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate("""
+                    You are an AI assistant that can respond based on the execution history and current status of plans.
+                    You will:
+                    1. Review the plan execution history if user requires
+                    2. Consider the current Memory and context
+                    3. Provide relevant and context-aware responses
+					
+					plan:
+					{planText}
+                    """);
+			Message systemMessage = systemPromptTemplate.createMessage(Map.of("planText", planText));
+			
+			UserMessage userMessage = new UserMessage(userRequest);
+			Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 
 			ChatResponse response = llmService.getFinalizeChatClient()
-					.prompt()
+					.prompt(prompt)
 					.advisors(new MessageChatMemoryAdvisor(llmService.getMemory()))
 					.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
 							.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
-					.user(prompt)
 					.call()
 					.chatResponse();
 
-			return "Plan Summary:\n\n" + response.getResult().getOutput().getText();
+			return response.getResult().getOutput().getText();
 		} catch (Exception e) {
 			log.error("Error finalizing plan with LLM: " + e.getMessage());
 			return "Plan completed. Error generating summary.";
