@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.flow;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 
@@ -28,9 +29,11 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
@@ -51,10 +54,13 @@ public class PlanningFlow extends BaseFlow {
 	@Autowired
 	private LlmService llmService;
 
+	@Autowired
+	private ChromeDriverService chromeDriverService;
+
 	// shared result state between agents.
 	private Map<String, Object> resultState;
 
-	public PlanningFlow(Map<String, BaseAgent> agents, Map<String, Object> data) {
+	public PlanningFlow(List<BaseAgent> agents, Map<String, Object> data) {
 		super(agents, data);
 
 		executorKeys = new ArrayList<>();
@@ -78,23 +84,46 @@ public class PlanningFlow extends BaseFlow {
 		}
 
 		if (executorKeys.isEmpty()) {
-			executorKeys.addAll(agents.keySet());
+			for (BaseAgent agent : agents) {
+				executorKeys.add(agent.getName().toUpperCase());
+			}
 		}
 
 		this.resultState = new HashMap<>();
 	}
 
 	public BaseAgent getExecutor(String stepType) {
-		if (stepType != null && agents.containsKey(stepType)) {
-			return agents.get(stepType);
-		}
+		BaseAgent defaultAgent = null;
 
-		for (String key : executorKeys) {
-			if (agents.containsKey(key)) {
-				return agents.get(key);
+		if (stepType != null) {
+			stepType = stepType.toUpperCase();
+			for (BaseAgent agent : agents) {
+				String agentUpper = agent.getName().toUpperCase();
+				if (agentUpper.equals(stepType)) {
+					return agent;
+				}
+				if (agentUpper.equals("MANUS")) {
+					defaultAgent = agent;
+				}
 			}
 		}
-		throw new RuntimeException("agent not found");
+
+		if (defaultAgent == null) {
+			log.warn("Agent not found for type: {}. No MANUS agent found as fallback.", stepType);
+			// 继续尝试获取第一个可用的 agent
+			if (!agents.isEmpty()) {
+				defaultAgent = agents.get(0);
+				log.warn("Using first available agent as fallback: {}", defaultAgent.getName());
+			}
+			else {
+				throw new RuntimeException("No agents available in the system");
+			}
+		}
+		else {
+			log.info("Agent not found for type: {}. Using MANUS agent as fallback.", stepType);
+		}
+
+		return defaultAgent;
 	}
 
 	@Override
@@ -138,23 +167,47 @@ public class PlanningFlow extends BaseFlow {
 			log.error("Error in PlanningFlow", e);
 			return "Execution failed: " + e.getMessage();
 		}
+		finally {
+			chromeDriverService.cleanup();
+		}
 	}
 
 	public void createInitialPlan(String request) {
 		log.info("Creating initial plan with ID: " + activePlanId);
 
-		String prompt_template = """
-				Create a reasonable plan with clear steps to accomplish the task:
+		// 构建agents信息
+		StringBuilder agentsInfo = new StringBuilder("Available Agents:\n");
+		agents.forEach(agent -> {
+			agentsInfo.append("- Agent Name ")
+				.append(": ")
+				.append(agent.getName().toUpperCase())
+				.append("\n")
+				.append("  Description: ")
+				.append(agent.getDescription())
+				.append("\n");
+		});
 
-				            {query}
+		String prompt_template = """
+				Create a reasonable plan with clear steps to accomplish the task.
+
+				Available Agents Information:
+				{agents_info}
+
+				Task to accomplish:
+				{query}
 
 				You can use the planning tool to help you create the plan, assign {plan_id} as the plan id.
+
+				Important: For each step in the plan, start with [AGENT_NAME] where AGENT_NAME is one of the available agents listed above.
+				For example: "[BROWSER_AGENT] Search for relevant information" or "[REACT_AGENT] Process the search results"
 				""";
 
 		PromptTemplate promptTemplate = new PromptTemplate(prompt_template);
-		Prompt userPrompt = promptTemplate.create(Map.of("plan_id", activePlanId, "query", request));
+		Prompt userPrompt = promptTemplate
+			.create(Map.of("plan_id", activePlanId, "query", request, "agents_info", agentsInfo.toString()));
 		ChatResponse response = llmService.getPlanningChatClient()
 			.prompt(userPrompt)
+			.tools(getToolCallList())
 			.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
 				.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
 			.user(request)
@@ -401,16 +454,46 @@ public class PlanningFlow extends BaseFlow {
 	public String finalizePlan() {
 		String planText = getPlanText();
 		try {
-			String prompt = "The plan has been completed. Here is the final plan status:\n\n" + planText
-					+ "\n\nPlease provide a summary of what was accomplished and any final thoughts.";
+			String prompt = """
+					Based on the execution history and the final plan status:
 
-			ChatResponse response = llmService.getFinalizeChatClient().prompt().user(prompt).call().chatResponse();
-			return "Plan completed:\n\n" + response.getResult().getOutput().getText();
+					Plan Status:
+					%s
+
+					Please analyze:
+					1. What was the original user request?
+					2. What steps were executed successfully?
+					3. Were there any challenges or failures?
+					4. What specific results were achieved?
+
+					Provide a clear and concise response addressing:
+					- Direct answer to the user's original question
+					- Key accomplishments and findings
+					- Any relevant data or metrics collected
+					- Recommendations or next steps (if applicable)
+
+					Format your response in a user-friendly way.
+					""".formatted(planText);
+
+			ChatResponse response = llmService.getFinalizeChatClient()
+				.prompt()
+				.advisors(new MessageChatMemoryAdvisor(llmService.getMemory()))
+				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
+					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
+				.user(prompt)
+				.call()
+				.chatResponse();
+
+			return "Plan Summary:\n\n" + response.getResult().getOutput().getText();
 		}
 		catch (Exception e) {
 			log.error("Error finalizing plan with LLM: " + e.getMessage());
 			return "Plan completed. Error generating summary.";
 		}
+	}
+
+	public List<ToolCallback> getToolCallList() {
+		return List.of(PlanningTool.getFunctionToolCallback());
 	}
 
 	public void setActivePlanId(String activePlanId) {

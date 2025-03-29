@@ -17,10 +17,13 @@ package com.alibaba.cloud.ai.graph;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
@@ -150,7 +153,7 @@ public class SubGraphTest {
 			.addEdge("B2", END);
 
 		var workflowParent = new StateGraph(getOverAllState()).addNode("A", _makeNode("A"))
-			.addSubgraph("B", workflowChild)
+			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addEdge(START, "A")
 			.addEdge("A", "B")
@@ -176,7 +179,7 @@ public class SubGraphTest {
 			.addEdge("B2", END);
 
 		var workflowParent = new StateGraph(getOverAllState()).addNode("A", _makeNode("A"))
-			.addSubgraph("B", workflowChild)
+			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
 			.addEdge("A", "B")
@@ -213,7 +216,7 @@ public class SubGraphTest {
 			.addEdge("C", END);
 
 		var workflowParent = new StateGraph(getOverAllState()).addNode("A", _makeNode("A"))
-			.addSubgraph("B", workflowChild)
+			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
 			.addEdge("A", "B")
@@ -251,7 +254,7 @@ public class SubGraphTest {
 			.addEdge("C", END);
 
 		var workflowParent = new StateGraph(overAllState).addNode("A", _makeNode("A"))
-			.addSubgraph("B", workflowChild)
+			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
 			.addEdge("A", "B")
@@ -338,7 +341,7 @@ public class SubGraphTest {
 			.addEdge("C", END);
 
 		var workflowParent = new StateGraph(overAllState).addNode("A", _makeNode("A"))
-			.addSubgraph("B", workflowChild)
+			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
 			.addEdge("A", "B")
@@ -377,7 +380,7 @@ public class SubGraphTest {
 			.addEdge("C", END);
 
 		var workflowParent = new StateGraph(overAllState).addNode("A", _makeNode("A"))
-			.addSubgraph("B", workflowChild)
+			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addNode("C1", _makeNode("C1"))
 			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
@@ -477,7 +480,7 @@ public class SubGraphTest {
 		var workflowParent = new StateGraph(overAllState).addNode("step_1", _makeNode("step1"))
 			.addNode("step_2", _makeNode("step2"))
 			.addNode("step_3", _makeNode("step3"))
-			.addSubgraph("subgraph", workflowChild)
+			.addNode("subgraph", workflowChild)
 			.addEdge(START, "step_1")
 			.addEdge("step_1", "step_2")
 			.addEdge("step_2", "subgraph")
@@ -495,6 +498,46 @@ public class SubGraphTest {
 		assertIterableEquals(List.of("step1", "step2", "child:step1", "child:step2", "child:step3", "step3"),
 				(List<String>) result.get().value("messages").get());
 
+	}
+
+	@Test
+	public void testOtherCreateSubgraph2() throws Exception {
+		SaverConfig saver = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
+
+		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
+		OverAllState overAllState = getOverAllState();
+		var workflowChild = new StateGraph().addNode("step_1", _makeNode("child:step1"))
+			.addNode("step_2", _makeNode("child:step2"))
+			.addNode("step_3", _makeNode("child:step3"))
+			.addEdge(START, "step_1")
+			.addEdge("step_1", "step_2")
+			.addEdge("step_2", "step_3")
+			.addEdge("step_3", END)
+		// .compile(compileConfig)
+		;
+
+		var workflowParent = new StateGraph(overAllState).addNode("step_1", _makeNode("step1"))
+			.addNode("step_2", _makeNode("step2"))
+			.addNode("step_3", _makeNode("step3"))
+			.addNode("subgraph", AsyncNodeActionWithConfig.node_async((t, config) -> {
+				// Reference the parent class Overallstate or create a new one
+				workflowChild.setOverAllState(t);
+				return workflowChild.compile().invoke(Map.of()).orElseThrow().data();
+			}))
+			.addEdge(START, "step_1")
+			.addEdge("step_1", "step_2")
+			.addEdge("step_2", "subgraph")
+			.addEdge("subgraph", "step_3")
+			.addEdge("step_3", END)
+			.compile(compileConfig);
+
+		var result = workflowParent.stream()
+			.stream()
+			.peek(n -> log.info("{}", n))
+			.reduce((a, b) -> b)
+			.map(NodeOutput::state);
+
+		assertTrue(result.isPresent());
 	}
 
 }

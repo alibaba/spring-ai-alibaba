@@ -69,8 +69,8 @@ public class DocLoaderTool implements Function<String, ToolExecuteResult> {
 		return functionTool;
 	}
 
-	public static ToolCallback getFunctionToolCallback() {
-		return FunctionToolCallback.builder(name, new DocLoaderTool())
+	public static FunctionToolCallback getFunctionToolCallback() {
+		return FunctionToolCallback.builder(name, new DocLoaderTool()) // 修改为正确的工具类
 			.description(description)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
