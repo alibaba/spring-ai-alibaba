@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-name: License Check
+name: 🗒️ License Check
 
 on:
   push:
