@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-name: Build and Test
+name: 🛠️ Build and Test
 
 on:
   push:
