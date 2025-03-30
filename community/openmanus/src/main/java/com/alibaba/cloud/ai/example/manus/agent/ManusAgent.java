@@ -59,7 +59,7 @@ public class ManusAgent extends ToolCallAgent {
 	public List<ToolCallback> getToolCallList() {
 		return List.of( FileSaver.getFunctionToolCallback(),
 				PythonExecute.getFunctionToolCallback(), Bash.getFunctionToolCallback(workingDirectory),
-				BrowserUseTool.getFunctionToolCallback(chromeDriverService),
+				BrowserUseTool.getFunctionToolCallback(chromeDriverService,this.getPlanId()),
 				TerminateTool.getFunctionToolCallback(this));
 	}
 
