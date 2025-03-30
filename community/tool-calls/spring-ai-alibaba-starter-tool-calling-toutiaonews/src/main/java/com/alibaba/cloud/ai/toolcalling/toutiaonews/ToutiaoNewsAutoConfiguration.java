@@ -29,7 +29,7 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @ConditionalOnClass(ToutiaoNewsSearchHotEventsService.class)
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.toutiaonews", name = "enabled", havingValue = "true")
-public class TiaotiaoNewsAutoConfiguration {
+public class ToutiaoNewsAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
