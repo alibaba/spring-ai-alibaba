@@ -41,9 +41,9 @@ public class PythonAgent extends ToolCallAgent {
 	private String lastResult;
 
 	// New constructor with PlanExecutionRecorder
-	public PythonAgent(LlmService llmService, ToolCallingManager toolCallingManager, 
-			String workingDirectory, PlanExecutionRecorder record) {
-		super(llmService, toolCallingManager,record);
+	public PythonAgent(LlmService llmService, ToolCallingManager toolCallingManager, String workingDirectory,
+			PlanExecutionRecorder record) {
+		super(llmService, toolCallingManager, record);
 		this.workingDirectory = workingDirectory;
 	}
 
@@ -137,8 +137,7 @@ public class PythonAgent extends ToolCallAgent {
 
 	@Override
 	public List<ToolCallback> getToolCallList() {
-		return List.of(PythonExecute.getFunctionToolCallback(),
-				TerminateTool.getFunctionToolCallback(this));
+		return List.of(PythonExecute.getFunctionToolCallback(), TerminateTool.getFunctionToolCallback(this));
 	}
 
 	@Override
