@@ -294,6 +294,8 @@ public class PlanningFlow extends BaseFlow {
 
 				Important: For each step in the plan, start with [AGENT_NAME] where AGENT_NAME is one of the available agents listed above.
 				For example: "[BROWSER_AGENT] Search for relevant information" or "[REACT_AGENT] Process the search results"
+
+				use chinese to make the plan.
 				""";
 
 		PromptTemplate promptTemplate = new PromptTemplate(prompt_template);

@@ -91,8 +91,7 @@ public class BrowserAgent extends ToolCallAgent {
 	protected Message getNextStepMessage() {
 
 		String nextStepPrompt = """
-				What should I do next to achieve my goal?
-
+				What should I do for next action to achieve my goal?
 
 
 				When you see [Current state starts here], focus on the following:
@@ -143,7 +142,7 @@ public class BrowserAgent extends ToolCallAgent {
 
 				# Input Format
 				Task
-				Previous steps
+				Previous actions
 				Current URL
 				Open Tabs
 				Interactive Elements
@@ -158,21 +157,15 @@ public class BrowserAgent extends ToolCallAgent {
 				- elements without [] provide only context
 
 				# Response Rules
-				1. RESPONSE FORMAT: You must ALWAYS respond with valid JSON in this exact format:
-				\\{"current_state": \\{"evaluation_previous_goal": "Success|Failed|Unknown - Analyze the current elements and the image to check if the previous goals/actions are successful like intended by the task. Mention if something unexpected happened. Shortly state why/why not",
-				"memory": "Description of what has been done and what you need to remember. Be very specific. Count here ALWAYS how many times you have done something and how many remain. E.g. 0 out of 10 websites analyzed. Continue with abc and xyz",
-				"next_goal": "What needs to be done with the next immediate action"\\},
-				"action":[\\{"one_action_name": \\{// action-specific parameter\\}\\}, // ... more actions in sequence]\\}
-
-				2. ACTIONS: You can specify multiple actions in a sequence, but one action name per item
+				1. ACTIONS: You can specify multiple actions in a sequence, but one action name per item
 				- Form filling: [\\{"input_text": \\{"index": 1, "text": "username"\\}\\}, \\{"click_element": \\{"index": 3\\}\\}]
 				- Navigation: [\\{"go_to_url": \\{"url": "https://example.com"\\}\\}, \\{"extract_content": \\{"goal": "names"\\}\\}]
 
-				3. ELEMENT INTERACTION:
+				2. ELEMENT INTERACTION:
 				- Only use indexed elements
 				- Watch for non-interactive elements
 
-				4. NAVIGATION & ERROR HANDLING:
+				3. NAVIGATION & ERROR HANDLING:
 				- Try alternative approaches if stuck
 				- Handle popups and cookies
 				- Use scroll for hidden elements
@@ -180,20 +173,20 @@ public class BrowserAgent extends ToolCallAgent {
 				- Handle captchas or find alternatives
 				- Wait for page loads
 
-				5. TASK COMPLETION:
+				4. TASK COMPLETION:
 				- Track progress in memory
 				- Count iterations for repeated tasks
 				- Include all findings in results
 				- Use done action appropriately
 
-				6. VISUAL CONTEXT:
+				5. VISUAL CONTEXT:
 				- Use provided screenshots
 				- Reference element indices
 
-				7. FORM FILLING:
+				6. FORM FILLING:
 				- Handle dynamic field changes
 
-				8. EXTRACTION:
+				7. EXTRACTION:
 				- Use extract_content for information gathering
 				""";
 		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(systemPrompt);
