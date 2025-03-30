@@ -21,7 +21,6 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 
 import org.openqa.selenium.*;
-import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +32,6 @@ import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.ArrayList;
 
@@ -46,14 +44,16 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 
 	private final ChromeDriverService chromeDriverService;
 
-	private static BrowserUseTool instance;
+	
+	private String planId;
 
-	public BrowserUseTool(ChromeDriverService chromeDriverService) {
+	public BrowserUseTool(ChromeDriverService chromeDriverService,String planId) {
 		this.chromeDriverService = chromeDriverService;
+		this.planId = planId;
 	}
 
 	private WebDriver getDriver() {
-		return chromeDriverService.getDriver();
+		return chromeDriverService.getDriver(planId);
 	}
 
 	private static final int MAX_LENGTH = 20000;
@@ -165,16 +165,14 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		return functionTool;
 	}
 
-	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService) {
-		if (instance == null) {
-			instance = new BrowserUseTool(chromeDriverService);
-		}
+	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService,String planId) {
+		BrowserUseTool instance = new BrowserUseTool(chromeDriverService,planId);
 		return instance;
 	}
 
 	@SuppressWarnings("rawtypes")
-	public static FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService) {
-		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
+	public static FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService,String planId) {
+		return FunctionToolCallback.builder(name, getInstance(chromeDriverService,planId))
 			.description(description)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
