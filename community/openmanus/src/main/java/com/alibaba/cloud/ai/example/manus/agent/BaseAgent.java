@@ -71,7 +71,7 @@ public abstract class BaseAgent {
 
 	protected LlmService llmService;
 
-	private int maxSteps = 8;
+	private int maxSteps = 20;
 
 	private int currentStep = 0;
 
