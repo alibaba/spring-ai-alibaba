@@ -40,13 +40,19 @@ public class DuckDuckGoQueryNewsService
 
 	private final DuckDuckGoProperties properties;
 
+	private static final int MEMORY_SIZE = 5;
+
+	private static final int BYTE_SIZE = 1024;
+
+	private static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
+
 	public DuckDuckGoQueryNewsService(DuckDuckGoProperties properties) {
 		this.webClient = WebClient.builder()
 			.defaultHeader("User-Agent",
 					"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " + "AppleWebKit/537.36 "
 							+ "(KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 			.defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024))
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_MEMORY_SIZE))
 			.build();
 		this.properties = properties;
 	}

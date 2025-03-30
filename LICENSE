@@ -231,4 +231,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
+For the module community/openmanus, some files under the 'tool' package has files originally from a project located at https://github.com/AIDC-AI/ali-langengine, licensed under Apache License 2.0.
+
+
+
 
