@@ -24,7 +24,7 @@ import java.util.Map;
 import org.springframework.ai.tool.ToolCallback;
 
 public abstract class BaseFlow {
-	
+
 	protected List<BaseAgent> agents;
 
 	protected PlanExecutionRecorder recorder;
@@ -42,4 +42,5 @@ public abstract class BaseFlow {
 	protected PlanExecutionRecorder getRecorder() {
 		return recorder;
 	}
+
 }

@@ -42,10 +42,12 @@ public class FileAgent extends ToolCallAgent {
 
 	private final AtomicReference<Map<String, Object>> currentFileState = new AtomicReference<>();
 
-	public FileAgent(LlmService llmService, ToolCallingManager toolCallingManager, String workingDirectory, PlanExecutionRecorder record) {
+	public FileAgent(LlmService llmService, ToolCallingManager toolCallingManager, String workingDirectory,
+			PlanExecutionRecorder record) {
 		super(llmService, toolCallingManager, record);
 		this.workingDirectory = workingDirectory;
 	}
+
 	@Override
 	protected Message getNextStepMessage() {
 		String nextStepPrompt = """
@@ -136,8 +138,7 @@ public class FileAgent extends ToolCallAgent {
 	@Override
 	public List<ToolCallback> getToolCallList() {
 		return List.of(Bash.getFunctionToolCallback(workingDirectory), DocLoaderTool.getFunctionToolCallback(),
-				FileSaver.getFunctionToolCallback(),
-				TerminateTool.getFunctionToolCallback(this));
+				FileSaver.getFunctionToolCallback(), TerminateTool.getFunctionToolCallback(this));
 	}
 
 	@Override

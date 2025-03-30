@@ -40,11 +40,10 @@ public class ManusAgent extends ToolCallAgent {
 
 	public ManusAgent(LlmService llmService, ToolCallingManager toolCallingManager,
 			ChromeDriverService chromeDriverService, String workingDirectory, PlanExecutionRecorder record) {
-		super(llmService, toolCallingManager,record);
+		super(llmService, toolCallingManager, record);
 		this.chromeDriverService = chromeDriverService;
 		this.workingDirectory = workingDirectory;
 	}
-
 
 	@Override
 	public String getName() {
@@ -57,9 +56,9 @@ public class ManusAgent extends ToolCallAgent {
 	}
 
 	public List<ToolCallback> getToolCallList() {
-		return List.of( FileSaver.getFunctionToolCallback(),
-				PythonExecute.getFunctionToolCallback(), Bash.getFunctionToolCallback(workingDirectory),
-				BrowserUseTool.getFunctionToolCallback(chromeDriverService,this.getPlanId()),
+		return List.of(FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback(),
+				Bash.getFunctionToolCallback(workingDirectory),
+				BrowserUseTool.getFunctionToolCallback(chromeDriverService, this.getPlanId()),
 				TerminateTool.getFunctionToolCallback(this));
 	}
 

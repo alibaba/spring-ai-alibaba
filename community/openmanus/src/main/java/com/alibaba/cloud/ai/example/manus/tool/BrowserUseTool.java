@@ -48,8 +48,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 	private List<Map<String, Object>> cachedTabs;
 
 	/**
-	 * 从设计来说所有的tool为了并行的thread-safe 都需要 保持 planId。
-	 * 这样才能区隔开每个请求 。 所以这里新增了PlanID
+	 * 从设计来说所有的tool为了并行的thread-safe 都需要 保持 planId。 这样才能区隔开每个请求 。 所以这里新增了PlanID
 	 */
 	private String planId;
 
@@ -179,10 +178,10 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 	@SuppressWarnings("rawtypes")
 	public static FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService, String planId) {
 		return FunctionToolCallback.builder(name, getInstance(chromeDriverService, planId))
-				.description(description)
-				.inputSchema(PARAMETERS)
-				.inputType(String.class)
-				.build();
+			.description(description)
+			.inputSchema(PARAMETERS)
+			.inputType(String.class)
+			.build();
 	}
 
 	private void simulateHumanBehavior(WebElement element) {
@@ -190,7 +189,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 
 			// 添加随机延迟
 			Thread.sleep(new Random().nextInt(1000) + 500);
-		} catch (InterruptedException e) {
+		}
+		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
 	}
@@ -204,7 +204,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			element.sendKeys(String.valueOf(c));
 			try {
 				Thread.sleep(random.nextInt(100) + 50);
-			} catch (InterruptedException e) {
+			}
+			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
 		}
@@ -278,7 +279,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					simulateHumanBehavior(element);
 					try {
 						element.click();
-					} catch (ElementClickInterceptedException e) {
+					}
+					catch (ElementClickInterceptedException e) {
 						// 如果普通点击失败，尝试使用 JavaScript 点击
 						JavascriptExecutor js = (JavascriptExecutor) driver;
 						js.executeScript("arguments[0].click();", element);
@@ -313,7 +315,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 						// 如果没有明显变化，返回普通点击成功消息
 						return new ToolExecuteResult("Clicked element at index " + index);
 
-					} catch (TimeoutException e) {
+					}
+					catch (TimeoutException e) {
 						// 如果超时，检查是否仍在原页面
 						if (!driver.getCurrentUrl().equals(currentUrl)) {
 							return new ToolExecuteResult("Clicked and page changed to: " + driver.getCurrentUrl());
@@ -374,9 +377,10 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					Object result = jsExecutor.executeScript(script);
 					refreshTabsInfo(driver); // 刷新标签页信息
 					if (result == null) {
-	
+
 						return new ToolExecuteResult("Successfully executed JavaScript code.");
-					} else {
+					}
+					else {
 						return new ToolExecuteResult(result.toString());
 					}
 				case "scroll":
@@ -416,7 +420,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 				default:
 					return new ToolExecuteResult("Unknown action: " + action);
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			if (e instanceof ElementNotInteractableException) {
 				String errorMessage = String.format(
 						"""
@@ -504,7 +509,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			// 生成标准HTML格式输出
 			return String.format("[%d] <%s%s>%s</%s>\n", index, tagName, attributes.toString(), text, tagName);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.warn("格式化元素信息失败 ,应该是页面某些元素过期了， 跳过当前元素格式化: {}", e.getMessage());
 			return "";
 		}
@@ -513,9 +519,9 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 	// 添加新的方法获取可交互元素
 	private List<WebElement> getInteractiveElements(WebDriver driver) {
 		return driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR))
-				.stream()
-				.filter(this::isElementVisible)
-				.collect(Collectors.toList());
+			.stream()
+			.filter(this::isElementVisible)
+			.collect(Collectors.toList());
 	}
 
 	private String getInteractiveElementsInfo(WebDriver driver) {
@@ -532,7 +538,6 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		return resultInfo.toString();
 	}
 
-	
 	private List<Map<String, Object>> getTabsInfo(WebDriver driver) {
 		if (cachedTabs != null) {
 			return cachedTabs;
@@ -541,9 +546,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 	}
 
 	/**
-	 * 这个方法是为了让getCurrentStatus 不会刷新页面，减少在Mac上主动唤起的次数
-	 * 否则太烦了 ， 每个step要调起这个东西两次。 都会强制把 页面唤起到 active啥事都没办法干了。
-	 * 
+	 * 这个方法是为了让getCurrentStatus 不会刷新页面，减少在Mac上主动唤起的次数 否则太烦了 ， 每个step要调起这个东西两次。 都会强制把 页面唤起到
+	 * active啥事都没办法干了。
 	 * @param driver
 	 * @return
 	 */
@@ -607,7 +611,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 
 			return state;
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Failed to get browser state", e);
 			state.put("error", "Failed to get browser state: " + e.getMessage());
 			return state;
@@ -617,7 +622,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 	private boolean isElementVisible(WebElement element) {
 		try {
 			return element.isDisplayed() && element.isEnabled();
-		} catch (NoSuchElementException e) {
+		}
+		catch (NoSuchElementException e) {
 			return false;
 		}
 	}

@@ -43,11 +43,10 @@ public class BrowserAgent extends ToolCallAgent {
 
 	private final ChromeDriverService chromeService;
 
-
 	// New constructor with PlanExecutionRecord
-	public BrowserAgent(LlmService llmService, ToolCallingManager toolCallingManager,
-			ChromeDriverService chromeService, PlanExecutionRecorder record) {
-		super(llmService, toolCallingManager,record);
+	public BrowserAgent(LlmService llmService, ToolCallingManager toolCallingManager, ChromeDriverService chromeService,
+			PlanExecutionRecorder record) {
+		super(llmService, toolCallingManager, record);
 		this.chromeService = chromeService;
 	}
 
@@ -70,7 +69,7 @@ public class BrowserAgent extends ToolCallAgent {
 			}
 
 			// 如果缓存为空，则获取新状态
-			BrowserUseTool browserTool = BrowserUseTool.getInstance(chromeService,this.getPlanId());
+			BrowserUseTool browserTool = BrowserUseTool.getInstance(chromeService, this.getPlanId());
 			if (browserTool == null) {
 				log.error("Failed to get browser tool instance");
 				return null;
@@ -216,8 +215,8 @@ public class BrowserAgent extends ToolCallAgent {
 	}
 
 	public List<ToolCallback> getToolCallList() {
-		return List.of(FileSaver.getFunctionToolCallback(),
-				PythonExecute.getFunctionToolCallback(), BrowserUseTool.getFunctionToolCallback(chromeService,this.getPlanId()),
+		return List.of(FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback(),
+				BrowserUseTool.getFunctionToolCallback(chromeService, this.getPlanId()),
 				TerminateTool.getFunctionToolCallback(this));
 	}
 
