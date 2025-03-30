@@ -31,7 +31,7 @@ public class QueryCommandRunner implements CommandLineRunner {
 	private static final Logger logger = LoggerFactory.getLogger(QueryCommandRunner.class);
 
 	private final PlanningFlow planningFlow;
-	
+
 	@Value("${manus.consolequery:false}")
 	private boolean consoleQueryEnabled;
 

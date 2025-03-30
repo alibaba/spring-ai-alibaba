@@ -30,53 +30,54 @@ import org.springframework.ai.tool.metadata.ToolMetadata;
 
 public class TerminateTool implements BiFunction<String, ToolContext, ToolExecuteResult> {
 
-    private static final Logger log = LoggerFactory.getLogger(TerminateTool.class);
+	private static final Logger log = LoggerFactory.getLogger(TerminateTool.class);
 
-    private static String PARAMETERS = """
-            {
-              "type" : "object",
-              "properties" : {
-                "message" : {
-                  "type" : "string",
-                  "description" : "The termination message"
-                }
-              },
-              "required" : [ "message" ]
-            }
-            """;
+	private static String PARAMETERS = """
+			{
+			  "type" : "object",
+			  "properties" : {
+			    "message" : {
+			      "type" : "string",
+			      "description" : "The termination message"
+			    }
+			  },
+			  "required" : [ "message" ]
+			}
+			""";
 
-    private static final String name = "terminate";
+	private static final String name = "terminate";
 
-    private static final String description = "Terminate the current step with a message.";
+	private static final String description = "Terminate the current step with a message.";
 
-    public static OpenAiApi.FunctionTool getToolDefinition() {
-        OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
-        return new OpenAiApi.FunctionTool(function);
-    }
+	public static OpenAiApi.FunctionTool getToolDefinition() {
+		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
+		return new OpenAiApi.FunctionTool(function);
+	}
 
-    public static FunctionToolCallback getFunctionToolCallback(BaseAgent agent) {
-        return FunctionToolCallback.builder(name, new TerminateTool(agent))
-            .description(description)
-            .inputSchema(PARAMETERS)
-            .inputType(String.class)
-            .toolMetadata(ToolMetadata.builder().returnDirect(true).build())
-            .build();
-    }
+	public static FunctionToolCallback getFunctionToolCallback(BaseAgent agent) {
+		return FunctionToolCallback.builder(name, new TerminateTool(agent))
+			.description(description)
+			.inputSchema(PARAMETERS)
+			.inputType(String.class)
+			.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
+			.build();
+	}
 
-    private BaseAgent agent;
+	private BaseAgent agent;
 
-    public TerminateTool(BaseAgent agent) {
-        this.agent = agent;
-    }
+	public TerminateTool(BaseAgent agent) {
+		this.agent = agent;
+	}
 
-    public ToolExecuteResult run(String toolInput) {
-        log.info("Terminate toolInput: " + toolInput);
-        agent.setState(AgentState.FINISHED);
-        return new ToolExecuteResult(toolInput);
-    }
+	public ToolExecuteResult run(String toolInput) {
+		log.info("Terminate toolInput: " + toolInput);
+		agent.setState(AgentState.FINISHED);
+		return new ToolExecuteResult(toolInput);
+	}
 
-    @Override
-    public ToolExecuteResult apply(String s, ToolContext toolContext) {
-        return run(s);
-    }
+	@Override
+	public ToolExecuteResult apply(String s, ToolContext toolContext) {
+		return run(s);
+	}
+
 }

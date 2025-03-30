@@ -57,6 +57,7 @@ import org.springframework.web.client.RestClient;
 public class ManusConfiguration {
 
 	private final ChromeDriverService chromeDriverService;
+
 	private final PlanExecutionRecorder recorder;
 
 	public ManusConfiguration(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder) {
@@ -76,7 +77,7 @@ public class ManusConfiguration {
 		PythonAgent pythonAgent = new PythonAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR, recorder);
 
 		List<BaseAgent> agentList = new ArrayList<>();
-		
+
 		agentList.add(manusAgent);
 		agentList.add(browserAgent);
 		agentList.add(fileAgent);
@@ -86,20 +87,20 @@ public class ManusConfiguration {
 		return new PlanningFlow(agentList, data, recorder);
 	}
 
-
 	/**
-	 * PlanningFlowManager
-	 * 为了与controller等方法兼容 ，并且还能保证每次请求都能创建一个新的PlanningFlow实例，来解决并发问题。
+	 * PlanningFlowManager 为了与controller等方法兼容 ，并且还能保证每次请求都能创建一个新的PlanningFlow实例，来解决并发问题。
 	 */
 	@Component
 	public class PlanningFlowManager {
+
 		private final ApplicationContext context;
+
 		private ConcurrentHashMap<String, PlanningFlow> flowMap = new ConcurrentHashMap<>();
 
 		public PlanningFlowManager(ApplicationContext context) {
 			this.context = context;
 		}
-		
+
 		public PlanningFlow getOrCreatePlanningFlow(String requestId) {
 			PlanningFlow flow = flowMap.computeIfAbsent(requestId, key -> {
 				PlanningFlow newFlow = context.getBean(PlanningFlow.class);
@@ -112,6 +113,7 @@ public class ManusConfiguration {
 		public boolean removePlanningFlow(String requestId) {
 			return flowMap.remove(requestId) != null;
 		}
+
 	}
 
 	@Bean

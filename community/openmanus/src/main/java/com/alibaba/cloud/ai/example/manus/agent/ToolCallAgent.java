@@ -62,10 +62,11 @@ public class ToolCallAgent extends ReActAgent {
 	private ChatResponse response;
 
 	private Prompt userPrompt;
-	protected ThinkActRecord thinkActRecord ;
 
+	protected ThinkActRecord thinkActRecord;
 
-	public ToolCallAgent(LlmService llmService, ToolCallingManager toolCallingManager, PlanExecutionRecorder planExecutionRecorder) {
+	public ToolCallAgent(LlmService llmService, ToolCallingManager toolCallingManager,
+			PlanExecutionRecorder planExecutionRecorder) {
 		super(llmService, planExecutionRecorder);
 		this.toolCallingManager = toolCallingManager;
 	}
@@ -81,9 +82,9 @@ public class ToolCallAgent extends ReActAgent {
 	protected boolean think() {
 
 		AgentExecutionRecord planExecutionRecord = planExecutionRecorder.getCurrentAgentExecutionRecord(getPlanId());
-		thinkActRecord  = new ThinkActRecord(planExecutionRecord.getId());
+		thinkActRecord = new ThinkActRecord(planExecutionRecord.getId());
 		planExecutionRecorder.recordThinkActExecution(getPlanId(), planExecutionRecord.getId(), thinkActRecord);
-			
+
 		try {
 			List<Message> messages = new ArrayList<>();
 			addThinkPrompt(messages);
@@ -108,12 +109,12 @@ public class ToolCallAgent extends ReActAgent {
 
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			String responseByLLm = response.getResult().getOutput().getText();
-			
+
 			thinkActRecord.finishThinking(responseByLLm);
 
 			log.info(String.format("✨ %s's thoughts: %s", getName(), responseByLLm));
 			log.info(String.format("🛠️ %s selected %d tools to use", getName(), toolCalls.size()));
-			
+
 			if (responseByLLm != null && !responseByLLm.isEmpty()) {
 				log.info(String.format("💬 %s's response: %s", getName(), responseByLLm));
 			}
@@ -124,9 +125,9 @@ public class ToolCallAgent extends ReActAgent {
 				thinkActRecord.setToolName(toolCalls.get(0).name());
 				thinkActRecord.setToolParameters(toolCalls.get(0).arguments());
 			}
-			
+
 			thinkActRecord.setStatus("SUCCESS");
-		
+
 			return !toolCalls.isEmpty();
 		}
 		catch (Exception e) {
@@ -224,12 +225,8 @@ public class ToolCallAgent extends ReActAgent {
 		try {
 			List<String> results = new ArrayList<>();
 			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
-			
-			thinkActRecord.startAction(
-				"Executing tool: " + toolCall.name(),
-				toolCall.name(),
-				toolCall.arguments()
-			);
+
+			thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
 
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
@@ -237,12 +234,12 @@ public class ToolCallAgent extends ReActAgent {
 			llmService.getMemory().add(getConversationId(), toolResponseMessage);
 			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
 			results.add(llmCallResponse);
-			
+
 			String finalResult = String.join("\n\n", results);
 			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), llmCallResponse));
-			
+
 			thinkActRecord.finishAction(finalResult, "SUCCESS");
-			
+
 			return finalResult;
 		}
 		catch (Exception e) {
@@ -252,16 +249,15 @@ public class ToolCallAgent extends ReActAgent {
 			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(List.of(toolResponse), Map.of());
 			llmService.getMemory().add(getConversationId(), toolResponseMessage);
 			log.error(e.getMessage());
-			
+
 			thinkActRecord.recordError(e.getMessage());
-			
+
 			return "Error: " + e.getMessage();
 		}
 	}
 
 	public List<ToolCallback> getToolCallList() {
-		return List.of(FileSaver.getFunctionToolCallback(),
-				PythonExecute.getFunctionToolCallback(),
+		return List.of(FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback(),
 				TerminateTool.getFunctionToolCallback(this));
 	}
 
