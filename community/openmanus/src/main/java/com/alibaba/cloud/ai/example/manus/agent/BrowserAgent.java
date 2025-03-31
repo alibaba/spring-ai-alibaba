@@ -70,7 +70,7 @@ public class BrowserAgent extends ToolCallAgent {
 			}
 
 			// 如果缓存为空，则获取新状态
-			BrowserUseTool browserTool = BrowserUseTool.getInstance(chromeService, this.getPlanId());
+			BrowserUseTool browserTool = BrowserUseTool.getInstance(chromeService);
 			if (browserTool == null) {
 				log.error("Failed to get browser tool instance");
 				return null;
@@ -210,7 +210,7 @@ public class BrowserAgent extends ToolCallAgent {
 
 	public List<ToolCallback> getToolCallList() {
 		return List.of(FileSaver.getFunctionToolCallback(),
-				BrowserUseTool.getFunctionToolCallback(chromeService, this.getPlanId()),
+				BrowserUseTool.getFunctionToolCallback(chromeService),
 				TerminateTool.getFunctionToolCallback(this));
 	}
 

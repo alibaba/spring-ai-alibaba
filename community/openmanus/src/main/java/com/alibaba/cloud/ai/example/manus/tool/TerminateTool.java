@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import java.util.function.BiFunction;
-
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
@@ -28,7 +26,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 
-public class TerminateTool implements BiFunction<String, ToolContext, ToolExecuteResult> {
+public class TerminateTool implements ToolDefinition {
 
 	private static final Logger log = LoggerFactory.getLogger(TerminateTool.class);
 
@@ -80,4 +78,28 @@ public class TerminateTool implements BiFunction<String, ToolContext, ToolExecut
 		return run(s);
 	}
 
+	@Override
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public String getDescription() {
+		return description;
+	}
+
+	@Override
+	public String getParameters() {
+		return PARAMETERS;
+	}
+
+	@Override
+	public Class<?> getInputType() {
+		return String.class;
+	}
+
+	@Override
+	public boolean isReturnDirect() {
+		return true;
+	}
 }
