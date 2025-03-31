@@ -30,7 +30,7 @@ public class ManusProperties {
 
     @ConfigProperty(
         group = "manus",
-        subGroup = "browser",
+        subGroup = "interaction",
         key = "openBrowser",
         path = "manus.openBrowserAuto",
         description = "启动时自动打开浏览器",
