@@ -1,0 +1,316 @@
+/* css/right-sidebar.css - 右侧边栏样式 */
+
+.right-sidebar {
+    width: 420px; /* 右侧边栏宽度 */
+    max-width: 800px;
+    border-left: 1px solid #e0e0e0;
+    border-right: none;
+    border-top: none;
+    border-bottom: none;
+    padding: 15px;
+    background-color: #fdfdfd; /* 略微不同的背景色 */
+    transition: width 0.3s ease-in-out, padding 0.3s ease-in-out, border-width 0.3s ease-in-out; /* 平滑过渡 */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* 收起状态的右侧边栏 */
+.right-sidebar.collapsed {
+    width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    border-width: 0;
+    overflow: hidden;
+}
+
+/* 标题 */
+.right-sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e8eaed;
+    white-space: nowrap; /* 防止换行 */
+    overflow: hidden; /* 收起时隐藏 */
+}
+.right-sidebar-header h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #202124;
+}
+
+/* 内容区域 */
+.right-sidebar-content {
+    flex-grow: 1; /* 占用剩余空间 */
+    overflow-y: auto; /* 允许内容滚动 */
+    overflow-x: hidden; /* 防止水平滚动 */
+    font-size: 13px;
+    padding-right: 5px; /* 为滚动条留空间 */
+    margin-bottom: 10px;
+}
+
+/* 终端状态 */
+.terminal-status {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: #5f6368;
+    margin-bottom: 4px;
+    white-space: nowrap; /* 防止换行 */
+    overflow: hidden; /* 收起时隐藏 */
+}
+.terminal-status .icon-terminal {
+    margin-right: 6px;
+    font-size: 14px;
+}
+.status-detail {
+    font-size: 12px;
+    color: #5f6368;
+    margin-bottom: 15px;
+    word-break: break-all; /* 长命令换行 */
+    white-space: nowrap; /* 防止换行 */
+    overflow: hidden; /* 收起时隐藏 */
+    text-overflow: ellipsis;
+}
+.code-inline {
+    background-color: #f1f3f4;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 11px;
+    color: #3c4043;
+}
+
+/* 终端输出框 */
+.terminal-output {
+    background-color: #202124; /* 深色背景 */
+    color: #e8eaed; /* 浅色文本 */
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    margin-top: 10px;
+    white-space: nowrap; /* 初始不换行 */
+    overflow: hidden; /* 收起时隐藏 */
+}
+.terminal-header {
+    font-weight: bold;
+    color: #bdc1c6;
+    padding-bottom: 5px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #3c4043; /* 细微分隔线 */
+}
+.terminal-output pre {
+    margin: 0;
+    white-space: pre-wrap; /* 允许pre内换行 */
+    word-wrap: break-word; /* 断行 */
+    max-height: 200px; /* 限制高度 */
+    overflow-y: auto; /* 太长时滚动 */
+}
+.terminal-output code { font-family: inherit; }
+
+/* 底部控制区 */
+.right-sidebar-footer {
+    margin-top: auto; /* 推至底部 */
+    padding-top: 10px;
+    border-top: 1px solid #e8eaed;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #5f6368;
+    white-space: nowrap; /* 防止换行 */
+    overflow: hidden; /* 收起时隐藏 */
+}
+
+.playback-controls { display: flex; align-items: center; }
+.playback-controls button { background: none; border: none; cursor: pointer; font-size: 18px; color: #5f6368; padding: 5px; }
+.progress-bar-stub { width: 50px; height: 4px; background-color: #e0e0e0; border-radius: 2px; margin-left: 8px; }
+
+.realtime-btn {
+    background: none;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 11px;
+    color: #3c4043;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+.realtime-btn:hover { background-color: #f8f9fa; }
+.realtime-btn .icon-play { font-size: 14px; margin-right: 4px; }
+
+.realtime-indicator { display: flex; align-items: center; }
+.realtime-indicator .icon-realtime { font-size: 10px; margin-right: 4px; }
+
+/* 底部状态栏（类似聊天区域的底栏） */
+.right-sidebar-status-bar {
+    padding: 8px 0 0;
+    font-size: 11px;
+    color: #5f6368;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    white-space: nowrap; /* 防止换行 */
+    overflow: hidden; /* 收起时隐藏 */
+}
+.right-sidebar-status-bar span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.right-sidebar-status-bar .icon-up-arrow { font-size: 10px; margin-left: 2px; }
+
+/* 新增 - 执行详情样式 */
+.no-selection-message {
+    text-align: center;
+    color: #5f6368;
+    padding: 40px 10px;
+    font-size: 14px;
+}
+
+.step-info {
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #e8eaed;
+}
+
+.step-info h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #202124;
+    margin-bottom: 12px;
+}
+
+.agent-info {
+    display: flex;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: #3c4043;
+    line-height: 1.4;
+}
+
+.agent-info .label {
+    min-width: 70px;
+    font-weight: 500;
+    color: #5f6368;
+}
+
+.agent-info .value {
+    flex: 1;
+}
+
+.agent-info .value.success {
+    color: #1a73e8;
+}
+
+.think-act-steps h4 {
+    font-size: 13px;
+    font-weight: 500;
+    color: #202124;
+    margin-bottom: 10px;
+}
+
+.steps-container {
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+}
+
+.think-act-step {
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid #e8eaed;
+    border-radius: 4px;
+    background-color: #ffffff;
+}
+
+.step-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 11px;
+}
+
+.step-number {
+    font-weight: 500;
+    color: #202124;
+}
+
+.step-status {
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    text-transform: uppercase;
+    background-color: #f1f3f4;
+}
+
+.step-status.completed {
+    background-color: #e6f4ea;
+    color: #137333;
+}
+
+.step-status.in_progress {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+}
+
+.step-status.error {
+    background-color: #fce8e6;
+    color: #c5221f;
+}
+
+.think-section, .action-section {
+    margin-bottom: 10px;
+}
+
+.think-section h5, .action-section h5 {
+    font-size: 12px;
+    font-weight: 500;
+    color: #3c4043;
+    padding-bottom: 5px;
+    margin-bottom: 8px;
+    border-bottom: 1px dashed #e0e0e0;
+}
+
+.think-content, .action-content {
+    font-size: 12px;
+}
+
+.input, .output, .tool-info, .tool-params, .action-desc, .action-result {
+    margin-bottom: 8px;
+}
+
+.input .label, .output .label, .tool-info .label, .tool-params .label, .action-desc .label, .action-result .label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: #5f6368;
+}
+
+.think-content pre, .action-content pre {
+    font-family: monospace;
+    background-color: #f8f9fa;
+    padding: 8px;
+    border-radius: 4px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    color: #3c4043;
+    font-size: 11px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.params {
+    color: #188038;
+}
+
+.no-steps-message {
+    text-align: center;
+    color: #5f6368;
+    padding: 15px 10px;
+    font-style: italic;
+    font-size: 12px;
+}

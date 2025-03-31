@@ -20,3 +20,28 @@ spring:
 manus:
   browser:
     headless: false # 设置为 true 则启用无头模式
+  openbrowser: true # 设置为 false 则禁用自动打开浏览器
+  consolequery: false # 设置为 true 则启用控制台交互模式
+
+# H2 数据库配置
+datasource:
+  url: jdbc:h2:file:./h2-data/openmanus_db;MODE=MYSQL;DATABASE_TO_LOWER=TRUE
+  driver-class-name: org.h2.Driver
+  username: sa
+  password: password
+
+# JPA 配置
+jpa:
+  database-platform: org.hibernate.dialect.H2Dialect
+  hibernate:
+    ddl-auto: update
+  show-sql: true
+  properties:
+    hibernate:
+      format_sql: true
+
+# H2 控制台配置
+h2:
+  console:
+    enabled: true
+    path: /h2-console
