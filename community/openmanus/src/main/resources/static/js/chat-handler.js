@@ -4,6 +4,8 @@
 const ChatHandler = (() => {
     let chatArea;
     let lastAgentExecutionId = null;
+    let currentDialogRoundId = null;
+    let dialogRoundPlans = new Map(); // 存储对话轮次和planId的映射关系
     
     /**
      * 初始化聊天处理器
@@ -11,21 +13,47 @@ const ChatHandler = (() => {
     const init = () => {
         chatArea = document.querySelector('.chat-area');
         
-        // // 订阅UI相关事件
-        
         // 订阅业务事件
         ManusUI.EventSystem.on('plan-update', handlePlanUpdate);
-        // ManusUI.EventSystem.on('agent-execution', handleAgentExecution);
         ManusUI.EventSystem.on('plan-completed', handlePlanComplete);
+        ManusUI.EventSystem.on(ManusUI.UI_EVENTS.DIALOG_ROUND_START, handleDialogRoundStart);
     };
-    
-    
+
     /**
-     * 处理用户输入消息
+     * 处理用户消息
      */
     const handleUserMessage = (message) => {
-        const messageElement = createMessageElement('user-message', message);
-        chatArea.appendChild(messageElement);
+        // 交给 UI 模块处理发送消息
+        ManusUI.handleSendMessage();
+    };
+    
+    /**
+     * 开始新的对话轮次
+     */
+    const startNewDialogRound = (planId) => {
+        currentDialogRoundId = Date.now().toString();
+        dialogRoundPlans.set(currentDialogRoundId, planId);
+        return currentDialogRoundId;
+    };
+
+    /**
+     * 处理对话轮次开始事件
+     */
+    const handleDialogRoundStart = (eventData) => {
+        const { planId, query } = eventData;
+        // 创建新的对话轮次
+        const dialogRoundId = startNewDialogRound(planId);
+        
+        // 创建对话轮次容器
+        const dialogRoundContainer = document.createElement('div');
+        dialogRoundContainer.className = 'dialog-round-container';
+        dialogRoundContainer.dataset.dialogRoundId = dialogRoundId;
+        dialogRoundContainer.dataset.planId = planId;
+        chatArea.appendChild(dialogRoundContainer);
+        
+        // 添加用户消息
+        const messageElement = createMessageElement('user-message', query);
+        dialogRoundContainer.appendChild(messageElement);
         scrollToBottom();
     };
     
@@ -34,39 +62,61 @@ const ChatHandler = (() => {
      */
     const handlePlanUpdate = (planDetails) => {
         if (!planDetails.steps || !planDetails.steps.length) return;
-        updateStepsDisplay(planDetails);
+
+        // 根据 planId 找到对应的对话轮次容器
+        const dialogRoundContainer = findDialogRoundContainerByPlanId(planDetails.planId);
+        if (!dialogRoundContainer) return;
+        
+        // 查找或创建步骤容器
+        let stepsContainer = dialogRoundContainer.querySelector('.ai-steps-container');
+        if (!stepsContainer) {
+            stepsContainer = document.createElement('div');
+            stepsContainer.className = 'message ai-message ai-steps-container';
+            dialogRoundContainer.appendChild(stepsContainer);
+        }
+        
+        // 更新步骤显示
+        updateStepsDisplay(planDetails, stepsContainer);
     };
 
+    /**
+     * 根据 planId 查找对话轮次容器
+     */
+    const findDialogRoundContainerByPlanId = (planId) => {
+        return document.querySelector(`.dialog-round-container[data-plan-id="${planId}"]`);
+    };
+    
     /**
      * 处理计划完成
      */
     const handlePlanComplete = (details) => {
-        // 首先调用handlePlanUpdate进行最后的执行状态更新
-        handlePlanUpdate(details);
+        if (!details?.planId) return;
         
-        // 如果有总结内容，显示为系统反馈消息
-        if (details && details.summary) {
-            const aiMessageElement = document.createElement('div');
-            aiMessageElement.className = 'message ai-message';
-            
-            // 创建AI消息头部
-            const headerDiv = document.createElement('div');
-            headerDiv.className = 'ai-header';
-            headerDiv.innerHTML = '<span class="ai-logo">M</span> Manus AI';
-            
-            // 创建消息内容区域
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'ai-content';
-            contentDiv.innerHTML = `<p>${formatSummaryContent(details.summary)}</p>`;
-            
-            // 组装消息元素
-            aiMessageElement.appendChild(headerDiv);
-            aiMessageElement.appendChild(contentDiv);
-            
-            // 添加到聊天区域
-            chatArea.appendChild(aiMessageElement);
-            scrollToBottom();
-        }
+        // 根据 planId 找到对应的对话轮次容器
+        const dialogRoundContainer = findDialogRoundContainerByPlanId(details.planId);
+        if (!dialogRoundContainer || !details?.summary) return;
+        
+        // 创建AI消息元素
+        const aiMessageElement = document.createElement('div');
+        aiMessageElement.className = 'message ai-message';
+        
+        // 创建AI消息头部
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'ai-header';
+        headerDiv.innerHTML = '<span class="ai-logo">M</span> Manus AI';
+        
+        // 创建消息内容区域
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'ai-content';
+        contentDiv.innerHTML = `<p>${formatSummaryContent(details.summary)}</p>`;
+        
+        // 组装消息元素
+        aiMessageElement.appendChild(headerDiv);
+        aiMessageElement.appendChild(contentDiv);
+        
+        // 添加到对话轮次容器
+        dialogRoundContainer.appendChild(aiMessageElement);
+        scrollToBottom();
     };
 
     /**
@@ -96,16 +146,9 @@ const ChatHandler = (() => {
     /**
      * 更新步骤显示
      */
-    const updateStepsDisplay = (planDetails) => {
+    const updateStepsDisplay = (planDetails, stepsContainer) => {
         if (!planDetails.steps || !planDetails.steps.length) return;
         
-        let stepsContainer = document.querySelector('.ai-steps-container');
-        if (!stepsContainer) {
-            stepsContainer = document.createElement('div');
-            stepsContainer.className = 'message ai-message ai-steps-container';
-            chatArea.appendChild(stepsContainer);
-        }
-
         // 初始化存储每个步骤的最后执行动作（现在是方法级变量）
         let lastStepActions = new Array(planDetails.steps.length).fill(null);
         
@@ -202,6 +245,7 @@ const ChatHandler = (() => {
     // 返回公开方法
     return {
         init,
-        handleUserMessage
+        handleUserMessage,  // 确保导出 handleUserMessage
+        // 其他需要公开的方法...
     };
 })();
