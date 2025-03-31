@@ -212,14 +212,8 @@ public abstract class JdbcChatMemory implements ChatMemory, AutoCloseable {
 			sql = "UPDATE chat_memory SET messages = ? WHERE conversation_id = ?";
 		}
 		try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
-			if (this.selectMessageById(conversationId).isEmpty()) {
-				stmt.setString(1, messages);
-				stmt.setString(2, conversationId);
-			}
-			else {
-				stmt.setString(1, messages);
-				stmt.setString(2, conversationId);
-			}
+			stmt.setString(1, messages);
+			stmt.setString(2, conversationId);
 			stmt.executeUpdate();
 		}
 		catch (SQLException e) {
