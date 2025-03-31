@@ -28,28 +28,27 @@ import org.springframework.util.Assert;
  * @author yuluo
  */
 @Configuration
-@EnableConfigurationProperties({CrawlerJinaProperties.class, CrawlerFirecrawlProperties.class})
-@ConditionalOnProperty(prefix = CrawlerJinaProperties.JINA_PROPERTIES_PREFIX, name = "enabled",
-        havingValue = "true")
+@EnableConfigurationProperties({ CrawlerJinaProperties.class, CrawlerFirecrawlProperties.class })
+@ConditionalOnProperty(prefix = CrawlerJinaProperties.JINA_PROPERTIES_PREFIX, name = "enabled", havingValue = "true")
 public class CrawlerAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Jina Reader Service Plugin.")
-    public CrawlerJinaServiceImpl jinaFunction (CrawlerJinaProperties jinaProperties,
-                                                ObjectMapper objectMapper) {
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Jina Reader Service Plugin.")
+	public CrawlerJinaServiceImpl jinaFunction(CrawlerJinaProperties jinaProperties, ObjectMapper objectMapper) {
 
-        Assert.notNull(jinaProperties, "Jina reader api token must not be empty");
-        return new CrawlerJinaServiceImpl(jinaProperties, objectMapper);
-    }
+		Assert.notNull(jinaProperties, "Jina reader api token must not be empty");
+		return new CrawlerJinaServiceImpl(jinaProperties, objectMapper);
+	}
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Firecrawl Service Plugin.")
-    public CrawlerFirecrawlServiceImpl firecrawlFunction (CrawlerFirecrawlProperties firecrawlProperties, ObjectMapper objectMapper) {
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Firecrawl Service Plugin.")
+	public CrawlerFirecrawlServiceImpl firecrawlFunction(CrawlerFirecrawlProperties firecrawlProperties,
+			ObjectMapper objectMapper) {
 
-        Assert.notNull(firecrawlProperties.getToken(), "Firecrawl api token must not be empty");
-        return new CrawlerFirecrawlServiceImpl(firecrawlProperties, objectMapper);
-    }
+		Assert.notNull(firecrawlProperties.getToken(), "Firecrawl api token must not be empty");
+		return new CrawlerFirecrawlServiceImpl(firecrawlProperties, objectMapper);
+	}
 
 }

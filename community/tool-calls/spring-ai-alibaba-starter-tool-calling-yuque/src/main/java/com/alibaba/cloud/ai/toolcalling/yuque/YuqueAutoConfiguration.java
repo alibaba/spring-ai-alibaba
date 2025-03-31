@@ -27,17 +27,16 @@ import org.springframework.context.annotation.Description;
  * @author 北极星
  */
 @Configuration
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.yuque", name = "enabled",
-        havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.yuque", name = "enabled", havingValue = "true")
 @ConditionalOnClass
 @EnableConfigurationProperties(YuqueProperties.class)
 public class YuqueAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Use yuque api to invoke a http request to create a doc.")
-    public YuqueQueryDocService createYuqueDocFunction (YuqueProperties yuqueProperties) {
-        return new YuqueQueryDocService(yuqueProperties);
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Use yuque api to invoke a http request to create a doc.")
+	public YuqueQueryDocService createYuqueDocFunction(YuqueProperties yuqueProperties) {
+		return new YuqueQueryDocService(yuqueProperties);
+	}
 
 }

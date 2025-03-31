@@ -27,15 +27,15 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @EnableConfigurationProperties(DuckDuckGoProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.duckduckgo", name = "enabled",
-        havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.duckduckgo", name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class DuckDuckGoAutoConfiguration {
 
-    @ConditionalOnMissingBean
-    @Bean
-    @Description("use duckduckgo engine to search news.")
-    public DuckDuckGoQueryNewsService duckDuckGoQueryNewsFunction (DuckDuckGoProperties duckDuckGoProperties) {
-        return new DuckDuckGoQueryNewsService(duckDuckGoProperties);
-    }
+	@ConditionalOnMissingBean
+	@Bean
+	@Description("use duckduckgo engine to search news.")
+	public DuckDuckGoQueryNewsService duckDuckGoQueryNewsFunction(DuckDuckGoProperties duckDuckGoProperties) {
+		return new DuckDuckGoQueryNewsService(duckDuckGoProperties);
+	}
 
 }

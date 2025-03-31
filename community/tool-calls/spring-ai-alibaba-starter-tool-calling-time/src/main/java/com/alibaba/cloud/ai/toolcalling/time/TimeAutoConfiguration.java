@@ -26,16 +26,15 @@ import org.springframework.context.annotation.Description;
  * @author chengle
  */
 @Configuration
-@ConditionalOnClass({GetCurrentLocalTimeService.class, GetCurrentTimeByTimeZoneIdService.class})
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.time", name = "enabled",
-        havingValue = "true")
+@ConditionalOnClass({ GetCurrentLocalTimeService.class, GetCurrentTimeByTimeZoneIdService.class })
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.time", name = "enabled", havingValue = "true")
 public class TimeAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Get the time of a specified city.")
-    public GetCurrentTimeByTimeZoneIdService getCityTimeFunction () {
-        return new GetCurrentTimeByTimeZoneIdService();
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Get the time of a specified city.")
+	public GetCurrentTimeByTimeZoneIdService getCityTimeFunction() {
+		return new GetCurrentTimeByTimeZoneIdService();
+	}
 
 }

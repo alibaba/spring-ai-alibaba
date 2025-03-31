@@ -29,15 +29,14 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @ConditionalOnClass(BingSearchService.class)
 @EnableConfigurationProperties(BingSearchProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.bingsearch", name = "enabled",
-        havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.bingsearch", name = "enabled", havingValue = "true")
 public class BingSearchAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Use bing search engine to query for the latest news.")
-    public BingSearchService bingSearchFunction (BingSearchProperties properties) {
-        return new BingSearchService(properties);
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Use bing search engine to query for the latest news.")
+	public BingSearchService bingSearchFunction(BingSearchProperties properties) {
+		return new BingSearchService(properties);
+	}
 
 }

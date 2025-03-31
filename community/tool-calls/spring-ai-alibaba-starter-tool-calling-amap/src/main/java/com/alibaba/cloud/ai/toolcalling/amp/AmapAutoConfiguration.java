@@ -27,15 +27,14 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @EnableConfigurationProperties(AmapProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.amap", name = "enabled",
-		havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.amap", name = "enabled", havingValue = "true")
 public class AmapAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Get weather information according to address.")
-    public WeatherSearchService gaoDeGetAddressWeatherFunction (AmapProperties amapProperties) {
-        return new WeatherSearchService(amapProperties);
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Get weather information according to address.")
+	public WeatherSearchService gaoDeGetAddressWeatherFunction(AmapProperties amapProperties) {
+		return new WeatherSearchService(amapProperties);
+	}
 
 }

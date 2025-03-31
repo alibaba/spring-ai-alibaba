@@ -29,16 +29,15 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @ConditionalOnClass(Kuaidi100AutoConfiguration.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.kuaidi100", name = "enabled",
-        havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.kuaidi100", name = "enabled", havingValue = "true")
 @EnableConfigurationProperties(Kuaidi100Properties.class)
 public class Kuaidi100AutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Query courier tracking information")
-    public Kuaidi100Service queryTrackFunction (Kuaidi100Properties kuaidi100Properties) {
-        return new Kuaidi100Service(kuaidi100Properties);
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Query courier tracking information")
+	public Kuaidi100Service queryTrackFunction(Kuaidi100Properties kuaidi100Properties) {
+		return new Kuaidi100Service(kuaidi100Properties);
+	}
 
 }

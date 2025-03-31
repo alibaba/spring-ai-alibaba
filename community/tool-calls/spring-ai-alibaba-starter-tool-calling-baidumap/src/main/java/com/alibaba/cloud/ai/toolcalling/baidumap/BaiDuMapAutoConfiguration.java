@@ -29,15 +29,14 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @ConditionalOnClass(MapSearchService.class)
 @EnableConfigurationProperties(BaiDuMapProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.baidumap", name = "enabled",
-		havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.baidumap", name = "enabled", havingValue = "true")
 public class BaiDuMapAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Get detail information of a address and facility query with baidu map.")
-    public MapSearchService baiDuMapGetAddressInformationFunction (BaiDuMapProperties baiDuMapProperties) {
-        return new MapSearchService(baiDuMapProperties);
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Get detail information of a address and facility query with baidu map.")
+	public MapSearchService baiDuMapGetAddressInformationFunction(BaiDuMapProperties baiDuMapProperties) {
+		return new MapSearchService(baiDuMapProperties);
+	}
 
 }

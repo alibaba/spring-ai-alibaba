@@ -28,15 +28,14 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @ConditionalOnClass(SinaNewsService.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.sinanews", name = "enabled",
-        havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.sinanews", name = "enabled", havingValue = "true")
 public class SinaNewsAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("Get the news from the Sina news (获取新浪新闻).")
-    public SinaNewsService getSinaNewsFunction () {
-        return new SinaNewsService();
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("Get the news from the Sina news (获取新浪新闻).")
+	public SinaNewsService getSinaNewsFunction() {
+		return new SinaNewsService();
+	}
 
 }

@@ -29,15 +29,14 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @ConditionalOnClass(YoudaoTranslateService.class)
 @EnableConfigurationProperties(YoudaoTranslateProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.youdaotranslate", name = "enabled"
-        , havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.youdaotranslate", name = "enabled", havingValue = "true")
 public class YoudaoTranslateAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    @Description("use youdao translation to achieve translation")
-    public YoudaoTranslateService youdaoTranslateFunction (YoudaoTranslateProperties properties) {
-        return new YoudaoTranslateService(properties);
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	@Description("use youdao translation to achieve translation")
+	public YoudaoTranslateService youdaoTranslateFunction(YoudaoTranslateProperties properties) {
+		return new YoudaoTranslateService(properties);
+	}
 
 }
