@@ -19,7 +19,6 @@ package com.alibaba.cloud.ai.example.manus.config;
 import java.awt.Desktop;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
