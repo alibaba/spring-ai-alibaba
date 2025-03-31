@@ -16,11 +16,13 @@
 package com.alibaba.cloud.ai.example.manus.flow;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,11 +30,15 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.time.LocalDateTime;
 
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -60,8 +66,8 @@ public class PlanningFlow extends BaseFlow {
 	// shared result state between agents.
 	private Map<String, Object> resultState;
 
-	public PlanningFlow(List<BaseAgent> agents, Map<String, Object> data) {
-		super(agents, data);
+	public PlanningFlow(List<BaseAgent> agents, Map<String, Object> data, PlanExecutionRecorder recorder) {
+		super(agents, data, recorder);
 
 		executorKeys = new ArrayList<>();
 
@@ -90,6 +96,7 @@ public class PlanningFlow extends BaseFlow {
 		}
 
 		this.resultState = new HashMap<>();
+
 	}
 
 	public BaseAgent getExecutor(String stepType) {
@@ -129,6 +136,9 @@ public class PlanningFlow extends BaseFlow {
 	@Override
 	public String execute(String inputText) {
 		try {
+			// Record plan start with input text
+			recordPlanStart(inputText);
+
 			if (inputText != null && !inputText.isEmpty()) {
 				createInitialPlan(inputText);
 
@@ -136,40 +146,124 @@ public class PlanningFlow extends BaseFlow {
 					log.error("Plan creation failed. Plan ID " + activePlanId + " not found in planning tool.");
 					return "Failed to create plan for: " + inputText;
 				}
+
+				// Update plan record with created plan details
+				updatePlanRecordWithPlanDetails();
 			}
 
-			StringBuilder result = new StringBuilder();
+			StringBuilder outputStringBuilder = new StringBuilder();
+			String returnResult = "";
 			while (true) {
 				Map.Entry<Integer, Map<String, String>> stepInfoEntry = getCurrentStepInfo();
 				if (stepInfoEntry == null) {
-					result.append(finalizePlan());
+					returnResult = finalizePlan(inputText);
+					outputStringBuilder.append(returnResult);
+
+					// Record plan completion
+					recordPlanCompletion(returnResult);
 					break;
 				}
 				currentStepIndex = stepInfoEntry.getKey();
 				Map<String, String> stepInfo = stepInfoEntry.getValue();
 
 				if (currentStepIndex == null) {
-					result.append(finalizePlan());
+					returnResult = finalizePlan(inputText);
+					outputStringBuilder.append(returnResult);
+
+					// Record plan completion
+					recordPlanCompletion(returnResult);
 					break;
 				}
 
 				String stepType = stepInfo != null ? stepInfo.get("type") : null;
 				BaseAgent executor = getExecutor(stepType);
 				executor.setConversationId(activePlanId);
+				executor.setPlanId(activePlanId);
 				String stepResult = executeStep(executor, stepInfo);
-				result.append(stepResult).append("\n");
 
+				outputStringBuilder.append(stepResult).append("\n");
 			}
-
-			return result.toString();
+			log.info("Plan execution completed. result flow is \n: " + outputStringBuilder.toString());
+			return returnResult;
 		}
 		catch (Exception e) {
 			log.error("Error in PlanningFlow", e);
+
+			// Record failure in plan execution
+			PlanExecutionRecord record = getRecorder().getExecutionRecord(activePlanId);
+			if (record != null) {
+				record.setSummary(e.getMessage());
+				getRecorder().recordPlanExecution(record);
+			}
+
 			return "Execution failed: " + e.getMessage();
 		}
 		finally {
 			chromeDriverService.cleanup();
 		}
+	}
+
+	/**
+	 * Initialize the plan execution record
+	 */
+	private PlanExecutionRecord getOrCreatePlanExecutionRecord() {
+		PlanExecutionRecord record = getRecorder().getExecutionRecord(activePlanId);
+		if (record == null) {
+			record = new PlanExecutionRecord();
+			record.setPlanId(activePlanId);
+			record.setStartTime(LocalDateTime.now());
+			getRecorder().recordPlanExecution(record);
+		}
+		return record;
+
+	}
+
+	/**
+	 * Record the start of plan execution
+	 * @param inputText The input text that initiated the plan
+	 */
+	private void recordPlanStart(String inputText) {
+		PlanExecutionRecord record = getOrCreatePlanExecutionRecord();
+		record.setUserRequest(inputText);
+		record.setTitle("Plan for: " + (inputText != null
+				? inputText.substring(0, Math.min(inputText.length(), 50)) + (inputText.length() > 50 ? "..." : "")
+				: "Unknown request"));
+
+		// Record initial plan execution
+		getRecorder().recordPlanExecution(record);
+	}
+
+	/**
+	 * Update plan record with details from the created plan
+	 */
+	private void updatePlanRecordWithPlanDetails() {
+		if (planningTool.getPlans().containsKey(activePlanId)) {
+			Map<String, Object> planData = planningTool.getPlans().get(activePlanId);
+			PlanExecutionRecord record = getRecorder().getExecutionRecord(activePlanId);
+
+			if (record != null) {
+				if (planData.containsKey("title")) {
+					record.setTitle((String) planData.get("title"));
+				}
+
+				if (planData.containsKey("steps")) {
+					@SuppressWarnings("unchecked")
+					List<String> steps = (List<String>) planData.get("steps");
+					record.setSteps(steps);
+				}
+
+				// Record updated plan execution
+				getRecorder().recordPlanExecution(record);
+			}
+		}
+	}
+
+	/**
+	 * Record plan completion
+	 * @param summary The summary of the plan execution
+	 */
+	private void recordPlanCompletion(String summary) {
+		getRecorder().recordPlanCompletion(activePlanId, summary);
 	}
 
 	public void createInitialPlan(String request) {
@@ -200,6 +294,8 @@ public class PlanningFlow extends BaseFlow {
 
 				Important: For each step in the plan, start with [AGENT_NAME] where AGENT_NAME is one of the available agents listed above.
 				For example: "[BROWSER_AGENT] Search for relevant information" or "[REACT_AGENT] Process the search results"
+
+				use chinese to make the plan.
 				""";
 
 		PromptTemplate promptTemplate = new PromptTemplate(prompt_template);
@@ -271,6 +367,7 @@ public class PlanningFlow extends BaseFlow {
 							}
 						};
 						planningTool.run(JSON.toJSONString(argsMap));
+
 					}
 					catch (Exception e) {
 						log.error("Error marking step as in_progress", e);
@@ -306,6 +403,12 @@ public class PlanningFlow extends BaseFlow {
 
 			try {
 
+				// 更新 PlanExecutionRecord 中的当前步骤索引
+				PlanExecutionRecord record = getRecorder().getExecutionRecord(activePlanId);
+				if (record != null) {
+					record.setCurrentStepIndex(currentStepIndex);
+					getRecorder().recordPlanExecution(record);
+				}
 				String stepResult = executor
 					.run(Map.of("planStatus", planStatus, "currentStepIndex", currentStepIndex, "stepText", stepText));
 
@@ -451,40 +554,33 @@ public class PlanningFlow extends BaseFlow {
 		}
 	}
 
-	public String finalizePlan() {
+	public String finalizePlan(String userRequest) {
 		String planText = getPlanText();
 		try {
-			String prompt = """
-					Based on the execution history and the final plan status:
 
-					Plan Status:
-					%s
+			SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(
+					"""
+							You are an AI assistant that can respond to user's request, based on the memory.
 
-					Please analyze:
-					1. What was the original user request?
-					2. What steps were executed successfully?
-					3. Were there any challenges or failures?
-					4. What specific results were achieved?
+							You will:
+							1. If the user requests to review the plan, then review it, otherwise just answer the user's question
+							2. Consider the current Memory and context
+							3. Provide relevant and context-aware responses
+							""");
+			Message systemMessage = systemPromptTemplate.createMessage(Map.of("planText", planText));
 
-					Provide a clear and concise response addressing:
-					- Direct answer to the user's original question
-					- Key accomplishments and findings
-					- Any relevant data or metrics collected
-					- Recommendations or next steps (if applicable)
-
-					Format your response in a user-friendly way.
-					""".formatted(planText);
+			UserMessage userMessage = new UserMessage(userRequest);
+			Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 
 			ChatResponse response = llmService.getFinalizeChatClient()
-				.prompt()
+				.prompt(prompt)
 				.advisors(new MessageChatMemoryAdvisor(llmService.getMemory()))
 				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
 					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
-				.user(prompt)
 				.call()
 				.chatResponse();
 
-			return "Plan Summary:\n\n" + response.getResult().getOutput().getText();
+			return response.getResult().getOutput().getText();
 		}
 		catch (Exception e) {
 			log.error("Error finalizing plan with LLM: " + e.getMessage());

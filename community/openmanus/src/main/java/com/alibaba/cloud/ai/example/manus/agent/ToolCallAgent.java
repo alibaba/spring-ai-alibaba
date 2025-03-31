@@ -16,14 +16,16 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.Message;
-import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
-import com.alibaba.cloud.ai.example.manus.tool.GoogleSearch;
 import com.alibaba.cloud.ai.example.manus.tool.PythonExecute;
-import com.alibaba.cloud.ai.example.manus.tool.Summary;
+import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +39,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -62,15 +63,78 @@ public class ToolCallAgent extends ReActAgent {
 
 	private Prompt userPrompt;
 
-	public ToolCallAgent(LlmService llmService, ToolCallingManager toolCallingManager) {
-		super(llmService);
+	protected ThinkActRecord thinkActRecord;
+
+	public ToolCallAgent(LlmService llmService, ToolCallingManager toolCallingManager,
+			PlanExecutionRecorder planExecutionRecorder) {
+		super(llmService, planExecutionRecorder);
 		this.toolCallingManager = toolCallingManager;
 	}
 
+	/**
+	 * 执行思考过程 实现说明： 1. 准备思考所需的消息列表 2. 设置工具调用选项 3. 构建提示并获取LLM响应 4. 分析响应中的工具调用 5.
+	 * 记录思考过程和工具选择
+	 * @param retry 当前重试次数
+	 * @return true 如果有工具需要调用，false 如果不需要执行任何工具
+	 */
+
 	@Override
 	protected boolean think() {
-		int retry = 0;
-		return _think(retry);
+
+		AgentExecutionRecord planExecutionRecord = planExecutionRecorder.getCurrentAgentExecutionRecord(getPlanId());
+		thinkActRecord = new ThinkActRecord(planExecutionRecord.getId());
+		planExecutionRecorder.recordThinkActExecution(getPlanId(), planExecutionRecord.getId(), thinkActRecord);
+
+		try {
+			List<Message> messages = new ArrayList<>();
+			addThinkPrompt(messages);
+			thinkActRecord.startThinking(messages.toString());
+
+			// calltool with mem
+			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
+			Message nextStepMessage = getNextStepMessage();
+			messages.add(nextStepMessage);
+
+			log.debug("Messages prepared for the prompt: {}", messages);
+
+			userPrompt = new Prompt(messages, chatOptions);
+
+			response = llmService.getChatClient()
+				.prompt(userPrompt)
+				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
+					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
+				.tools(getToolCallList())
+				.call()
+				.chatResponse();
+
+			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
+			String responseByLLm = response.getResult().getOutput().getText();
+
+			thinkActRecord.finishThinking(responseByLLm);
+
+			log.info(String.format("✨ %s's thoughts: %s", getName(), responseByLLm));
+			log.info(String.format("🛠️ %s selected %d tools to use", getName(), toolCalls.size()));
+
+			if (responseByLLm != null && !responseByLLm.isEmpty()) {
+				log.info(String.format("💬 %s's response: %s", getName(), responseByLLm));
+			}
+			if (!toolCalls.isEmpty()) {
+				log.info(String.format("🧰 Tools being prepared: %s",
+						toolCalls.stream().map(ToolCall::name).collect(Collectors.toList())));
+				thinkActRecord.setActionNeeded(true);
+				thinkActRecord.setToolName(toolCalls.get(0).name());
+				thinkActRecord.setToolParameters(toolCalls.get(0).arguments());
+			}
+
+			thinkActRecord.setStatus("SUCCESS");
+
+			return !toolCalls.isEmpty();
+		}
+		catch (Exception e) {
+			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()));
+			thinkActRecord.recordError(e.getMessage());
+			return false;
+		}
 	}
 
 	/**
@@ -100,38 +164,34 @@ public class ToolCallAgent extends ReActAgent {
 	protected Message addThinkPrompt(List<Message> messages) {
 		super.addThinkPrompt(messages);
 		String stepPrompt = """
-				CURRENT PLAN STATUS:
-				{planStatus}
+				CURRENT TASK STATUS:
+				         {planStatus}
 
-				FOCUS ON CURRENT STEP:
-				You are now working on step {currentStepIndex} : {stepText}
+				         CURRENT TASK STEP ({currentStepIndex}):
+				         {stepText}
 
 				EXECUTION GUIDELINES:
-				1. Focus ONLY on completing the current step's requirements
-				2. Use appropriate tools to accomplish the task
-				3. DO NOT proceed to next steps until current step is fully complete
-				4. Verify all requirements are met before marking as complete
+				         1. This is a SINGLE task step that may require multiple actions to complete
+				         2. Use appropriate tools to accomplish the current task step
+				         3. Stay focused on THIS task step until ALL requirements are met
+				         4. Each task step may need multiple actions/tools to be fully complete
 
-				COMPLETION PROTOCOL:
-				Once you have FULLY completed the current step:
+				         COMPLETION PROTOCOL:
+				         Only call Terminate tool when ALL of the following are true:
+				         1. ALL requirements for THIS task step are completed
+				         2. ALL necessary actions for THIS task step are done
+				         3. You have verified the results
+				         4. You can provide:
+				     		- Complete summary of accomplishments
+				         	- All relevant data/metrics
+				         	- Final status confirmation
 
-				1. MUST call Summary tool with following information:
-				- Detailed results of what was accomplished
-				- Any relevant data or metrics
-				- Status confirmation
+				         ⚠️ IMPORTANT:
+				         - You are working on ONE task step that may need multiple actions
+				         - Do NOT proceed to next TASK step until current one is 100% complete
+				         - Do NOT confuse task steps with action steps
 
-				2. The Summary tool call will automatically:
-				- Mark this step as complete
-				- Save the results
-				- Enable progression to next step
-				- terminate the current step
-
-				⚠️ IMPORTANT:
-				- Stay focused on current step only
-				- Do not skip or combine steps
-				- Only call Summary tool when current step is 100% complete
-				- Provide comprehensive summary before moving forward, including: all facts, data, and metrics
-				""";
+					""";
 
 		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(stepPrompt);
 
@@ -149,70 +209,25 @@ public class ToolCallAgent extends ReActAgent {
 	protected Message getNextStepMessage() {
 
 		String nextStepPrompt = """
-				What is the next step you would like to take?
-				Please provide the step number or the name of the next step.
+				What action would you like to take to progress on the current task step?
+				         Consider:
+				         1. What tools are needed for the next action?
+				         2. How does this action contribute to completing the current task step?
+				         3. What specific parameters or inputs are needed?
+
+				         Remember: This is about the next ACTION within the current TASK step.
 				""";
 
 		return new UserMessage(nextStepPrompt);
-	}
-
-	/**
-	 * 执行思考过程 实现说明： 1. 准备思考所需的消息列表 2. 设置工具调用选项 3. 构建提示并获取LLM响应 4. 分析响应中的工具调用 5.
-	 * 记录思考过程和工具选择
-	 * @param retry 当前重试次数
-	 * @return true 如果有工具需要调用，false 如果不需要执行任何工具
-	 */
-	private boolean _think(int retry) {
-		try {
-			List<Message> messages = new ArrayList<>();
-			addThinkPrompt(messages);
-
-			// calltool with mem
-			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
-			Message nextStepMessage = getNextStepMessage();
-			messages.add(nextStepMessage);
-
-			log.debug("Messages prepared for the prompt: {}", messages);
-
-			userPrompt = new Prompt(messages, chatOptions);
-
-			response = llmService.getChatClient()
-				.prompt(userPrompt)
-				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
-					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
-				.tools(getToolCallList())
-				.call()
-				.chatResponse();
-
-			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
-
-			log.info(String.format("✨ %s's thoughts: %s", getName(), response.getResult().getOutput().getText()));
-			log.info(String.format("🛠️ %s selected %d tools to use", getName(), toolCalls.size()));
-			String responseByLLm = response.getResult().getOutput().getText();
-			if (responseByLLm != null && !responseByLLm.isEmpty()) {
-				log.info(String.format("💬 %s's response: %s", getName(), responseByLLm));
-			}
-			if (!toolCalls.isEmpty()) {
-				log.info(String.format("🧰 Tools being prepared: %s",
-						toolCalls.stream().map(ToolCall::name).collect(Collectors.toList())));
-			}
-
-			return !toolCalls.isEmpty();
-		}
-		catch (Exception e) {
-			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()));
-			// 异常重试
-			if (retry < REPLY_MAX) {
-				return _think(retry + 1);
-			}
-			return false;
-		}
 	}
 
 	@Override
 	protected String act() {
 		try {
 			List<String> results = new ArrayList<>();
+			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
+
+			thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
 
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
@@ -220,8 +235,13 @@ public class ToolCallAgent extends ReActAgent {
 			llmService.getMemory().add(getConversationId(), toolResponseMessage);
 			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
 			results.add(llmCallResponse);
+
+			String finalResult = String.join("\n\n", results);
 			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), llmCallResponse));
-			return String.join("\n\n", results);
+
+			thinkActRecord.finishAction(finalResult, "SUCCESS");
+
+			return finalResult;
 		}
 		catch (Exception e) {
 			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
@@ -230,14 +250,16 @@ public class ToolCallAgent extends ReActAgent {
 			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(List.of(toolResponse), Map.of());
 			llmService.getMemory().add(getConversationId(), toolResponseMessage);
 			log.error(e.getMessage());
+
+			thinkActRecord.recordError(e.getMessage());
+
 			return "Error: " + e.getMessage();
 		}
 	}
 
 	public List<ToolCallback> getToolCallList() {
-		return List.of(GoogleSearch.getFunctionToolCallback(), FileSaver.getFunctionToolCallback(),
-				PythonExecute.getFunctionToolCallback(),
-				Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId()));
+		return List.of(FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback(),
+				TerminateTool.getFunctionToolCallback(this));
 	}
 
 }
