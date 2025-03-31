@@ -142,7 +142,7 @@ public class PythonAgent extends ToolCallAgent {
 	}
 
 	@Override
-	Map<String, Object> getData() {
+	protected Map<String, Object> getData() {
 		Map<String, Object> data = new HashMap<>();
 		Map<String, Object> parentData = super.getData();
 		if (parentData != null) {
