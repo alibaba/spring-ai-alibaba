@@ -560,13 +560,13 @@ public class PlanningFlow extends BaseFlow {
 
 			SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(
 					"""
-					You are an AI assistant that can respond to user's request, based on the memory.
-					
-					You will:
-					1. If the user requests to review the plan, then review it, otherwise just answer the user's question
-					2. Consider the current Memory and context
-					3. Provide relevant and context-aware responses
-					""");
+							You are an AI assistant that can respond to user's request, based on the memory.
+
+							You will:
+							1. If the user requests to review the plan, then review it, otherwise just answer the user's question
+							2. Consider the current Memory and context
+							3. Provide relevant and context-aware responses
+							""");
 			Message systemMessage = systemPromptTemplate.createMessage(Map.of("planText", planText));
 
 			UserMessage userMessage = new UserMessage(userRequest);

@@ -193,7 +193,6 @@ public class LlmService {
 			.build();
 
 		this.chatClient = ChatClient.builder(chatModel)
-			.defaultSystem(MANUS_SYSTEM_PROMPT)
 			.defaultAdvisors(new MessageChatMemoryAdvisor(memory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.defaultTools(toolCallbackProvider)
@@ -201,7 +200,6 @@ public class LlmService {
 			.build();
 
 		this.finalizeChatClient = ChatClient.builder(chatModel)
-			.defaultSystem(FINALIZE_SYSTEM_PROMPT)
 			.defaultAdvisors(new MessageChatMemoryAdvisor(finalizeMemory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.build();

@@ -164,34 +164,34 @@ public class ToolCallAgent extends ReActAgent {
 	protected Message addThinkPrompt(List<Message> messages) {
 		super.addThinkPrompt(messages);
 		String stepPrompt = """
-			CURRENT TASK STATUS:
-            {planStatus}
+				CURRENT TASK STATUS:
+				         {planStatus}
 
-            CURRENT TASK STEP ({currentStepIndex}):
-            {stepText}
+				         CURRENT TASK STEP ({currentStepIndex}):
+				         {stepText}
 
-			EXECUTION GUIDELINES:
-            1. This is a SINGLE task step that may require multiple actions to complete
-            2. Use appropriate tools to accomplish the current task step
-            3. Stay focused on THIS task step until ALL requirements are met
-            4. Each task step may need multiple actions/tools to be fully complete
+				EXECUTION GUIDELINES:
+				         1. This is a SINGLE task step that may require multiple actions to complete
+				         2. Use appropriate tools to accomplish the current task step
+				         3. Stay focused on THIS task step until ALL requirements are met
+				         4. Each task step may need multiple actions/tools to be fully complete
 
-            COMPLETION PROTOCOL:
-            Only call Terminate tool when ALL of the following are true:
-            1. ALL requirements for THIS task step are completed
-            2. ALL necessary actions for THIS task step are done
-            3. You have verified the results
-            4. You can provide:
-        		- Complete summary of accomplishments
-            	- All relevant data/metrics
-            	- Final status confirmation
+				         COMPLETION PROTOCOL:
+				         Only call Terminate tool when ALL of the following are true:
+				         1. ALL requirements for THIS task step are completed
+				         2. ALL necessary actions for THIS task step are done
+				         3. You have verified the results
+				         4. You can provide:
+				     		- Complete summary of accomplishments
+				         	- All relevant data/metrics
+				         	- Final status confirmation
 
-            ⚠️ IMPORTANT:
-            - You are working on ONE task step that may need multiple actions
-            - Do NOT proceed to next TASK step until current one is 100% complete
-            - Do NOT confuse task steps with action steps
-				
-				""";
+				         ⚠️ IMPORTANT:
+				         - You are working on ONE task step that may need multiple actions
+				         - Do NOT proceed to next TASK step until current one is 100% complete
+				         - Do NOT confuse task steps with action steps
+
+					""";
 
 		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(stepPrompt);
 
@@ -209,15 +209,14 @@ public class ToolCallAgent extends ReActAgent {
 	protected Message getNextStepMessage() {
 
 		String nextStepPrompt = """
-			What action would you like to take to progress on the current task step?
-            Consider:
-            1. What tools are needed for the next action?
-            2. How does this action contribute to completing the current task step?
-            3. What specific parameters or inputs are needed?
-            
-            Remember: This is about the next ACTION within the current TASK step.
-			""";
-					
+				What action would you like to take to progress on the current task step?
+				         Consider:
+				         1. What tools are needed for the next action?
+				         2. How does this action contribute to completing the current task step?
+				         3. What specific parameters or inputs are needed?
+
+				         Remember: This is about the next ACTION within the current TASK step.
+				""";
 
 		return new UserMessage(nextStepPrompt);
 	}
