@@ -9,16 +9,6 @@ import com.alibaba.cloud.ai.example.manus.config.entity.ConfigInputType;
 @ConfigurationProperties(prefix = "manus")
 public class ManusProperties {
 
-    @ConfigProperty(
-        group = "server",
-        subGroup = "basic",
-        key = "port",
-        path = "server.port",
-        description = "服务器端口号",
-        defaultValue = "18080",
-        inputType = ConfigInputType.NUMBER
-    )
-    private Integer serverPort;
 
     @ConfigProperty(
         group = "browser",
@@ -53,14 +43,7 @@ public class ManusProperties {
     )
     private Boolean consoleQuery;
 
-    // Getters and Setters
-    public Integer getServerPort() {
-        return serverPort;
-    }
-
-    public void setServerPort(Integer serverPort) {
-        this.serverPort = serverPort;
-    }
+    
 
     public Boolean getBrowserHeadless() {
         return browserHeadless;
