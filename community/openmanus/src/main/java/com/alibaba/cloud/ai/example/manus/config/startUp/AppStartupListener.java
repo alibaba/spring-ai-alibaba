@@ -23,6 +23,7 @@ import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
@@ -33,6 +34,10 @@ import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 public class AppStartupListener implements ApplicationListener<ApplicationReadyEvent> {
 
     private static final Logger logger = LoggerFactory.getLogger(AppStartupListener.class);
+	
+    @Value("${server.port:18080}")
+    //这里用的spring原始的，因为要跟配置文件保持一致。
+	private String serverPort;
 
     @Autowired
     private ManusProperties manusProperties;
@@ -45,7 +50,7 @@ public class AppStartupListener implements ApplicationListener<ApplicationReadyE
             return;
         }
 
-        String url = "http://localhost:" + manusProperties.getServerPort() + "/";
+        String url = "http://localhost:" + serverPort + "/";
         logger.info("应用已启动，正在尝试打开浏览器访问: {}", url);
 
         // 首先尝试使用Desktop API
