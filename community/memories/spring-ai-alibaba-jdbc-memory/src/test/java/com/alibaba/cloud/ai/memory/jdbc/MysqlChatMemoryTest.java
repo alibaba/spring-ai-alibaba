@@ -40,9 +40,11 @@ class MysqlChatMemoryTest {
 	public void mysql() {
 		MysqlChatMemory chatMemory = new MysqlChatMemory("root", "123456",
 				"jdbc:mysql://127.0.0.1:3306/spring_ai_alibaba_chat_memory");
-		ChatClient chatClient = ChatClient.create(new DashScopeChatModel(new DashScopeApi("test-api-key")));
+		String apiKey = System.getenv().getOrDefault("AI_DASHSCOPE_API_KEY", "test-api-key");
+		ChatClient chatClient = ChatClient.create(new DashScopeChatModel(new DashScopeApi(apiKey)));
 		String content1 = chatClient.prompt()
 			.advisors(new MessageChatMemoryAdvisor(chatMemory))
+			.system("你是一个AI聊天小助手，给人提供情绪价值。")
 			.user("我是张三😄")
 			.call()
 			.content();

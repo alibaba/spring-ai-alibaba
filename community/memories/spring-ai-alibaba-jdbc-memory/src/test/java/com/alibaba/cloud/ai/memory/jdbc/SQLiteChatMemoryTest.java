@@ -21,30 +21,28 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.memory.ChatMemory;
 
 import static org.mockito.Mockito.mock;
 
 /**
  * @author future0923
- *
  */
-class SqlServerChatMemoryTest {
+public class SQLiteChatMemoryTest {
 
 	@Test
 	public void test() {
-		SqlServerChatMemory mock = mock(SqlServerChatMemory.class);
+		SQLiteChatMemory mock = mock(SQLiteChatMemory.class);
 		Assertions.assertNotNull(mock);
 	}
 
 	// @Test
-	public void sqlServer() {
-		ChatMemory chatMemory = new SqlServerChatMemory("sa", "qWeR124563",
-				"jdbc:sqlserver://localhost:1433;database=spring_ai_alibaba_chat_memory;encrypt=true;trustServerCertificate=true");
+	public void sqlite() {
+		SQLiteChatMemory chatMemory = new SQLiteChatMemory(null, null, "jdbc:sqlite:spring_ai_alibaba_chat_memory.db");
 		String apiKey = System.getenv().getOrDefault("AI_DASHSCOPE_API_KEY", "test-api-key");
 		ChatClient chatClient = ChatClient.create(new DashScopeChatModel(new DashScopeApi(apiKey)));
 		String content1 = chatClient.prompt()
 			.advisors(new MessageChatMemoryAdvisor(chatMemory))
+			.system("你是一个AI聊天小助手，给人提供情绪价值。")
 			.user("我是张三😄")
 			.call()
 			.content();
