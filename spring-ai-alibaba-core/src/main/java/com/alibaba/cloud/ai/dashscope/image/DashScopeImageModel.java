@@ -123,7 +123,6 @@ public class DashScopeImageModel implements ImageModel {
 		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(request)
 			.provider(DashScopeApiConstants.PROVIDER_NAME)
-			.requestOptions(request.getOptions() != null ? request.getOptions() : this.defaultOptions)
 			.build();
 
 		Observation observation = ImageModelObservationDocumentation.IMAGE_MODEL_OPERATION.observation(
