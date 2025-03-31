@@ -35,13 +35,8 @@ import jakarta.annotation.PreDestroy;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
-import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Primary
@@ -49,105 +44,86 @@ public class ChromeDriverService implements ApplicationRunner {
 
 	private static final Logger log = LoggerFactory.getLogger(ChromeDriverService.class);
 
-	private final AtomicReference<ChromeDriver> driver = new AtomicReference<>();
+	private final ConcurrentHashMap<String, ChromeDriver> drivers = new ConcurrentHashMap<>();
 
 	private final BrowserProperties browserProperties;
 
-	private static final String PID_FILE = "chrome-driver.pid";
-
-	private File pidFile;
+	private final ConcurrentHashMap<String, Object> driverLocks = new ConcurrentHashMap<>();
 
 	public ChromeDriverService(BrowserProperties browserProperties) {
 		this.browserProperties = browserProperties;
-		this.pidFile = new File(System.getProperty("java.io.tmpdir"), PID_FILE);
-
-		// 启动时清理可能存在的僵尸进程
-		cleanupOrphanedProcesses();
-
-		// 添加JVM关闭钩子
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			log.info("JVM shutting down - cleaning up all Chrome processes");
+			log.info("JVM shutting down - cleaning up Chrome processes");
 			cleanupAllChromeProcesses();
-			deletePidFile();
 		}));
 	}
 
-	private void cleanupOrphanedProcesses() {
-		if (pidFile.exists()) {
-			try {
-				List<String> pids = Files.readAllLines(pidFile.toPath());
-				for (String pid : pids) {
-					try {
-						killProcessByPid(pid.trim());
-					}
-					catch (Exception e) {
-						log.warn("Failed to kill orphaned process with PID: {}", pid, e);
+	private Object getDriverLock(String planId) {
+		return driverLocks.computeIfAbsent(planId, k -> new Object());
+	}
+
+	public ChromeDriver getDriver(String planId) {
+		if (planId == null) {
+			throw new IllegalArgumentException("planId cannot be null");
+		}
+
+		ChromeDriver currentDriver = drivers.get(planId);
+		if (currentDriver != null && isDriverActive(currentDriver)) {
+			return currentDriver;
+		}
+
+		synchronized (getDriverLock(planId)) {
+			currentDriver = drivers.get(planId);
+			if (currentDriver != null && isDriverActive(currentDriver)) {
+				return currentDriver;
+			}
+
+			ChromeDriver newDriver = createNewDriver();
+			drivers.put(planId, newDriver);
+			return newDriver;
+		}
+	}
+
+	private void cleanupAllChromeProcesses() {
+		try {
+			// 关闭所有 driver
+			for (Map.Entry<String, ChromeDriver> entry : drivers.entrySet()) {
+				try {
+					ChromeDriver driver = entry.getValue();
+					if (driver != null) {
+						closeDriver(driver);
 					}
 				}
+				catch (Exception e) {
+					log.error("Error closing ChromeDriver for planId: {}", entry.getKey(), e);
+				}
 			}
-			catch (IOException e) {
-				log.warn("Failed to read PID file", e);
-			}
-			finally {
-				deletePidFile();
-			}
-		}
-	}
-
-	private void recordProcessId(String pid) {
-		try {
-			Files.write(pidFile.toPath(), Collections.singletonList(pid), StandardOpenOption.CREATE,
-					StandardOpenOption.APPEND);
-			log.info("Recorded Chrome process PID: {}", pid);
-		}
-		catch (IOException e) {
-			log.error("Failed to record process PID", e);
-		}
-	}
-
-	private void deletePidFile() {
-		try {
-			Files.deleteIfExists(pidFile.toPath());
-		}
-		catch (IOException e) {
-			log.warn("Failed to delete PID file", e);
-		}
-	}
-
-	private void killProcessByPid(String pid) {
-		try {
-			boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-			String killCommand = isWindows ? "taskkill /F /PID " + pid : "kill -9 " + pid;
-			Process process = Runtime.getRuntime().exec(killCommand);
-			process.waitFor(5, TimeUnit.SECONDS);
+			drivers.clear();
+			driverLocks.clear();
+			log.info("Successfully cleaned up all Chrome drivers");
 		}
 		catch (Exception e) {
-			log.warn("Failed to kill process with PID: {}", pid, e);
+			log.error("Error cleaning up Chrome processes", e);
 		}
 	}
 
-	private String getProcessId(ChromeDriver driver) {
-		try {
-			String processName = driver.getClass().getName();
-			ProcessHandle current = ProcessHandle.current();
-			Optional<ProcessHandle> chromeProcess = ProcessHandle.allProcesses()
-				.filter(process -> process.info()
-					.commandLine()
-					.map(cmd -> cmd.contains("chromedriver") || cmd.contains("chrome.exe"))
-					.orElse(false))
-				.findFirst();
-
-			return chromeProcess.map(handle -> String.valueOf(handle.pid())).orElse(null);
-		}
-		catch (Exception e) {
-			log.warn("Failed to get process ID", e);
-			return null;
+	public void closeDriverForPlan(String planId) {
+		ChromeDriver driver = drivers.remove(planId);
+		if (driver != null) {
+			closeDriver(driver);
+			driverLocks.remove(planId);
 		}
 	}
 
 	@Override
 	public void run(ApplicationArguments args) throws Exception {
-		String chromeDriverPath = getChromeDriverPath(checkOS() ? "data/chromedriver.exe" : "data/chromedriver");
+		OsType osType = checkOS();
+		if (osType == OsType.UNSUPPORTED) {
+			throw new UnsupportedOperationException("当前仅支持 Windows 和 macOS 系统");
+		}
+
+		String chromeDriverPath = getChromeDriverPath(
+				osType == OsType.WINDOWS ? "data/chromedriver.exe" : "data/chromedriver");
 		System.setProperty("webdriver.chrome.driver", chromeDriverPath);
 		log.info("ChromeDriver path initialized: {}", chromeDriverPath);
 	}
@@ -160,33 +136,25 @@ public class ChromeDriverService implements ApplicationRunner {
 		return Paths.get(resource.toURI()).toFile().getAbsolutePath();
 	}
 
-	private static Boolean checkOS() {
-		String os = System.getProperty("os.name").toLowerCase();
-		if (os.contains("win")) {
-			return true;
-		}
-		else if (os.contains("mac")) {
-			return false;
-		}
-		else if (os.contains("nix") || os.contains("nux") || os.contains("aix")) {
-			log.info("Operating System: Unix/Linux");
-			return false;
-		}
-		else {
-			log.info("Operating System: Unknown");
-			return false;
-		}
+	private enum OsType {
+
+		WINDOWS, MAC, UNSUPPORTED
+
 	}
 
-	public ChromeDriver getDriver() {
+	private static OsType checkOS() {
+		String os = System.getProperty("os.name").toLowerCase();
 
-		return driver.updateAndGet(existing -> {
-
-			if (existing != null && isDriverActive(existing)) {
-				return existing;
-			}
-			return createNewDriver();
-		});
+		if (os.contains("win")) {
+			return OsType.WINDOWS;
+		}
+		else if (os.contains("mac")) {
+			return OsType.MAC;
+		}
+		else {
+			log.warn("不支持的操作系统类型: {}", os);
+			return OsType.UNSUPPORTED;
+		}
 	}
 
 	private ChromeDriver createNewDriver() {
@@ -196,7 +164,7 @@ public class ChromeDriverService implements ApplicationRunner {
 
 			// 基础配置
 			options.addArguments("--remote-allow-origins=*");
-			options.addArguments("--disable-blink-features=AutomationControlled"); // 关键：禁用自动化控制检测
+			options.addArguments("--disable-blink-features=AutomationControlled");
 
 			// 根据配置决定是否使用 headless 模式
 			if (browserProperties.isHeadless()) {
@@ -205,10 +173,10 @@ public class ChromeDriverService implements ApplicationRunner {
 			}
 
 			// 模拟真实浏览器环境
-			options.addArguments("--disable-infobars"); // 禁用信息条
-			options.addArguments("--disable-notifications"); // 禁用通知
-			options.addArguments("--disable-dev-shm-usage"); // 禁用/dev/shm使用
-			options.addArguments("--lang=zh-CN,zh,en-US,en"); // 设置语言
+			options.addArguments("--disable-infobars");
+			options.addArguments("--disable-notifications");
+			options.addArguments("--disable-dev-shm-usage");
+			options.addArguments("--lang=zh-CN,zh,en-US,en");
 
 			// 添加随机化的用户代理
 			options.addArguments("--user-agent=" + getRandomUserAgent());
@@ -229,11 +197,6 @@ public class ChromeDriverService implements ApplicationRunner {
 			options.setExperimentalOption("excludeSwitches", Arrays.asList("enable-automation"));
 
 			newDriver = new ChromeDriver(options);
-			String pid = getProcessId(newDriver);
-			if (pid != null) {
-				recordProcessId(pid);
-			}
-
 			executeAntiDetectionScript(newDriver);
 			log.info("Created new ChromeDriver instance with anti-detection");
 			return newDriver;
@@ -321,36 +284,6 @@ public class ChromeDriverService implements ApplicationRunner {
 		}
 		catch (Exception e) {
 			log.error("Error closing ChromeDriver", e);
-		}
-	}
-
-	private void cleanupAllChromeProcesses() {
-		try {
-			// 首先尝试正常关闭当前driver
-			ChromeDriver currentDriver = driver.get();
-			if (currentDriver != null) {
-				closeDriver(currentDriver);
-				driver.set(null);
-			}
-
-			// 使用系统命令清理所有相关进程
-			boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-			if (isWindows) {
-				Runtime.getRuntime().exec("taskkill /F /IM chromedriver.exe /T");
-				Runtime.getRuntime().exec("taskkill /F /IM chrome.exe /T");
-			}
-			else {
-				Runtime.getRuntime().exec("pkill -f chromedriver");
-				Runtime.getRuntime().exec("pkill -f chrome");
-			}
-
-			// 清理PID文件
-			deletePidFile();
-
-			log.info("Successfully cleaned up all Chrome processes");
-		}
-		catch (Exception e) {
-			log.error("Error cleaning up Chrome processes", e);
 		}
 	}
 

@@ -15,27 +15,82 @@
  */
 package com.alibaba.cloud.ai.example.manus.controller;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusConfiguration.PlanningFlowManager;
 import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
-@RequestMapping("/manus")
+@RequestMapping("/api/manus")
 public class ManusController {
 
-	private final PlanningFlow planningFlow;
+	@Autowired
+	private PlanningFlowManager planningFlowManager;
 
-	ManusController(PlanningFlow planningFlow) {
-		this.planningFlow = planningFlow;
+	@Autowired
+	private PlanExecutionRecorder planExecutionRecorder;
+
+	/**
+	 * 异步执行 Manus 请求
+	 * @param request 包含用户查询的请求
+	 * @return 任务ID及状态
+	 */
+	@PostMapping("/execute")
+	public ResponseEntity<Map<String, Object>> executeQuery(@RequestBody Map<String, String> request) {
+		String query = request.get("query");
+		if (query == null || query.trim().isEmpty()) {
+			return ResponseEntity.badRequest().body(Map.of("error", "查询内容不能为空"));
+		}
+
+		// 创建唯一的计划ID
+		String planId = "plan_" + System.currentTimeMillis();
+
+		// 获取或创建规划流程
+		PlanningFlow planningFlow = planningFlowManager.getOrCreatePlanningFlow(planId);
+
+		// 异步执行任务
+		CompletableFuture.supplyAsync(() -> {
+			try {
+				return planningFlow.execute(query);
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+				return "执行出错: " + e.getMessage();
+			}
+		});
+
+		// 返回任务ID及初始状态
+		Map<String, Object> response = new HashMap<>();
+		response.put("planId", planId);
+		response.put("status", "processing");
+		response.put("message", "任务已提交，正在处理中");
+
+		return ResponseEntity.ok(response);
 	}
 
-	@GetMapping("/chat")
-	public String simpleChat(@RequestParam(value = "query", defaultValue = "你好，很高兴认识你，能简单介绍一下自己吗？") String query) {
-		planningFlow.setActivePlanId("plan_" + System.currentTimeMillis());
-		return planningFlow.execute(query);
+	/**
+	 * 获取详细的执行记录
+	 * @param planId 计划ID
+	 * @return 执行记录的 JSON 表示
+	 */
+	@GetMapping("/details/{planId}")
+	public synchronized ResponseEntity<String> getExecutionDetails(@PathVariable String planId) {
+		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId);
+
+		if (planRecord == null) {
+			return ResponseEntity.notFound().build();
+		}
+
+		return ResponseEntity.ok(planRecord.toJson());
 	}
 
 }

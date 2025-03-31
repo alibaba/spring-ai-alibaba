@@ -1,0 +1,44 @@
+/* layout.css - 应用整体布局 */
+.app-container {
+    display: flex; /* 使用flexbox横向排列子元素 */
+    height: 100vh;
+    background-color: #fff;
+    overflow: hidden; /* 防止主容器滚动 */
+}
+
+/* 主内容包装器 */
+.main-content-wrapper {
+    flex-grow: 1; /* 占用剩余空间 */
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    /* 防止包装器溢出，滚动应该在chat-area内部进行 */
+    overflow: hidden;
+    /* 添加侧边栏展开/收起时的平滑过渡 */
+    transition: width 0.3s ease-in-out;
+}
+
+/* 左侧边栏基础样式已经存在于sidebar.css中 */
+/* 右侧边栏样式已在right-sidebar.css中定义 */
+
+/* 自定义图标样式 */
+.icon-placeholder::before { content: "□"; display: inline-block; margin-right: 5px; }
+.icon-collapse-left::before { content: "◀"; }
+.icon-expand-left::before { content: "▶"; }
+.icon-collapse-right::before { content: "▶"; }
+.icon-expand-right::before { content: "◀"; }
+.icon-terminal::before { content: ">_"; }
+.icon-play::before { content: "►"; }
+.icon-realtime::before { content: "●"; color: #1a73e8; }
+.icon-menu::before { content: "⋮"; } /* 垂直省略号 */
+.icon-share::before { content: "↑"; }
+.icon-star-outline::before { content: "☆"; }
+.icon-star-filled::before { content: "★"; }
+.icon-lightbulb::before { content: "💡"; }
+.icon-attach::before { content: "📎"; }
+.icon-send::before { content: "↑"; }
+.icon-add::before { content: "+"; }
+.icon-folder::before { content:"📁"; }
+.icon-pages::before { content:"📄";}
+.icon-down-arrow::before { content: "▼"; }
+.icon-up-arrow::before { content: "▲"; }
