@@ -33,6 +33,9 @@ import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
+import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
+import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
+import com.alibaba.cloud.ai.example.manus.tool.ToolDefinition;
 import com.alibaba.cloud.ai.example.manus.tool.support.CodeUtils;
 
 import org.apache.hc.client5.http.classic.HttpClient;
@@ -42,6 +45,8 @@ import org.apache.hc.core5.util.Timeout;
 
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -94,11 +99,25 @@ public class ManusConfiguration {
 
 	@Bean
 	@Scope("prototype") // 每次请求创建一个新的实例
-	public  Map<String, ToolCallback> toolCallbackMap(LlmService llmService, ToolCallingManager toolCallingManager) {
+	public  Map<String, ToolCallback> toolCallbackMap(LlmService llmService, ToolCallingManager toolCallingManager,String planId) {
 		Map<String, ToolCallback> toolCallbackMap = new HashMap<>();
-		toolCallbackMap.put("python", new PythonAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR, recorder, manusProperties));
-		toolCallbackMap.put("file", new FileAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR, recorder, manusProperties));
-		toolCallbackMap.put("browser", new BrowserAgent(llmService, toolCallingManager, chromeDriverService, recorder, manusProperties));
+		List<ToolDefinition> toolDefinitions = new ArrayList<>();
+		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService));
+		toolDefinitions.add(new TerminateTool(null));
+
+
+
+		for(ToolDefinition toolDefinition : toolDefinitions) {
+			FunctionToolCallback functionToolcallback = FunctionToolCallback.builder(toolDefinition.getName(), toolDefinition)
+				.description(toolDefinition.getDescription())
+				.inputSchema(toolDefinition.getParameters())
+				.inputType(toolDefinition.getInputType())
+				.toolMetadata(ToolMetadata.builder()
+					.returnDirect(toolDefinition.isReturnDirect())
+					.build())
+				.build();
+			toolCallbackMap.put(toolDefinition.getName(), functionToolcallback);
+		}
 		return toolCallbackMap;
 	}
 

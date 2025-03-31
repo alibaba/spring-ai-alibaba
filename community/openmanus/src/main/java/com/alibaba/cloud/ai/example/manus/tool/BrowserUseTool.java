@@ -35,10 +35,11 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.ArrayList;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class BrowserUseTool implements Function<String, ToolExecuteResult> {
+public class BrowserUseTool implements ToolDefinition{
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseTool.class);
 
@@ -52,9 +53,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 	 */
 	private String planId;
 
-	public BrowserUseTool(ChromeDriverService chromeDriverService, String planId) {
+	public BrowserUseTool(ChromeDriverService chromeDriverService) {
 		this.chromeDriverService = chromeDriverService;
-		this.planId = planId;
 	}
 
 	private WebDriver getDriver() {
@@ -170,14 +170,14 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		return functionTool;
 	}
 
-	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService, String planId) {
-		BrowserUseTool instance = new BrowserUseTool(chromeDriverService, planId);
+	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService) {
+		BrowserUseTool instance = new BrowserUseTool(chromeDriverService);
 		return instance;
 	}
 
 	@SuppressWarnings("rawtypes")
-	public static FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService, String planId) {
-		return FunctionToolCallback.builder(name, getInstance(chromeDriverService, planId))
+	public static FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService) {
+		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
 			.description(description)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
@@ -627,10 +627,43 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			return false;
 		}
 	}
+	@Override
+	public ToolExecuteResult apply(String t, ToolContext u) {
+
+		return run(t);
+	}
 
 	@Override
-	public ToolExecuteResult apply(String s) {
-		return run(s);
+	public String getName() {
+		return  name;
+	}
+
+	@Override
+	public String getDescription() {
+		return description;
+	}
+
+	@Override
+	public String getParameters() {
+		return PARAMETERS;
+	}
+
+	@Override
+	public Class<?> getInputType() {
+		return String.class;
+	}
+
+	public void setPlanId(String planId) {
+		this.planId = planId;
+	}
+
+	public String getPlanId() {
+		return this.planId;
+	}
+
+	@Override
+	public boolean isReturnDirect() {
+		return false;
 	}
 
 }
