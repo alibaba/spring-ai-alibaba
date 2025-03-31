@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JTaskPilot - 管理界面</title>
+    <!-- 引入CSS文件 -->
+    <link rel="stylesheet" href="../css/reset.css">
+    <link rel="stylesheet" href="admin.css">
+    <!-- 添加与主页一致的图标样式 -->
+    <style>
+        /* Simple icons for demo */
+        .icon-placeholder::before { content: "□"; display: inline-block; margin-right: 5px; }
+        .icon-collapse-left::before { content: "◀"; display: inline-block; }
+        .icon-expand-left::before { content: "▶"; display: inline-block; }
+        .icon-collapse-right::before { content: "▶"; display: inline-block; }
+        .icon-expand-right::before { content: "◀"; display: inline-block; }
+        .icon-terminal::before { content: ">_"; display: inline-block; }
+        .icon-play::before { content: "►"; display: inline-block; }
+        .icon-realtime::before { content: "●"; color: #1a73e8; display: inline-block; }
+        .icon-menu::before { content: "⋮"; display: inline-block; }
+        .icon-share::before { content: "↑"; display: inline-block; }
+        .icon-star-outline::before { content: "☆"; display: inline-block; }
+        .icon-star-filled::before { content: "★"; display: inline-block; }
+        .icon-lightbulb::before { content: "💡"; display: inline-block; }
+        .icon-attach::before { content: "📎"; display: inline-block; }
+        .icon-send::before { content: "↑"; display: inline-block; }
+        .icon-add::before { content: "+"; display: inline-block; }
+        .icon-folder::before { content:"📁"; display: inline-block; }
+        .icon-pages::before { content:"📄"; display: inline-block; }
+        .icon-down-arrow::before { content: "▼"; display: inline-block; }
+        .icon-up-arrow::before { content: "▲"; display: inline-block; }
+        .icon-settings::before { content:"⚙️"; display: inline-block; }
+        .icon-agent::before { content:"🤖"; display: inline-block; }
+        .icon-tool::before { content:"🛠️"; display: inline-block; }
+        .icon-mcp::before { content:"🔌"; display: inline-block; }
+        .icon-back::before { content:"⬅️"; display: inline-block; }
+        .icon-save::before { content:"💾"; display: inline-block; }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- 顶部导航栏 -->
+        <header class="admin-header">
+            <div class="header-title">
+                <h1>JTaskPilot 管理控制台</h1>
+            </div>
+            <div class="header-actions">
+                <button class="action-btn" id="saveConfigBtn"><span class="icon-save"></span> 保存配置</button>
+                <button class="action-btn" id="backToMainBtn"><span class="icon-back"></span> 返回主页</button>
+            </div>
+        </header>
+
+        <!-- 主体内容区域 - 左右结构 -->
+        <div class="admin-content">
+            <!-- 左侧配置类别列表 -->
+            <nav class="config-categories">
+                <ul>
+                    <li class="category-item active" data-category="basic">
+                        <span class="icon-settings"></span>
+                        <span class="category-label">基础配置</span>
+                    </li>
+                    <li class="category-item" data-category="agent">
+                        <span class="icon-agent"></span>
+                        <span class="category-label">Agent配置</span>
+                    </li>
+                    <li class="category-item" data-category="tool">
+                        <span class="icon-tool"></span>
+                        <span class="category-label">Tool配置</span>
+                    </li>
+                    <li class="category-item" data-category="mcp">
+                        <span class="icon-mcp"></span>
+                        <span class="category-label">MCP配置</span>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- 中间分割线 -->
+            <div class="content-divider"></div>
+
+            <!-- 右侧配置详情区域 -->
+            <div class="config-details">
+                <!-- 基础配置面板 - 默认显示 -->
+                <div class="config-panel active" id="basic-config">
+                    <h2 class="panel-title">基础配置</h2>
+                    
+                    <div class="config-group">
+                        <h3 class="group-title">系统设置</h3>
+                        <div class="config-item">
+                            <label for="system-name">系统名称</label>
+                            <input type="text" id="system-name" value="JTaskPilot">
+                        </div>
+                        <div class="config-item">
+                            <label for="system-language">默认语言</label>
+                            <select id="system-language">
+                                <option value="zh-CN">中文 (简体)</option>
+                                <option value="en-US">English</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="config-group">
+                        <h3 class="group-title">性能设置</h3>
+                        <div class="config-item">
+                            <label for="max-threads">最大线程数</label>
+                            <input type="number" id="max-threads" min="1" max="32" value="8">
+                        </div>
+                        <div class="config-item">
+                            <label for="timeout-seconds">请求超时时间(秒)</label>
+                            <input type="number" id="timeout-seconds" min="5" max="300" value="60">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agent配置面板 - 初始隐藏 -->
+                <div class="config-panel" id="agent-config">
+                    <h2 class="panel-title">Agent配置</h2>
+                    
+                    <div class="config-group">
+                        <h3 class="group-title">Agent基本设置</h3>
+                        <div class="config-item">
+                            <label for="default-agent">默认Agent类型</label>
+                            <select id="default-agent">
+                                <option value="assistant">通用助手</option>
+                                <option value="programmer">编程专家</option>
+                                <option value="custom">自定义</option>
+                            </select>
+                        </div>
+                        <div class="config-item">
+                            <label for="agent-timeout">Agent响应超时(秒)</label>
+                            <input type="number" id="agent-timeout" min="10" max="300" value="120">
+                        </div>
+                    </div>
+                    
+                    <div class="config-group">
+                        <h3 class="group-title">Agent高级设置</h3>
+                        <div class="config-item">
+                            <label for="max-turns">最大对话轮次</label>
+                            <input type="number" id="max-turns" min="1" max="50" value="10">
+                        </div>
+                        <div class="config-item">
+                            <label for="system-prompt">系统提示词</label>
+                            <textarea id="system-prompt" rows="5">您是一个智能助手，可以回答问题并执行任务。</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tool配置面板 - 初始隐藏 -->
+                <div class="config-panel" id="tool-config">
+                    <h2 class="panel-title">Tool配置</h2>
+                    
+                    <div class="config-group">
+                        <h3 class="group-title">工具启用设置</h3>
+                        <div class="config-item checkbox-item">
+                            <input type="checkbox" id="enable-search-tool" checked>
+                            <label for="enable-search-tool">启用搜索工具</label>
+                        </div>
+                        <div class="config-item checkbox-item">
+                            <input type="checkbox" id="enable-calculator-tool" checked>
+                            <label for="enable-calculator-tool">启用计算器工具</label>
+                        </div>
+                        <div class="config-item checkbox-item">
+                            <input type="checkbox" id="enable-weather-tool">
+                            <label for="enable-weather-tool">启用天气工具</label>
+                        </div>
+                    </div>
+                    
+                    <div class="config-group">
+                        <h3 class="group-title">API配置</h3>
+                        <div class="config-item">
+                            <label for="weather-api-key">天气API密钥</label>
+                            <input type="text" id="weather-api-key" placeholder="输入API密钥">
+                        </div>
+                        <div class="config-item">
+                            <button class="secondary-btn" id="test-weather-api">测试连接</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MCP配置面板 - 初始隐藏 -->
+                <div class="config-panel" id="mcp-config">
+                    <h2 class="panel-title">MCP配置</h2>
+                    
+                    <div class="config-group">
+                        <h3 class="group-title">MCP连接设置</h3>
+                        <div class="config-item">
+                            <label for="mcp-endpoint">MCP服务端点</label>
+                            <input type="text" id="mcp-endpoint" value="http://localhost:8080/mcp">
+                        </div>
+                        <div class="config-item">
+                            <label for="mcp-version">MCP协议版本</label>
+                            <select id="mcp-version">
+                                <option value="1.0">1.0</option>
+                                <option value="1.1">1.1</option>
+                                <option value="1.2" selected>1.2</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="config-group">
+                        <h3 class="group-title">模型配置</h3>
+                        <div class="config-item">
+                            <label for="default-model">默认LLM模型</label>
+                            <select id="default-model">
+                                <option value="qwen-max">通义千问 Max</option>
+                                <option value="qwen-plus">通义千问 Plus</option>
+                                <option value="qwen-turbo">通义千问 Turbo</option>
+                                <option value="custom">自定义</option>
+                            </select>
+                        </div>
+                        <div class="config-item">
+                            <label for="custom-model-url">自定义模型URL</label>
+                            <input type="text" id="custom-model-url" placeholder="输入模型URL">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入JavaScript文件 -->
+    <script src="admin-utils.js"></script>
+    <script src="config-model.js"></script>
+    <script src="admin-ui.js"></script>
+    <script src="admin-events.js"></script>
+    <script src="admin-core.js"></script>
+</body>
+</html>

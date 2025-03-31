@@ -19,7 +19,7 @@ public class ManusProperties {
         defaultValue = "false",
         inputType = ConfigInputType.BOOLEAN
     )
-    private Boolean browserHeadless;
+    private Boolean browserHeadless = false;
 
     @ConfigProperty(
         group = "browser",
@@ -30,7 +30,7 @@ public class ManusProperties {
         defaultValue = "true",
         inputType = ConfigInputType.BOOLEAN
     )
-    private Boolean openBrowserAuto;
+    private Boolean openBrowserAuto = true;
 
     @ConfigProperty(
         group = "browser",
@@ -41,7 +41,7 @@ public class ManusProperties {
         defaultValue = "false",
         inputType = ConfigInputType.BOOLEAN
     )
-    private Boolean consoleQuery;
+    private Boolean consoleQuery = false;
 
     
 
