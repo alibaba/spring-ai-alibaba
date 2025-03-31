@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.config;
+package com.alibaba.cloud.ai.example.manus.config.startUp;
 
 import java.util.Scanner;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
@@ -32,8 +34,8 @@ public class QueryCommandRunner implements CommandLineRunner {
 
 	private final PlanningFlow planningFlow;
 
-	@Value("${manus.consolequery:false}")
-	private boolean consoleQueryEnabled;
+    @Autowired
+    private ManusProperties manusProperties;
 
 	public QueryCommandRunner(PlanningFlow planningFlow) {
 		this.planningFlow = planningFlow;
@@ -42,7 +44,7 @@ public class QueryCommandRunner implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 		// 只有当启用了控制台查询模式时才执行
-		if (!consoleQueryEnabled) {
+		if (!manusProperties.getConsoleQuery()) {
 			logger.info("控制台交互模式未启用，跳过命令行查询");
 			return;
 		}

@@ -27,7 +27,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
-import com.alibaba.cloud.ai.example.manus.config.BrowserProperties;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
 
 import jakarta.annotation.PreDestroy;
@@ -46,12 +46,12 @@ public class ChromeDriverService implements ApplicationRunner {
 
 	private final ConcurrentHashMap<String, ChromeDriver> drivers = new ConcurrentHashMap<>();
 
-	private final BrowserProperties browserProperties;
+	private final ManusProperties manusProperties;
 
 	private final ConcurrentHashMap<String, Object> driverLocks = new ConcurrentHashMap<>();
 
-	public ChromeDriverService(BrowserProperties browserProperties) {
-		this.browserProperties = browserProperties;
+	public ChromeDriverService(ManusProperties manusProperties) {
+		this.manusProperties = manusProperties;
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			log.info("JVM shutting down - cleaning up Chrome processes");
 			cleanupAllChromeProcesses();
@@ -167,7 +167,7 @@ public class ChromeDriverService implements ApplicationRunner {
 			options.addArguments("--disable-blink-features=AutomationControlled");
 
 			// 根据配置决定是否使用 headless 模式
-			if (browserProperties.isHeadless()) {
+			if (manusProperties.getBrowserHeadless()) {
 				log.info("启用 Chrome headless 模式");
 				options.addArguments("--headless=new");
 			}
