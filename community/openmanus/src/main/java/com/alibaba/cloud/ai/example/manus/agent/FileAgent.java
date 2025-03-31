@@ -19,7 +19,8 @@ import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.tool.Bash;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
 import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
-import com.alibaba.cloud.ai.example.manus.tool.Summary;
+import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.Message;
@@ -41,8 +42,9 @@ public class FileAgent extends ToolCallAgent {
 
 	private final AtomicReference<Map<String, Object>> currentFileState = new AtomicReference<>();
 
-	public FileAgent(LlmService llmService, ToolCallingManager toolCallingManager, String workingDirectory) {
-		super(llmService, toolCallingManager);
+	public FileAgent(LlmService llmService, ToolCallingManager toolCallingManager, String workingDirectory,
+			PlanExecutionRecorder record) {
+		super(llmService, toolCallingManager, record);
 		this.workingDirectory = workingDirectory;
 	}
 
@@ -136,8 +138,7 @@ public class FileAgent extends ToolCallAgent {
 	@Override
 	public List<ToolCallback> getToolCallList() {
 		return List.of(Bash.getFunctionToolCallback(workingDirectory), DocLoaderTool.getFunctionToolCallback(),
-				FileSaver.getFunctionToolCallback(),
-				Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId()));
+				FileSaver.getFunctionToolCallback(), TerminateTool.getFunctionToolCallback(this));
 	}
 
 	@Override

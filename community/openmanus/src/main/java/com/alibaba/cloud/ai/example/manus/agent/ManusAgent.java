@@ -16,13 +16,13 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.Bash;
 import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
-import com.alibaba.cloud.ai.example.manus.tool.GoogleSearch;
 import com.alibaba.cloud.ai.example.manus.tool.PythonExecute;
-import com.alibaba.cloud.ai.example.manus.tool.Summary;
+import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
 
 import java.util.List;
 
@@ -39,8 +39,8 @@ public class ManusAgent extends ToolCallAgent {
 	private final ChromeDriverService chromeDriverService;
 
 	public ManusAgent(LlmService llmService, ToolCallingManager toolCallingManager,
-			ChromeDriverService chromeDriverService, String workingDirectory) {
-		super(llmService, toolCallingManager);
+			ChromeDriverService chromeDriverService, String workingDirectory, PlanExecutionRecorder record) {
+		super(llmService, toolCallingManager, record);
 		this.chromeDriverService = chromeDriverService;
 		this.workingDirectory = workingDirectory;
 	}
@@ -56,10 +56,8 @@ public class ManusAgent extends ToolCallAgent {
 	}
 
 	public List<ToolCallback> getToolCallList() {
-		return List.of(GoogleSearch.getFunctionToolCallback(), FileSaver.getFunctionToolCallback(),
-				PythonExecute.getFunctionToolCallback(), Bash.getFunctionToolCallback(workingDirectory),
-				BrowserUseTool.getFunctionToolCallback(chromeDriverService),
-				Summary.getFunctionToolCallback(this, llmService.getMemory(), getConversationId()));
+		return List.of(FileSaver.getFunctionToolCallback(), Bash.getFunctionToolCallback(workingDirectory),
+				TerminateTool.getFunctionToolCallback(this));
 	}
 
 }
