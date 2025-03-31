@@ -13,20 +13,20 @@ import org.springframework.core.io.ClassPathResource;
  */
 public class PromptLoader {
 
-    /**
-     * load prompt form classpath file
-     *
-     * @param fileName file name
-     * @return file content
-     */
-    public static String loadPromptFromClasspath(String fileName) {
-        try {
-            ClassPathResource resource = new ClassPathResource(fileName);
-            return new BufferedReader(new InputStreamReader(resource.getInputStream()))
-                .lines().collect(Collectors.joining(System.lineSeparator()));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
+	/**
+	 * load prompt form classpath file
+	 * @param fileName file name
+	 * @return file content
+	 */
+	public static String loadPromptFromClasspath(String fileName) {
+		try {
+			ClassPathResource resource = new ClassPathResource(fileName);
+			return new BufferedReader(new InputStreamReader(resource.getInputStream())).lines()
+				.collect(Collectors.joining(System.lineSeparator()));
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 }

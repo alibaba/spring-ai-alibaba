@@ -161,8 +161,8 @@ public abstract class BaseAgent {
 		// End current step
 		setState(AgentState.FINISHED);
 
-		String stuckPrompt = PromptLoader
-			.loadPromptFromClasspath("prompts/base_agent_handle_stuck_prompt.md").formatted(currentStep);
+		String stuckPrompt = PromptLoader.loadPromptFromClasspath("prompts/base_agent_handle_stuck_prompt.md")
+			.formatted(currentStep);
 
 		log.error(stuckPrompt);
 	}
