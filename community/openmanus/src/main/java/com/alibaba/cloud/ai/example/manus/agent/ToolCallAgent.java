@@ -56,7 +56,6 @@ public class ToolCallAgent extends ReActAgent {
 
 	private static final Logger log = LoggerFactory.getLogger(ToolCallAgent.class);
 
-	private static final Integer REPLY_MAX = 3;
 
 	private final ToolCallingManager toolCallingManager;
 
