@@ -16,12 +16,16 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.tool.ToolCallback;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -61,15 +65,19 @@ public abstract class BaseAgent {
 
 	private String conversationId;
 
+	private String planId = null;
+
 	private AgentState state = AgentState.IDLE;
 
 	protected LlmService llmService;
 
-	private int maxSteps = 8;
+	private int maxSteps = 20;
 
 	private int currentStep = 0;
 
 	private Map<String, Object> data = new HashMap<>();
+
+	protected PlanExecutionRecorder planExecutionRecorder;
 
 	/**
 	 * 获取智能体的名称
@@ -116,8 +124,9 @@ public abstract class BaseAgent {
 
 	public abstract List<ToolCallback> getToolCallList();
 
-	public BaseAgent(LlmService llmService) {
+	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder) {
 		this.llmService = llmService;
+		this.planExecutionRecorder = planExecutionRecorder;
 	}
 
 	public String run(Map<String, Object> data) {
@@ -128,33 +137,63 @@ public abstract class BaseAgent {
 
 		setData(data);
 
+		// Create agent execution record
+		AgentExecutionRecord agentRecord = new AgentExecutionRecord(getConversationId(), getName(), getDescription());
+		agentRecord.setMaxSteps(maxSteps);
+		agentRecord.setStatus(state.toString());
+		// Record execution in recorder if we have a plan ID
+		if (planId != null && planExecutionRecorder != null) {
+			planExecutionRecorder.recordAgentExecution(planId, agentRecord);
+		}
 		List<String> results = new ArrayList<>();
 		lock.lock();
 		try {
 			state = AgentState.RUNNING;
+			agentRecord.setStatus(state.toString());
+
 			while (currentStep < maxSteps && !state.equals(AgentState.FINISHED)) {
 				currentStep++;
 				log.info("Executing round " + currentStep + "/" + maxSteps);
+
 				String stepResult = step();
+
 				if (isStuck()) {
-					handleStuckState();
+					handleStuckState(agentRecord);
 				}
+
 				results.add("Round " + currentStep + ": " + stepResult);
+
+				// Update agent record after each step
+				agentRecord.setCurrentStep(currentStep);
 			}
+
 			if (currentStep >= maxSteps) {
 				results.add("Terminated: Reached max rounds (" + maxSteps + ")");
 			}
+
+			// Set final state in record
+			agentRecord.setEndTime(LocalDateTime.now());
+			agentRecord.setStatus(AgentState.IDLE.toString());
+			agentRecord.setCompleted(state.equals(AgentState.FINISHED));
+
+			// Calculate execution time in seconds
+			long executionTimeSeconds = java.time.Duration.between(agentRecord.getStartTime(), agentRecord.getEndTime())
+				.getSeconds();
+			String status = agentRecord.isCompleted() ? "成功" : (agentRecord.isStuck() ? "执行卡住" : "未完成");
+			agentRecord.setResult(String.format("执行%s [耗时%d秒] [消耗步骤%d] ", status, executionTimeSeconds, currentStep));
+
 		}
 		finally {
 			lock.unlock();
 			state = AgentState.IDLE; // Reset state after execution
+			agentRecord.setStatus(state.toString());
 		}
 		return String.join("\n", results);
 	}
 
 	protected abstract String step();
 
-	private void handleStuckState() {
+	private void handleStuckState(AgentExecutionRecord agentRecord) {
 		log.warn("Agent stuck detected - Missing tool calls");
 
 		// End current step
@@ -166,6 +205,11 @@ public abstract class BaseAgent {
 				Current step: %d
 				Execution status: Force terminated
 				""".formatted(currentStep);
+
+		// Update agent record
+		agentRecord.setStuck(true);
+		agentRecord.setErrorMessage(stuckPrompt);
+		agentRecord.setStatus(state.toString());
 
 		log.error(stuckPrompt);
 	}
@@ -198,6 +242,14 @@ public abstract class BaseAgent {
 
 	public void setConversationId(String conversationId) {
 		this.conversationId = conversationId;
+	}
+
+	public String getPlanId() {
+		return planId;
+	}
+
+	public void setPlanId(String planId) {
+		this.planId = planId;
 	}
 
 	/**

@@ -21,7 +21,6 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 
 import org.openqa.selenium.*;
-import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +32,6 @@ import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.ArrayList;
 
@@ -46,14 +44,21 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 
 	private final ChromeDriverService chromeDriverService;
 
-	private static BrowserUseTool instance;
+	// 添加标签页缓存字段
+	private List<Map<String, Object>> cachedTabs;
 
-	public BrowserUseTool(ChromeDriverService chromeDriverService) {
+	/**
+	 * 从设计来说所有的tool为了并行的thread-safe 都需要 保持 planId。 这样才能区隔开每个请求 。 所以这里新增了PlanID
+	 */
+	private String planId;
+
+	public BrowserUseTool(ChromeDriverService chromeDriverService, String planId) {
 		this.chromeDriverService = chromeDriverService;
+		this.planId = planId;
 	}
 
 	private WebDriver getDriver() {
-		return chromeDriverService.getDriver();
+		return chromeDriverService.getDriver(planId);
 	}
 
 	private static final int MAX_LENGTH = 20000;
@@ -165,16 +170,14 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		return functionTool;
 	}
 
-	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService) {
-		if (instance == null) {
-			instance = new BrowserUseTool(chromeDriverService);
-		}
+	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService, String planId) {
+		BrowserUseTool instance = new BrowserUseTool(chromeDriverService, planId);
 		return instance;
 	}
 
 	@SuppressWarnings("rawtypes")
-	public static FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService) {
-		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
+	public static FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService, String planId) {
+		return FunctionToolCallback.builder(name, getInstance(chromeDriverService, planId))
 			.description(description)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
@@ -254,6 +257,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 						return new ToolExecuteResult("URL is required for 'navigate' action");
 					}
 					driver.get(url);
+					refreshTabsInfo(driver); // 刷新标签页信息
 					return new ToolExecuteResult("Navigated to " + url);
 
 				case "click":
@@ -295,6 +299,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 							// 切换到新窗口
 							driver.switchTo().window(newHandle);
 							log.info("New tab detected, switched to: {}", driver.getCurrentUrl());
+							refreshTabsInfo(driver); // 刷新标签页信息
 							return new ToolExecuteResult(
 									"Clicked element and opened in new tab: " + driver.getCurrentUrl());
 						}
@@ -303,9 +308,10 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 						boolean urlChanged = wait.until(d -> !d.getCurrentUrl().equals(currentUrl));
 						if (urlChanged) {
 							log.info("Page navigated to: {}", driver.getCurrentUrl());
+							refreshTabsInfo(driver); // 刷新标签页信息
 							return new ToolExecuteResult("Clicked element and navigated to: " + driver.getCurrentUrl());
 						}
-
+						refreshTabsInfo(driver); // 刷新标签页信息
 						// 如果没有明显变化，返回普通点击成功消息
 						return new ToolExecuteResult("Clicked element at index " + index);
 
@@ -331,6 +337,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 						return new ToolExecuteResult("Element at index " + index + " is not an input element");
 					}
 					typeWithHumanDelay(inputElement, text);
+					refreshTabsInfo(driver); // 刷新标签页信息
 					return new ToolExecuteResult("Successfully input '" + text + "' into element at index " + index);
 
 				case "key_enter":
@@ -342,6 +349,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					}
 					WebElement enterElement = interactiveElements.get(index);
 					enterElement.sendKeys(Keys.RETURN);
+					refreshTabsInfo(driver); // 刷新标签页信息
 					return new ToolExecuteResult("Hit the enter key at index " + index);
 
 				case "screenshot":
@@ -367,7 +375,9 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					}
 					JavascriptExecutor jsExecutor = (JavascriptExecutor) driver;
 					Object result = jsExecutor.executeScript(script);
+					refreshTabsInfo(driver); // 刷新标签页信息
 					if (result == null) {
+
 						return new ToolExecuteResult("Successfully executed JavaScript code.");
 					}
 					else {
@@ -386,10 +396,12 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 						return new ToolExecuteResult("URL is required for 'new_tab' action");
 					}
 					((JavascriptExecutor) driver).executeScript("window.open('" + url + "', '_blank');");
+					refreshTabsInfo(driver); // 刷新标签页信息
 					return new ToolExecuteResult("Opened new tab with URL " + url);
 
 				case "close_tab":
 					driver.close();
+					refreshTabsInfo(driver); // 刷新标签页信息
 					return new ToolExecuteResult("Closed current tab");
 
 				case "switch_tab":
@@ -398,6 +410,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 					}
 					Object[] windowHandles = driver.getWindowHandles().toArray();
 					driver.switchTo().window(windowHandles[tabId].toString());
+					refreshTabsInfo(driver); // 刷新标签页信息
 					return new ToolExecuteResult("Switched to tab " + tabId);
 
 				case "refresh":
@@ -525,6 +538,32 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		return resultInfo.toString();
 	}
 
+	private List<Map<String, Object>> getTabsInfo(WebDriver driver) {
+		if (cachedTabs != null) {
+			return cachedTabs;
+		}
+		return refreshTabsInfo(driver);
+	}
+
+	/**
+	 * 这个方法是为了让getCurrentStatus 不会刷新页面，减少在Mac上主动唤起的次数 否则太烦了 ， 每个step要调起这个东西两次。 都会强制把 页面唤起到
+	 * active啥事都没办法干了。
+	 * @param driver
+	 * @return
+	 */
+	private List<Map<String, Object>> refreshTabsInfo(WebDriver driver) {
+		Set<String> windowHandles = driver.getWindowHandles();
+		List<Map<String, Object>> tabs = new ArrayList<>();
+		String currentHandle = driver.getWindowHandle();
+		for (String handle : windowHandles) {
+			driver.switchTo().window(handle);
+			tabs.add(Map.of("url", driver.getCurrentUrl(), "title", driver.getTitle(), "id", handle));
+		}
+		driver.switchTo().window(currentHandle); // 切回原始标签页
+		this.cachedTabs = tabs;
+		return tabs;
+	}
+
 	public Map<String, Object> getCurrentState() {
 		WebDriver driver = getDriver();
 		Map<String, Object> state = new HashMap<>();
@@ -540,14 +579,8 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			state.put("title", title);
 
 			// 获取标签页信息
-			Set<String> windowHandles = driver.getWindowHandles();
-			List<Map<String, Object>> tabs = new ArrayList<>();
-			String currentHandle = driver.getWindowHandle();
-			for (String handle : windowHandles) {
-				driver.switchTo().window(handle);
-				tabs.add(Map.of("url", driver.getCurrentUrl(), "title", driver.getTitle(), "id", handle));
-			}
-			driver.switchTo().window(currentHandle); // 切回原始标签页
+
+			List<Map<String, Object>> tabs = getTabsInfo(driver);
 			state.put("tabs", tabs);
 
 			// 获取viewport和滚动信息
