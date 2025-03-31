@@ -43,6 +43,16 @@ public class ManusProperties {
     )
     private Boolean consoleQuery = false;
 
+    @ConfigProperty(
+        group = "agent",
+        subGroup = "settings",
+        key = "maxSteps",
+        path = "manus.agent.max-steps",
+        description = "智能体执行最大步数",
+        defaultValue = "20",
+        inputType = ConfigInputType.NUMBER
+    )
+    private Integer maxSteps = 20;
     
 
     public Boolean getBrowserHeadless() {
@@ -67,5 +77,13 @@ public class ManusProperties {
 
     public void setConsoleQuery(Boolean consoleQuery) {
         this.consoleQuery = consoleQuery;
+    }
+    
+    public Integer getMaxSteps() {
+        return maxSteps;
+    }
+    
+    public void setMaxSteps(Integer maxSteps) {
+        this.maxSteps = maxSteps;
     }
 }

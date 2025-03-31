@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.example.manus.agent.BrowserAgent;
 import com.alibaba.cloud.ai.example.manus.agent.FileAgent;
 import com.alibaba.cloud.ai.example.manus.agent.ManusAgent;
 import com.alibaba.cloud.ai.example.manus.agent.PythonAgent;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
@@ -60,9 +61,12 @@ public class ManusConfiguration {
 
 	private final PlanExecutionRecorder recorder;
 
-	public ManusConfiguration(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder) {
+	private final ManusProperties manusProperties;
+
+	public ManusConfiguration(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder, ManusProperties manusProperties) {
 		this.chromeDriverService = chromeDriverService;
 		this.recorder = recorder;
+		this.manusProperties = manusProperties;
 	}
 
 	@Bean
@@ -70,11 +74,11 @@ public class ManusConfiguration {
 	public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager) {
 
 		ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager, chromeDriverService,
-				CodeUtils.WORKING_DIR, recorder);
-		BrowserAgent browserAgent = new BrowserAgent(llmService, toolCallingManager, chromeDriverService, recorder);
+				CodeUtils.WORKING_DIR, recorder, manusProperties);
+		BrowserAgent browserAgent = new BrowserAgent(llmService, toolCallingManager, chromeDriverService, recorder, manusProperties);
 
-		FileAgent fileAgent = new FileAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR, recorder);
-		PythonAgent pythonAgent = new PythonAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR, recorder);
+		FileAgent fileAgent = new FileAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR, recorder, manusProperties);
+		PythonAgent pythonAgent = new PythonAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR, recorder, manusProperties);
 
 		List<BaseAgent> agentList = new ArrayList<>();
 

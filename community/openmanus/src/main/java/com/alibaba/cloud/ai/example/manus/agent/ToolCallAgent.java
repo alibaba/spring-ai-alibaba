@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.agent;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
@@ -66,8 +67,8 @@ public class ToolCallAgent extends ReActAgent {
 	protected ThinkActRecord thinkActRecord;
 
 	public ToolCallAgent(LlmService llmService, ToolCallingManager toolCallingManager,
-			PlanExecutionRecorder planExecutionRecorder) {
-		super(llmService, planExecutionRecorder);
+			PlanExecutionRecorder planExecutionRecorder, ManusProperties manusProperties) {
+		super(llmService, planExecutionRecorder, manusProperties);
 		this.toolCallingManager = toolCallingManager;
 	}
 
