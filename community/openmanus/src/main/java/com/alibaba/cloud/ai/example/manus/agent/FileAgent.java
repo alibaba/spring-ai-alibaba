@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.agent;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.tool.Bash;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
@@ -43,8 +44,8 @@ public class FileAgent extends ToolCallAgent {
 	private final AtomicReference<Map<String, Object>> currentFileState = new AtomicReference<>();
 
 	public FileAgent(LlmService llmService, ToolCallingManager toolCallingManager, String workingDirectory,
-			PlanExecutionRecorder record) {
-		super(llmService, toolCallingManager, record);
+			PlanExecutionRecorder record, ManusProperties manusProperties) {
+		super(llmService, toolCallingManager, record, manusProperties);
 		this.workingDirectory = workingDirectory;
 	}
 

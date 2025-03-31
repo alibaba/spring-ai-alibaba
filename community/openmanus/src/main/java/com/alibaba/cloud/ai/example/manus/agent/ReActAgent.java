@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.springframework.ai.chat.messages.Message;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
@@ -31,9 +32,10 @@ public abstract class ReActAgent extends BaseAgent {
 	 * 构造函数
 	 * @param llmService LLM服务实例，用于处理自然语言交互
 	 * @param planExecutionRecorder 计划执行记录器，用于记录执行过程
+	 * @param manusProperties Manus配置属性
 	 */
-	public ReActAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder) {
-		super(llmService, planExecutionRecorder);
+	public ReActAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder, ManusProperties manusProperties) {
+		super(llmService, planExecutionRecorder, manusProperties);
 	}
 
 	/**

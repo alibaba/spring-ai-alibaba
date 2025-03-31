@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.agent;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.tool.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
@@ -42,8 +43,8 @@ public class PythonAgent extends ToolCallAgent {
 
 	// New constructor with PlanExecutionRecorder
 	public PythonAgent(LlmService llmService, ToolCallingManager toolCallingManager, String workingDirectory,
-			PlanExecutionRecorder record) {
-		super(llmService, toolCallingManager, record);
+			PlanExecutionRecorder record , ManusProperties manusProperties) {
+		super(llmService, toolCallingManager, record, manusProperties);
 		this.workingDirectory = workingDirectory;
 	}
 
