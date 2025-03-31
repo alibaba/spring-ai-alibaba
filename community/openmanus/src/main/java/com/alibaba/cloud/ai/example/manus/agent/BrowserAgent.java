@@ -208,7 +208,7 @@ public class BrowserAgent extends ToolCallAgent {
 	}
 
 	public List<ToolCallback> getToolCallList() {
-		return List.of(FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback(),
+		return List.of(FileSaver.getFunctionToolCallback(), 
 				BrowserUseTool.getFunctionToolCallback(chromeService, this.getPlanId()),
 				TerminateTool.getFunctionToolCallback(this));
 	}
