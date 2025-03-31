@@ -9,7 +9,6 @@ import com.alibaba.cloud.ai.example.manus.config.entity.ConfigInputType;
 
 /**
  * 配置属性注解，支持三级配置结构：group.subgroup.key
- * 
  * <p>
  * 配置层级结构：
  * <ul>
@@ -17,39 +16,44 @@ import com.alibaba.cloud.ai.example.manus.config.entity.ConfigInputType;
  * <li>subGroup: 二级分组，如 browser.settings, browser.proxy 等</li>
  * <li>key: 具体配置项</li>
  * </ul>
- * 
- * <p>
- * 使用示例：
- * 
- * <pre>
- * {@code
- * @ConfigProperty(group = "browser", // 顶层分组，用来在第一层级合并展示
- *         subGroup = "settings", // 二级分组，用来在第二层级合并展示
- *         key = "headless", // 配置项key
- *         path = "manus.browser.headless", // YAML完整路径，对应如果yml里面有配置，那配置是什么
- *         description = "是否启用浏览器无头模式", // 用来在配置项的上面展示配置信息
- *         defaultValue = "false")
- * private Boolean browserHeadless;
- * }
- * </pre>
- * 
- * <p>
- * 对应的国际化资源结构：
- * 
- * <pre>
- * config.group.browser=浏览器
- * config.group.browser.settings=基本设置
- * config.prop.browser.settings.headless=无头模式
- * config.desc.browser.settings.headless=是否启用浏览器无头模式
- * </pre>
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ConfigProperty {
-    // ...existing properties...
+    /**
+     * 顶层分组
+     */
+    String group();
 
     /**
-     * 配置项的输入类型
+     * 二级分组
+     */
+    String subGroup();
+
+    /**
+     * 配置项key
+     */
+    String key();
+
+    /**
+     * 配置项YAML完整路径
+     */
+    String path();
+
+    /**
+     * 配置项描述
+     * <p>
+     * 支持国际化key格式：config.desc.{group}.{subGroup}.{key}
+     */
+    String description() default "";
+
+    /**
+     * 配置项默认值
+     */
+    String defaultValue() default "";
+
+    /**
+     * 配置项输入类型
      * <p>
      * 默认为文本输入框
      */
