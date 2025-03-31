@@ -1,245 +1,306 @@
 /**
- * admin-ui.js - 管理界面UI交互
- * 处理管理界面的用户界面交互和展示逻辑
+ * admin-ui.js - 管理界面UI处理模块
+ * 负责渲染和更新管理界面
  */
 
-// UI管理器
+/**
+ * 管理UI类
+ * 处理配置界面的所有UI操作
+ */
 class AdminUI {
-    constructor() {
-        // 缓存DOM元素
-        this.elements = {
-            // 类别选项
-            categoryItems: document.querySelectorAll('.category-item'),
-            // 配置面板
-            configPanels: document.querySelectorAll('.config-panel'),
-            // 按钮
-            saveConfigBtn: document.getElementById('saveConfigBtn'),
-            backToMainBtn: document.getElementById('backToMainBtn')
-        };
+    /**
+     * 初始化管理界面
+     */
+    static async initialize() {
+        // 初始化其他UI元素
+        this.initCategories();
         
-        // 绑定this
-        this.switchCategory = this.switchCategory.bind(this);
-        this.bindEvents = this.bindEvents.bind(this);
-        this.updateFormValues = this.updateFormValues.bind(this);
-        this.getFormValues = this.getFormValues.bind(this);
+        // 默认加载基础配置(manus组)
+        await this.loadBasicConfigs();
     }
     
     /**
-     * 初始化UI
+     * 初始化分类导航
      */
-    init() {
-        this.bindEvents();
-    }
-    
-    /**
-     * 绑定事件处理程序
-     */
-    bindEvents() {
-        // 类别切换事件
-        this.elements.categoryItems.forEach(item => {
-            item.addEventListener('click', () => {
-                const category = item.getAttribute('data-category');
-                this.switchCategory(category);
+    static initCategories() {
+        const categories = document.querySelectorAll('.category-item');
+        categories.forEach(category => {
+            category.addEventListener('click', () => {
+                // 移除所有分类的active类
+                categories.forEach(item => item.classList.remove('active'));
+                
+                // 添加当前分类的active类
+                category.classList.add('active');
+                
+                // 获取分类数据
+                const categoryId = category.getAttribute('data-category');
+                
+                // 显示对应的配置面板
+                this.showConfigPanel(categoryId);
+                
+                // 如果是基础配置面板，加载manus组配置
+                if (categoryId === 'basic') {
+                    this.loadBasicConfigs();
+                }
             });
         });
-        
-        // 表单输入变化监听
-        const formInputs = document.querySelectorAll('input, select, textarea');
-        formInputs.forEach(input => {
-            input.addEventListener('change', (e) => {
-                this.handleInputChange(e);
-            });
-            
-            if (input.type === 'text' || input.tagName === 'TEXTAREA') {
-                input.addEventListener('input', adminUtils.debounce((e) => {
-                    this.handleInputChange(e);
-                }, 500));
-            }
-        });
     }
     
     /**
-     * 处理表单输入变化
-     * @param {Event} e - 输入事件
+     * 显示指定的配置面板
+     * @param {string} panelId - 面板ID
      */
-    handleInputChange(e) {
-        const input = e.target;
-        const id = input.id;
-        
-        // 根据输入ID获取相应的配置节和键
-        const configMapping = this.getConfigMappingFromId(id);
-        if (!configMapping) return;
-        
-        const { section, key } = configMapping;
-        let value;
-        
-        // 根据输入类型获取值
-        switch (input.type) {
-            case 'checkbox':
-                value = input.checked;
-                break;
-            case 'number':
-                value = parseInt(input.value, 10);
-                break;
-            default:
-                value = input.value;
-        }
-        
-        // 更新配置
-        configModel.updateConfig(section, key, value);
-    }
-    
-    /**
-     * 根据输入ID获取配置映射
-     * @param {string} id - 输入元素ID
-     * @returns {Object|null} 配置映射对象 {section, key}
-     */
-    getConfigMappingFromId(id) {
-        // 配置ID映射表
-        const mappings = {
-            // 基础配置
-            'system-name': { section: 'basic', key: 'systemName' },
-            'system-language': { section: 'basic', key: 'language' },
-            'max-threads': { section: 'basic', key: 'performance.maxThreads' },
-            'timeout-seconds': { section: 'basic', key: 'performance.timeoutSeconds' },
-            
-            // Agent配置
-            'default-agent': { section: 'agent', key: 'defaultType' },
-            'agent-timeout': { section: 'agent', key: 'timeout' },
-            'max-turns': { section: 'agent', key: 'maxTurns' },
-            'system-prompt': { section: 'agent', key: 'systemPrompt' },
-            
-            // Tool配置
-            'enable-search-tool': { section: 'tool', key: 'enabled.search' },
-            'enable-calculator-tool': { section: 'tool', key: 'enabled.calculator' },
-            'enable-weather-tool': { section: 'tool', key: 'enabled.weather' },
-            'weather-api-key': { section: 'tool', key: 'apiKeys.weather' },
-            
-            // MCP配置
-            'mcp-endpoint': { section: 'mcp', key: 'endpoint' },
-            'mcp-version': { section: 'mcp', key: 'version' },
-            'default-model': { section: 'mcp', key: 'defaultModel' },
-            'custom-model-url': { section: 'mcp', key: 'customModelUrl' }
-        };
-        
-        return mappings[id] || null;
-    }
-    
-    /**
-     * 切换配置类别
-     * @param {string} category - 类别名称
-     */
-    switchCategory(category) {
-        // 移除所有类别的活动状态
-        this.elements.categoryItems.forEach(item => {
-            item.classList.remove('active');
-        });
-        
-        // 设置当前类别为活动状态
-        const activeItem = document.querySelector(`.category-item[data-category="${category}"]`);
-        if (activeItem) {
-            activeItem.classList.add('active');
-        }
-        
+    static showConfigPanel(panelId) {
         // 隐藏所有配置面板
-        this.elements.configPanels.forEach(panel => {
-            panel.classList.remove('active');
+        const panels = document.querySelectorAll('.config-panel');
+        panels.forEach(panel => panel.classList.remove('active'));
+        
+        // 显示指定的配置面板
+        const targetPanel = document.getElementById(`${panelId}-config`);
+        if (targetPanel) {
+            targetPanel.classList.add('active');
+        }
+    }
+    
+    /**
+     * 加载基础配置(manus组)
+     */
+    static async loadBasicConfigs() {
+        try {
+            const manusConfigs = await configModel.loadConfigByGroup('manus');
+            this.renderManusConfigs(manusConfigs);
+        } catch (error) {
+            console.error('加载基础配置失败:', error);
+            this.showNotification('加载配置失败，请重试', 'error');
+        }
+    }
+    
+    /**
+     * 渲染manus组的配置
+     * @param {Array} configs - 配置数组
+     */
+    static renderManusConfigs(configs) {
+        // 获取基础配置面板
+        const basicPanel = document.getElementById('basic-config');
+        if (!basicPanel) {
+            console.error('未找到基础配置面板');
+            return;
+        }
+        
+        // 清空面板（保留标题）
+        basicPanel.innerHTML = '<h2 class="panel-title">基础配置</h2>';
+        
+        // 按config_sub_group分组
+        const groupedConfigs = {};
+        configs.forEach(config => {
+            if (!groupedConfigs[config.configSubGroup]) {
+                groupedConfigs[config.configSubGroup] = [];
+            }
+            groupedConfigs[config.configSubGroup].push(config);
         });
         
-        // 显示当前配置面板
-        const activePanel = document.getElementById(`${category}-config`);
-        if (activePanel) {
-            activePanel.classList.add('active');
-        }
+        // 按子组首字母排序
+        const sortedGroups = Object.keys(groupedConfigs).sort();
+        
+        // 为每个子组创建配置区域
+        sortedGroups.forEach(groupName => {
+            // 创建子组容器
+            const groupContainer = document.createElement('div');
+            groupContainer.className = 'config-group';
+            
+            // 创建子组标题
+            const groupTitle = document.createElement('h3');
+            groupTitle.className = 'group-title';
+            groupTitle.textContent = this.formatSubGroupName(groupName);
+            groupContainer.appendChild(groupTitle);
+            
+            // 创建配置项列表
+            const configList = document.createElement('div');
+            configList.className = 'config-list';
+            
+            // 为每个配置项创建UI元素
+            groupedConfigs[groupName].forEach(config => {
+                const configItem = this.createConfigItem(config);
+                configList.appendChild(configItem);
+            });
+            
+            groupContainer.appendChild(configList);
+            basicPanel.appendChild(groupContainer);
+        });
+        
+        // 添加保存按钮
+        this.addSaveButton(basicPanel, 'manus');
     }
     
     /**
-     * 更新表单值
-     * @param {Object} config - 配置对象
+     * 格式化子组名称，使其更加易读
+     * @param {string} subGroup - 子组名称
+     * @returns {string} - 格式化后的名称
      */
-    updateFormValues(config) {
-        // 基础配置
-        document.getElementById('system-name').value = config.basic.systemName;
-        document.getElementById('system-language').value = config.basic.language;
-        document.getElementById('max-threads').value = config.basic.performance.maxThreads;
-        document.getElementById('timeout-seconds').value = config.basic.performance.timeoutSeconds;
-        
-        // Agent配置
-        document.getElementById('default-agent').value = config.agent.defaultType;
-        document.getElementById('agent-timeout').value = config.agent.timeout;
-        document.getElementById('max-turns').value = config.agent.maxTurns;
-        document.getElementById('system-prompt').value = config.agent.systemPrompt;
-        
-        // Tool配置
-        document.getElementById('enable-search-tool').checked = config.tool.enabled.search;
-        document.getElementById('enable-calculator-tool').checked = config.tool.enabled.calculator;
-        document.getElementById('enable-weather-tool').checked = config.tool.enabled.weather;
-        document.getElementById('weather-api-key').value = config.tool.apiKeys.weather || '';
-        
-        // MCP配置
-        document.getElementById('mcp-endpoint').value = config.mcp.endpoint;
-        document.getElementById('mcp-version').value = config.mcp.version;
-        document.getElementById('default-model').value = config.mcp.defaultModel;
-        document.getElementById('custom-model-url').value = config.mcp.customModelUrl || '';
-    }
-    
-    /**
-     * 获取表单值
-     * @returns {Object} 表单配置对象
-     */
-    getFormValues() {
-        const config = {
-            basic: {
-                systemName: document.getElementById('system-name').value,
-                language: document.getElementById('system-language').value,
-                performance: {
-                    maxThreads: parseInt(document.getElementById('max-threads').value, 10),
-                    timeoutSeconds: parseInt(document.getElementById('timeout-seconds').value, 10)
-                }
-            },
-            agent: {
-                defaultType: document.getElementById('default-agent').value,
-                timeout: parseInt(document.getElementById('agent-timeout').value, 10),
-                maxTurns: parseInt(document.getElementById('max-turns').value, 10),
-                systemPrompt: document.getElementById('system-prompt').value
-            },
-            tool: {
-                enabled: {
-                    search: document.getElementById('enable-search-tool').checked,
-                    calculator: document.getElementById('enable-calculator-tool').checked,
-                    weather: document.getElementById('enable-weather-tool').checked
-                },
-                apiKeys: {
-                    weather: document.getElementById('weather-api-key').value
-                }
-            },
-            mcp: {
-                endpoint: document.getElementById('mcp-endpoint').value,
-                version: document.getElementById('mcp-version').value,
-                defaultModel: document.getElementById('default-model').value,
-                customModelUrl: document.getElementById('custom-model-url').value
-            }
+    static formatSubGroupName(subGroup) {
+        // 子组名称映射表，可以根据需要扩展
+        const subGroupNameMap = {
+            'browser': '浏览器设置',
+            'agent': '智能体设置',
+            'interaction': '交互设置'
+            // 可以添加更多映射...
         };
         
-        return config;
+        return subGroupNameMap[subGroup] || subGroup.charAt(0).toUpperCase() + subGroup.slice(1);
     }
     
     /**
-     * 显示加载状态
-     * @param {boolean} isLoading - 是否处于加载状态
+     * 创建单个配置项的UI元素
+     * @param {Object} config - 配置对象
+     * @returns {HTMLElement} - 配置项UI元素
      */
-    setLoading(isLoading) {
-        if (isLoading) {
-            document.body.classList.add('loading');
-            this.elements.saveConfigBtn.disabled = true;
-            this.elements.saveConfigBtn.textContent = '保存中...';
-        } else {
-            document.body.classList.remove('loading');
-            this.elements.saveConfigBtn.disabled = false;
-            this.elements.saveConfigBtn.textContent = '保存配置';
+    static createConfigItem(config) {
+        const item = document.createElement('div');
+        item.className = 'config-item';
+        
+        // 创建配置项标签
+        const label = document.createElement('label');
+        label.setAttribute('for', `config-${config.id}`);
+        label.textContent = config.description;
+        item.appendChild(label);
+        
+        // 根据配置类型创建输入元素
+        let inputElem;
+        switch (config.inputType) {
+            case 'BOOLEAN':
+                inputElem = document.createElement('input');
+                inputElem.type = 'checkbox';
+                inputElem.checked = config.configValue === 'true';
+                break;
+                
+            case 'NUMBER':
+                inputElem = document.createElement('input');
+                inputElem.type = 'number';
+                inputElem.value = config.configValue;
+                break;
+                
+            case 'SELECT':
+                inputElem = document.createElement('select');
+                try {
+                    const options = JSON.parse(config.optionsJson || '[]');
+                    options.forEach(option => {
+                        const optionElem = document.createElement('option');
+                        optionElem.value = option.value;
+                        optionElem.textContent = option.label;
+                        optionElem.selected = option.value === config.configValue;
+                        inputElem.appendChild(optionElem);
+                    });
+                } catch (e) {
+                    console.error('解析选项JSON失败:', e);
+                }
+                break;
+                
+            case 'TEXTAREA':
+                inputElem = document.createElement('textarea');
+                inputElem.value = config.configValue;
+                inputElem.rows = 3;
+                break;
+                
+            default: // TEXT或其他类型
+                inputElem = document.createElement('input');
+                inputElem.type = 'text';
+                inputElem.value = config.configValue;
+                break;
         }
+        
+        // 设置通用属性
+        inputElem.id = `config-${config.id}`;
+        inputElem.className = 'config-input';
+        inputElem.setAttribute('data-config-id', config.id);
+        inputElem.setAttribute('data-config-type', config.inputType);
+        
+        // 添加事件处理
+        inputElem.addEventListener('change', (e) => {
+            const value = config.inputType === 'BOOLEAN' 
+                ? e.target.checked.toString() 
+                : e.target.value;
+            
+            // 更新配置模型中的值
+            configModel.updateGroupConfigValue('manus', config.id, value);
+        });
+        
+        item.appendChild(inputElem);
+        return item;
+    }
+    
+    /**
+     * 添加保存按钮
+     * @param {HTMLElement} panel - 面板元素
+     * @param {string} groupName - 配置组名
+     */
+    static addSaveButton(panel, groupName) {
+        // 创建按钮容器
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'button-container';
+        
+        // 创建保存按钮
+        const saveButton = document.createElement('button');
+        saveButton.className = 'save-button';
+        saveButton.textContent = '保存配置';
+        
+        // 添加保存事件处理
+        saveButton.addEventListener('click', async () => {
+            // 禁用按钮，防止重复点击
+            saveButton.disabled = true;
+            saveButton.textContent = '保存中...';
+            
+            try {
+                // 保存配置
+                const result = await configModel.saveGroupConfig(groupName);
+                
+                // 显示保存结果
+                this.showNotification(
+                    result.success ? '配置保存成功' : result.message,
+                    result.success ? 'success' : 'error'
+                );
+            } catch (error) {
+                console.error('保存配置失败:', error);
+                this.showNotification('保存失败: ' + (error.message || '未知错误'), 'error');
+            } finally {
+                // 恢复按钮状态
+                saveButton.disabled = false;
+                saveButton.textContent = '保存配置';
+            }
+        });
+        
+        buttonContainer.appendChild(saveButton);
+        panel.appendChild(buttonContainer);
+    }
+    
+    /**
+     * 显示通知消息
+     * @param {string} message - 通知消息
+     * @param {string} type - 消息类型 (success, error, warning, info)
+     */
+    static showNotification(message, type = 'info') {
+        // 如果已存在通知，先移除
+        const existingNotification = document.querySelector('.notification');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+        
+        // 创建通知元素
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        
+        // 添加到文档
+        document.body.appendChild(notification);
+        
+        // 3秒后自动移除
+        setTimeout(() => {
+            notification.classList.add('hide');
+            setTimeout(() => notification.remove(), 500);
+        }, 3000);
     }
 }
 
-// 创建全局UI实例
-const adminUI = new AdminUI();
+// 在DOMContentLoaded事件中初始化UI
+document.addEventListener('DOMContentLoaded', () => {
+    AdminUI.initialize();
+});

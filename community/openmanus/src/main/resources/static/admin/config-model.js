@@ -49,6 +49,9 @@ class ConfigModel {
     constructor() {
         this.config = this._deepCopy(DEFAULT_CONFIG);
         this.loaded = false;
+        
+        // 存储按组加载的配置
+        this.groupConfigs = {};
     }
     
     /**
@@ -59,23 +62,74 @@ class ConfigModel {
     }
     
     /**
-     * 加载配置
+     * 根据配置组名加载配置
+     * @param {string} groupName - 配置组名称 如 "manus"
+     * @returns {Promise<Array>} - 配置项数组
      */
-    async loadConfig() {
+    async loadConfigByGroup(groupName) {
         try {
-            const response = await fetch('/api/admin/config');
-            if (response.ok) {
-                const loadedConfig = await response.json();
-                this.config = this._mergeConfigs(this._deepCopy(DEFAULT_CONFIG), loadedConfig);
-            } else {
-                console.warn('无法加载配置，使用默认配置');
-            }
+            const configs = await AdminAPI.getConfigsByGroup(groupName);
+            // 缓存该组的配置
+            this.groupConfigs[groupName] = configs;
+            return configs;
         } catch (error) {
-            console.error('加载配置出错:', error);
+            console.error(`加载${groupName}组配置出错:`, error);
+            return [];
+        }
+    }
+    
+    /**
+     * 保存特定组的配置
+     * @param {string} groupName - 配置组名称
+     * @returns {Promise<Object>} - 保存结果
+     */
+    async saveGroupConfig(groupName) {
+        if (!this.groupConfigs[groupName] || this.groupConfigs[groupName].length === 0) {
+            return { success: false, message: `没有加载${groupName}组的配置` };
         }
         
-        this.loaded = true;
-        return this.config;
+        // 获取已修改的配置项
+        const configsToUpdate = this.groupConfigs[groupName].filter(config => 
+            config.configGroup === groupName && config._modified === true);
+            
+        if (configsToUpdate.length === 0) {
+            return { success: true, message: '没有需要保存的修改' };
+        }
+        
+        try {
+            return await AdminAPI.batchUpdateConfigs(configsToUpdate, groupName);
+        } catch (error) {
+            console.error(`保存${groupName}组配置出错:`, error);
+            return { success: false, message: `保存出错: ${error.message || '未知错误'}` };
+        }
+    }
+    
+    /**
+     * 更新特定组中配置项的值
+     * @param {string} groupName - 配置组名
+     * @param {number} configId - 配置项ID
+     * @param {string} newValue - 新值
+     * @returns {boolean} - 更新是否成功
+     */
+    updateGroupConfigValue(groupName, configId, newValue) {
+        if (!this.groupConfigs[groupName]) {
+            return false;
+        }
+        
+        const configIndex = this.groupConfigs[groupName].findIndex(item => item.id === configId);
+        if (configIndex === -1) {
+            return false;
+        }
+        
+        // 检查值是否实际变化
+        const config = this.groupConfigs[groupName][configIndex];
+        if (config.configValue !== newValue) {
+            config.configValue = newValue;
+            // 标记为已修改
+            config._modified = true;
+        }
+        
+        return true;
     }
     
     /**
@@ -114,84 +168,6 @@ class ConfigModel {
         }
         
         return merged;
-    }
-    
-    /**
-     * 保存配置
-     */
-    async saveConfig() {
-        try {
-            const response = await fetch('/api/admin/config', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(this.config)
-            });
-            
-            if (response.ok) {
-                return { success: true, message: '配置保存成功' };
-            } else {
-                const error = await response.json();
-                return { success: false, message: `保存失败: ${error.message || '未知错误'}` };
-            }
-        } catch (error) {
-            console.error('保存配置出错:', error);
-            return { success: false, message: `保存出错: ${error.message || '未知错误'}` };
-        }
-    }
-    
-    /**
-     * 更新配置中的特定部分
-     */
-    updateConfig(section, key, value) {
-        if (this.config.hasOwnProperty(section)) {
-            if (key.includes('.')) {
-                // 处理嵌套属性，如 performance.maxThreads
-                const keys = key.split('.');
-                let current = this.config[section];
-                
-                for (let i = 0; i < keys.length - 1; i++) {
-                    current = current[keys[i]];
-                }
-                
-                current[keys[keys.length - 1]] = value;
-            } else {
-                this.config[section][key] = value;
-            }
-            return true;
-        }
-        return false;
-    }
-    
-    /**
-     * 获取配置值
-     */
-    getConfig(section, key = null) {
-        if (!this.config.hasOwnProperty(section)) {
-            return null;
-        }
-        
-        if (key === null) {
-            return this.config[section];
-        }
-        
-        if (key.includes('.')) {
-            // 处理嵌套属性
-            const keys = key.split('.');
-            let current = this.config[section];
-            
-            for (const k of keys) {
-                if (!current.hasOwnProperty(k)) {
-                    return null;
-                }
-                current = current[k];
-            }
-            
-            return current;
-        }
-        
-        return this.config[section][key];
     }
     
     /**
