@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.toolcalling.microsofttranslate;
 
-import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -27,18 +26,18 @@ import org.springframework.context.annotation.Description;
 /**
  * @author 31445
  */
-@AutoConfiguration
+@Configuration
 @ConditionalOnClass(MicroSoftTranslateService.class)
 @EnableConfigurationProperties(MicroSoftTranslateProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.microsofttranslate", name = "enabled",
-		havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.microsofttranslate", name =
+		"enabled", havingValue = "true")
 public class MicroSoftTranslateAutoConfiguration {
 
-	@Bean
-	@ConditionalOnMissingBean
-	@Description("Implement natural language translation capabilities.")
-	public MicroSoftTranslateService microSoftTranslateFunction(MicroSoftTranslateProperties properties) {
-		return new MicroSoftTranslateService(properties);
-	}
+    @Bean
+    @ConditionalOnMissingBean
+    @Description("Implement natural language translation capabilities.")
+    public MicroSoftTranslateService microSoftTranslateFunction (MicroSoftTranslateProperties properties) {
+        return new MicroSoftTranslateService(properties);
+    }
 
 }

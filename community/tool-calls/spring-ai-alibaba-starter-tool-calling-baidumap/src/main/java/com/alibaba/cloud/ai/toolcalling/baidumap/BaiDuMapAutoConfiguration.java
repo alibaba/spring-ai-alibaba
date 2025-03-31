@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.toolcalling.baidumap;
 
-import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -27,17 +26,18 @@ import org.springframework.context.annotation.Description;
 /**
  * @author Carbon
  */
-@AutoConfiguration
+@Configuration
 @ConditionalOnClass(MapSearchService.class)
 @EnableConfigurationProperties(BaiDuMapProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.baidumap", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.baidumap", name = "enabled",
+		havingValue = "true")
 public class BaiDuMapAutoConfiguration {
 
-	@Bean
-	@ConditionalOnMissingBean
-	@Description("Get detail information of a address and facility query with baidu map.")
-	public MapSearchService baiDuMapGetAddressInformationFunction(BaiDuMapProperties baiDuMapProperties) {
-		return new MapSearchService(baiDuMapProperties);
-	}
+    @Bean
+    @ConditionalOnMissingBean
+    @Description("Get detail information of a address and facility query with baidu map.")
+    public MapSearchService baiDuMapGetAddressInformationFunction (BaiDuMapProperties baiDuMapProperties) {
+        return new MapSearchService(baiDuMapProperties);
+    }
 
 }

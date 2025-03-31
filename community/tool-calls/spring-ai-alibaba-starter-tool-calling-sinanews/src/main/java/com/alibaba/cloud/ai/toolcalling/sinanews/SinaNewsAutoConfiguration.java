@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.toolcalling.sinanews;
 
-import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -27,16 +26,17 @@ import org.springframework.context.annotation.Description;
  * @author XiaoYunTao
  * @since 2024/12/18
  */
-@AutoConfiguration
+@Configuration
 @ConditionalOnClass(SinaNewsService.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.sinanews", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.sinanews", name = "enabled",
+        havingValue = "true")
 public class SinaNewsAutoConfiguration {
 
-	@Bean
-	@ConditionalOnMissingBean
-	@Description("Get the news from the Sina news (获取新浪新闻).")
-	public SinaNewsService getSinaNewsFunction() {
-		return new SinaNewsService();
-	}
+    @Bean
+    @ConditionalOnMissingBean
+    @Description("Get the news from the Sina news (获取新浪新闻).")
+    public SinaNewsService getSinaNewsFunction () {
+        return new SinaNewsService();
+    }
 
 }

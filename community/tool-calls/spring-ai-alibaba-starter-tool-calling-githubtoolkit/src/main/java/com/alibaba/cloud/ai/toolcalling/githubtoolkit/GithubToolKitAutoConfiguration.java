@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.toolcalling.githubtoolkit;
 
-import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -27,31 +26,32 @@ import org.springframework.context.annotation.Description;
 /**
  * @author Yeaury
  */
-@AutoConfiguration
+@Configuration
 @EnableConfigurationProperties(GithubToolKitProperties.class)
 @ConditionalOnClass(GithubToolKitProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.githubtoolkit", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.githubtoolkit", name = "enabled",
+        havingValue = "true")
 public class GithubToolKitAutoConfiguration {
 
-	@Bean
-	@ConditionalOnMissingBean
-	@Description("implement the function of get a GitHub issue operation")
-	public GetIssueService getIssueFunction(GithubToolKitProperties properties) {
-		return new GetIssueService(properties);
-	}
+    @Bean
+    @ConditionalOnMissingBean
+    @Description("implement the function of get a GitHub issue operation")
+    public GetIssueService getIssueFunction (GithubToolKitProperties properties) {
+        return new GetIssueService(properties);
+    }
 
-	@Bean
-	@ConditionalOnMissingBean
-	@Description("implement the function of create GitHub pull request operation")
-	public CreatePullRequestService createPullRequestFunction(GithubToolKitProperties properties) {
-		return new CreatePullRequestService(properties);
-	}
+    @Bean
+    @ConditionalOnMissingBean
+    @Description("implement the function of create GitHub pull request operation")
+    public CreatePullRequestService createPullRequestFunction (GithubToolKitProperties properties) {
+        return new CreatePullRequestService(properties);
+    }
 
-	@Bean
-	@ConditionalOnMissingBean
-	@Description("implement the function of search the list of repositories operation")
-	public SearchRepositoryService SearchRepositoryFunction(GithubToolKitProperties properties) {
-		return new SearchRepositoryService(properties);
-	}
+    @Bean
+    @ConditionalOnMissingBean
+    @Description("implement the function of search the list of repositories operation")
+    public SearchRepositoryService SearchRepositoryFunction (GithubToolKitProperties properties) {
+        return new SearchRepositoryService(properties);
+    }
 
 }

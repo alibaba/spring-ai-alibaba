@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.toolcalling.toutiaonews;
 
-import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -27,16 +26,17 @@ import org.springframework.context.annotation.Description;
  * @author XiaoYunTao
  * @since 2024/12/18
  */
-@AutoConfiguration
+@Configuration
 @ConditionalOnClass(ToutiaoNewsSearchHotEventsService.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.toutiaonews", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.toutiaonews", name = "enabled",
+        havingValue = "true")
 public class ToutiaoNewsAutoConfiguration {
 
-	@Bean
-	@ConditionalOnMissingBean
-	@Description("Get the news from the toutiao news (获取今日头条新闻).")
-	public ToutiaoNewsSearchHotEventsService getToutiaoNewsFunction() {
-		return new ToutiaoNewsSearchHotEventsService();
-	}
+    @Bean
+    @ConditionalOnMissingBean
+    @Description("Get the news from the toutiao news (获取今日头条新闻).")
+    public ToutiaoNewsSearchHotEventsService getToutiaoNewsFunction () {
+        return new ToutiaoNewsSearchHotEventsService();
+    }
 
 }
