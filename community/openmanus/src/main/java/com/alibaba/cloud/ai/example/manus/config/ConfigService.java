@@ -165,4 +165,36 @@ public class ConfigService {
         Map<String, Object> configBeans = applicationContext.getBeansWithAnnotation(ConfigurationProperties.class);
         configBeans.values().forEach(bean -> updateBeanConfig(bean, configPath, entity.getDefaultValue()));
     }
+    
+    /**
+     * 根据配置组名获取配置项
+     *
+     * @param groupName 配置组名
+     * @return 该组的所有配置项
+     */
+    public List<ConfigEntity> getConfigsByGroup(String groupName) {
+        return configRepository.findByConfigGroup(groupName);
+    }
+    
+    /**
+     * 批量更新配置项
+     *
+     * @param configs 需要更新的配置项列表
+     */
+    @Transactional
+    public void batchUpdateConfigs(List<ConfigEntity> configs) {
+        for (ConfigEntity config : configs) {
+            ConfigEntity existingConfig = configRepository.findById(config.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Config not found with ID: " + config.getId()));
+            
+            // 只更新配置值
+            existingConfig.setConfigValue(config.getConfigValue());
+            configRepository.save(existingConfig);
+            
+            // 更新所有使用此配置的Bean
+            Map<String, Object> configBeans = applicationContext.getBeansWithAnnotation(ConfigurationProperties.class);
+            configBeans.values().forEach(bean -> 
+                updateBeanConfig(bean, existingConfig.getConfigPath(), existingConfig.getConfigValue()));
+        }
+    }
 }
