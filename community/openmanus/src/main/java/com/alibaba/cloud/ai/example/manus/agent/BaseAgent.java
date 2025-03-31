@@ -274,4 +274,8 @@ public abstract class BaseAgent {
 		this.data = data;
 	}
 
+	public ManusProperties getManusProperties() {
+		return manusProperties;
+	}
+
 }
