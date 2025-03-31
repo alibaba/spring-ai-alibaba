@@ -40,7 +40,8 @@ class OracleChatMemoryTest {
 	// @Test
 	public void oracle() {
 		ChatMemory chatMemory = new OracleChatMemory("system", "123456", "jdbc:oracle:thin:@localhost:1521/XEPDB1");
-		ChatClient chatClient = ChatClient.create(new DashScopeChatModel(new DashScopeApi("")));
+		String apiKey = System.getenv().getOrDefault("AI_DASHSCOPE_API_KEY", "test-api-key");
+		ChatClient chatClient = ChatClient.create(new DashScopeChatModel(new DashScopeApi(apiKey)));
 		String content1 = chatClient.prompt()
 			.advisors(new MessageChatMemoryAdvisor(chatMemory))
 			.user("我是张三😄")

@@ -41,7 +41,8 @@ class PostgresChatMemoryTest {
 	public void postgresql() {
 		ChatMemory chatMemory = new PostgresChatMemory("root", "123456",
 				"jdbc:postgresql://127.0.0.1:5432/spring_ai_alibaba_chat_memory");
-		ChatClient chatClient = ChatClient.create(new DashScopeChatModel(new DashScopeApi("")));
+		String apiKey = System.getenv().getOrDefault("AI_DASHSCOPE_API_KEY", "test-api-key");
+		ChatClient chatClient = ChatClient.create(new DashScopeChatModel(new DashScopeApi(apiKey)));
 		String content1 = chatClient.prompt()
 			.advisors(new MessageChatMemoryAdvisor(chatMemory))
 			.user("我是张三😄")
