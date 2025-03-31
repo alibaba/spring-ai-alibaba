@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.controller;
 
-import com.alibaba.cloud.ai.example.manus.config.ManusConfiguration.PlanningFlowManager;
+import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.PlanningFlowManager;
 import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;

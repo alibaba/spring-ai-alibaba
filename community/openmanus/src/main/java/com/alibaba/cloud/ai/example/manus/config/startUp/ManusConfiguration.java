@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.manus.config;
+package com.alibaba.cloud.ai.example.manus.config.startUp;
 
 import java.util.ArrayList;
 import java.util.HashMap;
