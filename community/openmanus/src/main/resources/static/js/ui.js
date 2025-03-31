@@ -33,12 +33,12 @@ const ManusUI = (() => {
     const UI_EVENTS = {
         MESSAGE_UPDATE: 'ui:message:update',
         MESSAGE_COMPLETE: 'ui:message:complete',
-        SECTION_ADD: 'ui:section:add'
+        SECTION_ADD: 'ui:section:add',
+        DIALOG_ROUND_START: 'ui:dialog:round:start',  // 新增：对话轮次开始
+        DIALOG_ROUND_UPDATE: 'ui:dialog:round:update' // 新增：对话轮次更新
     };
 
-    /**
-     * 事件发布订阅系统
-     */
+    // 事件发布订阅系统
     const EventSystem = {
         // 订阅事件
         on: (eventName, callback) => {
@@ -51,7 +51,9 @@ const ManusUI = (() => {
         // 发布事件
         emit: (eventName, data) => {
             if (eventListeners[eventName]) {
-                eventListeners[eventName].forEach(callback => callback(data));
+                // 确保事件数据中包含planId
+                const eventData = data ? { ...data, planId: activePlanId } : { planId: activePlanId };
+                eventListeners[eventName].forEach(callback => callback(eventData));
             }
         },
         
@@ -168,18 +170,20 @@ const ManusUI = (() => {
         // 清空输入框
         inputField.value = '';
         
-        // 通知ChatHandler处理用户消息
-        ChatHandler.handleUserMessage(query);
-        
         try {
-            // 禁用输入区域，防止重复提交
-            updateInputState(false);
-            
             // 发送到API
             const response = await ManusAPI.sendMessage(query);
             
             // 更新任务ID并开始轮询
             activePlanId = response.planId;
+            
+            // 发出对话轮次开始事件
+            EventSystem.emit(UI_EVENTS.DIALOG_ROUND_START, {
+                planId: activePlanId,
+                query: query
+            });
+            
+            // 开始轮询
             startPolling();
             
         } catch (error) {
@@ -285,7 +289,7 @@ const ManusUI = (() => {
     // 返回公开的方法和事件系统
     return {
         init,
-        handleSendMessage,
+        handleSendMessage,  // 确保导出 handleSendMessage
         EventSystem,
         UI_EVENTS
     };

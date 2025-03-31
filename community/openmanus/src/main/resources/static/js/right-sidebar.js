@@ -1,6 +1,5 @@
 /**
  * 右侧边栏 - 执行详情展示模块
- * 负责处理右侧边栏的动态内容显示和交互
  */
 const RightSidebar = (() => {
     // 缓存DOM元素
@@ -9,10 +8,10 @@ const RightSidebar = (() => {
     let executionStatusElement;
     let executionProgressElement;
 
-    // 当前执行计划数据
-    let currentPlanData = null;
-    // 当前选中的步骤索引
-    let selectedStepIndex = -1;
+    // 存储所有计划的数据
+    let planDataMap = new Map();
+    // 当前显示的计划ID
+    let currentDisplayedPlanId = null;
     
     /**
      * 初始化右侧边栏
@@ -38,19 +37,25 @@ const RightSidebar = (() => {
      * 处理计划更新
      */
     const handlePlanUpdate = (planData) => {
-        // 保存最新的计划数据
-        currentPlanData = planData;
+        if (!planData?.planId) return;
         
-        // 更新进度显示
+        // 保存/更新计划数据
+        planDataMap.set(planData.planId, planData);
+        
+        // 更新进度显示（如果是当前显示的计划）
+        if (planData.planId === currentDisplayedPlanId) {
+            updateDisplayedPlanProgress(planData);
+        }
+    };
+    
+    /**
+     * 更新显示的计划进度
+     */
+    const updateDisplayedPlanProgress = (planData) => {
         if (planData.steps && planData.steps.length > 0) {
             const totalSteps = planData.steps.length;
             const currentStep = planData.currentStepIndex + 1;
             executionProgressElement.innerHTML = `${currentStep} / ${totalSteps} <span class="icon-up-arrow"></span>`;
-        }
-        
-        // 如果已经选择了步骤，刷新显示该步骤的详情
-        if (selectedStepIndex >= 0) {
-            showStepDetails(selectedStepIndex);
         }
     };
     
@@ -62,17 +67,23 @@ const RightSidebar = (() => {
         const sectionHeader = findParentWithClass(event.target, 'section-header');
         if (!sectionHeader) return;
         
-        // 找到对应的步骤元素和索引
+        // 找到对应的步骤元素
         const stepElement = findParentWithClass(sectionHeader, 'ai-section');
         if (!stepElement) return;
+        
+        // 找到对话轮次容器并获取planId
+        const dialogRoundContainer = findParentWithClass(stepElement, 'dialog-round-container');
+        if (!dialogRoundContainer) return;
+        
+        const planId = dialogRoundContainer.dataset.planId;
+        if (!planId) return;
         
         // 获取步骤索引
         const stepIndex = findStepIndex(stepElement);
         if (stepIndex === -1) return;
         
         // 显示该步骤的详细信息
-        selectedStepIndex = stepIndex;
-        showStepDetails(stepIndex);
+        showStepDetails(planId, stepIndex);
     };
     
     /**
@@ -99,17 +110,26 @@ const RightSidebar = (() => {
     /**
      * 显示步骤详情
      */
-    const showStepDetails = (stepIndex) => {
+    const showStepDetails = (planId, stepIndex) => {
+        // 获取计划数据
+        const planData = planDataMap.get(planId);
+        
         // 如果没有计划数据或步骤不存在，则显示错误信息
-        if (!currentPlanData || !currentPlanData.steps || stepIndex >= currentPlanData.steps.length) {
+        if (!planData || !planData.steps || stepIndex >= planData.steps.length) {
             sidebarContent.innerHTML = '<div class="no-selection-message"><p>无法获取步骤详情</p></div>';
             executionStatusElement.textContent = '步骤数据不可用';
             return;
         }
         
+        // 更新当前显示的计划ID
+        currentDisplayedPlanId = planId;
+        
         // 获取步骤信息
-        const step = currentPlanData.steps[stepIndex];
-        const agentExecution = currentPlanData.agentExecutionSequence && currentPlanData.agentExecutionSequence[stepIndex];
+        const step = planData.steps[stepIndex];
+        const agentExecution = planData.agentExecutionSequence && planData.agentExecutionSequence[stepIndex];
+        
+        // 更新状态和进度显示
+        updateDisplayedPlanProgress(planData);
         
         // 如果没有执行数据，显示等待信息
         if (!agentExecution) {
