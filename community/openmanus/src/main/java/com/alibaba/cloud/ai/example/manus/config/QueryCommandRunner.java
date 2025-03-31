@@ -19,13 +19,21 @@ import java.util.Scanner;
 
 import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class QueryCommandRunner implements CommandLineRunner {
 
+	private static final Logger logger = LoggerFactory.getLogger(QueryCommandRunner.class);
+
 	private final PlanningFlow planningFlow;
+
+	@Value("${manus.consolequery:false}")
+	private boolean consoleQueryEnabled;
 
 	public QueryCommandRunner(PlanningFlow planningFlow) {
 		this.planningFlow = planningFlow;
@@ -33,7 +41,13 @@ public class QueryCommandRunner implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
+		// 只有当启用了控制台查询模式时才执行
+		if (!consoleQueryEnabled) {
+			logger.info("控制台交互模式未启用，跳过命令行查询");
+			return;
+		}
 
+		logger.info("启动控制台交互模式，请输入查询...");
 		Scanner scanner = new Scanner(System.in);
 		while (true) {
 
