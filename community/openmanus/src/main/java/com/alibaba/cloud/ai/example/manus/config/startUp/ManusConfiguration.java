@@ -41,6 +41,7 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.util.Timeout;
 
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -89,6 +90,16 @@ public class ManusConfiguration {
 
 		Map<String, Object> data = new HashMap<>();
 		return new PlanningFlow(agentList, data, recorder);
+	}
+
+	@Bean
+	@Scope("prototype") // 每次请求创建一个新的实例
+	public  Map<String, ToolCallback> toolCallbackMap(LlmService llmService, ToolCallingManager toolCallingManager) {
+		Map<String, ToolCallback> toolCallbackMap = new HashMap<>();
+		toolCallbackMap.put("python", new PythonAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR, recorder, manusProperties));
+		toolCallbackMap.put("file", new FileAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR, recorder, manusProperties));
+		toolCallbackMap.put("browser", new BrowserAgent(llmService, toolCallingManager, chromeDriverService, recorder, manusProperties));
+		return toolCallbackMap;
 	}
 
 	/**

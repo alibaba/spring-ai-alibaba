@@ -266,7 +266,7 @@ public abstract class BaseAgent {
 	 * 访问控制： - 包级私有访问权限 - 仅允许同包内的类访问 - 主要供子类在实现过程中使用
 	 * @return 包含智能体上下文数据的Map对象
 	 */
-	Map<String, Object> getData() {
+	protected Map<String, Object> getData() {
 		return data;
 	}
 
