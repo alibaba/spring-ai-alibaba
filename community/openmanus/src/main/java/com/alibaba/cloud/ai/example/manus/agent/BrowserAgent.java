@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.agent;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
@@ -45,8 +46,8 @@ public class BrowserAgent extends ToolCallAgent {
 
 	// New constructor with PlanExecutionRecord
 	public BrowserAgent(LlmService llmService, ToolCallingManager toolCallingManager, ChromeDriverService chromeService,
-			PlanExecutionRecorder record) {
-		super(llmService, toolCallingManager, record);
+			PlanExecutionRecorder record, ManusProperties manusProperties) {
+		super(llmService, toolCallingManager, record, manusProperties);
 		this.chromeService = chromeService;
 	}
 

@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.agent;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
@@ -71,7 +72,9 @@ public abstract class BaseAgent {
 
 	protected LlmService llmService;
 
-	private int maxSteps = 20;
+	private final ManusProperties manusProperties;
+
+	private int maxSteps;
 
 	private int currentStep = 0;
 
@@ -124,9 +127,11 @@ public abstract class BaseAgent {
 
 	public abstract List<ToolCallback> getToolCallList();
 
-	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder) {
+	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder, ManusProperties manusProperties) {
 		this.llmService = llmService;
 		this.planExecutionRecorder = planExecutionRecorder;
+		this.manusProperties = manusProperties;
+		this.maxSteps = manusProperties.getMaxSteps();
 	}
 
 	public String run(Map<String, Object> data) {
