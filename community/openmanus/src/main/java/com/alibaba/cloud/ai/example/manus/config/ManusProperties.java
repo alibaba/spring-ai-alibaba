@@ -5,16 +5,23 @@ import org.springframework.stereotype.Component;
 
 import com.alibaba.cloud.ai.example.manus.config.entity.ConfigInputType;
 
+/**
+ * 注意 这里配置是依托 path 从yml里取的。
+ * 
+ * 不是我们传统意义上立即的 java spring 配置类的逻辑。
+ * 
+ * 因为我们要把内容放到数据库里。
+ */
 @Component
 @ConfigurationProperties(prefix = "manus")
 public class ManusProperties {
 
 
     @ConfigProperty(
-        group = "browser",
-        subGroup = "settings",
+        group = "manus",
+        subGroup = "browser",
         key = "headless",
-        path = "manus.browser.headless",
+        path = "manus.browserHeadless",
         description = "浏览器无头模式",
         defaultValue = "false",
         inputType = ConfigInputType.BOOLEAN
@@ -22,10 +29,10 @@ public class ManusProperties {
     private Boolean browserHeadless = false;
 
     @ConfigProperty(
-        group = "browser",
-        subGroup = "settings",
-        key = "openbrowser",
-        path = "manus.openbrowser",
+        group = "manus",
+        subGroup = "browser",
+        key = "openBrowser",
+        path = "manus.openBrowserAuto",
         description = "启动时自动打开浏览器",
         defaultValue = "true",
         inputType = ConfigInputType.BOOLEAN
@@ -33,10 +40,10 @@ public class ManusProperties {
     private Boolean openBrowserAuto = true;
 
     @ConfigProperty(
-        group = "browser",
-        subGroup = "settings",
-        key = "consolequery",
-        path = "manus.consolequery",
+        group = "manus",
+        subGroup = "interaction",
+        key = "consoleQuery",
+        path = "manus.consoleQuery",
         description = "启用控制台交互模式",
         defaultValue = "false",
         inputType = ConfigInputType.BOOLEAN
@@ -44,10 +51,10 @@ public class ManusProperties {
     private Boolean consoleQuery = false;
 
     @ConfigProperty(
-        group = "agent",
-        subGroup = "settings",
+        group = "manus",
+        subGroup = "agent",
         key = "maxSteps",
-        path = "manus.agent.max-steps",
+        path = "manus.maxSteps",
         description = "智能体执行最大步数",
         defaultValue = "20",
         inputType = ConfigInputType.NUMBER

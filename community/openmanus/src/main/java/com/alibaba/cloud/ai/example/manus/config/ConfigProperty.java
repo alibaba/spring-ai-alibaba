@@ -36,7 +36,7 @@ public @interface ConfigProperty {
     String key();
 
     /**
-     * 配置项YAML完整路径
+     * 配置项YAML完整路径，用来从yml里面找到特定的配置项作为默认值放到数据库里
      */
     String path();
 
