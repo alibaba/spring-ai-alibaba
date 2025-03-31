@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.functioncalling.duckduckgo;
 
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -25,7 +26,7 @@ import org.springframework.context.annotation.Description;
 /**
  * @author 北极星
  */
-@Configuration
+@AutoConfiguration
 @EnableConfigurationProperties(DuckDuckGoProperties.class)
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.duckduckgo", name = "enabled", havingValue = "true",
 		matchIfMissing = true)

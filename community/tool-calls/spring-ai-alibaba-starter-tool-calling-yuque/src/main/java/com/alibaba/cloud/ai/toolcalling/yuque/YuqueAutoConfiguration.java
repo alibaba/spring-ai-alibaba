@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.toolcalling.yuque;
 
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -25,6 +26,7 @@ import org.springframework.context.annotation.Description;
 /**
  * @author 北极星
  */
+@AutoConfiguration
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.yuque", name = "enabled", havingValue = "true")
 @ConditionalOnClass
 @EnableConfigurationProperties(YuqueProperties.class)

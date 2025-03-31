@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.toolcalling.baidusearch;
 
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -24,6 +25,8 @@ import org.springframework.context.annotation.Description;
 /**
  * @author KrakenZJC
  **/
+
+@AutoConfiguration
 @ConditionalOnClass(BaiduSearchService.class)
 @ConditionalOnProperty(value = "spring.ai.alibaba.toolcalling.baidusearch", name = "enabled", havingValue = "true")
 public class BaiduSearchAutoConfiguration {

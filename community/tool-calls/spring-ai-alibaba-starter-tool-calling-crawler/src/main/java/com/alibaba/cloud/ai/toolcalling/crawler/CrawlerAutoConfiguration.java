@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.toolcalling.crawler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -26,6 +27,7 @@ import org.springframework.util.Assert;
 /**
  * @author yuluo
  */
+@AutoConfiguration
 @EnableConfigurationProperties({ CrawlerJinaProperties.class, CrawlerFirecrawlProperties.class })
 @ConditionalOnProperty(prefix = CrawlerJinaProperties.JINA_PROPERTIES_PREFIX, name = "enabled", havingValue = "true")
 public class CrawlerAutoConfiguration {

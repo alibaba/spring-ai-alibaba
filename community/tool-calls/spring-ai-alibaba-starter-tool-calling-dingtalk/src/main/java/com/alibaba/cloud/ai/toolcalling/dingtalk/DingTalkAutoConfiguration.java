@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.toolcalling.dingtalk;
 
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -25,7 +26,7 @@ import org.springframework.context.annotation.Description;
 /**
  * @author YunLong
  */
-@Configuration
+@AutoConfiguration
 @EnableConfigurationProperties(DingTalkProperties.class)
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.dingtalk", name = "enabled", havingValue = "true")
 public class DingTalkAutoConfiguration {

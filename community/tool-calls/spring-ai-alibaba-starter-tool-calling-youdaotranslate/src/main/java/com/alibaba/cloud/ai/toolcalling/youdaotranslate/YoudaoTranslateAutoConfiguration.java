@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.toolcalling.youdaotranslate;
 
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -26,7 +27,7 @@ import org.springframework.context.annotation.Description;
 /**
  * @author Yeaury
  */
-@Configuration
+@AutoConfiguration
 @ConditionalOnClass(YoudaoTranslateService.class)
 @EnableConfigurationProperties(YoudaoTranslateProperties.class)
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.youdaotranslate", name = "enabled", havingValue = "true")

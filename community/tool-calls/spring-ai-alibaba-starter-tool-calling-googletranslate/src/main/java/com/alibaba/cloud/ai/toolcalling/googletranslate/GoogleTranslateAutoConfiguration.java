@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.toolcalling.googletranslate;
 
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -25,6 +26,7 @@ import org.springframework.context.annotation.Description;
 /**
  * @author erasernoob
  */
+@AutoConfiguration
 @ConditionalOnClass({ GoogleTranslateService.class })
 @EnableConfigurationProperties(GoogleTranslateProperties.class)
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.googletranslate", name = "enabled", havingValue = "true")

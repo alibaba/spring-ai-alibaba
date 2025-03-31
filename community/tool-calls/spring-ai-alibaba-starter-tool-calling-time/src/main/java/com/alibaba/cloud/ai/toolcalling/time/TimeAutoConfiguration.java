@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.toolcalling.time;
 
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -25,7 +26,7 @@ import org.springframework.context.annotation.Description;
 /**
  * @author chengle
  */
-@Configuration
+@AutoConfiguration
 @ConditionalOnClass({ GetCurrentLocalTimeService.class, GetCurrentTimeByTimeZoneIdService.class })
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.time", name = "enabled", havingValue = "true")
 public class TimeAutoConfiguration {

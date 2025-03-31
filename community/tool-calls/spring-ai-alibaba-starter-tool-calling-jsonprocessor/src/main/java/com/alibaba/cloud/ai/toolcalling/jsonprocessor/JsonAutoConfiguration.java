@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -24,6 +25,7 @@ import org.springframework.context.annotation.Description;
 /**
  * @author 北极星
  */
+@AutoConfiguration
 @ConditionalOnClass({ JsonInsertService.class, JsonRemoveService.class, JsonReplaceService.class,
 		JsonParseService.class })
 @ConditionalOnProperty(value = "spring.ai.alibaba.toolcalling.jsonprocessor", name = "enabled", havingValue = "true")
