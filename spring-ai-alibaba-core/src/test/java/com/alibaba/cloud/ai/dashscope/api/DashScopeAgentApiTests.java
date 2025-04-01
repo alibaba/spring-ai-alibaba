@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
+import com.alibaba.cloud.ai.dashscope.agent.DashScopeAgentFlowStreamMode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -464,7 +465,7 @@ class DashScopeAgentApiTests {
 				TEST_PROMPT, null, null, null, null, null);
 
 		DashScopeAgentApi.DashScopeAgentRequest.DashScopeAgentRequestParameters parameters = new DashScopeAgentApi.DashScopeAgentRequest.DashScopeAgentRequestParameters(
-				false, false, null);
+				DashScopeAgentFlowStreamMode.FULL_THOUGHTS, false, false, null);
 
 		return new DashScopeAgentApi.DashScopeAgentRequest(TEST_APP_ID, input, parameters);
 	}
@@ -509,7 +510,7 @@ class DashScopeAgentApiTests {
 				TEST_PROMPT, null, "custom-session", "custom-memory", null, null);
 
 		DashScopeAgentApi.DashScopeAgentRequest.DashScopeAgentRequestParameters parameters = new DashScopeAgentApi.DashScopeAgentRequest.DashScopeAgentRequestParameters(
-				true, true, null);
+				DashScopeAgentFlowStreamMode.FULL_THOUGHTS, true, true, null);
 
 		return new DashScopeAgentApi.DashScopeAgentRequest(TEST_APP_ID, input, parameters);
 	}
@@ -522,7 +523,7 @@ class DashScopeAgentApiTests {
 				TEST_PROMPT, null, null, null, null, null);
 
 		DashScopeAgentApi.DashScopeAgentRequest.DashScopeAgentRequestParameters parameters = new DashScopeAgentApi.DashScopeAgentRequest.DashScopeAgentRequestParameters(
-				true, false, null);
+				DashScopeAgentFlowStreamMode.FULL_THOUGHTS, true, false, null);
 
 		return new DashScopeAgentApi.DashScopeAgentRequest(TEST_APP_ID, input, parameters);
 	}
