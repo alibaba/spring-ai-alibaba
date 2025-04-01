@@ -135,28 +135,6 @@ public class FileAgent extends ToolCallAgent {
 				FileSaver.getFunctionToolCallback(), TerminateTool.getFunctionToolCallback(this));
 	}
 
-	@Override
-	protected void setData(Map<String, Object> oldData) {
-		Map<String, Object> data = new HashMap<>();
-		Map<String, Object> parentData = super.getData();
-		if (parentData != null) {
-			data.putAll(parentData);
-		}
-
-		data.put("working_directory", workingDirectory);
-
-		// 获取当前文件操作状态
-		Map<String, Object> state = currentFileState.get();
-		if (state != null) {
-			data.put("last_operation", state.get("operation"));
-			data.put("operation_result", state.get("result"));
-		} else {
-			data.put("last_operation", "No previous operation");
-			data.put("operation_result", null);
-		}
-		super.setData(data);
-	}
-
 	/**
 	 * 更新文件操作状态
 	 */
