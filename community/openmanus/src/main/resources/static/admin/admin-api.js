@@ -83,6 +83,114 @@ class AdminAPI {
             return { success: false, message: error.message || '更新失败，请重试' };
         }
     }
+
+    /**
+     * 获取所有Agent列表
+     * @returns {Promise<Array>} - Agent配置列表
+     */
+    static async getAllAgents() {
+        try {
+            const response = await fetch('/api/agents');
+            const result = await this._handleResponse(response);
+            return await result.json();
+        } catch (error) {
+            console.error('获取Agent列表失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 获取单个Agent详情
+     * @param {string} id - Agent ID
+     * @returns {Promise<Object>} - Agent配置详情
+     */
+    static async getAgentById(id) {
+        try {
+            const response = await fetch(`/api/agents/${id}`);
+            const result = await this._handleResponse(response);
+            return await result.json();
+        } catch (error) {
+            console.error(`获取Agent[${id}]详情失败:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * 创建新的Agent
+     * @param {Object} agentConfig - Agent配置信息
+     * @returns {Promise<Object>} - 创建的Agent配置
+     */
+    static async createAgent(agentConfig) {
+        try {
+            const response = await fetch('/api/agents', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(agentConfig)
+            });
+            const result = await this._handleResponse(response);
+            return await result.json();
+        } catch (error) {
+            console.error('创建Agent失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 更新Agent配置
+     * @param {string} id - Agent ID
+     * @param {Object} agentConfig - 更新的Agent配置信息
+     * @returns {Promise<Object>} - 更新后的Agent配置
+     */
+    static async updateAgent(id, agentConfig) {
+        try {
+            const response = await fetch(`/api/agents/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(agentConfig)
+            });
+            const result = await this._handleResponse(response);
+            return await result.json();
+        } catch (error) {
+            console.error(`更新Agent[${id}]失败:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * 删除Agent
+     * @param {string} id - 要删除的Agent ID
+     * @returns {Promise<void>}
+     */
+    static async deleteAgent(id) {
+        try {
+            const response = await fetch(`/api/agents/${id}`, {
+                method: 'DELETE'
+            });
+            await this._handleResponse(response);
+        } catch (error) {
+            console.error(`删除Agent[${id}]失败:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * 获取所有可用工具列表
+     * @returns {Promise<Array>} - 工具列表
+     */
+    static async getAvailableTools() {
+        try {
+            const response = await fetch('/api/agents/tools');
+            const result = await this._handleResponse(response);
+            return await result.json();
+        } catch (error) {
+            console.error('获取可用工具列表失败:', error);
+            throw error;
+        }
+    }
 }
 
 // 导出 API 类，使其在其他文件中可用
