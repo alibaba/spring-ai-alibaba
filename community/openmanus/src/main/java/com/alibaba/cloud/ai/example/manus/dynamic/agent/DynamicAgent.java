@@ -44,8 +44,8 @@ public class DynamicAgent extends ReActAgent {
 
     private final String nextStepPrompt;
 
-    private  Map<String, ToolCallBackContext> toolCallbackMap;
-    
+    private Map<String, ToolCallBackContext> toolCallbackMap;
+
     private final List<String> availableToolKeys;
 
     private ChatResponse response;
@@ -56,11 +56,12 @@ public class DynamicAgent extends ReActAgent {
 
     private final ToolCallingManager toolCallingManager;
 
-    private String executionEnv;
+    private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
+
 
     public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
             ManusProperties manusProperties, String name, String description, String systemPrompt,
-            String nextStepPrompt,  List<String> availableToolKeys,
+            String nextStepPrompt, List<String> availableToolKeys,
             ToolCallingManager toolCallingManager) {
         super(llmService, planExecutionRecorder, manusProperties);
         this.agentName = name;
@@ -80,8 +81,8 @@ public class DynamicAgent extends ReActAgent {
         try {
             List<Message> messages = new ArrayList<>();
             addThinkPrompt(messages);
-            thinkActRecord.startThinking(messages.toString(), executionEnv);
-
+            thinkActRecord.startThinking(messages.toString(), String.valueOf(getData().getOrDefault(EXECUTION_ENV_KEY_STRING,"")));// The `ToolCallAgent` class in the
+		
             ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
             Message nextStepMessage = getNextStepWithEnvMessage();
             messages.add(nextStepMessage);
@@ -135,9 +136,9 @@ public class DynamicAgent extends ReActAgent {
 
             thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
             ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
-            
-            executionEnv = collectEnvData(toolCall.name());
-            
+
+            addEnvData(EXECUTION_ENV_KEY_STRING, collectEnvData(toolCall.name()));
+            setData(getData());
             ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
                     .get(toolExecutionResult.conversationHistory().size() - 1);
             llmService.getMemory().add(getConversationId(), toolResponseMessage);
@@ -176,16 +177,16 @@ public class DynamicAgent extends ReActAgent {
 
     @Override
     protected Message getNextStepWithEnvMessage() {
-		String nextStepPrompt = """
+        String nextStepPrompt = """
 
-        CURRENT STEP ENVIRONMENT STATUS:
-        {current_step_env_data}
+                CURRENT STEP ENVIRONMENT STATUS:
+                {current_step_env_data}
 
-        """;
+                """;
         nextStepPrompt = nextStepPrompt += this.nextStepPrompt;
-		PromptTemplate promptTemplate = new PromptTemplate(nextStepPrompt);
-		Message userMessage = promptTemplate.createMessage(getData());
-		return userMessage;
+        PromptTemplate promptTemplate = new PromptTemplate(nextStepPrompt);
+        Message userMessage = promptTemplate.createMessage(getData());
+        return userMessage;
     }
 
     @Override
@@ -200,7 +201,7 @@ public class DynamicAgent extends ReActAgent {
     @Override
     public List<ToolCallback> getToolCallList() {
         List<ToolCallback> toolCallbacks = new ArrayList<>();
-        for(String toolKey : availableToolKeys) {
+        for (String toolKey : availableToolKeys) {
             if (toolCallbackMap.containsKey(toolKey)) {
                 ToolCallBackContext toolCallback = toolCallbackMap.get(toolKey);
                 if (toolCallback != null) {
@@ -213,31 +214,28 @@ public class DynamicAgent extends ReActAgent {
         return toolCallbacks;
     }
 
-    @Override
-    protected void setData(Map<String, Object> oldData) {
-        Map<String, Object> data = new HashMap<>();
-        Map<String, Object> parentData = super.getData();
-        if (parentData != null) {
-            data.putAll(parentData);
+
+    public void addEnvData(String key, String value) {
+        Map<String, Object> data = super.getData();
+        if (data == null) {
+            throw new IllegalStateException("Data map is null. Cannot add environment data.");
         }
-        data.put("current_step_env_data", executionEnv);
-        super.setData(data) ;
+        data.put(key, value);
     }
 
     public void setToolCallbackMap(Map<String, ToolCallBackContext> toolCallbackMap) {
         this.toolCallbackMap = toolCallbackMap;
     }
 
+    protected String collectEnvData(String toolCallName) {
+        ToolCallBackContext context = toolCallbackMap.get(toolCallName);
+        if (context != null) {
+            return context.getFunctionInstance().getCurrentToolStateString();
+        }
+        // 如果没有找到对应的工具回调上下文，返回空字符串
+        return "";
+    }
 
-
-	protected String collectEnvData(String toolCallName) {
-		ToolCallBackContext context = toolCallbackMap.get(toolCallName);
-		if (context != null) {
-			return context.getFunctionInstance().getCurrentToolStateString();
-		}
-		// 如果没有找到对应的工具回调上下文，返回空字符串
-		return "";
-	}
-
+    
 
 }

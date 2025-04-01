@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -54,10 +55,9 @@ import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvis
 /**
  * 工具调用智能体，专门负责管理和执行工具调用的智能体实现 继承自ReActAgent，实现了基于工具调用的思考-行动模式
  */
-public  class ToolCallAgent extends ReActAgent {
+public class ToolCallAgent extends ReActAgent {
 
 	private static final Logger log = LoggerFactory.getLogger(ToolCallAgent.class);
-
 
 	private final ToolCallingManager toolCallingManager;
 
@@ -67,14 +67,15 @@ public  class ToolCallAgent extends ReActAgent {
 
 	protected ThinkActRecord thinkActRecord;
 
-	protected String executionEnv = "";
+	private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
 
-    private  Map<String, ToolCallBackContext> toolCallbackMap;
+	private Map<String, ToolCallBackContext> toolCallbackMap;
 
 	private List<String> availableToolKeys = List.of("FileSaver", "PythonExecute", "TerminateTool");
 
 	public ToolCallAgent(LlmService llmService, ToolCallingManager toolCallingManager,
-			PlanExecutionRecorder planExecutionRecorder, ManusProperties manusProperties, Map<String, ToolCallBackContext> toolCallbackMap) {
+			PlanExecutionRecorder planExecutionRecorder, ManusProperties manusProperties,
+			Map<String, ToolCallBackContext> toolCallbackMap) {
 		super(llmService, planExecutionRecorder, manusProperties);
 		this.toolCallingManager = toolCallingManager;
 		this.toolCallbackMap = toolCallbackMap;
@@ -83,6 +84,7 @@ public  class ToolCallAgent extends ReActAgent {
 	/**
 	 * 执行思考过程 实现说明： 1. 准备思考所需的消息列表 2. 设置工具调用选项 3. 构建提示并获取LLM响应 4. 分析响应中的工具调用 5.
 	 * 记录思考过程和工具选择
+	 * 
 	 * @param retry 当前重试次数
 	 * @return true 如果有工具需要调用，false 如果不需要执行任何工具
 	 */
@@ -97,7 +99,7 @@ public  class ToolCallAgent extends ReActAgent {
 		try {
 			List<Message> messages = new ArrayList<>();
 			addThinkPrompt(messages);
-			thinkActRecord.startThinking(messages.toString(), executionEnv);// The `ToolCallAgent` class in the
+			thinkActRecord.startThinking(messages.toString(), String.valueOf(getData().getOrDefault(EXECUTION_ENV_KEY_STRING,"")));// The `ToolCallAgent` class in the
 			// provided Java code is responsible
 			// for managing and executing tool
 			// calls within the ReAct agent. It
@@ -106,7 +108,6 @@ public  class ToolCallAgent extends ReActAgent {
 			// handling tool calls during the
 			// thinking and acting phases of the
 			// agent.
-			
 
 			// calltool with mem
 			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
@@ -118,12 +119,12 @@ public  class ToolCallAgent extends ReActAgent {
 			userPrompt = new Prompt(messages, chatOptions);
 
 			response = llmService.getChatClient()
-				.prompt(userPrompt)
-				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
-					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
-				.tools(getToolCallList())
-				.call()
-				.chatResponse();
+					.prompt(userPrompt)
+					.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
+							.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
+					.tools(getToolCallList())
+					.call()
+					.chatResponse();
 
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			String responseByLLm = response.getResult().getOutput().getText();
@@ -147,8 +148,7 @@ public  class ToolCallAgent extends ReActAgent {
 			thinkActRecord.setStatus("SUCCESS");
 
 			return !toolCalls.isEmpty();
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()));
 			thinkActRecord.recordError(e.getMessage());
 			return false;
@@ -157,6 +157,7 @@ public  class ToolCallAgent extends ReActAgent {
 
 	/**
 	 * 工具调用智能体的功能描述 实现说明：提供该智能体的核心功能说明 描述包含工具调用管理和执行能力等关键特性
+	 * 
 	 * @return 智能体的功能描述文本
 	 */
 	@Override
@@ -166,6 +167,7 @@ public  class ToolCallAgent extends ReActAgent {
 
 	/**
 	 * 工具调用智能体的名称 实现说明：返回固定的智能体标识符"ToolCallAgent" 用于在日志和调试中标识该类型的智能体
+	 * 
 	 * @return "ToolCallAgent"
 	 */
 	@Override
@@ -174,8 +176,10 @@ public  class ToolCallAgent extends ReActAgent {
 	}
 
 	/**
-	 * 添加工具调用相关的思考提示 实现说明： 1. 首先调用父类的addThinkPrompt添加基础提示 2. 构建特定的工具调用相关提示，包括： - 当前计划状态 -
+	 * 添加工具调用相关的思考提示 实现说明： 1. 首先调用父类的addThinkPrompt添加基础提示 2. 构建特定的工具调用相关提示，包括： -
+	 * 当前计划状态 -
 	 * 当前步骤信息 - 执行指南 - 完成协议 3. 返回包含完整提示信息的系统消息
+	 * 
 	 * @param messages 当前的消息列表
 	 * @return 添加了工具调用相关提示的系统消息
 	 */
@@ -214,9 +218,10 @@ public  class ToolCallAgent extends ReActAgent {
 	}
 
 	/**
-
+	 * 
 	 * 获取下一步执行提示的用户消息对象 实现说明： 1. 构建提示模板，包含当前步骤的环境状态 2. 创建用户消息对象
 	 * 这里会额外带 上当前步骤的环境数据 ，所以，如果 你想自定义环境数据 则 重写这个方法， 如果不想，则
+	 * 
 	 * @return 下一步执行提示的用户消息对象
 	 */
 	protected Message getNextStepWithEnvMessage() {
@@ -228,7 +233,7 @@ public  class ToolCallAgent extends ReActAgent {
 
 				""";
 
-		nextStepPrompt += getNextStepPromptString();		
+		nextStepPrompt += getNextStepPromptString();
 		PromptTemplate promptTemplate = new PromptTemplate(nextStepPrompt);
 		Message userMessage = promptTemplate.createMessage(getData());
 		return userMessage;
@@ -237,15 +242,15 @@ public  class ToolCallAgent extends ReActAgent {
 	/**
 	 * 获取下一步执行的用户自定义 Prompt ， 写的时候可以不带环境数据（因为全局会自动拼）
 	 * 这个环境数据物理上属于toolcall的一个参数，如果需要修改或携带环境数据，在tool里面去修改
+	 * 
 	 * @return 下一步执行的用户自定义 Prompt
 	 */
-	protected String getNextStepPromptString(){
+	protected String getNextStepPromptString() {
 		String nextStepPrompt = """
 				What should I do for next action to achieve my goal?
 				""";
 		return nextStepPrompt;
 	}
-
 
 	@Override
 	protected String act() {
@@ -254,13 +259,13 @@ public  class ToolCallAgent extends ReActAgent {
 			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
 
 			thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
-			
+
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
 
-			executionEnv = collectEnvData(toolCall.name());
+			addEnvData(EXECUTION_ENV_KEY_STRING, collectEnvData(toolCall.name()));
 
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
-				.get(toolExecutionResult.conversationHistory().size() - 1);
+					.get(toolExecutionResult.conversationHistory().size() - 1);
 			llmService.getMemory().add(getConversationId(), toolResponseMessage);
 			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
 			results.add(llmCallResponse);
@@ -271,8 +276,7 @@ public  class ToolCallAgent extends ReActAgent {
 			thinkActRecord.finishAction(finalResult, "SUCCESS");
 
 			return finalResult;
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
 			ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse(toolCall.id(),
 					toolCall.name(), "Error: " + e.getMessage());
@@ -285,8 +289,6 @@ public  class ToolCallAgent extends ReActAgent {
 			return "Error: " + e.getMessage();
 		}
 	}
-
-	
 
 	public List<ToolCallback> getToolCallList() {
 		List<ToolCallback> toolCallList = new ArrayList<>();
@@ -309,5 +311,12 @@ public  class ToolCallAgent extends ReActAgent {
 		return "";
 	}
 
+    public void addEnvData(String key, String value) {
+        Map<String, Object> data = super.getData();
+        if (data == null) {
+            throw new IllegalStateException("Data map is null. Cannot add environment data.");
+        }
+        data.put(key, value);
+    }
 
 }

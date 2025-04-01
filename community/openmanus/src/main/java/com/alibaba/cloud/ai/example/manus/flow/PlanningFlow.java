@@ -299,8 +299,14 @@ public class PlanningFlow extends BaseFlow {
 				""";
 
 		PromptTemplate promptTemplate = new PromptTemplate(prompt_template);
+
+		//可变还是方便点
+		Map<String, Object> data = new HashMap<>();
+		data.put("plan_id", activePlanId);
+		data.put("query", request);
+		data.put("agents_info", agentsInfo.toString());
 		Prompt userPrompt = promptTemplate
-			.create(Map.of("plan_id", activePlanId, "query", request, "agents_info", agentsInfo.toString()));
+			.create(data);
 		ChatResponse response = llmService.getPlanningChatClient()
 			.prompt(userPrompt)
 			.tools(getToolCallList())
