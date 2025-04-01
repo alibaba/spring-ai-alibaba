@@ -1,49 +1,77 @@
 /**
- * admin-core.js - 管理界面核心
- * 管理界面的主要入口点，负责初始化和协调功能
- */
-
-/**
- * 管理界面核心
+ * admin-core.js - 管理界面核心功能协调
  */
 class AdminCore {
     constructor() {
-        this.initialized = false;
-        this.init = this.init.bind(this);
+        this.initializePanels();
+        this.bindGlobalEvents();
     }
-    
+
     /**
-     * 初始化管理界面
+     * 初始化面板显示
      */
-    async init() {
-        if (this.initialized) return;
-        
-        try {
-            // 显示加载状态
-            document.body.classList.add('loading');
-            document.body.insertAdjacentHTML('beforeend', '<div class="loading-overlay"><div class="loading-spinner"></div><div class="loading-text">加载中...</div></div>');
-            
-            // 1. 初始化UI（这会触发加载基础配置）
-            await AdminUI.initialize();
-            
-            console.log('管理界面初始化完成');
-            this.initialized = true;
-        } catch (error) {
-            console.error('初始化管理界面出错:', error);
-            AdminUI.showNotification('初始化界面失败，请刷新页面重试', 'error');
-        } finally {
-            // 移除加载状态
-            document.body.classList.remove('loading');
-            const loadingOverlay = document.querySelector('.loading-overlay');
-            if (loadingOverlay) {
-                loadingOverlay.remove();
-            }
+    initializePanels() {
+        // 获取所有配置面板和类别项
+        const panels = document.querySelectorAll('.config-panel');
+        const categories = document.querySelectorAll('.category-item');
+
+        // 设置初始激活状态
+        this.setActivePanel('basic');
+
+        // 绑定类别切换事件
+        categories.forEach(category => {
+            category.addEventListener('click', () => {
+                const categoryId = category.dataset.category;
+                this.setActivePanel(categoryId);
+            });
+        });
+    }
+
+    /**
+     * 设置当前激活的面板
+     */
+    setActivePanel(categoryId) {
+        // 更新类别项的激活状态
+        document.querySelectorAll('.category-item').forEach(item => {
+            item.classList.toggle('active', item.dataset.category === categoryId);
+        });
+
+        // 更新面板的显示状态
+        document.querySelectorAll('.config-panel').forEach(panel => {
+            panel.classList.toggle('active', panel.id === `${categoryId}-config`);
+        });
+    }
+
+    /**
+     * 绑定全局事件
+     */
+    bindGlobalEvents() {
+        // 返回主页按钮
+        const backBtn = document.getElementById('backToMainBtn');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                window.location.href = '/index.html';
+            });
         }
+
+        // 监听页面离开事件
+        window.addEventListener('beforeunload', (event) => {
+            // 如果有未保存的更改，提示用户
+            if (this.hasUnsavedChanges()) {
+                event.preventDefault();
+                event.returnValue = '您有未保存的更改，确定要离开吗？';
+            }
+        });
+    }
+
+    /**
+     * 检查是否有未保存的更改
+     */
+    hasUnsavedChanges() {
+        // TODO: 实现未保存更改检查逻辑
+        return false;
     }
 }
 
-// 创建核心实例
-const adminCore = new AdminCore();
-
-// 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', adminCore.init);
+// 创建全局管理界面实例
+window.adminCore = new AdminCore();
