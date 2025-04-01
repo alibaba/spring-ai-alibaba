@@ -29,13 +29,21 @@ import com.alibaba.cloud.ai.example.manus.agent.FileAgent;
 import com.alibaba.cloud.ai.example.manus.agent.ManusAgent;
 import com.alibaba.cloud.ai.example.manus.agent.PythonAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.DynamicAgent;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoader;
 import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
+import com.alibaba.cloud.ai.example.manus.tool.Bash;
 import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
+import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
+import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
+import com.alibaba.cloud.ai.example.manus.tool.GoogleSearch;
+import com.alibaba.cloud.ai.example.manus.tool.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
-import com.alibaba.cloud.ai.example.manus.tool.ToolDefinition;
+import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.support.CodeUtils;
 
 import org.apache.hc.client5.http.classic.HttpClient;
@@ -75,39 +83,61 @@ public class ManusConfiguration {
 		this.manusProperties = manusProperties;
 	}
 
+	// @Bean
+	// @Scope("prototype") // 每次请求创建一个新的实例
+	// public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager) {
+
+	// 	ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager, chromeDriverService,
+	// 			CodeUtils.WORKING_DIR, recorder, manusProperties);
+	// 	BrowserAgent browserAgent = new BrowserAgent(llmService, toolCallingManager, chromeDriverService, recorder, manusProperties);
+
+	// 	FileAgent fileAgent = new FileAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR, recorder, manusProperties);
+	// 	PythonAgent pythonAgent = new PythonAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR, recorder, manusProperties);
+
+	// 	List<BaseAgent> agentList = new ArrayList<>();
+
+	// 	agentList.add(manusAgent);
+	// 	agentList.add(browserAgent);
+	// 	agentList.add(fileAgent);
+	// 	agentList.add(pythonAgent);
+
+	// 	Map<String, Object> data = new HashMap<>();
+	// 	return new PlanningFlow(agentList, data, recorder);
+	// }
+
+	@Bean
+	@Scope("prototype")
+	public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager,
+			DynamicAgentLoader dynamicAgentLoader) {
+        List<BaseAgent> agentList = new ArrayList<>();
+        
+        // Add all dynamic agents from the database
+        for (DynamicAgentEntity agentEntity : dynamicAgentLoader.getAllAgents()) {
+            DynamicAgent agent = dynamicAgentLoader.loadAgent(agentEntity.getAgentName());
+            agentList.add(agent);
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        return new PlanningFlow(agentList, data, recorder);
+    }
+
 	@Bean
 	@Scope("prototype") // 每次请求创建一个新的实例
-	public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager) {
-
-		ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager, chromeDriverService,
-				CodeUtils.WORKING_DIR, recorder, manusProperties);
-		BrowserAgent browserAgent = new BrowserAgent(llmService, toolCallingManager, chromeDriverService, recorder, manusProperties);
-
-		FileAgent fileAgent = new FileAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR, recorder, manusProperties);
-		PythonAgent pythonAgent = new PythonAgent(llmService, toolCallingManager, CodeUtils.WORKING_DIR, recorder, manusProperties);
-
-		List<BaseAgent> agentList = new ArrayList<>();
-
-		agentList.add(manusAgent);
-		agentList.add(browserAgent);
-		agentList.add(fileAgent);
-		agentList.add(pythonAgent);
-
-		Map<String, Object> data = new HashMap<>();
-		return new PlanningFlow(agentList, data, recorder);
-	}
-
-	@Bean
-	@Scope("prototype") // 每次请求创建一个新的实例
-	public  Map<String, ToolCallback> toolCallbackMap(LlmService llmService, ToolCallingManager toolCallingManager,String planId) {
+	public Map<String, ToolCallback> toolCallbackMap(LlmService llmService, ToolCallingManager toolCallingManager, BaseAgent agent) {
 		Map<String, ToolCallback> toolCallbackMap = new HashMap<>();
-		List<ToolDefinition> toolDefinitions = new ArrayList<>();
+		List<ToolCallBiFunctionDef> toolDefinitions = new ArrayList<>();
+		
+		// 添加所有工具定义
 		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService));
-		toolDefinitions.add(new TerminateTool(null));
+		toolDefinitions.add(new TerminateTool(null)); 
+		toolDefinitions.add(new Bash(CodeUtils.WORKING_DIR));
+		toolDefinitions.add(new DocLoaderTool());
+		toolDefinitions.add(new FileSaver());
+		toolDefinitions.add(new GoogleSearch());
+		toolDefinitions.add(new PythonExecute());
 
-
-
-		for(ToolDefinition toolDefinition : toolDefinitions) {
+		// 为每个工具创建 FunctionToolCallback
+		for(ToolCallBiFunctionDef toolDefinition : toolDefinitions) {
 			FunctionToolCallback functionToolcallback = FunctionToolCallback.builder(toolDefinition.getName(), toolDefinition)
 				.description(toolDefinition.getDescription())
 				.inputSchema(toolDefinition.getParameters())
@@ -116,6 +146,7 @@ public class ManusConfiguration {
 					.returnDirect(toolDefinition.isReturnDirect())
 					.build())
 				.build();
+				toolDefinition.setAgent(agent);
 			toolCallbackMap.put(toolDefinition.getName(), functionToolcallback);
 		}
 		return toolCallbackMap;

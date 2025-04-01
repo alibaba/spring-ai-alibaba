@@ -26,7 +26,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 
-public class TerminateTool implements ToolDefinition {
+public class TerminateTool implements ToolCallBiFunctionDef {
 
 	private static final Logger log = LoggerFactory.getLogger(TerminateTool.class);
 
@@ -102,4 +102,10 @@ public class TerminateTool implements ToolDefinition {
 	public boolean isReturnDirect() {
 		return true;
 	}
+
+	@Override
+	public void setAgent(BaseAgent agent) {
+		this.agent = agent;
+	}
+
 }
