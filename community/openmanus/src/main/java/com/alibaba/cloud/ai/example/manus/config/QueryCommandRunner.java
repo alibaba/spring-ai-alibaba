@@ -63,7 +63,6 @@ public class QueryCommandRunner implements CommandLineRunner {
 			String result = planningFlow.execute(query);
 			System.out.println("plan : " + planningFlow.getConversationId() + " Result: " + result);
 		}
-
 		scanner.close();
 	}
 
