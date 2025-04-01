@@ -51,7 +51,6 @@ public class DynamicAgentLoader {
             entity.getAgentDescription(),
             entity.getSystemPrompt(),
             entity.getNextStepPrompt(),
-            toolCallbackMap,
             entity.getAvailableToolKeys(),
             toolCallingManager
         );

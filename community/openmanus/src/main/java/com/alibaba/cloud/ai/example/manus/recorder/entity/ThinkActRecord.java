@@ -54,6 +54,9 @@ public class ThinkActRecord implements JsonSerializable {
 	// 行动完成的时间戳
 	private LocalDateTime actEndTime;
 
+	// 思考环境的上下文（如适用）
+	private String thinkEnv;
+
 	// 思考过程的输入上下文
 	private String thinkInput;
 
@@ -94,7 +97,8 @@ public class ThinkActRecord implements JsonSerializable {
 	/**
 	 * 记录思考阶段开始
 	 */
-	public void startThinking(String thinkInput) {
+	public void startThinking(String thinkInput,String thinkEnv) {
+		this.thinkEnv = thinkEnv;
 		this.thinkStartTime = LocalDateTime.now();
 		this.thinkInput = thinkInput;
 	}
@@ -298,7 +302,7 @@ public class ThinkActRecord implements JsonSerializable {
 		if (actEndTime != null) {
 			appendField(json, "actEndTime", actEndTime.toString(), true);
 		}
-
+		appendField(json, "thinkEnv", thinkEnv, true);	
 		appendField(json, "thinkInput", thinkInput, true);
 		appendField(json, "thinkOutput", thinkOutput, true);
 		appendField(json, "actionNeeded", actionNeeded, false);
@@ -308,6 +312,7 @@ public class ThinkActRecord implements JsonSerializable {
 		appendField(json, "errorMessage", errorMessage, true);
 		appendField(json, "toolName", toolName, true);
 		appendField(json, "toolParameters", toolParameters, true);
+
 
 		// Remove trailing comma if present
 		if (json.charAt(json.length() - 1) == ',') {

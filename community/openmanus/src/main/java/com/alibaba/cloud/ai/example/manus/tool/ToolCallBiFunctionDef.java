@@ -36,5 +36,7 @@ public interface ToolCallBiFunctionDef extends BiFunction<String, ToolContext, T
 
     public void setAgent(BaseAgent agent);
 
+    String getCurrentToolStateString();
+
     
 }

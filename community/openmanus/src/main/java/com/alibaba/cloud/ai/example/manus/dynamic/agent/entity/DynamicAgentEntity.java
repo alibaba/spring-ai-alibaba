@@ -23,7 +23,7 @@ public class DynamicAgentEntity {
     @Column(nullable = false, length = 4000)
     private String nextStepPrompt;
     
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "dynamic_agent_tools", joinColumns = @JoinColumn(name = "agent_id"))
     @Column(name = "tool_key")
     private List<String> availableToolKeys;

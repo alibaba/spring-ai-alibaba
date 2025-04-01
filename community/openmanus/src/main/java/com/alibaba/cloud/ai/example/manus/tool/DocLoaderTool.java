@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +83,10 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 	public DocLoaderTool() {
 	}
 
+	private String lastFilePath = "";
+	private String lastOperationResult = "";
+	private String lastFileType = "";
+
 	public ToolExecuteResult run(String toolInput) {
 		log.info("DocLoaderTool toolInput:" + toolInput);
 		try {
@@ -89,6 +94,9 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 			});
 			String fileType = (String) toolInputMap.get("file_type");
 			String filePath = (String) toolInputMap.get("file_path");
+			this.lastFilePath = filePath;
+			this.lastFileType = fileType;
+			
 			TikaDocumentParser parser = new TikaDocumentParser();
 			List<Document> documentList = parser.parse(new FileInputStream(filePath));
 			List<String> documentContents = documentList.stream()
@@ -97,13 +105,16 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 
 			String documentContentStr = String.join("\n", documentContents);
 			if (StringUtils.isEmpty(documentContentStr)) {
+				this.lastOperationResult = "No content found";
 				return new ToolExecuteResult("No Related information");
 			}
 			else {
+				this.lastOperationResult = "Success";
 				return new ToolExecuteResult("Related information: " + documentContentStr);
 			}
 		}
 		catch (Throwable e) {
+			this.lastOperationResult = "Error: " + e.getMessage();
 			return new ToolExecuteResult("Error get Related information: " + e.getMessage());
 		}
 	}
@@ -147,5 +158,26 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 
 	public BaseAgent getAgent() {
 		return this.agent;
+	}
+
+	@Override
+	public String getCurrentToolStateString() {
+		return String.format("""
+                Current File Operation State:
+                - Working Directory: 
+				%s
+
+                - Last File Operation: 
+				%s
+
+                - Last Operation Result: 
+				%s
+				
+                """,
+                new File("").getAbsolutePath(),
+                lastFilePath.isEmpty() ? "No file loaded yet" : 
+                    String.format("Load %s file from: %s", lastFileType, lastFilePath),
+                lastOperationResult.isEmpty() ? "No operation performed yet" : lastOperationResult
+        );
 	}
 }
