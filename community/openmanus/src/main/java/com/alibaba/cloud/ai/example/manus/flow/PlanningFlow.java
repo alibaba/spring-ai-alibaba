@@ -63,6 +63,10 @@ public class PlanningFlow extends BaseFlow {
 	@Autowired
 	private ChromeDriverService chromeDriverService;
 
+
+
+    private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
+
 	// shared result state between agents.
 	private Map<String, Object> resultState;
 
@@ -415,8 +419,12 @@ public class PlanningFlow extends BaseFlow {
 					record.setCurrentStepIndex(currentStepIndex);
 					getRecorder().recordPlanExecution(record);
 				}
-				String stepResult = executor
-					.run(Map.of("planStatus", planStatus, "currentStepIndex", currentStepIndex, "stepText", stepText));
+				Map<String, Object> executorParams = new HashMap<>();
+				executorParams.put("planStatus", planStatus);
+				executorParams.put("currentStepIndex", currentStepIndex); 
+				executorParams.put("stepText", stepText);
+				executorParams.put(EXECUTION_ENV_KEY_STRING,"");
+				String stepResult = executor.run(executorParams);
 
 				markStepCompleted();
 
@@ -567,20 +575,27 @@ public class PlanningFlow extends BaseFlow {
 			SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(
 					"""
 							You are an AI assistant that can respond to user's request, based on the memory.
+							
+							current plan state:
+							{planText}
 
-							You will:
-							1. If the user requests to review the plan, then review it, otherwise just answer the user's question
-							2. Consider the current Memory and context
-							3. Provide relevant and context-aware responses
+							You will be given a user's request, and you need to do the following step by step:
+							1) Analyze the user's request.
+							2) Respond to the user's request in detail.
+							3) then Provide a summary of the plan and its execution status.
+
 							""");
 			Message systemMessage = systemPromptTemplate.createMessage(Map.of("planText", planText));
-
-			UserMessage userMessage = new UserMessage(userRequest);
+			String userRequestTemplate = """
+					user's request: 
+					{userRequest}
+					""";
+			PromptTemplate userMessageTemplate = new PromptTemplate(userRequestTemplate);
+			Message userMessage = userMessageTemplate.createMessage(Map.of("userRequest", userRequest));
 			Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 
 			ChatResponse response = llmService.getFinalizeChatClient()
 				.prompt(prompt)
-				.advisors(new MessageChatMemoryAdvisor(llmService.getMemory()))
 				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
 					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
 				.call()
