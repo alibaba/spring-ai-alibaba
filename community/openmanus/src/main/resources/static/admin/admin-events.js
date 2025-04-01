@@ -1,156 +1,131 @@
 /**
  * admin-events.js - 管理界面事件处理
- * 负责处理管理界面的各种事件
  */
-
-// 事件处理器
 class AdminEvents {
-    /**
-     * 初始化事件
-     */
-    static init() {
-        // 保存配置按钮
-        document.getElementById('saveConfigBtn')?.addEventListener('click', this.handleSaveConfig);
+    constructor() {
+        // Agent列表相关元素
+        this.agentListContainer = document.querySelector('.agent-list-container');
+        this.addAgentBtn = document.querySelector('.add-agent-btn');
         
-        // 返回主页按钮
-        document.getElementById('backToMainBtn')?.addEventListener('click', this.handleBackToMain);
+        // Agent详情相关元素
+        this.saveAgentBtn = document.querySelector('.save-agent-btn');
+        this.addToolBtn = document.querySelector('.add-tool-btn');
         
-        // 测试天气API按钮
-        const testWeatherApiBtn = document.getElementById('test-weather-api');
-        if (testWeatherApiBtn) {
-            testWeatherApiBtn.addEventListener('click', this.handleTestWeatherApi);
-        }
-        
-        // 默认模型选择变更事件
-        const defaultModelSelect = document.getElementById('default-model');
-        if (defaultModelSelect) {
-            defaultModelSelect.addEventListener('change', this.handleCustomModelVisibility);
-            // 初始触发一次
-            this.handleCustomModelVisibility({ target: defaultModelSelect });
-        }
-        
-        // 页面离开确认
-        window.addEventListener('beforeunload', this.handleBeforeUnload);
+        this.currentAgentId = null;
+        this.bindEvents();
     }
-    
+
     /**
-     * 处理保存配置事件
+     * 绑定所有事件监听器
      */
-    static async handleSaveConfig() {
+    bindEvents() {
+        // Agent列表事件
+        this.agentListContainer.addEventListener('click', (e) => this.handleAgentListClick(e));
+        this.addAgentBtn.addEventListener('click', () => this.handleAddAgent());
+
+        // Agent详情事件
+        this.saveAgentBtn.addEventListener('click', () => this.handleSaveAgent());
+        this.addToolBtn.addEventListener('click', () => this.handleAddTool());
+
+        // 工具列表事件委托
+        document.querySelector('.tool-list').addEventListener('click', (e) => this.handleToolListClick(e));
+    }
+
+    /**
+     * 处理Agent列表点击事件
+     */
+    async handleAgentListClick(event) {
+        const agentItem = event.target.closest('.agent-item');
+        if (!agentItem) return;
+
+        const agentId = agentItem.dataset.agentId;
+        if (event.target.closest('.expand-btn')) {
+            // 展开/折叠Agent详情
+            agentItem.classList.toggle('expanded');
+        } else {
+            // 加载Agent详情
+            try {
+                const agent = await agentConfigModel.loadAgentDetails(agentId);
+                this.currentAgentId = agentId;
+                adminUI.showAgentDetails(agent);
+            } catch (error) {
+                adminUI.showError('加载Agent详情失败');
+            }
+        }
+    }
+
+    /**
+     * 处理添加新Agent
+     */
+    handleAddAgent() {
+        this.currentAgentId = null;
+        adminUI.clearAgentDetails();
+    }
+
+    /**
+     * 处理保存Agent
+     */
+    async handleSaveAgent() {
         try {
-            // 显示加载状态
-            AdminUI.showNotification('正在保存...', 'info');
-            
-            // 保存配置
-            const result = await configModel.saveConfig();
-            
-            if (result.success) {
-                AdminUI.showNotification('配置保存成功', 'success');
-            } else {
-                AdminUI.showNotification(`保存失败: ${result.message}`, 'error');
+            const formData = adminUI.collectFormData();
+            if (this.currentAgentId) {
+                formData.id = this.currentAgentId;
             }
+
+            const savedAgent = await agentConfigModel.saveAgent(formData);
+            this.currentAgentId = savedAgent.id;
+            
+            // 重新加载Agent列表
+            await adminUI.loadAgents();
+            adminUI.showSuccess('Agent保存成功');
         } catch (error) {
-            console.error('保存配置出错:', error);
-            AdminUI.showNotification(`保存出错: ${error.message || '未知错误'}`, 'error');
+            adminUI.showError('保存Agent失败');
         }
     }
-    
+
     /**
-     * 处理返回主页事件
-     * @param {Event} e - 点击事件
+     * 处理添加工具
      */
-    static async handleBackToMain(e) {
-        // 检查是否有未保存的更改
-        if (configModel.hasUnsavedChanges()) {
-            const confirmed = confirm('您有未保存的更改，确定要离开吗？');
-            if (!confirmed) {
-                e.preventDefault();
-                return;
-            }
-        }
-        
-        // 返回主页
-        window.location.href = '/';
-    }
-    
-    /**
-     * 处理测试天气API事件
-     */
-    static async handleTestWeatherApi() {
-        const apiKey = document.getElementById('weather-api-key')?.value.trim();
-        
-        if (!apiKey) {
-            AdminUI.showNotification('请输入API密钥', 'warning');
-            return;
-        }
-        
-        try {
-            // 设置测试按钮状态
-            const testBtn = document.getElementById('test-weather-api');
-            if (!testBtn) return;
+    handleAddTool() {
+        const availableTools = agentConfigModel.availableTools;
+        // 这里应该显示一个工具选择对话框
+        // 简化处理，直接显示第一个可用工具
+        if (availableTools.length > 0) {
+            const currentTools = Array.from(document.querySelectorAll('.tool-item'))
+                .map(item => item.querySelector('.tool-name').textContent);
             
-            const originalText = testBtn.textContent;
-            testBtn.disabled = true;
-            testBtn.textContent = '测试中...';
+            const newTools = availableTools.filter(tool => !currentTools.includes(tool.key));
             
-            // 发送测试请求
-            const response = await fetch('/api/admin/test-weather-api', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ apiKey })
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                AdminUI.showNotification('API连接测试成功', 'success');
+            if (newTools.length > 0) {
+                const toolList = document.querySelector('.tool-list');
+                const toolHtml = `
+                    <div class="tool-item">
+                        <span class="tool-name">${newTools[0].key}</span>
+                        <button class="delete-tool-btn" data-tool="${newTools[0].key}">×</button>
+                    </div>
+                `;
+                toolList.insertAdjacentHTML('beforeend', toolHtml);
             } else {
-                AdminUI.showNotification(`测试失败: ${result.message}`, 'error');
-            }
-        } catch (error) {
-            console.error('测试API出错:', error);
-            AdminUI.showNotification(`测试出错: ${error.message || '未知错误'}`, 'error');
-        } finally {
-            // 恢复按钮状态
-            const testBtn = document.getElementById('test-weather-api');
-            if (testBtn) {
-                testBtn.disabled = false;
-                testBtn.textContent = '测试连接';
+                adminUI.showError('没有更多可用的工具');
             }
         }
     }
-    
+
     /**
-     * 处理自定义模型输入框可见性
-     * @param {Event} e - 变更事件
+     * 处理工具列表点击事件
      */
-    static handleCustomModelVisibility(e) {
-        const value = e.target.value;
-        const customModelUrlInput = document.getElementById('custom-model-url');
-        const customModelUrlContainer = customModelUrlInput?.closest('.config-item');
-        
-        if (customModelUrlContainer) {
-            customModelUrlContainer.style.display = value === 'custom' ? 'block' : 'none';
-        }
-    }
-    
-    /**
-     * 处理页面离开前确认
-     * @param {BeforeUnloadEvent} e - 页面卸载前事件
-     */
-    static handleBeforeUnload(e) {
-        // 如果有未保存的更改，提示用户
-        if (configModel.hasUnsavedChanges()) {
-            const message = '您有未保存的更改，确定要离开吗？';
-            e.returnValue = message;
-            return message;
+    handleToolListClick(event) {
+        if (event.target.classList.contains('delete-tool-btn')) {
+            const toolItem = event.target.closest('.tool-item');
+            if (toolItem) {
+                toolItem.remove();
+            }
         }
     }
 }
 
-// 在 DOMContentLoaded 事件中初始化事件处理
+// 等待DOM加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
-    AdminEvents.init();
+    window.adminEvents = new AdminEvents();
+    window.adminUI.init();
 });
