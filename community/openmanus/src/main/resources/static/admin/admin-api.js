@@ -9,6 +9,7 @@ class AdminAPI {
      * @type {string}
      */
     static BASE_URL = '/api/config';
+    static AGENT_URL = '/api/agents';
 
     /**
      * 处理HTTP错误
@@ -90,7 +91,7 @@ class AdminAPI {
      */
     static async getAllAgents() {
         try {
-            const response = await fetch('/api/agents');
+            const response = await fetch(this.AGENT_URL);
             const result = await this._handleResponse(response);
             return await result.json();
         } catch (error) {
@@ -106,7 +107,7 @@ class AdminAPI {
      */
     static async getAgentById(id) {
         try {
-            const response = await fetch(`/api/agents/${id}`);
+            const response = await fetch(`${this.AGENT_URL}/${id}`);
             const result = await this._handleResponse(response);
             return await result.json();
         } catch (error) {
@@ -122,7 +123,7 @@ class AdminAPI {
      */
     static async createAgent(agentConfig) {
         try {
-            const response = await fetch('/api/agents', {
+            const response = await fetch(this.AGENT_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -145,7 +146,7 @@ class AdminAPI {
      */
     static async updateAgent(id, agentConfig) {
         try {
-            const response = await fetch(`/api/agents/${id}`, {
+            const response = await fetch(`${this.AGENT_URL}/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -167,7 +168,7 @@ class AdminAPI {
      */
     static async deleteAgent(id) {
         try {
-            const response = await fetch(`/api/agents/${id}`, {
+            const response = await fetch(`${this.AGENT_URL}/${id}`, {
                 method: 'DELETE'
             });
             await this._handleResponse(response);
@@ -183,7 +184,7 @@ class AdminAPI {
      */
     static async getAvailableTools() {
         try {
-            const response = await fetch('/api/agents/tools');
+            const response = await fetch(`${this.AGENT_URL}/tools`);
             const result = await this._handleResponse(response);
             return await result.json();
         } catch (error) {
