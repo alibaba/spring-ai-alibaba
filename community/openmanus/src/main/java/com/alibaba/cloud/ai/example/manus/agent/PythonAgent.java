@@ -135,20 +135,6 @@ public class PythonAgent extends ToolCallAgent {
 		return List.of(PythonExecute.getFunctionToolCallback(), TerminateTool.getFunctionToolCallback(this));
 	}
 
-	@Override
-	protected void setData(Map<String, Object> oldData) {
-		Map<String, Object> data = new HashMap<>();
-		Map<String, Object> parentData = super.getData();
-		if (parentData != null) {
-			data.putAll(parentData);
-		}
-
-		data.put("working_directory", workingDirectory);
-		data.put("last_result", lastResult != null ? lastResult : "No previous execution");
-		
-		super.setData(data)	;
-	}
-
 	/**
 	 * 更新执行状态
 	 */
