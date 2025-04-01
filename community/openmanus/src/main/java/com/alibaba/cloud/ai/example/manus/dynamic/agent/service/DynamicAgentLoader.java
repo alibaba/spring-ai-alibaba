@@ -21,20 +21,17 @@ public class DynamicAgentLoader {
     private final PlanExecutionRecorder recorder;
     private final ManusProperties properties;
     private final ToolCallingManager toolCallingManager;
-    private final Map<String, ToolCallback> toolCallbackMap;
 
     public DynamicAgentLoader(DynamicAgentRepository repository,
                             LlmService llmService,
                             PlanExecutionRecorder recorder,
                             ManusProperties properties,
-                            ToolCallingManager toolCallingManager,
-                            Map<String, ToolCallback> toolCallbackMap) {
+                            ToolCallingManager toolCallingManager) {
         this.repository = repository;
         this.llmService = llmService;
         this.recorder = recorder;
         this.properties = properties;
         this.toolCallingManager = toolCallingManager;
-        this.toolCallbackMap = toolCallbackMap;
     }
 
     public DynamicAgent loadAgent(String agentName) {
