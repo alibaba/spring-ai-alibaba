@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
+import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
@@ -39,7 +40,7 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class BrowserUseTool implements ToolDefinition{
+public class BrowserUseTool implements ToolCallBiFunctionDef{
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseTool.class);
 
@@ -48,17 +49,13 @@ public class BrowserUseTool implements ToolDefinition{
 	// 添加标签页缓存字段
 	private List<Map<String, Object>> cachedTabs;
 
-	/**
-	 * 从设计来说所有的tool为了并行的thread-safe 都需要 保持 planId。 这样才能区隔开每个请求 。 所以这里新增了PlanID
-	 */
-	private String planId;
-
+	private BaseAgent agent;
 	public BrowserUseTool(ChromeDriverService chromeDriverService) {
 		this.chromeDriverService = chromeDriverService;
 	}
 
 	private WebDriver getDriver() {
-		return chromeDriverService.getDriver(planId);
+		return chromeDriverService.getDriver(agent.getPlanId());
 	}
 
 	private static final int MAX_LENGTH = 20000;
@@ -653,17 +650,19 @@ public class BrowserUseTool implements ToolDefinition{
 		return String.class;
 	}
 
-	public void setPlanId(String planId) {
-		this.planId = planId;
-	}
-
-	public String getPlanId() {
-		return this.planId;
-	}
-
 	@Override
 	public boolean isReturnDirect() {
 		return false;
+	}
+
+	@Override
+	public void setAgent(BaseAgent agent) {
+		this.agent = agent;
+	}
+
+
+	public BaseAgent getAgent() {
+		return this.agent;
 	}
 
 }
