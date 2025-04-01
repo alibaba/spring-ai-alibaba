@@ -143,7 +143,6 @@ class AdminUI {
             'browser': '浏览器设置',
             'agent': '智能体设置',
             'interaction': '交互设置'
-            // 可以添加更多映射...
         };
         
         return subGroupNameMap[subGroup] || subGroup.charAt(0).toUpperCase() + subGroup.slice(1);
