@@ -59,11 +59,13 @@ public class DynamicAgentScanner {
     }
 
     private void saveDynamicAgent(DynamicAgentDefinition annotation, Class<?> clazz) {
-        DynamicAgentEntity entity = repository.findByAgentName(annotation.agentName());
-        if (entity == null) {
-            entity = new DynamicAgentEntity();
+        DynamicAgentEntity existingEntity = repository.findByAgentName(annotation.agentName());
+        if (existingEntity != null) {
+            log.info("动态代理定义 {} 已存在，跳过保存", annotation.agentName());
+            return;
         }
 
+        DynamicAgentEntity entity = new DynamicAgentEntity();
         entity.setAgentName(annotation.agentName());
         entity.setAgentDescription(annotation.agentDescription());
         entity.setSystemPrompt(annotation.systemPrompt());
@@ -72,6 +74,6 @@ public class DynamicAgentScanner {
         entity.setClassName(clazz.getName());
 
         repository.save(entity);
-        log.info("已保存动态代理定义: {}", entity.getAgentName());
+        log.info("已保存新的动态代理定义: {}", entity.getAgentName());
     }
 }
