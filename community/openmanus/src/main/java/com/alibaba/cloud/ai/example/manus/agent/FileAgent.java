@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.tool.Bash;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
@@ -44,21 +45,16 @@ public class FileAgent extends ToolCallAgent {
 	private final AtomicReference<Map<String, Object>> currentFileState = new AtomicReference<>();
 
 	public FileAgent(LlmService llmService, ToolCallingManager toolCallingManager, String workingDirectory,
-			PlanExecutionRecorder record, ManusProperties manusProperties) {
-		super(llmService, toolCallingManager, record, manusProperties);
+			PlanExecutionRecorder record, ManusProperties manusProperties,
+			Map<String, ToolCallBackContext> toolCallbackMap) {
+		super(llmService, toolCallingManager, record, manusProperties, toolCallbackMap);
 		this.workingDirectory = workingDirectory;
 	}
 
 	@Override
-	protected Message getNextStepMessage() {
+	protected String getNextStepPromptString() {
 		String nextStepPrompt = """
 				What should I do next to achieve my goal?
-
-				Current File Operation State:
-				- Working Directory: {working_directory}
-				- Last File Operation: {last_operation}
-				- Last Operation Result: {operation_result}
-
 
 				Remember:
 				1. Check file existence before operations
@@ -74,10 +70,7 @@ public class FileAgent extends ToolCallAgent {
 				3. How to handle potential errors?
 				4. What's the expected outcome?
 				""";
-
-		PromptTemplate promptTemplate = new PromptTemplate(nextStepPrompt);
-		Message userMessage = promptTemplate.createMessage(getData());
-		return userMessage;
+		return nextStepPrompt;
 	}
 
 	@Override
@@ -143,7 +136,7 @@ public class FileAgent extends ToolCallAgent {
 	}
 
 	@Override
-	protected Map<String, Object> getData() {
+	protected void setData(Map<String, Object> oldData) {
 		Map<String, Object> data = new HashMap<>();
 		Map<String, Object> parentData = super.getData();
 		if (parentData != null) {
@@ -157,13 +150,11 @@ public class FileAgent extends ToolCallAgent {
 		if (state != null) {
 			data.put("last_operation", state.get("operation"));
 			data.put("operation_result", state.get("result"));
-		}
-		else {
+		} else {
 			data.put("last_operation", "No previous operation");
 			data.put("operation_result", null);
 		}
-
-		return data;
+		super.setData(data);
 	}
 
 	/**

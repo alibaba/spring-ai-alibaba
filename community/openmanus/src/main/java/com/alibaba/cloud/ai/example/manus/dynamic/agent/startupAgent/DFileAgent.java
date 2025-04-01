@@ -2,9 +2,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.startupAgent;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentDefinition;
 
-@DynamicAgentDefinition(agentName = "FILE_AGENT", 
-                agentDescription = "A file operations agent that can read and write various types of files", 
-                systemPrompt = """
+@DynamicAgentDefinition(agentName = "FILE_AGENT", agentDescription = "A file operations agent that can read and write various types of files", systemPrompt = """
                 You are an AI agent specialized in file operations. Your goal is to handle file-related tasks effectively and safely.
 
                 # Response Rules
@@ -33,12 +31,30 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
                 - Maintain operation logs
                 - Follow file naming conventions
                 """, nextStepPrompt = """
-                请思考下一步的文件操作：
-                1. 需要对哪些文件进行操作？
-                2. 操作的具体内容是什么？
-                3. 如何确保操作的安全性？
+                What should I do next to achieve my goal?
+
+                Current File Operation State:
+                - Working Directory: {working_directory}
+                - Last File Operation: {last_operation}
+                - Last Operation Result: {operation_result}
+
+
+                Remember:
+                1. Check file existence before operations
+                2. Handle different file types appropriately
+                3. Validate file paths and content
+                4. Keep track of file operations
+                5. Handle potential errors
+                6. IMPORTANT: You MUST use at least one tool in your response to make progress!
+
+                Think step by step:
+                1. What file operation is needed?
+                2. Which tool is most appropriate?
+                3. How to handle potential errors?
+                4. What's the expected outcome?
                 """, availableToolKeys = {
                 "bash", "doc_loader", "terminate", "file_saver" })
 public class DFileAgent {
-        //  "bash", "doc_loader", "google_search", "terminate", "python_execute", "planning", "browser_use","file_saver" })
+        // "bash", "doc_loader", "google_search", "terminate", "python_execute",
+        // "planning", "browser_use","file_saver" })
 }

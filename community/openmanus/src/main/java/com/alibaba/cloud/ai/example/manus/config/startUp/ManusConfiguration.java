@@ -114,6 +114,8 @@ public class ManusConfiguration {
         // Add all dynamic agents from the database
         for (DynamicAgentEntity agentEntity : dynamicAgentLoader.getAllAgents()) {
             DynamicAgent agent = dynamicAgentLoader.loadAgent(agentEntity.getAgentName());
+			Map<String, ToolCallBackContext> toolCallbackMap = toolCallbackMap(llmService, toolCallingManager, agent);
+			agent.setToolCallbackMap(toolCallbackMap);
             agentList.add(agent);
         }
 
@@ -121,10 +123,26 @@ public class ManusConfiguration {
         return new PlanningFlow(agentList, data, recorder);
     }
 
-	@Bean
-	@Scope("prototype") // 每次请求创建一个新的实例
-	public Map<String, ToolCallback> toolCallbackMap(LlmService llmService, ToolCallingManager toolCallingManager, BaseAgent agent) {
-		Map<String, ToolCallback> toolCallbackMap = new HashMap<>();
+	public static class ToolCallBackContext{
+		private final ToolCallback toolCallback;
+		private final ToolCallBiFunctionDef functionInstance;
+
+		public ToolCallBackContext(ToolCallback toolCallback, ToolCallBiFunctionDef functionInstance) {
+			this.toolCallback = toolCallback;
+			this.functionInstance = functionInstance;
+		}
+
+		public ToolCallback getToolCallback() {
+			return toolCallback;
+		}
+
+		public ToolCallBiFunctionDef getFunctionInstance() {
+			return functionInstance;
+		}
+
+	}
+	public Map<String, ToolCallBackContext> toolCallbackMap(LlmService llmService, ToolCallingManager toolCallingManager, BaseAgent agent) {
+		Map<String, ToolCallBackContext> toolCallbackMap = new HashMap<>();
 		List<ToolCallBiFunctionDef> toolDefinitions = new ArrayList<>();
 		
 		// 添加所有工具定义
@@ -147,7 +165,8 @@ public class ManusConfiguration {
 					.build())
 				.build();
 				toolDefinition.setAgent(agent);
-			toolCallbackMap.put(toolDefinition.getName(), functionToolcallback);
+			ToolCallBackContext functionToolcallbackContext = new ToolCallBackContext(functionToolcallback, toolDefinition);
+			toolCallbackMap.put(toolDefinition.getName(), functionToolcallbackContext);
 		}
 		return toolCallbackMap;
 	}

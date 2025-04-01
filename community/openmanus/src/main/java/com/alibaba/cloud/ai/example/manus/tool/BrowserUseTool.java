@@ -475,7 +475,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef{
 			}
 
 			// 构建HTML属性字符串
-			StringBuilder attributes = new StringBuilder();
+		 StringBuilder attributes = new StringBuilder();
 
 			// 添加基本属性
 			if (props.get("type") != null) {
@@ -665,4 +665,58 @@ public class BrowserUseTool implements ToolCallBiFunctionDef{
 		return this.agent;
 	}
 
+	@Override
+	public String getCurrentToolStateString() {
+		Map<String, Object> state = getCurrentState();
+		
+		// 构建URL和标题信息
+		String urlInfo = String.format("\n   URL: %s\n   Title: %s", 
+			state.get("url"), 
+			state.get("title"));
+		
+		// 构建标签页信息
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> tabs = (List<Map<String, Object>>) state.get("tabs");
+		String tabsInfo = (tabs != null) ? 
+			String.format("\n   %d tab(s) available", tabs.size()) : "";
+		
+		// 获取滚动信息
+		@SuppressWarnings("unchecked")
+		Map<String, Object> scrollInfo = (Map<String, Object>) state.get("scroll_info");
+		String contentAbove = "";
+		String contentBelow = "";
+		if (scrollInfo != null) {
+			Long pixelsAbove = (Long) scrollInfo.get("pixels_above");
+			Long pixelsBelow = (Long) scrollInfo.get("pixels_below");
+			contentAbove = pixelsAbove > 0 ? String.format(" (%d pixels)", pixelsAbove) : "";
+			contentBelow = pixelsBelow > 0 ? String.format(" (%d pixels)", pixelsBelow) : "";
+		}
+		
+		// 获取交互元素信息
+		String elementsInfo = (String) state.get("interactive_elements");
+		
+		// 构建最终的状态字符串
+		return String.format("""
+				When you see [Current state starts here], focus on the following:
+				- Current URL and page title:
+				%s
+				
+				- Available tabs:
+				%s
+				
+				- Interactive elements and their indices:
+				%s
+				
+				- Content above%s or below%s the viewport (if indicated)
+				
+				- Any action results or errors:
+				%s
+				""",
+				urlInfo,
+				tabsInfo,
+				elementsInfo != null ? elementsInfo : "",
+				contentAbove,
+				contentBelow,
+				state.containsKey("error") ? state.get("error") : "");
+	}
 }

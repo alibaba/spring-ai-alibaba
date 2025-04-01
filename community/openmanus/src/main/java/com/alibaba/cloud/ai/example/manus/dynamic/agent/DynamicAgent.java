@@ -21,9 +21,9 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
@@ -44,7 +44,7 @@ public class DynamicAgent extends ReActAgent {
 
     private final String nextStepPrompt;
 
-    private final Map<String, ToolCallback> toolCallbackMap;
+    private  Map<String, ToolCallBackContext> toolCallbackMap;
     
     private final List<String> availableToolKeys;
 
@@ -56,16 +56,17 @@ public class DynamicAgent extends ReActAgent {
 
     private final ToolCallingManager toolCallingManager;
 
+    private String executionEnv;
+
     public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
             ManusProperties manusProperties, String name, String description, String systemPrompt,
-            String nextStepPrompt, Map<String, ToolCallback> toolCallbackMap, List<String> availableToolKeys,
+            String nextStepPrompt,  List<String> availableToolKeys,
             ToolCallingManager toolCallingManager) {
         super(llmService, planExecutionRecorder, manusProperties);
         this.agentName = name;
         this.agentDescription = description;
         this.systemPrompt = systemPrompt;
         this.nextStepPrompt = nextStepPrompt;
-        this.toolCallbackMap = toolCallbackMap;
         this.availableToolKeys = availableToolKeys;
         this.toolCallingManager = toolCallingManager;
     }
@@ -79,10 +80,10 @@ public class DynamicAgent extends ReActAgent {
         try {
             List<Message> messages = new ArrayList<>();
             addThinkPrompt(messages);
-            thinkActRecord.startThinking(messages.toString());
+            thinkActRecord.startThinking(messages.toString(), executionEnv);
 
             ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
-            Message nextStepMessage = getNextStepMessage();
+            Message nextStepMessage = getNextStepWithEnvMessage();
             messages.add(nextStepMessage);
 
             log.debug("Messages prepared for the prompt: {}", messages);
@@ -134,6 +135,9 @@ public class DynamicAgent extends ReActAgent {
 
             thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
             ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
+            
+            executionEnv = collectEnvData(toolCall.name());
+            
             ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
                     .get(toolExecutionResult.conversationHistory().size() - 1);
             llmService.getMemory().add(getConversationId(), toolResponseMessage);
@@ -171,8 +175,15 @@ public class DynamicAgent extends ReActAgent {
     }
 
     @Override
-    protected Message getNextStepMessage() {
-		PromptTemplate promptTemplate = new PromptTemplate(this.nextStepPrompt);
+    protected Message getNextStepWithEnvMessage() {
+		String nextStepPrompt = """
+
+        CURRENT STEP ENVIRONMENT STATUS:
+        {current_step_env_data}
+
+        """;
+        nextStepPrompt = nextStepPrompt += this.nextStepPrompt;
+		PromptTemplate promptTemplate = new PromptTemplate(nextStepPrompt);
 		Message userMessage = promptTemplate.createMessage(getData());
 		return userMessage;
     }
@@ -191,9 +202,9 @@ public class DynamicAgent extends ReActAgent {
         List<ToolCallback> toolCallbacks = new ArrayList<>();
         for(String toolKey : availableToolKeys) {
             if (toolCallbackMap.containsKey(toolKey)) {
-                ToolCallback toolCallback = toolCallbackMap.get(toolKey);
+                ToolCallBackContext toolCallback = toolCallbackMap.get(toolKey);
                 if (toolCallback != null) {
-                    toolCallbacks.add(toolCallback);
+                    toolCallbacks.add(toolCallback.getToolCallback());
                 }
             } else {
                 log.warn("Tool callback for {} not found in the map.", toolKey);
@@ -203,13 +214,30 @@ public class DynamicAgent extends ReActAgent {
     }
 
     @Override
-    protected Map<String, Object> getData() {
+    protected void setData(Map<String, Object> oldData) {
         Map<String, Object> data = new HashMap<>();
         Map<String, Object> parentData = super.getData();
         if (parentData != null) {
             data.putAll(parentData);
         }
-        return data;
+        data.put("current_step_env_data", executionEnv);
+        super.setData(data) ;
     }
+
+    public void setToolCallbackMap(Map<String, ToolCallBackContext> toolCallbackMap) {
+        this.toolCallbackMap = toolCallbackMap;
+    }
+
+
+
+	protected String collectEnvData(String toolCallName) {
+		ToolCallBackContext context = toolCallbackMap.get(toolCallName);
+		if (context != null) {
+			return context.getFunctionInstance().getCurrentToolStateString();
+		}
+		// 如果没有找到对应的工具回调上下文，返回空字符串
+		return "";
+	}
+
 
 }

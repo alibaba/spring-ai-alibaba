@@ -63,12 +63,35 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 
 	private BaseAgent agent;
 
+	private String lastTerminationMessage = "";
+    private boolean isTerminated = false;
+    private String terminationTimestamp = "";
+
+    @Override
+    public String getCurrentToolStateString() {
+        return String.format("""
+                Termination Tool Status:
+                - Current State: %s
+                - Last Termination: %s
+                - Termination Message: %s
+                - Timestamp: %s
+                """,
+                isTerminated ? "🛑 Terminated" : "⚡ Active",
+                isTerminated ? "Process was terminated" : "No termination recorded",
+                lastTerminationMessage.isEmpty() ? "N/A" : lastTerminationMessage,
+                terminationTimestamp.isEmpty() ? "N/A" : terminationTimestamp
+        );
+    }
+
 	public TerminateTool(BaseAgent agent) {
 		this.agent = agent;
 	}
 
 	public ToolExecuteResult run(String toolInput) {
 		log.info("Terminate toolInput: " + toolInput);
+		this.lastTerminationMessage = toolInput;
+		this.isTerminated = true;
+		this.terminationTimestamp = java.time.LocalDateTime.now().toString();
 		agent.setState(AgentState.FINISHED);
 		return new ToolExecuteResult(toolInput);
 	}
