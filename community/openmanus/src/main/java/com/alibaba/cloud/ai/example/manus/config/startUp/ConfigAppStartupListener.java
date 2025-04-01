@@ -2,6 +2,7 @@ package com.alibaba.cloud.ai.example.manus.config.startUp;
 
 import com.alibaba.cloud.ai.example.manus.config.ConfigService;
 import com.alibaba.cloud.ai.example.manus.config.entity.ConfigEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +21,17 @@ public class ConfigAppStartupListener implements ApplicationListener<Application
     
     @Autowired
     private ConfigService configService;
+    
+    @Autowired
+    private DynamicAgentScanner dynamicAgentScanner;
 
     @Override
     public void onApplicationEvent(ApplicationStartedEvent event) {
+        initializeConfigs();
+        initializeDynamicAgents();
+    }
+
+    private void initializeConfigs() {
         try {
             List<ConfigEntity> allConfigs = configService.getAllConfigs();
             
@@ -44,6 +53,16 @@ public class ConfigAppStartupListener implements ApplicationListener<Application
             
         } catch (Exception e) {
             log.error("Failed to verify configuration system state", e);
+        }
+    }
+
+    private void initializeDynamicAgents() {
+        try {
+            log.info("Starting to initialize dynamic agents...");
+            dynamicAgentScanner.scanAndSaveAgents();
+            log.info("Dynamic agents initialization completed");
+        } catch (Exception e) {
+            log.error("Failed to initialize dynamic agents", e);
         }
     }
 }
