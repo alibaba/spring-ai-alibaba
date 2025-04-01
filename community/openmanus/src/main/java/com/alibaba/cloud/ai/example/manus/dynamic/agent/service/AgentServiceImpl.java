@@ -1,5 +1,7 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 
+import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration;
+import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.model.Tool;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
@@ -21,7 +23,8 @@ public class AgentServiceImpl implements AgentService {
     private DynamicAgentRepository repository;
 
     @Autowired
-    private Map<String, ToolCallback> toolCallbackMap;
+    private ManusConfiguration manusConfiguration;
+
 
     @Override
     public List<AgentConfig> getAllAgents() {
@@ -61,7 +64,9 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     public List<Tool> getAvailableTools() {
-        return toolCallbackMap.entrySet().stream()
+
+        Map<String, ToolCallBackContext>  toolcallContext = manusConfiguration.toolCallbackMap(null);
+        return toolcallContext.entrySet().stream()
                 .map(entry -> {
                     Tool tool = new Tool();
                     tool.setKey(entry.getKey());

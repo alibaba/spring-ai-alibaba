@@ -114,7 +114,7 @@ public class ManusConfiguration {
         // Add all dynamic agents from the database
         for (DynamicAgentEntity agentEntity : dynamicAgentLoader.getAllAgents()) {
             DynamicAgent agent = dynamicAgentLoader.loadAgent(agentEntity.getAgentName());
-			Map<String, ToolCallBackContext> toolCallbackMap = toolCallbackMap(llmService, toolCallingManager, agent);
+			Map<String, ToolCallBackContext> toolCallbackMap = toolCallbackMap(agent);
 			agent.setToolCallbackMap(toolCallbackMap);
             agentList.add(agent);
         }
@@ -141,7 +141,7 @@ public class ManusConfiguration {
 		}
 
 	}
-	public Map<String, ToolCallBackContext> toolCallbackMap(LlmService llmService, ToolCallingManager toolCallingManager, BaseAgent agent) {
+	public Map<String, ToolCallBackContext> toolCallbackMap(BaseAgent agent) {
 		Map<String, ToolCallBackContext> toolCallbackMap = new HashMap<>();
 		List<ToolCallBiFunctionDef> toolDefinitions = new ArrayList<>();
 		
