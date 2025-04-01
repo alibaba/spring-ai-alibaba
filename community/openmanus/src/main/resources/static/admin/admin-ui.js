@@ -13,15 +13,328 @@ class AdminUI {
             nextStepPrompt: document.getElementById('agent-next-prompt'),
             toolList: document.querySelector('.tool-list')
         };
+        // 基础配置表单元素
+        this.basicConfigForm = {
+            systemName: document.getElementById('system-name'),
+            language: document.getElementById('system-language'),
+            maxThreads: document.getElementById('max-threads'),
+            timeoutSeconds: document.getElementById('timeout-seconds')
+        };
     }
 
     /**
      * 初始化UI
      */
     async init() {
+        // 初始化分类导航
+        this.initCategories();
+        
+        // 加载基础配置 - 两种方式
+        await this.loadBasicConfig(); // 默认配置
+        await this.loadBasicConfigs(); // manus 组配置
+
+        // 加载Agent相关数据
         await this.loadAgents();
         await this.loadAvailableTools();
-        this.setupToolListeners();
+    }
+
+    /**
+     * 初始化分类导航
+     */
+    initCategories() {
+        const categories = document.querySelectorAll('.category-item');
+        categories.forEach(category => {
+            category.addEventListener('click', () => {
+                // 点击逻辑由admin-core.js处理
+            });
+        });
+    }
+
+    /**
+     * 加载基础配置(对象模式)
+     */
+    async loadBasicConfig() {
+        try {
+            // 从 configModel 获取基础配置
+            const basicConfig = configModel.config.basic;
+            this.renderBasicConfig(basicConfig);
+            this.bindBasicConfigEvents();
+        } catch (error) {
+            this.showError('加载基础配置失败');
+        }
+    }
+
+    /**
+     * 渲染基础配置(对象模式)
+     */
+    renderBasicConfig(config) {
+        if (!config) return;
+
+        // 设置系统名称
+        if (this.basicConfigForm.systemName) {
+            this.basicConfigForm.systemName.value = config.systemName;
+        }
+
+        // 设置语言选择
+        if (this.basicConfigForm.language) {
+            this.basicConfigForm.language.value = config.language;
+        }
+
+        // 设置性能参数
+        if (config.performance) {
+            if (this.basicConfigForm.maxThreads) {
+                this.basicConfigForm.maxThreads.value = config.performance.maxThreads;
+            }
+            if (this.basicConfigForm.timeoutSeconds) {
+                this.basicConfigForm.timeoutSeconds.value = config.performance.timeoutSeconds;
+            }
+        }
+    }
+
+    /**
+     * 绑定基础配置事件(对象模式)
+     */
+    bindBasicConfigEvents() {
+        // 系统名称变更
+        if (this.basicConfigForm.systemName) {
+            this.basicConfigForm.systemName.addEventListener('change', (e) => {
+                configModel.config.basic.systemName = e.target.value;
+            });
+        }
+
+        // 语言选择变更
+        if (this.basicConfigForm.language) {
+            this.basicConfigForm.language.addEventListener('change', (e) => {
+                configModel.config.basic.language = e.target.value;
+            });
+        }
+
+        // 最大线程数变更
+        if (this.basicConfigForm.maxThreads) {
+            this.basicConfigForm.maxThreads.addEventListener('change', (e) => {
+                configModel.config.basic.performance.maxThreads = parseInt(e.target.value, 10);
+            });
+        }
+
+        // 超时时间变更
+        if (this.basicConfigForm.timeoutSeconds) {
+            this.basicConfigForm.timeoutSeconds.addEventListener('change', (e) => {
+                configModel.config.basic.performance.timeoutSeconds = parseInt(e.target.value, 10);
+            });
+        }
+    }
+
+    /**
+     * 加载基础配置(manus组)
+     */
+    async loadBasicConfigs() {
+        try {
+            const manusConfigs = await configModel.loadConfigByGroup('manus');
+            this.renderManusConfigs(manusConfigs);
+        } catch (error) {
+            console.error('加载基础配置失败:', error);
+            this.showError('加载配置失败，请重试');
+        }
+    }
+    
+    /**
+     * 渲染manus组的配置
+     * @param {Array} configs - 配置数组
+     */
+    renderManusConfigs(configs) {
+        // 获取基础配置面板
+        const basicPanel = document.getElementById('basic-config');
+        if (!basicPanel) {
+            console.error('未找到基础配置面板');
+            return;
+        }
+        
+        // 备份并解析当前HTML (用于保留静态配置区域)
+        const currentHtml = basicPanel.innerHTML;
+        const titleEndIndex = currentHtml.indexOf('</h2>') + 5;
+        const titleHtml = currentHtml.substring(0, titleEndIndex);
+        
+        // 清空面板（保留标题）
+        basicPanel.innerHTML = titleHtml;
+        
+        // 按config_sub_group分组
+        const groupedConfigs = {};
+        configs.forEach(config => {
+            if (!groupedConfigs[config.configSubGroup]) {
+                groupedConfigs[config.configSubGroup] = [];
+            }
+            groupedConfigs[config.configSubGroup].push(config);
+        });
+        
+        // 按子组首字母排序
+        const sortedGroups = Object.keys(groupedConfigs).sort();
+        
+        // 为每个子组创建配置区域
+        sortedGroups.forEach(groupName => {
+            // 创建子组容器
+            const groupContainer = document.createElement('div');
+            groupContainer.className = 'config-group';
+            
+            // 创建子组标题
+            const groupTitle = document.createElement('h3');
+            groupTitle.className = 'group-title';
+            groupTitle.textContent = this.formatSubGroupName(groupName);
+            groupContainer.appendChild(groupTitle);
+            
+            // 创建配置项列表
+            const configList = document.createElement('div');
+            configList.className = 'config-list';
+            
+            // 为每个配置项创建UI元素
+            groupedConfigs[groupName].forEach(config => {
+                const configItem = this.createConfigItem(config);
+                configList.appendChild(configItem);
+            });
+            
+            groupContainer.appendChild(configList);
+            basicPanel.appendChild(groupContainer);
+        });
+        
+        // 添加保存按钮
+        this.addSaveButton(basicPanel, 'manus');
+    }
+    
+    /**
+     * 格式化子组名称，使其更加易读
+     * @param {string} subGroup - 子组名称
+     * @returns {string} - 格式化后的名称
+     */
+    formatSubGroupName(subGroup) {
+        // 子组名称映射表，可以根据需要扩展
+        const subGroupNameMap = {
+            'browser': '浏览器设置',
+            'agent': '智能体设置',
+            'interaction': '交互设置'
+        };
+        
+        return subGroupNameMap[subGroup] || subGroup.charAt(0).toUpperCase() + subGroup.slice(1);
+    }
+    
+    /**
+     * 创建单个配置项的UI元素
+     * @param {Object} config - 配置对象
+     * @returns {HTMLElement} - 配置项UI元素
+     */
+    createConfigItem(config) {
+        const item = document.createElement('div');
+        item.className = 'config-item';
+        
+        // 创建配置项标签
+        const label = document.createElement('label');
+        label.setAttribute('for', `config-${config.id}`);
+        label.textContent = config.description;
+        item.appendChild(label);
+        
+        // 根据配置类型创建输入元素
+        let inputElem;
+        switch (config.inputType) {
+            case 'BOOLEAN':
+                inputElem = document.createElement('input');
+                inputElem.type = 'checkbox';
+                inputElem.checked = config.configValue === 'true';
+                break;
+                
+            case 'NUMBER':
+                inputElem = document.createElement('input');
+                inputElem.type = 'number';
+                inputElem.value = config.configValue;
+                break;
+                
+            case 'SELECT':
+                inputElem = document.createElement('select');
+                try {
+                    const options = JSON.parse(config.optionsJson || '[]');
+                    options.forEach(option => {
+                        const optionElem = document.createElement('option');
+                        optionElem.value = option.value;
+                        optionElem.textContent = option.label;
+                        optionElem.selected = option.value === config.configValue;
+                        inputElem.appendChild(optionElem);
+                    });
+                } catch (e) {
+                    console.error('解析选项JSON失败:', e);
+                }
+                break;
+                
+            case 'TEXTAREA':
+                inputElem = document.createElement('textarea');
+                inputElem.value = config.configValue;
+                inputElem.rows = 3;
+                break;
+                
+            default: // TEXT或其他类型
+                inputElem = document.createElement('input');
+                inputElem.type = 'text';
+                inputElem.value = config.configValue;
+                break;
+        }
+        
+        // 设置通用属性
+        inputElem.id = `config-${config.id}`;
+        inputElem.className = 'config-input';
+        inputElem.setAttribute('data-config-id', config.id);
+        inputElem.setAttribute('data-config-type', config.inputType);
+        
+        // 添加事件处理
+        inputElem.addEventListener('change', (e) => {
+            const value = config.inputType === 'BOOLEAN' 
+                ? e.target.checked.toString() 
+                : e.target.value;
+            
+            // 更新配置模型中的值
+            configModel.updateGroupConfigValue('manus', config.id, value);
+        });
+        
+        item.appendChild(inputElem);
+        return item;
+    }
+    
+    /**
+     * 添加保存按钮
+     * @param {HTMLElement} panel - 面板元素
+     * @param {string} groupName - 配置组名
+     */
+    addSaveButton(panel, groupName) {
+        // 创建按钮容器
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'button-container';
+        
+        // 创建保存按钮
+        const saveButton = document.createElement('button');
+        saveButton.className = 'save-button';
+        saveButton.textContent = '保存配置';
+        
+        // 添加保存事件处理
+        saveButton.addEventListener('click', async () => {
+            // 禁用按钮，防止重复点击
+            saveButton.disabled = true;
+            saveButton.textContent = '保存中...';
+            
+            try {
+                // 保存配置
+                const result = await configModel.saveGroupConfig(groupName);
+                
+                // 显示保存结果
+                this.showSuccess(
+                    result.success ? '配置保存成功' : result.message
+                );
+            } catch (error) {
+                console.error('保存配置失败:', error);
+                this.showError('保存失败: ' + (error.message || '未知错误'));
+            } finally {
+                // 恢复按钮状态
+                saveButton.disabled = false;
+                saveButton.textContent = '保存配置';
+            }
+        });
+        
+        buttonContainer.appendChild(saveButton);
+        panel.appendChild(buttonContainer);
     }
 
     /**
@@ -40,6 +353,7 @@ class AdminUI {
      * 渲染Agent列表
      */
     renderAgentList(agents) {
+        if (!this.agentListContainer) return;
         this.agentListContainer.innerHTML = agents.map(agent => this.createAgentListItem(agent)).join('');
     }
 
@@ -130,18 +444,21 @@ class AdminUI {
      * 显示错误消息
      */
     showError(message) {
-        // 可以使用更好的提示UI组件
-        alert(message);
+        AdminUtils.showNotification(message, 'error');
     }
 
     /**
      * 显示成功消息
      */
     showSuccess(message) {
-        // 可以使用更好的提示UI组件
-        alert(message);
+        AdminUtils.showNotification(message, 'success');
     }
 }
 
 // 创建全局UI实例
 window.adminUI = new AdminUI();
+
+// 在DOMContentLoaded事件中初始化UI
+document.addEventListener('DOMContentLoaded', () => {
+    adminUI.init();
+});
