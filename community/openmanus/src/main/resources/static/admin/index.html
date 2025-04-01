@@ -115,31 +115,118 @@
                 <div class="config-panel" id="agent-config">
                     <h2 class="panel-title">Agent配置</h2>
                     
-                    <div class="config-group">
-                        <h3 class="group-title">Agent基本设置</h3>
-                        <div class="config-item">
-                            <label for="default-agent">默认Agent类型</label>
-                            <select id="default-agent">
-                                <option value="assistant">通用助手</option>
-                                <option value="programmer">编程专家</option>
-                                <option value="custom">自定义</option>
-                            </select>
+                    <div class="agent-layout">
+                        <!-- 左侧Agent列表 -->
+                        <div class="agent-list">
+                            <div class="agent-list-container">
+                                <!-- 示例Agent项 -->
+                                <div class="agent-item">
+                                    <div class="agent-item-header">
+                                        <span class="agent-name">通用助手</span>
+                                        <button class="expand-btn"><span class="icon-play"></span></button>
+                                    </div>
+                                    <div class="agent-item-content">
+                                        <div class="agent-desc">这是一个通用的智能助手，可以回答问题和执行多种任务，具有良好的通用能力...</div>
+                                        <div class="agent-tools">
+                                            <span class="tool-tag">search</span>
+                                            <span class="tool-tag">calculator</span>
+                                            <span class="tool-tag">weather</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="agent-item">
+                                    <div class="agent-item-header">
+                                        <span class="agent-name">编程专家</span>
+                                        <button class="expand-btn"><span class="icon-play"></span></button>
+                                    </div>
+                                    <div class="agent-item-content">
+                                        <div class="agent-desc">专注于解决编程相关问题的AI助手，熟悉多种编程语言和框架，可以提供代码分析...</div>
+                                        <div class="agent-tools">
+                                            <span class="tool-tag">code_analysis</span>
+                                            <span class="tool-tag">git</span>
+                                            <span class="tool-tag">docker</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="agent-item">
+                                    <div class="agent-item-header">
+                                        <span class="agent-name">文件管理器</span>
+                                        <button class="expand-btn"><span class="icon-play"></span></button>
+                                    </div>
+                                    <div class="agent-item-content">
+                                        <div class="agent-desc">专门用于文件管理和操作的智能体，可以进行文件读写、复制、移动等操作...</div>
+                                        <div class="agent-tools">
+                                            <span class="tool-tag">file_read</span>
+                                            <span class="tool-tag">file_write</span>
+                                            <span class="tool-tag">file_search</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 添加新Agent按钮 -->
+                            <div class="add-agent-container">
+                                <button class="add-agent-btn">
+                                    <span class="icon-add"></span>
+                                    新建Agent
+                                </button>
+                            </div>
                         </div>
-                        <div class="config-item">
-                            <label for="agent-timeout">Agent响应超时(秒)</label>
-                            <input type="number" id="agent-timeout" min="10" max="300" value="120">
-                        </div>
-                    </div>
-                    
-                    <div class="config-group">
-                        <h3 class="group-title">Agent高级设置</h3>
-                        <div class="config-item">
-                            <label for="max-turns">最大对话轮次</label>
-                            <input type="number" id="max-turns" min="1" max="50" value="10">
-                        </div>
-                        <div class="config-item">
-                            <label for="system-prompt">系统提示词</label>
-                            <textarea id="system-prompt" rows="5">您是一个智能助手，可以回答问题并执行任务。</textarea>
+                        
+                        <!-- 右侧Agent详情 -->
+                        <div class="agent-detail">
+                            <div class="detail-section">
+                                <label for="agent-detail-name">Agent名称</label>
+                                <input type="text" id="agent-detail-name" class="detail-input" placeholder="输入Agent名称">
+                            </div>
+                            
+                            <div class="detail-section">
+                                <label for="agent-detail-desc">描述</label>
+                                <textarea id="agent-detail-desc" class="detail-input" rows="3" placeholder="描述这个Agent的功能和用途"></textarea>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <label for="agent-think-prompt">思考提示词</label>
+                                <textarea id="agent-think-prompt" class="detail-input" rows="6" placeholder="设置Agent思考时的提示词"></textarea>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <label for="agent-next-prompt">执行提示词</label>
+                                <textarea id="agent-next-prompt" class="detail-input" rows="6" placeholder="设置Agent执行任务时的提示词"></textarea>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <div class="detail-header">
+                                    <label>工具调用列表</label>
+                                </div>
+                                <div class="tool-list">
+                                    <div class="tool-item">
+                                        <span class="tool-name">search</span>
+                                        <button class="delete-tool-btn">×</button>
+                                    </div>
+                                    <div class="tool-item">
+                                        <span class="tool-name">calculator</span>
+                                        <button class="delete-tool-btn">×</button>
+                                    </div>
+                                    <div class="tool-item">
+                                        <span class="tool-name">weather</span>
+                                        <button class="delete-tool-btn">×</button>
+                                    </div>
+                                </div>
+                                <button class="add-tool-btn">
+                                    <span class="icon-add"></span>
+                                    添加工具
+                                </button>
+                            </div>
+                            
+                            <div class="detail-actions">
+                                <button class="action-btn save-agent-btn">
+                                    <span class="icon-save"></span>
+                                    保存Agent
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
