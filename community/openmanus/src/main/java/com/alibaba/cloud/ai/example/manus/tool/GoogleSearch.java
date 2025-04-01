@@ -84,6 +84,10 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 
 	private static final String SERP_API_KEY = System.getenv("SERP_API_KEY");
 
+	private String lastQuery = "";
+	private String lastSearchResults = "";
+	private Integer lastNumResults = 0;
+
 	public GoogleSearch() {
 		service = new SerpApiService(new SerpApiProperties(SERP_API_KEY, "google"));
 	}
@@ -94,11 +98,14 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 		});
 		String query = (String) toolInputMap.get("query");
+		this.lastQuery = query;
 
 		Integer numResults = 2;
 		if (toolInputMap.get("num_results") != null) {
 			numResults = (Integer) toolInputMap.get("num_results");
 		}
+		this.lastNumResults = numResults;
+
 		SerpApiService.Request request = new SerpApiService.Request(query);
 		Map<String, Object> response = service.apply(request);
 
@@ -154,6 +161,7 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 			toret = "No good search result found";
 		}
 		log.warn("SerpapiTool result:" + toret);
+		this.lastSearchResults = toret;
 		return new ToolExecuteResult(toret);
 	}
 
@@ -192,6 +200,25 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 	@Override
 	public void setAgent(BaseAgent agent) {
 		this.agent = agent;
+	}
+
+	public BaseAgent getAgent() {
+		return this.agent;
+	}
+
+	@Override
+	public String getCurrentToolStateString() {
+		return String.format("""
+                Google Search Status:
+                - Search Location: %s
+                - Recent Search: %s
+                - Search Results: %s
+                """,
+                new java.io.File("").getAbsolutePath(),
+                lastQuery.isEmpty() ? "No search performed yet" : 
+                    String.format("Searched for: '%s' (max results: %d)", lastQuery, lastNumResults),
+                lastSearchResults.isEmpty() ? "No results found" : lastSearchResults
+        );
 	}
 
 }

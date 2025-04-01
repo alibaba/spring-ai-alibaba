@@ -75,6 +75,9 @@ public class FileSaver implements ToolCallBiFunctionDef {
 			.build();
 	}
 
+	private String lastFilePath = "";
+	private String lastOperationResult = "";
+
 	public ToolExecuteResult run(String toolInput) {
 		log.info("FileSaver toolInput:" + toolInput);
 		try {
@@ -82,6 +85,8 @@ public class FileSaver implements ToolCallBiFunctionDef {
 			});
 			String content = (String) toolInputMap.get("content");
 			String filePath = (String) toolInputMap.get("file_path");
+			this.lastFilePath = filePath;
+			
 			File file = new File(filePath);
 			File directory = file.getParentFile();
 			if (directory != null && !directory.exists()) {
@@ -90,14 +95,17 @@ public class FileSaver implements ToolCallBiFunctionDef {
 
 			try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, true))) {
 				writer.write(content);
+				this.lastOperationResult = "Success";
 			}
 			catch (IOException e) {
+				this.lastOperationResult = "Error: " + e.getMessage();
 				throw new RuntimeException(e);
 			}
 
 			return new ToolExecuteResult("Content successfully saved to " + filePath);
 		}
 		catch (Throwable e) {
+			this.lastOperationResult = "Error: " + e.getMessage();
 			return new ToolExecuteResult("Error saving file: " + e.getMessage());
 		}
 	}
@@ -137,6 +145,30 @@ public class FileSaver implements ToolCallBiFunctionDef {
 	@Override
 	public void setAgent(BaseAgent agent) {
 		this.agent = agent;
+	}
+
+	public BaseAgent getAgent() {
+		return this.agent;
+	}
+
+	@Override
+	public String getCurrentToolStateString() {
+		return String.format("""
+                Current File Operation State:
+                - Working Directory: 
+				%s
+
+                - Last File Operation: 
+				%s
+
+                - Last Operation Result: 
+				%s
+				
+                """,
+                new File("").getAbsolutePath(),
+                lastFilePath.isEmpty() ? "No file saved yet" : "Save file to: " + lastFilePath,
+                lastOperationResult.isEmpty() ? "No operation performed yet" : lastOperationResult
+        );
 	}
 
 }

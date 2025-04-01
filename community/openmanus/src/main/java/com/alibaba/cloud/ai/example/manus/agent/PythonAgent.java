@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.tool.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
@@ -43,8 +44,8 @@ public class PythonAgent extends ToolCallAgent {
 
 	// New constructor with PlanExecutionRecorder
 	public PythonAgent(LlmService llmService, ToolCallingManager toolCallingManager, String workingDirectory,
-			PlanExecutionRecorder record , ManusProperties manusProperties) {
-		super(llmService, toolCallingManager, record, manusProperties);
+			PlanExecutionRecorder record , ManusProperties manusProperties, Map<String, ToolCallBackContext> toolCallbackMap) {
+		super(llmService, toolCallingManager, record, manusProperties, toolCallbackMap);
 		this.workingDirectory = workingDirectory;
 	}
 
@@ -55,13 +56,9 @@ public class PythonAgent extends ToolCallAgent {
 	}
 
 	@Override
-	protected Message getNextStepMessage() {
+	protected String getNextStepPromptString () {
 		String nextStepPrompt = """
 				What should I do next to achieve my goal?
-
-				Current Execution State:
-				- Working Directory: {working_directory}
-				- Last Execution Result: {last_result}
 
 				Remember:
 				1. Use PythonExecute for direct Python code execution
@@ -69,10 +66,7 @@ public class PythonAgent extends ToolCallAgent {
 
 
 				""";
-
-		PromptTemplate promptTemplate = new PromptTemplate(nextStepPrompt);
-		Message userMessage = promptTemplate.createMessage(getData());
-		return userMessage;
+		return nextStepPrompt;
 	}
 
 	@Override
@@ -142,7 +136,7 @@ public class PythonAgent extends ToolCallAgent {
 	}
 
 	@Override
-	protected Map<String, Object> getData() {
+	protected void setData(Map<String, Object> oldData) {
 		Map<String, Object> data = new HashMap<>();
 		Map<String, Object> parentData = super.getData();
 		if (parentData != null) {
@@ -151,8 +145,8 @@ public class PythonAgent extends ToolCallAgent {
 
 		data.put("working_directory", workingDirectory);
 		data.put("last_result", lastResult != null ? lastResult : "No previous execution");
-
-		return data;
+		
+		super.setData(data)	;
 	}
 
 	/**

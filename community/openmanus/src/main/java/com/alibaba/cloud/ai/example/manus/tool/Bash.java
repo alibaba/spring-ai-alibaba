@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -81,14 +80,21 @@ public class Bash implements ToolCallBiFunctionDef {
 		this.workingDirectoryPath = workingDirectoryPath;
 	}
 
+	private String lastCommand = "";
+	private String lastResult = "";
+
 	public ToolExecuteResult run(String toolInput) {
 		log.info("Bash toolInput:" + toolInput);
 		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 		});
 		String command = (String) toolInputMap.get("command");
+		this.lastCommand = command;
+		
 		List<String> commandList = new ArrayList<>();
 		commandList.add(command);
 		List<String> result = BashProcess.executeCommand(commandList, workingDirectoryPath);
+		this.lastResult = String.join("\n", result);
+		
 		return new ToolExecuteResult(JSON.toJSONString(result));
 	}
 
@@ -131,5 +137,25 @@ public class Bash implements ToolCallBiFunctionDef {
 
 	public BaseAgent getAgent() {
 		return this.agent;
+	}
+
+	@Override
+	public String getCurrentToolStateString() {
+		return String.format("""
+                Current File Operation State:
+                - Working Directory: 
+				%s
+
+                - Last File Operation: 
+				%s
+
+                - Last Operation Result: 
+				%s
+				
+                """,
+                workingDirectoryPath,
+                lastCommand.isEmpty() ? "No command executed yet" : lastCommand,
+                lastResult.isEmpty() ? "No result yet" : lastResult
+        );
 	}
 }
