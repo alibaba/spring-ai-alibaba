@@ -21,6 +21,7 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 
+import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
@@ -132,7 +133,6 @@ public class DynamicAgent extends ReActAgent {
             ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
 
             thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
-
             ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
             ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
                     .get(toolExecutionResult.conversationHistory().size() - 1);

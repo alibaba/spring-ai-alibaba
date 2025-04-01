@@ -22,16 +22,17 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.function.Function;
 
+import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class FileSaver implements Function<String, ToolExecuteResult> {
+public class FileSaver implements ToolCallBiFunctionDef {
 
 	private static final Logger log = LoggerFactory.getLogger(FileSaver.class);
 
@@ -102,8 +103,40 @@ public class FileSaver implements Function<String, ToolExecuteResult> {
 	}
 
 	@Override
-	public ToolExecuteResult apply(String s) {
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public String getDescription() {
+		return description;
+	}
+
+	@Override
+	public String getParameters() {
+		return PARAMETERS;
+	}
+
+	@Override
+	public Class<?> getInputType() {
+		return String.class;
+	}
+
+	@Override
+	public boolean isReturnDirect() {
+		return false;
+	}
+
+	@Override
+	public ToolExecuteResult apply(String s, ToolContext toolContext) {
 		return run(s);
+	}
+
+	private BaseAgent agent;
+
+	@Override
+	public void setAgent(BaseAgent agent) {
+		this.agent = agent;
 	}
 
 }
