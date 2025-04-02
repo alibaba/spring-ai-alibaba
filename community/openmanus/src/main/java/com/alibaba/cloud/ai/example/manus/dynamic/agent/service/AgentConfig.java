@@ -3,66 +3,76 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 import java.util.List;
 
 public class AgentConfig {
-    private String id;
-    private String name;
-    private String description;
-    private String systemPrompt;
-    private String nextStepPrompt;
-    private List<String> availableTools;
-    private String className;
 
-    // Getters and Setters
-    public String getId() {
-        return id;
-    }
+	private String id;
 
-    public void setId(String id) {
-        this.id = id;
-    }
+	private String name;
 
-    public String getName() {
-        return name;
-    }
+	private String description;
 
-    public void setName(String name) {
-        this.name = name;
-    }
+	private String systemPrompt;
 
-    public String getDescription() {
-        return description;
-    }
+	private String nextStepPrompt;
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+	private List<String> availableTools;
 
-    public String getSystemPrompt() {
-        return systemPrompt;
-    }
+	private String className;
 
-    public void setSystemPrompt(String systemPrompt) {
-        this.systemPrompt = systemPrompt;
-    }
+	// Getters and Setters
+	public String getId() {
+		return id;
+	}
 
-    public String getNextStepPrompt() {
-        return nextStepPrompt;
-    }
+	public void setId(String id) {
+		this.id = id;
+	}
 
-    public void setNextStepPrompt(String nextStepPrompt) {
-        this.nextStepPrompt = nextStepPrompt;
-    }
+	public String getName() {
+		return name;
+	}
 
-    public List<String> getAvailableTools() {
-        return availableTools;
-    }
+	public void setName(String name) {
+		this.name = name;
+	}
 
-    public void setAvailableTools(List<String> availableTools) {
-        this.availableTools = availableTools;
-    }
-    public String getClassName() {
-        return className;
-    }
-    public void setClassName(String className) {
-        this.className = className;
-    }
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public String getSystemPrompt() {
+		return systemPrompt;
+	}
+
+	public void setSystemPrompt(String systemPrompt) {
+		this.systemPrompt = systemPrompt;
+	}
+
+	public String getNextStepPrompt() {
+		return nextStepPrompt;
+	}
+
+	public void setNextStepPrompt(String nextStepPrompt) {
+		this.nextStepPrompt = nextStepPrompt;
+	}
+
+	public List<String> getAvailableTools() {
+		return availableTools;
+	}
+
+	public void setAvailableTools(List<String> availableTools) {
+		this.availableTools = availableTools;
+	}
+
+	public String getClassName() {
+		return className;
+	}
+
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
 }

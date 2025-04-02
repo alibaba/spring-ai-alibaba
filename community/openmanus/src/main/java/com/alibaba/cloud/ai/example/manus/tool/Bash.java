@@ -81,6 +81,7 @@ public class Bash implements ToolCallBiFunctionDef {
 	}
 
 	private String lastCommand = "";
+
 	private String lastResult = "";
 
 	public ToolExecuteResult run(String toolInput) {
@@ -89,12 +90,12 @@ public class Bash implements ToolCallBiFunctionDef {
 		});
 		String command = (String) toolInputMap.get("command");
 		this.lastCommand = command;
-		
+
 		List<String> commandList = new ArrayList<>();
 		commandList.add(command);
 		List<String> result = BashProcess.executeCommand(commandList, workingDirectoryPath);
 		this.lastResult = String.join("\n", result);
-		
+
 		return new ToolExecuteResult(JSON.toJSONString(result));
 	}
 
@@ -142,20 +143,18 @@ public class Bash implements ToolCallBiFunctionDef {
 	@Override
 	public String getCurrentToolStateString() {
 		return String.format("""
-                Current File Operation State:
-                - Working Directory: 
+				            Current File Operation State:
+				            - Working Directory:
 				%s
 
-                - Last File Operation: 
+				            - Last File Operation:
 				%s
 
-                - Last Operation Result: 
+				            - Last Operation Result:
 				%s
-				
-                """,
-                workingDirectoryPath,
-                lastCommand.isEmpty() ? "No command executed yet" : lastCommand,
-                lastResult.isEmpty() ? "No result yet" : lastResult
-        );
+
+				            """, workingDirectoryPath, lastCommand.isEmpty() ? "No command executed yet" : lastCommand,
+				lastResult.isEmpty() ? "No result yet" : lastResult);
 	}
+
 }

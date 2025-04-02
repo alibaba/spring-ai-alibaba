@@ -34,208 +34,207 @@ import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvis
 
 public class DynamicAgent extends ReActAgent {
 
-    private static final Logger log = LoggerFactory.getLogger(DynamicAgent.class);
+	private static final Logger log = LoggerFactory.getLogger(DynamicAgent.class);
 
-    private final String agentName;
+	private final String agentName;
 
-    private final String agentDescription;
+	private final String agentDescription;
 
-    private final String systemPrompt;
+	private final String systemPrompt;
 
-    private final String nextStepPrompt;
+	private final String nextStepPrompt;
 
-    private Map<String, ToolCallBackContext> toolCallbackMap;
+	private Map<String, ToolCallBackContext> toolCallbackMap;
 
-    private final List<String> availableToolKeys;
+	private final List<String> availableToolKeys;
 
-    private ChatResponse response;
+	private ChatResponse response;
 
-    private Prompt userPrompt;
+	private Prompt userPrompt;
 
-    protected ThinkActRecord thinkActRecord;
+	protected ThinkActRecord thinkActRecord;
 
-    private final ToolCallingManager toolCallingManager;
+	private final ToolCallingManager toolCallingManager;
 
-    private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
+	private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
 
+	public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
+			ManusProperties manusProperties, String name, String description, String systemPrompt,
+			String nextStepPrompt, List<String> availableToolKeys, ToolCallingManager toolCallingManager) {
+		super(llmService, planExecutionRecorder, manusProperties);
+		this.agentName = name;
+		this.agentDescription = description;
+		this.systemPrompt = systemPrompt;
+		this.nextStepPrompt = nextStepPrompt;
+		this.availableToolKeys = availableToolKeys;
+		this.toolCallingManager = toolCallingManager;
+	}
 
-    public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-            ManusProperties manusProperties, String name, String description, String systemPrompt,
-            String nextStepPrompt, List<String> availableToolKeys,
-            ToolCallingManager toolCallingManager) {
-        super(llmService, planExecutionRecorder, manusProperties);
-        this.agentName = name;
-        this.agentDescription = description;
-        this.systemPrompt = systemPrompt;
-        this.nextStepPrompt = nextStepPrompt;
-        this.availableToolKeys = availableToolKeys;
-        this.toolCallingManager = toolCallingManager;
-    }
+	@Override
+	protected boolean think() {
+		AgentExecutionRecord planExecutionRecord = planExecutionRecorder.getCurrentAgentExecutionRecord(getPlanId());
+		thinkActRecord = new ThinkActRecord(planExecutionRecord.getId());
+		planExecutionRecorder.recordThinkActExecution(getPlanId(), planExecutionRecord.getId(), thinkActRecord);
 
-    @Override
-    protected boolean think() {
-        AgentExecutionRecord planExecutionRecord = planExecutionRecorder.getCurrentAgentExecutionRecord(getPlanId());
-        thinkActRecord = new ThinkActRecord(planExecutionRecord.getId());
-        planExecutionRecorder.recordThinkActExecution(getPlanId(), planExecutionRecord.getId(), thinkActRecord);
+		try {
+			List<Message> messages = new ArrayList<>();
+			addThinkPrompt(messages);
 
-        try {
-            List<Message> messages = new ArrayList<>();
-            addThinkPrompt(messages);
-        
-            ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
-            Message nextStepMessage = getNextStepWithEnvMessage();
-            messages.add(nextStepMessage);
-            thinkActRecord.startThinking(messages.toString());// The `ToolCallAgent` class in the
-		
-            log.debug("Messages prepared for the prompt: {}", messages);
+			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
+			Message nextStepMessage = getNextStepWithEnvMessage();
+			messages.add(nextStepMessage);
+			thinkActRecord.startThinking(messages.toString());// The `ToolCallAgent` class
+																// in the
 
-            userPrompt = new Prompt(messages, chatOptions);
+			log.debug("Messages prepared for the prompt: {}", messages);
 
-            response = llmService.getChatClient()
-                    .prompt(userPrompt)
-                    .advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
-                            .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
-                    .tools(getToolCallList())
-                    .call()
-                    .chatResponse();
+			userPrompt = new Prompt(messages, chatOptions);
 
-            List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
-            String responseByLLm = response.getResult().getOutput().getText();
+			response = llmService.getChatClient()
+				.prompt(userPrompt)
+				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
+					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
+				.tools(getToolCallList())
+				.call()
+				.chatResponse();
 
-            thinkActRecord.finishThinking(responseByLLm);
+			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
+			String responseByLLm = response.getResult().getOutput().getText();
 
-            log.info(String.format("✨ %s's thoughts: %s", getName(), responseByLLm));
-            log.info(String.format("🛠️ %s selected %d tools to use", getName(), toolCalls.size()));
+			thinkActRecord.finishThinking(responseByLLm);
 
-            if (responseByLLm != null && !responseByLLm.isEmpty()) {
-                log.info(String.format("💬 %s's response: %s", getName(), responseByLLm));
-            }
-            if (!toolCalls.isEmpty()) {
-                log.info(String.format("🧰 Tools being prepared: %s",
-                        toolCalls.stream().map(ToolCall::name).collect(Collectors.toList())));
-                thinkActRecord.setActionNeeded(true);
-                thinkActRecord.setToolName(toolCalls.get(0).name());
-                thinkActRecord.setToolParameters(toolCalls.get(0).arguments());
-            }
+			log.info(String.format("✨ %s's thoughts: %s", getName(), responseByLLm));
+			log.info(String.format("🛠️ %s selected %d tools to use", getName(), toolCalls.size()));
 
-            thinkActRecord.setStatus("SUCCESS");
+			if (responseByLLm != null && !responseByLLm.isEmpty()) {
+				log.info(String.format("💬 %s's response: %s", getName(), responseByLLm));
+			}
+			if (!toolCalls.isEmpty()) {
+				log.info(String.format("🧰 Tools being prepared: %s",
+						toolCalls.stream().map(ToolCall::name).collect(Collectors.toList())));
+				thinkActRecord.setActionNeeded(true);
+				thinkActRecord.setToolName(toolCalls.get(0).name());
+				thinkActRecord.setToolParameters(toolCalls.get(0).arguments());
+			}
 
-            return !toolCalls.isEmpty();
-        } catch (Exception e) {
-            log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()));
-            thinkActRecord.recordError(e.getMessage());
-            return false;
-        }
-    }
+			thinkActRecord.setStatus("SUCCESS");
 
-    @Override
-    protected String act() {
-        try {
-            List<String> results = new ArrayList<>();
-            ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
+			return !toolCalls.isEmpty();
+		}
+		catch (Exception e) {
+			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()));
+			thinkActRecord.recordError(e.getMessage());
+			return false;
+		}
+	}
 
-            thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
-            ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
+	@Override
+	protected String act() {
+		try {
+			List<String> results = new ArrayList<>();
+			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
 
-            addEnvData(EXECUTION_ENV_KEY_STRING, collectEnvData(toolCall.name()));
-            setData(getData());
-            ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
-                    .get(toolExecutionResult.conversationHistory().size() - 1);
-            llmService.getMemory().add(getConversationId(), toolResponseMessage);
-            String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
-            results.add(llmCallResponse);
+			thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
 
-            String finalResult = String.join("\n\n", results);
-            log.info(String.format("🔧 Tool %s's executing result: %s", getName(), llmCallResponse));
+			addEnvData(EXECUTION_ENV_KEY_STRING, collectEnvData(toolCall.name()));
+			setData(getData());
+			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
+				.get(toolExecutionResult.conversationHistory().size() - 1);
+			llmService.getMemory().add(getConversationId(), toolResponseMessage);
+			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
+			results.add(llmCallResponse);
 
-            thinkActRecord.finishAction(finalResult, "SUCCESS");
+			String finalResult = String.join("\n\n", results);
+			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), llmCallResponse));
 
-            return finalResult;
-        } catch (Exception e) {
-            ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
-            ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse(toolCall.id(),
-                    toolCall.name(), "Error: " + e.getMessage());
-            ToolResponseMessage toolResponseMessage = new ToolResponseMessage(List.of(toolResponse), Map.of());
-            llmService.getMemory().add(getConversationId(), toolResponseMessage);
-            log.error(e.getMessage());
+			thinkActRecord.finishAction(finalResult, "SUCCESS");
 
-            thinkActRecord.recordError(e.getMessage());
+			return finalResult;
+		}
+		catch (Exception e) {
+			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
+			ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse(toolCall.id(),
+					toolCall.name(), "Error: " + e.getMessage());
+			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(List.of(toolResponse), Map.of());
+			llmService.getMemory().add(getConversationId(), toolResponseMessage);
+			log.error(e.getMessage());
 
-            return "Error: " + e.getMessage();
-        }
-    }
+			thinkActRecord.recordError(e.getMessage());
 
-    @Override
-    public String getName() {
-        return this.agentName;
-    }
+			return "Error: " + e.getMessage();
+		}
+	}
 
-    @Override
-    public String getDescription() {
-        return this.agentDescription;
-    }
+	@Override
+	public String getName() {
+		return this.agentName;
+	}
 
-    @Override
-    protected Message getNextStepWithEnvMessage() {
-        String nextStepPrompt = """
+	@Override
+	public String getDescription() {
+		return this.agentDescription;
+	}
 
-                CURRENT STEP ENVIRONMENT STATUS:
-                {current_step_env_data}
+	@Override
+	protected Message getNextStepWithEnvMessage() {
+		String nextStepPrompt = """
 
-                """;
-        nextStepPrompt = nextStepPrompt += this.nextStepPrompt;
-        PromptTemplate promptTemplate = new PromptTemplate(nextStepPrompt);
-        Message userMessage = promptTemplate.createMessage(getData());
-        return userMessage;
-    }
+				CURRENT STEP ENVIRONMENT STATUS:
+				{current_step_env_data}
 
-    @Override
-    protected Message addThinkPrompt(List<Message> messages) {
-        super.addThinkPrompt(messages);
-        SystemPromptTemplate promptTemplate = new SystemPromptTemplate(this.systemPrompt);
-        Message systemMessage = promptTemplate.createMessage(getData());
-        messages.add(systemMessage);
-        return systemMessage;
-    }
+				""";
+		nextStepPrompt = nextStepPrompt += this.nextStepPrompt;
+		PromptTemplate promptTemplate = new PromptTemplate(nextStepPrompt);
+		Message userMessage = promptTemplate.createMessage(getData());
+		return userMessage;
+	}
 
-    @Override
-    public List<ToolCallback> getToolCallList() {
-        List<ToolCallback> toolCallbacks = new ArrayList<>();
-        for (String toolKey : availableToolKeys) {
-            if (toolCallbackMap.containsKey(toolKey)) {
-                ToolCallBackContext toolCallback = toolCallbackMap.get(toolKey);
-                if (toolCallback != null) {
-                    toolCallbacks.add(toolCallback.getToolCallback());
-                }
-            } else {
-                log.warn("Tool callback for {} not found in the map.", toolKey);
-            }
-        }
-        return toolCallbacks;
-    }
+	@Override
+	protected Message addThinkPrompt(List<Message> messages) {
+		super.addThinkPrompt(messages);
+		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(this.systemPrompt);
+		Message systemMessage = promptTemplate.createMessage(getData());
+		messages.add(systemMessage);
+		return systemMessage;
+	}
 
+	@Override
+	public List<ToolCallback> getToolCallList() {
+		List<ToolCallback> toolCallbacks = new ArrayList<>();
+		for (String toolKey : availableToolKeys) {
+			if (toolCallbackMap.containsKey(toolKey)) {
+				ToolCallBackContext toolCallback = toolCallbackMap.get(toolKey);
+				if (toolCallback != null) {
+					toolCallbacks.add(toolCallback.getToolCallback());
+				}
+			}
+			else {
+				log.warn("Tool callback for {} not found in the map.", toolKey);
+			}
+		}
+		return toolCallbacks;
+	}
 
-    public void addEnvData(String key, String value) {
-        Map<String, Object> data = super.getData();
-        if (data == null) {
-            throw new IllegalStateException("Data map is null. Cannot add environment data.");
-        }
-        data.put(key, value);
-    }
+	public void addEnvData(String key, String value) {
+		Map<String, Object> data = super.getData();
+		if (data == null) {
+			throw new IllegalStateException("Data map is null. Cannot add environment data.");
+		}
+		data.put(key, value);
+	}
 
-    public void setToolCallbackMap(Map<String, ToolCallBackContext> toolCallbackMap) {
-        this.toolCallbackMap = toolCallbackMap;
-    }
+	public void setToolCallbackMap(Map<String, ToolCallBackContext> toolCallbackMap) {
+		this.toolCallbackMap = toolCallbackMap;
+	}
 
-    protected String collectEnvData(String toolCallName) {
-        ToolCallBackContext context = toolCallbackMap.get(toolCallName);
-        if (context != null) {
-            return context.getFunctionInstance().getCurrentToolStateString();
-        }
-        // 如果没有找到对应的工具回调上下文，返回空字符串
-        return "";
-    }
-
-    
+	protected String collectEnvData(String toolCallName) {
+		ToolCallBackContext context = toolCallbackMap.get(toolCallName);
+		if (context != null) {
+			return context.getFunctionInstance().getCurrentToolStateString();
+		}
+		// 如果没有找到对应的工具回调上下文，返回空字符串
+		return "";
+	}
 
 }

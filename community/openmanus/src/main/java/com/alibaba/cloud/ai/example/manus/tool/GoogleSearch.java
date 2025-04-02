@@ -85,7 +85,9 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 	private static final String SERP_API_KEY = System.getenv("SERP_API_KEY");
 
 	private String lastQuery = "";
+
 	private String lastSearchResults = "";
+
 	private Integer lastNumResults = 0;
 
 	public GoogleSearch() {
@@ -209,16 +211,14 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 	@Override
 	public String getCurrentToolStateString() {
 		return String.format("""
-                Google Search Status:
-                - Search Location: %s
-                - Recent Search: %s
-                - Search Results: %s
-                """,
-                new java.io.File("").getAbsolutePath(),
-                lastQuery.isEmpty() ? "No search performed yet" : 
-                    String.format("Searched for: '%s' (max results: %d)", lastQuery, lastNumResults),
-                lastSearchResults.isEmpty() ? "No results found" : lastSearchResults
-        );
+				Google Search Status:
+				- Search Location: %s
+				- Recent Search: %s
+				- Search Results: %s
+				""", new java.io.File("").getAbsolutePath(),
+				lastQuery.isEmpty() ? "No search performed yet"
+						: String.format("Searched for: '%s' (max results: %d)", lastQuery, lastNumResults),
+				lastSearchResults.isEmpty() ? "No results found" : lastSearchResults);
 	}
 
 }

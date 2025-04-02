@@ -11,17 +11,18 @@ import java.util.List;
 @RequestMapping("/api/config")
 public class ConfigController {
 
-    @Autowired
-    private ConfigService configService;
+	@Autowired
+	private ConfigService configService;
 
-    @GetMapping("/group/{groupName}")
-    public ResponseEntity<List<ConfigEntity>> getConfigsByGroup(@PathVariable String groupName) {
-        return ResponseEntity.ok(configService.getConfigsByGroup(groupName));
-    }
+	@GetMapping("/group/{groupName}")
+	public ResponseEntity<List<ConfigEntity>> getConfigsByGroup(@PathVariable String groupName) {
+		return ResponseEntity.ok(configService.getConfigsByGroup(groupName));
+	}
 
-    @PostMapping("/batch-update")
-    public ResponseEntity<Void> batchUpdateConfigs(@RequestBody List<ConfigEntity> configs) {
-        configService.batchUpdateConfigs(configs);
-        return ResponseEntity.ok().build();
-    }
+	@PostMapping("/batch-update")
+	public ResponseEntity<Void> batchUpdateConfigs(@RequestBody List<ConfigEntity> configs) {
+		configService.batchUpdateConfigs(configs);
+		return ResponseEntity.ok().build();
+	}
+
 }

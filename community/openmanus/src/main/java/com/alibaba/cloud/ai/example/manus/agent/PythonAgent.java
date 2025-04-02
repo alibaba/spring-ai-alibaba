@@ -44,7 +44,8 @@ public class PythonAgent extends ToolCallAgent {
 
 	// New constructor with PlanExecutionRecorder
 	public PythonAgent(LlmService llmService, ToolCallingManager toolCallingManager, String workingDirectory,
-			PlanExecutionRecorder record , ManusProperties manusProperties, Map<String, ToolCallBackContext> toolCallbackMap) {
+			PlanExecutionRecorder record, ManusProperties manusProperties,
+			Map<String, ToolCallBackContext> toolCallbackMap) {
 		super(llmService, toolCallingManager, record, manusProperties, toolCallbackMap);
 		this.workingDirectory = workingDirectory;
 	}
@@ -56,7 +57,7 @@ public class PythonAgent extends ToolCallAgent {
 	}
 
 	@Override
-	protected String getNextStepPromptString () {
+	protected String getNextStepPromptString() {
 		String nextStepPrompt = """
 				What should I do next to achieve my goal?
 

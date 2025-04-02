@@ -11,43 +11,42 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/agents")
-@CrossOrigin(origins = "*")  // 添加跨域支持
+@CrossOrigin(origins = "*") // 添加跨域支持
 public class AgentController {
 
-    @Autowired
-    private AgentService agentService;
+	@Autowired
+	private AgentService agentService;
 
-    @GetMapping
-    public ResponseEntity<List<AgentConfig>> getAllAgents() {
-        return ResponseEntity.ok(agentService.getAllAgents());
-    }
+	@GetMapping
+	public ResponseEntity<List<AgentConfig>> getAllAgents() {
+		return ResponseEntity.ok(agentService.getAllAgents());
+	}
 
-    @GetMapping("/{id}")
-    public ResponseEntity<AgentConfig> getAgentById(@PathVariable String id) {
-        return ResponseEntity.ok(agentService.getAgentById(id));
-    }
+	@GetMapping("/{id}")
+	public ResponseEntity<AgentConfig> getAgentById(@PathVariable String id) {
+		return ResponseEntity.ok(agentService.getAgentById(id));
+	}
 
-    @PostMapping
-    public ResponseEntity<AgentConfig> createAgent(@RequestBody AgentConfig agentConfig) {
-        return ResponseEntity.ok(agentService.createAgent(agentConfig));
-    }
+	@PostMapping
+	public ResponseEntity<AgentConfig> createAgent(@RequestBody AgentConfig agentConfig) {
+		return ResponseEntity.ok(agentService.createAgent(agentConfig));
+	}
 
-    @PutMapping("/{id}")
-    public ResponseEntity<AgentConfig> updateAgent(
-            @PathVariable String id,
-            @RequestBody AgentConfig agentConfig) {
-        agentConfig.setId(id);
-        return ResponseEntity.ok(agentService.updateAgent(agentConfig));
-    }
+	@PutMapping("/{id}")
+	public ResponseEntity<AgentConfig> updateAgent(@PathVariable String id, @RequestBody AgentConfig agentConfig) {
+		agentConfig.setId(id);
+		return ResponseEntity.ok(agentService.updateAgent(agentConfig));
+	}
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteAgent(@PathVariable String id) {
-        agentService.deleteAgent(id);
-        return ResponseEntity.ok().build();
-    }
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> deleteAgent(@PathVariable String id) {
+		agentService.deleteAgent(id);
+		return ResponseEntity.ok().build();
+	}
 
-    @GetMapping("/tools")
-    public ResponseEntity<List<Tool>> getAvailableTools() {
-        return ResponseEntity.ok(agentService.getAvailableTools());
-    }
+	@GetMapping("/tools")
+	public ResponseEntity<List<Tool>> getAvailableTools() {
+		return ResponseEntity.ok(agentService.getAvailableTools());
+	}
+
 }

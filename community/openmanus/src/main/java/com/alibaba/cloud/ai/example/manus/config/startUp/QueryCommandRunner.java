@@ -34,8 +34,8 @@ public class QueryCommandRunner implements CommandLineRunner {
 
 	private final PlanningFlow planningFlow;
 
-    @Autowired
-    private ManusProperties manusProperties;
+	@Autowired
+	private ManusProperties manusProperties;
 
 	public QueryCommandRunner(PlanningFlow planningFlow) {
 		this.planningFlow = planningFlow;

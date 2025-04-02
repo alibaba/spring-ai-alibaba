@@ -84,7 +84,9 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 	}
 
 	private String lastFilePath = "";
+
 	private String lastOperationResult = "";
+
 	private String lastFileType = "";
 
 	public ToolExecuteResult run(String toolInput) {
@@ -96,7 +98,7 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 			String filePath = (String) toolInputMap.get("file_path");
 			this.lastFilePath = filePath;
 			this.lastFileType = fileType;
-			
+
 			TikaDocumentParser parser = new TikaDocumentParser();
 			List<Document> documentList = parser.parse(new FileInputStream(filePath));
 			List<String> documentContents = documentList.stream()
@@ -163,21 +165,20 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 	@Override
 	public String getCurrentToolStateString() {
 		return String.format("""
-                Current File Operation State:
-                - Working Directory: 
+				            Current File Operation State:
+				            - Working Directory:
 				%s
 
-                - Last File Operation: 
+				            - Last File Operation:
 				%s
 
-                - Last Operation Result: 
+				            - Last Operation Result:
 				%s
-				
-                """,
-                new File("").getAbsolutePath(),
-                lastFilePath.isEmpty() ? "No file loaded yet" : 
-                    String.format("Load %s file from: %s", lastFileType, lastFilePath),
-                lastOperationResult.isEmpty() ? "No operation performed yet" : lastOperationResult
-        );
+
+				            """, new File("").getAbsolutePath(),
+				lastFilePath.isEmpty() ? "No file loaded yet"
+						: String.format("Load %s file from: %s", lastFileType, lastFilePath),
+				lastOperationResult.isEmpty() ? "No operation performed yet" : lastOperationResult);
 	}
+
 }
