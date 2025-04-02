@@ -53,7 +53,6 @@ public class BrowserAgent extends ToolCallAgent {
 		return super.think();
 	}
 
-
 	@Override
 	protected String getNextStepPromptString() {
 		return """
@@ -146,8 +145,7 @@ public class BrowserAgent extends ToolCallAgent {
 	}
 
 	public List<ToolCallback> getToolCallList() {
-		return List.of(FileSaver.getFunctionToolCallback(),
-				BrowserUseTool.getFunctionToolCallback(chromeService),
+		return List.of(FileSaver.getFunctionToolCallback(), BrowserUseTool.getFunctionToolCallback(chromeService),
 				TerminateTool.getFunctionToolCallback(this));
 	}
 

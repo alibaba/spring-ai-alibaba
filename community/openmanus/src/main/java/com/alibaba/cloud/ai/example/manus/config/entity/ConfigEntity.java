@@ -16,185 +16,184 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "system_config")
 public class ConfigEntity {
-    
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
-    /**
-     * 配置组 
-     */
-    @Column(nullable = false)
-    private String configGroup;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    /**
-     * 配置子组
-     */
-    @Column(nullable = false)
-    private String configSubGroup;
+	/**
+	 * 配置组
+	 */
+	@Column(nullable = false)
+	private String configGroup;
 
-    /**
-     * 配置键
-     */
-    @Column(nullable = false)
-    private String configKey;
+	/**
+	 * 配置子组
+	 */
+	@Column(nullable = false)
+	private String configSubGroup;
 
-    /**
-     * 配置项完整路径
-     */
-    @Column(nullable = false, unique = true)
-    private String configPath;
+	/**
+	 * 配置键
+	 */
+	@Column(nullable = false)
+	private String configKey;
 
-    /**
-     * 配置值
-     */
-    @Column(columnDefinition = "TEXT")
-    private String configValue;
+	/**
+	 * 配置项完整路径
+	 */
+	@Column(nullable = false, unique = true)
+	private String configPath;
 
-    /**
-     * 默认值
-     */
-    @Column(columnDefinition = "TEXT")
-    private String defaultValue;
+	/**
+	 * 配置值
+	 */
+	@Column(columnDefinition = "TEXT")
+	private String configValue;
 
-    /**
-     * 配置描述
-     */
-    @Column(columnDefinition = "TEXT")
-    private String description;
+	/**
+	 * 默认值
+	 */
+	@Column(columnDefinition = "TEXT")
+	private String defaultValue;
 
-    /**
-     * 输入类型
-     */
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private ConfigInputType inputType;
+	/**
+	 * 配置描述
+	 */
+	@Column(columnDefinition = "TEXT")
+	private String description;
 
-    /**
-     * 选项JSON字符串
-     * 用于存储SELECT类型的选项数据
-     */
-    @Column(columnDefinition = "TEXT")
-    private String optionsJson;
+	/**
+	 * 输入类型
+	 */
+	@Column(nullable = false)
+	@Enumerated(EnumType.STRING)
+	private ConfigInputType inputType;
 
-    /**
-     * 最后更新时间
-     */
-    @Column(nullable = false)
-    private LocalDateTime updateTime;
+	/**
+	 * 选项JSON字符串 用于存储SELECT类型的选项数据
+	 */
+	@Column(columnDefinition = "TEXT")
+	private String optionsJson;
 
-    /**
-     * 创建时间
-     */
-    @Column(nullable = false)
-    private LocalDateTime createTime;
+	/**
+	 * 最后更新时间
+	 */
+	@Column(nullable = false)
+	private LocalDateTime updateTime;
 
-    @PrePersist
-    protected void onCreate() {
-        createTime = LocalDateTime.now();
-        updateTime = LocalDateTime.now();
-    }
+	/**
+	 * 创建时间
+	 */
+	@Column(nullable = false)
+	private LocalDateTime createTime;
 
-    @PreUpdate
-    protected void onUpdate() {
-        updateTime = LocalDateTime.now();
-    }
+	@PrePersist
+	protected void onCreate() {
+		createTime = LocalDateTime.now();
+		updateTime = LocalDateTime.now();
+	}
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
+	@PreUpdate
+	protected void onUpdate() {
+		updateTime = LocalDateTime.now();
+	}
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+	// Getters and Setters
+	public Long getId() {
+		return id;
+	}
 
-    public String getConfigGroup() {
-        return configGroup;
-    }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public void setConfigGroup(String configGroup) {
-        this.configGroup = configGroup;
-    }
+	public String getConfigGroup() {
+		return configGroup;
+	}
 
-    public String getConfigSubGroup() {
-        return configSubGroup;
-    }
+	public void setConfigGroup(String configGroup) {
+		this.configGroup = configGroup;
+	}
 
-    public void setConfigSubGroup(String configSubGroup) {
-        this.configSubGroup = configSubGroup;
-    }
+	public String getConfigSubGroup() {
+		return configSubGroup;
+	}
 
-    public String getConfigKey() {
-        return configKey;
-    }
+	public void setConfigSubGroup(String configSubGroup) {
+		this.configSubGroup = configSubGroup;
+	}
 
-    public void setConfigKey(String configKey) {
-        this.configKey = configKey;
-    }
+	public String getConfigKey() {
+		return configKey;
+	}
 
-    public String getConfigPath() {
-        return configPath;
-    }
+	public void setConfigKey(String configKey) {
+		this.configKey = configKey;
+	}
 
-    public void setConfigPath(String configPath) {
-        this.configPath = configPath;
-    }
+	public String getConfigPath() {
+		return configPath;
+	}
 
-    public String getConfigValue() {
-        return configValue;
-    }
+	public void setConfigPath(String configPath) {
+		this.configPath = configPath;
+	}
 
-    public void setConfigValue(String configValue) {
-        this.configValue = configValue;
-    }
+	public String getConfigValue() {
+		return configValue;
+	}
 
-    public String getDefaultValue() {
-        return defaultValue;
-    }
+	public void setConfigValue(String configValue) {
+		this.configValue = configValue;
+	}
 
-    public void setDefaultValue(String defaultValue) {
-        this.defaultValue = defaultValue;
-    }
+	public String getDefaultValue() {
+		return defaultValue;
+	}
 
-    public String getDescription() {
-        return description;
-    }
+	public void setDefaultValue(String defaultValue) {
+		this.defaultValue = defaultValue;
+	}
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+	public String getDescription() {
+		return description;
+	}
 
-    public ConfigInputType getInputType() {
-        return inputType;
-    }
+	public void setDescription(String description) {
+		this.description = description;
+	}
 
-    public void setInputType(ConfigInputType inputType) {
-        this.inputType = inputType;
-    }
+	public ConfigInputType getInputType() {
+		return inputType;
+	}
 
-    public String getOptionsJson() {
-        return optionsJson;
-    }
+	public void setInputType(ConfigInputType inputType) {
+		this.inputType = inputType;
+	}
 
-    public void setOptionsJson(String optionsJson) {
-        this.optionsJson = optionsJson;
-    }
+	public String getOptionsJson() {
+		return optionsJson;
+	}
 
-    public LocalDateTime getUpdateTime() {
-        return updateTime;
-    }
+	public void setOptionsJson(String optionsJson) {
+		this.optionsJson = optionsJson;
+	}
 
-    public void setUpdateTime(LocalDateTime updateTime) {
-        this.updateTime = updateTime;
-    }
+	public LocalDateTime getUpdateTime() {
+		return updateTime;
+	}
 
-    public LocalDateTime getCreateTime() {
-        return createTime;
-    }
+	public void setUpdateTime(LocalDateTime updateTime) {
+		this.updateTime = updateTime;
+	}
 
-    public void setCreateTime(LocalDateTime createTime) {
-        this.createTime = createTime;
-    }
+	public LocalDateTime getCreateTime() {
+		return createTime;
+	}
+
+	public void setCreateTime(LocalDateTime createTime) {
+		this.createTime = createTime;
+	}
+
 }

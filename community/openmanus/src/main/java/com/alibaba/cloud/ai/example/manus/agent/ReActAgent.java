@@ -26,7 +26,7 @@ import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
  */
 public abstract class ReActAgent extends BaseAgent {
 
-	private static final Logger	logger = LoggerFactory.getLogger(ReActAgent.class);
+	private static final Logger logger = LoggerFactory.getLogger(ReActAgent.class);
 
 	/**
 	 * 构造函数
@@ -34,7 +34,8 @@ public abstract class ReActAgent extends BaseAgent {
 	 * @param planExecutionRecorder 计划执行记录器，用于记录执行过程
 	 * @param manusProperties Manus配置属性
 	 */
-	public ReActAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder, ManusProperties manusProperties) {
+	public ReActAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
+			ManusProperties manusProperties) {
 		super(llmService, planExecutionRecorder, manusProperties);
 	}
 
@@ -64,7 +65,7 @@ public abstract class ReActAgent extends BaseAgent {
 	 */
 	@Override
 	public String step() {
-		
+
 		boolean shouldAct = think();
 		if (!shouldAct) {
 			return "Thinking complete - no action needed";
@@ -72,5 +73,4 @@ public abstract class ReActAgent extends BaseAgent {
 		return act();
 	}
 
-	
 }

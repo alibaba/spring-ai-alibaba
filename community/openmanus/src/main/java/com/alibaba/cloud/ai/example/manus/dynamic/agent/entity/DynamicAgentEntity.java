@@ -6,85 +6,86 @@ import java.util.List;
 @Entity
 @Table(name = "dynamic_agents")
 public class DynamicAgentEntity {
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Column(nullable = false)
-    private String agentName;
-    
-    @Column(nullable = false, length = 1000)
-    private String agentDescription;
-    
-    @Column(nullable = false, length = 4000)
-    private String systemPrompt;
-    
-    @Column(nullable = false, length = 4000)
-    private String nextStepPrompt;
-    
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "dynamic_agent_tools", joinColumns = @JoinColumn(name = "agent_id"))
-    @Column(name = "tool_key")
-    private List<String> availableToolKeys;
-    
-    @Column(nullable = false)
-    private String className;
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+	@Column(nullable = false)
+	private String agentName;
 
-    public String getAgentName() {
-        return agentName;
-    }
+	@Column(nullable = false, length = 1000)
+	private String agentDescription;
 
-    public void setAgentName(String agentName) {
-        this.agentName = agentName;
-    }
+	@Column(nullable = false, length = 4000)
+	private String systemPrompt;
 
-    public String getAgentDescription() {
-        return agentDescription;
-    }
+	@Column(nullable = false, length = 4000)
+	private String nextStepPrompt;
 
-    public void setAgentDescription(String agentDescription) {
-        this.agentDescription = agentDescription;
-    }
+	@ElementCollection(fetch = FetchType.EAGER)
+	@CollectionTable(name = "dynamic_agent_tools", joinColumns = @JoinColumn(name = "agent_id"))
+	@Column(name = "tool_key")
+	private List<String> availableToolKeys;
 
-    public String getSystemPrompt() {
-        return systemPrompt;
-    }
+	@Column(nullable = false)
+	private String className;
 
-    public void setSystemPrompt(String systemPrompt) {
-        this.systemPrompt = systemPrompt;
-    }
+	// Getters and Setters
+	public Long getId() {
+		return id;
+	}
 
-    public String getNextStepPrompt() {
-        return nextStepPrompt;
-    }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public void setNextStepPrompt(String nextStepPrompt) {
-        this.nextStepPrompt = nextStepPrompt;
-    }
+	public String getAgentName() {
+		return agentName;
+	}
 
-    public List<String> getAvailableToolKeys() {
-        return availableToolKeys;
-    }
+	public void setAgentName(String agentName) {
+		this.agentName = agentName;
+	}
 
-    public void setAvailableToolKeys(List<String> availableToolKeys) {
-        this.availableToolKeys = availableToolKeys;
-    }
+	public String getAgentDescription() {
+		return agentDescription;
+	}
 
-    public String getClassName() {
-        return className;
-    }
+	public void setAgentDescription(String agentDescription) {
+		this.agentDescription = agentDescription;
+	}
 
-    public void setClassName(String className) {
-        this.className = className;
-    }
+	public String getSystemPrompt() {
+		return systemPrompt;
+	}
+
+	public void setSystemPrompt(String systemPrompt) {
+		this.systemPrompt = systemPrompt;
+	}
+
+	public String getNextStepPrompt() {
+		return nextStepPrompt;
+	}
+
+	public void setNextStepPrompt(String nextStepPrompt) {
+		this.nextStepPrompt = nextStepPrompt;
+	}
+
+	public List<String> getAvailableToolKeys() {
+		return availableToolKeys;
+	}
+
+	public void setAvailableToolKeys(List<String> availableToolKeys) {
+		this.availableToolKeys = availableToolKeys;
+	}
+
+	public String getClassName() {
+		return className;
+	}
+
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
 }

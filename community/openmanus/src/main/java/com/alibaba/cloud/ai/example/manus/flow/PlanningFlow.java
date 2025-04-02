@@ -63,9 +63,7 @@ public class PlanningFlow extends BaseFlow {
 	@Autowired
 	private ChromeDriverService chromeDriverService;
 
-
-
-    private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
+	private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
 
 	// shared result state between agents.
 	private Map<String, Object> resultState;
@@ -176,14 +174,11 @@ public class PlanningFlow extends BaseFlow {
 				String stepResult = executeStep(executor, stepInfo);
 
 				// 添加带步骤信息的输出
-				outputStringBuilder.append(String.format("Step %d [%s]: %s\n", 
-				currentStepIndex + 1,  // 步骤序号从1开始显示更友好
-				stepType != null ? stepType : "DEFAULT", 
-				stepResult));
+				outputStringBuilder.append(String.format("Step %d [%s]: %s\n", currentStepIndex + 1, // 步骤序号从1开始显示更友好
+						stepType != null ? stepType : "DEFAULT", stepResult));
 			}
 
-			returnResult = finalizePlan(inputText,outputStringBuilder.toString());
-			
+			returnResult = finalizePlan(inputText, outputStringBuilder.toString());
 
 			// Record plan completion
 			recordPlanCompletion(returnResult);
@@ -303,13 +298,12 @@ public class PlanningFlow extends BaseFlow {
 
 		PromptTemplate promptTemplate = new PromptTemplate(prompt_template);
 
-		//可变还是方便点
+		// 可变还是方便点
 		Map<String, Object> data = new HashMap<>();
 		data.put("plan_id", activePlanId);
 		data.put("query", request);
 		data.put("agents_info", agentsInfo.toString());
-		Prompt userPrompt = promptTemplate
-			.create(data);
+		Prompt userPrompt = promptTemplate.create(data);
 		ChatResponse response = llmService.getPlanningChatClient()
 			.prompt(userPrompt)
 			.tools(getToolCallList())
@@ -420,9 +414,9 @@ public class PlanningFlow extends BaseFlow {
 				}
 				Map<String, Object> executorParams = new HashMap<>();
 				executorParams.put("planStatus", planStatus);
-				executorParams.put("currentStepIndex", currentStepIndex); 
+				executorParams.put("currentStepIndex", currentStepIndex);
 				executorParams.put("stepText", stepText);
-				executorParams.put(EXECUTION_ENV_KEY_STRING,"");
+				executorParams.put(EXECUTION_ENV_KEY_STRING, "");
 				String stepResult = executor.run(executorParams);
 
 				markStepCompleted();
@@ -567,28 +561,28 @@ public class PlanningFlow extends BaseFlow {
 		}
 	}
 
-	public String finalizePlan(String userRequest,String executionDetail) {
+	public String finalizePlan(String userRequest, String executionDetail) {
 		String planText = getPlanText();
 		try {
 
-			SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(
-					"""
-							You are an AI assistant that can respond to user's request, based on the memory.
-							
-							current plan state:
-							{planText}
-							execution detail:
-							{executionDetail}
+			SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate("""
+					You are an AI assistant that can respond to user's request, based on the memory.
 
-							You will be given a user's request, and you need to do the following step by step:
-							1) Analyze the user's request.
-							2) Respond to the user's request in detail.
-							3) then Provide a summary of the plan and its execution status.
+					current plan state:
+					{planText}
+					execution detail:
+					{executionDetail}
 
-							""");
-			Message systemMessage = systemPromptTemplate.createMessage(Map.of("planText", planText, "executionDetail", executionDetail));
+					You will be given a user's request, and you need to do the following step by step:
+					1) Analyze the user's request.
+					2) Respond to the user's request in detail.
+					3) then Provide a summary of the plan and its execution status.
+
+					""");
+			Message systemMessage = systemPromptTemplate
+				.createMessage(Map.of("planText", planText, "executionDetail", executionDetail));
 			String userRequestTemplate = """
-					user's request: 
+					user's request:
 					{userRequest}
 					""";
 			PromptTemplate userMessageTemplate = new PromptTemplate(userRequestTemplate);

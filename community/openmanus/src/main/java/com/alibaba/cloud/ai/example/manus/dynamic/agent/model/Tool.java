@@ -1,41 +1,46 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.agent.model;
 
 public class Tool {
-    private String key;
-    private String name;
-    private String description;
-    private boolean enabled;
 
-    // Getters and Setters
-    public String getKey() {
-        return key;
-    }
+	private String key;
 
-    public void setKey(String key) {
-        this.key = key;
-    }
+	private String name;
 
-    public String getName() {
-        return name;
-    }
+	private String description;
 
-    public void setName(String name) {
-        this.name = name;
-    }
+	private boolean enabled;
 
-    public String getDescription() {
-        return description;
-    }
+	// Getters and Setters
+	public String getKey() {
+		return key;
+	}
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+	public void setKey(String key) {
+		this.key = key;
+	}
 
-    public boolean isEnabled() {
-        return enabled;
-    }
+	public String getName() {
+		return name;
+	}
 
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public boolean isEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
+
 }

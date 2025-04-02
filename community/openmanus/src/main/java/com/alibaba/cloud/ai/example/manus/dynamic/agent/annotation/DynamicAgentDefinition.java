@@ -8,9 +8,15 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface DynamicAgentDefinition {
-    String agentName();
-    String agentDescription();
-    String systemPrompt();
-    String nextStepPrompt();
-    String[] availableToolKeys();
+
+	String agentName();
+
+	String agentDescription();
+
+	String systemPrompt();
+
+	String nextStepPrompt();
+
+	String[] availableToolKeys();
+
 }
