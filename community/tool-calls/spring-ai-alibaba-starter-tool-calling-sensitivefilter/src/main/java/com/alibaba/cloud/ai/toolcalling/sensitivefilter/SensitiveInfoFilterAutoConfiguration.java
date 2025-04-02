@@ -24,8 +24,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 /**
- * 敏感信息过滤自动配置
- *
+ * Automatic configuration of sensitive information filtering
  * @author Makoto
  */
 @Configuration
@@ -43,7 +42,7 @@ public class SensitiveInfoFilterAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("检测和过滤文本中的敏感信息，如身份证号、手机号、信用卡号等个人隐私数据")
+	@Description("Detect and filter sensitive information in text, such as ID numbers, cell phone numbers, credit card numbers, and other private data")
 	public SensitiveInfoFilterService sensitiveInfoFilterFunction() {
 		return new SensitiveInfoFilterService();
 	}
