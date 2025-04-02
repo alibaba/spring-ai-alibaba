@@ -88,26 +88,28 @@ class AdminEvents {
      */
     handleAddTool() {
         const availableTools = agentConfigModel.availableTools;
-        // 这里应该显示一个工具选择对话框
-        // 简化处理，直接显示第一个可用工具
-        if (availableTools.length > 0) {
+        if (availableTools && availableTools.length > 0) {
             const currentTools = Array.from(document.querySelectorAll('.tool-item'))
                 .map(item => item.querySelector('.tool-name').textContent);
             
             const newTools = availableTools.filter(tool => !currentTools.includes(tool.key));
             
             if (newTools.length > 0) {
-                const toolList = document.querySelector('.tool-list');
-                const toolHtml = `
-                    <div class="tool-item">
-                        <span class="tool-name">${newTools[0].key}</span>
-                        <button class="delete-tool-btn" data-tool="${newTools[0].key}">×</button>
-                    </div>
-                `;
-                toolList.insertAdjacentHTML('beforeend', toolHtml);
+                adminUI.showToolSelectionDialog(newTools, (selectedTool) => {
+                    const toolList = document.querySelector('.tool-list');
+                    const toolHtml = `
+                        <div class="tool-item">
+                            <span class="tool-name">${selectedTool.key}</span>
+                            <button class="delete-tool-btn" data-tool="${selectedTool.key}">×</button>
+                        </div>
+                    `;
+                    toolList.insertAdjacentHTML('beforeend', toolHtml);
+                });
             } else {
                 adminUI.showError('没有更多可用的工具');
             }
+        } else {
+            adminUI.showError('工具列表未加载或为空');
         }
     }
 

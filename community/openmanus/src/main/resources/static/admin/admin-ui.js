@@ -387,17 +387,140 @@ class AdminUI {
         this.agentDetailForm.description.value = agent.description || '';
         this.agentDetailForm.systemPrompt.value = agent.systemPrompt || '';
         this.agentDetailForm.nextStepPrompt.value = agent.nextStepPrompt || '';
-        this.renderToolList(agent.availableTools || []);
+        this.renderAgentToolList(agent.availableTools || []);
     }
 
     /**
-     * 渲染工具列表
+     * 渲染主工具列表
      */
-    renderToolList(tools) {
+    renderAgentToolList(tools) {
         this.agentDetailForm.toolList.innerHTML = tools.map(tool => `
             <div class="tool-item">
                 <span class="tool-name">${tool}</span>
                 <button class="delete-tool-btn" data-tool="${tool}">×</button>
+            </div>
+        `).join('');
+    }
+
+    /**
+     * 显示工具选择对话框
+     */
+    showToolSelectionDialog(availableTools, onSelect) {
+        // 创建遮罩层
+        const overlay = document.createElement('div');
+        overlay.className = 'dialog-overlay';
+        document.body.appendChild(overlay);
+
+        // 获取或创建对话框
+        let dialog = document.querySelector('.tool-selection-dialog');
+        if (!dialog) {
+            dialog = document.createElement('div');
+            dialog.className = 'tool-selection-dialog';
+            dialog.innerHTML = `
+                <div class="dialog-header">
+                    <h3>选择工具</h3>
+                    <input type="text" class="tool-search" placeholder="搜索工具...">
+                </div>
+                <div class="tool-list-container"></div>
+                <div class="dialog-footer">
+                    <button class="cancel-btn">取消</button>
+                    <button class="confirm-btn">确认</button>
+                </div>
+            `;
+            document.body.appendChild(dialog);
+        }
+        
+        const toolListContainer = dialog.querySelector('.tool-list-container');
+        const searchInput = dialog.querySelector('.tool-search');
+        
+        // 渲染工具选择列表
+        this.renderToolSelectionList(toolListContainer, availableTools);
+        
+        // 搜索功能
+        const handleSearch = (e) => {
+            const searchText = e.target.value.toLowerCase();
+            const filteredTools = availableTools.filter(tool => 
+                tool.key.toLowerCase().includes(searchText) || 
+                (tool.description && tool.description.toLowerCase().includes(searchText))
+            );
+            this.renderToolSelectionList(toolListContainer, filteredTools);
+        };
+        
+        searchInput.addEventListener('input', handleSearch);
+        
+        // 显示对话框和遮罩
+        overlay.style.display = 'block';
+        dialog.style.display = 'block';
+        setTimeout(() => overlay.classList.add('show'), 10);
+        
+        // 处理工具选择
+        let selectedTool = null;
+        const handleToolClick = (e) => {
+            const item = e.target.closest('.tool-selection-item');
+            if (item) {
+                toolListContainer.querySelectorAll('.tool-selection-item').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                item.classList.add('selected');
+                selectedTool = availableTools.find(tool => tool.key === item.dataset.toolKey);
+            }
+        };
+
+        toolListContainer.addEventListener('click', handleToolClick);
+        
+        // 确认按钮
+        const handleConfirm = () => {
+            if (selectedTool) {
+                onSelect(selectedTool);
+            }
+            closeDialog();
+        };
+        
+        // 取消按钮
+        const handleCancel = () => {
+            closeDialog();
+        };
+        
+        // ESC键关闭
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                closeDialog();
+            }
+        };
+        
+        dialog.querySelector('.confirm-btn').addEventListener('click', handleConfirm);
+        dialog.querySelector('.cancel-btn').addEventListener('click', handleCancel);
+        document.addEventListener('keydown', handleKeyDown);
+        
+        // 关闭对话框并清理事件监听器
+        const closeDialog = () => {
+            overlay.classList.remove('show');
+            setTimeout(() => {
+                dialog.style.display = 'none';
+                overlay.style.display = 'none';
+                overlay.remove();
+                
+                // 清理事件监听器
+                searchInput.removeEventListener('input', handleSearch);
+                toolListContainer.removeEventListener('click', handleToolClick);
+                dialog.querySelector('.confirm-btn').removeEventListener('click', handleConfirm);
+                dialog.querySelector('.cancel-btn').removeEventListener('click', handleCancel);
+                document.removeEventListener('keydown', handleKeyDown);
+            }, 300);
+        };
+    }
+
+    /**
+     * 渲染工具选择列表
+     * @private
+     */
+    renderToolSelectionList(container, tools) {
+        container.innerHTML = tools.map(tool => `
+            <div class="tool-selection-item" data-tool-key="${tool.key}">
+                <div class="tool-info">
+                    <div class="tool-selection-name">${tool.key}</div>
+                    ${tool.description ? `<div class="tool-selection-desc">${tool.description}</div>` : ''}
+                </div>
             </div>
         `).join('');
     }
