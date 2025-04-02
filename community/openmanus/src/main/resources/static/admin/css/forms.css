@@ -1,0 +1,135 @@
+/* forms.css - 表单样式 */
+
+/* 配置面板 */
+.config-panel {
+    display: none;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.config-panel.active {
+    display: block;
+}
+
+.panel-title {
+    font-size: 22px;
+    font-weight: 500;
+    color: #202124;
+    margin-bottom: 24px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e1e2e3;
+}
+
+/* 配置组 */
+.config-group {
+    margin-bottom: 28px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.03);
+    transition: box-shadow 0.3s ease;
+}
+
+.config-group:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.group-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #202124;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.group-title:before {
+    content: "⚙️";
+    margin-right: 8px;
+    font-size: 18px;
+}
+
+/* 配置项 */
+.config-item {
+    margin-bottom: 18px;
+    transition: opacity 0.2s ease;
+}
+
+.config-item:last-child {
+    margin-bottom: 0;
+}
+
+.config-item label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #5f6368;
+    font-size: 14px;
+}
+
+/* 输入框和选择框通用样式 */
+.config-item input[type="text"],
+.config-item input[type="number"],
+.config-item select,
+.config-item textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #202124;
+    transition: all 0.2s ease;
+    background-color: #fff;
+}
+
+.config-item input[type="text"]:focus,
+.config-item input[type="number"]:focus,
+.config-item select:focus,
+.config-item textarea:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.config-item input[type="text"]:hover,
+.config-item input[type="number"]:hover,
+.config-item select:hover,
+.config-item textarea:hover {
+    border-color: #c6c6c6;
+}
+
+/* 复选框样式 */
+.checkbox-item {
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin-right: 12px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.checkbox-item label {
+    margin-bottom: 0;
+    cursor: pointer;
+}
+
+/* 详情输入框 */
+.detail-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e1e2e3;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #202124;
+    transition: border-color 0.3s ease;
+    resize: vertical;
+}
+
+.detail-input:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+}
