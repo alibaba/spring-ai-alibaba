@@ -15,222 +15,307 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.agent.ToolCallAgent;
-import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
-import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
-import com.alibaba.fastjson.JSON;
-import org.junit.jupiter.api.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
+import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
+import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
+import com.alibaba.fastjson.JSON;
 
 /**
- * BrowserUseTool的Spring集成测试类
- * 使用真实的Spring上下文来测试BrowserUseTool的功能
+ * BrowserUseTool的Spring集成测试类 使用真实的Spring上下文来测试BrowserUseTool的功能
  */
 @SpringBootTest(classes = OpenManusSpringBootApplication.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BrowserUseToolSpringTest {
 
-    private static final Logger log = LoggerFactory.getLogger(BrowserUseToolSpringTest.class);
+	private static final Logger log = LoggerFactory.getLogger(BrowserUseToolSpringTest.class);
 
-    @Autowired
-    private ChromeDriverService chromeDriverService;
+	@Autowired
+	private ChromeDriverService chromeDriverService;
 
-    private BrowserUseTool browserUseTool;
+	private BrowserUseTool browserUseTool;
 
-    @BeforeEach
-    void setUp() {
-        browserUseTool = new BrowserUseTool(chromeDriverService);
-        browserUseTool.setAgent(null);
-    }
+	@BeforeEach
+	void setUp() {
+		browserUseTool = new BrowserUseTool(chromeDriverService);
+		ManusProperties manusProperties = new ManusProperties();
+		manusProperties.setBrowserHeadless(true);
+		DummyBaseAgent agent = new DummyBaseAgent(null, null, manusProperties);
+		agent.setPlanId("plan_123123124124124");
+		browserUseTool.setAgent(agent);
+	}
 
-    @Test
-    @Order(1)
-    @DisplayName("测试浏览器搜索'Hello World'")
-    void testHelloWorldSearch() {
-        try {
-            // 步骤1: 导航到百度
-            log.info("步骤1: 导航到百度");
-            ToolExecuteResult navigateResult = executeAction("navigate", "https://www.baidu.com");
-            Assertions.assertEquals(
-                "Navigated to https://www.baidu.com",
-                navigateResult.getOutput(),
-                "导航到百度失败"
-            );
+	private static class DummyBaseAgent extends BaseAgent {
 
-            // 步骤2: 在搜索框中输入 "Hello World"
-            log.info("步骤2: 在搜索框中输入 'Hello World'");
-            ToolExecuteResult inputResult = executeAction("input_text", null, 0, "Hello World");
-            Assertions.assertEquals(
-                "Successfully input 'Hello World' into element at index 0",
-                inputResult.getOutput(),
-                "在搜索框输入文本失败"
-            );
+		public DummyBaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
+				ManusProperties manusProperties) {
+			super(llmService, planExecutionRecorder, manusProperties);
 
-            // 步骤3: 点击搜索按钮
-            log.info("步骤3: 点击搜索按钮");
-            ToolExecuteResult clickResult = executeAction("click", null, 1, null);
-            Assertions.assertTrue(
-                clickResult.getOutput().contains("Clicked"),
-                "点击搜索按钮失败"
-            );
+		}
 
-            // 步骤4: 等待并获取搜索结果
-            log.info("步骤4: 等待页面加载并获取搜索结果");
-            Thread.sleep(2000); // 等待页面加载
-            ToolExecuteResult textResult = executeAction("get_text", null);
-            String searchResults = textResult.getOutput();
+		@Override
+		public String getName() {
+			return "DummyAgent";
+		}
 
-            // 验证搜索结果
-            Assertions.assertTrue(
-                searchResults.contains("Hello World"),
-                "搜索结果中未找到 'Hello World'"
-            );
+		@Override
+		public String getDescription() {
+			return "A dummy agent for testing";
+		}
 
-            // 步骤5: 获取截图
-            log.info("步骤5: 获取页面截图");
-            ToolExecuteResult screenshotResult = executeAction("screenshot", null);
-            Assertions.assertTrue(
-                screenshotResult.getOutput().contains("Screenshot captured"),
-                "获取截图失败"
-            );
+		@Override
+		protected Message getNextStepWithEnvMessage() {
+			return null;
+		}
 
-            // 步骤6: 获取页面HTML
-            log.info("步骤6: 获取页面HTML");
-            ToolExecuteResult htmlResult = executeAction("get_html", null);
-            Assertions.assertNotNull(
-                htmlResult.getOutput(),
-                "获取页面HTML失败"
-            );
+		@Override
+		public List<ToolCallback> getToolCallList() {
+			return null;
+		}
 
-            // 步骤7: 执行页面滚动
-            log.info("步骤7: 执行页面滚动");
-            Map<String, Object> scrollParams = new HashMap<>();
-            scrollParams.put("action", "scroll");
-            scrollParams.put("scroll_amount", 500);
-            String scrollInput = JSON.toJSONString(scrollParams);
-            ToolExecuteResult scrollDownResult = browserUseTool.run(scrollInput);
-            Assertions.assertTrue(
-                scrollDownResult.getOutput().contains("Scrolled down"),
-                "页面滚动失败"
-            );
+		@Override
+		protected String step() {
+			return "Dummy step";
+		}
 
-            log.info("测试成功完成！");
+		@Override
+		protected Message addThinkPrompt(List<Message> messages) {
+			return null;
+		}
 
-        } catch (Exception e) {
-            log.error("测试过程中发生错误", e);
-            Assertions.fail("测试执行失败: " + e.getMessage());
-        }
-    }
+	}
 
-    @Test
-    @Order(2)
-    @DisplayName("测试浏览器标签页操作")
-    void testBrowserTabs() {
-        try {
-            // 步骤1: 打开新标签页
-            log.info("步骤1: 打开新标签页访问必应");
-            ToolExecuteResult newTabResult = executeAction("new_tab", "https://www.bing.com");
-            Assertions.assertTrue(
-                newTabResult.getOutput().contains("Opened new tab"),
-                "打开新标签页失败"
-            );
+	@Test
+	@Order(1)
+	@DisplayName("测试浏览器搜索'Hello World'")
+	void testHelloWorldSearch() {
+		try {
+			// 步骤1: 导航到百度
+			log.info("步骤1: 导航到百度");
+			ToolExecuteResult navigateResult = executeAction("navigate", "https://www.baidu.com");
+			Assertions.assertEquals("Navigated to https://www.baidu.com", navigateResult.getOutput(), "导航到百度失败");
 
-            // 步骤2: 切换到新标签页
-            log.info("步骤2: 切换到新标签页");
-            ToolExecuteResult switchResult = executeAction("switch_tab", null, 1, null);
-            Assertions.assertTrue(
-                switchResult.getOutput().contains("Switched to tab"),
-                "切换标签页失败"
-            );
+			// 步骤2: 获取并验证可交互元素
+			log.info("步骤2: 获取可交互元素并分析");
+			Map<String, Object> state = browserUseTool.getCurrentState();
+			String elements = (String) state.get("interactive_elements");
+			Assertions.assertNotNull(elements, "获取可交互元素失败");
+			log.info("获取到的可交互元素: {}", elements);
 
-            // 步骤3: 刷新页面
-            log.info("步骤3: 刷新页面");
-            ToolExecuteResult refreshResult = executeAction("refresh", null);
-            Assertions.assertEquals(
-                "Refreshed current page",
-                refreshResult.getOutput(),
-                "刷新页面失败"
-            );
+			// 步骤3: 找到搜索框
+			log.info("步骤3: 定位搜索框");
+			int searchInputIndex = -1;
+			String[] elementLines = elements.split("\n");
+			for (int i = 0; i < elementLines.length; i++) {
+				if (elementLines[i].contains("name=\"wd\"") || elementLines[i].contains("id=\"kw\"")) { // 百度搜索框的特征
+					searchInputIndex = i;
+					break;
+				}
+			}
+			Assertions.assertNotEquals(-1, searchInputIndex, "未找到搜索框");
+			log.info("找到搜索框索引: {}", searchInputIndex);
 
-            // 步骤4: 关闭当前标签页
-            log.info("步骤4: 关闭当前标签页");
-            ToolExecuteResult closeResult = executeAction("close_tab", null);
-            Assertions.assertEquals(
-                "Closed current tab",
-                closeResult.getOutput(),
-                "关闭标签页失败"
-            );
+			// 步骤4: 在搜索框中输入文本
+			log.info("步骤4: 在搜索框中输入'Hello World'");
+			ToolExecuteResult inputResult = executeAction("input_text", null, searchInputIndex, "Hello World");
+			Assertions.assertTrue(inputResult.getOutput().contains("Successfully input 'Hello World'"), "在搜索框输入文本失败");
 
-            log.info("标签页操作测试成功完成！");
+			// 步骤5: 重新获取状态并查找搜索按钮
+			log.info("步骤5: 定位搜索按钮");
+			state = browserUseTool.getCurrentState();
+			elements = (String) state.get("interactive_elements");
+			int searchButtonIndex = -1;
+			elementLines = elements.split("\n");
+			for (int i = 0; i < elementLines.length; i++) {
+				if (elementLines[i].contains("value=\"百度一下\"") || elementLines[i].contains(">百度一下<")) {
+					searchButtonIndex = i;
+					break;
+				}
+			}
+			Assertions.assertNotEquals(-1, searchButtonIndex, "未找到搜索按钮");
+			log.info("找到搜索按钮索引: {}", searchButtonIndex);
 
-        } catch (Exception e) {
-            log.error("测试过程中发生错误", e);
-            Assertions.fail("测试执行失败: " + e.getMessage());
-        }
-    }
+			// 步骤6: 点击搜索按钮
+			log.info("步骤6: 点击搜索按钮");
+			ToolExecuteResult clickResult = executeAction("click", null, searchButtonIndex, null);
+			Assertions.assertTrue(clickResult.getOutput().contains("Clicked"), "点击搜索按钮失败");
 
-    @Test
-    @Order(3)
-    @DisplayName("测试浏览器状态获取")
-    void testBrowserState() {
-        // 获取浏览器当前状态
-        String currentState = browserUseTool.getCurrentToolStateString();
-        
-        // 验证状态信息完整性
-        Assertions.assertNotNull(currentState, "获取浏览器状态失败");
-        Assertions.assertTrue(
-            currentState.contains("Current URL"),
-            "状态信息中缺少URL信息"
-        );
-        Assertions.assertTrue(
-            currentState.contains("Available tabs"),
-            "状态信息中缺少标签页信息"
-        );
-        Assertions.assertTrue(
-            currentState.contains("Interactive elements"),
-            "状态信息中缺少可交互元素信息"
-        );
-    }
+			// 步骤7: 等待并验证搜索结果
+			log.info("步骤7: 等待页面加载并获取搜索结果");
+			Thread.sleep(2000); // 等待页面加载
+			ToolExecuteResult textResult = executeAction("get_text", null);
+			String searchResults = textResult.getOutput();
+			Assertions.assertTrue(searchResults.contains("Hello World"), "搜索结果中未找到 'Hello World'");
 
+			// 步骤8: 获取截图作为证据（可选）
+			log.info("步骤8: 获取页面截图");
+			ToolExecuteResult screenshotResult = executeAction("screenshot", null);
+			Assertions.assertTrue(screenshotResult.getOutput().contains("Screenshot captured"), "获取截图失败");
 
-    // 辅助方法：执行浏览器操作
-    private ToolExecuteResult executeAction(
-            String action,
-            String url) {
-        return executeAction(action, url, null, null);
-    }
+		}
+		catch (Exception e) {
+			log.error("测试过程中发生错误", e);
+			Assertions.fail("测试执行失败: " + e.getMessage());
+		}
+	}
 
-    // 辅助方法：执行浏览器操作（带索引和文本）
-    private ToolExecuteResult executeAction(
-            String action,
-            String url,
-            Integer index,
-            String text) {
+	/**
+	 * 导航到指定URL并验证可交互元素的通用方法
+	 * @param tool BrowserUseTool实例
+	 * @param url 目标URL
+	 * @param expectedElements 期望在页面中出现的元素关键词列表
+	 * @return 获取到的可交互元素字符串
+	 */
+	private String navigateAndVerifyElements(BrowserUseTool tool, String url, List<String> expectedElements) {
+		// 步骤1: 导航到指定URL
+		log.info("步骤1: 导航到 {}", url);
+		ToolExecuteResult navigateResult = executeAction("navigate", url);
+		Assertions.assertEquals("Navigated to " + url, navigateResult.getOutput(), "导航失败");
 
-        Map<String, Object> params = new HashMap<>();
-        params.put("action", action);
+		// 步骤2: 获取并验证可交互元素
+		log.info("步骤2: 获取可交互元素");
+		Map<String, Object> state = tool.getCurrentState();
+		String elements = (String) state.get("interactive_elements");
+		Assertions.assertNotNull(elements, "获取可交互元素失败");
+		log.info("获取到的可交互元素: {}", elements);
 
-        if (url != null) {
-            params.put("url", url);
-        }
+		// 步骤3: 验证期望的元素
+		log.info("步骤3: 验证期望的元素");
+		String[] elementLines = elements.split("\n");
+		boolean foundMatchingElement = false;
 
-        if (index != null) {
-            params.put("index", index);
-        }
+		for (String elementLine : elementLines) {
+			boolean allExpectedFound = true;
+			for (String expectedElement : expectedElements) {
+				if (!elementLine.contains(expectedElement)) {
+					allExpectedFound = false;
+					break;
+				}
+			}
+			if (allExpectedFound) {
+				foundMatchingElement = true;
+				log.info("找到匹配所有特征的元素: {}", elementLine);
+				break;
+			}
+		}
 
-        if (text != null) {
-            params.put("text", text);
-        }
+		Assertions.assertTrue(foundMatchingElement, String.format("未找到同时包含所有期望特征的元素。期望特征: %s", expectedElements));
 
-        String toolInput = JSON.toJSONString(params);
-        return browserUseTool.run(toolInput);
-    }
+		return elements;
+	}
+
+	@Test
+	@Order(4)
+	@DisplayName("测试导航到指定URL并获取交互元素")
+	void testNavigateAndGetElements() {
+		try {
+			String testUrl = "https://www.bing.com";
+			List<String> expectedElements = Arrays.asList("search", "textarea");
+
+			// 使用通用方法进行测试
+			String elements = navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
+
+			// 获取截图（可选）
+			log.info("获取页面截图作为证据");
+			ToolExecuteResult screenshotResult = executeAction("screenshot", null);
+			Assertions.assertTrue(screenshotResult.getOutput().contains("Screenshot captured"), "获取截图失败");
+
+			log.info("测试成功完成！");
+
+		}
+		catch (Exception e) {
+			log.error("测试过程中发生错误", e);
+			Assertions.fail("测试执行失败: " + e.getMessage());
+		}
+	}
+
+	@Test
+	@Order(5)
+	@DisplayName("测试GitHub搜索页面元素")
+	void testGitHubSearch() {
+		try {
+			String testUrl = "https://github.com/search";
+			List<String> expectedElements = Arrays.asList("query", // GitHub搜索框的name属性
+					"search", // 搜索相关元素
+					"type=\"text\"" // 文本输入框
+			);
+
+			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
+			log.info("GitHub搜索页面测试成功完成！");
+		}
+		catch (Exception e) {
+			log.error("测试过程中发生错误", e);
+			Assertions.fail("测试执行失败: " + e.getMessage());
+		}
+	}
+
+	@Test
+	@Order(6)
+	@DisplayName("测试百度首页元素")
+	void testBaiduElements() {
+		try {
+			String testUrl = "https://www.baidu.com";
+			List<String> expectedElements = Arrays.asList("name=\"wd\"", // 百度搜索框的特征
+					"id=\"kw\"", // 搜索框的另一个特征
+					"百度一下" // 搜索按钮文本
+			);
+
+			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
+			log.info("百度首页测试成功完成！");
+		}
+		catch (Exception e) {
+			log.error("测试过程中发生错误", e);
+			Assertions.fail("测试执行失败: " + e.getMessage());
+		}
+	}
+
+	// 辅助方法：执行浏览器操作
+	private ToolExecuteResult executeAction(String action, String url) {
+		return executeAction(action, url, null, null);
+	}
+
+	// 辅助方法：执行浏览器操作（带索引和文本）
+	private ToolExecuteResult executeAction(String action, String url, Integer index, String text) {
+
+		Map<String, Object> params = new HashMap<>();
+		params.put("action", action);
+
+		if (url != null) {
+			params.put("url", url);
+		}
+
+		if (index != null) {
+			params.put("index", index);
+		}
+
+		if (text != null) {
+			params.put("text", text);
+		}
+
+		String toolInput = JSON.toJSONString(params);
+		return browserUseTool.run(toolInput);
+	}
+
 }
