@@ -188,12 +188,12 @@
                             </div>
                             
                             <div class="detail-section">
-                                <label for="agent-think-prompt">思考提示词</label>
+                                <label for="agent-think-prompt">思考提示词（常见问题处理）</label>
                                 <textarea id="agent-think-prompt" class="detail-input" rows="6" placeholder="设置Agent思考时的提示词"></textarea>
                             </div>
                             
                             <div class="detail-section">
-                                <label for="agent-next-prompt">执行提示词</label>
+                                <label for="agent-next-prompt">执行提示词（工具使用细化指导）</label>
                                 <textarea id="agent-next-prompt" class="detail-input" rows="6" placeholder="设置Agent执行任务时的提示词"></textarea>
                             </div>
                             
@@ -304,12 +304,15 @@
         </div>
     </div>
 
-    <!-- 引入JavaScript文件 -->
-    <script src="admin-utils.js"></script>
-    <script src="admin-api.js"></script>
-    <script src="config-model.js"></script>
-    <script src="admin-ui.js"></script>
-    <script src="admin-events.js"></script>
-    <script src="admin-core.js"></script>
-</body>
-</html>
+    <!-- 工具选择对话框 -->
+    <div class="tool-selection-dialog" style="display: none;">
+        <div class="dialog-header">
+            <h3>选择工具</h3>
+            <input type="text" class="tool-search" placeholder="搜索工具...">
+        </div>
+        <div class="tool-list-container">
+            <!-- 工具列表项将由JS动态生成 -->
+        </div>
+        <div class="dialog-footer">
+
+            <button class="cancel-btn">取消</button>
