@@ -38,9 +38,6 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
                 """, nextStepPrompt = """
                 What should I do next to achieve my goal?
 
-                Current Execution State:
-                - Working Directory: {working_directory}
-                - Last Execution Result: {last_result}
 
                 Remember:
                 1. Use PythonExecute for direct Python code execution

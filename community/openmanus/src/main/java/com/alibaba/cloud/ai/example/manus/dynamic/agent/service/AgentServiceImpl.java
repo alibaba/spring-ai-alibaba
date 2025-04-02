@@ -71,6 +71,7 @@ public class AgentServiceImpl implements AgentService {
                     Tool tool = new Tool();
                     tool.setKey(entry.getKey());
                     tool.setName(entry.getKey()); // You might want to provide a more friendly name
+                    tool.setDescription(entry.getValue().getFunctionInstance().getDescription());
                     tool.setEnabled(true);
                     return tool;
                 })

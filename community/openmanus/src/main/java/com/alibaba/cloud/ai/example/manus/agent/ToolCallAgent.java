@@ -99,7 +99,6 @@ public class ToolCallAgent extends ReActAgent {
 		try {
 			List<Message> messages = new ArrayList<>();
 			addThinkPrompt(messages);
-			thinkActRecord.startThinking(messages.toString(), String.valueOf(getData().getOrDefault(EXECUTION_ENV_KEY_STRING,"")));// The `ToolCallAgent` class in the
 			// provided Java code is responsible
 			// for managing and executing tool
 			// calls within the ReAct agent. It
@@ -113,7 +112,8 @@ public class ToolCallAgent extends ReActAgent {
 			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
 			Message nextStepMessage = getNextStepWithEnvMessage();
 			messages.add(nextStepMessage);
-
+			thinkActRecord.startThinking(messages.toString());// The `ToolCallAgent` class in the
+		
 			log.debug("Messages prepared for the prompt: {}", messages);
 
 			userPrompt = new Prompt(messages, chatOptions);

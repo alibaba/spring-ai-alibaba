@@ -782,13 +782,6 @@ body {
     justify-content: flex-end;
 }
 
-.save-agent-btn {
-    padding: 10px 20px;
-    background-color: #1a73e8;
-    color: #fff;
-    font-weight: 500;
-}
-
 /* 工具选择对话框样式 */
 .tool-selection-dialog {
     position: fixed;
