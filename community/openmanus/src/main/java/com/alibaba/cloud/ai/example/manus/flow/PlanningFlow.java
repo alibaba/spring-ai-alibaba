@@ -111,14 +111,14 @@ public class PlanningFlow extends BaseFlow {
 				if (agentUpper.equals(stepType)) {
 					return agent;
 				}
-				if (agentUpper.equals("MANUS")) {
+				if (agentUpper.equals("DEFAULT_AGENT")) {
 					defaultAgent = agent;
 				}
 			}
 		}
 
 		if (defaultAgent == null) {
-			log.warn("Agent not found for type: {}. No MANUS agent found as fallback.", stepType);
+			log.warn("Agent not found for type: {}. No DEFAULT agent found as fallback.", stepType);
 			// 继续尝试获取第一个可用的 agent
 			if (!agents.isEmpty()) {
 				defaultAgent = agents.get(0);
