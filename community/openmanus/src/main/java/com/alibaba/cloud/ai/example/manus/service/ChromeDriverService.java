@@ -162,11 +162,14 @@ public class ChromeDriverService implements ApplicationRunner {
 
 		if (os.contains("win")) {
 			resMap.put(OsType.WINDOWS, "chromedriver/win32/chromedriver.exe");
-		} else if (os.contains("mac")) {
+		}
+		else if (os.contains("mac")) {
 			resMap.put(OsType.MAC, "chromedriver/mac-arm/chromedriver");
-		} else if (os.contains("nix") || os.contains("nux") || os.contains("aix")) {
+		}
+		else if (os.contains("nix") || os.contains("nux") || os.contains("aix")) {
 			resMap.put(OsType.LINUX, "chromedriver/linux64/chromedriver");
-		} else {
+		}
+		else {
 			log.warn("不支持的操作系统类型: {}", os);
 			return null;
 		}
