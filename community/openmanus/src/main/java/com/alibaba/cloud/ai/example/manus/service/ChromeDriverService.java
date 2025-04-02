@@ -15,6 +15,21 @@
  */
 package com.alibaba.cloud.ai.example.manus.service;
 
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
+import com.alibaba.cloud.ai.example.manus.config.BrowserProperties;
+import jakarta.annotation.PreDestroy;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -22,21 +37,11 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
-
-import com.alibaba.cloud.ai.example.manus.config.BrowserProperties;
-import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
-
-import jakarta.annotation.PreDestroy;
-
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Primary
@@ -117,44 +122,56 @@ public class ChromeDriverService implements ApplicationRunner {
 
 	@Override
 	public void run(ApplicationArguments args) throws Exception {
-		OsType osType = checkOS();
-		if (osType == OsType.UNSUPPORTED) {
-			throw new UnsupportedOperationException("当前仅支持 Windows 和 macOS 系统");
+
+		Map<OsType, String> chromeDriverMap = checkOS();
+		if (Objects.nonNull(chromeDriverMap)) {
+			throw new UnsupportedOperationException("不受支持的操作系统，当前仅支持 Windows、MacOS 和 Linux 系统");
 		}
 
-		String chromeDriverPath = getChromeDriverPath(
-				osType == OsType.WINDOWS ? "data/chromedriver.exe" : "data/chromedriver");
+		String chromeDriverPath = getChromeDriverPath(chromeDriverMap);
+
 		System.setProperty("webdriver.chrome.driver", chromeDriverPath);
 		log.info("ChromeDriver path initialized: {}", chromeDriverPath);
 	}
 
-	private String getChromeDriverPath(String resourcePath) throws URISyntaxException {
-		URL resource = OpenManusSpringBootApplication.class.getClassLoader().getResource(resourcePath);
-		if (resource == null) {
-			throw new IllegalStateException("ChromeDriver not found: " + resourcePath);
+	private String getChromeDriverPath(Map<OsType, String> chromeDriverMap) throws URISyntaxException {
+
+		if (chromeDriverMap.size() != 1) {
+			throw new IllegalArgumentException("Chrome Driver Map 中的元素数量非法，必须且只能包含一个元素");
 		}
+		String chromeDriverPath = chromeDriverMap.values().iterator().next();
+
+		URL resource = OpenManusSpringBootApplication.class.getClassLoader().getResource(chromeDriverPath);
+		if (resource == null) {
+			throw new IllegalStateException("ChromeDriver not found: " + chromeDriverPath);
+		}
+
 		return Paths.get(resource.toURI()).toFile().getAbsolutePath();
 	}
 
 	private enum OsType {
 
-		WINDOWS, MAC, UNSUPPORTED
+		WINDOWS, MAC, LINUX, UNSUPPORTED
 
 	}
 
-	private static OsType checkOS() {
+	private static Map<OsType, String> checkOS() {
+
 		String os = System.getProperty("os.name").toLowerCase();
+		Map<OsType, String> resMap = new HashMap<>();
 
 		if (os.contains("win")) {
-			return OsType.WINDOWS;
-		}
-		else if (os.contains("mac")) {
-			return OsType.MAC;
-		}
-		else {
+			resMap.put(OsType.WINDOWS, "chromedriver/win32/chromedriver.exe");
+		} else if (os.contains("mac")) {
+			resMap.put(OsType.MAC, "chromedriver/mac-arm/chromedriver");
+		} else if (os.contains("nix") || os.contains("nux") || os.contains("aix")) {
+			resMap.put(OsType.LINUX, "chromedriver/linux64/chromedriver");
+		} else {
 			log.warn("不支持的操作系统类型: {}", os);
-			return OsType.UNSUPPORTED;
+			return null;
 		}
+
+		return resMap;
 	}
 
 	private ChromeDriver createNewDriver() {
