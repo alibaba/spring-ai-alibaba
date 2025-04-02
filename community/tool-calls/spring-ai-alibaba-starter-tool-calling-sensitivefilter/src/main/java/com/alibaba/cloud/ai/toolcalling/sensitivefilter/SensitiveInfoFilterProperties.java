@@ -20,40 +20,39 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.List;
 
 /**
- * 敏感信息过滤配置属性
- *
+ * Sensitive Information Filtering Configuration Attributes
  * @author Makoto
  */
 @ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.sensitivefilter")
 public class SensitiveInfoFilterProperties {
 
 	/**
-	 * 是否启用敏感信息过滤功能
+	 * Whether to enable sensitive information filtering
 	 */
 	private boolean enabled = true;
 
 	/**
-	 * 是否过滤身份证号
+	 * Whether to filter ID numbers
 	 */
 	private boolean filterIdCard = true;
 
 	/**
-	 * 是否过滤手机号
+	 * Whether to filter cell phone numbers
 	 */
 	private boolean filterPhone = true;
 
 	/**
-	 * 是否过滤信用卡号
+	 * Whether to filter credit card numbers
 	 */
 	private boolean filterCreditCard = true;
 
 	/**
-	 * 是否过滤邮箱
+	 * Whether to filter mailboxes
 	 */
 	private boolean filterEmail = true;
 
 	/**
-	 * 全局自定义敏感信息正则表达式列表
+	 * Global Customized Sensitive Information Regular Expression List
 	 */
 	private List<String> customPatterns;
 
@@ -105,5 +104,4 @@ public class SensitiveInfoFilterProperties {
 	public void setCustomPatterns(List<String> customPatterns) {
 		this.customPatterns = customPatterns;
 	}
-
 }
