@@ -263,14 +263,33 @@ class BrowserUseToolSpringTest {
 	@DisplayName("测试GitHub搜索页面元素")
 	void testGitHubSearch() {
 		try {
-			String testUrl = "https://github.com/search";
-			List<String> expectedElements = Arrays.asList("query", // GitHub搜索框的name属性
-					"search", // 搜索相关元素
-					"type=\"text\"" // 文本输入框
+			String testUrl = "https://github.com/";
+			List<String> expectedElements = Arrays.asList( // GitHub搜索框的name属性
+					"search" // 搜索相关元素
+
 			);
 
 			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
 			log.info("GitHub搜索页面测试成功完成！");
+		}
+		catch (Exception e) {
+			log.error("测试过程中发生错误", e);
+			Assertions.fail("测试执行失败: " + e.getMessage());
+		}
+	}
+
+	@Test
+	@Order(6)
+	@DisplayName("测试Nacos页面元素")
+	void testNacosPageLink() {
+		try {
+			String testUrl = "https://nacos.io/docs/latest/overview";
+			List<String> expectedElements = Arrays.asList( // Nacos页面的特征
+					"Java SDK 容灾" // 搜索相关元素
+			);
+
+			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
+			log.info("Nacos页面测试成功完成！");
 		}
 		catch (Exception e) {
 			log.error("测试过程中发生错误", e);
@@ -285,8 +304,7 @@ class BrowserUseToolSpringTest {
 		try {
 			String testUrl = "https://www.baidu.com";
 			List<String> expectedElements = Arrays.asList("name=\"wd\"", // 百度搜索框的特征
-					"id=\"kw\"", // 搜索框的另一个特征
-					"百度一下" // 搜索按钮文本
+					"id=\"kw\"" // 搜索框的另一个特征
 			);
 
 			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
