@@ -1,17 +1,17 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration;
 import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.model.Tool;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class AgentServiceImpl implements AgentService {
@@ -92,7 +92,7 @@ public class AgentServiceImpl implements AgentService {
 		entity.setSystemPrompt(config.getSystemPrompt());
 		entity.setNextStepPrompt(config.getNextStepPrompt());
 		entity.setAvailableToolKeys(config.getAvailableTools());
-		entity.setClassName(config.getClassName());
+		entity.setClassName(config.getName());
 	}
 
 }
