@@ -160,22 +160,12 @@ public class PlanningFlow extends BaseFlow {
 			while (true) {
 				Map.Entry<Integer, Map<String, String>> stepInfoEntry = getCurrentStepInfo();
 				if (stepInfoEntry == null) {
-					returnResult = finalizePlan(inputText);
-					outputStringBuilder.append(returnResult);
-
-					// Record plan completion
-					recordPlanCompletion(returnResult);
 					break;
 				}
 				currentStepIndex = stepInfoEntry.getKey();
 				Map<String, String> stepInfo = stepInfoEntry.getValue();
 
 				if (currentStepIndex == null) {
-					returnResult = finalizePlan(inputText);
-					outputStringBuilder.append(returnResult);
-
-					// Record plan completion
-					recordPlanCompletion(returnResult);
 					break;
 				}
 
@@ -185,9 +175,18 @@ public class PlanningFlow extends BaseFlow {
 				executor.setPlanId(activePlanId);
 				String stepResult = executeStep(executor, stepInfo);
 
-				outputStringBuilder.append(stepResult).append("\n");
+				// 添加带步骤信息的输出
+				outputStringBuilder.append(String.format("Step %d [%s]: %s\n", 
+				currentStepIndex + 1,  // 步骤序号从1开始显示更友好
+				stepType != null ? stepType : "DEFAULT", 
+				stepResult));
 			}
-			log.info("Plan execution completed. result flow is \n: " + outputStringBuilder.toString());
+
+			returnResult = finalizePlan(inputText,outputStringBuilder.toString());
+			
+
+			// Record plan completion
+			recordPlanCompletion(returnResult);
 			return returnResult;
 		}
 		catch (Exception e) {
@@ -568,7 +567,7 @@ public class PlanningFlow extends BaseFlow {
 		}
 	}
 
-	public String finalizePlan(String userRequest) {
+	public String finalizePlan(String userRequest,String executionDetail) {
 		String planText = getPlanText();
 		try {
 
@@ -578,6 +577,8 @@ public class PlanningFlow extends BaseFlow {
 							
 							current plan state:
 							{planText}
+							execution detail:
+							{executionDetail}
 
 							You will be given a user's request, and you need to do the following step by step:
 							1) Analyze the user's request.
@@ -585,7 +586,7 @@ public class PlanningFlow extends BaseFlow {
 							3) then Provide a summary of the plan and its execution status.
 
 							""");
-			Message systemMessage = systemPromptTemplate.createMessage(Map.of("planText", planText));
+			Message systemMessage = systemPromptTemplate.createMessage(Map.of("planText", planText, "executionDetail", executionDetail));
 			String userRequestTemplate = """
 					user's request: 
 					{userRequest}
@@ -594,7 +595,7 @@ public class PlanningFlow extends BaseFlow {
 			Message userMessage = userMessageTemplate.createMessage(Map.of("userRequest", userRequest));
 			Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 
-			ChatResponse response = llmService.getFinalizeChatClient()
+			ChatResponse response = llmService.getPlanningChatClient()
 				.prompt(prompt)
 				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
 					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
