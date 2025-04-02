@@ -1,0 +1,42 @@
+/* base.css - 基础样式设置 */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #333;
+    background-color: #fff;
+}
+
+/* 图标样式 */
+.icon-placeholder::before { content: "□"; display: inline-block; margin-right: 5px; }
+.icon-collapse-left::before { content: "◀"; display: inline-block; }
+.icon-expand-left::before { content: "▶"; display: inline-block; }
+.icon-collapse-right::before { content: "▶"; display: inline-block; }
+.icon-expand-right::before { content: "◀"; display: inline-block; }
+.icon-terminal::before { content: ">_"; display: inline-block; }
+.icon-play::before { content: "►"; display: inline-block; }
+.icon-realtime::before { content: "●"; color: #1a73e8; display: inline-block; }
+.icon-menu::before { content: "⋮"; display: inline-block; }
+.icon-share::before { content: "↑"; display: inline-block; }
+.icon-star-outline::before { content: "☆"; display: inline-block; }
+.icon-star-filled::before { content: "★"; display: inline-block; }
+.icon-lightbulb::before { content: "💡"; display: inline-block; }
+.icon-attach::before { content: "📎"; display: inline-block; }
+.icon-send::before { content: "↑"; display: inline-block; }
+.icon-add::before { content: "+"; display: inline-block; }
+.icon-folder::before { content:"📁"; display: inline-block; }
+.icon-pages::before { content:"📄"; display: inline-block; }
+.icon-down-arrow::before { content: "▼"; display: inline-block; }
+.icon-up-arrow::before { content: "▲"; display: inline-block; }
+.icon-settings::before { content:"⚙️"; display: inline-block; }
+.icon-agent::before { content:"🤖"; display: inline-block; }
+.icon-tool::before { content:"🛠️"; display: inline-block; }
+.icon-mcp::before { content:"🔌"; display: inline-block; }
+.icon-back::before { content:"⬅️"; display: inline-block; }
+.icon-save::before { content:"💾"; display: inline-block; }

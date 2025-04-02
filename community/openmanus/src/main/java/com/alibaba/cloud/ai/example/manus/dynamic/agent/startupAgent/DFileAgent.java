@@ -33,11 +33,6 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
                 """, nextStepPrompt = """
                 What should I do next to achieve my goal?
 
-                Current File Operation State:
-                - Working Directory: {working_directory}
-                - Last File Operation: {last_operation}
-                - Last Operation Result: {operation_result}
-
 
                 Remember:
                 1. Check file existence before operations
