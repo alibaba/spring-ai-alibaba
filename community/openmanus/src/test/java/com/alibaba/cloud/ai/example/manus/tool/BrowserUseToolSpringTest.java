@@ -57,12 +57,19 @@ class BrowserUseToolSpringTest {
 
 	private BrowserUseTool browserUseTool;
 
+	@Autowired
+	private LlmService llmService;
+
+	@Autowired
+	private PlanExecutionRecorder planExecutionRecorder;
+
+	@Autowired
+	private ManusProperties manusProperties;
+
 	@BeforeEach
 	void setUp() {
 		browserUseTool = new BrowserUseTool(chromeDriverService);
-		ManusProperties manusProperties = new ManusProperties();
-		manusProperties.setBrowserHeadless(true);
-		DummyBaseAgent agent = new DummyBaseAgent(null, null, manusProperties);
+		DummyBaseAgent agent = new DummyBaseAgent(llmService, planExecutionRecorder, manusProperties);
 		agent.setPlanId("plan_123123124124124");
 		browserUseTool.setAgent(agent);
 	}

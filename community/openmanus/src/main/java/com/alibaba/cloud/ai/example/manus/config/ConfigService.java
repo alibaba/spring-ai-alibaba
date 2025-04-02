@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,8 @@ public class ConfigService {
 
 	@Autowired
 	private Environment environment;
+
+	private final Map<String, ConfigCacheEntry<String>> configCache = new ConcurrentHashMap<>();
 
 	@PostConstruct
 	public void init() {
@@ -103,6 +106,23 @@ public class ConfigService {
 			});
 	}
 
+	public String getConfigValue(String configPath) {
+		// 检查缓存
+		ConfigCacheEntry<String> cacheEntry = configCache.get(configPath);
+		if (cacheEntry != null && !cacheEntry.isExpired()) {
+			return cacheEntry.getValue();
+		}
+
+		// 如果缓存不存在或已过期，从数据库获取
+		Optional<ConfigEntity> configOpt = configRepository.findByConfigPath(configPath);
+		if (configOpt.isPresent()) {
+			String value = configOpt.get().getConfigValue();
+			configCache.put(configPath, new ConfigCacheEntry<>(value));
+			return value;
+		}
+		return null;
+	}
+
 	@Transactional
 	public void updateConfig(String configPath, String newValue) {
 		ConfigEntity entity = configRepository.findByConfigPath(configPath)
@@ -110,6 +130,9 @@ public class ConfigService {
 
 		entity.setConfigValue(newValue);
 		configRepository.save(entity);
+
+		// 更新缓存
+		configCache.put(configPath, new ConfigCacheEntry<>(newValue));
 
 		// 更新所有使用此配置的Bean
 		Map<String, Object> configBeans = applicationContext.getBeansWithAnnotation(ConfigurationProperties.class);
