@@ -32,6 +32,10 @@ public class ManusProperties {
 			description = "智能体执行最大步数", defaultValue = "20", inputType = ConfigInputType.NUMBER)
 	private Integer maxSteps = 20;
 
+	@ConfigProperty(group = "manus", subGroup = "agent", key = "resetAgents", path = "manus.resetAgents",
+			description = "重置所有agent", defaultValue = "true", inputType = ConfigInputType.BOOLEAN)
+	private Boolean resetAgents = true;
+
 	public Boolean getBrowserHeadless() {
 		return browserHeadless;
 	}
@@ -62,6 +66,14 @@ public class ManusProperties {
 
 	public void setMaxSteps(Integer maxSteps) {
 		this.maxSteps = maxSteps;
+	}
+
+	public Boolean getResetAgents() {
+		return resetAgents;
+	}
+
+	public void setResetAgents(Boolean resetAgents) {
+		this.resetAgents = resetAgents;
 	}
 
 }
