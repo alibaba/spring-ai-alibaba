@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2024 AIDC-AI
+ * Copyright (C) 2025 AIDC-AI
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,17 @@
 
 package com.alibaba.cloud.ai.example.manus.tool.support;
 
-import cn.hutool.core.util.ByteUtil;
-import com.google.common.net.InetAddresses;
-import org.apache.commons.lang3.StringUtils;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.google.common.net.InetAddresses;
+
+import cn.hutool.core.util.ByteUtil;
 
 public class LogIdGenerator {
 
