@@ -28,24 +28,23 @@ import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 敏感信息过滤服务
- *
+ * Sensitive Information Filtering Service
  * @author Makoto
  */
 @Slf4j
 public class SensitivefilterService
 		implements Function<SensitivefilterService.Request, SensitivefilterService.Response> {
 
-	// 中国身份证号码模式
+	// China Identity Card Number Patterns
 	private static final Pattern ID_CARD_PATTERN = Pattern.compile("\\d{17}[0-9Xx]|\\d{15}");
 
-	// 中国手机号模式
+	// China Cell Phone Number Model
 	private static final Pattern PHONE_PATTERN = Pattern.compile("1[3-9]\\d{9}");
 
-	// 信用卡号模式
+	// Credit card number model
 	private static final Pattern CREDIT_CARD_PATTERN = Pattern.compile("\\d{16}|\\d{13}");
 
-	// 邮箱地址模式
+	// Email Address Mode
 	private static final Pattern EMAIL_PATTERN = Pattern.compile("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}");
 
 	@Override
@@ -54,7 +53,7 @@ public class SensitivefilterService
 		List<String> detectedTypes = new ArrayList<>();
 		String filteredText = text;
 
-		// 检测并过滤身份证号
+		// Detect and filter ID numbers
 		if (request.isFilterIdCard()) {
 			Matcher matcher = ID_CARD_PATTERN.matcher(filteredText);
 			if (matcher.find()) {
@@ -63,7 +62,7 @@ public class SensitivefilterService
 			}
 		}
 
-		// 检测并过滤手机号
+		// Detect and filter cell phone numbers
 		if (request.isFilterPhone()) {
 			Matcher matcher = PHONE_PATTERN.matcher(filteredText);
 			if (matcher.find()) {
@@ -73,7 +72,7 @@ public class SensitivefilterService
 			}
 		}
 
-		// 检测并过滤信用卡号
+		// Detect and filter credit card numbers
 		if (request.isFilterCreditCard()) {
 			Matcher matcher = CREDIT_CARD_PATTERN.matcher(filteredText);
 			if (matcher.find()) {
@@ -83,7 +82,7 @@ public class SensitivefilterService
 			}
 		}
 
-		// 检测并过滤邮箱
+		// Detect and filter mailboxes
 		if (request.isFilterEmail()) {
 			Matcher matcher = EMAIL_PATTERN.matcher(filteredText);
 			if (matcher.find()) {
@@ -95,7 +94,7 @@ public class SensitivefilterService
 			}
 		}
 
-		// 处理自定义敏感词
+		// Handling customized sensitive words
 		if (request.getCustomPatterns() != null && !request.getCustomPatterns().isEmpty()) {
 			for (String pattern : request.getCustomPatterns()) {
 				try {
@@ -118,31 +117,31 @@ public class SensitivefilterService
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	@JsonClassDescription("敏感信息过滤请求，用于检测和屏蔽文本中的敏感信息")
+	@JsonClassDescription("Sensitive information filtering requests to detect and block sensitive information in text")
 	public static class Request {
 
 		@JsonProperty(required = true)
-		@JsonPropertyDescription("需要过滤的文本内容")
+		@JsonPropertyDescription("Text content to be filtered")
 		private String text;
 
 		@JsonProperty(required = false, defaultValue = "true")
-		@JsonPropertyDescription("是否过滤身份证号码")
+		@JsonPropertyDescription("Whether to filter ID numbers")
 		private boolean filterIdCard = true;
 
 		@JsonProperty(required = false, defaultValue = "true")
-		@JsonPropertyDescription("是否过滤手机号码")
+		@JsonPropertyDescription("Whether to filter cell phone numbers")
 		private boolean filterPhone = true;
 
 		@JsonProperty(required = false, defaultValue = "true")
-		@JsonPropertyDescription("是否过滤信用卡号码")
+		@JsonPropertyDescription("Whether to filter credit card numbers")
 		private boolean filterCreditCard = true;
 
 		@JsonProperty(required = false, defaultValue = "true")
-		@JsonPropertyDescription("是否过滤电子邮箱地址")
+		@JsonPropertyDescription("Whether to filter e-mail addresses")
 		private boolean filterEmail = true;
 
 		@JsonProperty(required = false)
-		@JsonPropertyDescription("自定义敏感信息正则表达式模式列表")
+		@JsonPropertyDescription("Customizing the list of regular expression patterns for sensitive information")
 		private List<String> customPatterns;
 
 		public Request() {
@@ -200,19 +199,19 @@ public class SensitivefilterService
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	@JsonClassDescription("敏感信息过滤响应")
+	@JsonClassDescription("Sensitive Information Filtering Response")
 	public static class Response {
 
 		@JsonProperty
-		@JsonPropertyDescription("过滤后的文本内容")
+		@JsonPropertyDescription("Filtered text content")
 		private final String filteredText;
 
 		@JsonProperty
-		@JsonPropertyDescription("是否包含敏感信息")
+		@JsonPropertyDescription("Does it contain sensitive information")
 		private final boolean containsSensitiveInfo;
 
 		@JsonProperty
-		@JsonPropertyDescription("检测到的敏感信息类型列表")
+		@JsonPropertyDescription("List of detected sensitive information types")
 		private final List<String> detectedTypes;
 
 		public Response(String filteredText, boolean containsSensitiveInfo, List<String> detectedTypes) {
