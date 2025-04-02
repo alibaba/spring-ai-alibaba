@@ -76,6 +76,7 @@ public class FileSaver implements ToolCallBiFunctionDef {
 	}
 
 	private String lastFilePath = "";
+
 	private String lastOperationResult = "";
 
 	public ToolExecuteResult run(String toolInput) {
@@ -86,7 +87,7 @@ public class FileSaver implements ToolCallBiFunctionDef {
 			String content = (String) toolInputMap.get("content");
 			String filePath = (String) toolInputMap.get("file_path");
 			this.lastFilePath = filePath;
-			
+
 			File file = new File(filePath);
 			File directory = file.getParentFile();
 			if (directory != null && !directory.exists()) {
@@ -154,21 +155,19 @@ public class FileSaver implements ToolCallBiFunctionDef {
 	@Override
 	public String getCurrentToolStateString() {
 		return String.format("""
-                Current File Operation State:
-                - Working Directory: 
+				            Current File Operation State:
+				            - Working Directory:
 				%s
 
-                - Last File Operation: 
+				            - Last File Operation:
 				%s
 
-                - Last Operation Result: 
+				            - Last Operation Result:
 				%s
-				
-                """,
-                new File("").getAbsolutePath(),
-                lastFilePath.isEmpty() ? "No file saved yet" : "Save file to: " + lastFilePath,
-                lastOperationResult.isEmpty() ? "No operation performed yet" : lastOperationResult
-        );
+
+				            """, new File("").getAbsolutePath(),
+				lastFilePath.isEmpty() ? "No file saved yet" : "Save file to: " + lastFilePath,
+				lastOperationResult.isEmpty() ? "No operation performed yet" : lastOperationResult);
 	}
 
 }

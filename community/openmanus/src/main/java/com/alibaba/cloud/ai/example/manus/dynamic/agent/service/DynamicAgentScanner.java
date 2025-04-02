@@ -20,60 +20,63 @@ import java.util.Set;
 
 @Service
 public class DynamicAgentScanner {
-    
-    private static final Logger log = LoggerFactory.getLogger(DynamicAgentScanner.class);
-    
-    private final DynamicAgentRepository repository;
-    private final String basePackage = "com.alibaba.cloud.ai.example.manus";
-    private final ApplicationContext applicationContext;
 
-    @Autowired
-    public DynamicAgentScanner(DynamicAgentRepository repository, ApplicationContext applicationContext) {
-        this.repository = repository;
-        this.applicationContext = applicationContext;
-    }
+	private static final Logger log = LoggerFactory.getLogger(DynamicAgentScanner.class);
 
-    @PostConstruct
-    public void scanAndSaveAgents() {
-        // 创建扫描器
-        ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
-        
-        // 添加注解过滤器
-        scanner.addIncludeFilter(new AnnotationTypeFilter(DynamicAgentDefinition.class));
-        
-        // 扫描指定包下的所有类
-        Set<BeanDefinition> candidates = scanner.findCandidateComponents(basePackage);
-        
-        for (BeanDefinition beanDefinition : candidates) {
-            try {
-                Class<?> clazz = Class.forName(beanDefinition.getBeanClassName());
-                DynamicAgentDefinition annotation = clazz.getAnnotation(DynamicAgentDefinition.class);
-                if (annotation != null) {
-                    saveDynamicAgent(annotation, clazz);
-                }
-            }
-            catch (ClassNotFoundException e) {
-                log.error("Failed to load class: " + beanDefinition.getBeanClassName(), e);
-            }
-        }
-    }
+	private final DynamicAgentRepository repository;
 
-    private void saveDynamicAgent(DynamicAgentDefinition annotation, Class<?> clazz) {
-        DynamicAgentEntity existingEntity = repository.findByAgentName(annotation.agentName());
-        if (existingEntity != null) {
-            log.info("动态代理定义 {} 已存在，跳过保存", annotation.agentName());
-            return;
-        }
+	private final String basePackage = "com.alibaba.cloud.ai.example.manus";
 
-        DynamicAgentEntity entity = new DynamicAgentEntity();
-        entity.setAgentName(annotation.agentName());
-        entity.setAgentDescription(annotation.agentDescription());
-        entity.setSystemPrompt(annotation.systemPrompt());
-        entity.setNextStepPrompt(annotation.nextStepPrompt());
-        entity.setAvailableToolKeys(Arrays.asList(annotation.availableToolKeys()));
-        entity.setClassName(clazz.getName());
+	private final ApplicationContext applicationContext;
 
-        repository.save(entity);
-        log.info("已保存新的动态代理定义: {}", entity.getAgentName());
-    }
+	@Autowired
+	public DynamicAgentScanner(DynamicAgentRepository repository, ApplicationContext applicationContext) {
+		this.repository = repository;
+		this.applicationContext = applicationContext;
+	}
+
+	@PostConstruct
+	public void scanAndSaveAgents() {
+		// 创建扫描器
+		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
+
+		// 添加注解过滤器
+		scanner.addIncludeFilter(new AnnotationTypeFilter(DynamicAgentDefinition.class));
+
+		// 扫描指定包下的所有类
+		Set<BeanDefinition> candidates = scanner.findCandidateComponents(basePackage);
+
+		for (BeanDefinition beanDefinition : candidates) {
+			try {
+				Class<?> clazz = Class.forName(beanDefinition.getBeanClassName());
+				DynamicAgentDefinition annotation = clazz.getAnnotation(DynamicAgentDefinition.class);
+				if (annotation != null) {
+					saveDynamicAgent(annotation, clazz);
+				}
+			}
+			catch (ClassNotFoundException e) {
+				log.error("Failed to load class: " + beanDefinition.getBeanClassName(), e);
+			}
+		}
+	}
+
+	private void saveDynamicAgent(DynamicAgentDefinition annotation, Class<?> clazz) {
+		DynamicAgentEntity existingEntity = repository.findByAgentName(annotation.agentName());
+		if (existingEntity != null) {
+			log.info("动态代理定义 {} 已存在，跳过保存", annotation.agentName());
+			return;
+		}
+
+		DynamicAgentEntity entity = new DynamicAgentEntity();
+		entity.setAgentName(annotation.agentName());
+		entity.setAgentDescription(annotation.agentDescription());
+		entity.setSystemPrompt(annotation.systemPrompt());
+		entity.setNextStepPrompt(annotation.nextStepPrompt());
+		entity.setAvailableToolKeys(Arrays.asList(annotation.availableToolKeys()));
+		entity.setClassName(clazz.getName());
+
+		repository.save(entity);
+		log.info("已保存新的动态代理定义: {}", entity.getAgentName());
+	}
+
 }

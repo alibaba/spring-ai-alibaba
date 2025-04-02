@@ -47,18 +47,18 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 
 	private static final String description = """
 
-    Terminate the current execution step with a comprehensive summary message.
-    This message will be passed as the final output of the current step and should include:
-    
-    - Detailed execution results and status
-    - All relevant facts and data collected
-    - Key findings and observations 
-    - Important insights and conclusions
-    - Any actionable recommendations
-    
-    The summary should be thorough enough to provide complete context for subsequent steps or other agents.
-	
-    """;
+			Terminate the current execution step with a comprehensive summary message.
+			This message will be passed as the final output of the current step and should include:
+
+			- Detailed execution results and status
+			- All relevant facts and data collected
+			- Key findings and observations
+			- Important insights and conclusions
+			- Any actionable recommendations
+
+			The summary should be thorough enough to provide complete context for subsequent steps or other agents.
+
+			""";
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
@@ -77,24 +77,24 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 	private BaseAgent agent;
 
 	private String lastTerminationMessage = "";
-    private boolean isTerminated = false;
-    private String terminationTimestamp = "";
 
-    @Override
-    public String getCurrentToolStateString() {
-        return String.format("""
-                Termination Tool Status:
-                - Current State: %s
-                - Last Termination: %s
-                - Termination Message: %s
-                - Timestamp: %s
-                """,
-                isTerminated ? "🛑 Terminated" : "⚡ Active",
-                isTerminated ? "Process was terminated" : "No termination recorded",
-                lastTerminationMessage.isEmpty() ? "N/A" : lastTerminationMessage,
-                terminationTimestamp.isEmpty() ? "N/A" : terminationTimestamp
-        );
-    }
+	private boolean isTerminated = false;
+
+	private String terminationTimestamp = "";
+
+	@Override
+	public String getCurrentToolStateString() {
+		return String.format("""
+				Termination Tool Status:
+				- Current State: %s
+				- Last Termination: %s
+				- Termination Message: %s
+				- Timestamp: %s
+				""", isTerminated ? "🛑 Terminated" : "⚡ Active",
+				isTerminated ? "Process was terminated" : "No termination recorded",
+				lastTerminationMessage.isEmpty() ? "N/A" : lastTerminationMessage,
+				terminationTimestamp.isEmpty() ? "N/A" : terminationTimestamp);
+	}
 
 	public TerminateTool(BaseAgent agent) {
 		this.agent = agent;

@@ -39,10 +39,9 @@ public class ManusAgent extends ToolCallAgent {
 
 	private final String workingDirectory;
 
-
 	public ManusAgent(LlmService llmService, ToolCallingManager toolCallingManager,
-			ChromeDriverService chromeDriverService, String workingDirectory, PlanExecutionRecorder record, ManusProperties manusProperties
-			, Map<String, ToolCallBackContext> toolCallbackMap) {
+			ChromeDriverService chromeDriverService, String workingDirectory, PlanExecutionRecorder record,
+			ManusProperties manusProperties, Map<String, ToolCallBackContext> toolCallbackMap) {
 		super(llmService, toolCallingManager, record, manusProperties, toolCallbackMap);
 		this.workingDirectory = workingDirectory;
 	}

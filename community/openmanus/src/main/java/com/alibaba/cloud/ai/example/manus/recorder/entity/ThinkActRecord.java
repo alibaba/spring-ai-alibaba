@@ -95,7 +95,7 @@ public class ThinkActRecord implements JsonSerializable {
 	 * 记录思考阶段开始
 	 */
 	public void startThinking(String thinkInput) {
-		
+
 		this.thinkStartTime = LocalDateTime.now();
 		this.thinkInput = thinkInput;
 	}
@@ -308,7 +308,6 @@ public class ThinkActRecord implements JsonSerializable {
 		appendField(json, "errorMessage", errorMessage, true);
 		appendField(json, "toolName", toolName, true);
 		appendField(json, "toolParameters", toolParameters, true);
-
 
 		// Remove trailing comma if present
 		if (json.charAt(json.length() - 1) == ',') {

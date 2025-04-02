@@ -7,5 +7,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntit
 
 @Repository
 public interface DynamicAgentRepository extends JpaRepository<DynamicAgentEntity, Long> {
-    DynamicAgentEntity findByAgentName(String agentName);
+
+	DynamicAgentEntity findByAgentName(String agentName);
+
 }
