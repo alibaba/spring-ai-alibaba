@@ -15,6 +15,17 @@
  */
 package com.alibaba.cloud.ai.example.manus.service;
 
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -27,16 +38,10 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 
 import jakarta.annotation.PreDestroy;
-
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Primary
@@ -169,7 +174,7 @@ public class ChromeDriverService implements ApplicationRunner {
 			// 根据配置决定是否使用 headless 模式
 			if (manusProperties.getBrowserHeadless()) {
 				log.info("启用 Chrome headless 模式");
-				options.addArguments("--headless=new");
+				options.addArguments("--headless=true");
 			}
 
 			// 模拟真实浏览器环境

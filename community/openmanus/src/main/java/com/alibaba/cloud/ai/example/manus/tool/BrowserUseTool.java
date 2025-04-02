@@ -30,7 +30,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.HashMap;
 import java.util.Set;
@@ -186,7 +185,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		try {
 
 			// 添加随机延迟
-			Thread.sleep(new Random().nextInt(1000) + 500);
+			Thread.sleep(new Random().nextInt(500) + 200);
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
@@ -440,38 +439,45 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		}
 	}
 
-	private static final String INTERACTIVE_ELEMENTS_SELECTOR = "a, button, input, select, textarea, [role='button'], [role='link']";
+	private static final String INTERACTIVE_ELEMENTS_SELECTOR = "a, button, input, select, textarea[type='search'], textarea, [role='button'], [role='link'], [role='textbox'], [role='search'], [role='searchbox']";
 
 	private String formatElementInfo(int index, WebElement element) {
 		try {
+			if (!isElementVisible(element)) {
+				return ""; // 如果元素不可见，直接返回空字符串
+			}
+
 			JavascriptExecutor js = (JavascriptExecutor) getDriver();
 			@SuppressWarnings("unchecked")
-			// 为了提速 getAttribute做多了太慢了
 			Map<String, Object> props = (Map<String, Object>) js.executeScript("""
 					function getElementInfo(el) {
-					    const style = window.getComputedStyle(el);
-					    return {
-					        tagName: el.tagName.toLowerCase(),
-					        type: el.getAttribute('type'),
-					        role: el.getAttribute('role'),
-					        text: el.textContent.trim(),
-					        value: el.value,
-					        placeholder: el.getAttribute('placeholder'),
-					        name: el.getAttribute('name'),
-					        id: el.getAttribute('id'),
-					        'aria-label': el.getAttribute('aria-label'),
-					        isVisible: (
-					            el.offsetWidth > 0 &&
-					            el.offsetHeight > 0 &&
-					            style.visibility !== 'hidden' &&
-					            style.display !== 'none'
-					        )
-					    };
+					    try {
+					        const style = window.getComputedStyle(el);
+					        return {
+					            tagName: el.tagName.toLowerCase(),
+					            type: el.getAttribute('type'),
+					            role: el.getAttribute('role'),
+					            text: el.textContent.trim(),
+					            value: el.value,
+					            placeholder: el.getAttribute('placeholder'),
+					            name: el.getAttribute('name'),
+					            id: el.getAttribute('id'),
+					            'aria-label': el.getAttribute('aria-label'),
+					            isVisible: (
+					                el.offsetWidth > 0 &&
+					                el.offsetHeight > 0 &&
+					                style.visibility !== 'hidden' &&
+					                style.display !== 'none'
+					            )
+					        };
+					    } catch(e) {
+					        return null; // 如果获取元素信息失败，返回null
+					    }
 					}
 					return getElementInfo(arguments[0]);
 					""", element);
 
-			if (!(Boolean) props.get("isVisible")) {
+			if (props == null || !(Boolean) props.get("isVisible")) {
 				return "";
 			}
 
@@ -508,18 +514,50 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			return String.format("[%d] <%s%s>%s</%s>\n", index, tagName, attributes.toString(), text, tagName);
 
 		}
+		catch (StaleElementReferenceException | NoSuchElementException e) {
+			log.debug("忽略过期或不存在的元素: {}", e.getMessage());
+			return "";
+		}
 		catch (Exception e) {
-			log.warn("格式化元素信息失败 ,应该是页面某些元素过期了， 跳过当前元素格式化: {}", e.getMessage());
+			log.warn("格式化元素信息失败，跳过当前元素: {}", e.getMessage());
 			return "";
 		}
 	}
 
 	// 添加新的方法获取可交互元素
+	private boolean isElementVisible(WebElement element) {
+		try {
+			return element.isDisplayed() && element.isEnabled();
+		}
+		catch (StaleElementReferenceException | NoSuchElementException e) {
+			// 忽略过期或不存在的元素
+			log.debug("忽略过期或不存在的元素: {}", e.getMessage());
+			return false;
+		}
+	}
+
 	private List<WebElement> getInteractiveElements(WebDriver driver) {
-		return driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR))
-			.stream()
-			.filter(this::isElementVisible)
-			.collect(Collectors.toList());
+		try {
+			return driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR))
+				.stream()
+				.filter(this::isElementVisible)
+				.collect(Collectors.toList());
+		}
+		catch (StaleElementReferenceException e) {
+			log.warn("元素在获取过程中过期，重试一次: {}", e.getMessage());
+			// 如果发生异常，等待一下然后重试
+			try {
+				Thread.sleep(500);
+				return driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR))
+					.stream()
+					.filter(this::isElementVisible)
+					.collect(Collectors.toList());
+			}
+			catch (Exception retryEx) {
+				log.error("重试获取元素失败: {}", retryEx.getMessage());
+				return new ArrayList<>(); // 返回空列表而不是抛出异常
+			}
+		}
 	}
 
 	private String getInteractiveElementsInfo(WebDriver driver) {
@@ -614,15 +652,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			log.error("Failed to get browser state", e);
 			state.put("error", "Failed to get browser state: " + e.getMessage());
 			return state;
-		}
-	}
-
-	private boolean isElementVisible(WebElement element) {
-		try {
-			return element.isDisplayed() && element.isEnabled();
-		}
-		catch (NoSuchElementException e) {
-			return false;
 		}
 	}
 
