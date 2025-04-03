@@ -2,6 +2,8 @@
 
 [Spring AI Alibaba](https://java2ai.com) 是一款 Java 语言实现的 AI 应用开发框架，旨在简化 Java AI 应用程序开发，让 Java 开发者像使用 Spring 开发普通应用一样开发 AI 应用。Spring AI Alibaba 基于 Spring AI 开源项目构建，默认提供阿里云基础模型服务、开源及商业生态组件的集成与最佳实践。
 
+[English](./README.md) | [日本語](./README-ja.md)
+
 ## 快速开始
 
 请参考[快速开始](https://java2ai.com/docs/dev/get-started/) 了解如何使用 Spring AI Alibaba 快速开发生成式 AI 应用。
@@ -16,7 +18,7 @@
  <dependency>
   <groupId>com.alibaba.cloud.ai</groupId>
   <artifactId>spring-ai-alibaba-starter</artifactId>
-  <version>1.0.0-M5.1</version>
+  <version>1.0.0-M6.1</version>
  </dependency>
  ```
 
