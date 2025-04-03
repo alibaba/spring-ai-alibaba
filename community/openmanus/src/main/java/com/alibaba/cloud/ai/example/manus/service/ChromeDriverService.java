@@ -43,6 +43,7 @@ import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 
 import jakarta.annotation.PreDestroy;
+
 @Service
 @Primary
 public class ChromeDriverService implements ApplicationRunner {
