@@ -53,6 +53,5 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
                 - Log and script files (.log, .sh, .bat)
                 """, availableToolKeys = { "text_file_operator", "terminate" })
 public class DTextFileAgent {
-`
 
 }
