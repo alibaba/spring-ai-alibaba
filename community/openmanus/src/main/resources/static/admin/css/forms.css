@@ -1,0 +1,292 @@
+/* forms.css - 表单样式 */
+
+/* 配置面板 */
+.config-panel {
+    display: none;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.config-panel.active {
+    display: block;
+}
+
+/* 面板标题区域 */
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e1e2e3;
+}
+
+.panel-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 500;
+    color: #202124;
+}
+
+/* 面板标题右侧操作按钮区域 */
+.panel-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.panel-actions .action-btn {
+    padding: 6px 12px;
+    font-size: 14px;
+    background-color: #f8f9fa;
+    transition: all 0.2s ease;
+}
+
+.panel-actions .action-btn:hover {
+    background-color: #e8f0fe;
+    border-color: #1a73e8;
+    color: #1a73e8;
+}
+
+/* 配置组 */
+.config-group {
+    margin-bottom: 28px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.03);
+    transition: box-shadow 0.3s ease;
+}
+
+.config-group:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.group-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #202124;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.group-title:before {
+    content: "*";
+    margin-right: 8px;
+    font-size: 18px;
+}
+
+/* 配置项 */
+.config-item {
+    margin-bottom: 18px;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;  /* 改为纵向排列 */
+    gap: 8px;  /* 调整标签和输入框之间的间距 */
+    padding: 16px;
+    border-radius: 8px;
+    background-color: #fff;
+    border: 1px solid #f0f0f0;
+}
+
+.config-item:hover {
+    border-color: #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    background-color: #f8f9fa;
+}
+
+.config-item label {
+    display: block;
+    width: 100%;
+    font-weight: 500;
+    color: #202124;
+    font-size: 14px;
+    line-height: 1.4;
+    margin-bottom: 4px;
+}
+
+/* 数字输入框样式优化 */
+.config-item input[type="number"],
+.config-item input.config-input[data-config-type="NUMBER"] {
+    width: 100%;
+    max-width: 200px;  /* 限制最大宽度 */
+    padding: 10px 12px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #202124;
+    background: #fff;
+    transition: all 0.3s ease;
+    -moz-appearance: textfield;  /* 移除Firefox默认箭头 */
+}
+
+/* 移除Webkit浏览器的默认箭头 */
+.config-item input[type="number"]::-webkit-outer-spin-button,
+.config-item input[type="number"]::-webkit-inner-spin-button,
+.config-item input.config-input[data-config-type="NUMBER"]::-webkit-outer-spin-button,
+.config-item input.config-input[data-config-type="NUMBER"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.config-item input[type="number"]:hover,
+.config-item input.config-input[data-config-type="NUMBER"]:hover {
+    border-color: #1a73e8;
+    background-color: #fff;
+}
+
+.config-item input[type="number"]:focus,
+.config-item input.config-input[data-config-type="NUMBER"]:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26,115,232,0.2);
+    background-color: #fff;
+}
+
+/* 添加输入框的自定义控制按钮 */
+.config-item .number-controls {
+    position: relative;
+}
+
+.config-item .number-controls::after {
+    content: "⌃";
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #5f6368;
+    pointer-events: none;
+    font-size: 12px;
+}
+
+/* 添加可选的描述文本 */
+.config-item .config-description {
+    font-size: 12px;
+    color: #5f6368;
+    margin-top: 4px;
+    line-height: 1.4;
+}
+
+/* 禁用状态样式 */
+.config-item input[type="number"]:disabled,
+.config-item input.config-input[data-config-type="NUMBER"]:disabled {
+    background-color: #f1f3f4;
+    border-color: #e0e0e0;
+    color: #80868b;
+    cursor: not-allowed;
+}
+
+/* 复选框样式增强 */
+.config-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    cursor: pointer;
+    position: relative;
+    border: 2px solid #dadce0;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: #fff;
+}
+
+.config-item input[type="checkbox"]:checked {
+    background-color: #1a73e8;
+    border-color: #1a73e8;
+}
+
+.config-item input[type="checkbox"]:checked:after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 4px;
+    height: 9px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.config-item input[type="checkbox"]:hover {
+    border-color: #1a73e8;
+}
+
+.config-item input[type="checkbox"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(26,115,232,0.2);
+}
+
+/* 工具提示样式 */
+.config-item label[title] {
+    text-decoration: underline dotted #dadce0;
+    cursor: help;
+}
+
+/* 输入框和选择框通用样式 */
+.config-item input[type="text"],
+.config-item input[type="number"],
+.config-item select,
+.config-item textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #202124;
+    transition: all 0.2s ease;
+    background-color: #fff;
+}
+
+.config-item input[type="text"]:focus,
+.config-item input[type="number"]:focus,
+.config-item select:focus,
+.config-item textarea:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.config-item input[type="text"]:hover,
+.config-item input[type="number"]:hover,
+.config-item select:hover,
+.config-item textarea:hover {
+    border-color: #c6c6c6;
+}
+
+/* 复选框样式 */
+.checkbox-item {
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin-right: 12px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.checkbox-item label {
+    margin-bottom: 0;
+    cursor: pointer;
+}
+
+/* 详情输入框 */
+.detail-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e1e2e3;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #202124;
+    transition: border-color 0.3s ease;
+    resize: vertical;
+}
+
+.detail-input:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+}

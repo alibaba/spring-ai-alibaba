@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.agent;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
@@ -23,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.tool.ToolCallback;
 
 import java.time.LocalDateTime;
@@ -71,7 +73,9 @@ public abstract class BaseAgent {
 
 	protected LlmService llmService;
 
-	private int maxSteps = 20;
+	private final ManusProperties manusProperties;
+
+	private int maxSteps;
 
 	private int currentStep = 0;
 
@@ -110,7 +114,21 @@ public abstract class BaseAgent {
 	 * @param messages 当前的消息列表，用于构建上下文
 	 * @return 添加的系统提示消息对象
 	 */
-	protected abstract Message addThinkPrompt(List<Message> messages);
+	protected Message addThinkPrompt(List<Message> messages) {
+		String stepPrompt = """
+				CURRENT TASK STATUS:
+				{planStatus}
+
+				CURRENT TASK STEP ({currentStepIndex}):
+				{stepText}""";
+
+		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(stepPrompt);
+
+		Message systemMessage = promptTemplate.createMessage(getData());
+
+		messages.add(systemMessage);
+		return systemMessage;
+	}
 
 	/**
 	 * 获取下一步操作的提示消息
@@ -120,13 +138,16 @@ public abstract class BaseAgent {
 	 * 子类实现参考： 1. ToolCallAgent：返回工具选择和调用相关的提示 2. ReActAgent：返回思考或行动决策相关的提示
 	 * @return 下一步操作的提示消息对象
 	 */
-	protected abstract Message getNextStepMessage();
+	protected abstract Message getNextStepWithEnvMessage();
 
 	public abstract List<ToolCallback> getToolCallList();
 
-	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder) {
+	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
+			ManusProperties manusProperties) {
 		this.llmService = llmService;
 		this.planExecutionRecorder = planExecutionRecorder;
+		this.manusProperties = manusProperties;
+		this.maxSteps = manusProperties.getMaxSteps();
 	}
 
 	public String run(Map<String, Object> data) {
@@ -258,15 +279,19 @@ public abstract class BaseAgent {
 	 * 使用说明： 1. 返回智能体在执行过程中需要的所有上下文数据 2. 数据可包含： - 当前执行状态 - 步骤信息 - 中间结果 - 配置参数 3.
 	 * 数据在run()方法执行时通过setData()设置
 	 *
-	 * 访问控制： - 包级私有访问权限 - 仅允许同包内的类访问 - 主要供子类在实现过程中使用
+	 * 不要修改这个方法的实现，如果你需要传递上下文，继承并修改setData方法，这样可以提高getData()的的效率。
 	 * @return 包含智能体上下文数据的Map对象
 	 */
-	Map<String, Object> getData() {
+	protected final Map<String, Object> getData() {
 		return data;
 	}
 
-	void setData(Map<String, Object> data) {
+	protected void setData(Map<String, Object> data) {
 		this.data = data;
+	}
+
+	public ManusProperties getManusProperties() {
+		return manusProperties;
 	}
 
 }

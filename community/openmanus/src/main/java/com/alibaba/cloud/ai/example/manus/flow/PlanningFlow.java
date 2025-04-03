@@ -24,6 +24,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +46,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
 
+import com.alibaba.cloud.ai.example.manus.service.TextFileService;
+
 public class PlanningFlow extends BaseFlow {
 
 	private static final Logger log = LoggerFactory.getLogger(PlanningFlow.class);
@@ -62,6 +65,11 @@ public class PlanningFlow extends BaseFlow {
 
 	@Autowired
 	private ChromeDriverService chromeDriverService;
+
+	@Autowired
+	private TextFileService textFileService;
+
+	private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
 
 	// shared result state between agents.
 	private Map<String, Object> resultState;
@@ -109,14 +117,14 @@ public class PlanningFlow extends BaseFlow {
 				if (agentUpper.equals(stepType)) {
 					return agent;
 				}
-				if (agentUpper.equals("MANUS")) {
+				if (agentUpper.equals("DEFAULT_AGENT")) {
 					defaultAgent = agent;
 				}
 			}
 		}
 
 		if (defaultAgent == null) {
-			log.warn("Agent not found for type: {}. No MANUS agent found as fallback.", stepType);
+			log.warn("Agent not found for type: {}. No DEFAULT agent found as fallback.", stepType);
 			// 继续尝试获取第一个可用的 agent
 			if (!agents.isEmpty()) {
 				defaultAgent = agents.get(0);
@@ -156,22 +164,12 @@ public class PlanningFlow extends BaseFlow {
 			while (true) {
 				Map.Entry<Integer, Map<String, String>> stepInfoEntry = getCurrentStepInfo();
 				if (stepInfoEntry == null) {
-					returnResult = finalizePlan(inputText);
-					outputStringBuilder.append(returnResult);
-
-					// Record plan completion
-					recordPlanCompletion(returnResult);
 					break;
 				}
 				currentStepIndex = stepInfoEntry.getKey();
 				Map<String, String> stepInfo = stepInfoEntry.getValue();
 
 				if (currentStepIndex == null) {
-					returnResult = finalizePlan(inputText);
-					outputStringBuilder.append(returnResult);
-
-					// Record plan completion
-					recordPlanCompletion(returnResult);
 					break;
 				}
 
@@ -181,9 +179,15 @@ public class PlanningFlow extends BaseFlow {
 				executor.setPlanId(activePlanId);
 				String stepResult = executeStep(executor, stepInfo);
 
-				outputStringBuilder.append(stepResult).append("\n");
+				// 添加带步骤信息的输出
+				outputStringBuilder.append(String.format("Step %d [%s]: %s\n", currentStepIndex + 1, // 步骤序号从1开始显示更友好
+						stepType != null ? stepType : "DEFAULT", stepResult));
 			}
-			log.info("Plan execution completed. result flow is \n: " + outputStringBuilder.toString());
+
+			returnResult = finalizePlan(inputText, outputStringBuilder.toString());
+
+			// Record plan completion
+			recordPlanCompletion(returnResult);
 			return returnResult;
 		}
 		catch (Exception e) {
@@ -199,7 +203,8 @@ public class PlanningFlow extends BaseFlow {
 			return "Execution failed: " + e.getMessage();
 		}
 		finally {
-			chromeDriverService.cleanup();
+			chromeDriverService.cleanup(activePlanId);
+			textFileService.cleanup(activePlanId);
 		}
 	}
 
@@ -282,12 +287,28 @@ public class PlanningFlow extends BaseFlow {
 		});
 
 		String prompt_template = """
+
+				## Introduction
+				I am Manus, an AI assistant designed to help users with a wide variety of tasks. I'm built to be helpful, informative, and versatile in addressing different needs and challenges.
+
+				## My Purpose
+				My primary purpose is to assist users in accomplishing their goals by providing information, executing tasks, and offering guidance. I aim to be a reliable partner in problem-solving and task completion.
+
+				## How I Approach Tasks
+				When presented with a task, I typically:
+				1. Analyze the request to understand what's being asked
+				2. Break down complex problems into manageable steps
+				3. Use appropriate tools and methods to address each step
+				4. Provide clear communication throughout the process
+				5. Deliver results in a helpful and organized manner
+
+				## Current state Main goal :
 				Create a reasonable plan with clear steps to accomplish the task.
 
-				Available Agents Information:
+				## Available Agents Information:
 				{agents_info}
 
-				Task to accomplish:
+				# Task to accomplish:
 				{query}
 
 				You can use the planning tool to help you create the plan, assign {plan_id} as the plan id.
@@ -299,8 +320,13 @@ public class PlanningFlow extends BaseFlow {
 				""";
 
 		PromptTemplate promptTemplate = new PromptTemplate(prompt_template);
-		Prompt userPrompt = promptTemplate
-			.create(Map.of("plan_id", activePlanId, "query", request, "agents_info", agentsInfo.toString()));
+
+		// 可变还是方便点
+		Map<String, Object> data = new HashMap<>();
+		data.put("plan_id", activePlanId);
+		data.put("query", request);
+		data.put("agents_info", agentsInfo.toString());
+		Prompt userPrompt = promptTemplate.create(data);
 		ChatResponse response = llmService.getPlanningChatClient()
 			.prompt(userPrompt)
 			.tools(getToolCallList())
@@ -409,8 +435,12 @@ public class PlanningFlow extends BaseFlow {
 					record.setCurrentStepIndex(currentStepIndex);
 					getRecorder().recordPlanExecution(record);
 				}
-				String stepResult = executor
-					.run(Map.of("planStatus", planStatus, "currentStepIndex", currentStepIndex, "stepText", stepText));
+				Map<String, Object> executorParams = new HashMap<>();
+				executorParams.put("planStatus", planStatus);
+				executorParams.put("currentStepIndex", currentStepIndex);
+				executorParams.put("stepText", stepText);
+				executorParams.put(EXECUTION_ENV_KEY_STRING, "");
+				String stepResult = executor.run(executorParams);
 
 				markStepCompleted();
 
@@ -554,27 +584,36 @@ public class PlanningFlow extends BaseFlow {
 		}
 	}
 
-	public String finalizePlan(String userRequest) {
+	public String finalizePlan(String userRequest, String executionDetail) {
 		String planText = getPlanText();
 		try {
 
-			SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(
-					"""
-							You are an AI assistant that can respond to user's request, based on the memory.
+			SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate("""
+					You are an AI assistant that can respond to user's request, based on the memory.
 
-							You will:
-							1. If the user requests to review the plan, then review it, otherwise just answer the user's question
-							2. Consider the current Memory and context
-							3. Provide relevant and context-aware responses
-							""");
-			Message systemMessage = systemPromptTemplate.createMessage(Map.of("planText", planText));
+					current plan state:
+					{planText}
+					execution detail:
+					{executionDetail}
 
-			UserMessage userMessage = new UserMessage(userRequest);
+					You will be given a user's request, and you need to do the following step by step:
+					1) Analyze the user's request.
+					2) Respond to the user's request in detail.
+					3) then Provide a summary of the plan and its execution status.
+
+					""");
+			Message systemMessage = systemPromptTemplate
+				.createMessage(Map.of("planText", planText, "executionDetail", executionDetail));
+			String userRequestTemplate = """
+					user's request:
+					{userRequest}
+					""";
+			PromptTemplate userMessageTemplate = new PromptTemplate(userRequestTemplate);
+			Message userMessage = userMessageTemplate.createMessage(Map.of("userRequest", userRequest));
 			Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 
-			ChatResponse response = llmService.getFinalizeChatClient()
+			ChatResponse response = llmService.getPlanningChatClient()
 				.prompt(prompt)
-				.advisors(new MessageChatMemoryAdvisor(llmService.getMemory()))
 				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
 					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
 				.call()
