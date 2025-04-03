@@ -19,22 +19,21 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.alibaba.cloud.ai.toolcalling.sensitivefilter.SensitiveInfoFilterProperties.PatternConfig;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Sensitive Information Filtering Service
  *
  * @author Makoto
  */
-@Slf4j
-public class SensitivefilterService
-		implements Function<SensitivefilterService.Request, SensitivefilterService.Response> {
+public class SensitiveInfoFilterService
+		implements Function<SensitiveInfoFilterService.Request, SensitiveInfoFilterService.Response> {
 
 	// Chinese ID card number pattern
 	private static final Pattern ID_CARD_PATTERN = Pattern.compile("\\d{17}[0-9Xx]|\\d{15}");
@@ -97,17 +96,19 @@ public class SensitivefilterService
 
 		// Process custom sensitive patterns
 		if (request.getCustomPatterns() != null && !request.getCustomPatterns().isEmpty()) {
-			for (String pattern : request.getCustomPatterns()) {
+			for (PatternConfig patternConfig : request.getCustomPatterns()) {
 				try {
-					Pattern customPattern = Pattern.compile(pattern);
+					Pattern customPattern = Pattern.compile(patternConfig.getPattern());
 					Matcher matcher = customPattern.matcher(filteredText);
 					if (matcher.find()) {
 						detectedTypes.add("CUSTOM_PATTERN");
-						filteredText = matcher.replaceAll("******");
+						String replacement = patternConfig.getReplacement() != null ? patternConfig.getReplacement()
+								: "******";
+						filteredText = matcher.replaceAll(replacement);
 					}
 				}
 				catch (Exception e) {
-					log.error("Error processing custom pattern: {}", pattern, e);
+					System.err.println("Error processing custom pattern: " + patternConfig.getPattern());
 				}
 			}
 		}
@@ -143,7 +144,7 @@ public class SensitivefilterService
 
 		@JsonProperty(required = false)
 		@JsonPropertyDescription("List of custom sensitive information regex patterns")
-		private List<String> customPatterns;
+		private List<PatternConfig> customPatterns;
 
 		public Request() {
 		}
@@ -189,11 +190,11 @@ public class SensitivefilterService
 			this.filterEmail = filterEmail;
 		}
 
-		public List<String> getCustomPatterns() {
+		public List<PatternConfig> getCustomPatterns() {
 			return customPatterns;
 		}
 
-		public void setCustomPatterns(List<String> customPatterns) {
+		public void setCustomPatterns(List<PatternConfig> customPatterns) {
 			this.customPatterns = customPatterns;
 		}
 
@@ -236,3 +237,4 @@ public class SensitivefilterService
 	}
 
 }
+
