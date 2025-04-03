@@ -41,3 +41,4 @@ spring-ai-alibaba-examples/playground-flight-booking/src/main/bundles/
 /spring-ai-alibaba-examples/playground-flight-booking-example/
 **/community/openmanus/extensions/*
 **/venv/*
+**/community/openmanus/h2-data/*

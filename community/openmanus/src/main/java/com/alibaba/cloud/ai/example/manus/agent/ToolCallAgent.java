@@ -15,38 +15,34 @@
  */
 package com.alibaba.cloud.ai.example.manus.agent;
 
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
-
-import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
-import org.springframework.ai.chat.messages.Message;
-import com.alibaba.cloud.ai.example.manus.tool.FileSaver;
-import com.alibaba.cloud.ai.example.manus.tool.PythonExecute;
-import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
+import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
+import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 
-import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
-import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.ToolCallBackContext;
+import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 
 /**
  * 工具调用智能体，专门负责管理和执行工具调用的智能体实现 继承自ReActAgent，实现了基于工具调用的思考-行动模式
@@ -54,8 +50,6 @@ import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvis
 public class ToolCallAgent extends ReActAgent {
 
 	private static final Logger log = LoggerFactory.getLogger(ToolCallAgent.class);
-
-	private static final Integer REPLY_MAX = 3;
 
 	private final ToolCallingManager toolCallingManager;
 
@@ -65,10 +59,18 @@ public class ToolCallAgent extends ReActAgent {
 
 	protected ThinkActRecord thinkActRecord;
 
+	private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
+
+	private Map<String, ToolCallBackContext> toolCallbackMap;
+
+	private List<String> availableToolKeys = List.of("FileSaver", "PythonExecute", "TerminateTool");
+
 	public ToolCallAgent(LlmService llmService, ToolCallingManager toolCallingManager,
-			PlanExecutionRecorder planExecutionRecorder) {
-		super(llmService, planExecutionRecorder);
+			PlanExecutionRecorder planExecutionRecorder, ManusProperties manusProperties,
+			Map<String, ToolCallBackContext> toolCallbackMap) {
+		super(llmService, planExecutionRecorder, manusProperties);
 		this.toolCallingManager = toolCallingManager;
+		this.toolCallbackMap = toolCallbackMap;
 	}
 
 	/**
@@ -88,12 +90,21 @@ public class ToolCallAgent extends ReActAgent {
 		try {
 			List<Message> messages = new ArrayList<>();
 			addThinkPrompt(messages);
-			thinkActRecord.startThinking(messages.toString());
+			// provided Java code is responsible
+			// for managing and executing tool
+			// calls within the ReAct agent. It
+			// extends the `ReActAgent` class
+			// and implements the logic for
+			// handling tool calls during the
+			// thinking and acting phases of the
+			// agent.
 
 			// calltool with mem
 			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
-			Message nextStepMessage = getNextStepMessage();
+			Message nextStepMessage = getNextStepWithEnvMessage();
 			messages.add(nextStepMessage);
+			thinkActRecord.startThinking(messages.toString());// The `ToolCallAgent` class
+																// in the
 
 			log.debug("Messages prepared for the prompt: {}", messages);
 
@@ -164,32 +175,26 @@ public class ToolCallAgent extends ReActAgent {
 	protected Message addThinkPrompt(List<Message> messages) {
 		super.addThinkPrompt(messages);
 		String stepPrompt = """
-				CURRENT TASK STATUS:
-				         {planStatus}
-
-				         CURRENT TASK STEP ({currentStepIndex}):
-				         {stepText}
-
 				EXECUTION GUIDELINES:
-				         1. This is a SINGLE task step that may require multiple actions to complete
-				         2. Use appropriate tools to accomplish the current task step
-				         3. Stay focused on THIS task step until ALL requirements are met
-				         4. Each task step may need multiple actions/tools to be fully complete
+						1. This is a SINGLE task step that may require multiple actions to complete
+						2. Use appropriate tools to accomplish the current task step
+						3. Stay focused on THIS task step until ALL requirements are met
+						4. Each task step may need multiple actions/tools to be fully complete
 
-				         COMPLETION PROTOCOL:
-				         Only call Terminate tool when ALL of the following are true:
-				         1. ALL requirements for THIS task step are completed
-				         2. ALL necessary actions for THIS task step are done
-				         3. You have verified the results
-				         4. You can provide:
-				     		- Complete summary of accomplishments
-				         	- All relevant data/metrics
-				         	- Final status confirmation
+						COMPLETION PROTOCOL:
+						Only call Terminate tool when ALL of the following are true:
+						1. ALL requirements for THIS task step are completed
+						2. ALL necessary actions for THIS task step are done
+						3. You have verified the results
+						4. You can provide:
+						- Complete summary of accomplishments
+						- All relevant data/metrics
+						- Final status confirmation
 
-				         ⚠️ IMPORTANT:
-				         - You are working on ONE task step that may need multiple actions
-				         - Do NOT proceed to next TASK step until current one is 100% complete
-				         - Do NOT confuse task steps with action steps
+						⚠️ IMPORTANT:
+						- You are working on ONE task step that may need multiple actions
+						- Do NOT proceed to next TASK step until current one is 100% complete
+						- Do NOT confuse task steps with action steps
 
 					""";
 
@@ -202,23 +207,36 @@ public class ToolCallAgent extends ReActAgent {
 	}
 
 	/**
-	 * 获取下一步执行的提示消息 实现说明： 1. 返回引导工具选择和执行的提示消息 2. 提示内容包括： - 询问下一步操作的计划 - 请求提供步骤编号或名称 3.
-	 * 使用UserMessage封装提示内容
+	 *
+	 * 获取下一步执行提示的用户消息对象 实现说明： 1. 构建提示模板，包含当前步骤的环境状态 2. 创建用户消息对象 这里会额外带 上当前步骤的环境数据 ，所以，如果
+	 * 你想自定义环境数据 则 重写这个方法， 如果不想，则
 	 * @return 下一步执行提示的用户消息对象
 	 */
-	protected Message getNextStepMessage() {
+	protected Message getNextStepWithEnvMessage() {
 
 		String nextStepPrompt = """
-				What action would you like to take to progress on the current task step?
-				         Consider:
-				         1. What tools are needed for the next action?
-				         2. How does this action contribute to completing the current task step?
-				         3. What specific parameters or inputs are needed?
 
-				         Remember: This is about the next ACTION within the current TASK step.
+				CURRENT STEP ENVIRONMENT STATUS:
+				{current_step_env_data}
+
 				""";
 
-		return new UserMessage(nextStepPrompt);
+		nextStepPrompt += getNextStepPromptString();
+		PromptTemplate promptTemplate = new PromptTemplate(nextStepPrompt);
+		Message userMessage = promptTemplate.createMessage(getData());
+		return userMessage;
+	}
+
+	/**
+	 * 获取下一步执行的用户自定义 Prompt ， 写的时候可以不带环境数据（因为全局会自动拼）
+	 * 这个环境数据物理上属于toolcall的一个参数，如果需要修改或携带环境数据，在tool里面去修改
+	 * @return 下一步执行的用户自定义 Prompt
+	 */
+	protected String getNextStepPromptString() {
+		String nextStepPrompt = """
+				What should I do for next action to achieve my goal?
+				""";
+		return nextStepPrompt;
 	}
 
 	@Override
@@ -230,6 +248,9 @@ public class ToolCallAgent extends ReActAgent {
 			thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
 
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
+
+			addEnvData(EXECUTION_ENV_KEY_STRING, collectEnvData(toolCall.name()));
+
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
 				.get(toolExecutionResult.conversationHistory().size() - 1);
 			llmService.getMemory().add(getConversationId(), toolResponseMessage);
@@ -258,8 +279,32 @@ public class ToolCallAgent extends ReActAgent {
 	}
 
 	public List<ToolCallback> getToolCallList() {
-		return List.of(FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback(),
-				TerminateTool.getFunctionToolCallback(this));
+		List<ToolCallback> toolCallList = new ArrayList<>();
+		for (String key : availableToolKeys) {
+			if (toolCallbackMap.containsKey(key)) {
+				ToolCallBackContext context = toolCallbackMap.get(key);
+				ToolCallback toolCallback = context.getToolCallback();
+				toolCallList.add(toolCallback);
+			}
+		}
+		return toolCallList;
+	}
+
+	protected String collectEnvData(String toolCallName) {
+		ToolCallBackContext context = toolCallbackMap.get(toolCallName);
+		if (context != null) {
+			return context.getFunctionInstance().getCurrentToolStateString();
+		}
+		// 如果没有找到对应的工具回调上下文，返回空字符串
+		return "";
+	}
+
+	public void addEnvData(String key, String value) {
+		Map<String, Object> data = super.getData();
+		if (data == null) {
+			throw new IllegalStateException("Data map is null. Cannot add environment data.");
+		}
+		data.put(key, value);
 	}
 
 }
