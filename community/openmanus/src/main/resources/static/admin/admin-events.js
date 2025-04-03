@@ -1,3 +1,4 @@
+
 /**
  * admin-events.js - 管理界面事件处理
  */
@@ -10,6 +11,7 @@ class AdminEvents {
         // Agent详情相关元素
         this.saveAgentBtn = document.querySelector('.save-agent-btn');
         this.addToolBtn = document.querySelector('.add-tool-btn');
+        this.deleteAgentBtn = document.querySelector('.delete-agent-btn');
         
         this.currentAgentId = null;
         this.bindEvents();
@@ -26,6 +28,7 @@ class AdminEvents {
         // Agent详情事件
         this.saveAgentBtn.addEventListener('click', () => this.handleSaveAgent());
         this.addToolBtn.addEventListener('click', () => this.handleAddTool());
+        this.deleteAgentBtn.addEventListener('click', () => this.handleDeleteAgent());
 
         // 工具列表事件委托
         document.querySelector('.tool-list').addEventListener('click', (e) => this.handleToolListClick(e));
@@ -122,6 +125,29 @@ class AdminEvents {
             if (toolItem) {
                 toolItem.remove();
             }
+        }
+    }
+
+    /**
+     * 处理删除Agent
+     */
+    async handleDeleteAgent() {
+        if (!this.currentAgentId) {
+            adminUI.showError('未选择任何Agent');
+            return;
+        }
+
+        const confirmed = await adminUtils.confirmDialog('确定要删除该Agent吗？');
+        if (!confirmed) return;
+
+        try {
+            await agentConfigModel.deleteAgent(this.currentAgentId);
+            this.currentAgentId = null;
+            await adminUI.loadAgents();
+            adminUI.clearAgentDetails();
+            adminUI.showSuccess('Agent删除成功');
+        } catch (error) {
+            adminUI.showError('删除Agent失败');
         }
     }
 }

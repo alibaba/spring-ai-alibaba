@@ -196,3 +196,4 @@ class AdminUtils {
         return JSON.stringify(originalData) !== JSON.stringify(currentData);
     }
 }
+
