@@ -36,7 +36,7 @@ public class DynamicAgentEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(nullable = false)
+	@Column(nullable = false, unique = true)
 	private String agentName;
 
 	@Column(nullable = false, length = 1000)
