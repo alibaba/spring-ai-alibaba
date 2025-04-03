@@ -171,6 +171,9 @@ class AdminAPI {
             const response = await fetch(`${this.AGENT_URL}/${id}`, {
                 method: 'DELETE'
             });
+            if (response.status === 400) {
+                throw new Error('不能删除默认Agent');
+            }
             await this._handleResponse(response);
         } catch (error) {
             console.error(`删除Agent[${id}]失败:`, error);

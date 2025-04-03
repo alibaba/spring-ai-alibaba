@@ -64,8 +64,13 @@ public class AgentController {
 
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Void> deleteAgent(@PathVariable String id) {
-		agentService.deleteAgent(id);
-		return ResponseEntity.ok().build();
+		try {
+			agentService.deleteAgent(id);
+			return ResponseEntity.ok().build();
+		}
+		catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest().build();
+		}
 	}
 
 	@GetMapping("/tools")

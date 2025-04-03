@@ -31,6 +31,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentR
 @Service
 public class AgentServiceImpl implements AgentService {
 
+	private static final String DEFAULT_AGENT_NAME = "DEFAULT_AGENT"; // 修改为通过 name 判断
+
 	@Autowired
 	private DynamicAgentLoader dynamicAgentLoader;
 
@@ -71,6 +73,13 @@ public class AgentServiceImpl implements AgentService {
 
 	@Override
 	public void deleteAgent(String id) {
+		DynamicAgentEntity entity = repository.findById(Long.parseLong(id))
+			.orElseThrow(() -> new IllegalArgumentException("Agent not found: " + id));
+
+		if (DEFAULT_AGENT_NAME.equals(entity.getAgentName())) {
+			throw new IllegalArgumentException("不能删除默认 Agent");
+		}
+
 		repository.deleteById(Long.parseLong(id));
 	}
 
