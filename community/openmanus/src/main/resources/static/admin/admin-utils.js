@@ -3,7 +3,7 @@
  * 提供管理界面中通用的工具函数
  */
 
-class AdminUtils {
+export class AdminUtils {
     /**
      * 显示通知消息
      * @param {string} message - 消息内容
@@ -113,10 +113,11 @@ class AdminUtils {
             overlay.appendChild(dialog);
             document.body.appendChild(overlay);
             
-            // 添加动画
-            setTimeout(() => {
+            // 添加动画，使用 requestAnimationFrame 确保 DOM 更新后再添加动画类
+            requestAnimationFrame(() => {
+                overlay.classList.add('show');
                 dialog.classList.add('show');
-            }, 10);
+            });
             
             // 添加按钮事件
             dialog.querySelector('.confirm-btn').addEventListener('click', () => {
@@ -137,6 +138,7 @@ class AdminUtils {
      */
     static closeDialog(overlay) {
         const dialog = overlay.querySelector('.confirm-dialog');
+        overlay.classList.remove('show');
         dialog.classList.remove('show');
         
         // 移除元素
