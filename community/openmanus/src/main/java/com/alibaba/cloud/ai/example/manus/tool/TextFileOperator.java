@@ -33,26 +33,22 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
+import com.alibaba.cloud.ai.example.manus.service.TextFileService;
+
 public class TextFileOperator implements ToolCallBiFunctionDef {
 
 	private static final Logger log = LoggerFactory.getLogger(TextFileOperator.class);
 
-	/**
-	 * 文本文件操作的工作目录
-	 */
 	private final String workingDirectoryPath;
 
-	/**
-	 * 支持的文本文件扩展名集合
-	 */
-	private static final Set<String> SUPPORTED_EXTENSIONS = new HashSet<>(Set.of(".txt", ".md", ".markdown", // 普通文本和Markdown
-			".java", ".py", ".js", ".ts", ".jsx", ".tsx", // 常见编程语言
-			".html", ".htm", ".css", ".scss", ".sass", ".less", // Web相关
-			".xml", ".json", ".yaml", ".yml", ".properties", // 配置文件
-			".sql", ".sh", ".bat", ".cmd", // 脚本和数据库
-			".log", ".conf", ".ini", // 日志和配置
-			".gradle", ".pom", ".mvn" // 构建工具
-	));
+	private final TextFileService textFileService;
+
+	private BaseAgent agent;
+
+	public TextFileOperator(String workingDirectoryPath, TextFileService textFileService) {
+		this.workingDirectoryPath = workingDirectoryPath;
+		this.textFileService = textFileService;
+	}
 
 	private static final String PARAMETERS = """
 			{
@@ -105,14 +101,6 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 			- And more text-based file types
 			""";
 
-	// 移除对内存中内容的依赖
-	// private String currentContent = "";
-
-	// 只保存当前文件路径和操作结果
-	private String currentFilePath = "";
-
-	private String lastOperationResult = "";
-
 	public static OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(TOOL_DESCRIPTION, TOOL_NAME,
 				PARAMETERS);
@@ -120,16 +108,13 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 		return functionTool;
 	}
 
-	public static FunctionToolCallback getFunctionToolCallback(String workingDirectoryPath) {
-		return FunctionToolCallback.builder(TOOL_NAME, new TextFileOperator(workingDirectoryPath))
+	public static FunctionToolCallback getFunctionToolCallback(String workingDirectoryPath,
+			TextFileService textFileService) {
+		return FunctionToolCallback.builder(TOOL_NAME, new TextFileOperator(workingDirectoryPath, textFileService))
 			.description(TOOL_DESCRIPTION)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
 			.build();
-	}
-
-	public TextFileOperator(String workingDirectoryPath) {
-		this.workingDirectoryPath = workingDirectoryPath;
 	}
 
 	public ToolExecuteResult run(String toolInput) {
@@ -137,221 +122,221 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 		try {
 			Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 			});
+			String planId = agent.getPlanId();
 
 			String action = (String) toolInputMap.get("action");
 			String filePath = (String) toolInputMap.get("file_path");
-			this.currentFilePath = filePath;
 
 			return switch (action) {
-				case "open" -> openFile(filePath);
+				case "open" -> openFile(planId, filePath);
 				case "replace" -> {
 					String sourceText = (String) toolInputMap.get("source_text");
 					String targetText = (String) toolInputMap.get("target_text");
-					yield replaceText(sourceText, targetText);
+					yield replaceText(planId, sourceText, targetText);
 				}
-				case "get_text" -> getCurrentText();
+				case "get_text" -> getCurrentText(planId);
 				case "save" -> {
 					String content = (String) toolInputMap.get("content");
-					yield saveAndClose(content);
+					yield saveAndClose(planId, content);
 				}
 				case "append" -> {
 					String appendContent = (String) toolInputMap.get("content");
-					yield appendToFile(appendContent);
+					yield appendToFile(planId, appendContent);
 				}
-				case "count_words" -> countWords();
+				case "count_words" -> countWords(planId);
 				default -> {
-					this.lastOperationResult = "Error: Unknown action";
+					textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
+							"Error: Unknown action");
 					yield new ToolExecuteResult("Unknown action: " + action);
 				}
 			};
 		}
 		catch (Exception e) {
-			this.lastOperationResult = "Error: " + e.getMessage();
+			String planId = agent.getPlanId();
+			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
+					"Error: " + e.getMessage());
 			return new ToolExecuteResult("Error: " + e.getMessage());
 		}
 	}
 
-	private ToolExecuteResult openFile(String filePath) {
+	private ToolExecuteResult openFile(String planId, String filePath) {
 		try {
 			// 检查文件类型
-			String fileExtension = getFileExtension(filePath);
-			if (!SUPPORTED_EXTENSIONS.contains(fileExtension.toLowerCase())) {
-				this.lastOperationResult = "Error: Unsupported file type: " + fileExtension;
+			if (!textFileService.isSupportedFileType(filePath)) {
+				textFileService.updateFileState(planId, filePath, "Error: Unsupported file type");
 				return new ToolExecuteResult("Unsupported file type. Only text-based files are supported.");
 			}
 
-			Path absolutePath = validateAndGetAbsolutePath(filePath);
+			textFileService.validateAndGetAbsolutePath(workingDirectoryPath, filePath);
 
 			// 如果文件不存在，先创建父目录
+			Path absolutePath = Paths.get(workingDirectoryPath).resolve(filePath);
 			if (!Files.exists(absolutePath)) {
 				try {
 					Files.createDirectories(absolutePath.getParent());
 					Files.createFile(absolutePath);
-					this.lastOperationResult = "Success: New file created";
+					textFileService.updateFileState(planId, filePath, "Success: New file created");
 					return new ToolExecuteResult("New file created successfully: " + absolutePath);
 				}
 				catch (IOException e) {
-					this.lastOperationResult = "Error: Failed to create file: " + e.getMessage();
+					textFileService.updateFileState(planId, filePath,
+							"Error: Failed to create file: " + e.getMessage());
 					return new ToolExecuteResult("Failed to create file: " + e.getMessage());
 				}
 			}
 
-			// 检查文件大小
-			if (Files.size(absolutePath) > 10 * 1024 * 1024) { // 10MB limit
-				this.lastOperationResult = "Error: File too large";
-				return new ToolExecuteResult(
-						"File is too large (>10MB). For safety reasons, please use a smaller file.");
-			}
-
-			// 不再将内容读入内存，只存储文件路径
-			this.currentFilePath = filePath;
-			this.lastOperationResult = "Success: File opened";
+			textFileService.updateFileState(planId, filePath, "Success: File opened");
 			return new ToolExecuteResult("File opened successfully: " + absolutePath);
 		}
 		catch (IOException e) {
-			this.lastOperationResult = "Error: " + e.getMessage();
+			textFileService.updateFileState(planId, filePath, "Error: " + e.getMessage());
 			return new ToolExecuteResult("Error opening file: " + e.getMessage());
 		}
 	}
 
-	/**
-	 * 获取文件扩展名（包含点号）
-	 */
-	private String getFileExtension(String filePath) {
-		int lastDotIndex = filePath.lastIndexOf('.');
-		if (lastDotIndex > 0) {
-			return filePath.substring(lastDotIndex).toLowerCase();
-		}
-		return "";
-	}
-
-	private ToolExecuteResult replaceText(String sourceText, String targetText) {
+	private ToolExecuteResult replaceText(String planId, String sourceText, String targetText) {
 		try {
-			if (this.currentFilePath.isEmpty()) {
-				this.lastOperationResult = "Error: No file is currently open";
+			String currentFilePath = textFileService.getCurrentFilePath(planId);
+			if (currentFilePath.isEmpty()) {
+				textFileService.updateFileState(planId, "", "Error: No file is currently open");
 				return new ToolExecuteResult("Error: No file is currently open");
 			}
 
-			// 直接从文件读取内容
-			Path absolutePath = validateAndGetAbsolutePath(this.currentFilePath);
+			Path absolutePath = Paths.get(workingDirectoryPath).resolve(currentFilePath);
 			String content = Files.readString(absolutePath);
-
-			// 替换内容
 			String newContent = content.replace(sourceText, targetText);
-
-			// 直接写回文件
 			Files.writeString(absolutePath, newContent);
 
-			this.lastOperationResult = "Success: Text replaced";
+			textFileService.updateFileState(planId, currentFilePath, "Success: Text replaced");
 			return new ToolExecuteResult("Text replaced successfully");
 		}
 		catch (IOException e) {
-			this.lastOperationResult = "Error: " + e.getMessage();
+			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
+					"Error: " + e.getMessage());
 			return new ToolExecuteResult("Error replacing text: " + e.getMessage());
 		}
 	}
 
-	private ToolExecuteResult getCurrentText() {
+	private ToolExecuteResult getCurrentText(String planId) {
 		try {
-			if (this.currentFilePath.isEmpty()) {
-				this.lastOperationResult = "Error: No file is currently open";
+			String currentFilePath = textFileService.getCurrentFilePath(planId);
+			if (currentFilePath.isEmpty()) {
+				textFileService.updateFileState(planId, "", "Error: No file is currently open");
 				return new ToolExecuteResult("Error: No file is currently open");
 			}
 
-			// 直接从文件读取内容
-			Path absolutePath = validateAndGetAbsolutePath(this.currentFilePath);
+			Path absolutePath = Paths.get(workingDirectoryPath).resolve(currentFilePath);
 			String content = Files.readString(absolutePath);
 
-			this.lastOperationResult = "Success: Retrieved current text";
+			textFileService.updateFileState(planId, currentFilePath, "Success: Retrieved current text");
 			return new ToolExecuteResult(content);
 		}
 		catch (IOException e) {
-			this.lastOperationResult = "Error: " + e.getMessage();
+			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
+					"Error: " + e.getMessage());
 			return new ToolExecuteResult("Error retrieving text: " + e.getMessage());
 		}
 	}
 
-	private ToolExecuteResult saveAndClose(String content) {
+	private ToolExecuteResult saveAndClose(String planId, String content) {
 		try {
-			Path absolutePath = validateAndGetAbsolutePath(this.currentFilePath);
+			String currentFilePath = textFileService.getCurrentFilePath(planId);
+			Path absolutePath = Paths.get(workingDirectoryPath).resolve(currentFilePath);
 
 			if (content != null) {
-				// 直接将内容写入文件
 				Files.writeString(absolutePath, content);
 			}
 
-			// 强制刷新到磁盘（通过FileChannel实现）
+			// 强制刷新到磁盘
 			try (FileChannel channel = FileChannel.open(absolutePath, StandardOpenOption.WRITE)) {
 				channel.force(true);
 			}
 
-			this.lastOperationResult = "Success: File saved and closed";
-			// 操作完成后清除当前文件路径，表示文件已关闭
-			this.currentFilePath = "";
+			textFileService.updateFileState(planId, "", "Success: File saved and closed");
+			textFileService.closeFileForPlan(planId);
 			return new ToolExecuteResult("File saved and closed successfully: " + absolutePath);
 		}
 		catch (IOException e) {
-			this.lastOperationResult = "Error: " + e.getMessage();
+			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
+					"Error: " + e.getMessage());
 			return new ToolExecuteResult("Error saving file: " + e.getMessage());
 		}
 	}
 
-	private ToolExecuteResult appendToFile(String content) {
+	private ToolExecuteResult appendToFile(String planId, String content) {
 		try {
 			if (content == null || content.isEmpty()) {
-				this.lastOperationResult = "Error: No content to append";
+				textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
+						"Error: No content to append");
 				return new ToolExecuteResult("Error: No content to append");
 			}
 
-			Path absolutePath = validateAndGetAbsolutePath(this.currentFilePath);
-
-			// 直接将内容附加到文件
+			String currentFilePath = textFileService.getCurrentFilePath(planId);
+			Path absolutePath = Paths.get(workingDirectoryPath).resolve(currentFilePath);
 			Files.writeString(absolutePath, "\n" + content, StandardOpenOption.APPEND, StandardOpenOption.CREATE);
 
-			this.lastOperationResult = "Success: Content appended";
+			textFileService.updateFileState(planId, currentFilePath, "Success: Content appended");
 			return new ToolExecuteResult("Content appended successfully");
 		}
 		catch (IOException e) {
-			this.lastOperationResult = "Error: " + e.getMessage();
+			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
+					"Error: " + e.getMessage());
 			return new ToolExecuteResult("Error appending to file: " + e.getMessage());
 		}
 	}
 
-	private ToolExecuteResult countWords() {
+	private ToolExecuteResult countWords(String planId) {
 		try {
-			if (this.currentFilePath.isEmpty()) {
-				this.lastOperationResult = "Error: No file is currently open";
+			String currentFilePath = textFileService.getCurrentFilePath(planId);
+			if (currentFilePath.isEmpty()) {
+				textFileService.updateFileState(planId, "", "Error: No file is currently open");
 				return new ToolExecuteResult("Error: No file is currently open");
 			}
 
-			// 直接从文件读取内容
-			Path absolutePath = validateAndGetAbsolutePath(this.currentFilePath);
+			Path absolutePath = Paths.get(workingDirectoryPath).resolve(currentFilePath);
 			String content = Files.readString(absolutePath);
-
-			// 按空格分割并计数
 			int wordCount = content.isEmpty() ? 0 : content.split("\\s+").length;
 
-			this.lastOperationResult = "Success: Counted words";
+			textFileService.updateFileState(planId, currentFilePath, "Success: Counted words");
 			return new ToolExecuteResult(String.format("Total word count (including Markdown symbols): %d", wordCount));
 		}
 		catch (IOException e) {
-			this.lastOperationResult = "Error: " + e.getMessage();
+			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
+					"Error: " + e.getMessage());
 			return new ToolExecuteResult("Error counting words: " + e.getMessage());
 		}
 	}
 
-	/**
-	 * 验证并获取文件的绝对路径，确保文件在工作目录范围内
-	 */
-	private Path validateAndGetAbsolutePath(String filePath) throws IOException {
-		Path workingDir = Paths.get(workingDirectoryPath).toAbsolutePath().normalize();
-		Path absolutePath = workingDir.resolve(filePath).normalize();
+	@Override
+	public void setAgent(BaseAgent agent) {
+		this.agent = agent;
+	}
 
-		// 检查文件是否在工作目录范围内
-		if (!absolutePath.startsWith(workingDir)) {
-			throw new IOException("Access denied: File path must be within working directory");
-		}
-		return absolutePath;
+	public BaseAgent getAgent() {
+		return this.agent;
+	}
+
+	@Override
+	public String getCurrentToolStateString() {
+		String planId = agent.getPlanId();
+		return String.format("""
+				Current Text File Operation State:
+				- Working Directory:
+				%s
+
+				- Current File:
+				%s
+				- File Type: %s
+
+				- Last Operation Result:
+				%s
+				""", workingDirectoryPath,
+				textFileService.getCurrentFilePath(planId).isEmpty() ? "No file open"
+						: textFileService.getCurrentFilePath(planId),
+				textFileService.getCurrentFilePath(planId).isEmpty() ? "N/A"
+						: textFileService.getFileExtension(textFileService.getCurrentFilePath(planId)),
+				textFileService.getLastOperationResult(planId).isEmpty() ? "No operation performed yet"
+						: textFileService.getLastOperationResult(planId));
 	}
 
 	@Override
@@ -382,35 +367,6 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	@Override
 	public ToolExecuteResult apply(String s, ToolContext toolContext) {
 		return run(s);
-	}
-
-	private BaseAgent agent;
-
-	@Override
-	public void setAgent(BaseAgent agent) {
-		this.agent = agent;
-	}
-
-	public BaseAgent getAgent() {
-		return this.agent;
-	}
-
-	@Override
-	public String getCurrentToolStateString() {
-		return String.format("""
-				Current Text File Operation State:
-				- Working Directory:
-				%s
-
-				- Current File:
-				%s
-				- File Type: %s
-
-				- Last Operation Result:
-				%s
-				""", workingDirectoryPath, currentFilePath.isEmpty() ? "No file open" : currentFilePath,
-				currentFilePath.isEmpty() ? "N/A" : getFileExtension(currentFilePath),
-				lastOperationResult.isEmpty() ? "No operation performed yet" : lastOperationResult);
 	}
 
 }

@@ -24,6 +24,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +46,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
 
+import com.alibaba.cloud.ai.example.manus.service.TextFileService;
+
 public class PlanningFlow extends BaseFlow {
 
 	private static final Logger log = LoggerFactory.getLogger(PlanningFlow.class);
@@ -62,6 +65,9 @@ public class PlanningFlow extends BaseFlow {
 
 	@Autowired
 	private ChromeDriverService chromeDriverService;
+
+	@Autowired
+	private TextFileService textFileService;
 
 	private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
 
@@ -197,7 +203,8 @@ public class PlanningFlow extends BaseFlow {
 			return "Execution failed: " + e.getMessage();
 		}
 		finally {
-			chromeDriverService.cleanup();
+			chromeDriverService.cleanup(activePlanId);
+			textFileService.cleanup(activePlanId);
 		}
 	}
 

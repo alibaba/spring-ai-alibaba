@@ -48,6 +48,7 @@ import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
+import com.alibaba.cloud.ai.example.manus.service.TextFileService;
 import com.alibaba.cloud.ai.example.manus.tool.Bash;
 import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
@@ -72,11 +73,14 @@ public class ManusConfiguration {
 
 	private final ManusProperties manusProperties;
 
+	private final TextFileService textFileService;
+
 	public ManusConfiguration(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
-			ManusProperties manusProperties) {
+			ManusProperties manusProperties, TextFileService textFileService) {
 		this.chromeDriverService = chromeDriverService;
 		this.recorder = recorder;
 		this.manusProperties = manusProperties;
+		this.textFileService = textFileService;
 	}
 
 	// @Bean
@@ -154,7 +158,7 @@ public class ManusConfiguration {
 		toolDefinitions.add(new TerminateTool(null));
 		toolDefinitions.add(new Bash(CodeUtils.WORKING_DIR));
 		toolDefinitions.add(new DocLoaderTool());
-		toolDefinitions.add(new TextFileOperator(CodeUtils.WORKING_DIR));
+		toolDefinitions.add(new TextFileOperator(CodeUtils.WORKING_DIR, textFileService));
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
 
