@@ -292,6 +292,13 @@ public class ChromeDriverService implements ApplicationRunner {
 		}
 	}
 
+	public void cleanup(String planId) {
+		if (planId != null) {
+			log.info("Cleaning up Chrome resources for plan: {}", planId);
+			closeDriverForPlan(planId);
+		}
+	}
+
 	@PreDestroy
 	public void cleanup() {
 		log.info("Spring container shutting down - cleaning up Chrome resources");
