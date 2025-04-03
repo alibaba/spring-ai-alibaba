@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.tool;
 
 import java.io.*;
+import java.nio.channels.FileChannel;
 import java.nio.file.*;
 import java.util.Map;
 import java.util.Set;
@@ -25,6 +26,7 @@ import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
@@ -103,9 +105,11 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 			- And more text-based file types
 			""";
 
-	private String currentFilePath = "";
+	// 移除对内存中内容的依赖
+	// private String currentContent = "";
 
-	private String currentContent = "";
+	// 只保存当前文件路径和操作结果
+	private String currentFilePath = "";
 
 	private String lastOperationResult = "";
 
@@ -183,7 +187,6 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 				try {
 					Files.createDirectories(absolutePath.getParent());
 					Files.createFile(absolutePath);
-					this.currentContent = "";
 					this.lastOperationResult = "Success: New file created";
 					return new ToolExecuteResult("New file created successfully: " + absolutePath);
 				}
@@ -200,7 +203,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 						"File is too large (>10MB). For safety reasons, please use a smaller file.");
 			}
 
-			this.currentContent = Files.readString(absolutePath);
+			// 不再将内容读入内存，只存储文件路径
+			this.currentFilePath = filePath;
 			this.lastOperationResult = "Success: File opened";
 			return new ToolExecuteResult("File opened successfully: " + absolutePath);
 		}
@@ -222,34 +226,69 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	}
 
 	private ToolExecuteResult replaceText(String sourceText, String targetText) {
-		if (this.currentContent.isEmpty()) {
-			this.lastOperationResult = "Error: No file is currently open";
-			return new ToolExecuteResult("Error: No file is currently open");
+		try {
+			if (this.currentFilePath.isEmpty()) {
+				this.lastOperationResult = "Error: No file is currently open";
+				return new ToolExecuteResult("Error: No file is currently open");
+			}
+
+			// 直接从文件读取内容
+			Path absolutePath = validateAndGetAbsolutePath(this.currentFilePath);
+			String content = Files.readString(absolutePath);
+
+			// 替换内容
+			String newContent = content.replace(sourceText, targetText);
+
+			// 直接写回文件
+			Files.writeString(absolutePath, newContent);
+
+			this.lastOperationResult = "Success: Text replaced";
+			return new ToolExecuteResult("Text replaced successfully");
 		}
-		this.currentContent = this.currentContent.replace(sourceText, targetText);
-		this.lastOperationResult = "Success: Text replaced";
-		return new ToolExecuteResult("Text replaced successfully");
+		catch (IOException e) {
+			this.lastOperationResult = "Error: " + e.getMessage();
+			return new ToolExecuteResult("Error replacing text: " + e.getMessage());
+		}
 	}
 
 	private ToolExecuteResult getCurrentText() {
-		if (this.currentContent.isEmpty()) {
-			this.lastOperationResult = "Error: No file is currently open";
-			return new ToolExecuteResult("Error: No file is currently open");
+		try {
+			if (this.currentFilePath.isEmpty()) {
+				this.lastOperationResult = "Error: No file is currently open";
+				return new ToolExecuteResult("Error: No file is currently open");
+			}
+
+			// 直接从文件读取内容
+			Path absolutePath = validateAndGetAbsolutePath(this.currentFilePath);
+			String content = Files.readString(absolutePath);
+
+			this.lastOperationResult = "Success: Retrieved current text";
+			return new ToolExecuteResult(content);
 		}
-		this.lastOperationResult = "Success: Retrieved current text";
-		return new ToolExecuteResult(this.currentContent);
+		catch (IOException e) {
+			this.lastOperationResult = "Error: " + e.getMessage();
+			return new ToolExecuteResult("Error retrieving text: " + e.getMessage());
+		}
 	}
 
 	private ToolExecuteResult saveAndClose(String content) {
 		try {
-			if (content != null) {
-				this.currentContent = content;
-			}
 			Path absolutePath = validateAndGetAbsolutePath(this.currentFilePath);
-			Files.writeString(absolutePath, this.currentContent);
-			this.lastOperationResult = "Success: File saved";
-			this.currentContent = "";
-			return new ToolExecuteResult("File saved successfully: " + absolutePath);
+
+			if (content != null) {
+				// 直接将内容写入文件
+				Files.writeString(absolutePath, content);
+			}
+
+			// 强制刷新到磁盘（通过FileChannel实现）
+			try (FileChannel channel = FileChannel.open(absolutePath, StandardOpenOption.WRITE)) {
+				channel.force(true);
+			}
+
+			this.lastOperationResult = "Success: File saved and closed";
+			// 操作完成后清除当前文件路径，表示文件已关闭
+			this.currentFilePath = "";
+			return new ToolExecuteResult("File saved and closed successfully: " + absolutePath);
 		}
 		catch (IOException e) {
 			this.lastOperationResult = "Error: " + e.getMessage();
@@ -259,12 +298,16 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 
 	private ToolExecuteResult appendToFile(String content) {
 		try {
-			Path absolutePath = validateAndGetAbsolutePath(this.currentFilePath);
-			if (this.currentContent.isEmpty()) {
-				// If no file is open, read it first
-				this.currentContent = Files.readString(absolutePath);
+			if (content == null || content.isEmpty()) {
+				this.lastOperationResult = "Error: No content to append";
+				return new ToolExecuteResult("Error: No content to append");
 			}
-			this.currentContent += "\n" + content;
+
+			Path absolutePath = validateAndGetAbsolutePath(this.currentFilePath);
+
+			// 直接将内容附加到文件
+			Files.writeString(absolutePath, "\n" + content, StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+
 			this.lastOperationResult = "Success: Content appended";
 			return new ToolExecuteResult("Content appended successfully");
 		}
@@ -275,19 +318,26 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	}
 
 	private ToolExecuteResult countWords() {
-		if (this.currentContent.isEmpty()) {
-			this.lastOperationResult = "Error: No file is currently open";
-			return new ToolExecuteResult("Error: No file is currently open");
+		try {
+			if (this.currentFilePath.isEmpty()) {
+				this.lastOperationResult = "Error: No file is currently open";
+				return new ToolExecuteResult("Error: No file is currently open");
+			}
+
+			// 直接从文件读取内容
+			Path absolutePath = validateAndGetAbsolutePath(this.currentFilePath);
+			String content = Files.readString(absolutePath);
+
+			// 按空格分割并计数
+			int wordCount = content.isEmpty() ? 0 : content.split("\\s+").length;
+
+			this.lastOperationResult = "Success: Counted words";
+			return new ToolExecuteResult(String.format("Total word count (including Markdown symbols): %d", wordCount));
 		}
-
-		// 将多个空白字符替换为单个空格
-		String processedText = this.currentContent;
-
-		// 按空格分割并计数
-		int wordCount = processedText.isEmpty() ? 0 : processedText.split("\\s+").length;
-
-		this.lastOperationResult = "Success: Counted words";
-		return new ToolExecuteResult(String.format("Total word count (including Markdown symbols): %d", wordCount));
+		catch (IOException e) {
+			this.lastOperationResult = "Error: " + e.getMessage();
+			return new ToolExecuteResult("Error counting words: " + e.getMessage());
+		}
 	}
 
 	/**

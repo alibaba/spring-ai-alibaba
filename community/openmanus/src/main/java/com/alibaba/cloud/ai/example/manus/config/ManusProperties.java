@@ -31,10 +31,9 @@ public class ManusProperties {
 	@Autowired
 	private ConfigService configService;
 
-	@ConfigProperty(group = "browser", subGroup = "settings", key = "headless", path = "manus.browser.headless",
-			description = "是否使用无头浏览器模式", defaultValue = "true", inputType = ConfigInputType.SELECT,
+	@ConfigProperty(group = "manus", subGroup = "browser", key = "headless", path = "manus.browser.headless",
+			description = "是否使用无头浏览器模式", defaultValue = "true", inputType = ConfigInputType.CHECKBOX,
 			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
-
 	private volatile Boolean browserHeadless;
 
 	public Boolean getBrowserHeadless() {
@@ -50,10 +49,9 @@ public class ManusProperties {
 		this.browserHeadless = browserHeadless;
 	}
 
-	@ConfigProperty(group = "interaction", subGroup = "settings", key = "openBrowser", path = "manus.openBrowserAuto",
-			description = "启动时自动打开浏览器", defaultValue = "true", inputType = ConfigInputType.SELECT,
+	@ConfigProperty(group = "manus", subGroup = "interaction", key = "openBrowser", path = "manus.openBrowserAuto",
+			description = "启动时自动打开浏览器", defaultValue = "true", inputType = ConfigInputType.CHECKBOX,
 			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
-
 	private volatile Boolean openBrowserAuto;
 
 	public Boolean getOpenBrowserAuto() {
@@ -69,8 +67,8 @@ public class ManusProperties {
 		this.openBrowserAuto = openBrowserAuto;
 	}
 
-	@ConfigProperty(group = "interaction", subGroup = "settings", key = "consoleQuery", path = "manus.consoleQuery",
-			description = "启用控制台交互模式", defaultValue = "false", inputType = ConfigInputType.SELECT,
+	@ConfigProperty(group = "manus", subGroup = "interaction", key = "consoleQuery", path = "manus.consoleQuery",
+			description = "启用控制台交互模式", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
 			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
 	private volatile Boolean consoleQuery;
 
@@ -87,7 +85,7 @@ public class ManusProperties {
 		this.consoleQuery = consoleQuery;
 	}
 
-	@ConfigProperty(group = "agent", subGroup = "settings", key = "maxSteps", path = "manus.maxSteps",
+	@ConfigProperty(group = "manus", subGroup = "agent", key = "maxSteps", path = "manus.maxSteps",
 			description = "智能体执行最大步数", defaultValue = "20", inputType = ConfigInputType.NUMBER)
 	private volatile Integer maxSteps;
 
@@ -104,8 +102,8 @@ public class ManusProperties {
 		this.maxSteps = maxSteps;
 	}
 
-	@ConfigProperty(group = "agent", subGroup = "settings", key = "resetAgents", path = "manus.resetAgents",
-			description = "重置所有agent", defaultValue = "true", inputType = ConfigInputType.SELECT,
+	@ConfigProperty(group = "manus", subGroup = "agent", key = "resetAgents", path = "manus.resetAgents",
+			description = "重置所有agent", defaultValue = "true", inputType = ConfigInputType.CHECKBOX,
 			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
 	private volatile Boolean resetAgents;
 
