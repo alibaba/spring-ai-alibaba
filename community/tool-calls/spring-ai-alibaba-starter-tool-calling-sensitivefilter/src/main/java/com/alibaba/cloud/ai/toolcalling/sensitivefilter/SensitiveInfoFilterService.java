@@ -25,24 +25,27 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Sensitive Information Filtering Service
+ *
  * @author Makoto
  */
-public class SensitiveInfoFilterService
-		implements Function<SensitiveInfoFilterService.Request, SensitiveInfoFilterService.Response> {
+@Slf4j
+public class SensitivefilterService
+		implements Function<SensitivefilterService.Request, SensitivefilterService.Response> {
 
-	// China Identity Card Number Patterns
+	// Chinese ID card number pattern
 	private static final Pattern ID_CARD_PATTERN = Pattern.compile("\\d{17}[0-9Xx]|\\d{15}");
 
-	// China Cell Phone Number Model
+	// Chinese mobile phone number pattern
 	private static final Pattern PHONE_PATTERN = Pattern.compile("1[3-9]\\d{9}");
 
-	// Credit card number model
+	// Credit card number pattern
 	private static final Pattern CREDIT_CARD_PATTERN = Pattern.compile("\\d{16}|\\d{13}");
 
-	// Email Address Mode
+	// Email address pattern
 	private static final Pattern EMAIL_PATTERN = Pattern.compile("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}");
 
 	@Override
@@ -51,7 +54,7 @@ public class SensitiveInfoFilterService
 		List<String> detectedTypes = new ArrayList<>();
 		String filteredText = text;
 
-		// Detect and filter ID numbers
+		// Detect and filter ID card numbers
 		if (request.isFilterIdCard()) {
 			Matcher matcher = ID_CARD_PATTERN.matcher(filteredText);
 			if (matcher.find()) {
@@ -60,7 +63,7 @@ public class SensitiveInfoFilterService
 			}
 		}
 
-		// Detect and filter cell phone numbers
+		// Detect and filter phone numbers
 		if (request.isFilterPhone()) {
 			Matcher matcher = PHONE_PATTERN.matcher(filteredText);
 			if (matcher.find()) {
@@ -80,7 +83,7 @@ public class SensitiveInfoFilterService
 			}
 		}
 
-		// Detect and filter mailboxes
+		// Detect and filter email addresses
 		if (request.isFilterEmail()) {
 			Matcher matcher = EMAIL_PATTERN.matcher(filteredText);
 			if (matcher.find()) {
@@ -92,7 +95,7 @@ public class SensitiveInfoFilterService
 			}
 		}
 
-		// Handling customized sensitive words
+		// Process custom sensitive patterns
 		if (request.getCustomPatterns() != null && !request.getCustomPatterns().isEmpty()) {
 			for (String pattern : request.getCustomPatterns()) {
 				try {
@@ -104,7 +107,7 @@ public class SensitiveInfoFilterService
 					}
 				}
 				catch (Exception e) {
-					System.err.println("Error processing custom pattern: " + pattern);
+					log.error("Error processing custom pattern: {}", pattern, e);
 				}
 			}
 		}
@@ -115,7 +118,7 @@ public class SensitiveInfoFilterService
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	@JsonClassDescription("Sensitive information filtering requests to detect and block sensitive information in text")
+	@JsonClassDescription("Sensitive information filtering request for detecting and masking sensitive data in text")
 	public static class Request {
 
 		@JsonProperty(required = true)
@@ -123,11 +126,11 @@ public class SensitiveInfoFilterService
 		private String text;
 
 		@JsonProperty(required = false, defaultValue = "true")
-		@JsonPropertyDescription("Whether to filter ID numbers")
+		@JsonPropertyDescription("Whether to filter ID card numbers")
 		private boolean filterIdCard = true;
 
 		@JsonProperty(required = false, defaultValue = "true")
-		@JsonPropertyDescription("Whether to filter cell phone numbers")
+		@JsonPropertyDescription("Whether to filter phone numbers")
 		private boolean filterPhone = true;
 
 		@JsonProperty(required = false, defaultValue = "true")
@@ -135,11 +138,11 @@ public class SensitiveInfoFilterService
 		private boolean filterCreditCard = true;
 
 		@JsonProperty(required = false, defaultValue = "true")
-		@JsonPropertyDescription("Whether to filter e-mail addresses")
+		@JsonPropertyDescription("Whether to filter email addresses")
 		private boolean filterEmail = true;
 
 		@JsonProperty(required = false)
-		@JsonPropertyDescription("Customizing the list of regular expression patterns for sensitive information")
+		@JsonPropertyDescription("List of custom sensitive information regex patterns")
 		private List<String> customPatterns;
 
 		public Request() {
@@ -197,7 +200,7 @@ public class SensitiveInfoFilterService
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	@JsonClassDescription("Sensitive Information Filtering Response")
+	@JsonClassDescription("Sensitive information filtering response")
 	public static class Response {
 
 		@JsonProperty
@@ -205,7 +208,7 @@ public class SensitiveInfoFilterService
 		private final String filteredText;
 
 		@JsonProperty
-		@JsonPropertyDescription("Does it contain sensitive information")
+		@JsonPropertyDescription("Whether the text contains sensitive information")
 		private final boolean containsSensitiveInfo;
 
 		@JsonProperty
