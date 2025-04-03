@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.alibaba.cloud.ai.toolcalling.sensitivefilter.SensitiveInfoFilterProperties.PatternConfig;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +33,7 @@ import java.util.regex.Pattern;
  *
  * @author Makoto
  */
+@Component
 public class SensitiveInfoFilterService
 		implements Function<SensitiveInfoFilterService.Request, SensitiveInfoFilterService.Response> {
 
