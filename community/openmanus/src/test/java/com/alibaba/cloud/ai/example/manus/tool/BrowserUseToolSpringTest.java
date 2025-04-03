@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -48,6 +49,7 @@ import com.alibaba.fastjson.JSON;
  */
 @SpringBootTest(classes = OpenManusSpringBootApplication.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@Disabled("仅用于本地测试，CI 环境跳过") // 添加这一行
 class BrowserUseToolSpringTest {
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseToolSpringTest.class);
@@ -69,6 +71,7 @@ class BrowserUseToolSpringTest {
 	@BeforeEach
 	void setUp() {
 		browserUseTool = new BrowserUseTool(chromeDriverService);
+		manusProperties.setBrowserHeadless(true);
 		DummyBaseAgent agent = new DummyBaseAgent(llmService, planExecutionRecorder, manusProperties);
 		agent.setPlanId("plan_123123124124124");
 		browserUseTool.setAgent(agent);
