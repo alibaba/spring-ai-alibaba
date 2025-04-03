@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +34,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentR
 public class AgentServiceImpl implements AgentService {
 
 	private static final String DEFAULT_AGENT_NAME = "DEFAULT_AGENT"; // 修改为通过 name 判断
+
+	private static final Logger log = LoggerFactory.getLogger(AgentServiceImpl.class);
 
 	@Autowired
 	private DynamicAgentLoader dynamicAgentLoader;
@@ -56,10 +60,32 @@ public class AgentServiceImpl implements AgentService {
 
 	@Override
 	public AgentConfig createAgent(AgentConfig config) {
-		DynamicAgentEntity entity = new DynamicAgentEntity();
-		updateEntityFromConfig(entity, config);
-		entity = repository.save(entity);
-		return mapToAgentConfig(entity);
+		try {
+			// 检查是否已存在同名Agent
+			DynamicAgentEntity existingAgent = repository.findByAgentName(config.getName());
+			if (existingAgent != null) {
+				log.info("发现同名Agent: {}，返回已存在的Agent", config.getName());
+				return mapToAgentConfig(existingAgent);
+			}
+
+			DynamicAgentEntity entity = new DynamicAgentEntity();
+			updateEntityFromConfig(entity, config);
+			entity = repository.save(entity);
+			log.info("成功创建新Agent: {}", config.getName());
+			return mapToAgentConfig(entity);
+		}
+		catch (Exception e) {
+			log.warn("创建Agent过程中发生异常: {}，错误信息: {}", config.getName(), e.getMessage());
+			// 如果是唯一性约束违反异常，尝试返回已存在的Agent
+			if (e.getMessage() != null && e.getMessage().contains("Unique")) {
+				DynamicAgentEntity existingAgent = repository.findByAgentName(config.getName());
+				if (existingAgent != null) {
+					log.info("返回已存在的Agent: {}", config.getName());
+					return mapToAgentConfig(existingAgent);
+				}
+			}
+			throw e;
+		}
 	}
 
 	@Override

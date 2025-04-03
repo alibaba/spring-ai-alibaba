@@ -385,8 +385,16 @@ class AgentConfigModel {
         }
     }
 
-    async saveAgent(agentData) {
+    async saveAgent(agentData, isImport = false) {
         try {
+            // 如果是导入操作，移除ID以强制创建新Agent
+            if (isImport) {
+                const importData = { ...agentData };
+                delete importData.id;
+                return await AdminAPI.createAgent(importData);
+            }
+            
+            // 正常保存逻辑
             if (agentData.id) {
                 return await AdminAPI.updateAgent(agentData.id, agentData);
             } else {
