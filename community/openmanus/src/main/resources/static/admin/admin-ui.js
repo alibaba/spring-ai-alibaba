@@ -235,7 +235,7 @@ class AdminUI {
         // 根据配置类型创建输入元素
         let inputElem;
         switch (config.inputType) {
-            case 'BOOLEAN':
+            case 'CHECKBOX':
                 inputElem = document.createElement('input');
                 inputElem.type = 'checkbox';
                 inputElem.checked = config.configValue === 'true';
