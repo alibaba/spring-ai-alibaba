@@ -1,0 +1,111 @@
+/* layout.css - 管理界面布局 */
+
+/* 管理界面容器 */
+.admin-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #fff;
+    overflow: hidden;
+}
+
+/* 顶部导航栏 */
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 60px;
+    padding: 0 20px;
+    background-color: #fff;
+    color: #333;
+    border-bottom: 1px solid #e1e2e3;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* 主体内容区域 - 左右结构 */
+.admin-content {
+    display: flex;
+    flex-grow: 1;
+    overflow: hidden;
+    background-color: #f8f9fa;
+}
+
+/* 左侧配置类别列表 - 参照主页sidebar样式 */
+.config-categories {
+    width: 220px;
+    background-color: #fff;
+    border-right: 1px solid #e1e2e3;
+    overflow-y: auto;
+    transition: width 0.3s ease-in-out;
+}
+
+.config-categories ul {
+    list-style: none;
+    padding: 10px 0;
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    color: #5f6368;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.category-item:hover {
+    background-color: #f1f3f4;
+}
+
+.category-item.active {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+    font-weight: 500;
+    position: relative;
+}
+
+.category-item.active::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background-color: #1a73e8;
+}
+
+.category-icon {
+    margin-right: 12px;
+    font-size: 18px;
+}
+
+/* 中间分割线 */
+.content-divider {
+    width: 1px;
+    background-color: #e1e2e3;
+}
+
+/* 右侧配置详情区域 */
+.config-details {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+    background-color: #fff;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+    .admin-content {
+        flex-direction: column;
+    }
+    
+    .config-categories {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #e1e2e3;
+    }
+    
+    .content-divider {
+        display: none;
+    }
+}

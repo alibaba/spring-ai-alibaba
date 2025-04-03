@@ -15,10 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.agent;
 
-import java.util.List;
-
-import org.springframework.ai.chat.messages.Message;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
@@ -27,13 +26,17 @@ import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
  */
 public abstract class ReActAgent extends BaseAgent {
 
+	private static final Logger logger = LoggerFactory.getLogger(ReActAgent.class);
+
 	/**
 	 * 构造函数
 	 * @param llmService LLM服务实例，用于处理自然语言交互
 	 * @param planExecutionRecorder 计划执行记录器，用于记录执行过程
+	 * @param manusProperties Manus配置属性
 	 */
-	public ReActAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder) {
-		super(llmService, planExecutionRecorder);
+	public ReActAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
+			ManusProperties manusProperties) {
+		super(llmService, planExecutionRecorder, manusProperties);
 	}
 
 	/**
@@ -62,27 +65,12 @@ public abstract class ReActAgent extends BaseAgent {
 	 */
 	@Override
 	public String step() {
+
 		boolean shouldAct = think();
 		if (!shouldAct) {
 			return "Thinking complete - no action needed";
 		}
 		return act();
-	}
-
-	/**
-	 * 添加思考过程的提示词到消息列表
-	 *
-	 * 实现说明： 1. 构建引导智能体进行思考的系统提示词 2. 提示词应包含： - 当前执行状态 - 任务目标 - 思考方向指导 3.
-	 * 可由子类进行扩展，添加特定的思考模式
-	 *
-	 * 子类扩展参考： - ToolCallAgent：添加工具选择相关的思考提示 - BrowserAgent：添加网页操作相关的思考提示
-	 * @param messages 当前的消息列表
-	 * @return 系统提示消息对象
-	 */
-	protected Message addThinkPrompt(List<Message> messages) {
-		String prompt = "";
-		// TODO: 根据当前状态和消息列表生成合适的提示词
-		return null;
 	}
 
 }
