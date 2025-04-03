@@ -11,13 +11,40 @@
     display: block;
 }
 
-.panel-title {
-    font-size: 22px;
-    font-weight: 500;
-    color: #202124;
+/* 面板标题区域 */
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 24px;
     padding-bottom: 10px;
     border-bottom: 1px solid #e1e2e3;
+}
+
+.panel-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 500;
+    color: #202124;
+}
+
+/* 面板标题右侧操作按钮区域 */
+.panel-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.panel-actions .action-btn {
+    padding: 6px 12px;
+    font-size: 14px;
+    background-color: #f8f9fa;
+    transition: all 0.2s ease;
+}
+
+.panel-actions .action-btn:hover {
+    background-color: #e8f0fe;
+    border-color: #1a73e8;
+    color: #1a73e8;
 }
 
 /* 配置组 */
