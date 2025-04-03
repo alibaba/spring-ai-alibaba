@@ -1,7 +1,8 @@
-
 /**
  * admin-events.js - 管理界面事件处理
  */
+import { AdminUtils } from './admin-utils.js';
+
 class AdminEvents {
     constructor() {
         // Agent列表相关元素
@@ -137,7 +138,7 @@ class AdminEvents {
             return;
         }
 
-        const confirmed = await adminUtils.confirmDialog('确定要删除该Agent吗？');
+        const confirmed = await AdminUtils.confirmDialog('确定要删除该Agent吗？');
         if (!confirmed) return;
 
         try {

@@ -1,6 +1,8 @@
 /**
  * admin-ui.js - 管理界面UI交互
  */
+import { AdminUtils } from './admin-utils.js';
+
 class AdminUI {
     constructor() {
         // Agent列表容器
