@@ -14,6 +14,10 @@ class AdminEvents {
         this.addToolBtn = document.querySelector('.add-tool-btn');
         this.deleteAgentBtn = document.querySelector('.delete-agent-btn');
         
+        // 添加导入导出按钮
+        this.importAgentsBtn = document.querySelector('.import-agents-btn');
+        this.exportAgentsBtn = document.querySelector('.export-agents-btn');
+        
         this.currentAgentId = null;
         this.bindEvents();
     }
@@ -30,6 +34,10 @@ class AdminEvents {
         this.saveAgentBtn.addEventListener('click', () => this.handleSaveAgent());
         this.addToolBtn.addEventListener('click', () => this.handleAddTool());
         this.deleteAgentBtn.addEventListener('click', () => this.handleDeleteAgent());
+
+        // 导入导出事件
+        this.importAgentsBtn.addEventListener('click', () => this.handleImportAgents());
+        this.exportAgentsBtn.addEventListener('click', () => this.handleExportAgents());
 
         // 工具列表事件委托
         document.querySelector('.tool-list').addEventListener('click', (e) => this.handleToolListClick(e));
@@ -149,6 +157,75 @@ class AdminEvents {
             adminUI.showSuccess('Agent删除成功');
         } catch (error) {
             adminUI.showError('删除Agent失败');
+        }
+    }
+
+    /**
+     * 处理导入Agents配置
+     */
+    handleImportAgents() {
+        // 创建隐藏的文件输入框
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.json';
+        fileInput.style.display = 'none';
+        document.body.appendChild(fileInput);
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    try {
+                        const agentConfigs = JSON.parse(event.target.result);
+                        for (const config of agentConfigs) {
+                            await agentConfigModel.saveAgent(config,true);
+                        }
+                        await adminUI.loadAgents();
+                        adminUI.showSuccess('成功导入Agent配置');
+                    } catch (error) {
+                        adminUI.showError('导入失败：无效的配置文件格式');
+                    }
+                };
+                reader.readAsText(file);
+            } catch (error) {
+                adminUI.showError('导入失败');
+            } finally {
+                document.body.removeChild(fileInput);
+            }
+        });
+
+        fileInput.click();
+    }
+
+    /**
+     * 处理导出Agents配置
+     */
+    async handleExportAgents() {
+        try {
+            const agents = await agentConfigModel.loadAgents();
+            const exportData = JSON.stringify(agents, null, 2);
+            
+            // 创建下载链接
+            const blob = new Blob([exportData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `agents-config-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            
+            // 清理
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+            
+            adminUI.showSuccess('成功导出Agent配置');
+        } catch (error) {
+            adminUI.showError('导出失败');
         }
     }
 }
