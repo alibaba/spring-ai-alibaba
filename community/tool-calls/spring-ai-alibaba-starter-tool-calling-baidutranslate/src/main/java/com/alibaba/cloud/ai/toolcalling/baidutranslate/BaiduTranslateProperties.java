@@ -18,15 +18,29 @@ package com.alibaba.cloud.ai.toolcalling.baidutranslate;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import static com.alibaba.cloud.ai.toolcalling.baidutranslate.BaiduTranslateProperties.BaiDuTranslatePrefix;
+
 /**
  * @author SCMRCORE
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.baidutranslate")
-public class BaidutranslateProperties {
+@ConfigurationProperties(prefix = BaiDuTranslatePrefix)
+public class BaiduTranslateProperties {
+
+	protected static final String BaiDuTranslatePrefix = "spring.ai.alibaba.tool-calling.baidu.translate";
+
+	private boolean enabled = true;
 
 	private String appId;
 
 	private String secretKey;
+
+	public boolean isEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
 
 	public String getSecretKey() {
 		return secretKey;
