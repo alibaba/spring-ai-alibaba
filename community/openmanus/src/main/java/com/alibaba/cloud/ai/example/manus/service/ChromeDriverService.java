@@ -125,7 +125,7 @@ public class ChromeDriverService implements ApplicationRunner {
 	public void run(ApplicationArguments args) throws Exception {
 
 		Map<OsType, String> chromeDriverMap = checkOS();
-		if (Objects.nonNull(chromeDriverMap)) {
+		if (Objects.isNull(chromeDriverMap)) {
 			throw new UnsupportedOperationException("不受支持的操作系统，当前仅支持 Windows、MacOS 和 Linux 系统");
 		}
 
