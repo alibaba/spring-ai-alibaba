@@ -1,191 +1,39 @@
 openapi: 3.0.1
 info:
-  title: OpenAPI definition
-  version: v0
+  title: Spring AI Alibaba PlayGround APIs
+  description: Spring AI Alibaba PlayGround API Docs
+  contact:
+    name: Spring AI Alibaba Community
+    url: https://java2ai.com
+  version: v1
 servers:
 - url: http://localhost:8080
   description: Generated server url
-tags:
-- name: App
-  description: the app API
-- name: DSL
-  description: the DSL API
-- name: Generator
-  description: API related to code/project generation
-- name: Runner
-  description: the running api
 paths:
-  /graph-studio/api/generate/project:
-    get:
-      tags:
-      - Generator
-      summary: Generate project from DSL
-      operationId: generateZip
-      parameters:
-      - name: projectGenerateParam
-        in: query
-        required: true
-        schema:
-          $ref: "#/components/schemas/ProjectGenerateParam"
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: string
-                format: byte
+  /api/v1/video-qa:
     post:
       tags:
-      - Generator
-      summary: Generate project from DSL
-      operationId: generateZip_1
+      - 视频问答 APIs
+      summary: 基于视频内容的问答接口
+      operationId: videoQuestionAnswering
       parameters:
-      - name: projectGenerateParam
+      - name: prompt
         in: query
-        required: true
-        schema:
-          $ref: "#/components/schemas/ProjectGenerateParam"
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: string
-                format: byte
-  /graph-studio/api/generate/code:
-    get:
-      tags:
-      - Generator
-      summary: Generate code from node data
-      operationId: generateCode
-      parameters:
-      - name: codeGenerateParam
-        in: query
-        required: true
-        schema:
-          $ref: "#/components/schemas/CodeGenerateParam"
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/RString"
-    post:
-      tags:
-      - Generator
-      summary: Generate code from node data
-      operationId: generateCode_1
-      parameters:
-      - name: codeGenerateParam
-        in: query
-        required: true
-        schema:
-          $ref: "#/components/schemas/CodeGenerateParam"
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/RString"
-  /graph-studio/api/app:
-    get:
-      tags:
-      - App
-      summary: list apps
-      operationId: list
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RListApp"
-    put:
-      tags:
-      - App
-      summary: sync app
-      operationId: sync
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/App"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RApp"
-    post:
-      tags:
-      - App
-      summary: create app
-      operationId: create
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateAppParam"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RApp"
-  /graph-studio/run/app/{id}/sync:
-    post:
-      tags:
-      - Runner
-      summary: run app in sync mode
-      operationId: run
-      parameters:
-      - name: id
-        in: path
-        required: true
+        required: false
         schema:
           type: string
+          default: 请总结这个视频的主要内容
       requestBody:
         content:
           application/json:
             schema:
+              required:
+              - video
               type: object
-              additionalProperties:
-                type: object
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: "#/components/schemas/RRunEvent"
-  /graph-studio/run/app/{id}/stream:
-    post:
-      tags:
-      - Runner
-      summary: run app in stream mode
-      operationId: stream
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties:
-                type: object
+              properties:
+                video:
+                  type: string
+                  format: binary
         required: true
       responses:
         "200":
@@ -195,44 +43,29 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/RunEvent"
-  /graph-studio/api/dsl/import:
+                  type: string
+  /api/v1/summarizer:
     post:
       tags:
-      - DSL
-      summary: import app from dsl
-      operationId: importDSL
+      - Docs Summarize APIs
+      summary: Docs summary
+      operationId: summary
+      parameters:
+      - name: url
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: chatId
+        in: header
+        required: false
+        schema:
+          type: string
+          default: spring-ai-alibaba-docs-summary
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/DSLParam"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RApp"
-  /graph-studio/api/dsl/import-file:
-    post:
-      tags:
-      - DSL
-      summary: 'import app from dsl file '
-      operationId: importDSLFile
-      parameters:
-      - name: dialect
-        in: query
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              required:
-              - file
               type: object
               properties:
                 file:
@@ -242,22 +75,134 @@ paths:
         "200":
           description: OK
           content:
-            application/json:
+            '*/*':
               schema:
-                $ref: "#/components/schemas/RApp"
-  /graph-studio/api/dsl/export/{id}:
+                type: array
+                items:
+                  type: string
+  /api/v1/image2text:
+    post:
+      tags:
+      - Image APIs
+      summary: DashScope Image Recognition
+      operationId: image2text
+      parameters:
+      - name: prompt
+        in: query
+        required: false
+        schema:
+          type: string
+          default: 请总结图片内容
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - image
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+  /api/v1/audio2text:
+    post:
+      tags:
+      - Audio APIs
+      summary: DashScope Audio Transcription
+      operationId: audioToText
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - audio
+              type: object
+              properties:
+                audio:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ResultString'
+  /api/v1/tool-call:
     get:
       tags:
-      - DSL
-      summary: export app to dsl
-      operationId: exportDSL
+      - Tool Calling APIs
+      summary: DashScope ToolCall Chat
+      operationId: chat
       parameters:
-      - name: id
-        in: path
+      - name: prompt
+        in: query
         required: true
         schema:
           type: string
-      - name: dialect
+      - name: chatId
+        in: header
+        required: false
+        schema:
+          type: string
+          default: spring-ai-alibaba-playground-functions
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+  /api/v1/text2image:
+    get:
+      tags:
+      - Image APIs
+      summary: DashScope Image Generation
+      operationId: text2Image
+      parameters:
+      - name: prompt
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: style
+        in: query
+        required: false
+        schema:
+          type: string
+          default: 摄影写实
+      - name: resolution
+        in: query
+        required: false
+        schema:
+          type: string
+          default: 1080*1080
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ResultVoid'
+  /api/v1/text2audio:
+    get:
+      tags:
+      - Audio APIs
+      summary: DashScope Speech Synthesis
+      operationId: textToAudio
+      parameters:
+      - name: prompt
         in: query
         required: true
         schema:
@@ -266,22 +211,16 @@ paths:
         "200":
           description: OK
           content:
-            application/json:
+            '*/*':
               schema:
-                $ref: "#/components/schemas/RString"
-  /graph-studio/api/dsl/export-file/{id}:
+                $ref: "#/components/schemas/ResultByte[]"
+  /api/v1/search:
     get:
       tags:
-      - DSL
-      summary: export app to dsl file
-      operationId: exportDSLFile
+      - Web Search APIs
+      operationId: search
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: dialect
+      - name: query
         in: query
         required: true
         schema:
@@ -290,212 +229,193 @@ paths:
         "200":
           description: OK
           content:
-            application/octet-stream:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+  /api/v1/mcp:
+    get:
+      tags:
+      - MCP APIs
+      summary: DashScope Mcp Chat
+      operationId: chat_1
+      parameters:
+      - name: prompt
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: chatId
+        in: header
+        required: false
+        schema:
+          type: string
+          default: spring-ai-alibaba-playground-mcp
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
               schema:
                 type: string
-                format: binary
-  /graph-studio/api/app/{id}:
+  /api/v1/health:
     get:
       tags:
-      - App
-      summary: get app by id
-      operationId: get
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+      - Base APIs
+      operationId: health
       responses:
         "200":
           description: OK
           content:
-            application/json:
+            '*/*':
               schema:
-                $ref: "#/components/schemas/RApp"
-    delete:
+                $ref: '#/components/schemas/ResultString'
+  /api/v1/deep-thinking/chat:
+    get:
       tags:
-      - App
-      summary: delete app
-      operationId: delete
+      - Chat APIs
+      operationId: deepThinkingChat
       parameters:
-      - name: id
-        in: path
+      - name: prompt
+        in: query
         required: true
         schema:
           type: string
+      - name: model
+        in: header
+        required: false
+        schema:
+          type: string
+      - name: chatId
+        in: header
+        required: false
+        schema:
+          type: string
+          default: spring-ai-alibaba-playground-deepthink-chat
       responses:
         "200":
           description: OK
           content:
-            application/json:
+            '*/*':
               schema:
-                $ref: "#/components/schemas/RBoolean"
+                type: array
+                items:
+                  type: string
+  /api/v1/dashscope/getModels:
+    get:
+      tags:
+      - Base APIs
+      operationId: getDashScopeModels
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ResultSetMapStringString'
+  /api/v1/chat:
+    get:
+      tags:
+      - Chat APIs
+      summary: DashScope Flux Chat
+      operationId: chat_2
+      parameters:
+      - name: prompt
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: model
+        in: header
+        required: false
+        schema:
+          type: string
+      - name: chatId
+        in: header
+        required: false
+        schema:
+          type: string
+          default: spring-ai-alibaba-playground-chat
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
 components:
   schemas:
-    ProjectGenerateParam:
+    ResultString:
       type: object
       properties:
-        dsl:
+        code:
+          type: integer
+          format: int32
+        message:
           type: string
-          description: dsl raw content
-        dialect:
+        data:
           type: string
-          description: dsl dialect
-          example: dify
-        bootVersion:
-          type: string
-          description: spring boot version
-        baseDir:
-          type: string
-          description: base directory
-          example: demo
-        groupId:
-          type: string
-          description: group id
-          example: com.example
-        name:
-          type: string
-          description: artifact id
-          example: demo
-        description:
-          type: string
-          description: description
-        packageName:
-          type: string
-          description: package name
-          example: com.example.demo
-        packaging:
-          type: string
-          description: packaging
-          example: jar
-        javaVersion:
-          type: string
-          description: javaVersion
-          example: "21"
-    CodeGenerateParam:
+    ResultVoid:
       type: object
       properties:
-        nodeType:
+        code:
+          type: integer
+          format: int32
+        message:
           type: string
-          description: node type
-          example: CODE
-        nodeData:
+        data:
           type: object
-          additionalProperties:
-            type: object
-            description: node data
-          description: node data
-    RString:
+    ResultByte[]:
       type: object
       properties:
         code:
           type: integer
           format: int32
-        msg:
+        message:
           type: string
         data:
           type: string
-        timestamp:
-          type: integer
-          format: int64
-    App:
-      type: object
-      properties:
-        metadata:
-          $ref: "#/components/schemas/AppMetadata"
-        spec:
-          type: object
-    AppMetadata:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        mode:
-          type: string
-    RApp:
+          format: byte
+    ResultSetMapStringString:
       type: object
       properties:
         code:
           type: integer
           format: int32
-        msg:
+        message:
           type: string
         data:
-          $ref: "#/components/schemas/App"
-        timestamp:
-          type: integer
-          format: int64
-    RRunEvent:
-      type: object
-      properties:
-        code:
-          type: integer
-          format: int32
-        msg:
-          type: string
-        data:
-          $ref: "#/components/schemas/RunEvent"
-        timestamp:
-          type: integer
-          format: int64
-    RunEvent:
-      type: object
-      properties:
-        eventType:
-          type: string
-    DSLParam:
-      type: object
-      properties:
-        content:
-          type: string
-          description: dsl raw content
-        dialect:
-          type: string
-          description: dsl dialect
-    CreateAppParam:
-      type: object
-      properties:
-        name:
-          type: string
-          description: app name
-          example: rag-demo
-        mode:
-          type: string
-          description: app mode
-          example: "one of `chatbot`, `workflow`"
-        description:
-          type: string
-          description: app description
-    RListApp:
-      type: object
-      properties:
-        code:
-          type: integer
-          format: int32
-        msg:
-          type: string
-        data:
+          uniqueItems: true
           type: array
           items:
-            $ref: "#/components/schemas/App"
-        timestamp:
-          type: integer
-          format: int64
-    RBoolean:
-      type: object
-      properties:
-        code:
-          type: integer
-          format: int32
-        msg:
-          type: string
-        data:
-          type: boolean
-        timestamp:
-          type: integer
-          format: int64
+            type: object
+            additionalProperties:
+              type: string
+x-openapi:
+  x-setting:
+    customCode: 200
+    language: zh-CN
+    enableSwaggerModels: true
+    swaggerModelName: Swagger Models
+    enableReloadCacheParameter: false
+    enableAfterScript: true
+    enableDocumentManage: true
+    enableVersion: true
+    enableRequestCache: true
+    enableFilterMultipartApis: false
+    enableFilterMultipartApiMethodType: POST
+    enableHost: false
+    enableHostText: ""
+    enableDynamicParameter: false
+    enableDebug: true
+    enableFooter: true
+    enableFooterCustom: false
+    enableSearch: true
+    enableOpenApi: true
+    enableHomeCustom: false
+    enableGroup: true
+    enableResponseCode: true
+  x-markdownFiles: []
