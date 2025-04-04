@@ -25,7 +25,7 @@
 	</parent>
 
 	<artifactId>spring-ai-alibaba-starter-document-reader-larksuite</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+<!--	<version>0.0.1-SNAPSHOT</version>-->
 	<name>Spring AI Alibaba Starter Document Reader LarkSuite</name>
 	<description>FeiShu Reader for Spring AI Alibaba</description>
 	<packaging>jar</packaging>
