@@ -26,7 +26,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-document-reader-arxiv</artifactId>
-    <name>Spring AI Alibaba Starter Arxiv Document Reader</name>
+    <name>Spring AI Alibaba Starter Document Reader Arxiv</name>
     <description>arxiv reader for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>

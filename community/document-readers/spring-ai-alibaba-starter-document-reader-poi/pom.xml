@@ -41,7 +41,7 @@
   </parent>
 
   <artifactId>spring-ai-alibaba-starter-document-reader-poi</artifactId>
-  <name>Spring AI Alibaba Starter POI Document Reader</name>
+  <name>Spring AI Alibaba Starter Document Reader POI</name>
   <description>poi-document reader for Spring AI Alibaba</description>
   <packaging>jar</packaging>
   <url>https://github.com/alibaba/spring-ai-alibaba</url>

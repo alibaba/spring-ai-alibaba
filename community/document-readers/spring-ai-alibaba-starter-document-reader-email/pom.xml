@@ -26,8 +26,8 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-document-reader-email</artifactId>
-    <name>Spring AI Alibaba Starter Email Document Reader</name>
-    <description>Spring AI Alibaba Email Document Reader</description>
+    <name>Spring AI Alibaba Starter Document Reader Email</name>
+    <description>Spring AI Alibaba Document Reader Email</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <url>https://github.com/alibaba/spring-ai-alibaba</url>

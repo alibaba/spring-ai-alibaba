@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-document-reader-youtube</artifactId>
-    <name>Spring AI Alibaba Starter YouTube Document Reader</name>
+    <name>Spring AI Alibaba Starter Document Reader YouTube</name>
     <description>youtube reader for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>

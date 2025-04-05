@@ -26,7 +26,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-document-reader-onenote</artifactId>
-    <name>Spring AI Alibaba Starter OneNote Document Reader</name>
+    <name>Spring AI Alibaba Starter Document Reader OneNote</name>
     <description>onenote reader for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>

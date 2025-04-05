@@ -26,8 +26,8 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-document-reader-elasticsearch</artifactId>
-    <name>Spring AI Alibaba Starter Elasticsearch Document Reader</name>
-    <description>Spring AI Alibaba Elasticsearch Document Reader</description>
+    <name>Spring AI Alibaba Starter Document Reader Elasticsearch</name>
+    <description>Spring AI Alibaba Document Reader Elasticsearch</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <url>https://github.com/alibaba/spring-ai-alibaba</url>

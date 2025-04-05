@@ -25,8 +25,8 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <name>Spring AI Alibaba Starter OpenSearch Store</name>
-    <artifactId>spring-ai-alibaba-starter-opensearch-store</artifactId>
+    <name>Spring AI Alibaba Starter Store OpenSearch</name>
+    <artifactId>spring-ai-alibaba-starter-store-opensearch</artifactId>
     <packaging>jar</packaging>
 
     <properties>

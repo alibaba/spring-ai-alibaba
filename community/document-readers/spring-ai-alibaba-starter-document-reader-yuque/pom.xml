@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-document-reader-yuque</artifactId>
-    <name>Spring AI Alibaba Starter YuQue Document Reader</name>
+    <name>Spring AI Alibaba Starter Document Reader Yuque</name>
     <description>yuque reader for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
