@@ -13,20 +13,19 @@ https://github.com/user-attachments/assets/fc8153bc-8353-4d5c-8789-755d2fd7c4f3
    ```shell
    npm install -g npx
    ```
-3. For Windows users, you need to modify the `mcp-servers-config.json` file in the resources directory, changing `npx` to `npx.cmd`.
-4. Set <a href="https://help.aliyun.com/zh/model-studio/getting-started/first-api-call-to-qwen" target="_blank">dashscope api key</a>.
+3. Set <a href="https://help.aliyun.com/zh/model-studio/getting-started/first-api-call-to-qwen" target="_blank">dashscope api key</a>.
 
  ```shell
  export AI_DASHSCOPE_API_KEY=xxxx
  ```
 
-5. [Optional] Set <a href="https://serpapi.com/users/sign_in" target="_blank">SerpApi key</a>, register to get free tokens for each month.
+4. [Optional] Set <a href="https://serpapi.com/users/sign_in" target="_blank">SerpApi key</a>, register to get free tokens for each month.
 
  ```shell
  export SERP_API_KEY=xxxx
  ```
 
-6. [Optional] Set <a href="https://lbsyun.baidu.com/apiconsole/key" target="_blank">Baidu Map key</a>. Modify the "ak" in the mcp-servers-config.json file.
+5. [Optional] Set <a href="https://lbsyun.baidu.com/apiconsole/key" target="_blank">Baidu Map key</a>. Modify the "ak" in the mcp-servers-config.json file.
 
 
  ```shell
