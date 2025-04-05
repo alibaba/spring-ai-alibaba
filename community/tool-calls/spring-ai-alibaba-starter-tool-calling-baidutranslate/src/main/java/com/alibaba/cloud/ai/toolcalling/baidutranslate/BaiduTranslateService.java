@@ -28,19 +28,19 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Mono;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.DigestUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.ResponseErrorHandler;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
-public class BaidutranslateService implements Function<BaidutranslateService.Request, BaidutranslateService.Response> {
+public class BaiduTranslateService implements Function<BaiduTranslateService.Request, BaiduTranslateService.Response> {
 
-	private static final Logger logger = LoggerFactory.getLogger(BaidutranslateService.class);
+	private static final Logger logger = LoggerFactory.getLogger(BaiduTranslateService.class);
 
 	private static final String TRANSLATE_HOST_URL = "https://fanyi-api.baidu.com/api/trans/vip/translate";
 
@@ -50,41 +50,43 @@ public class BaidutranslateService implements Function<BaidutranslateService.Req
 
 	private final String secretKey;
 
-	private final WebClient webClient;
+	private final RestClient restClient;
 
-	public BaidutranslateService(BaiduTranslateProperties properties) {
+	public BaiduTranslateService(BaiduTranslateProperties properties, RestClient.Builder restClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 
 		assert StringUtils.hasText(properties.getAppId());
 		this.appId = properties.getAppId();
 		assert StringUtils.hasText(properties.getSecretKey());
 		this.secretKey = properties.getSecretKey();
 
-		this.webClient = WebClient.builder()
+		this.restClient = restClientBuilder.baseUrl(TRANSLATE_HOST_URL)
 			.defaultHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
+			.defaultStatusHandler(responseErrorHandler)
 			.build();
 	}
 
 	@Override
 	public Response apply(Request request) {
+
 		if (request == null || !StringUtils.hasText(request.q) || !StringUtils.hasText(request.from)
 				|| !StringUtils.hasText(request.to)) {
 			return null;
 		}
+
 		String salt = String.valueOf(random.nextInt(100000));
 		String sign = DigestUtils.md5DigestAsHex((appId + request.q + salt + secretKey).getBytes());
 		String url = UriComponentsBuilder.fromHttpUrl(TRANSLATE_HOST_URL).toUriString();
+
 		try {
 			MultiValueMap<String, String> body = constructRequestBody(request, salt, sign);
-			Mono<String> responseMono = webClient.post().uri(url).bodyValue(body).retrieve().bodyToMono(String.class);
 
-			String responseData = responseMono.block();
-			assert responseData != null;
-			logger.info("Translation request: {}, response: {}", request.q, responseData);
+			var respData = this.restClient.post().uri(url).body(body).retrieve().toEntity(String.class).getBody();
 
-			return parseResponse(responseData);
+			return parseResponse(respData);
 		}
 		catch (Exception e) {
-			logger.error("Failed to invoke translate API due to: {}", e.getMessage());
+			logger.error("Error occurred: {}", e.getMessage());
 			return null;
 		}
 	}
