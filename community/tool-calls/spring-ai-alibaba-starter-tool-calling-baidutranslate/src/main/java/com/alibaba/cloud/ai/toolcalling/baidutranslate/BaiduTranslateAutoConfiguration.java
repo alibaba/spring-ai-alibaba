@@ -16,7 +16,9 @@
 
 package com.alibaba.cloud.ai.toolcalling.baidutranslate;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -27,16 +29,21 @@ import org.springframework.context.annotation.Description;
 /**
  * @author SCMRCORE
  */
-@Configuration
-@ConditionalOnClass(BaidutranslateService.class)
-@EnableConfigurationProperties(BaidutranslateProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.baidutranslate", name = "enabled", havingValue = "true")
-public class BaidutranslateAutoConfiguration {
 
-	@Bean(name = "baiduTranslateFunction")
+@Configuration
+@EnableConfigurationProperties(BaiduTranslateProperties.class)
+@ConditionalOnProperty(prefix = BaiduTranslateProperties.BaiDuTranslatePrefix, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
+public class BaiduTranslateAutoConfiguration {
+
+	private static final Logger logger = LoggerFactory.getLogger(BaiduTranslateAutoConfiguration.class);
+
+	@Bean
 	@ConditionalOnMissingBean
 	@Description("Baidu translation function for general text translation")
-	public BaidutranslateService baiduTranslateFunction(BaidutranslateProperties properties) {
+	public BaidutranslateService baiduTranslateFunction(BaiduTranslateProperties properties) {
+
+		logger.debug("Initializing Baidu translation function bean");
 		return new BaidutranslateService(properties);
 	}
 

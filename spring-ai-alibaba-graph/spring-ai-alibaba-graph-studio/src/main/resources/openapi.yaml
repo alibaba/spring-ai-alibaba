@@ -3,30 +3,30 @@ info:
   title: OpenAPI definition
   version: v0
 servers:
-- url: http://localhost:8080
-  description: Generated server url
+  - url: http://localhost:8080
+    description: Generated server url
 tags:
-- name: App
-  description: the app API
-- name: DSL
-  description: the DSL API
-- name: Generator
-  description: API related to code/project generation
-- name: Runner
-  description: the running api
+  - name: App
+    description: the app API
+  - name: DSL
+    description: the DSL API
+  - name: Generator
+    description: API related to code/project generation
+  - name: Runner
+    description: the running api
 paths:
   /graph-studio/api/generate/project:
     get:
       tags:
-      - Generator
+        - Generator
       summary: Generate project from DSL
       operationId: generateZip
       parameters:
-      - name: projectGenerateParam
-        in: query
-        required: true
-        schema:
-          $ref: "#/components/schemas/ProjectGenerateParam"
+        - name: projectGenerateParam
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/ProjectGenerateParam"
       responses:
         "200":
           description: OK
@@ -37,15 +37,15 @@ paths:
                 format: byte
     post:
       tags:
-      - Generator
+        - Generator
       summary: Generate project from DSL
       operationId: generateZip_1
       parameters:
-      - name: projectGenerateParam
-        in: query
-        required: true
-        schema:
-          $ref: "#/components/schemas/ProjectGenerateParam"
+        - name: projectGenerateParam
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/ProjectGenerateParam"
       responses:
         "200":
           description: OK
@@ -57,15 +57,15 @@ paths:
   /graph-studio/api/generate/code:
     get:
       tags:
-      - Generator
+        - Generator
       summary: Generate code from node data
       operationId: generateCode
       parameters:
-      - name: codeGenerateParam
-        in: query
-        required: true
-        schema:
-          $ref: "#/components/schemas/CodeGenerateParam"
+        - name: codeGenerateParam
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/CodeGenerateParam"
       responses:
         "200":
           description: OK
@@ -75,15 +75,15 @@ paths:
                 $ref: "#/components/schemas/RString"
     post:
       tags:
-      - Generator
+        - Generator
       summary: Generate code from node data
       operationId: generateCode_1
       parameters:
-      - name: codeGenerateParam
-        in: query
-        required: true
-        schema:
-          $ref: "#/components/schemas/CodeGenerateParam"
+        - name: codeGenerateParam
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/CodeGenerateParam"
       responses:
         "200":
           description: OK
@@ -94,7 +94,7 @@ paths:
   /graph-studio/api/app:
     get:
       tags:
-      - App
+        - App
       summary: list apps
       operationId: list
       responses:
@@ -106,7 +106,7 @@ paths:
                 $ref: "#/components/schemas/RListApp"
     put:
       tags:
-      - App
+        - App
       summary: sync app
       operationId: sync
       requestBody:
@@ -124,7 +124,7 @@ paths:
                 $ref: "#/components/schemas/RApp"
     post:
       tags:
-      - App
+        - App
       summary: create app
       operationId: create
       requestBody:
@@ -143,15 +143,15 @@ paths:
   /graph-studio/run/app/{id}/sync:
     post:
       tags:
-      - Runner
+        - Runner
       summary: run app in sync mode
       operationId: run
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
@@ -170,15 +170,15 @@ paths:
   /graph-studio/run/app/{id}/stream:
     post:
       tags:
-      - Runner
+        - Runner
       summary: run app in stream mode
       operationId: stream
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           application/json:
@@ -199,7 +199,7 @@ paths:
   /graph-studio/api/dsl/import:
     post:
       tags:
-      - DSL
+        - DSL
       summary: import app from dsl
       operationId: importDSL
       requestBody:
@@ -218,21 +218,21 @@ paths:
   /graph-studio/api/dsl/import-file:
     post:
       tags:
-      - DSL
+        - DSL
       summary: 'import app from dsl file '
       operationId: importDSLFile
       parameters:
-      - name: dialect
-        in: query
-        required: true
-        schema:
-          type: string
+        - name: dialect
+          in: query
+          required: true
+          schema:
+            type: string
       requestBody:
         content:
           multipart/form-data:
             schema:
               required:
-              - file
+                - file
               type: object
               properties:
                 file:
@@ -248,20 +248,20 @@ paths:
   /graph-studio/api/dsl/export/{id}:
     get:
       tags:
-      - DSL
+        - DSL
       summary: export app to dsl
       operationId: exportDSL
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: dialect
-        in: query
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: dialect
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -272,20 +272,20 @@ paths:
   /graph-studio/api/dsl/export-file/{id}:
     get:
       tags:
-      - DSL
+        - DSL
       summary: export app to dsl file
       operationId: exportDSLFile
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: dialect
-        in: query
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: dialect
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -297,15 +297,15 @@ paths:
   /graph-studio/api/app/{id}:
     get:
       tags:
-      - App
+        - App
       summary: get app by id
       operationId: get
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -315,15 +315,15 @@ paths:
                 $ref: "#/components/schemas/RApp"
     delete:
       tags:
-      - App
+        - App
       summary: delete app
       operationId: delete
       parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
