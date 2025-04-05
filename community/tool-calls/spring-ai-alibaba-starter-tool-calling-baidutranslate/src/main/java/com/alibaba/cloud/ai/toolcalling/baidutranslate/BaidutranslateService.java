@@ -16,12 +16,20 @@
 
 package com.alibaba.cloud.ai.toolcalling.baidutranslate;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.function.Function;
+
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Mono;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.DigestUtils;
 import org.springframework.util.LinkedMultiValueMap;
@@ -29,13 +37,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
-import reactor.core.publisher.Mono;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.function.Function;
 
 public class BaidutranslateService implements Function<BaidutranslateService.Request, BaidutranslateService.Response> {
 
@@ -51,7 +52,8 @@ public class BaidutranslateService implements Function<BaidutranslateService.Req
 
 	private final WebClient webClient;
 
-	public BaidutranslateService(BaidutranslateProperties properties) {
+	public BaidutranslateService(BaiduTranslateProperties properties) {
+
 		assert StringUtils.hasText(properties.getAppId());
 		this.appId = properties.getAppId();
 		assert StringUtils.hasText(properties.getSecretKey());
