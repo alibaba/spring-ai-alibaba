@@ -27,6 +27,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import jakarta.annotation.PreDestroy;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -34,15 +37,11 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
-
-import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-
-import jakarta.annotation.PreDestroy;
 
 @Service
 @Primary
@@ -162,7 +161,7 @@ public class ChromeDriverService implements ApplicationRunner {
 		Map<OsType, String> resMap = new HashMap<>();
 
 		if (os.contains("win")) {
-			resMap.put(OsType.WINDOWS, "chromedriver/win32/chromedriver.exe");
+			resMap.put(OsType.WINDOWS, "chromedriver/win64/chromedriver.exe");
 		}
 		else if (os.contains("mac")) {
 			resMap.put(OsType.MAC, "chromedriver/mac-arm/chromedriver");
