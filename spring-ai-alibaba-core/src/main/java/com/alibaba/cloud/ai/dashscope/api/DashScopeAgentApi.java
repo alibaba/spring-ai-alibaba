@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
+import com.alibaba.cloud.ai.dashscope.agent.DashScopeAgentFlowStreamMode;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -119,6 +120,7 @@ public class DashScopeAgentApi {
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record DashScopeAgentRequestParameters(
+				@JsonProperty("flow_stream_mode") DashScopeAgentFlowStreamMode flowStreamMode,
 				@JsonProperty("has_thoughts") Boolean hasThoughts,
 				@JsonProperty("incremental_output") Boolean incrementalOutput,
 				@JsonProperty("rag_options") DashScopeAgentRequestRagOptions ragOptions

@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
+import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.support.llmbash.BashProcess;
 import com.alibaba.fastjson.JSON;
@@ -25,12 +26,12 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class Bash implements Function<String, ToolExecuteResult> {
+public class Bash implements ToolCallBiFunctionDef {
 
 	private static final Logger log = LoggerFactory.getLogger(Bash.class);
 
@@ -79,20 +80,81 @@ public class Bash implements Function<String, ToolExecuteResult> {
 		this.workingDirectoryPath = workingDirectoryPath;
 	}
 
+	private String lastCommand = "";
+
+	private String lastResult = "";
+
 	public ToolExecuteResult run(String toolInput) {
 		log.info("Bash toolInput:" + toolInput);
 		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 		});
 		String command = (String) toolInputMap.get("command");
+		this.lastCommand = command;
+
 		List<String> commandList = new ArrayList<>();
 		commandList.add(command);
 		List<String> result = BashProcess.executeCommand(commandList, workingDirectoryPath);
+		this.lastResult = String.join("\n", result);
+
 		return new ToolExecuteResult(JSON.toJSONString(result));
 	}
 
 	@Override
-	public ToolExecuteResult apply(String s) {
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public String getDescription() {
+		return description;
+	}
+
+	@Override
+	public String getParameters() {
+		return PARAMETERS;
+	}
+
+	@Override
+	public Class<?> getInputType() {
+		return String.class;
+	}
+
+	@Override
+	public boolean isReturnDirect() {
+		return false;
+	}
+
+	@Override
+	public ToolExecuteResult apply(String s, ToolContext toolContext) {
 		return run(s);
+	}
+
+	private BaseAgent agent;
+
+	@Override
+	public void setAgent(BaseAgent agent) {
+		this.agent = agent;
+	}
+
+	public BaseAgent getAgent() {
+		return this.agent;
+	}
+
+	@Override
+	public String getCurrentToolStateString() {
+		return String.format("""
+				            Current File Operation State:
+				            - Working Directory:
+				%s
+
+				            - Last File Operation:
+				%s
+
+				            - Last Operation Result:
+				%s
+
+				            """, workingDirectoryPath, lastCommand.isEmpty() ? "No command executed yet" : lastCommand,
+				lastResult.isEmpty() ? "No result yet" : lastResult);
 	}
 
 }
