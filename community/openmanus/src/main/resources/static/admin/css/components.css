@@ -1,0 +1,120 @@
+/* components.css - 组件样式 */
+
+/* 按钮组件 */
+.action-btn {
+    padding: 8px 16px;
+    background-color: #f8f9fa;
+    color: #202124;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.action-btn:hover {
+    background-color: #f1f3f4;
+    border-color: #c6c6c6;
+}
+
+.action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.secondary-btn {
+    padding: 8px 16px;
+    background-color: #fff;
+    color: #1a73e8;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.secondary-btn:hover {
+    background-color: #f1f3f4;
+    border-color: #1a73e8;
+}
+
+.secondary-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #f1f3f4;
+}
+
+/* 通知组件 */
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.notification {
+    min-width: 280px;
+    max-width: 400px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transform: translateX(120%);
+    transition: transform 0.3s ease;
+    border-left: 4px solid #1a73e8;
+}
+
+.notification.success { border-left-color: #34a853; }
+.notification.error { border-left-color: #ea4335; }
+.notification.warning { border-left-color: #fbbc05; }
+.notification.info { border-left-color: #1a73e8; }
+
+.notification.show { transform: translateX(0); }
+.notification.hide { transform: translateX(120%); }
+
+/* 加载状态样式 */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(26, 115, 232, 0.1);
+    border-left-color: #1a73e8;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    margin-top: 16px;
+    color: #5f6368;
+    font-size: 16px;
+}

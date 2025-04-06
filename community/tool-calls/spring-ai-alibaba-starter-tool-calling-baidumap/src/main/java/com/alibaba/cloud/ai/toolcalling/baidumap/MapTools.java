@@ -38,7 +38,7 @@ public class MapTools {
 
 		this.httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
 
-		if (Objects.isNull(baiDuMapProperties.getWebApiKey())) {
+		if (Objects.isNull(baiDuMapProperties.getApiKey())) {
 			throw new RuntimeException("Please configure your BaiDuMap API key in the application.yml file.");
 		}
 	}
@@ -51,7 +51,7 @@ public class MapTools {
 	public String getAddressCityCode(String address) {
 
 		String path = String.format("/api_region_search/v1/?ak=%s&keyword=%s&sub_admin=0&extensions_code=1",
-				baiDuMapProperties.getWebApiKey(), address);
+				baiDuMapProperties.getApiKey(), address);
 
 		HttpRequest httpRequest = createGetRequest(path);
 
@@ -73,7 +73,7 @@ public class MapTools {
 	 * @return https://lbs.baidu.com/faq/api?title=webapi/weather/base
 	 */
 	public String getWeather(String cityCode) {
-		String path = String.format("/weather/v1/?ak=%s&district_id=%s&data_type=%s", baiDuMapProperties.getWebApiKey(),
+		String path = String.format("/weather/v1/?ak=%s&district_id=%s&data_type=%s", baiDuMapProperties.getApiKey(),
 				cityCode, "all");
 
 		HttpRequest httpRequest = createGetRequest(path);
@@ -98,7 +98,7 @@ public class MapTools {
 	 */
 	public String getFacilityInformation(String address, String facilityType) {
 		String path = String.format("/place/v2/search?query=%s&region=%s&output=json&ak=%s", facilityType, address,
-				baiDuMapProperties.getWebApiKey());
+				baiDuMapProperties.getApiKey());
 
 		HttpRequest httpRequest = createGetRequest(path);
 
