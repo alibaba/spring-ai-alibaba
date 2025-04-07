@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
+import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
 import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
@@ -29,16 +30,16 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.ArrayList;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class BrowserUseTool implements Function<String, ToolExecuteResult> {
+public class BrowserUseTool implements ToolCallBiFunctionDef {
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseTool.class);
 
@@ -47,18 +48,14 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 	// 添加标签页缓存字段
 	private List<Map<String, Object>> cachedTabs;
 
-	/**
-	 * 从设计来说所有的tool为了并行的thread-safe 都需要 保持 planId。 这样才能区隔开每个请求 。 所以这里新增了PlanID
-	 */
-	private String planId;
+	private BaseAgent agent;
 
-	public BrowserUseTool(ChromeDriverService chromeDriverService, String planId) {
+	public BrowserUseTool(ChromeDriverService chromeDriverService) {
 		this.chromeDriverService = chromeDriverService;
-		this.planId = planId;
 	}
 
 	private WebDriver getDriver() {
-		return chromeDriverService.getDriver(planId);
+		return chromeDriverService.getDriver(agent.getPlanId());
 	}
 
 	private static final int MAX_LENGTH = 20000;
@@ -170,14 +167,14 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		return functionTool;
 	}
 
-	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService, String planId) {
-		BrowserUseTool instance = new BrowserUseTool(chromeDriverService, planId);
+	public static synchronized BrowserUseTool getInstance(ChromeDriverService chromeDriverService) {
+		BrowserUseTool instance = new BrowserUseTool(chromeDriverService);
 		return instance;
 	}
 
 	@SuppressWarnings("rawtypes")
-	public static FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService, String planId) {
-		return FunctionToolCallback.builder(name, getInstance(chromeDriverService, planId))
+	public static FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService) {
+		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
 			.description(description)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
@@ -188,7 +185,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		try {
 
 			// 添加随机延迟
-			Thread.sleep(new Random().nextInt(1000) + 500);
+			Thread.sleep(new Random().nextInt(500) + 200);
 		}
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
@@ -442,38 +439,45 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		}
 	}
 
-	private static final String INTERACTIVE_ELEMENTS_SELECTOR = "a, button, input, select, textarea, [role='button'], [role='link']";
+	private static final String INTERACTIVE_ELEMENTS_SELECTOR = "a, button, input, select, textarea[type='search'], textarea, [role='button'], [role='link'], [role='textbox'], [role='search'], [role='searchbox']";
 
 	private String formatElementInfo(int index, WebElement element) {
 		try {
+			if (!isElementVisible(element)) {
+				return ""; // 如果元素不可见，直接返回空字符串
+			}
+
 			JavascriptExecutor js = (JavascriptExecutor) getDriver();
 			@SuppressWarnings("unchecked")
-			// 为了提速 getAttribute做多了太慢了
 			Map<String, Object> props = (Map<String, Object>) js.executeScript("""
 					function getElementInfo(el) {
-					    const style = window.getComputedStyle(el);
-					    return {
-					        tagName: el.tagName.toLowerCase(),
-					        type: el.getAttribute('type'),
-					        role: el.getAttribute('role'),
-					        text: el.textContent.trim(),
-					        value: el.value,
-					        placeholder: el.getAttribute('placeholder'),
-					        name: el.getAttribute('name'),
-					        id: el.getAttribute('id'),
-					        'aria-label': el.getAttribute('aria-label'),
-					        isVisible: (
-					            el.offsetWidth > 0 &&
-					            el.offsetHeight > 0 &&
-					            style.visibility !== 'hidden' &&
-					            style.display !== 'none'
-					        )
-					    };
+					    try {
+					        const style = window.getComputedStyle(el);
+					        return {
+					            tagName: el.tagName.toLowerCase(),
+					            type: el.getAttribute('type'),
+					            role: el.getAttribute('role'),
+					            text: el.textContent.trim(),
+					            value: el.value,
+					            placeholder: el.getAttribute('placeholder'),
+					            name: el.getAttribute('name'),
+					            id: el.getAttribute('id'),
+					            'aria-label': el.getAttribute('aria-label'),
+					            isVisible: (
+					                el.offsetWidth > 0 &&
+					                el.offsetHeight > 0 &&
+					                style.visibility !== 'hidden' &&
+					                style.display !== 'none'
+					            )
+					        };
+					    } catch(e) {
+					        return null; // 如果获取元素信息失败，返回null
+					    }
 					}
 					return getElementInfo(arguments[0]);
 					""", element);
 
-			if (!(Boolean) props.get("isVisible")) {
+			if (props == null || !(Boolean) props.get("isVisible")) {
 				return "";
 			}
 
@@ -510,18 +514,50 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 			return String.format("[%d] <%s%s>%s</%s>\n", index, tagName, attributes.toString(), text, tagName);
 
 		}
+		catch (StaleElementReferenceException | NoSuchElementException e) {
+			log.debug("忽略过期或不存在的元素: {}", e.getMessage());
+			return "";
+		}
 		catch (Exception e) {
-			log.warn("格式化元素信息失败 ,应该是页面某些元素过期了， 跳过当前元素格式化: {}", e.getMessage());
+			log.warn("格式化元素信息失败，跳过当前元素: {}", e.getMessage());
 			return "";
 		}
 	}
 
 	// 添加新的方法获取可交互元素
+	private boolean isElementVisible(WebElement element) {
+		try {
+			return element.isDisplayed() && element.isEnabled();
+		}
+		catch (StaleElementReferenceException | NoSuchElementException e) {
+			// 忽略过期或不存在的元素
+			log.debug("忽略过期或不存在的元素: {}", e.getMessage());
+			return false;
+		}
+	}
+
 	private List<WebElement> getInteractiveElements(WebDriver driver) {
-		return driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR))
-			.stream()
-			.filter(this::isElementVisible)
-			.collect(Collectors.toList());
+		try {
+			return driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR))
+				.stream()
+				.filter(this::isElementVisible)
+				.collect(Collectors.toList());
+		}
+		catch (StaleElementReferenceException e) {
+			log.warn("元素在获取过程中过期，重试一次: {}", e.getMessage());
+			// 如果发生异常，等待一下然后重试
+			try {
+				Thread.sleep(500);
+				return driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR))
+					.stream()
+					.filter(this::isElementVisible)
+					.collect(Collectors.toList());
+			}
+			catch (Exception retryEx) {
+				log.error("重试获取元素失败: {}", retryEx.getMessage());
+				return new ArrayList<>(); // 返回空列表而不是抛出异常
+			}
+		}
 	}
 
 	private String getInteractiveElementsInfo(WebDriver driver) {
@@ -619,18 +655,93 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 		}
 	}
 
-	private boolean isElementVisible(WebElement element) {
-		try {
-			return element.isDisplayed() && element.isEnabled();
-		}
-		catch (NoSuchElementException e) {
-			return false;
-		}
+	@Override
+	public ToolExecuteResult apply(String t, ToolContext u) {
+
+		return run(t);
 	}
 
 	@Override
-	public ToolExecuteResult apply(String s) {
-		return run(s);
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public String getDescription() {
+		return description;
+	}
+
+	@Override
+	public String getParameters() {
+		return PARAMETERS;
+	}
+
+	@Override
+	public Class<?> getInputType() {
+		return String.class;
+	}
+
+	@Override
+	public boolean isReturnDirect() {
+		return false;
+	}
+
+	@Override
+	public void setAgent(BaseAgent agent) {
+		this.agent = agent;
+	}
+
+	public BaseAgent getAgent() {
+		return this.agent;
+	}
+
+	@Override
+	public String getCurrentToolStateString() {
+		Map<String, Object> state = getCurrentState();
+
+		// 构建URL和标题信息
+		String urlInfo = String.format("\n   URL: %s\n   Title: %s", state.get("url"), state.get("title"));
+
+		// 构建标签页信息
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> tabs = (List<Map<String, Object>>) state.get("tabs");
+		String tabsInfo = (tabs != null) ? String.format("\n   %d tab(s) available", tabs.size()) : "";
+
+		// 获取滚动信息
+		@SuppressWarnings("unchecked")
+		Map<String, Object> scrollInfo = (Map<String, Object>) state.get("scroll_info");
+		String contentAbove = "";
+		String contentBelow = "";
+		if (scrollInfo != null) {
+			Long pixelsAbove = (Long) scrollInfo.get("pixels_above");
+			Long pixelsBelow = (Long) scrollInfo.get("pixels_below");
+			contentAbove = pixelsAbove > 0 ? String.format(" (%d pixels)", pixelsAbove) : "";
+			contentBelow = pixelsBelow > 0 ? String.format(" (%d pixels)", pixelsBelow) : "";
+		}
+
+		// 获取交互元素信息
+		String elementsInfo = (String) state.get("interactive_elements");
+
+		// 构建最终的状态字符串
+		String retString = String.format("""
+				When you see [Current state starts here], focus on the following:
+				- Current URL and page title:
+				%s
+
+				- Available tabs:
+				%s
+
+				- Interactive elements and their indices:
+				%s
+
+				- Content above%s or below%s the viewport (if indicated)
+
+				- Any action results or errors:
+				%s
+				""", urlInfo, tabsInfo, elementsInfo != null ? elementsInfo : "", contentAbove, contentBelow,
+				state.containsKey("error") ? state.get("error") : "");
+
+		return retString;
 	}
 
 }

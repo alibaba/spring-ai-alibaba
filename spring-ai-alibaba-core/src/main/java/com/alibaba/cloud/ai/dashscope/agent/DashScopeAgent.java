@@ -24,6 +24,8 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi.DashScopeAgentReques
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -114,15 +116,27 @@ public final class DashScopeAgent extends Agent {
 			throw new IllegalArgumentException("appId must be set");
 		}
 
+		String requestPrompt = null;
+		List<DashScopeAgentRequestMessage> requestMessages = List.of();
+
+		List<Message> messages = prompt.getInstructions();
+		boolean onlyOneUserMessage = messages.size() == 1 && messages.get(0).getMessageType() == MessageType.USER;
+		if (onlyOneUserMessage) {
+			requestPrompt = messages.get(0).getText();
+		}
+		else {
+			requestMessages = messages.stream()
+				.map(msg -> new DashScopeAgentRequestMessage(msg.getMessageType().getValue(), msg.getText()))
+				.toList();
+		}
+
 		DashScopeAgentRagOptions ragOptions = runtimeOptions.getRagOptions();
 		return new DashScopeAgentRequest(appId,
-				new DashScopeAgentRequest.DashScopeAgentRequestInput(null, prompt.getInstructions()
-					.stream()
-					.map(msg -> new DashScopeAgentRequestMessage(msg.getMessageType().getValue(), msg.getText()))
-					.toList(), runtimeOptions.getSessionId(), runtimeOptions.getMemoryId(), runtimeOptions.getImages(),
+				new DashScopeAgentRequest.DashScopeAgentRequestInput(requestPrompt, requestMessages,
+						runtimeOptions.getSessionId(), runtimeOptions.getMemoryId(), runtimeOptions.getImages(),
 						runtimeOptions.getBizParams()),
-				new DashScopeAgentRequest.DashScopeAgentRequestParameters(runtimeOptions.getHasThoughts(),
-						stream && runtimeOptions.getIncrementalOutput(),
+				new DashScopeAgentRequest.DashScopeAgentRequestParameters(runtimeOptions.getFlowStreamMode(),
+						runtimeOptions.getHasThoughts(), stream && runtimeOptions.getIncrementalOutput(),
 						ragOptions == null ? null
 								: new DashScopeAgentRequestRagOptions(ragOptions.getPipelineIds(),
 										ragOptions.getFileIds(), ragOptions.getMetadataFilter(), ragOptions.getTags(),
@@ -132,6 +146,10 @@ public final class DashScopeAgent extends Agent {
 	private ChatResponse toChatResponse(DashScopeAgentResponse response) {
 		DashScopeAgentResponse.DashScopeAgentResponseOutput output = response.output();
 		DashScopeAgentResponse.DashScopeAgentResponseUsage usage = response.usage();
+		if (output == null) {
+			throw new RuntimeException("output is null");
+		}
+
 		String text = output.text();
 
 		if (text == null) {
