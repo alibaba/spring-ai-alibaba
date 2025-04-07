@@ -17,46 +17,33 @@
 
 package com.alibaba.cloud.ai.example.helloworld.controller;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.imageio.ImageIO;
-
 import com.alibaba.cloud.ai.example.helloworld.SupervisorAgent;
+import com.alibaba.cloud.ai.example.helloworld.tool.PlanningTool;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.ReactAgentWithHuman;
+import com.alibaba.cloud.ai.graph.node.HumanNode;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import net.sourceforge.plantuml.FileFormat;
-import net.sourceforge.plantuml.FileFormatOption;
-import net.sourceforge.plantuml.SourceStringReader;
+import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -65,8 +52,8 @@ import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 @RestController
-@RequestMapping("/helloworld")
-public class HelloworldController {
+@RequestMapping("/embedded-human")
+public class EmbeddedHumanNodeController {
 
 	String planningPrompt = "Your are a task planner, please analyze the task and plan the steps.";
 
@@ -81,8 +68,11 @@ public class HelloworldController {
 
 	private CompiledGraph compiledGraph;
 
+	private PlanningTool planningTool = new PlanningTool(Map.of());
+
+
 	// 也可以使用如下的方式注入 ChatClient
-	public HelloworldController(ChatModel chatModel) {
+	public EmbeddedHumanNodeController(ChatModel chatModel) {
 		this.planningClient = ChatClient.builder(chatModel)
 			.defaultSystem(planningPrompt)
 			.defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
@@ -102,28 +92,36 @@ public class HelloworldController {
 	public void initGraph() throws GraphStateException {
 		AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
 			OverAllState state = new OverAllState();
-			state.registerKeyAndStrategy("plan", new ReplaceStrategy());
-			state.registerKeyAndStrategy("step_prompt", new ReplaceStrategy());
-			state.registerKeyAndStrategy("step_output", new ReplaceStrategy());
-			state.registerKeyAndStrategy("final_output", new ReplaceStrategy());
+			state.registerKeyAndStrategy("plan", (o1, o2) -> o2);
+			state.registerKeyAndStrategy("step_prompt", (o1, o2) -> o2);
+			state.registerKeyAndStrategy("step_output", (o1, o2) -> o2);
+			state.registerKeyAndStrategy("final_output", (o1, o2) -> o2);
 
 			state.input(inputs);
 			return state;
 		};
 
 		SupervisorAgent controllerAgent = new SupervisorAgent();
-		ReactAgent planningAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。",planningClient, resolver, 10);
+		ReactAgentWithHuman planningAgent = new ReactAgentWithHuman("请帮助用户完成他接下来输入的任务规划。", planningClient, resolver, 10);
 		planningAgent.getAndCompileGraph();
-		ReactAgent stepAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。",stepClient, resolver, 10);
+		ReactAgentWithHuman stepAgent = new ReactAgentWithHuman("请帮助用户完成他接下来输入的任务规划。", stepClient, resolver, 10);
 		stepAgent.getAndCompileGraph();
+//		SupervisorAgent controllerAgent = new SupervisorAgent();
+//		ReactAgent planningAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。",planningClient, resolver, 10);
+//		planningAgent.getAndCompileGraph();
+//		ReactAgent stepAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。",stepClient, resolver, 10);
+//		stepAgent.getAndCompileGraph();
+		HumanNode humanNode = new HumanNode();
 
 		StateGraph graph2 = new StateGraph(stateFactory)
 				.addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
+				.addNode("graph_human", node_async(humanNode))
 				.addNode("controller_agent", node_async(controllerAgent))
 				.addNode("step_executing_agent", stepAgent.asAsyncNodeAction("step_prompt", "step_output"))
 
 				.addEdge(START, "planning_agent")
-				.addEdge("planning_agent", "controller_agent")
+				.addEdge("planning_agent", "graph_human")
+				.addConditionalEdges("graph_human", edge_async(humanNode::think), Map.of("planning_agent", "planning_agent", "controller_agent", "controller_agent"))
 				.addConditionalEdges("controller_agent", edge_async(controllerAgent::think),
 						Map.of("continue", "step_executing_agent", "end", END))
 				.addEdge("step_executing_agent", "controller_agent");
@@ -135,45 +133,54 @@ public class HelloworldController {
 	 * ChatClient 简单调用
 	 */
 	@GetMapping("/simple/chat")
-	public String simpleChat(String query)
-			throws GraphStateException {
-		Optional<OverAllState> result = compiledGraph.invoke(Map.of("input", query));
+	public String simpleChat(String query) {
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId("1").build();
+		Optional<OverAllState> result = compiledGraph.invoke(Map.of("input", query), runnableConfig);
+		// send back to user and wait for plan approval
 		return result.get().data().toString();
 	}
 
-	@GetMapping(value = "/image", produces = MediaType.IMAGE_PNG_VALUE)
-	public ResponseEntity<byte[]> getImage() throws IOException {
+	@GetMapping("/simple/resume-to-tool")
+	public String resume() {
+		Map<String, Object> data = Map.of("input", "请帮我查询最近的新闻");
+		String nextNode = "tool";
+
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId("1").build();
+
+		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
+		OverAllState state = stateSnapshot.state();
+		state.withResume();
+		state.withHumanFeedback(new OverAllState.HumanFeedback(data, nextNode));
+
+		Optional<OverAllState> result = compiledGraph.invoke(state, runnableConfig);
+		// send back to user and wait for plan approval
+
+		return result.get().data().toString();
+	}
+
+	@GetMapping("/simple/resume-to-agent")
+	public String resumtToNextStep() {
+		String nextNode = "agent";
+
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId("1").build();
+
+		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
+		OverAllState state = stateSnapshot.state();
+		state.withResume();
+		state.withHumanFeedback(new OverAllState.HumanFeedback(Map.of(), nextNode));
+
+		Optional<OverAllState> result = compiledGraph.invoke(state, runnableConfig);
+		// send back to user and wait for plan approval
+
+		return result.get().data().toString();
+	}
+
+	@GetMapping(value = "/image")
+	@ResponseBody
+	public String getImage() {
 		GraphRepresentation graphRepresentation = compiledGraph.getGraph(GraphRepresentation.Type.PLANTUML);
 		System.out.println(graphRepresentation.content());
-		var reader = new SourceStringReader(graphRepresentation.content());
-		try(var imageOutStream = new java.io.ByteArrayOutputStream()) {
-
-			var description = reader.outputImage( imageOutStream, 0, new FileFormatOption(FileFormat.PNG));
-
-			var imageInStream = new java.io.ByteArrayInputStream(  imageOutStream.toByteArray() );
-
-			var image = javax.imageio.ImageIO.read( imageInStream );
-
-			// Create a BufferedImage
-			int width = 400, height = 300;
-			Graphics2D g2d = image.createGraphics();
-
-			// Draw something
-			g2d.setColor(Color.BLUE);
-			g2d.fillRect(50, 50, 300, 200);
-			g2d.setColor(Color.RED);
-			g2d.drawString("Hello, Browser!", 120, 150);
-			g2d.dispose();
-
-			// Convert to byte array
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			ImageIO.write(image, "png", baos);
-
-			return ResponseEntity.ok()
-					.contentType(MediaType.IMAGE_PNG)
-					.body(baos.toByteArray());
-
-		}
+		return graphRepresentation.content();
 	}
 
 

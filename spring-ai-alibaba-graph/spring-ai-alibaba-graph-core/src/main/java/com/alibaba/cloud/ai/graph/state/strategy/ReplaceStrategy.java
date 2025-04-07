@@ -14,28 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.example.tool;
+package com.alibaba.cloud.ai.graph.state.strategy;
 
-import java.util.Map;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 
-public class PlanningTool {
-
-	private Map<String, Plan> plans;
-
-	public PlanningTool(Map<String, Plan> plans) {
-		this.plans = plans;
+public class ReplaceStrategy implements KeyStrategy {
+	@Override
+	public Object apply(Object oldValue, Object newValue) {
+		return newValue;
 	}
-
-	public void createPlan() {
-		// create plan
-	}
-
-	public void updatePlan() {
-		// update plan
-	}
-
-	public Plan getPlans(String id) {
-		return plans.get(id);
-	}
-
 }

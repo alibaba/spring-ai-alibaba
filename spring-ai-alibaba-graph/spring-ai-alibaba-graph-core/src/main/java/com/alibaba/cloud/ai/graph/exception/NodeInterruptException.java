@@ -14,11 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.node;
+package com.alibaba.cloud.ai.graph.exception;
 
-public class GraphInterruptException extends Exception {
+/**
+ * Raised by a node to interrupt execution, suppressed by the current graph.
+ * Never raised directly, or surfaced to the user.
+ */
+public class NodeInterruptException extends Exception {
 
-	public GraphInterruptException(String message) {
+	public NodeInterruptException(String message) {
 		super(message);
 	}
 

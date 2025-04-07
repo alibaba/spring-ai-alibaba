@@ -21,6 +21,8 @@ import java.util.Map;
 
 public class PlanningTool {
 
+	private static final Plan plan = new Plan("1", List.of("step1", "step2", "step3"));
+
 	private Map<String, Plan> plans;
 
 	public PlanningTool(Map<String, Plan> plans) {
@@ -36,7 +38,7 @@ public class PlanningTool {
 	}
 
 	public Plan getPlans(String id) {
-		return new Plan("1", List.of("step1", "step2", "step3"));
+		return plan;
 //		return plans.get(id);
 	}
 
