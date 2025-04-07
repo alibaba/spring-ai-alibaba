@@ -36,7 +36,7 @@ public class Plan {
 	}
 
 	public boolean isFinished() {
-		return currentStep == steps.size() - 1;
+		return currentStep == steps.size();
 	}
 
 }

@@ -40,6 +40,12 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>net.sourceforge.plantuml</groupId>
+			<artifactId>plantuml-mit</artifactId>
+			<version>1.2024.4</version>
+		</dependency>
+
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>

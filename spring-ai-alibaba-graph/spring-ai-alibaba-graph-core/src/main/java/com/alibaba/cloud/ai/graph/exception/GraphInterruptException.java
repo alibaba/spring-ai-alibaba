@@ -14,29 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.example.tool;
+package com.alibaba.cloud.ai.graph.exception;
 
-import java.util.List;
+/**
+ * Raised when a subgraph is interrupted, suppressed by the root graph.
+ * Never raised directly, or surfaced to the user.
+ */
+public class GraphInterruptException extends Exception {
 
-public class Plan {
-
-	private int currentStep = 0;
-
-	private String planId;
-
-	private List<String> steps;
-
-	public Plan(String planId, List<String> steps) {
-		this.planId = planId;
-		this.steps = steps;
-	}
-
-	public String nextStep() {
-		return steps.get(currentStep++);
-	}
-
-	public boolean isFinished() {
-		return currentStep == steps.size() - 1;
+	public GraphInterruptException(String message) {
+		super(message);
 	}
 
 }

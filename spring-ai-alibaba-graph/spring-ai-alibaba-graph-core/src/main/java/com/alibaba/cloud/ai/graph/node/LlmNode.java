@@ -27,8 +27,10 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.StringUtils;
@@ -37,7 +39,9 @@ public class LlmNode implements NodeAction {
 
 	public static final String LLM_RESPONSE_KEY = "llm_response";
 
-	private String prompt;
+	private String systemPrompt;
+
+	private String userPrompt;
 
 	private Map<String, Object> params = new HashMap<>();
 
@@ -47,7 +51,9 @@ public class LlmNode implements NodeAction {
 
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
-	private String templateKey;
+	private String systemPromptKey;
+
+	private String userPromptKey;
 
 	private String paramsKey;
 
@@ -57,12 +63,12 @@ public class LlmNode implements NodeAction {
 
 	private ChatClient chatClient;
 
-	public LlmNode() {
-	}
+	public LlmNode() {}
 
-	public LlmNode(String prompt, Map<String, Object> params, List<Message> messages, List<Advisor> advisors,
+	public LlmNode(String systemPrompt, String prompt, Map<String, Object> params, List<Message> messages, List<Advisor> advisors,
 			List<ToolCallback> toolCallbacks, ChatClient chatClient) {
-		this.prompt = prompt;
+		this.systemPrompt = systemPrompt;
+		this.userPrompt = prompt;
 		this.params = params;
 		this.messages = messages;
 		this.advisors = advisors;
@@ -86,8 +92,11 @@ public class LlmNode implements NodeAction {
 	}
 
 	private void initNodeWithState(OverAllState state) {
-		if (StringUtils.hasLength(templateKey)) {
-			this.prompt = (String) state.value(templateKey).orElse(this.prompt);
+		if (StringUtils.hasLength(userPromptKey)) {
+			this.userPrompt = (String) state.value(userPromptKey).orElse(this.userPrompt);
+		}
+		if (StringUtils.hasLength(systemPromptKey)) {
+			this.systemPrompt = (String) state.value(systemPromptKey).orElse(this.systemPrompt);
 		}
 		if (StringUtils.hasLength(paramsKey)) {
 			this.params = (Map<String, Object>) state.value(paramsKey).orElse(this.params);
@@ -95,8 +104,8 @@ public class LlmNode implements NodeAction {
 		if (StringUtils.hasLength(messagesKey)) {
 			this.messages = (List<Message>) state.value(messagesKey).orElse(this.messages);
 		}
-		if (StringUtils.hasLength(prompt) && !params.isEmpty()) {
-			this.prompt = renderPromptTemplate(prompt, params);
+		if (StringUtils.hasLength(userPrompt) && !params.isEmpty()) {
+			this.userPrompt = renderPromptTemplate(userPrompt, params);
 		}
 	}
 
@@ -106,24 +115,85 @@ public class LlmNode implements NodeAction {
 	}
 
 	public Flux<ChatResponse> stream() {
-		return chatClient.prompt()
-			.user(prompt)
-			.messages(messages)
-			.advisors(advisors)
-			.tools(toolCallbacks)
-			.stream()
-			.chatResponse();
+		if (StringUtils.hasLength(systemPrompt) && StringUtils.hasLength(userPrompt)) {
+			return chatClient.prompt()
+					.system(systemPrompt)
+					.user(userPrompt)
+					.messages(messages)
+					.advisors(advisors)
+					.tools(toolCallbacks)
+					.stream()
+					.chatResponse();
+		} else {
+			if (StringUtils.hasLength(systemPrompt)) {
+				return chatClient.prompt()
+					.system(systemPrompt)
+					.messages(messages)
+					.advisors(advisors)
+					.tools(toolCallbacks)
+					.stream()
+					.chatResponse();
+			} else if (StringUtils.hasLength(userPrompt)) {
+				return chatClient.prompt()
+						.user(userPrompt)
+						.messages(messages)
+						.advisors(advisors)
+						.tools(toolCallbacks)
+						.stream()
+						.chatResponse();
+			} else {
+				return chatClient.prompt()
+					.messages(messages)
+					.advisors(advisors)
+					.tools(toolCallbacks)
+					.stream()
+					.chatResponse();
+			}
+		}
 	}
 
 	public ChatResponse call() {
-		return chatClient.prompt()
-			.user(prompt)
-			.messages(messages)
-			.advisors(advisors)
-			.tools(toolCallbacks)
-			.call()
-			.chatResponse();
+		return ChatResponse.builder().generations(List.of(new Generation(new AssistantMessage("test")))).build();
 	}
+
+//	public ChatResponse call() {
+//
+//		if (StringUtils.hasLength(systemPrompt) && StringUtils.hasLength(userPrompt)) {
+//			return chatClient.prompt()
+//					.system(systemPrompt)
+//					.user(userPrompt)
+//					.messages(messages)
+//					.advisors(advisors)
+//					.tools(toolCallbacks)
+//					.call()
+//					.chatResponse();
+//		} else {
+//			if (StringUtils.hasLength(systemPrompt)) {
+//				return chatClient.prompt()
+//						.system(systemPrompt)
+//						.messages(messages)
+//						.advisors(advisors)
+//						.tools(toolCallbacks)
+//						.call()
+//						.chatResponse();
+//			} else if (StringUtils.hasLength(userPrompt)) {
+//				return chatClient.prompt()
+//						.user(userPrompt)
+//						.messages(messages)
+//						.advisors(advisors)
+//						.tools(toolCallbacks)
+//						.call()
+//						.chatResponse();
+//			} else {
+//				return chatClient.prompt()
+//						.messages(messages)
+//						.advisors(advisors)
+//						.tools(toolCallbacks)
+//						.call()
+//						.chatResponse();
+//			}
+//		}
+//	}
 
 	public static Builder builder() {
 		return new Builder();
@@ -131,7 +201,9 @@ public class LlmNode implements NodeAction {
 
 	public static class Builder {
 
-		private String promptTemplateKey;
+		private String systemPromptTemplateKey;
+
+		private String userPromptTemplateKey;
 
 		private String paramsKey;
 
@@ -141,7 +213,9 @@ public class LlmNode implements NodeAction {
 
 		private ChatClient chatClient;
 
-		private String promptTemplate;
+		private String userPromptTemplate;
+
+		private String systemPromptTemplate;
 
 		private Map<String, Object> params;
 
@@ -151,13 +225,23 @@ public class LlmNode implements NodeAction {
 
 		private List<ToolCallback> toolCallbacks;
 
-		public Builder promptTemplate(String promptTemplate) {
-			this.promptTemplate = promptTemplate;
+		public Builder userPromptTemplate(String userPromptTemplate) {
+			this.userPromptTemplate = userPromptTemplate;
 			return this;
 		}
 
-		public Builder promptTemplateKey(String promptTemplateKey) {
-			this.promptTemplateKey = promptTemplateKey;
+		public Builder systemPromptTemplate(String systemPromptTemplate) {
+			this.systemPromptTemplate = systemPromptTemplate;
+			return this;
+		}
+
+		public Builder userPromptTemplateKey(String userPromptTemplateKey) {
+			this.userPromptTemplateKey = userPromptTemplateKey;
+			return this;
+		}
+
+		public Builder systemPromptTemplateKey(String systemPromptTemplateKey) {
+			this.systemPromptTemplateKey = systemPromptTemplateKey;
 			return this;
 		}
 
@@ -203,8 +287,10 @@ public class LlmNode implements NodeAction {
 
 		public LlmNode build() {
 			LlmNode llmNode = new LlmNode();
-			llmNode.prompt = this.promptTemplate;
-			llmNode.templateKey = this.promptTemplateKey;
+			llmNode.systemPrompt = this.systemPromptTemplate;
+			llmNode.userPrompt = this.userPromptTemplate;
+			llmNode.systemPromptKey = this.systemPromptTemplateKey;
+			llmNode.userPromptKey = this.userPromptTemplateKey;
 			llmNode.paramsKey = this.paramsKey;
 			llmNode.messagesKey = this.messagesKey;
 			llmNode.outputKey = this.outputKey;
