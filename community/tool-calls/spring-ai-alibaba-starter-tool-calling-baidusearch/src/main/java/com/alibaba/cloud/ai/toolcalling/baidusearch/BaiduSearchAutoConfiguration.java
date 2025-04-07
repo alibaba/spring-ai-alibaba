@@ -19,11 +19,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 /**
  * @author KrakenZJC
  **/
+
+@Configuration
 @ConditionalOnClass(BaiduSearchService.class)
 @ConditionalOnProperty(value = "spring.ai.alibaba.toolcalling.baidusearch", name = "enabled", havingValue = "true")
 public class BaiduSearchAutoConfiguration {

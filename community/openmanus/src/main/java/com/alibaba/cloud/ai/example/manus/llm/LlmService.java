@@ -200,7 +200,7 @@ public class LlmService {
 			.build();
 
 		this.finalizeChatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(new MessageChatMemoryAdvisor(finalizeMemory))
+			.defaultAdvisors(new MessageChatMemoryAdvisor(memory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.build();
 
