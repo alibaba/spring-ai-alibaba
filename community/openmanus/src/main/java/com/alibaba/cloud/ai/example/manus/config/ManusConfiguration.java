@@ -47,6 +47,10 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 /**
  * @author yuluo
@@ -88,7 +92,9 @@ public class ManusConfiguration {
 	}
 
 	/**
-	 * PlanningFlowManager 为了与controller等方法兼容 ，并且还能保证每次请求都能创建一个新的PlanningFlow实例，来解决并发问题。
+	 * PlanningFlowManager is designed to be compatible with controller methods and
+	 * ensures that a new PlanningFlow instance is created for each request to solve
+	 * concurrency issues.
 	 */
 	@Component
 	public class PlanningFlowManager {
@@ -138,6 +144,15 @@ public class ManusConfiguration {
 
 		// 5. 创建 RestClient 并设置请求工厂
 		return RestClient.builder().requestFactory(requestFactory);
+	}
+
+	/**
+	 * Provides an empty ToolCallbackProvider implementation when MCP is disabled
+	 */
+	@Bean
+	@ConditionalOnProperty(name = "spring.ai.mcp.client.enabled", havingValue = "false")
+	public ToolCallbackProvider emptyToolCallbackProvider() {
+		return () -> new ToolCallback[0];
 	}
 
 }
