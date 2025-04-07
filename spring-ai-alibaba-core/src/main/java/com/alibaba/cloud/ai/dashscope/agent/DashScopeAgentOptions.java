@@ -54,6 +54,9 @@ public class DashScopeAgentOptions implements ChatOptions {
 	@JsonProperty("rag_options")
 	private DashScopeAgentRagOptions ragOptions;
 
+	@JsonProperty("flow_stream_mode")
+	private DashScopeAgentFlowStreamMode flowStreamMode;
+
 	@Override
 	public String getModel() {
 		return null;
@@ -158,6 +161,14 @@ public class DashScopeAgentOptions implements ChatOptions {
 		this.ragOptions = ragOptions;
 	}
 
+	public DashScopeAgentFlowStreamMode getFlowStreamMode() {
+		return flowStreamMode;
+	}
+
+	public void setFlowStreamMode(DashScopeAgentFlowStreamMode flowStreamMode) {
+		this.flowStreamMode = flowStreamMode;
+	}
+
 	@Override
 	public ChatOptions copy() {
 		return DashScopeAgentOptions.fromOptions(this);
@@ -231,6 +242,11 @@ public class DashScopeAgentOptions implements ChatOptions {
 			return this;
 		}
 
+		public Builder withFlowStreamMode(DashScopeAgentFlowStreamMode flowStreamMode) {
+			this.options.flowStreamMode = flowStreamMode;
+			return this;
+		}
+
 		public DashScopeAgentOptions build() {
 			return this.options;
 		}
@@ -247,6 +263,8 @@ public class DashScopeAgentOptions implements ChatOptions {
 		sb.append(", hasThoughts=").append(hasThoughts);
 		sb.append(", images=").append(images);
 		sb.append(", bizParams=").append(bizParams);
+		sb.append(", ragOptions=").append(ragOptions);
+		sb.append(", flowStreamMode=").append(flowStreamMode);
 		sb.append('}');
 		return sb.toString();
 	}
