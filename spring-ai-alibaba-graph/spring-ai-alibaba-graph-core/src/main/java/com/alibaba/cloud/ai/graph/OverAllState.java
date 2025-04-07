@@ -38,6 +38,10 @@ public final class OverAllState implements Serializable {
 
 	private Boolean resume;
 
+	private HumanFeedback humanFeedback;
+
+	private String interruptMessage;
+
 	/**
 	 * The constant DEFAULT_INPUT_KEY.
 	 */
@@ -66,7 +70,7 @@ public final class OverAllState implements Serializable {
 	 * @param data the data
 	 */
 	public OverAllState(Map<String, Object> data) {
-		this.data = data;
+		this.data = new HashMap<>(data);
 		this.keyStrategies = new HashMap<>();
 		this.resume = false;
 	}
@@ -88,6 +92,22 @@ public final class OverAllState implements Serializable {
 		this.resume = resume;
 	}
 
+	public String interruptMessage() {
+		return interruptMessage;
+	}
+
+	public void setInterruptMessage(String interruptMessage) {
+		this.interruptMessage = interruptMessage;
+	}
+
+	public void withHumanFeedback(HumanFeedback humanFeedback) {
+		this.humanFeedback = humanFeedback;
+	}
+
+	public HumanFeedback humanFeedback() {
+		return this.humanFeedback;
+	}
+
 	/**
 	 * Copy with resume over all state.
 	 * @return the over all state
@@ -100,7 +120,7 @@ public final class OverAllState implements Serializable {
 		this.resume = true;
 	}
 
-	public void withOutResume() {
+	public void withoutResume() {
 		this.resume = false;
 	}
 
@@ -270,4 +290,30 @@ public final class OverAllState implements Serializable {
 		return (T) value(key).orElse(defaultValue);
 	}
 
+	public static class HumanFeedback {
+		private Map<String, Object> data;
+		private String nextNodeId;
+		private String currentNodeId;
+
+		public HumanFeedback(Map<String, Object> data, String nextNodeId) {
+			this.data = data;
+			this.nextNodeId = nextNodeId;
+		}
+
+		public Map<String, Object> data() {
+			return data;
+		}
+
+		public String nextNodeId() {
+			return nextNodeId;
+		}
+
+		public void setData(Map<String, Object> data) {
+			this.data = data;
+		}
+
+		public void setNextNodeId(String nextNodeId) {
+			this.nextNodeId = nextNodeId;
+		}
+	}
 }

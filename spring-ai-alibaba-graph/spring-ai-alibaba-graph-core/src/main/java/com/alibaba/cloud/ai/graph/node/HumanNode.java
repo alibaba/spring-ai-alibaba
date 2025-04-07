@@ -17,29 +17,66 @@
 package com.alibaba.cloud.ai.graph.node;
 
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.exception.GraphInterruptException;
 
 public class HumanNode implements NodeAction {
 
-	private boolean shouldInterrupt = false;
+	// always or conditioned
+	private String interruptStrategy;
+	private Function<OverAllState, Boolean> interruptCondition;
+	private Function<OverAllState, Map<String, Object>> stateUpdateFunc;
+
+	public HumanNode() {
+		this.interruptStrategy = "always";
+	}
+
+	public HumanNode(String interruptStrategy, Function<OverAllState, Boolean> interruptCondition) {
+		this.interruptStrategy = interruptStrategy;
+		this.interruptCondition = interruptCondition;
+	}
+
+	public HumanNode(String interruptStrategy, Function<OverAllState, Boolean> interruptCondition, Function<OverAllState, Map<String, Object>> stateUpdateFunc) {
+		this.interruptStrategy = interruptStrategy;
+		this.interruptCondition = interruptCondition;
+		this.stateUpdateFunc = stateUpdateFunc;
+	}
 
 	//
 	@Override
-	public Map<String, Object> apply(OverAllState t) throws GraphInterruptException {
-		Map<String, Object> userInput = interrupt();
+	public Map<String, Object> apply(OverAllState state) throws GraphInterruptException {
+		var shouldInterrupt = interruptStrategy.equals("always") || (interruptStrategy.equals("conditioned") && interruptCondition.apply(state));
+		if (shouldInterrupt) {
+			interrupt(state);
+			Map<String, Object> data = Map.of();
+			if (state.humanFeedback() != null) {
+				if (stateUpdateFunc != null) {
+					data = stateUpdateFunc.apply(state);
+				}
+				else {
+					// todo, check and only update keys defined in state.
+					data = state.updateState(state.humanFeedback().data());
+				}
+			}
 
-		// userInput update State
-		// Command, node 跳转、state更新
+			state.withoutResume();
+			return data;
+		}
 		return Map.of();
 	}
 
-	private Map<String, Object> interrupt() throws GraphInterruptException {
-		if (shouldInterrupt) {
+	private void interrupt(OverAllState state) throws GraphInterruptException {
+		if (state.humanFeedback() == null || !state.isResume()) {
 			throw new GraphInterruptException("interrupt");
 		}
-		return null;
 	}
 
+	public String think(OverAllState state) {
+		return state.humanFeedback().nextNodeId();
+	}
 }

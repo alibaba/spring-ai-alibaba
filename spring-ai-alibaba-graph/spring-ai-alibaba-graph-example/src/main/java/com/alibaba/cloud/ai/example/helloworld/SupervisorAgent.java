@@ -14,30 +14,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.example;
+package com.alibaba.cloud.ai.example.helloworld;
 
-import java.util.List;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.example.helloworld.tool.Plan;
+import com.alibaba.cloud.ai.example.helloworld.tool.PlanningTool;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.example.tool.Plan;
 
-import org.springframework.ai.chat.messages.Message;
+public class SupervisorAgent implements NodeAction {
 
-public class ControllerAgent implements NodeAction {
+	private PlanningTool planningTool = new PlanningTool(Map.of());
 
 	@Override
 	public Map<String, Object> apply(OverAllState t) throws Exception {
-		Plan plan = (Plan) t.value("plan").orElseThrow();
-		List<Message> messages = (List<Message>) t.value("step_result").orElseThrow();
-		String promptForNextStep = "Plan completed.";
+		String planId = (String) t.value("plan").orElseThrow();
+		Plan plan = planningTool.getPlans(planId);
+		String promptForNextStep;
 		if (!plan.isFinished()) {
 			String step = plan.nextStep();
 			promptForNextStep = "What is the next step for " + step + "?";
 		}
-		t.value("prompt_for_next_step", promptForNextStep);
-		return Map.of();
+		else {
+			promptForNextStep = "Plan completed.";
+		}
+
+		return Map.of("step_prompt", promptForNextStep);
+	}
+
+	public String think(OverAllState state) {
+		String nextPrompt = (String) state.value("step_prompt").orElseThrow();
+
+		if (nextPrompt.equalsIgnoreCase("Plan completed.")) {
+			state.updateState(Map.of("final_output", state.value("step_output").orElseThrow()));
+			return "end";
+		}
+
+		return "continue";
 	}
 
 }
