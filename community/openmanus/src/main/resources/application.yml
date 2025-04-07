@@ -13,6 +13,7 @@ spring:
           model: qwen-max-latest
     mcp:
       client:
+        enabled: false
         request-timeout: 60000
         stdio:
           servers-configuration: classpath:/mcp-servers-config.json
