@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import io.github.bonigarcia.wdm.WebDriverManager;
 import jakarta.annotation.PreDestroy;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
@@ -215,7 +216,8 @@ public class ChromeDriverService implements ApplicationRunner {
 			Map<String, Object> properties = new HashMap<>();
 			properties.put("navigator.webdriver", false);
 			options.setExperimentalOption("excludeSwitches", Arrays.asList("enable-automation"));
-
+			// 自动匹配版本
+			WebDriverManager.chromedriver().setup();
 			newDriver = new ChromeDriver(options);
 			executeAntiDetectionScript(newDriver);
 			log.info("Created new ChromeDriver instance with anti-detection");
