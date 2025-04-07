@@ -32,6 +32,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -234,13 +235,14 @@ public class ManusConfiguration {
 		return RestClient.builder().requestFactory(requestFactory);
 	}
 
-
 	/**
 	 * Provides an empty ToolCallbackProvider implementation when MCP is disabled
 	 */
 	@Bean
+	@ConditionalOnMissingBean
 	@ConditionalOnProperty(name = "spring.ai.mcp.client.enabled", havingValue = "false")
 	public ToolCallbackProvider emptyToolCallbackProvider() {
 		return () -> new ToolCallback[0];
 	}
+
 }
