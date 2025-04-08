@@ -438,7 +438,7 @@ public class PlanningFlow extends BaseFlow {
 				executorParams.put(EXECUTION_ENV_KEY_STRING, "");
 				String stepResult = executor.run(executorParams);
 
-				markStepCompleted();
+				markStepCompleted(stepResult);
 
 				return stepResult;
 			}
@@ -453,7 +453,7 @@ public class PlanningFlow extends BaseFlow {
 		}
 	}
 
-	public void markStepCompleted() {
+	public void markStepCompleted(String stepNotes) {
 		if (currentStepIndex == null) {
 			return;
 		}
@@ -465,6 +465,7 @@ public class PlanningFlow extends BaseFlow {
 					put("plan_id", activePlanId);
 					put("step_index", currentStepIndex);
 					put("step_status", PlanStepStatus.COMPLETED.getValue());
+					put("step_notes", stepNotes);
 				}
 			};
 			ToolExecuteResult result = planningTool.run(JSON.toJSONString(argsMap));

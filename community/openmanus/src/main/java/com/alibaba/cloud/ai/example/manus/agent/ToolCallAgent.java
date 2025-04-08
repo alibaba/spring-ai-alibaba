@@ -110,7 +110,7 @@ public class ToolCallAgent extends ReActAgent {
 
 			userPrompt = new Prompt(messages, chatOptions);
 
-			response = llmService.getChatClient()
+			response = llmService.getAgentChatClient(getPlanId()).getChatClient()
 				.prompt(userPrompt)
 				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
 					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
@@ -253,7 +253,7 @@ public class ToolCallAgent extends ReActAgent {
 
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
 				.get(toolExecutionResult.conversationHistory().size() - 1);
-			llmService.getMemory().add(getConversationId(), toolResponseMessage);
+				llmService.getAgentChatClient(getPlanId()).getMemory().add(getConversationId(), toolResponseMessage);
 			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
 			results.add(llmCallResponse);
 
@@ -269,7 +269,7 @@ public class ToolCallAgent extends ReActAgent {
 			ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse(toolCall.id(),
 					toolCall.name(), "Error: " + e.getMessage());
 			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(List.of(toolResponse), Map.of());
-			llmService.getMemory().add(getConversationId(), toolResponseMessage);
+			llmService.getAgentChatClient(getPlanId()).getMemory().add(getConversationId(), toolResponseMessage);
 			log.error(e.getMessage());
 
 			thinkActRecord.recordError(e.getMessage());
