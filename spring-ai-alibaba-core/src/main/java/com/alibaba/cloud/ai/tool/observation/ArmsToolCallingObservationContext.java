@@ -10,73 +10,75 @@ import org.springframework.util.Assert;
 
 public class ArmsToolCallingObservationContext extends Context {
 
-  private ToolCall toolCall;
+	private ToolCall toolCall;
 
-  private final String description;
+	private final String description;
 
-  private final boolean returnDirect;
+	private final boolean returnDirect;
 
-  private String toolResult;
+	private String toolResult;
 
-  public static Builder builder() {
-    return new Builder();
-  }
+	public static Builder builder() {
+		return new Builder();
+	}
 
-  public ToolCall getToolCall() {
-    return toolCall;
-  }
+	public ToolCall getToolCall() {
+		return toolCall;
+	}
 
-  public String getDescription() {
-    return description;
-  }
+	public String getDescription() {
+		return description;
+	}
 
-  public boolean isReturnDirect() {
-    return returnDirect;
-  }
+	public boolean isReturnDirect() {
+		return returnDirect;
+	}
 
-  public void setToolResult(String toolResult) {
-    this.toolResult = toolResult;
-  }
+	public void setToolResult(String toolResult) {
+		this.toolResult = toolResult;
+	}
 
-  public String getToolResult() {
-    return toolResult;
-  }
+	public String getToolResult() {
+		return toolResult;
+	}
 
-  public ArmsToolCallingObservationContext(ToolCall toolCall, String description, boolean returnDirect) {
-    Assert.notNull(toolCall, "toolCall cannot be null");
-    this.toolCall = toolCall;
-    this.description = description;
-    this.returnDirect = returnDirect;
-  }
+	public ArmsToolCallingObservationContext(ToolCall toolCall, String description, boolean returnDirect) {
+		Assert.notNull(toolCall, "toolCall cannot be null");
+		this.toolCall = toolCall;
+		this.description = description;
+		this.returnDirect = returnDirect;
+	}
 
-  public static final class Builder {
+	public static final class Builder {
 
-    private ToolCall toolCall;
+		private ToolCall toolCall;
 
-    private String description;
+		private String description;
 
-    private boolean returnDirect;
+		private boolean returnDirect;
 
-    private Builder() {
-    }
+		private Builder() {
+		}
 
-    public Builder toolCall(ToolCall toolCall) {
-      this.toolCall = toolCall;
-      return this;
-    }
+		public Builder toolCall(ToolCall toolCall) {
+			this.toolCall = toolCall;
+			return this;
+		}
 
-    public Builder description(String description) {
-      this.description = description;
-      return this;
-    }
+		public Builder description(String description) {
+			this.description = description;
+			return this;
+		}
 
-    public Builder returnDirect(boolean returnDirect) {
-      this.returnDirect = returnDirect;
-      return this;
-    }
+		public Builder returnDirect(boolean returnDirect) {
+			this.returnDirect = returnDirect;
+			return this;
+		}
 
-    public ArmsToolCallingObservationContext build() {
-      return new ArmsToolCallingObservationContext(this.toolCall, this.description, this.returnDirect);
-    }
-  }
+		public ArmsToolCallingObservationContext build() {
+			return new ArmsToolCallingObservationContext(this.toolCall, this.description, this.returnDirect);
+		}
+
+	}
+
 }

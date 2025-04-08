@@ -89,7 +89,7 @@ public enum ArmsToolCallingObservationDocumentation implements ObservationDocume
 				return ArmsToolCallingObservationDocumentation.GEN_AI_FRAMEWORK;
 			}
 		}
-		
+
 	}
 
 	/**

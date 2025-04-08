@@ -56,36 +56,36 @@ import reactor.core.publisher.Flux;
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 public class ArmsToolCallingObservationIT {
 
-  // Test constants
-  private static final String BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode";
+	// Test constants
+	private static final String BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode";
 
-  private static final String TEST_MODEL = "qwen-max-latest";
+	private static final String TEST_MODEL = "qwen-max-latest";
 
-  private static final String API_KEY_ENV = "AI_DASHSCOPE_API_KEY";
+	private static final String API_KEY_ENV = "AI_DASHSCOPE_API_KEY";
 
-  private static final Logger logger = LoggerFactory.getLogger(ArmsToolCallingObservationIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(ArmsToolCallingObservationIT.class);
 
-  @Autowired
-  TestObservationRegistry observationRegistry;
+	@Autowired
+	TestObservationRegistry observationRegistry;
 
-  @Autowired
-  ChatModel chatModel;
+	@Autowired
+	ChatModel chatModel;
 
-  @BeforeEach
-  void setUp() {
-    // Get API key from environment variable
-    String apiKey = System.getenv(API_KEY_ENV);
-    // Skip tests if API key is not set
-    Assumptions.assumeTrue(apiKey != null && !apiKey.trim().isEmpty(),
-        "Skipping tests because " + API_KEY_ENV + " environment variable is not set");
-  }
+	@BeforeEach
+	void setUp() {
+		// Get API key from environment variable
+		String apiKey = System.getenv(API_KEY_ENV);
+		// Skip tests if API key is not set
+		Assumptions.assumeTrue(apiKey != null && !apiKey.trim().isEmpty(),
+				"Skipping tests because " + API_KEY_ENV + " environment variable is not set");
+	}
 
-  @Test
-  void functionCallSupplier() {
+	@Test
+	void functionCallSupplier() {
 
-    Map<String, Object> state = new ConcurrentHashMap<>();
+		Map<String, Object> state = new ConcurrentHashMap<>();
 
-    // @formatter:off
+	// @formatter:off
     String response = ChatClient.create(this.chatModel).prompt()
         .user("Turn the light on in the living room")
         .functions(FunctionCallback.builder()
@@ -95,208 +95,210 @@ public class ArmsToolCallingObservationIT {
         .content();
     // @formatter:on
 
-    logger.info("Response: {}", response);
-    assertThat(state).containsEntry("Light", "ON");
+		logger.info("Response: {}", response);
+		assertThat(state).containsEntry("Light", "ON");
 
-    validate();
-  }
+		validate();
+	}
 
-  @Test
-  void functionCallTest() {
-    functionCallTest(OpenAiChatOptions.builder()
-        .model(TEST_MODEL)
-        .functionCallbacks(List.of(FunctionCallback.builder()
-            .function("getCurrentWeather", new MockWeatherService())
-            .description("Get the weather in location")
-            .inputType(MockWeatherService.Request.class)
-            .build()))
-        .build());
-  }
+	@Test
+	void functionCallTest() {
+		functionCallTest(OpenAiChatOptions.builder()
+			.model(TEST_MODEL)
+			.functionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build());
+	}
 
-  @Test
-  void functionCallWithToolContextTest() {
+	@Test
+	void functionCallWithToolContextTest() {
 
-    var biFunction = new BiFunction<Request, ToolContext, Response>() {
+		var biFunction = new BiFunction<Request, ToolContext, Response>() {
 
-      @Override
-      public Response apply(Request request, ToolContext toolContext) {
+			@Override
+			public Response apply(Request request, ToolContext toolContext) {
 
-        assertThat(toolContext.getContext()).containsEntry("sessionId", "123");
+				assertThat(toolContext.getContext()).containsEntry("sessionId", "123");
 
-        double temperature = 0;
-        if (request.location().contains("Paris")) {
-          temperature = 15;
-        }
-        else if (request.location().contains("Tokyo")) {
-          temperature = 10;
-        }
-        else if (request.location().contains("San Francisco")) {
-          temperature = 30;
-        }
+				double temperature = 0;
+				if (request.location().contains("Paris")) {
+					temperature = 15;
+				}
+				else if (request.location().contains("Tokyo")) {
+					temperature = 10;
+				}
+				else if (request.location().contains("San Francisco")) {
+					temperature = 30;
+				}
 
-        return new MockWeatherService.Response(temperature, 15, 20, 2, 53, 45, MockWeatherService.Unit.C);
-      }
+				return new MockWeatherService.Response(temperature, 15, 20, 2, 53, 45, MockWeatherService.Unit.C);
+			}
 
-    };
+		};
 
-    functionCallTest(OpenAiChatOptions.builder()
-        .model(TEST_MODEL)
-        .functionCallbacks(List.of(FunctionCallback.builder()
-            .function("getCurrentWeather", biFunction)
-            .description("Get the weather in location")
-            .inputType(MockWeatherService.Request.class)
-            .build()))
-        .toolContext(Map.of("sessionId", "123"))
-        .build());
-  }
+		functionCallTest(OpenAiChatOptions.builder()
+			.model(TEST_MODEL)
+			.functionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", biFunction)
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.toolContext(Map.of("sessionId", "123"))
+			.build());
+	}
 
-  @Test
-  void streamFunctionCallTest() {
+	@Test
+	void streamFunctionCallTest() {
 
-    streamFunctionCallTest(OpenAiChatOptions.builder()
-        .model(TEST_MODEL)
-        .functionCallbacks(List.of((FunctionCallback.builder()
-            .function("getCurrentWeather", new MockWeatherService())
-            .description("Get the weather in location")
-            .inputType(MockWeatherService.Request.class)
-            // .responseConverter(response -> "" + response.temp() + response.unit())
-            .build())))
-        .build());
-  }
+		streamFunctionCallTest(OpenAiChatOptions.builder()
+			.model(TEST_MODEL)
+			.functionCallbacks(List.of((FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				// .responseConverter(response -> "" + response.temp() + response.unit())
+				.build())))
+			.build());
+	}
 
-  @Test
-  void streamFunctionCallWithToolContextTest() {
+	@Test
+	void streamFunctionCallWithToolContextTest() {
 
-    var biFunction = new BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>() {
+		var biFunction = new BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>() {
 
-      @Override
-      public Response apply(Request request, ToolContext toolContext) {
+			@Override
+			public Response apply(Request request, ToolContext toolContext) {
 
-        assertThat(toolContext.getContext()).containsEntry("sessionId", "123");
+				assertThat(toolContext.getContext()).containsEntry("sessionId", "123");
 
-        double temperature = 0;
-        if (request.location().contains("Paris")) {
-          temperature = 15;
-        }
-        else if (request.location().contains("Tokyo")) {
-          temperature = 10;
-        }
-        else if (request.location().contains("San Francisco")) {
-          temperature = 30;
-        }
+				double temperature = 0;
+				if (request.location().contains("Paris")) {
+					temperature = 15;
+				}
+				else if (request.location().contains("Tokyo")) {
+					temperature = 10;
+				}
+				else if (request.location().contains("San Francisco")) {
+					temperature = 30;
+				}
 
-        return new MockWeatherService.Response(temperature, 15, 20, 2, 53, 45, MockWeatherService.Unit.C);
-      }
+				return new MockWeatherService.Response(temperature, 15, 20, 2, 53, 45, MockWeatherService.Unit.C);
+			}
 
-    };
+		};
 
-    OpenAiChatOptions promptOptions = OpenAiChatOptions.builder()
-        .functionCallbacks(List.of((FunctionCallback.builder()
-            .function("getCurrentWeather", biFunction)
-            .description("Get the weather in location")
-            .inputType(MockWeatherService.Request.class)
-            .build())))
-        .toolContext(Map.of("sessionId", "123"))
-        .build();
+		OpenAiChatOptions promptOptions = OpenAiChatOptions.builder()
+			.functionCallbacks(List.of((FunctionCallback.builder()
+				.function("getCurrentWeather", biFunction)
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build())))
+			.toolContext(Map.of("sessionId", "123"))
+			.build();
 
-    streamFunctionCallTest(promptOptions);
-  }
+		streamFunctionCallTest(promptOptions);
+	}
 
-  void streamFunctionCallTest(OpenAiChatOptions promptOptions) {
+	void streamFunctionCallTest(OpenAiChatOptions promptOptions) {
 
-    UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-    List<Message> messages = new ArrayList<>(List.of(userMessage));
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-    Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
 
-    String content = response.collectList()
-        .block()
-        .stream()
-        .map(ChatResponse::getResults)
-        .flatMap(List::stream)
-        .map(Generation::getOutput)
-        .map(AssistantMessage::getText)
-        .collect(Collectors.joining());
-    logger.info("Response: {}", content);
+		String content = response.collectList()
+			.block()
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.collect(Collectors.joining());
+		logger.info("Response: {}", content);
 
-    assertThat(content).contains("30", "10", "15");
+		assertThat(content).contains("30", "10", "15");
 
-    validate();
-  }
+		validate();
+	}
 
-  void functionCallTest(OpenAiChatOptions promptOptions) {
+	void functionCallTest(OpenAiChatOptions promptOptions) {
 
-    UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-    List<Message> messages = new ArrayList<>(List.of(userMessage));
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-    ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-    logger.info("Response: {}", response);
+		logger.info("Response: {}", response);
 
-    assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
-    validate();
-  }
+		validate();
+	}
 
-  private void validate() {
-    TestObservationRegistryAssert.assertThat(this.observationRegistry)
-        .doesNotHaveAnyRemainingCurrentObservation()
-        .hasObservationWithNameEqualTo(ArmsToolCallingObservationConvention.DEFAULT_OPERATION_NAME)
-        .that()
-        .hasContextualNameEqualTo(ArmsToolCallingObservationConvention.DEFAULT_OPERATION_NAME + " getCurrentWeather")
-        .hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
-            ArmsToolCallingObservationConvention.DEFAULT_OPERATION_NAME)
-        .hasLowCardinalityKeyValue(LowCardinalityKeyNames.GEN_AI_SPAN_KIND.asString(),
-            ArmsToolCallingObservationConvention.SPAN_KIND)
-        .hasLowCardinalityKeyValue(LowCardinalityKeyNames.GEN_AI_FRAMEWORK.asString(),
-            ArmsToolCallingObservationConvention.FRAMEWORK)
-        .hasHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.GEN_AI_TOOL_CALL_ID.asString())
-        .hasHighCardinalityKeyValue(HighCardinalityKeyNames.GEN_AI_TOOL_NAME.asString(), "getCurrentWeather")
-        .hasHighCardinalityKeyValue(HighCardinalityKeyNames.TOOL_NAME.asString(), "getCurrentWeather")
-        .hasHighCardinalityKeyValue(HighCardinalityKeyNames.TOOL_DESCRIPTION.asString(), "Get the weather in location")
-        .hasHighCardinalityKeyValue(HighCardinalityKeyNames.TOOL_RETURN_DIRECT.asString(), "false")
-        .hasHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.TOOL_PARAMETERS.asString())
-        .hasHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.OUTPUT_VALUE.asString())
-        .hasBeenStarted()
-        .hasBeenStopped();
-  }
+	private void validate() {
+		TestObservationRegistryAssert.assertThat(this.observationRegistry)
+			.doesNotHaveAnyRemainingCurrentObservation()
+			.hasObservationWithNameEqualTo(ArmsToolCallingObservationConvention.DEFAULT_OPERATION_NAME)
+			.that()
+			.hasContextualNameEqualTo(
+					ArmsToolCallingObservationConvention.DEFAULT_OPERATION_NAME + " getCurrentWeather")
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
+					ArmsToolCallingObservationConvention.DEFAULT_OPERATION_NAME)
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.GEN_AI_SPAN_KIND.asString(),
+					ArmsToolCallingObservationConvention.SPAN_KIND)
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.GEN_AI_FRAMEWORK.asString(),
+					ArmsToolCallingObservationConvention.FRAMEWORK)
+			.hasHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.GEN_AI_TOOL_CALL_ID.asString())
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.GEN_AI_TOOL_NAME.asString(), "getCurrentWeather")
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.TOOL_NAME.asString(), "getCurrentWeather")
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.TOOL_DESCRIPTION.asString(),
+					"Get the weather in location")
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.TOOL_RETURN_DIRECT.asString(), "false")
+			.hasHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.TOOL_PARAMETERS.asString())
+			.hasHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.OUTPUT_VALUE.asString())
+			.hasBeenStarted()
+			.hasBeenStopped();
+	}
 
-  @SpringBootConfiguration
-  static class Config {
+	@SpringBootConfiguration
+	static class Config {
 
-    @Bean
-    public OpenAiApi chatApi() {
-      return OpenAiApi.builder()
-          .baseUrl(BASE_URL)
-          .apiKey(new SimpleApiKey(System.getenv(API_KEY_ENV)))
-          .completionsPath("/v1/chat/completions")
-          .embeddingsPath("/v1/embeddings")
-          .build();
-    }
+		@Bean
+		public OpenAiApi chatApi() {
+			return OpenAiApi.builder()
+				.baseUrl(BASE_URL)
+				.apiKey(new SimpleApiKey(System.getenv(API_KEY_ENV)))
+				.completionsPath("/v1/chat/completions")
+				.embeddingsPath("/v1/embeddings")
+				.build();
+		}
 
-    @Bean
-    public OpenAiChatModel openAiClient(OpenAiApi openAiApi, ToolCallingManager toolCallingManager,
-        TestObservationRegistry observationRegistry) {
-      return OpenAiChatModel.builder()
-          .openAiApi(openAiApi)
-          .defaultOptions(OpenAiChatOptions.builder().model(TEST_MODEL).topP(0.7).build())
-          .toolCallingManager(toolCallingManager)
-          .observationRegistry(observationRegistry)
-          .build();
-    }
+		@Bean
+		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, ToolCallingManager toolCallingManager,
+				TestObservationRegistry observationRegistry) {
+			return OpenAiChatModel.builder()
+				.openAiApi(openAiApi)
+				.defaultOptions(OpenAiChatOptions.builder().model(TEST_MODEL).topP(0.7).build())
+				.toolCallingManager(toolCallingManager)
+				.observationRegistry(observationRegistry)
+				.build();
+		}
 
-    @Bean
-    public ToolCallingManager toolCallingManager(TestObservationRegistry observationRegistry) {
-      return ObservableToolCallingManager.builder()
-          .observationRegistry(observationRegistry)
-          .build();
-    }
+		@Bean
+		public ToolCallingManager toolCallingManager(TestObservationRegistry observationRegistry) {
+			return ObservableToolCallingManager.builder().observationRegistry(observationRegistry).build();
+		}
 
-    @Bean
-    public TestObservationRegistry observationRegistry() {
-      return TestObservationRegistry.create();
-    }
-  }
+		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
+
+	}
+
 }
