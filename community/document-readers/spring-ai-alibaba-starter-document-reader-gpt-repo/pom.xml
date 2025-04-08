@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-document-reader-gpt-repo</artifactId>
-    <name>Spring AI Alibaba Starter GPT Repo Document Reader</name>
+    <name>Spring AI Alibaba Starter Document Reader GPT Repo</name>
     <description>gpt-repo reader for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
