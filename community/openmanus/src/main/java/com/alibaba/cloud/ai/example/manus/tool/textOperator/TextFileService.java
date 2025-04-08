@@ -30,12 +30,11 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
-
 import jakarta.annotation.PreDestroy;
 
 @Service
 @Primary
-public class TextFileService implements ApplicationRunner{
+public class TextFileService implements ApplicationRunner {
 
 	private static final Logger log = LoggerFactory.getLogger(TextFileService.class);
 
@@ -103,20 +102,20 @@ public class TextFileService implements ApplicationRunner{
 	}
 
 	public void updateFileState(String planId, String filePath, String operationResult) {
-        FileState state = getFileState(planId);
-        synchronized (getFileLock(planId)) {
-            state.setCurrentFilePath(filePath);
-            state.setLastOperationResult(operationResult);
-        }
-    }
+		FileState state = getFileState(planId);
+		synchronized (getFileLock(planId)) {
+			state.setCurrentFilePath(filePath);
+			state.setLastOperationResult(operationResult);
+		}
+	}
 
 	public String getCurrentFilePath(String planId) {
-        return getFileState(planId).getCurrentFilePath();
-    }
+		return getFileState(planId).getCurrentFilePath();
+	}
 
-    public String getLastOperationResult(String planId) {
-        return getFileState(planId).getLastOperationResult();
-    }
+	public String getLastOperationResult(String planId) {
+		return getFileState(planId).getLastOperationResult();
+	}
 
 	@PreDestroy
 	public void cleanup() {

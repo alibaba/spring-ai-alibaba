@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.manus.tool.support;
+package com.alibaba.cloud.ai.example.manus.tool.code;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;

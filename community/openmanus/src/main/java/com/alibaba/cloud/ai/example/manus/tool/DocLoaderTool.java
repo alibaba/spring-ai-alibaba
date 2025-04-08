@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.tool;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.parser.tika.TikaDocumentParser;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
@@ -28,13 +28,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 public class DocLoaderTool implements ToolCallBiFunctionDef {
@@ -47,7 +45,7 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 			    "properties": {
 			        "file_type": {
 			            "type": "string",
-			            "description": "(required) File type, such as pdf, text, docx, xlsx, csv, etc.."
+			            "description": "(required) File type, such as pdf, docx, xlsx, csv, etc.."
 			        },
 			        "file_path": {
 			            "type": "string",
@@ -183,7 +181,7 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 
 	@Override
 	public void cleanup(String planId) {
-		//do nothing
+		// do nothing
 	}
 
 }

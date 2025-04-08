@@ -20,38 +20,59 @@ import java.util.function.BiFunction;
 import org.springframework.ai.chat.model.ToolContext;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.tool.support.PlanBasedLifecycleService;
-import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 /**
  * Tool 定义的接口，提供统一的工具定义方法
  */
-public interface ToolCallBiFunctionDef extends BiFunction<String, ToolContext, ToolExecuteResult>, PlanBasedLifecycleService{
+public interface ToolCallBiFunctionDef extends BiFunction<String, ToolContext, ToolExecuteResult> {
 
 	/**
 	 * 获取工具的名称
+	 * @return 返回工具的唯一标识名称
 	 */
 	String getName();
 
 	/**
 	 * 获取工具的描述信息
+	 * @return 返回工具的功能描述
 	 */
 	String getDescription();
 
 	/**
 	 * 获取工具的参数定义 schema
+	 * @return 返回JSON格式的参数定义架构
 	 */
 	String getParameters();
 
 	/**
 	 * 获取工具的输入类型
+	 * @return 返回工具接受的输入参数类型Class
 	 */
 	Class<?> getInputType();
 
+	/**
+	 * 判断工具是否直接返回结果
+	 * @return 如果工具直接返回结果返回true，否则返回false
+	 */
 	boolean isReturnDirect();
 
+	/**
+	 * 设置关联的Agent实例
+	 * @param agent 要关联的BaseAgent实例
+	 */
 	public void setAgent(BaseAgent agent);
 
+	/**
+	 * 获取工具当前的状态字符串
+	 * @return 返回描述工具当前状态的字符串
+	 */
 	String getCurrentToolStateString();
+
+	/**
+	 * 清理指定 planId 的所有相关资源
+	 * @param planId 计划ID
+	 */
+	void cleanup(String planId);
 
 }

@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 

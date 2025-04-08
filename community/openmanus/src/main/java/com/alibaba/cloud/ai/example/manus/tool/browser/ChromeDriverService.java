@@ -308,7 +308,6 @@ public class ChromeDriverService implements ApplicationRunner {
 		}
 	}
 
-
 	@PreDestroy
 	public void cleanup() {
 		log.info("Spring container shutting down - cleaning up Chrome resources");

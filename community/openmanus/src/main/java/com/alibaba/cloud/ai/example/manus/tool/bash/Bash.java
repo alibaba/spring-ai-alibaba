@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.example.manus.tool.bash;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
-import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import org.slf4j.Logger;
@@ -31,7 +31,7 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
-public class Bash implements ToolCallBiFunctionDef{
+public class Bash implements ToolCallBiFunctionDef {
 
 	private static final Logger log = LoggerFactory.getLogger(Bash.class);
 
@@ -56,22 +56,24 @@ public class Bash implements ToolCallBiFunctionDef{
 			}
 			""";
 
-	private  final String name = "bash";
+	private final String name = "bash";
 
-	private  final String description = String.format("""
-			Execute a bash command in the terminal (Current OS: %s).
-			* Long running commands: For commands that may run indefinitely, it should be run in the background and the output should be redirected to a file, e.g. command = `python3 app.py > server.log 2>&1 &`.
-			* Interactive: If a bash command returns exit code `-1`, this means the process is not yet finished. The assistant must then send a second call to terminal with an empty `command` (which will retrieve any additional logs), or it can send additional text (set `command` to the text) to STDIN of the running process, or it can send command=`ctrl+c` to interrupt the process.
-			* Timeout: If a command execution result says "Command timed out. Sending SIGINT to the process", the assistant should retry running the command in the background.
-			 """, osName);
+	private final String description = String.format(
+			"""
+					Execute a bash command in the terminal (Current OS: %s).
+					* Long running commands: For commands that may run indefinitely, it should be run in the background and the output should be redirected to a file, e.g. command = `python3 app.py > server.log 2>&1 &`.
+					* Interactive: If a bash command returns exit code `-1`, this means the process is not yet finished. The assistant must then send a second call to terminal with an empty `command` (which will retrieve any additional logs), or it can send additional text (set `command` to the text) to STDIN of the running process, or it can send command=`ctrl+c` to interrupt the process.
+					* Timeout: If a command execution result says "Command timed out. Sending SIGINT to the process", the assistant should retry running the command in the background.
+					 """,
+			osName);
 
-	public  OpenAiApi.FunctionTool getToolDefinition() {
+	public OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
 		OpenAiApi.FunctionTool functionTool = new OpenAiApi.FunctionTool(function);
 		return functionTool;
 	}
 
-	public  FunctionToolCallback getFunctionToolCallback(String workingDirectoryPath) {
+	public FunctionToolCallback getFunctionToolCallback(String workingDirectoryPath) {
 		return FunctionToolCallback.builder(name, new Bash(workingDirectoryPath))
 			.description(description)
 			.inputSchema(PARAMETERS)
@@ -96,7 +98,7 @@ public class Bash implements ToolCallBiFunctionDef{
 
 		List<String> commandList = new ArrayList<>();
 		commandList.add(command);
-		
+
 		// 使用ShellExecutorFactory创建对应操作系统的执行器
 		ShellCommandExecutor executor = ShellExecutorFactory.createExecutor();
 		List<String> result = executor.execute(commandList, workingDirectoryPath);

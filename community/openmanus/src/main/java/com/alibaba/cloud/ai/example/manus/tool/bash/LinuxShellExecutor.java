@@ -17,114 +17,124 @@ import java.util.stream.Collectors;
  * Linux命令执行器实现
  */
 public class LinuxShellExecutor implements ShellCommandExecutor {
-    
-    private static final Logger log = LoggerFactory.getLogger(LinuxShellExecutor.class);
-    private Process currentProcess;
-    private static final int DEFAULT_TIMEOUT = 60; // 默认超时时间(秒)
-    private BufferedWriter processInput;
 
-    @Override
-    public List<String> execute(List<String> commands, String workingDir) {
-        return commands.stream().map(command -> {
-            try {
-                // 如果是空命令，返回当前进程的额外日志
-                if (command.trim().isEmpty() && currentProcess != null) {
-                    return processOutput(currentProcess);
-                }
-                
-                // 如果是ctrl+c命令，发送中断信号
-                if ("ctrl+c".equalsIgnoreCase(command.trim()) && currentProcess != null) {
-                    terminate();
-                    return "Process terminated by ctrl+c";
-                }
+	private static final Logger log = LoggerFactory.getLogger(LinuxShellExecutor.class);
 
-                ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
-                if (!StringUtils.isEmpty(workingDir)) {
-                    pb.directory(new File(workingDir));
-                }
+	private Process currentProcess;
 
-                // 设置Linux环境变量
-                pb.environment().put("LANG", "en_US.UTF-8");
-                pb.environment().put("SHELL", "/bin/bash");
-                pb.environment().put("PATH", System.getenv("PATH") + ":/usr/local/bin");
+	private static final int DEFAULT_TIMEOUT = 60; // 默认超时时间(秒)
 
-                currentProcess = pb.start();
-                processInput = new BufferedWriter(new OutputStreamWriter(currentProcess.getOutputStream()));
+	private BufferedWriter processInput;
 
-                // 设置超时处理
-                try {
-                    if (!command.endsWith("&")) { // 不是后台命令才设置超时
-                        if (!currentProcess.waitFor(DEFAULT_TIMEOUT, TimeUnit.SECONDS)) {
-                            log.warn("Command timed out. Sending SIGINT to the process");
-                            terminate();
-                            // 在后台重试命令
-                            if (!command.endsWith("&")) {
-                                command += " &";
-                            }
-                            return execute(Collections.singletonList(command), workingDir).get(0);
-                        }
-                    }
-                    return processOutput(currentProcess);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return "Error: Process interrupted - " + e.getMessage();
-                }
-            } catch (Throwable e) {
-                log.error("Exception executing Linux command", e);
-                return "Error: " + e.getClass().getSimpleName() + " - " + e.getMessage();
-            }
-        }).collect(Collectors.toList());
-    }
+	@Override
+	public List<String> execute(List<String> commands, String workingDir) {
+		return commands.stream().map(command -> {
+			try {
+				// 如果是空命令，返回当前进程的额外日志
+				if (command.trim().isEmpty() && currentProcess != null) {
+					return processOutput(currentProcess);
+				}
 
-    @Override
-    public void terminate() {
-        if (currentProcess != null && currentProcess.isAlive()) {
-            // 首先尝试发送SIGINT (ctrl+c)
-            currentProcess.destroy();
-            try {
-                // 等待进程响应SIGINT
-                if (!currentProcess.waitFor(5, TimeUnit.SECONDS)) {
-                    // 如果进程没有响应SIGINT，强制终止
-                    currentProcess.destroyForcibly();
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                currentProcess.destroyForcibly();
-            }
-            log.info("Linux process terminated");
-        }
-    }
+				// 如果是ctrl+c命令，发送中断信号
+				if ("ctrl+c".equalsIgnoreCase(command.trim()) && currentProcess != null) {
+					terminate();
+					return "Process terminated by ctrl+c";
+				}
 
-    private String processOutput(Process process) throws IOException, InterruptedException {
-        StringBuilder outputBuilder = new StringBuilder();
-        StringBuilder errorBuilder = new StringBuilder();
+				ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
+				if (!StringUtils.isEmpty(workingDir)) {
+					pb.directory(new File(workingDir));
+				}
 
-        // 读取标准输出
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "UTF-8"))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                log.info(line);
-                outputBuilder.append(line).append("\n");
-            }
-        }
+				// 设置Linux环境变量
+				pb.environment().put("LANG", "en_US.UTF-8");
+				pb.environment().put("SHELL", "/bin/bash");
+				pb.environment().put("PATH", System.getenv("PATH") + ":/usr/local/bin");
 
-        // 读取错误输出
-        try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream(), "UTF-8"))) {
-            String line;
-            while ((line = errorReader.readLine()) != null) {
-                log.error(line);
-                errorBuilder.append(line).append("\n");
-            }
-        }
+				currentProcess = pb.start();
+				processInput = new BufferedWriter(new OutputStreamWriter(currentProcess.getOutputStream()));
 
-        int exitCode = process.isAlive() ? -1 : process.exitValue();
-        if (exitCode == 0) {
-            return outputBuilder.toString();
-        } else if (exitCode == -1) {
-            return "Process is still running. Use empty command to get more logs, or 'ctrl+c' to terminate.";
-        } else {
-            return "Error (Exit Code " + exitCode + "): " + 
-                   (errorBuilder.length() > 0 ? errorBuilder.toString() : outputBuilder.toString());
-        }
-    }
+				// 设置超时处理
+				try {
+					if (!command.endsWith("&")) { // 不是后台命令才设置超时
+						if (!currentProcess.waitFor(DEFAULT_TIMEOUT, TimeUnit.SECONDS)) {
+							log.warn("Command timed out. Sending SIGINT to the process");
+							terminate();
+							// 在后台重试命令
+							if (!command.endsWith("&")) {
+								command += " &";
+							}
+							return execute(Collections.singletonList(command), workingDir).get(0);
+						}
+					}
+					return processOutput(currentProcess);
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					return "Error: Process interrupted - " + e.getMessage();
+				}
+			}
+			catch (Throwable e) {
+				log.error("Exception executing Linux command", e);
+				return "Error: " + e.getClass().getSimpleName() + " - " + e.getMessage();
+			}
+		}).collect(Collectors.toList());
+	}
+
+	@Override
+	public void terminate() {
+		if (currentProcess != null && currentProcess.isAlive()) {
+			// 首先尝试发送SIGINT (ctrl+c)
+			currentProcess.destroy();
+			try {
+				// 等待进程响应SIGINT
+				if (!currentProcess.waitFor(5, TimeUnit.SECONDS)) {
+					// 如果进程没有响应SIGINT，强制终止
+					currentProcess.destroyForcibly();
+				}
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				currentProcess.destroyForcibly();
+			}
+			log.info("Linux process terminated");
+		}
+	}
+
+	private String processOutput(Process process) throws IOException, InterruptedException {
+		StringBuilder outputBuilder = new StringBuilder();
+		StringBuilder errorBuilder = new StringBuilder();
+
+		// 读取标准输出
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), "UTF-8"))) {
+			String line;
+			while ((line = reader.readLine()) != null) {
+				log.info(line);
+				outputBuilder.append(line).append("\n");
+			}
+		}
+
+		// 读取错误输出
+		try (BufferedReader errorReader = new BufferedReader(
+				new InputStreamReader(process.getErrorStream(), "UTF-8"))) {
+			String line;
+			while ((line = errorReader.readLine()) != null) {
+				log.error(line);
+				errorBuilder.append(line).append("\n");
+			}
+		}
+
+		int exitCode = process.isAlive() ? -1 : process.exitValue();
+		if (exitCode == 0) {
+			return outputBuilder.toString();
+		}
+		else if (exitCode == -1) {
+			return "Process is still running. Use empty command to get more logs, or 'ctrl+c' to terminate.";
+		}
+		else {
+			return "Error (Exit Code " + exitCode + "): "
+					+ (errorBuilder.length() > 0 ? errorBuilder.toString() : outputBuilder.toString());
+		}
+	}
+
 }
