@@ -13,16 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.tool;
+package com.alibaba.cloud.ai.example.manus.tool.code;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
-import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
-import com.alibaba.cloud.ai.example.manus.tool.support.CodeExecutionResult;
-import com.alibaba.cloud.ai.example.manus.tool.support.CodeUtils;
-import com.alibaba.cloud.ai.example.manus.tool.support.LogIdGenerator;
+import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -218,7 +216,7 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 
 	@Override
 	public void cleanup(String planId) {
-		//do nothing
+		// do nothing
 	}
 
 }

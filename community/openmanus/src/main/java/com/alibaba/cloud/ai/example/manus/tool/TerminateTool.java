@@ -17,7 +17,8 @@ package com.alibaba.cloud.ai.example.manus.tool;
 
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

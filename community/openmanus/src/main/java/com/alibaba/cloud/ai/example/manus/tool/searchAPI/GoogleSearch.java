@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.tool;
+package com.alibaba.cloud.ai.example.manus.tool.searchAPI;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
-import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.tool.support.serpapi.SerpApiProperties;
-import com.alibaba.cloud.ai.example.manus.tool.support.serpapi.SerpApiService;
+import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi.SerpApiProperties;
+import com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi.SerpApiService;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import org.slf4j.Logger;
@@ -223,7 +224,7 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 
 	@Override
 	public void cleanup(String planId) {
-		//do nothing
+		// do nothing
 	}
 
 }
