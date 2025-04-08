@@ -16,12 +16,11 @@
 package com.alibaba.cloud.ai.param;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
 
 /**
  * generate project params
  */
-@Data
+
 public class ProjectGenerateParam {
 
 	@Schema(description = "dsl raw content")
@@ -53,5 +52,95 @@ public class ProjectGenerateParam {
 
 	@Schema(description = "javaVersion", example = "21")
 	private String javaVersion;
+
+	public String getDsl() {
+		return dsl;
+	}
+
+	public ProjectGenerateParam setDsl(String dsl) {
+		this.dsl = dsl;
+		return this;
+	}
+
+	public String getDialect() {
+		return dialect;
+	}
+
+	public ProjectGenerateParam setDialect(String dialect) {
+		this.dialect = dialect;
+		return this;
+	}
+
+	public String getBootVersion() {
+		return bootVersion;
+	}
+
+	public ProjectGenerateParam setBootVersion(String bootVersion) {
+		this.bootVersion = bootVersion;
+		return this;
+	}
+
+	public String getBaseDir() {
+		return baseDir;
+	}
+
+	public ProjectGenerateParam setBaseDir(String baseDir) {
+		this.baseDir = baseDir;
+		return this;
+	}
+
+	public String getGroupId() {
+		return groupId;
+	}
+
+	public ProjectGenerateParam setGroupId(String groupId) {
+		this.groupId = groupId;
+		return this;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public ProjectGenerateParam setName(String name) {
+		this.name = name;
+		return this;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public ProjectGenerateParam setDescription(String description) {
+		this.description = description;
+		return this;
+	}
+
+	public String getPackageName() {
+		return packageName;
+	}
+
+	public ProjectGenerateParam setPackageName(String packageName) {
+		this.packageName = packageName;
+		return this;
+	}
+
+	public String getPackaging() {
+		return packaging;
+	}
+
+	public ProjectGenerateParam setPackaging(String packaging) {
+		this.packaging = packaging;
+		return this;
+	}
+
+	public String getJavaVersion() {
+		return javaVersion;
+	}
+
+	public ProjectGenerateParam setJavaVersion(String javaVersion) {
+		this.javaVersion = javaVersion;
+		return this;
+	}
 
 }
