@@ -291,8 +291,11 @@ public final class OverAllState implements Serializable {
 	}
 
 	public static class HumanFeedback {
+
 		private Map<String, Object> data;
+
 		private String nextNodeId;
+
 		private String currentNodeId;
 
 		public HumanFeedback(Map<String, Object> data, String nextNodeId) {
@@ -315,5 +318,7 @@ public final class OverAllState implements Serializable {
 		public void setNextNodeId(String nextNodeId) {
 			this.nextNodeId = nextNodeId;
 		}
+
 	}
+
 }

@@ -12,11 +12,11 @@ import org.springframework.context.annotation.Description;
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.weather", name = "enabled", havingValue = "true")
 public class WeatherAutoConfiguration {
 
-    @Bean(name = "getWeatherFunction")
-    @ConditionalOnMissingBean
-    @Description("Use api.weather to get weather information.")
-    public WeatherService getWeatherServiceFunction(WeatherProperties properties) {
-        return new WeatherService(properties);
-    }
+	@Bean(name = "getWeatherFunction")
+	@ConditionalOnMissingBean
+	@Description("Use api.weather to get weather information.")
+	public WeatherService getWeatherServiceFunction(WeatherProperties properties) {
+		return new WeatherService(properties);
+	}
 
 }
