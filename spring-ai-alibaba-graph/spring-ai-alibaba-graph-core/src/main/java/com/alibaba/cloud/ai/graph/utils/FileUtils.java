@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.utils;
 
-import lombok.SneakyThrows;
+package com.alibaba.cloud.ai.graph.utils;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import lombok.SneakyThrows;
 
 /**
  * @author HeYQ
