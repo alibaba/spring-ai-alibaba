@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.helloworld;
+package com.alibaba.cloud.ai.example.graph;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class HelloworldApplication {
+public class GraphApplication {
 
 	public static void main(String[] args) {
 
-		SpringApplication.run(HelloworldApplication.class, args);
+		SpringApplication.run(GraphApplication.class, args);
 	}
 
 }

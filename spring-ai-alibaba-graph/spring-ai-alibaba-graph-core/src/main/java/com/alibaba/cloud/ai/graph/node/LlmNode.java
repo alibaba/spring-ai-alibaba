@@ -153,47 +153,43 @@ public class LlmNode implements NodeAction {
 	}
 
 	public ChatResponse call() {
-		return ChatResponse.builder().generations(List.of(new Generation(new AssistantMessage("test")))).build();
-	}
 
-//	public ChatResponse call() {
-//
-//		if (StringUtils.hasLength(systemPrompt) && StringUtils.hasLength(userPrompt)) {
-//			return chatClient.prompt()
-//					.system(systemPrompt)
-//					.user(userPrompt)
-//					.messages(messages)
-//					.advisors(advisors)
-//					.tools(toolCallbacks)
-//					.call()
-//					.chatResponse();
-//		} else {
-//			if (StringUtils.hasLength(systemPrompt)) {
-//				return chatClient.prompt()
-//						.system(systemPrompt)
-//						.messages(messages)
-//						.advisors(advisors)
-//						.tools(toolCallbacks)
-//						.call()
-//						.chatResponse();
-//			} else if (StringUtils.hasLength(userPrompt)) {
-//				return chatClient.prompt()
-//						.user(userPrompt)
-//						.messages(messages)
-//						.advisors(advisors)
-//						.tools(toolCallbacks)
-//						.call()
-//						.chatResponse();
-//			} else {
-//				return chatClient.prompt()
-//						.messages(messages)
-//						.advisors(advisors)
-//						.tools(toolCallbacks)
-//						.call()
-//						.chatResponse();
-//			}
-//		}
-//	}
+		if (StringUtils.hasLength(systemPrompt) && StringUtils.hasLength(userPrompt)) {
+			return chatClient.prompt()
+					.system(systemPrompt)
+					.user(userPrompt)
+					.messages(messages)
+					.advisors(advisors)
+					.tools(toolCallbacks)
+					.call()
+					.chatResponse();
+		} else {
+			if (StringUtils.hasLength(systemPrompt)) {
+				return chatClient.prompt()
+						.system(systemPrompt)
+						.messages(messages)
+						.advisors(advisors)
+						.tools(toolCallbacks)
+						.call()
+						.chatResponse();
+			} else if (StringUtils.hasLength(userPrompt)) {
+				return chatClient.prompt()
+						.user(userPrompt)
+						.messages(messages)
+						.advisors(advisors)
+						.tools(toolCallbacks)
+						.call()
+						.chatResponse();
+			} else {
+				return chatClient.prompt()
+						.messages(messages)
+						.advisors(advisors)
+						.tools(toolCallbacks)
+						.call()
+						.chatResponse();
+			}
+		}
+	}
 
 	public static Builder builder() {
 		return new Builder();
