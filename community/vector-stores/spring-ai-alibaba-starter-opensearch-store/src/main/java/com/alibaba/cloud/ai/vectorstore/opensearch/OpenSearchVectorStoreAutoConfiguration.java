@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.vectorstore.opensearch;
 
 import com.aliyun.ha3engine.vector.Client;
 import com.aliyun.ha3engine.vector.models.Config;
+
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
@@ -28,13 +29,25 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
 
+import static com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchVectorStoreProperties.DEFAULT_ALIBABA_OPENSEARCH_CONFIG_PREFIX;
+
 /**
  * @author 北极星
  */
+
+// @formatter:off
 @AutoConfiguration
-@ConditionalOnClass({ EmbeddingModel.class, Client.class, OpenSearchVectorStore.class })
-@EnableConfigurationProperties({ OpenSearchApi.class, OpenSearchVectorStoreProperties.class })
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.vectorstore.opensearch", havingValue = "true")
+@ConditionalOnClass({
+		EmbeddingModel.class,
+		Client.class
+})
+@ConditionalOnProperty(
+		prefix = DEFAULT_ALIBABA_OPENSEARCH_CONFIG_PREFIX,
+		name = "enabled",
+		havingValue = "true",
+		matchIfMissing = true
+)
+@EnableConfigurationProperties({ OpenSearchVectorStoreProperties.class })
 public class OpenSearchVectorStoreAutoConfiguration {
 
 	@Bean
@@ -45,7 +58,6 @@ public class OpenSearchVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@DependsOn({ "embeddingModel", "openSearchApi" })
 	public OpenSearchVectorStore vectorStore(OpenSearchVectorStoreProperties properties, EmbeddingModel embeddingModel,
 			BatchingStrategy batchingStrategy, OpenSearchVectorStoreOptions options) throws Exception {
 		OpenSearchApi openSearchApi = new OpenSearchApi(properties);
@@ -70,3 +82,4 @@ public class OpenSearchVectorStoreAutoConfiguration {
 	}
 
 }
+// @formatter:on
