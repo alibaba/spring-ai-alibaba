@@ -16,28 +16,18 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.function.Function;
-
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphInterruptException;
 import com.alibaba.cloud.ai.graph.node.HumanNode;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
-import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -46,41 +36,67 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
+
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public class ReactAgentWithHuman {
+
 	private LlmNode llmNode;
+
 	private ToolNode toolNode;
+
 	private HumanNode humanNode;
+
 	private StateGraph graph;
+
 	private CompiledGraph compiledGraph;
+
 	private String prompt;
 
 	private List<String> tools;
+
 	private int max_iterations = 10;
+
 	private int iterations = 0;
+
 	private CompileConfig compileConfig;
+
 	private OverAllState state;
+
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
 	public ReactAgentWithHuman(String prompt, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations)
 			throws GraphStateException {
-		this.llmNode = LlmNode.builder().chatClient(chatClient).userPromptTemplate(prompt).messagesKey("messages").build();
+		this.llmNode = LlmNode.builder()
+			.chatClient(chatClient)
+			.userPromptTemplate(prompt)
+			.messagesKey("messages")
+			.build();
 		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		this.max_iterations = maxIterations;
 		this.graph = initGraph();
 	}
 
 	public ReactAgentWithHuman(String prompt, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations,
-			OverAllState state, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc, Function<OverAllState, Boolean> shouldInterruptFunc) throws GraphStateException {
-		this.llmNode = LlmNode.builder().chatClient(chatClient).userPromptTemplate(prompt).messagesKey("messages").build();
+			OverAllState state, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc,
+			Function<OverAllState, Boolean> shouldInterruptFunc) throws GraphStateException {
+		this.llmNode = LlmNode.builder()
+			.chatClient(chatClient)
+			.userPromptTemplate(prompt)
+			.messagesKey("messages")
+			.build();
 		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		if (shouldInterruptFunc != null) {
 			this.humanNode = new HumanNode("conditioned", shouldInterruptFunc);
-		} else {
+		}
+		else {
 			this.humanNode = new HumanNode();
 		}
 		this.max_iterations = maxIterations;
@@ -96,12 +112,18 @@ public class ReactAgentWithHuman {
 	}
 
 	public ReactAgentWithHuman(String prompt, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations,
-			OverAllState state, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc, Function<OverAllState, Boolean> shouldInterruptFunc) throws GraphStateException {
-		this.llmNode = LlmNode.builder().chatClient(chatClient).userPromptTemplate(prompt).messagesKey("messages").build();
+			OverAllState state, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc,
+			Function<OverAllState, Boolean> shouldInterruptFunc) throws GraphStateException {
+		this.llmNode = LlmNode.builder()
+			.chatClient(chatClient)
+			.userPromptTemplate(prompt)
+			.messagesKey("messages")
+			.build();
 		this.toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
 		if (shouldInterruptFunc != null) {
 			this.humanNode = new HumanNode("conditioned", shouldInterruptFunc);
-		} else {
+		}
+		else {
 			this.humanNode = new HumanNode();
 		}
 		this.max_iterations = maxIterations;
@@ -127,7 +149,8 @@ public class ReactAgentWithHuman {
 	public CompiledGraph getAndCompileGraph() throws GraphStateException {
 		if (this.compileConfig == null) {
 			this.compiledGraph = getStateGraph().compile();
-		} else {
+		}
+		else {
 			this.compiledGraph = getStateGraph().compile(this.compileConfig);
 		}
 		return this.compiledGraph;
@@ -138,7 +161,8 @@ public class ReactAgentWithHuman {
 	}
 
 	public AsyncNodeActionWithConfig asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent) {
-		return AsyncNodeActionWithConfig.node_async(new SubGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
+		return AsyncNodeActionWithConfig
+			.node_async(new SubGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
 	}
 
 	private StateGraph initGraph() throws GraphStateException {
@@ -148,14 +172,14 @@ public class ReactAgentWithHuman {
 			this.state = defaultState;
 		}
 
-		StateGraph graph = new StateGraph(state)
-				.addNode("agent", node_async(this.llmNode))
-				.addNode("human", node_async(this.humanNode))
-				.addNode("tool", node_async(this.toolNode))
-				.addEdge(START, "agent")
-				.addEdge("agent", "human")
-				.addConditionalEdges("human", edge_async(humanNode::think), Map.of("agent", "agent", "tool", "tool", "end", END))
-				.addEdge("tool", "agent");
+		StateGraph graph = new StateGraph(state).addNode("agent", node_async(this.llmNode))
+			.addNode("human", node_async(this.humanNode))
+			.addNode("tool", node_async(this.toolNode))
+			.addEdge(START, "agent")
+			.addEdge("agent", "human")
+			.addConditionalEdges("human", edge_async(humanNode::think),
+					Map.of("agent", "agent", "tool", "tool", "end", END))
+			.addEdge("tool", "agent");
 
 		return graph;
 	}
@@ -231,14 +255,23 @@ public class ReactAgentWithHuman {
 	}
 
 	public static class Builder {
+
 		private ChatClient chatClient;
+
 		private String prompt;
+
 		private List<FunctionCallback> tools;
+
 		private ToolCallbackResolver resolver;
+
 		private int maxIterations = 10;
+
 		private CompileConfig compileConfig;
+
 		private OverAllState state;
+
 		private Function<OverAllState, Boolean> shouldContinueFunc;
+
 		private Function<OverAllState, Boolean> shouldInterruptFunc;
 
 		public Builder chatClient(ChatClient chatClient) {
@@ -288,18 +321,26 @@ public class ReactAgentWithHuman {
 
 		public ReactAgentWithHuman build() throws GraphStateException {
 			if (resolver != null) {
-				return new ReactAgentWithHuman(prompt, chatClient, resolver, maxIterations, state, compileConfig, shouldContinueFunc, shouldInterruptFunc);
-			} else if (tools != null) {
-				return new ReactAgentWithHuman(prompt, chatClient, tools, maxIterations, state, compileConfig, shouldContinueFunc, shouldInterruptFunc);
+				return new ReactAgentWithHuman(prompt, chatClient, resolver, maxIterations, state, compileConfig,
+						shouldContinueFunc, shouldInterruptFunc);
+			}
+			else if (tools != null) {
+				return new ReactAgentWithHuman(prompt, chatClient, tools, maxIterations, state, compileConfig,
+						shouldContinueFunc, shouldInterruptFunc);
 			}
 			throw new IllegalArgumentException("Either tools or resolver must be provided");
 		}
+
 	}
 
 	public static class SubGraphNodeAdapter implements NodeActionWithConfig {
+
 		public String uuid = UUID.randomUUID().toString();
+
 		private String inputKeyFromParent;
+
 		private String outputKeyToParent;
+
 		private CompiledGraph childGraph;
 
 		SubGraphNodeAdapter(String inputKeyFromParent, String outputKeyToParent, CompiledGraph childGraph) {
@@ -311,16 +352,17 @@ public class ReactAgentWithHuman {
 		@Override
 		public Map<String, Object> apply(OverAllState parentState, RunnableConfig config) throws Exception {
 			RunnableConfig subConfig = RunnableConfig.builder()
-					.threadId(uuid + "-" + config.threadId())
-					.nextNode(config.nextNode().orElse(null))
-					.checkPointId(config.checkPointId().orElse(null))
-					.streamMode(config.streamMode())
-					.build();
+				.threadId(uuid + "-" + config.threadId())
+				.nextNode(config.nextNode().orElse(null))
+				.checkPointId(config.checkPointId().orElse(null))
+				.streamMode(config.streamMode())
+				.build();
 			OverAllState childState = null;
 			if (parentState.humanFeedback() != null && parentState.isResume()) {
 				// invoke child graph
 				childState = childGraph.resume(parentState.humanFeedback(), subConfig).get();
-			} else {
+			}
+			else {
 				// prepare input for child graph
 				String input = (String) parentState.value(inputKeyFromParent).orElseThrow();
 				Message message = new UserMessage(input);
@@ -342,6 +384,7 @@ public class ReactAgentWithHuman {
 			// update parent state
 			return Map.of(outputKeyToParent, reactResult);
 		}
+
 	}
 
 }
