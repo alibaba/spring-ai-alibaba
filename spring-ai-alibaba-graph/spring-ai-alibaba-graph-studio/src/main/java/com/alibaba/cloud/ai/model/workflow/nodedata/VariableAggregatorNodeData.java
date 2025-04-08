@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.model.workflow.nodedata;
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
@@ -66,10 +67,12 @@ public class VariableAggregatorNodeData extends NodeData {
 
 	public static class Groups {
 
+		@JsonProperty("output_type")
 		private String outputType;
 
 		private List<List<String>> variables;
 
+		@JsonProperty("group_name")
 		private String groupName;
 
 		private String groupId;
