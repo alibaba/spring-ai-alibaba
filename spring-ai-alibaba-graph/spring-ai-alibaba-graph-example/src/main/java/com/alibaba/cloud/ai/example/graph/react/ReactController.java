@@ -55,16 +55,18 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 public class ReactController {
 
 	private final ChatClient chatClient;
+
 	private CompiledGraph compiledGraph;
+
 	@Autowired
 	private ToolCallbackResolver resolver;
 
 	ReactController(ChatModel chatModel) throws GraphStateException {
 		this.chatClient = ChatClient.builder(chatModel)
-				.defaultTools("getWeatherFunction")
-				.defaultAdvisors(new SimpleLoggerAdvisor())
-				.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
-				.build();
+			.defaultTools("getWeatherFunction")
+			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.build();
 
 		initGraph();
 	}
@@ -87,13 +89,13 @@ public class ReactController {
 	}
 
 	@GetMapping("/chat")
-	public String simpleChat(String query)
-			throws GraphStateException {
+	public String simpleChat(String query) throws GraphStateException {
 		Optional<OverAllState> result = compiledGraph.invoke(Map.of("input", query));
 		return result.get().value("solution").get().toString();
 	}
 
 	public static class FeedbackQuestionDispatcher implements EdgeAction {
+
 		@Override
 		public String apply(OverAllState state) throws Exception {
 			String classifierOutput = (String) state.value("classifier_output").orElse("");
@@ -103,22 +105,29 @@ public class ReactController {
 			}
 			return "negative";
 		}
+
 	}
 
 	public static class SpecificQuestionDispatcher implements EdgeAction {
+
 		@Override
 		public String apply(OverAllState state) throws Exception {
 			String classifierOutput = (String) state.value("classifier_output").orElse("");
 			System.out.println("classifierOutput: " + classifierOutput);
 			if (classifierOutput.contains("after-sale")) {
 				return "after-sale";
-			} else if (classifierOutput.contains("quality")) {
+			}
+			else if (classifierOutput.contains("quality")) {
 				return "quality";
-			} else if (classifierOutput.contains("transportation")) {
+			}
+			else if (classifierOutput.contains("transportation")) {
 				return "transportation";
-			} else {
+			}
+			else {
 				return "others";
 			}
 		}
+
 	}
+
 }

@@ -33,7 +33,9 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.util.StringUtils;
 
 public class ToolNode implements NodeAction {
+
 	private String llmResponseKey;
+
 	private String outputKey;
 
 	private List<FunctionCallback> toolCallbacks = new ArrayList<>();

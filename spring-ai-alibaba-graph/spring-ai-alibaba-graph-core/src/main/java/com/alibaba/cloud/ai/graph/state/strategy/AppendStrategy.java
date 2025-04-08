@@ -29,6 +29,7 @@ import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import static java.util.Collections.unmodifiableList;
 
 public class AppendStrategy implements KeyStrategy {
+
 	@Override
 	public Object apply(Object oldValue, Object newValue) {
 		if (newValue == null) {
@@ -62,10 +63,9 @@ public class AppendStrategy implements KeyStrategy {
 				}
 				if (oldValueIsList) {
 					var result = evaluateRemoval((List<Object>) oldValue, list);
-					List<Object> mergedList = Stream
-							.concat(result.oldValues().stream(), result.newValues().stream())
-							.distinct()
-							.collect(Collectors.toList());
+					List<Object> mergedList = Stream.concat(result.oldValues().stream(), result.newValues().stream())
+						.distinct()
+						.collect(Collectors.toList());
 					return mergedList;
 				}
 				oldList.addAll(list);

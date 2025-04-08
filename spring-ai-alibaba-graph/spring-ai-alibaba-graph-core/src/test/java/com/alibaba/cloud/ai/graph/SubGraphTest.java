@@ -65,7 +65,7 @@ public class SubGraphTest {
 	private AsyncNodeAction _makeExceptionNode(String id) {
 		return node_async(state -> {
 			throw new NodeInterruptException("aa");
-//			return Map.of("messages", id);
+			// return Map.of("messages", id);
 		});
 	}
 
@@ -259,8 +259,8 @@ public class SubGraphTest {
 		OverAllState overAllState = getOverAllState();
 		var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
 			.addNode("B2", _makeExceptionNode("B2"))
-//				.addNode("B2", _makeNormalNode("B2"))
-				.addNode("C", _makeNode("subgraph(C)"))
+			// .addNode("B2", _makeNormalNode("B2"))
+			.addNode("C", _makeNode("subgraph(C)"))
 			.addEdge(START, "B1")
 			.addEdge("B1", "B2")
 			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))

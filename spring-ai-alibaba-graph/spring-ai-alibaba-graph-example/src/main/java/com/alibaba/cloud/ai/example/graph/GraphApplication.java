@@ -24,7 +24,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 @SpringBootApplication
-@EnableConfigurationProperties({WeatherProperties.class})
+@EnableConfigurationProperties({ WeatherProperties.class })
 public class GraphApplication {
 
 	public static void main(String[] args) {

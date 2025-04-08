@@ -253,7 +253,8 @@ public class CompiledGraph {
 		return nextNodeId(route, state, nodeId, null);
 	}
 
-	private String nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId, OverAllState overAllState) throws Exception {
+	private String nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId, OverAllState overAllState)
+			throws Exception {
 
 		if (route == null) {
 			throw StateGraph.RunnableErrors.missingEdge.exception(nodeId);
