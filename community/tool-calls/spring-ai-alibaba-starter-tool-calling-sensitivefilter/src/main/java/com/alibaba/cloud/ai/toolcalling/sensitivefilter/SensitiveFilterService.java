@@ -22,46 +22,51 @@ import java.util.regex.Pattern;
 
 /**
  * Service for filtering sensitive information in text
- * 
+ *
  * @author Makoto
  */
 @Service
 public class SensitiveFilterService {
-    
-    private final SensitiveFilterProperties properties;
-    
-    private static final Pattern PHONE_PATTERN = Pattern.compile("1[3-9]\\d{9}");
-    private static final Pattern ID_CARD_PATTERN = Pattern.compile("[1-9]\\d{5}(18|19|20)\\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\\d{3}[0-9Xx]");
-    private static final Pattern BANK_CARD_PATTERN = Pattern.compile("\\d{16,19}");
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}");
-    
-    public SensitiveFilterService(SensitiveFilterProperties properties) {
-        this.properties = properties;
-    }
-    
-    public String filter(String text) {
-        if (text == null || text.isEmpty()) {
-            return text;
-        }
-        
-        String result = text;
-        
-        if (properties.isFilterPhoneNumber()) {
-            result = PHONE_PATTERN.matcher(result).replaceAll(properties.getReplacement());
-        }
-        
-        if (properties.isFilterIdCard()) {
-            result = ID_CARD_PATTERN.matcher(result).replaceAll(properties.getReplacement());
-        }
-        
-        if (properties.isFilterBankCard()) {
-            result = BANK_CARD_PATTERN.matcher(result).replaceAll(properties.getReplacement());
-        }
-        
-        if (properties.isFilterEmail()) {
-            result = EMAIL_PATTERN.matcher(result).replaceAll(properties.getReplacement());
-        }
-        
-        return result;
-    }
+
+	private final SensitiveFilterProperties properties;
+
+	private static final Pattern PHONE_PATTERN = Pattern.compile("1[3-9]\\d{9}");
+
+	private static final Pattern ID_CARD_PATTERN = Pattern
+		.compile("[1-9]\\d{5}(18|19|20)\\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\\d{3}[0-9Xx]");
+
+	private static final Pattern BANK_CARD_PATTERN = Pattern.compile("\\d{16,19}");
+
+	private static final Pattern EMAIL_PATTERN = Pattern.compile("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}");
+
+	public SensitiveFilterService(SensitiveFilterProperties properties) {
+		this.properties = properties;
+	}
+
+	public String filter(String text) {
+		if (text == null || text.isEmpty()) {
+			return text;
+		}
+
+		String result = text;
+
+		if (properties.isFilterPhoneNumber()) {
+			result = PHONE_PATTERN.matcher(result).replaceAll(properties.getReplacement());
+		}
+
+		if (properties.isFilterIdCard()) {
+			result = ID_CARD_PATTERN.matcher(result).replaceAll(properties.getReplacement());
+		}
+
+		if (properties.isFilterBankCard()) {
+			result = BANK_CARD_PATTERN.matcher(result).replaceAll(properties.getReplacement());
+		}
+
+		if (properties.isFilterEmail()) {
+			result = EMAIL_PATTERN.matcher(result).replaceAll(properties.getReplacement());
+		}
+
+		return result;
+	}
+
 }
