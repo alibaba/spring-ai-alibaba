@@ -105,21 +105,21 @@ public class OpenmanusController {
 		};
 
 		SupervisorAgent controllerAgent = new SupervisorAgent();
-		ReactAgent planningAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。",planningClient, resolver, 10);
+		ReactAgent planningAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。", planningClient, resolver, 10);
 		planningAgent.getAndCompileGraph();
-		ReactAgent stepAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。",stepClient, resolver, 10);
+		ReactAgent stepAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。", stepClient, resolver, 10);
 		stepAgent.getAndCompileGraph();
 
 		StateGraph graph = new StateGraph(stateFactory)
-				.addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
-				.addNode("controller_agent", node_async(controllerAgent))
-				.addNode("step_executing_agent", stepAgent.asAsyncNodeAction("step_prompt", "step_output"))
+			.addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
+			.addNode("controller_agent", node_async(controllerAgent))
+			.addNode("step_executing_agent", stepAgent.asAsyncNodeAction("step_prompt", "step_output"))
 
-				.addEdge(START, "planning_agent")
-				.addEdge("planning_agent", "controller_agent")
-				.addConditionalEdges("controller_agent", edge_async(controllerAgent::think),
-						Map.of("continue", "step_executing_agent", "end", END))
-				.addEdge("step_executing_agent", "controller_agent");
+			.addEdge(START, "planning_agent")
+			.addEdge("planning_agent", "controller_agent")
+			.addConditionalEdges("controller_agent", edge_async(controllerAgent::think),
+					Map.of("continue", "step_executing_agent", "end", END))
+			.addEdge("step_executing_agent", "controller_agent");
 
 		this.compiledGraph = graph.compile();
 	}
@@ -128,8 +128,7 @@ public class OpenmanusController {
 	 * ChatClient 简单调用
 	 */
 	@GetMapping("/chat")
-	public String simpleChat(String query)
-			throws GraphStateException {
+	public String simpleChat(String query) throws GraphStateException {
 		Optional<OverAllState> result = compiledGraph.invoke(Map.of("input", query));
 		return result.get().data().toString();
 	}
@@ -139,13 +138,13 @@ public class OpenmanusController {
 		GraphRepresentation graphRepresentation = compiledGraph.getGraph(GraphRepresentation.Type.PLANTUML);
 		System.out.println(graphRepresentation.content());
 		var reader = new SourceStringReader(graphRepresentation.content());
-		try(var imageOutStream = new java.io.ByteArrayOutputStream()) {
+		try (var imageOutStream = new java.io.ByteArrayOutputStream()) {
 
-			var description = reader.outputImage( imageOutStream, 0, new FileFormatOption(FileFormat.PNG));
+			var description = reader.outputImage(imageOutStream, 0, new FileFormatOption(FileFormat.PNG));
 
-			var imageInStream = new java.io.ByteArrayInputStream(  imageOutStream.toByteArray() );
+			var imageInStream = new java.io.ByteArrayInputStream(imageOutStream.toByteArray());
 
-			var image = javax.imageio.ImageIO.read( imageInStream );
+			var image = javax.imageio.ImageIO.read(imageInStream);
 
 			// Create a BufferedImage
 			int width = 400, height = 300;
@@ -162,12 +161,9 @@ public class OpenmanusController {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			ImageIO.write(image, "png", baos);
 
-			return ResponseEntity.ok()
-					.contentType(MediaType.IMAGE_PNG)
-					.body(baos.toByteArray());
+			return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(baos.toByteArray());
 
 		}
 	}
-
 
 }

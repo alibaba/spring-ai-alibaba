@@ -15,14 +15,6 @@
  */
 package com.alibaba.cloud.ai.model;
 
-import lombok.Data;
-import lombok.experimental.Accessors;
-
-/**
- * AppMetadata carries the basic information of an App
- */
-@Data
-@Accessors(chain = true)
 public class AppMetadata {
 
 	public static final String CHATBOT_MODE = "chatbot";
@@ -38,5 +30,41 @@ public class AppMetadata {
 	private String description;
 
 	private String mode;
+
+	public String getId() {
+		return id;
+	}
+
+	public AppMetadata setId(String id) {
+		this.id = id;
+		return this;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public AppMetadata setName(String name) {
+		this.name = name;
+		return this;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public AppMetadata setDescription(String description) {
+		this.description = description;
+		return this;
+	}
+
+	public String getMode() {
+		return mode;
+	}
+
+	public AppMetadata setMode(String mode) {
+		this.mode = mode;
+		return this;
+	}
 
 }
