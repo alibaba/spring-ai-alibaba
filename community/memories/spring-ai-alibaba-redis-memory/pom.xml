@@ -26,7 +26,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-redis-memory</artifactId>
-    <name>spring-ai-alibaba-redis-memory</name>
+    <name>Spring AI Alibaba Starter Memory Redis</name>
     <description>Redis ChatMemory implementation for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
