@@ -20,12 +20,13 @@ import java.util.function.BiFunction;
 import org.springframework.ai.chat.model.ToolContext;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.example.manus.tool.support.PlanBasedLifecycleService;
 import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
 
 /**
  * Tool 定义的接口，提供统一的工具定义方法
  */
-public interface ToolCallBiFunctionDef extends BiFunction<String, ToolContext, ToolExecuteResult> {
+public interface ToolCallBiFunctionDef extends BiFunction<String, ToolContext, ToolExecuteResult>, PlanBasedLifecycleService{
 
 	/**
 	 * 获取工具的名称

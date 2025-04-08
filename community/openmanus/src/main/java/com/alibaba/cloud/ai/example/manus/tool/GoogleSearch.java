@@ -221,4 +221,9 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 				lastSearchResults.isEmpty() ? "No results found" : lastSearchResults);
 	}
 
+	@Override
+	public void cleanup(String planId) {
+		//do nothing
+	}
+
 }
