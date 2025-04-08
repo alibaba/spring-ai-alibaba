@@ -15,6 +15,10 @@
  */
 package com.alibaba.cloud.ai.graph.internal.edge;
 
+import com.alibaba.cloud.ai.graph.GraphStateException;
+import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.internal.node.Node;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -22,14 +26,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import lombok.NonNull;
-import com.alibaba.cloud.ai.graph.GraphStateException;
-import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.internal.node.Node;
-import com.alibaba.cloud.ai.graph.state.AgentState;
-
-import static java.lang.String.format;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static java.lang.String.format;
 
 /**
  * Represents an edge in a graph with a source ID and a target value.
@@ -74,7 +72,7 @@ public record Edge(String sourceId, List<EdgeValue> targets) {
 
 	}
 
-	public void validate(@NonNull StateGraph.Nodes nodes) throws GraphStateException {
+	public void validate(StateGraph.Nodes nodes) throws GraphStateException {
 		if (!Objects.equals(sourceId(), START) && !nodes.anyMatchById(sourceId())) {
 			throw StateGraph.Errors.missingNodeReferencedByEdge.exception(sourceId());
 		}
