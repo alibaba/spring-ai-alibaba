@@ -15,20 +15,19 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.helloworld.controller;
+package com.alibaba.cloud.ai.example.graph.openmanus;
 
 import java.util.Map;
 import java.util.Optional;
 
-import com.alibaba.cloud.ai.example.helloworld.SupervisorAgent;
-import com.alibaba.cloud.ai.example.helloworld.tool.PlanningTool;
+import com.alibaba.cloud.ai.example.graph.openmanus.tool.PlanningTool;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.agent.ReactAgentWithHuman;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.node.HumanNode;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
@@ -52,8 +51,8 @@ import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 @RestController
-@RequestMapping("/embedded-human")
-public class EmbeddedHumanNodeController {
+@RequestMapping("/manus/human")
+public class OpenmanusHumanController {
 
 	String planningPrompt = "Your are a task planner, please analyze the task and plan the steps.";
 
@@ -72,7 +71,7 @@ public class EmbeddedHumanNodeController {
 
 
 	// 也可以使用如下的方式注入 ChatClient
-	public EmbeddedHumanNodeController(ChatModel chatModel) {
+	public OpenmanusHumanController(ChatModel chatModel) {
 		this.planningClient = ChatClient.builder(chatModel)
 			.defaultSystem(planningPrompt)
 			.defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
@@ -102,26 +101,21 @@ public class EmbeddedHumanNodeController {
 		};
 
 		SupervisorAgent controllerAgent = new SupervisorAgent();
-		ReactAgentWithHuman planningAgent = new ReactAgentWithHuman("请帮助用户完成他接下来输入的任务规划。", planningClient, resolver, 10);
+		ReactAgent planningAgent = new ReactAgent("请完成用户接下来输入的任务规划。",planningClient, resolver, 10);
 		planningAgent.getAndCompileGraph();
-		ReactAgentWithHuman stepAgent = new ReactAgentWithHuman("请帮助用户完成他接下来输入的任务规划。", stepClient, resolver, 10);
+		ReactAgent stepAgent = new ReactAgent("请完成用户接下来输入的任务规划。",stepClient, resolver, 10);
 		stepAgent.getAndCompileGraph();
-//		SupervisorAgent controllerAgent = new SupervisorAgent();
-//		ReactAgent planningAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。",planningClient, resolver, 10);
-//		planningAgent.getAndCompileGraph();
-//		ReactAgent stepAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。",stepClient, resolver, 10);
-//		stepAgent.getAndCompileGraph();
 		HumanNode humanNode = new HumanNode();
 
 		StateGraph graph2 = new StateGraph(stateFactory)
 				.addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
-				.addNode("graph_human", node_async(humanNode))
+				.addNode("human", node_async(humanNode))
 				.addNode("controller_agent", node_async(controllerAgent))
 				.addNode("step_executing_agent", stepAgent.asAsyncNodeAction("step_prompt", "step_output"))
 
 				.addEdge(START, "planning_agent")
-				.addEdge("planning_agent", "graph_human")
-				.addConditionalEdges("graph_human", edge_async(humanNode::think), Map.of("planning_agent", "planning_agent", "controller_agent", "controller_agent"))
+				.addEdge("planning_agent", "human")
+				.addConditionalEdges("human", edge_async(humanNode::think), Map.of("planning_agent", "planning_agent", "controller_agent", "controller_agent"))
 				.addConditionalEdges("controller_agent", edge_async(controllerAgent::think),
 						Map.of("continue", "step_executing_agent", "end", END))
 				.addEdge("step_executing_agent", "controller_agent");
@@ -129,10 +123,7 @@ public class EmbeddedHumanNodeController {
 		this.compiledGraph = graph2.compile();
 	}
 
-	/**
-	 * ChatClient 简单调用
-	 */
-	@GetMapping("/simple/chat")
+	@GetMapping("/chat")
 	public String simpleChat(String query) {
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId("1").build();
 		Optional<OverAllState> result = compiledGraph.invoke(Map.of("input", query), runnableConfig);
@@ -140,10 +131,10 @@ public class EmbeddedHumanNodeController {
 		return result.get().data().toString();
 	}
 
-	@GetMapping("/simple/resume-to-tool")
+	@GetMapping("/resume")
 	public String resume() {
 		Map<String, Object> data = Map.of("input", "请帮我查询最近的新闻");
-		String nextNode = "tool";
+		String nextNode = "planning_agent";
 
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId("1").build();
 
@@ -158,9 +149,9 @@ public class EmbeddedHumanNodeController {
 		return result.get().data().toString();
 	}
 
-	@GetMapping("/simple/resume-to-agent")
+	@GetMapping("/resume-to-next-step")
 	public String resumtToNextStep() {
-		String nextNode = "agent";
+		String nextNode = "controller_agent";
 
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId("1").build();
 
@@ -182,6 +173,5 @@ public class EmbeddedHumanNodeController {
 		System.out.println(graphRepresentation.content());
 		return graphRepresentation.content();
 	}
-
 
 }

@@ -396,6 +396,9 @@ public class CompiledGraph {
 		return this.invoke(stateGraph.getOverAllState().input(inputs), RunnableConfig.builder().build());
 	}
 
+	/**
+	 * Experimental API
+	 */
 	public Optional<OverAllState> resume(OverAllState.HumanFeedback feedback, RunnableConfig config) {
 		StateSnapshot stateSnapshot = this.getState(config);
 		OverAllState resumeState = stateGraph.getStateFactory().apply(stateSnapshot.state().data());

@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.helloworld;
+package com.alibaba.cloud.ai.example.graph.openmanus;
 
 import java.util.Map;
 
-import com.alibaba.cloud.ai.example.helloworld.tool.Plan;
-import com.alibaba.cloud.ai.example.helloworld.tool.PlanningTool;
+import com.alibaba.cloud.ai.example.graph.openmanus.tool.Plan;
+import com.alibaba.cloud.ai.example.graph.openmanus.tool.PlanningTool;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 

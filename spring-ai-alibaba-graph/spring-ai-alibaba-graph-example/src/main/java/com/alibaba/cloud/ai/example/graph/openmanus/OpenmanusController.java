@@ -15,25 +15,22 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.helloworld.controller;
+package com.alibaba.cloud.ai.example.graph.openmanus;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import javax.imageio.ImageIO;
 
-import com.alibaba.cloud.ai.example.helloworld.SupervisorAgent;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -45,9 +42,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
@@ -56,7 +50,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -65,8 +58,8 @@ import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 @RestController
-@RequestMapping("/helloworld")
-public class HelloworldController {
+@RequestMapping("/manus")
+public class OpenmanusController {
 
 	String planningPrompt = "Your are a task planner, please analyze the task and plan the steps.";
 
@@ -82,7 +75,7 @@ public class HelloworldController {
 	private CompiledGraph compiledGraph;
 
 	// 也可以使用如下的方式注入 ChatClient
-	public HelloworldController(ChatModel chatModel) {
+	public OpenmanusController(ChatModel chatModel) {
 		this.planningClient = ChatClient.builder(chatModel)
 			.defaultSystem(planningPrompt)
 			.defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
@@ -117,7 +110,7 @@ public class HelloworldController {
 		ReactAgent stepAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。",stepClient, resolver, 10);
 		stepAgent.getAndCompileGraph();
 
-		StateGraph graph2 = new StateGraph(stateFactory)
+		StateGraph graph = new StateGraph(stateFactory)
 				.addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
 				.addNode("controller_agent", node_async(controllerAgent))
 				.addNode("step_executing_agent", stepAgent.asAsyncNodeAction("step_prompt", "step_output"))
@@ -128,13 +121,13 @@ public class HelloworldController {
 						Map.of("continue", "step_executing_agent", "end", END))
 				.addEdge("step_executing_agent", "controller_agent");
 
-		this.compiledGraph = graph2.compile();
+		this.compiledGraph = graph.compile();
 	}
 
 	/**
 	 * ChatClient 简单调用
 	 */
-	@GetMapping("/simple/chat")
+	@GetMapping("/chat")
 	public String simpleChat(String query)
 			throws GraphStateException {
 		Optional<OverAllState> result = compiledGraph.invoke(Map.of("input", query));
