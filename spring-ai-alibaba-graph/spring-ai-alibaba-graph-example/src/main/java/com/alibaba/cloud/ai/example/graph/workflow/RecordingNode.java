@@ -14,22 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.alibaba.cloud.ai.example.graph.workflow;
 
-package com.alibaba.cloud.ai.example.graph;
+import java.util.HashMap;
+import java.util.Map;
 
-import com.alibaba.cloud.ai.example.graph.react.tool.weather.function.WeatherProperties;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+public class RecordingNode implements NodeAction {
+	@Override
+	public Map<String, Object> apply(OverAllState state) throws Exception {
+		String feedback = (String)state.value("classifier_output").get();
 
-@SpringBootApplication
-@EnableConfigurationProperties({WeatherProperties.class})
-public class GraphApplication {
+		Map<String, Object> updatedState = new HashMap<>();
+		if (feedback.contains("positive")) {
+			System.out.println("Received positive feedback: " + feedback);
+			updatedState.put("solution", "Praise, no action taken.");
+		} else {
+			System.out.println("Received negative feedback: " + feedback);
+			updatedState.put("solution", feedback);
+		}
 
-	public static void main(String[] args) {
-
-		SpringApplication.run(GraphApplication.class, args);
+		return updatedState;
 	}
-
 }
