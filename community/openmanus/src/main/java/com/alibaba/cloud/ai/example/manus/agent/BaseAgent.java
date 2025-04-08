@@ -120,7 +120,9 @@ public abstract class BaseAgent {
 				{planStatus}
 
 				CURRENT TASK STEP ({currentStepIndex}):
-				{stepText}""";
+				{stepText}
+				
+				""";
 
 		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(stepPrompt);
 
