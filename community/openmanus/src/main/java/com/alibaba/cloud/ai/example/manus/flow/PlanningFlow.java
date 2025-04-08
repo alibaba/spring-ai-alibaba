@@ -197,6 +197,8 @@ public class PlanningFlow extends BaseFlow {
 			return "Execution failed: " + e.getMessage();
 		}
 		finally {
+			llmService.removeAgentChatClient(activePlanId);
+			// Cleanup tool callback contexts
 			for (ToolCallBackContext context : toolCallbackMap.values()) {
 				// 清除工具回调上下文
 				context.getFunctionInstance().cleanup(activePlanId);

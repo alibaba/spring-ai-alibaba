@@ -40,8 +40,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	private final TextFileService textFileService;
 
 	private BaseAgent agent;
-
-	public TextFileOperator(String workingDirectoryPath, TextFileService textFileService) {
+	
+		public TextFileOperator(String workingDirectoryPath, TextFileService textFileService) {
 		this.workingDirectoryPath = workingDirectoryPath;
 		this.textFileService = textFileService;
 	}
@@ -114,7 +114,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 
 	public ToolExecuteResult run(String toolInput) {
 		log.info("TextFileOperator toolInput:" + toolInput);
-		try {
+				try {
 			Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 			});
 			String planId = agent.getPlanId();
@@ -236,6 +236,10 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	private ToolExecuteResult saveAndClose(String planId, String content) {
 		try {
 			String currentFilePath = textFileService.getCurrentFilePath(planId);
+			if (currentFilePath.isEmpty()) {
+				textFileService.updateFileState(planId, "", "Error: No file is currently open");
+				return new ToolExecuteResult("Error: No file is currently open");
+			}
 			Path absolutePath = Paths.get(workingDirectoryPath).resolve(currentFilePath);
 
 			if (content != null) {
@@ -267,6 +271,11 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 			}
 
 			String currentFilePath = textFileService.getCurrentFilePath(planId);
+			if (currentFilePath.isEmpty()) {
+				textFileService.updateFileState(planId, "", "Error: No file is currently open");
+				return new ToolExecuteResult("Error: No file is currently open");
+			}
+
 			Path absolutePath = Paths.get(workingDirectoryPath).resolve(currentFilePath);
 			Files.writeString(absolutePath, "\n" + content, StandardOpenOption.APPEND, StandardOpenOption.CREATE);
 
