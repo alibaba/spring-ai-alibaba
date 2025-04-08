@@ -1,12 +1,11 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Copyright 2024-2025 the original author or authors.
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -69,7 +68,6 @@ public class OpenmanusHumanController {
 
 	private PlanningTool planningTool = new PlanningTool(Map.of());
 
-
 	// 也可以使用如下的方式注入 ChatClient
 	public OpenmanusHumanController(ChatModel chatModel) {
 		this.planningClient = ChatClient.builder(chatModel)
@@ -101,26 +99,32 @@ public class OpenmanusHumanController {
 		};
 
 		SupervisorAgent controllerAgent = new SupervisorAgent();
-		ReactAgent planningAgent = new ReactAgent("请完成用户接下来输入的任务规划。",planningClient, resolver, 10);
+		ReactAgent planningAgent = new ReactAgent("请完成用户接下来输入的任务规划。", planningClient, resolver, 10);
 		planningAgent.getAndCompileGraph();
-		ReactAgent stepAgent = new ReactAgent("请完成用户接下来输入的任务规划。",stepClient, resolver, 10);
+		ReactAgent stepAgent = new ReactAgent("请完成用户接下来输入的任务规划。", stepClient, resolver, 10);
 		stepAgent.getAndCompileGraph();
 		HumanNode humanNode = new HumanNode();
 
 		StateGraph graph2 = new StateGraph(stateFactory)
-				.addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
-				.addNode("human", node_async(humanNode))
-				.addNode("controller_agent", node_async(controllerAgent))
-				.addNode("step_executing_agent", stepAgent.asAsyncNodeAction("step_prompt", "step_output"))
+			.addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
+			.addNode("human", node_async(humanNode))
+			.addNode("controller_agent", node_async(controllerAgent))
+			.addNode("step_executing_agent", stepAgent.asAsyncNodeAction("step_prompt", "step_output"))
 
-				.addEdge(START, "planning_agent")
-				.addEdge("planning_agent", "human")
-				.addConditionalEdges("human", edge_async(humanNode::think), Map.of("planning_agent", "planning_agent", "controller_agent", "controller_agent"))
-				.addConditionalEdges("controller_agent", edge_async(controllerAgent::think),
-						Map.of("continue", "step_executing_agent", "end", END))
-				.addEdge("step_executing_agent", "controller_agent");
+			.addEdge(START, "planning_agent")
+			.addEdge("planning_agent", "human")
+			.addConditionalEdges("human", edge_async(humanNode::think),
+					Map.of("planning_agent", "planning_agent", "controller_agent", "controller_agent"))
+			.addConditionalEdges("controller_agent", edge_async(controllerAgent::think),
+					Map.of("continue", "step_executing_agent", "end", END))
+			.addEdge("step_executing_agent", "controller_agent");
 
 		this.compiledGraph = graph2.compile();
+
+		GraphRepresentation graphRepresentation = compiledGraph.getGraph(GraphRepresentation.Type.PLANTUML);
+		System.out.println("\n\n");
+		System.out.println(graphRepresentation.content());
+		System.out.println("\n\n");
 	}
 
 	@GetMapping("/chat")
@@ -164,14 +168,6 @@ public class OpenmanusHumanController {
 		// send back to user and wait for plan approval
 
 		return result.get().data().toString();
-	}
-
-	@GetMapping(value = "/image")
-	@ResponseBody
-	public String getImage() {
-		GraphRepresentation graphRepresentation = compiledGraph.getGraph(GraphRepresentation.Type.PLANTUML);
-		System.out.println(graphRepresentation.content());
-		return graphRepresentation.content();
 	}
 
 }

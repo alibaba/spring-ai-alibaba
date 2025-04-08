@@ -1,12 +1,11 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Copyright 2024-2025 the original author or authors.
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,7 +28,9 @@ public class HumanNode implements NodeAction {
 
 	// always or conditioned
 	private String interruptStrategy;
+
 	private Function<OverAllState, Boolean> interruptCondition;
+
 	private Function<OverAllState, Map<String, Object>> stateUpdateFunc;
 
 	public HumanNode() {
@@ -41,7 +42,8 @@ public class HumanNode implements NodeAction {
 		this.interruptCondition = interruptCondition;
 	}
 
-	public HumanNode(String interruptStrategy, Function<OverAllState, Boolean> interruptCondition, Function<OverAllState, Map<String, Object>> stateUpdateFunc) {
+	public HumanNode(String interruptStrategy, Function<OverAllState, Boolean> interruptCondition,
+			Function<OverAllState, Map<String, Object>> stateUpdateFunc) {
 		this.interruptStrategy = interruptStrategy;
 		this.interruptCondition = interruptCondition;
 		this.stateUpdateFunc = stateUpdateFunc;
@@ -50,7 +52,8 @@ public class HumanNode implements NodeAction {
 	//
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws GraphInterruptException {
-		var shouldInterrupt = interruptStrategy.equals("always") || (interruptStrategy.equals("conditioned") && interruptCondition.apply(state));
+		var shouldInterrupt = interruptStrategy.equals("always")
+				|| (interruptStrategy.equals("conditioned") && interruptCondition.apply(state));
 		if (shouldInterrupt) {
 			interrupt(state);
 			Map<String, Object> data = Map.of();
@@ -79,4 +82,5 @@ public class HumanNode implements NodeAction {
 	public String think(OverAllState state) {
 		return state.humanFeedback().nextNodeId();
 	}
+
 }
