@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-document-reader-chatgpt-data</artifactId>
-    <name>Spring AI Alibaba Starter ChatGPT Data Document Reader</name>
+    <name>Spring AI Alibaba Starter Document Reader ChatGPT Data</name>
     <description>chatgpt-data reader for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
