@@ -114,7 +114,7 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 
 	public ToolExecuteResult run(String toolInput) {
 		try {
-			log.info("PlanningTool toolInput:" + toolInput);
+            log.info("PlanningTool toolInput:{}", toolInput);
 			Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 			});
 

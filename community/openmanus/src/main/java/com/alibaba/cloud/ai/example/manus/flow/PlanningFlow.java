@@ -33,9 +33,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.time.LocalDateTime;
 
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -151,7 +149,7 @@ public class PlanningFlow extends BaseFlow {
 				createInitialPlan(inputText);
 
 				if (!planningTool.getPlans().containsKey(activePlanId)) {
-					log.error("Plan creation failed. Plan ID " + activePlanId + " not found in planning tool.");
+                    log.error("Plan creation failed. Plan ID {} not found in planning tool.", activePlanId);
 					return "Failed to create plan for: " + inputText;
 				}
 
@@ -272,7 +270,7 @@ public class PlanningFlow extends BaseFlow {
 	}
 
 	public void createInitialPlan(String request) {
-		log.info("Creating initial plan with ID: " + activePlanId);
+		log.info("Creating initial plan with ID: {}", activePlanId);
 
 		// 构建agents信息
 		StringBuilder agentsInfo = new StringBuilder("Available Agents:\n");
@@ -337,7 +335,7 @@ public class PlanningFlow extends BaseFlow {
 			.chatResponse();
 
 		if (response != null && response.getResult() != null) {
-			log.info("Plan creation result: " + response.getResult().getOutput().getText());
+            log.info("Plan creation result: {}", response.getResult().getOutput().getText());
 		}
 		else {
 			log.warn("Creating default plan");
@@ -354,7 +352,7 @@ public class PlanningFlow extends BaseFlow {
 
 	public Map.Entry<Integer, Map<String, String>> getCurrentStepInfo() {
 		if (activePlanId == null || !planningTool.getPlans().containsKey(activePlanId)) {
-			log.error("Plan with ID " + activePlanId + " not found");
+            log.error("Plan with ID {} not found", activePlanId);
 			return null;
 		}
 
@@ -417,7 +415,7 @@ public class PlanningFlow extends BaseFlow {
 
 		}
 		catch (Exception e) {
-			log.error("Error finding current step index: " + e.getMessage());
+            log.error("Error finding current step index: {}", e.getMessage());
 			return null;
 		}
 	}
@@ -447,12 +445,12 @@ public class PlanningFlow extends BaseFlow {
 				return stepResult;
 			}
 			catch (Exception e) {
-				log.error("Error executing step " + currentStepIndex + ": " + e.getMessage());
+                log.error("Error executing step {}: {}", currentStepIndex, e.getMessage());
 				return "Error executing step " + currentStepIndex + ": " + e.getMessage();
 			}
 		}
 		catch (Exception e) {
-			log.error("Error preparing execution context: " + e.getMessage());
+            log.error("Error preparing execution context: {}", e.getMessage());
 			return "Error preparing execution context: " + e.getMessage();
 		}
 	}
@@ -472,10 +470,10 @@ public class PlanningFlow extends BaseFlow {
 				}
 			};
 			ToolExecuteResult result = planningTool.run(JSON.toJSONString(argsMap));
-			log.info("Marked step " + currentStepIndex + " as completed in plan " + activePlanId);
+            log.info("Marked step {} as completed in plan {}", currentStepIndex, activePlanId);
 		}
 		catch (Exception e) {
-			log.error("Failed to update plan status: " + e.getMessage());
+            log.error("Failed to update plan status: {}", e.getMessage());
 
 			Map<String, Map<String, Object>> plans = planningTool.getPlans();
 			if (plans.containsKey(activePlanId)) {
@@ -506,7 +504,7 @@ public class PlanningFlow extends BaseFlow {
 			return result.getOutput() != null ? result.getOutput() : result.toString();
 		}
 		catch (Exception e) {
-			log.error("Error getting plan: " + e.getMessage());
+            log.error("Error getting plan: {}", e.getMessage());
 			return generatePlanTextFromStorage();
 		}
 	}
@@ -579,7 +577,7 @@ public class PlanningFlow extends BaseFlow {
 			return planText.toString();
 		}
 		catch (Exception e) {
-			log.error("Error generating plan text from storage: " + e.getMessage());
+            log.error("Error generating plan text from storage: {}", e.getMessage());
 			return "Error: Unable to retrieve plan with ID " + activePlanId;
 		}
 	}
@@ -622,7 +620,7 @@ public class PlanningFlow extends BaseFlow {
 			return response.getResult().getOutput().getText();
 		}
 		catch (Exception e) {
-			log.error("Error finalizing plan with LLM: " + e.getMessage());
+            log.error("Error finalizing plan with LLM: {}", e.getMessage());
 			return "Plan completed. Error generating summary.";
 		}
 	}
