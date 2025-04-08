@@ -165,6 +165,18 @@ public class StateGraph {
 
 	}
 
+	static class GsonSerializer2 extends GsonStateSerializer {
+
+		public GsonSerializer2(AgentStateFactory<OverAllState> stateFactory) {
+			super(stateFactory, new GsonBuilder().serializeNulls().create());
+		}
+
+		Gson getGson() {
+			return gson;
+		}
+
+	}
+
 	/**
 	 * Instantiates a new State graph.
 	 * @param overAllState the over all state
@@ -182,6 +194,11 @@ public class StateGraph {
 	public StateGraph(OverAllState overAllState) {
 		this.overAllState = overAllState;
 		this.stateSerializer = new GsonSerializer();
+	}
+
+	public StateGraph(AgentStateFactory<OverAllState> factory) {
+		this.overAllState = factory.apply(Map.of());
+		this.stateSerializer = new GsonSerializer2(factory);
 	}
 
 	/**
@@ -234,10 +251,25 @@ public class StateGraph {
 	 * exists
 	 */
 	public StateGraph addNode(String id, AsyncNodeActionWithConfig actionWithConfig) throws GraphStateException {
-		if (Objects.equals(id, END)) {
+		Node node = new Node(id, (config) -> actionWithConfig);
+		return addNode(id, node);
+	}
+
+	/**
+	 *
+	 * @param id the identifier of the node
+	 * @param node the node to be added
+	 * @return this
+	 * @throws GraphStateException if the node identifier is invalid or the node already
+	 * exists
+	 */
+	public StateGraph addNode(String id, Node node) throws GraphStateException {
+		if (Objects.equals(node.id(), END)) {
 			throw Errors.invalidNodeIdentifier.exception(END);
 		}
-		Node node = new Node(id, (config) -> actionWithConfig);
+		if (!Objects.equals(node.id(), id)) {
+			throw Errors.invalidNodeIdentifier.exception(node.id(), id);
+		}
 
 		if (nodes.elements.contains(node)) {
 			throw Errors.duplicateNodeError.exception(id);
