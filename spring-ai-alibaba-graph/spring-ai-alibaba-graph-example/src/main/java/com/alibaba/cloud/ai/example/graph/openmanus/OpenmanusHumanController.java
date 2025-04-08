@@ -121,6 +121,11 @@ public class OpenmanusHumanController {
 				.addEdge("step_executing_agent", "controller_agent");
 
 		this.compiledGraph = graph2.compile();
+
+		GraphRepresentation graphRepresentation = compiledGraph.getGraph(GraphRepresentation.Type.PLANTUML);
+		System.out.println("\n\n");
+		System.out.println(graphRepresentation.content());
+		System.out.println("\n\n");
 	}
 
 	@GetMapping("/chat")
@@ -164,14 +169,6 @@ public class OpenmanusHumanController {
 		// send back to user and wait for plan approval
 
 		return result.get().data().toString();
-	}
-
-	@GetMapping(value = "/image")
-	@ResponseBody
-	public String getImage() {
-		GraphRepresentation graphRepresentation = compiledGraph.getGraph(GraphRepresentation.Type.PLANTUML);
-		System.out.println(graphRepresentation.content());
-		return graphRepresentation.content();
 	}
 
 }
