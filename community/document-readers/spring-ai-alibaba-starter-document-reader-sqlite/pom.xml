@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-document-reader-mysql</artifactId>
-    <name>Spring AI Alibaba Starter MySQL Document Reader</name>
+    <name>Spring AI Alibaba Starter Document Reader MySQL</name>
     <description>Spring AI Alibaba MySQL Document Reader Implementation</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
