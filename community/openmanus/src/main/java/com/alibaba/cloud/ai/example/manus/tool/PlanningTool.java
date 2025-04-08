@@ -173,8 +173,14 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 	}
 
 	public ToolExecuteResult createPlan(String planId, String title, List<String> steps) {
+		log.info("createPlan planId: {}, title: {}, steps: {}", planId, title, steps);
 		if (planId == null || planId.isEmpty()) {
 			throw new RuntimeException("Parameter `plan_id` is required for command: create");
+		}
+
+		if (!planId.startsWith("plan_")) {
+			planId = "plan_" + planId;
+			log.info("Adding 'plan_' prefix to plan ID: {}", planId);
 		}
 
 		if (plans.containsKey(planId)) {
