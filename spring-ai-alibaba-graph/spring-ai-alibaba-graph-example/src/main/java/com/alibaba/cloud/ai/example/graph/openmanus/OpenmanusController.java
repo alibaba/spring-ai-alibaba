@@ -60,82 +60,82 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 @RequestMapping("/manus")
 public class OpenmanusController {
 
-    String planningPrompt = "Your are a task planner, please analyze the task and plan the steps.";
+	String planningPrompt = "Your are a task planner, please analyze the task and plan the steps.";
 
-    String stepPrompt = "Tools available: xxx";
+	String stepPrompt = "Tools available: xxx";
 
-    private final ChatClient planningClient;
+	private final ChatClient planningClient;
 
-    private final ChatClient stepClient;
+	private final ChatClient stepClient;
 
-    @Autowired
-    private ToolCallbackResolver resolver;
+	@Autowired
+	private ToolCallbackResolver resolver;
 
-    private CompiledGraph compiledGraph;
+	private CompiledGraph compiledGraph;
 
-    // 也可以使用如下的方式注入 ChatClient
-    public OpenmanusController(ChatModel chatModel) throws GraphStateException {
-        this.planningClient = ChatClient.builder(chatModel)
-                .defaultSystem(planningPrompt)
-                .defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
-                .defaultAdvisors(new SimpleLoggerAdvisor())
-                .defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
-                .build();
+	// 也可以使用如下的方式注入 ChatClient
+	public OpenmanusController(ChatModel chatModel) throws GraphStateException {
+		this.planningClient = ChatClient.builder(chatModel)
+			.defaultSystem(planningPrompt)
+			.defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
+			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.build();
 
-        this.stepClient = ChatClient.builder(chatModel)
-                .defaultSystem(stepPrompt)
-                .defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
-                .defaultAdvisors(new SimpleLoggerAdvisor())
-                .defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
-                .build();
+		this.stepClient = ChatClient.builder(chatModel)
+			.defaultSystem(stepPrompt)
+			.defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
+			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.build();
 
-        initGraph();
-    }
+		initGraph();
+	}
 
-    public void initGraph() throws GraphStateException {
-        AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
-            OverAllState state = new OverAllState();
-            state.registerKeyAndStrategy("plan", new ReplaceStrategy());
-            state.registerKeyAndStrategy("step_prompt", new ReplaceStrategy());
-            state.registerKeyAndStrategy("step_output", new ReplaceStrategy());
-            state.registerKeyAndStrategy("final_output", new ReplaceStrategy());
+	public void initGraph() throws GraphStateException {
+		AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
+			OverAllState state = new OverAllState();
+			state.registerKeyAndStrategy("plan", new ReplaceStrategy());
+			state.registerKeyAndStrategy("step_prompt", new ReplaceStrategy());
+			state.registerKeyAndStrategy("step_output", new ReplaceStrategy());
+			state.registerKeyAndStrategy("final_output", new ReplaceStrategy());
 
-            state.input(inputs);
-            return state;
-        };
+			state.input(inputs);
+			return state;
+		};
 
-        SupervisorAgent controllerAgent = new SupervisorAgent();
-        ReactAgent planningAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。", planningClient, resolver, 10);
-        planningAgent.getAndCompileGraph();
-        ReactAgent stepAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。", stepClient, resolver, 10);
-        stepAgent.getAndCompileGraph();
+		SupervisorAgent controllerAgent = new SupervisorAgent();
+		ReactAgent planningAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。", planningClient, resolver, 10);
+		planningAgent.getAndCompileGraph();
+		ReactAgent stepAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。", stepClient, resolver, 10);
+		stepAgent.getAndCompileGraph();
 
-        StateGraph graph = new StateGraph(stateFactory)
-                .addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
-                .addNode("controller_agent", node_async(controllerAgent))
-                .addNode("step_executing_agent", stepAgent.asAsyncNodeAction("step_prompt", "step_output"))
+		StateGraph graph = new StateGraph(stateFactory)
+			.addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
+			.addNode("controller_agent", node_async(controllerAgent))
+			.addNode("step_executing_agent", stepAgent.asAsyncNodeAction("step_prompt", "step_output"))
 
-                .addEdge(START, "planning_agent")
-                .addEdge("planning_agent", "controller_agent")
-                .addConditionalEdges("controller_agent", edge_async(controllerAgent::think),
-                        Map.of("continue", "step_executing_agent", "end", END))
-                .addEdge("step_executing_agent", "controller_agent");
+			.addEdge(START, "planning_agent")
+			.addEdge("planning_agent", "controller_agent")
+			.addConditionalEdges("controller_agent", edge_async(controllerAgent::think),
+					Map.of("continue", "step_executing_agent", "end", END))
+			.addEdge("step_executing_agent", "controller_agent");
 
-        this.compiledGraph = graph.compile();
+		this.compiledGraph = graph.compile();
 
-        GraphRepresentation graphRepresentation = compiledGraph.getGraph(GraphRepresentation.Type.PLANTUML);
-        System.out.println("\n\n");
-        System.out.println(graphRepresentation.content());
-        System.out.println("\n\n");
-    }
+		GraphRepresentation graphRepresentation = compiledGraph.getGraph(GraphRepresentation.Type.PLANTUML);
+		System.out.println("\n\n");
+		System.out.println(graphRepresentation.content());
+		System.out.println("\n\n");
+	}
 
-    /**
-     * ChatClient 简单调用
-     */
-    @GetMapping("/chat")
-    public String simpleChat(String query) throws GraphStateException {
-        Optional<OverAllState> result = compiledGraph.invoke(Map.of("input", query));
-        return result.get().data().toString();
-    }
+	/**
+	 * ChatClient 简单调用
+	 */
+	@GetMapping("/chat")
+	public String simpleChat(String query) throws GraphStateException {
+		Optional<OverAllState> result = compiledGraph.invoke(Map.of("input", query));
+		return result.get().data().toString();
+	}
 
 }
