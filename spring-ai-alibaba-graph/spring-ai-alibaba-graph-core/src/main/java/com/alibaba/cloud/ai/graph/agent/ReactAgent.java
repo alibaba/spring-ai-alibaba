@@ -50,8 +50,6 @@ public class ReactAgent {
 	private final StateGraph graph;
 	private CompiledGraph compiledGraph;
 
-
-	private String prompt;
 	private List<String> tools;
 	private int max_iterations = 10;
 	private int iterations = 0;
