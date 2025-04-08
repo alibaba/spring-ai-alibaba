@@ -13,29 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.alibaba.cloud.ai.example.graph.react;
 
-package com.alibaba.cloud.ai.example.graph.openmanus;
-
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.imageio.ImageIO;
-
+import com.alibaba.cloud.ai.example.graph.workflow.RecordingNode;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.action.EdgeAction;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.node.QuestionClassifierNode;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import net.sourceforge.plantuml.FileFormat;
-import net.sourceforge.plantuml.FileFormatOption;
-import net.sourceforge.plantuml.SourceStringReader;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -45,8 +40,6 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -57,34 +50,19 @@ import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 @RestController
-@RequestMapping("/manus")
-public class OpenmanusController {
+@RequestMapping("/react")
+public class ReactController {
 
-	String planningPrompt = "Your are a task planner, please analyze the task and plan the steps.";
+	private final ChatClient chatClient;
 
-	String stepPrompt = "Tools available: xxx";
-
-	private final ChatClient planningClient;
-
-	private final ChatClient stepClient;
+	private CompiledGraph compiledGraph;
 
 	@Autowired
 	private ToolCallbackResolver resolver;
 
-	private CompiledGraph compiledGraph;
-
-	// 也可以使用如下的方式注入 ChatClient
-	public OpenmanusController(ChatModel chatModel) throws GraphStateException {
-		this.planningClient = ChatClient.builder(chatModel)
-			.defaultSystem(planningPrompt)
-			.defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
-			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
-			.build();
-
-		this.stepClient = ChatClient.builder(chatModel)
-			.defaultSystem(stepPrompt)
-			.defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
+	ReactController(ChatModel chatModel) throws GraphStateException {
+		this.chatClient = ChatClient.builder(chatModel)
+			.defaultTools("getWeatherFunction")
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();
@@ -95,33 +73,13 @@ public class OpenmanusController {
 	public void initGraph() throws GraphStateException {
 		AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
 			OverAllState state = new OverAllState();
-			state.registerKeyAndStrategy("plan", new ReplaceStrategy());
-			state.registerKeyAndStrategy("step_prompt", new ReplaceStrategy());
-			state.registerKeyAndStrategy("step_output", new ReplaceStrategy());
-			state.registerKeyAndStrategy("final_output", new ReplaceStrategy());
-
+			state.registerKeyAndStrategy("messages", new AppendStrategy());
 			state.input(inputs);
 			return state;
 		};
 
-		SupervisorAgent controllerAgent = new SupervisorAgent();
-		ReactAgent planningAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。", planningClient, resolver, 10);
-		planningAgent.getAndCompileGraph();
-		ReactAgent stepAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。", stepClient, resolver, 10);
-		stepAgent.getAndCompileGraph();
-
-		StateGraph graph = new StateGraph(stateFactory)
-			.addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
-			.addNode("controller_agent", node_async(controllerAgent))
-			.addNode("step_executing_agent", stepAgent.asAsyncNodeAction("step_prompt", "step_output"))
-
-			.addEdge(START, "planning_agent")
-			.addEdge("planning_agent", "controller_agent")
-			.addConditionalEdges("controller_agent", edge_async(controllerAgent::think),
-					Map.of("continue", "step_executing_agent", "end", END))
-			.addEdge("step_executing_agent", "controller_agent");
-
-		this.compiledGraph = graph.compile();
+		ReactAgent planningAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。", chatClient, resolver, 10);
+		this.compiledGraph = planningAgent.getAndCompileGraph();
 
 		GraphRepresentation graphRepresentation = compiledGraph.getGraph(GraphRepresentation.Type.PLANTUML);
 		System.out.println("\n\n");
@@ -129,13 +87,46 @@ public class OpenmanusController {
 		System.out.println("\n\n");
 	}
 
-	/**
-	 * ChatClient 简单调用
-	 */
 	@GetMapping("/chat")
 	public String simpleChat(String query) throws GraphStateException {
 		Optional<OverAllState> result = compiledGraph.invoke(Map.of("input", query));
-		return result.get().data().toString();
+		return result.get().value("solution").get().toString();
+	}
+
+	public static class FeedbackQuestionDispatcher implements EdgeAction {
+
+		@Override
+		public String apply(OverAllState state) throws Exception {
+			String classifierOutput = (String) state.value("classifier_output").orElse("");
+			System.out.println("classifierOutput: " + classifierOutput);
+			if (classifierOutput.contains("positive")) {
+				return "positive";
+			}
+			return "negative";
+		}
+
+	}
+
+	public static class SpecificQuestionDispatcher implements EdgeAction {
+
+		@Override
+		public String apply(OverAllState state) throws Exception {
+			String classifierOutput = (String) state.value("classifier_output").orElse("");
+			System.out.println("classifierOutput: " + classifierOutput);
+			if (classifierOutput.contains("after-sale")) {
+				return "after-sale";
+			}
+			else if (classifierOutput.contains("quality")) {
+				return "quality";
+			}
+			else if (classifierOutput.contains("transportation")) {
+				return "transportation";
+			}
+			else {
+				return "others";
+			}
+		}
+
 	}
 
 }
