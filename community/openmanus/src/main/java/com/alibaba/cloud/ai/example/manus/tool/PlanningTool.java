@@ -125,6 +125,10 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 			String planId = null;
 			if (toolInputMap.get("plan_id") != null) {
 				planId = (String) toolInputMap.get("plan_id");
+				if (!planId.startsWith("plan_")) {
+					planId = "plan_" + planId;
+					log.info("Adding 'plan_' prefix to plan ID: {}", planId);
+				}
 			}
 			String title = null;
 			if (toolInputMap.get("title") != null) {
@@ -176,11 +180,6 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 		log.info("createPlan planId: {}, title: {}, steps: {}", planId, title, steps);
 		if (planId == null || planId.isEmpty()) {
 			throw new RuntimeException("Parameter `plan_id` is required for command: create");
-		}
-
-		if (!planId.startsWith("plan_")) {
-			planId = "plan_" + planId;
-			log.info("Adding 'plan_' prefix to plan ID: {}", planId);
 		}
 
 		if (plans.containsKey(planId)) {
