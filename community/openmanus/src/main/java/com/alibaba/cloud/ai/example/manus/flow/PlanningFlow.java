@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.example.manus.flow;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
@@ -25,6 +24,7 @@ import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration;
 import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +60,6 @@ public class PlanningFlow extends BaseFlow {
 	@Autowired
 	private LlmService llmService;
 
-
 	private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
 
 	// shared result state between agents.
@@ -69,7 +68,8 @@ public class PlanningFlow extends BaseFlow {
 	// Store tool callback contexts
 	private final Map<String, ToolCallBackContext> toolCallbackMap;
 
-	public PlanningFlow(List<BaseAgent> agents, Map<String, Object> data, PlanExecutionRecorder recorder, Map<String, ManusConfiguration.ToolCallBackContext> toolCallbackMap) {
+	public PlanningFlow(List<BaseAgent> agents, Map<String, Object> data, PlanExecutionRecorder recorder,
+			Map<String, ManusConfiguration.ToolCallBackContext> toolCallbackMap) {
 		super(agents, data, recorder);
 		this.toolCallbackMap = toolCallbackMap;
 		// 初始化Map字段
@@ -197,7 +197,7 @@ public class PlanningFlow extends BaseFlow {
 			return "Execution failed: " + e.getMessage();
 		}
 		finally {
-			for(ToolCallBackContext context : toolCallbackMap.values()) {
+			for (ToolCallBackContext context : toolCallbackMap.values()) {
 				// 清除工具回调上下文
 				context.getFunctionInstance().cleanup(activePlanId);
 			}

@@ -42,7 +42,7 @@ import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.ChromeDriverService;
-import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 
 /**
