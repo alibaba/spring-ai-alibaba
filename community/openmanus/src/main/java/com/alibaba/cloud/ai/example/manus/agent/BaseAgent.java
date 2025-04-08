@@ -240,7 +240,7 @@ public abstract class BaseAgent {
 	 */
 	protected boolean isStuck() {
 		// 目前判断是如果三次没有调用工具就认为是卡住了，就退出当前step。
-		List<Message> memoryEntries = llmService.getMemory().get(conversationId, 6);
+		List<Message> memoryEntries = llmService.getAgentChatClient(getPlanId()).getMemory().get(conversationId, 6);
 		int zeroToolCallCount = 0;
 		for (Message msg : memoryEntries) {
 			if (msg instanceof AssistantMessage) {
