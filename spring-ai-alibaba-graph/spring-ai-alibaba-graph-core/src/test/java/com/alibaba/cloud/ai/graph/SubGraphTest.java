@@ -15,23 +15,27 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.exception.NodeInterruptException;
+import com.alibaba.cloud.ai.graph.state.AppenderChannel;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
-import java.util.*;
-import java.util.function.Function;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.LogManager;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
-import com.alibaba.cloud.ai.graph.state.AppenderChannel;
-import lombok.extern.slf4j.Slf4j;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -43,8 +47,9 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Slf4j
 public class SubGraphTest {
+
+	private static final Logger log = LoggerFactory.getLogger(SubGraphTest.class);
 
 	@BeforeAll
 	public static void initLogging() throws IOException {
@@ -55,6 +60,17 @@ public class SubGraphTest {
 
 	private AsyncNodeAction _makeNode(String id) {
 		return node_async(state -> Map.of("messages", id));
+	}
+
+	private AsyncNodeAction _makeNormalNode(String id) {
+		return node_async(state -> Map.of("messages", id));
+	}
+
+	private AsyncNodeAction _makeExceptionNode(String id) {
+		return node_async(state -> {
+			throw new NodeInterruptException("aa");
+			// return Map.of("messages", id);
+		});
 	}
 
 	private List<String> _execute(CompiledGraph workflow, Map<String, Object> input) throws Exception {
@@ -246,7 +262,8 @@ public class SubGraphTest {
 	public void testMergeSubgraph03WithInterruption() throws Exception {
 		OverAllState overAllState = getOverAllState();
 		var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
-			.addNode("B2", _makeNode("B2"))
+			.addNode("B2", _makeExceptionNode("B2"))
+			// .addNode("B2", _makeNormalNode("B2"))
 			.addNode("C", _makeNode("subgraph(C)"))
 			.addEdge(START, "B1")
 			.addEdge("B1", "B2")

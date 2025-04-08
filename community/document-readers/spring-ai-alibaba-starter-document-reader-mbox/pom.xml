@@ -26,7 +26,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-document-reader-mbox</artifactId>
-    <name>Spring AI Alibaba Starter Mbox Document Reader</name>
+    <name>Spring AI Alibaba Starter Document Reader Mbox</name>
     <description>Spring AI Document Reader implementation for Mbox format emails</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>

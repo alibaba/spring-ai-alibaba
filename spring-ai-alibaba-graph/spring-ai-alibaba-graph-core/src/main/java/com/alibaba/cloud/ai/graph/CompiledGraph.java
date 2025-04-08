@@ -15,42 +15,46 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
+import com.alibaba.cloud.ai.graph.exception.GraphInterruptException;
+import com.alibaba.cloud.ai.graph.internal.edge.Edge;
+import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
+import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
+import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import org.bsc.async.AsyncGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
+
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import org.bsc.async.AsyncGenerator;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
-import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
-import com.alibaba.cloud.ai.graph.internal.edge.Edge;
-import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
-import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
-import com.alibaba.cloud.ai.graph.state.AgentState;
-import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-import org.springframework.util.CollectionUtils;
-
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.toList;
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
 
-/**
- * Represents a compiled graph of nodes and edges. This class manage the StateGraph
- * execution
- *
- */
-@Slf4j
 public class CompiledGraph {
+
+	private static final Logger log = LoggerFactory.getLogger(CompiledGraph.class);
 
 	public enum StreamMode {
 
@@ -247,6 +251,11 @@ public class CompiledGraph {
 	}
 
 	private String nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId) throws Exception {
+		return nextNodeId(route, state, nodeId, null);
+	}
+
+	private String nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId, OverAllState overAllState)
+			throws Exception {
 
 		if (route == null) {
 			throw StateGraph.RunnableErrors.missingEdge.exception(nodeId);
@@ -255,9 +264,11 @@ public class CompiledGraph {
 			return route.id();
 		}
 		if (route.value() != null) {
-			OverAllState derefState = stateGraph.getStateFactory().apply(state);
+			if (overAllState == null) {
+				overAllState = stateGraph.getStateFactory().apply(state);
+			}
 			com.alibaba.cloud.ai.graph.action.AsyncEdgeAction condition = route.value().action();
-			String newRoute = condition.apply(derefState).get();
+			String newRoute = condition.apply(overAllState).get();
 			String result = route.value().mappings().get(newRoute);
 			if (result == null) {
 				throw StateGraph.RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
@@ -277,7 +288,10 @@ public class CompiledGraph {
 	 */
 	private String nextNodeId(String nodeId, Map<String, Object> state) throws Exception {
 		return nextNodeId(edges.get(nodeId), state, nodeId);
+	}
 
+	private String nextNodeId(String nodeId, Map<String, Object> state, OverAllState overAllState) throws Exception {
+		return nextNodeId(edges.get(nodeId), state, nodeId, overAllState);
 	}
 
 	private String getEntryPoint(Map<String, Object> state) throws Exception {
@@ -285,7 +299,7 @@ public class CompiledGraph {
 		return nextNodeId(entryPoint, state, "entryPoint");
 	}
 
-	private boolean shouldInterruptBefore(@NonNull String nodeId, String previousNodeId) {
+	private boolean shouldInterruptBefore(String nodeId, String previousNodeId) {
 		if (previousNodeId == null) { // FIX RESUME ERROR
 			return false;
 		}
@@ -370,7 +384,7 @@ public class CompiledGraph {
 		return stream(inputs, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
 
-	private Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) {
+	public Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) {
 		return stream(overAllState, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
 
@@ -382,6 +396,18 @@ public class CompiledGraph {
 	 */
 	public Optional<OverAllState> invoke(Map<String, Object> inputs) {
 		return this.invoke(stateGraph.getOverAllState().input(inputs), RunnableConfig.builder().build());
+	}
+
+	/**
+	 * Experimental API
+	 */
+	public Optional<OverAllState> resume(OverAllState.HumanFeedback feedback, RunnableConfig config) {
+		StateSnapshot stateSnapshot = this.getState(config);
+		OverAllState resumeState = stateGraph.getStateFactory().apply(stateSnapshot.state().data());
+		resumeState.withResume();
+		resumeState.withHumanFeedback(feedback);
+
+		return this.invoke(resumeState, config);
 	}
 
 	/**
@@ -473,7 +499,8 @@ public class CompiledGraph {
 
 				// Reset checkpoint id
 				this.config = config.withCheckPointId(null);
-				this.overAllState = overAllState;
+				// FIXME
+				this.overAllState = overAllState.input(this.currentState);
 				this.nextNodeId = startCheckpoint.getNextNodeId();
 				this.currentNodeId = null;
 				log.trace("RESUME FROM {}", startCheckpoint.getNodeId());
@@ -533,7 +560,7 @@ public class CompiledGraph {
 		}
 
 		@SuppressWarnings("unchecked")
-		protected Output buildNodeOutput(String nodeId) throws Exception {
+		protected Output buildNodeOutput(String nodeId) {
 			return (Output) NodeOutput.of(nodeId, overAllState);
 		}
 
@@ -585,7 +612,7 @@ public class CompiledGraph {
 					}
 
 					currentState = overAllState.updateState(partialState);
-					nextNodeId = nextNodeId(currentNodeId, currentState);
+					nextNodeId = nextNodeId(currentNodeId, currentState, overAllState);
 
 					return Data.of(getNodeOutput());
 				}
@@ -674,6 +701,11 @@ public class CompiledGraph {
 				return evaluateAction(action, overAllState).get();
 			}
 			catch (Exception e) {
+				if (e instanceof ExecutionException executionException
+						&& executionException.getCause() instanceof GraphInterruptException interruptException) {
+					overAllState.setInterruptMessage(interruptException.getMessage());
+					return Data.done(buildNodeOutput(currentNodeId));
+				}
 				log.error(e.getMessage(), e);
 				return Data.error(e);
 			}

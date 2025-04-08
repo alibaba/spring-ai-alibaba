@@ -15,14 +15,20 @@
  */
 package com.alibaba.cloud.ai.model;
 
-import lombok.Data;
-
 /**
  * RunEvent defines a single event that occurred during the run. TODO complement
  */
-@Data
 public class RunEvent {
 
 	private String eventType;
+
+	public String getEventType() {
+		return eventType;
+	}
+
+	public RunEvent setEventType(String eventType) {
+		this.eventType = eventType;
+		return this;
+	}
 
 }

@@ -37,7 +37,10 @@ public class BaiDuMapAutoConfiguration {
 	private static final Logger logger = LoggerFactory.getLogger(BaiDuMapAutoConfiguration.class);
 
 	@Bean
-	@Description("Get detail information of a address and facility query with baidu map.")
+	@Description("Search for places using Baidu Maps API "
+			+ "or Get detail information of a address and facility query with baidu map or "
+			+ "Get address information of a place with baidu map or "
+			+ "Get detailed information about a specific place with baidu map")
 	public MapSearchService baiDuMapGetAddressInformationFunction(BaiDuMapProperties baiDuMapProperties) {
 
 		logger.debug("baiDuMapGetAddressInformationFunction is enabled.");

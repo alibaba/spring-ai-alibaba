@@ -16,11 +16,7 @@
 package com.alibaba.cloud.ai.param;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
-import lombok.experimental.Accessors;
 
-@Data
-@Accessors(chain = true)
 public class CreateAppParam {
 
 	@Schema(description = "app name", example = "rag-demo")
@@ -31,5 +27,32 @@ public class CreateAppParam {
 
 	@Schema(description = "app description")
 	private String description;
+
+	public String getName() {
+		return name;
+	}
+
+	public CreateAppParam setName(String name) {
+		this.name = name;
+		return this;
+	}
+
+	public String getMode() {
+		return mode;
+	}
+
+	public CreateAppParam setMode(String mode) {
+		this.mode = mode;
+		return this;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public CreateAppParam setDescription(String description) {
+		this.description = description;
+		return this;
+	}
 
 }

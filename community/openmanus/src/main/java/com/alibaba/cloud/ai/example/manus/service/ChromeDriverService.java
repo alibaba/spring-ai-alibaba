@@ -216,6 +216,7 @@ public class ChromeDriverService implements ApplicationRunner {
 			Map<String, Object> properties = new HashMap<>();
 			properties.put("navigator.webdriver", false);
 			options.setExperimentalOption("excludeSwitches", Arrays.asList("enable-automation"));
+
 			// 自动匹配版本
 			WebDriverManager.chromedriver().setup();
 			newDriver = new ChromeDriver(options);
