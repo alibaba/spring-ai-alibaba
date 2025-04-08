@@ -16,24 +16,21 @@
  */
 package com.alibaba.cloud.ai.graph.node;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
-import reactor.core.publisher.Flux;
-
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.api.Advisor;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.util.StringUtils;
 
 public class LlmNode implements NodeAction {
 
@@ -63,10 +60,11 @@ public class LlmNode implements NodeAction {
 
 	private ChatClient chatClient;
 
-	public LlmNode() {}
+	public LlmNode() {
+	}
 
-	public LlmNode(String systemPrompt, String prompt, Map<String, Object> params, List<Message> messages, List<Advisor> advisors,
-			List<ToolCallback> toolCallbacks, ChatClient chatClient) {
+	public LlmNode(String systemPrompt, String prompt, Map<String, Object> params, List<Message> messages,
+			List<Advisor> advisors, List<ToolCallback> toolCallbacks, ChatClient chatClient) {
 		this.systemPrompt = systemPrompt;
 		this.userPrompt = prompt;
 		this.params = params;
@@ -117,14 +115,15 @@ public class LlmNode implements NodeAction {
 	public Flux<ChatResponse> stream() {
 		if (StringUtils.hasLength(systemPrompt) && StringUtils.hasLength(userPrompt)) {
 			return chatClient.prompt()
-					.system(systemPrompt)
-					.user(userPrompt)
-					.messages(messages)
-					.advisors(advisors)
-					.tools(toolCallbacks)
-					.stream()
-					.chatResponse();
-		} else {
+				.system(systemPrompt)
+				.user(userPrompt)
+				.messages(messages)
+				.advisors(advisors)
+				.tools(toolCallbacks)
+				.stream()
+				.chatResponse();
+		}
+		else {
 			if (StringUtils.hasLength(systemPrompt)) {
 				return chatClient.prompt()
 					.system(systemPrompt)
@@ -133,15 +132,17 @@ public class LlmNode implements NodeAction {
 					.tools(toolCallbacks)
 					.stream()
 					.chatResponse();
-			} else if (StringUtils.hasLength(userPrompt)) {
+			}
+			else if (StringUtils.hasLength(userPrompt)) {
 				return chatClient.prompt()
-						.user(userPrompt)
-						.messages(messages)
-						.advisors(advisors)
-						.tools(toolCallbacks)
-						.stream()
-						.chatResponse();
-			} else {
+					.user(userPrompt)
+					.messages(messages)
+					.advisors(advisors)
+					.tools(toolCallbacks)
+					.stream()
+					.chatResponse();
+			}
+			else {
 				return chatClient.prompt()
 					.messages(messages)
 					.advisors(advisors)
@@ -156,37 +157,40 @@ public class LlmNode implements NodeAction {
 
 		if (StringUtils.hasLength(systemPrompt) && StringUtils.hasLength(userPrompt)) {
 			return chatClient.prompt()
+				.system(systemPrompt)
+				.user(userPrompt)
+				.messages(messages)
+				.advisors(advisors)
+				.tools(toolCallbacks)
+				.call()
+				.chatResponse();
+		}
+		else {
+			if (StringUtils.hasLength(systemPrompt)) {
+				return chatClient.prompt()
 					.system(systemPrompt)
+					.messages(messages)
+					.advisors(advisors)
+					.tools(toolCallbacks)
+					.call()
+					.chatResponse();
+			}
+			else if (StringUtils.hasLength(userPrompt)) {
+				return chatClient.prompt()
 					.user(userPrompt)
 					.messages(messages)
 					.advisors(advisors)
 					.tools(toolCallbacks)
 					.call()
 					.chatResponse();
-		} else {
-			if (StringUtils.hasLength(systemPrompt)) {
+			}
+			else {
 				return chatClient.prompt()
-						.system(systemPrompt)
-						.messages(messages)
-						.advisors(advisors)
-						.tools(toolCallbacks)
-						.call()
-						.chatResponse();
-			} else if (StringUtils.hasLength(userPrompt)) {
-				return chatClient.prompt()
-						.user(userPrompt)
-						.messages(messages)
-						.advisors(advisors)
-						.tools(toolCallbacks)
-						.call()
-						.chatResponse();
-			} else {
-				return chatClient.prompt()
-						.messages(messages)
-						.advisors(advisors)
-						.tools(toolCallbacks)
-						.call()
-						.chatResponse();
+					.messages(messages)
+					.advisors(advisors)
+					.tools(toolCallbacks)
+					.call()
+					.chatResponse();
 			}
 		}
 	}

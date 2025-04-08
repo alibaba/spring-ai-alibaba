@@ -16,20 +16,20 @@
  */
 package com.alibaba.cloud.ai.graph.node;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Function;
-
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.exception.GraphInterruptException;
+
+import java.util.Map;
+import java.util.function.Function;
 
 public class HumanNode implements NodeAction {
 
 	// always or conditioned
 	private String interruptStrategy;
+
 	private Function<OverAllState, Boolean> interruptCondition;
+
 	private Function<OverAllState, Map<String, Object>> stateUpdateFunc;
 
 	public HumanNode() {
@@ -41,7 +41,8 @@ public class HumanNode implements NodeAction {
 		this.interruptCondition = interruptCondition;
 	}
 
-	public HumanNode(String interruptStrategy, Function<OverAllState, Boolean> interruptCondition, Function<OverAllState, Map<String, Object>> stateUpdateFunc) {
+	public HumanNode(String interruptStrategy, Function<OverAllState, Boolean> interruptCondition,
+			Function<OverAllState, Map<String, Object>> stateUpdateFunc) {
 		this.interruptStrategy = interruptStrategy;
 		this.interruptCondition = interruptCondition;
 		this.stateUpdateFunc = stateUpdateFunc;
@@ -50,7 +51,8 @@ public class HumanNode implements NodeAction {
 	//
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws GraphInterruptException {
-		var shouldInterrupt = interruptStrategy.equals("always") || (interruptStrategy.equals("conditioned") && interruptCondition.apply(state));
+		var shouldInterrupt = interruptStrategy.equals("always")
+				|| (interruptStrategy.equals("conditioned") && interruptCondition.apply(state));
 		if (shouldInterrupt) {
 			interrupt(state);
 			Map<String, Object> data = Map.of();
@@ -79,4 +81,5 @@ public class HumanNode implements NodeAction {
 	public String think(OverAllState state) {
 		return state.humanFeedback().nextNodeId();
 	}
+
 }

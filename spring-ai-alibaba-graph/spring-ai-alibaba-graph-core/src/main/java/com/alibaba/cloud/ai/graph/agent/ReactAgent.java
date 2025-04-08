@@ -16,10 +16,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphStateException;
@@ -30,7 +26,6 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -38,27 +33,40 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public class ReactAgent {
 
 	private final LlmNode llmNode;
+
 	private final ToolNode toolNode;
+
 	private final StateGraph graph;
+
 	private CompiledGraph compiledGraph;
 
 	private List<String> tools;
+
 	private int max_iterations = 10;
+
 	private int iterations = 0;
+
 	private CompileConfig compileConfig;
+
 	private OverAllState state;
+
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
 	public ReactAgent(LlmNode llmNode, ToolNode toolNode, int maxIterations, OverAllState state,
-			CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
+			CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc)
+			throws GraphStateException {
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
 		this.max_iterations = maxIterations;
@@ -70,15 +78,24 @@ public class ReactAgent {
 
 	public ReactAgent(String prompt, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations)
 			throws GraphStateException {
-		this.llmNode = LlmNode.builder().chatClient(chatClient).userPromptTemplate(prompt).messagesKey("messages").build();
+		this.llmNode = LlmNode.builder()
+			.chatClient(chatClient)
+			.userPromptTemplate(prompt)
+			.messagesKey("messages")
+			.build();
 		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		this.max_iterations = maxIterations;
 		this.graph = initGraph();
 	}
 
 	public ReactAgent(String prompt, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations,
-			OverAllState state, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
-		this.llmNode = LlmNode.builder().chatClient(chatClient).userPromptTemplate(prompt).messagesKey("messages").build();
+			OverAllState state, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc)
+			throws GraphStateException {
+		this.llmNode = LlmNode.builder()
+			.chatClient(chatClient)
+			.userPromptTemplate(prompt)
+			.messagesKey("messages")
+			.build();
 		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		this.max_iterations = maxIterations;
 		this.state = state;
@@ -88,15 +105,24 @@ public class ReactAgent {
 
 	public ReactAgent(String prompt, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations)
 			throws GraphStateException {
-		this.llmNode = LlmNode.builder().chatClient(chatClient).userPromptTemplate(prompt).messagesKey("messages").build();
+		this.llmNode = LlmNode.builder()
+			.chatClient(chatClient)
+			.userPromptTemplate(prompt)
+			.messagesKey("messages")
+			.build();
 		this.toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
 		this.max_iterations = maxIterations;
 		this.graph = initGraph();
 	}
 
 	public ReactAgent(String prompt, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations,
-			OverAllState state, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
-		this.llmNode = LlmNode.builder().chatClient(chatClient).userPromptTemplate(prompt).messagesKey("messages").build();
+			OverAllState state, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc)
+			throws GraphStateException {
+		this.llmNode = LlmNode.builder()
+			.chatClient(chatClient)
+			.userPromptTemplate(prompt)
+			.messagesKey("messages")
+			.build();
 		this.toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
 		this.max_iterations = maxIterations;
 		this.state = state;
@@ -121,7 +147,8 @@ public class ReactAgent {
 	public CompiledGraph getAndCompileGraph() throws GraphStateException {
 		if (this.compileConfig == null) {
 			this.compiledGraph = getStateGraph().compile();
-		} else {
+		}
+		else {
 			this.compiledGraph = getStateGraph().compile(this.compileConfig);
 		}
 		return this.compiledGraph;
@@ -145,8 +172,7 @@ public class ReactAgent {
 			this.state = defaultState;
 		}
 
-		return new StateGraph(state)
-			.addNode("agent", node_async(this.llmNode))
+		return new StateGraph(state).addNode("agent", node_async(this.llmNode))
 			.addNode("tool", node_async(this.toolNode))
 			.addEdge(START, "agent")
 			.addConditionalEdges("agent", edge_async(this::think), Map.of("continue", "tool", "end", END))
@@ -224,13 +250,21 @@ public class ReactAgent {
 	}
 
 	public static class Builder {
+
 		private ChatClient chatClient;
+
 		private String prompt;
+
 		private List<FunctionCallback> tools;
+
 		private ToolCallbackResolver resolver;
+
 		private int maxIterations = 10;
+
 		private CompileConfig compileConfig;
+
 		private OverAllState state;
+
 		private Function<OverAllState, Boolean> shouldContinueFunc;
 
 		public Builder chatClient(ChatClient chatClient) {
@@ -275,18 +309,24 @@ public class ReactAgent {
 
 		public ReactAgent build() throws GraphStateException {
 			if (resolver != null) {
-				return new ReactAgent(prompt, chatClient, resolver, maxIterations, state, compileConfig, shouldContinueFunc);
-			} else if (tools != null) {
-				return new ReactAgent(prompt, chatClient, tools, maxIterations, state, compileConfig, shouldContinueFunc);
+				return new ReactAgent(prompt, chatClient, resolver, maxIterations, state, compileConfig,
+						shouldContinueFunc);
+			}
+			else if (tools != null) {
+				return new ReactAgent(prompt, chatClient, tools, maxIterations, state, compileConfig,
+						shouldContinueFunc);
 			}
 			throw new IllegalArgumentException("Either tools or resolver must be provided");
 		}
+
 	}
 
 	public static class SubGraphNodeAdapter implements NodeAction {
 
 		private String inputKeyFromParent;
+
 		private String outputKeyToParent;
+
 		private CompiledGraph childGraph;
 
 		SubGraphNodeAdapter(String inputKeyFromParent, String outputKeyToParent, CompiledGraph childGraph) {
@@ -314,6 +354,7 @@ public class ReactAgent {
 			// update parent state
 			return Map.of(outputKeyToParent, reactResult);
 		}
+
 	}
 
 }
