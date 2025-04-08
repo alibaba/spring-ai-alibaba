@@ -20,69 +20,70 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Configuration properties for sensitive information filter
- * 
+ *
  * @author Makoto
  */
 @ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.sensitivefilter")
 public class SensitiveFilterProperties {
-    
-    private boolean enabled = true;
-    
-    private String replacement = "***";
-    
-    private boolean filterPhoneNumber = true;
-    
-    private boolean filterIdCard = true;
-    
-    private boolean filterBankCard = true;
-    
-    private boolean filterEmail = true;
 
-    public boolean isEnabled() {
-        return enabled;
-    }
+	private boolean enabled = true;
 
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
+	private String replacement = "***";
 
-    public String getReplacement() {
-        return replacement;
-    }
+	private boolean filterPhoneNumber = true;
 
-    public void setReplacement(String replacement) {
-        this.replacement = replacement;
-    }
+	private boolean filterIdCard = true;
 
-    public boolean isFilterPhoneNumber() {
-        return filterPhoneNumber;
-    }
+	private boolean filterBankCard = true;
 
-    public void setFilterPhoneNumber(boolean filterPhoneNumber) {
-        this.filterPhoneNumber = filterPhoneNumber;
-    }
+	private boolean filterEmail = true;
 
-    public boolean isFilterIdCard() {
-        return filterIdCard;
-    }
+	public boolean isEnabled() {
+		return enabled;
+	}
 
-    public void setFilterIdCard(boolean filterIdCard) {
-        this.filterIdCard = filterIdCard;
-    }
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
 
-    public boolean isFilterBankCard() {
-        return filterBankCard;
-    }
+	public String getReplacement() {
+		return replacement;
+	}
 
-    public void setFilterBankCard(boolean filterBankCard) {
-        this.filterBankCard = filterBankCard;
-    }
+	public void setReplacement(String replacement) {
+		this.replacement = replacement;
+	}
 
-    public boolean isFilterEmail() {
-        return filterEmail;
-    }
+	public boolean isFilterPhoneNumber() {
+		return filterPhoneNumber;
+	}
 
-    public void setFilterEmail(boolean filterEmail) {
-        this.filterEmail = filterEmail;
-    }
+	public void setFilterPhoneNumber(boolean filterPhoneNumber) {
+		this.filterPhoneNumber = filterPhoneNumber;
+	}
+
+	public boolean isFilterIdCard() {
+		return filterIdCard;
+	}
+
+	public void setFilterIdCard(boolean filterIdCard) {
+		this.filterIdCard = filterIdCard;
+	}
+
+	public boolean isFilterBankCard() {
+		return filterBankCard;
+	}
+
+	public void setFilterBankCard(boolean filterBankCard) {
+		this.filterBankCard = filterBankCard;
+	}
+
+	public boolean isFilterEmail() {
+		return filterEmail;
+	}
+
+	public void setFilterEmail(boolean filterEmail) {
+		this.filterEmail = filterEmail;
+	}
+
 }
