@@ -37,51 +37,56 @@ import org.springframework.util.StringUtils;
 public class QuestionClassifierNode implements NodeAction {
 
 	private static final String CLASSIFIER_PROMPT_TEMPLATE = """
-		### Job Description',
-		You are a text classification engine that analyzes text data and assigns categories based on user input or automatically determined categories.
-		### Task
-		Your task is to assign one category ONLY to the input text and only one category can be  returned in the output. Additionally, you need to extract the key words from the text that are related to the classification.
-		### Format
-		The input text is: {inputText}. Categories are specified as a category list: {categories}. Classification instructions may be included to improve the classification accuracy: {classificationInstructions}.
-		### Constraint
-		DO NOT include anything other than the JSON array in your response.
-	""";
+				### Job Description',
+				You are a text classification engine that analyzes text data and assigns categories based on user input or automatically determined categories.
+				### Task
+				Your task is to assign one category ONLY to the input text and only one category can be  returned in the output. Additionally, you need to extract the key words from the text that are related to the classification.
+				### Format
+				The input text is: {inputText}. Categories are specified as a category list: {categories}. Classification instructions may be included to improve the classification accuracy: {classificationInstructions}.
+				### Constraint
+				DO NOT include anything other than the JSON array in your response.
+			""";
 
 	private static final String QUESTION_CLASSIFIER_USER_PROMPT_1 = """
-		{ "input_text": ["I recently had a great experience with your company. The service was prompt and the staff was very friendly."],
-		"categories": ["Customer Service", "Satisfaction", "Sales", "Product"],
-		"classification_instructions": ["classify the text based on the feedback provided by customer"]}
-	""";
+				{ "input_text": ["I recently had a great experience with your company. The service was prompt and the staff was very friendly."],
+				"categories": ["Customer Service", "Satisfaction", "Sales", "Product"],
+				"classification_instructions": ["classify the text based on the feedback provided by customer"]}
+			""";
 
 	private static final String QUESTION_CLASSIFIER_ASSISTANT_PROMPT_1 = """
-		```json
-			{"keywords": ["recently", "great experience", "company", "service", "prompt", "staff", "friendly"]
-			"category_name": "Customer Service"}
-		```
-	""";
+				```json
+					{"keywords": ["recently", "great experience", "company", "service", "prompt", "staff", "friendly"]
+					"category_name": "Customer Service"}
+				```
+			""";
 
 	private static final String QUESTION_CLASSIFIER_USER_PROMPT_2 = """
-		{"input_text": ["bad service, slow to bring the food"],
-		"categories": ["Food Quality", "Experience", "Price"],
-		"classification_instructions": []}
-	""";
+				{"input_text": ["bad service, slow to bring the food"],
+				"categories": ["Food Quality", "Experience", "Price"],
+				"classification_instructions": []}
+			""";
 
 	private static final String QUESTION_CLASSIFIER_ASSISTANT_PROMPT_2 = """
-		```json
-			{"keywords": ["bad service", "slow", "food", "tip", "terrible", "waitresses"],
-			"category_name": "Experience"}
-		```
-	""";
+				```json
+					{"keywords": ["bad service", "slow", "food", "tip", "terrible", "waitresses"],
+					"category_name": "Experience"}
+				```
+			""";
 
 	private SystemPromptTemplate systemPromptTemplate;
+
 	private ChatClient chatClient;
+
 	private String inputText;
+
 	private List<String> categories;
+
 	private List<String> classificationInstructions;
 
 	private String inputTextKey;
 
-	public QuestionClassifierNode(ChatClient chatClient, String inputTextKey, List<String> categories, List<String> classificationInstructions) {
+	public QuestionClassifierNode(ChatClient chatClient, String inputTextKey, List<String> categories,
+			List<String> classificationInstructions) {
 		this.chatClient = chatClient;
 		this.inputTextKey = inputTextKey;
 		this.categories = categories;
@@ -106,11 +111,12 @@ public class QuestionClassifierNode implements NodeAction {
 		messages.add(assistantMessage2);
 
 		ChatResponse response = chatClient.prompt()
-				.system(systemPromptTemplate.render(Map.of("inputText", inputText, "categories", categories, "classificationInstructions", classificationInstructions)))
-				.user(inputText)
-				.messages(messages)
-				.call()
-				.chatResponse();
+			.system(systemPromptTemplate.render(Map.of("inputText", inputText, "categories", categories,
+					"classificationInstructions", classificationInstructions)))
+			.user(inputText)
+			.messages(messages)
+			.call()
+			.chatResponse();
 
 		Map<String, Object> updatedState = new HashMap<>();
 		updatedState.put("classifier_output", response.getResult().getOutput().getText());
@@ -125,11 +131,14 @@ public class QuestionClassifierNode implements NodeAction {
 		return new Builder();
 	}
 
-
 	public static class Builder {
+
 		private String inputTextKey;
+
 		private ChatClient chatClient;
+
 		private List<String> categories;
+
 		private List<String> classificationInstructions;
 
 		public Builder inputTextKey(String input) {
@@ -155,6 +164,7 @@ public class QuestionClassifierNode implements NodeAction {
 		public QuestionClassifierNode build() {
 			return new QuestionClassifierNode(chatClient, inputTextKey, categories, classificationInstructions);
 		}
+
 	}
 
 }

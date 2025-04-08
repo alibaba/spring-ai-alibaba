@@ -23,19 +23,22 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 
 public class RecordingNode implements NodeAction {
+
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		String feedback = (String)state.value("classifier_output").get();
+		String feedback = (String) state.value("classifier_output").get();
 
 		Map<String, Object> updatedState = new HashMap<>();
 		if (feedback.contains("positive")) {
 			System.out.println("Received positive feedback: " + feedback);
 			updatedState.put("solution", "Praise, no action taken.");
-		} else {
+		}
+		else {
 			System.out.println("Received negative feedback: " + feedback);
 			updatedState.put("solution", feedback);
 		}
 
 		return updatedState;
 	}
+
 }

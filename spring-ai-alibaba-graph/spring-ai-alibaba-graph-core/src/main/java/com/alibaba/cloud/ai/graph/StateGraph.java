@@ -256,7 +256,6 @@ public class StateGraph {
 	}
 
 	/**
-	 *
 	 * @param id the identifier of the node
 	 * @param node the node to be added
 	 * @return this

@@ -63,10 +63,11 @@ public class LlmNode implements NodeAction {
 
 	private ChatClient chatClient;
 
-	public LlmNode() {}
+	public LlmNode() {
+	}
 
-	public LlmNode(String systemPrompt, String prompt, Map<String, Object> params, List<Message> messages, List<Advisor> advisors,
-			List<ToolCallback> toolCallbacks, ChatClient chatClient) {
+	public LlmNode(String systemPrompt, String prompt, Map<String, Object> params, List<Message> messages,
+			List<Advisor> advisors, List<ToolCallback> toolCallbacks, ChatClient chatClient) {
 		this.systemPrompt = systemPrompt;
 		this.userPrompt = prompt;
 		this.params = params;
@@ -117,14 +118,15 @@ public class LlmNode implements NodeAction {
 	public Flux<ChatResponse> stream() {
 		if (StringUtils.hasLength(systemPrompt) && StringUtils.hasLength(userPrompt)) {
 			return chatClient.prompt()
-					.system(systemPrompt)
-					.user(userPrompt)
-					.messages(messages)
-					.advisors(advisors)
-					.tools(toolCallbacks)
-					.stream()
-					.chatResponse();
-		} else {
+				.system(systemPrompt)
+				.user(userPrompt)
+				.messages(messages)
+				.advisors(advisors)
+				.tools(toolCallbacks)
+				.stream()
+				.chatResponse();
+		}
+		else {
 			if (StringUtils.hasLength(systemPrompt)) {
 				return chatClient.prompt()
 					.system(systemPrompt)
@@ -133,15 +135,17 @@ public class LlmNode implements NodeAction {
 					.tools(toolCallbacks)
 					.stream()
 					.chatResponse();
-			} else if (StringUtils.hasLength(userPrompt)) {
+			}
+			else if (StringUtils.hasLength(userPrompt)) {
 				return chatClient.prompt()
-						.user(userPrompt)
-						.messages(messages)
-						.advisors(advisors)
-						.tools(toolCallbacks)
-						.stream()
-						.chatResponse();
-			} else {
+					.user(userPrompt)
+					.messages(messages)
+					.advisors(advisors)
+					.tools(toolCallbacks)
+					.stream()
+					.chatResponse();
+			}
+			else {
 				return chatClient.prompt()
 					.messages(messages)
 					.advisors(advisors)
@@ -156,37 +160,40 @@ public class LlmNode implements NodeAction {
 
 		if (StringUtils.hasLength(systemPrompt) && StringUtils.hasLength(userPrompt)) {
 			return chatClient.prompt()
+				.system(systemPrompt)
+				.user(userPrompt)
+				.messages(messages)
+				.advisors(advisors)
+				.tools(toolCallbacks)
+				.call()
+				.chatResponse();
+		}
+		else {
+			if (StringUtils.hasLength(systemPrompt)) {
+				return chatClient.prompt()
 					.system(systemPrompt)
+					.messages(messages)
+					.advisors(advisors)
+					.tools(toolCallbacks)
+					.call()
+					.chatResponse();
+			}
+			else if (StringUtils.hasLength(userPrompt)) {
+				return chatClient.prompt()
 					.user(userPrompt)
 					.messages(messages)
 					.advisors(advisors)
 					.tools(toolCallbacks)
 					.call()
 					.chatResponse();
-		} else {
-			if (StringUtils.hasLength(systemPrompt)) {
+			}
+			else {
 				return chatClient.prompt()
-						.system(systemPrompt)
-						.messages(messages)
-						.advisors(advisors)
-						.tools(toolCallbacks)
-						.call()
-						.chatResponse();
-			} else if (StringUtils.hasLength(userPrompt)) {
-				return chatClient.prompt()
-						.user(userPrompt)
-						.messages(messages)
-						.advisors(advisors)
-						.tools(toolCallbacks)
-						.call()
-						.chatResponse();
-			} else {
-				return chatClient.prompt()
-						.messages(messages)
-						.advisors(advisors)
-						.tools(toolCallbacks)
-						.call()
-						.chatResponse();
+					.messages(messages)
+					.advisors(advisors)
+					.tools(toolCallbacks)
+					.call()
+					.chatResponse();
 			}
 		}
 	}
