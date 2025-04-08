@@ -38,6 +38,11 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+/**
+ * Inspired from org.springframework.ai.model.tool.DefaultToolCallingManager.
+ *
+ * @author Lumian
+ * */
 public class ObservableToolCallingManager implements ToolCallingManager {
 
   private static final Logger logger = LoggerFactory.getLogger(ObservableToolCallingManager.class);

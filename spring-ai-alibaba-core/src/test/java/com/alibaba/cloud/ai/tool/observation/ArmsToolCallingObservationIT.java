@@ -48,8 +48,8 @@ import reactor.core.publisher.Flux;
  * Integration tests for DashScope Chat functionality. These tests will only run if
  * AI_DASHSCOPE_API_KEY environment variable is set.
  *
- * @author brianxiadong
- * @since 1.0.0-M6
+ * @author Lumian
+ * @since 1.0.0-M6.1
  */
 @Tag("integration")
 @SpringBootTest(classes = ArmsToolCallingObservationIT.Config.class)
