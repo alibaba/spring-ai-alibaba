@@ -15,13 +15,11 @@
  */
 package com.alibaba.cloud.ai.graph.plain_text.gson;
 
-import java.io.IOException;
-import java.util.Map;
-
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.gson.GsonStateSerializer;
-import com.alibaba.cloud.ai.graph.state.AgentState;
 import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
 
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.mapOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;

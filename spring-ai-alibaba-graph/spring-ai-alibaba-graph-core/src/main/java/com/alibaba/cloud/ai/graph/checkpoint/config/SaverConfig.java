@@ -15,13 +15,11 @@
  */
 package com.alibaba.cloud.ai.graph.checkpoint.config;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import jodd.util.StringUtil;
-import lombok.Getter;
-import lombok.Setter;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant.MEMORY;
 
@@ -29,9 +27,16 @@ public class SaverConfig {
 
 	private Map<String, BaseCheckpointSaver> savers = new ConcurrentHashMap<>();
 
-	@Setter
-	@Getter
 	private String type = MEMORY;
+
+	public String getType() {
+		return type;
+	}
+
+	public SaverConfig setType(String type) {
+		this.type = type;
+		return this;
+	}
 
 	public static Builder builder() {
 		return new Builder();

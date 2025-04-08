@@ -15,8 +15,29 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
+import com.alibaba.cloud.ai.graph.exception.GraphInterruptException;
+import com.alibaba.cloud.ai.graph.internal.edge.Edge;
+import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
+import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
+import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import org.bsc.async.AsyncGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
+
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -25,35 +46,15 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.alibaba.cloud.ai.graph.exception.GraphInterruptException;
-import com.esotericsoftware.kryo.io.Output;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import org.bsc.async.AsyncGenerator;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
-import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
-import com.alibaba.cloud.ai.graph.internal.edge.Edge;
-import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
-import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
-import com.alibaba.cloud.ai.graph.state.AgentState;
-import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-import org.springframework.util.CollectionUtils;
-
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.toList;
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
 
-/**
- * Represents a compiled graph of nodes and edges. This class manage the StateGraph
- * execution
- *
- */
-@Slf4j
 public class CompiledGraph {
+
+	private static final Logger log = LoggerFactory.getLogger(CompiledGraph.class);
 
 	public enum StreamMode {
 
@@ -253,7 +254,8 @@ public class CompiledGraph {
 		return nextNodeId(route, state, nodeId, null);
 	}
 
-	private String nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId, OverAllState overAllState) throws Exception {
+	private String nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId, OverAllState overAllState)
+			throws Exception {
 
 		if (route == null) {
 			throw StateGraph.RunnableErrors.missingEdge.exception(nodeId);
@@ -297,7 +299,7 @@ public class CompiledGraph {
 		return nextNodeId(entryPoint, state, "entryPoint");
 	}
 
-	private boolean shouldInterruptBefore(@NonNull String nodeId, String previousNodeId) {
+	private boolean shouldInterruptBefore(String nodeId, String previousNodeId) {
 		if (previousNodeId == null) { // FIX RESUME ERROR
 			return false;
 		}
