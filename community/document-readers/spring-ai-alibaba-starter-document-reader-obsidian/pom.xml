@@ -26,7 +26,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-document-reader-obsidian</artifactId>
-    <name>Spring AI Alibaba Starter Obsidian Document Reader</name>
+    <name>Spring AI Alibaba Starter Document Reader Obsidian</name>
     <description>obsidian reader for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>

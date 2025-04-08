@@ -26,8 +26,8 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-starter-document-reader-encent-cos</artifactId>
-    <name>Spring AI Alibaba Starter Tencent COS Document Reader</name>
+    <artifactId>spring-ai-alibaba-starter-document-reader-tencent-cos</artifactId>
+    <name>Spring AI Alibaba Starter Document Reader Tencent COS</name>
     <description>tencent-cos-reader for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
