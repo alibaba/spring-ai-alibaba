@@ -15,23 +15,24 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.std;
 
+import com.alibaba.cloud.ai.graph.serializer.Serializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.ObjectOutput;
 import java.util.Objects;
 import java.util.Optional;
 
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import com.alibaba.cloud.ai.graph.serializer.Serializer;
-
-@Slf4j
 class ObjectOutputWithMapper implements ObjectOutput {
+
+	private static final Logger log = LoggerFactory.getLogger(ObjectOutputWithMapper.class);
 
 	private final ObjectOutput out;
 
 	private final SerializerMapper mapper;
 
-	public ObjectOutputWithMapper(@NonNull ObjectOutput out, @NonNull SerializerMapper mapper) {
+	public ObjectOutputWithMapper(ObjectOutput out, SerializerMapper mapper) {
 		this.out = out;
 		this.mapper = mapper;
 	}

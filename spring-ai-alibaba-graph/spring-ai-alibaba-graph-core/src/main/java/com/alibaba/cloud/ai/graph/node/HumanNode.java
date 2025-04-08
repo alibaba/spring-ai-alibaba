@@ -15,14 +15,12 @@
  */
 package com.alibaba.cloud.ai.graph.node;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Function;
-
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.exception.GraphInterruptException;
+
+import java.util.Map;
+import java.util.function.Function;
 
 public class HumanNode implements NodeAction {
 

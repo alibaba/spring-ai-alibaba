@@ -16,16 +16,20 @@
 package com.alibaba.cloud.ai.exception;
 
 import com.alibaba.cloud.ai.common.ReturnCode;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
 public class SerializationException extends RuntimeException {
 
 	private int code;
 
 	private String msg;
+
+	public int getCode() {
+		return code;
+	}
+
+	public String getMsg() {
+		return msg;
+	}
 
 	public SerializationException(String message) {
 		super(message);
