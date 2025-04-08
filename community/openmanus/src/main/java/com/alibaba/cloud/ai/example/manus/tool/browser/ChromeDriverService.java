@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.service;
+package com.alibaba.cloud.ai.example.manus.tool.browser;
 
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+
 import jakarta.annotation.PreDestroy;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
@@ -307,12 +308,6 @@ public class ChromeDriverService implements ApplicationRunner {
 		}
 	}
 
-	public void cleanup(String planId) {
-		if (planId != null) {
-			log.info("Cleaning up Chrome resources for plan: {}", planId);
-			closeDriverForPlan(planId);
-		}
-	}
 
 	@PreDestroy
 	public void cleanup() {

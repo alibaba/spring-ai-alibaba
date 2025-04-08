@@ -181,4 +181,9 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 				lastOperationResult.isEmpty() ? "No operation performed yet" : lastOperationResult);
 	}
 
+	@Override
+	public void cleanup(String planId) {
+		//do nothing
+	}
+
 }

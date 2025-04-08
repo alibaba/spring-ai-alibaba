@@ -144,4 +144,9 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 		this.agent = agent;
 	}
 
+	@Override
+	public void cleanup(String planId) {
+		// do nothing
+	}
+
 }
