@@ -114,6 +114,8 @@
         <!-- Spring AI Alibaba JManus -->
         <module>spring-ai-alibaba-jmanus</module>
 
+        <module>spring-ai-alibaba-arms-observation-autoconfigure</module>
+
     </modules>
 
     <properties>
