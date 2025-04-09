@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.tool;
+package com.alibaba.cloud.ai.example.manus.tool.browser;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
-import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 
@@ -58,9 +58,9 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		return chromeDriverService.getDriver(agent.getPlanId());
 	}
 
-	private static final int MAX_LENGTH = 20000;
+	private final int MAX_LENGTH = 20000;
 
-	private static final String PARAMETERS = """
+	private final String PARAMETERS = """
 			{
 			    "type": "object",
 			    "properties": {
@@ -141,9 +141,9 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			}
 			""";
 
-	private static final String name = "browser_use";
+	private final String name = "browser_use";
 
-	private static final String description = """
+	private final String description = """
 			Interact with a web browser to perform various actions such as navigation, element interaction,搜索类优先考虑此工具
 			content extraction, and tab management. Supported actions include:
 			- 'navigate': Go to a specific URL, use https://baidu.com by default
@@ -161,7 +161,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			- 'refresh': Refresh the current page
 			""";
 
-	public static OpenAiApi.FunctionTool getToolDefinition() {
+	public OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
 		OpenAiApi.FunctionTool functionTool = new OpenAiApi.FunctionTool(function);
 		return functionTool;
@@ -173,7 +173,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	}
 
 	@SuppressWarnings("rawtypes")
-	public static FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService) {
+	public FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService) {
 		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
 			.description(description)
 			.inputSchema(PARAMETERS)
@@ -742,6 +742,20 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 				state.containsKey("error") ? state.get("error") : "");
 
 		return retString;
+	}
+
+	// @Override
+	// public ChromeDriver getInstance(String planId) {
+	// return this.chromeDriverService.getDriver(planId);
+	// }
+
+	// cleanup 方法已经存在，只需确保它符合接口规范
+	@Override
+	public void cleanup(String planId) {
+		if (planId != null) {
+			log.info("Cleaning up Chrome resources for plan: {}", planId);
+			this.chromeDriverService.closeDriverForPlan(planId);
+		}
 	}
 
 }

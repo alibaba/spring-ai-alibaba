@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2025 the original author or authors.
  *
@@ -13,38 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.tool.support;
+package com.alibaba.cloud.ai.example.manus.tool.textOperator;
 
-public class CodeExecutionResult {
+public class FileState {
 
-	Integer exitcode;
+	private String currentFilePath = "";
 
-	String logs;
+	private String lastOperationResult = "";
 
-	String image;
+	private final Object fileLock = new Object();
 
-	Integer getExitcode() {
-		return exitcode;
+	public String getCurrentFilePath() {
+		return currentFilePath;
 	}
 
-	void setExitcode(Integer exitcode) {
-		this.exitcode = exitcode;
+	public void setCurrentFilePath(String currentFilePath) {
+		this.currentFilePath = currentFilePath;
 	}
 
-	public String getLogs() {
-		return logs;
+	public String getLastOperationResult() {
+		return lastOperationResult;
 	}
 
-	public void setLogs(String logs) {
-		this.logs = logs;
+	public void setLastOperationResult(String lastOperationResult) {
+		this.lastOperationResult = lastOperationResult;
 	}
 
-	public String getImage() {
-		return image;
-	}
-
-	public void setImage(String image) {
-		this.image = image;
+	public Object getFileLock() {
+		return fileLock;
 	}
 
 }

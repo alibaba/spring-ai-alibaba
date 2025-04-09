@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.tool;
+package com.alibaba.cloud.ai.example.manus.tool.textOperator;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.file.*;
 import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
-
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 
@@ -32,8 +30,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-
-import com.alibaba.cloud.ai.example.manus.service.TextFileService;
 
 public class TextFileOperator implements ToolCallBiFunctionDef {
 
@@ -50,7 +46,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 		this.textFileService = textFileService;
 	}
 
-	private static final String PARAMETERS = """
+	private final String PARAMETERS = """
 			{
 			    "type": "object",
 			    "properties": {
@@ -79,9 +75,9 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 			}
 			""";
 
-	private static final String TOOL_NAME = "text_file_operator";
+	private final String TOOL_NAME = "text_file_operator";
 
-	private static final String TOOL_DESCRIPTION = """
+	private final String TOOL_DESCRIPTION = """
 			Operate on text files (including md, html, css, java, etc) with various actions:
 			- open: Open and read a text file
 			- replace: Replace specific text in the file
@@ -101,15 +97,14 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 			- And more text-based file types
 			""";
 
-	public static OpenAiApi.FunctionTool getToolDefinition() {
+	public OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(TOOL_DESCRIPTION, TOOL_NAME,
 				PARAMETERS);
 		OpenAiApi.FunctionTool functionTool = new OpenAiApi.FunctionTool(function);
 		return functionTool;
 	}
 
-	public static FunctionToolCallback getFunctionToolCallback(String workingDirectoryPath,
-			TextFileService textFileService) {
+	public FunctionToolCallback getFunctionToolCallback(String workingDirectoryPath, TextFileService textFileService) {
 		return FunctionToolCallback.builder(TOOL_NAME, new TextFileOperator(workingDirectoryPath, textFileService))
 			.description(TOOL_DESCRIPTION)
 			.inputSchema(PARAMETERS)
@@ -241,6 +236,10 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	private ToolExecuteResult saveAndClose(String planId, String content) {
 		try {
 			String currentFilePath = textFileService.getCurrentFilePath(planId);
+			if (currentFilePath.isEmpty()) {
+				textFileService.updateFileState(planId, "", "Error: No file is currently open");
+				return new ToolExecuteResult("Error: No file is currently open");
+			}
 			Path absolutePath = Paths.get(workingDirectoryPath).resolve(currentFilePath);
 
 			if (content != null) {
@@ -272,6 +271,11 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 			}
 
 			String currentFilePath = textFileService.getCurrentFilePath(planId);
+			if (currentFilePath.isEmpty()) {
+				textFileService.updateFileState(planId, "", "Error: No file is currently open");
+				return new ToolExecuteResult("Error: No file is currently open");
+			}
+
 			Path absolutePath = Paths.get(workingDirectoryPath).resolve(currentFilePath);
 			Files.writeString(absolutePath, "\n" + content, StandardOpenOption.APPEND, StandardOpenOption.CREATE);
 
@@ -368,5 +372,21 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	public ToolExecuteResult apply(String s, ToolContext toolContext) {
 		return run(s);
 	}
+
+	@Override
+	public void cleanup(String planId) {
+		if (planId != null) {
+			log.info("Cleaning up text file resources for plan: {}", planId);
+			textFileService.closeFileForPlan(planId);
+		}
+	}
+
+	// @Override
+	// public FileState getInstance(String planId) {
+	// if (planId == null) {
+	// throw new IllegalArgumentException("planId cannot be null");
+	// }
+	// return textFileService.getFileState(planId);
+	// }
 
 }

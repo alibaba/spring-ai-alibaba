@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.service;
+package com.alibaba.cloud.ai.example.manus.tool.browser;
 
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -307,13 +307,6 @@ public class ChromeDriverService implements ApplicationRunner {
 		}
 		catch (Exception e) {
 			log.error("Error closing ChromeDriver", e);
-		}
-	}
-
-	public void cleanup(String planId) {
-		if (planId != null) {
-			log.info("Cleaning up Chrome resources for plan: {}", planId);
-			closeDriverForPlan(planId);
 		}
 	}
 
