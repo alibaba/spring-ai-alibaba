@@ -15,6 +15,10 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.plain_text;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
+import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -23,18 +27,10 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Reader;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-
-import com.alibaba.cloud.ai.graph.OverAllState;
-import lombok.NonNull;
-import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
-import com.alibaba.cloud.ai.graph.state.AgentState;
-import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
 public abstract class PlainTextStateSerializer extends StateSerializer<OverAllState> {
 
-	protected PlainTextStateSerializer(@NonNull AgentStateFactory<OverAllState> stateFactory) {
+	protected PlainTextStateSerializer(AgentStateFactory<OverAllState> stateFactory) {
 		super(stateFactory);
 	}
 

@@ -15,30 +15,14 @@
  */
 package com.alibaba.cloud.ai.graph.checkpoint;
 
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.OverAllState;
+
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-import com.alibaba.cloud.ai.graph.KeyStrategy;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.state.AgentState;
-import com.alibaba.cloud.ai.graph.state.Channel;
-import lombok.Data;
-import lombok.ToString;
-
-/**
- * Represents a checkpoint of an agent state.
- *
- * The checkpoint is an immutable object that holds an {@link AgentState} and a
- * {@code String} that represents the next state.
- *
- * The checkpoint is serializable and can be persisted and restored.
- *
- * @see AgentState
- */
-@Data
-@ToString
 public class Checkpoint implements Serializable {
 
 	private String id = UUID.randomUUID().toString();
@@ -57,6 +41,48 @@ public class Checkpoint implements Serializable {
 		this.state = checkpoint.state;
 		this.nodeId = checkpoint.nodeId;
 		this.nextNodeId = checkpoint.nextNodeId;
+	}
+
+	public String getId() {
+		return id;
+	}
+
+	public Checkpoint setId(String id) {
+		this.id = id;
+		return this;
+	}
+
+	public Map<String, Object> getState() {
+		return state;
+	}
+
+	public Checkpoint setState(Map<String, Object> state) {
+		this.state = state;
+		return this;
+	}
+
+	public String getNodeId() {
+		return nodeId;
+	}
+
+	public Checkpoint setNodeId(String nodeId) {
+		this.nodeId = nodeId;
+		return this;
+	}
+
+	public String getNextNodeId() {
+		return nextNodeId;
+	}
+
+	public Checkpoint setNextNodeId(String nextNodeId) {
+		this.nextNodeId = nextNodeId;
+		return this;
+	}
+
+	@Override
+	public String toString() {
+		return "Checkpoint{" + "id='" + id + '\'' + ", state=" + state + ", nodeId='" + nodeId + '\'' + ", nextNodeId='"
+				+ nextNodeId + '\'' + '}';
 	}
 
 	public static Builder builder() {

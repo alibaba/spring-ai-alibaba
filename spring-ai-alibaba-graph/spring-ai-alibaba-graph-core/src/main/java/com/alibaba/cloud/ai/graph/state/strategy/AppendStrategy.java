@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph.state.strategy;
 
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.state.AppenderChannel;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -22,9 +25,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.alibaba.cloud.ai.graph.KeyStrategy;
-import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 
 import static java.util.Collections.unmodifiableList;
 

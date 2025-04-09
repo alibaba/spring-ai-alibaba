@@ -16,19 +16,14 @@
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.model.workflow.NodeType;
-import com.alibaba.cloud.ai.model.workflow.nodedata.AnswerNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.VariableAggregatorNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
-import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.SneakyThrows;
 import org.springframework.stereotype.Component;
-import org.springframework.util.ReflectionUtils;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -72,11 +67,8 @@ public class VariableAggregatorNodeDataConverter extends AbstractNodeDataConvert
 				catch (JsonProcessingException e) {
 					throw new RuntimeException("Failed to parse JSON", e);
 				}
-				return VariableAggregatorNodeData.builder()
-					.variables((List<List<String>>) data.get("variables"))
-					.outputType((String) data.get("output_type"))
-					.advancedSettings(advancedSettings)
-					.build();
+				return new VariableAggregatorNodeData(null, null, (List<List<String>>) data.get("variables"),
+						(String) data.get("output_type"), advancedSettings);
 			}
 
 			@Override
