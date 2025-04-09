@@ -15,10 +15,6 @@
  */
 package com.alibaba.cloud.ai.vectorstore.opensearch;
 
-import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.ai.vectorstore.filter.Filter.Expression;
-import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.ZoneId;
@@ -27,6 +23,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
+
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.Filter.Expression;
+import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
 
 /**
  * @author 北极星

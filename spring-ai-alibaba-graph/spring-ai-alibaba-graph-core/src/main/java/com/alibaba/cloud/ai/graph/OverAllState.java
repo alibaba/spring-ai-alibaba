@@ -15,21 +15,20 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import lombok.ToString;
 import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Optional.ofNullable;
 
-/**
- * The type Over all state.
- */
-@ToString
 public final class OverAllState implements Serializable {
 
 	private final Map<String, Object> data;
@@ -319,6 +318,12 @@ public final class OverAllState implements Serializable {
 			this.nextNodeId = nextNodeId;
 		}
 
+	}
+
+	@Override
+	public String toString() {
+		return "OverAllState{" + "data=" + data + ", keyStrategies=" + keyStrategies + ", resume=" + resume
+				+ ", humanFeedback=" + humanFeedback + ", interruptMessage='" + interruptMessage + '\'' + '}';
 	}
 
 }

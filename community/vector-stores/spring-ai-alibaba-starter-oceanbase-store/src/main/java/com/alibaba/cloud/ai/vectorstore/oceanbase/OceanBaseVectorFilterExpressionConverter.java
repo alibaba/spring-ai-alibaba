@@ -28,83 +28,86 @@ import java.util.List;
  */
 public class OceanBaseVectorFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
-    @Override
-    protected void doExpression(Expression expression, StringBuilder context) {
-        if (expression.type() == Filter.ExpressionType.IN) {
-            handleIn(expression, context);
-        } else if (expression.type() == Filter.ExpressionType.NIN) {
-            handleNotIn(expression, context);
-        } else {
-            this.convertOperand(expression.left(), context);
-            context.append(getOperationSymbol(expression));
-            this.convertOperand(expression.right(), context);
-        }
-    }
+	@Override
+	protected void doExpression(Expression expression, StringBuilder context) {
+		if (expression.type() == Filter.ExpressionType.IN) {
+			handleIn(expression, context);
+		}
+		else if (expression.type() == Filter.ExpressionType.NIN) {
+			handleNotIn(expression, context);
+		}
+		else {
+			this.convertOperand(expression.left(), context);
+			context.append(getOperationSymbol(expression));
+			this.convertOperand(expression.right(), context);
+		}
+	}
 
-    private void handleIn(Expression expression, StringBuilder context) {
-        context.append("(");
-        convertToConditions(expression, context);
-        context.append(")");
-    }
+	private void handleIn(Expression expression, StringBuilder context) {
+		context.append("(");
+		convertToConditions(expression, context);
+		context.append(")");
+	}
 
-    private void convertToConditions(Expression expression, StringBuilder context) {
-        Filter.Value right = (Filter.Value) expression.right();
-        Object value = right.value();
-        if (!(value instanceof List)) {
-            throw new IllegalArgumentException("Expected a List, but got: " + value.getClass().getSimpleName());
-        }
-        List<Object> values = (List) value;
-        for (int i = 0; i < values.size(); i++) {
-            this.convertOperand(expression.left(), context);
-            context.append(" = ");
-            this.doSingleValue(values.get(i), context);
-            if (i < values.size() - 1) {
-                context.append(" OR ");
-            }
-        }
-    }
+	private void convertToConditions(Expression expression, StringBuilder context) {
+		Filter.Value right = (Filter.Value) expression.right();
+		Object value = right.value();
+		if (!(value instanceof List)) {
+			throw new IllegalArgumentException("Expected a List, but got: " + value.getClass().getSimpleName());
+		}
+		List<Object> values = (List) value;
+		for (int i = 0; i < values.size(); i++) {
+			this.convertOperand(expression.left(), context);
+			context.append(" = ");
+			this.doSingleValue(values.get(i), context);
+			if (i < values.size() - 1) {
+				context.append(" OR ");
+			}
+		}
+	}
 
-    private void handleNotIn(Expression expression, StringBuilder context) {
-        context.append("!(");
-        convertToConditions(expression, context);
-        context.append(")");
-    }
+	private void handleNotIn(Expression expression, StringBuilder context) {
+		context.append("!(");
+		convertToConditions(expression, context);
+		context.append(")");
+	}
 
-    private String getOperationSymbol(Expression exp) {
-        switch (exp.type()) {
-            case AND:
-                return " AND ";
-            case OR:
-                return " OR ";
-            case EQ:
-                return " = ";
-            case NE:
-                return " != ";
-            case LT:
-                return " < ";
-            case LTE:
-                return " <= ";
-            case GT:
-                return " > ";
-            case GTE:
-                return " >= ";
-            default:
-                throw new RuntimeException("Not supported expression type: " + exp.type());
-        }
-    }
+	private String getOperationSymbol(Expression exp) {
+		switch (exp.type()) {
+			case AND:
+				return " AND ";
+			case OR:
+				return " OR ";
+			case EQ:
+				return " = ";
+			case NE:
+				return " != ";
+			case LT:
+				return " < ";
+			case LTE:
+				return " <= ";
+			case GT:
+				return " > ";
+			case GTE:
+				return " >= ";
+			default:
+				throw new RuntimeException("Not supported expression type: " + exp.type());
+		}
+	}
 
-    @Override
-    protected void doKey(Key key, StringBuilder context) {
-        context.append(key.key());
-    }
+	@Override
+	protected void doKey(Key key, StringBuilder context) {
+		context.append(key.key());
+	}
 
-    @Override
-    protected void doStartGroup(Group group, StringBuilder context) {
-        context.append("(");
-    }
+	@Override
+	protected void doStartGroup(Group group, StringBuilder context) {
+		context.append("(");
+	}
 
-    @Override
-    protected void doEndGroup(Group group, StringBuilder context) {
-        context.append(")");
-    }
+	@Override
+	protected void doEndGroup(Group group, StringBuilder context) {
+		context.append(")");
+	}
+
 }
