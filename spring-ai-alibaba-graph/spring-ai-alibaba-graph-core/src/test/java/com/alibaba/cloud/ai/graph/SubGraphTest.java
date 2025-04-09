@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.exception.NodeInterruptException;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import lombok.extern.slf4j.Slf4j;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
@@ -91,57 +92,7 @@ public class SubGraphTest {
 			.registerKeyAndStrategy("b", (o, o2) -> o2)
 			.registerKeyAndStrategy("c", (o, o2) -> o2)
 			.registerKeyAndStrategy("steps", (o, o2) -> o2)
-			.registerKeyAndStrategy("messages", (oldValue, newValue) -> {
-				if (newValue == null) {
-					return oldValue;
-				}
-
-				boolean oldValueIsList = oldValue instanceof List<?>;
-
-				if (oldValueIsList && newValue instanceof AppenderChannel.RemoveIdentifier<?>) {
-					var result = new ArrayList<>((List<Object>) oldValue);
-					removeFromList(result, (AppenderChannel.RemoveIdentifier) newValue);
-					return unmodifiableList(result);
-				}
-
-				List<Object> list = null;
-				if (newValue instanceof List) {
-					list = new ArrayList<>((List<?>) newValue);
-				}
-				else if (newValue.getClass().isArray()) {
-					list = new ArrayList<>(Arrays.asList((Object[]) newValue));
-				}
-				else if (newValue instanceof Collection) {
-					list = new ArrayList<>((Collection<?>) newValue);
-				}
-
-				if (oldValueIsList) {
-					List<Object> oldList = (List<Object>) oldValue;
-					if (list != null) {
-						if (list.isEmpty()) {
-							return oldValue;
-						}
-						if (oldValueIsList) {
-							var result = evaluateRemoval((List<Object>) oldValue, list);
-							List<Object> mergedList = Stream
-								.concat(result.oldValues().stream(), result.newValues().stream())
-								.distinct()
-								.collect(Collectors.toList());
-							return mergedList;
-						}
-						oldList.addAll(list);
-					}
-					else {
-						oldList.add(newValue);
-					}
-					return oldList;
-				}
-				else {
-					ArrayList<Object> arrayResult = new ArrayList<>();
-					arrayResult.add(newValue);
-					return arrayResult;
-				}
-			});
+			.registerKeyAndStrategy("messages", new AppendStrategy());
 	}
 
 	@Test
