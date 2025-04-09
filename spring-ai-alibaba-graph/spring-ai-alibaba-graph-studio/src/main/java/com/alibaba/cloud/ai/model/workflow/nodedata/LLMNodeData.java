@@ -32,6 +32,9 @@ public class LLMNodeData extends NodeData {
 
 	private MemoryConfig memoryConfig;
 
+	public LLMNodeData() {
+	}
+
 	public LLMNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
 		super(inputs, outputs);
 	}

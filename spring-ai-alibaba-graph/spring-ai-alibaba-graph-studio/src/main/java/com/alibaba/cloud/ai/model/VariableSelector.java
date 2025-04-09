@@ -35,6 +35,9 @@ public class VariableSelector {
 	 */
 	private String label;
 
+	public VariableSelector() {
+	}
+
 	/**
 	 * Only namespace and name is required for a valid selector.
 	 * @param namespace An isolation domain of the variable

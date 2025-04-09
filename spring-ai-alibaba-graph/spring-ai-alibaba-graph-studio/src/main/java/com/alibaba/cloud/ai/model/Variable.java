@@ -33,6 +33,9 @@ public class Variable {
 
 	private Map<String, Object> extraProperties;
 
+	public Variable() {
+	}
+
 	/**
 	 * Only name and valueType is required
 	 * @param name a valid variable name

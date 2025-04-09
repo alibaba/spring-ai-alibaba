@@ -27,6 +27,9 @@ public class CodeNodeData extends NodeData {
 
 	private String codeLanguage;
 
+	public CodeNodeData() {
+	}
+
 	public CodeNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
 		super(inputs, outputs);
 	}
