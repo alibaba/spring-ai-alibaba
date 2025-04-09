@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.tool.support.serpapi;
+package com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi;
+
+import static com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi.SerpApiProperties.SERP_API_URL;
+import static com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi.SerpApiProperties.USER_AGENT_VALUE;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,9 +41,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import static com.alibaba.cloud.ai.example.manus.tool.support.serpapi.SerpApiProperties.SERP_API_URL;
-import static com.alibaba.cloud.ai.example.manus.tool.support.serpapi.SerpApiProperties.USER_AGENT_VALUE;
 
 public class SerpApiService {
 

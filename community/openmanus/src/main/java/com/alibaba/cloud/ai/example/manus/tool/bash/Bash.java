@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.tool;
+package com.alibaba.cloud.ai.example.manus.tool.bash;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
-import com.alibaba.cloud.ai.example.manus.tool.support.llmbash.BashProcess;
+import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import org.slf4j.Logger;
@@ -40,6 +40,9 @@ public class Bash implements ToolCallBiFunctionDef {
 	 */
 	private String workingDirectoryPath;
 
+	// 添加操作系统信息
+	private static final String osName = System.getProperty("os.name");
+
 	private static String PARAMETERS = """
 			{
 				"type": "object",
@@ -53,22 +56,25 @@ public class Bash implements ToolCallBiFunctionDef {
 			}
 			""";
 
-	private static final String name = "bash";
+	private final String name = "bash";
 
-	private static final String description = """
-			Execute a bash command in the terminal.
-			* Long running commands: For commands that may run indefinitely, it should be run in the background and the output should be redirected to a file, e.g. command = `python3 app.py > server.log 2>&1 &`.
-			* Interactive: If a bash command returns exit code `-1`, this means the process is not yet finished. The assistant must then send a second call to terminal with an empty `command` (which will retrieve any additional logs), or it can send additional text (set `command` to the text) to STDIN of the running process, or it can send command=`ctrl+c` to interrupt the process.
-			* Timeout: If a command execution result says "Command timed out. Sending SIGINT to the process", the assistant should retry running the command in the background.
-			""";
+	private final String description = String.format(
+			"""
+					Execute a bash command in the terminal (Current OS: %s).
+						* Long running commands: For commands that may run indefinitely, it should be run in the background and the output should be redirected to a file, e.g. command = `python3 app.py > server.log 2>&1 &`.
+						* Interactive: If a bash command returns exit code `-1`, this means the process is not yet finished. The assistant must then send a second call to terminal with an empty `command` (which will retrieve any additional logs), or it can send additional text (set `command` to the text) to STDIN of the running process, or it can send command=`ctrl+c` to interrupt the process.
+						* Timeout: If a command execution result says "Command timed out. Sending SIGINT to the process", the assistant should retry running the command in the background.
 
-	public static OpenAiApi.FunctionTool getToolDefinition() {
+					""",
+			osName);
+
+	public OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
 		OpenAiApi.FunctionTool functionTool = new OpenAiApi.FunctionTool(function);
 		return functionTool;
 	}
 
-	public static FunctionToolCallback getFunctionToolCallback(String workingDirectoryPath) {
+	public FunctionToolCallback getFunctionToolCallback(String workingDirectoryPath) {
 		return FunctionToolCallback.builder(name, new Bash(workingDirectoryPath))
 			.description(description)
 			.inputSchema(PARAMETERS)
@@ -86,6 +92,7 @@ public class Bash implements ToolCallBiFunctionDef {
 
 	public ToolExecuteResult run(String toolInput) {
 		log.info("Bash toolInput:" + toolInput);
+		log.info("Current operating system: " + osName);
 		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 		});
 		String command = (String) toolInputMap.get("command");
@@ -93,9 +100,12 @@ public class Bash implements ToolCallBiFunctionDef {
 
 		List<String> commandList = new ArrayList<>();
 		commandList.add(command);
-		List<String> result = BashProcess.executeCommand(commandList, workingDirectoryPath);
-		this.lastResult = String.join("\n", result);
 
+		// 使用ShellExecutorFactory创建对应操作系统的执行器
+		ShellCommandExecutor executor = ShellExecutorFactory.createExecutor();
+		log.info("Using shell executor for OS: " + osName);
+		List<String> result = executor.execute(commandList, workingDirectoryPath);
+		this.lastResult = String.join("\n", result);
 		return new ToolExecuteResult(JSON.toJSONString(result));
 	}
 
@@ -155,6 +165,11 @@ public class Bash implements ToolCallBiFunctionDef {
 
 				            """, workingDirectoryPath, lastCommand.isEmpty() ? "No command executed yet" : lastCommand,
 				lastResult.isEmpty() ? "No result yet" : lastResult);
+	}
+
+	@Override
+	public void cleanup(String planId) {
+		log.info("Cleaned up resources for plan: " + planId);
 	}
 
 }
