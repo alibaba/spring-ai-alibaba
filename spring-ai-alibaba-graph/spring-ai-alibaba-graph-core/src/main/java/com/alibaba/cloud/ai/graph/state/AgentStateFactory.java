@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.state;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-
 import java.util.Map;
 import java.util.function.Function;
 
