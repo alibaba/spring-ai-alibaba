@@ -61,10 +61,11 @@ public class Bash implements ToolCallBiFunctionDef {
 	private final String description = String.format(
 			"""
 					Execute a bash command in the terminal (Current OS: %s).
-					* Long running commands: For commands that may run indefinitely, it should be run in the background and the output should be redirected to a file, e.g. command = `python3 app.py > server.log 2>&1 &`.
-					* Interactive: If a bash command returns exit code `-1`, this means the process is not yet finished. The assistant must then send a second call to terminal with an empty `command` (which will retrieve any additional logs), or it can send additional text (set `command` to the text) to STDIN of the running process, or it can send command=`ctrl+c` to interrupt the process.
-					* Timeout: If a command execution result says "Command timed out. Sending SIGINT to the process", the assistant should retry running the command in the background.
-					 """,
+						* Long running commands: For commands that may run indefinitely, it should be run in the background and the output should be redirected to a file, e.g. command = `python3 app.py > server.log 2>&1 &`.
+						* Interactive: If a bash command returns exit code `-1`, this means the process is not yet finished. The assistant must then send a second call to terminal with an empty `command` (which will retrieve any additional logs), or it can send additional text (set `command` to the text) to STDIN of the running process, or it can send command=`ctrl+c` to interrupt the process.
+						* Timeout: If a command execution result says "Command timed out. Sending SIGINT to the process", the assistant should retry running the command in the background.
+
+					""",
 			osName);
 
 	public OpenAiApi.FunctionTool getToolDefinition() {
@@ -91,6 +92,7 @@ public class Bash implements ToolCallBiFunctionDef {
 
 	public ToolExecuteResult run(String toolInput) {
 		log.info("Bash toolInput:" + toolInput);
+		log.info("Current operating system: " + osName);
 		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 		});
 		String command = (String) toolInputMap.get("command");
@@ -101,6 +103,7 @@ public class Bash implements ToolCallBiFunctionDef {
 
 		// 使用ShellExecutorFactory创建对应操作系统的执行器
 		ShellCommandExecutor executor = ShellExecutorFactory.createExecutor();
+		log.info("Using shell executor for OS: " + osName);
 		List<String> result = executor.execute(commandList, workingDirectoryPath);
 		this.lastResult = String.join("\n", result);
 		return new ToolExecuteResult(JSON.toJSONString(result));
