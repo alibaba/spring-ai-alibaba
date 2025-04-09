@@ -15,6 +15,10 @@
  */
 package com.alibaba.cloud.ai.example.manus.llm;
 
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -168,7 +172,11 @@ public class LlmService {
 
 			""";
 
-	private final ChatClient chatClient;
+	private static final Logger log = LoggerFactory.getLogger(LlmService.class);
+
+	private final ConcurrentHashMap<String, AgentChatClientWrapper> agentClients = new ConcurrentHashMap<>();
+
+	// private final ChatClient chatClient;
 
 	private ChatMemory memory = new InMemoryChatMemory();
 
@@ -178,13 +186,16 @@ public class LlmService {
 
 	private final ChatClient finalizeChatClient;
 
-	private ChatMemory finalizeMemory = new InMemoryChatMemory();
+	// private ChatMemory finalizeMemory = new InMemoryChatMemory();
 
 	private final ChatModel chatModel;
 
+	private final ToolCallbackProvider toolCallbackProvider;
+
 	public LlmService(ChatModel chatModel, ToolCallbackProvider toolCallbackProvider) {
 		this.chatModel = chatModel;
-
+		this.toolCallbackProvider = toolCallbackProvider;
+		// 执行和总结规划，用相同的memory
 		this.planningChatClient = ChatClient.builder(chatModel)
 			.defaultSystem(PLANNING_SYSTEM_PROMPT)
 			.defaultAdvisors(new MessageChatMemoryAdvisor(planningMemory))
@@ -192,22 +203,60 @@ public class LlmService {
 			.defaultTools(toolCallbackProvider)
 			.build();
 
-		this.chatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(new MessageChatMemoryAdvisor(memory))
-			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultTools(toolCallbackProvider)
-			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
-			.build();
+		// // 每个agent执行过程中，用独立的memroy
+		// this.chatClient = ChatClient.builder(chatModel)
+		// .defaultAdvisors(new MessageChatMemoryAdvisor(memory))
+		// .defaultAdvisors(new SimpleLoggerAdvisor())
+		// .defaultTools(toolCallbackProvider)
+		// .defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+		// .build();
 
 		this.finalizeChatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(new MessageChatMemoryAdvisor(memory))
+			.defaultAdvisors(new MessageChatMemoryAdvisor(planningMemory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.build();
 
 	}
 
-	public ChatClient getChatClient() {
-		return chatClient;
+	public static class AgentChatClientWrapper {
+
+		private final ChatClient chatClient;
+
+		private final ChatMemory memory;
+
+		public AgentChatClientWrapper(ChatClient chatClient, ChatMemory memory) {
+			this.chatClient = chatClient;
+			this.memory = memory;
+		}
+
+		public ChatClient getChatClient() {
+			return chatClient;
+		}
+
+		public ChatMemory getMemory() {
+			return memory;
+		}
+
+	}
+
+	public AgentChatClientWrapper getAgentChatClient(String planId) {
+		return agentClients.computeIfAbsent(planId, k -> {
+			ChatMemory agentMemory = new InMemoryChatMemory();
+			ChatClient agentChatClient = ChatClient.builder(chatModel)
+				.defaultAdvisors(new MessageChatMemoryAdvisor(agentMemory))
+				.defaultAdvisors(new SimpleLoggerAdvisor())
+				.defaultTools(toolCallbackProvider)
+				.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+				.build();
+			return new AgentChatClientWrapper(agentChatClient, agentMemory);
+		});
+	}
+
+	public void removeAgentChatClient(String planId) {
+		AgentChatClientWrapper wrapper = agentClients.remove(planId);
+		if (wrapper != null) {
+			log.info("Removed and cleaned up AgentChatClientWrapper for planId: {}", planId);
+		}
 	}
 
 	public ChatClient getPlanningChatClient() {
@@ -216,10 +265,6 @@ public class LlmService {
 
 	public ChatClient getFinalizeChatClient() {
 		return finalizeChatClient;
-	}
-
-	public ChatMemory getMemory() {
-		return memory;
 	}
 
 	public ChatMemory getPlanningMemory() {
