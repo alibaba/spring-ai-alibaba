@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-document-reader-gitlab</artifactId>
-    <name>Spring AI Alibaba Starter GitLab Document Reader</name>
+    <name>Spring AI Alibaba Starter Document Reader GitLab</name>
     <description>gitlab reader for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
