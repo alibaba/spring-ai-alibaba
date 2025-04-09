@@ -69,7 +69,7 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 		this.accessPassWord = accessPassWord;
 	}
 
-	public Map<String, ?> toClientParams() {
+	public Map<String, Object> toClientParams() {
 		Map<String, Object> params = new HashMap<>();
 		params.put("instanceId", this.getInstanceId());
 		params.put("endpoint", this.getEndpoint());
