@@ -136,6 +136,11 @@ public abstract class BaseAgent {
 				CURRENT TASK STEP ({currentStepIndex}):
 				{stepText}
 
+				IMPORTANT INSTRUCTIONS:
+				1. When using tools, execute them directly without explanations
+				2. Do not provide reasoning or descriptions before tool calls
+				3. Focus on immediate action rather than explanation
+
 				""".formatted(osName, osVersion, osArch, currentDateTime);
 
 		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(stepPrompt);
