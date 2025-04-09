@@ -40,8 +40,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	private final TextFileService textFileService;
 
 	private BaseAgent agent;
-	
-		public TextFileOperator(String workingDirectoryPath, TextFileService textFileService) {
+
+	public TextFileOperator(String workingDirectoryPath, TextFileService textFileService) {
 		this.workingDirectoryPath = workingDirectoryPath;
 		this.textFileService = textFileService;
 	}
@@ -114,7 +114,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 
 	public ToolExecuteResult run(String toolInput) {
 		log.info("TextFileOperator toolInput:" + toolInput);
-				try {
+		try {
 			Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 			});
 			String planId = agent.getPlanId();
