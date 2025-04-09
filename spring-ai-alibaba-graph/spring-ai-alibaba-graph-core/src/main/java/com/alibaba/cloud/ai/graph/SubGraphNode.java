@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.state.AgentState;
-
 import static java.lang.String.format;
 
 /**

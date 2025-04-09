@@ -15,11 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
-import com.alibaba.cloud.ai.graph.state.AgentState;
-
 import static java.lang.String.format;
 
 /**
@@ -42,12 +37,16 @@ public class NodeOutput {
 	 */
 	private final OverAllState state;
 
-	/**
-	 * If the output is from a subgraph.
-	 */
-	@Setter(AccessLevel.PROTECTED)
-	@Getter
 	private boolean subGraph = false;
+
+	public boolean isSubGraph() {
+		return subGraph;
+	}
+
+	public NodeOutput setSubGraph(boolean subGraph) {
+		this.subGraph = subGraph;
+		return this;
+	}
 
 	public String node() {
 		return node;
