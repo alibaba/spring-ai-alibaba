@@ -26,6 +26,9 @@ public class BranchNodeData extends NodeData {
 
 	private List<Case> cases;
 
+	public BranchNodeData() {
+	}
+
 	public BranchNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
 		super(inputs, outputs);
 	}
