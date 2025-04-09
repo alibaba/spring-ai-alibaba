@@ -85,16 +85,17 @@ public class OpenSearchVectorStoreOptions {
 	 */
 	private String index = "saa_default_index";
 
-	public String getSimilarityFunction () {
+	public String getSimilarityFunction() {
 		return similarityFunction;
 	}
 
-	public OpenSearchVectorStoreOptions setSimilarityFunction (String similarityFunction) {
+	public OpenSearchVectorStoreOptions setSimilarityFunction(String similarityFunction) {
 		this.similarityFunction = similarityFunction;
 		return this;
 	}
 
 	private String similarityFunction = "cosinesimil";
+
 	/**
 	 * The fields to be output in the search results.
 	 */
