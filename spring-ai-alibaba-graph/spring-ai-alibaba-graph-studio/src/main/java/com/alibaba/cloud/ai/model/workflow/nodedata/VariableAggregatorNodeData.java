@@ -57,6 +57,9 @@ public class VariableAggregatorNodeData extends NodeData {
 		return this;
 	}
 
+	public VariableAggregatorNodeData() {
+	}
+
 	public VariableAggregatorNodeData(List<VariableSelector> inputs, List<Variable> outputs,
 			List<List<String>> variables, String outputType, AdvancedSettings advancedSettings) {
 		super(inputs, outputs);

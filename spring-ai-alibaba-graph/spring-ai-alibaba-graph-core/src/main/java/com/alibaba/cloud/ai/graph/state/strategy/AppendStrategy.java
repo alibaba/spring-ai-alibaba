@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -33,6 +34,10 @@ public class AppendStrategy implements KeyStrategy {
 	public Object apply(Object oldValue, Object newValue) {
 		if (newValue == null) {
 			return oldValue;
+		}
+
+		if (oldValue instanceof Optional<?> oldValueOptional) {
+			oldValue = oldValueOptional.orElse(null);
 		}
 
 		boolean oldValueIsList = oldValue instanceof List<?>;
@@ -48,7 +53,7 @@ public class AppendStrategy implements KeyStrategy {
 			list = new ArrayList<>((List<?>) newValue);
 		}
 		else if (newValue.getClass().isArray()) {
-			list = new ArrayList<>(Arrays.asList((Object[]) newValue));
+			list = Arrays.asList((Object[]) newValue);
 		}
 		else if (newValue instanceof Collection) {
 			list = new ArrayList<>((Collection<?>) newValue);
