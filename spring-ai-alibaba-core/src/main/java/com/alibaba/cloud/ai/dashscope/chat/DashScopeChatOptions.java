@@ -28,13 +28,14 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.util.Assert;
 
 /**
  * @author nottyjay
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions {
+public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions {
 
 	// @formatter:off
   /** ID of the model to use. */
@@ -124,29 +125,6 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   private @JsonProperty("vl_high_resolution_images") Boolean vlHighResolutionImages;
 
   /**
-   * Tool Function Callbacks to register with the ChatClient. For Prompt Options the
-   * functionCallbacks are automatically enabled for the duration of the prompt execution. For
-   * Default Options the functionCallbacks are registered but disabled by default. Use the
-   * enableFunctions to set the functions from the registry to be used by the ChatClient chat
-   * completion requests.
-   */
-  @JsonIgnore
-  private List<FunctionCallback> functionCallbacks = new ArrayList<>();
-
-  /**
-   * List of functions, identified by their names, to configure for function calling in the chat
-   * completion requests. Functions with those names must exist in the functionCallbacks registry.
-   * The {@link #functionCallbacks} from the PromptOptions are automatically enabled for the
-   * duration of the prompt execution.
-   *
-   * <p>Note that function enabled with the default options are enabled for all chat completion
-   * requests. This could impact the token count and the billing. If the functions is set in a
-   * prompt options, then the enabled functions are only active for the duration of this prompt
-   * execution.
-   */
-  @JsonIgnore private Set<String> functions = new HashSet<>();
-
-  /**
    * Indicate if the request is multi model
    */
   private @JsonProperty("multi_model") Boolean multiModel = false;
@@ -158,6 +136,15 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
    */
   @JsonIgnore
   private Boolean proxyToolCalls;
+
+  @JsonIgnore
+  private List<FunctionCallback> toolCallbacks = new ArrayList();
+
+  @JsonIgnore
+  private Set<String> toolNames = new HashSet();
+
+  @JsonIgnore
+  private Boolean internalToolExecutionEnabled;
 
   @JsonIgnore
   private Map<String, Object> toolContext;
@@ -303,22 +290,22 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
 
   @Override
   public List<FunctionCallback> getFunctionCallbacks() {
-    return this.functionCallbacks;
+    return this.toolCallbacks;
   }
 
   @Override
-  public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-    this.functionCallbacks = functionCallbacks;
+  public void setFunctionCallbacks(List<FunctionCallback> toolCallbacks) {
+    this.toolCallbacks = toolCallbacks;
   }
 
   @Override
   public Set<String> getFunctions() {
-    return this.functions;
+    return this.toolNames;
   }
 
   @Override
-  public void setFunctions(Set<String> functions) {
-    this.functions = functions;
+  public void setFunctions(Set<String> toolNames) {
+    this.toolNames = toolNames;
   }
 
   @Override
@@ -353,6 +340,30 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
 
   public void setMultiModel(Boolean multiModel) {
       this.  multiModel = multiModel;
+  }
+
+  @Override public List<FunctionCallback> getToolCallbacks() {
+    return this.toolCallbacks;
+  }
+
+  @Override public void setToolCallbacks(List<FunctionCallback> toolCallbacks) {
+    this.toolCallbacks = toolCallbacks;
+  }
+
+  @Override public Set<String> getToolNames() {
+    return this.toolNames;
+  }
+
+  @Override public void setToolNames(Set<String> toolNames) {
+      this.toolNames = toolNames;
+  }
+
+  @Override public Boolean isInternalToolExecutionEnabled() {
+    return this.internalToolExecutionEnabled;
+  }
+
+  @Override public void setInternalToolExecutionEnabled(Boolean internalToolExecutionEnabled) {
+    this.internalToolExecutionEnabled = internalToolExecutionEnabled;
   }
 
   public static DashscopeChatOptionsBuilder builder() {
@@ -428,19 +439,19 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
 
     public DashscopeChatOptionsBuilder withFunctionCallbacks(
         List<FunctionCallback> functionCallbacks) {
-      this.options.functionCallbacks = functionCallbacks;
+      this.options.toolCallbacks = functionCallbacks;
       return this;
     }
 
     public DashscopeChatOptionsBuilder withFunction(String functionName) {
       Assert.hasText(functionName, "Function name must not be empty");
-      this.options.functions.add(functionName);
+      this.options.toolNames.add(functionName);
       return this;
     }
 
     public DashscopeChatOptionsBuilder withFunctions(Set<String> functionNames) {
       Assert.notNull(functionNames, "Function names must not be null");
-      this.options.functions = functionNames;
+      this.options.toolNames = functionNames;
       return this;
     }
 
@@ -515,13 +526,13 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
 	if (o == null || getClass() != o.getClass()) return false;
 	DashScopeChatOptions that = (DashScopeChatOptions) o;
 
-    return Objects.equals(model, that.model) && Objects.equals(stream, that.stream) && Objects.equals(temperature, that.temperature) && Objects.equals(seed, that.seed) && Objects.equals(topP, that.topP) && Objects.equals(topK, that.topK) && Objects.equals(stop, that.stop) && Objects.equals(enableSearch, that.enableSearch) && Objects.equals(responseFormat, that.responseFormat) && Objects.equals(incrementalOutput, that.incrementalOutput) && Objects.equals(repetitionPenalty, that.repetitionPenalty) && Objects.equals(tools, that.tools) && Objects.equals(toolChoice, that.toolChoice) && Objects.equals(vlHighResolutionImages, that.vlHighResolutionImages) && Objects.equals(functionCallbacks, that.functionCallbacks) && Objects.equals(functions, that.functions) && Objects.equals(multiModel, that.multiModel) && Objects.equals(toolContext, that.toolContext) && Objects.equals(proxyToolCalls, that.proxyToolCalls);
+    return Objects.equals(model, that.model) && Objects.equals(stream, that.stream) && Objects.equals(temperature, that.temperature) && Objects.equals(seed, that.seed) && Objects.equals(topP, that.topP) && Objects.equals(topK, that.topK) && Objects.equals(stop, that.stop) && Objects.equals(enableSearch, that.enableSearch) && Objects.equals(responseFormat, that.responseFormat) && Objects.equals(incrementalOutput, that.incrementalOutput) && Objects.equals(repetitionPenalty, that.repetitionPenalty) && Objects.equals(tools, that.tools) && Objects.equals(toolChoice, that.toolChoice) && Objects.equals(vlHighResolutionImages, that.vlHighResolutionImages) && Objects.equals(toolCallbacks, that.toolCallbacks) && Objects.equals(toolNames, that.toolNames) && Objects.equals(multiModel, that.multiModel) && Objects.equals(toolContext, that.toolContext) && Objects.equals(proxyToolCalls, that.proxyToolCalls);
   }
 
   @Override
   public int hashCode() {
 
-    return Objects.hash(model, stream, temperature, seed, topP, topK, stop, enableSearch, responseFormat, incrementalOutput, repetitionPenalty, tools, toolChoice, vlHighResolutionImages, functionCallbacks, functions, multiModel, toolContext, proxyToolCalls);
+    return Objects.hash(model, stream, temperature, seed, topP, topK, stop, enableSearch, responseFormat, incrementalOutput, repetitionPenalty, tools, toolChoice, vlHighResolutionImages, toolCallbacks, toolNames, multiModel, toolContext, proxyToolCalls);
   }
 
   @Override
