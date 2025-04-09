@@ -16,16 +16,9 @@
 package com.alibaba.cloud.ai.model.workflow;
 
 import com.alibaba.cloud.ai.model.VariableSelector;
-import lombok.Data;
-import lombok.experimental.Accessors;
 
 import java.util.List;
 
-/**
- * A Case represents a condition in ConditionalEdge
- */
-@Data
-@Accessors(chain = true)
 public class Case {
 
 	private String id;
@@ -34,8 +27,33 @@ public class Case {
 
 	private List<Condition> conditions;
 
-	@Data
-	@Accessors(chain = true)
+	public String getId() {
+		return id;
+	}
+
+	public Case setId(String id) {
+		this.id = id;
+		return this;
+	}
+
+	public String getLogicalOperator() {
+		return logicalOperator;
+	}
+
+	public Case setLogicalOperator(String logicalOperator) {
+		this.logicalOperator = logicalOperator;
+		return this;
+	}
+
+	public List<Condition> getConditions() {
+		return conditions;
+	}
+
+	public Case setConditions(List<Condition> conditions) {
+		this.conditions = conditions;
+		return this;
+	}
+
 	public static class Condition {
 
 		private String value;
@@ -46,6 +64,42 @@ public class Case {
 		private String comparisonOperator;
 
 		private VariableSelector variableSelector;
+
+		public String getValue() {
+			return value;
+		}
+
+		public Condition setValue(String value) {
+			this.value = value;
+			return this;
+		}
+
+		public String getVarType() {
+			return varType;
+		}
+
+		public Condition setVarType(String varType) {
+			this.varType = varType;
+			return this;
+		}
+
+		public String getComparisonOperator() {
+			return comparisonOperator;
+		}
+
+		public Condition setComparisonOperator(String comparisonOperator) {
+			this.comparisonOperator = comparisonOperator;
+			return this;
+		}
+
+		public VariableSelector getVariableSelector() {
+			return variableSelector;
+		}
+
+		public Condition setVariableSelector(VariableSelector variableSelector) {
+			this.variableSelector = variableSelector;
+			return this;
+		}
 
 	}
 
