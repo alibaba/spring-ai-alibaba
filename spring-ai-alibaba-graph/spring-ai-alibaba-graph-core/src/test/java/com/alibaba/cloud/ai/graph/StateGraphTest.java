@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
@@ -253,57 +254,7 @@ public class StateGraphTest {
 
 	private static OverAllState getOverAllState() {
 		return new OverAllState().registerKeyAndStrategy("steps", (o, o2) -> o2)
-			.registerKeyAndStrategy("messages", (oldValue, newValue) -> {
-				if (newValue == null) {
-					return oldValue;
-				}
-
-				boolean oldValueIsList = oldValue instanceof List<?>;
-
-				if (oldValueIsList && newValue instanceof AppenderChannel.RemoveIdentifier<?>) {
-					var result = new ArrayList<>((List<Object>) oldValue);
-					removeFromList(result, (AppenderChannel.RemoveIdentifier) newValue);
-					return unmodifiableList(result);
-				}
-
-				List<Object> list = null;
-				if (newValue instanceof List) {
-					list = new ArrayList<>((List<?>) newValue);
-				}
-				else if (newValue.getClass().isArray()) {
-					list = new ArrayList<>(Arrays.asList((Object[]) newValue));
-				}
-				else if (newValue instanceof Collection) {
-					list = new ArrayList<>((Collection<?>) newValue);
-				}
-
-				if (oldValueIsList) {
-					List<Object> oldList = (List<Object>) oldValue;
-					if (list != null) {
-						if (list.isEmpty()) {
-							return oldValue;
-						}
-						if (oldValueIsList) {
-							var result = evaluateRemoval((List<Object>) oldValue, list);
-							List<Object> mergedList = Stream
-								.concat(result.oldValues().stream(), result.newValues().stream())
-								.distinct()
-								.collect(Collectors.toList());
-							return mergedList;
-						}
-						oldList.addAll(list);
-					}
-					else {
-						oldList.add(newValue);
-					}
-					return oldList;
-				}
-				else {
-					ArrayList<Object> arrayResult = new ArrayList<>();
-					arrayResult.add(newValue);
-					return arrayResult;
-				}
-			});
+			.registerKeyAndStrategy("messages", new AppendStrategy());
 	}
 
 	@Test
