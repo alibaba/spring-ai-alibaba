@@ -15,6 +15,12 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.std;
 
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
+import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -24,13 +30,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import lombok.extern.slf4j.Slf4j;
-import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
-import com.alibaba.cloud.ai.graph.state.AgentState;
-import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
-
-@Slf4j
 public class ObjectStreamStateSerializer<State extends AgentState> extends StateSerializer<State> {
+
+	private static final Logger log = LoggerFactory.getLogger(ObjectStreamStateSerializer.class);
 
 	static class ListSerializer implements NullableObjectSerializer<List<Object>> {
 

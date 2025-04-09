@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.std;
 
+import com.alibaba.cloud.ai.graph.serializer.Serializer;
+
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -24,9 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import lombok.NonNull;
-import com.alibaba.cloud.ai.graph.serializer.Serializer;
 
 import static java.lang.String.format;
 
@@ -90,19 +89,19 @@ public class SerializerMapper {
 
 	private final Map<Key, Serializer<?>> _serializers = new HashMap<>();
 
-	public SerializerMapper register(@NonNull Class<?> clazz, @NonNull Serializer<?> serializer) {
+	public SerializerMapper register(Class<?> clazz, Serializer<?> serializer) {
 		_serializers.put(Key.of(clazz), serializer);
 		return this;
 	}
 
-	public boolean unregister(@NonNull Class<? extends Serializer<?>> clazz) {
+	public boolean unregister(Class<? extends Serializer<?>> clazz) {
 		Objects.requireNonNull(clazz, "Serializer's class cannot be null");
 		Serializer<?> serializer = _serializers.remove(Key.of(clazz));
 		return serializer != null;
 	}
 
 	@SuppressWarnings("unchecked")
-	public Optional<Serializer<Object>> getSerializer(@NonNull Class<?> clazz) {
+	public Optional<Serializer<Object>> getSerializer(Class<?> clazz) {
 		Serializer<?> ser = _serializers.get(Key.of(clazz));
 
 		return (ser != null) ?
@@ -118,7 +117,7 @@ public class SerializerMapper {
 	}
 
 	@SuppressWarnings("unchecked")
-	public Optional<Serializer<Object>> getSerializer(@NonNull String className) {
+	public Optional<Serializer<Object>> getSerializer(String className) {
 		return Optional.ofNullable((Serializer<Object>) _serializers.get(Key.of(className)));
 	}
 
@@ -126,7 +125,7 @@ public class SerializerMapper {
 		return DEFAULT_SERIALIZER;
 	}
 
-	protected final ObjectOutput objectOutputWithMapper(@NonNull ObjectOutput out) {
+	protected final ObjectOutput objectOutputWithMapper(ObjectOutput out) {
 
 		final ObjectOutputWithMapper mapperOut;
 		if (out instanceof ObjectOutputWithMapper) {
@@ -139,7 +138,7 @@ public class SerializerMapper {
 		return mapperOut;
 	}
 
-	protected final ObjectInput objectInputWithMapper(@NonNull ObjectInput in) {
+	protected final ObjectInput objectInputWithMapper(ObjectInput in) {
 
 		final ObjectInputWithMapper mapperIn;
 		if (in instanceof ObjectInputWithMapper) {
