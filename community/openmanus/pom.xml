@@ -14,7 +14,8 @@
         <spring-ai.version>1.0.0-M6</spring-ai.version>
         <spring-boot.version>3.2.0</spring-boot.version>
         <jsoup-version>1.18.1</jsoup-version>
-
+        <moditect-maven-plugin.version>1.2.0.Final</moditect-maven-plugin.version>
+        <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <spring-javaformat-maven-plugin.version>0.0.39</spring-javaformat-maven-plugin.version>
     </properties>
@@ -232,6 +233,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-source-plugin</artifactId>
+                <version>${maven-source-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -273,6 +275,7 @@
             <plugin>
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
+                <version>${moditect-maven-plugin.version}</version>
             </plugin>
             <plugin>
                 <groupId>io.spring.javaformat</groupId>
