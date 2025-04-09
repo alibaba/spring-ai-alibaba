@@ -21,8 +21,9 @@ import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.Serializer;
 import com.alibaba.cloud.ai.service.dsl.nodes.StartNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.serialize.YamlSerializer;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -30,8 +31,9 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@Slf4j
 public class StartNodeDataConverterTest {
+
+	private static final Logger log = LoggerFactory.getLogger(StartNodeDataConverterTest.class);
 
 	private final NodeDataConverter<StartNodeData> nodeDataConverter;
 

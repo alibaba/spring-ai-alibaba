@@ -16,16 +16,30 @@
 package com.alibaba.cloud.ai.exception;
 
 import com.alibaba.cloud.ai.common.ReturnCode;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
 public class NotImplementedException extends RuntimeException {
 
 	private int code;
 
 	private String msg;
+
+	public int getCode() {
+		return code;
+	}
+
+	public NotImplementedException setCode(int code) {
+		this.code = code;
+		return this;
+	}
+
+	public String getMsg() {
+		return msg;
+	}
+
+	public NotImplementedException setMsg(String msg) {
+		this.msg = msg;
+		return this;
+	}
 
 	public NotImplementedException() {
 		super();

@@ -15,9 +15,6 @@
  */
 package com.alibaba.cloud.ai.common;
 
-import lombok.Data;
-
-@Data
 public class R<T> {
 
 	private Integer code;
@@ -30,6 +27,42 @@ public class R<T> {
 
 	public R() {
 		this.timestamp = System.currentTimeMillis();
+	}
+
+	public Integer getCode() {
+		return code;
+	}
+
+	public R<T> setCode(Integer code) {
+		this.code = code;
+		return this;
+	}
+
+	public String getMsg() {
+		return msg;
+	}
+
+	public R<T> setMsg(String msg) {
+		this.msg = msg;
+		return this;
+	}
+
+	public T getData() {
+		return data;
+	}
+
+	public R<T> setData(T data) {
+		this.data = data;
+		return this;
+	}
+
+	public long getTimestamp() {
+		return timestamp;
+	}
+
+	public R<T> setTimestamp(long timestamp) {
+		this.timestamp = timestamp;
+		return this;
 	}
 
 	public static <T> R<T> success(T data) {
