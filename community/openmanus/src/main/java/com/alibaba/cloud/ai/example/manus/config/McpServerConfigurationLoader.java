@@ -34,54 +34,73 @@ public class McpServerConfigurationLoader implements ApplicationListener<Applica
 
 	@Override
 	public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
+		logger.info("开始处理 MCP 服务器配置...");
 		ConfigurableEnvironment environment = event.getEnvironment();
-		if (!Boolean.parseBoolean(environment.getProperty("spring.ai.mcp.enabled", "true"))) {
+		String enabled = environment.getProperty("spring.ai.mcp.enabled", "true");
+		logger.info("MCP 配置状态: enabled={}", enabled);
+
+		if (!Boolean.parseBoolean(enabled)) {
+			logger.info("MCP 配置已禁用，跳过处理");
 			return;
 		}
 
 		try {
 			// 读取原始配置文件
 			Resource resource = new ClassPathResource(CONFIG_FILE);
+			logger.info("加载配置文件: {}", resource.getURL());
 			ObjectMapper objectMapper = new ObjectMapper();
 
 			// 创建临时目录存放处理后的配置
 			Path tempDir = Files.createTempDirectory(TEMP_DIR_PREFIX);
 			tempDir.toFile().deleteOnExit();
-
 			Path tempConfigPath = tempDir.resolve(CONFIG_FILE);
+			logger.info("创建临时配置文件: {}", tempConfigPath);
 
 			// 读取并处理配置
 			try (InputStream is = resource.getInputStream()) {
 				JsonNode rootNode = objectMapper.readTree(is);
+				logger.debug("原始配置内容: {}", objectMapper.writeValueAsString(rootNode));
 
 				if (rootNode.has("mcpServers")) {
 					ObjectNode mcpServers = (ObjectNode) rootNode.get("mcpServers");
 					mcpServers.fields().forEachRemaining(entry -> {
+						String serverName = entry.getKey();
 						ObjectNode serverConfig = (ObjectNode) entry.getValue();
+						logger.info("处理服务器配置: {}", serverName);
+
 						if (serverConfig.has("command") && "npx".equals(serverConfig.get("command").asText())) {
 							String npxCommand = isWindows() ? WINDOWS_NPX : UNIX_NPX;
 							serverConfig.put("command", npxCommand);
+							logger.info("更新服务器 {} 的命令: {} -> {}", serverName, "npx", npxCommand);
 						}
 					});
 
 					// 将处理后的配置写入临时文件
 					objectMapper.writerWithDefaultPrettyPrinter().writeValue(tempConfigPath.toFile(), rootNode);
+					logger.debug("处理后的配置内容: {}", objectMapper.writeValueAsString(rootNode));
 
 					// 设置系统属性，指向新的配置文件位置
-					System.setProperty("spring.ai.mcp.client.stdio.servers-configuration",
-							"file:" + tempConfigPath.toAbsolutePath());
+					String newConfigPath = "file:" + tempConfigPath.toAbsolutePath();
+					System.setProperty("spring.ai.mcp.client.stdio.servers-configuration", newConfigPath);
+					logger.info("已更新配置文件路径: {}", newConfigPath);
 
-					logger.info("MCP server configuration processed for {} platform", getOsType());
+					logger.info("MCP 服务器配置处理完成，当前操作系统: {}", getOsType());
+				}
+				else {
+					logger.warn("配置文件中未找到 mcpServers 节点");
 				}
 			}
 		}
 		catch (IOException e) {
-			logger.error("Error processing MCP server configuration", e);
+			logger.error("处理 MCP 服务器配置时发生错误", e);
+			logger.error("错误详情: ", e);
 		}
 	}
 
 	private boolean isWindows() {
-		return System.getProperty("os.name").toLowerCase().contains("win");
+		String os = System.getProperty("os.name").toLowerCase();
+		logger.debug("当前操作系统: {}", os);
+		return os.contains("win");
 	}
 
 	private String getOsType() {
