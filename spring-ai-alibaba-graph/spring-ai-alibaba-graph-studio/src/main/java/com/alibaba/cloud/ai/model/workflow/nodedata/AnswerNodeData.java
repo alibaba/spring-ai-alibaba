@@ -29,6 +29,9 @@ public class AnswerNodeData extends NodeData {
 	// a string template
 	private String answer;
 
+	public AnswerNodeData() {
+	}
+
 	public AnswerNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
 		super(inputs, outputs);
 	}

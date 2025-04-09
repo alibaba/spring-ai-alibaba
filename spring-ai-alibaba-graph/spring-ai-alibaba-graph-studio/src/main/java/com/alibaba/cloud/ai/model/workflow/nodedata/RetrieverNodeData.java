@@ -54,6 +54,9 @@ public class RetrieverNodeData extends NodeData {
 		return this;
 	}
 
+	public RetrieverNodeData() {
+	}
+
 	public RetrieverNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
 		super(inputs, outputs);
 	}
