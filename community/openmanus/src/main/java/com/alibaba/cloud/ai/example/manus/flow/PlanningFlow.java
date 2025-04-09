@@ -17,13 +17,14 @@ package com.alibaba.cloud.ai.example.manus.flow;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
-import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration;
+import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,9 +34,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.time.LocalDateTime;
 
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -45,8 +44,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
-
-import com.alibaba.cloud.ai.example.manus.service.TextFileService;
 
 public class PlanningFlow extends BaseFlow {
 
@@ -63,21 +60,21 @@ public class PlanningFlow extends BaseFlow {
 	@Autowired
 	private LlmService llmService;
 
-	@Autowired
-	private ChromeDriverService chromeDriverService;
-
-	@Autowired
-	private TextFileService textFileService;
-
 	private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
 
 	// shared result state between agents.
 	private Map<String, Object> resultState;
 
-	public PlanningFlow(List<BaseAgent> agents, Map<String, Object> data, PlanExecutionRecorder recorder) {
-		super(agents, data, recorder);
+	// Store tool callback contexts
+	private final Map<String, ToolCallBackContext> toolCallbackMap;
 
-		executorKeys = new ArrayList<>();
+	public PlanningFlow(List<BaseAgent> agents, Map<String, Object> data, PlanExecutionRecorder recorder,
+			Map<String, ManusConfiguration.ToolCallBackContext> toolCallbackMap) {
+		super(agents, data, recorder);
+		this.toolCallbackMap = toolCallbackMap;
+		// 初始化Map字段
+		this.executorKeys = new ArrayList<>();
+		this.resultState = new HashMap<>();
 
 		if (data.containsKey("executors")) {
 			this.executorKeys = (List<String>) data.remove("executors");
@@ -102,9 +99,6 @@ public class PlanningFlow extends BaseFlow {
 				executorKeys.add(agent.getName().toUpperCase());
 			}
 		}
-
-		this.resultState = new HashMap<>();
-
 	}
 
 	public BaseAgent getExecutor(String stepType) {
@@ -203,8 +197,12 @@ public class PlanningFlow extends BaseFlow {
 			return "Execution failed: " + e.getMessage();
 		}
 		finally {
-			chromeDriverService.cleanup(activePlanId);
-			textFileService.cleanup(activePlanId);
+			llmService.removeAgentChatClient(activePlanId);
+			// Cleanup tool callback contexts
+			for (ToolCallBackContext context : toolCallbackMap.values()) {
+				// 清除工具回调上下文
+				context.getFunctionInstance().cleanup(activePlanId);
+			}
 		}
 	}
 
@@ -442,7 +440,7 @@ public class PlanningFlow extends BaseFlow {
 				executorParams.put(EXECUTION_ENV_KEY_STRING, "");
 				String stepResult = executor.run(executorParams);
 
-				markStepCompleted();
+				markStepCompleted(stepResult);
 
 				return stepResult;
 			}
@@ -457,7 +455,7 @@ public class PlanningFlow extends BaseFlow {
 		}
 	}
 
-	public void markStepCompleted() {
+	public void markStepCompleted(String stepNotes) {
 		if (currentStepIndex == null) {
 			return;
 		}
@@ -469,6 +467,7 @@ public class PlanningFlow extends BaseFlow {
 					put("plan_id", activePlanId);
 					put("step_index", currentStepIndex);
 					put("step_status", PlanStepStatus.COMPLETED.getValue());
+					put("step_notes", stepNotes);
 				}
 			};
 			ToolExecuteResult result = planningTool.run(JSON.toJSONString(argsMap));

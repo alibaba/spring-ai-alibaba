@@ -29,8 +29,11 @@ import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,17 +50,17 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoad
 import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
-import com.alibaba.cloud.ai.example.manus.service.TextFileService;
-import com.alibaba.cloud.ai.example.manus.tool.Bash;
-import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
-import com.alibaba.cloud.ai.example.manus.tool.GoogleSearch;
-import com.alibaba.cloud.ai.example.manus.tool.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
-import com.alibaba.cloud.ai.example.manus.tool.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
-import com.alibaba.cloud.ai.example.manus.tool.support.CodeUtils;
+import com.alibaba.cloud.ai.example.manus.tool.bash.Bash;
+import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
+import com.alibaba.cloud.ai.example.manus.tool.browser.ChromeDriverService;
+import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
+import com.alibaba.cloud.ai.example.manus.tool.code.PythonExecute;
+import com.alibaba.cloud.ai.example.manus.tool.searchAPI.GoogleSearch;
+import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
+import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
 
 /**
  * @author yuluo
@@ -115,17 +118,19 @@ public class ManusConfiguration {
 	public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager,
 			DynamicAgentLoader dynamicAgentLoader) {
 		List<BaseAgent> agentList = new ArrayList<>();
-
+		Map<String, ToolCallBackContext> toolCallbackMap = new HashMap<>();
 		// Add all dynamic agents from the database
 		for (DynamicAgentEntity agentEntity : dynamicAgentLoader.getAllAgents()) {
 			DynamicAgent agent = dynamicAgentLoader.loadAgent(agentEntity.getAgentName());
-			Map<String, ToolCallBackContext> toolCallbackMap = toolCallbackMap(agent);
+			toolCallbackMap = toolCallbackMap(agent);
 			agent.setToolCallbackMap(toolCallbackMap);
 			agentList.add(agent);
 		}
 
 		Map<String, Object> data = new HashMap<>();
-		return new PlanningFlow(agentList, data, recorder);
+		// hack 暂时不想让planning flow 也继承agent，所以用了个讨巧的办法，以后要改掉， 这个讨巧办法的前提假设是tools
+		// 只调用baseagent的getPlanId方法
+		return new PlanningFlow(agentList, data, recorder, toolCallbackMap);
 	}
 
 	public static class ToolCallBackContext {
@@ -140,6 +145,7 @@ public class ManusConfiguration {
 		}
 
 		public ToolCallback getToolCallback() {
+
 			return toolCallback;
 		}
 
@@ -230,6 +236,16 @@ public class ManusConfiguration {
 
 		// 5. 创建 RestClient 并设置请求工厂
 		return RestClient.builder().requestFactory(requestFactory);
+	}
+
+	/**
+	 * Provides an empty ToolCallbackProvider implementation when MCP is disabled
+	 */
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(name = "spring.ai.mcp.client.enabled", havingValue = "false")
+	public ToolCallbackProvider emptyToolCallbackProvider() {
+		return () -> new ToolCallback[0];
 	}
 
 }
