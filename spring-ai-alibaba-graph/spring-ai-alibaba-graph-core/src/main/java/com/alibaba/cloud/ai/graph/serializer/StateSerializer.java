@@ -15,19 +15,16 @@
  */
 package com.alibaba.cloud.ai.graph.serializer;
 
+import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
+
 import java.io.IOException;
 import java.util.Map;
-
-import com.alibaba.cloud.ai.graph.OverAllState;
-import lombok.NonNull;
-import com.alibaba.cloud.ai.graph.state.AgentState;
-import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
 public abstract class StateSerializer<T> implements Serializer<T> {
 
 	private final AgentStateFactory<T> stateFactory;
 
-	protected StateSerializer(@NonNull AgentStateFactory<T> stateFactory) {
+	protected StateSerializer(AgentStateFactory<T> stateFactory) {
 		this.stateFactory = stateFactory;
 	}
 
@@ -35,11 +32,11 @@ public abstract class StateSerializer<T> implements Serializer<T> {
 		return stateFactory;
 	}
 
-	public final T stateOf(@NonNull Map<String, Object> data) {
+	public final T stateOf(Map<String, Object> data) {
 		return stateFactory.apply(data);
 	}
 
-	public final T cloneObject(@NonNull Map<String, Object> data) throws IOException, ClassNotFoundException {
+	public final T cloneObject(Map<String, Object> data) throws IOException, ClassNotFoundException {
 		return cloneObject(stateFactory().apply(data));
 	}
 

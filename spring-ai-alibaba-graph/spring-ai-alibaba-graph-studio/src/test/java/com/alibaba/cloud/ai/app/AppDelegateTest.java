@@ -28,9 +28,10 @@ import com.alibaba.cloud.ai.model.workflow.nodedata.StartNodeData;
 import com.alibaba.cloud.ai.param.CreateAppParam;
 import com.alibaba.cloud.ai.saver.AppSaver;
 import com.alibaba.cloud.ai.service.app.AppDelegate;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -39,8 +40,9 @@ import java.util.Objects;
 import java.util.UUID;
 
 @SpringBootTest
-@Slf4j
 public class AppDelegateTest {
+
+	private static final Logger log = LoggerFactory.getLogger(AppDelegateTest.class);
 
 	private final AppDelegate appDelegate;
 
