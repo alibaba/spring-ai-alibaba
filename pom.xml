@@ -33,6 +33,7 @@
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-starter</module>
         <module>spring-ai-alibaba-autoconfigure</module>
+        <module>spring-ai-alibaba-arms-observation-autoconfigure</module>
 <!--        <module>spring-ai-alibaba-studio</module>-->
         <module>spring-ai-alibaba-graph</module>
 
@@ -99,7 +100,6 @@
         <module>community/memories/spring-ai-alibaba-jdbc-memory</module>
 
         <module>community/openmanus</module>
-      <module>spring-ai-alibaba-arms-observation-autoconfigure</module>
 
     </modules>
 
