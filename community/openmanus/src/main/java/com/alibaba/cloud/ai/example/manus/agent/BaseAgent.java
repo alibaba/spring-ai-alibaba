@@ -115,12 +115,28 @@ public abstract class BaseAgent {
 	 * @return 添加的系统提示消息对象
 	 */
 	protected Message addThinkPrompt(List<Message> messages) {
+		// 获取操作系统信息
+		String osName = System.getProperty("os.name");
+		String osVersion = System.getProperty("os.version");
+		String osArch = System.getProperty("os.arch");
+
+		// 获取当前日期时间，格式为yyyy-MM-dd
+		String currentDateTime = java.time.LocalDate.now().toString(); // 格式为yyyy-MM-dd
+
 		String stepPrompt = """
+				SYSTEM INFORMATION:
+				OS: %s %s (%s)
+
+				Current Date:
+				%s
+
 				CURRENT TASK STATUS:
 				{planStatus}
 
 				CURRENT TASK STEP ({currentStepIndex}):
-				{stepText}""";
+				{stepText}
+
+				""".formatted(osName, osVersion, osArch, currentDateTime);
 
 		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(stepPrompt);
 
@@ -240,7 +256,7 @@ public abstract class BaseAgent {
 	 */
 	protected boolean isStuck() {
 		// 目前判断是如果三次没有调用工具就认为是卡住了，就退出当前step。
-		List<Message> memoryEntries = llmService.getMemory().get(conversationId, 6);
+		List<Message> memoryEntries = llmService.getAgentChatClient(getPlanId()).getMemory().get(conversationId, 6);
 		int zeroToolCallCount = 0;
 		for (Message msg : memoryEntries) {
 			if (msg instanceof AssistantMessage) {

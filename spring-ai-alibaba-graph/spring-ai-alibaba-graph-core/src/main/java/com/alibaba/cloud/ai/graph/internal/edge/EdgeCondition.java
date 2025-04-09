@@ -15,10 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph.internal.edge;
 
-import java.util.Map;
-
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+
+import java.util.Map;
 
 import static java.lang.String.format;
 

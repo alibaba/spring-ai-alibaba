@@ -15,13 +15,12 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.internal.edge.EdgeCondition;
+
 import java.util.Objects;
 
-import com.alibaba.cloud.ai.graph.internal.edge.EdgeCondition;
-import com.alibaba.cloud.ai.graph.state.AgentState;
-
-import static java.lang.String.format;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static java.lang.String.format;
 
 /**
  * Abstract class for diagram generation. This class provides a framework for generating

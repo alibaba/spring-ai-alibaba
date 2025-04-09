@@ -15,15 +15,14 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.check_point;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.NullableObjectSerializer;
-import com.alibaba.cloud.ai.graph.state.AgentState;
+
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 public class CheckPointSerializer implements NullableObjectSerializer<Checkpoint> {
 
