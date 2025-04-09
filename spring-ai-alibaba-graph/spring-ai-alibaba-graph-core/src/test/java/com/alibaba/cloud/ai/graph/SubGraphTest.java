@@ -58,17 +58,6 @@ public class SubGraphTest {
 		return node_async(state -> Map.of("messages", id));
 	}
 
-	private AsyncNodeAction _makeNormalNode(String id) {
-		return node_async(state -> Map.of("messages", id));
-	}
-
-	private AsyncNodeAction _makeExceptionNode(String id) {
-		return node_async(state -> {
-			throw new NodeInterruptException("aa");
-			// return Map.of("messages", id);
-		});
-	}
-
 	private List<String> _execute(CompiledGraph workflow, Map<String, Object> input) throws Exception {
 		return workflow.stream().stream().peek(System.out::println).map(NodeOutput::node).toList();
 	}
@@ -258,7 +247,7 @@ public class SubGraphTest {
 	public void testMergeSubgraph03WithInterruption() throws Exception {
 		OverAllState overAllState = getOverAllState();
 		var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
-			.addNode("B2", _makeExceptionNode("B2"))
+			.addNode("B2", _makeNode("B2"))
 			// .addNode("B2", _makeNormalNode("B2"))
 			.addNode("C", _makeNode("subgraph(C)"))
 			.addEdge(START, "B1")
