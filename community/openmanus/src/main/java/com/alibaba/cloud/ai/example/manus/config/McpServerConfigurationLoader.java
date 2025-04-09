@@ -1,3 +1,19 @@
+
+/*
+ * Copyright 2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.example.manus.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -5,22 +21,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
-import org.springframework.context.ApplicationListener;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 
-@Component
-public class McpServerConfigurationLoader implements ApplicationListener<ApplicationEnvironmentPreparedEvent> {
+public class McpServerConfigurationLoader implements EnvironmentPostProcessor {
 
 	private static final Logger logger = LoggerFactory.getLogger(McpServerConfigurationLoader.class);
 
@@ -33,9 +45,8 @@ public class McpServerConfigurationLoader implements ApplicationListener<Applica
 	private static final String TEMP_DIR_PREFIX = "mcp-config";
 
 	@Override
-	public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
+	public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
 		logger.info("开始处理 MCP 服务器配置...");
-		ConfigurableEnvironment environment = event.getEnvironment();
 		String enabled = environment.getProperty("spring.ai.mcp.enabled", "true");
 		logger.info("MCP 配置状态: enabled={}", enabled);
 
