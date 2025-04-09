@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package arms;
+package com.alibaba.cloud.ai.autoconfigure.arms;
 
 import com.alibaba.cloud.ai.tool.ObservableToolCallingManager;
 import io.micrometer.observation.ObservationRegistry;
