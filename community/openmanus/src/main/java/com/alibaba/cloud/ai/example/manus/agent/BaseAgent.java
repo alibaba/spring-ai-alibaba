@@ -127,7 +127,7 @@ public abstract class BaseAgent {
 				SYSTEM INFORMATION:
 				OS: %s %s (%s)
 
-				Current Date: 
+				Current Date:
 				%s
 
 				CURRENT TASK STATUS:
