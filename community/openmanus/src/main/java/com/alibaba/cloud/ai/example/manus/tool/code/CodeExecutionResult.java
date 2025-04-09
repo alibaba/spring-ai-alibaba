@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.model.workflow.nodedata;
+package com.alibaba.cloud.ai.example.manus.tool.code;
 
-import com.alibaba.cloud.ai.model.Variable;
-import com.alibaba.cloud.ai.model.VariableSelector;
-import com.alibaba.cloud.ai.model.workflow.NodeData;
+public class CodeExecutionResult {
 
-import java.util.List;
+	Integer exitcode;
 
-public class EndNodeData extends NodeData {
+	String logs;
 
-	public EndNodeData() {
+	String image;
+
+	Integer getExitcode() {
+		return exitcode;
 	}
 
-	public EndNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
-		super(inputs, outputs);
+	void setExitcode(Integer exitcode) {
+		this.exitcode = exitcode;
+	}
+
+	public String getLogs() {
+		return logs;
+	}
+
+	public void setLogs(String logs) {
+		this.logs = logs;
+	}
+
+	public String getImage() {
+		return image;
+	}
+
+	public void setImage(String image) {
+		this.image = image;
 	}
 
 }

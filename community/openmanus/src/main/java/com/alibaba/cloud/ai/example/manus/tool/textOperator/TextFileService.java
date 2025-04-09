@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.service;
+package com.alibaba.cloud.ai.example.manus.tool.textOperator;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -52,23 +52,13 @@ public class TextFileService implements ApplicationRunner {
 
 	private final ConcurrentHashMap<String, FileState> fileStates = new ConcurrentHashMap<>();
 
-	private final ConcurrentHashMap<String, Object> fileLocks = new ConcurrentHashMap<>();
-
-	private static class FileState {
-
-		String currentFilePath = "";
-
-		String lastOperationResult = "";
-
-	}
-
 	@Override
 	public void run(ApplicationArguments args) {
 		log.info("TextFileService initialized");
 	}
 
 	private Object getFileLock(String planId) {
-		return fileLocks.computeIfAbsent(planId, k -> new Object());
+		return getFileState(planId).getFileLock();
 	}
 
 	public FileState getFileState(String planId) {
@@ -78,7 +68,6 @@ public class TextFileService implements ApplicationRunner {
 	public void closeFileForPlan(String planId) {
 		synchronized (getFileLock(planId)) {
 			fileStates.remove(planId);
-			fileLocks.remove(planId);
 			log.info("Closed file state for plan: {}", planId);
 		}
 	}
@@ -115,31 +104,23 @@ public class TextFileService implements ApplicationRunner {
 	public void updateFileState(String planId, String filePath, String operationResult) {
 		FileState state = getFileState(planId);
 		synchronized (getFileLock(planId)) {
-			state.currentFilePath = filePath;
-			state.lastOperationResult = operationResult;
+			state.setCurrentFilePath(filePath);
+			state.setLastOperationResult(operationResult);
 		}
 	}
 
 	public String getCurrentFilePath(String planId) {
-		return getFileState(planId).currentFilePath;
+		return getFileState(planId).getCurrentFilePath();
 	}
 
 	public String getLastOperationResult(String planId) {
-		return getFileState(planId).lastOperationResult;
-	}
-
-	public void cleanup(String planId) {
-		if (planId != null) {
-			log.info("Cleaning up text file resources for plan: {}", planId);
-			closeFileForPlan(planId);
-		}
+		return getFileState(planId).getLastOperationResult();
 	}
 
 	@PreDestroy
 	public void cleanup() {
 		log.info("Cleaning up TextFileService resources");
 		fileStates.clear();
-		fileLocks.clear();
 	}
 
 }

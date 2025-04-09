@@ -83,7 +83,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 
 				Consider both what's visible and what might be beyond the current viewport.
 				Be methodical - remember your progress and what you've learned so far.
-				""", availableToolKeys = { "browser_use", "terminate" })
+				""", availableToolKeys = { "browser_use", "text_file_operator", "terminate" })
 public class DBrowserAgent {
 
 }

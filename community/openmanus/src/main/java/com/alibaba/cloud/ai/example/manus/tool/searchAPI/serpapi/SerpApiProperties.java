@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.tool.support.serpapi;
+package com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
