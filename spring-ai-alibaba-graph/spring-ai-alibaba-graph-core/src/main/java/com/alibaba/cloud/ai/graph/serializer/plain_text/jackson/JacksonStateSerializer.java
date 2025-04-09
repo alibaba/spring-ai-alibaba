@@ -15,18 +15,16 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
+import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.NonNull;
-import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
-import com.alibaba.cloud.ai.graph.state.AgentState;
-import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
+
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * Base Implementation of {@link PlainTextStateSerializer} using Jackson library. Need to
@@ -43,8 +41,7 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 	}
 
-	protected JacksonStateSerializer(@NonNull AgentStateFactory<OverAllState> stateFactory,
-			@NonNull ObjectMapper objectMapper) {
+	protected JacksonStateSerializer(AgentStateFactory<OverAllState> stateFactory, ObjectMapper objectMapper) {
 		super(stateFactory);
 		this.objectMapper = objectMapper;
 	}

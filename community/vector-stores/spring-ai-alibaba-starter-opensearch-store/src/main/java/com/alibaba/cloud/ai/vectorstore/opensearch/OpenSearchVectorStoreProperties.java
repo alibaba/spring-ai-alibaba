@@ -15,19 +15,24 @@
  */
 package com.alibaba.cloud.ai.vectorstore.opensearch;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import java.util.HashMap;
-import java.util.Map;
+import static com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchVectorStoreProperties.DEFAULT_ALIBABA_OPENSEARCH_CONFIG_PREFIX;
 
 /**
  * @author 北极星
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.vectorstore.opensearch")
-@JsonInclude(JsonInclude.Include.NON_NULL)
+
+@ConfigurationProperties(prefix = DEFAULT_ALIBABA_OPENSEARCH_CONFIG_PREFIX)
 public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties {
+
+	protected static final String DEFAULT_ALIBABA_OPENSEARCH_CONFIG_PREFIX = "spring.ai.alibaba.vectorstore.opensearch";
+
+	private Boolean enabled;
 
 	private String instanceId;
 
@@ -36,6 +41,14 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	private String accessUserName;
 
 	private String accessPassWord;
+
+	public Boolean isEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(Boolean enabled) {
+		this.enabled = enabled;
+	}
 
 	public String getInstanceId() {
 		return instanceId;

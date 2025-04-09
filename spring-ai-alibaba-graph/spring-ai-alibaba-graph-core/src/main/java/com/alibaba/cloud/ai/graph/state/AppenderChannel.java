@@ -15,26 +15,21 @@
  */
 package com.alibaba.cloud.ai.graph.state;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import lombok.extern.slf4j.Slf4j;
-
 import static java.util.Collections.unmodifiableList;
 import static java.util.Optional.ofNullable;
 
-/**
- * AppenderChannel is a {@link Channel} implementation that is used to accumulate a list
- * of values.
- *
- * @param <T> the type of the values being accumulated
- * @see Channel
- */
-@Slf4j
 public class AppenderChannel<T> implements Channel<List<T>> {
+
+	private static final Logger log = LoggerFactory.getLogger(AppenderChannel.class);
 
 	/**
 	 * A functional interface that is used to remove elements from a list.

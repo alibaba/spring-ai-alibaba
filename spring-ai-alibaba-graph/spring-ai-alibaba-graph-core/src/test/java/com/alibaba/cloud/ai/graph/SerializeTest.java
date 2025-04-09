@@ -15,6 +15,17 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.serializer.Serializer;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.gson.GsonStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.std.NullableObjectSerializer;
+import com.alibaba.cloud.ai.graph.serializer.std.ObjectStreamStateSerializer;
+import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import org.junit.jupiter.api.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -25,18 +36,6 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.util.List;
 import java.util.Map;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import lombok.ToString;
-import com.alibaba.cloud.ai.graph.serializer.Serializer;
-import com.alibaba.cloud.ai.graph.serializer.plain_text.gson.GsonStateSerializer;
-import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSerializer;
-import com.alibaba.cloud.ai.graph.serializer.std.NullableObjectSerializer;
-import com.alibaba.cloud.ai.graph.serializer.std.ObjectStreamStateSerializer;
-import com.alibaba.cloud.ai.graph.state.AgentState;
-import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.listOf;
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.mapOf;
@@ -120,7 +119,6 @@ public class SerializeTest {
 
 	}
 
-	@ToString
 	public static class NonSerializableElement {
 
 		String value;
@@ -131,6 +129,11 @@ public class SerializeTest {
 
 		public NonSerializableElement(String value) {
 			this.value = value;
+		}
+
+		@Override
+		public String toString() {
+			return "NonSerializableElement{" + "value='" + value + '\'' + '}';
 		}
 
 	}
