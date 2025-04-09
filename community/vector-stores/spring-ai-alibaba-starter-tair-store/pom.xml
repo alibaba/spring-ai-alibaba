@@ -25,7 +25,7 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <name>Spring AI Alibaba Starter Tair Store</name>
+    <name>Spring AI Alibaba Starter Store Tair</name>
     <artifactId>spring-ai-alibaba-starter-tair-store</artifactId>
     <packaging>jar</packaging>
 
@@ -44,14 +44,17 @@
     </scm>
 
     <dependencies>
+
         <dependency>
             <groupId>com.aliyun.tair</groupId>
             <artifactId>alibabacloud-tairjedis-sdk</artifactId>
             <version>5.2.0</version>
         </dependency>
+
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-core</artifactId>
         </dependency>
     </dependencies>
+
 </project>

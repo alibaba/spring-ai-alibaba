@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.alibaba.cloud.ai.toolcalling.sensitivefilter.SensitiveFilterAutoConfiguration 
