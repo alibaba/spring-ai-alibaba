@@ -17,54 +17,32 @@ package com.alibaba.cloud.ai.vectorstore.opensearch;
 
 import com.aliyun.ha3engine.vector.Client;
 import com.aliyun.ha3engine.vector.models.Config;
-
+import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.DependsOn;
-
-import static com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchVectorStoreProperties.DEFAULT_ALIBABA_OPENSEARCH_CONFIG_PREFIX;
 
 /**
- * @author 北极星
+ * @author fuyou.lxm 北极星
  */
-
-// @formatter:off
 @AutoConfiguration
-@ConditionalOnClass({
-		EmbeddingModel.class,
-		Client.class
-})
-@ConditionalOnProperty(
-		prefix = DEFAULT_ALIBABA_OPENSEARCH_CONFIG_PREFIX,
-		name = "enabled",
-		havingValue = "true",
-		matchIfMissing = true
-)
-@EnableConfigurationProperties({ OpenSearchVectorStoreProperties.class })
+@ConditionalOnClass({ OpenSearchVectorStore.class, EmbeddingModel.class, Client.class })
+@EnableConfigurationProperties({ OpenSearchVectorStoreProperties.class, OpenSearchVectorStoreOptions.class })
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.vectorstore.opensearch", name = "enabled", havingValue = "true")
 public class OpenSearchVectorStoreAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	public OpenSearchVectorStore vectorStore(OpenSearchVectorStoreProperties properties, EmbeddingModel embeddingModel,
-			BatchingStrategy batchingStrategy, OpenSearchVectorStoreOptions options) throws Exception {
-		OpenSearchApi openSearchApi = new OpenSearchApi(properties);
-		return OpenSearchVectorStore.builder(openSearchApi, embeddingModel)
-			.batchingStrategy(batchingStrategy)
-			.options(options)
-			.build();
 	}
 
 	@Bean
@@ -76,10 +54,23 @@ public class OpenSearchVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@DependsOn("client")
-	public OpenSearchApi openSearchApi(OpenSearchApi openSearchApi) {
-		return new OpenSearchApi(openSearchApi);
+	public OpenSearchApi openSearchApi(OpenSearchVectorStoreProperties properties) {
+		return new OpenSearchApi(properties);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public OpenSearchVectorStore vectorStore(OpenSearchApi openSearchApi, EmbeddingModel embeddingModel,
+			BatchingStrategy batchingStrategy, OpenSearchVectorStoreOptions options,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
+
+		return OpenSearchVectorStore.builder(openSearchApi, embeddingModel)
+			.batchingStrategy(batchingStrategy)
+			.options(options)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.build();
 	}
 
 }
-// @formatter:on
