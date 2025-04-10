@@ -132,7 +132,7 @@ public class DocumentRetrievalAdvisor implements CallAroundAdvisor, StreamAround
 	private AdvisedRequest before(AdvisedRequest request) {
 
 		var context = new HashMap<>(request.adviseContext());
-		List<Document> documents = retriever.retrieve(new Query(request.userText()));
+		List<Document> documents = retriever.retrieve(new Query(request.userText(), request.messages(), request.adviseContext()));
 
 		context.put(RETRIEVED_DOCUMENTS, documents);
 
