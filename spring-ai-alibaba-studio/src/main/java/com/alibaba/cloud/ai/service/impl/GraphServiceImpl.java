@@ -99,8 +99,8 @@ public class GraphServiceImpl implements GraphService, ApplicationContextAware {
 	@Override
 	public GraphInitData getPrintableGraphData(String name) throws GraphStateException {
 		List<GraphInitData.ArgumentMetadata> inputArgs = new ArrayList<>();
-		inputArgs.add(
-				new GraphInitData.ArgumentMetadata(name, GraphInitData.ArgumentMetadata.ArgumentType.STRING, true));
+		inputArgs
+			.add(new GraphInitData.ArgumentMetadata(name, GraphInitData.ArgumentMetadata.ArgumentType.STRING, true));
 
 		CompiledGraph compiledGraph = stateGraphMap.get(name).compile();
 		var graph = compiledGraph.getGraph(GraphRepresentation.Type.MERMAID, name, false);
