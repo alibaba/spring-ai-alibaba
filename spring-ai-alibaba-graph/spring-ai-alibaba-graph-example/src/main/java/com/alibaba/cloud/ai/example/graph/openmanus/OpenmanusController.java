@@ -104,22 +104,22 @@ public class OpenmanusController {
 			return state;
 		};
 
-		SupervisorAgent controllerAgent = new SupervisorAgent();
-		ReactAgent planningAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。", planningClient, resolver, 10);
+		SupervisorAgent supervisorAgent = new SupervisorAgent();
+		ReactAgent planningAgent = new ReactAgent("planningAgent", "请帮助用户完成他接下来输入的任务规划。", planningClient, resolver, 10);
 		planningAgent.getAndCompileGraph();
-		ReactAgent stepAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。", stepClient, resolver, 10);
+		ReactAgent stepAgent = new ReactAgent("stepAgent", "请帮助用户完成他接下来输入的任务规划。", stepClient, resolver, 10);
 		stepAgent.getAndCompileGraph();
 
 		StateGraph graph = new StateGraph(stateFactory)
 			.addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
-			.addNode("controller_agent", node_async(controllerAgent))
+			.addNode("supervisor_agent", node_async(supervisorAgent))
 			.addNode("step_executing_agent", stepAgent.asAsyncNodeAction("step_prompt", "step_output"))
 
 			.addEdge(START, "planning_agent")
-			.addEdge("planning_agent", "controller_agent")
-			.addConditionalEdges("controller_agent", edge_async(controllerAgent::think),
+			.addEdge("planning_agent", "supervisor_agent")
+			.addConditionalEdges("supervisor_agent", edge_async(supervisorAgent::think),
 					Map.of("continue", "step_executing_agent", "end", END))
-			.addEdge("step_executing_agent", "controller_agent");
+			.addEdge("step_executing_agent", "supervisor_agent");
 
 		this.compiledGraph = graph.compile();
 
