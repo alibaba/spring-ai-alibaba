@@ -29,7 +29,6 @@ import org.springframework.ai.tool.ToolCallback;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * An abstract base class for implementing AI agents that can execute multi-step tasks.
@@ -63,7 +62,6 @@ public abstract class BaseAgent {
 
 	private static final Logger log = LoggerFactory.getLogger(BaseAgent.class);
 
-	private final ReentrantLock lock = new ReentrantLock();
 
 	private String conversationId;
 
@@ -171,6 +169,7 @@ public abstract class BaseAgent {
 		this.maxSteps = manusProperties.getMaxSteps();
 	}
 
+
 	public String run(Map<String, Object> data) {
 		currentStep = 0;
 		if (state != AgentState.IDLE) {
@@ -188,7 +187,6 @@ public abstract class BaseAgent {
 			planExecutionRecorder.recordAgentExecution(planId, agentRecord);
 		}
 		List<String> results = new ArrayList<>();
-		lock.lock();
 		try {
 			state = AgentState.RUNNING;
 			agentRecord.setStatus(state.toString());
@@ -197,13 +195,17 @@ public abstract class BaseAgent {
 				currentStep++;
 				log.info("Executing round " + currentStep + "/" + maxSteps);
 
-				String stepResult = step();
-
+				AgentExecResult stepResult = step();
+				
 				if (isStuck()) {
 					handleStuckState(agentRecord);
+				} else {
+					// 更新全局状态以保持一致性
+					log.info("Agent state: " + stepResult.getState());
+					state = stepResult.getState();
 				}
 
-				results.add("Round " + currentStep + ": " + stepResult);
+				results.add("Round " + currentStep + ": " + stepResult.getResult());
 
 				// Update agent record after each step
 				agentRecord.setCurrentStep(currentStep);
@@ -225,15 +227,24 @@ public abstract class BaseAgent {
 			agentRecord.setResult(String.format("执行%s [耗时%d秒] [消耗步骤%d] ", status, executionTimeSeconds, currentStep));
 
 		}
+		catch (Exception e) {
+			log.error("Agent execution failed", e);
+			// 记录异常信息到agentRecord
+			agentRecord.setErrorMessage(e.getMessage());
+			agentRecord.setCompleted(false);
+			agentRecord.setEndTime(LocalDateTime.now());
+			agentRecord.setResult(String.format("执行失败 [错误: %s]", e.getMessage()));
+			results.add("Execution failed: " + e.getMessage());
+			throw e; // 重新抛出异常，让上层调用者知道发生了错误
+		}
 		finally {
-			lock.unlock();
 			state = AgentState.IDLE; // Reset state after execution
 			agentRecord.setStatus(state.toString());
 		}
 		return String.join("\n", results);
 	}
 
-	protected abstract String step();
+	protected abstract AgentExecResult step();
 
 	private void handleStuckState(AgentExecutionRecord agentRecord) {
 		log.warn("Agent stuck detected - Missing tool calls");
@@ -315,4 +326,23 @@ public abstract class BaseAgent {
 		return manusProperties;
 	}
 
+	public static class AgentExecResult{
+		private String result;
+		private AgentState state;
+
+		public AgentExecResult(String result, AgentState state) {
+			this.result = result;
+			this.state = state;
+		}
+
+		public String getResult() {
+			return result;
+		}
+
+		public AgentState getState() {
+			return state;
+		}
+		
+
+	}
 }

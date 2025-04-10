@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.example.manus.tool.searchAPI;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi.SerpApiProperties;
@@ -29,10 +28,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
-import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -198,16 +193,13 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 		return run(s);
 	}
 
-	private BaseAgent agent;
+	private String planId;
 
 	@Override
-	public void setAgent(BaseAgent agent) {
-		this.agent = agent;
+	public void setPlanId(String planId) {
+		this.planId = planId;
 	}
 
-	public BaseAgent getAgent() {
-		return this.agent;
-	}
 
 	@Override
 	public String getCurrentToolStateString() {

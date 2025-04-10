@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 public enum PlanStepStatus {
 
-	NOT_STARTED("not_started"), IN_PROGRESS("in_progress"), COMPLETED("completed"), BLOCKED("blocked");
+	NOT_STARTED("not_started"), IN_PROGRESS("in_progress"), COMPLETED("completed"), BLOCKED("blocked"),FAILED("failed");
 
 	private final String value;
 
