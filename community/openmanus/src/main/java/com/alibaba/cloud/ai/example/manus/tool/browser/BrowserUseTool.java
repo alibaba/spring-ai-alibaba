@@ -48,14 +48,14 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	// 添加标签页缓存字段
 	private List<Map<String, Object>> cachedTabs;
 
-	private BaseAgent agent;
+	private String planId;
 
 	public BrowserUseTool(ChromeDriverService chromeDriverService) {
 		this.chromeDriverService = chromeDriverService;
 	}
 
 	private WebDriver getDriver() {
-		return chromeDriverService.getDriver(agent.getPlanId());
+		return chromeDriverService.getDriver(planId);
 	}
 
 	private final int MAX_LENGTH = 20000;
@@ -687,13 +687,10 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public void setAgent(BaseAgent agent) {
-		this.agent = agent;
+	public void setPlanId(String planId) {
+		this.planId = planId;
 	}
 
-	public BaseAgent getAgent() {
-		return this.agent;
-	}
 
 	@Override
 	public String getCurrentToolStateString() {

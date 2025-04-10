@@ -15,8 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.controller;
 
-import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.PlanningFlowManager;
-import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
@@ -34,7 +34,7 @@ import java.util.concurrent.CompletableFuture;
 public class ManusController {
 
 	@Autowired
-	private PlanningFlowManager planningFlowManager;
+	private PlanningFactory manusConfiguration;
 
 	@Autowired
 	private PlanExecutionRecorder planExecutionRecorder;
@@ -55,15 +55,14 @@ public class ManusController {
 		String planId = "plan_" + System.currentTimeMillis();
 
 		// 获取或创建规划流程
-		PlanningFlow planningFlow = planningFlowManager.getOrCreatePlanningFlow(planId);
+		PlanningCoordinator planningFlow = manusConfiguration.createPlanningCoordinator(planId);
 
 		// 异步执行任务
 		CompletableFuture.supplyAsync(() -> {
 			try {
-				return planningFlow.execute(query);
+				return planningFlow.executePlan(query);
 			}
 			catch (Exception e) {
-				e.printStackTrace();
 				return "执行出错: " + e.getMessage();
 			}
 		});
@@ -91,6 +90,29 @@ public class ManusController {
 		}
 
 		return ResponseEntity.ok(planRecord.toJson());
+	}
+
+	/**
+	 * 删除指定计划ID的执行记录
+	 * @param planId 计划ID
+	 * @return 删除操作的结果
+	 */
+	@DeleteMapping("/details/{planId}")
+	public ResponseEntity<Map<String, String>> removeExecutionDetails(@PathVariable String planId) {
+		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId);
+		
+		if (planRecord == null) {
+			return ResponseEntity.notFound().build();
+		}
+
+		try {
+			planExecutionRecorder.removeExecutionRecord(planId);
+			return ResponseEntity.ok(Map.of("message", "执行记录已成功删除", "planId", planId));
+		}
+		catch (Exception e) {
+			return ResponseEntity.internalServerError()
+					.body(Map.of("error", "删除记录失败: " + e.getMessage()));
+		}
 	}
 
 }

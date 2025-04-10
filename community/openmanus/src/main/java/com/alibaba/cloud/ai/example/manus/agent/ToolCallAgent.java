@@ -38,11 +38,12 @@ import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
+import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
 
 /**
  * 工具调用智能体，专门负责管理和执行工具调用的智能体实现 继承自ReActAgent，实现了基于工具调用的思考-行动模式
@@ -241,9 +242,8 @@ public class ToolCallAgent extends ReActAgent {
 	}
 
 	@Override
-	protected String act() {
+	protected AgentExecResult act() {
 		try {
-			List<String> results = new ArrayList<>();
 			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
 
 			thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
@@ -256,14 +256,21 @@ public class ToolCallAgent extends ReActAgent {
 				.get(toolExecutionResult.conversationHistory().size() - 1);
 			llmService.getAgentChatClient(getPlanId()).getMemory().add(getConversationId(), toolResponseMessage);
 			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
-			results.add(llmCallResponse);
+			
 
-			String finalResult = String.join("\n\n", results);
 			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), llmCallResponse));
 
-			thinkActRecord.finishAction(finalResult, "SUCCESS");
-
-			return finalResult;
+			thinkActRecord.finishAction(llmCallResponse, "SUCCESS");
+			String toolcallName = toolCall.name();
+			AgentExecResult agentExecResult = null;
+			//如果是终止工具，则返回完成状态
+			//否则返回运行状态
+			if(TerminateTool.name.equals(toolcallName)) {
+				 agentExecResult = new AgentExecResult(llmCallResponse , AgentState.FINISHED);
+			} else {
+				agentExecResult = new AgentExecResult(llmCallResponse, AgentState.RUNNING);
+			}			
+			return agentExecResult;
 		}
 		catch (Exception e) {
 			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
@@ -275,7 +282,7 @@ public class ToolCallAgent extends ReActAgent {
 
 			thinkActRecord.recordError(e.getMessage());
 
-			return "Error: " + e.getMessage();
+			return new AgentExecResult(e.getMessage(), AgentState.ERROR);
 		}
 	}
 
