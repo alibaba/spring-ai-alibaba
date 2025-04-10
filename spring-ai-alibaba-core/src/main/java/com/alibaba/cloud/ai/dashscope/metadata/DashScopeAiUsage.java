@@ -53,7 +53,7 @@ public class DashScopeAiUsage implements Usage {
 
 	@Override
 	public Integer getCompletionTokens() {
-		return 0;
+		return getUsage().outputTokens();
 	}
 
 	@Override
@@ -63,7 +63,7 @@ public class DashScopeAiUsage implements Usage {
 			return totalTokens;
 		}
 		else {
-			return getPromptTokens() + getGenerationTokens().intValue();
+			return getPromptTokens() + getCompletionTokens();
 		}
 	}
 
