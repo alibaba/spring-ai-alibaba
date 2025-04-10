@@ -15,7 +15,12 @@
  */
 package com.alibaba.cloud.ai.api;
 
+import java.util.List;
+import java.util.Map;
+
 import com.alibaba.cloud.ai.common.R;
+import com.alibaba.cloud.ai.graph.GraphStateException;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.param.GraphStreamParam;
 import com.alibaba.cloud.ai.service.GraphService;
 import com.alibaba.cloud.ai.graph.GraphInitData;
@@ -34,17 +39,26 @@ public interface GraphAPI {
 
 	GraphService graphService();
 
+	@Operation(summary = "list graphs", description = "", tags = { "Graph" })
+	@GetMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE)
+	default R<List<String>> list() {
+		Map<String, StateGraph> graphMap = graphService().getStateGraphs();
+		List<String> graphNames = graphMap.keySet().stream().toList();
+		return R.success(graphNames);
+	}
+
 	@Operation(summary = "init graph", description = "", tags = { "Graph" })
 	@GetMapping(value = "init", produces = MediaType.APPLICATION_JSON_VALUE)
-	default R<GraphInitData> init() {
-		return R.success(graphService().getPrintableGraphData());
+	default R<GraphInitData> init(String name, boolean required) throws GraphStateException {
+		return R.success(graphService().getPrintableGraphData(name, required));
 	}
 
 	@Operation(summary = "stream", description = "", tags = { "Graph" })
 	@PostMapping(value = "stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-	default Flux<ServerSentEvent<String>> stream(HttpServletRequest request, GraphStreamParam param) throws Exception {
+	default Flux<ServerSentEvent<String>> stream(HttpServletRequest request, String name, GraphStreamParam param)
+			throws Exception {
 		param.setSessionId(request.getSession().getId());
-		return graphService().stream(param, request.getInputStream());
+		return graphService().stream(name, param, request.getInputStream());
 	}
 
 }

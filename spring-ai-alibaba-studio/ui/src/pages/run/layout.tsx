@@ -22,6 +22,7 @@ import styles from './layout.module.css';
 import { SubMenuItem } from '@/types/menu';
 import chatModelsService from '@/services/chat_models';
 import chatClientsService from '@/services/chat_clients';
+import graphsService from '@/services/graphs';
 
 export default function PageLayout() {
   const { Content, Sider } = Layout;
@@ -44,6 +45,11 @@ export default function PageLayout() {
       label: 'Prompts',
       children: [],
     },
+    {
+      key: '/run/graphs',
+      label: 'Graphs',
+      children: [],
+    },
   ]);
 
   useEffect(() => {
@@ -52,8 +58,9 @@ export default function PageLayout() {
         const results = await Promise.all([
           chatModelsService.getChatModels(),
           chatClientsService.getChatClients(),
+          graphsService.getGraphs(),
         ]);
-        const [chatModelList, chatClientList] = results;
+        const [chatModelList, chatClientList, graphsList] = results;
 
         // 更新runMenu的children
         setRunMenu((prevRunMenu) => {
@@ -70,12 +77,18 @@ export default function PageLayout() {
             key: `/run/models/${model.name}`,
             label: model.name,
           }));
+          
+          // 组装 Graphs 目录
+          updatedRunMenu[3].children = graphsList.map((graph) => ({
+            key: `/run/graphs/${graph.name}`,
+            label: graph.name,
+          }));
 
           // todo 组装xxx目录
           return updatedRunMenu;
         });
       } catch (error) {
-        console.error('Failed to fetch chat models: ', error);
+        console.error('Failed to fetch data: ', error);
       }
     };
     fetchData();
