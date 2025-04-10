@@ -18,12 +18,12 @@ package com.alibaba.cloud.ai.example.manus.config.startUp;
 import java.util.Scanner;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 
@@ -32,14 +32,11 @@ public class QueryCommandRunner implements CommandLineRunner {
 
 	private static final Logger logger = LoggerFactory.getLogger(QueryCommandRunner.class);
 
-	private final PlanningFlow planningFlow;
+	@Autowired
+	private PlanningFactory manusConfiguration;
 
 	@Autowired
 	private ManusProperties manusProperties;
-
-	public QueryCommandRunner(PlanningFlow planningFlow) {
-		this.planningFlow = planningFlow;
-	}
 
 	@Override
 	public void run(String... args) throws Exception {
@@ -52,7 +49,6 @@ public class QueryCommandRunner implements CommandLineRunner {
 		logger.info("启动控制台交互模式，请输入查询...");
 		Scanner scanner = new Scanner(System.in);
 		while (true) {
-
 			System.out.println("Enter your query (or type 'exit' to quit): ");
 			String query = scanner.nextLine();
 
@@ -61,9 +57,17 @@ public class QueryCommandRunner implements CommandLineRunner {
 				break;
 			}
 
-			planningFlow.setActivePlanId("plan_" + System.currentTimeMillis());
-			String result = planningFlow.execute(query);
-			System.out.println("plan : " + planningFlow.getConversationId() + " Result: " + result);
+			String planId = "plan_" + System.currentTimeMillis();
+			PlanningCoordinator planningCoordinator = manusConfiguration.createPlanningCoordinator(planId);
+			
+			try {
+				var context = planningCoordinator.executePlan(query);
+				System.out.println("Plan " + planId + " executed successfully");
+				System.out.println("Execution Context: " + context.toString());
+			} catch (Exception e) {
+				logger.error("执行查询时发生错误", e);
+				System.out.println("Error: " + e.getMessage());
+			}
 		}
 		scanner.close();
 	}

@@ -24,11 +24,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration;
-import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.model.Tool;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 
 @Service
 public class AgentServiceImpl implements AgentService {
@@ -44,7 +44,7 @@ public class AgentServiceImpl implements AgentService {
 	private DynamicAgentRepository repository;
 
 	@Autowired
-	private ManusConfiguration manusConfiguration;
+	private PlanningFactory manusConfiguration;
 
 	@Override
 	public List<AgentConfig> getAllAgents() {
