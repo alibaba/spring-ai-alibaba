@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.service.runner;
 
-import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.model.RunEvent;
 import reactor.core.publisher.Flux;
 

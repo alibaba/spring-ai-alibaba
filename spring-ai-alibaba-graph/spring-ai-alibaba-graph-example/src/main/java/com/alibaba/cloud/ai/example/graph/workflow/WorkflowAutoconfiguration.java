@@ -19,7 +19,6 @@ package com.alibaba.cloud.ai.example.graph.workflow;
 import java.util.List;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.OverAllState;
