@@ -17,6 +17,8 @@ package com.alibaba.cloud.ai.service.impl;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.PersistentConfig;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
@@ -25,7 +27,6 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
-import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.param.GraphStreamParam;
 import com.alibaba.cloud.ai.service.GraphService;
 import com.alibaba.cloud.ai.graph.GraphInitData;
@@ -33,6 +34,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.async.AsyncGenerator;
+
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -42,7 +47,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,27 +59,51 @@ import static java.util.Optional.ofNullable;
 
 @Service
 @Slf4j
-public class GraphServiceImpl implements GraphService {
+public class GraphServiceImpl implements GraphService, ApplicationContextAware {
 
 	private final ObjectMapper objectMapper;
 
-	private final StateGraph stateGraph;
+	private final Map<String, Map<PersistentConfig, CompiledGraph>> graphCache = new ConcurrentHashMap<>();
 
-	private GraphInitData initData;
+	private Map<String, StateGraph> stateGraphMap;
 
-	private final Map<PersistentConfig, CompiledGraph> graphCache = new ConcurrentHashMap<>();
-
-	public static final Map<String, Object> USER_INPUT = new HashMap<>();
-
-	public GraphServiceImpl(ObjectMapper objectMapper, GraphInitData initData, StateGraph stateGraph) {
+	public GraphServiceImpl(ObjectMapper objectMapper) {
 		this.objectMapper = objectMapper;
-		this.initData = initData;
-		this.stateGraph = stateGraph;
 	}
 
 	@Override
-	public GraphInitData getPrintableGraphData() {
-		return initData;
+	public Map<String, StateGraph> getStateGraphs() {
+		if (stateGraphMap == null) {
+			stateGraphMap = new ConcurrentHashMap<>();
+			applicationContext.getBeansOfType(StateGraph.class).forEach((_k, v) -> {
+				if (v.getName() != null) {
+					stateGraphMap.put(v.getName(), v);
+				}
+				else {
+					stateGraphMap.put(String.valueOf(v.hashCode()), v);
+				}
+			});
+			applicationContext.getBeansOfType(CompiledGraph.class).forEach((_k, v) -> {
+				if (v.stateGraph.getName() != null) {
+					stateGraphMap.put(v.stateGraph.getName(), v.stateGraph);
+				}
+				else {
+					stateGraphMap.put(String.valueOf(v.hashCode()), v.stateGraph);
+				}
+			});
+		}
+		return stateGraphMap;
+	}
+
+	@Override
+	public GraphInitData getPrintableGraphData(String name, boolean required) throws GraphStateException {
+		List<GraphInitData.ArgumentMetadata> inputArgs = new ArrayList<>();
+		inputArgs.add(
+				new GraphInitData.ArgumentMetadata(name, GraphInitData.ArgumentMetadata.ArgumentType.STRING, required));
+
+		CompiledGraph compiledGraph = stateGraphMap.get(name).compile();
+		var graph = compiledGraph.getGraph(GraphRepresentation.Type.MERMAID, name, false);
+		return new GraphInitData(name, graph.content(), inputArgs);
 	}
 
 	/**
@@ -95,11 +126,13 @@ public class GraphServiceImpl implements GraphService {
 	}
 
 	@Override
-	public Flux<ServerSentEvent<String>> stream(GraphStreamParam param, InputStream inputStream) throws Exception {
+	public Flux<ServerSentEvent<String>> stream(String name, GraphStreamParam param, InputStream inputStream)
+			throws Exception {
 		var threadId = param.getThread();
 		var resume = param.isResume();
 		var persistentConfig = new PersistentConfig(param.getSessionId(), threadId);
-		var compiledGraph = graphCache.get(persistentConfig);
+		var stateGraph = stateGraphMap.get(name);
+		var compiledGraph = graphCache.get(name).get(persistentConfig);
 
 		final Map<String, Object> dataMap;
 		if (resume && stateGraph.getStateSerializer() instanceof PlainTextStateSerializer textSerializer) {
@@ -140,7 +173,9 @@ public class GraphServiceImpl implements GraphService {
 
 			if (compiledGraph == null) {
 				compiledGraph = stateGraph.compile(compileConfig(persistentConfig));
-				graphCache.put(persistentConfig, compiledGraph);
+				Map<PersistentConfig, CompiledGraph> compiledGraphMap = graphCache.computeIfAbsent(name,
+						k -> new ConcurrentHashMap<>());
+				compiledGraphMap.put(persistentConfig, compiledGraph);
 			}
 
 			generator = compiledGraph.streamSnapshots(dataMap, runnableConfig(persistentConfig));
@@ -174,6 +209,13 @@ public class GraphServiceImpl implements GraphService {
 
 	RunnableConfig runnableConfig(PersistentConfig config) {
 		return RunnableConfig.builder().threadId(config.threadId()).build();
+	}
+
+	private ApplicationContext applicationContext;
+
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+		this.applicationContext = applicationContext;
 	}
 
 }
