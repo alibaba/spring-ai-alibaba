@@ -49,8 +49,8 @@ public interface GraphAPI {
 
 	@Operation(summary = "init graph", description = "", tags = { "Graph" })
 	@GetMapping(value = "init", produces = MediaType.APPLICATION_JSON_VALUE)
-	default R<GraphInitData> init(String name, boolean required) throws GraphStateException {
-		return R.success(graphService().getPrintableGraphData(name, required));
+	default R<GraphInitData> init(String name) throws GraphStateException {
+		return R.success(graphService().getPrintableGraphData(name));
 	}
 
 	@Operation(summary = "stream", description = "", tags = { "Graph" })

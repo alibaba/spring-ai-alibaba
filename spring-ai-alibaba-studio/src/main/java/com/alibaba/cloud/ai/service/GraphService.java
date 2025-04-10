@@ -34,7 +34,7 @@ public interface GraphService {
 	 * @return Init printable graph data (of MERMAID or PlantUML format) using StateGraph
 	 * definition
 	 */
-	GraphInitData getPrintableGraphData(String name, boolean required) throws GraphStateException;
+	GraphInitData getPrintableGraphData(String name) throws GraphStateException;
 
 	Flux<ServerSentEvent<String>> stream(String name, GraphStreamParam param, InputStream inputStream) throws Exception;
 
