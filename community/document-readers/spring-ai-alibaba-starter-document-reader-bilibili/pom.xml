@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-document-reader-bilibili</artifactId>
-    <name>Spring AI Alibaba Starter BiliBili Document Reader</name>
+    <name>Spring AI Alibaba Starter Document Reader BiliBili</name>
     <description>bilibili reader for Spring AI Alibaba</description>
     <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>

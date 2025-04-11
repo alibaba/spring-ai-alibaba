@@ -1,0 +1,2 @@
+org.springframework.boot.env.EnvironmentPostProcessor=\
+com.alibaba.cloud.ai.example.manus.config.McpServerConfigurationLoader
