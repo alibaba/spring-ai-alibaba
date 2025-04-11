@@ -106,7 +106,7 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 		this.lastTerminationMessage = toolInput;
 		this.isTerminated = true;
 		this.terminationTimestamp = java.time.LocalDateTime.now().toString();
-		
+
 		return new ToolExecuteResult(toolInput);
 	}
 

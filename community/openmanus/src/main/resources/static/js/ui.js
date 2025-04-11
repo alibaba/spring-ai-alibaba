@@ -231,6 +231,12 @@ const ManusUI = (() => {
             
             const details = await ManusAPI.getDetails(activePlanId);
             
+            // 如果details为null（例如404错误），则跳过处理
+            if (!details) {
+                console.log(`无法获取计划 ${activePlanId} 的详情`);
+                return;
+            }
+            
             // 发送计划更新事件
             EventSystem.emit('plan-update', details);
             

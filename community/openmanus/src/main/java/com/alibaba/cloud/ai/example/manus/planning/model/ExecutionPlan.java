@@ -24,89 +24,98 @@ import com.alibaba.cloud.ai.example.manus.flow.PlanStepStatus;
  * 计划实体类，用于管理执行计划的相关信息
  */
 public class ExecutionPlan {
-    private String planId;
-    private String title;
-    private String planningThinking;
-    private List<ExecutionStep> steps;
 
-    public ExecutionPlan(String planId, String title) {
-        this.planId = planId;
-        this.title = title;
-        this.steps = new ArrayList<>();
-    }
+	private String planId;
 
-    public String getPlanId() {
-        return planId;
-    }
+	private String title;
 
-    public void setPlanId(String planId) {
-        this.planId = planId;
-    }
+	private String planningThinking;
 
-    public String getTitle() {
-        return title;
-    }
+	private List<ExecutionStep> steps;
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
-    public List<ExecutionStep> getSteps() {
-        return steps;
-    }
-    public void setSteps(List<ExecutionStep> steps) {
-        this.steps = steps;
-    }
-    public void addStep(ExecutionStep step) {
-        this.steps.add(step);
-    }
-    public void removeStep(ExecutionStep step) {
-        this.steps.remove(step);
-    }
-    public int getStepCount() {
-        return steps.size();
-    }
+	public ExecutionPlan(String planId, String title) {
+		this.planId = planId;
+		this.title = title;
+		this.steps = new ArrayList<>();
+	}
 
+	public String getPlanId() {
+		return planId;
+	}
 
-    public String getPlanningThinking() {
-        return planningThinking;
-    }
+	public void setPlanId(String planId) {
+		this.planId = planId;
+	}
 
-    public void setPlanningThinking(String planningThinking) {
-        this.planningThinking = planningThinking;
-    }
+	public String getTitle() {
+		return title;
+	}
 
-    public String getPlanExecutionStateStringFormat() {
-        StringBuilder state = new StringBuilder();
-        state.append("Plan: ").append(title).append(" (ID: ").append(planId).append(")\n");
-        state.append("=".repeat(state.length())).append("\n\n");
+	public void setTitle(String title) {
+		this.title = title;
+	}
 
-        long completed = steps.stream().filter(step -> step.getStatus().equals(PlanStepStatus.COMPLETED)).count();
-        int total = steps.size();
-        double progress = total > 0 ? (completed * 100.0 / total) : 0;
+	public List<ExecutionStep> getSteps() {
+		return steps;
+	}
 
-        state.append(String.format("Progress: %d/%d steps (%.1f%%)\n\n", completed, total, progress));
+	public void setSteps(List<ExecutionStep> steps) {
+		this.steps = steps;
+	}
 
-        state.append("Steps:\n");
-        state.append(getStepsExecutionStateStringFormat());
+	public void addStep(ExecutionStep step) {
+		this.steps.add(step);
+	}
 
-        return state.toString();
-    }
+	public void removeStep(ExecutionStep step) {
+		this.steps.remove(step);
+	}
 
-    public String getStepsExecutionStateStringFormat() {
-        StringBuilder state = new StringBuilder();
-        for (int i = 0; i < steps.size(); i++) {
+	public int getStepCount() {
+		return steps.size();
+	}
 
-            ExecutionStep step = steps.get(i);
-            String symbol = switch (step.getStatus()) {
-                case COMPLETED -> "[completed]";
-                case IN_PROGRESS -> "[in_progress]";
-                case BLOCKED -> "[blocked]";
-                case NOT_STARTED -> "[not_started]";
-                default -> "[ ]";
-            };
-            state.append(i).append(". ").append(symbol).append(" ").append(step.getStepRequirement()).append("\n");
-            state.append(" - step execution result: ").append(step.getResult()).append("\n");
-        }
-        return state.toString();
-    }
+	public String getPlanningThinking() {
+		return planningThinking;
+	}
+
+	public void setPlanningThinking(String planningThinking) {
+		this.planningThinking = planningThinking;
+	}
+
+	public String getPlanExecutionStateStringFormat() {
+		StringBuilder state = new StringBuilder();
+		state.append("Plan: ").append(title).append(" (ID: ").append(planId).append(")\n");
+		state.append("=".repeat(state.length())).append("\n\n");
+
+		long completed = steps.stream().filter(step -> step.getStatus().equals(PlanStepStatus.COMPLETED)).count();
+		int total = steps.size();
+		double progress = total > 0 ? (completed * 100.0 / total) : 0;
+
+		state.append(String.format("Progress: %d/%d steps (%.1f%%)\n\n", completed, total, progress));
+
+		state.append("Steps:\n");
+		state.append(getStepsExecutionStateStringFormat());
+
+		return state.toString();
+	}
+
+	public String getStepsExecutionStateStringFormat() {
+		StringBuilder state = new StringBuilder();
+		for (int i = 0; i < steps.size(); i++) {
+
+			ExecutionStep step = steps.get(i);
+			String symbol = switch (step.getStatus()) {
+				case COMPLETED -> "[completed]";
+				case IN_PROGRESS -> "[in_progress]";
+				case BLOCKED -> "[blocked]";
+				case NOT_STARTED -> "[not_started]";
+				default -> "[ ]";
+			};
+			state.append("step ").append(i).append(": ").append(symbol).append(" ").append(step.getStepRequirement()).append("\n");
+			state.append(" - step execution result: ").append("\n").append(step.getResult()).append("\n");
+		}
+		return state.toString();
+	}
+
 }

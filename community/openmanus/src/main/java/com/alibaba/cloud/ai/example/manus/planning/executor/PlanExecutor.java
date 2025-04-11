@@ -39,136 +39,161 @@ import org.slf4j.LoggerFactory;
  */
 public class PlanExecutor {
 
-    private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
-    private static final Logger logger = LoggerFactory.getLogger(PlanExecutor.class);
+	private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
 
-    protected final PlanExecutionRecorder recorder;
-    Pattern pattern = Pattern.compile("\\[([A-Z_]+)\\]");
+	private static final Logger logger = LoggerFactory.getLogger(PlanExecutor.class);
 
-    private final List<BaseAgent> agents;
+	protected final PlanExecutionRecorder recorder;
 
-    public PlanExecutor(List<BaseAgent> agents, PlanExecutionRecorder recorder) {
-        this.agents = agents;
-        this.recorder = recorder;
-    }
+	Pattern pattern = Pattern.compile("\\[([A-Z_]+)\\]");
 
-    /**
-     * 执行整个计划的所有步骤
-     * 
-     * @param plan 要执行的计划
-     * @return 执行结果
-     */
-    public void executeAllSteps(ExecutionContext context) {
-        recordPlanExecutionStart(context);
-        ExecutionPlan plan = context.getPlan();
-        List<ExecutionStep> steps = plan.getSteps();
+	private final List<BaseAgent> agents;
 
-        for (ExecutionStep step : steps) {
-            executeStep(step, context);
-        }
-        context.setSuccess(true);
-    }
+	public PlanExecutor(List<BaseAgent> agents, PlanExecutionRecorder recorder) {
+		this.agents = agents;
+		this.recorder = recorder;
+	}
 
-    /**
-     * 执行单个步骤
-     * 
-     * @param executor 执行器
-     * @param stepInfo 步骤信息
-     * @return 步骤执行结果
-     */
-    private void executeStep(ExecutionStep step, ExecutionContext context) {
+	/**
+	 * 执行整个计划的所有步骤
+	 * @param plan 要执行的计划
+	 * @return 执行结果
+	 */
+	public void executeAllSteps(ExecutionContext context) {
+		recordPlanExecutionStart(context);
+		ExecutionPlan plan = context.getPlan();
+		List<ExecutionStep> steps = plan.getSteps();
 
-        String stepType = getStepFromStepReq(step.getStepRequirement());
-        BaseAgent executor = getExecutorForStep(stepType);
-        int stepIndex = step.getStepIndex();
-        recordStepStart(step, context);
+		for (ExecutionStep step : steps) {
+			executeStep(step, context);
+		}
+		context.setSuccess(true);
+	}
 
-        try {
-            String planStatus = context.getPlan().getPlanExecutionStateStringFormat();
+	/**
+	 * 执行单个步骤
+	 * @param executor 执行器
+	 * @param stepInfo 步骤信息
+	 * @return 步骤执行结果
+	 */
+	private void executeStep(ExecutionStep step, ExecutionContext context) {
 
-            String stepText = step.getStepRequirement();
-            Map<String, Object> executorParams = new HashMap<>();
-            executorParams.put("planStatus", planStatus);
-            executorParams.put("currentStepIndex", String.valueOf(stepIndex));
-            executorParams.put("stepText", stepText);
-            executorParams.put(EXECUTION_ENV_KEY_STRING, "");
-            String stepResultStr = executor.run(executorParams);
-            // Execute the step
-            step.setResult(stepResultStr);
-            step.setStatus(PlanStepStatus.COMPLETED);
-        } catch (Exception e) {
-            logger.error("Error executing step: " + e.getMessage());
-            step.setStatus(PlanStepStatus.FAILED);
-            step.setResult("Execution failed: " + e.getMessage());
-        }
+		String stepType = getStepFromStepReq(step.getStepRequirement());
+		BaseAgent executor = getExecutorForStep(stepType);
+		int stepIndex = step.getStepIndex();
 
-    }
+		step.setStatus(PlanStepStatus.IN_PROGRESS);
+		recordStepStart(step, context);
+		try {
+			String planStatus = context.getPlan().getPlanExecutionStateStringFormat();
 
-    private String getStepFromStepReq(String stepRequirement) {
-        Matcher matcher = pattern.matcher(stepRequirement);
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-        return "DEFAULT_AGENT"; // Default agent if no match found
-    }
+			String stepText = step.getStepRequirement();
+			Map<String, Object> executorParams = new HashMap<>();
+			executorParams.put("planStatus", planStatus);
+			executorParams.put("currentStepIndex", String.valueOf(stepIndex));
+			executorParams.put("stepText", stepText);
+			executorParams.put(EXECUTION_ENV_KEY_STRING, "");
+			String stepResultStr = executor.run(executorParams);
+			// Execute the step
+			step.setResult(stepResultStr);
+			step.setStatus(PlanStepStatus.COMPLETED);
+		}
+		catch (Exception e) {
+			logger.error("Error executing step: " + e.getMessage());
+			step.setStatus(PlanStepStatus.FAILED);
+			step.setResult("Execution failed: " + e.getMessage());
+		}
+		finally {
+			recordStepEnd(step, context);
+		}
 
-    /**
-     * 获取步骤的执行器
-     * 
-     * @param stepType 步骤类型
-     * @return 对应的执行器
-     */
-    private BaseAgent getExecutorForStep(String stepType) {
-        // 根据步骤类型获取对应的执行器
-        for (BaseAgent agent : agents) {
-            if (agent.getName().equalsIgnoreCase(stepType)) {
-                return agent;
-            }
-        }
-        throw new IllegalArgumentException(
-                "No Agent Executor found for step type, check your agents list : " + stepType);
-    }
+	}
 
-    protected PlanExecutionRecorder getRecorder() {
-        return recorder;
-    }
+	private String getStepFromStepReq(String stepRequirement) {
+		Matcher matcher = pattern.matcher(stepRequirement);
+		if (matcher.find()) {
+			return matcher.group(1);
+		}
+		return "DEFAULT_AGENT"; // Default agent if no match found
+	}
 
-    private void recordPlanExecutionStart(ExecutionContext context) {
-        PlanExecutionRecord record = getOrCreatePlanExecutionRecord(context);
-       
-        record.setPlanId(context.getPlan().getPlanId());
-        record.setStartTime(LocalDateTime.now());
-        record.setTitle(context.getPlan().getTitle());
-        record.setUserRequest(context.getUserRequest());
-        List<String> steps = new ArrayList<>();
-        for (ExecutionStep step : context.getPlan().getSteps()) {
-            steps.add(step.getStepInStr());
-        }
-        record.setSteps(steps);
-        getRecorder().recordPlanExecution(record);
-    }
+	/**
+	 * 获取步骤的执行器
+	 * @param stepType 步骤类型
+	 * @return 对应的执行器
+	 */
+	private BaseAgent getExecutorForStep(String stepType) {
+		// 根据步骤类型获取对应的执行器
+		for (BaseAgent agent : agents) {
+			if (agent.getName().equalsIgnoreCase(stepType)) {
+				return agent;
+			}
+		}
+		throw new IllegalArgumentException(
+				"No Agent Executor found for step type, check your agents list : " + stepType);
+	}
 
-    /**
-     * Initialize the plan execution record
-     */
-    private PlanExecutionRecord getOrCreatePlanExecutionRecord(ExecutionContext context) {
-        PlanExecutionRecord record = getRecorder().getExecutionRecord(context.getPlan().getPlanId());
-        if (record == null) {
-            record = new PlanExecutionRecord();
-        }
-        getRecorder().recordPlanExecution(record);
-        return record;
-    }
+	protected PlanExecutionRecorder getRecorder() {
+		return recorder;
+	}
 
+	private void recordPlanExecutionStart(ExecutionContext context) {
+		PlanExecutionRecord record = getOrCreatePlanExecutionRecord(context);
+
+		record.setPlanId(context.getPlan().getPlanId());
+		record.setStartTime(LocalDateTime.now());
+		record.setTitle(context.getPlan().getTitle());
+		record.setUserRequest(context.getUserRequest());
+		retrieveExecutionSteps(context, record);
+		getRecorder().recordPlanExecution(record);
+	}
+
+	private void retrieveExecutionSteps(ExecutionContext context, PlanExecutionRecord record) {
+		List<String> steps = new ArrayList<>();
+		for (ExecutionStep step : context.getPlan().getSteps()) {
+			steps.add(step.getStepInStr());
+		}
+		record.setSteps(steps);
+	}
+
+	/**
+	 * Initialize the plan execution record
+	 */
+	private PlanExecutionRecord getOrCreatePlanExecutionRecord(ExecutionContext context) {
+		PlanExecutionRecord record = getRecorder().getExecutionRecord(context.getPlanId());
+		if (record == null) {
+			record = new PlanExecutionRecord(context.getPlanId());
+		}
+		getRecorder().recordPlanExecution(record);
+		return record;
+	}
 
 	private void recordStepStart(ExecutionStep step, ExecutionContext context) {
 		// 更新 PlanExecutionRecord 中的当前步骤索引
-        PlanExecutionRecord record = getOrCreatePlanExecutionRecord(context);
-        if (record != null) {
-            int currentStepIndex = step.getStepIndex();
-            record.setCurrentStepIndex(currentStepIndex);
-            getRecorder().recordPlanExecution(record);
-        }
+		PlanExecutionRecord record = getOrCreatePlanExecutionRecord(context);
+		if (record != null) {
+			int currentStepIndex = step.getStepIndex();
+			record.setCurrentStepIndex(currentStepIndex);
+			retrieveExecutionSteps(context, record);
+			getRecorder().recordPlanExecution(record);
+		}
+	}
+
+	/**
+	 * 记录步骤执行完成
+	 * @param step 执行的步骤
+	 * @param context 执行上下文
+	 */
+	private void recordStepEnd(ExecutionStep step, ExecutionContext context) {
+		// 更新 PlanExecutionRecord 中的步骤状态
+		PlanExecutionRecord record = getOrCreatePlanExecutionRecord(context);
+		if (record != null) {
+			int currentStepIndex = step.getStepIndex();
+			record.setCurrentStepIndex(currentStepIndex);
+			// 重新获取所有步骤状态
+			retrieveExecutionSteps(context, record);
+			getRecorder().recordPlanExecution(record);
+		}
 	}
 
 }

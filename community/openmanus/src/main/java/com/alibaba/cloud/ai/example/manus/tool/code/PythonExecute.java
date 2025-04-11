@@ -77,7 +77,6 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 			.build();
 	}
 
-
 	private String lastCode = "";
 
 	private String lastExecutionResult = "";

@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.flow.PlanStepStatus;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
@@ -61,9 +62,6 @@ import java.util.*;
 public abstract class BaseAgent {
 
 	private static final Logger log = LoggerFactory.getLogger(BaseAgent.class);
-
-
-	private String conversationId;
 
 	private String planId = null;
 
@@ -169,7 +167,6 @@ public abstract class BaseAgent {
 		this.maxSteps = manusProperties.getMaxSteps();
 	}
 
-
 	public String run(Map<String, Object> data) {
 		currentStep = 0;
 		if (state != AgentState.IDLE) {
@@ -179,7 +176,7 @@ public abstract class BaseAgent {
 		setData(data);
 
 		// Create agent execution record
-		AgentExecutionRecord agentRecord = new AgentExecutionRecord(getConversationId(), getName(), getDescription());
+		AgentExecutionRecord agentRecord = new AgentExecutionRecord(getPlanId(), getName(), getDescription());
 		agentRecord.setMaxSteps(maxSteps);
 		agentRecord.setStatus(state.toString());
 		// Record execution in recorder if we have a plan ID
@@ -196,10 +193,11 @@ public abstract class BaseAgent {
 				log.info("Executing round " + currentStep + "/" + maxSteps);
 
 				AgentExecResult stepResult = step();
-				
+
 				if (isStuck()) {
 					handleStuckState(agentRecord);
-				} else {
+				}
+				else {
 					// 更新全局状态以保持一致性
 					log.info("Agent state: " + stepResult.getState());
 					state = stepResult.getState();
@@ -272,7 +270,7 @@ public abstract class BaseAgent {
 	 */
 	protected boolean isStuck() {
 		// 目前判断是如果三次没有调用工具就认为是卡住了，就退出当前step。
-		List<Message> memoryEntries = llmService.getAgentChatClient(getPlanId()).getMemory().get(conversationId, 6);
+		List<Message> memoryEntries = llmService.getAgentChatClient(getPlanId()).getMemory().get(getPlanId(), 6);
 		int zeroToolCallCount = 0;
 		for (Message msg : memoryEntries) {
 			if (msg instanceof AssistantMessage) {
@@ -288,15 +286,6 @@ public abstract class BaseAgent {
 	public void setState(AgentState state) {
 		this.state = state;
 	}
-
-	public String getConversationId() {
-		return conversationId;
-	}
-
-	public void setConversationId(String conversationId) {
-		this.conversationId = conversationId;
-	}
-
 	public String getPlanId() {
 		return planId;
 	}
@@ -326,8 +315,10 @@ public abstract class BaseAgent {
 		return manusProperties;
 	}
 
-	public static class AgentExecResult{
+	public static class AgentExecResult {
+
 		private String result;
+
 		private AgentState state;
 
 		public AgentExecResult(String result, AgentState state) {
@@ -342,7 +333,7 @@ public abstract class BaseAgent {
 		public AgentState getState() {
 			return state;
 		}
-		
 
 	}
+
 }

@@ -20,12 +20,14 @@ import java.util.Scanner;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
+import com.alibaba.cloud.ai.example.manus.planning.model.ExecutionContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 @Configuration
 public class QueryCommandRunner implements CommandLineRunner {
@@ -33,7 +35,8 @@ public class QueryCommandRunner implements CommandLineRunner {
 	private static final Logger logger = LoggerFactory.getLogger(QueryCommandRunner.class);
 
 	@Autowired
-	private PlanningFactory manusConfiguration;
+	@Lazy
+	private PlanningFactory planningFactory;
 
 	@Autowired
 	private ManusProperties manusProperties;
@@ -57,13 +60,16 @@ public class QueryCommandRunner implements CommandLineRunner {
 				break;
 			}
 
-			String planId = "plan_" + System.currentTimeMillis();
-			PlanningCoordinator planningCoordinator = manusConfiguration.createPlanningCoordinator(planId);
-			
+			// 创建唯一的计划ID
+			String planId = "plan-" + System.currentTimeMillis();
+			PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(planId);
+			ExecutionContext context = new ExecutionContext();
+			context.setUserRequest(query);
+			context.setPlanId(planId);
 			try {
-				var context = planningCoordinator.executePlan(query);
+				var executionContext = planningCoordinator.executePlan(context);
 				System.out.println("Plan " + planId + " executed successfully");
-				System.out.println("Execution Context: " + context.toString());
+				System.out.println("Execution Context: " + executionContext.getResultSummary());
 			} catch (Exception e) {
 				logger.error("执行查询时发生错误", e);
 				System.out.println("Error: " + e.getMessage());

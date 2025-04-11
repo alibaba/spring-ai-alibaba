@@ -17,11 +17,14 @@ package com.alibaba.cloud.ai.example.manus.controller;
 
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
+import com.alibaba.cloud.ai.example.manus.planning.model.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,9 +35,11 @@ import java.util.concurrent.CompletableFuture;
 @RestController
 @RequestMapping("/api/manus")
 public class ManusController {
+	private static final Logger logger = LoggerFactory.getLogger(ManusController.class);
 
 	@Autowired
-	private PlanningFactory manusConfiguration;
+	@Lazy
+	private PlanningFactory planningFactory;
 
 	@Autowired
 	private PlanExecutionRecorder planExecutionRecorder;
@@ -50,20 +55,23 @@ public class ManusController {
 		if (query == null || query.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "查询内容不能为空"));
 		}
-
+		ExecutionContext context = new ExecutionContext();
+		context.setUserRequest(query);
 		// 创建唯一的计划ID
-		String planId = "plan_" + System.currentTimeMillis();
-
+		String planId = "plan-" + System.currentTimeMillis();
+		context.setPlanId(planId);
+		context.setNeedSummary(true);
 		// 获取或创建规划流程
-		PlanningCoordinator planningFlow = manusConfiguration.createPlanningCoordinator(planId);
+		PlanningCoordinator planningFlow = planningFactory.createPlanningCoordinator(planId);
 
 		// 异步执行任务
 		CompletableFuture.supplyAsync(() -> {
 			try {
-				return planningFlow.executePlan(query);
+				return planningFlow.executePlan(context);
 			}
 			catch (Exception e) {
-				return "执行出错: " + e.getMessage();
+				logger.error("执行计划失败", e);
+				throw new RuntimeException("执行计划失败: " + e.getMessage(), e);
 			}
 		});
 
@@ -100,7 +108,7 @@ public class ManusController {
 	@DeleteMapping("/details/{planId}")
 	public ResponseEntity<Map<String, String>> removeExecutionDetails(@PathVariable String planId) {
 		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId);
-		
+
 		if (planRecord == null) {
 			return ResponseEntity.notFound().build();
 		}
@@ -110,8 +118,7 @@ public class ManusController {
 			return ResponseEntity.ok(Map.of("message", "执行记录已成功删除", "planId", planId));
 		}
 		catch (Exception e) {
-			return ResponseEntity.internalServerError()
-					.body(Map.of("error", "删除记录失败: " + e.getMessage()));
+			return ResponseEntity.internalServerError().body(Map.of("error", "删除记录失败: " + e.getMessage()));
 		}
 	}
 
