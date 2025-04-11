@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>计划模板 - JTaskPilot</title>
+    <!-- 引入模块化CSS文件 -->
+    <link rel="stylesheet" href="../css/reset.css">
+    <link rel="stylesheet" href="../css/layout.css">
+    <link rel="stylesheet" href="../css/sidebar.css">
+    <link rel="stylesheet" href="../css/content.css">
+    <link rel="stylesheet" href="../css/chat.css">
+    <link rel="stylesheet" href="../css/input.css">
+    <link rel="stylesheet" href="../css/right-sidebar.css">
+    <link rel="stylesheet" href="css/plan-template.css">
+    <style>
+        /* Simple icons for demo */
+        .icon-placeholder::before { content: "□"; display: inline-block; margin-right: 5px; }
+        .icon-collapse-left::before { content: "◀"; }
+        .icon-expand-left::before { content: "▶"; }
+        .icon-collapse-right::before { content: "▶"; }
+        .icon-expand-right::before { content: "◀"; }
+        .icon-terminal::before { content: ">_"; }
+        .icon-play::before { content: "►"; }
+        .icon-realtime::before { content: "●"; color: #1a73e8; }
+        .icon-menu::before { content: "⋮"; }
+        .icon-share::before { content: "↑"; }
+        .icon-star-outline::before { content: "☆"; }
+        .icon-star-filled::before { content: "★"; }
+        .icon-lightbulb::before { content: "💡"; }
+        .icon-attach::before { content: "📎"; }
+        .icon-send::before { content: "↑"; }
+        .icon-add::before { content: "+"; }
+        .icon-folder::before { content:"📁"; }
+        .icon-pages::before { content:"📄";}
+        .icon-down-arrow::before { content: "▼"; }
+        .icon-up-arrow::before { content: "▲"; }
+        .icon-edit::before { content: "✎"; }
+        .icon-run::before { content: "▶"; }
+        .icon-save::before { content: "💾"; }
+        .icon-back::before { content: "⬅"; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 左侧边栏 - 已简化 -->
+        <aside class="sidebar left-sidebar" id="leftSidebar">
+            <div class="sidebar-top-icons">
+                <div class="icon">[M]</div>
+                <div class="icon">[G]</div>
+            </div>
+            <button class="new-task-btn">
+                <span class="icon-add"></span> 新建计划 <span class="shortcut">⌘ K</span>
+            </button>
+            <ul class="task-list">
+                <li class="task-item">
+                    <div class="task-icon">[📊]</div>
+                    <div class="task-details">
+                        <div class="task-title">深度分析MCP核心技术原理</div>
+                        <div class="task-preview">我已经成功将MCP核心技术原理分析报...</div>
+                    </div>
+                    <div class="task-time">6小时前</div>
+                </li>
+                <li class="task-item selected">
+                    <div class="task-icon">[🛡️]</div>
+                    <div class="task-details">
+                        <div class="task-title">manus核心技术讲解与开源...</div>
+                        <div class="task-preview">我已经成功将Manus AI指南网站部署到...</div>
+                    </div>
+                    <div class="task-time">2天前</div>
+                </li>
+            </ul>
+            <div class="sidebar-bottom">
+                <!-- 用户信息区域 -->
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content-wrapper" id="mainContent">
+            <header class="content-header">
+                <div class="header-controls-left">
+                    <button id="toggleLeftSidebarBtn" class="action-btn toggle-btn" title="切换左侧边栏">
+                        <span class="icon-collapse-left"></span>
+                    </button>
+                    <div class="header-title-section">
+                        <h1>计划模板</h1>
+                        <div class="knowledge-suggestion">
+                            <span class="icon-lightbulb"></span> 自动生成和修改执行计划
+                        </div>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button id="backToMainBtn" class="action-btn" onclick="window.location.href='index.html'">
+                        <span class="icon-back"></span> 返回主页
+                    </button>
+                    <button id="toggleRightSidebarBtn" class="action-btn toggle-btn" title="切换右侧边栏">
+                        <span class="icon-collapse-right"></span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="plan-container">
+                <div class="plan-input-section">
+                    <div class="section-header">
+                        <h2>计划需求输入</h2>
+                        <div class="section-actions">
+                            <button class="action-btn" id="clearBtn">
+                                <span class="icon-placeholder"></span> 清空
+                            </button>
+                        </div>
+                    </div>
+                    <div class="input-field">
+                        <label for="plan-prompt">任务描述：</label>
+                        <textarea id="plan-prompt" placeholder="请输入您的任务需求，系统将基于此生成执行计划..."></textarea>
+                    </div>
+                    <div class="submit-area">
+                        <button class="submit-btn" id="generatePlanBtn">
+                            <span class="icon-placeholder"></span> 生成计划
+                        </button>
+                    </div>
+                </div>
+
+                <div class="plan-result-section">
+                    <div class="section-header">
+                        <h2>计划文本预览</h2>
+                        <div class="section-actions">
+                            <button class="action-btn" id="editModeBtn">
+                                <span class="icon-edit"></span> 编辑模式
+                            </button>
+                            <button class="action-btn" id="saveBtn">
+                                <span class="icon-save"></span> 保存
+                            </button>
+                        </div>
+                    </div>
+                    <div class="plan-text-preview">
+                        <div id="plan-text-display" class="preview-content">
+                            <p class="placeholder-text">计划文本将在这里显示...</p>
+                        </div>
+                        <textarea id="plan-text-editor" class="hidden"></textarea>
+                    </div>
+                </div>
+
+                <div class="plan-json-section">
+                    <div class="section-header">
+                        <h2>计划数据 (JSON)</h2>
+                        <div class="section-actions">
+                            <button class="action-btn" id="jsonEditModeBtn">
+                                <span class="icon-edit"></span> 编辑JSON
+                            </button>
+                            <button class="action-btn" id="validateJsonBtn">
+                                <span class="icon-placeholder"></span> 验证
+                            </button>
+                        </div>
+                    </div>
+                    <div class="plan-json-preview">
+                        <div id="plan-json-display" class="preview-content code-view">
+                            <p class="placeholder-text">计划的JSON数据将在这里显示...</p>
+                        </div>
+                        <textarea id="plan-json-editor" class="hidden"></textarea>
+                    </div>
+                </div>
+
+                <div class="plan-actions">
+                    <button class="secondary-btn" id="modifyPlanBtn">
+                        <span class="icon-edit"></span> 重新生成
+                    </button>
+                    <button class="primary-btn" id="runPlanBtn">
+                        <span class="icon-run"></span> 执行计划
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- 右侧边栏 -->
+        <aside class="sidebar right-sidebar" id="rightSidebar">
+            <div class="right-sidebar-header">
+                <h3>计划历史</h3>
+            </div>
+            <div class="right-sidebar-content">
+                <div class="plan-history-list">
+                    <div class="plan-history-item">
+                        <div class="history-item-header">
+                            <span class="history-date">2025-04-10 15:32</span>
+                            <span class="history-status completed">已完成</span>
+                        </div>
+                        <div class="history-title">分析项目结构并创建文档</div>
+                        <div class="history-steps">5个步骤</div>
+                    </div>
+                    <div class="plan-history-item">
+                        <div class="history-item-header">
+                            <span class="history-date">2025-04-09 11:20</span>
+                            <span class="history-status failed">失败</span>
+                        </div>
+                        <div class="history-title">部署Spring AI应用到阿里云</div>
+                        <div class="history-steps">8个步骤</div>
+                    </div>
+                    <div class="plan-history-item">
+                        <div class="history-item-header">
+                            <span class="history-date">2025-04-08 09:45</span>
+                            <span class="history-status completed">已完成</span>
+                        </div>
+                        <div class="history-title">生成单元测试用例</div>
+                        <div class="history-steps">3个步骤</div>
+                    </div>
+                </div>
+            </div>
+            <div class="right-sidebar-footer">
+                <span>计划模板 v1.0.0</span>
+            </div>
+        </aside>
+    </div>
+
+    <!-- 执行确认对话框 -->
+    <div class="dialog-overlay" id="executionDialog">
+        <div class="dialog-container">
+            <div class="dialog-header">
+                <h3>计划执行确认</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="dialog-content">
+                <p>您确定要执行此计划吗？执行后将会实际运行计划中定义的所有步骤。</p>
+                <div class="dialog-plan-summary">
+                    <h4>计划摘要：</h4>
+                    <div id="plan-summary"></div>
+                    <div class="plan-step-count"><span id="step-count">0</span> 个步骤将被执行</div>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button class="secondary-btn" id="cancelExecutionBtn">取消</button>
+                <button class="primary-btn" id="confirmExecutionBtn">确认执行</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入模块化JavaScript文件 -->
+    <script src="../js/api.js"></script>
+    <script src="js/plan-template.js"></script>
+</body>
+</html>
