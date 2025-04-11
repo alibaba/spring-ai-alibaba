@@ -78,7 +78,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 
 	private final String TOOL_DESCRIPTION = """
 			Operate on text files (including md, html, css, java, etc) with various actions:
-			- open: Open and read a text file, YOU MUST OPEN A FILE FIRST ! 
+			- open: Open and read a text file, YOU MUST OPEN A FILE FIRST !
 			- replace: Replace specific text in the file
 			- get_text: Get current content of the file
 			- save: Save and close the file
@@ -314,7 +314,6 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	public void setPlanId(String planId) {
 		this.planId = planId;
 	}
-
 
 	@Override
 	public String getCurrentToolStateString() {

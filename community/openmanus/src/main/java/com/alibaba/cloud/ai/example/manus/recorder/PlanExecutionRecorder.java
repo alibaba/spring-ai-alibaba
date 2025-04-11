@@ -82,9 +82,9 @@ public interface PlanExecutionRecorder {
 	AgentExecutionRecord getCurrentAgentExecutionRecord(String planId);
 
 	/**
-     * 删除指定计划ID的执行记录
-     * @param planId 要删除的计划ID
-     */
-    void removeExecutionRecord(String planId);
+	 * 删除指定计划ID的执行记录
+	 * @param planId 要删除的计划ID
+	 */
+	void removeExecutionRecord(String planId);
 
 }

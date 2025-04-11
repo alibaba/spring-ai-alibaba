@@ -34,20 +34,27 @@ const ManusAPI = (() => {
     /**
      * 获取详细的执行记录
      * @param {string} planId - 计划ID
-     * @returns {Promise<Object>} - 包含详细执行记录的响应
+     * @returns {Promise<Object>} - 包含详细执行记录的响应，如果404则返回null
      */
     const getDetails = async (planId) => {
         try {
             const response = await fetch(`${BASE_URL}/details/${planId}`);
 
+            if (response.status === 404) {
+                // 静默处理404错误，返回null
+                console.log(`Plan ${planId} 不存在或已被删除，忽略此次查询`);
+                return null;
+            }
+            
             if (!response.ok) {
                 throw new Error(`获取详细信息失败: ${response.status}`);
             }
 
             return await response.json();
         } catch (error) {
-            console.error('获取详细信息失败:', error);
-            throw error;
+            // 记录错误但不抛出异常
+            console.log('获取详细信息失败:', error.message);
+            return null;
         }
     };
 

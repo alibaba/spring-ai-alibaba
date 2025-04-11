@@ -120,12 +120,12 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 	}
 
 	/**
-     * 删除指定计划ID的执行记录
-     * @param planId 要删除的计划ID
-     */
-    @Override
-    public void removeExecutionRecord(String planId) {
-        planRecords.remove(planId);
-    }
+	 * 删除指定计划ID的执行记录
+	 * @param planId 要删除的计划ID
+	 */
+	@Override
+	public void removeExecutionRecord(String planId) {
+		planRecords.remove(planId);
+	}
 
 }

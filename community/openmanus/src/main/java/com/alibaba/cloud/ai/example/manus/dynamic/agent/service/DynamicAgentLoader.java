@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 import java.util.List;
 
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
@@ -30,38 +31,38 @@ import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 @Service
 public class DynamicAgentLoader {
 
-	private final DynamicAgentRepository repository;
+    private final DynamicAgentRepository repository;
+    private final LlmService llmService;
+    private final PlanExecutionRecorder recorder;
+    private final ManusProperties properties;
+    private final ToolCallingManager toolCallingManager;
 
-	private final LlmService llmService;
+    public DynamicAgentLoader(
+            DynamicAgentRepository repository,
+            @Lazy LlmService llmService,
+            PlanExecutionRecorder recorder,
+            ManusProperties properties,
+            @Lazy ToolCallingManager toolCallingManager) {
+        this.repository = repository;
+        this.llmService = llmService;
+        this.recorder = recorder;
+        this.properties = properties;
+        this.toolCallingManager = toolCallingManager;
+    }
 
-	private final PlanExecutionRecorder recorder;
+    public DynamicAgent loadAgent(String agentName) {
+        DynamicAgentEntity entity = repository.findByAgentName(agentName);
+        if (entity == null) {
+            throw new IllegalArgumentException("Agent not found: " + agentName);
+        }
 
-	private final ManusProperties properties;
+        return new DynamicAgent(llmService, recorder, properties, entity.getAgentName(), entity.getAgentDescription(),
+                entity.getSystemPrompt(), entity.getNextStepPrompt(), entity.getAvailableToolKeys(),
+                toolCallingManager);
+    }
 
-	private final ToolCallingManager toolCallingManager;
-
-	public DynamicAgentLoader(DynamicAgentRepository repository, LlmService llmService, PlanExecutionRecorder recorder,
-			ManusProperties properties, ToolCallingManager toolCallingManager) {
-		this.repository = repository;
-		this.llmService = llmService;
-		this.recorder = recorder;
-		this.properties = properties;
-		this.toolCallingManager = toolCallingManager;
-	}
-
-	public DynamicAgent loadAgent(String agentName) {
-		DynamicAgentEntity entity = repository.findByAgentName(agentName);
-		if (entity == null) {
-			throw new IllegalArgumentException("Agent not found: " + agentName);
-		}
-
-		return new DynamicAgent(llmService, recorder, properties, entity.getAgentName(), entity.getAgentDescription(),
-				entity.getSystemPrompt(), entity.getNextStepPrompt(), entity.getAvailableToolKeys(),
-				toolCallingManager);
-	}
-
-	public List<DynamicAgentEntity> getAllAgents() {
-		return repository.findAll();
-	}
+    public List<DynamicAgentEntity> getAllAgents() {
+        return repository.findAll();
+    }
 
 }
