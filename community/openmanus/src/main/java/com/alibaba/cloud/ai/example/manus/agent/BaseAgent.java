@@ -236,8 +236,9 @@ public abstract class BaseAgent {
 			throw e; // 重新抛出异常，让上层调用者知道发生了错误
 		}
 		finally {
-			state = AgentState.IDLE; // Reset state after execution
+			state = AgentState.FINISHED; // Reset state after execution
 			agentRecord.setStatus(state.toString());
+			llmService.removeAgentChatClient(planId);
 		}
 		return String.join("\n", results);
 	}
