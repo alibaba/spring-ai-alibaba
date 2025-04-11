@@ -36,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -82,11 +83,12 @@ public class PlanningFactory {
 
 	private ConcurrentHashMap<String, PlanningCoordinator> flowMap = new ConcurrentHashMap<>();
 
-
 	@Autowired
+	@Lazy
 	private LlmService llmService;
 
 	@Autowired
+	@Lazy
 	private ToolCallingManager toolCallingManager;
 
 	@Autowired
@@ -100,29 +102,29 @@ public class PlanningFactory {
 		this.textFileService = textFileService;
 	}
 
-
 	// public PlanningCoordinator getOrCreatePlanningFlow(String planId) {
-	// 	PlanningCoordinator flow = flowMap.computeIfAbsent(planId, key -> {
-	// 		return createPlanningCoordinator(planId);
-	// 	});
-	// 	return flow;
+	// PlanningCoordinator flow = flowMap.computeIfAbsent(planId, key -> {
+	// return createPlanningCoordinator(planId);
+	// });
+	// return flow;
 	// }
 
 	// public boolean removePlanningFlow(String planId) {
-	// 	return flowMap.remove(planId) != null;
+	// return flowMap.remove(planId) != null;
 	// }
 
 	public PlanningCoordinator createPlanningCoordinator(String planId) {
 
-        // String planId = "plan_" + System.currentTimeMillis();
+		// String planId = "plan_" + System.currentTimeMillis();
 		// context.setPlanId(planId);
-		
+
 		List<BaseAgent> agentList = new ArrayList<>();
 		Map<String, ToolCallBackContext> toolCallbackMap = new HashMap<>();
 		// Add all dynamic agents from the database
 		for (DynamicAgentEntity agentEntity : dynamicAgentLoader.getAllAgents()) {
 			DynamicAgent agent = dynamicAgentLoader.loadAgent(agentEntity.getAgentName());
 			toolCallbackMap = toolCallbackMap(planId);
+			agent.setPlanId(planId);
 			agent.setToolCallbackMap(toolCallbackMap);
 			agentList.add(agent);
 		}
@@ -134,7 +136,6 @@ public class PlanningFactory {
 
 		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutor, planFinalizer);
 
-		
 		return planningCoordinator;
 	}
 
@@ -166,7 +167,7 @@ public class PlanningFactory {
 
 		// 添加所有工具定义
 		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService));
-		toolDefinitions.add(new TerminateTool(null));
+		toolDefinitions.add(new TerminateTool(planId));
 		toolDefinitions.add(new Bash(CodeUtils.WORKING_DIR));
 		toolDefinitions.add(new DocLoaderTool());
 		toolDefinitions.add(new TextFileOperator(CodeUtils.WORKING_DIR, textFileService));
@@ -189,7 +190,6 @@ public class PlanningFactory {
 		}
 		return toolCallbackMap;
 	}
-
 
 	@Bean
 	public RestClient.Builder createRestClient() {

@@ -146,7 +146,6 @@ public class Bash implements ToolCallBiFunctionDef {
 		this.planId = planId;
 	}
 
-
 	@Override
 	public String getCurrentToolStateString() {
 		return String.format("""

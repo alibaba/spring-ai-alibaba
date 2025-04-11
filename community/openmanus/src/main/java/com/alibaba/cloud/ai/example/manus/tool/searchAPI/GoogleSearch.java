@@ -200,7 +200,6 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 		this.planId = planId;
 	}
 
-
 	@Override
 	public String getCurrentToolStateString() {
 		return String.format("""

@@ -691,7 +691,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		this.planId = planId;
 	}
 
-
 	@Override
 	public String getCurrentToolStateString() {
 		Map<String, Object> state = getCurrentState();

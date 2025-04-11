@@ -21,51 +21,56 @@ import com.alibaba.cloud.ai.example.manus.flow.PlanStepStatus;
  * 单个步骤的执行结果
  */
 public class ExecutionStep {
-    private int stepIndex;
-    private String stepRequirement;
-    private String result;
-    private PlanStepStatus status;
 
-    public int getStepIndex() {
-        return stepIndex;
-    }
+	private int stepIndex;
 
-    public void setStepIndex(int stepIndex) {
-        this.stepIndex = stepIndex;
-    }
-    public String getResult() {
-        return result;
-    }
+	private String stepRequirement;
 
-    public void setResult(String result) {
-        this.result = result;
-    }
-    public PlanStepStatus getStatus() {
-        return status;
-    }
-    public void setStatus(PlanStepStatus status) {
-        this.status = status;
-    }
+	private String result;
 
-    public String getStepRequirement() {
-        return stepRequirement;
-    }
-    public void setStepRequirement(String stepRequirement) {
-        this.stepRequirement = stepRequirement;
-    }
-    
-    public String getStepInStr(){
-        StringBuilder sb = new StringBuilder();
-        sb.append(stepIndex);
-        sb.append(". ");
-        sb.append("[").append(status).append("]");
-        sb.append(" ");
-        sb.append(stepRequirement);
-        sb.append("\n");
-        if(result != null && !result.isEmpty()){
-            sb.append("result : ").append(result).append("\n");
-        }
-        
-        return sb.toString();
-    }
+	private PlanStepStatus status;
+
+	public int getStepIndex() {
+		return stepIndex;
+	}
+
+	public void setStepIndex(int stepIndex) {
+		this.stepIndex = stepIndex;
+	}
+
+	public String getResult() {
+		return result;
+	}
+
+	public void setResult(String result) {
+		this.result = result;
+	}
+
+	public PlanStepStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(PlanStepStatus status) {
+		this.status = status;
+	}
+
+	public String getStepRequirement() {
+		return stepRequirement;
+	}
+
+	public void setStepRequirement(String stepRequirement) {
+		this.stepRequirement = stepRequirement;
+	}
+
+	public String getStepInStr() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(stepIndex);
+		sb.append(". ");
+		sb.append("[").append(status).append("]");
+		sb.append(" ");
+		sb.append(stepRequirement);
+
+		return sb.toString();
+	}
+
 }
