@@ -72,14 +72,12 @@ public class OpenmanusHumanController {
 	public OpenmanusHumanController(ChatModel chatModel) {
 		this.planningClient = ChatClient.builder(chatModel)
 			.defaultSystem(planningPrompt)
-			.defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();
 
 		this.stepClient = ChatClient.builder(chatModel)
 			.defaultSystem(stepPrompt)
-			.defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();
