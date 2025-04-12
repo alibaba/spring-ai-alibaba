@@ -94,13 +94,16 @@ public class WeatherService implements Function<WeatherService.Request, WeatherS
 		if (Objects.equals("杭州", request.city())) {
 			return new Response(request.city(), Map.of("temp", 25, "condition", "Sunny"),
 					List.of(Map.of("date", "2025-05-27", "high", 28, "low", 20)));
-		} else if (Objects.equals("上海", request.city())) {
+		}
+		else if (Objects.equals("上海", request.city())) {
 			return new Response(request.city(), Map.of("temp", 26, "condition", "Sunny"),
 					List.of(Map.of("date", "2025-05-27", "high", 29, "low", 21)));
-		} else if (Objects.equals("南京", request.city())) {
+		}
+		else if (Objects.equals("南京", request.city())) {
 			return new Response(request.city(), Map.of("temp", 18, "condition", "cloudy"),
 					List.of(Map.of("date", "2025-05-27", "high", 18, "low", 10)));
-		} else {
+		}
+		else {
 			return new Response(request.city(), Map.of("temp", -20, "condition", "Snowy"),
 					List.of(Map.of("date", "2025-05-27", "high", -10, "low", -30)));
 		}
