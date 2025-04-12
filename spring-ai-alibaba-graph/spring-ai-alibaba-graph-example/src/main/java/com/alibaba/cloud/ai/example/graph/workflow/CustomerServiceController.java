@@ -35,6 +35,7 @@ import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -48,63 +49,13 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 @RequestMapping("/customer")
 public class CustomerServiceController {
 
-	private final ChatClient chatClient;
+	private StateGraph stateGraph;
 
 	private CompiledGraph compiledGraph;
 
-	CustomerServiceController(ChatModel chatModel) throws GraphStateException {
-		this.chatClient = ChatClient.builder(chatModel)
-			// .defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
-			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.build();
-
-		initGraph();
-	}
-
-	public void initGraph() throws GraphStateException {
-		AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
-			OverAllState state = new OverAllState();
-			state.registerKeyAndStrategy("classifier_output", new ReplaceStrategy());
-			state.registerKeyAndStrategy("solution", new ReplaceStrategy());
-
-			state.input(inputs);
-			return state;
-		};
-
-		QuestionClassifierNode feedbackClassifier = QuestionClassifierNode.builder()
-			.chatClient(chatClient)
-			.inputTextKey("input")
-			.categories(List.of("positive feedback", "negative feedback"))
-			.classificationInstructions(
-					List.of("Try to understand the user's feeling when he/she is giving the feedback."))
-			.build();
-
-		QuestionClassifierNode specificQuestionClassifier = QuestionClassifierNode.builder()
-			.chatClient(chatClient)
-			.inputTextKey("input")
-			.categories(List.of("after-sale service", "transportation", "product quality", "others"))
-			.classificationInstructions(List
-				.of("What kind of service or help the customer is trying to get from us? Classify the question based on your understanding."))
-			.build();
-
-		StateGraph graph = new StateGraph(stateFactory).addNode("feedback_classifier", node_async(feedbackClassifier))
-			.addNode("specific_question_classifier", node_async(specificQuestionClassifier))
-			.addNode("recorder", node_async(new RecordingNode()))
-
-			.addEdge(START, "feedback_classifier")
-			.addConditionalEdges("feedback_classifier", edge_async(new FeedbackQuestionDispatcher()),
-					Map.of("positive", "recorder", "negative", "specific_question_classifier"))
-			.addConditionalEdges("specific_question_classifier", edge_async(new SpecificQuestionDispatcher()),
-					Map.of("after-sale", "recorder", "transportation", "recorder", "quality", "recorder", "others",
-							"recorder"))
-			.addEdge("recorder", END);
-
-		this.compiledGraph = graph.compile();
-
-		GraphRepresentation graphRepresentation = compiledGraph.getGraph(GraphRepresentation.Type.PLANTUML);
-		System.out.println("\n\n");
-		System.out.println(graphRepresentation.content());
-		System.out.println("\n\n");
+	CustomerServiceController(@Qualifier("workflowGraph") StateGraph stateGraph) throws GraphStateException {
+		this.stateGraph = stateGraph;
+		this.compiledGraph = stateGraph.compile();
 	}
 
 	@GetMapping("/chat")
