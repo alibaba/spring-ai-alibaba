@@ -51,6 +51,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -96,10 +97,10 @@ public class GraphServiceImpl implements GraphService, ApplicationContextAware {
 	}
 
 	@Override
-	public GraphInitData getPrintableGraphData(String name, boolean required) throws GraphStateException {
+	public GraphInitData getPrintableGraphData(String name) throws GraphStateException {
 		List<GraphInitData.ArgumentMetadata> inputArgs = new ArrayList<>();
-		inputArgs.add(
-				new GraphInitData.ArgumentMetadata(name, GraphInitData.ArgumentMetadata.ArgumentType.STRING, required));
+		inputArgs
+			.add(new GraphInitData.ArgumentMetadata(name, GraphInitData.ArgumentMetadata.ArgumentType.STRING, true));
 
 		CompiledGraph compiledGraph = stateGraphMap.get(name).compile();
 		var graph = compiledGraph.getGraph(GraphRepresentation.Type.MERMAID, name, false);
