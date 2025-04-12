@@ -44,9 +44,7 @@ public class WorkflowAutoconfiguration {
 
 	@Bean
 	public StateGraph workflowGraph(ChatModel chatModel) throws GraphStateException {
-		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.build();
+		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
 
 		AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
 			OverAllState state = new OverAllState();

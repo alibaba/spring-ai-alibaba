@@ -67,7 +67,7 @@ public class ReactController {
 	public String simpleChat(String query) throws GraphStateException {
 		Optional<OverAllState> result = compiledGraph.invoke(Map.of("messages", new UserMessage(query)));
 		List<Message> messages = (List<Message>) result.get().value("messages").get();
-		AssistantMessage assistantMessage = (AssistantMessage)messages.get(messages.size() -1);
+		AssistantMessage assistantMessage = (AssistantMessage) messages.get(messages.size() - 1);
 		return assistantMessage.getText();
 	}
 

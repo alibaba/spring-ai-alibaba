@@ -59,17 +59,18 @@ public class ReactAutoconfiguration {
 	@Bean
 	public ReactAgent normalReactAgent(ChatModel chatModel, ToolCallbackResolver resolver) throws GraphStateException {
 		ChatClient chatClient = ChatClient.builder(chatModel)
-				.defaultTools("getWeatherFunction")
-				.defaultAdvisors(new SimpleLoggerAdvisor())
-				.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
-				.build();
+			.defaultTools("getWeatherFunction")
+			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.build();
 
-		return ReactAgent.builder().name("React Agent Demo")
-				.prompt("请完成接下来用户输入给你的任务。")
-				.chatClient(chatClient)
-				.resolver(resolver)
-				.maxIterations(10)
-				.build();
+		return ReactAgent.builder()
+			.name("React Agent Demo")
+			.prompt("请完成接下来用户输入给你的任务。")
+			.chatClient(chatClient)
+			.resolver(resolver)
+			.maxIterations(10)
+			.build();
 	}
 
 	@Bean
@@ -88,10 +89,10 @@ public class ReactAutoconfiguration {
 	public RestClient.Builder createRestClient() {
 		// 2. 创建 RequestConfig 并设置超时
 		RequestConfig requestConfig = RequestConfig.custom()
-				.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
-				.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
-				.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
-				.build();
+			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
+			.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
+			.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
+			.build();
 
 		// 3. 创建 CloseableHttpClient 并应用配置
 		HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();

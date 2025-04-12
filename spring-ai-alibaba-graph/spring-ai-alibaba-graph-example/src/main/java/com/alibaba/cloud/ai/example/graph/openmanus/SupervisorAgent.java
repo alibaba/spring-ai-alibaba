@@ -24,7 +24,7 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 
 public class SupervisorAgent implements NodeAction {
 
-	private PlanningTool planningTool = new PlanningTool(Map.of());
+	private PlanningTool planningTool = new PlanningTool();
 
 	@Override
 	public Map<String, Object> apply(OverAllState t) throws Exception {
