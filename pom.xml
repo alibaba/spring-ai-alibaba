@@ -101,6 +101,7 @@
         <module>community/memories/spring-ai-alibaba-jdbc-memory</module>
 
         <module>community/openmanus</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-commontoolcall</module>
 
     </modules>
 
