@@ -15,16 +15,30 @@
  */
 package com.alibaba.cloud.ai.toolcalling.larksuite;
 
+import com.alibaba.cloud.ai.toolcalling.larksuite.param.req.ValueRange;
+import com.alibaba.cloud.ai.toolcalling.larksuite.param.req.ValuesAppendReq;
+import com.alibaba.cloud.ai.toolcalling.larksuite.param.req.ValuesAppendReqBody;
+import com.alibaba.cloud.ai.toolcalling.larksuite.param.resp.ValuesAppendResp;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.lark.oapi.Client;
-import com.lark.oapi.service.docx.v1.model.CreateDocumentReq;
-import com.lark.oapi.service.docx.v1.model.CreateDocumentReqBody;
-import com.lark.oapi.service.docx.v1.model.CreateDocumentResp;
+import com.lark.oapi.core.request.RequestOptions;
+import com.lark.oapi.core.response.RawResponse;
+import com.lark.oapi.core.token.AccessTokenType;
+import com.lark.oapi.core.utils.UnmarshalRespUtil;
+import com.lark.oapi.service.drive.v1.enums.BaseMemberMemberTypeEnum;
+import com.lark.oapi.service.drive.v1.enums.BaseMemberPermEnum;
+import com.lark.oapi.service.drive.v1.model.BaseMember;
+import com.lark.oapi.service.drive.v1.model.CreatePermissionMemberReq;
+import com.lark.oapi.service.drive.v1.model.CreatePermissionMemberResp;
+import com.lark.oapi.service.sheets.v3.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.ObjectUtils;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -53,41 +67,195 @@ public class LarkSuiteCreateSheetService implements Function<LarkSuiteCreateShee
 			throw new IllegalArgumentException("current larksuite appId or appSecret must not be null.");
 		}
 
-		logger.debug("current larksuite.appId is {},appSecret is {}", larkSuiteProperties.getAppId(),
-				larkSuiteProperties.getAppSecret());
+		logger.debug("current larksuite.appId is {},appSecret is {}",
+				larkSuiteProperties.getAppId(), larkSuiteProperties.getAppSecret());
 
 		Client client = Client.newBuilder(larkSuiteProperties.getAppId(), larkSuiteProperties.getAppSecret()).build();
 
-		CreateDocumentResp resp;
+		Spreadsheet spreadsheet = null;
 
 		try {
-			resp = client.docx()
-				.document()
-				.create(CreateDocumentReq.newBuilder()
-					.createDocumentReqBody(CreateDocumentReqBody.newBuilder()
-						.title(request.title)
-						// .folderToken(request.folderToken)
-						.build())
-					.build());
-			if (!resp.success()) {
-				logger.error("code:{},msg:{},reqId:{}", resp.getCode(), resp.getMsg(), resp.getRequestId());
-				return resp.getError();
-			}
-			return resp.getData();
+			// 创建工作表
+			spreadsheet = this.createSpreadsheet(request.title());
 		}
 		catch (Exception e) {
 			logger.error("failed to invoke larksuite sheet create, caused by:{}", e.getMessage());
 		}
-		return null;
+
+		if (spreadsheet == null) {
+			throw new RuntimeException("服务端创建飞书表格出错");
+		}
+
+		Spreadsheet finalSpreadsheet = spreadsheet;
+        new Thread(() -> {
+			try {
+				// 获取 sheetId
+				String sheetId = getSheetId(client, finalSpreadsheet.getSpreadsheetToken());
+				// 追加数据
+				ValuesAppendReq valuesAppendReq = buildWriteRequest(finalSpreadsheet.getSpreadsheetToken(), sheetId, request.data());
+				valuesAppend(client, valuesAppendReq);
+				// 分配权限
+				addPermission(client, finalSpreadsheet.getSpreadsheetToken(), request.email());
+			} catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
+
+		return spreadsheet.getUrl();
 	}
 
 	public record SheetRequest(
 			@JsonProperty(required = true,
 					value = "title") @JsonPropertyDescription("the larksuite sheet title") String title,
 			@JsonProperty(required = true,
-					value = "email") @JsonPropertyDescription("email that needs to be authorized for the user") String email,
+					value = "email") @JsonPropertyDescription("email that needs to be authorized for the user")
+			String email,
 			@JsonProperty(required = true,
-					value = "data") @JsonPropertyDescription("the larksuite sheet data") String data) {
+					value = "data") @JsonPropertyDescription("the larksuite sheet data") List<List<String>> data) {
+	}
+
+	/**
+	 * 创建 飞书表格
+	 *
+	 * @param title			飞书表格标题
+	 * @return				飞书表格链接
+	 * @throws Exception	抛出异常
+	 */
+    private Spreadsheet createSpreadsheet(String title) throws Exception {
+		CreateSpreadsheetReq req = CreateSpreadsheetReq.newBuilder()
+				.spreadsheet(Spreadsheet.newBuilder()
+						.title(title)
+						.build())
+				.build();
+
+		Client larkClient = Client.newBuilder(larkSuiteProperties.getAppId(), larkSuiteProperties.getAppSecret()).build();
+
+		CreateSpreadsheetResp resp = larkClient.sheets().v3().spreadsheet().create(req);
+		return resp.getData().getSpreadsheet();
+	}
+
+	/**
+	 * 获取 Sheet1 的 sheet ID
+	 *
+	 * @param larkClient			飞书客户端
+	 * @param spreadsheetToken		飞书表格 token
+	 * @return						飞书表格 ID
+	 * @throws Exception			抛出异常
+	 */
+	private String getSheetId(Client larkClient, String spreadsheetToken) throws Exception {
+		// 查询 电子表格 的 sheet 信息
+		QuerySpreadsheetSheetReq req = QuerySpreadsheetSheetReq.newBuilder()
+				.spreadsheetToken(spreadsheetToken)
+				.build();
+
+		QuerySpreadsheetSheetResp resp = larkClient.sheets().v3().spreadsheetSheet().query(req);
+
+		Optional<Sheet> existingSheet = Arrays.stream(resp.getData().getSheets())
+				.filter(sheet -> "Sheet1".equals(sheet.getTitle()))
+				.findFirst();
+
+        return existingSheet.map(Sheet::getSheetId).orElse(null);
+    }
+
+	/**
+	 * 构造 追加数据 请求
+	 *
+	 * @param spreadsheetToken		飞书表格 token
+	 * @param sheetId				sheet ID
+	 * @param sheetData				追加数据
+	 * @return						追加数据请求
+	 */
+	private ValuesAppendReq buildWriteRequest(String spreadsheetToken, String sheetId, List<List<String>> sheetData) {
+		int rowCount = sheetData.size();
+		int colCount = rowCount > 0 ? sheetData.get(0).size() : 0;
+
+		return ValuesAppendReq.newBuilder()
+				.spreadsheetToken(spreadsheetToken)
+				.body(ValuesAppendReqBody.newBuilder()
+						.valueRange(ValueRange.newBuilder()
+								.range(getRange(sheetId, rowCount, colCount))
+								.values(sheetData)
+								.build())
+						.build())
+				.build();
+	}
+
+	private String getRange(String sheetId, int rowCount, int colCount) {
+		return String.format("%s!A1:%s%d",
+				sheetId,
+				toColumnName(colCount),
+				rowCount
+				);
+	}
+
+	private String toColumnName(int colNum) {
+		StringBuilder stringBuilder = new StringBuilder();
+		while (colNum > 0) {
+			colNum--;
+			stringBuilder.insert(0, (char) ('A' + colNum % 26));
+			colNum /= 26;
+		}
+		return stringBuilder.toString();
+	}
+
+	/**
+	 * 向飞书表格追加数据
+	 *
+	 * @param larkClient		飞书客户端
+	 * @param req				追加数据请求
+	 * @throws Exception		抛出异常
+	 */
+	private void valuesAppend(Client larkClient, ValuesAppendReq req) throws Exception {
+		// 请求参数选项
+		RequestOptions reqOptions = new RequestOptions();
+
+		// 发起请求
+		RawResponse httpResponse =  larkClient.post(
+				String.format("/open-apis/sheets/v2/spreadsheets/%s/values_append?insertDataOption=OVERWRITE", req.getSpreadsheetToken()),
+				req.getBody(),
+				AccessTokenType.Tenant, reqOptions
+		);
+
+		// 反序列化
+		ValuesAppendResp resp = UnmarshalRespUtil.unmarshalResp(httpResponse, ValuesAppendResp.class);
+		if (resp == null) {
+			throw new IllegalArgumentException("The result returned by the server is illegal");
+		}
+
+		resp.setRawResponse(httpResponse);
+		resp.setRequest(req);
+
+		if (!resp.success()) {
+			throw new RuntimeException("设置权限失败: " + resp.getMsg());
+		}
+	}
+
+	/**
+	 * 分配飞书表格的授权
+	 *
+	 * @param larkClient			飞书客户端
+	 * @param spreadsheetToken		飞书表格 token
+	 * @param email					分配权限的邮箱
+	 * @throws Exception			抛出异常
+	 */
+	private void addPermission(Client larkClient, String spreadsheetToken, String email) throws Exception {
+		CreatePermissionMemberReq req = CreatePermissionMemberReq.newBuilder()
+				.token(spreadsheetToken)
+				.type("sheet")
+				.baseMember(BaseMember.newBuilder()
+						.memberId(email)
+						.memberType(BaseMemberMemberTypeEnum.EMAIL)
+						.perm(BaseMemberPermEnum.FULL_ACCESS)
+						.build())
+				.needNotification(true)
+				.build();
+
+		CreatePermissionMemberResp resp = larkClient.drive().v1().permissionMember().create(req);
+
+		if (!resp.success()) {
+			throw new RuntimeException("设置权限失败: " + resp.getMsg());
+		}
+
 	}
 
 }
