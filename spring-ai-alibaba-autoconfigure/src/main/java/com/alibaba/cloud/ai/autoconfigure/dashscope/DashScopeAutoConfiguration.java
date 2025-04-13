@@ -45,6 +45,7 @@ import org.springframework.boot.web.client.RestClientCustomizer;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -251,6 +252,7 @@ public class DashScopeAutoConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
+		@Primary
 		public DashScopeEmbeddingModel dashscopeEmbeddingModel(
 				DashScopeConnectionProperties commonProperties,
 				DashScopeEmbeddingProperties embeddingProperties,
