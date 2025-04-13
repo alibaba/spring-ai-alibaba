@@ -31,10 +31,10 @@ public class JsonParseService {
 		return objectMapper.readValue(json, type);
 	}
 
-	public <T> T getFieldValue(String json, Class<T> clazz, String fieldName) throws JsonProcessingException {
+	public <T> T getFieldValue(String json, Class<T> fieldClazz, String fieldName) throws JsonProcessingException {
 		JsonNode rootNode = objectMapper.readTree(json);
 		JsonNode fieldNode = rootNode.path(fieldName);
-		return objectMapper.treeToValue(fieldNode, clazz);
+		return objectMapper.treeToValue(fieldNode, fieldClazz);
 	}
 
 }

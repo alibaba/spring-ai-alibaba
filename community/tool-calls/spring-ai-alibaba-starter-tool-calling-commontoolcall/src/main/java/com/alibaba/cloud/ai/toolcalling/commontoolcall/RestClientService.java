@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -39,6 +40,10 @@ public class RestClientService {
 			.body(String.class);
 	}
 
+	public String get(String uri) {
+		return this.get(uri, new HashMap<>());
+	}
+
 	public <T> String post(String uri, Map<String, Object> variables, T value) {
 		try {
 			return restClient.post()
@@ -57,6 +62,10 @@ public class RestClientService {
 		catch (JsonProcessingException e) {
 			throw new RuntimeException("Serialization failed", e);
 		}
+	}
+
+	public <T> String post(String uri, T value) {
+		return this.post(uri, new HashMap<>(), value);
 	}
 
 }
