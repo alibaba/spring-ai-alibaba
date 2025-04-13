@@ -47,7 +47,7 @@ public class OpenSearchVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public Client client(OpenSearchVectorStoreProperties properties) throws Exception {
+	public Client openSearchClient(OpenSearchVectorStoreProperties properties) throws Exception {
 		Config clientConfig = Config.build(properties.toClientParams());
 		return new Client(clientConfig);
 	}
@@ -60,7 +60,7 @@ public class OpenSearchVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenSearchVectorStore vectorStore(OpenSearchApi openSearchApi, EmbeddingModel embeddingModel,
+	public OpenSearchVectorStore openSearchVectorStore(OpenSearchApi openSearchApi, EmbeddingModel embeddingModel,
 			BatchingStrategy batchingStrategy, OpenSearchVectorStoreOptions options,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
