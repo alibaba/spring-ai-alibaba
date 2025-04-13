@@ -66,7 +66,7 @@ public class OpenmanusHumanController {
 
 	private CompiledGraph compiledGraph;
 
-	private PlanningTool planningTool = new PlanningTool(Map.of());
+	private PlanningTool planningTool = new PlanningTool();
 
 	// 也可以使用如下的方式注入 ChatClient
 	public OpenmanusHumanController(ChatModel chatModel) {
