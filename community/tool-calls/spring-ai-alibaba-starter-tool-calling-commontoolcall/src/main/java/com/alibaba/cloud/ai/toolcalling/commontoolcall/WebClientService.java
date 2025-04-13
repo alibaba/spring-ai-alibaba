@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -40,6 +41,10 @@ public class WebClientService {
 			.bodyToMono(String.class);
 	}
 
+	public Mono<String> get(String uri) {
+		return this.get(uri, new HashMap<>());
+	}
+
 	public <T> Mono<String> post(String uri, Map<String, Object> variables, T value) {
 		return Mono.fromCallable(() -> jsonParseService.objectToJson(value))
 			.flatMap(json -> webClient.post()
@@ -55,6 +60,10 @@ public class WebClientService {
 							.error(new RuntimeException("Server error, code: " + response.statusCode().value())))
 				.bodyToMono(String.class))
 			.onErrorMap(JsonProcessingException.class, e -> new RuntimeException("Serialization failed", e));
+	}
+
+	public <T> Mono<String> post(String uri, T value) {
+		return this.post(uri, new HashMap<>(), value);
 	}
 
 }
