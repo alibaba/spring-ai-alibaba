@@ -29,7 +29,8 @@ public class SupervisorAgent implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState t) throws Exception {
 		String planId = (String) t.value("plan").orElseThrow();
-		Plan plan = planningTool.getPlans(planId);
+		// Plan plan = planningTool.getPlans(planId);
+		Plan plan = new Plan(planId, null);
 		String promptForNextStep;
 		if (!plan.isFinished()) {
 			String step = plan.nextStep();
