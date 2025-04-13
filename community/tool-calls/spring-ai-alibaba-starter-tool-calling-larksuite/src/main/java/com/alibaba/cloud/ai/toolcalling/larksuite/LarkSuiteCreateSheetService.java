@@ -53,8 +53,8 @@ public class LarkSuiteCreateSheetService implements Function<LarkSuiteCreateShee
 			throw new IllegalArgumentException("current larksuite appId or appSecret must not be null.");
 		}
 
-		logger.debug("current larksuite.appId is {},appSecret is {}",
-				larkSuiteProperties.getAppId(), larkSuiteProperties.getAppSecret());
+		logger.debug("current larksuite.appId is {},appSecret is {}", larkSuiteProperties.getAppId(),
+				larkSuiteProperties.getAppSecret());
 
 		Client client = Client.newBuilder(larkSuiteProperties.getAppId(), larkSuiteProperties.getAppSecret()).build();
 
@@ -66,7 +66,7 @@ public class LarkSuiteCreateSheetService implements Function<LarkSuiteCreateShee
 				.create(CreateDocumentReq.newBuilder()
 					.createDocumentReqBody(CreateDocumentReqBody.newBuilder()
 						.title(request.title)
-//						.folderToken(request.folderToken)
+						// .folderToken(request.folderToken)
 						.build())
 					.build());
 			if (!resp.success()) {
@@ -85,8 +85,7 @@ public class LarkSuiteCreateSheetService implements Function<LarkSuiteCreateShee
 			@JsonProperty(required = true,
 					value = "title") @JsonPropertyDescription("the larksuite sheet title") String title,
 			@JsonProperty(required = true,
-					value = "email") @JsonPropertyDescription("email that needs to be authorized for the user")
-			String email,
+					value = "email") @JsonPropertyDescription("email that needs to be authorized for the user") String email,
 			@JsonProperty(required = true,
 					value = "data") @JsonPropertyDescription("the larksuite sheet data") String data) {
 	}
