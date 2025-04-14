@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>计划模板 - JTaskPilot</title>
+    <title>计划-执行 编辑器 - JTaskPilot</title>
     <!-- 引入模块化CSS文件 -->
     <link rel="stylesheet" href="../css/reset.css">
     <link rel="stylesheet" href="../css/layout.css">
@@ -83,9 +83,9 @@
                         <span class="icon-collapse-left"></span>
                     </button>
                     <div class="header-title-section">
-                        <h1>计划模板</h1>
+                        <h1>计划-执行 编辑器</h1>
                         <div class="knowledge-suggestion">
-                            <span class="icon-lightbulb"></span> 自动生成和修改执行计划
+                            <span class="icon-lightbulb"></span> 可以基于prompt生成和修改执行计划，详细的计划步骤可以重复使用，来获取更准确的执行结果。
                         </div>
                     </div>
                 </div>
@@ -120,43 +120,20 @@
                     </div>
                 </div>
 
-                <div class="plan-result-section">
-                    <div class="section-header">
-                        <h2>计划文本预览</h2>
-                        <div class="section-actions">
-                            <button class="action-btn" id="editModeBtn">
-                                <span class="icon-edit"></span> 编辑模式
-                            </button>
-                            <button class="action-btn" id="saveBtn">
-                                <span class="icon-save"></span> 保存
-                            </button>
-                        </div>
-                    </div>
-                    <div class="plan-text-preview">
-                        <div id="plan-text-display" class="preview-content">
-                            <p class="placeholder-text">计划文本将在这里显示...</p>
-                        </div>
-                        <textarea id="plan-text-editor" class="hidden"></textarea>
-                    </div>
-                </div>
+                <!-- 移除了计划文本预览部分 -->
 
                 <div class="plan-json-section">
                     <div class="section-header">
                         <h2>计划数据 (JSON)</h2>
                         <div class="section-actions">
-                            <button class="action-btn" id="jsonEditModeBtn">
-                                <span class="icon-edit"></span> 编辑JSON
-                            </button>
-                            <button class="action-btn" id="validateJsonBtn">
-                                <span class="icon-placeholder"></span> 验证
+                            <button class="action-btn" id="saveJsonBtn">
+                                <span class="icon-save"></span> 保存
                             </button>
                         </div>
                     </div>
                     <div class="plan-json-preview">
-                        <div id="plan-json-display" class="preview-content code-view">
-                            <p class="placeholder-text">计划的JSON数据将在这里显示...</p>
-                        </div>
-                        <textarea id="plan-json-editor" class="hidden"></textarea>
+                        <!-- 默认显示编辑器而不是只读视图 -->
+                        <textarea id="plan-json-editor" class="preview-content code-view" placeholder="计划的JSON数据将在这里显示..."></textarea>
                     </div>
                 </div>
 
@@ -174,38 +151,29 @@
         <!-- 右侧边栏 -->
         <aside class="sidebar right-sidebar" id="rightSidebar">
             <div class="right-sidebar-header">
-                <h3>计划历史</h3>
+                <h3>执行详情</h3>
             </div>
             <div class="right-sidebar-content">
-                <div class="plan-history-list">
-                    <div class="plan-history-item">
-                        <div class="history-item-header">
-                            <span class="history-date">2025-04-10 15:32</span>
-                            <span class="history-status completed">已完成</span>
-                        </div>
-                        <div class="history-title">分析项目结构并创建文档</div>
-                        <div class="history-steps">5个步骤</div>
-                    </div>
-                    <div class="plan-history-item">
-                        <div class="history-item-header">
-                            <span class="history-date">2025-04-09 11:20</span>
-                            <span class="history-status failed">失败</span>
-                        </div>
-                        <div class="history-title">部署Spring AI应用到阿里云</div>
-                        <div class="history-steps">8个步骤</div>
-                    </div>
-                    <div class="plan-history-item">
-                        <div class="history-item-header">
-                            <span class="history-date">2025-04-08 09:45</span>
-                            <span class="history-status completed">已完成</span>
-                        </div>
-                        <div class="history-title">生成单元测试用例</div>
-                        <div class="history-steps">3个步骤</div>
-                    </div>
+                <!-- 执行详情将在这里动态填充 -->
+                <div class="no-selection-message">
+                    <p>点击执行计划后查看详情</p>
                 </div>
             </div>
             <div class="right-sidebar-footer">
-                <span>计划模板 v1.0.0</span>
+                <div class="playback-controls">
+                    <button class="icon-play"></button>
+                    <div class="progress-bar-stub"></div>
+                </div>
+                <button class="realtime-btn">
+                    <span class="icon-play"></span> 跳到实时
+                </button>
+                <span class="realtime-indicator">
+                    <span class="icon-realtime"></span> 实时
+                </span>
+            </div>
+            <div class="right-sidebar-status-bar">
+                <span id="execution-status">未选择执行步骤</span>
+                <span id="execution-progress">0 / 0 <span class="icon-up-arrow"></span></span>
             </div>
         </aside>
     </div>
