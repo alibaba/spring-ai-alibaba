@@ -287,6 +287,7 @@ public abstract class BaseAgent {
 	public void setState(AgentState state) {
 		this.state = state;
 	}
+
 	public String getPlanId() {
 		return planId;
 	}

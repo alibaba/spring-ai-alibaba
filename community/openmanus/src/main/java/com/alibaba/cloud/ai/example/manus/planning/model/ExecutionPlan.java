@@ -112,7 +112,13 @@ public class ExecutionPlan {
 				case NOT_STARTED -> "[not_started]";
 				default -> "[ ]";
 			};
-			state.append("step ").append(i).append(": ").append(symbol).append(" ").append(step.getStepRequirement()).append("\n");
+			state.append("step ")
+				.append(i)
+				.append(": ")
+				.append(symbol)
+				.append(" ")
+				.append(step.getStepRequirement())
+				.append("\n");
 			state.append(" - step execution result: ").append("\n").append(step.getResult()).append("\n");
 		}
 		return state.toString();

@@ -86,8 +86,6 @@ public class PlanExecutionRecord implements JsonSerializable {
 		this.agentExecutionSequence = new ArrayList<>();
 	}
 
-	
-
 	/**
 	 * 添加一个执行步骤
 	 * @param step 步骤描述
