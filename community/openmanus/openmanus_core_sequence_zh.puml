@@ -1,0 +1,93 @@
+@startuml OpenManus 核心组件交互时序图
+
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowFontSize 11
+skinparam noteFontSize 11
+
+actor User
+participant "ManusController" as Controller
+participant "PlanningFlow" as PlanningFlow
+participant "LlmService" as LlmService
+participant "BaseAgent及其子类" as Agent
+participant "ToolCallingManager" as ToolManager
+participant "各种工具\n(Bash/Browser等)" as Tools
+database "DB/Cache" as DB
+
+== 初始化阶段 ==
+
+User -> Controller: 发送请求 (JSON)
+activate Controller
+
+Controller -> PlanningFlow: getOrCreatePlanningFlow(requestId)
+activate PlanningFlow
+
+Controller -> PlanningFlow: execute(userQuery)
+note right: 异步执行
+
+== 计划创建阶段 ==
+
+PlanningFlow -> LlmService: 创建初始计划createInitialPlan
+activate LlmService
+LlmService --> PlanningFlow: 返回计划描述
+deactivate LlmService
+
+PlanningFlow -> PlanningFlow: 解析计划并创建步骤
+PlanningFlow -> DB: 保存计划和步骤
+
+== 步骤执行阶段 ==
+
+loop 对每个计划步骤
+    PlanningFlow -> PlanningFlow: 更新步骤状态为进行中
+    PlanningFlow -> DB: 保存步骤状态
+
+    PlanningFlow -> PlanningFlow: getExecutor 查找合适的Agent
+    activate Agent
+
+    PlanningFlow -> Agent: run() 执行计划步骤
+
+    loop ReAct执行轮次 (最多maxRounds)
+        Agent -> Agent: ReActAgent.step(), 包含 think 和 act
+        Agent -> LlmService: think() 执行思考，构建消息并请求llm
+        activate LlmService
+        LlmService --> Agent: 返回ChatResponse, 判断toolCalls
+        deactivate LlmService
+
+        opt 如果响应包含toolCalls
+            Agent -> ToolManager: act(), 发起工具调用 executeToolCalls(toolCalls, callbacks)
+            activate ToolManager
+
+            loop 对每个工具调用
+                ToolManager -> Tools: 调用具体工具
+                activate Tools
+                Tools --> ToolManager: 返回工具执行结果
+                deactivate Tools
+            end
+
+            ToolManager --> Agent: 返回工具执行结果
+            deactivate ToolManager
+
+            Agent -> Agent: 记录工具执行结果
+        end
+    end
+
+    Agent --> PlanningFlow: 返回步骤结果
+    deactivate Agent
+
+    PlanningFlow -> DB: 更新步骤状态(完成/失败)和结果
+end
+
+== 结果返回阶段 ==
+PlanningFlow -> LlmService: 构建响应结果
+activate LlmService
+LlmService --> PlanningFlow: 返回响应结果
+deactivate LlmService
+
+PlanningFlow -> DB: 标记计划执行完成
+
+PlanningFlow --> Controller: 返回执行结果
+deactivate PlanningFlow
+
+Controller --> User: 返回响应
+deactivate Controller
+
+@enduml
