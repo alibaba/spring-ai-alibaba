@@ -18,8 +18,6 @@ package com.alibaba.cloud.ai.example.manus.tool;
 import java.util.function.BiFunction;
 
 import org.springframework.ai.chat.model.ToolContext;
-
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 /**

@@ -70,7 +70,8 @@ public class QueryCommandRunner implements CommandLineRunner {
 				var executionContext = planningCoordinator.executePlan(context);
 				System.out.println("Plan " + planId + " executed successfully");
 				System.out.println("Execution Context: " + executionContext.getResultSummary());
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				logger.error("执行查询时发生错误", e);
 				System.out.println("Error: " + e.getMessage());
 			}
