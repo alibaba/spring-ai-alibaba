@@ -16,23 +16,27 @@
 
 package com.alibaba.cloud.ai.toolcalling.baidutranslate;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import static com.alibaba.cloud.ai.toolcalling.baidutranslate.BaiduTranslateProperties.BaiDuTranslatePrefix;
+import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
 
 /**
  * @author SCMRCORE
  */
 @ConfigurationProperties(prefix = BaiDuTranslatePrefix)
-public class BaiduTranslateProperties {
+public class BaiduTranslateProperties extends CommonToolCallProperties {
 
-	protected static final String BaiDuTranslatePrefix = "spring.ai.alibaba.tool-calling.baidu.translate";
+	protected static final String BaiDuTranslatePrefix = TOOL_CALLING_CONFIG_PREFIX + ".baidu.translate";
+
+	private static final String TRANSLATE_HOST_URL = "https://fanyi-api.baidu.com/api/trans/vip/translate/";
+
+	public BaiduTranslateProperties() {
+		super(TRANSLATE_HOST_URL);
+	}
 
 	private boolean enabled = true;
-
-	private String appId;
-
-	private String secretKey;
 
 	public boolean isEnabled() {
 		return enabled;
@@ -40,22 +44,6 @@ public class BaiduTranslateProperties {
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
-	}
-
-	public String getSecretKey() {
-		return secretKey;
-	}
-
-	public void setSecretKey(String secretKey) {
-		this.secretKey = secretKey;
-	}
-
-	public String getAppId() {
-		return appId;
-	}
-
-	public void setAppId(String appId) {
-		this.appId = appId;
 	}
 
 }
