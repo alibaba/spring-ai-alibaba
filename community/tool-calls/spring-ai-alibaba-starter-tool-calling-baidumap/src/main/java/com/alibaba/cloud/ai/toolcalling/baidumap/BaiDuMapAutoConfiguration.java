@@ -44,10 +44,11 @@ public class BaiDuMapAutoConfiguration {
 			+ "Get address information of a place with baidu map or "
 			+ "Get detailed information about a specific place with baidu map")
 	public MapSearchService baiDuMapGetAddressInformationFunction(BaiDuMapProperties baiDuMapProperties,
-			WebClientTool webClientTool, JsonParseTool jsonParseTool) {
+			JsonParseTool jsonParseTool) {
 
 		logger.debug("baiDuMapGetAddressInformationFunction is enabled.");
-		return new MapSearchService(baiDuMapProperties, webClientTool, jsonParseTool);
+		return new MapSearchService(baiDuMapProperties, new WebClientTool(jsonParseTool, baiDuMapProperties),
+				jsonParseTool);
 	}
 
 }

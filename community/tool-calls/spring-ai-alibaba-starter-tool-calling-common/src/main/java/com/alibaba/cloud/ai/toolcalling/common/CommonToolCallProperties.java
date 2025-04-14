@@ -16,7 +16,9 @@
 package com.alibaba.cloud.ai.toolcalling.common;
 
 /**
- * @author vlsmb 具体tool-call的Properties需要继承本类
+ * The properties of the specific tool call need to inherit from this class
+ *
+ * @author vlsmb
  */
 public class CommonToolCallProperties {
 

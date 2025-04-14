@@ -49,6 +49,9 @@ public class WebClientTool {
 				HttpClient.create().responseTimeout(Duration.ofMinutes(properties.getNetworkTimeout())));
 	}
 
+	/**
+	 * default webClient
+	 */
 	public WebClientTool(JsonParseTool jsonParseTool, CommonToolCallProperties properties) {
 		this.jsonParseTool = jsonParseTool;
 		this.properties = properties;
@@ -63,6 +66,9 @@ public class WebClientTool {
 			.build();
 	}
 
+	/**
+	 * Creates webClient with customized HeaderConsumer
+	 */
 	public WebClientTool(Consumer<HttpHeaders> httpHeadersConsumer, CommonToolCallProperties properties,
 			JsonParseTool jsonParseTool) {
 		this.jsonParseTool = jsonParseTool;
@@ -79,6 +85,9 @@ public class WebClientTool {
 			.build();
 	}
 
+	/**
+	 * Creates webClient with customized HeaderConsumer and ExceptionFunction
+	 */
 	public WebClientTool(Consumer<HttpHeaders> httpHeadersConsumer,
 			Function<ClientResponse, Mono<? extends Throwable>> is4xxException,
 			Function<ClientResponse, Mono<? extends Throwable>> is5xxException, CommonToolCallProperties properties,
@@ -95,6 +104,9 @@ public class WebClientTool {
 			.build();
 	}
 
+	/**
+	 * Creates webClient with customized ExceptionFunction
+	 */
 	public WebClientTool(Function<ClientResponse, Mono<? extends Throwable>> is4xxException,
 			Function<ClientResponse, Mono<? extends Throwable>> is5xxException, CommonToolCallProperties properties,
 			JsonParseTool jsonParseTool) {
