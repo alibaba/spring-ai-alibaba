@@ -68,21 +68,6 @@ public class RestClientTool {
 	}
 
 	/**
-	 * Creates restClient with customized HeaderConsumer
-	 */
-	public RestClientTool(Consumer<HttpHeaders> httpHeadersConsumer, CommonToolCallProperties properties,
-			JsonParseTool jsonParseTool) {
-		this.jsonParseTool = jsonParseTool;
-		this.properties = properties;
-		this.restClient = RestClient.builder()
-			.requestFactory(createRequestFactory())
-			.baseUrl(properties.getBaseUrl())
-			.defaultHeaders(httpHeadersConsumer)
-			.defaultStatusHandler(CommonToolCallConstants.DEFAULT_RESTCLIENT_ERROR_HANDLER)
-			.build();
-	}
-
-	/**
 	 * Creates restClient with customized HeaderConsumer and ErrorHandler
 	 */
 	public RestClientTool(Consumer<HttpHeaders> httpHeadersConsumer, ResponseErrorHandler errorHandler,
@@ -93,20 +78,6 @@ public class RestClientTool {
 			.requestFactory(createRequestFactory())
 			.baseUrl(properties.getBaseUrl())
 			.defaultHeaders(httpHeadersConsumer)
-			.defaultStatusHandler(errorHandler)
-			.build();
-	}
-
-	/**
-	 * Creates restClient with customized ErrorHandler
-	 */
-	public RestClientTool(ResponseErrorHandler errorHandler, CommonToolCallProperties properties,
-			JsonParseTool jsonParseTool) {
-		this.jsonParseTool = jsonParseTool;
-		this.properties = properties;
-		this.restClient = RestClient.builder()
-			.requestFactory(createRequestFactory())
-			.baseUrl(properties.getBaseUrl())
 			.defaultStatusHandler(errorHandler)
 			.build();
 	}
@@ -130,28 +101,42 @@ public class RestClientTool {
 		return this.get(uri, new HashMap<>());
 	}
 
+	public <T> String post(String uri, MultiValueMap<String, String> params, Map<String, ?> variables, T value,
+			MediaType mediaType) {
+		return restClient.post()
+			.uri(uriBuilder -> uriBuilder.path(uri).queryParams(params).build(variables))
+			.contentType(mediaType)
+			.body(value)
+			.retrieve()
+			.body(String.class);
+	}
+
 	public <T> String post(String uri, MultiValueMap<String, String> params, Map<String, ?> variables, T value) {
 		try {
-			return restClient.post()
-				.uri(uriBuilder -> uriBuilder.path(uri).queryParams(params).build(variables))
-				.contentType(MediaType.APPLICATION_JSON)
-				.body(jsonParseTool.objectToJson(value))
-				.retrieve()
-				.body(String.class);
+			return this.post(uri, params, variables, jsonParseTool.objectToJson(value), MediaType.APPLICATION_JSON);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException("Serialization failed", e);
 		}
 	}
 
+	/**
+	 * post json object
+	 */
 	public <T> String post(String uri, Map<String, ?> variables, T value) {
 		return this.post(uri, new LinkedMultiValueMap<>(), variables, value);
 	}
 
+	/**
+	 * post json object
+	 */
 	public <T> String post(String uri, MultiValueMap<String, String> params, T value) {
 		return this.post(uri, params, new HashMap<>(), value);
 	}
 
+	/**
+	 * post json object
+	 */
 	public <T> String post(String uri, T value) {
 		return this.post(uri, new HashMap<>(), value);
 	}

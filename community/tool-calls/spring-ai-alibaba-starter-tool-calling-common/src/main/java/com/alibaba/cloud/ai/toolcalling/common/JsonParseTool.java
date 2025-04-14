@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author vlsmb
@@ -68,6 +69,16 @@ public class JsonParseTool {
 	 */
 	public <T> List<T> jsonToList(String json, TypeReference<T> typeRef) throws JsonProcessingException {
 		JavaType type = objectMapper.getTypeFactory().constructType(typeRef);
+		return objectMapper.readValue(json, type);
+	}
+
+	/**
+	 * convert json string to map
+	 * @param json json string
+	 * @param clazz class in Map Value
+	 */
+	public <T> Map<String, T> jsonToMap(String json, Class<T> clazz) throws JsonProcessingException {
+		JavaType type = objectMapper.getTypeFactory().constructMapType(Map.class, String.class, clazz);
 		return objectMapper.readValue(json, type);
 	}
 
