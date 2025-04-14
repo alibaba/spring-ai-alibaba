@@ -22,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
@@ -30,15 +31,16 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * @author vlsmb
  */
-public class WebClientService {
+public class WebClientTool {
 
 	private final WebClient webClient;
 
-	private final JsonParseService jsonParseService;
+	private final JsonParseTool jsonParseTool;
 
 	private final CommonToolCallProperties properties;
 
@@ -47,24 +49,62 @@ public class WebClientService {
 				HttpClient.create().responseTimeout(Duration.ofMinutes(properties.getNetworkTimeout())));
 	}
 
-	public WebClientService(JsonParseService jsonParseService, CommonToolCallProperties properties) {
-		this.jsonParseService = jsonParseService;
+	public WebClientTool(JsonParseTool jsonParseTool, CommonToolCallProperties properties) {
+		this.jsonParseTool = jsonParseTool;
 		this.properties = properties;
 		this.webClient = WebClient.builder()
 			.clientConnector(createHttpConnector())
 			.baseUrl(properties.getBaseUrl())
+			.defaultStatusHandler(HttpStatusCode::is4xxClientError,
+					CommonToolCallConstants.DEFAULT_WEBCLIENT_4XX_EXCEPTION)
+			.defaultStatusHandler(HttpStatusCode::is5xxServerError,
+					CommonToolCallConstants.DEFAULT_WEBCLIENT_5XX_EXCEPTION)
 			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(CommonToolCallConstants.MAX_MEMORY_SIZE))
 			.build();
 	}
 
-	public WebClientService(Consumer<HttpHeaders> httpHeadersConsumer, CommonToolCallProperties properties,
-			JsonParseService jsonParseService) {
-		this.jsonParseService = jsonParseService;
+	public WebClientTool(Consumer<HttpHeaders> httpHeadersConsumer, CommonToolCallProperties properties,
+			JsonParseTool jsonParseTool) {
+		this.jsonParseTool = jsonParseTool;
 		this.properties = properties;
 		this.webClient = WebClient.builder()
 			.clientConnector(createHttpConnector())
 			.baseUrl(properties.getBaseUrl())
 			.defaultHeaders(httpHeadersConsumer)
+			.defaultStatusHandler(HttpStatusCode::is4xxClientError,
+					CommonToolCallConstants.DEFAULT_WEBCLIENT_4XX_EXCEPTION)
+			.defaultStatusHandler(HttpStatusCode::is5xxServerError,
+					CommonToolCallConstants.DEFAULT_WEBCLIENT_5XX_EXCEPTION)
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(CommonToolCallConstants.MAX_MEMORY_SIZE))
+			.build();
+	}
+
+	public WebClientTool(Consumer<HttpHeaders> httpHeadersConsumer,
+			Function<ClientResponse, Mono<? extends Throwable>> is4xxException,
+			Function<ClientResponse, Mono<? extends Throwable>> is5xxException, CommonToolCallProperties properties,
+			JsonParseTool jsonParseTool) {
+		this.jsonParseTool = jsonParseTool;
+		this.properties = properties;
+		this.webClient = WebClient.builder()
+			.clientConnector(createHttpConnector())
+			.baseUrl(properties.getBaseUrl())
+			.defaultHeaders(httpHeadersConsumer)
+			.defaultStatusHandler(HttpStatusCode::is4xxClientError, is4xxException)
+			.defaultStatusHandler(HttpStatusCode::is5xxServerError, is5xxException)
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(CommonToolCallConstants.MAX_MEMORY_SIZE))
+			.build();
+	}
+
+	public WebClientTool(Function<ClientResponse, Mono<? extends Throwable>> is4xxException,
+			Function<ClientResponse, Mono<? extends Throwable>> is5xxException, CommonToolCallProperties properties,
+			JsonParseTool jsonParseTool) {
+		this.jsonParseTool = jsonParseTool;
+		this.properties = properties;
+		this.webClient = WebClient.builder()
+			.clientConnector(createHttpConnector())
+			.baseUrl(properties.getBaseUrl())
+			.defaultStatusHandler(HttpStatusCode::is4xxClientError, is4xxException)
+			.defaultStatusHandler(HttpStatusCode::is5xxServerError, is5xxException)
 			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(CommonToolCallConstants.MAX_MEMORY_SIZE))
 			.build();
 	}
@@ -95,7 +135,7 @@ public class WebClientService {
 	}
 
 	public <T> Mono<String> post(String uri, MultiValueMap<String, String> params, Map<String, ?> variables, T value) {
-		return Mono.fromCallable(() -> jsonParseService.objectToJson(value))
+		return Mono.fromCallable(() -> jsonParseTool.objectToJson(value))
 			.flatMap(json -> webClient.post()
 				.uri(uriBuilder -> uriBuilder.path(uri).queryParams(params).build(variables))
 				.contentType(MediaType.APPLICATION_JSON)

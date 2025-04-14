@@ -26,20 +26,20 @@ import org.springframework.context.annotation.Configuration;
 public class CommonToolCallAutoConfiguration {
 
 	@Bean
-	public JsonParseService jsonParseService() {
-		return new JsonParseService();
+	public JsonParseTool jsonParseService() {
+		return new JsonParseTool();
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(WebClientService.class)
-	public WebClientService commonWebClientService(CommonToolCallProperties properties) {
-		return new WebClientService(jsonParseService(), properties);
+	@ConditionalOnMissingBean(WebClientTool.class)
+	public WebClientTool commonWebClientService(CommonToolCallProperties properties) {
+		return new WebClientTool(jsonParseService(), properties);
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(RestClientService.class)
-	public RestClientService commonRestClientService(CommonToolCallProperties properties) {
-		return new RestClientService(jsonParseService(), properties);
+	@ConditionalOnMissingBean(RestClientTool.class)
+	public RestClientTool commonRestClientService(CommonToolCallProperties properties) {
+		return new RestClientTool(jsonParseService(), properties);
 	}
 
 	@Bean
