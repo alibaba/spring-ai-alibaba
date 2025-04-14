@@ -22,9 +22,8 @@ import io.opentelemetry.sdk.common.CompletableResultCode;
 import java.util.Collection;
 
 /**
- * @Description:
- * @Author: 肖云涛
- * @Date: 2024/12/8
+ * @author 肖云涛
+ * @since 2024/12/8
  */
 public interface StudioObservabilityService {
 

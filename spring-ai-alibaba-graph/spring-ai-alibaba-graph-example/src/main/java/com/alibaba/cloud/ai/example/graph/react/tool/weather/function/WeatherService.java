@@ -40,7 +40,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * @author yingzi
- * @date 2025/3/27:11:07
+ * @since 2025/3/27:11:07
  */
 public class WeatherService implements Function<WeatherService.Request, WeatherService.Response> {
 
