@@ -28,9 +28,23 @@ public class CommonToolCallProperties {
 
 	private Integer networkTimeout;
 
+	private String appId;
+
+	private String token;
+
 	public CommonToolCallProperties() {
 		this.baseUrl = CommonToolCallConstants.DEFAULT_BASE_URL;
 		this.networkTimeout = CommonToolCallConstants.DEFAULT_NETWORK_TIMEOUT;
+	}
+
+	public CommonToolCallProperties(String baseUrl) {
+		this.baseUrl = baseUrl;
+		this.networkTimeout = CommonToolCallConstants.DEFAULT_NETWORK_TIMEOUT;
+	}
+
+	public CommonToolCallProperties(String baseUrl, Integer networkTimeout) {
+		this.baseUrl = baseUrl;
+		this.networkTimeout = networkTimeout;
 	}
 
 	public String getApiKey() {
@@ -49,6 +63,14 @@ public class CommonToolCallProperties {
 		this.secretKey = secretKey;
 	}
 
+	public String getAppId() {
+		return appId;
+	}
+
+	public void setAppId(String appId) {
+		this.appId = appId;
+	}
+
 	public String getBaseUrl() {
 		return baseUrl;
 	}
@@ -63,6 +85,14 @@ public class CommonToolCallProperties {
 
 	public void setNetworkTimeout(Integer networkTimeout) {
 		this.networkTimeout = networkTimeout;
+	}
+
+	public String getToken() {
+		return token;
+	}
+
+	public void setToken(String token) {
+		this.token = token;
 	}
 
 }
