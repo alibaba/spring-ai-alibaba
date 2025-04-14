@@ -54,6 +54,9 @@ public class RestClientTool {
 		return new HttpComponentsClientHttpRequestFactory(httpClient);
 	}
 
+	/**
+	 * default restClient
+	 */
 	public RestClientTool(JsonParseTool jsonParseTool, CommonToolCallProperties properties) {
 		this.jsonParseTool = jsonParseTool;
 		this.properties = properties;
@@ -64,6 +67,9 @@ public class RestClientTool {
 			.build();
 	}
 
+	/**
+	 * Creates restClient with customized HeaderConsumer
+	 */
 	public RestClientTool(Consumer<HttpHeaders> httpHeadersConsumer, CommonToolCallProperties properties,
 			JsonParseTool jsonParseTool) {
 		this.jsonParseTool = jsonParseTool;
@@ -76,6 +82,9 @@ public class RestClientTool {
 			.build();
 	}
 
+	/**
+	 * Creates restClient with customized HeaderConsumer and ErrorHandler
+	 */
 	public RestClientTool(Consumer<HttpHeaders> httpHeadersConsumer, ResponseErrorHandler errorHandler,
 			CommonToolCallProperties properties, JsonParseTool jsonParseTool) {
 		this.jsonParseTool = jsonParseTool;
@@ -88,6 +97,9 @@ public class RestClientTool {
 			.build();
 	}
 
+	/**
+	 * Creates restClient with customized ErrorHandler
+	 */
 	public RestClientTool(ResponseErrorHandler errorHandler, CommonToolCallProperties properties,
 			JsonParseTool jsonParseTool) {
 		this.jsonParseTool = jsonParseTool;
