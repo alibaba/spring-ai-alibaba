@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="../css/input.css">
     <link rel="stylesheet" href="../css/right-sidebar.css">
     <link rel="stylesheet" href="css/plan-template.css">
+    <link rel="stylesheet" href="css/chat-area.css">
     <style>
         /* Simple icons for demo */
         .icon-placeholder::before { content: "□"; display: inline-block; margin-right: 5px; }
@@ -129,6 +130,12 @@
                             <button class="action-btn" id="rollbackJsonBtn">
                                 <span class="icon-placeholder"></span> 回滚
                             </button>
+                            <button class="action-btn" id="restoreJsonBtn">
+                                <span class="icon-placeholder"></span> 恢复
+                            </button>
+                            <button class="action-btn" id="compareJsonBtn">
+                                <span class="icon-placeholder"></span> 对比
+                            </button>
                             <button class="action-btn" id="saveJsonBtn">
                                 <span class="icon-save"></span> 保存
                             </button>
@@ -141,12 +148,89 @@
                 </div>
 
                 <div class="plan-actions">
+                    <div class="api-call-link">
+                        调用链接: <span class="api-url">http://ip:port/executePlan/id</span>
+                    </div>
                     <button class="secondary-btn" id="modifyPlanBtn">
                         <span class="icon-edit"></span> 重新生成
                     </button>
                     <button class="primary-btn" id="runPlanBtn">
                         <span class="icon-run"></span> 执行计划
                     </button>
+                </div>
+            
+                <!-- 添加简单操作请求区域 -->
+                <div class="simple-chat-area">
+                    <div class="chat-area-header">
+                        <h2>操作记录</h2>
+                        <div class="chat-area-actions">
+                            <button class="action-btn" id="clearChatBtn">
+                                <span class="icon-placeholder"></span> 清空记录
+                            </button>
+                        </div>
+                    </div>
+                    <div class="dialog-round-container" data-dialog-round-id="demo-round" data-plan-id="demo-plan">
+                        <!-- 示例用户消息 -->
+                        <div class="message user-message">
+                            <p>请帮我分析这段数据并生成可视化图表</p>
+                        </div>
+                        
+                        <!-- 示例AI回复消息 -->
+                        <div class="message ai-message ai-steps-container">
+                            <div class="ai-header">
+                                <span class="ai-logo">M</span> Manus AI
+                            </div>
+                            
+                            <div class="ai-section">
+                                <div class="section-header">
+                                    <span class="icon">✓</span> 步骤1: 解析输入数据
+                                    <span class="toggle-arrow icon-down-arrow"></span>
+                                </div>
+                                <div class="section-content">
+                                    我会首先解析您提供的数据集，确定其结构和特征。
+                                    <div class="status-update">
+                                        <span class="icon">🔍</span> 正在分析数据结构...
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="ai-section">
+                                <div class="section-header checked">
+                                    <span class="icon">✓</span> 步骤2: 选择合适的图表类型
+                                    <span class="toggle-arrow icon-down-arrow"></span>
+                                </div>
+                                <div class="section-content">
+                                    基于数据特征，我将选择合适的可视化图表类型。
+                                    <div class="action-info">
+                                        <div class="action-description">
+                                            <span class="icon">🛠️</span> 调用数据分析工具
+                                        </div>
+                                        <div class="tool-params">
+                                            <span class="icon">⚙️</span>
+                                            参数: {"dataType": "time-series", "visualization": "line-chart"}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="ai-section">
+                                <div class="section-header">
+                                    <span class="icon">🔄</span> 步骤3: 生成图表
+                                    <span class="toggle-arrow icon-down-arrow"></span>
+                                </div>
+                                <div class="section-content">
+                                    正在生成图表，这可能需要一点时间...
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 可以在这里添加更多消息 -->
+                    </div>
+                    
+                    <!-- 当没有消息时显示的提示 -->
+                    <div class="empty-chat-message" style="display:none;">
+                        <p>暂无操作记录，请执行计划生成操作记录。</p>
+                    </div>
                 </div>
             </div>
         </main>
