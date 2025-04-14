@@ -20,10 +20,16 @@ package com.alibaba.cloud.ai.toolcalling.common;
  */
 public class CommonToolCallConstants {
 
-	public static final String TOOLCALLING_CONFIG_PREFIX = "spring.ai.alibaba.toolcalling";
+	public static final String TOOL_CALLING_CONFIG_PREFIX = "spring.ai.alibaba.tool-calling";
 
 	public static final String DEFAULT_BASE_URL = "/";
 
-	public static final Integer DEFAULT_NETWORK_TIMEOUT = 10;
+	public static final int DEFAULT_NETWORK_TIMEOUT = 10;
+
+	private static final int MEMORY_SIZE = 5;
+
+	private static final int BYTE_SIZE = 1024;
+
+	public static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
 
 }

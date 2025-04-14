@@ -19,9 +19,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -37,25 +42,36 @@ public class WebClientService {
 
 	private final CommonToolCallProperties properties;
 
+	private ReactorClientHttpConnector createHttpConnector() {
+		return new ReactorClientHttpConnector(
+				HttpClient.create().responseTimeout(Duration.ofMinutes(properties.getNetworkTimeout())));
+	}
+
 	public WebClientService(JsonParseService jsonParseService, CommonToolCallProperties properties) {
 		this.jsonParseService = jsonParseService;
 		this.properties = properties;
-		this.webClient = WebClient.builder().build();
+		this.webClient = WebClient.builder()
+			.clientConnector(createHttpConnector())
+			.baseUrl(properties.getBaseUrl())
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(CommonToolCallConstants.MAX_MEMORY_SIZE))
+			.build();
 	}
 
 	public WebClientService(Consumer<HttpHeaders> httpHeadersConsumer, CommonToolCallProperties properties,
 			JsonParseService jsonParseService) {
-		this.webClient = WebClient.builder()
-			.baseUrl(properties.getBaseUrl())
-			.defaultHeaders(httpHeadersConsumer)
-			.build();
 		this.jsonParseService = jsonParseService;
 		this.properties = properties;
+		this.webClient = WebClient.builder()
+			.clientConnector(createHttpConnector())
+			.baseUrl(properties.getBaseUrl())
+			.defaultHeaders(httpHeadersConsumer)
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(CommonToolCallConstants.MAX_MEMORY_SIZE))
+			.build();
 	}
 
-	public Mono<String> get(String uri, Map<String, Object> variables) {
+	public Mono<String> get(String uri, MultiValueMap<String, String> params, Map<String, ?> variables) {
 		return webClient.get()
-			.uri(uriBuilder -> uriBuilder.path(uri).build(variables))
+			.uri(uriBuilder -> uriBuilder.path(uri).queryParams(params).build(variables))
 			.retrieve()
 			.onStatus(HttpStatusCode::is4xxClientError,
 					response -> Mono
@@ -66,14 +82,22 @@ public class WebClientService {
 			.bodyToMono(String.class);
 	}
 
+	public Mono<String> get(String uri, MultiValueMap<String, String> params) {
+		return this.get(uri, params, new HashMap<>());
+	}
+
+	public Mono<String> get(String uri, Map<String, ?> variables) {
+		return this.get(uri, new LinkedMultiValueMap<>(), variables);
+	}
+
 	public Mono<String> get(String uri) {
 		return this.get(uri, new HashMap<>());
 	}
 
-	public <T> Mono<String> post(String uri, Map<String, Object> variables, T value) {
+	public <T> Mono<String> post(String uri, MultiValueMap<String, String> params, Map<String, ?> variables, T value) {
 		return Mono.fromCallable(() -> jsonParseService.objectToJson(value))
 			.flatMap(json -> webClient.post()
-				.uri(uriBuilder -> uriBuilder.path(uri).build(variables))
+				.uri(uriBuilder -> uriBuilder.path(uri).queryParams(params).build(variables))
 				.contentType(MediaType.APPLICATION_JSON)
 				.bodyValue(json)
 				.retrieve()
@@ -85,6 +109,14 @@ public class WebClientService {
 							.error(new RuntimeException("Server error, code: " + response.statusCode().value())))
 				.bodyToMono(String.class))
 			.onErrorMap(JsonProcessingException.class, e -> new RuntimeException("Serialization failed", e));
+	}
+
+	public <T> Mono<String> post(String uri, Map<String, ?> variables, T value) {
+		return this.post(uri, new LinkedMultiValueMap<>(), variables, value);
+	}
+
+	public <T> Mono<String> post(String uri, MultiValueMap<String, String> params, T value) {
+		return this.post(uri, params, new HashMap<>(), value);
 	}
 
 	public <T> Mono<String> post(String uri, T value) {

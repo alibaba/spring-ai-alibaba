@@ -16,13 +16,22 @@
 package com.alibaba.cloud.ai.toolcalling.common;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.util.Timeout;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
+import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -36,10 +45,23 @@ public class RestClientService {
 
 	private final CommonToolCallProperties properties;
 
+	private HttpComponentsClientHttpRequestFactory createRequestFactory() {
+		RequestConfig requestConfig = RequestConfig.custom()
+			.setConnectionRequestTimeout(Timeout.of(properties.getNetworkTimeout(), TimeUnit.MINUTES))
+			.setConnectTimeout(Timeout.of(properties.getNetworkTimeout(), TimeUnit.MINUTES))
+			.setResponseTimeout(Timeout.of(properties.getNetworkTimeout(), TimeUnit.MINUTES))
+			.build();
+		HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
+		return new HttpComponentsClientHttpRequestFactory(httpClient);
+	}
+
 	public RestClientService(JsonParseService jsonParseService, CommonToolCallProperties properties) {
 		this.jsonParseService = jsonParseService;
 		this.properties = properties;
-		this.restClient = RestClient.builder().build();
+		this.restClient = RestClient.builder()
+			.requestFactory(createRequestFactory())
+			.baseUrl(properties.getBaseUrl())
+			.build();
 	}
 
 	public RestClientService(String baseUrl, Consumer<HttpHeaders> httpHeadersConsumer,
@@ -47,14 +69,15 @@ public class RestClientService {
 		this.jsonParseService = jsonParseService;
 		this.properties = properties;
 		this.restClient = RestClient.builder()
+			.requestFactory(createRequestFactory())
 			.baseUrl(properties.getBaseUrl())
 			.defaultHeaders(httpHeadersConsumer)
 			.build();
 	}
 
-	public String get(String uri, Map<String, Object> variables) {
+	public String get(String uri, MultiValueMap<String, String> params, Map<String, ?> variables) {
 		return restClient.get()
-			.uri(uriBuilder -> uriBuilder.path(uri).build(variables))
+			.uri(uriBuilder -> uriBuilder.path(uri).queryParams(params).build(variables))
 			.retrieve()
 			.onStatus(HttpStatusCode::is4xxClientError, (request, response) -> {
 				throw new RuntimeException("Client error, code: " + response.getStatusCode());
@@ -65,14 +88,22 @@ public class RestClientService {
 			.body(String.class);
 	}
 
+	public String get(String uri, MultiValueMap<String, String> params) {
+		return this.get(uri, params, new HashMap<>());
+	}
+
+	public String get(String uri, Map<String, ?> variables) {
+		return this.get(uri, new LinkedMultiValueMap<>(), variables);
+	}
+
 	public String get(String uri) {
 		return this.get(uri, new HashMap<>());
 	}
 
-	public <T> String post(String uri, Map<String, Object> variables, T value) {
+	public <T> String post(String uri, MultiValueMap<String, String> params, Map<String, ?> variables, T value) {
 		try {
 			return restClient.post()
-				.uri(uriBuilder -> uriBuilder.path(uri).build(variables))
+				.uri(uriBuilder -> uriBuilder.path(uri).queryParams(params).build(variables))
 				.contentType(MediaType.APPLICATION_JSON)
 				.body(jsonParseService.objectToJson(value))
 				.retrieve()
@@ -87,6 +118,14 @@ public class RestClientService {
 		catch (JsonProcessingException e) {
 			throw new RuntimeException("Serialization failed", e);
 		}
+	}
+
+	public <T> String post(String uri, Map<String, ?> variables, T value) {
+		return this.post(uri, new LinkedMultiValueMap<>(), variables, value);
+	}
+
+	public <T> String post(String uri, MultiValueMap<String, String> params, T value) {
+		return this.post(uri, params, new HashMap<>(), value);
 	}
 
 	public <T> String post(String uri, T value) {
