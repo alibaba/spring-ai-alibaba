@@ -15,12 +15,20 @@
  */
 package com.alibaba.cloud.ai.toolcalling.common;
 
+import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.web.client.ResponseErrorHandler;
+import org.springframework.web.reactive.function.client.ClientResponse;
+import reactor.core.publisher.Mono;
+
+import java.io.IOException;
+import java.util.function.Function;
+
 /**
  * @author vlsmb
  */
 public class CommonToolCallConstants {
 
-	public static final String TOOL_CALLING_CONFIG_PREFIX = "spring.ai.alibaba.tool-calling";
+	public static final String TOOL_CALLING_CONFIG_PREFIX = "spring.ai.alibaba.toolcalling";
 
 	public static final String DEFAULT_BASE_URL = "/";
 
@@ -31,5 +39,24 @@ public class CommonToolCallConstants {
 	private static final int BYTE_SIZE = 1024;
 
 	public static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
+
+	public static final ResponseErrorHandler DEFAULT_RESTCLIENT_ERROR_HANDLER = new ResponseErrorHandler() {
+		@Override
+		public boolean hasError(ClientHttpResponse response) throws IOException {
+			return response.getStatusCode().isError();
+		}
+
+		@Override
+		public void handleError(ClientHttpResponse response) throws IOException {
+			throw new RuntimeException(
+					"Server error, code: " + response.getStatusCode() + ", message: " + response.getStatusText());
+		}
+	};
+
+	public static final Function<ClientResponse, Mono<? extends Throwable>> DEFAULT_WEBCLIENT_4XX_EXCEPTION = response -> Mono
+		.error(new RuntimeException("Server error, code: " + response.statusCode().value()));
+
+	public static final Function<ClientResponse, Mono<? extends Throwable>> DEFAULT_WEBCLIENT_5XX_EXCEPTION = response -> Mono
+		.error(new RuntimeException("Server error, code: " + response.statusCode().value()));
 
 }

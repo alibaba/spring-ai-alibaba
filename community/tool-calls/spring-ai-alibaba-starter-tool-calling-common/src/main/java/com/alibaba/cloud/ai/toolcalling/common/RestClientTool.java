@@ -21,13 +21,12 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
-import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,11 +36,11 @@ import java.util.function.Consumer;
 /**
  * @author vlsmb
  */
-public class RestClientService {
+public class RestClientTool {
 
 	private final RestClient restClient;
 
-	private final JsonParseService jsonParseService;
+	private final JsonParseTool jsonParseTool;
 
 	private final CommonToolCallProperties properties;
 
@@ -55,23 +54,48 @@ public class RestClientService {
 		return new HttpComponentsClientHttpRequestFactory(httpClient);
 	}
 
-	public RestClientService(JsonParseService jsonParseService, CommonToolCallProperties properties) {
-		this.jsonParseService = jsonParseService;
+	public RestClientTool(JsonParseTool jsonParseTool, CommonToolCallProperties properties) {
+		this.jsonParseTool = jsonParseTool;
 		this.properties = properties;
 		this.restClient = RestClient.builder()
 			.requestFactory(createRequestFactory())
 			.baseUrl(properties.getBaseUrl())
+			.defaultStatusHandler(CommonToolCallConstants.DEFAULT_RESTCLIENT_ERROR_HANDLER)
 			.build();
 	}
 
-	public RestClientService(String baseUrl, Consumer<HttpHeaders> httpHeadersConsumer,
-			CommonToolCallProperties properties, JsonParseService jsonParseService) {
-		this.jsonParseService = jsonParseService;
+	public RestClientTool(Consumer<HttpHeaders> httpHeadersConsumer, CommonToolCallProperties properties,
+			JsonParseTool jsonParseTool) {
+		this.jsonParseTool = jsonParseTool;
 		this.properties = properties;
 		this.restClient = RestClient.builder()
 			.requestFactory(createRequestFactory())
 			.baseUrl(properties.getBaseUrl())
 			.defaultHeaders(httpHeadersConsumer)
+			.defaultStatusHandler(CommonToolCallConstants.DEFAULT_RESTCLIENT_ERROR_HANDLER)
+			.build();
+	}
+
+	public RestClientTool(Consumer<HttpHeaders> httpHeadersConsumer, ResponseErrorHandler errorHandler,
+			CommonToolCallProperties properties, JsonParseTool jsonParseTool) {
+		this.jsonParseTool = jsonParseTool;
+		this.properties = properties;
+		this.restClient = RestClient.builder()
+			.requestFactory(createRequestFactory())
+			.baseUrl(properties.getBaseUrl())
+			.defaultHeaders(httpHeadersConsumer)
+			.defaultStatusHandler(errorHandler)
+			.build();
+	}
+
+	public RestClientTool(ResponseErrorHandler errorHandler, CommonToolCallProperties properties,
+			JsonParseTool jsonParseTool) {
+		this.jsonParseTool = jsonParseTool;
+		this.properties = properties;
+		this.restClient = RestClient.builder()
+			.requestFactory(createRequestFactory())
+			.baseUrl(properties.getBaseUrl())
+			.defaultStatusHandler(errorHandler)
 			.build();
 	}
 
@@ -79,12 +103,6 @@ public class RestClientService {
 		return restClient.get()
 			.uri(uriBuilder -> uriBuilder.path(uri).queryParams(params).build(variables))
 			.retrieve()
-			.onStatus(HttpStatusCode::is4xxClientError, (request, response) -> {
-				throw new RuntimeException("Client error, code: " + response.getStatusCode());
-			})
-			.onStatus(HttpStatusCode::is5xxServerError, (request, response) -> {
-				throw new RuntimeException("Server error, code: " + response.getStatusCode());
-			})
 			.body(String.class);
 	}
 
@@ -105,14 +123,8 @@ public class RestClientService {
 			return restClient.post()
 				.uri(uriBuilder -> uriBuilder.path(uri).queryParams(params).build(variables))
 				.contentType(MediaType.APPLICATION_JSON)
-				.body(jsonParseService.objectToJson(value))
+				.body(jsonParseTool.objectToJson(value))
 				.retrieve()
-				.onStatus(HttpStatusCode::is4xxClientError, (request, response) -> {
-					throw new RuntimeException("Client error, code: " + response.getStatusCode());
-				})
-				.onStatus(HttpStatusCode::is5xxServerError, (request, response) -> {
-					throw new RuntimeException("Server error, code: " + response.getStatusCode());
-				})
 				.body(String.class);
 		}
 		catch (JsonProcessingException e) {
