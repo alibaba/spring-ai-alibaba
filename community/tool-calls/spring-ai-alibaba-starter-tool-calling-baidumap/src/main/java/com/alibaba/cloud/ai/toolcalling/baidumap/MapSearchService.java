@@ -15,11 +15,16 @@
  */
 package com.alibaba.cloud.ai.toolcalling.baidumap;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.google.gson.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.micrometer.common.util.StringUtils;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -29,63 +34,52 @@ public class MapSearchService implements Function<MapSearchService.Request, MapS
 
 	private final MapTools mapTools;
 
-	public MapSearchService(BaiDuMapProperties baiDuMapProperties) {
-		this.mapTools = new MapTools(baiDuMapProperties);
+	private final JsonParseTool jsonParseTool;
+
+	public MapSearchService(BaiDuMapProperties baiDuMapProperties, WebClientTool webClientTool,
+			JsonParseTool jsonParseTool) {
+		this.mapTools = new MapTools(baiDuMapProperties, webClientTool, jsonParseTool);
+		this.jsonParseTool = jsonParseTool;
 	}
 
 	@Override
 	public Response apply(Request request) {
-		Gson gson = new Gson();
 		try {
-			JsonObject jsonObject = new JsonObject();
-
 			// 获取并解析城市代码信息
-			String addressCityCodeResponse = mapTools.getAddressCityCode(request.address);
-			JsonObject cityCodeJson = JsonParser.parseString(addressCityCodeResponse).getAsJsonObject();
-			JsonElement districtsElement = cityCodeJson.get("districts");
-
+			MapTools.Region region = mapTools.getAddressCityCode(request.address);
 			// 检查districts是否存在且为有效数组
-			if (districtsElement != null && districtsElement.isJsonArray()) {
-				JsonArray districtsArray = districtsElement.getAsJsonArray();
-
-				if (districtsArray.isEmpty()) {
+			if (region != null && region.districts() != null) {
+				if (region.districts().isEmpty()) {
 					return new Response("No districts found in the response.");
 				}
-
 				// 遍历处理每个行政区划
-				for (JsonElement districtElement : districtsArray) {
-					JsonObject district = districtElement.getAsJsonObject();
-					JsonElement adcodeElement = district.get("adcode");
-
-					// 处理有效的adcode
-					if (adcodeElement != null && !adcodeElement.isJsonNull()) {
-						String adcode = adcodeElement.getAsString();
-						if (!adcode.isEmpty()) {
-							String weather = mapTools.getWeather(adcode);
-							jsonObject.addProperty("weather", weather);
-						}
-					}
-				}
-
+				List<String> weathers = region.districts()
+					.stream()
+					// 处理有效的adcode（现在API文档该字段是code）
+					.map(MapTools.District::code)
+					.filter(Objects::nonNull)
+					.filter(StringUtils::isNotBlank)
+					.map(mapTools::getWeather)
+					.toList();
+				String jsonObjectStr = jsonParseTool.setFieldJsonObjectAsString("{}", "weather", weathers);
 				// 获取并处理设施信息
 				String facilityJsonStr = mapTools.getFacilityInformation(request.address, request.facilityType);
-				JsonElement facilityElement = JsonParser.parseString(facilityJsonStr);
-				JsonElement resultsElement = facilityElement.getAsJsonObject().get("results");
-
-				if (resultsElement != null && resultsElement.isJsonArray()) {
-					jsonObject.add("facilityInformation", resultsElement.getAsJsonArray());
+				String resultsJsonStr = jsonParseTool.getFieldValueAsString(facilityJsonStr, "results");
+				if (StringUtils.isNotBlank(resultsJsonStr)) {
+					jsonObjectStr = jsonParseTool.setFieldJsonObjectAsString(jsonObjectStr, "facilityInformation",
+							resultsJsonStr);
 				}
 				else {
-					jsonObject.addProperty("facilityInformation", "No facility information found.");
+					jsonObjectStr = jsonParseTool.setFieldValue(jsonObjectStr, "facilityInformation",
+							"No facility information found.");
 				}
-
-				return new Response(gson.toJson(jsonObject));
+				return new Response(jsonObjectStr);
 			}
 			else {
 				return new Response("No districts found in the response.");
 			}
 		}
-		catch (JsonSyntaxException e) {
+		catch (JsonProcessingException e) {
 			return new Response("Invalid JSON format: " + e.getMessage());
 		}
 		catch (Exception e) {

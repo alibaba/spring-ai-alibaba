@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.toolcalling.baidumap;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,10 +43,11 @@ public class BaiDuMapAutoConfiguration {
 			+ "or Get detail information of a address and facility query with baidu map or "
 			+ "Get address information of a place with baidu map or "
 			+ "Get detailed information about a specific place with baidu map")
-	public MapSearchService baiDuMapGetAddressInformationFunction(BaiDuMapProperties baiDuMapProperties) {
+	public MapSearchService baiDuMapGetAddressInformationFunction(BaiDuMapProperties baiDuMapProperties,
+			WebClientTool webClientTool, JsonParseTool jsonParseTool) {
 
 		logger.debug("baiDuMapGetAddressInformationFunction is enabled.");
-		return new MapSearchService(baiDuMapProperties);
+		return new MapSearchService(baiDuMapProperties, webClientTool, jsonParseTool);
 	}
 
 }
