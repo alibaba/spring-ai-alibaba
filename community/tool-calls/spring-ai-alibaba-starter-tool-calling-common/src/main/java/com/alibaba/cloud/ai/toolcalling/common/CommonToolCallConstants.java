@@ -28,10 +28,12 @@ import java.util.function.Function;
  */
 public class CommonToolCallConstants {
 
+	// toolcall properties prefix in application.yaml
 	public static final String TOOL_CALLING_CONFIG_PREFIX = "spring.ai.alibaba.toolcalling";
 
 	public static final String DEFAULT_BASE_URL = "/";
 
+	// default timeout minutes
 	public static final int DEFAULT_NETWORK_TIMEOUT = 10;
 
 	private static final int MEMORY_SIZE = 5;
@@ -40,6 +42,7 @@ public class CommonToolCallConstants {
 
 	public static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
 
+	// default error handler for restclient bean
 	public static final ResponseErrorHandler DEFAULT_RESTCLIENT_ERROR_HANDLER = new ResponseErrorHandler() {
 		@Override
 		public boolean hasError(ClientHttpResponse response) throws IOException {
@@ -53,9 +56,11 @@ public class CommonToolCallConstants {
 		}
 	};
 
+	// default exceptionFunction for webclient
 	public static final Function<ClientResponse, Mono<? extends Throwable>> DEFAULT_WEBCLIENT_4XX_EXCEPTION = response -> Mono
 		.error(new RuntimeException("Server error, code: " + response.statusCode().value()));
 
+	// default exceptionFunction for webclient
 	public static final Function<ClientResponse, Mono<? extends Throwable>> DEFAULT_WEBCLIENT_5XX_EXCEPTION = response -> Mono
 		.error(new RuntimeException("Server error, code: " + response.statusCode().value()));
 

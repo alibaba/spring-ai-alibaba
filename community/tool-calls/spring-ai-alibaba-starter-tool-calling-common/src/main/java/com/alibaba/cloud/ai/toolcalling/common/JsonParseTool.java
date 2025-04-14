@@ -51,28 +51,55 @@ public class JsonParseTool {
 		return objectMapper.readValue(json, typeRef);
 	}
 
+	/**
+	 * convert json string to List
+	 * @param json json string
+	 * @param clazz class in List
+	 */
 	public <T> List<T> jsonToList(String json, Class<T> clazz) throws JsonProcessingException {
 		JavaType type = objectMapper.getTypeFactory().constructCollectionType(List.class, clazz);
 		return objectMapper.readValue(json, type);
 	}
 
+	/**
+	 * convert json string to List
+	 * @param json json string
+	 * @param typeRef class in List, TypeReference object
+	 */
 	public <T> List<T> jsonToList(String json, TypeReference<T> typeRef) throws JsonProcessingException {
 		JavaType type = objectMapper.getTypeFactory().constructType(typeRef);
 		return objectMapper.readValue(json, type);
 	}
 
+	/**
+	 * Deserialize the JSON string's 'fieldName' key into an object of type T
+	 * @param json json string
+	 * @param typeRef target class
+	 * @param fieldName keyName
+	 */
 	public <T> T getFieldValue(String json, TypeReference<T> typeRef, String fieldName) throws JsonProcessingException {
 		JsonNode rootNode = objectMapper.readTree(json);
 		JsonNode fieldNode = rootNode.path(fieldName);
 		return objectMapper.treeToValue(fieldNode, typeRef);
 	}
 
+	/**
+	 * Get the string value of 'fieldName' from the JSON.
+	 * @param json json string
+	 * @param fieldName keyName
+	 */
 	public String getFieldValueAsString(String json, String fieldName) throws JsonProcessingException {
 		JsonNode rootNode = objectMapper.readTree(json);
 		JsonNode fieldNode = rootNode.path(fieldName);
 		return fieldNode.toString();
 	}
 
+	/**
+	 * Assign 'value' to 'fieldName' in the JSON
+	 * @param json json string
+	 * @param fieldName fieldName
+	 * @param value value
+	 */
 	public String setFieldValue(String json, String fieldName, String value) throws JsonProcessingException {
 		JsonNode jsonNode = objectMapper.readTree(json);
 		if (!(jsonNode instanceof ObjectNode rootNode)) {
@@ -82,6 +109,13 @@ public class JsonParseTool {
 		return objectMapper.writeValueAsString(rootNode);
 	}
 
+	/**
+	 * Parse and merge the sub-JSON into the main JSON's 'fieldName', then stringify the
+	 * result Ensure the JSON is not an array
+	 * @param json main json string
+	 * @param fieldName fieldName
+	 * @param objectJson sub json string
+	 */
 	public String setFieldJsonObjectAsString(String json, String fieldName, String objectJson)
 			throws JsonProcessingException {
 		JsonNode jsonNode = objectMapper.readTree(json);
@@ -93,6 +127,13 @@ public class JsonParseTool {
 		return objectMapper.writeValueAsString(rootNode);
 	}
 
+	/**
+	 * Parse and merge multiple sub-JSONs into the main JSON's 'fieldName', then stringify
+	 * Ensure the JSON is not an array
+	 * @param json main json string
+	 * @param fieldName fieldName
+	 * @param objectJsons sub json string list
+	 */
 	public String setFieldJsonObjectAsString(String json, String fieldName, List<String> objectJsons)
 			throws JsonProcessingException {
 		JsonNode jsonNode = objectMapper.readTree(json);

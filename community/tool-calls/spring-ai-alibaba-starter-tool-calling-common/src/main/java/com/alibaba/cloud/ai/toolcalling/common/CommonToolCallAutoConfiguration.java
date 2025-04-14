@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.toolcalling.common;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -28,24 +27,6 @@ public class CommonToolCallAutoConfiguration {
 	@Bean
 	public JsonParseTool jsonParseService() {
 		return new JsonParseTool();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean(WebClientTool.class)
-	public WebClientTool commonWebClientService(CommonToolCallProperties properties) {
-		return new WebClientTool(jsonParseService(), properties);
-	}
-
-	@Bean
-	@ConditionalOnMissingBean(RestClientTool.class)
-	public RestClientTool commonRestClientService(CommonToolCallProperties properties) {
-		return new RestClientTool(jsonParseService(), properties);
-	}
-
-	@Bean
-	@ConditionalOnMissingBean(CommonToolCallProperties.class)
-	public CommonToolCallProperties commonToolCallProperties() {
-		return new CommonToolCallProperties();
 	}
 
 }
