@@ -1,0 +1,93 @@
+@startuml OpenManus Core Component Interaction Sequence Diagram
+
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowFontSize 11
+skinparam noteFontSize 11
+
+actor User
+participant "ManusController" as Controller
+participant "PlanningFlow" as PlanningFlow
+participant "LlmService" as LlmService
+participant "BaseAgent and subclasses" as Agent
+participant "ToolCallingManager" as ToolManager
+participant "Various tools\n(Bash/Browser etc.)" as Tools
+database "DB/Cache" as DB
+
+== Initialization Phase ==
+
+User -> Controller: Send request (JSON)
+activate Controller
+
+Controller -> PlanningFlow: getOrCreatePlanningFlow(requestId)
+activate PlanningFlow
+
+Controller -> PlanningFlow: execute(userQuery)
+note right: Asynchronous execution
+
+== Plan Creation Phase ==
+
+PlanningFlow -> LlmService: createInitialPlan
+activate LlmService
+LlmService --> PlanningFlow: Return plan description
+deactivate LlmService
+
+PlanningFlow -> PlanningFlow: Parse plan and create steps
+PlanningFlow -> DB: Save plan and steps
+
+== Step Execution Phase ==
+
+loop For each plan step
+    PlanningFlow -> PlanningFlow: Update step status to in progress
+    PlanningFlow -> DB: Save step status
+
+    PlanningFlow -> PlanningFlow: getExecutor to find suitable Agent
+    activate Agent
+
+    PlanningFlow -> Agent: run() execute plan step
+
+    loop ReAct execution rounds (max: maxRounds)
+        Agent -> Agent: ReActAgent.step(), including think and act
+        Agent -> LlmService: think() perform thinking, build messages and request llm
+        activate LlmService
+        LlmService --> Agent: Return ChatResponse, check toolCalls
+        deactivate LlmService
+
+        opt If response contains toolCalls
+            Agent -> ToolManager: act(), initiate tool calls executeToolCalls(toolCalls, callbacks)
+            activate ToolManager
+
+            loop For each tool call
+                ToolManager -> Tools: Call specific tool
+                activate Tools
+                Tools --> ToolManager: Return tool execution result
+                deactivate Tools
+            end
+
+            ToolManager --> Agent: Return tool execution results
+            deactivate ToolManager
+
+            Agent -> Agent: Record tool execution results
+        end
+    end
+
+    Agent --> PlanningFlow: Return step results
+    deactivate Agent
+
+    PlanningFlow -> DB: Update step status (completed/failed) and results
+end
+
+== Result Return Phase ==
+PlanningFlow -> LlmService: Build response result
+activate LlmService
+LlmService --> PlanningFlow: Return response result
+deactivate LlmService
+
+PlanningFlow -> DB: Mark plan execution as completed
+
+PlanningFlow --> Controller: Return execution result
+deactivate PlanningFlow
+
+Controller --> User: Return response
+deactivate Controller
+
+@enduml
