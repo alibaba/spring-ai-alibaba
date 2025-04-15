@@ -216,6 +216,25 @@ const ManusAPI = (() => {
             throw error;
         }
     };
+    
+    /**
+     * 获取所有计划模板列表
+     * @returns {Promise<Object>} - 包含计划模板列表的响应
+     */
+    const getAllPlanTemplates = async () => {
+        try {
+            const response = await fetch(`${PLAN_TEMPLATE_URL}/list`);
+            
+            if (!response.ok) {
+                throw new Error(`获取计划模板列表失败: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('获取计划模板列表失败:', error);
+            throw error;
+        }
+    };
 
     // 返回公开的方法
     return {
@@ -227,6 +246,7 @@ const ManusAPI = (() => {
         executePlan,
         savePlan,
         getPlanVersions,
-        getVersionPlan
+        getVersionPlan,
+        getAllPlanTemplates
     };
 })();

@@ -302,4 +302,37 @@ public class PlanTemplateController {
 			return ResponseEntity.internalServerError().body(Map.of("error", "获取计划版本失败: " + e.getMessage()));
 		}
 	}
+	
+	/**
+	 * 获取所有计划模板列表
+	 * @return 所有计划模板的列表
+	 */
+	@GetMapping("/list")
+	public ResponseEntity<Map<String, Object>> getAllPlanTemplates() {
+		try {
+			// 使用 repository 的 findAll 方法获取所有计划模板
+			List<PlanTemplate> templates = planTemplateRepository.findAll();
+			
+			// 构造响应数据
+			List<Map<String, Object>> templateList = new ArrayList<>();
+			for (PlanTemplate template : templates) {
+				Map<String, Object> templateData = new HashMap<>();
+				templateData.put("id", template.getPlanTemplateId());
+				templateData.put("title", template.getTitle());
+				templateData.put("description", template.getUserRequest());
+				templateData.put("createTime", template.getCreateTime());
+				templateData.put("updateTime", template.getUpdateTime());
+				templateList.add(templateData);
+			}
+			
+			Map<String, Object> response = new HashMap<>();
+			response.put("templates", templateList);
+			response.put("count", templateList.size());
+			
+			return ResponseEntity.ok(response);
+		} catch (Exception e) {
+			logger.error("获取计划模板列表失败", e);
+			return ResponseEntity.internalServerError().body(Map.of("error", "获取计划模板列表失败: " + e.getMessage()));
+		}
+	}
 }
