@@ -289,6 +289,32 @@ const ManusAPI = (() => {
         }
     };
 
+    /**
+     * 删除计划模板
+     * @param {string} planId - 计划模板ID
+     * @returns {Promise<Object>} - 删除结果
+     */
+    const deletePlanTemplate = async (planId) => {
+        try {
+            const response = await fetch(`${PLAN_TEMPLATE_URL}/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ planId })
+            });
+
+            if (!response.ok) {
+                throw new Error(`删除计划模板失败: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('删除计划模板失败:', error);
+            throw error;
+        }
+    };
+
     // 返回公开的方法
     return {
         BASE_URL,
@@ -302,6 +328,6 @@ const ManusAPI = (() => {
         updatePlanTemplate,
         getVersionPlan,
         getAllPlanTemplates,
-        updatePlanTemplate
+        deletePlanTemplate
     };
 })();

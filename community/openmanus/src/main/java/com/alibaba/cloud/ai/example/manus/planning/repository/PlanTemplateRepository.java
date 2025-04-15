@@ -35,4 +35,11 @@ public interface PlanTemplateRepository extends JpaRepository<PlanTemplate, Stri
      * @return 计划模板实体
      */
     Optional<PlanTemplate> findByPlanTemplateId(String planTemplateId);
+    
+    /**
+     * 根据计划模板ID删除计划模板
+     * 
+     * @param planTemplateId 计划模板ID
+     */
+    void deleteByPlanTemplateId(String planTemplateId);
 }

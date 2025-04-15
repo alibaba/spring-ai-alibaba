@@ -195,4 +195,27 @@ public class PlanTemplateService {
     public List<PlanTemplate> getAllPlanTemplates() {
         return planTemplateRepository.findAll();
     }
+
+    /**
+     * 删除计划模板
+     * 
+     * @param planTemplateId 计划模板ID
+     * @return 是否删除成功
+     */
+    @Transactional
+    public boolean deletePlanTemplate(String planTemplateId) {
+        try {
+            // 先删除所有相关的版本
+            versionRepository.deleteByPlanTemplateId(planTemplateId);
+            
+            // 再删除模板本身
+            planTemplateRepository.deleteByPlanTemplateId(planTemplateId);
+            
+            logger.info("已删除计划模板 {} 及其所有版本", planTemplateId);
+            return true;
+        } catch (Exception e) {
+            logger.error("删除计划模板 {} 失败", planTemplateId, e);
+            return false;
+        }
+    }
 }

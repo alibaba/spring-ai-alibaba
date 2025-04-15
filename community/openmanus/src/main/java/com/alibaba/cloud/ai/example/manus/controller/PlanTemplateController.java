@@ -410,4 +410,44 @@ public class PlanTemplateController {
 			return ResponseEntity.internalServerError().body(Map.of("error", "计划模板更新失败: " + e.getMessage()));
 		}
 	}
+	
+	/**
+	 * 删除计划模板
+	 * @param request 包含计划ID的请求
+	 * @return 删除结果
+	 */
+	@PostMapping("/delete")
+	public ResponseEntity<Map<String, Object>> deletePlanTemplate(@RequestBody Map<String, String> request) {
+		String planId = request.get("planId");
+		
+		if (planId == null || planId.trim().isEmpty()) {
+			return ResponseEntity.badRequest().body(Map.of("error", "计划ID不能为空"));
+		}
+		
+		try {
+			// 检查计划模板是否存在
+			PlanTemplate template = planTemplateService.getPlanTemplate(planId);
+			if (template == null) {
+				return ResponseEntity.notFound().build();
+			}
+			
+			// 删除计划模板及其所有版本
+			boolean deleted = planTemplateService.deletePlanTemplate(planId);
+			
+			if (deleted) {
+				logger.info("计划模板删除成功: {}", planId);
+				return ResponseEntity.ok(Map.of(
+					"status", "success",
+					"message", "计划模板已删除",
+					"planId", planId
+				));
+			} else {
+				logger.error("计划模板删除失败: {}", planId);
+				return ResponseEntity.internalServerError().body(Map.of("error", "计划模板删除失败"));
+			}
+		} catch (Exception e) {
+			logger.error("删除计划模板失败", e);
+			return ResponseEntity.internalServerError().body(Map.of("error", "删除计划模板失败: " + e.getMessage()));
+		}
+	}
 }
