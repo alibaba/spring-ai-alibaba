@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.planning.model;
+package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -122,6 +122,31 @@ public class ExecutionPlan {
 			state.append(" - step execution result: ").append("\n").append(step.getResult()).append("\n");
 		}
 		return state.toString();
+	}
+	
+	/**
+	 * 将计划转换为JSON字符串
+	 * @return 计划的JSON字符串表示
+	 */
+	public String toJson() {
+		StringBuilder json = new StringBuilder();
+		json.append("{\n");
+		json.append("  \"planId\": \"").append(planId).append("\",\n");
+		json.append("  \"title\": \"").append(title).append("\",\n");
+		
+		// 添加步骤数组
+		json.append("  \"steps\": [\n");
+		for (int i = 0; i < steps.size(); i++) {
+			json.append(steps.get(i).toJson());
+			if (i < steps.size() - 1) {
+				json.append(",");
+			}
+			json.append("\n");
+		}
+		json.append("  ]\n");
+		
+		json.append("}");
+		return json.toString();
 	}
 
 }

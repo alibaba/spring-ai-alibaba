@@ -18,8 +18,8 @@ package com.alibaba.cloud.ai.example.manus.planning.creator;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.planning.model.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
 import org.slf4j.Logger;

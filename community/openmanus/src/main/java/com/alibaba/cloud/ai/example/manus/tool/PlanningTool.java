@@ -16,8 +16,8 @@
 package com.alibaba.cloud.ai.example.manus.tool;
 
 import com.alibaba.cloud.ai.example.manus.flow.PlanStepStatus;
-import com.alibaba.cloud.ai.example.manus.planning.model.ExecutionPlan;
-import com.alibaba.cloud.ai.example.manus.planning.model.ExecutionStep;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;

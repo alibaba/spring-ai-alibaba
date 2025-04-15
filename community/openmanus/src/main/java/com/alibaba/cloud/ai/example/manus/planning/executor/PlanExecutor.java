@@ -17,9 +17,9 @@ package com.alibaba.cloud.ai.example.manus.planning.executor;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.flow.PlanStepStatus;
-import com.alibaba.cloud.ai.example.manus.planning.model.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.ExecutionPlan;
-import com.alibaba.cloud.ai.example.manus.planning.model.ExecutionStep;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 

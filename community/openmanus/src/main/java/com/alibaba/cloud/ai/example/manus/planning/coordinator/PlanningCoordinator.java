@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.example.manus.planning.coordinator;
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
-import com.alibaba.cloud.ai.example.manus.planning.model.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 
 /**
  * 计划流程的总协调器 负责协调计划的创建、执行和总结三个主要步骤
@@ -36,10 +36,21 @@ public class PlanningCoordinator {
 		this.planExecutor = planExecutor;
 		this.planFinalizer = planFinalizer;
 	}
+	
+	/**
+	 * 仅创建计划，不执行
+	 * @param context 执行上下文
+	 * @return 执行上下文
+	 */
+	public ExecutionContext createPlan(ExecutionContext context) {
+		// 只执行创建计划步骤
+		planCreator.createPlan(context);
+		return context;
+	}
 
 	/**
 	 * 执行完整的计划流程
-	 * @param userRequest 用户请求
+	 * @param context 执行上下文
 	 * @return 执行总结
 	 */
 	public ExecutionContext executePlan(ExecutionContext context) {

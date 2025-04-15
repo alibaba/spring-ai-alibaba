@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.example.manus.controller;
 
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
-import com.alibaba.cloud.ai.example.manus.planning.model.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 
