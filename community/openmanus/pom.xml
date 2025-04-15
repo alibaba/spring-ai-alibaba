@@ -11,7 +11,7 @@
     <properties>
         <java.version>17</java.version>
         <spring-ai-alibaba.version>1.0.0-M6.1</spring-ai-alibaba.version>
-        <spring-ai.version>1.0.0-M6</spring-ai.version>
+        <spring-ai.version>1.0.0-M7</spring-ai.version>
         <spring-boot.version>3.2.0</spring-boot.version>
         <jsoup-version>1.18.1</jsoup-version>
 
@@ -60,7 +60,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
         </dependency>
 
         <dependency>
@@ -77,8 +77,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-mcp-client-spring-boot-starter</artifactId>
-            <version>${spring-ai.version}</version>
+            <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
         </dependency>
 
         <dependency>
@@ -199,7 +198,7 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
-        
+
         <!-- Mockito 测试框架 -->
         <dependency>
             <groupId>org.mockito</groupId>
@@ -207,7 +206,7 @@
             <version>5.11.0</version>
             <scope>test</scope>
         </dependency>
-        
+
         <!-- Mockito JUnit Jupiter 集成 -->
         <dependency>
             <groupId>org.mockito</groupId>
@@ -248,7 +247,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
-                     <skipTests>true</skipTests> 
+                     <skipTests>true</skipTests>
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
