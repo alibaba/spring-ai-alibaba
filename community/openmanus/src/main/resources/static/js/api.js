@@ -223,7 +223,10 @@ const ManusAPI = (() => {
      */
     const getAllPlanTemplates = async () => {
         try {
-            const response = await fetch(`${PLAN_TEMPLATE_URL}/list`);
+            const url = `${PLAN_TEMPLATE_URL}/list`;
+            console.log('正在请求计划模板列表，URL:', url);
+            
+            const response = await fetch(url);
             
             if (!response.ok) {
                 throw new Error(`获取计划模板列表失败: ${response.status}`);

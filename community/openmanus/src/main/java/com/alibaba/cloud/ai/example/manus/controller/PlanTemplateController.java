@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -310,8 +311,9 @@ public class PlanTemplateController {
 	@GetMapping("/list")
 	public ResponseEntity<Map<String, Object>> getAllPlanTemplates() {
 		try {
-			// 使用 repository 的 findAll 方法获取所有计划模板
-			List<PlanTemplate> templates = planTemplateRepository.findAll();
+			// 使用 PlanTemplateService 获取所有计划模板
+			// 由于没有直接提供获取所有模板的方法，我们使用 PlanTemplateRepository 的 findAll 方法
+			List<PlanTemplate> templates = planTemplateService.getAllPlanTemplates();
 			
 			// 构造响应数据
 			List<Map<String, Object>> templateList = new ArrayList<>();
