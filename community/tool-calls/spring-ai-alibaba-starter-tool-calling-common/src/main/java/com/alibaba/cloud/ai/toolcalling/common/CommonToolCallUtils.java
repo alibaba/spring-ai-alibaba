@@ -21,7 +21,11 @@ import org.springframework.util.MultiValueMap;
 /**
  * @author vlsmb
  */
-public class CommonToolCallUtils {
+public final class CommonToolCallUtils {
+
+	private CommonToolCallUtils() {
+
+	}
 
 	public static class MultiValueMapBuilder<K, V> {
 
