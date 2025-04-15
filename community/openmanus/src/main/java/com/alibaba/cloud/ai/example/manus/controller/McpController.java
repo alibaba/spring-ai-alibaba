@@ -50,19 +50,19 @@ public class McpController {
 	 * @param mcpConfigEntity MCP Server
 	 */
 	@PostMapping("/add")
-    public ResponseEntity<String> add(@RequestBody McpConfigEntity mcpConfigEntity) throws IOException {
-        mcpService.addMcpServer(mcpConfigEntity);
-        return ResponseEntity.ok("Success");
-    }
+	public ResponseEntity<String> add(@RequestBody McpConfigEntity mcpConfigEntity) throws IOException {
+		mcpService.addMcpServer(mcpConfigEntity);
+		return ResponseEntity.ok("Success");
+	}
 
 	/**
-     * Remove MCP Server
-     * @param mcpServerName MCP Server Name
-     */
+	 * Remove MCP Server
+	 * @param mcpServerName MCP Server Name
+	 */
 	@GetMapping("/remove")
-    public ResponseEntity<String> remove(@RequestParam("mcpServerName") String mcpServerName) throws IOException {
-        mcpService.removeMcpServer(mcpServerName);
-        return ResponseEntity.ok("Success");
-    }
+	public ResponseEntity<String> remove(@RequestParam("mcpServerName") String mcpServerName) throws IOException {
+		mcpService.removeMcpServer(mcpServerName);
+		return ResponseEntity.ok("Success");
+	}
 
 }
