@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.planning.model;
+package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 
 import com.alibaba.cloud.ai.example.manus.flow.PlanStepStatus;
 
@@ -71,6 +71,25 @@ public class ExecutionStep {
 		sb.append(stepRequirement);
 
 		return sb.toString();
+	}
+	
+	/**
+	 * 将步骤转换为JSON字符串
+	 * @return 步骤的JSON字符串表示
+	 */
+	public String toJson() {
+		StringBuilder json = new StringBuilder();
+		json.append("    {");
+		json.append("\"stepIndex\": ").append(stepIndex).append(", ");
+		json.append("\"stepRequirement\": \"").append(stepRequirement.replace("\"", "\\\"")).append("\" ");
+		
+		
+		if (result != null && !result.isEmpty()) {
+			json.append(", \"result\": \"").append(result.replace("\"", "\\\"").replace("\n", "\\n")).append("\"");
+		}
+		
+		json.append("}");
+		return json.toString();
 	}
 
 }

@@ -4,6 +4,7 @@
 const ManusAPI = (() => {
     // API 基础URL
     const BASE_URL = '/api/manus';
+    const PLAN_TEMPLATE_URL = '/api/plan-template';
 
     /**
      * 向 Manus 发送消息，获取异步处理结果
@@ -30,7 +31,79 @@ const ManusAPI = (() => {
             throw error;
         }
     };
+    
+    /**
+     * 根据输入生成执行计划
+     * @param {string} query - 用户输入的计划需求
+     * @param {string} [existingJson] - 可选的已有JSON数据字符串
+     * @returns {Promise<Object>} - 包含完整计划数据的响应
+     */
+    const generatePlan = async (query, existingJson = null) => {
+        try {
+            const requestBody = { query };
+            
+            // 如果存在已有的JSON数据，添加到请求中
+            if (existingJson) {
+                requestBody.existingJson = existingJson;
+            }
+            
+            const response = await fetch(`${PLAN_TEMPLATE_URL}/generate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
 
+            if (!response.ok) {
+                throw new Error(`生成计划失败: ${response.status}`);
+            }
+
+            const responseData = await response.json();
+            
+            // 如果响应中包含planJson字段，就将其解析为JSON对象
+            if (responseData.planJson) {
+                try {
+                    responseData.plan = JSON.parse(responseData.planJson);
+                } catch (e) {
+                    console.warn('无法解析计划JSON:', e);
+                    responseData.plan = { error: '无法解析计划数据' };
+                }
+            }
+
+            return responseData;
+        } catch (error) {
+            console.error('生成计划失败:', error);
+            throw error;
+        }
+    };
+    
+    /**
+     * 执行已生成的计划
+     * @param {string} planId - 计划ID
+     * @returns {Promise<Object>} - 包含执行状态的响应
+     */
+    const executePlan = async (planId) => {
+        try {
+            const response = await fetch(`${PLAN_TEMPLATE_URL}/execute`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ planId })
+            });
+
+            if (!response.ok) {
+                throw new Error(`执行计划失败: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('执行计划失败:', error);
+            throw error;
+        }
+    };
+    
     /**
      * 获取详细的执行记录
      * @param {string} planId - 计划ID
@@ -57,10 +130,103 @@ const ManusAPI = (() => {
             return null;
         }
     };
+    
+    /**
+     * 保存计划到服务器
+     * @param {string} planId - 计划ID
+     * @param {string} planJson - 计划JSON内容
+     * @returns {Promise<Object>} - 保存结果
+     */
+    const savePlan = async (planId, planJson) => {
+        try {
+            const response = await fetch(`${PLAN_TEMPLATE_URL}/save`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    planId: planId,
+                    planJson: planJson
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`保存计划失败: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('保存计划失败:', error);
+            throw error;
+        }
+    };
+    
+    /**
+     * 获取计划的所有版本
+     * @param {string} planId - 计划ID
+     * @returns {Promise<Object>} - 包含版本历史的响应
+     */
+    const getPlanVersions = async (planId) => {
+        try {
+            const response = await fetch(`${PLAN_TEMPLATE_URL}/versions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ planId })
+            });
+
+            if (!response.ok) {
+                throw new Error(`获取计划版本失败: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('获取计划版本失败:', error);
+            throw error;
+        }
+    };
+    
+    /**
+     * 获取特定版本的计划
+     * @param {string} planId - 计划ID
+     * @param {number} versionIndex - 版本索引
+     * @returns {Promise<Object>} - 包含特定版本计划的响应
+     */
+    const getVersionPlan = async (planId, versionIndex) => {
+        try {
+            const response = await fetch(`${PLAN_TEMPLATE_URL}/get-version`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    planId: planId,
+                    versionIndex: versionIndex.toString()
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`获取特定版本计划失败: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('获取特定版本计划失败:', error);
+            throw error;
+        }
+    };
 
     // 返回公开的方法
     return {
+        BASE_URL,
+        PLAN_TEMPLATE_URL,
         sendMessage,
-        getDetails
+        getDetails,
+        generatePlan,
+        executePlan,
+        savePlan,
+        getPlanVersions,
+        getVersionPlan
     };
 })();
