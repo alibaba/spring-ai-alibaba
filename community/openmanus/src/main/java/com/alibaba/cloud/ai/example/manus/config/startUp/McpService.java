@@ -42,74 +42,77 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class McpService implements InitializingBean {
 
-    @Autowired
-    private McpConfigRepository mcpConfigRepository;
+	@Autowired
+	private McpConfigRepository mcpConfigRepository;
 
-    private final Map<String, Map<McpAsyncClient, AsyncMcpToolCallbackProvider>> toolCallbackMap = new ConcurrentHashMap<>();
+	private final Map<String, Map<McpAsyncClient, AsyncMcpToolCallbackProvider>> toolCallbackMap = new ConcurrentHashMap<>();
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        // https://mcp.higress.ai/mcp-stock-helper
-        for (McpConfigEntity mcpConfigEntity : mcpConfigRepository.findAll()) {
-            addClient(mcpConfigEntity);
-        }
-    }
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		// https://mcp.higress.ai/mcp-stock-helper
+		for (McpConfigEntity mcpConfigEntity : mcpConfigRepository.findAll()) {
+			addClient(mcpConfigEntity);
+		}
+	}
 
-    private void addClient(McpConfigEntity mcpConfigEntity) throws IOException {
-        if (toolCallbackMap.containsKey(mcpConfigEntity.getConnectionConfig())) {
-            return;
-        }
+	private void addClient(McpConfigEntity mcpConfigEntity) throws IOException {
+		if (toolCallbackMap.containsKey(mcpConfigEntity.getConnectionConfig())) {
+			return;
+		}
 
-        McpClientTransport transport = null;
-        switch (mcpConfigEntity.getConnectionType()) {
-            case SSE -> {
-                WebClient.Builder webClientBuilder = WebClient.builder().baseUrl(mcpConfigEntity.getConnectionConfig());
-                transport = new WebFluxSseClientTransport(webClientBuilder, new ObjectMapper());
-            }
-            case STUDIO -> {
-                try (JsonParser jsonParser = new ObjectMapper()
-                             .createParser(mcpConfigEntity.getConnectionConfig())) {
-                    ServerParameters serverParameters = jsonParser.readValueAs(ServerParameters.class);
-                    transport = new StdioClientTransport(serverParameters);
-                }
-            }
-        }
-        if (transport != null) {
-            McpAsyncClient mcpAsyncClient = McpClient.async(transport).clientInfo(new McpSchema.Implementation(mcpConfigEntity.getMcpServerName(), "1.0.0")).build();
-            mcpAsyncClient.initialize().block();
-            toolCallbackMap.computeIfAbsent(mcpConfigEntity.getConnectionConfig(), k -> new ConcurrentHashMap<>())
-                    .put(mcpAsyncClient, new AsyncMcpToolCallbackProvider(mcpAsyncClient));
-        }
-    }
+		McpClientTransport transport = null;
+		switch (mcpConfigEntity.getConnectionType()) {
+			case SSE -> {
+				WebClient.Builder webClientBuilder = WebClient.builder().baseUrl(mcpConfigEntity.getConnectionConfig());
+				transport = new WebFluxSseClientTransport(webClientBuilder, new ObjectMapper());
+			}
+			case STUDIO -> {
+				try (JsonParser jsonParser = new ObjectMapper().createParser(mcpConfigEntity.getConnectionConfig())) {
+					ServerParameters serverParameters = jsonParser.readValueAs(ServerParameters.class);
+					transport = new StdioClientTransport(serverParameters);
+				}
+			}
+		}
+		if (transport != null) {
+			McpAsyncClient mcpAsyncClient = McpClient.async(transport)
+				.clientInfo(new McpSchema.Implementation(mcpConfigEntity.getMcpServerName(), "1.0.0"))
+				.build();
+			mcpAsyncClient.initialize().block();
+			toolCallbackMap.computeIfAbsent(mcpConfigEntity.getConnectionConfig(), k -> new ConcurrentHashMap<>())
+				.put(mcpAsyncClient, new AsyncMcpToolCallbackProvider(mcpAsyncClient));
+		}
+	}
 
-    public void addMcpServer(McpConfigEntity mcpConfigEntity) throws IOException {
-        // TODO Check connection config structure
-        addClient(mcpConfigEntity);
-        mcpConfigRepository.save(mcpConfigEntity);
-    }
+	public void addMcpServer(McpConfigEntity mcpConfigEntity) throws IOException {
+		// TODO Check connection config structure
+		addClient(mcpConfigEntity);
+		mcpConfigRepository.save(mcpConfigEntity);
+	}
 
-    public void removeMcpServer(String mcpServerName) {
-        McpConfigEntity mcpConfigEntity = mcpConfigRepository.findByMcpServerName(mcpServerName);
-        if (mcpConfigEntity != null) {
-            Map<McpAsyncClient, AsyncMcpToolCallbackProvider> map = toolCallbackMap.remove(mcpConfigEntity.getConnectionConfig());
-            if (map != null) {
-                map.keySet().forEach(McpAsyncClient::close);
-            }
-        }
-        mcpConfigRepository.deleteByMcpServerName(mcpServerName);
-    }
+	public void removeMcpServer(String mcpServerName) {
+		McpConfigEntity mcpConfigEntity = mcpConfigRepository.findByMcpServerName(mcpServerName);
+		if (mcpConfigEntity != null) {
+			Map<McpAsyncClient, AsyncMcpToolCallbackProvider> map = toolCallbackMap
+				.remove(mcpConfigEntity.getConnectionConfig());
+			if (map != null) {
+				map.keySet().forEach(McpAsyncClient::close);
+			}
+		}
+		mcpConfigRepository.deleteByMcpServerName(mcpServerName);
+	}
 
-    public List<McpConfigEntity> getMcpServers() {
-        return mcpConfigRepository.findAll();
-    }
+	public List<McpConfigEntity> getMcpServers() {
+		return mcpConfigRepository.findAll();
+	}
 
-    public List<ToolCallback> getFunctionCallbacks() {
-        return toolCallbackMap.values()
-                .stream()
-                .flatMap(map -> map.values().stream())
-                .map(AsyncMcpToolCallbackProvider::getToolCallbacks)
-                .map(List::of)
-                .flatMap(List::stream)
-                .toList();
-    }
+	public List<ToolCallback> getFunctionCallbacks() {
+		return toolCallbackMap.values()
+			.stream()
+			.flatMap(map -> map.values().stream())
+			.map(AsyncMcpToolCallbackProvider::getToolCallbacks)
+			.map(List::of)
+			.flatMap(List::stream)
+			.toList();
+	}
+
 }

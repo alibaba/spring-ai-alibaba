@@ -40,7 +40,7 @@ public class McpConfigEntity {
 	private McpConfigType connectionType;
 
 	@Column(nullable = false, length = 4000)
-    private String connectionConfig;
+	private String connectionConfig;
 
 	// Getters and Setters
 	public Long getId() {
@@ -77,4 +77,5 @@ public class McpConfigEntity {
 		this.connectionConfig = connectionConfig;
 		return this;
 	}
+
 }

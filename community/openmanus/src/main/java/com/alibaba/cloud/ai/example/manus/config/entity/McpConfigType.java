@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.config.entity;
 
 public enum McpConfigType {
-    SSE,
-    STREAMING,
-    STUDIO
+
+	SSE, STREAMING, STUDIO
+
 }

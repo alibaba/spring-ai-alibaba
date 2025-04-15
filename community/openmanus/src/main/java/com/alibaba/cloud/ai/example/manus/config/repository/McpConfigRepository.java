@@ -24,7 +24,9 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface McpConfigRepository extends JpaRepository<McpConfigEntity, Long> {
-    McpConfigEntity findByMcpServerName(String mcpServerName);
 
-    void deleteByMcpServerName(String mcpServerName);
+	McpConfigEntity findByMcpServerName(String mcpServerName);
+
+	void deleteByMcpServerName(String mcpServerName);
+
 }
