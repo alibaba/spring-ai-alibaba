@@ -219,7 +219,8 @@ public class DynamicAgent extends ReActAgent {
 	public List<ToolCallback> getToolCallList() {
 		List<ToolCallback> toolCallbacks = new ArrayList<>();
 		for (String toolKey : availableToolKeys) {
-			Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContexts(getPlanId());
+			Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider
+				.getToolCallBackContexts(getPlanId());
 			if (toolCallBackContext.containsKey(toolKey)) {
 				ToolCallBackContext toolCallback = toolCallBackContext.get(toolKey);
 				if (toolCallback != null) {

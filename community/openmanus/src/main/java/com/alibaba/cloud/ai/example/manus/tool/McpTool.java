@@ -70,8 +70,9 @@ public class McpTool implements ToolCallBiFunctionDef {
 		return new ToolExecuteResult(toolCallback.call(s, toolContext));
 	}
 
-    @Override
-    public void cleanup(String planId) {
+	@Override
+	public void cleanup(String planId) {
 
-    }
+	}
+
 }
