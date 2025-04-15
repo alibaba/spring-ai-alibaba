@@ -337,4 +337,77 @@ public class PlanTemplateController {
 			return ResponseEntity.internalServerError().body(Map.of("error", "获取计划模板列表失败: " + e.getMessage()));
 		}
 	}
+	
+	/**
+	 * 更新计划模板
+	 * @param request 包含计划模板ID、计划需求和可选的JSON数据的请求
+	 * @return 更新后的计划JSON数据
+	 */
+	@PostMapping("/update")
+	public ResponseEntity<Map<String, Object>> updatePlanTemplate(@RequestBody Map<String, String> request) {
+		String planId = request.get("planId");
+		String query = request.get("query");
+		String existingJson = request.get("existingJson"); // 获取可能存在的JSON数据
+		
+		if (planId == null || planId.trim().isEmpty()) {
+			return ResponseEntity.badRequest().body(Map.of("error", "计划模板ID不能为空"));
+		}
+		
+		if (query == null || query.trim().isEmpty()) {
+			return ResponseEntity.badRequest().body(Map.of("error", "计划描述不能为空"));
+		}
+		
+		// 检查计划模板是否存在
+		PlanTemplate template = planTemplateService.getPlanTemplate(planId);
+		if (template == null) {
+			return ResponseEntity.notFound().build();
+		}
+		
+		ExecutionContext context = new ExecutionContext();
+		// 如果存在已有JSON数据，将其添加到用户请求中
+		String enhancedQuery;
+		if (existingJson != null && !existingJson.trim().isEmpty()) {
+			// 转义JSON中的花括号，防止被String.format误解为占位符
+			String escapedJson = existingJson.replace("{", "\\{").replace("}", "\\}");
+			enhancedQuery = String.format("参照过去的执行计划 %s 。以及用户的新的query：%s。更新这个执行计划。", escapedJson, query);
+		} else {
+			enhancedQuery = query;
+		}
+		context.setUserRequest(enhancedQuery);
+		
+		// 使用已有的计划模板ID
+		context.setPlanId(planId);
+		context.setNeedSummary(false); // 不需要生成摘要，因为我们只需要计划
+		
+		// 获取规划流程
+		PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(planId);
+		
+		try {
+			// 立即执行创建计划的阶段，而不是异步
+			planningCoordinator.createPlan(context);
+			logger.info("计划模板更新成功: {}", planId);
+			
+			// 从记录器中获取生成的计划
+			if (context.getPlan() == null) {
+				return ResponseEntity.internalServerError().body(Map.of("error", "计划更新失败，无法获取计划数据"));
+			}
+			
+			// 获取计划JSON
+			String planJson = context.getPlan().toJson();
+			
+			// 保存到版本历史
+			saveToVersionHistory(planId, planJson);
+			
+			// 返回计划数据
+			Map<String, Object> response = new HashMap<>();
+			response.put("planTemplateId", planId);
+			response.put("status", "completed");
+			response.put("planJson", planJson);
+			
+			return ResponseEntity.ok(response);
+		} catch (Exception e) {
+			logger.error("更新计划模板失败", e);
+			return ResponseEntity.internalServerError().body(Map.of("error", "计划模板更新失败: " + e.getMessage()));
+		}
+	}
 }

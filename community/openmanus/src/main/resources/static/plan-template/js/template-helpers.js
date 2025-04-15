@@ -50,10 +50,7 @@ async function handlePlanTemplateClick(template) {
     }
     
     try {
-        // 设置加载状态 - 不直接调用updateUIState
-        // 这里我们通知外部需要显示加载状态
-        document.dispatchEvent(new CustomEvent('plan-template-loading-start'));
-        
+        // 设置当前计划模板ID
         currentPlanTemplateId = template.id;
         
         // 获取计划模板的最新版本
@@ -78,15 +75,11 @@ async function handlePlanTemplateClick(template) {
             apiUrlElement.textContent = `http://your-domain/api/plan-template/execute/${template.id}`;
         }
         
-        // 更新左侧边栏选中状态 - 使用事件通知主文件
-        document.dispatchEvent(new CustomEvent('plan-template-list-update'));
+        // 直接调用updateUIState来更新UI状态，确保按钮文本正确显示
+        updateUIState();
         
-        // 通知外部UI状态需要更新
-        document.dispatchEvent(new CustomEvent('plan-template-loading-end'));
     } catch (error) {
         console.error('加载计划模板失败:', error);
         alert('加载计划模板失败: ' + error.message);
-        // 使用事件通知而不是直接调用 updateUIState
-        document.dispatchEvent(new CustomEvent('plan-template-loading-error'));
     }
 }

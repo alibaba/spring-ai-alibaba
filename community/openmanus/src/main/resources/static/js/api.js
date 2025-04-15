@@ -239,6 +239,56 @@ const ManusAPI = (() => {
         }
     };
 
+    /**
+     * 更新现有计划模板
+     * @param {string} planId - 计划模板ID
+     * @param {string} query - 用户输入的计划需求
+     * @param {string} existingJson - 已有的JSON数据字符串
+     * @returns {Promise<Object>} - 包含更新后计划数据的响应
+     */
+    const updatePlanTemplate = async (planId, query, existingJson = null) => {
+        try {
+            const requestBody = { 
+                planId,
+                query
+            };
+            
+            // 如果存在已有的JSON数据，添加到请求中
+            if (existingJson) {
+                requestBody.existingJson = existingJson;
+            }
+            
+            const response = await fetch(`${PLAN_TEMPLATE_URL}/update`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                throw new Error(`更新计划模板失败: ${response.status}`);
+            }
+
+            const responseData = await response.json();
+            
+            // 如果响应中包含planJson字段，就将其解析为JSON对象
+            if (responseData.planJson) {
+                try {
+                    responseData.plan = JSON.parse(responseData.planJson);
+                } catch (e) {
+                    console.warn('无法解析计划JSON:', e);
+                    responseData.plan = { error: '无法解析计划数据' };
+                }
+            }
+
+            return responseData;
+        } catch (error) {
+            console.error('更新计划模板失败:', error);
+            throw error;
+        }
+    };
+
     // 返回公开的方法
     return {
         BASE_URL,
@@ -249,7 +299,9 @@ const ManusAPI = (() => {
         executePlan,
         savePlan,
         getPlanVersions,
+        updatePlanTemplate,
         getVersionPlan,
-        getAllPlanTemplates
+        getAllPlanTemplates,
+        updatePlanTemplate
     };
 })();
