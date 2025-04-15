@@ -18,10 +18,20 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent;
 import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-public interface ToolCallbackProvider {
+public abstract class AbstractToolCallbackProvider implements ToolCallbackProvider {
+    private final Map<String, Map<String, ManusConfiguration.ToolCallBackContext>> cachedToolCallbackMap = new ConcurrentHashMap<>();
 
-	Map<String, ManusConfiguration.ToolCallBackContext> getToolCallBackContexts(String planId);
+    @Override
+    public Map<String, ManusConfiguration.ToolCallBackContext> getToolCallBackContexts(String planId) {
+        return cachedToolCallbackMap.computeIfAbsent(planId, k -> getToolCallBackContexts());
+    }
 
-	Map<String, ManusConfiguration.ToolCallBackContext> removePlan(String planId);
+    protected abstract Map<String, ManusConfiguration.ToolCallBackContext> getToolCallBackContexts();
+
+    @Override
+    public Map<String, ManusConfiguration.ToolCallBackContext> removePlan(String planId) {
+        return cachedToolCallbackMap.remove(planId);
+    }
 }
