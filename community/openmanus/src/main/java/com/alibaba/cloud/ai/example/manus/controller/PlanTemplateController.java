@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +32,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
+import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.service.PlanTemplateService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
 /**
@@ -46,15 +48,18 @@ public class PlanTemplateController {
 
 	private static final Logger logger = LoggerFactory.getLogger(PlanTemplateController.class);
 
-	// 存储所有计划版本的Map: planId -> 版本列表
-	private final Map<String, List<String>> planVersionsMap = new ConcurrentHashMap<>();
-
 	@Autowired
 	@Lazy
 	private PlanningFactory planningFactory;
 
 	@Autowired
 	private PlanExecutionRecorder planExecutionRecorder;
+	
+	@Autowired
+	private PlanTemplateService planTemplateService;
+	
+	@Autowired
+	private PlanIdDispatcher planIdDispatcher;
 
 	/**
 	 * 生成计划
@@ -74,14 +79,16 @@ public class PlanTemplateController {
 		// 如果存在已有JSON数据，将其添加到用户请求中
 		String enhancedQuery;
 		if (existingJson != null && !existingJson.trim().isEmpty()) {
-			enhancedQuery = String.format("参照过去的执行计划 %s 。以及用户的新的query：%s。构建一个新的执行计划。", existingJson, query);
+			// 转义JSON中的花括号，防止被String.format误解为占位符
+			String escapedJson = existingJson.replace("{", "\\{").replace("}", "\\}");
+			enhancedQuery = String.format("参照过去的执行计划 %s 。以及用户的新的query：%s。构建一个新的执行计划。", escapedJson, query);
 		} else {
 			enhancedQuery = query;
 		}
 		context.setUserRequest(enhancedQuery);
 		
-		// 创建唯一的计划ID
-		String planTemplateId = "planTemplate-" + System.currentTimeMillis();
+		// 使用 PlanIdDispatcher 生成唯一的计划模板ID
+		String planTemplateId = planIdDispatcher.generatePlanTemplateId();
 		context.setPlanId(planTemplateId);
 		context.setNeedSummary(false); // 不需要生成摘要，因为我们只需要计划
 		
@@ -171,8 +178,20 @@ public class PlanTemplateController {
 	 * @param planJson 计划JSON数据
 	 */
 	private void saveToVersionHistory(String planId, String planJson) {
-		planVersionsMap.computeIfAbsent(planId, k -> new ArrayList<>()).add(planJson);
-		logger.info("已保存计划 {} 的版本, 当前版本数: {}", planId, planVersionsMap.get(planId).size());
+		// 从JSON中提取标题
+		String title = planTemplateService.extractTitleFromPlan(planJson);
+		
+		// 检查计划是否存在
+		PlanTemplate template = planTemplateService.getPlanTemplate(planId);
+		if (template == null) {
+			// 如果不存在，则创建新计划
+			planTemplateService.savePlanTemplate(planId, title, "用户请求生成计划: " + planId, planJson);
+		} else {
+			// 如果存在，则保存新版本
+			planTemplateService.saveVersionToHistory(planId, planJson);
+		}
+		
+		logger.info("已保存计划 {} 的新版本", planId);
 	}
 	
 	/**
@@ -197,12 +216,16 @@ public class PlanTemplateController {
 			// 保存到版本历史
 			saveToVersionHistory(planId, planJson);
 			
+			// 计算版本数量
+			List<String> versions = planTemplateService.getPlanVersions(planId);
+			int versionCount = versions.size();
+			
 			// 返回成功响应
 			return ResponseEntity.ok(Map.of(
 				"status", "success",
 				"message", "计划已保存",
 				"planId", planId,
-				"versionCount", planVersionsMap.get(planId).size()
+				"versionCount", versionCount
 			));
 		} catch (Exception e) {
 			logger.error("保存计划失败", e);
@@ -223,7 +246,7 @@ public class PlanTemplateController {
 			return ResponseEntity.badRequest().body(Map.of("error", "计划ID不能为空"));
 		}
 		
-		List<String> versions = planVersionsMap.getOrDefault(planId, new ArrayList<>());
+		List<String> versions = planTemplateService.getPlanVersions(planId);
 		
 		Map<String, Object> response = new HashMap<>();
 		response.put("planId", planId);
@@ -249,7 +272,7 @@ public class PlanTemplateController {
 		
 		try {
 			int index = Integer.parseInt(versionIndex);
-			List<String> versions = planVersionsMap.getOrDefault(planId, new ArrayList<>());
+			List<String> versions = planTemplateService.getPlanVersions(planId);
 			
 			if (versions.isEmpty()) {
 				return ResponseEntity.notFound().build();
@@ -259,7 +282,11 @@ public class PlanTemplateController {
 				return ResponseEntity.badRequest().body(Map.of("error", "版本索引超出范围"));
 			}
 			
-			String planJson = versions.get(index);
+			String planJson = planTemplateService.getPlanVersion(planId, index);
+			
+			if (planJson == null) {
+				return ResponseEntity.notFound().build();
+			}
 			
 			Map<String, Object> response = new HashMap<>();
 			response.put("planId", planId);

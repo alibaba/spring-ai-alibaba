@@ -19,6 +19,7 @@ import java.util.Scanner;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 
@@ -37,6 +38,9 @@ public class QueryCommandRunner implements CommandLineRunner {
 	@Autowired
 	@Lazy
 	private PlanningFactory planningFactory;
+	
+	@Autowired
+	private PlanIdDispatcher planIdDispatcher;
 
 	@Autowired
 	private ManusProperties manusProperties;
@@ -60,8 +64,8 @@ public class QueryCommandRunner implements CommandLineRunner {
 				break;
 			}
 
-			// 创建唯一的计划ID
-			String planId = "plan-" + System.currentTimeMillis();
+			// 使用 PlanIdDispatcher 生成唯一的计划ID
+			String planId = planIdDispatcher.generatePlanId();
 			PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(planId);
 			ExecutionContext context = new ExecutionContext();
 			context.setUserRequest(query);
