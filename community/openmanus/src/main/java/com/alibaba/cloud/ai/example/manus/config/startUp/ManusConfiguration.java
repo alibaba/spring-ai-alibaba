@@ -16,13 +16,26 @@
 
 package com.alibaba.cloud.ai.example.manus.config.startUp;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-
+import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.DynamicAgent;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoader;
+import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
+import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
+import com.alibaba.cloud.ai.example.manus.service.TextFileService;
+import com.alibaba.cloud.ai.example.manus.tool.Bash;
+import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
+import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
+import com.alibaba.cloud.ai.example.manus.tool.GoogleSearch;
+import com.alibaba.cloud.ai.example.manus.tool.McpTool;
+import com.alibaba.cloud.ai.example.manus.tool.PythonExecute;
+import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
+import com.alibaba.cloud.ai.example.manus.tool.TextFileOperator;
+import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.tool.support.CodeUtils;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -42,25 +55,12 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.DynamicAgent;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoader;
-import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.service.ChromeDriverService;
-import com.alibaba.cloud.ai.example.manus.service.TextFileService;
-import com.alibaba.cloud.ai.example.manus.tool.Bash;
-import com.alibaba.cloud.ai.example.manus.tool.BrowserUseTool;
-import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
-import com.alibaba.cloud.ai.example.manus.tool.GoogleSearch;
-import com.alibaba.cloud.ai.example.manus.tool.PythonExecute;
-import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
-import com.alibaba.cloud.ai.example.manus.tool.TextFileOperator;
-import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
-import com.alibaba.cloud.ai.example.manus.tool.support.CodeUtils;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author yuluo
@@ -78,12 +78,15 @@ public class ManusConfiguration {
 
 	private final TextFileService textFileService;
 
+	private final McpService mcpService;
+
 	public ManusConfiguration(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
-			ManusProperties manusProperties, TextFileService textFileService) {
+			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService) {
 		this.chromeDriverService = chromeDriverService;
 		this.recorder = recorder;
 		this.manusProperties = manusProperties;
 		this.textFileService = textFileService;
+		this.mcpService = mcpService;
 	}
 
 	// @Bean
@@ -122,8 +125,7 @@ public class ManusConfiguration {
 		// Add all dynamic agents from the database
 		for (DynamicAgentEntity agentEntity : dynamicAgentLoader.getAllAgents()) {
 			DynamicAgent agent = dynamicAgentLoader.loadAgent(agentEntity.getAgentName());
-			Map<String, ToolCallBackContext> toolCallbackMap = toolCallbackMap(agent);
-			agent.setToolCallbackMap(toolCallbackMap);
+			agent.setToolCallbackProvider(()->toolCallbackMap(agent));
 			agentList.add(agent);
 		}
 
@@ -164,6 +166,9 @@ public class ManusConfiguration {
 		toolDefinitions.add(new TextFileOperator(CodeUtils.WORKING_DIR, textFileService));
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
+		for (ToolCallback toolCallback : mcpService.getFunctionCallbacks()) {
+			toolDefinitions.add(new McpTool(toolCallback));
+		}
 
 		// 为每个工具创建 FunctionToolCallback
 		for (ToolCallBiFunctionDef toolDefinition : toolDefinitions) {
