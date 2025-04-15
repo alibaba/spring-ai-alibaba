@@ -197,11 +197,24 @@ async function handleGeneratePlan() {
             }
         }
         
-        // 调用后端API生成计划
-        const response = await ManusAPI.generatePlan(query, existingJson);
+        let response;
         
-        // 更新计划ID和数据
-        currentPlanTemplateId = response.planTemplateId;
+        // 检查是否有当前计划模板ID，决定是更新还是创建新计划
+        if (currentPlanTemplateId && (currentPlanData || existingJson)) {
+            console.log('正在更新现有计划模板:', currentPlanTemplateId);
+            // 调用更新接口
+            response = await ManusAPI.updatePlanTemplate(currentPlanTemplateId, query, existingJson);
+            console.log('计划模板更新成功');
+        } else {
+            console.log('正在创建新计划模板');
+            // 调用创建接口
+            response = await ManusAPI.generatePlan(query, existingJson);
+            // 更新计划模板ID
+            currentPlanTemplateId = response.planTemplateId;
+            console.log('创建新计划模板成功:', currentPlanTemplateId);
+        }
+        
+        // 更新计划数据
         currentPlanData = response.plan;
         
         // 直接显示计划数据
@@ -541,8 +554,8 @@ function updateUIState() {
     if (isGenerating) {
         generatePlanBtn.innerHTML = '<span class="icon-loader"></span> 生成中...';
     } else {
-        // 当计划数据和planId不为空时，显示"优化计划"而不是"生成计划"
-        if (currentPlanId && (currentPlanData || jsonEditor.value.trim())) {
+        // 当计划模板ID不为空且有数据时，显示"优化计划"而不是"生成计划"
+        if (currentPlanTemplateId && (currentPlanData || jsonEditor.value.trim())) {
             generatePlanBtn.innerHTML = '<span class="icon-placeholder"></span> 优化计划';
         } else {
             generatePlanBtn.innerHTML = '<span class="icon-placeholder"></span> 生成计划';
