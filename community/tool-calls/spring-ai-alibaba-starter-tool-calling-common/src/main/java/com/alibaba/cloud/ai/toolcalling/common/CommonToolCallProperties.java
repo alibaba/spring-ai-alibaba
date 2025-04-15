@@ -34,6 +34,8 @@ public class CommonToolCallProperties {
 
 	private String token;
 
+	private boolean enabled = false;
+
 	public CommonToolCallProperties() {
 		this.baseUrl = CommonToolCallConstants.DEFAULT_BASE_URL;
 		this.networkTimeout = CommonToolCallConstants.DEFAULT_NETWORK_TIMEOUT;
@@ -95,6 +97,14 @@ public class CommonToolCallProperties {
 
 	public void setToken(String token) {
 		this.token = token;
+	}
+
+	public boolean isEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 }

@@ -36,14 +36,4 @@ public class BaiduTranslateProperties extends CommonToolCallProperties {
 		super(TRANSLATE_HOST_URL);
 	}
 
-	private boolean enabled = true;
-
-	public boolean isEnabled() {
-		return enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
-	}
-
 }

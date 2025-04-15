@@ -28,7 +28,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * @author Carbon
+ * @author Carbon vlsmb
  */
 public class MapSearchService implements Function<MapSearchService.Request, MapSearchService.Response> {
 
@@ -45,24 +45,28 @@ public class MapSearchService implements Function<MapSearchService.Request, MapS
 	@Override
 	public Response apply(Request request) {
 		try {
-			// 获取并解析城市代码信息
+			// Retrieves and parses city code information
 			MapTools.Region region = mapTools.getAddressCityCode(request.address);
-			// 检查districts是否存在且为有效数组
+
+			// Verifies if 'districts' exists and is a valid non-empty array
 			if (region != null && region.districts() != null) {
 				if (region.districts().isEmpty()) {
 					return new Response("No districts found in the response.");
 				}
-				// 遍历处理每个行政区划
+
+				// Iterate through each district
 				List<String> weathers = region.districts()
 					.stream()
-					// 处理有效的adcode（现在API文档该字段是code）
+					// Process valid 'adcode' (Note: renamed to 'code' in current API
+					// version)
 					.map(MapTools.District::code)
 					.filter(Objects::nonNull)
 					.filter(StringUtils::isNotBlank)
 					.map(mapTools::getWeather)
 					.toList();
 				String jsonObjectStr = jsonParseTool.setFieldJsonObjectAsString("{}", "weather", weathers);
-				// 获取并处理设施信息
+
+				// Fetch and process facility information
 				String facilityJsonStr = mapTools.getFacilityInformation(request.address, request.facilityType);
 				String resultsJsonStr = jsonParseTool.getFieldValueAsString(facilityJsonStr, "results");
 				if (StringUtils.isNotBlank(resultsJsonStr)) {
