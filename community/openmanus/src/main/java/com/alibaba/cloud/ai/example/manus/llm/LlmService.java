@@ -189,13 +189,11 @@ public class LlmService {
 			.defaultSystem(PLANNING_SYSTEM_PROMPT)
 			.defaultAdvisors(new MessageChatMemoryAdvisor(planningMemory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultTools(toolCallbackProvider)
 			.build();
 
 		this.chatClient = ChatClient.builder(chatModel)
 			.defaultAdvisors(new MessageChatMemoryAdvisor(memory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultTools(toolCallbackProvider)
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();
 
