@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.controller;
 
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
@@ -44,6 +45,9 @@ public class ManusController {
 
 	@Autowired
 	private PlanExecutionRecorder planExecutionRecorder;
+	
+	@Autowired
+	private PlanIdDispatcher planIdDispatcher;
 
 	/**
 	 * 异步执行 Manus 请求
@@ -58,8 +62,8 @@ public class ManusController {
 		}
 		ExecutionContext context = new ExecutionContext();
 		context.setUserRequest(query);
-		// 创建唯一的计划ID
-		String planId = "plan-" + System.currentTimeMillis();
+		// 使用 PlanIdDispatcher 生成唯一的计划ID
+		String planId = planIdDispatcher.generatePlanId();
 		context.setPlanId(planId);
 		context.setNeedSummary(true);
 		// 获取或创建规划流程
