@@ -20,5 +20,7 @@ import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration;
 import java.util.Map;
 
 public interface ToolCallbackProvider {
-    Map<String, ManusConfiguration.ToolCallBackContext> getToolCallBackContexts();
+
+	Map<String, ManusConfiguration.ToolCallBackContext> getToolCallBackContexts();
+
 }

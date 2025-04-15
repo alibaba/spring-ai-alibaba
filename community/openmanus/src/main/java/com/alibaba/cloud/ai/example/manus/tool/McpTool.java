@@ -21,51 +21,53 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 
 public class McpTool implements ToolCallBiFunctionDef {
-    private final ToolCallback toolCallback;
 
-    private BaseAgent agent;
+	private final ToolCallback toolCallback;
 
-    public McpTool(ToolCallback toolCallback) {
-        this.toolCallback = toolCallback;
-    }
+	private BaseAgent agent;
 
-    @Override
-    public String getName() {
-        return toolCallback.getToolDefinition().name();
-    }
+	public McpTool(ToolCallback toolCallback) {
+		this.toolCallback = toolCallback;
+	}
 
-    @Override
-    public String getDescription() {
-        return toolCallback.getToolDefinition().description();
-    }
+	@Override
+	public String getName() {
+		return toolCallback.getToolDefinition().name();
+	}
 
-    @Override
-    public String getParameters() {
-        return toolCallback.getToolDefinition().inputSchema();
-    }
+	@Override
+	public String getDescription() {
+		return toolCallback.getToolDefinition().description();
+	}
 
-    @Override
-    public Class<?> getInputType() {
-        return String.class;
-    }
+	@Override
+	public String getParameters() {
+		return toolCallback.getToolDefinition().inputSchema();
+	}
 
-    @Override
-    public boolean isReturnDirect() {
-        return false;
-    }
+	@Override
+	public Class<?> getInputType() {
+		return String.class;
+	}
 
-    @Override
-    public void setAgent(BaseAgent agent) {
-        this.agent = agent;
-    }
+	@Override
+	public boolean isReturnDirect() {
+		return false;
+	}
 
-    @Override
-    public String getCurrentToolStateString() {
-        return "";
-    }
+	@Override
+	public void setAgent(BaseAgent agent) {
+		this.agent = agent;
+	}
 
-    @Override
-    public ToolExecuteResult apply(String s, ToolContext toolContext) {
-        return new ToolExecuteResult(toolCallback.call(s, toolContext));
-    }
+	@Override
+	public String getCurrentToolStateString() {
+		return "";
+	}
+
+	@Override
+	public ToolExecuteResult apply(String s, ToolContext toolContext) {
+		return new ToolExecuteResult(toolCallback.call(s, toolContext));
+	}
+
 }

@@ -125,7 +125,7 @@ public class ManusConfiguration {
 		// Add all dynamic agents from the database
 		for (DynamicAgentEntity agentEntity : dynamicAgentLoader.getAllAgents()) {
 			DynamicAgent agent = dynamicAgentLoader.loadAgent(agentEntity.getAgentName());
-			agent.setToolCallbackProvider(()->toolCallbackMap(agent));
+			agent.setToolCallbackProvider(() -> toolCallbackMap(agent));
 			agentList.add(agent);
 		}
 
