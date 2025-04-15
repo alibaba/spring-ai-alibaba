@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.toolcalling.baidutranslate;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.RestClientTool;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -39,9 +41,9 @@ public class BaiduTranslateAutoConfiguration {
 	@ConditionalOnMissingBean
 	@Description("Baidu translation function for general text translation")
 	public BaiduTranslateService baiduTranslateFunction(BaiduTranslateProperties properties,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+			JsonParseTool jsonParseTool) {
 
-		return new BaiduTranslateService(properties, restClientBuilder, responseErrorHandler);
+		return new BaiduTranslateService(properties, new RestClientTool(jsonParseTool, properties), jsonParseTool);
 	}
 
 }
