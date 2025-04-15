@@ -15,6 +15,27 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.internal.edge.Edge;
+import com.alibaba.cloud.ai.graph.internal.edge.EdgeCondition;
+import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
+import com.alibaba.cloud.ai.graph.internal.node.Node;
+import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode;
+import com.alibaba.cloud.ai.graph.internal.node.SubStateGraphNode;
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.gson.GsonStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSerializer;
+import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -24,31 +45,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-
-import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
-import com.alibaba.cloud.ai.graph.serializer.plain_text.gson.GsonStateSerializer;
-import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import lombok.Getter;
-
-import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.internal.edge.Edge;
-import com.alibaba.cloud.ai.graph.internal.edge.EdgeCondition;
-import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
-import com.alibaba.cloud.ai.graph.internal.node.Node;
-import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode;
-import com.alibaba.cloud.ai.graph.internal.node.SubStateGraphNode;
-import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
-import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
-
-import lombok.Setter;
 
 import static java.lang.String.format;
 
@@ -129,9 +125,18 @@ public class StateGraph {
 
 	final Edges edges = new Edges();
 
-	@Getter
-	@Setter
 	private OverAllState overAllState;
+
+	private String name;
+
+	public OverAllState getOverAllState() {
+		return overAllState;
+	}
+
+	public StateGraph setOverAllState(OverAllState overAllState) {
+		this.overAllState = overAllState;
+		return this;
+	}
 
 	private final PlainTextStateSerializer stateSerializer;
 
@@ -187,6 +192,12 @@ public class StateGraph {
 		this.stateSerializer = plainTextStateSerializer;
 	}
 
+	public StateGraph(String name, OverAllState overAllState) {
+		this.name = name;
+		this.overAllState = overAllState;
+		this.stateSerializer = new GsonSerializer();
+	}
+
 	/**
 	 * Instantiates a new State graph.
 	 * @param overAllState the over all state
@@ -194,6 +205,12 @@ public class StateGraph {
 	public StateGraph(OverAllState overAllState) {
 		this.overAllState = overAllState;
 		this.stateSerializer = new GsonSerializer();
+	}
+
+	public StateGraph(String name, AgentStateFactory<OverAllState> factory) {
+		this.name = name;
+		this.overAllState = factory.apply(Map.of());
+		this.stateSerializer = new GsonSerializer2(factory);
 	}
 
 	public StateGraph(AgentStateFactory<OverAllState> factory) {
@@ -206,6 +223,10 @@ public class StateGraph {
 	 */
 	public StateGraph() {
 		this.stateSerializer = new GsonSerializer();
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	/**
@@ -462,6 +483,13 @@ public class StateGraph {
 	public GraphRepresentation getGraph(GraphRepresentation.Type type, String title) {
 
 		String content = type.generator.generate(nodes, edges, title, true);
+
+		return new GraphRepresentation(type, content);
+	}
+
+	public GraphRepresentation getGraph(GraphRepresentation.Type type) {
+
+		String content = type.generator.generate(nodes, edges, name, true);
 
 		return new GraphRepresentation(type, content);
 	}

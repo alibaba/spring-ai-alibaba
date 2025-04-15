@@ -16,14 +16,7 @@
 package com.alibaba.cloud.ai.model.workflow;
 
 import com.alibaba.cloud.ai.service.runner.RunnableModel;
-import lombok.Data;
-import lombok.experimental.Accessors;
 
-/**
- * Node defines the visual elements and behavior of a node in a workflow.
- */
-@Data
-@Accessors(chain = true)
 public class Node implements RunnableModel {
 
 	private String id;
@@ -52,17 +45,151 @@ public class Node implements RunnableModel {
 
 	private NodeData data;
 
+	public String getId() {
+		return id;
+	}
+
+	public Node setId(String id) {
+		this.id = id;
+		return this;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public Node setType(String type) {
+		this.type = type;
+		return this;
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public Node setTitle(String title) {
+		this.title = title;
+		return this;
+	}
+
+	public String getDesc() {
+		return desc;
+	}
+
+	public Node setDesc(String desc) {
+		this.desc = desc;
+		return this;
+	}
+
+	public Float getWidth() {
+		return width;
+	}
+
+	public Node setWidth(Float width) {
+		this.width = width;
+		return this;
+	}
+
+	public Float getHeight() {
+		return height;
+	}
+
+	public Node setHeight(Float height) {
+		this.height = height;
+		return this;
+	}
+
+	public Coordinate getPosition() {
+		return position;
+	}
+
+	public Node setPosition(Coordinate position) {
+		this.position = position;
+		return this;
+	}
+
+	public Coordinate getPositionAbsolute() {
+		return positionAbsolute;
+	}
+
+	public Node setPositionAbsolute(Coordinate positionAbsolute) {
+		this.positionAbsolute = positionAbsolute;
+		return this;
+	}
+
+	public Boolean getSelected() {
+		return selected;
+	}
+
+	public Node setSelected(Boolean selected) {
+		this.selected = selected;
+		return this;
+	}
+
+	public Integer getzIndex() {
+		return zIndex;
+	}
+
+	public Node setzIndex(Integer zIndex) {
+		this.zIndex = zIndex;
+		return this;
+	}
+
+	public String getSourcePosition() {
+		return sourcePosition;
+	}
+
+	public Node setSourcePosition(String sourcePosition) {
+		this.sourcePosition = sourcePosition;
+		return this;
+	}
+
+	public String getTargetPosition() {
+		return targetPosition;
+	}
+
+	public Node setTargetPosition(String targetPosition) {
+		this.targetPosition = targetPosition;
+		return this;
+	}
+
+	public NodeData getData() {
+		return data;
+	}
+
+	public Node setData(NodeData data) {
+		this.data = data;
+		return this;
+	}
+
 	@Override
 	public String id() {
 		return id;
 	}
 
-	@Data
 	public static class Coordinate {
 
 		private Float x;
 
 		private Float y;
+
+		public Float getX() {
+			return x;
+		}
+
+		public Coordinate setX(Float x) {
+			this.x = x;
+			return this;
+		}
+
+		public Float getY() {
+			return y;
+		}
+
+		public Coordinate setY(Float y) {
+			this.y = y;
+			return this;
+		}
 
 	}
 

@@ -39,7 +39,7 @@ jobs:
       - uses: ./tools/github-actions/setup-deps
       - run: make format-check
 
-  build:
+  test:
     runs-on: ubuntu-22.04
     needs: [format]
     steps:
@@ -47,7 +47,7 @@ jobs:
       - uses: ./tools/github-actions/setup-deps
       - run: make test
 
-  test:
+  build:
     runs-on: ubuntu-22.04
     needs: [format, test]
     steps:

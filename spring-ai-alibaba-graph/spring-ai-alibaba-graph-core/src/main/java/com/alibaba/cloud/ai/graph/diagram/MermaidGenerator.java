@@ -17,9 +17,9 @@ package com.alibaba.cloud.ai.graph.diagram;
 
 import com.alibaba.cloud.ai.graph.DiagramGenerator;
 
-import static java.lang.String.format;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static java.lang.String.format;
 
 /**
  * This class represents a MermaidGenerator that extends DiagramGenerator. It generates a
