@@ -26,7 +26,7 @@ import java.util.function.Function;
 /**
  * @author vlsmb
  */
-public class CommonToolCallConstants {
+public final class CommonToolCallConstants {
 
 	// toolcall properties prefix in application.yaml
 	public static final String TOOL_CALLING_CONFIG_PREFIX = "spring.ai.alibaba.toolcalling";

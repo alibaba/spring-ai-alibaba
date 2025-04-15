@@ -22,7 +22,8 @@ import static com.alibaba.cloud.ai.toolcalling.baidumap.BaiDuMapProperties.BaiDu
 import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
 
 /**
- * @author Carbon vlsmb
+ * @author Carbon
+ * @author vlsmb
  */
 @ConfigurationProperties(prefix = BaiDuMapPrefix)
 public class BaiDuMapProperties extends CommonToolCallProperties {
