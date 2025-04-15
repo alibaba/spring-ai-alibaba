@@ -27,8 +27,8 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.planning.model.ExecutionContext;
-import com.alibaba.cloud.ai.example.manus.planning.model.ExecutionPlan;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
 /**

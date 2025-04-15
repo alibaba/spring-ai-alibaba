@@ -20,7 +20,7 @@ import java.util.Scanner;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
-import com.alibaba.cloud.ai.example.manus.planning.model.ExecutionContext;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
