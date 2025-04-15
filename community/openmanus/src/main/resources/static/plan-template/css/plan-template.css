@@ -401,3 +401,39 @@
         width: 100%;
     }
 }
+
+/* 左侧任务列表中的任务项操作区域 */
+.task-actions {
+    display: none;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* 当鼠标悬停在任务项上时显示操作按钮 */
+.task-item:hover .task-actions {
+    display: flex;
+}
+
+/* 删除任务按钮样式 */
+.delete-task-btn {
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    color: #666;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.delete-task-btn:hover {
+    background-color: #ff4d4f;
+    color: white;
+    border-color: #ff4d4f;
+}

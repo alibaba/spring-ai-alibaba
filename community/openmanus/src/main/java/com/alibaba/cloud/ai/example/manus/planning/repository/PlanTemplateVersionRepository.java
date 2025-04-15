@@ -55,4 +55,11 @@ public interface PlanTemplateVersionRepository extends JpaRepository<PlanTemplat
      * @return 计划模板版本实体
      */
     PlanTemplateVersion findByPlanTemplateIdAndVersionIndex(String planTemplateId, Integer versionIndex);
+    
+    /**
+     * 根据计划模板ID删除所有版本
+     * 
+     * @param planTemplateId 计划模板ID
+     */
+    void deleteByPlanTemplateId(String planTemplateId);
 }

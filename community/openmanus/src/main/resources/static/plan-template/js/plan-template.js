@@ -149,10 +149,19 @@ function updatePlanTemplateListUI() {
                 <div class="task-preview">${truncateText(template.description || '', 40)}</div>
             </div>
             <div class="task-time">${relativeTime}</div>
+            <div class="task-actions">
+                <button class="delete-task-btn" title="删除此计划">&times;</button>
+            </div>
         `;
         
         // 添加点击事件
-        listItem.addEventListener('click', () => handlePlanTemplateClick(template));
+        listItem.querySelector('.task-details').addEventListener('click', () => handlePlanTemplateClick(template));
+        
+        // 添加删除按钮点击事件
+        listItem.querySelector('.delete-task-btn').addEventListener('click', (event) => {
+            event.stopPropagation(); // 阻止事件冒泡，防止触发模板选择
+            handleDeletePlanTemplate(template);
+        });
         
         taskListEl.appendChild(listItem);
     });
@@ -718,6 +727,45 @@ function handleCompareJson() {
         targetVersionText.value = planVersions[targetIndex] || '';
         
         console.log(`对比版本 ${compareIndex + 1} 和版本 ${targetIndex + 1}`);
+    }
+}
+
+/**
+ * 处理删除计划模板
+ * @param {Object} template - 计划模板对象
+ */
+async function handleDeletePlanTemplate(template) {
+    // 确认删除
+    if (!confirm(`确定要删除计划 "${template.title || '未命名计划'}" 吗？此操作不可恢复。`)) {
+        return;
+    }
+    
+    try {
+        // 调用API删除计划模板
+        await ManusAPI.deletePlanTemplate(template.id);
+        
+        // 如果删除的是当前选中的计划模板，重置状态
+        if (template.id === currentPlanTemplateId) {
+            currentPlanTemplateId = null;
+            currentPlanId = null;
+            currentPlanData = null;
+            planPromptInput.value = '';
+            jsonEditor.value = '';
+            planVersions = [];
+            currentVersionIndex = -1;
+        }
+        
+        // 重新加载计划模板列表
+        await loadPlanTemplateList();
+        
+        // 更新UI状态
+        updateUIState();
+        
+        // 显示成功消息
+        alert('计划已删除');
+    } catch (error) {
+        console.error('删除计划模板失败:', error);
+        alert('删除计划模板失败: ' + error.message);
     }
 }
 
