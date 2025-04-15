@@ -219,7 +219,7 @@ public class DynamicAgent extends ReActAgent {
 	public List<ToolCallback> getToolCallList() {
 		List<ToolCallback> toolCallbacks = new ArrayList<>();
 		for (String toolKey : availableToolKeys) {
-			Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContexts();
+			Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContexts(getPlanId());
 			if (toolCallBackContext.containsKey(toolKey)) {
 				ToolCallBackContext toolCallback = toolCallBackContext.get(toolKey);
 				if (toolCallback != null) {
@@ -246,7 +246,7 @@ public class DynamicAgent extends ReActAgent {
 	}
 
 	protected String collectEnvData(String toolCallName) {
-		ToolCallBackContext context = toolCallbackProvider.getToolCallBackContexts().get(toolCallName);
+		ToolCallBackContext context = toolCallbackProvider.getToolCallBackContexts(getPlanId()).get(toolCallName);
 		if (context != null) {
 			return context.getFunctionInstance().getCurrentToolStateString();
 		}
