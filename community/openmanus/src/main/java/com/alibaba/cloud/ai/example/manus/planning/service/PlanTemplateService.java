@@ -187,4 +187,13 @@ public class PlanTemplateService {
         }
         return "未命名计划";
     }
+    
+    /**
+     * 获取所有计划模板
+     * 
+     * @return 所有计划模板的列表
+     */
+    public List<PlanTemplate> getAllPlanTemplates() {
+        return planTemplateRepository.findAll();
+    }
 }
