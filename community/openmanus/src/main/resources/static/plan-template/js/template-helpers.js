@@ -86,6 +86,7 @@ async function handlePlanTemplateClick(template) {
     } catch (error) {
         console.error('加载计划模板失败:', error);
         alert('加载计划模板失败: ' + error.message);
-        updateUIState();
+        // 使用事件通知而不是直接调用 updateUIState
+        document.dispatchEvent(new CustomEvent('plan-template-loading-error'));
     }
 }
