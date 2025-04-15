@@ -15,12 +15,12 @@
  */
 package com.alibaba.cloud.ai.example.manus.flow;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.fastjson.JSON;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration;
 import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
@@ -65,13 +65,12 @@ public class PlanningFlow extends BaseFlow {
 	// shared result state between agents.
 	private Map<String, Object> resultState;
 
-	// Store tool callback contexts
-	private final Map<String, ToolCallBackContext> toolCallbackMap;
+	private List<ToolCallbackProvider> toolCallbackProviders;
 
 	public PlanningFlow(List<BaseAgent> agents, Map<String, Object> data, PlanExecutionRecorder recorder,
-			Map<String, ManusConfiguration.ToolCallBackContext> toolCallbackMap) {
+						List<ToolCallbackProvider> toolCallbackProviders) {
 		super(agents, data, recorder);
-		this.toolCallbackMap = toolCallbackMap;
+		this.toolCallbackProviders = toolCallbackProviders;
 		// 初始化Map字段
 		this.executorKeys = new ArrayList<>();
 		this.resultState = new HashMap<>();
@@ -199,10 +198,17 @@ public class PlanningFlow extends BaseFlow {
 		finally {
 			llmService.removeAgentChatClient(activePlanId);
 			// Cleanup tool callback contexts
-			for (ToolCallBackContext context : toolCallbackMap.values()) {
-				// 清除工具回调上下文
-				context.getFunctionInstance().cleanup(activePlanId);
+			for (ToolCallbackProvider callbackProvider : toolCallbackProviders) {
+				Map<String, ToolCallBackContext> toolCallBackContexts = callbackProvider.getToolCallBackContexts(activePlanId);
+				if (toolCallBackContexts == null) {
+					continue;
+				}
+				for (ToolCallBackContext context : toolCallBackContexts.values()) {
+					// 清除工具回调上下文
+					context.getFunctionInstance().cleanup(activePlanId);
+				}
 			}
+
 		}
 	}
 

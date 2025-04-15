@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.tool;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.tool.support.ToolExecuteResult;
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 
@@ -70,4 +70,8 @@ public class McpTool implements ToolCallBiFunctionDef {
 		return new ToolExecuteResult(toolCallback.call(s, toolContext));
 	}
 
+    @Override
+    public void cleanup(String planId) {
+
+    }
 }
