@@ -31,6 +31,8 @@ import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplateVersion;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.repository.PlanTemplateRepository;
 import com.alibaba.cloud.ai.example.manus.planning.repository.PlanTemplateVersionRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * 计划模板服务类，提供计划模板相关的业务逻辑
@@ -62,7 +64,7 @@ public class PlanTemplateService {
 
         // 保存第一个版本
         saveVersionToHistory(planTemplateId, planJson);
-        
+
         logger.info("已保存计划模板 {} 及其第一个版本", planTemplateId);
     }
 
@@ -87,7 +89,7 @@ public class PlanTemplateService {
 
             // 保存新版本
             saveVersionToHistory(planTemplateId, planJson);
-            
+
             logger.info("已更新计划模板 {} 及保存新版本", planTemplateId);
             return true;
         }
@@ -109,7 +111,7 @@ public class PlanTemplateService {
         // 保存新版本
         PlanTemplateVersion version = new PlanTemplateVersion(planTemplateId, newVersionIndex, planJson);
         versionRepository.save(version);
-        
+
         logger.info("已保存计划 {} 的版本 {}", planTemplateId, newVersionIndex);
     }
 
@@ -130,7 +132,8 @@ public class PlanTemplateService {
      * @return 版本JSON数据列表
      */
     public List<String> getPlanVersions(String planTemplateId) {
-        List<PlanTemplateVersion> versions = versionRepository.findByPlanTemplateIdOrderByVersionIndexAsc(planTemplateId);
+        List<PlanTemplateVersion> versions = versionRepository
+                .findByPlanTemplateIdOrderByVersionIndexAsc(planTemplateId);
         List<String> jsonVersions = new ArrayList<>();
         for (PlanTemplateVersion version : versions) {
             jsonVersions.add(version.getPlanJson());
@@ -146,7 +149,8 @@ public class PlanTemplateService {
      * @return 版本JSON数据，如果版本不存在则返回null
      */
     public String getPlanVersion(String planTemplateId, int versionIndex) {
-        PlanTemplateVersion version = versionRepository.findByPlanTemplateIdAndVersionIndex(planTemplateId, versionIndex);
+        PlanTemplateVersion version = versionRepository.findByPlanTemplateIdAndVersionIndex(planTemplateId,
+                versionIndex);
         return version != null ? version.getPlanJson() : null;
     }
 
@@ -172,22 +176,17 @@ public class PlanTemplateService {
      */
     public String extractTitleFromPlan(String planJson) {
         try {
-            // 这里使用简单的字符串处理来提取标题
-            // 在真实场景中应该使用JSON解析库如Jackson
-            int titleStart = planJson.indexOf("\"title\":");
-            if (titleStart > 0) {
-                titleStart += 9; // "title": "的长度
-                int titleEnd = planJson.indexOf("\"", titleStart);
-                if (titleEnd > titleStart) {
-                    return planJson.substring(titleStart, titleEnd);
-                }
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode rootNode = mapper.readTree(planJson);
+            if (rootNode.has("title")) {
+                return rootNode.get("title").asText("未命名计划");
             }
         } catch (Exception e) {
             logger.warn("从计划JSON中提取标题失败", e);
         }
         return "未命名计划";
     }
-    
+
     /**
      * 获取所有计划模板
      * 
