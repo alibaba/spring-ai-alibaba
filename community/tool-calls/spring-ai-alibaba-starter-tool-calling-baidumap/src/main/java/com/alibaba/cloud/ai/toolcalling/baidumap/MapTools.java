@@ -15,32 +15,43 @@
  */
 package com.alibaba.cloud.ai.toolcalling.baidumap;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.type.TypeReference;
+import org.springframework.util.MultiValueMap;
+
+import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * @author Carbon
  */
 public class MapTools {
 
-	private final String baseUrl = "https://api.map.baidu.com";
-
 	private final BaiDuMapProperties baiDuMapProperties;
 
-	private final HttpClient httpClient;
+	private final WebClientTool webClientTool;
 
-	public MapTools(BaiDuMapProperties baiDuMapProperties) {
+	private final JsonParseTool jsonParseTool;
+
+	public MapTools(BaiDuMapProperties baiDuMapProperties, WebClientTool webClientTool, JsonParseTool jsonParseTool) {
 		this.baiDuMapProperties = baiDuMapProperties;
-
-		this.httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
+		this.webClientTool = webClientTool;
+		this.jsonParseTool = jsonParseTool;
 
 		if (Objects.isNull(baiDuMapProperties.getApiKey())) {
 			throw new RuntimeException("Please configure your BaiDuMap API key in the application.yml file.");
 		}
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record District(String code, String name, Integer level) {
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record Region(Integer status, List<District> districts) {
 	}
 
 	/**
@@ -48,23 +59,22 @@ public class MapTools {
 	 * @param address
 	 * @return https://lbs.baidu.com/faq/api?title=webapi/district-search/base
 	 */
-	public String getAddressCityCode(String address) {
-
-		String path = String.format("/api_region_search/v1/?ak=%s&keyword=%s&sub_admin=0&extensions_code=1",
-				baiDuMapProperties.getApiKey(), address);
-
-		HttpRequest httpRequest = createGetRequest(path);
-
-		CompletableFuture<HttpResponse<String>> responseFuture = httpClient.sendAsync(httpRequest,
-				HttpResponse.BodyHandlers.ofString());
-
-		HttpResponse<String> response = responseFuture.join();
-
-		if (response.statusCode() != 200) {
-			throw new RuntimeException("Failed to get address city code");
+	public Region getAddressCityCode(String address) {
+		String path = "/api_region_search/v1/";
+		MultiValueMap<String, String> params = CommonToolCallUtils.<String, String>multiValueMapBuilder()
+			.add("ak", baiDuMapProperties.getApiKey())
+			.add("keyword", address)
+			.add("sub_admin", "0")
+			.add("extensions_code", "1")
+			.build();
+		try {
+			String response = webClientTool.get(path, params).block();
+			return jsonParseTool.jsonToObject(response, new TypeReference<Region>() {
+			});
 		}
-
-		return response.body();
+		catch (Exception e) {
+			throw new RuntimeException("Failed to get address city code", e);
+		}
 	}
 
 	/**
@@ -73,21 +83,19 @@ public class MapTools {
 	 * @return https://lbs.baidu.com/faq/api?title=webapi/weather/base
 	 */
 	public String getWeather(String cityCode) {
-		String path = String.format("/weather/v1/?ak=%s&district_id=%s&data_type=%s", baiDuMapProperties.getApiKey(),
-				cityCode, "all");
+		String path = "/weather/v1/";
+		MultiValueMap<String, String> params = CommonToolCallUtils.<String, String>multiValueMapBuilder()
+			.add("ak", baiDuMapProperties.getApiKey())
+			.add("district_id", cityCode)
+			.add("data_type", "all")
+			.build();
 
-		HttpRequest httpRequest = createGetRequest(path);
-
-		CompletableFuture<HttpResponse<String>> responseFuture = httpClient.sendAsync(httpRequest,
-				HttpResponse.BodyHandlers.ofString());
-
-		HttpResponse<String> response = responseFuture.join();
-
-		if (response.statusCode() != 200) {
-			throw new RuntimeException("Failed to get weather information");
+		try {
+			return webClientTool.get(path, params).block();
 		}
-
-		return response.body();
+		catch (Exception e) {
+			throw new RuntimeException("Failed to get weather information", e);
+		}
 	}
 
 	/**
@@ -97,26 +105,19 @@ public class MapTools {
 	 * @return https://lbsyun.baidu.com/faq/api?title=webapi/guide/webservice-placeapi/district
 	 */
 	public String getFacilityInformation(String address, String facilityType) {
-		String path = String.format("/place/v2/search?query=%s&region=%s&output=json&ak=%s", facilityType, address,
-				baiDuMapProperties.getApiKey());
-
-		HttpRequest httpRequest = createGetRequest(path);
-
-		CompletableFuture<HttpResponse<String>> responseFuture = httpClient.sendAsync(httpRequest,
-				HttpResponse.BodyHandlers.ofString());
-
-		HttpResponse<String> response = responseFuture.join();
-
-		if (response.statusCode() != 200) {
-			throw new RuntimeException("Failed to get facility information");
+		String path = "/place/v2/search/";
+		MultiValueMap<String, String> params = CommonToolCallUtils.<String, String>multiValueMapBuilder()
+			.add("ak", baiDuMapProperties.getApiKey())
+			.add("query", facilityType)
+			.add("region", address)
+			.add("output", "json")
+			.build();
+		try {
+			return webClientTool.get(path, params).block();
 		}
-
-		return response.body();
-	}
-
-	private HttpRequest createGetRequest(String path) {
-		URI uri = URI.create(baseUrl + path);
-		return HttpRequest.newBuilder().uri(uri).GET().build();
+		catch (Exception e) {
+			throw new RuntimeException("Failed to get facility information", e);
+		}
 	}
 
 }
