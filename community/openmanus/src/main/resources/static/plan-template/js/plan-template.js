@@ -251,27 +251,43 @@ function handlePlanData(planData) {
  * 处理执行计划按钮点击
  */
 function handleRunPlanClick() {
-    if (!currentPlanId || isExecuting) {
+    // 检查是否正在执行
+    if (isExecuting) {
         return;
     }
     
-    // 显示执行确认对话框
-    if (currentPlanData) {
-        planSummaryElement.textContent = currentPlanData.title || '未命名计划';
-        stepCountElement.textContent = (currentPlanData.steps && currentPlanData.steps.length) || 0;
-    } else {
-        planSummaryElement.textContent = '计划详情不可用';
-        stepCountElement.textContent = '?';
+    // 检查是否有JSON数据可以执行
+    let jsonContent = jsonEditor.value.trim();
+    if (!jsonContent) {
+        alert('计划数据不能为空');
+        return;
     }
     
-    openExecutionDialog();
+    try {
+        // 尝试解析JSON
+        const planData = JSON.parse(jsonContent);
+        
+        // 显示执行确认对话框
+        if (planData) {
+            planSummaryElement.textContent = planData.title || '未命名计划';
+            stepCountElement.textContent = (planData.steps && planData.steps.length) || 0;
+        } else {
+            planSummaryElement.textContent = '计划详情不可用';
+            stepCountElement.textContent = '?';
+        }
+        
+        openExecutionDialog();
+    } catch (e) {
+        console.error('JSON解析错误', e);
+        alert('无效的JSON格式: ' + e.message);
+    }
 }
 
 /**
  * 执行计划
  */
 async function executePlan() {
-    if (!currentPlanId || isExecuting) {
+    if (isExecuting) {
         closeExecutionDialog();
         return;
     }
@@ -281,11 +297,51 @@ async function executePlan() {
         updateUIState();
         closeExecutionDialog();
         
-        // 调用执行计划API
-        const response = await ManusAPI.executePlan(currentPlanId);
+        let jsonContent = jsonEditor.value.trim();
+        let response;
+        
+        // 有两种执行模式：
+        // 1. 如果有currentPlanId，使用现有的计划ID执行
+        // 2. 如果没有currentPlanId，使用JSON内容创建新计划并执行
+        if (currentPlanId) {
+            // 检查JSON内容是否已修改
+            let isModified = true;
+            if (currentVersionIndex >= 0 && planVersions.length > 0) {
+                const latestVersion = planVersions[currentVersionIndex];
+                isModified = jsonContent !== latestVersion;
+            }
+            
+            if (isModified) {
+                // JSON已修改，使用新的JSON内容执行
+                response = await ManusAPI.executePlanFromJson(jsonContent, "从计划模板界面执行计划");
+                
+                // 更新当前计划ID
+                currentPlanId = response.planId;
+                
+                // 保存此版本到版本历史
+                saveToVersionHistory(jsonContent);
+            } else {
+                // JSON未修改，使用现有计划ID执行
+                response = await ManusAPI.executePlan(currentPlanId);
+            }
+        } else {
+            // 没有现有计划ID，直接使用JSON内容执行
+            response = await ManusAPI.executePlanFromJson(jsonContent, "从计划模板界面执行计划");
+            
+            // 更新当前计划ID
+            currentPlanId = response.planId;
+            
+            // 保存此版本到版本历史
+            saveToVersionHistory(jsonContent);
+        }
         
         // 提示用户
         alert('计划执行请求已提交，可以在右侧边栏查看执行进度');
+        
+        // 更新API URL
+        if (currentPlanId) {
+            apiUrlElement.textContent = `http://your-domain/api/plan-template/execute/${currentPlanId}`;
+        }
         
         // 开始轮询执行状态
         lastSequenceSize = 0; // 重置序列大小，以便接收所有执行记录
@@ -316,13 +372,26 @@ function handleModifyPlan() {
             // 验证JSON格式是否正确
             JSON.parse(jsonContent);
             
-            // 保存当前版本到历史记录
-            saveToVersionHistory(jsonContent);
+            // 检查是否与最新版本相同
+            let isModified = true;
+            if (currentVersionIndex >= 0 && planVersions.length > 0) {
+                const latestVersion = planVersions[currentVersionIndex];
+                isModified = jsonContent !== latestVersion;
+            }
             
-            // 如果有当前计划ID，保存修改到后端
-            savePlanToServer(currentPlanId, jsonContent);
-            
-            alert('计划已保存');
+            if (isModified) {
+                // 保存当前版本到历史记录
+                saveToVersionHistory(jsonContent);
+                
+                // 如果有当前计划ID，保存修改到后端
+                savePlanToServer(currentPlanId, jsonContent);
+                
+                alert('计划已保存');
+            } else {
+                console.log('计划未修改，忽略保存操作');
+                // 可选：轻量级提示
+                alert('计划未修改，无需保存');
+            }
         } else {
             alert('计划内容不能为空');
         }

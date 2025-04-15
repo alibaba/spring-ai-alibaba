@@ -216,6 +216,38 @@ const ManusAPI = (() => {
             throw error;
         }
     };
+    
+    /**
+     * 直接执行JSON格式的计划
+     * @param {string} planJson - 计划的JSON内容
+     * @param {string} [description] - 可选的计划描述
+     * @returns {Promise<Object>} - 包含执行状态的响应
+     */
+    const executePlanFromJson = async (planJson, description = null) => {
+        try {
+            const requestBody = { planJson };
+            if (description) {
+                requestBody.description = description;
+            }
+            
+            const response = await fetch(`${PLAN_TEMPLATE_URL}/execute-plan`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                throw new Error(`执行JSON计划失败: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('执行JSON计划失败:', error);
+            throw error;
+        }
+    };
 
     // 返回公开的方法
     return {
@@ -227,6 +259,7 @@ const ManusAPI = (() => {
         executePlan,
         savePlan,
         getPlanVersions,
-        getVersionPlan
+        getVersionPlan,
+        executePlanFromJson
     };
 })();
