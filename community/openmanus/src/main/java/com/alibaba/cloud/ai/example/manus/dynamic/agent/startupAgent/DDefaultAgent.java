@@ -52,16 +52,6 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				4. What's the expected outcome?
 				5. How to verify success?
 
-				Available Tools:
-				- Text file operations (create, read, write, append)
-				- Shell commands (system operations, file management)
-				- Task termination (when complete)
-
-				Supported Operations:
-				- File management and text processing
-				- System commands and shell operations
-				- File content manipulation
-				- Directory operations
 				""", availableToolKeys = { "bash", "text_file_operator", "terminate" })
 public class DDefaultAgent {
 

@@ -15,21 +15,22 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import lombok.ToString;
 import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Optional.ofNullable;
 
-/**
- * The type Over all state.
- */
-@ToString
 public final class OverAllState implements Serializable {
 
 	private final Map<String, Object> data;
@@ -81,14 +82,14 @@ public final class OverAllState implements Serializable {
 	public OverAllState() {
 		this.data = new HashMap<>();
 		this.keyStrategies = new HashMap<>();
-		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, (o, o2) -> o2);
+		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.resume = false;
 	}
 
 	private OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean resume) {
 		this.data = data;
 		this.keyStrategies = keyStrategies;
-		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, (o, o2) -> o2);
+		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.resume = resume;
 	}
 
@@ -319,6 +320,12 @@ public final class OverAllState implements Serializable {
 			this.nextNodeId = nextNodeId;
 		}
 
+	}
+
+	@Override
+	public String toString() {
+		return "OverAllState{" + "data=" + data + ", keyStrategies=" + keyStrategies + ", resume=" + resume
+				+ ", humanFeedback=" + humanFeedback + ", interruptMessage='" + interruptMessage + '\'' + '}';
 	}
 
 }

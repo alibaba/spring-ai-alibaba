@@ -15,52 +15,19 @@
  */
 package com.alibaba.cloud.ai.config;
 
-import com.alibaba.cloud.ai.graph.CompileConfig;
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.GraphRepresentation;
-import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.GraphInitData;
 import com.alibaba.cloud.ai.graph.InitDataSerializer;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.NodeOutputSerializer;
-import com.alibaba.cloud.ai.graph.StateGraph;
+
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Configuration
 public class GraphAutoConfiguration {
-
-	// @Bean
-	// public GraphInitData initData(ApplicationContext context) {
-	// String title = "AGENT EXECUTOR";
-	// Map<String, GraphInitData.ArgumentMetadata> inputArgs = new HashMap<>();
-	// inputArgs.put("input", new GraphInitData.ArgumentMetadata("string", true));
-	//
-	// StateGraph stateGraph = context.getBean(StateGraph.class);
-	// var graph = stateGraph.getGraph(GraphRepresentation.Type.MERMAID, title, false);
-	// return new GraphInitData(title, graph.getContent(), inputArgs);
-	// }
-
-	@Bean
-	public GraphInitData initData(StateGraph stateGraph) throws GraphStateException {
-		String title = "Agent Executor";
-		String name = "input";
-		boolean required = true;
-
-		List<GraphInitData.ArgumentMetadata> inputArgs = new ArrayList<>();
-		inputArgs.add(
-				new GraphInitData.ArgumentMetadata(name, GraphInitData.ArgumentMetadata.ArgumentType.STRING, required));
-
-		CompiledGraph compiledGraph = stateGraph.compile();
-		var graph = compiledGraph.getGraph(GraphRepresentation.Type.MERMAID, title, false);
-		return new GraphInitData(title, graph.content(), inputArgs);
-	}
 
 	@Bean
 	public Jackson2ObjectMapperBuilderCustomizer customJackson() {

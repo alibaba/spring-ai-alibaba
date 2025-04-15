@@ -98,26 +98,26 @@ public class OpenmanusHumanController {
 			return state;
 		};
 
-		SupervisorAgent controllerAgent = new SupervisorAgent();
-		ReactAgent planningAgent = new ReactAgent("请完成用户接下来输入的任务规划。", planningClient, resolver, 10);
+		SupervisorAgent supervisorAgent = new SupervisorAgent();
+		ReactAgent planningAgent = new ReactAgent("planningAgent", "请完成用户接下来输入的任务规划。", planningClient, resolver, 10);
 		planningAgent.getAndCompileGraph();
-		ReactAgent stepAgent = new ReactAgent("请完成用户接下来输入的任务规划。", stepClient, resolver, 10);
+		ReactAgent stepAgent = new ReactAgent("stepAgent", "请完成用户接下来输入的任务规划。", stepClient, resolver, 10);
 		stepAgent.getAndCompileGraph();
 		HumanNode humanNode = new HumanNode();
 
 		StateGraph graph2 = new StateGraph(stateFactory)
 			.addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
 			.addNode("human", node_async(humanNode))
-			.addNode("controller_agent", node_async(controllerAgent))
+			.addNode("supervisor_agent", node_async(supervisorAgent))
 			.addNode("step_executing_agent", stepAgent.asAsyncNodeAction("step_prompt", "step_output"))
 
 			.addEdge(START, "planning_agent")
 			.addEdge("planning_agent", "human")
 			.addConditionalEdges("human", edge_async(humanNode::think),
-					Map.of("planning_agent", "planning_agent", "controller_agent", "controller_agent"))
-			.addConditionalEdges("controller_agent", edge_async(controllerAgent::think),
+					Map.of("planning_agent", "planning_agent", "supervisor_agent", "supervisor_agent"))
+			.addConditionalEdges("supervisor_agent", edge_async(supervisorAgent::think),
 					Map.of("continue", "step_executing_agent", "end", END))
-			.addEdge("step_executing_agent", "controller_agent");
+			.addEdge("step_executing_agent", "supervisor_agent");
 
 		this.compiledGraph = graph2.compile();
 
@@ -155,7 +155,7 @@ public class OpenmanusHumanController {
 
 	@GetMapping("/resume-to-next-step")
 	public String resumtToNextStep() {
-		String nextNode = "controller_agent";
+		String nextNode = "supervisor_agent";
 
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId("1").build();
 

@@ -40,6 +40,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -53,80 +54,16 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 @RequestMapping("/react")
 public class ReactController {
 
-	private final ChatClient chatClient;
-
 	private CompiledGraph compiledGraph;
 
-	@Autowired
-	private ToolCallbackResolver resolver;
-
-	ReactController(ChatModel chatModel) throws GraphStateException {
-		this.chatClient = ChatClient.builder(chatModel)
-			.defaultTools("getWeatherFunction")
-			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
-			.build();
-
-		initGraph();
-	}
-
-	public void initGraph() throws GraphStateException {
-		AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
-			OverAllState state = new OverAllState();
-			state.registerKeyAndStrategy("messages", new AppendStrategy());
-			state.input(inputs);
-			return state;
-		};
-
-		ReactAgent planningAgent = new ReactAgent("请帮助用户完成他接下来输入的任务规划。", chatClient, resolver, 10);
-		this.compiledGraph = planningAgent.getAndCompileGraph();
-
-		GraphRepresentation graphRepresentation = compiledGraph.getGraph(GraphRepresentation.Type.PLANTUML);
-		System.out.println("\n\n");
-		System.out.println(graphRepresentation.content());
-		System.out.println("\n\n");
+	ReactController(@Qualifier("reactAgentGraph") CompiledGraph compiledGraph) throws GraphStateException {
+		this.compiledGraph = compiledGraph;
 	}
 
 	@GetMapping("/chat")
 	public String simpleChat(String query) throws GraphStateException {
 		Optional<OverAllState> result = compiledGraph.invoke(Map.of("input", query));
 		return result.get().value("solution").get().toString();
-	}
-
-	public static class FeedbackQuestionDispatcher implements EdgeAction {
-
-		@Override
-		public String apply(OverAllState state) throws Exception {
-			String classifierOutput = (String) state.value("classifier_output").orElse("");
-			System.out.println("classifierOutput: " + classifierOutput);
-			if (classifierOutput.contains("positive")) {
-				return "positive";
-			}
-			return "negative";
-		}
-
-	}
-
-	public static class SpecificQuestionDispatcher implements EdgeAction {
-
-		@Override
-		public String apply(OverAllState state) throws Exception {
-			String classifierOutput = (String) state.value("classifier_output").orElse("");
-			System.out.println("classifierOutput: " + classifierOutput);
-			if (classifierOutput.contains("after-sale")) {
-				return "after-sale";
-			}
-			else if (classifierOutput.contains("quality")) {
-				return "quality";
-			}
-			else if (classifierOutput.contains("transportation")) {
-				return "transportation";
-			}
-			else {
-				return "others";
-			}
-		}
-
 	}
 
 }
