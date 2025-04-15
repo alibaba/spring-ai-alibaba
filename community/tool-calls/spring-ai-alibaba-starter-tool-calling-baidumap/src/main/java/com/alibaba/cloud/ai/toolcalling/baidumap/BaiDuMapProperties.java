@@ -22,29 +22,19 @@ import static com.alibaba.cloud.ai.toolcalling.baidumap.BaiDuMapProperties.BaiDu
 import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
 
 /**
- * @author Carbon
+ * @author Carbon vlsmb
  */
 @ConfigurationProperties(prefix = BaiDuMapPrefix)
 public class BaiDuMapProperties extends CommonToolCallProperties {
 
 	protected static final String BaiDuMapPrefix = TOOL_CALLING_CONFIG_PREFIX + ".baidu.map";
 
-	public BaiDuMapProperties() {
-		super("https://api.map.baidu.com/");
-	}
-
 	/**
 	 * Official Document URL：
 	 * <a href="https://lbs.baidu.com/faq/api?title=webapi/ROS2/prepare">...</a>
 	 */
-	private boolean enabled = true;
-
-	public boolean isEnabled() {
-		return enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
+	public BaiDuMapProperties() {
+		super("https://api.map.baidu.com/");
 	}
 
 }
