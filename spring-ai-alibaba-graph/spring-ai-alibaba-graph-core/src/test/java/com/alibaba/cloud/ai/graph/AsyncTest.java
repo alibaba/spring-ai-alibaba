@@ -15,16 +15,16 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
-
 import org.bsc.async.AsyncGenerator;
 import org.bsc.async.AsyncGeneratorQueue;
 import org.junit.jupiter.api.Test;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.listOf;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
