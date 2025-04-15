@@ -24,4 +24,5 @@ public interface ToolCallbackProvider {
 	Map<String, ManusConfiguration.ToolCallBackContext> getToolCallBackContexts(String planId);
 
 	Map<String, ManusConfiguration.ToolCallBackContext> removePlan(String planId);
+
 }

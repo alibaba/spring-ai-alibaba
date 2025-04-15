@@ -21,17 +21,19 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class AbstractToolCallbackProvider implements ToolCallbackProvider {
-    private final Map<String, Map<String, ManusConfiguration.ToolCallBackContext>> cachedToolCallbackMap = new ConcurrentHashMap<>();
 
-    @Override
-    public Map<String, ManusConfiguration.ToolCallBackContext> getToolCallBackContexts(String planId) {
-        return cachedToolCallbackMap.computeIfAbsent(planId, k -> getToolCallBackContexts());
-    }
+	private final Map<String, Map<String, ManusConfiguration.ToolCallBackContext>> cachedToolCallbackMap = new ConcurrentHashMap<>();
 
-    protected abstract Map<String, ManusConfiguration.ToolCallBackContext> getToolCallBackContexts();
+	@Override
+	public Map<String, ManusConfiguration.ToolCallBackContext> getToolCallBackContexts(String planId) {
+		return cachedToolCallbackMap.computeIfAbsent(planId, k -> getToolCallBackContexts());
+	}
 
-    @Override
-    public Map<String, ManusConfiguration.ToolCallBackContext> removePlan(String planId) {
-        return cachedToolCallbackMap.remove(planId);
-    }
+	protected abstract Map<String, ManusConfiguration.ToolCallBackContext> getToolCallBackContexts();
+
+	@Override
+	public Map<String, ManusConfiguration.ToolCallBackContext> removePlan(String planId) {
+		return cachedToolCallbackMap.remove(planId);
+	}
+
 }
