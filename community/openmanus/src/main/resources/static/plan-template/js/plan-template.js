@@ -4,7 +4,8 @@
  */
 
 // 全局变量，保存当前计划状态
-let currentPlanId = null;
+let currentPlanTemplateId = null; // 存储计划模板ID
+let currentPlanId = null; // 存储计划执行ID
 let currentPlanData = null;
 let isGenerating = false;
 let isExecuting = false;
@@ -115,7 +116,7 @@ async function handleGeneratePlan() {
         const response = await ManusAPI.generatePlan(query, existingJson);
         
         // 更新计划ID和数据
-        currentPlanId = response.planTemplateId;
+        currentPlanTemplateId = response.planTemplateId;
         currentPlanData = response.plan;
         
         // 直接显示计划数据
@@ -128,8 +129,8 @@ async function handleGeneratePlan() {
             saveToVersionHistory(jsonString);
             
             // 更新API URL
-            if (currentPlanId) {
-                apiUrlElement.textContent = `http://your-domain/api/plan-template/execute/${currentPlanId}`;
+            if (currentPlanTemplateId) {
+                apiUrlElement.textContent = `http://your-domain/api/plan-template/execute/${currentPlanTemplateId}`;
             }
         } else if (response.planJson) {
             // 如果plan对象解析失败但有原始JSON字符串，直接显示原始JSON
@@ -179,7 +180,7 @@ function stopPolling() {
  * 轮询计划状态
  */
 async function pollPlanStatus() {
-    if (!currentPlanId || isPolling) {
+    if (!currentPlanTemplateId || isPolling) {
         return;
     }
     
@@ -187,7 +188,7 @@ async function pollPlanStatus() {
         isPolling = true;
         
         // 调用获取计划详情的API
-        const planData = await ManusAPI.getDetails(currentPlanId);
+        const planData = await ManusAPI.getDetails(currentPlanTemplateId);
         
         // 如果planData为null（可能404或其他错误），继续轮询
         if (!planData) {
@@ -228,8 +229,8 @@ function handlePlanData(planData) {
     saveToVersionHistory(jsonString);
     
     // 更新API URL
-    if (currentPlanId) {
-        apiUrlElement.textContent = `http://your-domain/api/plan-template/execute/${currentPlanId}`;
+    if (currentPlanTemplateId) {
+        apiUrlElement.textContent = `http://your-domain/api/plan-template/execute/${currentPlanTemplateId}`;
     }
     
     // 更新UI状态
@@ -256,7 +257,12 @@ function handleRunPlanClick() {
         return;
     }
     
-    // 检查是否有JSON数据可以执行
+    // 检查是否有计划模板ID和JSON数据可以执行
+    if (!currentPlanTemplateId) {
+        alert('没有可执行的计划模板');
+        return;
+    }
+    
     let jsonContent = jsonEditor.value.trim();
     if (!jsonContent) {
         alert('计划数据不能为空');
@@ -292,6 +298,12 @@ async function executePlan() {
         return;
     }
     
+    if (!currentPlanTemplateId) {
+        alert('没有可执行的计划模板');
+        closeExecutionDialog();
+        return;
+    }
+    
     try {
         isExecuting = true;
         updateUIState();
@@ -300,47 +312,36 @@ async function executePlan() {
         let jsonContent = jsonEditor.value.trim();
         let response;
         
-        // 有两种执行模式：
-        // 1. 如果有currentPlanId，使用现有的计划ID执行
-        // 2. 如果没有currentPlanId，使用JSON内容创建新计划并执行
-        if (currentPlanId) {
-            // 检查JSON内容是否已修改
-            let isModified = true;
-            if (currentVersionIndex >= 0 && planVersions.length > 0) {
-                const latestVersion = planVersions[currentVersionIndex];
-                isModified = jsonContent !== latestVersion;
-            }
-            
-            if (isModified) {
-                // JSON已修改，使用新的JSON内容执行
-                response = await ManusAPI.executePlanFromJson(jsonContent, "从计划模板界面执行计划");
-                
-                // 更新当前计划ID
-                currentPlanId = response.planId;
-                
-                // 保存此版本到版本历史
-                saveToVersionHistory(jsonContent);
-            } else {
-                // JSON未修改，使用现有计划ID执行
-                response = await ManusAPI.executePlan(currentPlanId);
-            }
-        } else {
-            // 没有现有计划ID，直接使用JSON内容执行
-            response = await ManusAPI.executePlanFromJson(jsonContent, "从计划模板界面执行计划");
-            
-            // 更新当前计划ID
-            currentPlanId = response.planId;
-            
+        // 检查JSON内容是否已修改
+        let isModified = true;
+        if (currentVersionIndex >= 0 && planVersions.length > 0) {
+            const latestVersion = planVersions[currentVersionIndex];
+            isModified = jsonContent !== latestVersion;
+        }
+        
+        if (isModified) {
+            // JSON已修改，先保存新版本
             // 保存此版本到版本历史
             saveToVersionHistory(jsonContent);
+            
+            // 保存到服务器
+            await savePlanToServer(currentPlanTemplateId, jsonContent);
+            
+            console.log('修改后的JSON已保存，使用计划模板ID执行');
         }
+        
+        // 使用现有计划模板ID执行
+        response = await ManusAPI.executePlan(currentPlanTemplateId);
+        
+        // 更新当前计划ID
+        currentPlanId = response.planId;
         
         // 提示用户
         alert('计划执行请求已提交，可以在右侧边栏查看执行进度');
         
         // 更新API URL
-        if (currentPlanId) {
-            apiUrlElement.textContent = `http://your-domain/api/plan-template/execute/${currentPlanId}`;
+        if (currentPlanTemplateId) {
+            apiUrlElement.textContent = `http://your-domain/api/plan-template/execute/${currentPlanTemplateId}`;
         }
         
         // 开始轮询执行状态
