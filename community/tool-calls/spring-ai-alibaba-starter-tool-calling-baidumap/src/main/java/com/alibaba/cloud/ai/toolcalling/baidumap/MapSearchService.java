@@ -28,7 +28,8 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * @author Carbon vlsmb
+ * @author Carbon
+ * @author vlsmb
  */
 public class MapSearchService implements Function<MapSearchService.Request, MapSearchService.Response> {
 
