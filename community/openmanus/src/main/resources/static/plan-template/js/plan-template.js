@@ -9,6 +9,7 @@ let currentPlanId = null; // 存储计划执行ID
 let currentPlanData = null;
 let isGenerating = false;
 let isExecuting = false;
+let planTemplateList = []; // 存储计划模板列表
 
 // 版本控制相关变量
 let planVersions = []; // 存储所有版本的计划JSON
@@ -77,7 +78,91 @@ function init() {
     // 初始状态
     updateUIState();
     
+    // 加载计划模板列表
+    loadPlanTemplateList();
+    
     console.log('计划模板页面初始化完成');
+}
+
+/**
+ * 加载计划模板列表并更新左侧边栏
+ */
+async function loadPlanTemplateList() {
+    try {
+        // 调用API获取计划模板列表
+        const response = await ManusAPI.getAllPlanTemplates();
+        planTemplateList = response.templates || [];
+        
+        // 更新左侧边栏
+        updatePlanTemplateListUI();
+    } catch (error) {
+        console.error('加载计划模板列表失败:', error);
+    }
+}
+
+/**
+ * 更新左侧边栏的计划模板列表
+ */
+function updatePlanTemplateListUI() {
+    const taskListEl = document.querySelector('.task-list');
+    if (!taskListEl) {
+        console.error('找不到任务列表元素');
+        return;
+    }
+    
+    // 清空现有列表
+    taskListEl.innerHTML = '';
+    
+    if (planTemplateList.length === 0) {
+        // 如果没有计划模板，显示提示信息
+        const emptyItem = document.createElement('li');
+        emptyItem.className = 'task-item empty';
+        emptyItem.textContent = '没有可用的计划模板';
+        taskListEl.appendChild(emptyItem);
+        return;
+    }
+    
+    // 按更新时间排序，最新的在前面
+    const sortedTemplates = [...planTemplateList].sort((a, b) => {
+        const timeA = new Date(a.updateTime || a.createTime);
+        const timeB = new Date(b.updateTime || b.createTime);
+        return timeB - timeA; // 降序排序
+    });
+    
+    // 添加计划模板项
+    sortedTemplates.forEach(template => {
+        const listItem = document.createElement('li');
+        listItem.className = 'task-item';
+        if (template.id === currentPlanTemplateId) {
+            listItem.classList.add('selected');
+        }
+        
+        // 计算相对时间
+        const updateTime = new Date(template.updateTime || template.createTime);
+        const relativeTime = getRelativeTimeString(updateTime);
+        
+        // 创建HTML结构
+        listItem.innerHTML = `
+            <div class="task-icon">[📄]</div>
+            <div class="task-details">
+                <div class="task-title">${template.title || '未命名计划'}</div>
+                <div class="task-preview">${truncateText(template.description || '', 40)}</div>
+            </div>
+            <div class="task-time">${relativeTime}</div>
+        `;
+        
+        // 添加点击事件
+        listItem.addEventListener('click', () => handlePlanTemplateClick(template));
+        
+        taskListEl.appendChild(listItem);
+    });
+    
+    // 更新新建计划按钮文本
+    const newTaskBtn = document.querySelector('.new-task-btn');
+    if (newTaskBtn) {
+        newTaskBtn.innerHTML = '<span class="icon-add"></span> 新建计划 <span class="shortcut">⌘ K</span>';
+        newTaskBtn.addEventListener('click', handleClearInput);
+    }
 }
 
 /**
