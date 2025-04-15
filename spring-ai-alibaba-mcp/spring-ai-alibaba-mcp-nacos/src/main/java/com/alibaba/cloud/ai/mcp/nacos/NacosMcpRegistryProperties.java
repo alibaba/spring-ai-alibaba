@@ -24,4 +24,5 @@ public class NacosMcpRegistryProperties {
 	void setNamespace(String namespace) {
 		this.namespace = namespace;
 	}
+
 }

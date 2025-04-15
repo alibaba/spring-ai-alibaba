@@ -71,192 +71,192 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class ManusConfiguration {
 
-    private final ChromeDriverService chromeDriverService;
+	private final ChromeDriverService chromeDriverService;
 
-    private final PlanExecutionRecorder recorder;
+	private final PlanExecutionRecorder recorder;
 
-    private final ManusProperties manusProperties;
+	private final ManusProperties manusProperties;
 
-    private final TextFileService textFileService;
+	private final TextFileService textFileService;
 
-    private final McpService mcpService;
+	private final McpService mcpService;
 
-    public ManusConfiguration(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
-                              ManusProperties manusProperties, TextFileService textFileService, McpService mcpService) {
-        this.chromeDriverService = chromeDriverService;
-        this.recorder = recorder;
-        this.manusProperties = manusProperties;
-        this.textFileService = textFileService;
-        this.mcpService = mcpService;
-    }
+	public ManusConfiguration(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
+			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService) {
+		this.chromeDriverService = chromeDriverService;
+		this.recorder = recorder;
+		this.manusProperties = manusProperties;
+		this.textFileService = textFileService;
+		this.mcpService = mcpService;
+	}
 
-    // @Bean
-    // @Scope("prototype") // 每次请求创建一个新的实例
-    // public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager
-    // toolCallingManager) {
+	// @Bean
+	// @Scope("prototype") // 每次请求创建一个新的实例
+	// public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager
+	// toolCallingManager) {
 
-    // ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager,
-    // chromeDriverService,
-    // CodeUtils.WORKING_DIR, recorder, manusProperties);
-    // BrowserAgent browserAgent = new BrowserAgent(llmService, toolCallingManager,
-    // chromeDriverService, recorder, manusProperties);
+	// ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager,
+	// chromeDriverService,
+	// CodeUtils.WORKING_DIR, recorder, manusProperties);
+	// BrowserAgent browserAgent = new BrowserAgent(llmService, toolCallingManager,
+	// chromeDriverService, recorder, manusProperties);
 
-    // FileAgent fileAgent = new FileAgent(llmService, toolCallingManager,
-    // CodeUtils.WORKING_DIR, recorder, manusProperties);
-    // PythonAgent pythonAgent = new PythonAgent(llmService, toolCallingManager,
-    // CodeUtils.WORKING_DIR, recorder, manusProperties);
+	// FileAgent fileAgent = new FileAgent(llmService, toolCallingManager,
+	// CodeUtils.WORKING_DIR, recorder, manusProperties);
+	// PythonAgent pythonAgent = new PythonAgent(llmService, toolCallingManager,
+	// CodeUtils.WORKING_DIR, recorder, manusProperties);
 
-    // List<BaseAgent> agentList = new ArrayList<>();
+	// List<BaseAgent> agentList = new ArrayList<>();
 
-    // agentList.add(manusAgent);
-    // agentList.add(browserAgent);
-    // agentList.add(fileAgent);
-    // agentList.add(pythonAgent);
+	// agentList.add(manusAgent);
+	// agentList.add(browserAgent);
+	// agentList.add(fileAgent);
+	// agentList.add(pythonAgent);
 
-    // Map<String, Object> data = new HashMap<>();
-    // return new PlanningFlow(agentList, data, recorder);
-    // }
+	// Map<String, Object> data = new HashMap<>();
+	// return new PlanningFlow(agentList, data, recorder);
+	// }
 
-    @Bean
-    @Scope("prototype")
-    public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager,
-                                     DynamicAgentLoader dynamicAgentLoader) {
-        List<BaseAgent> agentList = new ArrayList<>();
-        List<com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider> toolCallbackProviderList = new ArrayList<>();
+	@Bean
+	@Scope("prototype")
+	public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager,
+			DynamicAgentLoader dynamicAgentLoader) {
+		List<BaseAgent> agentList = new ArrayList<>();
+		List<com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider> toolCallbackProviderList = new ArrayList<>();
 
-        // Add all dynamic agents from the database
-        for (DynamicAgentEntity agentEntity : dynamicAgentLoader.getAllAgents()) {
-            DynamicAgent agent = dynamicAgentLoader.loadAgent(agentEntity.getAgentName());
-            com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider toolCallbackProvider = new AbstractToolCallbackProvider() {
-                @Override
-                protected Map<String, ToolCallBackContext> getToolCallBackContexts() {
-                    return toolCallbackMap(agent);
-                }
-            };
-            agent.setToolCallbackProvider(toolCallbackProvider);
-            agentList.add(agent);
-            toolCallbackProviderList.add(toolCallbackProvider);
-        }
+		// Add all dynamic agents from the database
+		for (DynamicAgentEntity agentEntity : dynamicAgentLoader.getAllAgents()) {
+			DynamicAgent agent = dynamicAgentLoader.loadAgent(agentEntity.getAgentName());
+			com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider toolCallbackProvider = new AbstractToolCallbackProvider() {
+				@Override
+				protected Map<String, ToolCallBackContext> getToolCallBackContexts() {
+					return toolCallbackMap(agent);
+				}
+			};
+			agent.setToolCallbackProvider(toolCallbackProvider);
+			agentList.add(agent);
+			toolCallbackProviderList.add(toolCallbackProvider);
+		}
 
-        Map<String, Object> data = new HashMap<>();
-        return new PlanningFlow(agentList, data, recorder, toolCallbackProviderList);
-    }
+		Map<String, Object> data = new HashMap<>();
+		return new PlanningFlow(agentList, data, recorder, toolCallbackProviderList);
+	}
 
-    public static class ToolCallBackContext {
+	public static class ToolCallBackContext {
 
-        private final ToolCallback toolCallback;
+		private final ToolCallback toolCallback;
 
-        private final ToolCallBiFunctionDef functionInstance;
+		private final ToolCallBiFunctionDef functionInstance;
 
-        public ToolCallBackContext(ToolCallback toolCallback, ToolCallBiFunctionDef functionInstance) {
-            this.toolCallback = toolCallback;
-            this.functionInstance = functionInstance;
-        }
+		public ToolCallBackContext(ToolCallback toolCallback, ToolCallBiFunctionDef functionInstance) {
+			this.toolCallback = toolCallback;
+			this.functionInstance = functionInstance;
+		}
 
-        public ToolCallback getToolCallback() {
-            return toolCallback;
-        }
+		public ToolCallback getToolCallback() {
+			return toolCallback;
+		}
 
-        public ToolCallBiFunctionDef getFunctionInstance() {
-            return functionInstance;
-        }
+		public ToolCallBiFunctionDef getFunctionInstance() {
+			return functionInstance;
+		}
 
-    }
+	}
 
-    public Map<String, ToolCallBackContext> toolCallbackMap(BaseAgent agent) {
-        Map<String, ToolCallBackContext> toolCallbackMap = new HashMap<>();
-        List<ToolCallBiFunctionDef> toolDefinitions = new ArrayList<>();
+	public Map<String, ToolCallBackContext> toolCallbackMap(BaseAgent agent) {
+		Map<String, ToolCallBackContext> toolCallbackMap = new HashMap<>();
+		List<ToolCallBiFunctionDef> toolDefinitions = new ArrayList<>();
 
-        // 添加所有工具定义
-        toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService));
-        toolDefinitions.add(new TerminateTool(null));
-        toolDefinitions.add(new Bash(CodeUtils.WORKING_DIR));
-        toolDefinitions.add(new DocLoaderTool());
-        toolDefinitions.add(new TextFileOperator(CodeUtils.WORKING_DIR, textFileService));
-        toolDefinitions.add(new GoogleSearch());
-        toolDefinitions.add(new PythonExecute());
-        for (ToolCallback toolCallback : mcpService.getFunctionCallbacks()) {
-            toolDefinitions.add(new McpTool(toolCallback));
-        }
+		// 添加所有工具定义
+		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService));
+		toolDefinitions.add(new TerminateTool(null));
+		toolDefinitions.add(new Bash(CodeUtils.WORKING_DIR));
+		toolDefinitions.add(new DocLoaderTool());
+		toolDefinitions.add(new TextFileOperator(CodeUtils.WORKING_DIR, textFileService));
+		toolDefinitions.add(new GoogleSearch());
+		toolDefinitions.add(new PythonExecute());
+		for (ToolCallback toolCallback : mcpService.getFunctionCallbacks()) {
+			toolDefinitions.add(new McpTool(toolCallback));
+		}
 
-        // 为每个工具创建 FunctionToolCallback
-        for (ToolCallBiFunctionDef toolDefinition : toolDefinitions) {
-            FunctionToolCallback functionToolcallback = FunctionToolCallback
-                    .builder(toolDefinition.getName(), toolDefinition)
-                    .description(toolDefinition.getDescription())
-                    .inputSchema(toolDefinition.getParameters())
-                    .inputType(toolDefinition.getInputType())
-                    .toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
-                    .build();
-            toolDefinition.setAgent(agent);
-            ToolCallBackContext functionToolcallbackContext = new ToolCallBackContext(functionToolcallback,
-                    toolDefinition);
-            toolCallbackMap.put(toolDefinition.getName(), functionToolcallbackContext);
-        }
-        return toolCallbackMap;
-    }
+		// 为每个工具创建 FunctionToolCallback
+		for (ToolCallBiFunctionDef toolDefinition : toolDefinitions) {
+			FunctionToolCallback functionToolcallback = FunctionToolCallback
+				.builder(toolDefinition.getName(), toolDefinition)
+				.description(toolDefinition.getDescription())
+				.inputSchema(toolDefinition.getParameters())
+				.inputType(toolDefinition.getInputType())
+				.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
+				.build();
+			toolDefinition.setAgent(agent);
+			ToolCallBackContext functionToolcallbackContext = new ToolCallBackContext(functionToolcallback,
+					toolDefinition);
+			toolCallbackMap.put(toolDefinition.getName(), functionToolcallbackContext);
+		}
+		return toolCallbackMap;
+	}
 
-    /**
-     * PlanningFlowManager 为了与controller等方法兼容 ，并且还能保证每次请求都能创建一个新的PlanningFlow实例，来解决并发问题。
-     */
-    @Component
-    public class PlanningFlowManager {
+	/**
+	 * PlanningFlowManager 为了与controller等方法兼容 ，并且还能保证每次请求都能创建一个新的PlanningFlow实例，来解决并发问题。
+	 */
+	@Component
+	public class PlanningFlowManager {
 
-        private final ApplicationContext context;
+		private final ApplicationContext context;
 
-        private ConcurrentHashMap<String, PlanningFlow> flowMap = new ConcurrentHashMap<>();
+		private ConcurrentHashMap<String, PlanningFlow> flowMap = new ConcurrentHashMap<>();
 
-        public PlanningFlowManager(ApplicationContext context) {
-            this.context = context;
-        }
+		public PlanningFlowManager(ApplicationContext context) {
+			this.context = context;
+		}
 
-        public PlanningFlow getOrCreatePlanningFlow(String requestId) {
-            PlanningFlow flow = flowMap.computeIfAbsent(requestId, key -> {
-                PlanningFlow newFlow = context.getBean(PlanningFlow.class);
-                newFlow.setActivePlanId(key);
-                return newFlow;
-            });
-            return flow;
-        }
+		public PlanningFlow getOrCreatePlanningFlow(String requestId) {
+			PlanningFlow flow = flowMap.computeIfAbsent(requestId, key -> {
+				PlanningFlow newFlow = context.getBean(PlanningFlow.class);
+				newFlow.setActivePlanId(key);
+				return newFlow;
+			});
+			return flow;
+		}
 
-        public boolean removePlanningFlow(String requestId) {
-            return flowMap.remove(requestId) != null;
-        }
+		public boolean removePlanningFlow(String requestId) {
+			return flowMap.remove(requestId) != null;
+		}
 
-    }
+	}
 
-    @Bean
-    public RestClient.Builder createRestClient() {
-        // 1. 配置超时时间（单位：毫秒）
-        int connectionTimeout = 600000; // 连接超时时间
-        int readTimeout = 600000; // 响应读取超时时间
-        int writeTimeout = 600000; // 请求写入超时时间
+	@Bean
+	public RestClient.Builder createRestClient() {
+		// 1. 配置超时时间（单位：毫秒）
+		int connectionTimeout = 600000; // 连接超时时间
+		int readTimeout = 600000; // 响应读取超时时间
+		int writeTimeout = 600000; // 请求写入超时时间
 
-        // 2. 创建 RequestConfig 并设置超时
-        RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
-                .setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
-                .setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
-                .build();
+		// 2. 创建 RequestConfig 并设置超时
+		RequestConfig requestConfig = RequestConfig.custom()
+			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
+			.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
+			.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
+			.build();
 
-        // 3. 创建 CloseableHttpClient 并应用配置
-        HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
+		// 3. 创建 CloseableHttpClient 并应用配置
+		HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
 
-        // 4. 使用 HttpComponentsClientHttpRequestFactory 包装 HttpClient
-        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
+		// 4. 使用 HttpComponentsClientHttpRequestFactory 包装 HttpClient
+		HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
 
-        // 5. 创建 RestClient 并设置请求工厂
-        return RestClient.builder().requestFactory(requestFactory);
-    }
+		// 5. 创建 RestClient 并设置请求工厂
+		return RestClient.builder().requestFactory(requestFactory);
+	}
 
-    /**
-     * Provides an empty ToolCallbackProvider implementation when MCP is disabled
-     */
-    @Bean
-    @ConditionalOnMissingBean
-    @ConditionalOnProperty(name = "spring.ai.mcp.client.enabled", havingValue = "false")
-    public ToolCallbackProvider emptyToolCallbackProvider() {
-        return () -> new ToolCallback[0];
-    }
+	/**
+	 * Provides an empty ToolCallbackProvider implementation when MCP is disabled
+	 */
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(name = "spring.ai.mcp.client.enabled", havingValue = "false")
+	public ToolCallbackProvider emptyToolCallbackProvider() {
+		return () -> new ToolCallback[0];
+	}
 
 }

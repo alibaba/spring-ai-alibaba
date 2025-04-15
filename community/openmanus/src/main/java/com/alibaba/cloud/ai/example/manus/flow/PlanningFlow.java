@@ -68,7 +68,7 @@ public class PlanningFlow extends BaseFlow {
 	private List<ToolCallbackProvider> toolCallbackProviders;
 
 	public PlanningFlow(List<BaseAgent> agents, Map<String, Object> data, PlanExecutionRecorder recorder,
-						List<ToolCallbackProvider> toolCallbackProviders) {
+			List<ToolCallbackProvider> toolCallbackProviders) {
 		super(agents, data, recorder);
 		this.toolCallbackProviders = toolCallbackProviders;
 		// 初始化Map字段
@@ -199,7 +199,8 @@ public class PlanningFlow extends BaseFlow {
 			llmService.removeAgentChatClient(activePlanId);
 			// Cleanup tool callback contexts
 			for (ToolCallbackProvider callbackProvider : toolCallbackProviders) {
-				Map<String, ToolCallBackContext> toolCallBackContexts = callbackProvider.getToolCallBackContexts(activePlanId);
+				Map<String, ToolCallBackContext> toolCallBackContexts = callbackProvider
+					.getToolCallBackContexts(activePlanId);
 				if (toolCallBackContexts == null) {
 					continue;
 				}
