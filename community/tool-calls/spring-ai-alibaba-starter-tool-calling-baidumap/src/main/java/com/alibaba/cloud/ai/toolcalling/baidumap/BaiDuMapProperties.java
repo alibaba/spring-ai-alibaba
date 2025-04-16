@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.toolcalling.baidumap;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
-import jakarta.annotation.PostConstruct;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import static com.alibaba.cloud.ai.toolcalling.baidumap.BaiDuMapProperties.BaiDuMapPrefix;
@@ -37,10 +36,6 @@ public class BaiDuMapProperties extends CommonToolCallProperties {
 	 */
 	public BaiDuMapProperties() {
 		super("https://api.map.baidu.com/");
-	}
-
-	@PostConstruct
-	private void initProperties() {
 		this.setPropertiesFromEnv("BAIDU_MAP_API_KEY", null, null, null);
 	}
 
