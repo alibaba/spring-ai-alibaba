@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.toolcalling.common;
 
+import org.springframework.util.StringUtils;
+
 /**
  * The properties of the specific tool call need to inherit from this class
  *
@@ -34,7 +36,7 @@ public class CommonToolCallProperties {
 
 	private String token;
 
-	private boolean enabled = false;
+	private boolean enabled = true;
 
 	public CommonToolCallProperties() {
 		this.baseUrl = CommonToolCallConstants.DEFAULT_BASE_URL;
@@ -105,6 +107,24 @@ public class CommonToolCallProperties {
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	// Invoked after PropertiesBean instantiation to load default values from system
+	// environment variables using keys associated with derived Properties class
+	// attributes.
+	protected void setPropertiesFromEnv(String apiKeyEnv, String secretKeyEnv, String appIdEnv, String tokenEnv) {
+		if (StringUtils.hasText(apiKeyEnv) && !StringUtils.hasText(this.apiKey)) {
+			this.apiKey = System.getenv(apiKeyEnv);
+		}
+		if (StringUtils.hasText(secretKeyEnv) && !StringUtils.hasText(this.secretKey)) {
+			this.secretKey = System.getenv(secretKeyEnv);
+		}
+		if (StringUtils.hasText(appIdEnv) && !StringUtils.hasText(this.appId)) {
+			this.appId = System.getenv(appIdEnv);
+		}
+		if (StringUtils.hasText(tokenEnv) && !StringUtils.hasText(this.token)) {
+			this.token = System.getenv(tokenEnv);
+		}
 	}
 
 }
