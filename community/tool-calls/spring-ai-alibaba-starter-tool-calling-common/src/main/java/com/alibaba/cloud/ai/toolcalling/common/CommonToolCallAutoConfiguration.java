@@ -13,32 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.alibaba.cloud.ai.toolcalling.common;
 
-package com.alibaba.cloud.ai.mcp.nacos;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
+/**
+ * @author vlsmb
+ */
+@Configuration
+public class CommonToolCallAutoConfiguration {
 
-@ConfigurationProperties(prefix = "spring.ai.alibaba.mcp.nacos")
-public class NacosMcpRegistryProperties {
-
-	String serverAddr;
-
-	String namespace;
-
-	String getServerAddr() {
-		return serverAddr;
-	}
-
-	void setServerAddr(String serverAddr) {
-		this.serverAddr = serverAddr;
-	}
-
-	String getNamespace() {
-		return namespace;
-	}
-
-	void setNamespace(String namespace) {
-		this.namespace = namespace;
+	@Bean
+	@ConditionalOnMissingBean(JsonParseTool.class)
+	public JsonParseTool jsonParseService() {
+		return new JsonParseTool();
 	}
 
 }
