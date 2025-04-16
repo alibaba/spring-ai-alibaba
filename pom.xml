@@ -108,7 +108,7 @@
 
     <properties>
 
-        <revision>1.0.0-M6.2-SNAPSHOT</revision>
+        <revision>1.0.0-M7.1-SNAPSHOT</revision>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -116,11 +116,11 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
 
-        <spring-boot.version>3.3.3</spring-boot.version>
-        <springdoc-openapi.version>2.6.0</springdoc-openapi.version>
+        <spring-boot.version>3.4.4</spring-boot.version>
+        <springdoc-openapi.version>2.8.6</springdoc-openapi.version>
 
         <!-- Spring AI -->
-        <spring-ai.version>1.0.0-M6</spring-ai.version>
+        <spring-ai.version>1.0.0-M7</spring-ai.version>
         <dashscope-sdk-java.version>2.15.1</dashscope-sdk-java.version>
 
         <!-- plugin versions -->
@@ -138,7 +138,7 @@
         <maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
         <maven-project-info-reports-plugin.version>3.4.5</maven-project-info-reports-plugin.version>
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
-        <spring-javaformat-maven-plugin.version>0.0.39</spring-javaformat-maven-plugin.version>
+        <spring-javaformat-maven-plugin.version>0.0.43</spring-javaformat-maven-plugin.version>
         <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
     </properties>
 
@@ -332,31 +332,31 @@
                             </properties>
                             <quiet>true</quiet>
                             <header>HEADER</header>
-                                <excludes>
-                                    <exclude>**/.antlr/**</exclude>
-                                    <exclude>**/aot.factories</exclude>
-                                    <exclude>**/.sdkmanrc</exclude>
-                                    <exclude>**/*.adoc</exclude>
-                                    <exclude>**/*.puml</exclude>
-                                    <exclude>**/pom.xml</exclude>
-                                    <exclude>**/*.properties</exclude>
-                                    <exclude>**/*.yaml</exclude>
-                                    <exclude>**/*.yml</exclude>
-                                    <exclude>**/*.map</exclude>
-                                    <exclude>**/*.html</exclude>
-                                    <exclude>**/*.xhtml</exclude>
-                                    <exclude>**/*.jsp</exclude>
-                                    <exclude>**/*.js</exclude>
-                                    <exclude>**/*.css</exclude>
-                                    <exclude>**/*.txt</exclude>
-                                    <exclude>**/*.xjb</exclude>
-                                    <exclude>**/*.ftl</exclude>
-                                    <exclude>**/*.xsd</exclude>
-                                    <exclude>**/*.xml</exclude>
-                                    <exclude>**/*.sh</exclude>
-                                    <exclude>**/generated/**</exclude>
-                                    <exclude>**/Dockerfile</exclude>
-                                </excludes>
+                            <excludes>
+                                <exclude>**/.antlr/**</exclude>
+                                <exclude>**/aot.factories</exclude>
+                                <exclude>**/.sdkmanrc</exclude>
+                                <exclude>**/*.adoc</exclude>
+                                <exclude>**/*.puml</exclude>
+                                <exclude>**/pom.xml</exclude>
+                                <exclude>**/*.properties</exclude>
+                                <exclude>**/*.yaml</exclude>
+                                <exclude>**/*.yml</exclude>
+                                <exclude>**/*.map</exclude>
+                                <exclude>**/*.html</exclude>
+                                <exclude>**/*.xhtml</exclude>
+                                <exclude>**/*.jsp</exclude>
+                                <exclude>**/*.js</exclude>
+                                <exclude>**/*.css</exclude>
+                                <exclude>**/*.txt</exclude>
+                                <exclude>**/*.xjb</exclude>
+                                <exclude>**/*.ftl</exclude>
+                                <exclude>**/*.xsd</exclude>
+                                <exclude>**/*.xml</exclude>
+                                <exclude>**/*.sh</exclude>
+                                <exclude>**/generated/**</exclude>
+                                <exclude>**/Dockerfile</exclude>
+                            </excludes>
                         </configuration>
                     </plugin>
 

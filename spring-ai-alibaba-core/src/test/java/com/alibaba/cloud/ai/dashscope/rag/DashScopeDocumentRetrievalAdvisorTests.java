@@ -148,44 +148,44 @@ class DashScopeDocumentRetrievalAdvisorTests {
 	}
 
 	@Test
-    void testGeneratePromptWithEmptyDocuments() {
-        // Prepare test data
-        when(documentRetriever.retrieve(any(Query.class))).thenReturn(Collections.emptyList());
+	void testGeneratePromptWithEmptyDocuments() {
+		// Prepare test data
+		when(documentRetriever.retrieve(any(Query.class))).thenReturn(Collections.emptyList());
 
-        // Generate prompt
-        Map<String, Object> userParams = new HashMap<>();
-        Map<String, Object> adviseContext = new HashMap<>();
-        AdvisedRequest request = AdvisedRequest.builder()
-                .userText(TEST_QUERY)
-                .userParams(userParams)
-                .adviseContext(adviseContext)
-                .chatModel(chatModel)
-                .build();
+		// Generate prompt
+		Map<String, Object> userParams = new HashMap<>();
+		Map<String, Object> adviseContext = new HashMap<>();
+		AdvisedRequest request = AdvisedRequest.builder()
+			.userText(TEST_QUERY)
+			.userParams(userParams)
+			.adviseContext(adviseContext)
+			.chatModel(chatModel)
+			.build();
 
-        // Create a valid ChatResponse with Generation and metadata
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("finishReason", ChatCompletionFinishReason.STOP.name());
-        AssistantMessage assistantMessage = new AssistantMessage("Test response", metadata);
-        ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder()
-                .finishReason(ChatCompletionFinishReason.STOP.name())
-                .build();
-        Generation generation = new Generation(assistantMessage, generationMetadata);
-        ChatResponse chatResponse = new ChatResponse(List.of(generation));
+		// Create a valid ChatResponse with Generation and metadata
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("finishReason", ChatCompletionFinishReason.STOP.name());
+		AssistantMessage assistantMessage = new AssistantMessage("Test response", metadata);
+		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder()
+			.finishReason(ChatCompletionFinishReason.STOP.name())
+			.build();
+		Generation generation = new Generation(assistantMessage, generationMetadata);
+		ChatResponse chatResponse = new ChatResponse(List.of(generation));
 
-        // Create adviseContext with empty document map
-        Map<String, Object> responseAdviseContext = new HashMap<>();
-        Map<String, Document> documentMap = new HashMap<>();
-        responseAdviseContext.put(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS, documentMap);
+		// Create adviseContext with empty document map
+		Map<String, Object> responseAdviseContext = new HashMap<>();
+		Map<String, Document> documentMap = new HashMap<>();
+		responseAdviseContext.put(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS, documentMap);
 
-        AdvisedResponse response = advisor.aroundCall(request,
-                chain -> new AdvisedResponse(chatResponse, responseAdviseContext));
+		AdvisedResponse response = advisor.aroundCall(request,
+				chain -> new AdvisedResponse(chatResponse, responseAdviseContext));
 
-        // Verify response
-        assertThat(response).isNotNull();
-        assertThat(response.adviseContext()).containsKey(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS);
-        assertThat((Map<?, ?>) response.adviseContext().get(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS))
-                .isEmpty();
-    }
+		// Verify response
+		assertThat(response).isNotNull();
+		assertThat(response.adviseContext()).containsKey(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS);
+		assertThat((Map<?, ?>) response.adviseContext().get(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS))
+			.isEmpty();
+	}
 
 	@Test
 	void testProcessChatResponse() {

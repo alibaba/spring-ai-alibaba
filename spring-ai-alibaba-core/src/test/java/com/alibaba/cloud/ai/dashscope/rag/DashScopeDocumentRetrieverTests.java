@@ -93,15 +93,14 @@ class DashScopeDocumentRetrieverTests {
 	}
 
 	@Test
-    void testRetrieveWithNonExistentIndex() {
-        // Mock API response for non-existent index
-        when(dashScopeApi.getPipelineIdByName(TEST_INDEX_NAME)).thenReturn(null);
+	void testRetrieveWithNonExistentIndex() {
+		// Mock API response for non-existent index
+		when(dashScopeApi.getPipelineIdByName(TEST_INDEX_NAME)).thenReturn(null);
 
-        // Test retrieval with non-existent index
-        assertThatThrownBy(() -> retriever.retrieve(new Query(TEST_QUERY)))
-                .isInstanceOf(DashScopeException.class)
-                .hasMessageContaining("Index:" + TEST_INDEX_NAME + " NotExist");
-    }
+		// Test retrieval with non-existent index
+		assertThatThrownBy(() -> retriever.retrieve(new Query(TEST_QUERY))).isInstanceOf(DashScopeException.class)
+			.hasMessageContaining("Index:" + TEST_INDEX_NAME + " NotExist");
+	}
 
 	@Test
 	void testSuccessfulRetrieval() {
@@ -130,18 +129,18 @@ class DashScopeDocumentRetrieverTests {
 	}
 
 	@Test
-    void testEmptyRetrieval() {
-        // Mock API responses for empty result
-        when(dashScopeApi.getPipelineIdByName(TEST_INDEX_NAME)).thenReturn(TEST_PIPELINE_ID);
-        when(dashScopeApi.retriever(eq(TEST_PIPELINE_ID), eq(TEST_QUERY), any(DashScopeDocumentRetrieverOptions.class)))
-                .thenReturn(new ArrayList<>());
+	void testEmptyRetrieval() {
+		// Mock API responses for empty result
+		when(dashScopeApi.getPipelineIdByName(TEST_INDEX_NAME)).thenReturn(TEST_PIPELINE_ID);
+		when(dashScopeApi.retriever(eq(TEST_PIPELINE_ID), eq(TEST_QUERY), any(DashScopeDocumentRetrieverOptions.class)))
+			.thenReturn(new ArrayList<>());
 
-        // Test retrieval with no results
-        List<Document> retrievedDocs = retriever.retrieve(new Query(TEST_QUERY));
+		// Test retrieval with no results
+		List<Document> retrievedDocs = retriever.retrieve(new Query(TEST_QUERY));
 
-        // Verify empty result
-        assertThat(retrievedDocs).isNotNull().isEmpty();
-    }
+		// Verify empty result
+		assertThat(retrievedDocs).isNotNull().isEmpty();
+	}
 
 	@Test
 	void testRetrievalWithMultipleDocuments() {

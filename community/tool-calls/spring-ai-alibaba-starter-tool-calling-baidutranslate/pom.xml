@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-tool-calling-baidutranslate</artifactId>
-    <name>Spring AI Alibaba Starter Tool Calling BaiduTranslate </name>
+    <name>Spring AI Alibaba Starter Tool Calling BaiduTranslate</name>
     <description>Translate tool for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
