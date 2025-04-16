@@ -118,7 +118,7 @@
 
     <properties>
 
-        <revision>1.0.0-M6.2-SNAPSHOT</revision>
+        <revision>1.0.0-M7.1-SNAPSHOT</revision>
 
         <!-- Maven project basic config -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -128,9 +128,9 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- Spring version -->
-        <spring-ai.version>1.0.0-M6</spring-ai.version>
-        <spring-boot.version>3.3.3</spring-boot.version>
-        <springdoc-openapi.version>2.6.0</springdoc-openapi.version>
+        <spring-ai.version>1.0.0-M7</spring-ai.version>
+        <spring-boot.version>3.4.5</spring-boot.version>
+        <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 
         <!-- DashScope SDK Version -->
         <dashscope-sdk-java.version>2.15.1</dashscope-sdk-java.version>
@@ -246,6 +246,15 @@
     </developers>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>io.spring.javaformat</groupId>
@@ -367,31 +376,31 @@
                             </properties>
                             <quiet>true</quiet>
                             <header>HEADER</header>
-                                <excludes>
-                                    <exclude>**/.antlr/**</exclude>
-                                    <exclude>**/aot.factories</exclude>
-                                    <exclude>**/.sdkmanrc</exclude>
-                                    <exclude>**/*.adoc</exclude>
-                                    <exclude>**/*.puml</exclude>
-                                    <exclude>**/pom.xml</exclude>
-                                    <exclude>**/*.properties</exclude>
-                                    <exclude>**/*.yaml</exclude>
-                                    <exclude>**/*.yml</exclude>
-                                    <exclude>**/*.map</exclude>
-                                    <exclude>**/*.html</exclude>
-                                    <exclude>**/*.xhtml</exclude>
-                                    <exclude>**/*.jsp</exclude>
-                                    <exclude>**/*.js</exclude>
-                                    <exclude>**/*.css</exclude>
-                                    <exclude>**/*.txt</exclude>
-                                    <exclude>**/*.xjb</exclude>
-                                    <exclude>**/*.ftl</exclude>
-                                    <exclude>**/*.xsd</exclude>
-                                    <exclude>**/*.xml</exclude>
-                                    <exclude>**/*.sh</exclude>
-                                    <exclude>**/generated/**</exclude>
-                                    <exclude>**/Dockerfile</exclude>
-                                </excludes>
+                            <excludes>
+                                <exclude>**/.antlr/**</exclude>
+                                <exclude>**/aot.factories</exclude>
+                                <exclude>**/.sdkmanrc</exclude>
+                                <exclude>**/*.adoc</exclude>
+                                <exclude>**/*.puml</exclude>
+                                <exclude>**/pom.xml</exclude>
+                                <exclude>**/*.properties</exclude>
+                                <exclude>**/*.yaml</exclude>
+                                <exclude>**/*.yml</exclude>
+                                <exclude>**/*.map</exclude>
+                                <exclude>**/*.html</exclude>
+                                <exclude>**/*.xhtml</exclude>
+                                <exclude>**/*.jsp</exclude>
+                                <exclude>**/*.js</exclude>
+                                <exclude>**/*.css</exclude>
+                                <exclude>**/*.txt</exclude>
+                                <exclude>**/*.xjb</exclude>
+                                <exclude>**/*.ftl</exclude>
+                                <exclude>**/*.xsd</exclude>
+                                <exclude>**/*.xml</exclude>
+                                <exclude>**/*.sh</exclude>
+                                <exclude>**/generated/**</exclude>
+                                <exclude>**/Dockerfile</exclude>
+                            </excludes>
                         </configuration>
                     </plugin>
 
