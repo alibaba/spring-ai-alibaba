@@ -24,13 +24,7 @@ let modifyPlanBtn;
 let clearBtn;
 let apiUrlElement;
 
-// 执行确认对话框元素
-let executionDialog;
-let planSummaryElement;
-let stepCountElement;
-let cancelExecutionBtn;
-let confirmExecutionBtn;
-let dialogCloseBtn;
+// 移除了执行确认对话框相关的变量
 
 // 轮询相关变量
 let pollTimer = null;
@@ -50,14 +44,6 @@ function init() {
     modifyPlanBtn = document.getElementById('modifyPlanBtn');
     clearBtn = document.getElementById('clearBtn');
     apiUrlElement = document.querySelector('.api-url');
-
-    // 执行确认对话框元素
-    executionDialog = document.getElementById('executionDialog');
-    planSummaryElement = document.getElementById('plan-summary');
-    stepCountElement = document.getElementById('step-count');
-    cancelExecutionBtn = document.getElementById('cancelExecutionBtn');
-    confirmExecutionBtn = document.getElementById('confirmExecutionBtn');
-    dialogCloseBtn = document.querySelector('#executionDialog .close-btn');
     
     // 绑定按钮事件
     generatePlanBtn.addEventListener('click', handleGeneratePlan);
@@ -69,11 +55,6 @@ function init() {
     document.getElementById('rollbackJsonBtn').addEventListener('click', handleRollbackJson);
     document.getElementById('restoreJsonBtn').addEventListener('click', handleRestoreJson);
     document.getElementById('compareJsonBtn').addEventListener('click', handleCompareJson);
-    
-    // 对话框事件
-    cancelExecutionBtn.addEventListener('click', closeExecutionDialog);
-    confirmExecutionBtn.addEventListener('click', executePlan);
-    dialogCloseBtn.addEventListener('click', closeExecutionDialog);
     
     // 初始状态
     updateUIState();
@@ -287,15 +268,17 @@ function stopPolling() {
  * 轮询计划状态
  */
 async function pollPlanStatus() {
-    if (!currentPlanTemplateId || isPolling) {
+    // 使用currentPlanId而不是currentPlanTemplateId来轮询计划状态
+    // 只有在执行计划后，currentPlanId才会被设置
+    if (!currentPlanId || isPolling) {
         return;
     }
     
     try {
         isPolling = true;
         
-        // 调用获取计划详情的API
-        const planData = await ManusAPI.getDetails(currentPlanTemplateId);
+        // 调用获取计划详情的API，使用currentPlanId作为参数
+        const planData = await ManusAPI.getDetails(currentPlanId);
         
         // 如果planData为null（可能404或其他错误），继续轮询
         if (!planData) {
@@ -380,16 +363,8 @@ function handleRunPlanClick() {
         // 尝试解析JSON
         const planData = JSON.parse(jsonContent);
         
-        // 显示执行确认对话框
-        if (planData) {
-            planSummaryElement.textContent = planData.title || '未命名计划';
-            stepCountElement.textContent = (planData.steps && planData.steps.length) || 0;
-        } else {
-            planSummaryElement.textContent = '计划详情不可用';
-            stepCountElement.textContent = '?';
-        }
-        
-        openExecutionDialog();
+        // 直接执行计划，不显示确认对话框
+        executePlan();
     } catch (e) {
         console.error('JSON解析错误', e);
         alert('无效的JSON格式: ' + e.message);
@@ -401,20 +376,17 @@ function handleRunPlanClick() {
  */
 async function executePlan() {
     if (isExecuting) {
-        closeExecutionDialog();
         return;
     }
     
     if (!currentPlanTemplateId) {
         alert('没有可执行的计划模板');
-        closeExecutionDialog();
         return;
     }
     
     try {
         isExecuting = true;
         updateUIState();
-        closeExecutionDialog();
         
         let jsonContent = jsonEditor.value.trim();
         let response;
@@ -536,19 +508,7 @@ function handleClearInput() {
     updateUIState();
 }
 
-/**
- * 打开执行确认对话框
- */
-function openExecutionDialog() {
-    executionDialog.classList.add('show');
-}
-
-/**
- * 关闭执行确认对话框
- */
-function closeExecutionDialog() {
-    executionDialog.classList.remove('show');
-}
+// 已删除不再使用的对话框相关函数
 
 /**
  * 更新UI状态
