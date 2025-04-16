@@ -348,13 +348,6 @@ function handlePlanData(planData) {
     // 保存当前计划数据
     currentPlanData = planData;
     
-    // 显示计划JSON数据
-    const jsonString = JSON.stringify(planData, null, 2);
-    jsonEditor.value = jsonString;
-    
-    // 保存此版本到版本历史
-    saveToVersionHistory(jsonString);
-    
     // 更新API URL
     if (currentPlanTemplateId) {
         apiUrlElement.textContent = `http://your-domain/api/plan-template/execute/${currentPlanTemplateId}`;
