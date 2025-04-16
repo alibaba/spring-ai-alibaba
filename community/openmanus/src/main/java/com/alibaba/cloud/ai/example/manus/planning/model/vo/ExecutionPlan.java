@@ -148,5 +148,41 @@ public class ExecutionPlan {
 		json.append("}");
 		return json.toString();
 	}
+	
+	/**
+	 * 从JSON字符串解析并创建ExecutionPlan对象
+	 * @param planJson JSON字符串
+	 * @param newPlanId 新的计划ID（可选，如果提供将覆盖JSON中的planId）
+	 * @return 解析后的ExecutionPlan对象
+	 * @throws Exception 如果解析失败则抛出异常
+	 */
+	public static ExecutionPlan fromJson(String planJson, String newPlanId) throws Exception {
+		com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+		com.fasterxml.jackson.databind.JsonNode rootNode = objectMapper.readTree(planJson);
+		
+		// 获取计划标题
+		String title = rootNode.has("title") ? rootNode.get("title").asText() : "来自模板的计划";
+		
+		// 使用新的计划ID或从JSON中获取
+		String planId = (newPlanId != null && !newPlanId.isEmpty()) ? 
+			newPlanId : (rootNode.has("planId") ? rootNode.get("planId").asText() : "unknown-plan");
+		
+		// 创建新的ExecutionPlan对象
+		ExecutionPlan plan = new ExecutionPlan(planId, title);
+		
+		// 如果有计划步骤，添加到计划中
+		if (rootNode.has("steps") && rootNode.get("steps").isArray()) {
+			com.fasterxml.jackson.databind.JsonNode stepsNode = rootNode.get("steps");
+			for (com.fasterxml.jackson.databind.JsonNode stepNode : stepsNode) {
+				if (stepNode.has("stepRequirement")) {
+					// 调用ExecutionStep的fromJson方法创建步骤
+					ExecutionStep step = ExecutionStep.fromJson(stepNode);
+					plan.addStep(step);
+				}
+			}
+		}
+		
+		return plan;
+	}
 
 }
