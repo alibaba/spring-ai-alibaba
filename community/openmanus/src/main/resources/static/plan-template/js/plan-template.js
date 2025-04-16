@@ -23,8 +23,8 @@ let runPlanBtn;
 let modifyPlanBtn;
 let clearBtn;
 let apiUrlElement;
-
-// 移除了执行确认对话框相关的变量
+let chatArea;
+let clearChatBtn;
 
 // 轮询相关变量
 let pollTimer = null;
@@ -44,6 +44,8 @@ function init() {
     modifyPlanBtn = document.getElementById('modifyPlanBtn');
     clearBtn = document.getElementById('clearBtn');
     apiUrlElement = document.querySelector('.api-url');
+    chatArea = document.querySelector('.simple-chat-area .dialog-round-container');
+    clearChatBtn = document.getElementById('clearChatBtn');
     
     // 绑定按钮事件
     generatePlanBtn.addEventListener('click', handleGeneratePlan);
@@ -51,10 +53,25 @@ function init() {
     modifyPlanBtn.addEventListener('click', handleModifyPlan);
     clearBtn.addEventListener('click', handleClearInput);
     
+    if (clearChatBtn) {
+        clearChatBtn.addEventListener('click', clearChatArea);
+    }
+    
     // 绑定版本控制按钮事件
     document.getElementById('rollbackJsonBtn').addEventListener('click', handleRollbackJson);
     document.getElementById('restoreJsonBtn').addEventListener('click', handleRestoreJson);
     document.getElementById('compareJsonBtn').addEventListener('click', handleCompareJson);
+    
+    // 初始化聊天处理器和右侧边栏
+    if (typeof ChatHandler !== 'undefined') {
+        ChatHandler.init();
+        console.log('聊天处理器初始化完成');
+    }
+    
+    if (typeof RightSidebar !== 'undefined') {
+        RightSidebar.init();
+        console.log('右侧边栏初始化完成');
+    }
     
     // 初始状态
     updateUIState();
@@ -63,6 +80,22 @@ function init() {
     loadPlanTemplateList();
     
     console.log('计划模板页面初始化完成');
+}
+
+/**
+ * 清空聊天区域
+ */
+function clearChatArea() {
+    if (chatArea) {
+        // 保留对话容器，但清空内容
+        chatArea.innerHTML = '';
+        
+        // 显示空聊天提示
+        const emptyMessage = document.querySelector('.empty-chat-message');
+        if (emptyMessage) {
+            emptyMessage.style.display = 'block';
+        }
+    }
 }
 
 /**
@@ -268,8 +301,7 @@ function stopPolling() {
  * 轮询计划状态
  */
 async function pollPlanStatus() {
-    // 使用currentPlanId而不是currentPlanTemplateId来轮询计划状态
-    // 只有在执行计划后，currentPlanId才会被设置
+    // 使用currentPlanId来轮询计划状态
     if (!currentPlanId || isPolling) {
         return;
     }
@@ -297,6 +329,11 @@ async function pollPlanStatus() {
             isGenerating = false;
             updateUIState();
             stopPolling();
+            
+            // 发送计划完成事件
+            if (typeof PlanUIEvents !== 'undefined') {
+                PlanUIEvents.EventSystem.emit('plan-completed', planData);
+            }
         }
     } catch (error) {
         console.error('轮询计划状态出错:', error);
@@ -326,12 +363,26 @@ function handlePlanData(planData) {
     // 更新UI状态
     updateUIState();
     
-    // 如果有新的智能体执行记录，且sequence size增加了，更新UI
+    // 如果有新的智能体执行记录，且sequence size增加了，更新UI并发送事件
     if (planData.agentExecutionSequence) {
         const currentSize = planData.agentExecutionSequence.length;
         if (currentSize > lastSequenceSize) {
-            // 只处理新增的记录
+            // 发出事件通知
+            if (typeof PlanUIEvents !== 'undefined') {
+                // 只处理新增的记录
+                const newRecords = planData.agentExecutionSequence.slice(lastSequenceSize);
+                newRecords.forEach(record => {
+                    PlanUIEvents.EventSystem.emit('agent-execution', record);
+                });
+            }
+            
+            // 更新最后序列大小
             lastSequenceSize = currentSize;
+            
+            // 发送更新事件
+            if (typeof PlanUIEvents !== 'undefined') {
+                PlanUIEvents.EventSystem.emit('plan-update', planData);
+            }
         }
     }
     
@@ -415,8 +466,61 @@ async function executePlan() {
         // 更新当前计划ID
         currentPlanId = response.planId;
         
-        // 提示用户
-        alert('计划执行请求已提交，可以在右侧边栏查看执行进度');
+        // 检查并初始化聊天区域
+        if (!chatArea) {
+            chatArea = document.querySelector('.simple-chat-area .dialog-round-container');
+        }
+        
+        // 如果聊天区域不存在，则创建一个
+        if (!chatArea) {
+            const simpleChatArea = document.querySelector('.simple-chat-area');
+            if (simpleChatArea) {
+                chatArea = document.createElement('div');
+                chatArea.className = 'dialog-round-container';
+                chatArea.dataset.dialogRoundId = 'auto-created';
+                chatArea.dataset.planId = currentPlanId;
+                simpleChatArea.appendChild(chatArea);
+                console.log('创建了新的对话容器');
+            } else {
+                console.error('无法找到 .simple-chat-area 元素');
+                alert('UI元素初始化失败，请刷新页面重试');
+                return; // 中止执行
+            }
+        }
+        
+        // 隐藏空聊天提示
+        const emptyMessage = document.querySelector('.empty-chat-message');
+        if (emptyMessage) {
+            emptyMessage.style.display = 'none';
+        }
+        
+        // 添加用户输入到聊天区域
+        const userMessage = document.createElement('div');
+        userMessage.className = 'message user-message';
+        userMessage.innerHTML = `<p>执行计划: ${planPromptInput.value || '计划执行'}</p>`;
+        chatArea.appendChild(userMessage);
+        
+        // 创建AI消息容器
+        const aiStepsContainer = document.createElement('div');
+        aiStepsContainer.className = 'message ai-message ai-steps-container';
+        chatArea.appendChild(aiStepsContainer);
+        
+        // 通知右侧边栏和聊天处理器
+        if (typeof PlanUIEvents !== 'undefined') {
+            // 发出对话轮次开始事件
+            PlanUIEvents.EventSystem.emit(PlanUIEvents.UI_EVENTS.DIALOG_ROUND_START, {
+                planId: currentPlanId,
+                query: planPromptInput.value || '计划执行'
+            });
+            
+            // 模拟发送plan-update事件
+            if (currentPlanData) {
+                PlanUIEvents.EventSystem.emit('plan-update', currentPlanData);
+            }
+        }
+        
+        // 静默方式提示用户（不使用alert，避免打断用户体验）
+        console.log('计划执行请求已提交，可以在右侧边栏查看执行进度');
         
         // 更新API URL
         if (currentPlanTemplateId) {
@@ -507,8 +611,6 @@ function handleClearInput() {
     currentPlanData = null;
     updateUIState();
 }
-
-// 已删除不再使用的对话框相关函数
 
 /**
  * 更新UI状态

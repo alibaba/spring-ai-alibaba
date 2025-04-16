@@ -239,13 +239,19 @@ const ChatHandler = (() => {
      * 滚动到底部
      */
     const scrollToBottom = () => {
-        chatArea.scrollTop = chatArea.scrollHeight;
+        if (chatArea && chatArea.scrollHeight !== undefined) {
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
     };
     
     // 返回公开方法
     return {
         init,
-        handleUserMessage,  // 确保导出 handleUserMessage
-        // 其他需要公开的方法...
+        handleUserMessage,
+        handlePlanUpdate,
+        handlePlanComplete,
+        handleDialogRoundStart,
+        startNewDialogRound,
+        findDialogRoundContainerByPlanId
     };
 })();
