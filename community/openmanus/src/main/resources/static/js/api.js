@@ -80,17 +80,17 @@ const ManusAPI = (() => {
     
     /**
      * 执行已生成的计划
-     * @param {string} planId - 计划ID
+     * @param {string} planTemplateId - 计划模板ID
      * @returns {Promise<Object>} - 包含执行状态的响应
      */
-    const executePlan = async (planId) => {
+    const executePlan = async (planTemplateId) => {
         try {
-            const response = await fetch(`${PLAN_TEMPLATE_URL}/execute`, {
+            const response = await fetch(`${PLAN_TEMPLATE_URL}/executePlanByTemplateId`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ planId })
+                body: JSON.stringify({ planTemplateId: planTemplateId })
             });
 
             if (!response.ok) {
