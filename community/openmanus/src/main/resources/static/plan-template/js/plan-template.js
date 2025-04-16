@@ -556,8 +556,8 @@ function closeExecutionDialog() {
 function updateUIState() {
     // 更新按钮状态
     generatePlanBtn.disabled = isGenerating;
-    runPlanBtn.disabled = !currentPlanId || isGenerating || isExecuting;
-    modifyPlanBtn.disabled = isGenerating || isExecuting || !currentPlanId;
+    runPlanBtn.disabled = !currentPlanTemplateId || isGenerating || isExecuting;
+    modifyPlanBtn.disabled = isGenerating || isExecuting || !currentPlanTemplateId;
     
     // 更新按钮文本
     if (isGenerating) {

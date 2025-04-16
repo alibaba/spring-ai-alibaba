@@ -65,5 +65,20 @@ public class PlanningCoordinator {
 
 		return context;
 	}
+	
+	/**
+	 * 执行已有计划（跳过创建计划步骤）
+	 * @param context 包含现有计划的执行上下文
+	 * @return 执行总结
+	 */
+	public ExecutionContext executeExistingPlan(ExecutionContext context) {
+		// 1. 执行计划
+		planExecutor.executeAllSteps(context);
+
+		// 2. 生成总结
+		planFinalizer.generateSummary(context);
+
+		return context;
+	}
 
 }
