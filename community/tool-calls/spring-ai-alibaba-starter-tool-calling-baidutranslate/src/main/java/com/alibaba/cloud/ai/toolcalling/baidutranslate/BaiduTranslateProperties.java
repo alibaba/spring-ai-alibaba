@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.toolcalling.baidutranslate;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
+import jakarta.annotation.PostConstruct;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import static com.alibaba.cloud.ai.toolcalling.baidutranslate.BaiduTranslateProperties.BaiDuTranslatePrefix;
@@ -34,6 +35,11 @@ public class BaiduTranslateProperties extends CommonToolCallProperties {
 
 	public BaiduTranslateProperties() {
 		super(TRANSLATE_HOST_URL);
+	}
+
+	@PostConstruct
+	private void initProperties() {
+		this.setPropertiesFromEnv(null, "BAIDU_TRANSLATE_SECRET_KEY", "BAIDU_TRANSLATE_APP_ID", null);
 	}
 
 }
