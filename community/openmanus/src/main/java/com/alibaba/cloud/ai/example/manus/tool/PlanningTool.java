@@ -114,7 +114,7 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 
 	public ToolExecuteResult run(String toolInput) {
 		try {
-			log.info("PlanningTool toolInput:" + toolInput);
+			log.info("PlanningTool toolInput:{}", toolInput);
 			Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 			});
 
@@ -125,6 +125,10 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 			String planId = null;
 			if (toolInputMap.get("plan_id") != null) {
 				planId = (String) toolInputMap.get("plan_id");
+				if (!planId.startsWith("plan_")) {
+					planId = "plan_" + planId;
+					log.info("Adding 'plan_' prefix to plan ID: {}", planId);
+				}
 			}
 			String title = null;
 			if (toolInputMap.get("title") != null) {
