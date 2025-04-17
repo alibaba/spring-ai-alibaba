@@ -409,13 +409,21 @@
     right: 10px;
     top: 50%;
     transform: translateY(-50%);
+    z-index: 10; /* 确保按钮显示在上层 */
 }
 
-/* 当鼠标悬停在任务项上时显示操作按钮 */
+/* 当鼠标悬停在任务项上时显示操作按钮 - 临时禁用 */
+
 .task-item:hover .task-actions {
     display: flex;
 }
 
+/* 强制显示操作按钮，便于调试 */
+/* 注释掉悬停效果以便检查样式
+.task-actions {
+    display: flex !important;
+}
+*/
 /* 删除任务按钮样式 */
 .delete-task-btn {
     background-color: #f8f8f8;
