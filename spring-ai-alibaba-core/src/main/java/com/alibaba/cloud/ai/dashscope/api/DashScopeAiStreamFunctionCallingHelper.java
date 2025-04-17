@@ -168,7 +168,7 @@ public class DashScopeAiStreamFunctionCallingHelper {
 	public boolean isStreamingToolFunctionCall(ChatCompletionChunk chatCompletion) {
 
 		if (chatCompletion == null || chatCompletion.output() == null
-			|| CollectionUtils.isEmpty(chatCompletion.output().choices())) {
+				|| CollectionUtils.isEmpty(chatCompletion.output().choices())) {
 			return false;
 		}
 
