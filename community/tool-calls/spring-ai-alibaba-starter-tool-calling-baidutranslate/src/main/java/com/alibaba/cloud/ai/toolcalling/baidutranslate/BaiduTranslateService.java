@@ -53,11 +53,12 @@ public class BaiduTranslateService implements Function<BaiduTranslateService.Req
 	public BaiduTranslateService(BaiduTranslateProperties properties, RestClientTool restClientTool,
 			JsonParseTool jsonParseTool) {
 
-		assert StringUtils.hasText(properties.getAppId());
-		assert StringUtils.hasText(properties.getSecretKey());
 		this.restClientTool = restClientTool;
 		this.jsonParseTool = jsonParseTool;
 		this.properties = properties;
+		if (!StringUtils.hasText(properties.getAppId()) || !StringUtils.hasText(properties.getSecretKey())) {
+			throw new RuntimeException("AppId and SecretKey is empty. Please check your configuration.");
+		}
 	}
 
 	@Override
