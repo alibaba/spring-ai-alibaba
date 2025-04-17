@@ -19,16 +19,19 @@ import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Objects;
 
 /**
  * @author Carbon
+ * @author vlsmb
  */
-public class MapTools {
+public final class BaiDuMapTools {
 
 	private final BaiDuMapProperties baiDuMapProperties;
 
@@ -36,7 +39,8 @@ public class MapTools {
 
 	private final JsonParseTool jsonParseTool;
 
-	public MapTools(BaiDuMapProperties baiDuMapProperties, WebClientTool webClientTool, JsonParseTool jsonParseTool) {
+	public BaiDuMapTools(BaiDuMapProperties baiDuMapProperties, WebClientTool webClientTool,
+			JsonParseTool jsonParseTool) {
 		this.baiDuMapProperties = baiDuMapProperties;
 		this.webClientTool = webClientTool;
 		this.jsonParseTool = jsonParseTool;
@@ -46,25 +50,29 @@ public class MapTools {
 		}
 	}
 
+	// Used to retrieve specific property values from JSON.
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	public record District(String code, String name, Integer level) {
+	public record District(String code, String name, Integer level, List<District> districts) {
 	}
 
+	// Used to retrieve specific property values from JSON.
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Region(Integer status, List<District> districts) {
 	}
 
 	/**
-	 * Geographic/Inverse Geocoding
-	 * @param address
+	 * Query administrative division information This method can be used to obtain
+	 * administrative division codes
+	 * @param regionName the name of a city/province/district
+	 * @param depth depth of child information
 	 * @return https://lbs.baidu.com/faq/api?title=webapi/district-search/base
 	 */
-	public Region getAddressCityCode(String address) {
+	public Region getRegionInformation(String regionName, Integer depth) {
 		String path = "/api_region_search/v1/";
 		MultiValueMap<String, String> params = CommonToolCallUtils.<String, String>multiValueMapBuilder()
 			.add("ak", baiDuMapProperties.getApiKey())
-			.add("keyword", address)
-			.add("sub_admin", "0")
+			.add("keyword", regionName)
+			.add("sub_admin", depth.toString())
 			.add("extensions_code", "1")
 			.build();
 		try {
@@ -78,9 +86,9 @@ public class MapTools {
 	}
 
 	/**
-	 * Weather Information
-	 * @param cityCode
-	 * @return https://lbs.baidu.com/faq/api?title=webapi/weather/base
+	 * Get Weather Information
+	 * @param cityCode the code of a city/province/district
+	 * @return https://lbsyun.baidu.com/faq/api?title=webapi/weather/base
 	 */
 	public String getWeather(String cityCode) {
 		String path = "/weather/v1/";
@@ -89,7 +97,6 @@ public class MapTools {
 			.add("district_id", cityCode)
 			.add("data_type", "all")
 			.build();
-
 		try {
 			return webClientTool.get(path, params).block();
 		}
@@ -99,24 +106,29 @@ public class MapTools {
 	}
 
 	/**
-	 * Public Facility Information
-	 * @param address
-	 * @param facilityType
+	 * Get detailed information about a certain location
+	 * @param region the code/name of a city/province
+	 * @param queryPlace location of inquiry
+	 * @param isDetail when the value is true, returns detailed geographical coordinates;
+	 * when false, returns only the administrative region.
 	 * @return https://lbsyun.baidu.com/faq/api?title=webapi/guide/webservice-placeapi/district
 	 */
-	public String getFacilityInformation(String address, String facilityType) {
+	public String getAddressInformation(String region, String queryPlace, boolean isDetail) {
 		String path = "/place/v2/search/";
 		MultiValueMap<String, String> params = CommonToolCallUtils.<String, String>multiValueMapBuilder()
 			.add("ak", baiDuMapProperties.getApiKey())
-			.add("query", facilityType)
-			.add("region", address)
+			.add("query", queryPlace)
+			.add("region", StringUtils.hasText(region) ? region : "china") // region
+																			// default
+																			// value
 			.add("output", "json")
+			.add("scope", isDetail ? "2" : "1") // get detail information
 			.build();
 		try {
 			return webClientTool.get(path, params).block();
 		}
 		catch (Exception e) {
-			throw new RuntimeException("Failed to get facility information", e);
+			throw new RuntimeException("Failed to get information", e);
 		}
 	}
 
