@@ -65,8 +65,8 @@
                 <li class="task-item selected">
                     <div class="task-icon">[🛡️]</div>
                     <div class="task-details">
-                        <div class="task-title">manus核心技术讲解与开源...</div>
-                        <div class="task-preview">我已经成功将Manus AI指南网站部署到...</div>
+                        <div class="task-title">JTaskPilot 核心技术讲解与开源...</div>
+                        <div class="task-preview">我已经成功将JTaskPilot AI指南网站部署到...</div>
                     </div>
                     <div class="task-time">2天前</div>
                 </li>
@@ -146,7 +146,13 @@
 
                 <div class="plan-actions">
                     <div class="api-call-link">
-                        调用链接: <span class="api-url">http://ip:port/executePlan/id</span>
+                        调用链接: <span class="api-url">http://your-domain/api/plan-template/execute/<span class="dynamic-id">template_xxxx</span></span>
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                            <span>返回结果: {"planId": "plan_xxxx", "status": "processing", "message": "计划执行请求已提交，正在处理中"}</span>
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                            <span>状态监控: http://your-domain/api/executor/details/<span class="dynamic-plan-id">plan_xxxx</span></span>
+                        </div>
                     </div>
                     <button class="secondary-btn" id="modifyPlanBtn">
                         <span class="icon-save"></span> 保存计划
@@ -169,13 +175,13 @@
                     <div class="dialog-round-container" data-dialog-round-id="demo-round" data-plan-id="demo-plan">
                         <!-- 示例用户消息 -->
                         <div class="message user-message">
-                            <p>请帮我分析这段数据并生成可视化图表</p>
+                            <p>请帮我分析这段数据并生成可视化图表(DEMO)</p>
                         </div>
                         
                         <!-- 示例AI回复消息 -->
                         <div class="message ai-message ai-steps-container">
                             <div class="ai-header">
-                                <span class="ai-logo">M</span> Manus AI
+                                <span class="ai-logo">M</span> JTaskPilot AI
                             </div>
                             
                             <div class="ai-section">
