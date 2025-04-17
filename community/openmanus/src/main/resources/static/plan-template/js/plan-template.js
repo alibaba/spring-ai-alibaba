@@ -330,9 +330,45 @@ async function pollPlanStatus() {
             updateUIState();
             stopPolling();
             
-            // 发送计划完成事件
-            if (typeof PlanUIEvents !== 'undefined') {
-                PlanUIEvents.EventSystem.emit('plan-completed', planData);
+            // 在计划完成时，再次获取完整数据，确保所有思考步骤都被加载
+            try {
+                console.log("计划已完成，刷新最终数据...");
+                // 最后一次获取完整数据
+                const finalPlanData = await ManusAPI.getDetails(currentPlanId);
+                if (finalPlanData) {
+                    // 更新UI，确保最终数据正确显示
+                    handlePlanData(finalPlanData);
+                    // 触发计划完成事件
+                    if (typeof PlanUIEvents !== 'undefined') {
+                        console.log("发送计划完成事件，带有完整数据");
+                        PlanUIEvents.EventSystem.emit('plan-completed', finalPlanData);
+                    }
+                } else {
+                    // 如果无法获取最终数据，仍使用当前数据
+                    console.log("无法获取最终数据，使用当前数据");
+                    if (typeof PlanUIEvents !== 'undefined') {
+                        PlanUIEvents.EventSystem.emit('plan-completed', planData);
+                    }
+                }
+            } catch (error) {
+                console.error("获取最终数据失败:", error);
+                // 出错时仍使用当前数据
+                if (typeof PlanUIEvents !== 'undefined') {
+                    PlanUIEvents.EventSystem.emit('plan-completed', planData);
+                }
+            }
+            
+            // 计划完成后，删除后端执行详情记录释放资源
+            try {
+                // 延迟时间从5秒增加到10秒，确保前端有足够时间处理所有数据
+                setTimeout(async () => {
+                    await fetch(`${ManusAPI.BASE_URL}/details/${currentPlanId}`, {
+                        method: 'DELETE'
+                    });
+                    console.log(`已删除已完成的计划执行记录: ${currentPlanId}`);
+                }, 10000); // 10秒后删除
+            } catch (error) {
+                console.log(`删除计划执行记录失败: ${error.message}`);
             }
         }
     } catch (error) {

@@ -163,12 +163,16 @@ const ChatHandler = (() => {
                         // 保存此步骤的最后执行动作
                         lastStepActions[index] = {
                             actionDescription: latestThinkAct.actionDescription,
-                            toolParameters: latestThinkAct.toolParameters
+                            toolParameters: latestThinkAct.toolParameters,
+                            thinkInput: latestThinkAct.thinkInput || '',
+                            thinkOutput: latestThinkAct.thinkOutput || ''
                         };
-                    }else{
+                    } else {
                         lastStepActions[index] = {
-                            actionDescription: latestThinkAct.thinkOutput,
-                            toolParameters: "无工具"
+                            actionDescription: latestThinkAct.thinkOutput || '执行完成',
+                            toolParameters: "无工具",
+                            thinkInput: latestThinkAct.thinkInput || '',
+                            thinkOutput: latestThinkAct.thinkOutput || ''
                         };
                     }
                 }
@@ -204,6 +208,16 @@ const ChatHandler = (() => {
                     <div class="tool-params">
                         <span class="icon">⚙️</span>
                         参数: ${escapeHtml(lastAction.toolParameters)}
+                    </div>
+                    <div class="think-details" style="margin-top: 8px; border-top: 1px dashed #e8eaed; padding-top: 6px;">
+                        <div class="think-input" style="font-size: 12px; color: #5f6368; margin-bottom: 4px;">
+                            <span style="font-weight: bold;">思考输入:</span> 
+                            <span>${escapeHtml(lastAction.thinkInput || '')}</span>
+                        </div>
+                        <div class="think-output" style="font-size: 12px; color: #5f6368;">
+                            <span style="font-weight: bold;">思考输出:</span> 
+                            <span>${escapeHtml(lastAction.thinkOutput || '')}</span>
+                        </div>
                     </div>
                 `;
                 stepDiv.appendChild(actionInfoDiv);

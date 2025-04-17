@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
-@RequestMapping("/api/manus")
+@RequestMapping("/api/executor")
 public class ManusController {
 
 	private static final Logger logger = LoggerFactory.getLogger(ManusController.class);

@@ -3,7 +3,7 @@
  */
 const ManusAPI = (() => {
     // API 基础URL
-    const BASE_URL = '/api/manus';
+    const BASE_URL = '/api/executor';
     const PLAN_TEMPLATE_URL = '/api/plan-template';
 
     /**
@@ -81,17 +81,26 @@ const ManusAPI = (() => {
     /**
      * 执行已生成的计划
      * @param {string} planTemplateId - 计划模板ID
+     * @param {boolean} [useGetMethod=false] - 是否使用GET方法，默认为false使用POST方法
      * @returns {Promise<Object>} - 包含执行状态的响应
      */
-    const executePlan = async (planTemplateId) => {
+    const executePlan = async (planTemplateId, useGetMethod = false) => {
         try {
-            const response = await fetch(`${PLAN_TEMPLATE_URL}/executePlanByTemplateId`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ planTemplateId: planTemplateId })
-            });
+            let response;
+            
+            if (useGetMethod) {
+                // 使用GET方法
+                response = await fetch(`${PLAN_TEMPLATE_URL}/execute/${planTemplateId}`);
+            } else {
+                // 使用POST方法（默认）
+                response = await fetch(`${PLAN_TEMPLATE_URL}/executePlanByTemplateId`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ planTemplateId: planTemplateId })
+                });
+            }
 
             if (!response.ok) {
                 throw new Error(`执行计划失败: ${response.status}`);
