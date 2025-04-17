@@ -13,29 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.toolcalling.baidusearch;
+package com.alibaba.cloud.ai.toolcalling.common;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Description;
 
 /**
- * @author KrakenZJC
- **/
-
+ * @author vlsmb
+ */
 @Configuration
-@ConditionalOnClass(BaiduSearchService.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.baidusearch", name = "enabled", havingValue = "true")
-public class BaiduSearchAutoConfiguration {
+public class CommonToolCallAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean
-	@Description("Use baidu search engine to query for the latest news.")
-	public BaiduSearchService baiduSearchFunction() {
-		return new BaiduSearchService();
+	@ConditionalOnMissingBean(JsonParseTool.class)
+	public JsonParseTool jsonParseService() {
+		return new JsonParseTool();
 	}
 
 }
