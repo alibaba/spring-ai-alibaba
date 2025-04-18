@@ -28,6 +28,7 @@ import org.springframework.context.annotation.Description;
 
 /**
  * @author Carbon
+ * @author vlsmb
  */
 
 @Configuration
@@ -43,12 +44,22 @@ public class BaiDuMapAutoConfiguration {
 			+ "or Get detail information of a address and facility query with baidu map or "
 			+ "Get address information of a place with baidu map or "
 			+ "Get detailed information about a specific place with baidu map")
-	public MapSearchService baiDuMapGetAddressInformation(BaiDuMapProperties baiDuMapProperties,
-			JsonParseTool jsonParseTool) {
+	public BaiduMapSearchInfoService baiduMapGetAddressInformation(BaiDuMapTools baiDuMapTools) {
+		logger.debug("baiduMapSearchInfoService is enabled.");
+		return new BaiduMapSearchInfoService(baiDuMapTools);
+	}
 
-		logger.debug("baiDuMapGetAddressInformationFunction is enabled.");
-		return new MapSearchService(baiDuMapProperties, new WebClientTool(jsonParseTool, baiDuMapProperties),
-				jsonParseTool);
+	@Bean
+	@Description("Query the weather conditions of a specified location")
+	public BaiDuMapWeatherService baiDuMapGetAddressWeatherInformation(JsonParseTool jsonParseTool,
+			BaiDuMapTools baiDuMapTools) {
+		logger.debug("baiDuMapWeatherService is enabled.");
+		return new BaiDuMapWeatherService(jsonParseTool, baiDuMapTools);
+	}
+
+	@Bean
+	public BaiDuMapTools baiDuMapTools(BaiDuMapProperties properties, JsonParseTool jsonParseTool) {
+		return new BaiDuMapTools(properties, new WebClientTool(jsonParseTool, properties), jsonParseTool);
 	}
 
 }
