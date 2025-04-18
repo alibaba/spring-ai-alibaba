@@ -60,6 +60,7 @@ spring:
     alibaba:
       mcp:
         nacos:
+          enabled: true
           server-addr: <nacos-sever-addr>
           service-namespace: <nacos-namespace>  
           service-group: <nacos-group>
