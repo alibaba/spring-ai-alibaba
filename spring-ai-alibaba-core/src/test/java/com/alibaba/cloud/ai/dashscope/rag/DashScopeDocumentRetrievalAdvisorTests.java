@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Arrays;
 
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.RETRIEVED_DOCUMENTS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -128,7 +129,7 @@ class DashScopeDocumentRetrievalAdvisorTests {
 		Map<String, Object> responseAdviseContext = new HashMap<>();
 		Map<String, Document> documentMap = new HashMap<>();
 		documentMap.put("[1]", documents.get(0));
-		responseAdviseContext.put(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS, documentMap);
+		responseAdviseContext.put(RETRIEVED_DOCUMENTS, documentMap);
 
 		// Create question_answer_context as a Map
 		Map<String, String> qaContext = new HashMap<>();
@@ -143,7 +144,7 @@ class DashScopeDocumentRetrievalAdvisorTests {
 
 		// Verify response
 		assertThat(response).isNotNull();
-		assertThat(response.adviseContext()).containsKey(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS);
+		assertThat(response.adviseContext()).containsKey(RETRIEVED_DOCUMENTS);
 		assertThat(response.adviseContext()).containsKey("question_answer_context");
 	}
 
@@ -175,15 +176,15 @@ class DashScopeDocumentRetrievalAdvisorTests {
         // Create adviseContext with empty document map
         Map<String, Object> responseAdviseContext = new HashMap<>();
         Map<String, Document> documentMap = new HashMap<>();
-        responseAdviseContext.put(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS, documentMap);
+        responseAdviseContext.put(RETRIEVED_DOCUMENTS, documentMap);
 
         AdvisedResponse response = advisor.aroundCall(request,
                 chain -> new AdvisedResponse(chatResponse, responseAdviseContext));
 
         // Verify response
         assertThat(response).isNotNull();
-        assertThat(response.adviseContext()).containsKey(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS);
-        assertThat((Map<?, ?>) response.adviseContext().get(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS))
+        assertThat(response.adviseContext()).containsKey(RETRIEVED_DOCUMENTS);
+        assertThat((Map<?, ?>) response.adviseContext().get(RETRIEVED_DOCUMENTS))
                 .isEmpty();
     }
 
@@ -243,7 +244,7 @@ class DashScopeDocumentRetrievalAdvisorTests {
 		// Create adviseContext with retrieved documents
 		Map<String, Object> adviseContext = new HashMap<>();
 		Map<String, Document> documentMap = new HashMap<>();
-		adviseContext.put(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS, documentMap);
+		adviseContext.put(RETRIEVED_DOCUMENTS, documentMap);
 
 		AdvisedResponse response = advisor.aroundCall(request,
 				chain -> new AdvisedResponse(chatResponse, adviseContext));
@@ -251,7 +252,7 @@ class DashScopeDocumentRetrievalAdvisorTests {
 		// Then
 		assertThat(response).isNotNull();
 		assertThat(response.response()).isNotNull();
-		assertThat(response.adviseContext()).containsKey(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS);
+		assertThat(response.adviseContext()).containsKey(RETRIEVED_DOCUMENTS);
 	}
 
 	@Test
@@ -276,7 +277,7 @@ class DashScopeDocumentRetrievalAdvisorTests {
 		// Create adviseContext with retrieved documents
 		Map<String, Object> adviseContext = new HashMap<>();
 		Map<String, Document> documentMap = new HashMap<>();
-		adviseContext.put(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS, documentMap);
+		adviseContext.put(RETRIEVED_DOCUMENTS, documentMap);
 
 		AdvisedResponse response = advisor.aroundCall(request,
 				chain -> new AdvisedResponse(chatResponse, adviseContext));
@@ -284,9 +285,8 @@ class DashScopeDocumentRetrievalAdvisorTests {
 		// Then
 		assertThat(response).isNotNull();
 		assertThat(response.response()).isNotNull();
-		assertThat(response.adviseContext()).containsKey(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS);
-		assertThat((Map<?, ?>) response.adviseContext().get(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS))
-			.isEmpty();
+		assertThat(response.adviseContext()).containsKey(RETRIEVED_DOCUMENTS);
+		assertThat((Map<?, ?>) response.adviseContext().get(RETRIEVED_DOCUMENTS)).isEmpty();
 	}
 
 	@Test
@@ -315,7 +315,7 @@ class DashScopeDocumentRetrievalAdvisorTests {
 		for (int i = 0; i < documents.size(); i++) {
 			documentMap.put(String.format("[%d]", i + 1), documents.get(i));
 		}
-		adviseContext.put(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS, documentMap);
+		adviseContext.put(RETRIEVED_DOCUMENTS, documentMap);
 
 		AdvisedResponse response = advisor.aroundCall(request,
 				chain -> new AdvisedResponse(chatResponse, adviseContext));
@@ -323,7 +323,7 @@ class DashScopeDocumentRetrievalAdvisorTests {
 		// Then
 		assertThat(response).isNotNull();
 		assertThat(response.response()).isNotNull();
-		assertThat(response.adviseContext()).containsKey(DashScopeDocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS);
+		assertThat(response.adviseContext()).containsKey(RETRIEVED_DOCUMENTS);
 	}
 
 }

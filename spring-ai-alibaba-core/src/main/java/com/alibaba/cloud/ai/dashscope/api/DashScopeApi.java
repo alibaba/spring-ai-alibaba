@@ -58,6 +58,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_PARSER_NAME;
 
 /**
  * @author nuocheng.lxm
@@ -74,8 +75,6 @@ public class DashScopeApi {
 	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.EMBEDDING_V2.getValue();
 
 	public static final String DEFAULT_EMBEDDING_TEXT_TYPE = EmbeddingTextType.DOCUMENT.getValue();
-
-	public static final String DEFAULT_PARSER_NAME = "DASHSCOPE_DOCMIND";
 
 	private final RestClient restClient;
 
