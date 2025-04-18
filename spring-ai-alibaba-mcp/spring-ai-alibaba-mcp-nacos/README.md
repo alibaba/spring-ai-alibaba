@@ -61,8 +61,8 @@ spring:
       mcp:
         nacos:
           server-addr: <nacos-sever-addr>
-          namespace: <nacos-namespace>  
-          group: <nacos-group>
+          service-namespace: <nacos-namespace>  
+          service-group: <nacos-group>
 ```
 The tools information and server information will be published to ```nacos-default-mcp``` namespace in nacos,
 and the service of mcp server will be registered to ```<nacos-group>``` group of ```<nacos-namespace>``` namespace which set in application.yaml.
