@@ -19,15 +19,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletion;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput.Choice;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionChunk;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.TokenUsage;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.ChatCompletionFunction;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.Role;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.ToolCall;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput.Choice;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.TokenUsage;
 
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -167,7 +167,8 @@ public class DashScopeAiStreamFunctionCallingHelper {
 	 */
 	public boolean isStreamingToolFunctionCall(ChatCompletionChunk chatCompletion) {
 
-		if (chatCompletion == null || CollectionUtils.isEmpty(chatCompletion.output().choices())) {
+		if (chatCompletion == null || chatCompletion.output() == null
+				|| CollectionUtils.isEmpty(chatCompletion.output().choices())) {
 			return false;
 		}
 
