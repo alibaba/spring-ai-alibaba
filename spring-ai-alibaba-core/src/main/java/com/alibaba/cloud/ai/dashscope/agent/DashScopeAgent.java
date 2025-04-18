@@ -40,6 +40,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.*;
+
 /**
  * Title Dashscope low level agent.<br>
  * Description Dashscope low level agent.<br>
@@ -52,11 +54,7 @@ public final class DashScopeAgent extends Agent {
 
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeAgent.class);
 
-	public static final String REQUEST_ID = "request_id";
 
-	public static final String USAGE = "usage";
-
-	public static final String OUTPUT = "output";
 
 	private final DashScopeAgentOptions options;
 
