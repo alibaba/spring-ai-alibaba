@@ -41,8 +41,6 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.MAX_TR
  */
 public class DashScopeDocumentCloudReader implements DocumentReader {
 
-
-
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeDocumentCloudReader.class);
 
 	private final DashScopeApi dashScopeApi;
