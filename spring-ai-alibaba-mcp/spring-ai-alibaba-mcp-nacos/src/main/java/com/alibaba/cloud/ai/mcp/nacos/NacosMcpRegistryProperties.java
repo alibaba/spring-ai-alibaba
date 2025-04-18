@@ -88,6 +88,16 @@ public class NacosMcpRegistryProperties {
 
 	String ip;
 
+	String contextPath;
+
+	public String getContextPath() {
+		return contextPath;
+	}
+
+	public void setContextPath(String contextPath) {
+		this.contextPath = contextPath;
+	}
+
 	public String getGroup() {
 		return group;
 	}
@@ -170,6 +180,12 @@ public class NacosMcpRegistryProperties {
 		}
 		if (StringUtils.isBlank(this.namespace)) {
 			this.namespace = "";
+		}
+		if (StringUtils.isBlank(this.contextPath)) {
+			String path = environment.getProperty("server.servlet.context-path");
+			if (!StringUtils.isBlank(path)) {
+				this.contextPath = path;
+			}
 		}
 	}
 
