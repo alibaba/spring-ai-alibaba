@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.toolcalling.baidumap;
 
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
-import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
