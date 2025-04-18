@@ -297,6 +297,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
     return this.proxyToolCalls;
   }
 
+  @Override
   public void setProxyToolCalls(Boolean proxyToolCalls) {
     this.proxyToolCalls = proxyToolCalls;
   }
