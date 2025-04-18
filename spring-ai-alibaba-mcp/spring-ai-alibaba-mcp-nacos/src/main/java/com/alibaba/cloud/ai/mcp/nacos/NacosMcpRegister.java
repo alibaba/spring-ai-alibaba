@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.mcp.nacos;
 import com.alibaba.cloud.ai.mcp.nacos.model.McpServerInfo;
 import com.alibaba.cloud.ai.mcp.nacos.model.RemoteServerConfigInfo;
 import com.alibaba.cloud.ai.mcp.nacos.model.ServiceRefInfo;
+import com.alibaba.cloud.ai.mcp.nacos.utils.JsonUtils;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.config.listener.Listener;
@@ -27,9 +28,6 @@ import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.utils.StringUtils;
 import com.alibaba.nacos.client.config.NacosConfigService;
 import com.alibaba.nacos.client.naming.NacosNamingService;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -41,12 +39,14 @@ import org.springframework.context.ApplicationListener;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author Sunrisea
@@ -75,8 +75,6 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	private ConfigService configService;
 
-	private ObjectMapper objectMapper;
-
 	private ScheduledExecutorService executorService;
 
 	public NacosMcpRegister(McpAsyncServer mcpAsyncServer, NacosMcpRegistryProperties nacosMcpProperties, String type) {
@@ -84,9 +82,6 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 		log.info("Mcp server type: " + type);
 		this.type = type;
 		this.nacosMcpProperties = nacosMcpProperties;
-		this.objectMapper = new ObjectMapper();
-		this.objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-		this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		this.executorService = new ScheduledThreadPoolExecutor(1, r -> {
 			Thread t = new Thread(r);
 			t.setName("nacos-mcp-register");
@@ -121,8 +116,8 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				List<McpSchema.Tool> toolsNeedtoRegister = this.tools.stream()
 					.map(McpServerFeatures.AsyncToolRegistration::tool)
 					.toList();
-				String toolsConfigContent = objectMapper.writerWithDefaultPrettyPrinter()
-					.writeValueAsString(new McpSchema.ListToolsResult(toolsNeedtoRegister, null));
+				String toolsConfigContent = JsonUtils
+					.serialize(new McpSchema.ListToolsResult(toolsNeedtoRegister, null));
 				boolean isPublishSuccess = this.configService.publishConfig(this.serverInfo.name() + toolsConfigSuffix,
 						toolsGroup, toolsConfigContent);
 				if (!isPublishSuccess) {
@@ -151,13 +146,13 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			}
 			else {
 				ServiceRefInfo serviceRefInfo = new ServiceRefInfo();
-				serviceRefInfo.setNamespace(nacosMcpProperties.getNamespace());
-				serviceRefInfo.setService(this.serverInfo.name());
-				serviceRefInfo.setGroup(nacosMcpProperties.getGroup());
+				serviceRefInfo.setNamespace(nacosMcpProperties.getServiceNamespace());
+				serviceRefInfo.setService(this.serverInfo.name() + "-mcp-service");
+				serviceRefInfo.setGroup(nacosMcpProperties.getServiceGroup());
 				RemoteServerConfigInfo remoteServerConfigInfo = new RemoteServerConfigInfo();
 				remoteServerConfigInfo.setServiceRef(serviceRefInfo);
 				remoteServerConfigInfo.setBackendProtocol("mcp-sse");
-				String contextPath = nacosMcpProperties.getContextPath();
+				String contextPath = nacosMcpProperties.getSseExportContextPath();
 				if (StringUtils.isBlank(contextPath)) {
 					contextPath = "";
 				}
@@ -169,7 +164,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				mcpServerInfo.setToolsDescriptionRef(this.serverInfo.name() + toolsConfigSuffix);
 			}
 			boolean isPublishSuccess = this.configService.publishConfig(this.serverInfo.name() + "-mcp-server.json",
-					configNamespace, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(mcpServerInfo));
+					configNamespace, JsonUtils.serialize(mcpServerInfo));
 			if (!isPublishSuccess) {
 				log.error("Publish mcp server info to nacos failed.");
 				throw new Exception("Publish mcp server info to nacos failed.");
@@ -187,8 +182,8 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				List<McpSchema.Tool> toolsNeedtoRegister = this.tools.stream()
 					.map(McpServerFeatures.AsyncToolRegistration::tool)
 					.toList();
-				String toolsConfigContent = objectMapper.writerWithDefaultPrettyPrinter()
-					.writeValueAsString(new McpSchema.ListToolsResult(toolsNeedtoRegister, null));
+				String toolsConfigContent = JsonUtils
+					.serialize(new McpSchema.ListToolsResult(toolsNeedtoRegister, null));
 				if (!StringUtils.equals(toolsConfigContent, toolsInNacosContent)) {
 					this.configService.publishConfig(this.serverInfo.name() + toolsConfigSuffix, toolsGroup,
 							toolsConfigContent);
@@ -202,23 +197,25 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	private void updateToolsDescription(String toolsInNacosContent) {
 		try {
-			McpSchema.ListToolsResult toolsInNacosResult = objectMapper.readValue(toolsInNacosContent,
+			McpSchema.ListToolsResult toolsInNacosResult = JsonUtils.deserialize(toolsInNacosContent,
 					McpSchema.ListToolsResult.class);
 			List<McpServerFeatures.AsyncToolRegistration> toolsRegistrationNeedToUpdate = new ArrayList<>();
 			List<McpSchema.Tool> toolsInNacos = toolsInNacosResult.tools();
-			for (McpSchema.Tool toolInNacos : toolsInNacos) {
-				for (McpServerFeatures.AsyncToolRegistration toolRegistration : this.tools) {
-					if (!toolRegistration.tool().name().equals(toolInNacos.name())) {
-						continue;
-					}
-					if (toolRegistration.tool().description() != null
-							&& !toolRegistration.tool().description().equals(toolInNacos.description())) {
-						McpSchema.Tool toolNeedtoUpdate = new McpSchema.Tool(toolRegistration.tool().name(),
-								toolInNacos.description(), toolRegistration.tool().inputSchema());
-						toolsRegistrationNeedToUpdate.add(
-								new McpServerFeatures.AsyncToolRegistration(toolNeedtoUpdate, toolRegistration.call()));
-						break;
-					}
+			Map<String, McpSchema.Tool> toolsInNacosMap = toolsInNacos.stream()
+				.collect(Collectors.toMap(McpSchema.Tool::name, tool -> tool));
+			for (McpServerFeatures.AsyncToolRegistration toolRegistration : this.tools) {
+				String name = toolRegistration.tool().name();
+				if (!toolsInNacosMap.containsKey(name)) {
+					continue;
+				}
+				McpSchema.Tool toolInNacos = toolsInNacosMap.get(name);
+				if (toolRegistration.tool().description() != null
+						&& !toolRegistration.tool().description().equals(toolInNacos.description())) {
+					McpSchema.Tool toolNeedtoUpdate = new McpSchema.Tool(toolRegistration.tool().name(),
+							toolInNacos.description(), toolRegistration.tool().inputSchema());
+					toolsRegistrationNeedToUpdate
+						.add(new McpServerFeatures.AsyncToolRegistration(toolNeedtoUpdate, toolRegistration.call()));
+					break;
 				}
 			}
 			boolean descriptionChanged = false;
@@ -245,15 +242,15 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	@Override
 	public void onApplicationEvent(WebServerInitializedEvent event) {
-		if ("stdio".equals(this.type)) {
+		if ("stdio".equals(this.type) || !nacosMcpProperties.isServiceRegister()) {
 			log.info("No need to register mcp server service to nacos");
 			return;
 		}
 		try {
 			int port = event.getWebServer().getPort();
 			NamingService namingService = new NacosNamingService(nacosMcpProperties.getNacosProperties());
-			namingService.registerInstance(this.serverInfo.name(), nacosMcpProperties.getGroup(),
-					nacosMcpProperties.getIp(), port);
+			namingService.registerInstance(this.serverInfo.name() + "-mcp-service",
+					nacosMcpProperties.getServiceGroup(), nacosMcpProperties.getIp(), port);
 			log.info("Register mcp server service to nacos successfully");
 		}
 		catch (NacosException e) {

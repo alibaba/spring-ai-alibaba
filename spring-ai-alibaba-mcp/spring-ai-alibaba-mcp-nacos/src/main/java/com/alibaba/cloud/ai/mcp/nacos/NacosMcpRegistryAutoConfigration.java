@@ -42,17 +42,17 @@ public class NacosMcpRegistryAutoConfigration {
 	public NacosMcpRegister nacosMcpRegisterSync(McpSyncServer mcpSyncServer,
 			NacosMcpRegistryProperties nacosMcpRegistryProperties, ServerMcpTransport mcpServerTransport) {
 		McpAsyncServer mcpAsyncServer = mcpSyncServer.getAsyncServer();
-		if (mcpServerTransport instanceof StdioServerTransport) {
-			return new NacosMcpRegister(mcpAsyncServer, nacosMcpRegistryProperties, "stdio");
-		}
-		else {
-			return new NacosMcpRegister(mcpAsyncServer, nacosMcpRegistryProperties, "sse");
-		}
+		return getNacosMcpRegister(mcpAsyncServer, nacosMcpRegistryProperties, mcpServerTransport);
 	}
 
 	@Bean
 	@ConditionalOnBean(McpAsyncServer.class)
 	public NacosMcpRegister nacosMcpRegisterAsync(McpAsyncServer mcpAsyncServer,
+			NacosMcpRegistryProperties nacosMcpRegistryProperties, ServerMcpTransport mcpServerTransport) {
+		return getNacosMcpRegister(mcpAsyncServer, nacosMcpRegistryProperties, mcpServerTransport);
+	}
+
+	private NacosMcpRegister getNacosMcpRegister(McpAsyncServer mcpAsyncServer,
 			NacosMcpRegistryProperties nacosMcpRegistryProperties, ServerMcpTransport mcpServerTransport) {
 		if (mcpServerTransport instanceof StdioServerTransport) {
 			return new NacosMcpRegister(mcpAsyncServer, nacosMcpRegistryProperties, "stdio");
