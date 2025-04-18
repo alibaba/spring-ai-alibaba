@@ -34,6 +34,7 @@ public class BaiduTranslateProperties extends CommonToolCallProperties {
 
 	public BaiduTranslateProperties() {
 		super(TRANSLATE_HOST_URL);
+		this.setPropertiesFromEnv(null, "BAIDU_TRANSLATE_SECRET_KEY", "BAIDU_TRANSLATE_APP_ID", null);
 	}
 
 }
