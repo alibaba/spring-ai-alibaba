@@ -39,6 +39,8 @@ public class NacosMcpRegistryAutoConfigration {
 
 	@Bean
 	@ConditionalOnBean(McpSyncServer.class)
+	@ConditionalOnProperty(prefix = NacosMcpRegistryProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = false)
 	public NacosMcpRegister nacosMcpRegisterSync(McpSyncServer mcpSyncServer,
 			NacosMcpRegistryProperties nacosMcpRegistryProperties, ServerMcpTransport mcpServerTransport) {
 		McpAsyncServer mcpAsyncServer = mcpSyncServer.getAsyncServer();
@@ -47,6 +49,8 @@ public class NacosMcpRegistryAutoConfigration {
 
 	@Bean
 	@ConditionalOnBean(McpAsyncServer.class)
+	@ConditionalOnProperty(prefix = NacosMcpRegistryProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = false)
 	public NacosMcpRegister nacosMcpRegisterAsync(McpAsyncServer mcpAsyncServer,
 			NacosMcpRegistryProperties nacosMcpRegistryProperties, ServerMcpTransport mcpServerTransport) {
 		return getNacosMcpRegister(mcpAsyncServer, nacosMcpRegistryProperties, mcpServerTransport);
