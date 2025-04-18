@@ -40,8 +40,7 @@ public class BaiduTranslateAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Baidu translation function for general text translation")
-	public BaiduTranslateService baiduTranslateFunction(BaiduTranslateProperties properties,
-			JsonParseTool jsonParseTool) {
+	public BaiduTranslateService baiduTranslate(BaiduTranslateProperties properties, JsonParseTool jsonParseTool) {
 
 		return new BaiduTranslateService(properties, new RestClientTool(jsonParseTool, properties), jsonParseTool);
 	}
