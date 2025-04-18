@@ -36,6 +36,7 @@ public class BaiDuMapProperties extends CommonToolCallProperties {
 	 */
 	public BaiDuMapProperties() {
 		super("https://api.map.baidu.com/");
+		this.setPropertiesFromEnv("BAIDU_MAP_API_KEY", null, null, null);
 	}
 
 }
