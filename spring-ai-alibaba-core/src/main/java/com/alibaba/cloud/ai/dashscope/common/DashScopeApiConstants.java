@@ -66,4 +66,5 @@ public final class DashScopeApiConstants {
 	public static final int MAX_TRY_COUNT = 10;
 
 	public static String RETRIEVED_DOCUMENTS = "question_answer_context";
+
 }

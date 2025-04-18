@@ -54,8 +54,6 @@ public final class DashScopeAgent extends Agent {
 
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeAgent.class);
 
-
-
 	private final DashScopeAgentOptions options;
 
 	private final DashScopeAgentApi dashScopeAgentApi;

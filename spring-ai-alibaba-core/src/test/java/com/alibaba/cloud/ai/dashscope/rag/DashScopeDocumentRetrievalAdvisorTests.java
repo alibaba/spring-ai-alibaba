@@ -286,8 +286,7 @@ class DashScopeDocumentRetrievalAdvisorTests {
 		assertThat(response).isNotNull();
 		assertThat(response.response()).isNotNull();
 		assertThat(response.adviseContext()).containsKey(RETRIEVED_DOCUMENTS);
-		assertThat((Map<?, ?>) response.adviseContext().get(RETRIEVED_DOCUMENTS))
-			.isEmpty();
+		assertThat((Map<?, ?>) response.adviseContext().get(RETRIEVED_DOCUMENTS)).isEmpty();
 	}
 
 	@Test
