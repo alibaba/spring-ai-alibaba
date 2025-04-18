@@ -566,7 +566,8 @@ public class DashScopeApi {
 					@JsonProperty("enable_reranking") boolean enableRerank,
 					@JsonProperty("rerank") List<CommonModelComponent> rerankComponents,
 					@JsonProperty("rerank_min_score") float rerankMinScore,
-					@JsonProperty("rerank_top_n") int rerankTopN) {
+					@JsonProperty("rerank_top_n") int rerankTopN,
+					@JsonProperty("search_filters") List<Map<String, Object>> searchFilters) {
 
 			}
 
@@ -620,7 +621,8 @@ public class DashScopeApi {
 			@JsonProperty("rewrite") List<DocumentRetrieveModelConfig> rewrite,
 			@JsonProperty("enable_reranking") boolean enableReranking,
 			@JsonProperty("rerank") List<DocumentRetrieveModelConfig> rerank,
-			@JsonProperty("rerank_min_score") float rerankMinScore, @JsonProperty("rerank_top_n") int rerankTopN) {
+			@JsonProperty("rerank_min_score") float rerankMinScore, @JsonProperty("rerank_top_n") int rerankTopN,
+			@JsonProperty("search_filters") List<Map<String, Object>> searchFilters) {
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record DocumentRetrieveModelConfig(@JsonProperty("model_name") String modelName,
 				@JsonProperty("class_name") String className) {
@@ -693,7 +695,8 @@ public class DashScopeApi {
 						retrieverOptions.isEnableReranking(),
 						Arrays.asList(new UpsertPipelineRequest.RetrieverConfiguredTransformations.CommonModelComponent(
 								retrieverOptions.getRerankModelName())),
-						retrieverOptions.getRerankMinScore(), retrieverOptions.getRerankTopN()));
+						retrieverOptions.getRerankMinScore(), retrieverOptions.getRerankTopN(),
+						retrieverOptions.getSearchFilters()));
 		List<String> documentIdList = documents.stream()
 			.map(Document::getId)
 			.filter(Objects::nonNull)
@@ -746,12 +749,13 @@ public class DashScopeApi {
 	public List<Document> retriever(String pipelineId, String query, DashScopeDocumentRetrieverOptions searchOption) {
 		DocumentRetrieveRequest request = new DocumentRetrieveRequest(query, searchOption.getDenseSimilarityTopK(),
 				searchOption.getDenseSimilarityTopK(), searchOption.isEnableRewrite(),
-				Arrays.asList(new DocumentRetrieveRequest.DocumentRetrieveModelConfig(
-						searchOption.getRewriteModelName(), "DashScopeTextRewrite")),
+				Arrays
+					.asList(new DocumentRetrieveRequest.DocumentRetrieveModelConfig(
+							searchOption.getRewriteModelName(), "DashScopeTextRewrite")),
 				searchOption.isEnableReranking(),
 				Arrays.asList(new DocumentRetrieveRequest.DocumentRetrieveModelConfig(searchOption.getRerankModelName(),
 						null)),
-				searchOption.getRerankMinScore(), searchOption.getRerankTopN());
+				searchOption.getRerankMinScore(), searchOption.getRerankTopN(), searchOption.getSearchFilters());
 		ResponseEntity<DocumentRetrieveResponse> deleDocumentResponse = this.restClient.post()
 			.uri("/api/v1/indices/pipeline/{pipeline_id}/retrieve", pipelineId)
 			.body(request)
