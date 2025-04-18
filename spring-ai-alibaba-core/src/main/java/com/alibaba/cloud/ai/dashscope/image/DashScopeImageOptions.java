@@ -142,6 +142,7 @@ public class DashScopeImageOptions implements ImageOptions {
 		return null;
 	}
 
+	@Override
 	public String getStyle() {
 		return this.style;
 	}
