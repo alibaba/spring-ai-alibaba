@@ -23,7 +23,6 @@ import org.springframework.http.codec.ServerSentEvent;
 import reactor.core.publisher.Flux;
 
 import java.io.InputStream;
-import java.util.List;
 import java.util.Map;
 
 public interface GraphService {
