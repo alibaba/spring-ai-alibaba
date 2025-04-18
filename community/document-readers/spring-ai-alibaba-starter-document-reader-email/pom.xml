@@ -39,7 +39,7 @@
         <!-- Spring AI -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-core</artifactId>
+            <artifactId>spring-ai-commons</artifactId>
         </dependency>
 
         <!-- JavaMail API -->
@@ -58,7 +58,7 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-document-parser-bshtml</artifactId>
-			<version>${project.parent.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
 
         <!-- tika Document Parser -->

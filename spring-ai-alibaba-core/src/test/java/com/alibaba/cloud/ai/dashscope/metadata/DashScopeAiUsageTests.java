@@ -40,7 +40,7 @@ class DashScopeAiUsageTests {
 
 		// Verify token counts are converted correctly
 		assertThat(usage.getPromptTokens()).isEqualTo(10L);
-		assertThat(usage.getGenerationTokens()).isEqualTo(20L);
+		assertThat(usage.getCompletionTokens()).isEqualTo(20);
 		assertThat(usage.getTotalTokens()).isEqualTo(30L);
 	}
 
@@ -69,7 +69,7 @@ class DashScopeAiUsageTests {
 
 		// Verify all token counts are zero
 		assertThat(usage.getPromptTokens()).isZero();
-		assertThat(usage.getGenerationTokens()).isZero();
+		assertThat(usage.getCompletionTokens()).isZero();
 		assertThat(usage.getTotalTokens()).isZero();
 	}
 

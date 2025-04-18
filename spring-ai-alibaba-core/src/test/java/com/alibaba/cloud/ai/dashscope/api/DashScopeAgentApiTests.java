@@ -33,7 +33,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.when;
 
 /**
  * Test cases for DashScopeAgentApi. Tests cover constructor combinations, call
@@ -98,7 +97,7 @@ class DashScopeAgentApiTests {
 		lenient().when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
 
 		// Setup RestClient mock chain
-		lenient().when(restClientBuilder.baseUrl(any())).thenReturn(restClientBuilder);
+		lenient().when(restClientBuilder.baseUrl(any(String.class))).thenReturn(restClientBuilder);
 		lenient().when(restClientBuilder.defaultHeaders(any())).thenReturn(restClientBuilder);
 		lenient().when(restClientBuilder.defaultStatusHandler(any())).thenReturn(restClientBuilder);
 		lenient().when(restClientBuilder.build()).thenReturn(restClient);

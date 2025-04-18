@@ -39,7 +39,7 @@
         <!-- Spring AI -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-core</artifactId>
+            <artifactId>spring-ai-commons</artifactId>
         </dependency>
 
         <!-- Elasticsearch -->

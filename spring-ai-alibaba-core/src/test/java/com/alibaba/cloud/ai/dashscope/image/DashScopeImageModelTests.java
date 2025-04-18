@@ -117,16 +117,15 @@ class DashScopeImageModelTests {
 	}
 
 	@Test
-    void testNullResponse() {
-        // Test handling of null API response
-        when(dashScopeImageApi.submitImageGenTask(any()))
-                .thenReturn(null);
+	void testNullResponse() {
+		// Test handling of null API response
+		when(dashScopeImageApi.submitImageGenTask(any())).thenReturn(null);
 
-        ImagePrompt prompt = new ImagePrompt(TEST_PROMPT);
-        ImageResponse response = imageModel.call(prompt);
+		ImagePrompt prompt = new ImagePrompt(TEST_PROMPT);
+		ImageResponse response = imageModel.call(prompt);
 
-        assertThat(response.getResults()).isEmpty();
-    }
+		assertThat(response.getResults()).isEmpty();
+	}
 
 	@Test
 	void testNullPrompt() {
