@@ -23,8 +23,8 @@ import org.springframework.ai.document.Document;
 import java.util.List;
 
 /**
- * @Author: XiaoYunTao
- * @Date: 2025/1/18
+ * @author XiaoYunTao
+ * @since 2025/1/18
  */
 public class BilibiliDocumentReaderTest {
 

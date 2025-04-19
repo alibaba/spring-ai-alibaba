@@ -36,11 +36,14 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.messaging.Message;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -62,8 +65,10 @@ public class ReactController {
 
 	@GetMapping("/chat")
 	public String simpleChat(String query) throws GraphStateException {
-		Optional<OverAllState> result = compiledGraph.invoke(Map.of("input", query));
-		return result.get().value("solution").get().toString();
+		Optional<OverAllState> result = compiledGraph.invoke(Map.of("messages", new UserMessage(query)));
+		List<Message> messages = (List<Message>) result.get().value("messages").get();
+		AssistantMessage assistantMessage = (AssistantMessage) messages.get(messages.size() - 1);
+		return assistantMessage.getText();
 	}
 
 }

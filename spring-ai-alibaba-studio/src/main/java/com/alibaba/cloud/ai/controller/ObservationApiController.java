@@ -31,9 +31,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @Description:
- * @Author: XiaoYunTao
- * @Date: 2024/12/4
+ * @author XiaoYunTao
+ * @since 2024/12/4
  */
 @CrossOrigin
 @RestController

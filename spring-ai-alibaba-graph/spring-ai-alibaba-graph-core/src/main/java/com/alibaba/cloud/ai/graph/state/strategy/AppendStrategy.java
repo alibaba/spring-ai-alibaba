@@ -81,7 +81,12 @@ public class AppendStrategy implements KeyStrategy {
 		}
 		else {
 			ArrayList<Object> arrayResult = new ArrayList<>();
-			arrayResult.add(newValue);
+			if (list != null) {
+				arrayResult.addAll(list);
+			}
+			else {
+				arrayResult.add(newValue);
+			}
 			return arrayResult;
 		}
 	}
