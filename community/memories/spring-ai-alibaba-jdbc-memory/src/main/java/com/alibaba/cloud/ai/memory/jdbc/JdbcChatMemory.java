@@ -38,191 +38,200 @@ import java.util.List;
  */
 public abstract class JdbcChatMemory implements ChatMemory, AutoCloseable {
 
-    private static final Logger logger = LoggerFactory.getLogger(JdbcChatMemory.class);
+	private static final Logger logger = LoggerFactory.getLogger(JdbcChatMemory.class);
 
-    private static final String DEFAULT_TABLE_NAME = "chat_memory";
+	private static final String DEFAULT_TABLE_NAME = "chat_memory";
 
-    private final Connection connection;
+	private final Connection connection;
 
-    private final String tableName;
+	private final String tableName;
 
-    protected JdbcChatMemory(String username, String password, String jdbcUrl) {
-        this(username, password, jdbcUrl, DEFAULT_TABLE_NAME);
-    }
+	protected JdbcChatMemory(String username, String password, String jdbcUrl) {
+		this(username, password, jdbcUrl, DEFAULT_TABLE_NAME);
+	}
 
-    protected JdbcChatMemory(String username, String password, String jdbcUrl, String tableName) {
-        this.tableName = tableName;
-        try {
-            this.connection = DriverManager.getConnection(jdbcUrl, username, password);
-            checkAndCreateTable();
-        } catch (SQLException e) {
-            throw new RuntimeException("Error connecting to the database", e);
-        }
-    }
+	protected JdbcChatMemory(String username, String password, String jdbcUrl, String tableName) {
+		this.tableName = tableName;
+		try {
+			this.connection = DriverManager.getConnection(jdbcUrl, username, password);
+			checkAndCreateTable();
+		}
+		catch (SQLException e) {
+			throw new RuntimeException("Error connecting to the database", e);
+		}
+	}
 
-    protected JdbcChatMemory(Connection connection) {
-        this(connection, DEFAULT_TABLE_NAME);
-    }
+	protected JdbcChatMemory(Connection connection) {
+		this(connection, DEFAULT_TABLE_NAME);
+	}
 
-    protected JdbcChatMemory(Connection connection, String tableName) {
-        this.connection = connection;
-        this.tableName = tableName;
-        try {
-            checkAndCreateTable();
-        } catch (SQLException e) {
-            throw new RuntimeException("Error checking the database table", e);
-        }
-    }
+	protected JdbcChatMemory(Connection connection, String tableName) {
+		this.connection = connection;
+		this.tableName = tableName;
+		try {
+			checkAndCreateTable();
+		}
+		catch (SQLException e) {
+			throw new RuntimeException("Error checking the database table", e);
+		}
+	}
 
-    protected abstract String jdbcType();
+	protected abstract String jdbcType();
 
-    protected abstract String hasTableSql(String tableName);
+	protected abstract String hasTableSql(String tableName);
 
-    protected abstract String createTableSql(String tableName);
+	protected abstract String createTableSql(String tableName);
 
-    /**
-     * Generate paginated query SQL based on the database type.
-     * Default implementation uses LIMIT clause.
-     * Subclasses can override this method if their database uses different pagination syntax.
-     *
-     * @param tableName The name of the table
-     * @param lastN     Number of records to return, if greater than 0
-     * @return SQL query string with pagination
-     */
-    protected String generatePaginatedQuerySql(String tableName, int lastN) {
-        StringBuilder sqlBuilder = new StringBuilder("SELECT messages,type FROM ")
-                .append(tableName)
-                .append(" WHERE conversation_id = ?");
+	/**
+	 * Generate paginated query SQL based on the database type. Default implementation
+	 * uses LIMIT clause. Subclasses can override this method if their database uses
+	 * different pagination syntax.
+	 * @param tableName The name of the table
+	 * @param lastN Number of records to return, if greater than 0
+	 * @return SQL query string with pagination
+	 */
+	protected String generatePaginatedQuerySql(String tableName, int lastN) {
+		StringBuilder sqlBuilder = new StringBuilder("SELECT messages,type FROM ").append(tableName)
+			.append(" WHERE conversation_id = ?");
 
-        if (lastN > 0) {
-            sqlBuilder.append(" LIMIT ?");
-        }
+		if (lastN > 0) {
+			sqlBuilder.append(" LIMIT ?");
+		}
 
-        return sqlBuilder.toString();
-    }
+		return sqlBuilder.toString();
+	}
 
-    private void checkAndCreateTable() throws SQLException {
-        String checkTableQuery = hasTableSql(tableName);
-        try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(checkTableQuery)) {
-            if (rs.next()) {
-                logger.info("Table {} exists.", tableName);
-            } else {
-                logger.info("Table {} does not exist. Creating table...", tableName);
-                createTable();
-            }
-        }
-    }
+	private void checkAndCreateTable() throws SQLException {
+		String checkTableQuery = hasTableSql(tableName);
+		try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(checkTableQuery)) {
+			if (rs.next()) {
+				logger.info("Table {} exists.", tableName);
+			}
+			else {
+				logger.info("Table {} does not exist. Creating table...", tableName);
+				createTable();
+			}
+		}
+	}
 
-    private void createTable() {
-        try (Statement stmt = connection.createStatement()) {
-            stmt.execute(createTableSql(tableName));
-            logger.info("Table {} created successfully.", tableName);
-        } catch (Exception e) {
-            throw new RuntimeException("Error creating table " + tableName + " ", e);
-        }
-    }
+	private void createTable() {
+		try (Statement stmt = connection.createStatement()) {
+			stmt.execute(createTableSql(tableName));
+			logger.info("Table {} created successfully.", tableName);
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Error creating table " + tableName + " ", e);
+		}
+	}
 
-    @Override
-    public void add(String conversationId, List<Message> messages) {
-        try {
-            for (Message message : messages) {
-                String sql = "INSERT INTO " + tableName + " (messages, conversation_id, type) VALUES (?, ?, ?)";
-                try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
-                    stmt.setString(1, message.getText());
-                    stmt.setString(2, conversationId);
-                    stmt.setString(3, message.getMessageType().name());
-                    stmt.executeUpdate();
-                }
-            }
-        } catch (Exception e) {
-            logger.error("Error adding messages to {} chat memory", jdbcType(), e);
-            throw new RuntimeException(e);
-        }
-    }
+	@Override
+	public void add(String conversationId, List<Message> messages) {
+		try {
+			for (Message message : messages) {
+				String sql = "INSERT INTO " + tableName + " (messages, conversation_id, type) VALUES (?, ?, ?)";
+				try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
+					stmt.setString(1, message.getText());
+					stmt.setString(2, conversationId);
+					stmt.setString(3, message.getMessageType().name());
+					stmt.executeUpdate();
+				}
+			}
+		}
+		catch (Exception e) {
+			logger.error("Error adding messages to {} chat memory", jdbcType(), e);
+			throw new RuntimeException(e);
+		}
+	}
 
-    @Override
-    public List<Message> get(String conversationId, int lastN) {
-        return this.selectMessageById(conversationId, lastN);
-    }
+	@Override
+	public List<Message> get(String conversationId, int lastN) {
+		return this.selectMessageById(conversationId, lastN);
+	}
 
-    @Override
-    public void clear(String conversationId) {
-        String sql = "DELETE FROM " + tableName + " WHERE conversation_id = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, conversationId);
-            stmt.executeUpdate();
-        } catch (Exception e) {
-            logger.error("Error clearing messages from {} chat memory", jdbcType(), e);
-            throw new RuntimeException("Error executing delete ", e);
-        }
+	@Override
+	public void clear(String conversationId) {
+		String sql = "DELETE FROM " + tableName + " WHERE conversation_id = ?";
+		try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+			stmt.setString(1, conversationId);
+			stmt.executeUpdate();
+		}
+		catch (Exception e) {
+			logger.error("Error clearing messages from {} chat memory", jdbcType(), e);
+			throw new RuntimeException("Error executing delete ", e);
+		}
 
-    }
+	}
 
-    @Override
-    public void close() throws Exception {
-        if (connection != null) {
-            connection.close();
-        }
-    }
+	@Override
+	public void close() throws Exception {
+		if (connection != null) {
+			connection.close();
+		}
+	}
 
-    public void clearOverLimit(String conversationId, int maxLimit, int deleteSize) {
-        try {
-            List<Message> all = this.selectMessageById(conversationId);
-            if (all.size() >= maxLimit) {
-                // Delete oldest messages first
-                String sql = "DELETE FROM " + tableName + " WHERE conversation_id = ? ORDER BY ROWID LIMIT ?";
-                try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
-                    stmt.setString(1, conversationId);
-                    stmt.setInt(2, deleteSize);
-                    stmt.executeUpdate();
-                } catch (SQLException e) {
-                    // If the database doesn't support ORDER BY in DELETE, fallback to alternative approach
-                    all = all.stream().skip(Math.max(0, deleteSize)).toList();
-                    // Clear all messages and reinsert the remaining ones
-                    clear(conversationId);
-                    for (Message message : all) {
-                        add(conversationId, List.of(message));
-                    }
-                }
-            }
-        } catch (Exception e) {
-            logger.error("Error clearing messages from {} chat memory", jdbcType(), e);
-            throw new RuntimeException(e);
-        }
-    }
+	public void clearOverLimit(String conversationId, int maxLimit, int deleteSize) {
+		try {
+			List<Message> all = this.selectMessageById(conversationId);
+			if (all.size() >= maxLimit) {
+				// Delete oldest messages first
+				String sql = "DELETE FROM " + tableName + " WHERE conversation_id = ? ORDER BY ROWID LIMIT ?";
+				try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
+					stmt.setString(1, conversationId);
+					stmt.setInt(2, deleteSize);
+					stmt.executeUpdate();
+				}
+				catch (SQLException e) {
+					// If the database doesn't support ORDER BY in DELETE, fallback to
+					// alternative approach
+					all = all.stream().skip(Math.max(0, deleteSize)).toList();
+					// Clear all messages and reinsert the remaining ones
+					clear(conversationId);
+					for (Message message : all) {
+						add(conversationId, List.of(message));
+					}
+				}
+			}
+		}
+		catch (Exception e) {
+			logger.error("Error clearing messages from {} chat memory", jdbcType(), e);
+			throw new RuntimeException(e);
+		}
+	}
 
-    public List<Message> selectMessageById(String conversationId, int lastN) {
-        List<Message> totalMessage = new ArrayList<>();
-        String sql = generatePaginatedQuerySql(tableName, lastN);
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            // 设置会话ID参数
-            stmt.setString(1, conversationId);
-            // 如果有限制，设置limit参数
-            if (lastN > 0) {
-                stmt.setInt(2, lastN);
-            }
-            ResultSet resultSet = stmt.executeQuery();
-            while (resultSet.next()) {
-                var content = resultSet.getString("messages");
-                var type = MessageType.valueOf(resultSet.getString("type"));
+	public List<Message> selectMessageById(String conversationId, int lastN) {
+		List<Message> totalMessage = new ArrayList<>();
+		String sql = generatePaginatedQuerySql(tableName, lastN);
+		try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+			// 设置会话ID参数
+			stmt.setString(1, conversationId);
+			// 如果有限制，设置limit参数
+			if (lastN > 0) {
+				stmt.setInt(2, lastN);
+			}
+			ResultSet resultSet = stmt.executeQuery();
+			while (resultSet.next()) {
+				var content = resultSet.getString("messages");
+				var type = MessageType.valueOf(resultSet.getString("type"));
 
-                var message = switch (type) {
-                    case USER -> new UserMessage(content);
-                    case ASSISTANT -> new AssistantMessage(content);
-                    case SYSTEM -> new SystemMessage(content);
-                    default -> null;
-                };
-                totalMessage.add(message);
+				var message = switch (type) {
+					case USER -> new UserMessage(content);
+					case ASSISTANT -> new AssistantMessage(content);
+					case SYSTEM -> new SystemMessage(content);
+					default -> null;
+				};
+				totalMessage.add(message);
 
-            }
-        } catch (SQLException e) {
-            logger.error("select message by {} error，sql:{}", jdbcType(), sql, e);
-            throw new RuntimeException(e);
-        }
-        return totalMessage;
-    }
+			}
+		}
+		catch (SQLException e) {
+			logger.error("select message by {} error，sql:{}", jdbcType(), sql, e);
+			throw new RuntimeException(e);
+		}
+		return totalMessage;
+	}
 
-    public List<Message> selectMessageById(String conversationId) {
-        return this.selectMessageById(conversationId, 0);
-    }
+	public List<Message> selectMessageById(String conversationId) {
+		return this.selectMessageById(conversationId, 0);
+	}
+
 }
