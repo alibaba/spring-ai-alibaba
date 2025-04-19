@@ -71,7 +71,7 @@ public class ToolNode implements NodeAction {
 			return messages.get(messages.size() - 1);
 		});
 
-		ToolResponseMessage toolResponseMessage = executeFunction(assistantMessage);
+		ToolResponseMessage toolResponseMessage = executeFunction(assistantMessage, state);
 
 		Map<String, Object> updatedState = new HashMap<>();
 		updatedState.put("messages", toolResponseMessage);
@@ -81,7 +81,7 @@ public class ToolNode implements NodeAction {
 		return updatedState;
 	}
 
-	private ToolResponseMessage executeFunction(AssistantMessage assistantMessage) {
+	private ToolResponseMessage executeFunction(AssistantMessage assistantMessage, OverAllState state) {
 		// execute the tool function
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
 
@@ -91,7 +91,7 @@ public class ToolNode implements NodeAction {
 
 			FunctionCallback toolCallback = this.resolve(toolName);
 
-			String toolResult = toolCallback.call(toolArgs, new ToolContext(Map.of()));
+			String toolResult = toolCallback.call(toolArgs, new ToolContext(Map.of("state", state)));
 			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName, toolResult));
 		}
 		return new ToolResponseMessage(toolResponses, Map.of());

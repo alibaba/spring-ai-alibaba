@@ -17,9 +17,12 @@ package com.alibaba.cloud.ai.example.graph.openmanus.tool;
 
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.support.PlanToolExecuteResult;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -29,33 +32,56 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
-public class PlanningTool implements Function<String, PlanToolExecuteResult> {
+public class PlanningTool implements BiFunction<String, ToolContext, String> {
 
 	private static final Logger log = LoggerFactory.getLogger(PlanningTool.class);
 
-	public static final String PARAMETERS = "{\n" + "\t\"type\": \"object\",\n" + "\t\"properties\": {\n"
-			+ "\t\t\"command\": {\n"
-			+ "\t\t\t\"description\": \"The command to execute. Available commands: create, update, list, get, set_active, mark_step, delete.\",\n"
-			+ "\t\t\t\"enum\": [\n" + "\t\t\t\t\"create\",\n" + "\t\t\t\t\"update\",\n" + "\t\t\t\t\"list\",\n"
-			+ "\t\t\t\t\"get\",\n" + "\t\t\t\t\"set_active\",\n" + "\t\t\t\t\"mark_step\",\n" + "\t\t\t\t\"delete\"\n"
-			+ "\t\t\t],\n" + "\t\t\t\"type\": \"string\"\n" + "\t\t},\n" + "\t\t\"plan_id\": {\n"
-			+ "\t\t\t\"description\": \"Unique identifier for the plan. Required for create, update, set_active, and delete commands. Optional for get and mark_step (uses active plan if not specified).\",\n"
-			+ "\t\t\t\"type\": \"string\"\n" + "\t\t},\n" + "\t\t\"title\": {\n"
-			+ "\t\t\t\"description\": \"Title for the plan. Required for create command, optional for update command.\",\n"
-			+ "\t\t\t\"type\": \"string\"\n" + "\t\t},\n" + "\t\t\"steps\": {\n"
-			+ "\t\t\t\"description\": \"List of plan steps. Required for create command, optional for update command.\",\n"
-			+ "\t\t\t\"type\": \"array\",\n" + "\t\t\t\"items\": {\n" + "\t\t\t\t\"type\": \"string\"\n" + "\t\t\t}\n"
-			+ "\t\t},\n" + "\t\t\"step_index\": {\n"
-			+ "\t\t\t\"description\": \"Index of the step to update (0-based). Required for mark_step command.\",\n"
-			+ "\t\t\t\"type\": \"integer\"\n" + "\t\t},\n" + "\t\t\"step_status\": {\n"
-			+ "\t\t\t\"description\": \"Status to set for a step. Used with mark_step command.\",\n"
-			+ "\t\t\t\"enum\": [\"not_started\", \"in_progress\", \"completed\", \"blocked\"],\n"
-			+ "\t\t\t\"type\": \"string\"\n" + "\t\t},\n" + "\t\t\"step_notes\": {\n"
-			+ "\t\t\t\"description\": \"Additional notes for a step. Optional for mark_step command.\",\n"
-			+ "\t\t\t\"type\": \"string\"\n" + "\t\t}\n" + "\t},\n" + "\t\"required\": [\"command\"],\n"
-			+ "\t\"additionalProperties\": false\n" + "}";
+	public static final String PARAMETERS = """
+			{
+			    "type": "object",
+			    "properties": {
+			        "command": {
+			            "description": "The command to execute. Available commands: create, update, list, get, set_active, mark_step, delete.",
+			            "enum": [
+			                "create"
+			            ],
+			            "type": "string"
+			        },
+			        "plan_id": {
+			            "description": "Unique identifier for the plan. Required for create, update, set_active, and delete commands. Optional for get and mark_step (uses active plan if not specified).",
+			            "type": "string"
+			        },
+			        "title": {
+			            "description": "Title for the plan. Required for create command, optional for update command.",
+			            "type": "string"
+			        },
+			        "steps": {
+			            "description": "List of plan steps. Required for create command, optional for update command.",
+			            "type": "array",
+			            "items": {
+			                "type": "string"
+			            }
+			        },
+			        "step_index": {
+			            "description": "Index of the step to update (0-based). Required for mark_step command.",
+			            "type": "integer"
+			        },
+			        "step_status": {
+			            "description": "Status to set for a step. Used with mark_step command.",
+			            "enum": ["not_started", "in_progress", "completed", "blocked"],
+			            "type": "string"
+			        },
+			        "step_notes": {
+			            "description": "Additional notes for a step. Optional for mark_step command.",
+			            "type": "string"
+			        }
+			    },
+			    "required": ["command"],
+			    "additionalProperties": false
+			}
+			""";
 
 	private static final String name = "planning";
 
@@ -81,9 +107,11 @@ public class PlanningTool implements Function<String, PlanToolExecuteResult> {
 
 	private Map<String, Map<String, Object>> plans = new HashMap<>();
 
+	private Map<String, Plan> graphPlans = new HashMap<>();
+
 	private String currentPlanId;
 
-	public PlanToolExecuteResult run(String toolInput) {
+	public String run(String toolInput, ToolContext context) {
 		try {
 			log.info("PlanningTool toolInput:" + toolInput);
 			Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
@@ -96,6 +124,9 @@ public class PlanningTool implements Function<String, PlanToolExecuteResult> {
 			String planId = null;
 			if (toolInputMap.get("plan_id") != null) {
 				planId = (String) toolInputMap.get("plan_id");
+			}
+			else {
+				planId = "G_" + UUID.randomUUID().toString();
 			}
 			String title = null;
 			if (toolInputMap.get("title") != null) {
@@ -120,19 +151,7 @@ public class PlanningTool implements Function<String, PlanToolExecuteResult> {
 
 			switch (command) {
 				case "create":
-					return createPlan(planId, title, steps);
-				case "update":
-					return updatePlan(planId, title, steps);
-				case "list":
-					return listPlans();
-				case "get":
-					return getPlan(planId);
-				case "set_active":
-					return setActivePlan(planId);
-				case "mark_step":
-					return markStep(planId, stepIndex, stepStatus, stepNotes);
-				case "delete":
-					return deletePlan(planId);
+					return createPlan(planId, title, steps, context);
 				default:
 					throw new RuntimeException("Unrecognized command: " + command
 							+ ". Allowed commands are: create, update, list, get, set_active, mark_step, delete");
@@ -143,7 +162,9 @@ public class PlanningTool implements Function<String, PlanToolExecuteResult> {
 		}
 	}
 
-	public PlanToolExecuteResult createPlan(String planId, String title, List<String> steps) {
+	public String createPlan(String planId, String title, List<String> steps, ToolContext context) {
+		OverAllState state = (OverAllState) context.getContext().get("state");
+
 		if (planId == null || planId.isEmpty()) {
 			throw new RuntimeException("Parameter `plan_id` is required for command: create");
 		}
@@ -171,8 +192,11 @@ public class PlanningTool implements Function<String, PlanToolExecuteResult> {
 		plans.put(planId, plan);
 		this.currentPlanId = planId; // Set as active plan
 
-		return new PlanToolExecuteResult("Plan created successfully with ID: " + planId + "\n\n" + formatPlan(plan),
-				planId);
+		List<Message> messages = (List<Message>) state.value("messages").get();
+		Plan plan2 = new Plan(messages.get(0).getText(), planId, steps);
+		graphPlans.put(planId, plan2);
+
+		return planId;
 	}
 
 	public PlanToolExecuteResult updatePlan(String planId, String title, List<String> steps) {
@@ -247,6 +271,21 @@ public class PlanningTool implements Function<String, PlanToolExecuteResult> {
 		}
 
 		return new PlanToolExecuteResult(output.toString(), "");
+	}
+
+	public Plan getGraphPlan(String planId) {
+		if (planId == null || planId.isEmpty()) {
+			if (currentPlanId == null) {
+				throw new RuntimeException("No active plan. Please specify a plan_id or set an active plan.");
+			}
+			planId = currentPlanId;
+		}
+
+		if (!plans.containsKey(planId)) {
+			throw new RuntimeException("No plan found with ID: " + planId);
+		}
+
+		return graphPlans.get(planId);
 	}
 
 	public PlanToolExecuteResult getPlan(String planId) {
@@ -437,8 +476,8 @@ public class PlanningTool implements Function<String, PlanToolExecuteResult> {
 	}
 
 	@Override
-	public PlanToolExecuteResult apply(@ToolParam(description = PARAMETERS) String s) {
-		return run(s);
+	public String apply(@ToolParam(description = PARAMETERS) String s, ToolContext context) {
+		return run(s, context);
 	}
 
 }
