@@ -16,16 +16,11 @@
 
 package com.alibaba.cloud.ai.example.graph.openmanus;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.alibaba.cloud.ai.example.graph.openmanus.tool.BrowserUseTool;
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.Builder;
-import com.alibaba.cloud.ai.example.graph.openmanus.tool.FileSaver;
-import com.alibaba.cloud.ai.example.graph.openmanus.tool.GoogleSearch;
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.PlanningTool;
-import com.alibaba.cloud.ai.example.graph.openmanus.tool.PythonExecute;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.GraphStateException;
@@ -36,16 +31,11 @@ import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -200,7 +190,7 @@ public class OpenmanusController {
 	 * ChatClient 简单调用
 	 */
 	@GetMapping("/chat")
-	public String simpleChat(String query) throws GraphStateException {
+	public String simpleChat(String query) {
 		Optional<OverAllState> result = compiledGraph.invoke(Map.of("input", query));
 		return result.get().data().toString();
 	}

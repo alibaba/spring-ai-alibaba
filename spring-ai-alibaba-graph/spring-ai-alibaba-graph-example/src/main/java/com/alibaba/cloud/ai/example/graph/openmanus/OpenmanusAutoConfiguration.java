@@ -16,13 +16,9 @@
 
 package com.alibaba.cloud.ai.example.graph.openmanus;
 
-import com.alibaba.cloud.ai.example.graph.openmanus.tool.Bash;
-import com.alibaba.cloud.ai.example.graph.openmanus.tool.BrowserUseTool;
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.GoogleSearch;
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.PlanningTool;
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.PythonExecute;
-import com.alibaba.cloud.ai.example.graph.react.tool.weather.function.WeatherProperties;
-import com.alibaba.cloud.ai.example.graph.react.tool.weather.function.WeatherService;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
