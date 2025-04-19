@@ -16,22 +16,12 @@
  */
 package com.alibaba.cloud.ai.example.graph.react;
 
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.alibaba.cloud.ai.common.R;
-import com.alibaba.cloud.ai.example.graph.workflow.CustomerServiceController;
-import com.alibaba.cloud.ai.example.graph.workflow.RecordingNode;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.GraphStateException;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
-import com.alibaba.cloud.ai.graph.node.QuestionClassifierNode;
-import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -47,11 +37,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
-
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 @Configuration
 public class ReactAutoconfiguration {

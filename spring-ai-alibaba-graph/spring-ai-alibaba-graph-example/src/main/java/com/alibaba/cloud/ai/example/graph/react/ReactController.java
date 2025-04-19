@@ -19,39 +19,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.alibaba.cloud.ai.example.graph.workflow.RecordingNode;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.GraphRepresentation;
-import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.action.EdgeAction;
-import com.alibaba.cloud.ai.graph.agent.ReactAgent;
-import com.alibaba.cloud.ai.graph.node.QuestionClassifierNode;
-import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
-import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.tool.resolution.ToolCallbackResolver;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.Message;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 @RestController
 @RequestMapping("/react")
@@ -59,12 +36,12 @@ public class ReactController {
 
 	private CompiledGraph compiledGraph;
 
-	ReactController(@Qualifier("reactAgentGraph") CompiledGraph compiledGraph) throws GraphStateException {
+	ReactController(@Qualifier("reactAgentGraph") CompiledGraph compiledGraph) {
 		this.compiledGraph = compiledGraph;
 	}
 
 	@GetMapping("/chat")
-	public String simpleChat(String query) throws GraphStateException {
+	public String simpleChat(String query) {
 		Optional<OverAllState> result = compiledGraph.invoke(Map.of("messages", new UserMessage(query)));
 		List<Message> messages = (List<Message>) result.get().value("messages").get();
 		AssistantMessage assistantMessage = (AssistantMessage) messages.get(messages.size() - 1);
