@@ -22,39 +22,51 @@ import java.sql.Connection;
  */
 public class SqlServerChatMemory extends JdbcChatMemory {
 
-	private static final String JDBC_TYPE = "sqlserver";
+    private static final String JDBC_TYPE = "sqlserver";
 
-	public SqlServerChatMemory(String username, String password, String url) {
-		super(username, password, url);
-	}
+    public SqlServerChatMemory(String username, String password, String url) {
+        super(username, password, url);
+    }
 
-	public SqlServerChatMemory(String username, String password, String jdbcUrl, String tableName) {
-		super(username, password, jdbcUrl, tableName);
-	}
+    public SqlServerChatMemory(String username, String password, String jdbcUrl, String tableName) {
+        super(username, password, jdbcUrl, tableName);
+    }
 
-	public SqlServerChatMemory(Connection connection) {
-		super(connection);
-	}
+    public SqlServerChatMemory(Connection connection) {
+        super(connection);
+    }
 
-	public SqlServerChatMemory(Connection connection, String tableName) {
-		super(connection, tableName);
-	}
+    public SqlServerChatMemory(Connection connection, String tableName) {
+        super(connection, tableName);
+    }
 
-	@Override
-	protected String jdbcType() {
-		return JDBC_TYPE;
-	}
+    @Override
+    protected String jdbcType() {
+        return JDBC_TYPE;
+    }
 
-	@Override
-	protected String hasTableSql(String tableName) {
-		return String.format("SELECT name FROM sys.tables WHERE name LIKE '%s';", tableName);
-	}
+    @Override
+    protected String hasTableSql(String tableName) {
+        return String.format("SELECT name FROM sys.tables WHERE name LIKE '%s';", tableName);
+    }
 
-	@Override
-	protected String createTableSql(String tableName) {
-		return String.format(
-				"CREATE TABLE %s ( id BIGINT IDENTITY(1,1) PRIMARY KEY, conversation_id NVARCHAR(256), messages NVARCHAR(MAX), CONSTRAINT uq_conversation_id UNIQUE (conversation_id));",
-				tableName);
-	}
+    @Override
+    protected String createTableSql(String tableName) {
+        return String.format(
+                "CREATE TABLE %s (id BIGINT IDENTITY(1,1) PRIMARY KEY, conversation_id NVARCHAR(256), messages NVARCHAR(MAX), type VARCHAR(100));",
+                tableName);
+    }
+
+    @Override
+    protected String generatePaginatedQuerySql(String tableName, int lastN) {
+        StringBuilder sqlBuilder = new StringBuilder("SELECT ");
+        if (lastN > 0) {
+            sqlBuilder.append("TOP ").append(lastN).append(" ");
+        }
+        sqlBuilder.append("messages,type FROM ")
+                .append(tableName)
+                .append(" WHERE conversation_id = ?");
+        return sqlBuilder.toString();
+    }
 
 }

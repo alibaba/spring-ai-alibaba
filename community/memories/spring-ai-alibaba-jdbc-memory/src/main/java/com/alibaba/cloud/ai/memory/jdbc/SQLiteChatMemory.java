@@ -22,39 +22,39 @@ import java.sql.Connection;
  */
 public class SQLiteChatMemory extends JdbcChatMemory {
 
-	private static final String JDBC_TYPE = "sqlite";
+    private static final String JDBC_TYPE = "sqlite";
 
-	public SQLiteChatMemory(String username, String password, String jdbcUrl) {
-		super(username, password, jdbcUrl);
-	}
+    public SQLiteChatMemory(String username, String password, String jdbcUrl) {
+        super(username, password, jdbcUrl);
+    }
 
-	public SQLiteChatMemory(String username, String password, String jdbcUrl, String tableName) {
-		super(username, password, jdbcUrl, tableName);
-	}
+    public SQLiteChatMemory(String username, String password, String jdbcUrl, String tableName) {
+        super(username, password, jdbcUrl, tableName);
+    }
 
-	public SQLiteChatMemory(Connection connection) {
-		super(connection);
-	}
+    public SQLiteChatMemory(Connection connection) {
+        super(connection);
+    }
 
-	public SQLiteChatMemory(Connection connection, String tableName) {
-		super(connection, tableName);
-	}
+    public SQLiteChatMemory(Connection connection, String tableName) {
+        super(connection, tableName);
+    }
 
-	@Override
-	protected String jdbcType() {
-		return JDBC_TYPE;
-	}
+    @Override
+    protected String jdbcType() {
+        return JDBC_TYPE;
+    }
 
-	@Override
-	protected String hasTableSql(String tableName) {
-		return String.format("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '%s'", tableName);
-	}
+    @Override
+    protected String hasTableSql(String tableName) {
+        return String.format("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '%s'", tableName);
+    }
 
-	@Override
-	protected String createTableSql(String tableName) {
-		return String.format(
-				"CREATE TABLE IF NOT EXISTS %s ( id INTEGER PRIMARY KEY AUTOINCREMENT, conversation_id TEXT, messages TEXT, UNIQUE (conversation_id));",
-				tableName);
-	}
+    @Override
+    protected String createTableSql(String tableName) {
+        return String.format(
+                "CREATE TABLE IF NOT EXISTS %s ( id INTEGER PRIMARY KEY AUTOINCREMENT, conversation_id TEXT, messages TEXT, type TEXT);",
+                tableName);
+    }
 
 }
