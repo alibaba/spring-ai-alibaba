@@ -187,6 +187,7 @@
                             <nodeVersion>${node.version}</nodeVersion> <!-- 选择你需要的 Node 版本 -->
                             <npmVersion>${npm.version}</npmVersion> <!-- 对应的 npm 版本 -->
                             <workingDirectory>ui</workingDirectory>
+                            <!-- <nodeDownloadRoot>https://npmmirror.com/mirrors/node/</nodeDownloadRoot> -->
                         </configuration>
                     </execution>
 
