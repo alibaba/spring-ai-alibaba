@@ -30,17 +30,18 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 /**
- * Tool configuration in this bean has not been enabled yet. Instead, we still as the manual registration we do in the previous OpenManus implementation.
+ * Tool configuration in this bean has not been enabled yet. Instead, we still as the
+ * manual registration we do in the previous OpenManus implementation.
  */
 @Configuration
 public class OpenmanusAutoConfiguration {
 
-//	@Bean(name = "browserUseFunction")
-//	@ConditionalOnMissingBean
-//	@Description(BrowserUseTool.description)
-//	public BrowserUseTool browserUseFunction() {
-//		return new BrowserUseTool();
-//	}
+	// @Bean(name = "browserUseFunction")
+	// @ConditionalOnMissingBean
+	// @Description(BrowserUseTool.description)
+	// public BrowserUseTool browserUseFunction() {
+	// return new BrowserUseTool();
+	// }
 
 	@Bean(name = "googleSearchFunction")
 	@ConditionalOnMissingBean
