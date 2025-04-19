@@ -66,7 +66,6 @@ public class ReactAutoconfiguration {
 
 		return ReactAgent.builder()
 			.name("React Agent Demo")
-			.prompt("请完成接下来用户输入给你的任务。")
 			.chatClient(chatClient)
 			.resolver(resolver)
 			.maxIterations(10)
