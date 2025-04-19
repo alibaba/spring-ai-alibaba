@@ -202,9 +202,9 @@ public abstract class JdbcChatMemory implements ChatMemory, AutoCloseable {
 		List<Message> totalMessage = new ArrayList<>();
 		String sql = generatePaginatedQuerySql(tableName, lastN);
 		try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-			// 设置会话ID参数
+			// Set conversation ID parameters.
 			stmt.setString(1, conversationId);
-			// 如果有限制，设置limit参数
+			// If there is a limit, set the limit parameter.
 			if (lastN > 0) {
 				stmt.setInt(2, lastN);
 			}
