@@ -15,9 +15,6 @@
  */
 package com.alibaba.cloud.ai.memory.jdbc;
 
-import com.alibaba.cloud.ai.memory.jdbc.serializer.MessageDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -49,17 +46,11 @@ public abstract class JdbcChatMemory implements ChatMemory, AutoCloseable {
 
     private final String tableName;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     protected JdbcChatMemory(String username, String password, String jdbcUrl) {
         this(username, password, jdbcUrl, DEFAULT_TABLE_NAME);
     }
 
     protected JdbcChatMemory(String username, String password, String jdbcUrl, String tableName) {
-        // Configure ObjectMapper to support interface deserialization
-        SimpleModule module = new SimpleModule();
-        module.addDeserializer(Message.class, new MessageDeserializer());
-        this.objectMapper.registerModule(module);
         this.tableName = tableName;
         try {
             this.connection = DriverManager.getConnection(jdbcUrl, username, password);
@@ -74,10 +65,6 @@ public abstract class JdbcChatMemory implements ChatMemory, AutoCloseable {
     }
 
     protected JdbcChatMemory(Connection connection, String tableName) {
-        // Configure ObjectMapper to support interface deserialization
-        SimpleModule module = new SimpleModule();
-        module.addDeserializer(Message.class, new MessageDeserializer());
-        this.objectMapper.registerModule(module);
         this.connection = connection;
         this.tableName = tableName;
         try {
@@ -92,6 +79,27 @@ public abstract class JdbcChatMemory implements ChatMemory, AutoCloseable {
     protected abstract String hasTableSql(String tableName);
 
     protected abstract String createTableSql(String tableName);
+
+    /**
+     * Generate paginated query SQL based on the database type.
+     * Default implementation uses LIMIT clause.
+     * Subclasses can override this method if their database uses different pagination syntax.
+     *
+     * @param tableName The name of the table
+     * @param lastN     Number of records to return, if greater than 0
+     * @return SQL query string with pagination
+     */
+    protected String generatePaginatedQuerySql(String tableName, int lastN) {
+        StringBuilder sqlBuilder = new StringBuilder("SELECT messages,type FROM ")
+                .append(tableName)
+                .append(" WHERE conversation_id = ?");
+
+        if (lastN > 0) {
+            sqlBuilder.append(" LIMIT ?");
+        }
+
+        return sqlBuilder.toString();
+    }
 
     private void checkAndCreateTable() throws SQLException {
         String checkTableQuery = hasTableSql(tableName);
@@ -185,12 +193,11 @@ public abstract class JdbcChatMemory implements ChatMemory, AutoCloseable {
 
     public List<Message> selectMessageById(String conversationId, int lastN) {
         List<Message> totalMessage = new ArrayList<>();
-        String sql = "SELECT messages,type FROM " + tableName + " WHERE conversation_id = ?";
-        if (lastN > 0) {
-            sql += " LIMIT ?";
-        }
+        String sql = generatePaginatedQuerySql(tableName, lastN);
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            // 设置会话ID参数
             stmt.setString(1, conversationId);
+            // 如果有限制，设置limit参数
             if (lastN > 0) {
                 stmt.setInt(2, lastN);
             }
