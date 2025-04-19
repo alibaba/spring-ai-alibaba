@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.graph.openmanus;
+package com.alibaba.cloud.ai.example.graph.openmanus.human;
 
 import java.util.Map;
 import java.util.Optional;
 
+import com.alibaba.cloud.ai.example.graph.openmanus.SupervisorAgent;
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.PlanningTool;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
@@ -32,16 +33,13 @@ import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -96,10 +94,10 @@ public class OpenmanusHumanController {
 			return state;
 		};
 
-		SupervisorAgent supervisorAgent = new SupervisorAgent();
-		ReactAgent planningAgent = new ReactAgent("planningAgent", "请完成用户接下来输入的任务规划。", planningClient, resolver, 10);
+		SupervisorAgent supervisorAgent = new SupervisorAgent(planningTool);
+		ReactAgent planningAgent = new ReactAgent("planningAgent", planningClient, resolver, 10);
 		planningAgent.getAndCompileGraph();
-		ReactAgent stepAgent = new ReactAgent("stepAgent", "请完成用户接下来输入的任务规划。", stepClient, resolver, 10);
+		ReactAgent stepAgent = new ReactAgent("stepAgent", stepClient, resolver, 10);
 		stepAgent.getAndCompileGraph();
 		HumanNode humanNode = new HumanNode();
 
