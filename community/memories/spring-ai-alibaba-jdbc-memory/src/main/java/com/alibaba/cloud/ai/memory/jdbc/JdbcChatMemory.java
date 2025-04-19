@@ -16,14 +16,16 @@
 package com.alibaba.cloud.ai.memory.jdbc;
 
 import com.alibaba.cloud.ai.memory.jdbc.serializer.MessageDeserializer;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -39,187 +41,181 @@ import java.util.List;
  */
 public abstract class JdbcChatMemory implements ChatMemory, AutoCloseable {
 
-	private static final Logger logger = LoggerFactory.getLogger(JdbcChatMemory.class);
+    private static final Logger logger = LoggerFactory.getLogger(JdbcChatMemory.class);
 
-	private static final String DEFAULT_TABLE_NAME = "chat_memory";
+    private static final String DEFAULT_TABLE_NAME = "chat_memory";
 
-	private final Connection connection;
+    private final Connection connection;
 
-	private final String tableName;
+    private final String tableName;
 
-	private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-	protected abstract String jdbcType();
+    protected JdbcChatMemory(String username, String password, String jdbcUrl) {
+        this(username, password, jdbcUrl, DEFAULT_TABLE_NAME);
+    }
 
-	protected abstract String hasTableSql(String tableName);
+    protected JdbcChatMemory(String username, String password, String jdbcUrl, String tableName) {
+        // Configure ObjectMapper to support interface deserialization
+        SimpleModule module = new SimpleModule();
+        module.addDeserializer(Message.class, new MessageDeserializer());
+        this.objectMapper.registerModule(module);
+        this.tableName = tableName;
+        try {
+            this.connection = DriverManager.getConnection(jdbcUrl, username, password);
+            checkAndCreateTable();
+        } catch (SQLException e) {
+            throw new RuntimeException("Error connecting to the database", e);
+        }
+    }
 
-	protected abstract String createTableSql(String tableName);
+    protected JdbcChatMemory(Connection connection) {
+        this(connection, DEFAULT_TABLE_NAME);
+    }
 
-	protected JdbcChatMemory(String username, String password, String jdbcUrl) {
-		this(username, password, jdbcUrl, DEFAULT_TABLE_NAME);
-	}
+    protected JdbcChatMemory(Connection connection, String tableName) {
+        // Configure ObjectMapper to support interface deserialization
+        SimpleModule module = new SimpleModule();
+        module.addDeserializer(Message.class, new MessageDeserializer());
+        this.objectMapper.registerModule(module);
+        this.connection = connection;
+        this.tableName = tableName;
+        try {
+            checkAndCreateTable();
+        } catch (SQLException e) {
+            throw new RuntimeException("Error checking the database table", e);
+        }
+    }
 
-	protected JdbcChatMemory(String username, String password, String jdbcUrl, String tableName) {
-		// Configure ObjectMapper to support interface deserialization
-		SimpleModule module = new SimpleModule();
-		module.addDeserializer(Message.class, new MessageDeserializer());
-		this.objectMapper.registerModule(module);
-		this.tableName = tableName;
-		try {
-			this.connection = DriverManager.getConnection(jdbcUrl, username, password);
-			checkAndCreateTable();
-		}
-		catch (SQLException e) {
-			throw new RuntimeException("Error connecting to the database", e);
-		}
-	}
+    protected abstract String jdbcType();
 
-	protected JdbcChatMemory(Connection connection) {
-		this(connection, DEFAULT_TABLE_NAME);
-	}
+    protected abstract String hasTableSql(String tableName);
 
-	protected JdbcChatMemory(Connection connection, String tableName) {
-		// Configure ObjectMapper to support interface deserialization
-		SimpleModule module = new SimpleModule();
-		module.addDeserializer(Message.class, new MessageDeserializer());
-		this.objectMapper.registerModule(module);
-		this.connection = connection;
-		this.tableName = tableName;
-		try {
-			checkAndCreateTable();
-		}
-		catch (SQLException e) {
-			throw new RuntimeException("Error checking the database table", e);
-		}
-	}
+    protected abstract String createTableSql(String tableName);
 
-	private void checkAndCreateTable() throws SQLException {
-		String checkTableQuery = hasTableSql(tableName);
-		try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(checkTableQuery)) {
-			if (rs.next()) {
-				logger.info("Table {} exists.", tableName);
-			}
-			else {
-				logger.info("Table {} does not exist. Creating table...", tableName);
-				createTable();
-			}
-		}
-	}
+    private void checkAndCreateTable() throws SQLException {
+        String checkTableQuery = hasTableSql(tableName);
+        try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery(checkTableQuery)) {
+            if (rs.next()) {
+                logger.info("Table {} exists.", tableName);
+            } else {
+                logger.info("Table {} does not exist. Creating table...", tableName);
+                createTable();
+            }
+        }
+    }
 
-	private void createTable() {
-		try (Statement stmt = connection.createStatement()) {
-			stmt.execute(createTableSql(tableName));
-			logger.info("Table {} created successfully.", tableName);
-		}
-		catch (Exception e) {
-			throw new RuntimeException("Error creating table " + tableName + " ", e);
-		}
-	}
+    private void createTable() {
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute(createTableSql(tableName));
+            logger.info("Table {} created successfully.", tableName);
+        } catch (Exception e) {
+            throw new RuntimeException("Error creating table " + tableName + " ", e);
+        }
+    }
 
-	@Override
-	public void add(String conversationId, List<Message> messages) {
-		try {
-			List<Message> all = this.selectMessageById(conversationId);
-			all.addAll(messages);
-			this.updateMessageById(conversationId, this.objectMapper.writeValueAsString(all));
-		}
-		catch (Exception e) {
-			logger.error("Error adding messages to {} chat memory", jdbcType(), e);
-			throw new RuntimeException(e);
-		}
-	}
+    @Override
+    public void add(String conversationId, List<Message> messages) {
+        try {
+            for (Message message : messages) {
+                String sql = "INSERT INTO " + tableName + " (messages, conversation_id, type) VALUES (?, ?, ?)";
+                try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
+                    stmt.setString(1, message.getText());
+                    stmt.setString(2, conversationId);
+                    stmt.setString(3, message.getMessageType().name());
+                    stmt.executeUpdate();
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error adding messages to {} chat memory", jdbcType(), e);
+            throw new RuntimeException(e);
+        }
+    }
 
-	@Override
-	public List<Message> get(String conversationId, int lastN) {
-		List<Message> all;
-		try {
-			all = this.selectMessageById(conversationId);
-		}
-		catch (Exception e) {
-			logger.error("Error getting messages from {} chat memory", jdbcType(), e);
-			throw new RuntimeException(e);
-		}
-		return all != null ? all.stream().skip(Math.max(0, all.size() - lastN)).toList() : List.of();
-	}
+    @Override
+    public List<Message> get(String conversationId, int lastN) {
+        return this.selectMessageById(conversationId, lastN);
+    }
 
-	@Override
-	public void clear(String conversationId) {
-		StringBuilder sql = new StringBuilder("DELETE FROM " + tableName + " WHERE conversation_id = '");
-		sql.append(conversationId);
-		sql.append("'");
-		try (Statement stmt = connection.createStatement()) {
-			stmt.executeUpdate(sql.toString());
-		}
-		catch (Exception e) {
-			throw new RuntimeException("Error executing delete ", e);
-		}
+    @Override
+    public void clear(String conversationId) {
+        String sql = "DELETE FROM " + tableName + " WHERE conversation_id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, conversationId);
+            stmt.executeUpdate();
+        } catch (Exception e) {
+            logger.error("Error clearing messages from {} chat memory", jdbcType(), e);
+            throw new RuntimeException("Error executing delete ", e);
+        }
 
-	}
+    }
 
-	@Override
-	public void close() throws Exception {
-		if (connection != null) {
-			connection.close();
-		}
-	}
+    @Override
+    public void close() throws Exception {
+        if (connection != null) {
+            connection.close();
+        }
+    }
 
-	public void clearOverLimit(String conversationId, int maxLimit, int deleteSize) {
-		try {
-			List<Message> all = this.selectMessageById(conversationId);
-			if (all.size() >= maxLimit) {
-				all = all.stream().skip(Math.max(0, deleteSize)).toList();
-				this.updateMessageById(conversationId, this.objectMapper.writeValueAsString(all));
-			}
-		}
-		catch (Exception e) {
-			logger.error("Error clearing messages from {} chat memory", jdbcType(), e);
-			throw new RuntimeException(e);
-		}
-	}
+    public void clearOverLimit(String conversationId, int maxLimit, int deleteSize) {
+        try {
+            List<Message> all = this.selectMessageById(conversationId);
+            if (all.size() >= maxLimit) {
+                // Delete oldest messages first
+                String sql = "DELETE FROM " + tableName + " WHERE conversation_id = ? ORDER BY ROWID LIMIT ?";
+                try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
+                    stmt.setString(1, conversationId);
+                    stmt.setInt(2, deleteSize);
+                    stmt.executeUpdate();
+                } catch (SQLException e) {
+                    // If the database doesn't support ORDER BY in DELETE, fallback to alternative approach
+                    all = all.stream().skip(Math.max(0, deleteSize)).toList();
+                    // Clear all messages and reinsert the remaining ones
+                    clear(conversationId);
+                    for (Message message : all) {
+                        add(conversationId, List.of(message));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error clearing messages from {} chat memory", jdbcType(), e);
+            throw new RuntimeException(e);
+        }
+    }
 
-	public List<Message> selectMessageById(String conversationId) {
-		List<Message> totalMessage = new ArrayList<>();
-		StringBuilder sql = new StringBuilder("SELECT messages FROM " + tableName + " WHERE conversation_id = '");
-		sql.append(conversationId);
-		sql.append("'");
-		try (Statement stmt = connection.createStatement()) {
-			ResultSet resultSet = stmt.executeQuery(sql.toString());
-			String oldMessage;
-			while (resultSet.next()) {
-				oldMessage = resultSet.getString("messages");
-				if (oldMessage != null && !oldMessage.isEmpty()) {
-					List<Message> all = this.objectMapper.readValue(oldMessage, new TypeReference<>() {
-					});
-					totalMessage.addAll(all);
-				}
-			}
-		}
-		catch (SQLException | JsonProcessingException e) {
-			logger.error("select message by {} error，sql:{}", jdbcType(), sql, e);
-			throw new RuntimeException(e);
-		}
-		return totalMessage;
-	}
+    public List<Message> selectMessageById(String conversationId, int lastN) {
+        List<Message> totalMessage = new ArrayList<>();
+        String sql = "SELECT messages,type FROM " + tableName + " WHERE conversation_id = ?";
+        if (lastN > 0) {
+            sql += " LIMIT ?";
+        }
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, conversationId);
+            if (lastN > 0) {
+                stmt.setInt(2, lastN);
+            }
+            ResultSet resultSet = stmt.executeQuery();
+            while (resultSet.next()) {
+                var content = resultSet.getString("messages");
+                var type = MessageType.valueOf(resultSet.getString("type"));
 
-	public void updateMessageById(String conversationId, String messages) {
-		// Remove newlines and escape single quotes
-		messages = messages.replaceAll("[\\r\\n]", "").replace("'", "''");
-		String sql;
-		if (this.selectMessageById(conversationId).isEmpty()) {
-			sql = "INSERT INTO chat_memory (messages, conversation_id) VALUES (?, ?)";
-		}
-		else {
-			sql = "UPDATE chat_memory SET messages = ? WHERE conversation_id = ?";
-		}
-		try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
-			stmt.setString(1, messages);
-			stmt.setString(2, conversationId);
-			stmt.executeUpdate();
-		}
-		catch (SQLException e) {
-			logger.error("update message by {} error，sql:{}", sql, jdbcType(), e);
-			throw new RuntimeException(e);
-		}
-	}
+                var message = switch (type) {
+                    case USER -> new UserMessage(content);
+                    case ASSISTANT -> new AssistantMessage(content);
+                    case SYSTEM -> new SystemMessage(content);
+                    default -> null;
+                };
+                totalMessage.add(message);
 
+            }
+        } catch (SQLException e) {
+            logger.error("select message by {} error，sql:{}", jdbcType(), sql, e);
+            throw new RuntimeException(e);
+        }
+        return totalMessage;
+    }
+
+    public List<Message> selectMessageById(String conversationId) {
+        return this.selectMessageById(conversationId, 0);
+    }
 }
