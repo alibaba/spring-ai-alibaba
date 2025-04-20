@@ -28,108 +28,110 @@ import org.junit.jupiter.api.Test;
  */
 public class JsonInsertServiceTest {
 
-    private JsonInsertService jsonInsertService;
-    private String jsonContent;
+	private JsonInsertService jsonInsertService;
 
-    @BeforeEach
-    void setUp() {
-        jsonInsertService = new JsonInsertService();
-        jsonContent = "{\"name\":\"John\",\"age\":30}";
-    }
+	private String jsonContent;
 
-    @Test
-    void testInsertStringValue() {
-        JsonElement newValue = new JsonPrimitive("Beijing");
-        JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(
-                jsonContent, "city", newValue);
-        
-        JsonObject result = (JsonObject) jsonInsertService.apply(request);
-        
-        Assertions.assertEquals("John", result.get("name").getAsString());
-        Assertions.assertEquals(30, result.get("age").getAsInt());
-        Assertions.assertEquals("Beijing", result.get("city").getAsString());
-    }
+	@BeforeEach
+	void setUp() {
+		jsonInsertService = new JsonInsertService();
+		jsonContent = "{\"name\":\"John\",\"age\":30}";
+	}
 
-    @Test
-    void testInsertNumberValue() {
-        JsonElement newValue = new JsonPrimitive(true);
-        JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(
-                jsonContent, "isActive", newValue);
-        
-        JsonObject result = (JsonObject) jsonInsertService.apply(request);
-        
-        Assertions.assertEquals("John", result.get("name").getAsString());
-        Assertions.assertEquals(30, result.get("age").getAsInt());
-        Assertions.assertTrue(result.get("isActive").getAsBoolean());
-    }
+	@Test
+	void testInsertStringValue() {
+		JsonElement newValue = new JsonPrimitive("Beijing");
+		JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(jsonContent, "city",
+				newValue);
 
-    @Test
-    void testInsertJsonObjectValue() {
-        JsonObject addressObject = new JsonObject();
-        addressObject.addProperty("street", "Chang'an Street");
-        addressObject.addProperty("zipCode", "100000");
-        
-        JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(
-                jsonContent, "address", addressObject);
-        
-        JsonObject result = (JsonObject) jsonInsertService.apply(request);
-        
-        Assertions.assertEquals("John", result.get("name").getAsString());
-        Assertions.assertEquals(30, result.get("age").getAsInt());
-        Assertions.assertEquals("Chang'an Street", result.get("address").getAsJsonObject().get("street").getAsString());
-        Assertions.assertEquals("100000", result.get("address").getAsJsonObject().get("zipCode").getAsString());
-    }
+		JsonObject result = (JsonObject) jsonInsertService.apply(request);
 
-    @Test
-    void testInsertJsonArrayValue() {
-        JsonArray hobbiesArray = new JsonArray();
-        hobbiesArray.add("Reading");
-        hobbiesArray.add("Traveling");
-        hobbiesArray.add("Programming");
-        
-        JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(
-                jsonContent, "hobbies", hobbiesArray);
-        
-        JsonObject result = (JsonObject) jsonInsertService.apply(request);
-        
-        Assertions.assertEquals("John", result.get("name").getAsString());
-        Assertions.assertEquals(30, result.get("age").getAsInt());
-        Assertions.assertEquals(3, result.get("hobbies").getAsJsonArray().size());
-        Assertions.assertEquals("Reading", result.get("hobbies").getAsJsonArray().get(0).getAsString());
-        Assertions.assertEquals("Traveling", result.get("hobbies").getAsJsonArray().get(1).getAsString());
-        Assertions.assertEquals("Programming", result.get("hobbies").getAsJsonArray().get(2).getAsString());
-    }
+		Assertions.assertEquals("John", result.get("name").getAsString());
+		Assertions.assertEquals(30, result.get("age").getAsInt());
+		Assertions.assertEquals("Beijing", result.get("city").getAsString());
+	}
 
-    @Test
-    void testNullField() {
-        JsonElement newValue = new JsonPrimitive("Beijing");
-        JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(
-                jsonContent, null, newValue);
-        
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            jsonInsertService.apply(request);
-        });
-    }
+	@Test
+	void testInsertNumberValue() {
+		JsonElement newValue = new JsonPrimitive(true);
+		JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(jsonContent, "isActive",
+				newValue);
 
-    @Test
-    void testNullValue() {
-        JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(
-                jsonContent, "city", null);
-        
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            jsonInsertService.apply(request);
-        });
-    }
+		JsonObject result = (JsonObject) jsonInsertService.apply(request);
 
-    @Test
-    void testOverwriteExistingField() {
-        JsonElement newValue = new JsonPrimitive("David");
-        JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(
-                jsonContent, "name", newValue);
-        
-        JsonObject result = (JsonObject) jsonInsertService.apply(request);
-        
-        Assertions.assertEquals("David", result.get("name").getAsString());
-        Assertions.assertEquals(30, result.get("age").getAsInt());
-    }
+		Assertions.assertEquals("John", result.get("name").getAsString());
+		Assertions.assertEquals(30, result.get("age").getAsInt());
+		Assertions.assertTrue(result.get("isActive").getAsBoolean());
+	}
+
+	@Test
+	void testInsertJsonObjectValue() {
+		JsonObject addressObject = new JsonObject();
+		addressObject.addProperty("street", "Chang'an Street");
+		addressObject.addProperty("zipCode", "100000");
+
+		JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(jsonContent, "address",
+				addressObject);
+
+		JsonObject result = (JsonObject) jsonInsertService.apply(request);
+
+		Assertions.assertEquals("John", result.get("name").getAsString());
+		Assertions.assertEquals(30, result.get("age").getAsInt());
+		Assertions.assertEquals("Chang'an Street", result.get("address").getAsJsonObject().get("street").getAsString());
+		Assertions.assertEquals("100000", result.get("address").getAsJsonObject().get("zipCode").getAsString());
+	}
+
+	@Test
+	void testInsertJsonArrayValue() {
+		JsonArray hobbiesArray = new JsonArray();
+		hobbiesArray.add("Reading");
+		hobbiesArray.add("Traveling");
+		hobbiesArray.add("Programming");
+
+		JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(jsonContent, "hobbies",
+				hobbiesArray);
+
+		JsonObject result = (JsonObject) jsonInsertService.apply(request);
+
+		Assertions.assertEquals("John", result.get("name").getAsString());
+		Assertions.assertEquals(30, result.get("age").getAsInt());
+		Assertions.assertEquals(3, result.get("hobbies").getAsJsonArray().size());
+		Assertions.assertEquals("Reading", result.get("hobbies").getAsJsonArray().get(0).getAsString());
+		Assertions.assertEquals("Traveling", result.get("hobbies").getAsJsonArray().get(1).getAsString());
+		Assertions.assertEquals("Programming", result.get("hobbies").getAsJsonArray().get(2).getAsString());
+	}
+
+	@Test
+	void testNullField() {
+		JsonElement newValue = new JsonPrimitive("Beijing");
+		JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(jsonContent, null,
+				newValue);
+
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			jsonInsertService.apply(request);
+		});
+	}
+
+	@Test
+	void testNullValue() {
+		JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(jsonContent, "city",
+				null);
+
+		Assertions.assertThrows(IllegalArgumentException.class, () -> {
+			jsonInsertService.apply(request);
+		});
+	}
+
+	@Test
+	void testOverwriteExistingField() {
+		JsonElement newValue = new JsonPrimitive("David");
+		JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(jsonContent, "name",
+				newValue);
+
+		JsonObject result = (JsonObject) jsonInsertService.apply(request);
+
+		Assertions.assertEquals("David", result.get("name").getAsString());
+		Assertions.assertEquals(30, result.get("age").getAsInt());
+	}
+
 }
