@@ -70,12 +70,13 @@ public class DashScopeImageApi {
 	}
 
 	public ResponseEntity<DashScopeImageAsyncReponse> submitImageGenTask(DashScopeImageRequest request) {
-		String url = new String();
+		String url = "/api/v1/services/aigc/";
 		if (request.model().equals("wanx2.1-imageedit") || request.model().equals("wanx-x-painting")
 				|| request.model().equals("wanx-sketch-to-image-lite"))
-			url = "/api/v1/services/aigc/image2image/image-synthesis";
+			url += "image2image";
 		else
-			url = "/api/v1/services/aigc/text2image/image-synthesis";
+			url = "text2image";
+		url+="/image-synthesis";
 		return this.restClient.post()
 			.uri(url)
 			// issue: https://github.com/alibaba/spring-ai-alibaba/issues/29
