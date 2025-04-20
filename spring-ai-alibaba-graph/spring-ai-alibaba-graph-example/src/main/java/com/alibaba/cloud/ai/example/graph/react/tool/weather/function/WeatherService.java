@@ -81,7 +81,7 @@ public class WeatherService implements Function<WeatherService.Request, WeatherS
 			.toUriString();
 		logger.info("url : {}", url);
 		try {
-			return doGetWeatherMock(url, request);
+			return doGetWeatherMock(request);
 		}
 		catch (Exception e) {
 			logger.error("Failed to fetch weather data: {}", e.getMessage());
@@ -90,7 +90,7 @@ public class WeatherService implements Function<WeatherService.Request, WeatherS
 	}
 
 	@NotNull
-	private Response doGetWeatherMock(String url, Request request) throws JsonProcessingException {
+	private Response doGetWeatherMock(Request request) throws JsonProcessingException {
 		if (Objects.equals("杭州", request.city())) {
 			return new Response(request.city(), Map.of("temp", 25, "condition", "Sunny"),
 					List.of(Map.of("date", "2025-05-27", "high", 28, "low", 20)));

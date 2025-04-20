@@ -26,7 +26,7 @@ import com.alibaba.fastjson.JSON;
 
 public class SupervisorAgent implements NodeAction {
 
-	private PlanningTool planningTool;
+	private final PlanningTool planningTool;
 
 	public SupervisorAgent(PlanningTool planningTool) {
 		this.planningTool = planningTool;
@@ -34,10 +34,13 @@ public class SupervisorAgent implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState t) throws Exception {
+
 		String planStr = (String) t.value("plan").orElseThrow();
 		Plan tempPlan = parsePlan(planStr);
 		Plan plan = planningTool.getGraphPlan(tempPlan.getPlan_id());
+
 		Optional<Object> optionalOutput = t.value("step_output");
+
 		if (optionalOutput.isPresent()) {
 			String finalStepOutput = String.format("This is the final output of step %s:\n %s", plan.getCurrentStep(),
 					optionalOutput.get());
@@ -56,6 +59,7 @@ public class SupervisorAgent implements NodeAction {
 	}
 
 	public String think(OverAllState state) {
+
 		String nextPrompt = (String) state.value("step_prompt").orElseThrow();
 
 		if (nextPrompt.equalsIgnoreCase("Plan completed.")) {
