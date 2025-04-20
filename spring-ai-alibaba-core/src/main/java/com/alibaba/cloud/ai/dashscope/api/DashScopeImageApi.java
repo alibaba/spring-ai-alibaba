@@ -75,8 +75,8 @@ public class DashScopeImageApi {
 				|| request.model().equals("wanx-sketch-to-image-lite"))
 			url += "image2image";
 		else
-			url = "text2image";
-		url+="/image-synthesis";
+			url += "text2image";
+		url += "/image-synthesis";
 		return this.restClient.post()
 			.uri(url)
 			// issue: https://github.com/alibaba/spring-ai-alibaba/issues/29
