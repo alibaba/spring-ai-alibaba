@@ -21,12 +21,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class GetCurrentTimeByTimeZoneIdServiceTest {
 
-    @Test
-    void testApply() {
-        GetCurrentTimeByTimeZoneIdService service = new GetCurrentTimeByTimeZoneIdService();
-        String result = service.apply(new GetCurrentTimeByTimeZoneIdService.Request("Asia/Shanghai")).description();
-        assertNotNull(result);
-        assertTrue(result.contains("Asia/Shanghai"));
-        assertTrue(result.matches(".*\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} .+"));
-    }
+	@Test
+	void testApply() {
+		GetCurrentTimeByTimeZoneIdService service = new GetCurrentTimeByTimeZoneIdService();
+		String result = service.apply(new GetCurrentTimeByTimeZoneIdService.Request("Asia/Shanghai")).description();
+		assertNotNull(result);
+		assertTrue(result.contains("Asia/Shanghai"));
+		assertTrue(result.matches(".*\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} .+"));
+	}
+
 }
