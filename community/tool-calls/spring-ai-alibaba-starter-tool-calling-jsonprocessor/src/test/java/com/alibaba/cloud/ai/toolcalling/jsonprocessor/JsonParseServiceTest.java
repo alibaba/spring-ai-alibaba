@@ -25,66 +25,67 @@ import org.junit.jupiter.api.Test;
  */
 public class JsonParseServiceTest {
 
-    private JsonParseService jsonParseService;
-    private String jsonContent;
-    private String complexJsonContent;
+	private JsonParseService jsonParseService;
 
-    @BeforeEach
-    void setUp() {
-        jsonParseService = new JsonParseService();
-        jsonContent = "{\"name\":\"John\",\"age\":\"30\",\"city\":\"Beijing\",\"isActive\":\"true\"}";
-        complexJsonContent = "{\"person\":{\"name\":\"John\",\"contact\":{\"email\":\"john@example.com\",\"phone\":\"12345678\"}},\"items\":[\"item1\",\"item2\"]}";
-    }
+	private String jsonContent;
 
-    @Test
-    void testParseStringValue() {
-        JsonParseService.JsonParseRequest request = new JsonParseService.JsonParseRequest(
-                jsonContent, "name");
-        
-        String result = (String) jsonParseService.apply(request);
-        
-        Assertions.assertEquals("John", result);
-    }
+	private String complexJsonContent;
 
-    @Test
-    void testParseNumberAsString() {
-        JsonParseService.JsonParseRequest request = new JsonParseService.JsonParseRequest(
-                jsonContent, "age");
-        
-        String result = (String) jsonParseService.apply(request);
-        
-        Assertions.assertEquals("30", result);
-    }
+	@BeforeEach
+	void setUp() {
+		jsonParseService = new JsonParseService();
+		jsonContent = "{\"name\":\"John\",\"age\":\"30\",\"city\":\"Beijing\",\"isActive\":\"true\"}";
+		complexJsonContent = "{\"person\":{\"name\":\"John\",\"contact\":{\"email\":\"john@example.com\",\"phone\":\"12345678\"}},\"items\":[\"item1\",\"item2\"]}";
+	}
 
-    @Test
-    void testParseBooleanAsString() {
-        JsonParseService.JsonParseRequest request = new JsonParseService.JsonParseRequest(
-                jsonContent, "isActive");
-        
-        String result = (String) jsonParseService.apply(request);
-        
-        Assertions.assertEquals("true", result);
-    }
+	@Test
+	void testParseStringValue() {
+		JsonParseService.JsonParseRequest request = new JsonParseService.JsonParseRequest(jsonContent, "name");
 
-    @Test
-    void testParseNonExistentField() {
-        JsonParseService.JsonParseRequest request = new JsonParseService.JsonParseRequest(
-                jsonContent, "nonExistentField");
-        
-        Assertions.assertThrows(NullPointerException.class, () -> {
-            jsonParseService.apply(request);
-        });
-    }
+		String result = (String) jsonParseService.apply(request);
 
-    @Test
-    void testParseNestedJsonField() {
-        // Note: Current implementation does not support nested field parsing, this test is expected to fail
-        // This test case demonstrates the limitation of the current implementation
-        JsonParseService.JsonParseRequest request = new JsonParseService.JsonParseRequest(
-                complexJsonContent, "person.name");
-        
-        Assertions.assertThrows(NullPointerException.class, () -> {
-            jsonParseService.apply(request);
-        });
-    }
+		Assertions.assertEquals("John", result);
+	}
+
+	@Test
+	void testParseNumberAsString() {
+		JsonParseService.JsonParseRequest request = new JsonParseService.JsonParseRequest(jsonContent, "age");
+
+		String result = (String) jsonParseService.apply(request);
+
+		Assertions.assertEquals("30", result);
+	}
+
+	@Test
+	void testParseBooleanAsString() {
+		JsonParseService.JsonParseRequest request = new JsonParseService.JsonParseRequest(jsonContent, "isActive");
+
+		String result = (String) jsonParseService.apply(request);
+
+		Assertions.assertEquals("true", result);
+	}
+
+	@Test
+	void testParseNonExistentField() {
+		JsonParseService.JsonParseRequest request = new JsonParseService.JsonParseRequest(jsonContent,
+				"nonExistentField");
+
+		Assertions.assertThrows(NullPointerException.class, () -> {
+			jsonParseService.apply(request);
+		});
+	}
+
+	@Test
+	void testParseNestedJsonField() {
+		// Note: Current implementation does not support nested field parsing, this test
+		// is expected to fail
+		// This test case demonstrates the limitation of the current implementation
+		JsonParseService.JsonParseRequest request = new JsonParseService.JsonParseRequest(complexJsonContent,
+				"person.name");
+
+		Assertions.assertThrows(NullPointerException.class, () -> {
+			jsonParseService.apply(request);
+		});
+	}
+
 }
