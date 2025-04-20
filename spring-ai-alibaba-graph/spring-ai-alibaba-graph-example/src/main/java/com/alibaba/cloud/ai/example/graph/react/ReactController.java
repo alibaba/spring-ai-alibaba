@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/react")
 public class ReactController {
 
-	private CompiledGraph compiledGraph;
+	private final CompiledGraph compiledGraph;
 
 	ReactController(@Qualifier("reactAgentGraph") CompiledGraph compiledGraph) {
 		this.compiledGraph = compiledGraph;
@@ -42,9 +42,11 @@ public class ReactController {
 
 	@GetMapping("/chat")
 	public String simpleChat(String query) {
+
 		Optional<OverAllState> result = compiledGraph.invoke(Map.of("messages", new UserMessage(query)));
 		List<Message> messages = (List<Message>) result.get().value("messages").get();
 		AssistantMessage assistantMessage = (AssistantMessage) messages.get(messages.size() - 1);
+
 		return assistantMessage.getText();
 	}
 

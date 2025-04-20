@@ -150,7 +150,7 @@ public class OpenmanusHumanController {
 	}
 
 	@GetMapping("/resume-to-next-step")
-	public String resumtToNextStep() {
+	public String resumeToNextStep() {
 		String nextNode = "supervisor_agent";
 
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId("1").build();

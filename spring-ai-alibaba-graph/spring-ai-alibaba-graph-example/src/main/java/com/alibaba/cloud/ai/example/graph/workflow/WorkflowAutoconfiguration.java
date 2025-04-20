@@ -43,6 +43,7 @@ public class WorkflowAutoconfiguration {
 
 	@Bean
 	public StateGraph workflowGraph(ChatModel chatModel) throws GraphStateException {
+
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
 
 		AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
@@ -87,6 +88,7 @@ public class WorkflowAutoconfiguration {
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
 				"workflow graph");
+
 		System.out.println("\n\n");
 		System.out.println(graphRepresentation.content());
 		System.out.println("\n\n");

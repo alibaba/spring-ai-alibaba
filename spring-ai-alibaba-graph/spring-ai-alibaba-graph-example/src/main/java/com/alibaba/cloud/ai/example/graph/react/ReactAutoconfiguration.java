@@ -60,8 +60,10 @@ public class ReactAutoconfiguration {
 	@Bean
 	public CompiledGraph reactAgentGraph(@Qualifier("normalReactAgent") ReactAgent reactAgent)
 			throws GraphStateException {
+
 		GraphRepresentation graphRepresentation = reactAgent.getStateGraph()
 			.getGraph(GraphRepresentation.Type.PLANTUML);
+
 		System.out.println("\n\n");
 		System.out.println(graphRepresentation.content());
 		System.out.println("\n\n");
@@ -71,6 +73,7 @@ public class ReactAutoconfiguration {
 
 	@Bean
 	public RestClient.Builder createRestClient() {
+
 		// 2. 创建 RequestConfig 并设置超时
 		RequestConfig requestConfig = RequestConfig.custom()
 			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
