@@ -33,6 +33,7 @@ class ToutiaoNewsSearchHotEventsServiceTest {
 		ToutiaoNewsSearchHotEventsService.Request request = new ToutiaoNewsSearchHotEventsService.Request();
 		ToutiaoNewsSearchHotEventsService.Response apply = toutiaoNewsSearchHotEventsService.apply(request);
 		Assertions.assertNotNull(apply);
+		// Verify the size of events and the title of each event
 		Assertions.assertEquals(50, apply.events().size());
 		apply.events().forEach(event -> {
 			Assertions.assertNotNull(event.title());
