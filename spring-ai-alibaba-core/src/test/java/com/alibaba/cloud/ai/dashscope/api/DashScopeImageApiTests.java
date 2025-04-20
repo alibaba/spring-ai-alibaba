@@ -80,7 +80,7 @@ class DashScopeImageApiTests {
 		// Test creating image request objects
 		DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestInput input = new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestInput(
 				"Test prompt", null, null, "stylization_all",
-				"http://synthesis-source.oss-accelerate.aliyuncs.com/lingji/validation/mask2img/demo/source3.jpg",
+				"https://help-static-aliyun-doc.aliyuncs.com/assets/img/zh-CN/8649386271/p848790.png",
 				"https://help-static-aliyun-doc.aliyuncs.com/assets/img/zh-CN/8649386271/p848791.png",
 				"https://huarong123.oss-cn-hangzhou.aliyuncs.com/image/%E6%B6%82%E9%B8%A6%E8%8D%89%E5%9B%BE.png");
 		Integer[][] colorArray = { { 0, 0, 0 }, { 134, 134, 134 } };
