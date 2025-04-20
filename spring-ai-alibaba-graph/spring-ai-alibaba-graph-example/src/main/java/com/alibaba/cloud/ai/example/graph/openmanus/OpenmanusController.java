@@ -123,10 +123,7 @@ public class OpenmanusController {
 	@GetMapping("/chat")
 	public String simpleChat(String query) {
 
-		return compiledGraph.invoke(Map.of("input", query))
-				.get()
-				.data()
-				.toString();
+		return compiledGraph.invoke(Map.of("input", query)).get().data().toString();
 	}
 
 }
