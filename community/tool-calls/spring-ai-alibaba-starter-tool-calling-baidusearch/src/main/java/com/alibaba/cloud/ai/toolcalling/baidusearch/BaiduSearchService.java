@@ -51,11 +51,11 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 
 	private static final int MAX_RESULTS = 20;
 
-	private static final int Memory_Size = 5;
+	private static final int MEMORY_SIZE = 5;
 
-	private static final int Memory_Unit = 1024;
+	private static final int MEMORY_UNIT = 1024;
 
-	private static final int Max_Memory_In_MB = Memory_Size * Memory_Unit * Memory_Unit;
+	private static final int MAX_MEMORY_IN_MB = MEMORY_SIZE * MEMORY_UNIT * MEMORY_UNIT;
 
 	private static final String[] USER_AGENTS = {
 			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -81,7 +81,7 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 			.defaultHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
 			.defaultHeader(HttpHeaders.REFERER, "https://www.baidu.com/")
 			.defaultHeader(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9,ja;q=0.8")
-			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(Max_Memory_In_MB))
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_MEMORY_IN_MB))
 			.clientConnector(new ReactorClientHttpConnector(HttpClient.create()
 				.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECT_TIMEOUT_MILLIS)
 				.responseTimeout(Duration.ofSeconds(RESPONSE_TIMEOUT_SECONDS))))
