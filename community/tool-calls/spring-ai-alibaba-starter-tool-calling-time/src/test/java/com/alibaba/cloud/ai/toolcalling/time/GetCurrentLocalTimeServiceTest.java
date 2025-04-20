@@ -21,12 +21,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class GetCurrentLocalTimeServiceTest {
 
-    @Test
-    void testGetCurrentLocalTime() {
-        GetCurrentLocalTimeService service = new GetCurrentLocalTimeService();
-        String result = service.getCurrentLocalTime();
-        assertNotNull(result);
-        assertTrue(result.contains("The current local time is"));
-        assertTrue(result.matches(".*\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} .+"));
-    }
+	@Test
+	void testGetCurrentLocalTime() {
+		GetCurrentLocalTimeService service = new GetCurrentLocalTimeService();
+		String result = service.getCurrentLocalTime();
+		assertNotNull(result);
+		assertTrue(result.contains("The current local time is"));
+		assertTrue(result.matches(".*\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} .+"));
+	}
+
 }
