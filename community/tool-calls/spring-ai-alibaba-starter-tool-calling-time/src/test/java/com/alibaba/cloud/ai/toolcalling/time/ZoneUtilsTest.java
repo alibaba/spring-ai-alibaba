@@ -21,10 +21,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ZoneUtilsTest {
 
-    @Test
-    void testGetTimeByZoneId() {
-        String result = ZoneUtils.getTimeByZoneId("Asia/Shanghai");
-        assertNotNull(result);
-        assertTrue(result.matches("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} .+"));
-    }
+	@Test
+	void testGetTimeByZoneId() {
+		String result = ZoneUtils.getTimeByZoneId("Asia/Shanghai");
+		assertNotNull(result);
+		assertTrue(result.matches("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} .+"));
+	}
+
 }
