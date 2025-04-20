@@ -17,7 +17,7 @@
 .PHONY: test
 test: ## Run tests
 	@$(LOG_TARGET)
-	mvn test -pl !spring-ai-alibaba-studio,!spring-ai-alibaba-graph
+	mvn test
 
 # Separate build and test to speed up execution
 .PHONY: build

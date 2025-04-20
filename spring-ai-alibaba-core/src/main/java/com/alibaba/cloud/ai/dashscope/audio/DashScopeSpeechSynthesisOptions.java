@@ -99,6 +99,7 @@ public class DashScopeSpeechSynthesisOptions implements SpeechSynthesisOptions {
 		return new DashScopeSpeechSynthesisOptions.Builder();
 	}
 
+	@Override
 	public String getModel() {
 		return model;
 	}

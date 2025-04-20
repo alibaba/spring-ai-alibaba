@@ -77,6 +77,8 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
 
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.MESSAGE_FORMAT;
+
 /**
  * {@link ChatModel} implementation for {@literal Alibaba DashScope} backed by
  * {@link Generation}.
@@ -86,8 +88,6 @@ import org.springframework.util.StringUtils;
  * @see ChatModel
  */
 public class DashScopeChatModel extends AbstractToolCallSupport implements ChatModel {
-
-	public static final String MESSAGE_FORMAT = "messageFormat";
 
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeChatModel.class);
 

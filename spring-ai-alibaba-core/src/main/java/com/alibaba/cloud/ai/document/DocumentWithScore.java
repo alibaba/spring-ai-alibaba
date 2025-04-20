@@ -106,10 +106,12 @@ public class DocumentWithScore implements ModelResult<Document> {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (o == null || getClass() != o.getClass())
+		}
+		if (o == null || getClass() != o.getClass()) {
 			return false;
+		}
 		DocumentWithScore that = (DocumentWithScore) o;
 		return Objects.equals(score, that.score) && Objects.equals(document, that.document);
 	}

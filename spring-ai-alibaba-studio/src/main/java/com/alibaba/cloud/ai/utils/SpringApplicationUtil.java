@@ -89,8 +89,7 @@ public class SpringApplicationUtil implements ApplicationContextAware, Environme
 	 * Get the type of instance corresponding to the bean name from the spring container
 	 * based on the bean name
 	 * @param name bean name
-	 * @return Class<?>
-	 * @throws NoSuchBeanDefinitionException
+	 * @throws NoSuchBeanDefinitionException if no bean definition is found
 	 */
 	public static Class<?> getType(String name) throws NoSuchBeanDefinitionException {
 		return applicationContext.getType(name);
@@ -117,7 +116,6 @@ public class SpringApplicationUtil implements ApplicationContextAware, Environme
 	 * 18
 	 * @param key The name of the configuration item
 	 * @param targetType The type of value corresponding to the configuration item
-	 * @param <T>
 	 * @return The value of the configuration item of the specified type
 	 */
 	public static <T> T getProperty(String key, Class<T> targetType) {
