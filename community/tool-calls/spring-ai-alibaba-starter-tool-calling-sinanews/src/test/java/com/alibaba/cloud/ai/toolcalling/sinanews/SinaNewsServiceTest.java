@@ -27,6 +27,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+/**
+ * Test class for SinaNewsService.
+ *
+ * @author zhangshenghang
+ */
 class SinaNewsServiceTest {
 
 	private SinaNewsService service = new SinaNewsService();
@@ -36,10 +41,10 @@ class SinaNewsServiceTest {
 		SinaNewsService.Request request = new SinaNewsService.Request();
 		SinaNewsService.Response apply = service.apply(request);
 		assertNotNull(apply);
+		// Assert that the events list is not empty and contains at least one event
 		assertTrue(apply.events().size() > 0);
-		apply.events().forEach(event -> {
-			assertNotNull(event.title());
-		});
+		// Assert that each event has a title
+		apply.events().forEach(event -> assertNotNull(event.title()));
 	}
 
 	@Test
