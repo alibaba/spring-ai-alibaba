@@ -188,8 +188,7 @@
                             <nodeVersion>${node.version}</nodeVersion>
                             <npmVersion>${npm.version}</npmVersion>
                             <workingDirectory>ui</workingDirectory>
-                            <nodeDownloadRoot>http://npmmirror.com/mirrors/node/</nodeDownloadRoot>
-                            <npmDownloadRoot>http://npmmirror.com/mirrors/npm/</npmDownloadRoot>
+                            <!-- <nodeDownloadRoot>https://npmmirror.com/mirrors/node/</nodeDownloadRoot> -->
                         </configuration>
                     </execution>
 
