@@ -48,7 +48,7 @@ class ToutiaoNewsSearchHotEventsServiceTest {
 			Assertions.assertNotNull(event.title());
 		});
 	}
-	
+
 	@Test
 	void testFetchDataFromApi() {
 		// Test API data retrieval method
@@ -57,82 +57,83 @@ class ToutiaoNewsSearchHotEventsServiceTest {
 		Assertions.assertTrue(result.has("data"));
 		Assertions.assertTrue(result.get("data").isArray());
 	}
-	
+
 	@Test
 	void testParseHotEvents() {
 		// Create mock JsonNode data
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode rootNode = mapper.createObjectNode();
 		ArrayNode dataArray = mapper.createArrayNode();
-		
+
 		// Add test data
 		ObjectNode item1 = mapper.createObjectNode();
 		item1.put("Title", "Test News Title 1");
 		dataArray.add(item1);
-		
+
 		ObjectNode item2 = mapper.createObjectNode();
 		item2.put("Title", "Test News Title 2");
 		dataArray.add(item2);
-		
+
 		// Add an item without Title
 		ObjectNode itemNoTitle = mapper.createObjectNode();
 		itemNoTitle.put("OtherField", "Other Field");
 		dataArray.add(itemNoTitle);
-		
+
 		rootNode.set("data", dataArray);
-		
+
 		// Parse and verify results
-		List<ToutiaoNewsSearchHotEventsService.HotEvent> hotEvents = 
-			toutiaoNewsSearchHotEventsService.parseHotEvents(rootNode);
-		
+		List<ToutiaoNewsSearchHotEventsService.HotEvent> hotEvents = toutiaoNewsSearchHotEventsService
+			.parseHotEvents(rootNode);
+
 		Assertions.assertEquals(2, hotEvents.size());
 		Assertions.assertEquals("Test News Title 1", hotEvents.get(0).title());
 		Assertions.assertEquals("Test News Title 2", hotEvents.get(1).title());
 	}
-	
+
 	@Test
 	void testParseHotEventsWithNullData() {
 		// Test empty data scenario
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode rootNode = mapper.createObjectNode();
-		
+
 		// Verify exception thrown
 		Exception exception = Assertions.assertThrows(RuntimeException.class, () -> {
 			toutiaoNewsSearchHotEventsService.parseHotEvents(rootNode);
 		});
-		
+
 		Assertions.assertTrue(exception.getMessage().contains("Failed to retrieve or parse response data"));
 	}
-	
+
 	@Test
 	void testIntegrationWithMock() {
 		// Use spy to partially mock the service
 		ToutiaoNewsSearchHotEventsService spyService = spy(toutiaoNewsSearchHotEventsService);
-		
+
 		// Create mock JsonNode data
 		ObjectMapper mapper = new ObjectMapper();
 		ObjectNode rootNode = mapper.createObjectNode();
 		ArrayNode dataArray = mapper.createArrayNode();
-		
+
 		for (int i = 0; i < 10; i++) {
 			ObjectNode item = mapper.createObjectNode();
 			item.put("Title", "Mock News Title " + i);
 			dataArray.add(item);
 		}
-		
+
 		rootNode.set("data", dataArray);
-		
+
 		// Mock fetchDataFromApi method to return our created data
 		when(spyService.fetchDataFromApi()).thenReturn(rootNode);
-		
+
 		// Execute apply method
 		ToutiaoNewsSearchHotEventsService.Request request = new ToutiaoNewsSearchHotEventsService.Request();
 		ToutiaoNewsSearchHotEventsService.Response response = spyService.apply(request);
-		
+
 		// Verify results
 		Assertions.assertNotNull(response);
 		Assertions.assertEquals(10, response.events().size());
 		Assertions.assertEquals("Mock News Title 0", response.events().get(0).title());
 		Assertions.assertEquals("Mock News Title 9", response.events().get(9).title());
 	}
+
 }
