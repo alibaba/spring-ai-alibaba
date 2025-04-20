@@ -46,6 +46,9 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./tools/github-actions/setup-deps
       - run: make test
+    env:
+      YOUDAO_API_KEY: ${{ secrets.YOUDAO_API_KEY }}
+      YOUDAO_API_SECRET: ${{ secrets.YOUDAO_API_SECRET }}
 
   build:
     runs-on: ubuntu-22.04
@@ -54,3 +57,6 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./tools/github-actions/setup-deps
       - run: make build
+    env:
+      YOUDAO_API_KEY: ${{ secrets.YOUDAO_API_KEY }}
+      YOUDAO_API_SECRET: ${{ secrets.YOUDAO_API_SECRET }}
