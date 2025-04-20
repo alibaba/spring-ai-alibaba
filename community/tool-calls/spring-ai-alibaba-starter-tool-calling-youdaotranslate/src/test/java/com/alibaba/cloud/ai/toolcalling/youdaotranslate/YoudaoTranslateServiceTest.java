@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.toolcalling.youdaotranslate;
 
 import org.junit.jupiter.api.Assertions;
@@ -25,18 +26,21 @@ import org.junit.jupiter.api.Test;
  */
 class YoudaoTranslateServiceTest {
 
+
     @Test
     void apply() {
+        // Get the appKey and appSecret from environment variables or system properties.
         String appKey = System.getenv("YOUDAO_APP_KEY");
         if (appKey == null || appKey.isEmpty()) {
-            appKey = System.getenv("YOUDAO_API_KEY");
+            appKey = System.getProperty("youdao.app.key");
         }
         
         String appSecret = System.getenv("YOUDAO_APP_SECRET");
         if (appSecret == null || appSecret.isEmpty()) {
-            appSecret = System.getenv("YOUDAO_API_SECRET");
+            appSecret = System.getProperty("youdao.app.secret");
         }
-        
+
+        // Create an instance of YoudaoTranslateService with the appKey and appSecret.
         YoudaoTranslateProperties youdaoTranslateProperties = new YoudaoTranslateProperties();
         youdaoTranslateProperties.setAppKey(appKey);
         youdaoTranslateProperties.setAppSecret(appSecret);
