@@ -39,20 +39,14 @@ public class CustomerServiceController {
 
 	private CompiledGraph compiledGraph;
 
-	public CustomerServiceController(
-			@Qualifier("workflowGraph") StateGraph stateGraph
-	) throws GraphStateException {
+	public CustomerServiceController(@Qualifier("workflowGraph") StateGraph stateGraph) throws GraphStateException {
 		this.compiledGraph = stateGraph.compile();
 	}
 
 	@GetMapping("/chat")
 	public String simpleChat(String query) throws GraphStateException {
 
-		return compiledGraph.invoke(Map.of("input", query))
-				.get()
-				.value("solution")
-				.get()
-				.toString();
+		return compiledGraph.invoke(Map.of("input", query)).get().value("solution").get().toString();
 	}
 
 	public static class FeedbackQuestionDispatcher implements EdgeAction {
