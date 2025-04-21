@@ -462,3 +462,21 @@
     color: white;
     border-color: #ff4d4f;
 }
+
+/* 保存计划按钮右下角定位样式 */
+.save-plan-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 15px;
+}
+
+.plan-json-section {
+    position: relative;
+    padding-bottom: 60px; /* 为底部按钮预留空间 */
+}
+
+.plan-json-section .save-plan-container {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+}
