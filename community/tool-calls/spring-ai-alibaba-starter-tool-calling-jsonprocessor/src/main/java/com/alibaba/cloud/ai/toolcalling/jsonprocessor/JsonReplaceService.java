@@ -34,8 +34,9 @@ public class JsonReplaceService implements Function<JsonReplaceService.JsonRepla
 		String field = request.field;
 		JsonElement value = request.value;
 		JsonElement jsonElement = JsonParser.parseString(content);
-		if (!jsonElement.isJsonObject())
+		if (!jsonElement.isJsonObject()) {
 			throw new IllegalArgumentException("Content is not a valid JSON object .");
+		}
 		JsonObject jsonObject = jsonElement.getAsJsonObject();
 		Assert.notNull(field, "replace json field can not be null");
 		Assert.notNull(value, "replace json fieldValue can not be null");

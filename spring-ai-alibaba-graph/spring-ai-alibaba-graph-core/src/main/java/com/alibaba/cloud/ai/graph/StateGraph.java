@@ -127,6 +127,8 @@ public class StateGraph {
 
 	private OverAllState overAllState;
 
+	private String name;
+
 	public OverAllState getOverAllState() {
 		return overAllState;
 	}
@@ -190,6 +192,12 @@ public class StateGraph {
 		this.stateSerializer = plainTextStateSerializer;
 	}
 
+	public StateGraph(String name, OverAllState overAllState) {
+		this.name = name;
+		this.overAllState = overAllState;
+		this.stateSerializer = new GsonSerializer();
+	}
+
 	/**
 	 * Instantiates a new State graph.
 	 * @param overAllState the over all state
@@ -197,6 +205,12 @@ public class StateGraph {
 	public StateGraph(OverAllState overAllState) {
 		this.overAllState = overAllState;
 		this.stateSerializer = new GsonSerializer();
+	}
+
+	public StateGraph(String name, AgentStateFactory<OverAllState> factory) {
+		this.name = name;
+		this.overAllState = factory.apply(Map.of());
+		this.stateSerializer = new GsonSerializer2(factory);
 	}
 
 	public StateGraph(AgentStateFactory<OverAllState> factory) {
@@ -209,6 +223,10 @@ public class StateGraph {
 	 */
 	public StateGraph() {
 		this.stateSerializer = new GsonSerializer();
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	/**
@@ -465,6 +483,13 @@ public class StateGraph {
 	public GraphRepresentation getGraph(GraphRepresentation.Type type, String title) {
 
 		String content = type.generator.generate(nodes, edges, title, true);
+
+		return new GraphRepresentation(type, content);
+	}
+
+	public GraphRepresentation getGraph(GraphRepresentation.Type type) {
+
+		String content = type.generator.generate(nodes, edges, name, true);
 
 		return new GraphRepresentation(type, content);
 	}
