@@ -26,28 +26,28 @@ import org.junit.jupiter.api.Test;
  */
 class YoudaoTranslateServiceTest {
 
+	@Test
+	void apply() {
+		// Get the appKey and appSecret from environment variables or system properties.
+		String appKey = System.getenv("YOUDAO_APP_KEY");
+		if (appKey == null || appKey.isEmpty()) {
+			appKey = System.getProperty("youdao.app.key");
+		}
 
-    @Test
-    void apply() {
-        // Get the appKey and appSecret from environment variables or system properties.
-        String appKey = System.getenv("YOUDAO_APP_KEY");
-        if (appKey == null || appKey.isEmpty()) {
-            appKey = System.getProperty("youdao.app.key");
-        }
-        
-        String appSecret = System.getenv("YOUDAO_APP_SECRET");
-        if (appSecret == null || appSecret.isEmpty()) {
-            appSecret = System.getProperty("youdao.app.secret");
-        }
+		String appSecret = System.getenv("YOUDAO_APP_SECRET");
+		if (appSecret == null || appSecret.isEmpty()) {
+			appSecret = System.getProperty("youdao.app.secret");
+		}
 
-        // Create an instance of YoudaoTranslateService with the appKey and appSecret.
-        YoudaoTranslateProperties youdaoTranslateProperties = new YoudaoTranslateProperties();
-        youdaoTranslateProperties.setAppKey(appKey);
-        youdaoTranslateProperties.setAppSecret(appSecret);
-        YoudaoTranslateService youdaoTranslateService = new YoudaoTranslateService(youdaoTranslateProperties);
-        YoudaoTranslateService.Request request = new YoudaoTranslateService.Request("你好","zh-CHS","en");
-        YoudaoTranslateService.Response apply = youdaoTranslateService.apply(request);
-        Assertions.assertNotNull(apply);
-        Assertions.assertTrue(apply.translatedTexts().get(0).toLowerCase().contains("hello"));
-    }
+		// Create an instance of YoudaoTranslateService with the appKey and appSecret.
+		YoudaoTranslateProperties youdaoTranslateProperties = new YoudaoTranslateProperties();
+		youdaoTranslateProperties.setAppKey(appKey);
+		youdaoTranslateProperties.setAppSecret(appSecret);
+		YoudaoTranslateService youdaoTranslateService = new YoudaoTranslateService(youdaoTranslateProperties);
+		YoudaoTranslateService.Request request = new YoudaoTranslateService.Request("你好", "zh-CHS", "en");
+		YoudaoTranslateService.Response apply = youdaoTranslateService.apply(request);
+		Assertions.assertNotNull(apply);
+		Assertions.assertTrue(apply.translatedTexts().get(0).toLowerCase().contains("hello"));
+	}
+
 }
