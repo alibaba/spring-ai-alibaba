@@ -110,7 +110,7 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 	public AgentExecutionRecord getCurrentAgentExecutionRecord(String planId) {
 		// 自动清理超过30分钟的计划记录
 		cleanOutdatedPlans(30);
-		
+
 		PlanExecutionRecord planRecord = planRecords.get(planId);
 		if (planRecord != null) {
 			List<AgentExecutionRecord> agentExecutionSequence = planRecord.getAgentExecutionSequence();
@@ -121,14 +121,14 @@ public class DefaultPlanExecutionRecorder implements PlanExecutionRecorder {
 		}
 		return null;
 	}
-	
+
 	/**
 	 * 清理超过指定分钟数的过期计划记录
 	 * @param expirationMinutes 过期时间（分钟）
 	 */
 	private void cleanOutdatedPlans(int expirationMinutes) {
 		LocalDateTime currentTime = LocalDateTime.now();
-		
+
 		planRecords.entrySet().removeIf(entry -> {
 			PlanExecutionRecord record = entry.getValue();
 			// 检查记录创建时间是否超过了指定的过期时间

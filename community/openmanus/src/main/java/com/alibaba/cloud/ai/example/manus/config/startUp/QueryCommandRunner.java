@@ -38,7 +38,7 @@ public class QueryCommandRunner implements CommandLineRunner {
 	@Autowired
 	@Lazy
 	private PlanningFactory planningFactory;
-	
+
 	@Autowired
 	private PlanIdDispatcher planIdDispatcher;
 

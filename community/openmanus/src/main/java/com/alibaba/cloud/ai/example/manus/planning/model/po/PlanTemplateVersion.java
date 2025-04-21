@@ -31,71 +31,72 @@ import jakarta.persistence.Table;
 @Table(name = "plan_template_version")
 public class PlanTemplateVersion {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @Column(name = "plan_template_id", nullable = false, length = 50)
-    private String planTemplateId;
+	@Column(name = "plan_template_id", nullable = false, length = 50)
+	private String planTemplateId;
 
-    @Column(name = "version_index", nullable = false)
-    private Integer versionIndex;
+	@Column(name = "version_index", nullable = false)
+	private Integer versionIndex;
 
-    @Column(name = "plan_json", columnDefinition = "TEXT", nullable = false)
-    private String planJson;
+	@Column(name = "plan_json", columnDefinition = "TEXT", nullable = false)
+	private String planJson;
 
-    @Column(name = "create_time", nullable = false)
-    private LocalDateTime createTime;
+	@Column(name = "create_time", nullable = false)
+	private LocalDateTime createTime;
 
-    // 构造函数
-    public PlanTemplateVersion() {
-    }
+	// 构造函数
+	public PlanTemplateVersion() {
+	}
 
-    public PlanTemplateVersion(String planTemplateId, Integer versionIndex, String planJson) {
-        this.planTemplateId = planTemplateId;
-        this.versionIndex = versionIndex;
-        this.planJson = planJson;
-        this.createTime = LocalDateTime.now();
-    }
+	public PlanTemplateVersion(String planTemplateId, Integer versionIndex, String planJson) {
+		this.planTemplateId = planTemplateId;
+		this.versionIndex = versionIndex;
+		this.planJson = planJson;
+		this.createTime = LocalDateTime.now();
+	}
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
+	// Getters and Setters
+	public Long getId() {
+		return id;
+	}
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public String getPlanTemplateId() {
-        return planTemplateId;
-    }
+	public String getPlanTemplateId() {
+		return planTemplateId;
+	}
 
-    public void setPlanTemplateId(String planTemplateId) {
-        this.planTemplateId = planTemplateId;
-    }
+	public void setPlanTemplateId(String planTemplateId) {
+		this.planTemplateId = planTemplateId;
+	}
 
-    public Integer getVersionIndex() {
-        return versionIndex;
-    }
+	public Integer getVersionIndex() {
+		return versionIndex;
+	}
 
-    public void setVersionIndex(Integer versionIndex) {
-        this.versionIndex = versionIndex;
-    }
+	public void setVersionIndex(Integer versionIndex) {
+		this.versionIndex = versionIndex;
+	}
 
-    public String getPlanJson() {
-        return planJson;
-    }
+	public String getPlanJson() {
+		return planJson;
+	}
 
-    public void setPlanJson(String planJson) {
-        this.planJson = planJson;
-    }
+	public void setPlanJson(String planJson) {
+		this.planJson = planJson;
+	}
 
-    public LocalDateTime getCreateTime() {
-        return createTime;
-    }
+	public LocalDateTime getCreateTime() {
+		return createTime;
+	}
 
-    public void setCreateTime(LocalDateTime createTime) {
-        this.createTime = createTime;
-    }
+	public void setCreateTime(LocalDateTime createTime) {
+		this.createTime = createTime;
+	}
+
 }
