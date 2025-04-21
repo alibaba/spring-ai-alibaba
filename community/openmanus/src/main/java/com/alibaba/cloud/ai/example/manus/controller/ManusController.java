@@ -45,7 +45,7 @@ public class ManusController {
 
 	@Autowired
 	private PlanExecutionRecorder planExecutionRecorder;
-	
+
 	@Autowired
 	private PlanIdDispatcher planIdDispatcher;
 

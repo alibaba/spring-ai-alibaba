@@ -70,7 +70,6 @@ public class PlanTemplateController {
 
 	/**
 	 * 生成计划
-	 * 
 	 * @param request 包含计划需求的请求和可选的JSON数据
 	 * @return 计划的完整JSON数据
 	 */
@@ -90,7 +89,8 @@ public class PlanTemplateController {
 			// 转义JSON中的花括号，防止被String.format误解为占位符
 			String escapedJson = existingJson.replace("{", "\\{").replace("}", "\\}");
 			enhancedQuery = String.format("参照过去的执行计划 %s 。以及用户的新的query：%s。构建一个新的执行计划。", escapedJson, query);
-		} else {
+		}
+		else {
 			enhancedQuery = query;
 		}
 		context.setUserRequest(enhancedQuery);
@@ -126,7 +126,8 @@ public class PlanTemplateController {
 			response.put("planJson", planJson);
 
 			return ResponseEntity.ok(response);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("生成计划失败", e);
 			return ResponseEntity.internalServerError().body(Map.of("error", "计划生成失败: " + e.getMessage()));
 		}
@@ -134,7 +135,6 @@ public class PlanTemplateController {
 
 	/**
 	 * 根据计划模板ID执行计划（POST方法）
-	 * 
 	 * @param request 包含计划模板ID的请求
 	 * @return 结果状态
 	 */
@@ -144,40 +144,38 @@ public class PlanTemplateController {
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "计划模板ID不能为空"));
 		}
-		
+
 		String rawParam = request.get("rawParam");
 		return executePlanByTemplateIdInternal(planTemplateId, rawParam);
 	}
-	
+
 	/**
 	 * 根据计划模板ID执行计划（GET方法）
-	 * 
 	 * @param planTemplateId 计划模板ID
 	 * @param allParams 所有URL查询参数
 	 * @return 结果状态
 	 */
 	@GetMapping("/execute/{planTemplateId}")
-	public ResponseEntity<Map<String, Object>> executePlanByTemplateIdGet(
-			@PathVariable String planTemplateId,
+	public ResponseEntity<Map<String, Object>> executePlanByTemplateIdGet(@PathVariable String planTemplateId,
 			@RequestParam(required = false) Map<String, String> allParams) {
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "计划模板ID不能为空"));
 		}
-		
+
 		logger.info("执行计划模板，ID: {}, 参数: {}", planTemplateId, allParams);
 		String rawParam = allParams != null ? allParams.get("rawParam") : null;
 		// 如果有URL参数，使用带参数的执行方法
 		return executePlanByTemplateIdInternal(planTemplateId, rawParam);
 	}
-	
+
 	/**
 	 * 执行计划的内部共用方法（带URL参数版本）
-	 * 
 	 * @param planTemplateId 计划模板ID
 	 * @param rawParam URL查询参数
 	 * @return 结果状态
 	 */
-	private ResponseEntity<Map<String, Object>> executePlanByTemplateIdInternal(String planTemplateId, String rawParam) {
+	private ResponseEntity<Map<String, Object>> executePlanByTemplateIdInternal(String planTemplateId,
+			String rawParam) {
 		try {
 			// 第一步：从存储库中通过planTemplateId获取执行JSON
 			PlanTemplate template = planTemplateService.getPlanTemplate(planTemplateId);
@@ -206,19 +204,20 @@ public class PlanTemplateController {
 
 			try {
 				ExecutionPlan plan = ExecutionPlan.fromJson(planJson, newPlanId);
-				
+
 				// 设置URL参数到ExecutionPlan中
 				if (rawParam != null && !rawParam.isEmpty()) {
 					logger.info("设置执行参数到计划中: {}", rawParam);
 					plan.setExecutionParams(rawParam);
 				}
-				
+
 				// 设置计划到上下文
 				context.setPlan(plan);
 
 				// 从记录中获取用户请求
 				context.setUserRequest(template.getUserRequest());
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				logger.error("解析计划JSON或获取用户请求失败", e);
 				context.setUserRequest("执行计划: " + newPlanId + "\n来自模板: " + planTemplateId);
 
@@ -232,7 +231,8 @@ public class PlanTemplateController {
 					// 执行计划的执行和总结步骤，跳过创建计划
 					planningCoordinator.executeExistingPlan(context);
 					logger.info("计划执行成功: {}", newPlanId);
-				} catch (Exception e) {
+				}
+				catch (Exception e) {
 					logger.error("执行计划失败", e);
 				}
 			});
@@ -244,7 +244,8 @@ public class PlanTemplateController {
 			response.put("message", "计划执行请求已提交，正在处理中");
 
 			return ResponseEntity.ok(response);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("执行计划失败", e);
 			return ResponseEntity.internalServerError().body(Map.of("error", "执行计划失败: " + e.getMessage()));
 		}
@@ -252,8 +253,7 @@ public class PlanTemplateController {
 
 	/**
 	 * 保存版本历史
-	 * 
-	 * @param planId   计划ID
+	 * @param planId 计划ID
 	 * @param planJson 计划JSON数据
 	 */
 	private void saveToVersionHistory(String planId, String planJson) {
@@ -265,7 +265,8 @@ public class PlanTemplateController {
 		if (template == null) {
 			// 如果不存在，则创建新计划
 			planTemplateService.savePlanTemplate(planId, title, "用户请求生成计划: " + planId, planJson);
-		} else {
+		}
+		else {
 			// 如果存在，则保存新版本
 			planTemplateService.saveVersionToHistory(planId, planJson);
 		}
@@ -275,7 +276,6 @@ public class PlanTemplateController {
 
 	/**
 	 * 保存计划
-	 * 
 	 * @param request 包含计划ID和JSON的请求
 	 * @return 保存结果
 	 */
@@ -301,12 +301,10 @@ public class PlanTemplateController {
 			int versionCount = versions.size();
 
 			// 返回成功响应
-			return ResponseEntity.ok(Map.of(
-					"status", "success",
-					"message", "计划已保存",
-					"planId", planId,
-					"versionCount", versionCount));
-		} catch (Exception e) {
+			return ResponseEntity
+				.ok(Map.of("status", "success", "message", "计划已保存", "planId", planId, "versionCount", versionCount));
+		}
+		catch (Exception e) {
 			logger.error("保存计划失败", e);
 			return ResponseEntity.internalServerError().body(Map.of("error", "保存计划失败: " + e.getMessage()));
 		}
@@ -314,7 +312,6 @@ public class PlanTemplateController {
 
 	/**
 	 * 获取计划的版本历史
-	 * 
 	 * @param request 包含计划ID的请求
 	 * @return 版本历史列表
 	 */
@@ -338,7 +335,6 @@ public class PlanTemplateController {
 
 	/**
 	 * 获取特定版本的计划
-	 * 
 	 * @param request 包含计划ID和版本索引的请求
 	 * @return 特定版本的计划
 	 */
@@ -376,9 +372,11 @@ public class PlanTemplateController {
 			response.put("planJson", planJson);
 
 			return ResponseEntity.ok(response);
-		} catch (NumberFormatException e) {
+		}
+		catch (NumberFormatException e) {
 			return ResponseEntity.badRequest().body(Map.of("error", "版本索引必须是数字"));
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("获取计划版本失败", e);
 			return ResponseEntity.internalServerError().body(Map.of("error", "获取计划版本失败: " + e.getMessage()));
 		}
@@ -386,7 +384,6 @@ public class PlanTemplateController {
 
 	/**
 	 * 获取所有计划模板列表
-	 * 
 	 * @return 所有计划模板的列表
 	 */
 	@GetMapping("/list")
@@ -413,7 +410,8 @@ public class PlanTemplateController {
 			response.put("count", templateList.size());
 
 			return ResponseEntity.ok(response);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("获取计划模板列表失败", e);
 			return ResponseEntity.internalServerError().body(Map.of("error", "获取计划模板列表失败: " + e.getMessage()));
 		}
@@ -421,7 +419,6 @@ public class PlanTemplateController {
 
 	/**
 	 * 更新计划模板
-	 * 
 	 * @param request 包含计划模板ID、计划需求和可选的JSON数据的请求
 	 * @return 更新后的计划JSON数据
 	 */
@@ -452,7 +449,8 @@ public class PlanTemplateController {
 			// 转义JSON中的花括号，防止被String.format误解为占位符
 			String escapedJson = existingJson.replace("{", "\\{").replace("}", "\\}");
 			enhancedQuery = String.format("参照过去的执行计划 %s 。以及用户的新的query：%s。更新这个执行计划。", escapedJson, query);
-		} else {
+		}
+		else {
 			enhancedQuery = query;
 		}
 		context.setUserRequest(enhancedQuery);
@@ -487,7 +485,8 @@ public class PlanTemplateController {
 			response.put("planJson", planJson);
 
 			return ResponseEntity.ok(response);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("更新计划模板失败", e);
 			return ResponseEntity.internalServerError().body(Map.of("error", "计划模板更新失败: " + e.getMessage()));
 		}
@@ -495,7 +494,6 @@ public class PlanTemplateController {
 
 	/**
 	 * 删除计划模板
-	 * 
 	 * @param request 包含计划ID的请求
 	 * @return 删除结果
 	 */
@@ -519,17 +517,17 @@ public class PlanTemplateController {
 
 			if (deleted) {
 				logger.info("计划模板删除成功: {}", planId);
-				return ResponseEntity.ok(Map.of(
-						"status", "success",
-						"message", "计划模板已删除",
-						"planId", planId));
-			} else {
+				return ResponseEntity.ok(Map.of("status", "success", "message", "计划模板已删除", "planId", planId));
+			}
+			else {
 				logger.error("计划模板删除失败: {}", planId);
 				return ResponseEntity.internalServerError().body(Map.of("error", "计划模板删除失败"));
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("删除计划模板失败", e);
 			return ResponseEntity.internalServerError().body(Map.of("error", "删除计划模板失败: " + e.getMessage()));
 		}
 	}
+
 }
