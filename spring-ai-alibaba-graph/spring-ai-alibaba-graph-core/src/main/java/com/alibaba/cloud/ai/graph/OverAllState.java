@@ -26,6 +26,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Optional.ofNullable;
 
@@ -80,14 +82,14 @@ public final class OverAllState implements Serializable {
 	public OverAllState() {
 		this.data = new HashMap<>();
 		this.keyStrategies = new HashMap<>();
-		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, (o, o2) -> o2);
+		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.resume = false;
 	}
 
 	private OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean resume) {
 		this.data = data;
 		this.keyStrategies = keyStrategies;
-		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, (o, o2) -> o2);
+		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.resume = resume;
 	}
 
@@ -139,7 +141,11 @@ public final class OverAllState implements Serializable {
 	public OverAllState input(Map<String, Object> input) {
 		if (CollectionUtils.isEmpty(input))
 			return this;
-		this.data.putAll(input);
+
+		Map<String, KeyStrategy> keyStrategies = keyStrategies();
+		input.keySet().stream().filter(key -> keyStrategies.containsKey(key)).forEach(key -> {
+			this.data.put(key, keyStrategies.get(key).apply(value(key, null), input.get(key)));
+		});
 		return this;
 	}
 

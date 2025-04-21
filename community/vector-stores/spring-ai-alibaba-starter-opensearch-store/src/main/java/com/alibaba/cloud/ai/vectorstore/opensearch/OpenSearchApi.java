@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.vectorstore.opensearch;
 
 import com.aliyun.ha3engine.vector.Client;
 import com.aliyun.ha3engine.vector.models.*;
-import com.aliyun.teautil.models.RuntimeOptions;
+import com.aliyun.teautil.Common;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,38 +41,19 @@ public class OpenSearchApi {
 
 	private final Client client;
 
-	private final String instanceId;
-
-	private final String endpoint;
-
-	private final String accessUserName;
-
-	private final String accessPassWord;
+	private final OpenSearchVectorStoreProperties properties;
 
 	/**
 	 * Initializes a new instance of the OpenSearchApi class.
-	 * @param instanceId The ID of the OpenSearch instance to connect to.
-	 * @param endpoint The endpoint URL of the OpenSearch service.
-	 * @param accessUserName The username for authenticating with the OpenSearch service.
-	 * @param accessPassWord The password for authenticating with the OpenSearch service.
+	 * @param properties basic configuration for connecting to OpenSearch instance.
 	 * @throws RuntimeException If the initialization fails due to an error in configuring
 	 * or creating the OpenSearch client. The exception message will include details of
 	 * the underlying error.
 	 */
-	public OpenSearchApi(String instanceId, String endpoint, String accessUserName, String accessPassWord) {
-		this.endpoint = endpoint;
-		this.accessUserName = accessUserName;
-		this.accessPassWord = accessPassWord;
-
+	public OpenSearchApi(OpenSearchVectorStoreProperties properties) {
 		try {
-			Map<String, Object> params = new HashMap<>();
-			params.put("instanceId", instanceId);
-			params.put("endpoint", endpoint);
-			params.put("accessUserName", accessUserName);
-			params.put("accessPassWord", accessPassWord);
-
-			Config openSearchConfiguration = Config.build(params);
-			this.instanceId = openSearchConfiguration.getInstanceId();
+			this.properties = properties;
+			Config openSearchConfiguration = Config.build(properties.toClientParams());
 			this.client = new Client(openSearchConfiguration);
 		}
 		catch (Exception exception) {
@@ -81,32 +62,14 @@ public class OpenSearchApi {
 		}
 	}
 
-	public OpenSearchApi(OpenSearchApi openSearchApi) {
-		this.client = openSearchApi.client;
-		this.instanceId = openSearchApi.instanceId;
-		this.endpoint = openSearchApi.endpoint;
-		this.accessUserName = openSearchApi.accessUserName;
-		this.accessPassWord = openSearchApi.accessPassWord;
-	}
-
-	public OpenSearchApi(OpenSearchVectorStoreProperties properties) throws Exception {
-		this.instanceId = properties.getInstanceId();
-		this.endpoint = properties.getEndpoint();
-		this.accessUserName = properties.getAccessUserName();
-		this.accessPassWord = properties.getAccessPassWord();
-		Config openSearchConfiguration = Config.build(properties.toClientParams());
-		this.client = new Client(openSearchConfiguration);
-	}
-
 	private String getFullTableName(String tableName) {
-		return this.instanceId + "_" + tableName;
+		return this.properties.getInstanceId() + "_" + tableName;
 	}
 
-	public void createCollectionAndIndex() throws Exception {
-
-		String queryUri = "/openapi/ha3/instances/" + instanceId + "/tables";
-		Map<String, ?> ansMap = client._request("POST", queryUri, new HashMap<>(), new HashMap<>(), new HashMap<>(),
-				new RuntimeOptions());
+	public void createCollectionAndIndex(String mappingJson) throws Exception {
+		String queryUri = "/openapi/ha3/instances/" + this.properties.getInstanceId() + "/tables";
+		Map<String, ?> ansMap = client._request("POST", queryUri, null, client.getHeadersFromRunTimeOption(),
+				Common.toJSONString(mappingJson), client._runtimeOptions);
 
 		if (null == ansMap.get("requestId")) {
 			throw new RuntimeException(
@@ -116,25 +79,16 @@ public class OpenSearchApi {
 		logger.info("OpenSearch autoInitializeIndex success. requestId:{}", ansMap.get("requestId"));
 	}
 
-	public void createCollectionAndIndex(Map<String, ?> fieldSchema, List<Map<String, ?>> vectorIndex)
-			throws Exception {
-		HashMap<String, ?> bodyMap = new HashMap<>() {
-			{
-				put("fieldSchema", fieldSchema);
-				put("vectorIndex", vectorIndex);
-			}
-		};
-
-		String queryUri = "/openapi/ha3/instances/" + instanceId + "/tables";
-		Map<String, ?> ansMap = client._request("POST", queryUri, new HashMap<>(), new HashMap<>(), bodyMap,
-				new RuntimeOptions());
+	public List<Object> getIndexList(String tableName) throws Exception {
+		String queryUri = "/openapi/ha3/instances/" + this.properties.getInstanceId() + "/tables" + "/" + tableName;
+		Map<String, ?> ansMap = client._request("GET", queryUri, null, client.getHeadersFromRunTimeOption(), null,
+				client._runtimeOptions);
 
 		if (null == ansMap.get("requestId")) {
 			throw new RuntimeException(
 					"OpenSearch autoInitializeIndex failed. Error message:{} " + ansMap.get("message"));
 		}
-
-		logger.info("OpenSearch autoInitializeIndex success. requestId:{}", ansMap.get("requestId"));
+		return Collections.singletonList(ansMap.get("vectorIndex"));
 	}
 
 	/**
