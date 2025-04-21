@@ -103,7 +103,7 @@
             <div class="plan-container">
                 <div class="plan-input-section">
                     <div class="section-header">
-                        <h2>计划需求输入</h2>
+                        <h2>Step1: 需求输入</h2>
                         <div class="section-actions">
                             <button class="action-btn" id="clearBtn">
                                 <span class="icon-placeholder"></span> 清空
@@ -112,20 +112,19 @@
                     </div>
                     <div class="input-field">
                         <label for="plan-prompt">任务描述：</label>
-                        <textarea id="plan-prompt" placeholder="请输入您的任务需求，系统将基于此生成执行计划..."></textarea>
+                        <textarea id="plan-prompt" placeholder="请输入您的任务需求，系统将基于此生成执行计划，如果是既有计划，可以输入修改方案，他会结合之前的计划，将新需求自动添加到计划中..."></textarea>
                     </div>
                     <div class="submit-area">
                         <button class="submit-btn" id="generatePlanBtn">
-                            <span class="icon-placeholder"></span> 生成计划
+                            <span class="icon-placeholder"></span> 生成计划模板
                         </button>
                     </div>
                 </div>
 
-                <!-- 移除了计划文本预览部分 -->
 
                 <div class="plan-json-section">
                     <div class="section-header">
-                        <h2>计划数据 (JSON)</h2>
+                        <h2>Step2: 计划模板精调</h2>
                         <div class="section-actions">
                             <button class="action-btn" id="rollbackJsonBtn" title="回滚到上一个版本">
                                 <span class="icon-back"></span> 回滚
@@ -142,25 +141,55 @@
                         <!-- 默认显示编辑器而不是只读视图 -->
                         <textarea id="plan-json-editor" class="preview-content code-view" placeholder="计划的JSON数据将在这里显示..."></textarea>
                     </div>
-                </div>
-
-                <div class="plan-actions">
-                    <div class="api-call-link">
-                        调用链接: <span class="api-url">http://your-domain/api/plan-template/execute/<span class="dynamic-id">template_xxxx</span></span>
-                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
-                            <span>返回结果: {"planId": "plan_xxxx", "status": "processing", "message": "计划执行请求已提交，正在处理中"}</span>
+                    <div class="plan-param-section">
+                        <div class="section-header">
+                            <h2>附加额外参数</h2>
+                            <div class="section-actions">
+                                <button class="action-btn" id="clearParamBtn" title="清空参数">
+                                    <span class="icon-placeholder"></span> 清空
+                                </button>
+                            </div>
                         </div>
-                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
-                            <span>状态监控: http://your-domain/api/executor/details/<span class="dynamic-plan-id">plan_xxxx</span></span>
+                        <div class="input-field">
+                            <textarea id="plan-params" placeholder="可选：请输入计划执行需要的参数 ，会作为额外参数给到模型 ， 格式自定义只要能跟模型的执行prompt对应即可。 例如 变量1： xxx  ，那么执行计划里面有 变量1 ，模型就会自己替换"></textarea>
                         </div>
                     </div>
-                    <button class="secondary-btn" id="modifyPlanBtn">
-                        <span class="icon-save"></span> 保存计划
-                    </button>
-                    <button class="primary-btn" id="runPlanBtn">
-                        <span class="icon-run"></span> 执行计划
-                    </button>
                 </div>
+                
+                <div class="plan-execution-section">
+                    <div class="section-header">
+                        <h2>Step3: 计划执行控制</h2>
+                        <div class="section-actions">
+                            <button class="action-btn" id="refreshApiLinkBtn" title="刷新API链接">
+                                <span class="icon-placeholder"></span> 刷新
+                            </button>
+                        </div>
+                    </div>
+                    <div class="plan-actions">
+                        <div class="api-call-link">
+                            # 也可以通过get方法重复调用链接: 
+                            <div class="api-url-container">
+                                <span class="api-url">http://your-domain/api/plan-template/execute/<span class="dynamic-id">template_xxxx</span></span>
+                            </div>
+                            <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                                <span># 调用会返回结果样例: {"planId": "plan_xxxx", "status": "processing", "message": "计划执行请求已提交，正在处理中"}</span>
+                            </div>
+                            <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                                <span># 可监控执行状态: http://your-domain/api/executor/details/<span class="dynamic-plan-id">plan_xxxx</span></span>
+                            </div>
+                        </div>
+                        <div class="execution-buttons">
+                            <button class="secondary-btn" id="modifyPlanBtn">
+                                <span class="icon-save"></span> 保存计划
+                            </button>
+                            <button class="primary-btn" id="runPlanBtn">
+                                <span class="icon-run"></span> 执行计划
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+               
             
                 <!-- 添加简单操作请求区域 -->
                 <div class="simple-chat-area">
@@ -175,7 +204,7 @@
                     <div class="dialog-round-container" data-dialog-round-id="demo-round" data-plan-id="demo-plan">
                         <!-- 示例用户消息 -->
                         <div class="message user-message">
-                            <p>请帮我分析这段数据并生成可视化图表(DEMO)</p>
+                            <p>执行后这里可以看到详细执行情况</p>
                         </div>
                         
                         <!-- 示例AI回复消息 -->
@@ -184,50 +213,6 @@
                                 <span class="ai-logo">M</span> JTaskPilot AI
                             </div>
                             
-                            <div class="ai-section">
-                                <div class="section-header">
-                                    <span class="icon">✓</span> 步骤1: 解析输入数据
-                                    <span class="toggle-arrow icon-down-arrow"></span>
-                                </div>
-                                <div class="section-content">
-                                    我会首先解析您提供的数据集，确定其结构和特征。
-                                    <div class="status-update">
-                                        <span class="icon">🔍</span> 正在分析数据结构...
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="ai-section">
-                                <div class="section-header checked">
-                                    <span class="icon">✓</span> 步骤2: 选择合适的图表类型
-                                    <span class="toggle-arrow icon-down-arrow"></span>
-                                </div>
-                                <div class="section-content">
-                                    基于数据特征，我将选择合适的可视化图表类型。
-                                    <div class="action-info">
-                                        <div class="action-description">
-                                            <span class="icon">🛠️</span> 调用数据分析工具
-                                        </div>
-                                        <div class="tool-params">
-                                            <span class="icon">⚙️</span>
-                                            参数: {"dataType": "time-series", "visualization": "line-chart"}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="ai-section">
-                                <div class="section-header">
-                                    <span class="icon">🔄</span> 步骤3: 生成图表
-                                    <span class="toggle-arrow icon-down-arrow"></span>
-                                </div>
-                                <div class="section-content">
-                                    正在生成图表，这可能需要一点时间...
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 可以在这里添加更多消息 -->
                     </div>
                     
                     <!-- 当没有消息时显示的提示 -->

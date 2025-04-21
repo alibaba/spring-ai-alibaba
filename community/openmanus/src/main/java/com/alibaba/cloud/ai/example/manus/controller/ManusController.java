@@ -113,7 +113,6 @@ public class ManusController {
 	@DeleteMapping("/details/{planId}")
 	public ResponseEntity<Map<String, String>> removeExecutionDetails(@PathVariable String planId) {
 		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId);
-
 		if (planRecord == null) {
 			return ResponseEntity.notFound().build();
 		}

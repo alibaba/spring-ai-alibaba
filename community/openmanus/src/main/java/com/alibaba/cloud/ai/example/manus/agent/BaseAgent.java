@@ -132,6 +132,9 @@ public abstract class BaseAgent {
 				CURRENT TASK STEP ({currentStepIndex}):
 				{stepText}
 
+				ExtraParams for this step:
+				{extraParams}
+
 				IMPORTANT INSTRUCTIONS:
 				1. When using tools, execute them directly without explanations
 				2. Do not provide reasoning or descriptions before tool calls

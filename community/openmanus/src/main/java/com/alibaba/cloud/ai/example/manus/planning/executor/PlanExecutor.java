@@ -92,6 +92,7 @@ public class PlanExecutor {
 			executorParams.put("planStatus", planStatus);
 			executorParams.put("currentStepIndex", String.valueOf(stepIndex));
 			executorParams.put("stepText", stepText);
+			executorParams.put("extraParams", context.getPlan().getExecutionParams());
 			executorParams.put(EXECUTION_ENV_KEY_STRING, "");
 			String stepResultStr = executor.run(executorParams);
 			// Execute the step

@@ -13,7 +13,8 @@
 /* 通用的部分样式 */
 .plan-input-section,
 .plan-result-section,
-.plan-json-section {
+.plan-json-section,
+.plan-execution-section {
     background-color: #fff;
     border-radius: 8px;
     border: 1px solid #e0e0e0;
@@ -24,7 +25,8 @@
 
 .plan-input-section:hover,
 .plan-result-section:hover,
-.plan-json-section:hover {
+.plan-json-section:hover,
+.plan-execution-section:hover {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -185,9 +187,24 @@
 /* 底部操作按钮 */
 .plan-actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
+    align-items: center;
     gap: 12px;
     padding: 16px 0;
+}
+
+/* API调用链接区域 */
+.api-call-link {
+    flex: 1;
+    font-size: 14px;
+    color: #5f6368;
+}
+
+/* 执行按钮区域 */
+.execution-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
 }
 
 .primary-btn {
