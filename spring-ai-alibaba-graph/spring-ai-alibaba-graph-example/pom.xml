@@ -31,8 +31,8 @@
 	<artifactId>spring-ai-alibaba-graph-example</artifactId>
 	<version>${revision}</version>
 
-	<description>Spring AI Alibaba Helloworld Example</description>
-	<name>Spring AI Alibaba Helloworld Examples</name>
+	<description>Spring AI Alibaba Graph Example</description>
+	<name>Spring AI Alibaba Graph Examples</name>
 
 	<properties>
 		<gson.version>2.10.1</gson.version>
@@ -80,6 +80,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>com.alibaba.cloud.ai</groupId>
+			<artifactId>document-parser-tika</artifactId>
+			<version>1.0.0-M6.1</version>
+		</dependency>
+
+		<dependency>
 			<groupId>com.belerweb</groupId>
 			<artifactId>pinyin4j</artifactId>
 			<version>2.5.1</version>
@@ -90,6 +96,65 @@
 			<artifactId>hutool-extra</artifactId>
 			<version>5.8.20</version>
 			<scope>compile</scope>
+		</dependency>
+
+		<!-- HttpClient 核心库 -->
+		<dependency>
+			<groupId>org.apache.httpcomponents.client5</groupId>
+			<artifactId>httpclient5</artifactId>
+			<version>5.2.3</version>
+		</dependency>
+
+		<!-- 如果需要使用 HttpClient 连接池管理 -->
+		<dependency>
+			<groupId>org.apache.httpcomponents.core5</groupId>
+			<artifactId>httpcore5</artifactId>
+			<version>5.2.3</version>
+		</dependency>
+
+		<!-- This dependency automatically matches the appropriate version of Chrome Driver, -->
+		<!-- causing it to be slower on first boot -->
+		<dependency>
+			<groupId>io.github.bonigarcia</groupId>
+			<artifactId>webdrivermanager</artifactId>
+			<version>5.7.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-java</artifactId>
+			<version>4.25.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-chrome-driver</artifactId>
+			<version>4.25.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-api</artifactId>
+			<version>4.25.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-remote-driver</artifactId>
+			<version>4.25.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-manager</artifactId>
+			<version>4.25.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-http</artifactId>
+			<version>4.25.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.15</version>
 		</dependency>
 	</dependencies>
 
@@ -111,6 +176,9 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-deploy-plugin</artifactId>
 				<version>${maven-deploy-plugin.version}</version>
+				<configuration>
+					<skip>true</skip>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
