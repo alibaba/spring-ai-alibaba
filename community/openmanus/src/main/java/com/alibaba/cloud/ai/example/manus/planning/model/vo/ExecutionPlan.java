@@ -30,6 +30,9 @@ public class ExecutionPlan {
 	private String title;
 
 	private String planningThinking;
+	
+	// 使用简单字符串存储执行参数
+	private String executionParams;
 
 	private List<ExecutionStep> steps;
 
@@ -37,6 +40,7 @@ public class ExecutionPlan {
 		this.planId = planId;
 		this.title = title;
 		this.steps = new ArrayList<>();
+		this.executionParams = "";
 	}
 
 	public String getPlanId() {
@@ -82,11 +86,22 @@ public class ExecutionPlan {
 	public void setPlanningThinking(String planningThinking) {
 		this.planningThinking = planningThinking;
 	}
+	
+	public String getExecutionParams() {
+		return executionParams;
+	}
+	
+	public void setExecutionParams(String executionParams) {
+		this.executionParams = executionParams;
+	}
+	
 
 	public String getPlanExecutionStateStringFormat() {
 		StringBuilder state = new StringBuilder();
 		state.append("Plan: ").append(title).append(" (ID: ").append(planId).append(")\n");
 		state.append("=".repeat(state.length())).append("\n\n");
+
+		state.append("\n Execution Parameters: ").append(executionParams).append("\n");
 
 		long completed = steps.stream().filter(step -> step.getStatus().equals(PlanStepStatus.COMPLETED)).count();
 		int total = steps.size();

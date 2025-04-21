@@ -17,11 +17,13 @@ let currentVersionIndex = -1; // 当前版本索引
 
 // DOM 元素引用
 let planPromptInput;
+let planParamsInput;
 let generatePlanBtn;
 let jsonEditor;
 let runPlanBtn;
 let modifyPlanBtn;
 let clearBtn;
+let clearParamBtn;
 let apiUrlElement;
 let chatArea;
 let clearChatBtn;
@@ -38,11 +40,13 @@ let isPolling = false;
 function init() {
     // 获取DOM元素
     planPromptInput = document.getElementById('plan-prompt');
+    planParamsInput = document.getElementById('plan-params');
     generatePlanBtn = document.getElementById('generatePlanBtn');
     jsonEditor = document.getElementById('plan-json-editor');
     runPlanBtn = document.getElementById('runPlanBtn');
     modifyPlanBtn = document.getElementById('modifyPlanBtn');
     clearBtn = document.getElementById('clearBtn');
+    clearParamBtn = document.getElementById('clearParamBtn');
     apiUrlElement = document.querySelector('.api-url');
     chatArea = document.querySelector('.simple-chat-area .dialog-round-container');
     clearChatBtn = document.getElementById('clearChatBtn');
@@ -52,6 +56,23 @@ function init() {
     runPlanBtn.addEventListener('click', handleRunPlanClick);
     modifyPlanBtn.addEventListener('click', handleModifyPlan);
     clearBtn.addEventListener('click', handleClearInput);
+    
+    if (clearParamBtn) {
+        clearParamBtn.addEventListener('click', function() {
+            if (planParamsInput) {
+                planParamsInput.value = '';
+                // 清空参数时更新API URL
+                updateApiUrl();
+            }
+        });
+    }
+    
+    // 为参数输入框添加实时监听，当输入内容变化时更新API URL
+    if (planParamsInput) {
+        planParamsInput.addEventListener('input', function() {
+            updateApiUrl();
+        });
+    }
     
     if (clearChatBtn) {
         clearChatBtn.addEventListener('click', clearChatArea);
@@ -250,14 +271,15 @@ async function handleGeneratePlan() {
             saveToVersionHistory(jsonString);
             
             // 更新API URL
-            if (currentPlanTemplateId) {
-                apiUrlElement.textContent = `http://your-domain/api/plan-template/execute/${currentPlanTemplateId}`;
-            }
+            updateApiUrl();
         } else if (response.planJson) {
             // 如果plan对象解析失败但有原始JSON字符串，直接显示原始JSON
             jsonEditor.value = response.planJson;
             // 保存此版本到版本历史
             saveToVersionHistory(response.planJson);
+            
+            // 更新API URL
+            updateApiUrl();
         }
         
         // 计划生成完成
@@ -385,35 +407,12 @@ function handlePlanData(planData) {
     currentPlanData = planData;
     
     // 更新API URL
-    if (currentPlanTemplateId) {
-        apiUrlElement.textContent = `http://your-domain/api/plan-template/execute/${currentPlanTemplateId}`;
-    }
+    updateApiUrl();
     
     // 更新UI状态
     updateUIState();
     
-    // 如果有新的智能体执行记录，且sequence size增加了，更新UI并发送事件
-    if (planData.agentExecutionSequence) {
-        const currentSize = planData.agentExecutionSequence.length;
-        if (currentSize > lastSequenceSize) {
-            // 发出事件通知
-            if (typeof PlanUIEvents !== 'undefined') {
-                // 只处理新增的记录
-                const newRecords = planData.agentExecutionSequence.slice(lastSequenceSize);
-                newRecords.forEach(record => {
-                    PlanUIEvents.EventSystem.emit('agent-execution', record);
-                });
-            }
-            
-            // 更新最后序列大小
-            lastSequenceSize = currentSize;
-            
-            // 发送更新事件
-            if (typeof PlanUIEvents !== 'undefined') {
-                PlanUIEvents.EventSystem.emit('plan-update', planData);
-            }
-        }
-    }
+    PlanUIEvents.EventSystem.emit('plan-update', planData);
     
     isPolling = false;
 }
@@ -471,6 +470,21 @@ async function executePlan() {
         let jsonContent = jsonEditor.value.trim();
         let response;
         
+        // 获取执行参数（如果有）
+        let executionParams = null;
+        if (planParamsInput && planParamsInput.value.trim()) {
+            try {
+                executionParams = planParamsInput.value.trim();
+                console.log('使用自定义参数执行计划:', executionParams);
+            } catch (e) {
+                console.error('参数JSON解析错误', e);
+                alert('无效的参数JSON格式: ' + e.message);
+                isExecuting = false;
+                updateUIState();
+                return;
+            }
+        }
+        
         // 检查JSON内容是否已修改
         let isModified = true;
         if (currentVersionIndex >= 0 && planVersions.length > 0) {
@@ -489,8 +503,15 @@ async function executePlan() {
             console.log('修改后的JSON已保存，使用计划模板ID执行');
         }
         
-        // 使用现有计划模板ID执行
-        response = await ManusAPI.executePlan(currentPlanTemplateId);
+        // 使用现有计划模板ID执行，使用统一的API函数
+        // 如果有参数，则传递参数对象；否则不传递额外参数
+        if (executionParams) {
+            // 使用带参数的执行方式
+            response = await ManusAPI.executePlan(currentPlanTemplateId, executionParams);
+        } else {
+            // 使用无参数的执行方式
+            response = await ManusAPI.executePlan(currentPlanTemplateId);
+        }
         
         // 更新当前计划ID
         currentPlanId = response.planId;
@@ -570,10 +591,33 @@ async function executePlan() {
 }
 
 /**
- * 修改计划
+ * 更新API URL，添加用户提供的参数
  */
+function updateApiUrl() {
+    if (!currentPlanTemplateId || !apiUrlElement) {
+        return;
+    }
+    
+    let apiUrl = `http://your-domain/api/plan-template/execute/${currentPlanTemplateId}`;
+    
+    // 检查是否有额外参数
+    if (planParamsInput && planParamsInput.value.trim()) {
+        try {
+            // 尝试解析JSON
+            const queryString = planParamsInput.value.trim();
+            if (queryString) {
+                apiUrl += `?rawParams=${encodeURIComponent(planParamsInput.value.trim())}`;
+            }
+        } catch (e) {
+            console.warn('显示原始输入作为查询字符串');
+
+        }
+    }
+    
+    apiUrlElement.textContent = apiUrl;
+}
 function handleModifyPlan() {
-    if (!currentPlanId) {
+    if (!currentPlanTemplateId) {
         alert('没有计划可以保存');
         return;
     }
@@ -597,7 +641,7 @@ function handleModifyPlan() {
                 saveToVersionHistory(jsonContent);
                 
                 // 如果有当前计划ID，保存修改到后端
-                savePlanToServer(currentPlanId, jsonContent);
+                savePlanToServer(currentPlanTemplateId, jsonContent);
                 
                 alert('计划已保存');
             } else {

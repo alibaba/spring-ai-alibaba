@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
@@ -144,31 +145,39 @@ public class PlanTemplateController {
 			return ResponseEntity.badRequest().body(Map.of("error", "计划模板ID不能为空"));
 		}
 		
-		return executePlanByTemplateIdInternal(planTemplateId);
+		String rawParam = request.get("rawParam");
+		return executePlanByTemplateIdInternal(planTemplateId, rawParam);
 	}
 	
 	/**
 	 * 根据计划模板ID执行计划（GET方法）
 	 * 
 	 * @param planTemplateId 计划模板ID
+	 * @param allParams 所有URL查询参数
 	 * @return 结果状态
 	 */
 	@GetMapping("/execute/{planTemplateId}")
-	public ResponseEntity<Map<String, Object>> executePlanByTemplateIdGet(@PathVariable String planTemplateId) {
+	public ResponseEntity<Map<String, Object>> executePlanByTemplateIdGet(
+			@PathVariable String planTemplateId,
+			@RequestParam(required = false) Map<String, String> allParams) {
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "计划模板ID不能为空"));
 		}
 		
-		return executePlanByTemplateIdInternal(planTemplateId);
+		logger.info("执行计划模板，ID: {}, 参数: {}", planTemplateId, allParams);
+		String rawParam = allParams != null ? allParams.get("rawParam") : null;
+		// 如果有URL参数，使用带参数的执行方法
+		return executePlanByTemplateIdInternal(planTemplateId, rawParam);
 	}
 	
 	/**
-	 * 执行计划的内部共用方法
+	 * 执行计划的内部共用方法（带URL参数版本）
 	 * 
 	 * @param planTemplateId 计划模板ID
+	 * @param rawParam URL查询参数
 	 * @return 结果状态
 	 */
-	private ResponseEntity<Map<String, Object>> executePlanByTemplateIdInternal(String planTemplateId) {
+	private ResponseEntity<Map<String, Object>> executePlanByTemplateIdInternal(String planTemplateId, String rawParam) {
 		try {
 			// 第一步：从存储库中通过planTemplateId获取执行JSON
 			PlanTemplate template = planTemplateService.getPlanTemplate(planTemplateId);
@@ -197,11 +206,18 @@ public class PlanTemplateController {
 
 			try {
 				ExecutionPlan plan = ExecutionPlan.fromJson(planJson, newPlanId);
+				
+				// 设置URL参数到ExecutionPlan中
+				if (rawParam != null && !rawParam.isEmpty()) {
+					logger.info("设置执行参数到计划中: {}", rawParam);
+					plan.setExecutionParams(rawParam);
+				}
+				
 				// 设置计划到上下文
 				context.setPlan(plan);
 
 				// 从记录中获取用户请求
-				 context.setUserRequest(template.getUserRequest());
+				context.setUserRequest(template.getUserRequest());
 			} catch (Exception e) {
 				logger.error("解析计划JSON或获取用户请求失败", e);
 				context.setUserRequest("执行计划: " + newPlanId + "\n来自模板: " + planTemplateId);

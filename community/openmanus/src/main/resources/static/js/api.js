@@ -81,26 +81,29 @@ const ManusAPI = (() => {
     /**
      * 执行已生成的计划
      * @param {string} planTemplateId - 计划模板ID
-     * @param {boolean} [useGetMethod=false] - 是否使用GET方法，默认为false使用POST方法
+     * @param {string} [rawParam=null] - 可选的执行参数，字符串格式
      * @returns {Promise<Object>} - 包含执行状态的响应
      */
-    const executePlan = async (planTemplateId, useGetMethod = false) => {
+    const executePlan = async (planTemplateId, rawParam = null) => {
         try {
             let response;
             
-            if (useGetMethod) {
-                // 使用GET方法
-                response = await fetch(`${PLAN_TEMPLATE_URL}/execute/${planTemplateId}`);
-            } else {
-                // 使用POST方法（默认）
-                response = await fetch(`${PLAN_TEMPLATE_URL}/executePlanByTemplateId`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ planTemplateId: planTemplateId })
-                });
+            // 构建请求体对象
+            const requestBody = { planTemplateId: planTemplateId };
+            
+            // 如果有原始参数，添加到请求体
+            if (rawParam) {
+                requestBody.rawParam = rawParam;
             }
+            
+            // 统一使用POST方法
+            response = await fetch(`${PLAN_TEMPLATE_URL}/executePlanByTemplateId`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
 
             if (!response.ok) {
                 throw new Error(`执行计划失败: ${response.status}`);
