@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.config.repository;
 
 import com.alibaba.cloud.ai.example.manus.config.entity.McpConfigEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -26,7 +27,5 @@ import org.springframework.stereotype.Repository;
 public interface McpConfigRepository extends JpaRepository<McpConfigEntity, Long> {
 
 	McpConfigEntity findByMcpServerName(String mcpServerName);
-
-	void deleteByMcpServerName(String mcpServerName);
 
 }

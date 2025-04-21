@@ -78,4 +78,10 @@ public class McpConfigEntity {
 		return this;
 	}
 
+	@Override
+	public String toString() {
+		return "McpConfigEntity{" + "id=" + id + ", mcpServerName='" + mcpServerName + '\'' + ", connectionType="
+				+ connectionType + ", connectionConfig='" + connectionConfig + '\'' + '}';
+	}
+
 }

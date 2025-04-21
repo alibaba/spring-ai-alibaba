@@ -60,8 +60,8 @@ public class McpController {
 	 * @param mcpServerName MCP Server Name
 	 */
 	@GetMapping("/remove")
-	public ResponseEntity<String> remove(@RequestParam("mcpServerName") String mcpServerName) throws IOException {
-		mcpService.removeMcpServer(mcpServerName);
+	public ResponseEntity<String> remove(@RequestParam("id") long id) throws IOException {
+		mcpService.removeMcpServer(id);
 		return ResponseEntity.ok("Success");
 	}
 
