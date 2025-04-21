@@ -18,6 +18,8 @@ package com.alibaba.cloud.ai.toolcalling.youdaotranslate;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Test class for {@link YoudaoTranslateService}.
@@ -25,6 +27,8 @@ import org.junit.jupiter.api.Test;
  * @author zhangshenghang
  */
 class YoudaoTranslateServiceTest {
+
+	private static final Logger logger = LoggerFactory.getLogger(YoudaoTranslateServiceTest.class);
 
 	@Test
 	void apply() {
@@ -38,6 +42,13 @@ class YoudaoTranslateServiceTest {
 		if (appSecret == null || appSecret.isEmpty()) {
 			appSecret = System.getProperty("youdao.app.secret");
 		}
+
+		logger.info("appKey: {}, appSecret: {}", appKey, appSecret);
+
+		Assertions.assertNotNull(appKey,
+				"appKey is null, please set it in environment variables or system properties.");
+		Assertions.assertNotNull(appSecret,
+				"appSecret is null, please set it in environment variables or system properties.");
 
 		// Create an instance of YoudaoTranslateService with the appKey and appSecret.
 		YoudaoTranslateProperties youdaoTranslateProperties = new YoudaoTranslateProperties();
