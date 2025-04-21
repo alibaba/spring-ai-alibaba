@@ -415,7 +415,6 @@ public class CompiledGraph {
 	 * @param inputs the input map
 	 * @param config the invoke configuration
 	 * @return an AsyncGenerator stream of NodeOutput
-	 * @throws Exception if there is an error creating the stream
 	 */
 	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");

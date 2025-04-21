@@ -32,6 +32,8 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.RETRIEVED_DOCUMENTS;
+
 /**
  * Title Document retrieval advisor.<br>
  * Description Document retrieval advisor.<br>
@@ -74,8 +76,6 @@ public class DashScopeDocumentRetrievalAdvisor implements CallAroundAdvisor, Str
 			""";
 
 	private static final int DEFAULT_ORDER = 0;
-
-	public static String RETRIEVED_DOCUMENTS = "question_answer_context";
 
 	private final DocumentRetriever retriever;
 

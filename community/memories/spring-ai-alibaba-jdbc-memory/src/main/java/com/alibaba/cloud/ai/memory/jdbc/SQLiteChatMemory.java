@@ -53,7 +53,7 @@ public class SQLiteChatMemory extends JdbcChatMemory {
 	@Override
 	protected String createTableSql(String tableName) {
 		return String.format(
-				"CREATE TABLE IF NOT EXISTS %s ( id INTEGER PRIMARY KEY AUTOINCREMENT, conversation_id TEXT, messages TEXT, UNIQUE (conversation_id));",
+				"CREATE TABLE IF NOT EXISTS %s ( id INTEGER PRIMARY KEY AUTOINCREMENT, conversation_id TEXT, messages TEXT, type TEXT);",
 				tableName);
 	}
 
