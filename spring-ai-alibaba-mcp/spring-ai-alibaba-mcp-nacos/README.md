@@ -3,7 +3,7 @@
 
 ```xml
 <dependency>
-    <groupId>com.alibaba.nacos</groupId>
+    <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-mcp-nacos</artifactId>
 </dependency>
 
