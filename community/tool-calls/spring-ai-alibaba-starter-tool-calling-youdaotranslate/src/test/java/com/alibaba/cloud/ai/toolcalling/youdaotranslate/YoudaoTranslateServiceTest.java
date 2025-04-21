@@ -33,14 +33,14 @@ class YoudaoTranslateServiceTest {
 	@Test
 	void apply() {
 		// Get the appKey and appSecret from environment variables or system properties.
-		String appKey = System.getenv("YOUDAO_APP_KEY");
+		String appKey = System.getenv("YOUDAO_API_KEY");
 		if (appKey == null || appKey.isEmpty()) {
-			appKey = System.getProperty("youdao.app.key");
+			appKey = System.getProperty("youdao.api.key");
 		}
 
-		String appSecret = System.getenv("YOUDAO_APP_SECRET");
+		String appSecret = System.getenv("YOUDAO_API_SECRET");
 		if (appSecret == null || appSecret.isEmpty()) {
-			appSecret = System.getProperty("youdao.app.secret");
+			appSecret = System.getProperty("youdao.api.secret");
 		}
 
 		logger.info("appKey: {}, appSecret: {}", appKey, appSecret);
