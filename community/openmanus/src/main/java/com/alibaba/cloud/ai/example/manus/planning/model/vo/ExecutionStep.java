@@ -72,7 +72,7 @@ public class ExecutionStep {
 
 		return sb.toString();
 	}
-	
+
 	/**
 	 * 将步骤转换为JSON字符串
 	 * @return 步骤的JSON字符串表示
@@ -82,16 +82,15 @@ public class ExecutionStep {
 		json.append("    {");
 		json.append("\"stepIndex\": ").append(stepIndex).append(", ");
 		json.append("\"stepRequirement\": \"").append(stepRequirement.replace("\"", "\\\"")).append("\" ");
-		
-		
+
 		if (result != null && !result.isEmpty()) {
 			json.append(", \"result\": \"").append(result.replace("\"", "\\\"").replace("\n", "\\n")).append("\"");
 		}
-		
+
 		json.append("}");
 		return json.toString();
 	}
-	
+
 	/**
 	 * 从JsonNode解析并创建ExecutionStep对象
 	 * @param stepNode JsonNode对象
@@ -99,37 +98,38 @@ public class ExecutionStep {
 	 */
 	public static ExecutionStep fromJson(com.fasterxml.jackson.databind.JsonNode stepNode) {
 		ExecutionStep step = new ExecutionStep();
-		
+
 		// 设置步骤需求
-		String stepRequirement = stepNode.has("stepRequirement") ? 
-				stepNode.get("stepRequirement").asText() : "未指定步骤";
+		String stepRequirement = stepNode.has("stepRequirement") ? stepNode.get("stepRequirement").asText() : "未指定步骤";
 		step.setStepRequirement(stepRequirement);
-		
+
 		// 设置步骤索引（如果有）
 		if (stepNode.has("stepIndex")) {
 			step.setStepIndex(stepNode.get("stepIndex").asInt());
 		}
-		
+
 		// 设置步骤结果（如果有）
 		if (stepNode.has("result")) {
 			step.setResult(stepNode.get("result").asText());
 		}
-		
+
 		// 设置步骤状态（如果有）
 		if (stepNode.has("status")) {
 			try {
 				String statusStr = stepNode.get("status").asText();
 				PlanStepStatus status = PlanStepStatus.valueOf(statusStr);
 				step.setStatus(status);
-			} catch (IllegalArgumentException e) {
+			}
+			catch (IllegalArgumentException e) {
 				// 如果状态值不合法，设置为默认的NOT_STARTED
 				step.setStatus(PlanStepStatus.NOT_STARTED);
 			}
-		} else {
+		}
+		else {
 			// 默认设置为NOT_STARTED
 			step.setStatus(PlanStepStatus.NOT_STARTED);
 		}
-		
+
 		return step;
 	}
 

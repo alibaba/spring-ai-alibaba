@@ -29,72 +29,73 @@ import jakarta.persistence.Table;
 @Table(name = "plan_template")
 public class PlanTemplate {
 
-    @Id
-    @Column(name = "plan_template_id", length = 50)
-    private String planTemplateId;
+	@Id
+	@Column(name = "plan_template_id", length = 50)
+	private String planTemplateId;
 
-    @Column(name = "title", length = 255)
-    private String title;
+	@Column(name = "title", length = 255)
+	private String title;
 
-    @Column(name = "user_request", length = 4000)
-    private String userRequest;
+	@Column(name = "user_request", length = 4000)
+	private String userRequest;
 
-    @Column(name = "create_time", nullable = false)
-    private LocalDateTime createTime;
+	@Column(name = "create_time", nullable = false)
+	private LocalDateTime createTime;
 
-    @Column(name = "update_time", nullable = false)
-    private LocalDateTime updateTime;
+	@Column(name = "update_time", nullable = false)
+	private LocalDateTime updateTime;
 
-    // 构造函数
-    public PlanTemplate() {
-    }
+	// 构造函数
+	public PlanTemplate() {
+	}
 
-    public PlanTemplate(String planTemplateId, String title, String userRequest) {
-        this.planTemplateId = planTemplateId;
-        this.title = title;
-        this.userRequest = userRequest;
-        this.createTime = LocalDateTime.now();
-        this.updateTime = LocalDateTime.now();
-    }
+	public PlanTemplate(String planTemplateId, String title, String userRequest) {
+		this.planTemplateId = planTemplateId;
+		this.title = title;
+		this.userRequest = userRequest;
+		this.createTime = LocalDateTime.now();
+		this.updateTime = LocalDateTime.now();
+	}
 
-    // Getters and Setters
-    public String getPlanTemplateId() {
-        return planTemplateId;
-    }
+	// Getters and Setters
+	public String getPlanTemplateId() {
+		return planTemplateId;
+	}
 
-    public void setPlanTemplateId(String planTemplateId) {
-        this.planTemplateId = planTemplateId;
-    }
+	public void setPlanTemplateId(String planTemplateId) {
+		this.planTemplateId = planTemplateId;
+	}
 
-    public String getTitle() {
-        return title;
-    }
+	public String getTitle() {
+		return title;
+	}
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
+	public void setTitle(String title) {
+		this.title = title;
+	}
 
-    public String getUserRequest() {
-        return userRequest;
-    }
+	public String getUserRequest() {
+		return userRequest;
+	}
 
-    public void setUserRequest(String userRequest) {
-        this.userRequest = userRequest;
-    }
+	public void setUserRequest(String userRequest) {
+		this.userRequest = userRequest;
+	}
 
-    public LocalDateTime getCreateTime() {
-        return createTime;
-    }
+	public LocalDateTime getCreateTime() {
+		return createTime;
+	}
 
-    public void setCreateTime(LocalDateTime createTime) {
-        this.createTime = createTime;
-    }
+	public void setCreateTime(LocalDateTime createTime) {
+		this.createTime = createTime;
+	}
 
-    public LocalDateTime getUpdateTime() {
-        return updateTime;
-    }
+	public LocalDateTime getUpdateTime() {
+		return updateTime;
+	}
 
-    public void setUpdateTime(LocalDateTime updateTime) {
-        this.updateTime = updateTime;
-    }
+	public void setUpdateTime(LocalDateTime updateTime) {
+		this.updateTime = updateTime;
+	}
+
 }
