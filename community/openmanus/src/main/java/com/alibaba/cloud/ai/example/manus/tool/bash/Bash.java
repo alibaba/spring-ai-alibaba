@@ -139,15 +139,11 @@ public class Bash implements ToolCallBiFunctionDef {
 		return run(s);
 	}
 
-	private BaseAgent agent;
+	private String planId;
 
 	@Override
-	public void setAgent(BaseAgent agent) {
-		this.agent = agent;
-	}
-
-	public BaseAgent getAgent() {
-		return this.agent;
+	public void setPlanId(String planId) {
+		this.planId = planId;
 	}
 
 	@Override
