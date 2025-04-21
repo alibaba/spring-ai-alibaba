@@ -149,21 +149,13 @@ paths:
         required: true
         schema:
           type: string
-      - name: chatId
-        in: header
-        required: false
-        schema:
-          type: string
-          default: spring-ai-alibaba-playground-functions
       responses:
         "200":
           description: OK
           content:
             '*/*':
               schema:
-                type: array
-                items:
-                  type: string
+                $ref: '#/components/schemas/ResultToolCallResp'
   /api/v1/text2image:
     get:
       tags:
@@ -225,6 +217,33 @@ paths:
         required: true
         schema:
           type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+  /api/v1/rag:
+    get:
+      tags:
+      - RAG APIs
+      summary: DashScope RAG
+      operationId: ragChat
+      parameters:
+      - name: prompt
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: chatId
+        in: header
+        required: false
+        schema:
+          type: string
+          default: spring-ai-alibaba-playground-rag
       responses:
         "200":
           description: OK
@@ -358,6 +377,45 @@ components:
           type: string
         data:
           type: string
+    ResultToolCallResp:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/ToolCallResp'
+    ToolCallResp:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - SUCCESS
+          - FAILURE
+          - UNKNOWN
+          - RUNNING
+        toolName:
+          type: string
+        toolParameters:
+          type: string
+        toolResult:
+          type: string
+        toolStartTime:
+          type: string
+          format: date-time
+        toolEndTime:
+          type: string
+          format: date-time
+        errorMessage:
+          type: string
+        toolInput:
+          type: string
+        toolCostTime:
+          type: integer
+          format: int64
     ResultVoid:
       type: object
       properties:
