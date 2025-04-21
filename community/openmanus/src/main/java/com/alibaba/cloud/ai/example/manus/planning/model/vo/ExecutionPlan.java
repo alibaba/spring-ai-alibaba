@@ -101,13 +101,33 @@ public class ExecutionPlan {
 		state.append("Plan: ").append(title).append(" (ID: ").append(planId).append(")\n");
 		state.append("=".repeat(state.length())).append("\n\n");
 
-		state.append("\n Execution Parameters: ").append(executionParams).append("\n");
+		state.append("\n Execution Parameters: ").append("\n");
+		if(executionParams != null && !executionParams.isEmpty()) {
+			state.append(executionParams).append("\n");
+		} else {
+			state.append("No execution parameters provided.\n");
+		}
 
-		long completed = steps.stream().filter(step -> step.getStatus().equals(AgentState.COMPLETED)).count();
-		int total = steps.size();
-		double progress = total > 0 ? (completed * 100.0 / total) : 0;
+		state.append("CURRENT STEP TO BE EXECUTED:").append("\n");
+		String stepString = null;
+		boolean isFirst = true;
+		for(ExecutionStep step : steps) {
+			if(isFirst) {
+				isFirst = false;
+				stepString = step.getStepRequirement();
+			}
 
-		state.append(String.format("Progress: %d/%d steps (%.1f%%)\n\n", completed, total, progress));
+			if(step.getStatus() != AgentState.COMPLETED) {
+				stepString = step.getStepRequirement();
+				break;
+			}
+			
+		}
+		if(stepString != null) {
+			state.append(stepString).append("\n");
+		} else {
+			state.append("all complete \n");
+		}
 
 		state.append("Steps:\n");
 		state.append(getStepsExecutionStateStringFormat());
