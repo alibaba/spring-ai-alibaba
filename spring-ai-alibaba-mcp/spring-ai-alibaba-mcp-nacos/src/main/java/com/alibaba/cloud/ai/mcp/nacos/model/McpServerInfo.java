@@ -31,7 +31,7 @@ public class McpServerInfo {
 
 	private String version;
 
-	private Boolean enable;
+	private Boolean enabled = true;
 
 	private RemoteServerConfigInfo remoteServerConfig;
 
@@ -75,12 +75,12 @@ public class McpServerInfo {
 		this.version = version;
 	}
 
-	public Boolean getEnable() {
-		return enable;
+	public Boolean getEnabled() {
+		return enabled;
 	}
 
-	public void setEnable(Boolean enable) {
-		this.enable = enable;
+	public void setEnabled(Boolean enabled) {
+		this.enabled = enabled;
 	}
 
 	public RemoteServerConfigInfo getRemoteServerConfig() {
