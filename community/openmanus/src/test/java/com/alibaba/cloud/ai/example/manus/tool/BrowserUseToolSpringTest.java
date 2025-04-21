@@ -109,7 +109,7 @@ class BrowserUseToolSpringTest {
 
 		@Override
 		protected AgentExecResult step() {
-			return new AgentExecResult("Dummy step executed", AgentState.FINISHED);
+			return new AgentExecResult("Dummy step executed", AgentState.COMPLETED);
 		}
 
 		@Override

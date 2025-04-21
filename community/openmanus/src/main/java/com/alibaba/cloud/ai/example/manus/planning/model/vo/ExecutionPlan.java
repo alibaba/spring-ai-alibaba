@@ -18,7 +18,8 @@ package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.alibaba.cloud.ai.example.manus.flow.PlanStepStatus;
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
+
 
 /**
  * 计划实体类，用于管理执行计划的相关信息
@@ -102,7 +103,7 @@ public class ExecutionPlan {
 
 		state.append("\n Execution Parameters: ").append(executionParams).append("\n");
 
-		long completed = steps.stream().filter(step -> step.getStatus().equals(PlanStepStatus.COMPLETED)).count();
+		long completed = steps.stream().filter(step -> step.getStatus().equals(AgentState.COMPLETED)).count();
 		int total = steps.size();
 		double progress = total > 0 ? (completed * 100.0 / total) : 0;
 
