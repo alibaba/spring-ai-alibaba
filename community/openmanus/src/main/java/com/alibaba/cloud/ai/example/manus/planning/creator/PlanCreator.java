@@ -28,7 +28,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 

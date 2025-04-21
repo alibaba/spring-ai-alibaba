@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 
-import com.alibaba.cloud.ai.example.manus.flow.PlanStepStatus;
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 
 /**
  * 单个步骤的执行结果
@@ -28,7 +28,7 @@ public class ExecutionStep {
 
 	private String result;
 
-	private PlanStepStatus status;
+	private AgentState status;
 
 	public int getStepIndex() {
 		return stepIndex;
@@ -46,11 +46,11 @@ public class ExecutionStep {
 		this.result = result;
 	}
 
-	public PlanStepStatus getStatus() {
+	public AgentState getStatus() {
 		return status;
 	}
 
-	public void setStatus(PlanStepStatus status) {
+	public void setStatus(AgentState status) {
 		this.status = status;
 	}
 
@@ -117,17 +117,17 @@ public class ExecutionStep {
 		if (stepNode.has("status")) {
 			try {
 				String statusStr = stepNode.get("status").asText();
-				PlanStepStatus status = PlanStepStatus.valueOf(statusStr);
+				AgentState status = AgentState.valueOf(statusStr);
 				step.setStatus(status);
 			}
 			catch (IllegalArgumentException e) {
 				// 如果状态值不合法，设置为默认的NOT_STARTED
-				step.setStatus(PlanStepStatus.NOT_STARTED);
+				step.setStatus(AgentState.NOT_STARTED);
 			}
 		}
 		else {
 			// 默认设置为NOT_STARTED
-			step.setStatus(PlanStepStatus.NOT_STARTED);
+			step.setStatus(AgentState.NOT_STARTED);
 		}
 
 		return step;

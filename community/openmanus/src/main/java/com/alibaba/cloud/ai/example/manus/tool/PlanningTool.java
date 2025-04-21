@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import com.alibaba.cloud.ai.example.manus.flow.PlanStepStatus;
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
@@ -143,7 +143,7 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 		ExecutionStep executionStep = new ExecutionStep();
 		executionStep.setStepIndex(index);
 		executionStep.setStepRequirement(step);
-		executionStep.setStatus(PlanStepStatus.NOT_STARTED);
+		executionStep.setStatus(AgentState.NOT_STARTED);
 		return executionStep;
 	}
 
