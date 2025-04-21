@@ -19,9 +19,7 @@ package com.alibaba.cloud.ai.example.manus.recorder.entity;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 规划执行记录类，用于跟踪和记录PlanningFlow执行过程的详细信息。
