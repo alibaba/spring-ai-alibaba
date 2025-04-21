@@ -26,7 +26,7 @@ import org.springframework.context.annotation.Configuration;
 public class CommonToolCallAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(JsonParseTool.class)
+	@ConditionalOnMissingBean
 	public JsonParseTool jsonParseService() {
 		return new JsonParseTool();
 	}
