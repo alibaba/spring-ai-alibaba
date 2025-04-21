@@ -19,7 +19,6 @@ package com.alibaba.cloud.ai.example.graph.workflow;
 import java.util.List;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -44,16 +43,14 @@ public class WorkflowAutoconfiguration {
 
 	@Bean
 	public StateGraph workflowGraph(ChatModel chatModel) throws GraphStateException {
-		ChatClient chatClient = ChatClient.builder(chatModel)
-			// .defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
-			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
 
 		AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
 			OverAllState state = new OverAllState();
+			state.registerKeyAndStrategy("input", new ReplaceStrategy());
 			state.registerKeyAndStrategy("classifier_output", new ReplaceStrategy());
 			state.registerKeyAndStrategy("solution", new ReplaceStrategy());
-
 			state.input(inputs);
 			return state;
 		};
@@ -91,6 +88,7 @@ public class WorkflowAutoconfiguration {
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
 				"workflow graph");
+
 		System.out.println("\n\n");
 		System.out.println(graphRepresentation.content());
 		System.out.println("\n\n");
