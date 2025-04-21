@@ -143,7 +143,6 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 		ExecutionStep executionStep = new ExecutionStep();
 		executionStep.setStepIndex(index);
 		executionStep.setStepRequirement(step);
-		executionStep.setStatus(AgentState.NOT_STARTED);
 		return executionStep;
 	}
 
