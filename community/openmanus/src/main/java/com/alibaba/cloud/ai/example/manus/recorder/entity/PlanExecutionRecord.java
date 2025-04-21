@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.example.manus.recorder.entity;
 
-import com.alibaba.cloud.ai.example.manus.flow.PlanStepStatus;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;

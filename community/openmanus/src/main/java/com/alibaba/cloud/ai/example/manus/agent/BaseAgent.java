@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.example.manus.agent;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.flow.PlanStepStatus;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
@@ -65,7 +64,7 @@ public abstract class BaseAgent {
 
 	private String planId = null;
 
-	private AgentState state = AgentState.IDLE;
+	private AgentState state = AgentState.NOT_STARTED;
 
 	protected LlmService llmService;
 
@@ -172,7 +171,7 @@ public abstract class BaseAgent {
 
 	public String run(Map<String, Object> data) {
 		currentStep = 0;
-		if (state != AgentState.IDLE) {
+		if (state != AgentState.NOT_STARTED) {
 			throw new IllegalStateException("Cannot run agent from state: " + state);
 		}
 
@@ -188,10 +187,10 @@ public abstract class BaseAgent {
 		}
 		List<String> results = new ArrayList<>();
 		try {
-			state = AgentState.RUNNING;
+			state = AgentState.IN_PROGRESS;
 			agentRecord.setStatus(state.toString());
 
-			while (currentStep < maxSteps && !state.equals(AgentState.FINISHED)) {
+			while (currentStep < maxSteps && !state.equals(AgentState.COMPLETED)) {
 				currentStep++;
 				log.info("Executing round " + currentStep + "/" + maxSteps);
 
@@ -218,8 +217,8 @@ public abstract class BaseAgent {
 
 			// Set final state in record
 			agentRecord.setEndTime(LocalDateTime.now());
-			agentRecord.setStatus(AgentState.IDLE.toString());
-			agentRecord.setCompleted(state.equals(AgentState.FINISHED));
+			agentRecord.setStatus(state.toString());
+			agentRecord.setCompleted(state.equals(AgentState.COMPLETED));
 
 			// Calculate execution time in seconds
 			long executionTimeSeconds = java.time.Duration.between(agentRecord.getStartTime(), agentRecord.getEndTime())
@@ -239,7 +238,7 @@ public abstract class BaseAgent {
 			throw e; // 重新抛出异常，让上层调用者知道发生了错误
 		}
 		finally {
-			state = AgentState.FINISHED; // Reset state after execution
+			state = AgentState.COMPLETED; // Reset state after execution
 			agentRecord.setStatus(state.toString());
 			llmService.removeAgentChatClient(planId);
 		}
@@ -252,7 +251,7 @@ public abstract class BaseAgent {
 		log.warn("Agent stuck detected - Missing tool calls");
 
 		// End current step
-		setState(AgentState.FINISHED);
+		setState(AgentState.COMPLETED);
 
 		String stuckPrompt = """
 				Agent response detected missing required tool calls.

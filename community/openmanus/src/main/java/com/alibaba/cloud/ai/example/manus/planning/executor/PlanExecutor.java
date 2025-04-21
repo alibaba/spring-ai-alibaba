@@ -15,8 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.executor;
 
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.flow.PlanStepStatus;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
@@ -82,7 +82,7 @@ public class PlanExecutor {
 		BaseAgent executor = getExecutorForStep(stepType);
 		int stepIndex = step.getStepIndex();
 
-		step.setStatus(PlanStepStatus.IN_PROGRESS);
+		step.setStatus(AgentState.IN_PROGRESS);
 		recordStepStart(step, context);
 		try {
 			String planStatus = context.getPlan().getPlanExecutionStateStringFormat();
@@ -97,11 +97,11 @@ public class PlanExecutor {
 			String stepResultStr = executor.run(executorParams);
 			// Execute the step
 			step.setResult(stepResultStr);
-			step.setStatus(PlanStepStatus.COMPLETED);
+			step.setStatus(AgentState.COMPLETED);
 		}
 		catch (Exception e) {
-			logger.error("Error executing step: " + e.getMessage());
-			step.setStatus(PlanStepStatus.FAILED);
+			logger.error("Error executing step: " + e.getMessage(),e);
+			step.setStatus(AgentState.FAILED);
 			step.setResult("Execution failed: " + e.getMessage());
 		}
 		finally {
@@ -127,6 +127,7 @@ public class PlanExecutor {
 		// 根据步骤类型获取对应的执行器
 		for (BaseAgent agent : agents) {
 			if (agent.getName().equalsIgnoreCase(stepType)) {
+				
 				return agent;
 			}
 		}
