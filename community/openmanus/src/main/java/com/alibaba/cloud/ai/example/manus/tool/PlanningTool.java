@@ -79,7 +79,7 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 			            "type": "string"
 			        }
 			    },
-			    "required": ["command"],
+			    "required": ["command","plan_id","title"],
 			    "additionalProperties": false
 			}
 			""";
@@ -209,7 +209,8 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 		}
 
 		if (!plans.containsKey(planId)) {
-			throw new RuntimeException("No plan found with ID: " + planId);
+			// throw new RuntimeException("No plan found with ID: " + planId);
+			createPlan(planId, title, steps);
 		}
 
 		Map<String, Object> plan = plans.get(planId);

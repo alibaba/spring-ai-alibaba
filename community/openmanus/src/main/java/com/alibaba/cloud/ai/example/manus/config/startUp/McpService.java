@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.config.startUp;
 
 import com.alibaba.cloud.ai.example.manus.config.entity.McpConfigEntity;
+import com.alibaba.cloud.ai.example.manus.config.entity.SseParameters;
 import com.alibaba.cloud.ai.example.manus.config.repository.McpConfigRepository;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +27,8 @@ import io.modelcontextprotocol.client.transport.StdioClientTransport;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.InitializingBean;
@@ -37,10 +40,13 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class McpService implements InitializingBean {
+
+	private static final Logger log = LoggerFactory.getLogger(McpService.class);
 
 	@Autowired
 	private McpConfigRepository mcpConfigRepository;
@@ -49,9 +55,13 @@ public class McpService implements InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		// https://mcp.higress.ai/mcp-stock-helper
 		for (McpConfigEntity mcpConfigEntity : mcpConfigRepository.findAll()) {
-			addClient(mcpConfigEntity);
+			try {
+				addClient(mcpConfigEntity);
+			}
+			catch (Throwable t) {
+				log.error("Failed to init MCP Client for " + mcpConfigEntity, t);
+			}
 		}
 	}
 
@@ -63,8 +73,18 @@ public class McpService implements InitializingBean {
 		McpClientTransport transport = null;
 		switch (mcpConfigEntity.getConnectionType()) {
 			case SSE -> {
-				WebClient.Builder webClientBuilder = WebClient.builder().baseUrl(mcpConfigEntity.getConnectionConfig());
-				transport = new WebFluxSseClientTransport(webClientBuilder, new ObjectMapper());
+				try (JsonParser jsonParser = new ObjectMapper().createParser(mcpConfigEntity.getConnectionConfig())) {
+					SseParameters sseParameters = jsonParser.readValueAs(SseParameters.class);
+					WebClient.Builder webClientBuilder = WebClient.builder()
+						.baseUrl(sseParameters.getBaseUri())
+						.defaultHeaders(headers -> {
+							if (sseParameters.getHeaders() != null) {
+								sseParameters.getHeaders().forEach(headers::add);
+							}
+						})
+						.defaultUriVariables(sseParameters.getUriVariables());
+					transport = new WebFluxSseClientTransport(webClientBuilder, new ObjectMapper());
+				}
 			}
 			case STUDIO -> {
 				try (JsonParser jsonParser = new ObjectMapper().createParser(mcpConfigEntity.getConnectionConfig())) {
@@ -77,7 +97,13 @@ public class McpService implements InitializingBean {
 			McpAsyncClient mcpAsyncClient = McpClient.async(transport)
 				.clientInfo(new McpSchema.Implementation(mcpConfigEntity.getMcpServerName(), "1.0.0"))
 				.build();
-			mcpAsyncClient.initialize().block();
+			try {
+				mcpAsyncClient.initialize().block();
+			}
+			catch (Throwable t) {
+				transport.close();
+				throw t;
+			}
 			toolCallbackMap.computeIfAbsent(mcpConfigEntity.getConnectionConfig(), k -> new ConcurrentHashMap<>())
 				.put(mcpAsyncClient, new AsyncMcpToolCallbackProvider(mcpAsyncClient));
 		}
@@ -89,16 +115,16 @@ public class McpService implements InitializingBean {
 		mcpConfigRepository.save(mcpConfigEntity);
 	}
 
-	public void removeMcpServer(String mcpServerName) {
-		McpConfigEntity mcpConfigEntity = mcpConfigRepository.findByMcpServerName(mcpServerName);
-		if (mcpConfigEntity != null) {
+	public void removeMcpServer(long id) {
+		Optional<McpConfigEntity> mcpConfigEntity = mcpConfigRepository.findById(id);
+		if (mcpConfigEntity.isPresent()) {
 			Map<McpAsyncClient, AsyncMcpToolCallbackProvider> map = toolCallbackMap
-				.remove(mcpConfigEntity.getConnectionConfig());
+				.remove(mcpConfigEntity.get().getConnectionConfig());
 			if (map != null) {
 				map.keySet().forEach(McpAsyncClient::close);
 			}
+			mcpConfigRepository.delete(mcpConfigEntity.get());
 		}
-		mcpConfigRepository.deleteByMcpServerName(mcpServerName);
 	}
 
 	public List<McpConfigEntity> getMcpServers() {

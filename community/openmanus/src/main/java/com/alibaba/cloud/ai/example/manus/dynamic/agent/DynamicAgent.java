@@ -16,15 +16,15 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.ToolCallBackContext;
+import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
-import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -38,13 +38,13 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 
-import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
-import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.ToolCallBackContext;
-import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
-import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
+import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
 
 public class DynamicAgent extends ReActAgent {
 
@@ -98,7 +98,7 @@ public class DynamicAgent extends ReActAgent {
 			Message nextStepMessage = getNextStepWithEnvMessage();
 			messages.add(nextStepMessage);
 			thinkActRecord.startThinking(messages.toString());// The `ToolCallAgent` class
-																// in the
+			// in the
 
 			log.debug("Messages prepared for the prompt: {}", messages);
 
@@ -147,32 +147,37 @@ public class DynamicAgent extends ReActAgent {
 	protected String act() {
 		try {
 			List<String> results = new ArrayList<>();
-			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
 
-			thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
+			for (ToolCall toolCall : response.getResult().getOutput().getToolCalls()) {
+				thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
+				addEnvData(EXECUTION_ENV_KEY_STRING, collectEnvData(toolCall.name()));
+			}
+
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
 
-			addEnvData(EXECUTION_ENV_KEY_STRING, collectEnvData(toolCall.name()));
 			setData(getData());
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
 				.get(toolExecutionResult.conversationHistory().size() - 1);
-
 			llmService.getAgentChatClient(getPlanId()).getMemory().add(getConversationId(), toolResponseMessage);
-			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
-			results.add(llmCallResponse);
+			toolResponseMessage.getResponses().forEach(response -> {
+				results.add(response.responseData());
+				log.info(String.format("🔧 Tool %s's executing result: %s", getName(), response.responseData()));
+			});
 
 			String finalResult = String.join("\n\n", results);
-			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), llmCallResponse));
 
 			thinkActRecord.finishAction(finalResult, "SUCCESS");
 
 			return finalResult;
 		}
 		catch (Exception e) {
-			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
-			ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse(toolCall.id(),
-					toolCall.name(), "Error: " + e.getMessage());
-			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(List.of(toolResponse), Map.of());
+			List<ToolResponseMessage.ToolResponse> responses = response.getResult()
+				.getOutput()
+				.getToolCalls()
+				.stream()
+				.map(call -> new ToolResponseMessage.ToolResponse(call.id(), call.name(), "Error: " + e.getMessage()))
+				.toList();
+			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(responses, Map.of());
 			llmService.getAgentChatClient(getPlanId()).getMemory().add(getConversationId(), toolResponseMessage);
 			log.error(e.getMessage());
 
