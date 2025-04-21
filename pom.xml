@@ -34,7 +34,6 @@
         <module>spring-ai-alibaba-bom</module>
         <module>spring-ai-alibaba-mcp</module>
         <module>spring-ai-alibaba-core</module>
-        <module>spring-ai-alibaba-graph</module>
         <module>spring-ai-alibaba-studio</module>
         <module>spring-ai-alibaba-starter</module>
         <module>spring-ai-alibaba-auto-configurations</module>
@@ -113,6 +112,8 @@
 
         <!-- Spring AI Alibaba JManus -->
         <module>spring-ai-alibaba-jmanus</module>
+
+        <module>spring-ai-alibaba-graph</module>
 
     </modules>
 

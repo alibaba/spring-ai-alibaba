@@ -81,8 +81,8 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>document-parser-tika</artifactId>
-            <version>1.0.0-M6.1</version>
+            <artifactId>spring-ai-alibaba-starter-document-parser-tika</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
