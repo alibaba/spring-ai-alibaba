@@ -66,6 +66,7 @@ public abstract class LaajEvaluator implements Evaluator {
 		return evaluationRequest.getResponseContent();
 	}
 
+	@Override
 	public String doGetSupportingData(EvaluationRequest evaluationRequest) {
 		List<Document> data = evaluationRequest.getDataList();
 		return data.stream()

@@ -27,6 +27,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
@@ -37,7 +39,6 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.util.Assert;
 
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -103,9 +104,9 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	 * @param customObservationConvention Custom observation convention for metrics.
 	 * @param batchingStrategy The batching strategy used for processing documents.
 	 */
-	public OpenSearchVectorStore(com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi openSearchApi,
-			EmbeddingModel embeddingModel, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
+	public OpenSearchVectorStore(OpenSearchApi openSearchApi, EmbeddingModel embeddingModel,
+			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention,
+			BatchingStrategy batchingStrategy) {
 		this(builder(openSearchApi, embeddingModel).observationRegistry(observationRegistry)
 			.customObservationConvention(customObservationConvention)
 			.batchingStrategy(batchingStrategy));
@@ -145,8 +146,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	 * @param embeddingModel The embedding model used for vector operations.
 	 * @return A new Builder instance.
 	 */
-	public static Builder builder(com.alibaba.cloud.ai.vectorstore.opensearch.OpenSearchApi openSearchApi,
-			EmbeddingModel embeddingModel) {
+	public static Builder builder(OpenSearchApi openSearchApi, EmbeddingModel embeddingModel) {
 		return new Builder(openSearchApi, embeddingModel);
 	}
 
@@ -183,6 +183,9 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		}
 	}
 
+	/**
+	 * Delete documents from the vector store.
+	 */
 	@Override
 	public void doDelete(List<String> idList) {
 		for (String id : idList) {
@@ -200,6 +203,11 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		}
 	}
 
+	/**
+	 * Perform a similarity search in the vector store.
+	 * @param request The search request containing the query and parameters.
+	 * @return list of documents
+	 */
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
 		Assert.notNull(request, "The search request must not be null.");
@@ -230,40 +238,50 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		}
 	}
 
+	/**
+	 * Create an ObservationContextBuilder for OpenSearchVectorStore.
+	 * @return VectorStoreObservationContext.Builder
+	 */
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
-		return null;
+		return VectorStoreObservationContext.builder(VectorStoreProvider.OPENSEARCH.value(), operationName)
+			.collectionName(this.options.getIndex())
+			.dimensions(this.embeddingModel.dimensions())
+			.similarityMetric(getSimilarityFunction());
+	}
+
+	private String getSimilarityFunction() {
+		if ("cosinesimil".equalsIgnoreCase(this.options.getSimilarityFunction())) {
+			return VectorStoreSimilarityMetric.COSINE.value();
+		}
+		else if ("l2".equalsIgnoreCase(this.options.getSimilarityFunction())) {
+			return VectorStoreSimilarityMetric.EUCLIDEAN.value();
+		}
+
+		return this.options.getSimilarityFunction();
+	}
+
+	public boolean exists(String tableName) throws Exception {
+		List<Object> indexList = openSearchApi.getIndexList(tableName);
+		return indexList.contains("saa_default_index");
 	}
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		openSearchApi.createCollectionAndIndex();
+		if (this.options.isInitializeSchema() && !exists(this.options.getIndex())) {
+			openSearchApi.createCollectionAndIndex(this.options.getMappingJson());
+		}
 	}
 
-	@Override
-	public String getName() {
-		return super.getName();
-	}
-
-	@Override
-	public List<Document> similaritySearch(String query) {
-		return super.similaritySearch(query);
-	}
-
+	/**
+	 * Get the native client.
+	 * @return Client
+	 */
 	@Override
 	public <T> Optional<T> getNativeClient() {
-		return super.getNativeClient();
-	}
-
-	@Override
-	public void write(List<Document> documents) {
-		super.write(documents);
-	}
-
-	@NotNull
-	@Override
-	public Consumer<List<Document>> andThen(@NotNull Consumer<? super List<Document>> after) {
-		return super.andThen(after);
+		@SuppressWarnings("unchecked")
+		T client = (T) this.openSearchApi;
+		return Optional.of(client);
 	}
 
 	/**
@@ -323,7 +341,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		@NotNull
 		@Override
 		public OpenSearchVectorStore build() {
-			return new OpenSearchVectorStore(this);
+			return OpenSearchVectorStore.builder(this.openSearchApi, this.embeddingModel).build();
 		}
 
 	}

@@ -62,7 +62,7 @@ public class SerpApiService {
 	}
 
 	/**
-	 * 使用serpai API 搜索数据
+	 * 使用 serpai API 搜索数据
 	 * @param request the function argument
 	 * @return responseMono
 	 */
