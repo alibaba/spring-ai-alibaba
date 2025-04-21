@@ -9,8 +9,7 @@
 		<version>${revision}</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
-
-	<groupId>com.alibaba.nacos</groupId>
+	
 	<artifactId>spring-ai-alibaba-mcp-nacos</artifactId>
 	<version>${revision}</version>
 	<name>spring-ai-alibaba-mcp-nacos</name>
