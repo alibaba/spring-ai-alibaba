@@ -155,6 +155,11 @@
                             <textarea id="plan-params" placeholder="可选：请输入计划执行需要的参数 ，会作为额外参数给到模型 ， 格式自定义只要能跟模型的执行prompt对应即可。 例如 变量1： xxx  ，那么执行计划里面有 变量1 ，模型就会自己替换"></textarea>
                         </div>
                     </div>
+                    <div class="save-plan-container">
+                        <button class="secondary-btn" id="modifyPlanBtn">
+                            <span class="icon-save"></span> 保存计划
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="plan-execution-section">
@@ -180,9 +185,6 @@
                             </div>
                         </div>
                         <div class="execution-buttons">
-                            <button class="secondary-btn" id="modifyPlanBtn">
-                                <span class="icon-save"></span> 保存计划
-                            </button>
                             <button class="primary-btn" id="runPlanBtn">
                                 <span class="icon-run"></span> 执行计划
                             </button>
