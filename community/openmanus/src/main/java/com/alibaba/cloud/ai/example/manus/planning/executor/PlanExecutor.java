@@ -132,7 +132,6 @@ public class PlanExecutor {
 		// 根据步骤类型获取对应的执行器
 		for (BaseAgent agent : agents) {
 			if (agent.getName().equalsIgnoreCase(stepType)) {
-
 				return agent;
 			}
 		}
