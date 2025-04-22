@@ -85,13 +85,14 @@ public class NacosMcpRegistryProperties {
 	String sseExportContextPath;
 
 	boolean serviceRegister = true;
-    String toolsGroup = "mcp-tools";
 
-    String toolsConfigSuffix = "-mcp-tools.json";
+	String toolsGroup = "mcp-tools";
 
-    String configNamespace = "nacos-default-mcp";
+	String toolsConfigSuffix = "-mcp-tools.json";
 
-    String serverGroup = "mcp-server";
+	String configNamespace = "nacos-default-mcp";
+
+	String serverGroup = "mcp-server";
 
 	@Autowired
 	@JsonIgnore
@@ -185,37 +186,37 @@ public class NacosMcpRegistryProperties {
 		this.serviceNamespace = serviceNamespace;
 	}
 
-    public String getToolsGroup() {
-        return toolsGroup;
-    }
+	public String getToolsGroup() {
+		return toolsGroup;
+	}
 
-    public void setToolsGroup(String toolsGroup) {
-        this.toolsGroup = toolsGroup;
-    }
+	public void setToolsGroup(String toolsGroup) {
+		this.toolsGroup = toolsGroup;
+	}
 
-    public String getToolsConfigSuffix() {
-        return toolsConfigSuffix;
-    }
+	public String getToolsConfigSuffix() {
+		return toolsConfigSuffix;
+	}
 
-    public void setToolsConfigSuffix(String toolsConfigSuffix) {
-        this.toolsConfigSuffix = toolsConfigSuffix;
-    }
+	public void setToolsConfigSuffix(String toolsConfigSuffix) {
+		this.toolsConfigSuffix = toolsConfigSuffix;
+	}
 
-    public String getConfigNamespace() {
-        return configNamespace;
-    }
+	public String getConfigNamespace() {
+		return configNamespace;
+	}
 
-    public void setConfigNamespace(String configNamespace) {
-        this.configNamespace = configNamespace;
-    }
+	public void setConfigNamespace(String configNamespace) {
+		this.configNamespace = configNamespace;
+	}
 
-    public String getServerGroup() {
-        return serverGroup;
-    }
+	public String getServerGroup() {
+		return serverGroup;
+	}
 
-    public void setServerGroup(String serverGroup) {
-        this.serverGroup = serverGroup;
-    }
+	public void setServerGroup(String serverGroup) {
+		this.serverGroup = serverGroup;
+	}
 
 	@PostConstruct
 	public void init() throws Exception {

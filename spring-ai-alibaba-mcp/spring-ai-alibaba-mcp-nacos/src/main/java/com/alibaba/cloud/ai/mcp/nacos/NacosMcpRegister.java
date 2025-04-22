@@ -94,8 +94,8 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 		try {
 			Class<McpAsyncServer> clazz = McpAsyncServer.class;
-            this.serverInfo = mcpAsyncServer.getServerInfo();
-            this.serverCapabilities = mcpAsyncServer.getServerCapabilities();
+			this.serverInfo = mcpAsyncServer.getServerInfo();
+			this.serverCapabilities = mcpAsyncServer.getServerCapabilities();
 
 			Field toolsField = clazz.getDeclaredField("tools");
 			toolsField.setAccessible(true);
@@ -116,12 +116,13 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				DefaultMcpSession mcpSession = (DefaultMcpSession) mcpSessionField.get(mcpAsyncServer);
 				Field requestHandlersField = DefaultMcpSession.class.getDeclaredField("requestHandlers");
 				requestHandlersField.setAccessible(true);
-                @SuppressWarnings("unchecked")
+				@SuppressWarnings("unchecked")
 				ConcurrentHashMap<String, DefaultMcpSession.RequestHandler<?>> requestHandlers = (ConcurrentHashMap<String, DefaultMcpSession.RequestHandler<?>>) requestHandlersField
 					.get(mcpSession);
 				requestHandlers.put(McpSchema.METHOD_TOOLS_LIST, toolsListRequestHandler());
 
-				String toolsInNacosContent = this.configService.getConfig(this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix(),
+				String toolsInNacosContent = this.configService.getConfig(
+						this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix(),
 						nacosMcpProperties.getToolsGroup(), 3000);
 				if (toolsInNacosContent != null) {
 					updateToolsDescription(toolsInNacosContent);
@@ -133,23 +134,25 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				mcpToolsInfo.setTools(toolsNeedtoRegister);
 				mcpToolsInfo.setToolsMeta(this.toolsMeta);
 				String toolsConfigContent = JsonUtils.serialize(mcpToolsInfo);
-				boolean isPublishSuccess = this.configService.publishConfig(this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix(),
-                        nacosMcpProperties.getToolsGroup(), toolsConfigContent);
+				boolean isPublishSuccess = this.configService.publishConfig(
+						this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix(),
+						nacosMcpProperties.getToolsGroup(), toolsConfigContent);
 				if (!isPublishSuccess) {
 					log.error("Publish tools config to nacos failed.");
 					throw new Exception("Publish tools config to nacos failed.");
 				}
-				this.configService.addListener(this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix(), nacosMcpProperties.getToolsGroup(), new Listener() {
-					@Override
-					public void receiveConfigInfo(String configInfo) {
-						updateToolsDescription(configInfo);
-					}
+				this.configService.addListener(this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix(),
+						nacosMcpProperties.getToolsGroup(), new Listener() {
+							@Override
+							public void receiveConfigInfo(String configInfo) {
+								updateToolsDescription(configInfo);
+							}
 
-					@Override
-					public Executor getExecutor() {
-						return null;
-					}
-				});
+							@Override
+							public Executor getExecutor() {
+								return null;
+							}
+						});
 			}
 
 			McpServerInfo mcpServerInfo = new McpServerInfo();
@@ -175,7 +178,8 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				mcpServerInfo.setProtocol("mcp-sse");
 			}
 			if (this.serverCapabilities.tools() != null) {
-				mcpServerInfo.setToolsDescriptionRef(this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix());
+				mcpServerInfo
+					.setToolsDescriptionRef(this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix());
 			}
 			boolean isPublishSuccess = this.configService.publishConfig(this.serverInfo.name() + "-mcp-server.json",
 					nacosMcpProperties.getServerGroup(), JsonUtils.serialize(mcpServerInfo));
@@ -191,7 +195,8 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 		executorService.scheduleWithFixedDelay(() -> {
 			try {
-				String toolsInNacosContent = this.configService.getConfig(this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix(),
+				String toolsInNacosContent = this.configService.getConfig(
+						this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix(),
 						nacosMcpProperties.getToolsGroup(), 3000);
 				updateToolsDescription(toolsInNacosContent);
 				McpToolsInfo mcpToolsInfo = JsonUtils.deserialize(toolsInNacosContent, McpToolsInfo.class);
@@ -204,8 +209,8 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				if (!StringUtils.equals(toolsContentInLocal, toolsContentInNacos)) {
 					mcpToolsInfo.setTools(toolsInLocal);
 					String mcpToolsInfoString = JsonUtils.serialize(mcpToolsInfo);
-					this.configService.publishConfig(this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix(), nacosMcpProperties.getToolsGroup(),
-							mcpToolsInfoString);
+					this.configService.publishConfig(this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix(),
+							nacosMcpProperties.getToolsGroup(), mcpToolsInfoString);
 				}
 			}
 			catch (Exception e) {
@@ -295,23 +300,24 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 		};
 	}
 
-    /**
-     * 释放线程池资源
-     */
-    @PreDestroy
-    public void shutdown() {
-        log.info("Shutting down executorService in NacosMcpRegister...");
-        if (executorService != null && !executorService.isShutdown()) {
-            executorService.shutdown();
-            try {
-                if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
-                    executorService.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                executorService.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
+	/**
+	 * 释放线程池资源
+	 */
+	@PreDestroy
+	public void shutdown() {
+		log.info("Shutting down executorService in NacosMcpRegister...");
+		if (executorService != null && !executorService.isShutdown()) {
+			executorService.shutdown();
+			try {
+				if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+					executorService.shutdownNow();
+				}
+			}
+			catch (InterruptedException e) {
+				executorService.shutdownNow();
+				Thread.currentThread().interrupt();
+			}
+		}
+	}
 
 }
