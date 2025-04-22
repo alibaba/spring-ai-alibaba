@@ -76,4 +76,5 @@ class SinaNewsServiceTest {
 		assertNotNull(result);
 		assertTrue(result.has("data"));
 	}
+
 }
