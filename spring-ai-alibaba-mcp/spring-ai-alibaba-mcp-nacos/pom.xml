@@ -9,8 +9,7 @@
 		<version>${revision}</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
-
-	<groupId>com.alibaba.nacos</groupId>
+	
 	<artifactId>spring-ai-alibaba-mcp-nacos</artifactId>
 	<version>${revision}</version>
 	<name>spring-ai-alibaba-mcp-nacos</name>
@@ -32,13 +31,16 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-starter-mcp-server</artifactId>
-			<version>1.0.0-M7</version>
+			<artifactId>spring-ai-mcp-server-spring-boot-starter</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
-			<version>1.0.0-M7</version>
+			<groupId>com.alibaba.nacos</groupId>
+			<artifactId>nacos-client</artifactId>
+			<version>2.5.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
 		</dependency>
 	</dependencies>
 
@@ -50,5 +52,4 @@
 			</plugin>
 		</plugins>
 	</build>
-
 </project>

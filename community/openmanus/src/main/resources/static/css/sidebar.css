@@ -100,6 +100,7 @@
     cursor: pointer;
     transition: background-color 0.2s ease;
     white-space: nowrap; /* 收起时防止换行 */
+    position: relative; /* 添加相对定位，使绝对定位的子元素能够相对于它定位 */
 }
 
 .task-item:hover {
