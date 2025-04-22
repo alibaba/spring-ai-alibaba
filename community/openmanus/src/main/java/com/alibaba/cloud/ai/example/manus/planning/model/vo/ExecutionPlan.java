@@ -95,6 +95,12 @@ public class ExecutionPlan {
 		this.executionParams = executionParams;
 	}
 
+	@Override
+	public String toString() {
+		return "ExecutionPlan{" + "planId='" + planId + '\'' + ", title='" + title + '\'' + ", stepsCount="
+				+ (steps != null ? steps.size() : 0) + '}';
+	}
+
 	public String getPlanExecutionStateStringFormat() {
 		StringBuilder state = new StringBuilder();
 		state.append("Plan: ").append(title).append(" (ID: ").append(planId).append(")\n");
