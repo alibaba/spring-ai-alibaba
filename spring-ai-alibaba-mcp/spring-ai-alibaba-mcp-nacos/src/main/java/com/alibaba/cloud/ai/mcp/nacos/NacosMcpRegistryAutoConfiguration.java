@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.mcp.nacos;
 
+import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpRegistryProperties;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.transport.StdioServerTransport;
@@ -35,7 +36,7 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration(after = MpcServerAutoConfiguration.class)
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
-public class NacosMcpRegistryAutoConfigration {
+public class NacosMcpRegistryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnBean(McpSyncServer.class)

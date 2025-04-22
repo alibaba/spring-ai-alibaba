@@ -34,13 +34,13 @@
 			<artifactId>spring-ai-mcp-server-spring-boot-starter</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.alibaba.nacos</groupId>
-			<artifactId>nacos-client</artifactId>
-			<version>2.5.1</version>
-		</dependency>
-		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-annotations</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.alibaba.cloud.ai</groupId>
+			<artifactId>spring-ai-alibaba-mcp-nacos-common</artifactId>
+			<version>${project.parent.version}</version>
 		</dependency>
 	</dependencies>
 
