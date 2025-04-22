@@ -1,10 +1,10 @@
 package com.alibaba.cloud.ai.mcp.dynamic.server.provider;
 
-import com.alibaba.cloud.ai.mcp.dynamic.server.definiation.DynamicNacosToolDefinition;
+import org.springframework.ai.tool.definition.ToolDefinition;
 
 public interface DynamicMcpToolsProvider {
 
-	void addTool(final DynamicNacosToolDefinition toolDefinition);
+	void addTool(final ToolDefinition toolDefinition);
 
 	void removeTool(final String toolName);
 
