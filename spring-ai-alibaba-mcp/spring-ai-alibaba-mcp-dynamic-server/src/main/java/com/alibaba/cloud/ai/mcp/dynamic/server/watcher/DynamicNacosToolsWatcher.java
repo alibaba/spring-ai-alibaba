@@ -116,6 +116,7 @@ public class DynamicNacosToolsWatcher implements EventListener {
 							catch (Exception e) {
 								logger.error("Failed to remove tool: {}", toolDefinition.name(), e);
 							}
+							toolDefinition.setServiceName(serviceName);
 							dynamicMcpToolsProvider.addTool(toolDefinition);
 						}
 
