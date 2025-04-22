@@ -100,15 +100,9 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 		});
 
 		try {
-			Class clazz = McpAsyncServer.class;
-
-			Field serverInfoField = clazz.getDeclaredField("serverInfo");
-			serverInfoField.setAccessible(true);
-			this.serverInfo = (McpSchema.Implementation) serverInfoField.get(mcpAsyncServer);
-
-			Field serverCapabilitiesField = clazz.getDeclaredField("serverCapabilities");
-			serverCapabilitiesField.setAccessible(true);
-			this.serverCapabilities = (McpSchema.ServerCapabilities) serverCapabilitiesField.get(mcpAsyncServer);
+			Class<McpAsyncServer> clazz = McpAsyncServer.class;
+            this.serverInfo = mcpAsyncServer.getServerInfo();
+            this.serverCapabilities = mcpAsyncServer.getServerCapabilities();
 
 			Field toolsField = clazz.getDeclaredField("tools");
 			toolsField.setAccessible(true);
@@ -129,6 +123,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				DefaultMcpSession mcpSession = (DefaultMcpSession) mcpSessionField.get(mcpAsyncServer);
 				Field requestHandlersField = DefaultMcpSession.class.getDeclaredField("requestHandlers");
 				requestHandlersField.setAccessible(true);
+                @SuppressWarnings("unchecked")
 				ConcurrentHashMap<String, DefaultMcpSession.RequestHandler<?>> requestHandlers = (ConcurrentHashMap<String, DefaultMcpSession.RequestHandler<?>>) requestHandlersField
 					.get(mcpSession);
 				requestHandlers.put(McpSchema.METHOD_TOOLS_LIST, toolsListRequestHandler());
