@@ -43,7 +43,66 @@ public class InteractiveTextProcessor {
     
 
     public void refreshCache(WebDriver driver) {
-        this.interactiveElementsCache = getInteractiveElementsInner(driver);
+        // 清空现有缓存
+        this.interactiveElementsCache = new ArrayList<>();
+        
+        // 先获取主文档中的元素
+        List<WebElementWrapper> mainDocElements = getInteractiveElementsInner(driver);
+        this.interactiveElementsCache.addAll(mainDocElements);
+        
+        // 获取并处理所有iframe中的元素
+        processIframes(driver, "", null);
+    }
+    
+    /**
+     * 递归处理页面中的所有iframe元素
+     * 
+     * @param driver WebDriver实例
+     * @param parentPath 父iframe的路径
+     * @param parentIframe 父iframe元素
+     */
+    private void processIframes(WebDriver driver, String parentPath, WebElement parentIframe) {
+        // 查找当前上下文中的所有iframe
+        List<WebElement> iframes = driver.findElements(By.tagName("iframe"));
+        
+        for (int i = 0; i < iframes.size(); i++) {
+            WebElement iframe = iframes.get(i);
+            
+            // 构建iframe路径
+            String currentPath = parentPath.isEmpty() ? String.valueOf(i) : parentPath + "/" + i;
+            
+            try {
+                // 切换到iframe
+                driver.switchTo().frame(iframe);
+                
+                // 获取iframe中的交互元素并添加到缓存
+                List<WebElementWrapper> iframeElements = getInteractiveElementsInner(driver);
+                for (WebElementWrapper wrapper : iframeElements) {
+                    // 设置iframe信息
+                    wrapper.setIframeElement(iframe);
+                    wrapper.setIframePath(currentPath);
+                    this.interactiveElementsCache.add(wrapper);
+                }
+                
+                // 递归处理嵌套iframe
+                processIframes(driver, currentPath, iframe);
+                
+                // 切回父级上下文
+                if (parentIframe == null) {
+                    driver.switchTo().defaultContent();
+                } else {
+                    driver.switchTo().parentFrame();
+                }
+            } catch (Exception e) {
+                log.warn("处理iframe失败，路径: " + currentPath + ", 错误: " + e.getMessage());
+                // 确保即使处理某个iframe失败，也回到正确的上下文
+                if (parentIframe == null) {
+                    driver.switchTo().defaultContent();
+                } else {
+                    driver.switchTo().parentFrame();
+                }
+            }
+        }
     }
     /**
      * 获取网页中所有可交互的元素
@@ -58,6 +117,12 @@ public class InteractiveTextProcessor {
         return interactiveElementsCache;
     }
 
+    /**
+     * 获取当前文档上下文中的交互元素（不包含iframe内的元素）
+     * 
+     * @param driver WebDriver实例
+     * @return 当前文档中的交互元素列表
+     */
     private List<WebElementWrapper> getInteractiveElementsInner(WebDriver driver) {
          try {
             return driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR))
