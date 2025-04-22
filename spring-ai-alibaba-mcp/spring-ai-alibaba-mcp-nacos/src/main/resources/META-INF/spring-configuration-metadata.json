@@ -1,0 +1,78 @@
+{
+  "groups": [],
+  "properties": [
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.enabled",
+      "type": "java.lang.String",
+      "description": "If register mcp server information to nacos.",
+      "defaultValue": "false"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.server-addr",
+      "type": "java.lang.String",
+      "description": "Nacos server address.",
+      "defaultValue": ""
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.service-register",
+      "type": "java.lang.String",
+      "description": "if register mcp server service to nacos.",
+      "defaultValue": ""
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.service-namespace",
+      "type": "java.lang.String",
+      "description": "Namespace for mcp server service.",
+      "defaultValue": ""
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.service-group",
+      "type": "java.lang.String",
+      "description": "Group for mcp server service.",
+      "defaultValue": "DEFAULT_GROUP"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.username",
+      "type": "java.lang.String",
+      "description": "Nacos username to authenticate.",
+      "defaultValue": ""
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.password",
+      "type": "java.lang.String",
+      "description": "Nacos password to authenticate.",
+      "defaultValue": ""
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.access-key",
+      "type": "java.lang.String",
+      "description": "Nacos access key to authenticate.",
+      "defaultValue": ""
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.secret-key",
+      "type": "java.lang.String",
+      "description": "Nacos secret key to authenticate.",
+      "defaultValue": ""
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.endpoint",
+      "type": "java.lang.String",
+      "description": "Nacos server endpoint.",
+      "defaultValue": ""
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.ip",
+      "type": "java.lang.String",
+      "description": "Ip for mcp server service.",
+      "defaultValue": ""
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.sse-export-context-path",
+      "type": "java.lang.String",
+      "description": "base context path for sse mcp server.",
+      "defaultValue": ""
+    }
+  ],
+  "hints": []
+}

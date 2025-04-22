@@ -48,7 +48,7 @@ PS：收不到邮箱验证码，查看垃圾邮件。
 
 ## 4. 启动
 
-启动类位置：`community/openmanus/src/main/java/com/alibaba/cloud/ai/example/manus/OpenManusSpringBootApplication.java` 点击启动即可。
+启动类位置：`community/openmanus/src/main/java/com/alibaba/cloud/ai/example/executor/OpenManusSpringBootApplication.java` 点击启动即可。
 
 > 如果 openManus 有生成文件操作，生成的文件路径应该在项目中的 `extensions` 路径下。
 

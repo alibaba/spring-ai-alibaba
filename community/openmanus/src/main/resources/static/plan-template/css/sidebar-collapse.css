@@ -1,0 +1,77 @@
+/* 侧边栏折叠/展开功能相关样式 */
+
+/* 侧边栏折叠状态 */
+.sidebar.left-sidebar.collapsed {
+    width: 60px; /* 折叠时的宽度 */
+    min-width: 60px;
+}
+
+.sidebar.right-sidebar.collapsed {
+    width: 60px; /* 折叠时的宽度 */
+    min-width: 60px;
+}
+
+/* 侧边栏折叠时隐藏一些内容 */
+.sidebar.collapsed .sidebar-header h3,
+.sidebar.collapsed .sidebar-content,
+.sidebar.collapsed .right-sidebar-footer,
+.sidebar.collapsed .right-sidebar-status-bar,
+.sidebar.collapsed .task-list .task-details,
+.sidebar.collapsed .task-list .task-time,
+.sidebar.collapsed .task-list .task-actions,
+.sidebar.collapsed .sidebar-bottom,
+.sidebar.collapsed .new-task-btn .shortcut {
+    display: none;
+}
+
+/* 折叠时的新建任务按钮样式 */
+.sidebar.left-sidebar.collapsed .new-task-btn {
+    padding: 8px;
+    justify-content: center;
+}
+
+/* 折叠时的侧边栏顶部图标样式调整 */
+.sidebar.left-sidebar.collapsed .sidebar-top-icons {
+    justify-content: center;
+}
+
+/* 折叠时任务图标居中 */
+.sidebar.left-sidebar.collapsed .task-item {
+    padding: 10px 0;
+    justify-content: center;
+}
+
+/* 按钮样式 */
+.toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #5f6368;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.toggle-btn:hover {
+    background-color: rgba(95, 99, 104, 0.1);
+}
+
+/* 主内容区域适应侧边栏折叠状态 */
+.app-container {
+    display: flex;
+    height: 100vh;
+    transition: all 0.3s ease;
+}
+
+/* 主内容区域在侧边栏折叠时自动扩展 */
+.main-content-wrapper {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: margin 0.3s ease;
+}
