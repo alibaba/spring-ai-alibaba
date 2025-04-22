@@ -103,10 +103,10 @@ public class PlanExecutor {
 			String stepResultStr = executor.run(executorParams);
 			// Execute the step
 			step.setResult(stepResultStr);
-			
+
 		}
 		catch (Exception e) {
-			logger.error("Error executing step: " + e.getMessage(),e);
+			logger.error("Error executing step: " + e.getMessage(), e);
 			step.setResult("Execution failed: " + e.getMessage());
 		}
 		finally {
@@ -132,7 +132,7 @@ public class PlanExecutor {
 		// 根据步骤类型获取对应的执行器
 		for (BaseAgent agent : agents) {
 			if (agent.getName().equalsIgnoreCase(stepType)) {
-				
+
 				return agent;
 			}
 		}
