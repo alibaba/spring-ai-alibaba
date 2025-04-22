@@ -302,11 +302,11 @@ public class ChromeDriverService implements ApplicationRunner {
 								log.warn("Error closing window: {}", e.getMessage());
 							}
 						}
-					} 
+					}
 					catch (Exception e) {
 						log.warn("Error getting window handles: {}", e.getMessage());
 					}
-					
+
 					// 使用超时机制执行driver.quit()
 					Thread shutdownThread = new Thread(() -> {
 						try {
@@ -317,13 +317,13 @@ public class ChromeDriverService implements ApplicationRunner {
 							log.warn("Error in shutdown thread during driver.quit(): {}", e.getMessage());
 						}
 					}, "DriverShutdownThread");
-					
+
 					shutdownThread.setDaemon(true);
 					shutdownThread.start();
-					
+
 					// 最多等待5秒
 					shutdownThread.join(5000);
-					
+
 					if (shutdownThread.isAlive()) {
 						log.warn("Shutdown thread timed out, may need to force kill browser processes");
 					}
