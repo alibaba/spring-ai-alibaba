@@ -31,6 +31,10 @@ on:
 permissions:
   contents: read
 
+env:
+  YOUDAO_API_KEY: ${{ secrets.YOUDAO_API_KEY }}
+  YOUDAO_API_SECRET: ${{ secrets.YOUDAO_API_SECRET }}
+
 jobs:
   format:
     runs-on: ubuntu-22.04
@@ -45,7 +49,10 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./tools/github-actions/setup-deps
-      - run: make test
+      - run: |
+          echo "YOUDAO_API_KEY exists: $([ -n "$YOUDAO_API_KEY" ] && echo "Yes" || echo "No")"
+          echo "YOUDAO_API_SECRET exists: $([ -n "$YOUDAO_API_SECRET" ] && echo "Yes" || echo "No")"
+          make test MAVEN_OPTS="-Dyoudao.api.key=${YOUDAO_API_KEY} -Dyoudao.api.secret=${YOUDAO_API_SECRET}" JAVA_OPTS="-Dyoudao.api.key=${YOUDAO_API_KEY} -Dyoudao.api.secret=${YOUDAO_API_SECRET}" MAVEN_ARGS="-Dyoudao.api.key=${YOUDAO_API_KEY} -Dyoudao.api.secret=${YOUDAO_API_SECRET}"
 
   build:
     runs-on: ubuntu-22.04
@@ -53,4 +60,5 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./tools/github-actions/setup-deps
-      - run: make build
+      - run: |
+          make build MAVEN_OPTS="-Dyoudao.api.key=${YOUDAO_API_KEY} -Dyoudao.api.secret=${YOUDAO_API_SECRET}" JAVA_OPTS="-Dyoudao.api.key=${YOUDAO_API_KEY} -Dyoudao.api.secret=${YOUDAO_API_SECRET}" MAVEN_ARGS="-Dyoudao.api.key=${YOUDAO_API_KEY} -Dyoudao.api.secret=${YOUDAO_API_SECRET}"
