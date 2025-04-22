@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.code;
 
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
@@ -26,10 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
-import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -82,10 +76,6 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 			.inputType(String.class)
 			.build();
 	}
-
-	private InMemoryChatMemory chatMemory;
-
-	private PlanningFlow planningFlow;
 
 	private String lastCode = "";
 
@@ -207,11 +197,11 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 		return run(s);
 	}
 
-	private BaseAgent agent;
+	private String planId;
 
 	@Override
-	public void setAgent(BaseAgent agent) {
-		this.agent = agent;
+	public void setPlanId(String planId) {
+		this.planId = planId;
 	}
 
 	@Override

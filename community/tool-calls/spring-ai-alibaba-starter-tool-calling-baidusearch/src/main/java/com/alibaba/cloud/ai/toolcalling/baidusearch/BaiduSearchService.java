@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import io.netty.channel.ChannelOption;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -26,13 +27,17 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.function.Function;
 
 /**
@@ -46,25 +51,40 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 
 	private static final int MAX_RESULTS = 20;
 
-	private static final int Memory_Size = 5;
+	private static final int MEMORY_SIZE = 5;
 
-	private static final int Memory_Unit = 1024;
+	private static final int MEMORY_UNIT = 1024;
 
-	private static final int Max_Memory_In_MB = Memory_Size * Memory_Unit * Memory_Unit;
+	private static final int MAX_MEMORY_IN_MB = MEMORY_SIZE * MEMORY_UNIT * MEMORY_UNIT;
+
+	private static final String[] USER_AGENTS = {
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/120.0.0.0 Safari/537.36",
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
+			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15" };
+
+	private static final int CONNECT_TIMEOUT_MILLIS = 5000;
+
+	private static final int RESPONSE_TIMEOUT_SECONDS = 10;
+
+	private final Random random = new Random();
 
 	private final WebClient webClient;
 
 	public BaiduSearchService() {
 		this.webClient = WebClient.builder()
-			.defaultHeader(HttpHeaders.USER_AGENT,
-					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+			.defaultHeader(HttpHeaders.USER_AGENT, USER_AGENTS[random.nextInt(USER_AGENTS.length)])
 			.defaultHeader(HttpHeaders.ACCEPT,
 					"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
 			.defaultHeader(HttpHeaders.ACCEPT_ENCODING, "gzip, deflate")
 			.defaultHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
 			.defaultHeader(HttpHeaders.REFERER, "https://www.baidu.com/")
 			.defaultHeader(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9,ja;q=0.8")
-			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(Max_Memory_In_MB))
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_MEMORY_IN_MB))
+			.clientConnector(new ReactorClientHttpConnector(HttpClient.create()
+				.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECT_TIMEOUT_MILLIS)
+				.responseTimeout(Duration.ofSeconds(RESPONSE_TIMEOUT_SECONDS))))
 			.build();
 	}
 
@@ -103,8 +123,9 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 	private List<SearchResult> parseHtml(String htmlContent) {
 		try {
 			Document doc = Jsoup.parse(htmlContent);
-			Element contentLeft = doc.selectFirst("div#content_left"); // 选择具有特定 ID 的 div
-			// 元素
+			// Select a div with a specific ID
+			Element contentLeft = doc.selectFirst("div#content_left");
+			// element
 			Elements divContents = contentLeft.children();
 			List<SearchResult> listData = new ArrayList<>();
 
