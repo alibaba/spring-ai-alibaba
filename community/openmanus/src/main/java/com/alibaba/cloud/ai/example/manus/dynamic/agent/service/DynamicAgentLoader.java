@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 import java.util.List;
 
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
@@ -40,8 +41,8 @@ public class DynamicAgentLoader {
 
 	private final ToolCallingManager toolCallingManager;
 
-	public DynamicAgentLoader(DynamicAgentRepository repository, LlmService llmService, PlanExecutionRecorder recorder,
-			ManusProperties properties, ToolCallingManager toolCallingManager) {
+	public DynamicAgentLoader(DynamicAgentRepository repository, @Lazy LlmService llmService,
+			PlanExecutionRecorder recorder, ManusProperties properties, @Lazy ToolCallingManager toolCallingManager) {
 		this.repository = repository;
 		this.llmService = llmService;
 		this.recorder = recorder;
