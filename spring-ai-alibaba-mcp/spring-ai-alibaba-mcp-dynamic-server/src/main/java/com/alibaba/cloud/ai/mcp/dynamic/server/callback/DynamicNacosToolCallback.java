@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.mcp.dynamic.server.callback;
 
-import com.alibaba.cloud.ai.mcp.dynamic.server.definiation.DynamicNacosToolDefinition;
+import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinition;
 import com.alibaba.cloud.ai.mcp.dynamic.server.utils.SpringBeanUtils;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingService;
