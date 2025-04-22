@@ -15,8 +15,6 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.lang.NonNull;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.concurrent.CompletableFuture;
-
 public class DynamicNacosToolCallback implements ToolCallback {
 
 	private static final Logger logger = LoggerFactory.getLogger(DynamicNacosToolCallback.class);
