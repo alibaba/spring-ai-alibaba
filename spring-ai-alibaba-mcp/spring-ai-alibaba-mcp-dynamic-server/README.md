@@ -4,7 +4,7 @@
 ```xml
 <dependency>
     <groupId>com.alibaba.cloud.ai</groupId>
-    <artifactId>spring-ai-alibaba-mcp-nacos</artifactId>
+    <artifactId>spring-ai-alibaba-mcp-dynamic-server</artifactId>
 </dependency>
 
 <!--WebMvc SSE-->
@@ -23,15 +23,6 @@
 ```
 
 ```java
-@Service
-public class WeatherService {
-    
-    @Tool(description = "Get weather information by city name")
-    public String getWeather(String cityName) {
-        return "Sunny";
-    }
-
-}
 
 
 @SpringBootApplication
@@ -41,11 +32,6 @@ public class SpringAiMcpApplication {
         SpringApplication.run(SpringAiMcpApplication.class, args);
     }
     
-    @Bean
-    public ToolCallbackProvider weatherTools(WeatherService weatherService) {
-        return MethodToolCallbackProvider.builder().toolObjects(weatherService).build();
-    }
-
 }
 ```
 application.yaml
@@ -56,7 +42,6 @@ spring:
       server:
         name: webmvc-mcp-server
         version: 1.0.0
-        type: SYNC
     alibaba:
       mcp:
         nacos:
@@ -65,5 +50,7 @@ spring:
           service-namespace: <nacos-namespace>  
           service-group: <nacos-group>
 ```
-The tools information and server information will be published to ```nacos-default-mcp``` namespace in nacos,
-and the service of mcp server will be registered to ```<nacos-group>``` group of ```<nacos-namespace>``` namespace which set in application.yaml.
+
+The server can add tools or remove tools dynamically
+
+read instance info from nacos service list and tools info from nacos config
