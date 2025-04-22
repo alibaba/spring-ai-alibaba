@@ -31,6 +31,8 @@ public class DynamicNacosToolDefinition implements ToolDefinition {
 
 	private String description;
 
+	private String serviceName;
+
 	private String requestMethod;
 
 	private String requestPath;
@@ -40,13 +42,14 @@ public class DynamicNacosToolDefinition implements ToolDefinition {
 	public DynamicNacosToolDefinition() {
 	}
 
-	public DynamicNacosToolDefinition(final String name, final String description, final String requestMethod,
-			final String requestPath, final String inputSchema) {
+	public DynamicNacosToolDefinition(final String name, final String description, final String serviceName,
+			final String requestMethod, final String requestPath, final String inputSchema) {
 		Assert.hasText(name, "name cannot be null or empty");
 		Assert.hasText(description, "description cannot be null or empty");
 		Assert.hasText(inputSchema, "inputSchema cannot be null or empty");
 		this.name = name;
 		this.description = description;
+		this.serviceName = serviceName;
 		this.inputSchema = inputSchema;
 		this.requestMethod = StringUtils.isNoneBlank(requestMethod) ? requestMethod : "GET";
 		this.requestPath = StringUtils.isNoneBlank(requestPath) ? requestPath : name;
@@ -116,11 +119,21 @@ public class DynamicNacosToolDefinition implements ToolDefinition {
 		this.inputSchema = inputSchema;
 	}
 
+	public String getServiceName() {
+		return serviceName;
+	}
+
+	public void setServiceName(final String serviceName) {
+		this.serviceName = serviceName;
+	}
+
 	public static final class Builder {
 
 		private String name;
 
 		private String description;
+
+		private String serviceName;
 
 		private String requestMethod;
 
@@ -138,6 +151,11 @@ public class DynamicNacosToolDefinition implements ToolDefinition {
 
 		public DynamicNacosToolDefinition.Builder description(final String description) {
 			this.description = description;
+			return this;
+		}
+
+		public DynamicNacosToolDefinition.Builder serviceName(final String serviceName) {
+			this.serviceName = serviceName;
 			return this;
 		}
 
@@ -161,8 +179,8 @@ public class DynamicNacosToolDefinition implements ToolDefinition {
 				this.description = ToolUtils.getToolDescriptionFromName(this.name);
 			}
 
-			return new DynamicNacosToolDefinition(this.name, this.description, this.requestMethod, this.requestPath,
-					this.inputSchema);
+			return new DynamicNacosToolDefinition(this.name, this.description, this.serviceName, this.requestMethod,
+					this.requestPath, this.inputSchema);
 		}
 
 	}

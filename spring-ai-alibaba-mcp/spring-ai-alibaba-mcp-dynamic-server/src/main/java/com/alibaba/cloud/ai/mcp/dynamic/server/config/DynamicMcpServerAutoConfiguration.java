@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.mcp.dynamic.server.watcher.DynamicNacosToolsWatcher;
 import com.alibaba.cloud.ai.mcp.dynamic.server.properties.McpDynamicServerProperties;
 import com.alibaba.cloud.ai.mcp.dynamic.server.provider.DynamicMcpAsyncToolsProvider;
 import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpRegistryProperties;
+import com.alibaba.cloud.ai.mcp.dynamic.server.utils.SpringBeanUtils;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingFactory;
@@ -40,13 +41,17 @@ import org.springframework.ai.autoconfigure.mcp.server.McpServerProperties;
 import org.springframework.ai.autoconfigure.mcp.server.MpcServerAutoConfiguration;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
+import org.springframework.beans.BeansException;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.lang.NonNull;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -66,7 +71,12 @@ import java.util.concurrent.TimeUnit;
 @AutoConfiguration(after = MpcServerAutoConfiguration.class)
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
-public class DynamicMcpServerAutoConfiguration {
+public class DynamicMcpServerAutoConfiguration implements ApplicationContextAware {
+
+	@Override
+	public void setApplicationContext(@NonNull final ApplicationContext applicationContext) throws BeansException {
+		SpringBeanUtils.getInstance().setApplicationContext(applicationContext);
+	}
 
 	private static final Logger log = LoggerFactory.getLogger(DynamicMcpServerAutoConfiguration.class);
 
