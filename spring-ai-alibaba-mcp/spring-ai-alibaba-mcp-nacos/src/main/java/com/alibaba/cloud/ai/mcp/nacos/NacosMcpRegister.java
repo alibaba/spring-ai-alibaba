@@ -34,6 +34,7 @@ import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.spec.DefaultMcpSession;
 import io.modelcontextprotocol.spec.McpSchema;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.context.WebServerInitializedEvent;
@@ -293,5 +294,24 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			return Mono.just(new McpSchema.ListToolsResult(toolsEnable, null));
 		};
 	}
+
+    /**
+     * 释放线程池资源
+     */
+    @PreDestroy
+    public void shutdown() {
+        log.info("Shutting down executorService in NacosMcpRegister...");
+        if (executorService != null && !executorService.isShutdown()) {
+            executorService.shutdown();
+            try {
+                if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                    executorService.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executorService.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
 
 }
