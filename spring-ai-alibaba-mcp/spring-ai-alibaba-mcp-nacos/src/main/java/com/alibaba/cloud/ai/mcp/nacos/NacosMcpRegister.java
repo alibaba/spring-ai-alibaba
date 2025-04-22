@@ -61,14 +61,6 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	private static final Logger log = LoggerFactory.getLogger(NacosMcpRegister.class);
 
-	private final String toolsGroup = "mcp-tools";
-
-	private final String toolsConfigSuffix = "-mcp-tools.json";
-
-	private final String configNamespace = "nacos-default-mcp";
-
-	private final String serverGroup = "mcp-server";
-
 	private String type;
 
 	private NacosMcpRegistryProperties nacosMcpProperties;
@@ -115,7 +107,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			});
 
 			Properties configProperties = nacosMcpProperties.getNacosProperties();
-			configProperties.put(PropertyKeyConst.NAMESPACE, configNamespace);
+			configProperties.put(PropertyKeyConst.NAMESPACE, nacosMcpProperties.getConfigNamespace());
 			this.configService = new NacosConfigService(configProperties);
 			if (this.serverCapabilities.tools() != null) {
 				Field mcpSessionField = clazz.getDeclaredField("mcpSession");
@@ -128,8 +120,8 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 					.get(mcpSession);
 				requestHandlers.put(McpSchema.METHOD_TOOLS_LIST, toolsListRequestHandler());
 
-				String toolsInNacosContent = this.configService.getConfig(this.serverInfo.name() + toolsConfigSuffix,
-						toolsGroup, 3000);
+				String toolsInNacosContent = this.configService.getConfig(this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix(),
+						nacosMcpProperties.getToolsGroup(), 3000);
 				if (toolsInNacosContent != null) {
 					updateToolsDescription(toolsInNacosContent);
 				}
@@ -140,13 +132,13 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				mcpToolsInfo.setTools(toolsNeedtoRegister);
 				mcpToolsInfo.setToolsMeta(this.toolsMeta);
 				String toolsConfigContent = JsonUtils.serialize(mcpToolsInfo);
-				boolean isPublishSuccess = this.configService.publishConfig(this.serverInfo.name() + toolsConfigSuffix,
-						toolsGroup, toolsConfigContent);
+				boolean isPublishSuccess = this.configService.publishConfig(this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix(),
+                        nacosMcpProperties.getToolsGroup(), toolsConfigContent);
 				if (!isPublishSuccess) {
 					log.error("Publish tools config to nacos failed.");
 					throw new Exception("Publish tools config to nacos failed.");
 				}
-				this.configService.addListener(this.serverInfo.name() + toolsConfigSuffix, toolsGroup, new Listener() {
+				this.configService.addListener(this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix(), nacosMcpProperties.getToolsGroup(), new Listener() {
 					@Override
 					public void receiveConfigInfo(String configInfo) {
 						updateToolsDescription(configInfo);
@@ -182,10 +174,10 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				mcpServerInfo.setProtocol("mcp-sse");
 			}
 			if (this.serverCapabilities.tools() != null) {
-				mcpServerInfo.setToolsDescriptionRef(this.serverInfo.name() + toolsConfigSuffix);
+				mcpServerInfo.setToolsDescriptionRef(this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix());
 			}
 			boolean isPublishSuccess = this.configService.publishConfig(this.serverInfo.name() + "-mcp-server.json",
-					serverGroup, JsonUtils.serialize(mcpServerInfo));
+					nacosMcpProperties.getServerGroup(), JsonUtils.serialize(mcpServerInfo));
 			if (!isPublishSuccess) {
 				log.error("Publish mcp server info to nacos failed.");
 				throw new Exception("Publish mcp server info to nacos failed.");
@@ -198,8 +190,8 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 		executorService.scheduleWithFixedDelay(() -> {
 			try {
-				String toolsInNacosContent = this.configService.getConfig(this.serverInfo.name() + toolsConfigSuffix,
-						toolsGroup, 3000);
+				String toolsInNacosContent = this.configService.getConfig(this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix(),
+						nacosMcpProperties.getToolsGroup(), 3000);
 				updateToolsDescription(toolsInNacosContent);
 				McpToolsInfo mcpToolsInfo = JsonUtils.deserialize(toolsInNacosContent, McpToolsInfo.class);
 				List<McpSchema.Tool> toolsInNacos = mcpToolsInfo.getTools();
@@ -211,7 +203,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				if (!StringUtils.equals(toolsContentInLocal, toolsContentInNacos)) {
 					mcpToolsInfo.setTools(toolsInLocal);
 					String mcpToolsInfoString = JsonUtils.serialize(mcpToolsInfo);
-					this.configService.publishConfig(this.serverInfo.name() + toolsConfigSuffix, toolsGroup,
+					this.configService.publishConfig(this.serverInfo.name() + nacosMcpProperties.getToolsConfigSuffix(), nacosMcpProperties.getToolsGroup(),
 							mcpToolsInfoString);
 				}
 			}

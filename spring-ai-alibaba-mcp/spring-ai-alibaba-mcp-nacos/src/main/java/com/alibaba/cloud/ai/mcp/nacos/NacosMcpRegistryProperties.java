@@ -85,6 +85,13 @@ public class NacosMcpRegistryProperties {
 	String sseExportContextPath;
 
 	boolean serviceRegister = true;
+    String toolsGroup = "mcp-tools";
+
+    String toolsConfigSuffix = "-mcp-tools.json";
+
+    String configNamespace = "nacos-default-mcp";
+
+    String serverGroup = "mcp-server";
 
 	@Autowired
 	@JsonIgnore
@@ -177,6 +184,38 @@ public class NacosMcpRegistryProperties {
 	void setServiceNamespace(String serviceNamespace) {
 		this.serviceNamespace = serviceNamespace;
 	}
+
+    public String getToolsGroup() {
+        return toolsGroup;
+    }
+
+    public void setToolsGroup(String toolsGroup) {
+        this.toolsGroup = toolsGroup;
+    }
+
+    public String getToolsConfigSuffix() {
+        return toolsConfigSuffix;
+    }
+
+    public void setToolsConfigSuffix(String toolsConfigSuffix) {
+        this.toolsConfigSuffix = toolsConfigSuffix;
+    }
+
+    public String getConfigNamespace() {
+        return configNamespace;
+    }
+
+    public void setConfigNamespace(String configNamespace) {
+        this.configNamespace = configNamespace;
+    }
+
+    public String getServerGroup() {
+        return serverGroup;
+    }
+
+    public void setServerGroup(String serverGroup) {
+        this.serverGroup = serverGroup;
+    }
 
 	@PostConstruct
 	public void init() throws Exception {
