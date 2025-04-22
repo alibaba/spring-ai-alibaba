@@ -20,7 +20,6 @@ import java.util.List;
 
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 
-
 /**
  * 计划实体类，用于管理执行计划的相关信息
  */
@@ -102,30 +101,32 @@ public class ExecutionPlan {
 		state.append("=".repeat(state.length())).append("\n\n");
 
 		state.append("\n Execution Parameters: ").append("\n");
-		if(executionParams != null && !executionParams.isEmpty()) {
+		if (executionParams != null && !executionParams.isEmpty()) {
 			state.append(executionParams).append("\n");
-		} else {
+		}
+		else {
 			state.append("No execution parameters provided.\n");
 		}
 
 		state.append("CURRENT STEP TO BE EXECUTED:").append("\n");
 		String stepString = null;
 		boolean isFirst = true;
-		for(ExecutionStep step : steps) {
-			if(isFirst) {
+		for (ExecutionStep step : steps) {
+			if (isFirst) {
 				isFirst = false;
 				stepString = step.getStepRequirement();
 			}
 
-			if(step.getStatus() != AgentState.COMPLETED) {
+			if (step.getStatus() != AgentState.COMPLETED) {
 				stepString = step.getStepRequirement();
 				break;
 			}
-			
+
 		}
-		if(stepString != null) {
+		if (stepString != null) {
 			state.append(stepString).append("\n");
-		} else {
+		}
+		else {
 			state.append("all complete \n");
 		}
 

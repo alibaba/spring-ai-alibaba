@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.example.manus.recorder.entity;
 
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
