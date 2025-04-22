@@ -173,7 +173,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		return instance;
 	}
 
-	@SuppressWarnings("rawtypes")
 	public FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService) {
 		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
 				.description(description)
@@ -257,7 +256,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 					return new ToolExecuteResult("Navigated to " + url);
 				}
 				case "click": {
-					List<WebElement> interactiveElements = getInteractiveElements(driver);
+					List<WebElementWrapper> interactiveElements = getInteractiveElements(driver);
 					if (index == null) {
 						return new ToolExecuteResult("Index is required for 'click' action");
 					}
@@ -266,8 +265,10 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 						return new ToolExecuteResult("Element with index " + index + " not found");
 					}
 
-					WebElement element = interactiveElements.get(index);
-					log.info("Clicking element: {}", (element.getText() != null ? element.getText() : "No text"));
+					WebElementWrapper elementWrapper = interactiveElements.get(index);
+					elementWrapper.prepareForInteraction(driver);
+					WebElement element = elementWrapper.getElement();
+					log.info("Clicking element: {}", (element != null ? element.getText() : "No text"));
 
 					// 记录点击前的窗口状态
 					Set<String> beforeWindowHandles = driver.getWindowHandles();
@@ -326,11 +327,13 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 					if (index == null || text == null) {
 						return new ToolExecuteResult("Index and text are required for 'input_text' action");
 					}
-					List<WebElement> interactiveElements = getInteractiveElements(driver);
+					List<WebElementWrapper> interactiveElements = getInteractiveElements(driver);
 					if (index < 0 || index >= interactiveElements.size()) {
 						return new ToolExecuteResult("Element with index " + index + " not found");
 					}
-					WebElement inputElement = interactiveElements.get(index);
+					WebElementWrapper inputElementWrapper = interactiveElements.get(index);
+					inputElementWrapper.prepareForInteraction(driver);
+					WebElement inputElement = inputElementWrapper.getElement();
 					if (!inputElement.getTagName().equals("input") && !inputElement.getTagName().equals("textarea")) {
 						return new ToolExecuteResult("Element at index " + index + " is not an input element");
 					}
@@ -343,11 +346,13 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 					if (index == null) {
 						return new ToolExecuteResult("Index is required for 'key_enter' action");
 					}
-						List<WebElement> interactiveElements = getInteractiveElements(driver);
+					List<WebElementWrapper> interactiveElements = getInteractiveElements(driver);
 					if (index < 0 || index >= interactiveElements.size()) {
 						return new ToolExecuteResult("Element with index " + index + " not found");
 					}
-					WebElement enterElement = interactiveElements.get(index);
+					WebElementWrapper enterElementWrapper = interactiveElements.get(index);
+					enterElementWrapper.prepareForInteraction(driver);
+					WebElement enterElement = enterElementWrapper.getElement();
 					enterElement.sendKeys(Keys.RETURN);
 					refreshTabsInfo(driver); // 刷新标签页信息
 					interactiveTextProcessor.refreshCache(driver);
@@ -453,11 +458,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	 * @param driver WebDriver实例
 	 * @return 可交互元素列表
 	 */
-	private List<WebElement> getInteractiveElements(WebDriver driver) {
-		List<WebElementWrapper> wrappers = interactiveTextProcessor.getInteractiveElements(driver);
-		return wrappers.stream()
-				.map(WebElementWrapper::getElement)
-				.collect(Collectors.toList());
+	private List<WebElementWrapper> getInteractiveElements(WebDriver driver) {
+		return interactiveTextProcessor.getInteractiveElements(driver);
 	}
 
 	private String getInteractiveElementsInfo(WebDriver driver) {
