@@ -22,29 +22,35 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration;
-import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.model.Tool;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 
 @Service
 public class AgentServiceImpl implements AgentService {
 
-	private static final String DEFAULT_AGENT_NAME = "DEFAULT_AGENT"; // 修改为通过 name 判断
+	private static final String DEFAULT_AGENT_NAME = "DEFAULT_AGENT";
 
 	private static final Logger log = LoggerFactory.getLogger(AgentServiceImpl.class);
 
-	@Autowired
-	private DynamicAgentLoader dynamicAgentLoader;
+	private final DynamicAgentLoader dynamicAgentLoader;
+
+	private final DynamicAgentRepository repository;
+
+	private final PlanningFactory planningFactory;
 
 	@Autowired
-	private DynamicAgentRepository repository;
-
-	@Autowired
-	private ManusConfiguration manusConfiguration;
+	public AgentServiceImpl(@Lazy DynamicAgentLoader dynamicAgentLoader, DynamicAgentRepository repository,
+			@Lazy PlanningFactory planningFactory) {
+		this.dynamicAgentLoader = dynamicAgentLoader;
+		this.repository = repository;
+		this.planningFactory = planningFactory;
+	}
 
 	@Override
 	public List<AgentConfig> getAllAgents() {
@@ -112,7 +118,7 @@ public class AgentServiceImpl implements AgentService {
 	@Override
 	public List<Tool> getAvailableTools() {
 
-		Map<String, ToolCallBackContext> toolcallContext = manusConfiguration.toolCallbackMap(null);
+		Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(null);
 		return toolcallContext.entrySet().stream().map(entry -> {
 			Tool tool = new Tool();
 			tool.setKey(entry.getKey());
