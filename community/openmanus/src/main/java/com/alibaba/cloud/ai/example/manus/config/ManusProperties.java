@@ -32,7 +32,7 @@ public class ManusProperties {
 	private ConfigService configService;
 
 	@ConfigProperty(group = "manus", subGroup = "browser", key = "headless", path = "manus.browser.headless",
-			description = "是否使用无头浏览器模式", defaultValue = "true", inputType = ConfigInputType.CHECKBOX,
+			description = "是否使用无头浏览器模式", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
 			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
 	private volatile Boolean browserHeadless;
 
