@@ -30,6 +30,10 @@ class YoudaoTranslateServiceTest {
 
 	private static final Logger logger = LoggerFactory.getLogger(YoudaoTranslateServiceTest.class);
 
+	/**
+	 * Test method for
+	 * {@link YoudaoTranslateService#apply(YoudaoTranslateService.Request)}.
+	 */
 	@Test
 	void apply() {
 		// Get the appKey and appSecret from environment variables or system properties.
