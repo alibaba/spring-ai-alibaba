@@ -25,8 +25,6 @@ public class RemoteServerConfigInfo {
 
 	private String exportPath;
 
-	private String backendProtocol;
-
 	public ServiceRefInfo getServiceRef() {
 		return serviceRef;
 	}
@@ -41,14 +39,6 @@ public class RemoteServerConfigInfo {
 
 	public void setExportPath(String exportPath) {
 		this.exportPath = exportPath;
-	}
-
-	public String getBackendProtocol() {
-		return backendProtocol;
-	}
-
-	public void setBackendProtocol(String backendProtocol) {
-		this.backendProtocol = backendProtocol;
 	}
 
 }
