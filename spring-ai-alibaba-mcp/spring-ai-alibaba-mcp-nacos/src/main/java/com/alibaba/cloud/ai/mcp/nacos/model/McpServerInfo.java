@@ -23,7 +23,7 @@ import java.util.Map;
  */
 public class McpServerInfo {
 
-	private String type;
+	private String protocol;
 
 	private String name;
 
@@ -43,12 +43,12 @@ public class McpServerInfo {
 
 	private String resourceDescriptionRef;
 
-	public String getType() {
-		return type;
+	public String getProtocol() {
+		return protocol;
 	}
 
-	public void setType(String type) {
-		this.type = type;
+	public void setProtocol(String protocol) {
+		this.protocol = protocol;
 	}
 
 	public String getName() {
