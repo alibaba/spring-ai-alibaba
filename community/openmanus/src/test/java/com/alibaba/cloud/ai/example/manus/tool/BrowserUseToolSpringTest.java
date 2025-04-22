@@ -51,7 +51,7 @@ import com.alibaba.fastjson.JSON;
  */
 @SpringBootTest(classes = OpenManusSpringBootApplication.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@Disabled("仅用于本地测试，CI 环境跳过") // 添加这一行
+// @Disabled("仅用于本地测试，CI 环境跳过") // 添加这一行
 class BrowserUseToolSpringTest {
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseToolSpringTest.class);
@@ -212,7 +212,7 @@ class BrowserUseToolSpringTest {
 		String elements = (String) state.get("interactive_elements");
 		Assertions.assertNotNull(elements, "获取可交互元素失败");
 		log.info("获取到的可交互元素: {}", elements);
-
+	
 		// 步骤3: 验证期望的元素
 		log.info("步骤3: 验证期望的元素");
 		String[] elementLines = elements.split("\n");
@@ -320,6 +320,33 @@ class BrowserUseToolSpringTest {
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
 	}
+	
+	@Test
+	@Order(7)
+	@DisplayName("测试MEV平台登录页面元素")
+	void testMevLoginPageElements() {
+		try {
+			String testUrl = "https://mev-platform-sig.alibaba-inc.com/#/login";
+			List<String> expectedElements = Arrays.asList(
+					"id=\"fm-login-id\"", // 用户名输入框的ID特征
+					"name=\"loginId\"", // 用户名输入框的name特征
+					"placeholder=\"账号\"" // 用户名输入框的placeholder特征
+			);
+
+			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
+			log.info("MEV平台登录页面测试成功完成！");
+			
+			// 获取截图作为证据（可选）
+			log.info("获取页面截图作为证据");
+			ToolExecuteResult screenshotResult = executeAction("screenshot", null);
+			Assertions.assertTrue(screenshotResult.getOutput().contains("Screenshot captured"), "获取截图失败");
+		}
+		catch (Exception e) {
+			log.error("测试过程中发生错误", e);
+			Assertions.fail("测试执行失败: " + e.getMessage());
+		}
+	}
+	
 
 	// 辅助方法：执行浏览器操作
 	private ToolExecuteResult executeAction(String action, String url) {
