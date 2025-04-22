@@ -246,6 +246,7 @@ public abstract class BaseAgent {
 		}
 		finally {
 			state = AgentState.COMPLETED; // Reset state after execution
+
 			agentRecord.setStatus(state.toString());
 			llmService.removeAgentChatClient(planId);
 		}
