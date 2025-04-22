@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.mcp.dynamic.server.tools;
 
-import com.alibaba.cloud.ai.mcp.dynamic.server.definiation.DynamicNacosToolDefinition;
+import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinition;
 
 import java.util.List;
 
