@@ -18,28 +18,32 @@ package com.alibaba.cloud.ai.example.manus.config.startUp;
 import java.util.Scanner;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 @Configuration
 public class QueryCommandRunner implements CommandLineRunner {
 
 	private static final Logger logger = LoggerFactory.getLogger(QueryCommandRunner.class);
 
-	private final PlanningFlow planningFlow;
+	@Autowired
+	@Lazy
+	private PlanningFactory planningFactory;
+
+	@Autowired
+	private PlanIdDispatcher planIdDispatcher;
 
 	@Autowired
 	private ManusProperties manusProperties;
-
-	public QueryCommandRunner(PlanningFlow planningFlow) {
-		this.planningFlow = planningFlow;
-	}
 
 	@Override
 	public void run(String... args) throws Exception {
@@ -52,7 +56,6 @@ public class QueryCommandRunner implements CommandLineRunner {
 		logger.info("启动控制台交互模式，请输入查询...");
 		Scanner scanner = new Scanner(System.in);
 		while (true) {
-
 			System.out.println("Enter your query (or type 'exit' to quit): ");
 			String query = scanner.nextLine();
 
@@ -61,9 +64,21 @@ public class QueryCommandRunner implements CommandLineRunner {
 				break;
 			}
 
-			planningFlow.setActivePlanId("plan_" + System.currentTimeMillis());
-			String result = planningFlow.execute(query);
-			System.out.println("plan : " + planningFlow.getConversationId() + " Result: " + result);
+			// 使用 PlanIdDispatcher 生成唯一的计划ID
+			String planId = planIdDispatcher.generatePlanId();
+			PlanningCoordinator planningCoordinator = planningFactory.createPlanningCoordinator(planId);
+			ExecutionContext context = new ExecutionContext();
+			context.setUserRequest(query);
+			context.setPlanId(planId);
+			try {
+				var executionContext = planningCoordinator.executePlan(context);
+				System.out.println("Plan " + planId + " executed successfully");
+				System.out.println("Execution Context: " + executionContext.getResultSummary());
+			}
+			catch (Exception e) {
+				logger.error("执行查询时发生错误", e);
+				System.out.println("Error: " + e.getMessage());
+			}
 		}
 		scanner.close();
 	}

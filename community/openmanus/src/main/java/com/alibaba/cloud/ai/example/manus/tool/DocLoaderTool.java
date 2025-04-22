@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.parser.tika.TikaDocumentParser;
 import com.alibaba.fastjson.JSON;
@@ -149,15 +148,11 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 		return run(t);
 	}
 
-	private BaseAgent agent;
+	private String planId;
 
 	@Override
-	public void setAgent(BaseAgent agent) {
-		this.agent = agent;
-	}
-
-	public BaseAgent getAgent() {
-		return this.agent;
+	public void setPlanId(String planId) {
+		this.planId = planId;
 	}
 
 	@Override
