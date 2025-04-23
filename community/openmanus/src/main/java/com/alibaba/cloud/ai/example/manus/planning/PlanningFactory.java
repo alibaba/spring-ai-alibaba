@@ -127,6 +127,7 @@ public class PlanningFactory {
 		// Add all dynamic agents from the database
 		for (DynamicAgentEntity agentEntity : dynamicAgentLoader.getAllAgents()) {
 			DynamicAgent agent = dynamicAgentLoader.loadAgent(agentEntity.getAgentName());
+			agent.setPlanId(planId);
 			agent.setToolCallbackProvider(()->toolCallbackMap(planId));
 			agentList.add(agent);
 		}
