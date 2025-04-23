@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @CrossOrigin
 @RestController
-@RequestMapping("studio/api/graph")
+@RequestMapping("studio/api/graphs")
 public class GraphAPIController implements GraphAPI {
 
 	private final GraphService graphService;
