@@ -95,19 +95,22 @@ public class ExecutionPlan {
 		this.executionParams = executionParams;
 	}
 
+	@Override
+	public String toString() {
+		return "ExecutionPlan{" + "planId='" + planId + '\'' + ", title='" + title + '\'' + ", stepsCount="
+				+ (steps != null ? steps.size() : 0) + '}';
+	}
+
 	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
 		state.append("Plan: ").append("\n").append(title).append(")\n");
-		
 
 		state.append("\n- Execution Parameters: ").append("\n");
 		if (executionParams != null && !executionParams.isEmpty()) {
 			state.append(executionParams).append("\n\n");
-		}
-		else {
+		} else {
 			state.append("No execution parameters provided.\n\n");
 		}
-
 
 		state.append("- Steps:\n");
 		state.append(getStepsExecutionStateStringFormat(onlyCompletedAndFirstInProgress));
@@ -124,10 +127,10 @@ public class ExecutionPlan {
 	public String getStepsExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
 		boolean foundInProgress = false;
-		
+
 		for (int i = 0; i < steps.size(); i++) {
 			ExecutionStep step = steps.get(i);
-			
+
 			// 如果onlyCompletedAndFirstInProgress为true，则只显示COMPLETED状态的步骤和第一个IN_PROGRESS状态的步骤
 			if (onlyCompletedAndFirstInProgress) {
 				// 如果是COMPLETED状态，始终显示
@@ -143,7 +146,7 @@ public class ExecutionPlan {
 					continue; // 跳过不符合条件的步骤
 				}
 			}
-			
+
 			String symbol = switch (step.getStatus()) {
 				case COMPLETED -> "[completed]";
 				case IN_PROGRESS -> "[in_progress]";
@@ -152,17 +155,17 @@ public class ExecutionPlan {
 				default -> "[ ]";
 			};
 			state.append("* step ")
-				.append(i)
-				.append(": ")
-				.append(symbol)
-				.append(" ")
-				.append(step.getStepRequirement())
-				.append("\n").append("\n");
+					.append(i)
+					.append(": ")
+					.append(symbol)
+					.append(" ")
+					.append(step.getStepRequirement())
+					.append("\n").append("\n");
 			state.append("  step execution result: ").append("\n").append(step.getResult()).append("\n");
 		}
 		return state.toString();
 	}
-	
+
 	/**
 	 * 获取所有步骤执行状态的字符串格式（兼容旧版本）
 	 * 
@@ -174,6 +177,7 @@ public class ExecutionPlan {
 
 	/**
 	 * 将计划转换为JSON字符串
+	 * 
 	 * @return 计划的JSON字符串表示
 	 */
 	public String toJson() {
@@ -199,7 +203,8 @@ public class ExecutionPlan {
 
 	/**
 	 * 从JSON字符串解析并创建ExecutionPlan对象
-	 * @param planJson JSON字符串
+	 * 
+	 * @param planJson  JSON字符串
 	 * @param newPlanId 新的计划ID（可选，如果提供将覆盖JSON中的planId）
 	 * @return 解析后的ExecutionPlan对象
 	 * @throws Exception 如果解析失败则抛出异常
