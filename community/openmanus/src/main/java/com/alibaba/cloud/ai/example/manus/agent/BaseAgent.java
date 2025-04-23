@@ -172,7 +172,7 @@ public abstract class BaseAgent {
 
 	public String run(Map<String, Object> data) {
 		currentStep = 0;
-		if (state != AgentState.NOT_STARTED) {
+		if (state != AgentState.IN_PROGRESS) {
 			throw new IllegalStateException("Cannot run agent from state: " + state);
 		}
 
@@ -244,7 +244,7 @@ public abstract class BaseAgent {
 			agentRecord.setStatus(state.toString());
 			llmService.removeAgentChatClient(planId);
 		}
-		return String.join("\n", results);
+		return results.isEmpty() ? "" : results.get(results.size() - 1);
 	}
 
 	protected abstract AgentExecResult step();

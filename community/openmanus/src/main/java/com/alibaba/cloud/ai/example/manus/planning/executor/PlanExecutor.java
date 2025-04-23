@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.executor;
 
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
@@ -92,6 +93,7 @@ public class PlanExecutor {
 		int stepIndex = step.getStepIndex();
 
 		step.setAgent(executor);
+		executor.setState(AgentState.IN_PROGRESS);
 		recordStepStart(step, context);
 
 		try {
