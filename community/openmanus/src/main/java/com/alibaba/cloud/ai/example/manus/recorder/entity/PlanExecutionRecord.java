@@ -78,24 +78,12 @@ public class PlanExecutionRecord implements JsonSerializable {
 	/**
 	 * 默认构造函数
 	 */
-	public PlanExecutionRecord() {
+	public PlanExecutionRecord(String planId) {
+		this.planId = planId;
 		this.steps = new ArrayList<>();
 		this.startTime = LocalDateTime.now();
 		this.completed = false;
 		this.agentExecutionSequence = new ArrayList<>();
-	}
-
-	/**
-	 * 带参数的构造函数
-	 * @param planId 计划ID
-	 * @param title 计划标题
-	 * @param userRequest 用户请求
-	 */
-	public PlanExecutionRecord(String planId, String title, String userRequest) {
-		this();
-		this.planId = planId;
-		this.title = title;
-		this.userRequest = userRequest;
 	}
 
 	/**

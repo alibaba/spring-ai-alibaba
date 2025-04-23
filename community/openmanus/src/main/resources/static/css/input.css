@@ -29,7 +29,7 @@
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 20px; /* 调整图标大小 */
+    font-size: 14px; /* 调整图标大小 */
     color: #666;
     padding: 5px;
     flex-shrink: 0;
@@ -48,3 +48,6 @@
 .send-btn {
     /* 如需要添加特定样式 */
 }
+
+
+
