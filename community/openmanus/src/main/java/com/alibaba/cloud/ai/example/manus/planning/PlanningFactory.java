@@ -128,7 +128,7 @@ public class PlanningFactory {
 		for (DynamicAgentEntity agentEntity : dynamicAgentLoader.getAllAgents()) {
 			DynamicAgent agent = dynamicAgentLoader.loadAgent(agentEntity.getAgentName());
 			agent.setPlanId(planId);
-			agent.setToolCallbackProvider(()->toolCallbackMap(planId));
+			agent.setToolCallbackProvider(() -> toolCallbackMap(planId));
 			agentList.add(agent);
 		}
 		PlanningTool planningTool = new PlanningTool();
