@@ -36,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import com.alibaba.cloud.ai.example.manus.OpenManusSpringBootApplication;
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
@@ -75,7 +76,7 @@ class BrowserUseToolSpringTest {
 		manusProperties.setBrowserHeadless(true);
 		DummyBaseAgent agent = new DummyBaseAgent(llmService, planExecutionRecorder, manusProperties);
 		agent.setPlanId("plan_123123124124124");
-		browserUseTool.setAgent(agent);
+		browserUseTool.setPlanId(agent.getPlanId());
 	}
 
 	private static class DummyBaseAgent extends BaseAgent {
@@ -107,8 +108,8 @@ class BrowserUseToolSpringTest {
 		}
 
 		@Override
-		protected String step() {
-			return "Dummy step";
+		protected AgentExecResult step() {
+			return new AgentExecResult("Dummy step executed", AgentState.FINISHED);
 		}
 
 		@Override
