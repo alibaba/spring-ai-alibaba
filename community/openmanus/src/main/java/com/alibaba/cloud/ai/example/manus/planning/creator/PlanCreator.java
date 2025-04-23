@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.manus.planning.creator;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
@@ -37,7 +38,7 @@ public class PlanCreator {
 
 	private static final Logger log = LoggerFactory.getLogger(PlanCreator.class);
 
-	private final List<BaseAgent> agents;
+	private final List<DynamicAgentEntity> agents;
 
 	private final LlmService llmService;
 
@@ -45,7 +46,7 @@ public class PlanCreator {
 
 	protected final PlanExecutionRecorder recorder;
 
-	public PlanCreator(List<BaseAgent> agents, LlmService llmService, PlanningTool planningTool,
+	public PlanCreator(List<DynamicAgentEntity> agents, LlmService llmService, PlanningTool planningTool,
 			PlanExecutionRecorder recorder) {
 		this.agents = agents;
 		this.llmService = llmService;
@@ -103,13 +104,13 @@ public class PlanCreator {
 	 * @param agents 代理列表
 	 * @return 格式化的代理信息
 	 */
-	private String buildAgentsInfo(List<BaseAgent> agents) {
+	private String buildAgentsInfo(List<DynamicAgentEntity> agents) {
 		StringBuilder agentsInfo = new StringBuilder("Available Agents:\n");
-		for (BaseAgent agent : agents) {
+		for (DynamicAgentEntity agent : agents) {
 			agentsInfo.append("- Agent Name: ")
-				.append(agent.getName().toUpperCase())
+				.append(agent.getAgentName())
 				.append("\n  Description: ")
-				.append(agent.getDescription())
+				.append(agent.getAgentDescription())
 				.append("\n");
 		}
 		return agentsInfo.toString();
