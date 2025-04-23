@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 
-
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 
@@ -32,7 +31,6 @@ public class ExecutionStep {
 
 	private BaseAgent agent;
 
-
 	public int getStepIndex() {
 		return stepIndex;
 	}
@@ -48,7 +46,6 @@ public class ExecutionStep {
 	public void setResult(String result) {
 		this.result = result;
 	}
-
 
 	public AgentState getStatus() {
 		return agent == null ? AgentState.NOT_STARTED : agent.getState();

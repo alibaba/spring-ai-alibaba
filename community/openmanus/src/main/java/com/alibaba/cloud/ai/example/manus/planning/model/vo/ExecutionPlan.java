@@ -108,7 +108,8 @@ public class ExecutionPlan {
 		state.append("\n- Execution Parameters: ").append("\n");
 		if (executionParams != null && !executionParams.isEmpty()) {
 			state.append(executionParams).append("\n\n");
-		} else {
+		}
+		else {
 			state.append("No execution parameters provided.\n\n");
 		}
 
@@ -120,7 +121,6 @@ public class ExecutionPlan {
 
 	/**
 	 * 获取步骤执行状态的字符串格式
-	 * 
 	 * @param onlyCompletedAndFirstInProgress 当为true时，只输出所有已完成的步骤和第一个进行中的步骤
 	 * @return 格式化的步骤执行状态字符串
 	 */
@@ -155,12 +155,13 @@ public class ExecutionPlan {
 				default -> "[ ]";
 			};
 			state.append("* step ")
-					.append(i)
-					.append(": ")
-					.append(symbol)
-					.append(" ")
-					.append(step.getStepRequirement())
-					.append("\n").append("\n");
+				.append(i)
+				.append(": ")
+				.append(symbol)
+				.append(" ")
+				.append(step.getStepRequirement())
+				.append("\n")
+				.append("\n");
 			state.append("  step execution result: ").append("\n").append(step.getResult()).append("\n");
 		}
 		return state.toString();
@@ -168,7 +169,6 @@ public class ExecutionPlan {
 
 	/**
 	 * 获取所有步骤执行状态的字符串格式（兼容旧版本）
-	 * 
 	 * @return 格式化的步骤执行状态字符串
 	 */
 	public String getStepsExecutionStateStringFormat() {
@@ -177,7 +177,6 @@ public class ExecutionPlan {
 
 	/**
 	 * 将计划转换为JSON字符串
-	 * 
 	 * @return 计划的JSON字符串表示
 	 */
 	public String toJson() {
@@ -203,8 +202,7 @@ public class ExecutionPlan {
 
 	/**
 	 * 从JSON字符串解析并创建ExecutionPlan对象
-	 * 
-	 * @param planJson  JSON字符串
+	 * @param planJson JSON字符串
 	 * @param newPlanId 新的计划ID（可选，如果提供将覆盖JSON中的planId）
 	 * @return 解析后的ExecutionPlan对象
 	 * @throws Exception 如果解析失败则抛出异常

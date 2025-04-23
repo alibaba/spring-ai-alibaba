@@ -78,8 +78,6 @@ public abstract class BaseAgent {
 
 	protected PlanExecutionRecorder planExecutionRecorder;
 
-	
-
 	/**
 	 * 获取智能体的名称
 	 *
