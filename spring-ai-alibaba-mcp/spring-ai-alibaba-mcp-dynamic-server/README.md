@@ -1,7 +1,24 @@
-# Spring AI Alibaba Mcp Nacos
+# Spring AI Alibaba Mcp Dynamic Server
 
 
 ```xml
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-dependencies</artifactId>
+            <version>3.4.0</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-web</artifactId>
+</dependency>
+
 <dependency>
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-mcp-dynamic-server</artifactId>
@@ -47,10 +64,12 @@ spring:
         nacos:
           enabled: true
           server-addr: <nacos-sever-addr>
+          username: <nacos-username>
+          password: <nacos-password>
           service-namespace: <nacos-namespace>  
           service-group: <nacos-group>
 ```
 
-The server can add tools or remove tools dynamically
+The server can auto add tools to mcp server or remove tools from mcp server dynamically
 
 read instance info from nacos service list and tools info from nacos config
