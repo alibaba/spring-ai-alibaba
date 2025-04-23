@@ -100,7 +100,7 @@ public class ExecutionPlan {
 		state.append("Plan: ").append("\n").append(title).append(")\n");
 		
 
-		state.append("\n Execution Parameters: ").append("\n");
+		state.append("\n- Execution Parameters: ").append("\n");
 		if (executionParams != null && !executionParams.isEmpty()) {
 			state.append(executionParams).append("\n\n");
 		}
@@ -109,7 +109,7 @@ public class ExecutionPlan {
 		}
 
 
-		state.append("Steps:\n");
+		state.append("- Steps:\n");
 		state.append(getStepsExecutionStateStringFormat(onlyCompletedAndFirstInProgress));
 
 		return state.toString();
@@ -130,14 +130,17 @@ public class ExecutionPlan {
 			
 			// 如果onlyCompletedAndFirstInProgress为true，则只显示COMPLETED状态的步骤和第一个IN_PROGRESS状态的步骤
 			if (onlyCompletedAndFirstInProgress) {
-				if (step.getStatus() == AgentState.NOT_STARTED) {
-					if (foundInProgress) {
-						continue; // 跳过除第一个外的所有NOT_STARTED状态步骤
-					}
-					foundInProgress = true;
+				// 如果是COMPLETED状态，始终显示
+				if (step.getStatus() == AgentState.COMPLETED) {
+					// 什么都不做，继续显示
 				}
-				else if (step.getStatus() != AgentState.COMPLETED) {
-					continue; // 跳过非COMPLETED和非第一个IN_PROGRESS的步骤
+				// 如果是IN_PROGRESS状态，且还没找到其他IN_PROGRESS的步骤
+				else if (step.getStatus() == AgentState.IN_PROGRESS && !foundInProgress) {
+					foundInProgress = true; // 标记已找到IN_PROGRESS步骤
+				}
+				// 其他所有情况（不是COMPLETED且不是第一个IN_PROGRESS）
+				else {
+					continue; // 跳过不符合条件的步骤
 				}
 			}
 			
@@ -148,14 +151,14 @@ public class ExecutionPlan {
 				case NOT_STARTED -> "[not_started]";
 				default -> "[ ]";
 			};
-			state.append("step ")
+			state.append("* step ")
 				.append(i)
 				.append(": ")
 				.append(symbol)
 				.append(" ")
 				.append(step.getStepRequirement())
-				.append("\n");
-			state.append(" - step execution result: ").append("\n").append(step.getResult()).append("\n");
+				.append("\n").append("\n");
+			state.append("  step execution result: ").append("\n").append(step.getResult()).append("\n");
 		}
 		return state.toString();
 	}
