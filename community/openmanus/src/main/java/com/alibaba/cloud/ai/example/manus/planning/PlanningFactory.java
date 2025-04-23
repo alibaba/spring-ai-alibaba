@@ -45,6 +45,7 @@ import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.DynamicAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoader;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
@@ -80,7 +81,8 @@ public class PlanningFactory {
 	private final ManusProperties manusProperties;
 
 	private final TextFileService textFileService;
-
+	@Autowired
+	private AgentService agentService;
 	private ConcurrentHashMap<String, PlanningCoordinator> flowMap = new ConcurrentHashMap<>();
 
 	@Autowired
@@ -115,31 +117,19 @@ public class PlanningFactory {
 
 	public PlanningCoordinator createPlanningCoordinator(String planId) {
 
-		// String planId = "plan_" + System.currentTimeMillis();
-		// context.setPlanId(planId);
-
-		List<BaseAgent> agentList = new ArrayList<>();
-		Map<String, ToolCallBackContext> toolCallbackMap = new HashMap<>();
 		// Add all dynamic agents from the database
-		for (DynamicAgentEntity agentEntity : dynamicAgentLoader.getAllAgents()) {
-			DynamicAgent agent = dynamicAgentLoader.loadAgent(agentEntity.getAgentName());
-			toolCallbackMap = toolCallbackMap(planId);
-			agent.setPlanId(planId);
-			agent.setToolCallbackMap(toolCallbackMap);
-			agentList.add(agent);
-		}
+		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
+
 		PlanningTool planningTool = new PlanningTool();
 
-		PlanCreator planCreator = new PlanCreator(agentList, llmService, planningTool, recorder);
-		PlanExecutor planExecutor = new PlanExecutor(agentList, recorder);
+		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder);
+		PlanExecutor planExecutor = new PlanExecutor(agentEntities, recorder, agentService);
 		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder);
 
 		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutor, planFinalizer);
 
 		return planningCoordinator;
 	}
-
-	
 
 	public static class ToolCallBackContext {
 
@@ -179,12 +169,12 @@ public class PlanningFactory {
 		// 为每个工具创建 FunctionToolCallback
 		for (ToolCallBiFunctionDef toolDefinition : toolDefinitions) {
 			FunctionToolCallback functionToolcallback = FunctionToolCallback
-				.builder(toolDefinition.getName(), toolDefinition)
-				.description(toolDefinition.getDescription())
-				.inputSchema(toolDefinition.getParameters())
-				.inputType(toolDefinition.getInputType())
-				.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
-				.build();
+					.builder(toolDefinition.getName(), toolDefinition)
+					.description(toolDefinition.getDescription())
+					.inputSchema(toolDefinition.getParameters())
+					.inputType(toolDefinition.getInputType())
+					.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
+					.build();
 			toolDefinition.setPlanId(planId);
 			ToolCallBackContext functionToolcallbackContext = new ToolCallBackContext(functionToolcallback,
 					toolDefinition);
@@ -202,10 +192,10 @@ public class PlanningFactory {
 
 		// 2. 创建 RequestConfig 并设置超时
 		RequestConfig requestConfig = RequestConfig.custom()
-			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
-			.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
-			.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
-			.build();
+				.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
+				.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
+				.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
+				.build();
 
 		// 3. 创建 CloseableHttpClient 并应用配置
 		HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
