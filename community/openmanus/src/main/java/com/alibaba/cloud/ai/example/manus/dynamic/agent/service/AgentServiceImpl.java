@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.DynamicAgent;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.model.Tool;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
@@ -184,7 +185,14 @@ public class AgentServiceImpl implements AgentService {
 			agent.setPlanId(planId);
 			// 设置工具回调映射
 			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId);
-			agent.setToolCallbackMap(toolCallbackMap);
+			agent.setToolCallbackProvider(new ToolCallbackProvider() {
+
+				@Override
+				public Map<String, ToolCallBackContext> getToolCallBackContext() {
+					return toolCallbackMap;
+				}
+
+			});
 
 			log.info("成功加载BaseAgent: {}, 可用工具数量: {}", name, agent.getToolCallList().size());
 
