@@ -86,7 +86,7 @@ public class PlanCreator {
 			// 检查计划是否创建成功
 			if (planId.equals(planningTool.getCurrentPlanId())) {
 				currentPlan = planningTool.getCurrentPlan();
-				log.info("Plan created successfully: " + currentPlan);
+				log.info("Plan created successfully: {}", currentPlan);
 				currentPlan.setPlanningThinking(outputText);
 			}
 			context.setPlan(currentPlan);
