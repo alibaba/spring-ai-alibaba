@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser;
 
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
@@ -30,10 +29,10 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.stream.Collectors;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -44,6 +43,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseTool.class);
 
 	private final ChromeDriverService chromeDriverService;
+
+	private final InteractiveTextProcessor interactiveTextProcessor = new InteractiveTextProcessor();
 
 	// 添加标签页缓存字段
 	private List<Map<String, Object>> cachedTabs;
@@ -172,7 +173,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		return instance;
 	}
 
-	@SuppressWarnings("rawtypes")
 	public FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService) {
 		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
 			.description(description)
@@ -246,27 +246,31 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 				return new ToolExecuteResult("Action parameter is required");
 			}
 			WebDriver driver = getDriver();
-			List<WebElement> interactiveElements = getInteractiveElements(driver);
-
 			switch (action) {
-				case "navigate":
+				case "navigate": {
+
 					if (url == null) {
 						return new ToolExecuteResult("URL is required for 'navigate' action");
 					}
 					driver.get(url);
 					refreshTabsInfo(driver); // 刷新标签页信息
+					interactiveTextProcessor.refreshCache(driver);
 					return new ToolExecuteResult("Navigated to " + url);
-
-				case "click":
+				}
+				case "click": {
+					List<WebElementWrapper> interactiveElements = getInteractiveElements(driver);
 					if (index == null) {
 						return new ToolExecuteResult("Index is required for 'click' action");
 					}
+
 					if (index < 0 || index >= interactiveElements.size()) {
 						return new ToolExecuteResult("Element with index " + index + " not found");
 					}
 
-					WebElement element = interactiveElements.get(index);
-					log.info("Clicking element: {}", (element.getText() != null ? element.getText() : "No text"));
+					WebElementWrapper elementWrapper = interactiveElements.get(index);
+					elementWrapper.prepareForInteraction(driver);
+					WebElement element = elementWrapper.getElement();
+					log.info("Clicking element: {}", (element != null ? element.getText() : "No text"));
 
 					// 记录点击前的窗口状态
 					Set<String> beforeWindowHandles = driver.getWindowHandles();
@@ -309,6 +313,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 							return new ToolExecuteResult("Clicked element and navigated to: " + driver.getCurrentUrl());
 						}
 						refreshTabsInfo(driver); // 刷新标签页信息
+						interactiveTextProcessor.refreshCache(driver);
 						// 如果没有明显变化，返回普通点击成功消息
 						return new ToolExecuteResult("Clicked element at index " + index);
 
@@ -321,58 +326,67 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 						return new ToolExecuteResult(
 								"Clicked element at index " + index + " (no visible navigation occurred)");
 					}
-
-				case "input_text":
+				}
+				case "input_text": {
 					if (index == null || text == null) {
 						return new ToolExecuteResult("Index and text are required for 'input_text' action");
 					}
+					List<WebElementWrapper> interactiveElements = getInteractiveElements(driver);
 					if (index < 0 || index >= interactiveElements.size()) {
 						return new ToolExecuteResult("Element with index " + index + " not found");
 					}
-					WebElement inputElement = interactiveElements.get(index);
+					WebElementWrapper inputElementWrapper = interactiveElements.get(index);
+					inputElementWrapper.prepareForInteraction(driver);
+					WebElement inputElement = inputElementWrapper.getElement();
 					if (!inputElement.getTagName().equals("input") && !inputElement.getTagName().equals("textarea")) {
 						return new ToolExecuteResult("Element at index " + index + " is not an input element");
 					}
 					typeWithHumanDelay(inputElement, text);
 					refreshTabsInfo(driver); // 刷新标签页信息
+					interactiveTextProcessor.refreshCache(driver);
 					return new ToolExecuteResult("Successfully input '" + text + "' into element at index " + index);
-
-				case "key_enter":
+				}
+				case "key_enter": {
 					if (index == null) {
 						return new ToolExecuteResult("Index is required for 'key_enter' action");
 					}
+					List<WebElementWrapper> interactiveElements = getInteractiveElements(driver);
 					if (index < 0 || index >= interactiveElements.size()) {
 						return new ToolExecuteResult("Element with index " + index + " not found");
 					}
-					WebElement enterElement = interactiveElements.get(index);
+					WebElementWrapper enterElementWrapper = interactiveElements.get(index);
+					enterElementWrapper.prepareForInteraction(driver);
+					WebElement enterElement = enterElementWrapper.getElement();
 					enterElement.sendKeys(Keys.RETURN);
 					refreshTabsInfo(driver); // 刷新标签页信息
+					interactiveTextProcessor.refreshCache(driver);
 					return new ToolExecuteResult("Hit the enter key at index " + index);
-
-				case "screenshot":
+				}
+				case "screenshot": {
 					TakesScreenshot screenshot = (TakesScreenshot) driver;
 					String base64Screenshot = screenshot.getScreenshotAs(OutputType.BASE64);
 					return new ToolExecuteResult(
 							"Screenshot captured (base64 length: " + base64Screenshot.length() + ")");
-
-				case "get_html":
+				}
+				case "get_html": {
 					String html = driver.getPageSource();
 					return new ToolExecuteResult(
 							html.length() > MAX_LENGTH ? html.substring(0, MAX_LENGTH) + "..." : html);
-
-				case "get_text":
+				}
+				case "get_text": {
 					String body = driver.findElement(By.tagName("body")).getText();
 					log.info("get_text body is {}", body);
 
 					return new ToolExecuteResult(body);
-
-				case "execute_js":
+				}
+				case "execute_js": {
 					if (script == null) {
 						return new ToolExecuteResult("Script is required for 'execute_js' action");
 					}
 					JavascriptExecutor jsExecutor = (JavascriptExecutor) driver;
 					Object result = jsExecutor.executeScript(script);
 					refreshTabsInfo(driver); // 刷新标签页信息
+					interactiveTextProcessor.refreshCache(driver);
 					if (result == null) {
 
 						return new ToolExecuteResult("Successfully executed JavaScript code.");
@@ -380,40 +394,45 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 					else {
 						return new ToolExecuteResult(result.toString());
 					}
-				case "scroll":
+				}
+				case "scroll": {
 					if (scrollAmount == null) {
 						return new ToolExecuteResult("Scroll amount is required for 'scroll' action");
 					}
 					((JavascriptExecutor) driver).executeScript("window.scrollBy(0," + scrollAmount + ");");
 					String direction = scrollAmount > 0 ? "down" : "up";
 					return new ToolExecuteResult("Scrolled " + direction + " by " + Math.abs(scrollAmount) + " pixels");
-
-				case "new_tab":
+				}
+				case "new_tab": {
 					if (url == null) {
 						return new ToolExecuteResult("URL is required for 'new_tab' action");
 					}
 					((JavascriptExecutor) driver).executeScript("window.open('" + url + "', '_blank');");
 					refreshTabsInfo(driver); // 刷新标签页信息
+					interactiveTextProcessor.refreshCache(driver);
 					return new ToolExecuteResult("Opened new tab with URL " + url);
-
-				case "close_tab":
+				}
+				case "close_tab": {
 					driver.close();
 					refreshTabsInfo(driver); // 刷新标签页信息
+					interactiveTextProcessor.refreshCache(driver);
 					return new ToolExecuteResult("Closed current tab");
-
-				case "switch_tab":
+				}
+				case "switch_tab": {
 					if (tabId == null) {
 						return new ToolExecuteResult("Tab ID is out of range for 'switch_tab' action");
 					}
 					Object[] windowHandles = driver.getWindowHandles().toArray();
 					driver.switchTo().window(windowHandles[tabId].toString());
 					refreshTabsInfo(driver); // 刷新标签页信息
+					interactiveTextProcessor.refreshCache(driver);
 					return new ToolExecuteResult("Switched to tab " + tabId);
-
-				case "refresh":
+				}
+				case "refresh": {
 					driver.navigate().refresh();
+					interactiveTextProcessor.refreshCache(driver);
 					return new ToolExecuteResult("Refreshed current page");
-
+				}
 				default:
 					return new ToolExecuteResult("Unknown action: " + action);
 			}
@@ -439,139 +458,17 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		}
 	}
 
-	private static final String INTERACTIVE_ELEMENTS_SELECTOR = "a, button, input, select, textarea[type='search'], textarea, [role='button'], [role='link'], [role='textbox'], [role='search'], [role='searchbox']";
-
-	private String formatElementInfo(int index, WebElement element) {
-		try {
-			if (!isElementVisible(element)) {
-				return ""; // 如果元素不可见，直接返回空字符串
-			}
-
-			JavascriptExecutor js = (JavascriptExecutor) getDriver();
-			@SuppressWarnings("unchecked")
-			Map<String, Object> props = (Map<String, Object>) js.executeScript("""
-					function getElementInfo(el) {
-					    try {
-					        const style = window.getComputedStyle(el);
-					        return {
-					            tagName: el.tagName.toLowerCase(),
-					            type: el.getAttribute('type'),
-					            role: el.getAttribute('role'),
-					            text: el.textContent.trim(),
-					            value: el.value,
-					            placeholder: el.getAttribute('placeholder'),
-					            name: el.getAttribute('name'),
-					            id: el.getAttribute('id'),
-					            'aria-label': el.getAttribute('aria-label'),
-					            isVisible: (
-					                el.offsetWidth > 0 &&
-					                el.offsetHeight > 0 &&
-					                style.visibility !== 'hidden' &&
-					                style.display !== 'none'
-					            )
-					        };
-					    } catch(e) {
-					        return null; // 如果获取元素信息失败，返回null
-					    }
-					}
-					return getElementInfo(arguments[0]);
-					""", element);
-
-			if (props == null || !(Boolean) props.get("isVisible")) {
-				return "";
-			}
-
-			// 构建HTML属性字符串
-			StringBuilder attributes = new StringBuilder();
-
-			// 添加基本属性
-			if (props.get("type") != null) {
-				attributes.append(" type=\"").append(props.get("type")).append("\"");
-			}
-			if (props.get("role") != null) {
-				attributes.append(" role=\"").append(props.get("role")).append("\"");
-			}
-			if (props.get("placeholder") != null) {
-				attributes.append(" placeholder=\"").append(props.get("placeholder")).append("\"");
-			}
-			if (props.get("name") != null) {
-				attributes.append(" name=\"").append(props.get("name")).append("\"");
-			}
-			if (props.get("id") != null) {
-				attributes.append(" id=\"").append(props.get("id")).append("\"");
-			}
-			if (props.get("aria-label") != null) {
-				attributes.append(" aria-label=\"").append(props.get("aria-label")).append("\"");
-			}
-			if (props.get("value") != null) {
-				attributes.append(" value=\"").append(props.get("value")).append("\"");
-			}
-
-			String tagName = (String) props.get("tagName");
-			String text = (String) props.get("text");
-
-			// 生成标准HTML格式输出
-			return String.format("[%d] <%s%s>%s</%s>\n", index, tagName, attributes.toString(), text, tagName);
-
-		}
-		catch (StaleElementReferenceException | NoSuchElementException e) {
-			log.debug("忽略过期或不存在的元素: {}", e.getMessage());
-			return "";
-		}
-		catch (Exception e) {
-			log.warn("格式化元素信息失败，跳过当前元素: {}", e.getMessage());
-			return "";
-		}
-	}
-
-	// 添加新的方法获取可交互元素
-	private boolean isElementVisible(WebElement element) {
-		try {
-			return element.isDisplayed() && element.isEnabled();
-		}
-		catch (StaleElementReferenceException | NoSuchElementException e) {
-			// 忽略过期或不存在的元素
-			log.debug("忽略过期或不存在的元素: {}", e.getMessage());
-			return false;
-		}
-	}
-
-	private List<WebElement> getInteractiveElements(WebDriver driver) {
-		try {
-			return driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR))
-				.stream()
-				.filter(this::isElementVisible)
-				.collect(Collectors.toList());
-		}
-		catch (StaleElementReferenceException e) {
-			log.warn("元素在获取过程中过期，重试一次: {}", e.getMessage());
-			// 如果发生异常，等待一下然后重试
-			try {
-				Thread.sleep(500);
-				return driver.findElements(By.cssSelector(INTERACTIVE_ELEMENTS_SELECTOR))
-					.stream()
-					.filter(this::isElementVisible)
-					.collect(Collectors.toList());
-			}
-			catch (Exception retryEx) {
-				log.error("重试获取元素失败: {}", retryEx.getMessage());
-				return new ArrayList<>(); // 返回空列表而不是抛出异常
-			}
-		}
+	/**
+	 * 通过InteractiveTextProcessor获取可交互元素
+	 * @param driver WebDriver实例
+	 * @return 可交互元素列表
+	 */
+	private List<WebElementWrapper> getInteractiveElements(WebDriver driver) {
+		return interactiveTextProcessor.getInteractiveElements(driver);
 	}
 
 	private String getInteractiveElementsInfo(WebDriver driver) {
-		StringBuilder resultInfo = new StringBuilder();
-		List<WebElement> interactiveElements = getInteractiveElements(driver);
-
-		for (int i = 0; i < interactiveElements.size(); i++) {
-			String formattedInfo = formatElementInfo(i, interactiveElements.get(i));
-			if (!formattedInfo.isEmpty()) {
-				resultInfo.append(formattedInfo);
-			}
-		}
-
-		return resultInfo.toString();
+		return interactiveTextProcessor.getInteractiveElementsInfo(driver);
 	}
 
 	private List<Map<String, Object>> getTabsInfo(WebDriver driver) {

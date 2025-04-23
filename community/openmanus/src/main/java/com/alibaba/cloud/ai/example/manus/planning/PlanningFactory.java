@@ -16,10 +16,8 @@
 
 package com.alibaba.cloud.ai.example.manus.planning;
 
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.config.startUp.McpService;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.DynamicAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoader;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
@@ -59,6 +57,7 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -81,6 +80,9 @@ public class PlanningFactory {
 	private final ManusProperties manusProperties;
 
 	private final TextFileService textFileService;
+
+	@Autowired
+	private AgentService agentService;
 
 	private final McpService mcpService;
 
@@ -119,22 +121,13 @@ public class PlanningFactory {
 
 	public PlanningCoordinator createPlanningCoordinator(String planId) {
 
-		// String planId = "plan_" + System.currentTimeMillis();
-		// context.setPlanId(planId);
-
-		List<BaseAgent> agentList = new ArrayList<>();
-
 		// Add all dynamic agents from the database
-		for (DynamicAgentEntity agentEntity : dynamicAgentLoader.getAllAgents()) {
-			DynamicAgent agent = dynamicAgentLoader.loadAgent(agentEntity.getAgentName());
-			agent.setPlanId(planId);
-			agent.setToolCallbackProvider(() -> toolCallbackMap(planId));
-			agentList.add(agent);
-		}
+		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
+
 		PlanningTool planningTool = new PlanningTool();
 
-		PlanCreator planCreator = new PlanCreator(agentList, llmService, planningTool, recorder);
-		PlanExecutor planExecutor = new PlanExecutor(agentList, recorder);
+		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder);
+		PlanExecutor planExecutor = new PlanExecutor(agentEntities, recorder, agentService);
 		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder);
 
 		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutor, planFinalizer);
