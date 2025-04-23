@@ -182,7 +182,6 @@ public class AgentServiceImpl implements AgentService {
 			
 			// 设置planId
 			agent.setPlanId(planId);
-			
 			// 设置工具回调映射
 			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId);
 			agent.setToolCallbackMap(toolCallbackMap);
