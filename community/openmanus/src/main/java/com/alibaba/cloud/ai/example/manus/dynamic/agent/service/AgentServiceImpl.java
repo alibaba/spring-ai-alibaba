@@ -49,17 +49,17 @@ public class AgentServiceImpl implements AgentService {
 	private final DynamicAgentRepository repository;
 
 	private final PlanningFactory planningFactory;
-	
+
 	@Autowired
 	@Lazy
 	private LlmService llmService;
-	
+
 	@Autowired
 	private PlanExecutionRecorder planExecutionRecorder;
-	
+
 	@Autowired
 	private ManusProperties manusProperties;
-	
+
 	@Autowired
 	@Lazy
 	private ToolCallingManager toolCallingManager;
@@ -173,23 +173,24 @@ public class AgentServiceImpl implements AgentService {
 
 	@Override
 	public BaseAgent createDynamicBaseAgent(String name, String planId) {
-		
+
 		log.info("创建新的BaseAgent: {}, planId: {}", name, planId);
-		
+
 		try {
 			// 通过dynamicAgentLoader加载已存在的Agent
 			DynamicAgent agent = dynamicAgentLoader.loadAgent(name);
-			
+
 			// 设置planId
 			agent.setPlanId(planId);
 			// 设置工具回调映射
 			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId);
 			agent.setToolCallbackMap(toolCallbackMap);
-			
+
 			log.info("成功加载BaseAgent: {}, 可用工具数量: {}", name, agent.getToolCallList().size());
-			
+
 			return agent;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("加载BaseAgent过程中发生异常: {}, 错误信息: {}", name, e.getMessage(), e);
 			throw new RuntimeException("加载BaseAgent失败: " + e.getMessage(), e);
 		}

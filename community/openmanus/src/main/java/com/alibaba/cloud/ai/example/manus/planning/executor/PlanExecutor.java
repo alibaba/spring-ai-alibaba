@@ -134,11 +134,11 @@ public class PlanExecutor {
 	 * @param stepType 步骤类型
 	 * @return 对应的执行器
 	 */
-	private BaseAgent getExecutorForStep(String stepType,ExecutionContext context) {
+	private BaseAgent getExecutorForStep(String stepType, ExecutionContext context) {
 		// 根据步骤类型获取对应的执行器
 		for (DynamicAgentEntity agent : agents) {
 			if (agent.getAgentName().equalsIgnoreCase(stepType)) {
-				return agentService.createDynamicBaseAgent(agent.getAgentName(),context.getPlan().getPlanId());
+				return agentService.createDynamicBaseAgent(agent.getAgentName(), context.getPlan().getPlanId());
 			}
 		}
 		throw new IllegalArgumentException(
