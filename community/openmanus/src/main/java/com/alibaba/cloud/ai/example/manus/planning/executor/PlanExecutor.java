@@ -91,7 +91,7 @@ public class PlanExecutor {
 		recordStepStart(step, context);
 
 		try {
-			String planStatus = context.getPlan().getPlanExecutionStateStringFormat();
+			String planStatus = context.getPlan().getPlanExecutionStateStringFormat(true);
 
 			String stepText = step.getStepRequirement();
 			Map<String, Object> executorParams = new HashMap<>();
