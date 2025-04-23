@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import com.alibaba.cloud.ai.example.manus.config.startUp.McpService;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -108,25 +109,24 @@ public class PlanningFactory {
 
 	private final TextFileService textFileService;
 
-    private final McpService mcpService;
+	private final McpService mcpService;
 
+	private ConcurrentHashMap<String, PlanningCoordinator> flowMap = new ConcurrentHashMap<>();
 
-    private ConcurrentHashMap<String, PlanningCoordinator> flowMap = new ConcurrentHashMap<>();
+	@Autowired
+	@Lazy
+	private LlmService llmService;
 
-    @Autowired
-    @Lazy
-    private LlmService llmService;
+	@Autowired
+	@Lazy
+	private ToolCallingManager toolCallingManager;
 
-    @Autowired
-    @Lazy
-    private ToolCallingManager toolCallingManager;
+	@Autowired
+	private DynamicAgentLoader dynamicAgentLoader;
 
-    @Autowired
-    private DynamicAgentLoader dynamicAgentLoader;
-
-    public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
-                           ManusProperties manusProperties, TextFileService textFileService, McpService mcpService) {
-        this.chromeDriverService = chromeDriverService;
+	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
+			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService) {
+		this.chromeDriverService = chromeDriverService;
 		this.recorder = recorder;
 		this.manusProperties = manusProperties;
 		this.textFileService = textFileService;
@@ -159,7 +159,7 @@ public class PlanningFactory {
 				@Override
 				protected Map<String, ToolCallBackContext> getToolCallBackContexts() {
 					return toolCallbackMap(planId);
-			agent.setPlanId(planId);
+					agent.setPlanId(planId);
 				}
 			};
 			agent.setToolCallbackProvider(toolCallbackProvider);
