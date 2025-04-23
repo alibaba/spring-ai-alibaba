@@ -159,7 +159,7 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 		}
 
 		this.currentPlan = plan;
-		return new ToolExecuteResult("Plan created: " + planId + "\n" + plan.getPlanExecutionStateStringFormat());
+		return new ToolExecuteResult("Plan created: " + planId + "\n" + plan.getPlanExecutionStateStringFormat(false));
 	}
 
 	// public ToolExecuteResult updatePlan(String planId, String title, List<String>

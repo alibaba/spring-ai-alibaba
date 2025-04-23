@@ -139,6 +139,8 @@ public class PlanningFactory {
 		return planningCoordinator;
 	}
 
+	
+
 	public static class ToolCallBackContext {
 
 		private final ToolCallback toolCallback;

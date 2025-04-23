@@ -95,52 +95,52 @@ public class ExecutionPlan {
 		this.executionParams = executionParams;
 	}
 
-	public String getPlanExecutionStateStringFormat() {
+	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
-		state.append("Plan: ").append(title).append(" (ID: ").append(planId).append(")\n");
-		state.append("=".repeat(state.length())).append("\n\n");
+		state.append("Plan: ").append("\n").append(title).append(")\n");
+		
 
 		state.append("\n Execution Parameters: ").append("\n");
 		if (executionParams != null && !executionParams.isEmpty()) {
-			state.append(executionParams).append("\n");
+			state.append(executionParams).append("\n\n");
 		}
 		else {
-			state.append("No execution parameters provided.\n");
+			state.append("No execution parameters provided.\n\n");
 		}
 
-		state.append("CURRENT STEP TO BE EXECUTED:").append("\n");
-		String stepString = null;
-		boolean isFirst = true;
-		for (ExecutionStep step : steps) {
-			if (isFirst) {
-				isFirst = false;
-				stepString = step.getStepRequirement();
-			}
-
-			if (step.getStatus() != AgentState.COMPLETED) {
-				stepString = step.getStepRequirement();
-				break;
-			}
-
-		}
-		if (stepString != null) {
-			state.append(stepString).append("\n");
-		}
-		else {
-			state.append("all complete \n");
-		}
 
 		state.append("Steps:\n");
-		state.append(getStepsExecutionStateStringFormat());
+		state.append(getStepsExecutionStateStringFormat(onlyCompletedAndFirstInProgress));
 
 		return state.toString();
 	}
 
-	public String getStepsExecutionStateStringFormat() {
+	/**
+	 * 获取步骤执行状态的字符串格式
+	 * 
+	 * @param onlyCompletedAndFirstInProgress 当为true时，只输出所有已完成的步骤和第一个进行中的步骤
+	 * @return 格式化的步骤执行状态字符串
+	 */
+	public String getStepsExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
+		boolean foundInProgress = false;
+		
 		for (int i = 0; i < steps.size(); i++) {
-
 			ExecutionStep step = steps.get(i);
+			
+			// 如果onlyCompletedAndFirstInProgress为true，则只显示COMPLETED状态的步骤和第一个IN_PROGRESS状态的步骤
+			if (onlyCompletedAndFirstInProgress) {
+				if (step.getStatus() == AgentState.NOT_STARTED) {
+					if (foundInProgress) {
+						continue; // 跳过除第一个外的所有NOT_STARTED状态步骤
+					}
+					foundInProgress = true;
+				}
+				else if (step.getStatus() != AgentState.COMPLETED) {
+					continue; // 跳过非COMPLETED和非第一个IN_PROGRESS的步骤
+				}
+			}
+			
 			String symbol = switch (step.getStatus()) {
 				case COMPLETED -> "[completed]";
 				case IN_PROGRESS -> "[in_progress]";
@@ -158,6 +158,15 @@ public class ExecutionPlan {
 			state.append(" - step execution result: ").append("\n").append(step.getResult()).append("\n");
 		}
 		return state.toString();
+	}
+	
+	/**
+	 * 获取所有步骤执行状态的字符串格式（兼容旧版本）
+	 * 
+	 * @return 格式化的步骤执行状态字符串
+	 */
+	public String getStepsExecutionStateStringFormat() {
+		return getStepsExecutionStateStringFormat(false);
 	}
 
 	/**

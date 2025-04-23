@@ -126,17 +126,16 @@ public abstract class BaseAgent {
 		String currentDateTime = java.time.LocalDate.now().toString(); // 格式为yyyy-MM-dd
 
 		String stepPrompt = """
-				SYSTEM INFORMATION:
+				- SYSTEM INFORMATION:
 				OS: %s %s (%s)
 
-				Current Date:
+				- Current Date:
 				%s
-
-				CURRENT TASK STATUS:
+				- Plan message:
 				{planStatus}
 
-				CURRENT TASK STEP ({currentStepIndex}):
-				{stepText}
+				- CURRENT TASK STEP  IS :
+				STEP {currentStepIndex} :{stepText}
 
 				ExtraParams for this step:
 				{extraParams}
