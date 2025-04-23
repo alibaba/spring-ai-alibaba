@@ -49,9 +49,6 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -85,19 +82,11 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	private ConfigService configService;
 
-	private ScheduledExecutorService executorService;
-
 	public NacosMcpRegister(McpAsyncServer mcpAsyncServer, NacosMcpRegistryProperties nacosMcpProperties, String type) {
 		this.mcpAsyncServer = mcpAsyncServer;
 		log.info("Mcp server type: " + type);
 		this.type = type;
 		this.nacosMcpProperties = nacosMcpProperties;
-		this.executorService = new ScheduledThreadPoolExecutor(1, r -> {
-			Thread t = new Thread(r);
-			t.setName("nacos-mcp-register");
-			t.setDaemon(true);
-			return t;
-		});
 
 		try {
 			Class clazz = McpAsyncServer.class;
@@ -200,30 +189,6 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 		catch (Exception e) {
 			log.error("Failed to register mcp server to nacos", e);
 		}
-
-		executorService.scheduleWithFixedDelay(() -> {
-			try {
-				String toolsInNacosContent = this.configService.getConfig(this.serverInfo.name() + toolsConfigSuffix,
-						toolsGroup, 3000);
-				updateToolsDescription(toolsInNacosContent);
-				McpToolsInfo mcpToolsInfo = JsonUtils.deserialize(toolsInNacosContent, McpToolsInfo.class);
-				List<McpSchema.Tool> toolsInNacos = mcpToolsInfo.getTools();
-				List<McpSchema.Tool> toolsInLocal = this.tools.stream()
-					.map(McpServerFeatures.AsyncToolRegistration::tool)
-					.toList();
-				String toolsContentInNacos = JsonUtils.serialize(toolsInNacos);
-				String toolsContentInLocal = JsonUtils.serialize(toolsInLocal);
-				if (!StringUtils.equals(toolsContentInLocal, toolsContentInNacos)) {
-					mcpToolsInfo.setTools(toolsInLocal);
-					String mcpToolsInfoString = JsonUtils.serialize(mcpToolsInfo);
-					this.configService.publishConfig(this.serverInfo.name() + toolsConfigSuffix, toolsGroup,
-							mcpToolsInfoString);
-				}
-			}
-			catch (Exception e) {
-				log.error("Failed to update tools description to nacos", e);
-			}
-		}, 60, 60, TimeUnit.SECONDS);
 	}
 
 	private void updateToolsDescription(String toolsInNacosContent) {
