@@ -56,8 +56,8 @@ public class McpTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public void setAgent(BaseAgent agent) {
-		this.agent = agent;
+	public void setPlanId(String planId) {
+
 	}
 
 	@Override

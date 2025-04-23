@@ -15,14 +15,12 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent;
 
-import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 
 import java.util.Map;
 
 public interface ToolCallbackProvider {
 
-	Map<String, ManusConfiguration.ToolCallBackContext> getToolCallBackContexts(String planId);
-
-	Map<String, ManusConfiguration.ToolCallBackContext> removePlan(String planId);
+	Map<String, PlanningFactory.ToolCallBackContext> getToolCallBackContext();
 
 }
