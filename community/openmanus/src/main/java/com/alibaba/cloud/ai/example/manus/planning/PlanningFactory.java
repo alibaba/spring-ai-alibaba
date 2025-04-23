@@ -81,8 +81,10 @@ public class PlanningFactory {
 	private final ManusProperties manusProperties;
 
 	private final TextFileService textFileService;
+
 	@Autowired
 	private AgentService agentService;
+
 	private ConcurrentHashMap<String, PlanningCoordinator> flowMap = new ConcurrentHashMap<>();
 
 	@Autowired
@@ -169,12 +171,12 @@ public class PlanningFactory {
 		// 为每个工具创建 FunctionToolCallback
 		for (ToolCallBiFunctionDef toolDefinition : toolDefinitions) {
 			FunctionToolCallback functionToolcallback = FunctionToolCallback
-					.builder(toolDefinition.getName(), toolDefinition)
-					.description(toolDefinition.getDescription())
-					.inputSchema(toolDefinition.getParameters())
-					.inputType(toolDefinition.getInputType())
-					.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
-					.build();
+				.builder(toolDefinition.getName(), toolDefinition)
+				.description(toolDefinition.getDescription())
+				.inputSchema(toolDefinition.getParameters())
+				.inputType(toolDefinition.getInputType())
+				.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
+				.build();
 			toolDefinition.setPlanId(planId);
 			ToolCallBackContext functionToolcallbackContext = new ToolCallBackContext(functionToolcallback,
 					toolDefinition);
@@ -192,10 +194,10 @@ public class PlanningFactory {
 
 		// 2. 创建 RequestConfig 并设置超时
 		RequestConfig requestConfig = RequestConfig.custom()
-				.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
-				.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
-				.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
-				.build();
+			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
+			.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
+			.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
+			.build();
 
 		// 3. 创建 CloseableHttpClient 并应用配置
 		HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
