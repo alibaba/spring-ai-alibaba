@@ -314,8 +314,7 @@ public class LlmService {
 			.defaultSystem(PLANNING_SYSTEM_PROMPT)
 			.defaultAdvisors(new MessageChatMemoryAdvisor(planningMemory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultTools(toolCallbackProvider)
-                .defaultOptions(OpenAiChatOptions.builder().temperature(0.1).build())
+			.defaultOptions(OpenAiChatOptions.builder().temperature(0.1).build())
 			.build();
 
 		// // 每个agent执行过程中，用独立的memroy
