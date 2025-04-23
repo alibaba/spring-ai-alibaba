@@ -16,35 +16,9 @@
 
 package com.alibaba.cloud.ai.example.manus.planning;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-
-import com.alibaba.cloud.ai.example.manus.config.startUp.McpService;
-import org.apache.hc.client5.http.classic.HttpClient;
-import org.apache.hc.client5.http.config.RequestConfig;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.util.Timeout;
-import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.ToolCallbackProvider;
-import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.tool.metadata.ToolMetadata;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.AbstractToolCallbackProvider;
+import com.alibaba.cloud.ai.example.manus.config.startUp.McpService;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.DynamicAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoader;
@@ -76,14 +50,13 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
@@ -150,21 +123,12 @@ public class PlanningFactory {
 		// context.setPlanId(planId);
 
 		List<BaseAgent> agentList = new ArrayList<>();
-		List<com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider> toolCallbackProviderList = new ArrayList<>();
 
 		// Add all dynamic agents from the database
 		for (DynamicAgentEntity agentEntity : dynamicAgentLoader.getAllAgents()) {
 			DynamicAgent agent = dynamicAgentLoader.loadAgent(agentEntity.getAgentName());
-			com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider toolCallbackProvider = new AbstractToolCallbackProvider() {
-				@Override
-				protected Map<String, ToolCallBackContext> getToolCallBackContexts() {
-					return toolCallbackMap(planId);
-					agent.setPlanId(planId);
-				}
-			};
-			agent.setToolCallbackProvider(toolCallbackProvider);
+			agent.setToolCallbackProvider(()->toolCallbackMap(planId));
 			agentList.add(agent);
-			toolCallbackProviderList.add(toolCallbackProvider);
 		}
 		PlanningTool planningTool = new PlanningTool();
 
