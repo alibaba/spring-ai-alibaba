@@ -78,12 +78,7 @@ public abstract class BaseAgent {
 
 	protected PlanExecutionRecorder planExecutionRecorder;
 
-	public void resetAgentState() {
-		this.state = AgentState.NOT_STARTED;
-		this.currentStep = 0;
-		this.data.clear();
-		llmService.getAgentChatClient(planId).getMemory().clear(planId);
-	}
+	
 
 	/**
 	 * 获取智能体的名称
