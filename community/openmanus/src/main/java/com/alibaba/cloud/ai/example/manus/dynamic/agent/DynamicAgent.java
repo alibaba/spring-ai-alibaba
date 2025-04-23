@@ -171,10 +171,10 @@ public class DynamicAgent extends ReActAgent {
 			// 如果是终止工具，则返回完成状态
 			// 否则返回运行状态
 			if (TerminateTool.name.equals(toolcallName)) {
-				agentExecResult = new AgentExecResult(llmCallResponse, AgentState.FINISHED);
+				agentExecResult = new AgentExecResult(llmCallResponse, AgentState.COMPLETED);
 			}
 			else {
-				agentExecResult = new AgentExecResult(llmCallResponse, AgentState.RUNNING);
+				agentExecResult = new AgentExecResult(llmCallResponse, AgentState.IN_PROGRESS);
 			}
 			return agentExecResult;
 		}
@@ -188,7 +188,7 @@ public class DynamicAgent extends ReActAgent {
 
 			thinkActRecord.recordError(e.getMessage());
 
-			return new AgentExecResult(e.getMessage(), AgentState.ERROR);
+			return new AgentExecResult(e.getMessage(), AgentState.FAILED);
 		}
 	}
 
