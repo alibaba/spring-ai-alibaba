@@ -314,6 +314,8 @@ public class LlmService {
 			.defaultSystem(PLANNING_SYSTEM_PROMPT)
 			.defaultAdvisors(new MessageChatMemoryAdvisor(planningMemory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.defaultTools(toolCallbackProvider)
+                .defaultOptions(OpenAiChatOptions.builder().temperature(0.1).build())
 			.build();
 
 		// // 每个agent执行过程中，用独立的memroy
@@ -357,7 +359,8 @@ public class LlmService {
 			ChatClient agentChatClient = ChatClient.builder(chatModel)
 				.defaultAdvisors(new MessageChatMemoryAdvisor(agentMemory))
 				.defaultAdvisors(new SimpleLoggerAdvisor())
-				.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+				.defaultOptions(
+						OpenAiChatOptions.builder().internalToolExecutionEnabled(false).temperature(0.1).build())
 				.build();
 			return new AgentChatClientWrapper(agentChatClient, agentMemory);
 		});

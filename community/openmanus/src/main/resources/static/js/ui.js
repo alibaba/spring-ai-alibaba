@@ -231,6 +231,12 @@ const ManusUI = (() => {
             
             const details = await ManusAPI.getDetails(activePlanId);
             
+            // 如果details为null（例如404错误），则跳过处理
+            if (!details) {
+                console.log(`无法获取计划 ${activePlanId} 的详情`);
+                return;
+            }
+            
             // 发送计划更新事件
             EventSystem.emit('plan-update', details);
             
@@ -252,6 +258,19 @@ const ManusUI = (() => {
                 EventSystem.emit('plan-completed', details);
                 lastSequenceSize = 0; // 只在计划完成时重置
                 stopPolling();
+                
+                // 计划完成后，删除后端执行详情记录释放资源
+                try {
+                    // 延迟一段时间后删除，确保前端已完全处理完成事件
+                    setTimeout(async () => {
+                        await fetch(`${ManusAPI.BASE_URL}/details/${activePlanId}`, {
+                            method: 'DELETE'
+                        });
+                        console.log(`已删除已完成的计划执行记录: ${activePlanId}`);
+                    }, 5000); // 5秒后删除
+                } catch (error) {
+                    console.log(`删除计划执行记录失败: ${error.message}`);
+                }
             }
             
         } catch (error) {
