@@ -61,7 +61,7 @@ public class DynamicAgent extends ReActAgent {
 
 	private final String nextStepPrompt;
 
-	private Map<String, ToolCallBackContext> toolCallbackMap;
+	private ToolCallbackProvider toolCallbackProvider;
 
 	private final List<String> availableToolKeys;
 
@@ -228,9 +228,10 @@ public class DynamicAgent extends ReActAgent {
 	@Override
 	public List<ToolCallback> getToolCallList() {
 		List<ToolCallback> toolCallbacks = new ArrayList<>();
+		Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContext();
 		for (String toolKey : availableToolKeys) {
-			if (toolCallbackMap.containsKey(toolKey)) {
-				ToolCallBackContext toolCallback = toolCallbackMap.get(toolKey);
+			if (toolCallBackContext.containsKey(toolKey)) {
+				ToolCallBackContext toolCallback = toolCallBackContext.get(toolKey);
 				if (toolCallback != null) {
 					toolCallbacks.add(toolCallback.getToolCallback());
 				}
@@ -250,12 +251,12 @@ public class DynamicAgent extends ReActAgent {
 		data.put(key, value);
 	}
 
-	public void setToolCallbackMap(Map<String, ToolCallBackContext> toolCallbackMap) {
-		this.toolCallbackMap = toolCallbackMap;
+	public void setToolCallbackProvider(ToolCallbackProvider toolCallbackProvider) {
+		this.toolCallbackProvider = toolCallbackProvider;
 	}
 
 	protected String collectEnvData(String toolCallName) {
-		ToolCallBackContext context = toolCallbackMap.get(toolCallName);
+		ToolCallBackContext context = toolCallbackProvider.getToolCallBackContext().get(toolCallName);
 		if (context != null) {
 			return context.getFunctionInstance().getCurrentToolStateString();
 		}
