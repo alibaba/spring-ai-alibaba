@@ -21,34 +21,34 @@ package com.alibaba.cloud.ai.mcp.nacos.model;
  */
 public class ServiceRefInfo {
 
-	private String namespace;
+	private String namespaceId;
 
-	private String group;
+	private String groupName;
 
-	private String service;
+	private String serviceName;
 
-	public String getNamespace() {
-		return namespace;
+	public String getNamespaceId() {
+		return namespaceId;
 	}
 
-	public void setNamespace(String namespace) {
-		this.namespace = namespace;
+	public void setNamespaceId(String namespaceId) {
+		this.namespaceId = namespaceId;
 	}
 
-	public String getGroup() {
-		return group;
+	public String getGroupName() {
+		return groupName;
 	}
 
-	public void setGroup(String group) {
-		this.group = group;
+	public void setGroupName(String groupName) {
+		this.groupName = groupName;
 	}
 
-	public String getService() {
-		return service;
+	public String getServiceName() {
+		return serviceName;
 	}
 
-	public void setService(String service) {
-		this.service = service;
+	public void setServiceName(String serviceName) {
+		this.serviceName = serviceName;
 	}
 
 }
