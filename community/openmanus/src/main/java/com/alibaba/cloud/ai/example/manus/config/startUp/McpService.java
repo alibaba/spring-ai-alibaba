@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.config.startUp;
 import com.alibaba.cloud.ai.example.manus.config.entity.McpConfigEntity;
 import com.alibaba.cloud.ai.example.manus.config.entity.SseParameters;
 import com.alibaba.cloud.ai.example.manus.config.repository.McpConfigRepository;
+import com.alibaba.fastjson2.JSON;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpAsyncClient;
@@ -87,10 +88,9 @@ public class McpService implements InitializingBean {
 				}
 			}
 			case STUDIO -> {
-				try (JsonParser jsonParser = new ObjectMapper().createParser(mcpConfigEntity.getConnectionConfig())) {
-					ServerParameters serverParameters = jsonParser.readValueAs(ServerParameters.class);
-					transport = new StdioClientTransport(serverParameters);
-				}
+				ServerParameters serverParameters = JSON.parseObject(mcpConfigEntity.getConnectionConfig(),
+						ServerParameters.class);
+				transport = new StdioClientTransport(serverParameters);
 			}
 		}
 		if (transport != null) {
