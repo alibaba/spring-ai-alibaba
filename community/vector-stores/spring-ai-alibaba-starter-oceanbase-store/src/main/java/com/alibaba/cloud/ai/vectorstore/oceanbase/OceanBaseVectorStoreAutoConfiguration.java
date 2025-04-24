@@ -33,51 +33,52 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
  * OceanBase Vector Store Auto Configuration
- * 
+ *
  * @author xxsc0529
  * @since 2025-04-01
  */
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingModel.class, OceanBaseVectorStore.class })
 @EnableConfigurationProperties({ OceanBaseVectorStoreProperties.class })
-@ConditionalOnProperty(prefix = "spring.ai.vectorstore.oceanbase", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "spring.ai.vectorstore.oceanbase", name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class OceanBaseVectorStoreAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    public DataSource dataSource(OceanBaseVectorStoreProperties properties) {
-        DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setUrl(properties.getUrl());
-        dataSource.setUsername(properties.getUsername());
-        dataSource.setPassword(properties.getPassword());
-        return dataSource;
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	public DataSource dataSource(OceanBaseVectorStoreProperties properties) {
+		DriverManagerDataSource dataSource = new DriverManagerDataSource();
+		dataSource.setUrl(properties.getUrl());
+		dataSource.setUsername(properties.getUsername());
+		dataSource.setPassword(properties.getPassword());
+		return dataSource;
+	}
 
-    @Bean
-    @ConditionalOnMissingBean(BatchingStrategy.class)
-    public BatchingStrategy batchingStrategy() {
-        return new TokenCountBatchingStrategy();
-    }
+	@Bean
+	@ConditionalOnMissingBean(BatchingStrategy.class)
+	public BatchingStrategy batchingStrategy() {
+		return new TokenCountBatchingStrategy();
+	}
 
-    @Bean
-    @ConditionalOnMissingBean
-    public OceanBaseVectorStore oceanBaseVectorStore(DataSource dataSource, EmbeddingModel embeddingModel,
-                                                     OceanBaseVectorStoreProperties properties,
-                                                     ObjectProvider<ObservationRegistry> observationRegistry,
-                                                     ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
-                                                     BatchingStrategy batchingStrategy) {
+	@Bean
+	@ConditionalOnMissingBean
+	public OceanBaseVectorStore oceanBaseVectorStore(DataSource dataSource, EmbeddingModel embeddingModel,
+			OceanBaseVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
+			BatchingStrategy batchingStrategy) {
 
-        var builder = OceanBaseVectorStore.builder(properties.getTableName(), dataSource, embeddingModel)
-            .batchingStrategy(batchingStrategy)
-            .observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-            .customObservationConvention(customObservationConvention.getIfAvailable(() -> null));
-        if (properties.getDefaultTopK() >= 0) {
-            builder.defaultTopK(properties.getDefaultTopK());
-        }
+		var builder = OceanBaseVectorStore.builder(properties.getTableName(), dataSource, embeddingModel)
+			.batchingStrategy(batchingStrategy)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null));
+		if (properties.getDefaultTopK() >= 0) {
+			builder.defaultTopK(properties.getDefaultTopK());
+		}
 
-        if (properties.getDefaultSimilarityThreshold() >= 0.0) {
-            builder.defaultSimilarityThreshold(properties.getDefaultSimilarityThreshold());
-        }
-        return builder.build();
-    }
+		if (properties.getDefaultSimilarityThreshold() >= 0.0) {
+			builder.defaultSimilarityThreshold(properties.getDefaultSimilarityThreshold());
+		}
+		return builder.build();
+	}
+
 }

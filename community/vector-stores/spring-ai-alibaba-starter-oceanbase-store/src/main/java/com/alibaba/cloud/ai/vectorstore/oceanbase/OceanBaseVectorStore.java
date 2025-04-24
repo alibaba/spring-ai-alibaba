@@ -49,229 +49,252 @@ import static org.springframework.ai.vectorstore.SearchRequest.DEFAULT_TOP_K;
 
 public class OceanBaseVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-    private static final Logger logger = LoggerFactory.getLogger(OceanBaseVectorStore.class);
+	private static final Logger logger = LoggerFactory.getLogger(OceanBaseVectorStore.class);
 
-    private static final String DATA_BASE_SYSTEM = "oceanbase";
+	private static final String DATA_BASE_SYSTEM = "oceanbase";
 
-    private static final String REF_DOC_NAME = "refDocId";
-    private static final String METADATA_FIELD_NAME = "metadata";
-    private static final String CONTENT_FIELD_NAME = "content";
-    private static final String DOC_NAME = "docId";
-    private static final Double DEFAULT_SIMILARITY_THRESHOLD = 0.0;
+	private static final String REF_DOC_NAME = "refDocId";
 
-    private static final String CREATE_TABLE_SQL_TEMPLATE = "CREATE TABLE IF NOT EXISTS %s (" +
-            "id BIGINT PRIMARY KEY, " +
-            "vector VECTOR(384) NOT NULL, " +
-            "description text, " +
-            "metadata text)";
+	private static final String METADATA_FIELD_NAME = "metadata";
 
-    private static final String INSERT_DOC_SQL_TEMPLATE = "INSERT INTO %s (id, vector, description, metadata) VALUES (?, ?, ?, ?)";
-    private static final String DELETE_DOC_SQL_TEMPLATE = "DELETE FROM %s WHERE id = ?";
-    private static final String DELETE_DOC_BY_FILTER_SQL_TEMPLATE = "DELETE FROM %s WHERE %s";
-    private static final String SIMILARITY_SEARCH_SQL_TEMPLATE = "SELECT id, vector, description, metadata, l2_distance(vector,?) as distance FROM %s " +
-            "ORDER BY vector_distance(vector, ?) ASC LIMIT ?";
+	private static final String CONTENT_FIELD_NAME = "content";
 
-    public final FilterExpressionConverter filterExpressionConverter = new OceanBaseVectorFilterExpressionConverter();
+	private static final String DOC_NAME = "docId";
 
-    private final String tableName;
-    private final Integer defaultTopK;
-    private final Double defaultSimilarityThreshold;
-    private final DataSource dataSource;
-    private final ObjectMapper objectMapper;
+	private static final Double DEFAULT_SIMILARITY_THRESHOLD = 0.0;
 
-    protected OceanBaseVectorStore(Builder builder) {
-        super(builder);
-        this.tableName = builder.tableName;
-        this.dataSource = builder.dataSource;
-        this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
-        this.defaultSimilarityThreshold = builder.defaultSimilarityThreshold;
-        this.defaultTopK = builder.defaultTopK;
-    }
+	private static final String CREATE_TABLE_SQL_TEMPLATE = "CREATE TABLE IF NOT EXISTS %s ("
+			+ "id BIGINT PRIMARY KEY, " + "vector VECTOR(384) NOT NULL, " + "description text, " + "metadata text)";
 
-    public static Builder builder(String tableName, DataSource dataSource, EmbeddingModel embeddingModel) {
-        return new Builder(tableName, dataSource, embeddingModel);
-    }
+	private static final String INSERT_DOC_SQL_TEMPLATE = "INSERT INTO %s (id, vector, description, metadata) VALUES (?, ?, ?, ?)";
 
-    @Override
-    public void afterPropertiesSet() {
-        initializeDatabase();
-    }
+	private static final String DELETE_DOC_SQL_TEMPLATE = "DELETE FROM %s WHERE id = ?";
 
-    private void initializeDatabase() {
-        executeUpdate(String.format(CREATE_TABLE_SQL_TEMPLATE, tableName));
-        logger.debug("Successfully created or verified table: {}", tableName);
-    }
+	private static final String DELETE_DOC_BY_FILTER_SQL_TEMPLATE = "DELETE FROM %s WHERE %s";
 
-    @Override
-    public void doAdd(List<Document> documents) {
-        Assert.notNull(documents, "The document list should not be null.");
-        if (CollectionUtils.isEmpty(documents)) {
-            return;
-        }
-        List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
-        String sql = String.format(INSERT_DOC_SQL_TEMPLATE, tableName);
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            for (int i = 0; i < documents.size(); i++) {
-                Document doc = documents.get(i);
-                Map<String, String> metadata = createMetadata(doc);
-                String vectorString = convertEmbeddingToString(embeddings.get(i));
-                pstmt.setLong(1, Long.parseLong(doc.getId()));
-                pstmt.setString(2, vectorString);
-                pstmt.setString(3, doc.getText());
-                pstmt.setString(4, objectMapper.writeValueAsString(metadata));
-                pstmt.addBatch();
-            }
-            pstmt.executeBatch();
-        } catch (Exception e) {
-            logger.error("Failed to add documents", e);
-            throw new RuntimeException("Failed to add documents to OceanBase", e);
-        }
-    }
+	private static final String SIMILARITY_SEARCH_SQL_TEMPLATE = "SELECT id, vector, description, metadata, l2_distance(vector,?) as distance FROM %s "
+			+ "ORDER BY vector_distance(vector, ?) ASC LIMIT ?";
 
-    private Map<String, String> createMetadata(Document doc) throws JsonProcessingException {
-        Map<String, String> metadata = new HashMap<>();
-        String refDocId = Optional.ofNullable(doc.getMetadata().get(DOC_NAME)).map(Object::toString).orElse(doc.getId());
-        metadata.put(REF_DOC_NAME, refDocId);
-        metadata.put(CONTENT_FIELD_NAME, doc.getText());
-        metadata.put(METADATA_FIELD_NAME, objectMapper.writeValueAsString(doc.getMetadata()));
-        return metadata;
-    }
+	public final FilterExpressionConverter filterExpressionConverter = new OceanBaseVectorFilterExpressionConverter();
 
-    private String convertEmbeddingToString(float[] embedding) {
-        return Arrays.toString(IntStream.range(0, embedding.length).mapToObj(i -> embedding[i]).toArray());
-    }
+	private final String tableName;
 
-    @Override
-    public void doDelete(List<String> ids) {
-        if (CollectionUtils.isEmpty(ids)) {
-            return;
-        }
-        executeBatchUpdate(String.format(DELETE_DOC_SQL_TEMPLATE, tableName), ids);
-    }
+	private final Integer defaultTopK;
 
-    @Override
-    public void doDelete(Filter.Expression filterExpression) {
-        String nativeFilterExpression = filterExpressionConverter.convertExpression(filterExpression);
-        executeUpdate(String.format(DELETE_DOC_BY_FILTER_SQL_TEMPLATE, tableName, nativeFilterExpression));
-    }
+	private final Double defaultSimilarityThreshold;
 
-    @Override
-    public List<Document> similaritySearch(String query) {
-        return this.similaritySearch(SearchRequest.builder()
-                .query(query)
-                .topK(this.defaultTopK)
-                .similarityThreshold(this.defaultSimilarityThreshold)
-                .build());
-    }
+	private final DataSource dataSource;
 
-    @Override
-    public List<Document> doSimilaritySearch(SearchRequest searchRequest) {
-        String sql = String.format(SIMILARITY_SEARCH_SQL_TEMPLATE, tableName);
-        List<Document> similarDocuments = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            String vector = convertQueryToVectorBytes(searchRequest.getQuery());
-            pstmt.setString(1, vector);
-            pstmt.setString(2, vector);
-            pstmt.setInt(3, searchRequest.getTopK());
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                Document doc = extractDocumentFromResultSet(rs);
-                similarDocuments.add(doc);
-            }
-        } catch (Exception e) {
-            logger.error("Failed to perform similarity search", e);
-            throw new RuntimeException("Failed to perform similarity search in OceanBase", e);
-        }
-        return similarDocuments;
-    }
+	private final ObjectMapper objectMapper;
 
-    private Document extractDocumentFromResultSet(ResultSet rs) throws SQLException, JsonProcessingException {
-        long id = rs.getLong("id");
-        String vectorMetadata = rs.getString("metadata");
-        String distance = rs.getString("distance");
-        Map<String, String> metadata = extractMetadata(vectorMetadata);
-        String pageContent = metadata.get(CONTENT_FIELD_NAME);
-        Map<String, Object> metadataJson = objectMapper.readValue(metadata.get(METADATA_FIELD_NAME), new TypeReference<Map<String, Object>>() {});
-        metadataJson.put("distance", distance);
-        return new Document(String.valueOf(id), pageContent, metadataJson);
-    }
+	protected OceanBaseVectorStore(Builder builder) {
+		super(builder);
+		this.tableName = builder.tableName;
+		this.dataSource = builder.dataSource;
+		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+		this.defaultSimilarityThreshold = builder.defaultSimilarityThreshold;
+		this.defaultTopK = builder.defaultTopK;
+	}
 
-    private Map<String, String> extractMetadata(String vectorStr) throws JsonProcessingException {
-        return objectMapper.readValue(vectorStr, Map.class);
-    }
+	public static Builder builder(String tableName, DataSource dataSource, EmbeddingModel embeddingModel) {
+		return new Builder(tableName, dataSource, embeddingModel);
+	}
 
-    private String convertQueryToVectorBytes(String query) {
-        return Arrays.toString(this.embeddingModel.embed(query));
-    }
+	@Override
+	public void afterPropertiesSet() {
+		initializeDatabase();
+	}
 
-    private void executeUpdate(String sql) {
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.execute();
-        } catch (SQLException e) {
-            logger.error("SQL execution failed", e);
-            throw new RuntimeException("Failed to execute SQL", e);
-        }
-    }
+	private void initializeDatabase() {
+		executeUpdate(String.format(CREATE_TABLE_SQL_TEMPLATE, tableName));
+		logger.debug("Successfully created or verified table: {}", tableName);
+	}
 
-    private void executeBatchUpdate(String sql, List<String> params) {
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            for (String param : params) {
-                pstmt.setLong(1, Long.parseLong(param));
-                pstmt.addBatch();
-            }
-            pstmt.executeBatch();
-        } catch (SQLException e) {
-            logger.error("Batch SQL execution failed", e);
-            throw new RuntimeException("Failed to execute batch SQL", e);
-        }
-    }
+	@Override
+	public void doAdd(List<Document> documents) {
+		Assert.notNull(documents, "The document list should not be null.");
+		if (CollectionUtils.isEmpty(documents)) {
+			return;
+		}
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
+		String sql = String.format(INSERT_DOC_SQL_TEMPLATE, tableName);
+		try (Connection connection = dataSource.getConnection();
+				PreparedStatement pstmt = connection.prepareStatement(sql)) {
+			for (int i = 0; i < documents.size(); i++) {
+				Document doc = documents.get(i);
+				Map<String, String> metadata = createMetadata(doc);
+				String vectorString = convertEmbeddingToString(embeddings.get(i));
+				pstmt.setLong(1, Long.parseLong(doc.getId()));
+				pstmt.setString(2, vectorString);
+				pstmt.setString(3, doc.getText());
+				pstmt.setString(4, objectMapper.writeValueAsString(metadata));
+				pstmt.addBatch();
+			}
+			pstmt.executeBatch();
+		}
+		catch (Exception e) {
+			logger.error("Failed to add documents", e);
+			throw new RuntimeException("Failed to add documents to OceanBase", e);
+		}
+	}
 
-    @Override
-    public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
-        return VectorStoreObservationContext.builder(DATA_BASE_SYSTEM, operationName)
-                .collectionName(this.tableName)
-                .dimensions(this.embeddingModel.dimensions());
-    }
+	private Map<String, String> createMetadata(Document doc) throws JsonProcessingException {
+		Map<String, String> metadata = new HashMap<>();
+		String refDocId = Optional.ofNullable(doc.getMetadata().get(DOC_NAME))
+			.map(Object::toString)
+			.orElse(doc.getId());
+		metadata.put(REF_DOC_NAME, refDocId);
+		metadata.put(CONTENT_FIELD_NAME, doc.getText());
+		metadata.put(METADATA_FIELD_NAME, objectMapper.writeValueAsString(doc.getMetadata()));
+		return metadata;
+	}
 
-    public static class Builder extends AbstractVectorStoreBuilder<Builder> {
+	private String convertEmbeddingToString(float[] embedding) {
+		return Arrays.toString(IntStream.range(0, embedding.length).mapToObj(i -> embedding[i]).toArray());
+	}
 
-        private final String tableName;
-        private final DataSource dataSource;
-        private int defaultTopK = DEFAULT_TOP_K;
-        private Double defaultSimilarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
+	@Override
+	public void doDelete(List<String> ids) {
+		if (CollectionUtils.isEmpty(ids)) {
+			return;
+		}
+		executeBatchUpdate(String.format(DELETE_DOC_SQL_TEMPLATE, tableName), ids);
+	}
 
-        private Builder(String tableName, DataSource dataSource, EmbeddingModel embeddingModel) {
-            super(embeddingModel);
-            Assert.notNull(tableName, "Table name must not be null");
-            Assert.notNull(dataSource, "Data source must not be null");
-            this.tableName = tableName.toLowerCase();
-            this.dataSource = dataSource;
-        }
+	@Override
+	public void doDelete(Filter.Expression filterExpression) {
+		String nativeFilterExpression = filterExpressionConverter.convertExpression(filterExpression);
+		executeUpdate(String.format(DELETE_DOC_BY_FILTER_SQL_TEMPLATE, tableName, nativeFilterExpression));
+	}
 
-        public Builder defaultTopK(int defaultTopK) {
-            Assert.isTrue(defaultTopK >= 0, "The topK should be positive value.");
-            this.defaultTopK = defaultTopK;
-            return this;
-        }
+	@Override
+	public List<Document> similaritySearch(String query) {
+		return this.similaritySearch(SearchRequest.builder()
+			.query(query)
+			.topK(this.defaultTopK)
+			.similarityThreshold(this.defaultSimilarityThreshold)
+			.build());
+	}
 
-        public Builder defaultSimilarityThreshold(Double defaultSimilarityThreshold) {
-            Assert.isTrue(defaultSimilarityThreshold >= 0.0 && defaultSimilarityThreshold <= 1.0,
-                    "The similarity threshold must be in range [0.0:1.0].");
-            this.defaultSimilarityThreshold = defaultSimilarityThreshold;
-            return this;
-        }
+	@Override
+	public List<Document> doSimilaritySearch(SearchRequest searchRequest) {
+		String sql = String.format(SIMILARITY_SEARCH_SQL_TEMPLATE, tableName);
+		List<Document> similarDocuments = new ArrayList<>();
+		try (Connection connection = dataSource.getConnection();
+				PreparedStatement pstmt = connection.prepareStatement(sql)) {
+			String vector = convertQueryToVectorBytes(searchRequest.getQuery());
+			pstmt.setString(1, vector);
+			pstmt.setString(2, vector);
+			pstmt.setInt(3, searchRequest.getTopK());
+			ResultSet rs = pstmt.executeQuery();
+			while (rs.next()) {
+				Document doc = extractDocumentFromResultSet(rs);
+				similarDocuments.add(doc);
+			}
+		}
+		catch (Exception e) {
+			logger.error("Failed to perform similarity search", e);
+			throw new RuntimeException("Failed to perform similarity search in OceanBase", e);
+		}
+		return similarDocuments;
+	}
 
-        @Override
-        public OceanBaseVectorStore build() {
-            try {
-                return new OceanBaseVectorStore(this);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to build OceanBaseVectorStore: " + e.getMessage(), e);
-            }
-        }
-    }
+	private Document extractDocumentFromResultSet(ResultSet rs) throws SQLException, JsonProcessingException {
+		long id = rs.getLong("id");
+		String vectorMetadata = rs.getString("metadata");
+		String distance = rs.getString("distance");
+		Map<String, String> metadata = extractMetadata(vectorMetadata);
+		String pageContent = metadata.get(CONTENT_FIELD_NAME);
+		Map<String, Object> metadataJson = objectMapper.readValue(metadata.get(METADATA_FIELD_NAME),
+				new TypeReference<Map<String, Object>>() {
+				});
+		metadataJson.put("distance", distance);
+		return new Document(String.valueOf(id), pageContent, metadataJson);
+	}
+
+	private Map<String, String> extractMetadata(String vectorStr) throws JsonProcessingException {
+		return objectMapper.readValue(vectorStr, Map.class);
+	}
+
+	private String convertQueryToVectorBytes(String query) {
+		return Arrays.toString(this.embeddingModel.embed(query));
+	}
+
+	private void executeUpdate(String sql) {
+		try (Connection connection = dataSource.getConnection();
+				PreparedStatement pstmt = connection.prepareStatement(sql)) {
+			pstmt.execute();
+		}
+		catch (SQLException e) {
+			logger.error("SQL execution failed", e);
+			throw new RuntimeException("Failed to execute SQL", e);
+		}
+	}
+
+	private void executeBatchUpdate(String sql, List<String> params) {
+		try (Connection connection = dataSource.getConnection();
+				PreparedStatement pstmt = connection.prepareStatement(sql)) {
+			for (String param : params) {
+				pstmt.setLong(1, Long.parseLong(param));
+				pstmt.addBatch();
+			}
+			pstmt.executeBatch();
+		}
+		catch (SQLException e) {
+			logger.error("Batch SQL execution failed", e);
+			throw new RuntimeException("Failed to execute batch SQL", e);
+		}
+	}
+
+	@Override
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+		return VectorStoreObservationContext.builder(DATA_BASE_SYSTEM, operationName)
+			.collectionName(this.tableName)
+			.dimensions(this.embeddingModel.dimensions());
+	}
+
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
+
+		private final String tableName;
+
+		private final DataSource dataSource;
+
+		private int defaultTopK = DEFAULT_TOP_K;
+
+		private Double defaultSimilarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
+
+		private Builder(String tableName, DataSource dataSource, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
+			Assert.notNull(tableName, "Table name must not be null");
+			Assert.notNull(dataSource, "Data source must not be null");
+			this.tableName = tableName.toLowerCase();
+			this.dataSource = dataSource;
+		}
+
+		public Builder defaultTopK(int defaultTopK) {
+			Assert.isTrue(defaultTopK >= 0, "The topK should be positive value.");
+			this.defaultTopK = defaultTopK;
+			return this;
+		}
+
+		public Builder defaultSimilarityThreshold(Double defaultSimilarityThreshold) {
+			Assert.isTrue(defaultSimilarityThreshold >= 0.0 && defaultSimilarityThreshold <= 1.0,
+					"The similarity threshold must be in range [0.0:1.0].");
+			this.defaultSimilarityThreshold = defaultSimilarityThreshold;
+			return this;
+		}
+
+		@Override
+		public OceanBaseVectorStore build() {
+			try {
+				return new OceanBaseVectorStore(this);
+			}
+			catch (Exception e) {
+				throw new RuntimeException("Failed to build OceanBaseVectorStore: " + e.getMessage(), e);
+			}
+		}
+
+	}
+
 }
