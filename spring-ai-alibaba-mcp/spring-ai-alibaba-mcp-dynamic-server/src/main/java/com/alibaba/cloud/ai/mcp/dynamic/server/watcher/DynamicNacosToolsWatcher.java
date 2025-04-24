@@ -21,6 +21,8 @@ import com.alibaba.cloud.ai.mcp.dynamic.server.provider.DynamicMcpToolsProvider;
 import com.alibaba.cloud.ai.mcp.dynamic.server.tools.DynamicNacosToolsInfo;
 import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpRegistryProperties;
 import com.alibaba.cloud.ai.mcp.nacos.common.utils.JsonUtils;
+import com.alibaba.nacos.api.config.ConfigChangeEvent;
+import com.alibaba.nacos.api.config.ConfigChangeItem;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingService;
@@ -29,17 +31,21 @@ import com.alibaba.nacos.api.naming.listener.EventListener;
 import com.alibaba.nacos.api.naming.listener.NamingEvent;
 import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.alibaba.nacos.api.naming.pojo.ListView;
+import com.alibaba.nacos.client.config.listener.impl.AbstractConfigChangeListener;
 import com.alibaba.nacos.common.utils.CollectionUtils;
-import com.alibaba.nacos.common.utils.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class DynamicNacosToolsWatcher implements EventListener {
+public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener implements EventListener {
 
 	private static final Logger logger = LoggerFactory.getLogger(DynamicNacosToolsWatcher.class);
 
@@ -57,6 +63,9 @@ public class DynamicNacosToolsWatcher implements EventListener {
 
 	private final DynamicMcpToolsProvider dynamicMcpToolsProvider;
 
+	// 缓存服务名称和其工具的映射关系
+	private final Map<String, Set<String>> serviceToolsCache = new ConcurrentHashMap<>();
+
 	public DynamicNacosToolsWatcher(final NamingService namingService, final ConfigService configService,
 			final NacosMcpRegistryProperties nacosMcpRegistryProperties,
 			final DynamicMcpToolsProvider dynamicMcpToolsProvider) {
@@ -69,7 +78,7 @@ public class DynamicNacosToolsWatcher implements EventListener {
 	}
 
 	private void startScheduledPolling() {
-		scheduler.scheduleAtFixedRate(this::watch, 0, POLLING_INTERVAL, TimeUnit.SECONDS);
+		scheduler.scheduleAtFixedRate(this::watch, POLLING_INTERVAL, POLLING_INTERVAL, TimeUnit.SECONDS);
 		logger.info("Started scheduled service polling with interval: {} seconds", POLLING_INTERVAL);
 	}
 
@@ -88,17 +97,18 @@ public class DynamicNacosToolsWatcher implements EventListener {
 	}
 
 	private void watch() {
-		int pageNo = 1; // 页码
-		int pageSize = 100; // 每页大小
+		int pageNo = 1;
+		int pageSize = 100;
 		int totalCount = 0;
+
+		// 记录当前轮询中发现的所有服务
+		Set<String> currentServices = new HashSet<>();
 
 		try {
 			do {
-				// 获取服务列表，第一个参数是pageNo，第二个参数是pageSize，第三个参数是groupName
 				ListView<String> services = namingService.getServicesOfServer(pageNo, pageSize,
 						nacosMcpRegistryProperties.getServiceGroup());
 
-				// 第一次循环时记录总数
 				if (pageNo == 1) {
 					totalCount = services.getCount();
 					logger.info("Total count of services: {}", totalCount);
@@ -106,55 +116,24 @@ public class DynamicNacosToolsWatcher implements EventListener {
 
 				List<String> currentPageData = services.getData();
 				logger.info("Page {} - Found {} services", pageNo, currentPageData.size());
-				logger.info("Services list: {}", currentPageData);
 
 				for (String serviceName : currentPageData) {
-					try {
-						String toolConfig = configService.getConfig(serviceName + toolsConfigSuffix,
-								nacosMcpRegistryProperties.getServiceGroup(), 5000);
-						if (toolConfig == null) {
-							logger.warn("No tool config found for service: {}", serviceName);
-							continue;
-						}
-						logger.info("Subscribing to service: {}", serviceName);
-
-						DynamicNacosToolsInfo toolsInfo = JsonUtils.deserialize(toolConfig,
-								DynamicNacosToolsInfo.class);
-						List<DynamicNacosToolDefinition> toolsInNacos = toolsInfo.getTools();
-						if (CollectionUtils.isEmpty(toolsInNacos)) {
-							logger.warn("No tools found in Nacos for service: {}", serviceName);
-							continue;
-						}
-						for (DynamicNacosToolDefinition toolDefinition : toolsInNacos) {
-							try {
-								dynamicMcpToolsProvider.removeTool(toolDefinition.name());
-							}
-							catch (Exception e) {
-								logger.error("Failed to remove tool: {}", toolDefinition.name(), e);
-							}
-							toolDefinition.setServiceName(serviceName);
-							dynamicMcpToolsProvider.addTool(toolDefinition);
-						}
-
-						namingService.subscribe(serviceName, nacosMcpRegistryProperties.getServiceGroup(), this);
-					}
-					catch (NacosException e) {
-						logger.error("Failed to get tool config for service: {}", serviceName, e);
-						continue;
-					}
+					currentServices.add(serviceName);
+					updateServiceTools(serviceName);
+					namingService.subscribe(serviceName, nacosMcpRegistryProperties.getServiceGroup(), this);
+					configService.addListener(serviceName, nacosMcpRegistryProperties.getServiceGroup(), this);
 				}
 
-				// 计算是否还有下一页
 				int startIndex = (pageNo - 1) * pageSize;
 				if (startIndex + currentPageData.size() >= totalCount) {
-					// 已经获取所有数据
 					break;
 				}
-
-				// 继续查询下一页
 				pageNo++;
 			}
 			while (true);
+
+			// 检查并清理不再存在的服务
+			cleanupStaleServices(currentServices);
 
 		}
 		catch (NacosException e) {
@@ -165,20 +144,118 @@ public class DynamicNacosToolsWatcher implements EventListener {
 		}
 	}
 
+	private void cleanupStaleServices(Set<String> currentServices) {
+		// 获取所有已缓存但不在当前服务列表中的服务
+		Set<String> staleServices = new HashSet<>(serviceToolsCache.keySet());
+		staleServices.removeAll(currentServices);
+
+		// 移除过期服务的所有工具
+		for (String staleService : staleServices) {
+			Set<String> toolsToRemove = serviceToolsCache.get(staleService);
+			if (toolsToRemove != null) {
+				for (String toolName : toolsToRemove) {
+					try {
+						logger.info("Removing tool: {} for stale service: {}", toolName, staleService);
+						dynamicMcpToolsProvider.removeTool(toolName);
+					}
+					catch (Exception e) {
+						logger.error("Failed to remove tool: {} for service: {}", toolName, staleService, e);
+					}
+				}
+			}
+			serviceToolsCache.remove(staleService);
+		}
+	}
+
+	private void updateServiceTools(String serviceName) {
+		try {
+			String toolConfig = configService.getConfig(serviceName + toolsConfigSuffix,
+					nacosMcpRegistryProperties.getServiceGroup(), 5000);
+
+			// 获取该服务当前的实例列表
+			List<Instance> instances = namingService.getAllInstances(serviceName,
+					nacosMcpRegistryProperties.getServiceGroup());
+
+			// 如果没有实例或配置为空，移除所有相关工具
+			if (CollectionUtils.isEmpty(instances) || toolConfig == null) {
+				removeServiceTools(serviceName);
+				return;
+			}
+
+			// 解析工具配置
+			DynamicNacosToolsInfo toolsInfo = JsonUtils.deserialize(toolConfig, DynamicNacosToolsInfo.class);
+			List<DynamicNacosToolDefinition> toolsInNacos = toolsInfo.getTools();
+
+			if (CollectionUtils.isEmpty(toolsInNacos)) {
+				removeServiceTools(serviceName);
+				return;
+			}
+
+			// 更新工具缓存
+			Set<String> currentTools = new HashSet<>();
+			for (DynamicNacosToolDefinition toolDefinition : toolsInNacos) {
+				currentTools.add(toolDefinition.name());
+				toolDefinition.setServiceName(serviceName);
+				dynamicMcpToolsProvider.addTool(toolDefinition);
+			}
+
+			// 获取之前的工具集合
+			Set<String> previousTools = serviceToolsCache.getOrDefault(serviceName, new HashSet<>());
+
+			// 移除不再存在的工具
+			Set<String> toolsToRemove = new HashSet<>(previousTools);
+			toolsToRemove.removeAll(currentTools);
+			for (String toolName : toolsToRemove) {
+				logger.info("Removing obsolete tool: {} for service: {}", toolName, serviceName);
+				dynamicMcpToolsProvider.removeTool(toolName);
+			}
+
+			// 更新缓存
+			serviceToolsCache.put(serviceName, currentTools);
+
+		}
+		catch (NacosException e) {
+			logger.error("Failed to update tools for service: {}", serviceName, e);
+		}
+		catch (Exception e) {
+			logger.error("Unexpected error while updating tools for service: {}", serviceName, e);
+		}
+	}
+
+	private void removeServiceTools(String serviceName) {
+		Set<String> tools = serviceToolsCache.remove(serviceName);
+		if (tools != null) {
+			for (String toolName : tools) {
+				try {
+					logger.info("Removing tool: {} for service: {}", toolName, serviceName);
+					dynamicMcpToolsProvider.removeTool(toolName);
+				}
+				catch (Exception e) {
+					logger.error("Failed to remove tool: {} for service: {}", toolName, serviceName, e);
+				}
+			}
+		}
+	}
+
 	@Override
 	public void onEvent(Event event) {
 		if (event instanceof NamingEvent namingEvent) {
-			// 处理服务实例变更事件
-			logger.info("Received service instance change event for service: {}", namingEvent.getServiceName());
-			List<Instance> instances = namingEvent.getInstances();
-			logger.info("Updated instances count: {}", instances.size());
+			String serviceName = namingEvent.getServiceName();
+			logger.info("Received service instance change event for service: {}", serviceName);
+			updateServiceTools(serviceName);
+		}
+	}
 
-			// 打印每个实例的详细信息
-			instances.forEach(instance -> {
-				logger.info("Instance: {}:{} (Healthy: {}, Enabled: {}, Metadata: {})", instance.getIp(),
-						instance.getPort(), instance.isHealthy(), instance.isEnabled(),
-						JacksonUtils.toJson(instance.getMetadata()));
-			});
+	@Override
+	public void receiveConfigChange(final ConfigChangeEvent event) {
+		// 配置变更时更新对应服务的工具
+		for (ConfigChangeItem item : event.getChangeItems()) {
+			String dataId = item.getKey();
+			if (dataId != null && dataId.endsWith(toolsConfigSuffix)) {
+				String serviceName = dataId.substring(0, dataId.length() - toolsConfigSuffix.length());
+				logger.info("Received config change event for service: {}", serviceName);
+				updateServiceTools(serviceName);
+			}
 		}
 	}
 
