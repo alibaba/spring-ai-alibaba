@@ -88,7 +88,8 @@ public class McpService implements InitializingBean {
 				}
 			}
 			case STUDIO -> {
-				ServerParameters serverParameters = JSON.parseObject(mcpConfigEntity.getConnectionConfig(), ServerParameters.class);
+				ServerParameters serverParameters = JSON.parseObject(mcpConfigEntity.getConnectionConfig(),
+						ServerParameters.class);
 				transport = new StdioClientTransport(serverParameters);
 			}
 		}
