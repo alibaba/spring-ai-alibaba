@@ -16,19 +16,20 @@
 
 package com.alibaba.cloud.ai.mcp.dynamic.server.config;
 
-import com.alibaba.cloud.ai.mcp.dynamic.server.provider.DynamicMcpSyncToolsProvider;
-import com.alibaba.cloud.ai.mcp.dynamic.server.provider.DynamicMcpToolsProvider;
-import com.alibaba.cloud.ai.mcp.dynamic.server.watcher.DynamicNacosToolsWatcher;
 import com.alibaba.cloud.ai.mcp.dynamic.server.properties.McpDynamicServerProperties;
 import com.alibaba.cloud.ai.mcp.dynamic.server.provider.DynamicMcpAsyncToolsProvider;
-import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpRegistryProperties;
+import com.alibaba.cloud.ai.mcp.dynamic.server.provider.DynamicMcpSyncToolsProvider;
+import com.alibaba.cloud.ai.mcp.dynamic.server.provider.DynamicMcpToolsProvider;
+import com.alibaba.cloud.ai.mcp.dynamic.server.provider.DynamicToolCallbackProvider;
+import com.alibaba.cloud.ai.mcp.dynamic.server.tools.DynamicToolsInitializer;
 import com.alibaba.cloud.ai.mcp.dynamic.server.utils.SpringBeanUtils;
+import com.alibaba.cloud.ai.mcp.dynamic.server.watcher.DynamicNacosToolsWatcher;
+import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpRegistryProperties;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingFactory;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.client.config.NacosConfigService;
-import com.alibaba.nacos.shaded.com.google.common.collect.Lists;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.netty.channel.ChannelOption;
@@ -39,8 +40,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.autoconfigure.mcp.server.McpServerProperties;
 import org.springframework.ai.autoconfigure.mcp.server.MpcServerAutoConfiguration;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
-import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.beans.BeansException;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -52,7 +53,6 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.lang.NonNull;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -60,12 +60,12 @@ import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author Sunrisea
+ * @author aias00
  */
-@EnableScheduling
 @EnableConfigurationProperties({ McpDynamicServerProperties.class, NacosMcpRegistryProperties.class,
 		McpServerProperties.class })
 @AutoConfiguration(after = MpcServerAutoConfiguration.class)
@@ -85,6 +85,21 @@ public class DynamicMcpServerAutoConfiguration implements ApplicationContextAwar
 
 	@Resource
 	private NacosMcpRegistryProperties nacosMcpRegistryProperties;
+
+	// @Bean
+	// public ToolCallbackProvider callbackProvider(final DynamicToolsInitializer
+	// toolsInitializer) {
+	// return
+	// DynamicToolCallbackProvider.builder().toolCallbacks(toolsInitializer.initializeTools()).build();
+	// }
+	//
+	// @Bean
+	// public DynamicToolsInitializer dynamicToolsInitializer(final NamingService
+	// namingService,
+	// final ConfigService configService) {
+	// return new DynamicToolsInitializer(namingService, configService,
+	// nacosMcpRegistryProperties);
+	// }
 
 	@Bean(destroyMethod = "stop")
 	public DynamicNacosToolsWatcher nacosInstanceWatcher(final NamingService namingService,
@@ -115,11 +130,6 @@ public class DynamicMcpServerAutoConfiguration implements ApplicationContextAwar
 	@Bean
 	public NamingService namingService() throws NacosException {
 		return NamingFactory.createNamingService(nacosMcpRegistryProperties.getNacosProperties());
-	}
-
-	@Bean
-	public ToolCallbackProvider emptyTools() {
-		return MethodToolCallbackProvider.builder().toolObjects(Lists.newArrayList()).build();
 	}
 
 	@Bean

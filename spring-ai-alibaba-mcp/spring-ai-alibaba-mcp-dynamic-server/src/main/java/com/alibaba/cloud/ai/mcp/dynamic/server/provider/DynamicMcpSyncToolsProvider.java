@@ -32,6 +32,12 @@ public class DynamicMcpSyncToolsProvider implements DynamicMcpToolsProvider {
 	@Override
 	public void addTool(final ToolDefinition toolDefinition) {
 		DynamicNacosToolCallback dynamicNacosToolCallback = new DynamicNacosToolCallback(toolDefinition);
+		try {
+			removeTool(toolDefinition.name());
+		}
+		catch (Exception e) {
+			// Ignore exception
+		}
 		mcpSyncServer.addTool(McpToolUtils.toSyncToolRegistration(dynamicNacosToolCallback));
 	}
 
