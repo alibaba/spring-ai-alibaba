@@ -15,26 +15,27 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 
-import com.alibaba.cloud.ai.example.manus.flow.PlanStepStatus;
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
+import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 
 /**
  * 单个步骤的执行结果
  */
 public class ExecutionStep {
 
-	private int stepIndex;
+	private Integer stepIndex;
 
 	private String stepRequirement;
 
 	private String result;
 
-	private PlanStepStatus status;
+	private BaseAgent agent;
 
-	public int getStepIndex() {
+	public Integer getStepIndex() {
 		return stepIndex;
 	}
 
-	public void setStepIndex(int stepIndex) {
+	public void setStepIndex(Integer stepIndex) {
 		this.stepIndex = stepIndex;
 	}
 
@@ -46,12 +47,12 @@ public class ExecutionStep {
 		this.result = result;
 	}
 
-	public PlanStepStatus getStatus() {
-		return status;
+	public AgentState getStatus() {
+		return agent == null ? AgentState.NOT_STARTED : agent.getState();
 	}
 
-	public void setStatus(PlanStepStatus status) {
-		this.status = status;
+	public void setAgent(BaseAgent agent) {
+		this.agent = agent;
 	}
 
 	public String getStepRequirement() {
@@ -63,10 +64,17 @@ public class ExecutionStep {
 	}
 
 	public String getStepInStr() {
+		String agentState = null;
+		if (agent != null) {
+			agentState = agent.getState().toString();
+		}
+		else {
+			agentState = AgentState.NOT_STARTED.toString();
+		}
 		StringBuilder sb = new StringBuilder();
 		sb.append(stepIndex);
 		sb.append(". ");
-		sb.append("[").append(status).append("]");
+		sb.append("[").append(agentState).append("]");
 		sb.append(" ");
 		sb.append(stepRequirement);
 
@@ -80,7 +88,6 @@ public class ExecutionStep {
 	public String toJson() {
 		StringBuilder json = new StringBuilder();
 		json.append("    {");
-		json.append("\"stepIndex\": ").append(stepIndex).append(", ");
 		json.append("\"stepRequirement\": \"").append(stepRequirement.replace("\"", "\\\"")).append("\" ");
 
 		if (result != null && !result.isEmpty()) {
@@ -111,23 +118,6 @@ public class ExecutionStep {
 		// 设置步骤结果（如果有）
 		if (stepNode.has("result")) {
 			step.setResult(stepNode.get("result").asText());
-		}
-
-		// 设置步骤状态（如果有）
-		if (stepNode.has("status")) {
-			try {
-				String statusStr = stepNode.get("status").asText();
-				PlanStepStatus status = PlanStepStatus.valueOf(statusStr);
-				step.setStatus(status);
-			}
-			catch (IllegalArgumentException e) {
-				// 如果状态值不合法，设置为默认的NOT_STARTED
-				step.setStatus(PlanStepStatus.NOT_STARTED);
-			}
-		}
-		else {
-			// 默认设置为NOT_STARTED
-			step.setStatus(PlanStepStatus.NOT_STARTED);
 		}
 
 		return step;
