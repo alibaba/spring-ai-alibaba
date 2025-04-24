@@ -15,8 +15,10 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.executor;
 
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.example.manus.flow.PlanStepStatus;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
@@ -47,11 +49,14 @@ public class PlanExecutor {
 
 	Pattern pattern = Pattern.compile("\\[([A-Z_]+)\\]");
 
-	private final List<BaseAgent> agents;
+	private final List<DynamicAgentEntity> agents;
 
-	public PlanExecutor(List<BaseAgent> agents, PlanExecutionRecorder recorder) {
+	private final AgentService agentService;
+
+	public PlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder, AgentService agentService) {
 		this.agents = agents;
 		this.recorder = recorder;
+		this.agentService = agentService;
 	}
 
 	/**
@@ -79,13 +84,20 @@ public class PlanExecutor {
 	private void executeStep(ExecutionStep step, ExecutionContext context) {
 
 		String stepType = getStepFromStepReq(step.getStepRequirement());
-		BaseAgent executor = getExecutorForStep(stepType);
+		BaseAgent executor = getExecutorForStep(stepType, context);
+		if (executor == null) {
+			logger.error("No executor found for step type: " + stepType);
+			step.setResult("No executor found for step type: " + stepType);
+			return;
+		}
 		int stepIndex = step.getStepIndex();
 
-		step.setStatus(PlanStepStatus.IN_PROGRESS);
+		step.setAgent(executor);
+		executor.setState(AgentState.IN_PROGRESS);
 		recordStepStart(step, context);
+
 		try {
-			String planStatus = context.getPlan().getPlanExecutionStateStringFormat();
+			String planStatus = context.getPlan().getPlanExecutionStateStringFormat(true);
 
 			String stepText = step.getStepRequirement();
 			Map<String, Object> executorParams = new HashMap<>();
@@ -97,11 +109,10 @@ public class PlanExecutor {
 			String stepResultStr = executor.run(executorParams);
 			// Execute the step
 			step.setResult(stepResultStr);
-			step.setStatus(PlanStepStatus.COMPLETED);
+
 		}
 		catch (Exception e) {
-			logger.error("Error executing step: " + e.getMessage());
-			step.setStatus(PlanStepStatus.FAILED);
+			logger.error("Error executing step: " + e.getMessage(), e);
 			step.setResult("Execution failed: " + e.getMessage());
 		}
 		finally {
@@ -123,11 +134,11 @@ public class PlanExecutor {
 	 * @param stepType 步骤类型
 	 * @return 对应的执行器
 	 */
-	private BaseAgent getExecutorForStep(String stepType) {
+	private BaseAgent getExecutorForStep(String stepType, ExecutionContext context) {
 		// 根据步骤类型获取对应的执行器
-		for (BaseAgent agent : agents) {
-			if (agent.getName().equalsIgnoreCase(stepType)) {
-				return agent;
+		for (DynamicAgentEntity agent : agents) {
+			if (agent.getAgentName().equalsIgnoreCase(stepType)) {
+				return agentService.createDynamicBaseAgent(agent.getAgentName(), context.getPlan().getPlanId());
 			}
 		}
 		throw new IllegalArgumentException(

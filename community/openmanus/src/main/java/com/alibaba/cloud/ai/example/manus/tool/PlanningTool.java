@@ -15,12 +15,11 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import com.alibaba.cloud.ai.example.manus.flow.PlanStepStatus;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.TypeReference;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.TypeReference;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -143,7 +142,6 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 		ExecutionStep executionStep = new ExecutionStep();
 		executionStep.setStepIndex(index);
 		executionStep.setStepRequirement(step);
-		executionStep.setStatus(PlanStepStatus.NOT_STARTED);
 		return executionStep;
 	}
 
@@ -161,7 +159,7 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 		}
 
 		this.currentPlan = plan;
-		return new ToolExecuteResult("Plan created: " + planId + "\n" + plan.getPlanExecutionStateStringFormat());
+		return new ToolExecuteResult("Plan created: " + planId + "\n" + plan.getPlanExecutionStateStringFormat(false));
 	}
 
 	// public ToolExecuteResult updatePlan(String planId, String title, List<String>
