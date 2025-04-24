@@ -73,3 +73,5 @@ spring:
 The server can auto add tools to mcp server or remove tools from mcp server dynamically
 
 read instance info from nacos service list and tools info from nacos config
+
+![dynamic-mcp-server-process](./imgs/mcp-dynamic-server.png)
