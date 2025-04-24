@@ -35,7 +35,7 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration(after = MpcServerAutoConfiguration.class)
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
-public class NacosMcpRegistryAutoConfigration {
+public class NacosMcpRegistryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnBean(McpSyncServer.class)
