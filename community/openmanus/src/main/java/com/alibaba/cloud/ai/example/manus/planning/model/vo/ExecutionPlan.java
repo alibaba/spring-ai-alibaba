@@ -224,10 +224,19 @@ public class ExecutionPlan {
 		// 如果有计划步骤，添加到计划中
 		if (rootNode.has("steps") && rootNode.get("steps").isArray()) {
 			com.fasterxml.jackson.databind.JsonNode stepsNode = rootNode.get("steps");
+			int stepIndex = 0;
 			for (com.fasterxml.jackson.databind.JsonNode stepNode : stepsNode) {
 				if (stepNode.has("stepRequirement")) {
 					// 调用ExecutionStep的fromJson方法创建步骤
 					ExecutionStep step = ExecutionStep.fromJson(stepNode);
+					Integer stepIndexFromStep = step.getStepIndex();
+					if (stepIndexFromStep != null) {
+						stepIndex = stepIndexFromStep;
+					}
+					else {
+						step.setStepIndex(stepIndex);
+						stepIndex++;
+					}
 					plan.addStep(step);
 				}
 			}
