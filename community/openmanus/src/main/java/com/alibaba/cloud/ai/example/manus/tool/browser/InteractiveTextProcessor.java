@@ -189,13 +189,13 @@ public class InteractiveTextProcessor {
 	 */
 	public List<WebElementWrapper> getInteractiveElements(WebDriver driver) {
 		if (interactiveElementsCache == null) {
-			throw new IllegalStateException("缓存未初始化，请先调用refreshCache方法。");
+			refreshCache(driver);
 		}
 		return interactiveElementsCache;
 	}
 
 	/**
-	 * 获取当前文档上下文中的交互元素（不包含iframe内的元素）
+	 * 刷新缓存中的可交互元素
 	 * @param driver WebDriver实例
 	 * @return 当前文档中的交互元素列表
 	 */

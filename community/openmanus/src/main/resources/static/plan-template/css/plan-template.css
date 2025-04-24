@@ -200,11 +200,29 @@
     color: #5f6368;
 }
 
+/* API URL容器 */
+.api-url-container {
+    margin-top: 5px;
+}
+
+/* API说明文本 */
+.api-description {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+}
+
 /* 执行按钮区域 */
 .execution-buttons {
     display: flex;
     gap: 12px;
     align-items: center;
+    justify-content: flex-end;
+}
+
+/* 清空参数按钮 */
+#clearParamBtn {
+    margin-right: 10px;
 }
 
 .primary-btn {
