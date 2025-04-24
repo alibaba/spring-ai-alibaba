@@ -40,7 +40,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.autoconfigure.mcp.server.McpServerProperties;
 import org.springframework.ai.autoconfigure.mcp.server.MpcServerAutoConfiguration;
-import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.BeansException;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -60,7 +59,6 @@ import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -86,20 +84,16 @@ public class DynamicMcpServerAutoConfiguration implements ApplicationContextAwar
 	@Resource
 	private NacosMcpRegistryProperties nacosMcpRegistryProperties;
 
-	// @Bean
-	// public ToolCallbackProvider callbackProvider(final DynamicToolsInitializer
-	// toolsInitializer) {
-	// return
-	// DynamicToolCallbackProvider.builder().toolCallbacks(toolsInitializer.initializeTools()).build();
-	// }
-	//
-	// @Bean
-	// public DynamicToolsInitializer dynamicToolsInitializer(final NamingService
-	// namingService,
-	// final ConfigService configService) {
-	// return new DynamicToolsInitializer(namingService, configService,
-	// nacosMcpRegistryProperties);
-	// }
+	@Bean
+	public ToolCallbackProvider callbackProvider(final DynamicToolsInitializer toolsInitializer) {
+		return DynamicToolCallbackProvider.builder().toolCallbacks(toolsInitializer.initializeTools()).build();
+	}
+
+	@Bean
+	public DynamicToolsInitializer dynamicToolsInitializer(final NamingService namingService,
+			final ConfigService configService) {
+		return new DynamicToolsInitializer(namingService, configService, nacosMcpRegistryProperties);
+	}
 
 	@Bean(destroyMethod = "stop")
 	public DynamicNacosToolsWatcher nacosInstanceWatcher(final NamingService namingService,
