@@ -19,7 +19,6 @@ import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.file.*;
 import java.util.Map;
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
@@ -39,7 +38,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 
 	private final TextFileService textFileService;
 
-	private BaseAgent agent;
+	private String planId;
 
 	public TextFileOperator(String workingDirectoryPath, TextFileService textFileService) {
 		this.workingDirectoryPath = workingDirectoryPath;
@@ -79,7 +78,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 
 	private final String TOOL_DESCRIPTION = """
 			Operate on text files (including md, html, css, java, etc) with various actions:
-			- open: Open and read a text file
+			- open: Open and read a text file, YOU MUST OPEN A FILE FIRST !
 			- replace: Replace specific text in the file
 			- get_text: Get current content of the file
 			- save: Save and close the file
@@ -117,7 +116,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 		try {
 			Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 			});
-			String planId = agent.getPlanId();
+			String planId = this.planId;
 
 			String action = (String) toolInputMap.get("action");
 			String filePath = (String) toolInputMap.get("file_path");
@@ -147,7 +146,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 			};
 		}
 		catch (Exception e) {
-			String planId = agent.getPlanId();
+			String planId = this.planId;
 			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
 					"Error: " + e.getMessage());
 			return new ToolExecuteResult("Error: " + e.getMessage());
@@ -312,17 +311,13 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public void setAgent(BaseAgent agent) {
-		this.agent = agent;
-	}
-
-	public BaseAgent getAgent() {
-		return this.agent;
+	public void setPlanId(String planId) {
+		this.planId = planId;
 	}
 
 	@Override
 	public String getCurrentToolStateString() {
-		String planId = agent.getPlanId();
+		String planId = this.planId;
 		return String.format("""
 				Current Text File Operation State:
 				- Working Directory:

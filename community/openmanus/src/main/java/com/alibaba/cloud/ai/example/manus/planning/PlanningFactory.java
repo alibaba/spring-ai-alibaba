@@ -14,43 +14,21 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.manus.config.startUp;
+package com.alibaba.cloud.ai.example.manus.planning;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.hc.client5.http.classic.HttpClient;
-import org.apache.hc.client5.http.config.RequestConfig;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.util.Timeout;
-import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.ToolCallbackProvider;
-import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.tool.metadata.ToolMetadata;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
-
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.dynamic.agent.DynamicAgent;
+import com.alibaba.cloud.ai.example.manus.config.startUp.McpService;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoader;
-import com.alibaba.cloud.ai.example.manus.flow.PlanningFlow;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
+import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
+import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
+import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
+import com.alibaba.cloud.ai.example.manus.tool.McpTool;
+import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
 import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.bash.Bash;
@@ -61,14 +39,39 @@ import com.alibaba.cloud.ai.example.manus.tool.code.PythonExecute;
 import com.alibaba.cloud.ai.example.manus.tool.searchAPI.GoogleSearch;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileOperator;
 import com.alibaba.cloud.ai.example.manus.tool.textOperator.TextFileService;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.util.Timeout;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.tool.metadata.ToolMetadata;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
 
-@Configuration
-public class ManusConfiguration {
+@Service
+public class PlanningFactory {
 
 	private final ChromeDriverService chromeDriverService;
 
@@ -78,59 +81,58 @@ public class ManusConfiguration {
 
 	private final TextFileService textFileService;
 
-	public ManusConfiguration(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
-			ManusProperties manusProperties, TextFileService textFileService) {
+	@Autowired
+	private AgentService agentService;
+
+	private final McpService mcpService;
+
+	private ConcurrentHashMap<String, PlanningCoordinator> flowMap = new ConcurrentHashMap<>();
+
+	@Autowired
+	@Lazy
+	private LlmService llmService;
+
+	@Autowired
+	@Lazy
+	private ToolCallingManager toolCallingManager;
+
+	@Autowired
+	private DynamicAgentLoader dynamicAgentLoader;
+
+	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
+			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService) {
 		this.chromeDriverService = chromeDriverService;
 		this.recorder = recorder;
 		this.manusProperties = manusProperties;
 		this.textFileService = textFileService;
+		this.mcpService = mcpService;
 	}
 
-	// @Bean
-	// @Scope("prototype") // 每次请求创建一个新的实例
-	// public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager
-	// toolCallingManager) {
-
-	// ManusAgent manusAgent = new ManusAgent(llmService, toolCallingManager,
-	// chromeDriverService,
-	// CodeUtils.WORKING_DIR, recorder, manusProperties);
-	// BrowserAgent browserAgent = new BrowserAgent(llmService, toolCallingManager,
-	// chromeDriverService, recorder, manusProperties);
-
-	// FileAgent fileAgent = new FileAgent(llmService, toolCallingManager,
-	// CodeUtils.WORKING_DIR, recorder, manusProperties);
-	// PythonAgent pythonAgent = new PythonAgent(llmService, toolCallingManager,
-	// CodeUtils.WORKING_DIR, recorder, manusProperties);
-
-	// List<BaseAgent> agentList = new ArrayList<>();
-
-	// agentList.add(manusAgent);
-	// agentList.add(browserAgent);
-	// agentList.add(fileAgent);
-	// agentList.add(pythonAgent);
-
-	// Map<String, Object> data = new HashMap<>();
-	// return new PlanningFlow(agentList, data, recorder);
+	// public PlanningCoordinator getOrCreatePlanningFlow(String planId) {
+	// PlanningCoordinator flow = flowMap.computeIfAbsent(planId, key -> {
+	// return createPlanningCoordinator(planId);
+	// });
+	// return flow;
 	// }
 
-	@Bean
-	@Scope("prototype")
-	public PlanningFlow planningFlow(LlmService llmService, ToolCallingManager toolCallingManager,
-			DynamicAgentLoader dynamicAgentLoader) {
-		List<BaseAgent> agentList = new ArrayList<>();
-		Map<String, ToolCallBackContext> toolCallbackMap = new HashMap<>();
-		// Add all dynamic agents from the database
-		for (DynamicAgentEntity agentEntity : dynamicAgentLoader.getAllAgents()) {
-			DynamicAgent agent = dynamicAgentLoader.loadAgent(agentEntity.getAgentName());
-			toolCallbackMap = toolCallbackMap(agent);
-			agent.setToolCallbackMap(toolCallbackMap);
-			agentList.add(agent);
-		}
+	// public boolean removePlanningFlow(String planId) {
+	// return flowMap.remove(planId) != null;
+	// }
 
-		Map<String, Object> data = new HashMap<>();
-		// hack 暂时不想让planning flow 也继承agent，所以用了个讨巧的办法，以后要改掉， 这个讨巧办法的前提假设是tools
-		// 只调用baseagent的getPlanId方法
-		return new PlanningFlow(agentList, data, recorder, toolCallbackMap);
+	public PlanningCoordinator createPlanningCoordinator(String planId) {
+
+		// Add all dynamic agents from the database
+		List<DynamicAgentEntity> agentEntities = dynamicAgentLoader.getAllAgents();
+
+		PlanningTool planningTool = new PlanningTool();
+
+		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder);
+		PlanExecutor planExecutor = new PlanExecutor(agentEntities, recorder, agentService);
+		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder);
+
+		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutor, planFinalizer);
+
+		return planningCoordinator;
 	}
 
 	public static class ToolCallBackContext {
@@ -145,7 +147,6 @@ public class ManusConfiguration {
 		}
 
 		public ToolCallback getToolCallback() {
-
 			return toolCallback;
 		}
 
@@ -155,18 +156,21 @@ public class ManusConfiguration {
 
 	}
 
-	public Map<String, ToolCallBackContext> toolCallbackMap(BaseAgent agent) {
+	public Map<String, ToolCallBackContext> toolCallbackMap(String planId) {
 		Map<String, ToolCallBackContext> toolCallbackMap = new HashMap<>();
 		List<ToolCallBiFunctionDef> toolDefinitions = new ArrayList<>();
 
 		// 添加所有工具定义
 		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService));
-		toolDefinitions.add(new TerminateTool(null));
+		toolDefinitions.add(new TerminateTool(planId));
 		toolDefinitions.add(new Bash(CodeUtils.WORKING_DIR));
 		toolDefinitions.add(new DocLoaderTool());
 		toolDefinitions.add(new TextFileOperator(CodeUtils.WORKING_DIR, textFileService));
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
+		for (ToolCallback toolCallback : mcpService.getFunctionCallbacks()) {
+			toolDefinitions.add(new McpTool(toolCallback));
+		}
 
 		// 为每个工具创建 FunctionToolCallback
 		for (ToolCallBiFunctionDef toolDefinition : toolDefinitions) {
@@ -177,41 +181,12 @@ public class ManusConfiguration {
 				.inputType(toolDefinition.getInputType())
 				.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
 				.build();
-			toolDefinition.setAgent(agent);
+			toolDefinition.setPlanId(planId);
 			ToolCallBackContext functionToolcallbackContext = new ToolCallBackContext(functionToolcallback,
 					toolDefinition);
 			toolCallbackMap.put(toolDefinition.getName(), functionToolcallbackContext);
 		}
 		return toolCallbackMap;
-	}
-
-	/**
-	 * PlanningFlowManager 为了与controller等方法兼容 ，并且还能保证每次请求都能创建一个新的PlanningFlow实例，来解决并发问题。
-	 */
-	@Component
-	public class PlanningFlowManager {
-
-		private final ApplicationContext context;
-
-		private ConcurrentHashMap<String, PlanningFlow> flowMap = new ConcurrentHashMap<>();
-
-		public PlanningFlowManager(ApplicationContext context) {
-			this.context = context;
-		}
-
-		public PlanningFlow getOrCreatePlanningFlow(String requestId) {
-			PlanningFlow flow = flowMap.computeIfAbsent(requestId, key -> {
-				PlanningFlow newFlow = context.getBean(PlanningFlow.class);
-				newFlow.setActivePlanId(key);
-				return newFlow;
-			});
-			return flow;
-		}
-
-		public boolean removePlanningFlow(String requestId) {
-			return flowMap.remove(requestId) != null;
-		}
-
 	}
 
 	@Bean
