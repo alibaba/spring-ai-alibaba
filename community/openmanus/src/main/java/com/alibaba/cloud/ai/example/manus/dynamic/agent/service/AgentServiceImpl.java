@@ -21,30 +21,57 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration;
-import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.ToolCallBackContext;
+import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.DynamicAgent;
+import com.alibaba.cloud.ai.example.manus.dynamic.agent.ToolCallbackProvider;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.model.Tool;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.repository.DynamicAgentRepository;
+import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
+import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
 @Service
 public class AgentServiceImpl implements AgentService {
 
-	private static final String DEFAULT_AGENT_NAME = "DEFAULT_AGENT"; // 修改为通过 name 判断
+	private static final String DEFAULT_AGENT_NAME = "DEFAULT_AGENT";
 
 	private static final Logger log = LoggerFactory.getLogger(AgentServiceImpl.class);
 
-	@Autowired
-	private DynamicAgentLoader dynamicAgentLoader;
+	private final DynamicAgentLoader dynamicAgentLoader;
+
+	private final DynamicAgentRepository repository;
+
+	private final PlanningFactory planningFactory;
 
 	@Autowired
-	private DynamicAgentRepository repository;
+	@Lazy
+	private LlmService llmService;
 
 	@Autowired
-	private ManusConfiguration manusConfiguration;
+	private PlanExecutionRecorder planExecutionRecorder;
+
+	@Autowired
+	private ManusProperties manusProperties;
+
+	@Autowired
+	@Lazy
+	private ToolCallingManager toolCallingManager;
+
+	@Autowired
+	public AgentServiceImpl(@Lazy DynamicAgentLoader dynamicAgentLoader, DynamicAgentRepository repository,
+			@Lazy PlanningFactory planningFactory) {
+		this.dynamicAgentLoader = dynamicAgentLoader;
+		this.repository = repository;
+		this.planningFactory = planningFactory;
+	}
 
 	@Override
 	public List<AgentConfig> getAllAgents() {
@@ -112,7 +139,7 @@ public class AgentServiceImpl implements AgentService {
 	@Override
 	public List<Tool> getAvailableTools() {
 
-		Map<String, ToolCallBackContext> toolcallContext = manusConfiguration.toolCallbackMap(null);
+		Map<String, ToolCallBackContext> toolcallContext = planningFactory.toolCallbackMap(null);
 		return toolcallContext.entrySet().stream().map(entry -> {
 			Tool tool = new Tool();
 			tool.setKey(entry.getKey());
@@ -143,6 +170,38 @@ public class AgentServiceImpl implements AgentService {
 		entity.setNextStepPrompt(config.getNextStepPrompt());
 		entity.setAvailableToolKeys(config.getAvailableTools());
 		entity.setClassName(config.getName());
+	}
+
+	@Override
+	public BaseAgent createDynamicBaseAgent(String name, String planId) {
+
+		log.info("创建新的BaseAgent: {}, planId: {}", name, planId);
+
+		try {
+			// 通过dynamicAgentLoader加载已存在的Agent
+			DynamicAgent agent = dynamicAgentLoader.loadAgent(name);
+
+			// 设置planId
+			agent.setPlanId(planId);
+			// 设置工具回调映射
+			Map<String, ToolCallBackContext> toolCallbackMap = planningFactory.toolCallbackMap(planId);
+			agent.setToolCallbackProvider(new ToolCallbackProvider() {
+
+				@Override
+				public Map<String, ToolCallBackContext> getToolCallBackContext() {
+					return toolCallbackMap;
+				}
+
+			});
+
+			log.info("成功加载BaseAgent: {}, 可用工具数量: {}", name, agent.getToolCallList().size());
+
+			return agent;
+		}
+		catch (Exception e) {
+			log.error("加载BaseAgent过程中发生异常: {}, 错误信息: {}", name, e.getMessage(), e);
+			throw new RuntimeException("加载BaseAgent失败: " + e.getMessage(), e);
+		}
 	}
 
 }

@@ -77,27 +77,20 @@ public class ReactAgent {
 		this.graph = initGraph();
 	}
 
-	public ReactAgent(String prompt, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations)
+	public ReactAgent(String name, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations)
 			throws GraphStateException {
-		this.llmNode = LlmNode.builder()
-			.chatClient(chatClient)
-			.userPromptTemplate(prompt)
-			.messagesKey("messages")
-			.build();
+		this.name = name;
+		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey("messages").build();
 		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		this.max_iterations = maxIterations;
 		this.graph = initGraph();
 	}
 
-	public ReactAgent(String name, String prompt, ChatClient chatClient, List<FunctionCallback> tools,
-			int maxIterations, OverAllState state, CompileConfig compileConfig,
-			Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
+	public ReactAgent(String name, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations,
+			OverAllState state, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc)
+			throws GraphStateException {
 		this.name = name;
-		this.llmNode = LlmNode.builder()
-			.chatClient(chatClient)
-			.userPromptTemplate(prompt)
-			.messagesKey("messages")
-			.build();
+		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey("messages").build();
 		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		this.max_iterations = maxIterations;
 		this.state = state;
@@ -105,12 +98,12 @@ public class ReactAgent {
 		this.graph = initGraph();
 	}
 
-	public ReactAgent(String name, String prompt, ChatClient chatClient, ToolCallbackResolver resolver,
-			int maxIterations) throws GraphStateException {
+	public ReactAgent(String name, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations)
+			throws GraphStateException {
 		this.name = name;
 		this.llmNode = LlmNode.builder()
 			.chatClient(chatClient)
-			.userPromptTemplate(prompt)
+			// .userPromptTemplate(prompt)
 			.messagesKey("messages")
 			.build();
 		this.toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
@@ -118,15 +111,11 @@ public class ReactAgent {
 		this.graph = initGraph();
 	}
 
-	public ReactAgent(String name, String prompt, ChatClient chatClient, ToolCallbackResolver resolver,
-			int maxIterations, OverAllState state, CompileConfig compileConfig,
-			Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
+	public ReactAgent(String name, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations,
+			OverAllState state, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc)
+			throws GraphStateException {
 		this.name = name;
-		this.llmNode = LlmNode.builder()
-			.chatClient(chatClient)
-			.userPromptTemplate(prompt)
-			.messagesKey("messages")
-			.build();
+		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey("messages").build();
 		this.toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
 		this.max_iterations = maxIterations;
 		this.state = state;
@@ -259,8 +248,6 @@ public class ReactAgent {
 
 		private ChatClient chatClient;
 
-		private String prompt;
-
 		private List<FunctionCallback> tools;
 
 		private ToolCallbackResolver resolver;
@@ -280,11 +267,6 @@ public class ReactAgent {
 
 		public Builder chatClient(ChatClient chatClient) {
 			this.chatClient = chatClient;
-			return this;
-		}
-
-		public Builder prompt(String prompt) {
-			this.prompt = prompt;
 			return this;
 		}
 
@@ -320,12 +302,11 @@ public class ReactAgent {
 
 		public ReactAgent build() throws GraphStateException {
 			if (resolver != null) {
-				return new ReactAgent(name, prompt, chatClient, resolver, maxIterations, state, compileConfig,
+				return new ReactAgent(name, chatClient, resolver, maxIterations, state, compileConfig,
 						shouldContinueFunc);
 			}
 			else if (tools != null) {
-				return new ReactAgent(name, prompt, chatClient, tools, maxIterations, state, compileConfig,
-						shouldContinueFunc);
+				return new ReactAgent(name, chatClient, tools, maxIterations, state, compileConfig, shouldContinueFunc);
 			}
 			throw new IllegalArgumentException("Either tools or resolver must be provided");
 		}
