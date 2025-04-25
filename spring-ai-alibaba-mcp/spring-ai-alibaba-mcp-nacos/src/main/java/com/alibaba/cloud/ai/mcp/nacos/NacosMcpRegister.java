@@ -170,23 +170,22 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			mcpServerInfo.setVersion(this.serverInfo.version());
 			mcpServerInfo.setEnabled(true);
 			if ("stdio".equals(this.type)) {
-				mcpServerInfo.setType("local");
+				mcpServerInfo.setProtocol("local");
 			}
 			else {
 				ServiceRefInfo serviceRefInfo = new ServiceRefInfo();
-				serviceRefInfo.setNamespace(nacosMcpProperties.getServiceNamespace());
-				serviceRefInfo.setService(this.serverInfo.name() + "-mcp-service");
-				serviceRefInfo.setGroup(nacosMcpProperties.getServiceGroup());
+				serviceRefInfo.setNamespaceId(nacosMcpProperties.getServiceNamespace());
+				serviceRefInfo.setServiceName(this.serverInfo.name() + "-mcp-service");
+				serviceRefInfo.setGroupName(nacosMcpProperties.getServiceGroup());
 				RemoteServerConfigInfo remoteServerConfigInfo = new RemoteServerConfigInfo();
 				remoteServerConfigInfo.setServiceRef(serviceRefInfo);
-				remoteServerConfigInfo.setBackendProtocol("mcp-sse");
 				String contextPath = nacosMcpProperties.getSseExportContextPath();
 				if (StringUtils.isBlank(contextPath)) {
 					contextPath = "";
 				}
 				remoteServerConfigInfo.setExportPath(contextPath + "/sse");
 				mcpServerInfo.setRemoteServerConfig(remoteServerConfigInfo);
-				mcpServerInfo.setType("sse-remote");
+				mcpServerInfo.setProtocol("mcp-sse");
 			}
 			if (this.serverCapabilities.tools() != null) {
 				mcpServerInfo.setToolsDescriptionRef(this.serverInfo.name() + toolsConfigSuffix);
