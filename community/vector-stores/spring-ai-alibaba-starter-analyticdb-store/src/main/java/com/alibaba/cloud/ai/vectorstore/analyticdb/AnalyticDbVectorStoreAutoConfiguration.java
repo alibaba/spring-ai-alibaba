@@ -37,25 +37,26 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingModel.class, Client.class, AnalyticDbVectorStore.class })
 @EnableConfigurationProperties({ AnalyticDbVectorStoreProperties.class })
-@ConditionalOnProperty(prefix = "spring.ai.vectorstore.analytic")
+@ConditionalOnProperty(prefix = "spring.ai.vectorstore.analytic", name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class AnalyticDbVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public Client client(AnalyticDbVectorStoreProperties properties) throws Exception {
+	public Client analyticdbClient(AnalyticDbVectorStoreProperties properties) throws Exception {
 		Config clientConfig = Config.build(properties.toAnalyticDbClientParams());
 		return new Client(clientConfig);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean(BatchingStrategy.class)
-	BatchingStrategy batchingStrategy() {
+	BatchingStrategy analyticdbBatchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public AnalyticDbVectorStore vectorStore(Client client, EmbeddingModel embeddingModel,
+	public AnalyticDbVectorStore analyticdbVectorStore(Client client, EmbeddingModel embeddingModel,
 			AnalyticDbVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {

@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * @author 肖云涛
- * @date 2024/12/5
+ * @since 2024/12/5
  */
 @Configuration
 @ConfigurationProperties(StudioObservabilityProperties.CONFIG_PREFIX)

@@ -144,7 +144,6 @@
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-autoconfigure</artifactId>
             <version>${project.parent.version}</version>
-            <scope>test</scope>
         </dependency>
 
     </dependencies>
@@ -171,26 +170,27 @@
                 </configuration>
             </plugin>
 
-            <!-- 插件用于处理前端构建 -->
+            <!-- Windows OS has a problem when packaging and compiling studio modules, -->
+            <!-- and the downloaded node cannot be used. -->
+            <!-- see issue: https://github.com/eirslett/frontend-maven-plugin/issues/1179 -->
             <plugin>
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
                 <version>1.11.0</version>
                 <executions>
-                    <!-- 安装 Node 和 npm -->
                     <execution>
                         <id>install node and npm</id>
                         <goals>
                             <goal>install-node-and-npm</goal>
                         </goals>
                         <configuration>
-                            <nodeVersion>${node.version}</nodeVersion> <!-- 选择你需要的 Node 版本 -->
-                            <npmVersion>${npm.version}</npmVersion> <!-- 对应的 npm 版本 -->
+                            <nodeVersion>${node.version}</nodeVersion>
+                            <npmVersion>${npm.version}</npmVersion>
                             <workingDirectory>ui</workingDirectory>
+                            <!-- <nodeDownloadRoot>https://npmmirror.com/mirrors/node/</nodeDownloadRoot> -->
                         </configuration>
                     </execution>
 
-                    <!-- 运行 npm install -->
                     <execution>
                         <id>npm install</id>
                         <goals>
@@ -202,13 +202,12 @@
                         </configuration>
                     </execution>
 
-                    <!-- 运行 npm run build -->
                     <execution>
                         <id>npm build</id>
                         <goals>
                             <goal>npm</goal>
                         </goals>
-                        <phase>generate-resources</phase> <!-- 确保在资源生成阶段执行 -->
+                        <phase>generate-resources</phase>
                         <configuration>
                             <arguments>run build</arguments>
                             <workingDirectory>ui</workingDirectory>
@@ -217,7 +216,6 @@
                 </executions>
             </plugin>
 
-            <!-- 插件用于将前端构建结果复制到 Spring Boot 静态资源目录 -->
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>3.2.0</version>

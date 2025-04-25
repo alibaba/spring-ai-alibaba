@@ -39,23 +39,11 @@ import java.util.Objects;
 import java.util.UUID;
 import java.time.Duration;
 
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.*;
+
 public class DashScopeAudioTranscriptionModel implements AudioTranscriptionModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeAudioTranscriptionModel.class);
-
-	public static final String REQUEST_ID = "request_id";
-
-	public static final String TASK_ID = "task_id";
-
-	public static final String STATUS_CODE = "status_code";
-
-	public static final String CODE = "code";
-
-	public static final String USAGE = "usage";
-
-	public static final String OUTPUT = "output";
-
-	public static final String MESSAGE = "message";
 
 	private final DashScopeAudioTranscriptionApi api;
 
