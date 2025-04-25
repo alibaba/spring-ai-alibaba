@@ -3,16 +3,18 @@ package com.alibaba.cloud.ai.mcp.dynamic.server.tools;
 import com.alibaba.cloud.ai.mcp.dynamic.server.callback.DynamicNacosToolCallback;
 import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinition;
 import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpRegistryProperties;
-import com.alibaba.cloud.ai.mcp.nacos.common.utils.JsonUtils;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.pojo.ListView;
 import com.alibaba.nacos.common.utils.CollectionUtils;
+import com.alibaba.nacos.common.utils.JacksonUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,7 +66,7 @@ public class DynamicToolsInitializer {
 								nacosMcpRegistryProperties.getServiceGroup(), 5000);
 
 						if (toolConfig != null) {
-							DynamicNacosToolsInfo toolsInfo = JsonUtils.deserialize(toolConfig,
+							DynamicNacosToolsInfo toolsInfo = JacksonUtils.toObj(toolConfig,
 									DynamicNacosToolsInfo.class);
 							List<DynamicNacosToolDefinition> toolsInNacos = toolsInfo.getTools();
 
