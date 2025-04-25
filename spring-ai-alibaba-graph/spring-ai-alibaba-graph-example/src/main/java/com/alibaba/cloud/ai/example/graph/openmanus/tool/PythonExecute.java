@@ -22,18 +22,16 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.BiFunction;
 
 public class PythonExecute implements BiFunction<String, ToolContext, ToolExecuteResult> {
 
@@ -45,14 +43,24 @@ public class PythonExecute implements BiFunction<String, ToolContext, ToolExecut
 
 	public static final String LLMMATH_PYTHON_CODE = "import sys; import math; import numpy as np; import numexpr as ne; input = '%s'; res = ne.evaluate(input); print(res)";
 
-	public static final String PARAMETERS = "{\n" + "\t\"type\": \"object\",\n" + "\t\"properties\": {\n"
-			+ "\t\t\"code\": {\n" + "\t\t\t\"type\": \"string\",\n"
-			+ "\t\t\t\"description\": \"The Python code to execute.\"\n" + "\t\t}\n" + "\t},\n"
-			+ "\t\"required\": [\"code\"]\n" + "}";
+	public static final String PARAMETERS = """
+			{
+			    "type": "object",
+			    "properties": {
+			        "code": {
+			            "type": "string",
+			            "description": "The Python code to execute."
+			        }
+			    },
+			    "required": ["code"]
+			}
+			""";
 
 	private static final String name = "python_execute";
 
-	public static final String description = "Executes Python code string. Note: Only print outputs are visible, function return values are not captured. Use print statements to see results.";
+	public static final String description = """
+			Executes Python code string. Note: Only print outputs are visible, function return values are not captured. Use print statements to see results.
+			""";
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,32 +18,107 @@
     <link rel="stylesheet" href="css/sidebar-collapse.css">
     <style>
         /* Simple icons for demo */
-        .icon-placeholder::before { content: "□"; display: inline-block; margin-right: 5px; }
-        .icon-collapse-left::before { content: "◀"; }
-        .icon-expand-left::before { content: "▶"; }
-        .icon-collapse-right::before { content: "▶"; }
-        .icon-expand-right::before { content: "◀"; }
-        .icon-terminal::before { content: ">_"; }
-        .icon-play::before { content: "►"; }
-        .icon-realtime::before { content: "●"; color: #1a73e8; }
-        .icon-menu::before { content: "⋮"; }
-        .icon-share::before { content: "↑"; }
-        .icon-star-outline::before { content: "☆"; }
-        .icon-star-filled::before { content: "★"; }
-        .icon-lightbulb::before { content: "💡"; }
-        .icon-attach::before { content: "📎"; }
-        .icon-send::before { content: "↑"; }
-        .icon-add::before { content: "+"; }
-        .icon-folder::before { content:"📁"; }
-        .icon-pages::before { content:"📄";}
-        .icon-down-arrow::before { content: "▼"; }
-        .icon-up-arrow::before { content: "▲"; }
-        .icon-edit::before { content: "✎"; }
-        .icon-run::before { content: "▶"; }
-        .icon-save::before { content: "💾"; }
-        .icon-back::before { content: "⬅"; }
+        .icon-placeholder::before {
+            content: "□";
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .icon-collapse-left::before {
+            content: "◀";
+        }
+
+        .icon-expand-left::before {
+            content: "▶";
+        }
+
+        .icon-collapse-right::before {
+            content: "▶";
+        }
+
+        .icon-expand-right::before {
+            content: "◀";
+        }
+
+        .icon-terminal::before {
+            content: ">_";
+        }
+
+        .icon-play::before {
+            content: "►";
+        }
+
+        .icon-realtime::before {
+            content: "●";
+            color: #1a73e8;
+        }
+
+        .icon-menu::before {
+            content: "⋮";
+        }
+
+        .icon-share::before {
+            content: "↑";
+        }
+
+        .icon-star-outline::before {
+            content: "☆";
+        }
+
+        .icon-star-filled::before {
+            content: "★";
+        }
+
+        .icon-lightbulb::before {
+            content: "💡";
+        }
+
+        .icon-attach::before {
+            content: "📎";
+        }
+
+        .icon-send::before {
+            content: "↑";
+        }
+
+        .icon-add::before {
+            content: "+";
+        }
+
+        .icon-folder::before {
+            content: "📁";
+        }
+
+        .icon-pages::before {
+            content: "📄";
+        }
+
+        .icon-down-arrow::before {
+            content: "▼";
+        }
+
+        .icon-up-arrow::before {
+            content: "▲";
+        }
+
+        .icon-edit::before {
+            content: "✎";
+        }
+
+        .icon-run::before {
+            content: "▶";
+        }
+
+        .icon-save::before {
+            content: "💾";
+        }
+
+        .icon-back::before {
+            content: "⬅";
+        }
     </style>
 </head>
+
 <body>
     <div class="app-container">
         <!-- 左侧边栏 - 已简化 -->
@@ -113,7 +189,8 @@
                     </div>
                     <div class="input-field">
                         <label for="plan-prompt">任务描述：</label>
-                        <textarea id="plan-prompt" placeholder="请输入您的任务需求，系统将基于此生成执行计划，如果是既有计划，可以输入修改方案，他会结合之前的计划，将新需求自动添加到计划中..."></textarea>
+                        <textarea id="plan-prompt"
+                            placeholder="请输入您的任务需求，系统将基于此生成执行计划，如果是既有计划，可以输入修改方案，他会结合之前的计划，将新需求自动添加到计划中..."></textarea>
                     </div>
                     <div class="submit-area">
                         <button class="submit-btn" id="generatePlanBtn">
@@ -140,20 +217,8 @@
                     </div>
                     <div class="plan-json-preview">
                         <!-- 默认显示编辑器而不是只读视图 -->
-                        <textarea id="plan-json-editor" class="preview-content code-view" placeholder="计划的JSON数据将在这里显示..."></textarea>
-                    </div>
-                    <div class="plan-param-section">
-                        <div class="section-header">
-                            <h2>附加额外参数</h2>
-                            <div class="section-actions">
-                                <button class="action-btn" id="clearParamBtn" title="清空参数">
-                                    <span class="icon-placeholder"></span> 清空
-                                </button>
-                            </div>
-                        </div>
-                        <div class="input-field">
-                            <textarea id="plan-params" placeholder="可选：请输入计划执行需要的参数 ，会作为额外参数给到模型 ， 格式自定义只要能跟模型的执行prompt对应即可。 例如 变量1： xxx  ，那么执行计划里面有 变量1 ，模型就会自己替换"></textarea>
-                        </div>
+                        <textarea id="plan-json-editor" class="preview-content code-view"
+                            placeholder="计划的JSON数据将在这里显示..."></textarea>
                     </div>
                     <div class="save-plan-container">
                         <button class="secondary-btn" id="modifyPlanBtn">
@@ -161,8 +226,10 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="plan-execution-section">
+
+
                     <div class="section-header">
                         <h2>Step3: 计划执行控制</h2>
                         <div class="section-actions">
@@ -171,29 +238,43 @@
                             </button>
                         </div>
                     </div>
-                    <div class="plan-actions">
-                        <div class="api-call-link">
-                            # 也可以通过get方法重复调用链接: 
-                            <div class="api-url-container">
-                                <span class="api-url">http://your-domain/api/plan-template/execute/<span class="dynamic-id">template_xxxx</span></span>
-                            </div>
-                            <div style="font-size: 12px; color: #666; margin-top: 5px;">
-                                <span># 调用会返回结果样例: {"planId": "plan_xxxx", "status": "processing", "message": "计划执行请求已提交，正在处理中"}</span>
-                            </div>
-                            <div style="font-size: 12px; color: #666; margin-top: 5px;">
-                                <span># 可监控执行状态: http://your-domain/api/executor/details/<span class="dynamic-plan-id">plan_xxxx</span></span>
-                            </div>
+                    <div class="plan-param-section">
+                            <div>附加额外参数</div>
+                        <div class="input-field">
+                            <textarea id="plan-params"
+                                placeholder="可选：请输入计划执行需要的参数 ，会作为额外参数给到模型 ， 格式自定义只要能跟模型的执行prompt对应即可。 例如 变量1： xxx  ，那么执行计划里面有 变量1 ，模型就会自己替换"></textarea>
                         </div>
                         <div class="execution-buttons">
+                            <button class="secondary-btn" id="clearParamBtn" title="清空参数">
+                                <span class="icon-placeholder"></span> 清空
+                            </button>
                             <button class="primary-btn" id="runPlanBtn">
                                 <span class="icon-run"></span> 执行计划
                             </button>
                         </div>
                     </div>
+                    <div class="plan-actions">
+                        <div class="api-call-link">
+                            # 也可以通过get方法重复调用链接:
+                            <div class="api-url-container">
+                                <span class="api-url">http://your-domain/api/plan-template/execute/<span
+                                        class="dynamic-id">template_xxxx</span></span>
+                            </div>
+                            <div class="api-description">
+                                <span># 调用会返回结果样例: {"planId": "plan_xxxx", "status": "processing", "message":
+                                    "计划执行请求已提交，正在处理中"}</span>
+                            </div>
+                            <div class="api-description">
+                                <span># 可监控执行状态: http://your-domain/api/executor/details/<span
+                                        class="dynamic-plan-id">plan_xxxx</span></span>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
 
-               
-            
+
+
                 <!-- 添加简单操作请求区域 -->
                 <div class="simple-chat-area">
                     <div class="chat-area-header">
@@ -209,21 +290,21 @@
                         <div class="message user-message">
                             <p>执行后这里可以看到详细执行情况</p>
                         </div>
-                        
+
                         <!-- 示例AI回复消息 -->
                         <div class="message ai-message ai-steps-container">
                             <div class="ai-header">
                                 <span class="ai-logo">M</span> JTaskPilot AI
                             </div>
-                            
-                    </div>
-                    
-                    <!-- 当没有消息时显示的提示 -->
-                    <div class="empty-chat-message" style="display:none;">
-                        <p>暂无操作记录，请执行计划生成操作记录。</p>
+
+                        </div>
+
+                        <!-- 当没有消息时显示的提示 -->
+                        <div class="empty-chat-message" style="display:none;">
+                            <p>暂无操作记录，请执行计划生成操作记录。</p>
+                        </div>
                     </div>
                 </div>
-            </div>
         </main>
 
         <!-- 右侧边栏 -->
@@ -269,4 +350,5 @@
     <script src="js/chat-handler-adapter.js"></script>
     <script src="js/right-sidebar-adapter.js"></script>
 </body>
+
 </html>
