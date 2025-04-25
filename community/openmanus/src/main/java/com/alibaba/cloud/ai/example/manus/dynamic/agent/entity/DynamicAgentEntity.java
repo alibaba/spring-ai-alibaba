@@ -42,10 +42,10 @@ public class DynamicAgentEntity {
 	@Column(nullable = false, length = 1000)
 	private String agentDescription;
 
-	@Column(nullable = false, length = 4000)
+	@Column(nullable = false, length = 40000)
 	private String systemPrompt;
 
-	@Column(nullable = false, length = 4000)
+	@Column(nullable = false, length = 40000)
 	private String nextStepPrompt;
 
 	@ElementCollection(fetch = FetchType.EAGER)

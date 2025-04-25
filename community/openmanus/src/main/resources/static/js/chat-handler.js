@@ -210,10 +210,6 @@ const ChatHandler = (() => {
                         参数: ${escapeHtml(lastAction.toolParameters)}
                     </div>
                     <div class="think-details" style="margin-top: 8px; border-top: 1px dashed #e8eaed; padding-top: 6px;">
-                        <div class="think-input" style="font-size: 12px; color: #5f6368; margin-bottom: 4px;">
-                            <span style="font-weight: bold;">思考输入:</span> 
-                            <span>${escapeHtml(lastAction.thinkInput || '')}</span>
-                        </div>
                         <div class="think-output" style="font-size: 12px; color: #5f6368;">
                             <span style="font-weight: bold;">思考输出:</span> 
                             <span>${escapeHtml(lastAction.thinkOutput || '')}</span>
