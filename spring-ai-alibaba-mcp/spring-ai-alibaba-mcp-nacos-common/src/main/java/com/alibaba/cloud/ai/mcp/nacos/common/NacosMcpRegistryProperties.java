@@ -79,6 +79,8 @@ public class NacosMcpRegistryProperties {
 
 	boolean serviceRegister = true;
 
+	boolean serviceEphemeral = true;
+
 	@Autowired
 	@JsonIgnore
 	private Environment environment;
@@ -89,6 +91,14 @@ public class NacosMcpRegistryProperties {
 
 	public void setServiceRegister(boolean serviceRegister) {
 		this.serviceRegister = serviceRegister;
+	}
+
+	public boolean isServiceEphemeral() {
+		return serviceEphemeral;
+	}
+
+	public void setServiceEphemeral(boolean serviceEphemeral) {
+		this.serviceEphemeral = serviceEphemeral;
 	}
 
 	public String getSseExportContextPath() {
