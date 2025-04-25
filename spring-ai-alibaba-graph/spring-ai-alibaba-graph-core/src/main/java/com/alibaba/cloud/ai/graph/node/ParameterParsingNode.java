@@ -55,13 +55,13 @@ public class ParameterParsingNode implements NodeAction {
 			""";
 
 	private static final String PARAMETER_PARSING_USER_PROMPT_1 = """
-			{ "input_text":[" Please help me check the paper written by Lei Li, paper number: 2405.10739 ."],
-			"Parameters":{"name":[paper_name],“type”:[string],"description":["paper name"]}}
+			{ "input_text":[" Please help me check the paper, paper number: 2405.10739 ."],
+			"Parameters":{"name":[paper_num],“type”:[string],"description":["paper number"]}}
 			""";
 
 	private static final String PARAMETER_PARSING_ASSISTANT_PROMPT_1 = """
 			```json
-			{"paper_name": "2405.10739"}
+			{"paper_num": "2405.10739"}
 			```
 			""";
 
