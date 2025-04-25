@@ -53,8 +53,18 @@ public class SqlServerChatMemory extends JdbcChatMemory {
 	@Override
 	protected String createTableSql(String tableName) {
 		return String.format(
-				"CREATE TABLE %s ( id BIGINT IDENTITY(1,1) PRIMARY KEY, conversation_id NVARCHAR(256), messages NVARCHAR(MAX), CONSTRAINT uq_conversation_id UNIQUE (conversation_id));",
+				"CREATE TABLE %s (id BIGINT IDENTITY(1,1) PRIMARY KEY, conversation_id NVARCHAR(256), messages NVARCHAR(MAX), type VARCHAR(100));",
 				tableName);
+	}
+
+	@Override
+	protected String generatePaginatedQuerySql(String tableName, int lastN) {
+		StringBuilder sqlBuilder = new StringBuilder("SELECT ");
+		if (lastN > 0) {
+			sqlBuilder.append("TOP ").append(lastN).append(" ");
+		}
+		sqlBuilder.append("messages,type FROM ").append(tableName).append(" WHERE conversation_id = ?");
+		return sqlBuilder.toString();
 	}
 
 }

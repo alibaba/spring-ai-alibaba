@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.toolcalling.baidumap;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +28,7 @@ import org.springframework.context.annotation.Description;
 
 /**
  * @author Carbon
+ * @author vlsmb
  */
 
 @Configuration
@@ -41,10 +44,22 @@ public class BaiDuMapAutoConfiguration {
 			+ "or Get detail information of a address and facility query with baidu map or "
 			+ "Get address information of a place with baidu map or "
 			+ "Get detailed information about a specific place with baidu map")
-	public MapSearchService baiDuMapGetAddressInformationFunction(BaiDuMapProperties baiDuMapProperties) {
+	public BaiduMapSearchInfoService baiduMapGetAddressInformation(BaiDuMapTools baiDuMapTools) {
+		logger.debug("baiduMapSearchInfoService is enabled.");
+		return new BaiduMapSearchInfoService(baiDuMapTools);
+	}
 
-		logger.debug("baiDuMapGetAddressInformationFunction is enabled.");
-		return new MapSearchService(baiDuMapProperties);
+	@Bean
+	@Description("Query the weather conditions of a specified location")
+	public BaiDuMapWeatherService baiDuMapGetAddressWeatherInformation(JsonParseTool jsonParseTool,
+			BaiDuMapTools baiDuMapTools) {
+		logger.debug("baiDuMapWeatherService is enabled.");
+		return new BaiDuMapWeatherService(jsonParseTool, baiDuMapTools);
+	}
+
+	@Bean
+	public BaiDuMapTools baiDuMapTools(BaiDuMapProperties properties, JsonParseTool jsonParseTool) {
+		return new BaiDuMapTools(properties, new WebClientTool(jsonParseTool, properties), jsonParseTool);
 	}
 
 }

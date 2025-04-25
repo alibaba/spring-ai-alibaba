@@ -1,11 +1,21 @@
 ## 如何运行
 
-首先，您需要配置模型 API-KEY：
+### 前置条件
+1. 配置模型 API-KEY：
 
 ```shell
 export AI_DASHSCOPE_API_KEY=xxx
 ```
 
+2. [可选] 配置 <a href="https://serpapi.com/users/sign_in" target="_blank">SerpApi key</a>
+
+```shell
+export SERP_API_KEY=xxx
+```
+
+> 尽在您想体验 OpenManus 示例时，才需要配置这个选项。
+
+### 启动应用
 然后，就可以在 IDE 中直接运行 `GraphApplication` 类启动示例应用。
 
 或者，您可以运行以下 maven 命令启用示例应用（注意要在根目录先 install 源码）：
