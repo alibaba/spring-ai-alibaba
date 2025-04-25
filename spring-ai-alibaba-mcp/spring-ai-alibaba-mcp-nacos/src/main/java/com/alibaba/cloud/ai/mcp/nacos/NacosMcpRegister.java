@@ -27,6 +27,7 @@ import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.config.listener.Listener;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingService;
+import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.alibaba.nacos.api.utils.StringUtils;
 import com.alibaba.nacos.client.config.NacosConfigService;
 import com.alibaba.nacos.client.naming.NacosNamingService;
@@ -281,8 +282,12 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 		try {
 			int port = event.getWebServer().getPort();
 			NamingService namingService = new NacosNamingService(nacosMcpProperties.getNacosProperties());
+			Instance instance = new Instance();
+			instance.setIp(nacosMcpProperties.getIp());
+			instance.setPort(port);
+			instance.setEphemeral(nacosMcpProperties.isServiceEphemeral());
 			namingService.registerInstance(this.serverInfo.name() + "-mcp-service",
-					nacosMcpProperties.getServiceGroup(), nacosMcpProperties.getIp(), port);
+					nacosMcpProperties.getServiceGroup(), instance);
 			log.info("Register mcp server service to nacos successfully");
 		}
 		catch (NacosException e) {
