@@ -144,7 +144,6 @@
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-autoconfigure</artifactId>
             <version>${project.parent.version}</version>
-            <scope>test</scope>
         </dependency>
 
     </dependencies>
