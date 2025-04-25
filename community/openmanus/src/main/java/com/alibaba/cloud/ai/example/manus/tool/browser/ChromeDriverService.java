@@ -289,20 +289,49 @@ public class ChromeDriverService implements ApplicationRunner {
 	private void closeDriver(WebDriver driver) {
 		try {
 			if (driver != null) {
-				// 首先关闭所有窗口
-				Set<String> windowHandles = driver.getWindowHandles();
-				for (String handle : windowHandles) {
+				try {
+					// 首先关闭所有窗口，但使用超时保护
 					try {
-						driver.switchTo().window(handle);
-						driver.close();
+						Set<String> windowHandles = driver.getWindowHandles();
+						for (String handle : windowHandles) {
+							try {
+								driver.switchTo().window(handle);
+								driver.close();
+							}
+							catch (Exception e) {
+								log.warn("Error closing window: {}", e.getMessage());
+							}
+						}
 					}
 					catch (Exception e) {
-						log.warn("Error closing window: {}", e.getMessage());
+						log.warn("Error getting window handles: {}", e.getMessage());
+					}
+
+					// 使用超时机制执行driver.quit()
+					Thread shutdownThread = new Thread(() -> {
+						try {
+							driver.quit();
+							log.info("ChromeDriver closed successfully");
+						}
+						catch (Exception e) {
+							log.warn("Error in shutdown thread during driver.quit(): {}", e.getMessage());
+						}
+					}, "DriverShutdownThread");
+
+					shutdownThread.setDaemon(true);
+					shutdownThread.start();
+
+					// 最多等待5秒
+					shutdownThread.join(5000);
+
+					if (shutdownThread.isAlive()) {
+						log.warn("Shutdown thread timed out, may need to force kill browser processes");
 					}
 				}
-				// 然后退出driver
-				driver.quit();
-				log.info("ChromeDriver closed successfully");
+				catch (InterruptedException ie) {
+					log.warn("Driver shutdown thread interrupted: {}", ie.getMessage());
+					Thread.currentThread().interrupt();
+				}
 			}
 		}
 		catch (Exception e) {

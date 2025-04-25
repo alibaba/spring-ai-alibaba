@@ -14,10 +14,6 @@ spring:
     mcp:
       client:
         enabled: false
-        request-timeout: 60000
-        stdio:
-          servers-configuration: classpath:/mcp-servers-config.json
-
   # H2 数据库配置
   datasource:
     url: jdbc:h2:file:./h2-data/openmanus_db;MODE=MYSQL;DATABASE_TO_LOWER=TRUE

@@ -205,7 +205,8 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	/**
 	 * Perform a similarity search in the vector store.
-	 * @return List<Document>
+	 * @param request The search request containing the query and parameters.
+	 * @return list of documents
 	 */
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {

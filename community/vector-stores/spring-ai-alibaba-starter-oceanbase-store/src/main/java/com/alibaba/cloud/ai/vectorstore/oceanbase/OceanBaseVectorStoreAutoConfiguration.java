@@ -46,7 +46,7 @@ public class OceanBaseVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public DataSource dataSource(OceanBaseVectorStoreProperties properties) {
+	public DataSource oceanbaseDataSource(OceanBaseVectorStoreProperties properties) {
 		DriverManagerDataSource dataSource = new DriverManagerDataSource();
 		dataSource.setUrl(properties.getUrl());
 		dataSource.setUsername(properties.getUsername());
@@ -56,7 +56,7 @@ public class OceanBaseVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(BatchingStrategy.class)
-	public BatchingStrategy batchingStrategy() {
+	public BatchingStrategy oceanbaseBatchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}
 

@@ -34,8 +34,9 @@ public class JsonInsertService implements Function<JsonInsertService.JsonInsertR
 		String field = request.field;
 		JsonElement value = request.value;
 		JsonElement jsonElement = JsonParser.parseString(content);
-		if (!jsonElement.isJsonObject())
+		if (!jsonElement.isJsonObject()) {
 			throw new IllegalArgumentException("Content is not a valid JSON object .");
+		}
 		JsonObject jsonObject = jsonElement.getAsJsonObject();
 		Assert.notNull(field, "insert json field can not be null");
 		Assert.notNull(value, "insert json fieldValue can not be null");

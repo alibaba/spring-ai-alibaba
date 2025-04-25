@@ -16,24 +16,40 @@
 package com.alibaba.cloud.ai.example.graph.openmanus;
 
 import java.util.Map;
+import java.util.Optional;
 
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.Plan;
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.PlanningTool;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.fastjson.JSON;
 
 public class SupervisorAgent implements NodeAction {
 
-	private PlanningTool planningTool = new PlanningTool(Map.of());
+	private final PlanningTool planningTool;
+
+	public SupervisorAgent(PlanningTool planningTool) {
+		this.planningTool = planningTool;
+	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState t) throws Exception {
-		String planId = (String) t.value("plan").orElseThrow();
-		Plan plan = planningTool.getPlans(planId);
+
+		String planStr = (String) t.value("plan").orElseThrow();
+		Plan tempPlan = parsePlan(planStr);
+		Plan plan = planningTool.getGraphPlan(tempPlan.getPlan_id());
+
+		Optional<Object> optionalOutput = t.value("step_output");
+
+		if (optionalOutput.isPresent()) {
+			String finalStepOutput = String.format("This is the final output of step %s:\n %s", plan.getCurrentStep(),
+					optionalOutput.get());
+			plan.updateStepStatus(plan.getCurrentStep(), finalStepOutput);
+		}
+
 		String promptForNextStep;
 		if (!plan.isFinished()) {
-			String step = plan.nextStep();
-			promptForNextStep = "What is the next step for " + step + "?";
+			promptForNextStep = plan.nextStepPrompt();
 		}
 		else {
 			promptForNextStep = "Plan completed.";
@@ -43,6 +59,7 @@ public class SupervisorAgent implements NodeAction {
 	}
 
 	public String think(OverAllState state) {
+
 		String nextPrompt = (String) state.value("step_prompt").orElseThrow();
 
 		if (nextPrompt.equalsIgnoreCase("Plan completed.")) {
@@ -51,6 +68,38 @@ public class SupervisorAgent implements NodeAction {
 		}
 
 		return "continue";
+	}
+
+	private Plan parsePlan(String planJson) {
+		planJson = removeMarkdownCodeBlockSyntax(planJson);
+		return JSON.parseObject(planJson, Plan.class);
+	}
+
+	/**
+	 * 移除字符串中的Markdown代码块标记（```json 和 ```） 如果字符串不包含这些标记，则返回原始字符串
+	 * @param input 可能包含Markdown代码块标记的字符串
+	 * @return 去除了代码块标记的字符串
+	 */
+	public static String removeMarkdownCodeBlockSyntax(String input) {
+		if (input == null || input.isEmpty()) {
+			return input;
+		}
+
+		// 去除开头的 ```json 或 ```任何语言
+		String result = input.trim();
+		if (result.startsWith("```")) {
+			int firstLineEnd = result.indexOf('\n');
+			if (firstLineEnd != -1) {
+				result = result.substring(firstLineEnd).trim();
+			}
+		}
+
+		// 去除结尾的 ```
+		if (result.endsWith("```")) {
+			result = result.substring(0, result.length() - 3).trim();
+		}
+
+		return result;
 	}
 
 }

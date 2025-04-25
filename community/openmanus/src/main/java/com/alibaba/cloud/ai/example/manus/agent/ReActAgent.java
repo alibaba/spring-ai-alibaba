@@ -57,18 +57,21 @@ public abstract class ReActAgent extends BaseAgent {
 	 * 示例实现： - ToolCallAgent：执行选定的工具调用 - BrowserAgent：执行浏览器操作
 	 * @return 行动执行的结果描述
 	 */
-	protected abstract String act();
+	protected abstract AgentExecResult act();
 
 	/**
 	 * 执行一个完整的思考-行动步骤
 	 * @return 如果不需要行动则返回思考完成的消息，否则返回行动的执行结果
 	 */
 	@Override
-	public String step() {
+	public AgentExecResult step() {
 
 		boolean shouldAct = think();
 		if (!shouldAct) {
-			return "Thinking complete - no action needed";
+			AgentExecResult result = new AgentExecResult("Thinking complete - no action needed",
+					AgentState.IN_PROGRESS);
+
+			return result;
 		}
 		return act();
 	}
