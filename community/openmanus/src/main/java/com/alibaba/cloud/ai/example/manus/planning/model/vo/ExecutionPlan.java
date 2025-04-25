@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.alibaba.cloud.ai.example.manus.flow.PlanStepStatus;
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 
 /**
  * 计划实体类，用于管理执行计划的相关信息
@@ -95,30 +95,58 @@ public class ExecutionPlan {
 		this.executionParams = executionParams;
 	}
 
-	public String getPlanExecutionStateStringFormat() {
+	@Override
+	public String toString() {
+		return "ExecutionPlan{" + "planId='" + planId + '\'' + ", title='" + title + '\'' + ", stepsCount="
+				+ (steps != null ? steps.size() : 0) + '}';
+	}
+
+	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
-		state.append("Plan: ").append(title).append(" (ID: ").append(planId).append(")\n");
-		state.append("=".repeat(state.length())).append("\n\n");
+		state.append("Plan: ").append("\n").append(title).append(")\n");
 
-		state.append("\n Execution Parameters: ").append(executionParams).append("\n");
+		state.append("\n- Execution Parameters: ").append("\n");
+		if (executionParams != null && !executionParams.isEmpty()) {
+			state.append(executionParams).append("\n\n");
+		}
+		else {
+			state.append("No execution parameters provided.\n\n");
+		}
 
-		long completed = steps.stream().filter(step -> step.getStatus().equals(PlanStepStatus.COMPLETED)).count();
-		int total = steps.size();
-		double progress = total > 0 ? (completed * 100.0 / total) : 0;
-
-		state.append(String.format("Progress: %d/%d steps (%.1f%%)\n\n", completed, total, progress));
-
-		state.append("Steps:\n");
-		state.append(getStepsExecutionStateStringFormat());
+		state.append("- Steps:\n");
+		state.append(getStepsExecutionStateStringFormat(onlyCompletedAndFirstInProgress));
 
 		return state.toString();
 	}
 
-	public String getStepsExecutionStateStringFormat() {
+	/**
+	 * 获取步骤执行状态的字符串格式
+	 * @param onlyCompletedAndFirstInProgress 当为true时，只输出所有已完成的步骤和第一个进行中的步骤
+	 * @return 格式化的步骤执行状态字符串
+	 */
+	public String getStepsExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
-		for (int i = 0; i < steps.size(); i++) {
+		boolean foundInProgress = false;
 
+		for (int i = 0; i < steps.size(); i++) {
 			ExecutionStep step = steps.get(i);
+
+			// 如果onlyCompletedAndFirstInProgress为true，则只显示COMPLETED状态的步骤和第一个IN_PROGRESS状态的步骤
+			if (onlyCompletedAndFirstInProgress) {
+				// 如果是COMPLETED状态，始终显示
+				if (step.getStatus() == AgentState.COMPLETED) {
+					// 什么都不做，继续显示
+				}
+				// 如果是IN_PROGRESS状态，且还没找到其他IN_PROGRESS的步骤
+				else if (step.getStatus() == AgentState.IN_PROGRESS && !foundInProgress) {
+					foundInProgress = true; // 标记已找到IN_PROGRESS步骤
+				}
+				// 其他所有情况（不是COMPLETED且不是第一个IN_PROGRESS）
+				else {
+					continue; // 跳过不符合条件的步骤
+				}
+			}
+
 			String symbol = switch (step.getStatus()) {
 				case COMPLETED -> "[completed]";
 				case IN_PROGRESS -> "[in_progress]";
@@ -126,16 +154,25 @@ public class ExecutionPlan {
 				case NOT_STARTED -> "[not_started]";
 				default -> "[ ]";
 			};
-			state.append("step ")
+			state.append("* step ")
 				.append(i)
 				.append(": ")
 				.append(symbol)
 				.append(" ")
 				.append(step.getStepRequirement())
+				.append("\n")
 				.append("\n");
-			state.append(" - step execution result: ").append("\n").append(step.getResult()).append("\n");
+			state.append("  step execution result: ").append("\n").append(step.getResult()).append("\n");
 		}
 		return state.toString();
+	}
+
+	/**
+	 * 获取所有步骤执行状态的字符串格式（兼容旧版本）
+	 * @return 格式化的步骤执行状态字符串
+	 */
+	public String getStepsExecutionStateStringFormat() {
+		return getStepsExecutionStateStringFormat(false);
 	}
 
 	/**
@@ -187,10 +224,19 @@ public class ExecutionPlan {
 		// 如果有计划步骤，添加到计划中
 		if (rootNode.has("steps") && rootNode.get("steps").isArray()) {
 			com.fasterxml.jackson.databind.JsonNode stepsNode = rootNode.get("steps");
+			int stepIndex = 0;
 			for (com.fasterxml.jackson.databind.JsonNode stepNode : stepsNode) {
 				if (stepNode.has("stepRequirement")) {
 					// 调用ExecutionStep的fromJson方法创建步骤
 					ExecutionStep step = ExecutionStep.fromJson(stepNode);
+					Integer stepIndexFromStep = step.getStepIndex();
+					if (stepIndexFromStep != null) {
+						stepIndex = stepIndexFromStep;
+					}
+					else {
+						step.setStepIndex(stepIndex);
+						stepIndex++;
+					}
 					plan.addStep(step);
 				}
 			}
