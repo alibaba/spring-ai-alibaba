@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="css/forms.css">
     <link rel="stylesheet" href="css/agent.css">
     <link rel="stylesheet" href="css/dialog.css">
+    <link rel="stylesheet" href="css/mcp.css">
     <!-- 添加与主页一致的图标样式 -->
     <style>
         /* Simple icons for demo */
@@ -73,7 +74,7 @@
                     </li>
                     <li class="category-item" data-category="mcp">
                         <span class="icon-mcp"></span>
-                        <span class="category-label">MCP配置(coming soon）</span>
+                        <span class="category-label">MCP配置</span>
                     </li>
                 </ul>
             </nav>
@@ -285,40 +286,7 @@
 
                 <!-- MCP配置面板 - 初始隐藏 -->
                 <div class="config-panel" id="mcp-config">
-                    <h2 class="panel-title">MCP配置(coming soon)</h2>
-                    
-                    <div class="config-group">
-                        <h3 class="group-title">MCP连接设置</h3>
-                        <div class="config-item">
-                            <label for="mcp-endpoint">MCP服务端点</label>
-                            <input type="text" id="mcp-endpoint" value="http://localhost:8080/mcp">
-                        </div>
-                        <div class="config-item">
-                            <label for="mcp-version">MCP协议版本</label>
-                            <select id="mcp-version">
-                                <option value="1.0">1.0</option>
-                                <option value="1.1">1.1</option>
-                                <option value="1.2" selected>1.2</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="config-group">
-                        <h3 class="group-title">模型配置</h3>
-                        <div class="config-item">
-                            <label for="default-model">默认LLM模型</label>
-                            <select id="default-model">
-                                <option value="qwen-max">通义千问 Max</option>
-                                <option value="qwen-plus">通义千问 Plus</option>
-                                <option value="qwen-turbo">通义千问 Turbo</option>
-                                <option value="custom">自定义</option>
-                            </select>
-                        </div>
-                        <div class="config-item">
-                            <label for="custom-model-url">自定义模型URL</label>
-                            <input type="text" id="custom-model-url" placeholder="输入模型URL">
-                        </div>
-                    </div>
+                    <!-- 此处内容将由mcp-ui.js动态生成 -->
                 </div>
             </div>
         </div>
@@ -345,5 +313,7 @@
     <script type="module" src="js/admin-utils.js"></script>
     <script type="module" src="js/config-model.js"></script>
     <script type="module" src="js/admin-api.js"></script>
+    <script type="module" src="js/mcp-api.js"></script>
+    <script type="module" src="js/mcp-ui.js"></script>
 </body>
 </html>

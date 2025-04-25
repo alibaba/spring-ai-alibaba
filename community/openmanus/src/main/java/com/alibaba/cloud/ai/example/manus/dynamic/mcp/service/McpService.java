@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.config.startUp;
+package com.alibaba.cloud.ai.example.manus.dynamic.mcp.service;
 
-import com.alibaba.cloud.ai.example.manus.config.entity.McpConfigEntity;
 import com.alibaba.cloud.ai.example.manus.config.entity.SseParameters;
-import com.alibaba.cloud.ai.example.manus.config.repository.McpConfigRepository;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.repository.McpConfigRepository;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpAsyncClient;

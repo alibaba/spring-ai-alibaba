@@ -13,19 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.config.repository;
+package com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po;
 
-import com.alibaba.cloud.ai.example.manus.config.entity.McpConfigEntity;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.stereotype.Repository;
+public enum McpConfigType {
 
-/**
- * McpConfig
- */
-@Repository
-public interface McpConfigRepository extends JpaRepository<McpConfigEntity, Long> {
-
-	McpConfigEntity findByMcpServerName(String mcpServerName);
+	SSE, STREAMING, STUDIO
 
 }
