@@ -33,8 +33,9 @@ public class JsonRemoveService implements Function<JsonRemoveService.JsonRemoveR
 		String content = request.content;
 		String field = request.field;
 		JsonElement jsonElement = JsonParser.parseString(content);
-		if (!jsonElement.isJsonObject())
+		if (!jsonElement.isJsonObject()) {
 			throw new IllegalArgumentException("Content is not a valid JSON object .");
+		}
 		JsonObject jsonObject = jsonElement.getAsJsonObject();
 		return jsonObject.remove(field);
 	}

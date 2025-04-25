@@ -44,7 +44,7 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 			}
 			""";
 
-	private static final String name = "terminate";
+	public static final String name = "terminate";
 
 	private static final String description = """
 
@@ -66,8 +66,8 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 		return new OpenAiApi.FunctionTool(function);
 	}
 
-	public static FunctionToolCallback getFunctionToolCallback(BaseAgent agent) {
-		return FunctionToolCallback.builder(name, new TerminateTool(agent))
+	public static FunctionToolCallback getFunctionToolCallback(String planId) {
+		return FunctionToolCallback.builder(name, new TerminateTool(planId))
 			.description(description)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
@@ -75,7 +75,7 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 			.build();
 	}
 
-	private BaseAgent agent;
+	private String planId;
 
 	private String lastTerminationMessage = "";
 
@@ -97,8 +97,8 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 				terminationTimestamp.isEmpty() ? "N/A" : terminationTimestamp);
 	}
 
-	public TerminateTool(BaseAgent agent) {
-		this.agent = agent;
+	public TerminateTool(String planId) {
+		this.planId = planId;
 	}
 
 	public ToolExecuteResult run(String toolInput) {
@@ -106,7 +106,7 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 		this.lastTerminationMessage = toolInput;
 		this.isTerminated = true;
 		this.terminationTimestamp = java.time.LocalDateTime.now().toString();
-		agent.setState(AgentState.FINISHED);
+
 		return new ToolExecuteResult(toolInput);
 	}
 
@@ -141,8 +141,8 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 	}
 
 	@Override
-	public void setAgent(BaseAgent agent) {
-		this.agent = agent;
+	public void setPlanId(String planId) {
+		this.planId = planId;
 	}
 
 	@Override

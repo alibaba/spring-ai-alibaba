@@ -55,7 +55,7 @@ public class PostgresChatMemory extends JdbcChatMemory {
 	@Override
 	protected String createTableSql(String tableName) {
 		return String.format(
-				"CREATE TABLE %s ( id BIGSERIAL PRIMARY KEY, conversation_id VARCHAR(256), messages TEXT, UNIQUE (conversation_id));",
+				"CREATE TABLE %s ( id BIGSERIAL PRIMARY KEY, conversation_id VARCHAR(256), messages TEXT, type VARCHAR(100));",
 				tableName);
 	}
 

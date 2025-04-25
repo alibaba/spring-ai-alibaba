@@ -35,7 +35,9 @@
         <module>spring-ai-alibaba-autoconfigure</module>
         <module>spring-ai-alibaba-studio</module>
         <module>spring-ai-alibaba-graph</module>
+        <module>spring-ai-alibaba-mcp</module>
 
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-common</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-time</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidusearch</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidutranslate</module>
@@ -550,6 +552,14 @@
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
+        </repository>
+        <repository>
+            <id>spring-snapshots</id>
+            <name>Spring Snapshots</name>
+            <url>https://repo.spring.io/snapshot</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
         </repository>
     </repositories>
 

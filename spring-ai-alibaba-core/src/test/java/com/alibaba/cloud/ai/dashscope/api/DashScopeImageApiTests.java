@@ -79,10 +79,14 @@ class DashScopeImageApiTests {
 	void testImageRequestClasses() {
 		// Test creating image request objects
 		DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestInput input = new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestInput(
-				"Test prompt", null, null);
+				"Test prompt", null, null, "stylization_all",
+				"https://help-static-aliyun-doc.aliyuncs.com/assets/img/zh-CN/8649386271/p848790.png",
+				"https://help-static-aliyun-doc.aliyuncs.com/assets/img/zh-CN/8649386271/p848791.png",
+				"https://huarong123.oss-cn-hangzhou.aliyuncs.com/image/%E6%B6%82%E9%B8%A6%E8%8D%89%E5%9B%BE.png");
+		Integer[][] colorArray = { { 0, 0, 0 }, { 134, 134, 134 } };
 
 		DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestParameter parameter = new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestParameter(
-				"anime", "1024*1024", 1, 123456, 0.5f, "canny");
+				"anime", "1024*1024", 1, 123456, 0.5f, "canny", true, true, 5, true, colorArray, colorArray);
 
 		DashScopeImageApi.DashScopeImageRequest request = new DashScopeImageApi.DashScopeImageRequest(
 				"stable-diffusion-xl", input, parameter);
