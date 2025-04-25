@@ -39,7 +39,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/mcp")
 public class McpController {
+
 	private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(McpController.class);
+
 	@Autowired
 	private McpService mcpService;
 
@@ -60,134 +62,40 @@ public class McpController {
 	 */
 	@PostMapping("/add")
 	public ResponseEntity<String> add(@RequestBody McpConfigRequestVO requestVO) throws IOException {
-		ObjectMapper mapper = new ObjectMapper();
-		McpConfigEntity mcpConfigEntity = new McpConfigEntity();
-
+		String configJson = requestVO.getConfigJson();
+		
+		// 检查是否是简短格式（没有mcpServers包装）的JSON
 		try {
-			// 获取连接类型
-			if (requestVO.getConnectionType() != null && !requestVO.getConnectionType().isEmpty()) {
-				String connectionTypeStr = requestVO.getConnectionType();
-				try {
-					McpConfigType connectionType = McpConfigType.valueOf(connectionTypeStr);
-					mcpConfigEntity.setConnectionType(connectionType);
-				}
-				catch (IllegalArgumentException e) {
-					return ResponseEntity.badRequest().body("Invalid connectionType: " + connectionTypeStr);
-				}
-			}
-			else {
-				return ResponseEntity.badRequest().body("Missing connectionType field");
-			}
-
-			// 获取配置JSON内容
-			if (requestVO.getConfigJson() == null || requestVO.getConfigJson().isEmpty()) {
-				return ResponseEntity.badRequest().body("Missing configJson field");
-			}
-
-			// 解析configJson内容
-			String configJsonString = requestVO.getConfigJson();
+			ObjectMapper objectMapper = new ObjectMapper();
+			JsonNode jsonNode = objectMapper.readTree(configJson);
 			
-			// 处理可能以引号开头的JSON片段
-			if (configJsonString.startsWith("\"") && configJsonString.contains(":")) {
-				// 尝试将其转换为合法的JSON对象
-				configJsonString = "{" + configJsonString.trim() + "}";
-			}
-			
-			JsonNode configNode = mapper.readTree(configJsonString);
-			if (configNode.isObject() && !configNode.has("mcpServers") && configNode.size() == 1) {
-				// 获取第一个（也是唯一一个）字段名作为服务器名称
-				String serverName = configNode.fieldNames().next();
-				JsonNode serverConfig = configNode.get(serverName);
+			// 如果不包含mcpServers字段，则需要转换为完整格式
+			if (!jsonNode.has("mcpServers")) {
+				logger.info("Detected short format JSON, converting to full format");
 				
-				// 检查是否是有效的服务器配置对象
-				if (serverConfig.isObject() && (serverConfig.has("command") || serverConfig.has("url"))) {
-					// 为服务器创建一个实体
-					mcpConfigEntity.setMcpServerName(serverName);
-					
-					// 创建标准格式的配置
-					ObjectMapper tempMapper = new ObjectMapper();
-					com.fasterxml.jackson.databind.node.ObjectNode standardConfig = tempMapper.createObjectNode();
-					com.fasterxml.jackson.databind.node.ObjectNode mcpServersNode = tempMapper.createObjectNode();
-					mcpServersNode.set(serverName, serverConfig);
-					standardConfig.set("mcpServers", mcpServersNode);
-					
-					// 设置连接配置
-					mcpConfigEntity.setConnectionConfig(standardConfig.toString());
-					
-					// 保存配置
-					mcpService.addMcpServer(mcpConfigEntity);
+				// 检查是否是简单的键值对格式（不包含外层大括号）
+				if (configJson.trim().startsWith("\"") && configJson.contains(":")) {
+					// 简单键值对格式，需要添加外层大括号
+					configJson = "{" + configJson + "}";
 				}
-				else {
-					return ResponseEntity.badRequest().body("Invalid server configuration format for key: " + serverName);
-				}
+				
+				// 创建完整的配置格式
+				StringBuilder fullJsonBuilder = new StringBuilder();
+				fullJsonBuilder.append("{\n  \"mcpServers\": ");
+				fullJsonBuilder.append(configJson);
+				fullJsonBuilder.append("\n}");
+				
+				// 更新requestVO中的configJson
+				configJson = fullJsonBuilder.toString();
+				requestVO.setConfigJson(configJson);
+				logger.info("Converted to full format: {}", configJson);
 			}
-			else if (configNode.has("mcpServers") && configNode.get("mcpServers").isObject()
-					&& configNode.get("mcpServers").size() > 0) {
-				// 如果是标准MCP配置格式，处理所有服务器
-				JsonNode mcpServers = configNode.get("mcpServers");
-				int successCount = 0;
-				StringBuilder resultMessage = new StringBuilder();
-
-				// 遍历所有服务器配置
-				for (Iterator<String> fieldNames = mcpServers.fieldNames(); fieldNames.hasNext();) {
-					String serverName = fieldNames.next();
-
-					try {
-						// 为每个服务器创建一个实体
-						McpConfigEntity serverEntity = new McpConfigEntity();
-						serverEntity.setMcpServerName(serverName);
-						serverEntity.setConnectionType(mcpConfigEntity.getConnectionType());
-
-						// 创建该服务器的配置
-						ObjectMapper tempMapper = new ObjectMapper();
-						com.fasterxml.jackson.databind.node.ObjectNode serverConfig = tempMapper.createObjectNode();
-						serverConfig.set("mcpServers",
-								tempMapper.createObjectNode().set(serverName, mcpServers.get(serverName)));
-
-						// 设置连接配置
-						serverEntity.setConnectionConfig(serverConfig.toString());
-
-						// 保存配置
-						mcpService.addMcpServer(serverEntity);
-						successCount++;
-					}
-					catch (Exception e) {
-						resultMessage.append("Failed to add server '")
-							.append(serverName)
-							.append("': ")
-							.append(e.getMessage())
-							.append("; ");
-					}
-				}
-
-				if (successCount > 0) {
-					String message = "Successfully added " + successCount + " server(s)";
-					if (resultMessage.length() > 0) {
-						message += ". " + resultMessage.toString();
-					}
-					return ResponseEntity.ok(message);
-				}
-				else {
-					return ResponseEntity.badRequest().body("Failed to add any servers: " + resultMessage.toString());
-				}
-			}
-			else {
-				// 如果都没有，使用时间戳作为服务器名称
-				mcpConfigEntity.setMcpServerName("mcp-server-" + System.currentTimeMillis());
-
-				// 设置连接配置
-				mcpConfigEntity.setConnectionConfig(configJsonString);
-
-				// 保存配置
-				mcpService.addMcpServer(mcpConfigEntity);
-			}
-
-			return ResponseEntity.ok("Success");
+		} catch (Exception e) {
+			logger.warn("Error checking JSON format, proceeding with original format", e);
 		}
-		catch (Exception e) {
-			logger.error("Error adding MCP server: ", e);
-			return ResponseEntity.badRequest().body("Invalid JSON format: " + e.getMessage());
-		}
+		
+		mcpService.addMcpServer(requestVO);
+		return ResponseEntity.ok("success");
 	}
 
 	/**
@@ -199,5 +107,6 @@ public class McpController {
 		mcpService.removeMcpServer(id);
 		return ResponseEntity.ok("Success");
 	}
+
 
 }
