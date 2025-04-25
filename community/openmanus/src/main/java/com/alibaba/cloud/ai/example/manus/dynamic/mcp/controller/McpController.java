@@ -86,33 +86,15 @@ public class McpController {
 
 			// 解析configJson内容
 			String configJsonString = requestVO.getConfigJson();
-			JsonNode configNode = mapper.readTree(configJsonString);
-
-			// 处理输入为简单文本节点的情况，例如 "mac-shell"
-			if (configNode.isTextual()) {
-				String serverName = configNode.asText();
-				
-				// 使用时间戳作为服务器名称
-				mcpConfigEntity.setMcpServerName(serverName);
-				
-				// 对于文本输入，创建一个空的配置
-				ObjectMapper tempMapper = new ObjectMapper();
-				com.fasterxml.jackson.databind.node.ObjectNode standardConfig = tempMapper.createObjectNode();
-				com.fasterxml.jackson.databind.node.ObjectNode mcpServersNode = tempMapper.createObjectNode();
-				com.fasterxml.jackson.databind.node.ObjectNode emptyServerConfig = tempMapper.createObjectNode();
-				
-				// 至少添加一个默认字段，确保它是有效的配置
-				emptyServerConfig.put("command", "default_command");
-				mcpServersNode.set(serverName, emptyServerConfig);
-				standardConfig.set("mcpServers", mcpServersNode);
-				
-				// 设置连接配置
-				mcpConfigEntity.setConnectionConfig(standardConfig.toString());
-				
-				// 保存配置
-				mcpService.addMcpServer(mcpConfigEntity);
+			
+			// 处理可能以引号开头的JSON片段
+			if (configJsonString.startsWith("\"") && configJsonString.contains(":")) {
+				// 尝试将其转换为合法的JSON对象
+				configJsonString = "{" + configJsonString.trim() + "}";
 			}
-			else if (configNode.isObject() && !configNode.has("mcpServers") && configNode.size() == 1) {
+			
+			JsonNode configNode = mapper.readTree(configJsonString);
+			if (configNode.isObject() && !configNode.has("mcpServers") && configNode.size() == 1) {
 				// 获取第一个（也是唯一一个）字段名作为服务器名称
 				String serverName = configNode.fieldNames().next();
 				JsonNode serverConfig = configNode.get(serverName);
