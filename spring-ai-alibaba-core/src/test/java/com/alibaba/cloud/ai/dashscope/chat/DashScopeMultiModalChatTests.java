@@ -59,6 +59,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.MESSAGE_FORMAT;
+
 /**
  * Tests for DashScope multi-modal chat functionality.
  *
@@ -128,7 +130,7 @@ public class DashScopeMultiModalChatTests {
 
 		// Create user message with media
 		UserMessage message = new UserMessage(TEST_PROMPT, mediaList);
-		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.IMAGE);
+		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		// Create prompt with options
 		Prompt prompt = new Prompt(message,
@@ -161,7 +163,7 @@ public class DashScopeMultiModalChatTests {
 		// Create user message with resource media
 		UserMessage message = new UserMessage(TEST_PROMPT,
 				new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")));
-		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.IMAGE);
+		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		// Create prompt with options
 		Prompt prompt = new Prompt(message,
@@ -199,7 +201,7 @@ public class DashScopeMultiModalChatTests {
 
 		// Create user message with media
 		UserMessage message = new UserMessage(TEST_VIDEO_PROMPT, mediaList);
-		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.VIDEO);
+		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.VIDEO);
 
 		// Create prompt with options
 		Prompt prompt = new Prompt(message,
@@ -237,7 +239,7 @@ public class DashScopeMultiModalChatTests {
 		// Create user message with resource media
 		UserMessage message = new UserMessage(TEST_PROMPT,
 				new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")));
-		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.IMAGE);
+		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		// Create prompt with options
 		Prompt prompt = new Prompt(message,
@@ -277,7 +279,7 @@ public class DashScopeMultiModalChatTests {
 
 		// Create user message with media
 		UserMessage message = new UserMessage(TEST_PROMPT, mediaList);
-		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.IMAGE);
+		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		// Create prompt
 		Prompt prompt = new Prompt(message,
@@ -310,7 +312,7 @@ public class DashScopeMultiModalChatTests {
 		// Create user message with resource media
 		UserMessage message = new UserMessage(TEST_PROMPT,
 				new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")));
-		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.IMAGE);
+		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		// Create prompt
 		Prompt prompt = new Prompt(message,
@@ -348,7 +350,7 @@ public class DashScopeMultiModalChatTests {
 
 		// Create user message with media
 		UserMessage message = new UserMessage(TEST_VIDEO_PROMPT, mediaList);
-		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.VIDEO);
+		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.VIDEO);
 
 		// Create prompt
 		Prompt prompt = new Prompt(message,
@@ -381,7 +383,7 @@ public class DashScopeMultiModalChatTests {
 		// Create user message with resource media
 		UserMessage message = new UserMessage(TEST_PROMPT,
 				new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")));
-		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.IMAGE);
+		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		// Create prompt
 		Prompt prompt = new Prompt(message,
@@ -424,7 +426,7 @@ public class DashScopeMultiModalChatTests {
 		// Create user message with resource media and custom prompt
 		UserMessage message = new UserMessage("请详细描述这张图片中的场景，包括人物、动物、环境等细节，并分析图片的情感基调。",
 				new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")));
-		message.getMetadata().put(DashScopeChatModel.MESSAGE_FORMAT, MessageFormat.IMAGE);
+		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		// Create prompt
 		Prompt prompt = new Prompt(message,

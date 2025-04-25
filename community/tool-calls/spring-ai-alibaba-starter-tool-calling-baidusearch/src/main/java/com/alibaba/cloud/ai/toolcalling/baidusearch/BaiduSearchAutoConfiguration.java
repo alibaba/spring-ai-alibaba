@@ -28,7 +28,7 @@ import org.springframework.context.annotation.Description;
 
 @Configuration
 @ConditionalOnClass(BaiduSearchService.class)
-@ConditionalOnProperty(value = "spring.ai.alibaba.toolcalling.baidusearch", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.baidusearch", name = "enabled", havingValue = "true")
 public class BaiduSearchAutoConfiguration {
 
 	@Bean

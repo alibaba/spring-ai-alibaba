@@ -22,48 +22,43 @@ import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.RestClientTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.util.DigestUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.ResponseErrorHandler;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.util.UriComponentsBuilder;
 
 public class BaiduTranslateService implements Function<BaiduTranslateService.Request, BaiduTranslateService.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(BaiduTranslateService.class);
 
-	private static final String TRANSLATE_HOST_URL = "https://fanyi-api.baidu.com/api/trans/vip/translate";
-
 	private static final Random random = new Random();
 
-	private final String appId;
+	private final RestClientTool restClientTool;
 
-	private final String secretKey;
+	private final JsonParseTool jsonParseTool;
 
-	private final RestClient restClient;
+	private final BaiduTranslateProperties properties;
 
-	public BaiduTranslateService(BaiduTranslateProperties properties, RestClient.Builder restClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+	public BaiduTranslateService(BaiduTranslateProperties properties, RestClientTool restClientTool,
+			JsonParseTool jsonParseTool) {
 
-		assert StringUtils.hasText(properties.getAppId());
-		this.appId = properties.getAppId();
-		assert StringUtils.hasText(properties.getSecretKey());
-		this.secretKey = properties.getSecretKey();
-
-		this.restClient = restClientBuilder.baseUrl(TRANSLATE_HOST_URL)
-			.defaultHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
-			.defaultStatusHandler(responseErrorHandler)
-			.build();
+		this.restClientTool = restClientTool;
+		this.jsonParseTool = jsonParseTool;
+		this.properties = properties;
+		if (!StringUtils.hasText(properties.getAppId()) || !StringUtils.hasText(properties.getSecretKey())) {
+			throw new RuntimeException("AppId and SecretKey is empty. Please check your configuration.");
+		}
 	}
 
 	@Override
@@ -75,15 +70,19 @@ public class BaiduTranslateService implements Function<BaiduTranslateService.Req
 		}
 
 		String salt = String.valueOf(random.nextInt(100000));
-		String sign = DigestUtils.md5DigestAsHex((appId + request.q + salt + secretKey).getBytes());
-		String url = UriComponentsBuilder.fromHttpUrl(TRANSLATE_HOST_URL).toUriString();
-
+		String sign = DigestUtils
+			.md5DigestAsHex((properties.getAppId() + request.q + salt + properties.getSecretKey()).getBytes());
 		try {
-			MultiValueMap<String, String> body = constructRequestBody(request, salt, sign);
-
-			var respData = this.restClient.post().uri(url).body(body).retrieve().toEntity(String.class).getBody();
-
-			return parseResponse(respData);
+			MultiValueMap<String, String> body = CommonToolCallUtils.<String, String>multiValueMapBuilder()
+				.add("q", request.q)
+				.add("from", request.from)
+				.add("to", request.to)
+				.add("appid", properties.getAppId())
+				.add("salt", salt)
+				.add("sign", sign)
+				.build();
+			return parseResponse(restClientTool.post("/", new LinkedMultiValueMap<>(), new HashMap<>(), body,
+					MediaType.APPLICATION_FORM_URLENCODED));
 		}
 		catch (Exception e) {
 			logger.error("Error occurred: {}", e.getMessage());
@@ -91,22 +90,12 @@ public class BaiduTranslateService implements Function<BaiduTranslateService.Req
 		}
 	}
 
-	private MultiValueMap<String, String> constructRequestBody(Request request, String salt, String sign) {
-		MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-		body.add("q", request.q);
-		body.add("from", request.from);
-		body.add("to", request.to);
-		body.add("appid", appId);
-		body.add("salt", salt);
-		body.add("sign", sign);
-		return body;
-	}
-
 	private Response parseResponse(String responseData) {
-		ObjectMapper mapper = new ObjectMapper();
 		try {
 			Map<String, String> translations = new HashMap<>();
-			TranslationResponse responseList = mapper.readValue(responseData, TranslationResponse.class);
+			TranslationResponse responseList = jsonParseTool.jsonToObject(responseData,
+					new TypeReference<TranslationResponse>() {
+					});
 			String to = responseList.to;
 			List<TranslationResult> translationsList = responseList.trans_result;
 			if (translationsList != null) {
@@ -120,8 +109,7 @@ public class BaiduTranslateService implements Function<BaiduTranslateService.Req
 		}
 		catch (Exception e) {
 			try {
-				Map<String, String> responseList = mapper.readValue(responseData,
-						mapper.getTypeFactory().constructMapType(Map.class, String.class, String.class));
+				Map<String, String> responseList = jsonParseTool.jsonToMap(responseData, String.class);
 				logger.info(
 						"Translation exception, please inquire Baidu translation api documentation to info error_code:{}",
 						responseList);
