@@ -59,13 +59,13 @@ public class PlanFinalizer {
 		}
 		if (!context.isNeedSummary()) {
 			log.info("No need to generate summary, use code generate summary instead");
-			String summary = context.getPlan().getPlanExecutionStateStringFormat();
+			String summary = context.getPlan().getPlanExecutionStateStringFormat(false);
 			context.setResultSummary(summary);
 			recordPlanCompletion(context, summary);
 			return;
 		}
 		ExecutionPlan plan = context.getPlan();
-		String executionDetail = plan.getPlanExecutionStateStringFormat();
+		String executionDetail = plan.getPlanExecutionStateStringFormat(false);
 		try {
 			String userRequest = context.getUserRequest();
 
