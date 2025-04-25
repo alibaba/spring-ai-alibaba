@@ -22,7 +22,7 @@ import com.alibaba.cloud.ai.mcp.nacos.model.McpToolsInfo;
 import com.alibaba.cloud.ai.mcp.nacos.model.RemoteServerConfigInfo;
 import com.alibaba.cloud.ai.mcp.nacos.model.ServiceRefInfo;
 import com.alibaba.cloud.ai.mcp.nacos.model.ToolMetaInfo;
-import com.alibaba.cloud.ai.mcp.nacos.common.utils.JsonUtils;
+import com.alibaba.cloud.ai.mcp.nacos.utils.JsonUtils;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.config.listener.Listener;

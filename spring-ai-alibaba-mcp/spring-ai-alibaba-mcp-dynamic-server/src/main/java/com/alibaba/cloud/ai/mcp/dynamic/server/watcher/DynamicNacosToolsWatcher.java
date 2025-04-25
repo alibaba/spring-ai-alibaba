@@ -20,7 +20,6 @@ import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefini
 import com.alibaba.cloud.ai.mcp.dynamic.server.provider.DynamicMcpToolsProvider;
 import com.alibaba.cloud.ai.mcp.dynamic.server.tools.DynamicNacosToolsInfo;
 import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpRegistryProperties;
-import com.alibaba.cloud.ai.mcp.nacos.common.utils.JsonUtils;
 import com.alibaba.nacos.api.config.ConfigChangeEvent;
 import com.alibaba.nacos.api.config.ConfigChangeItem;
 import com.alibaba.nacos.api.config.ConfigService;
@@ -33,6 +32,7 @@ import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.alibaba.nacos.api.naming.pojo.ListView;
 import com.alibaba.nacos.client.config.listener.impl.AbstractConfigChangeListener;
 import com.alibaba.nacos.common.utils.CollectionUtils;
+import com.alibaba.nacos.common.utils.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -183,7 +183,7 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 			}
 
 			// 解析工具配置
-			DynamicNacosToolsInfo toolsInfo = JsonUtils.deserialize(toolConfig, DynamicNacosToolsInfo.class);
+			DynamicNacosToolsInfo toolsInfo = JacksonUtils.toObj(toolConfig, DynamicNacosToolsInfo.class);
 			List<DynamicNacosToolDefinition> toolsInNacos = toolsInfo.getTools();
 
 			if (CollectionUtils.isEmpty(toolsInNacos)) {
