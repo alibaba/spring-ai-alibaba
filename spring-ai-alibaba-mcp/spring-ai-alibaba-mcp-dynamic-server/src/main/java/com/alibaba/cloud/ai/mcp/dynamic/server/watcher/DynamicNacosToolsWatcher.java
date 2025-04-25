@@ -176,8 +176,14 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 			List<Instance> instances = namingService.getAllInstances(serviceName,
 					nacosMcpRegistryProperties.getServiceGroup());
 
-			// 如果没有实例或配置为空，移除所有相关工具
-			if (CollectionUtils.isEmpty(instances) || toolConfig == null) {
+			// 检查是否有健康且启用的实例
+			boolean hasHealthyEnabledInstance = instances.stream()
+				.anyMatch(instance -> instance.isHealthy() && instance.isEnabled());
+
+			// 如果没有实例、没有健康且启用的实例或配置为空，移除所有相关工具
+			if (CollectionUtils.isEmpty(instances) || !hasHealthyEnabledInstance || toolConfig == null) {
+				logger.info("Service {} has no healthy and enabled instances or no tool config, removing all tools",
+						serviceName);
 				removeServiceTools(serviceName);
 				return;
 			}
