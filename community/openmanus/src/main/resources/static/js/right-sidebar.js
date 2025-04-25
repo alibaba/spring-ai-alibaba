@@ -55,7 +55,10 @@ const RightSidebar = (() => {
         if (planData.steps && planData.steps.length > 0) {
             const totalSteps = planData.steps.length;
             const currentStep = planData.currentStepIndex + 1;
-            executionProgressElement.innerHTML = `${currentStep} / ${totalSteps} <span class="icon-up-arrow"></span>`;
+            const progressElement = RightSidebar.executionProgressElement || executionProgressElement;
+            if (progressElement) {
+                progressElement.innerHTML = `${currentStep} / ${totalSteps} <span class="icon-up-arrow"></span>`;
+            }
         }
     };
     
@@ -116,8 +119,15 @@ const RightSidebar = (() => {
         
         // 如果没有计划数据或步骤不存在，则显示错误信息
         if (!planData || !planData.steps || stepIndex >= planData.steps.length) {
-            sidebarContent.innerHTML = '<div class="no-selection-message"><p>无法获取步骤详情</p></div>';
-            executionStatusElement.textContent = '步骤数据不可用';
+            const contentElement = RightSidebar.sidebarContent || sidebarContent;
+            if (contentElement) {
+                contentElement.innerHTML = '<div class="no-selection-message"><p>无法获取步骤详情</p></div>';
+            }
+            
+            const statusElement = RightSidebar.executionStatusElement || executionStatusElement;
+            if (statusElement) {
+                statusElement.textContent = '步骤数据不可用';
+            }
             return;
         }
         
@@ -133,18 +143,28 @@ const RightSidebar = (() => {
         
         // 如果没有执行数据，显示等待信息
         if (!agentExecution) {
-            sidebarContent.innerHTML = `
-                <div class="step-info">
-                    <h3>${escapeHtml(step)}</h3>
-                    <div class="status-detail">等待执行...</div>
-                </div>
-            `;
-            executionStatusElement.textContent = '等待执行';
+            const contentElement = RightSidebar.sidebarContent || sidebarContent;
+            if (contentElement) {
+                contentElement.innerHTML = `
+                    <div class="step-info">
+                        <h3>${escapeHtml(step)}</h3>
+                        <div class="status-detail">等待执行...</div>
+                    </div>
+                `;
+            }
+            
+            const statusElement = RightSidebar.executionStatusElement || executionStatusElement;
+            if (statusElement) {
+                statusElement.textContent = '等待执行';
+            }
             return;
         }
         
         // 更新状态栏
-        executionStatusElement.textContent = agentExecution.status;
+        const statusElement = RightSidebar.executionStatusElement || executionStatusElement;
+        if (statusElement) {
+            statusElement.textContent = agentExecution.status;
+        }
         
         // 构建步骤详情HTML
         let detailsHTML = `
@@ -236,10 +256,17 @@ const RightSidebar = (() => {
         detailsHTML += '</div>'; // 结束 think-act-steps
         
         // 更新右侧边栏内容
-        sidebarContent.innerHTML = detailsHTML;
+        // 优先使用RightSidebar对象上的引用，支持适配器模式
+        const contentElement = RightSidebar.sidebarContent || sidebarContent;
+        if (contentElement) {
+            contentElement.innerHTML = detailsHTML;
+        } else {
+            console.error('无法更新右侧边栏内容：sidebarContent未定义');
+        }
         
         // 如果边栏是收起状态，展开边栏
-        if (sidebarElement.classList.contains('collapsed')) {
+        const sidebarEl = RightSidebar.sidebarElement || sidebarElement;
+        if (sidebarEl && sidebarEl.classList.contains('collapsed')) {
             document.getElementById('toggleRightSidebarBtn').click();
         }
     };
@@ -272,6 +299,10 @@ const RightSidebar = (() => {
     
     // 返回公开方法
     return {
-        init
+        init,
+        handlePlanUpdate,
+        updateDisplayedPlanProgress,
+        handleChatAreaClick,
+        showStepDetails
     };
 })();

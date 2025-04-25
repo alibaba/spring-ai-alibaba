@@ -16,6 +16,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.agent;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,13 +39,15 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
-import com.alibaba.cloud.ai.example.manus.config.startUp.ManusConfiguration.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
+import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
 
 public class DynamicAgent extends ReActAgent {
 
@@ -58,7 +61,7 @@ public class DynamicAgent extends ReActAgent {
 
 	private final String nextStepPrompt;
 
-	private Map<String, ToolCallBackContext> toolCallbackMap;
+	private ToolCallbackProvider toolCallbackProvider;
 
 	private final List<String> availableToolKeys;
 
@@ -88,6 +91,7 @@ public class DynamicAgent extends ReActAgent {
 	protected boolean think() {
 		AgentExecutionRecord planExecutionRecord = planExecutionRecorder.getCurrentAgentExecutionRecord(getPlanId());
 		thinkActRecord = new ThinkActRecord(planExecutionRecord.getId());
+		thinkActRecord.setActStartTime(LocalDateTime.now());
 		planExecutionRecorder.recordThinkActExecution(getPlanId(), planExecutionRecord.getId(), thinkActRecord);
 
 		try {
@@ -98,7 +102,7 @@ public class DynamicAgent extends ReActAgent {
 			Message nextStepMessage = getNextStepWithEnvMessage();
 			messages.add(nextStepMessage);
 			thinkActRecord.startThinking(messages.toString());// The `ToolCallAgent` class
-																// in the
+			// in the
 
 			log.debug("Messages prepared for the prompt: {}", messages);
 
@@ -107,7 +111,7 @@ public class DynamicAgent extends ReActAgent {
 			response = llmService.getAgentChatClient(getPlanId())
 				.getChatClient()
 				.prompt(userPrompt)
-				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getConversationId())
+				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getPlanId())
 					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
 				.tools(getToolCallList())
 				.call()
@@ -144,9 +148,8 @@ public class DynamicAgent extends ReActAgent {
 	}
 
 	@Override
-	protected String act() {
+	protected AgentExecResult act() {
 		try {
-			List<String> results = new ArrayList<>();
 			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
 
 			thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
@@ -157,28 +160,35 @@ public class DynamicAgent extends ReActAgent {
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
 				.get(toolExecutionResult.conversationHistory().size() - 1);
 
-			llmService.getAgentChatClient(getPlanId()).getMemory().add(getConversationId(), toolResponseMessage);
+			llmService.getAgentChatClient(getPlanId()).getMemory().add(getPlanId(), toolResponseMessage);
 			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
-			results.add(llmCallResponse);
 
-			String finalResult = String.join("\n\n", results);
 			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), llmCallResponse));
 
-			thinkActRecord.finishAction(finalResult, "SUCCESS");
-
-			return finalResult;
+			thinkActRecord.finishAction(llmCallResponse, "SUCCESS");
+			String toolcallName = toolCall.name();
+			AgentExecResult agentExecResult = null;
+			// 如果是终止工具，则返回完成状态
+			// 否则返回运行状态
+			if (TerminateTool.name.equals(toolcallName)) {
+				agentExecResult = new AgentExecResult(llmCallResponse, AgentState.COMPLETED);
+			}
+			else {
+				agentExecResult = new AgentExecResult(llmCallResponse, AgentState.IN_PROGRESS);
+			}
+			return agentExecResult;
 		}
 		catch (Exception e) {
 			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
 			ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse(toolCall.id(),
 					toolCall.name(), "Error: " + e.getMessage());
 			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(List.of(toolResponse), Map.of());
-			llmService.getAgentChatClient(getPlanId()).getMemory().add(getConversationId(), toolResponseMessage);
+			llmService.getAgentChatClient(getPlanId()).getMemory().add(getPlanId(), toolResponseMessage);
 			log.error(e.getMessage());
 
 			thinkActRecord.recordError(e.getMessage());
 
-			return "Error: " + e.getMessage();
+			return new AgentExecResult(e.getMessage(), AgentState.FAILED);
 		}
 	}
 
@@ -218,9 +228,10 @@ public class DynamicAgent extends ReActAgent {
 	@Override
 	public List<ToolCallback> getToolCallList() {
 		List<ToolCallback> toolCallbacks = new ArrayList<>();
+		Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContext();
 		for (String toolKey : availableToolKeys) {
-			if (toolCallbackMap.containsKey(toolKey)) {
-				ToolCallBackContext toolCallback = toolCallbackMap.get(toolKey);
+			if (toolCallBackContext.containsKey(toolKey)) {
+				ToolCallBackContext toolCallback = toolCallBackContext.get(toolKey);
 				if (toolCallback != null) {
 					toolCallbacks.add(toolCallback.getToolCallback());
 				}
@@ -240,12 +251,12 @@ public class DynamicAgent extends ReActAgent {
 		data.put(key, value);
 	}
 
-	public void setToolCallbackMap(Map<String, ToolCallBackContext> toolCallbackMap) {
-		this.toolCallbackMap = toolCallbackMap;
+	public void setToolCallbackProvider(ToolCallbackProvider toolCallbackProvider) {
+		this.toolCallbackProvider = toolCallbackProvider;
 	}
 
 	protected String collectEnvData(String toolCallName) {
-		ToolCallBackContext context = toolCallbackMap.get(toolCallName);
+		ToolCallBackContext context = toolCallbackProvider.getToolCallBackContext().get(toolCallName);
 		if (context != null) {
 			return context.getFunctionInstance().getCurrentToolStateString();
 		}

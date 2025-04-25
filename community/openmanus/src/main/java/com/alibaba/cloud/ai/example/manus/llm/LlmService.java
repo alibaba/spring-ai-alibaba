@@ -307,24 +307,20 @@ public class LlmService {
 
 	private final ChatModel chatModel;
 
-	private final ToolCallbackProvider toolCallbackProvider;
-
-	public LlmService(ChatModel chatModel, ToolCallbackProvider toolCallbackProvider) {
+	public LlmService(ChatModel chatModel) {
 		this.chatModel = chatModel;
-		this.toolCallbackProvider = toolCallbackProvider;
 		// 执行和总结规划，用相同的memory
 		this.planningChatClient = ChatClient.builder(chatModel)
 			.defaultSystem(PLANNING_SYSTEM_PROMPT)
 			.defaultAdvisors(new MessageChatMemoryAdvisor(planningMemory))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultTools(toolCallbackProvider)
+			.defaultOptions(OpenAiChatOptions.builder().temperature(0.1).build())
 			.build();
 
 		// // 每个agent执行过程中，用独立的memroy
 		// this.chatClient = ChatClient.builder(chatModel)
 		// .defaultAdvisors(new MessageChatMemoryAdvisor(memory))
 		// .defaultAdvisors(new SimpleLoggerAdvisor())
-		// .defaultTools(toolCallbackProvider)
 		// .defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 		// .build();
 
@@ -362,8 +358,8 @@ public class LlmService {
 			ChatClient agentChatClient = ChatClient.builder(chatModel)
 				.defaultAdvisors(new MessageChatMemoryAdvisor(agentMemory))
 				.defaultAdvisors(new SimpleLoggerAdvisor())
-				.defaultTools(toolCallbackProvider)
-				.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
+				.defaultOptions(
+						OpenAiChatOptions.builder().internalToolExecutionEnabled(false).temperature(0.1).build())
 				.build();
 			return new AgentChatClientWrapper(agentChatClient, agentMemory);
 		});
