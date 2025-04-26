@@ -21,10 +21,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -36,43 +37,52 @@ public class ListOperatorNode<T extends ListOperatorNode.ListElement> implements
 
 	private static final Logger log = LoggerFactory.getLogger(ListOperatorNode.class);
 
-	private final String inputTextKey; // 默认“input”
+	// default value "input"
+	private final String inputTextKey;
 
-	private final String outputTextKey; // 默认“output”
+	// default value "output"
+	private final String outputTextKey;
 
-	// 过滤条件
+	// filter conditions
 	private final Predicate<T> filterChain;
 
-	// 排序条件
+	// sort conditions
 	private final Comparator<T> comparatorChain;
 
-	// 取前几个值
+	// limit value
 	private final Long limitNumber;
 
+	// Generic concrete class, JSON deserialization usage
+	private final Class<T> type;
+
 	private ListOperatorNode(String inputTextKey, String outputTextKey, Predicate<T> filterChain,
-			Comparator<T> comparatorChain, Long limitNumber) {
+			Comparator<T> comparatorChain, Long limitNumber, Class<T> type) {
 		this.inputTextKey = inputTextKey;
 		this.outputTextKey = outputTextKey;
 		this.filterChain = filterChain;
 		this.comparatorChain = comparatorChain;
 		this.limitNumber = limitNumber;
+		this.type = type;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState t) throws Exception {
 		ObjectMapper objectMapper = new ObjectMapper();
 		try {
+			// Here we specify that the object obtained by inputTextKey is a JSON string
+			// conforming to Array[String], Array[Int], or Array[FileElement].
 			String inputJsonString = (String) t.value(inputTextKey).orElse(null);
 			if (inputJsonString == null) {
 				throw new RuntimeException("inputJsonString is null");
 			}
-			List<T> listElements = objectMapper.readValue(inputJsonString, new TypeReference<List<T>>() {
-			})
-				.stream()
+			JavaType javaType = objectMapper.getTypeFactory().constructParametricType(List.class, type);
+			List<T> inputList = objectMapper.readValue(inputJsonString, javaType);
+			List<T> listElements = inputList.stream()
 				.filter(filterChain)
 				.sorted(comparatorChain)
 				.limit(limitNumber != null && limitNumber > 0 ? limitNumber : Long.MAX_VALUE)
 				.toList();
+			// We will convert the processed result back into a JSON string.
 			return Map.of(outputTextKey, objectMapper.writeValueAsString(listElements));
 		}
 		catch (Exception e) {
@@ -81,10 +91,13 @@ public class ListOperatorNode<T extends ListOperatorNode.ListElement> implements
 		}
 	}
 
+	// We specify that the elements of the list object operated on by ListOperatorNode
+	// must be subclasses of ListElement.
 	public interface ListElement {
 
 	}
 
+	// this is the JSON numeric element wrapper supports both Integer and Double
 	public static class NumberElement implements ListElement {
 
 		Number value;
@@ -104,7 +117,8 @@ public class ListOperatorNode<T extends ListOperatorNode.ListElement> implements
 			return value.toString();
 		}
 
-		// 一些预定义的Predicate和Comparator，可以供用户直接使用
+		// Some predefined Predicate and Comparator implementations are provided for
+		// direct use by users.
 		public boolean isInteger() {
 			return value instanceof Integer;
 		}
@@ -147,6 +161,7 @@ public class ListOperatorNode<T extends ListOperatorNode.ListElement> implements
 
 	}
 
+	// this is the JSON numeric element wrapper supports String
 	public static class StringElement implements ListElement {
 
 		String value;
@@ -166,8 +181,52 @@ public class ListOperatorNode<T extends ListOperatorNode.ListElement> implements
 			return value;
 		}
 
+		// Some predefined Predicate and Comparator implementations are provided for
+		// direct use by users.
+		public boolean noEqual(String other) {
+			return !value.equals(other);
+		}
+
+		public boolean equal(String other) {
+			return value.equals(other);
+		}
+
+		public boolean startWith(String prefix) {
+			return value.startsWith(prefix);
+		}
+
+		public boolean endWith(String suffix) {
+			return value.endsWith(suffix);
+		}
+
+		public boolean contains(String sub) {
+			return value.contains(sub);
+		}
+
+		public boolean hasText() {
+			return StringUtils.hasText(value);
+		}
+
+		public boolean lengthNoMoreThan(Integer len) {
+			return value.length() <= len;
+		}
+
+		public boolean lengthNoLessThan(Integer len) {
+			return value.length() >= len;
+		}
+
+		public int compareTo(StringElement other) {
+			return value.compareTo(other.value);
+		}
+
+		public int compareToReverse(StringElement other) {
+			return other.value.compareTo(this.value);
+		}
+
 	}
 
+	// Define the JSON fields for the FileElement object. The content of the fields may be
+	// modified as needed.
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public static class FileElement implements ListElement {
 
@@ -241,7 +300,8 @@ public class ListOperatorNode<T extends ListOperatorNode.ListElement> implements
 					+ ", transferMethod='" + transferMethod + '\'' + '}';
 		}
 
-		// 一些预定义的Predicate和Comparator，可以供用户直接使用
+		// Some predefined Predicate and Comparator implementations are provided for
+		// direct use by users.
 		public boolean includeExtension(String... extensions) {
 			for (String extension : extensions) {
 				if (this.extension.equals(extension)) {
@@ -344,6 +404,8 @@ public class ListOperatorNode<T extends ListOperatorNode.ListElement> implements
 
 		private Long limitNumber;
 
+		private Class<T> type;
+
 		private Builder() {
 			inputTextKey = "input";
 			outputTextKey = "output";
@@ -377,10 +439,25 @@ public class ListOperatorNode<T extends ListOperatorNode.ListElement> implements
 			return this;
 		}
 
+		public Builder<T> limitNumber(Integer limitNumber) {
+			this.limitNumber = Long.valueOf(limitNumber);
+			return this;
+		}
+
+		public Builder<T> elementClassType(Class<T> type) {
+			this.type = type;
+			return this;
+		}
+
 		public ListOperatorNode<T> build() {
+			if (type == null) {
+				throw new IllegalArgumentException("ElementClassType is required");
+			}
+			// Merge List<Predicate> and List<Comparator> into a single Predicate and a
+			// single Comparator, respectively.
 			return new ListOperatorNode<T>(inputTextKey, outputTextKey,
 					filters.stream().reduce(Predicate::and).orElse(t -> true),
-					comparators.stream().reduce(Comparator::thenComparing).orElse((a, b) -> 0), limitNumber);
+					comparators.stream().reduce(Comparator::thenComparing).orElse((a, b) -> 0), limitNumber, type);
 		}
 
 	}
