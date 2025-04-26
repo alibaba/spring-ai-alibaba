@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -27,7 +42,9 @@ import static org.junit.jupiter.api.Assertions.*;
 public class HttpNodeTest {
 
 	private MockWebServer mockWebServer;
+
 	private WebClient webClient;
+
 	private String baseUrl;
 
 	@BeforeEach
@@ -45,17 +62,16 @@ public class HttpNodeTest {
 
 	@Test
 	void testHttpGetSuccess() throws Exception {
-		mockWebServer.enqueue(new MockResponse()
-				.setBody("{\"message\":\"success\"}")
-				.setHeader(HttpHeaders.CONTENT_TYPE, "application/json"));
+		mockWebServer.enqueue(new MockResponse().setBody("{\"message\":\"success\"}")
+			.setHeader(HttpHeaders.CONTENT_TYPE, "application/json"));
 
 		String url = mockWebServer.url("/test").toString();
 		HttpNode node = HttpNode.builder()
-				.webClient(webClient)
-				.method(HttpMethod.GET)
-				.url(url)
-				.body(new HttpRequestNodeBody())
-				.build();
+			.webClient(webClient)
+			.method(HttpMethod.GET)
+			.url(url)
+			.body(new HttpRequestNodeBody())
+			.build();
 
 		OverAllState state = new OverAllState();
 		Map<String, Object> result = node.apply(state);
@@ -76,17 +92,15 @@ public class HttpNodeTest {
 
 		String url = baseUrl + "${pathVar}";
 		HttpNode node = HttpNode.builder()
-				.webClient(webClient)
-				.method(HttpMethod.GET)
-				.url(url)
-				.header("X-Header", "${headerVal}")
-				.queryParam("param", "${queryVal}")
-				.build();
+			.webClient(webClient)
+			.method(HttpMethod.GET)
+			.url(url)
+			.header("X-Header", "${headerVal}")
+			.queryParam("param", "${queryVal}")
+			.build();
 
-		OverAllState state = new OverAllState(Map.of(
-				"pathVar", "users",
-				"headerVal", "test-header",
-				"queryVal", "test-query"));
+		OverAllState state = new OverAllState(
+				Map.of("pathVar", "users", "headerVal", "test-header", "queryVal", "test-query"));
 
 		node.apply(state);
 
@@ -103,11 +117,11 @@ public class HttpNodeTest {
 
 		String url = mockWebServer.url("/echo").toString();
 		HttpNode node = HttpNode.builder()
-				.webClient(webClient)
-				.method(HttpMethod.POST)
-				.url(url)
-				.body(HttpRequestNodeBody.from("Hello ${name}"))
-				.build();
+			.webClient(webClient)
+			.method(HttpMethod.POST)
+			.url(url)
+			.body(HttpRequestNodeBody.from("Hello ${name}"))
+			.build();
 
 		OverAllState state = new OverAllState(Map.of("name", "Alice"));
 		node.apply(state);
@@ -135,12 +149,7 @@ public class HttpNodeTest {
 		formBody.setData(List.of(d1, d2));
 
 		String url = mockWebServer.url("/form").toString();
-		HttpNode node = HttpNode.builder()
-				.webClient(webClient)
-				.method(HttpMethod.POST)
-				.url(url)
-				.body(formBody)
-				.build();
+		HttpNode node = HttpNode.builder().webClient(webClient).method(HttpMethod.POST).url(url).body(formBody).build();
 
 		OverAllState state = new OverAllState(Map.of("val1", "v1", "val2", "v2"));
 		node.apply(state);
@@ -148,22 +157,16 @@ public class HttpNodeTest {
 		RecordedRequest request = mockWebServer.takeRequest();
 
 		assertEquals("field1=v1&field2=v2", request.getBody().readUtf8());
-		assertEquals("application/x-www-form-urlencoded;charset=UTF-8",
-				request.getHeader("Content-Type"));
+		assertEquals("application/x-www-form-urlencoded;charset=UTF-8", request.getHeader("Content-Type"));
 	}
 
 	@Test
 	void testPlainTextResponse() throws Exception {
-		mockWebServer.enqueue(new MockResponse()
-				.setBody("plain response")
-				.setHeader(HttpHeaders.CONTENT_TYPE, "text/plain"));
+		mockWebServer
+			.enqueue(new MockResponse().setBody("plain response").setHeader(HttpHeaders.CONTENT_TYPE, "text/plain"));
 
 		String url = mockWebServer.url("/plain").toString();
-		HttpNode node = HttpNode.builder()
-				.webClient(webClient)
-				.method(HttpMethod.GET)
-				.url(url)
-				.build();
+		HttpNode node = HttpNode.builder().webClient(webClient).method(HttpMethod.GET).url(url).build();
 
 		Map<String, Object> result = node.apply(new OverAllState());
 		Map<String, Object> messages = (Map<String, Object>) result.get("messages");
@@ -174,18 +177,17 @@ public class HttpNodeTest {
 
 	@Test
 	void testNon2xxResponse() throws Exception {
-		mockWebServer.enqueue(new MockResponse()
-				.setResponseCode(404)
-				.setBody("{\"error\":\"Not Found\"}")
-				.setHeader(HttpHeaders.CONTENT_TYPE, "application/json"));
+		mockWebServer.enqueue(new MockResponse().setResponseCode(404)
+			.setBody("{\"error\":\"Not Found\"}")
+			.setHeader(HttpHeaders.CONTENT_TYPE, "application/json"));
 
 		String url = mockWebServer.url("/notfound").toString();
 		HttpNode node = HttpNode.builder()
-				.webClient(webClient)
-				.method(HttpMethod.GET)
-				.url(url)
-				.retryConfig(new RetryConfig(0, 0, false))
-				.build();
+			.webClient(webClient)
+			.method(HttpMethod.GET)
+			.url(url)
+			.retryConfig(new RetryConfig(0, 0, false))
+			.build();
 
 		Map<String, Object> result = node.apply(new OverAllState());
 		Map<String, Object> messages = (Map<String, Object>) result.get("messages");
@@ -200,18 +202,14 @@ public class HttpNodeTest {
 		InputStream is = getClass().getResourceAsStream("/test.png");
 		assertNotNull(is, "测试资源 test.png 未找到，请将文件放在 src/test/resources/ 根目录下");
 		byte[] fileBytes = is.readAllBytes();
-		MockResponse mockResponse = new MockResponse()
-				.setResponseCode(200)
-				.addHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"test.png\"")
-				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
-				.setBody(new okio.Buffer().write(fileBytes));
+		MockResponse mockResponse = new MockResponse().setResponseCode(200)
+			.addHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"test.png\"")
+			.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
+			.setBody(new okio.Buffer().write(fileBytes));
 		mockWebServer.enqueue(mockResponse);
 
 		String url = mockWebServer.url("/test.png").toString();
-		HttpNode node = HttpNode.builder()
-				.webClient(webClient)
-				.url(url)
-				.build();
+		HttpNode node = HttpNode.builder().webClient(webClient).url(url).build();
 
 		Map<String, Object> result = node.apply(new OverAllState());
 		Map<String, Object> messages = (Map<String, Object>) result.get("messages");
@@ -237,11 +235,11 @@ public class HttpNodeTest {
 		AuthConfig authConfig = AuthConfig.basic("user", "pass");
 
 		HttpNode node = HttpNode.builder()
-				.webClient(webClient)
-				.method(HttpMethod.GET)
-				.url(url)
-				.auth(authConfig)
-				.build();
+			.webClient(webClient)
+			.method(HttpMethod.GET)
+			.url(url)
+			.auth(authConfig)
+			.build();
 
 		node.apply(new OverAllState());
 
@@ -259,11 +257,11 @@ public class HttpNodeTest {
 
 		String url = mockWebServer.url("/retry-fail").toString();
 		HttpNode node = HttpNode.builder()
-				.webClient(webClient)
-				.method(HttpMethod.GET)
-				.url(url)
-				.retryConfig(new RetryConfig(3, 1000, true))
-				.build();
+			.webClient(webClient)
+			.method(HttpMethod.GET)
+			.url(url)
+			.retryConfig(new RetryConfig(3, 1000, true))
+			.build();
 
 		Map<String, Object> result = assertDoesNotThrow(() -> node.apply(new OverAllState()));
 		Map<String, Object> messages = (Map<String, Object>) result.get("messages");
@@ -271,4 +269,5 @@ public class HttpNodeTest {
 
 		assertEquals(3, mockWebServer.getRequestCount());
 	}
+
 }
