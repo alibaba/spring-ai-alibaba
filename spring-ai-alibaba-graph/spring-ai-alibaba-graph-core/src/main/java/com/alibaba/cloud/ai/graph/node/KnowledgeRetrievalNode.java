@@ -93,7 +93,7 @@ public class KnowledgeRetrievalNode implements NodeAction {
 			newUserPrompt.append("Document: ").append(document.getFormattedContent()).append("\n");
 		}
 		Map<String, Object> updatedState = new HashMap<>();
-		updatedState.put("userPrompt", newUserPrompt);
+		updatedState.put("user_prompt", newUserPrompt);
 		if (StringUtils.hasLength(this.userPromptKey)) {
 			updatedState.put(this.userPromptKey, newUserPrompt);
 		}
