@@ -98,15 +98,15 @@ public class HttpNode implements NodeAction {
 			URI finalUri = uriBuilder.build().toUri();
 
 			WebClient.RequestBodySpec requestSpec = webClient.method(method)
-					.uri(finalUri)
-					.headers(headers -> headers.setAll(finalHeaders));
+				.uri(finalUri)
+				.headers(headers -> headers.setAll(finalHeaders));
 
 			applyAuth(requestSpec);
 			initBody(body, requestSpec, state);
 
 			Mono<ResponseEntity<byte[]>> responseMono = requestSpec
-					.exchangeToMono((ClientResponse resp) -> resp.toEntity(byte[].class))
-					.retryWhen(Retry.backoff(retryConfig.maxRetries, Duration.ofMillis(retryConfig.maxRetryInterval)));
+				.exchangeToMono((ClientResponse resp) -> resp.toEntity(byte[].class))
+				.retryWhen(Retry.backoff(retryConfig.maxRetries, Duration.ofMillis(retryConfig.maxRetryInterval)));
 			ResponseEntity<byte[]> responseEntity = responseMono.block();
 			Map<String, Object> httpResponse = processResponse(responseEntity, state);
 
@@ -143,7 +143,8 @@ public class HttpNode implements NodeAction {
 		return result;
 	}
 
-	private void initBody(HttpRequestNodeBody body, WebClient.RequestBodySpec requestSpec, OverAllState state) throws HttpNodeException {
+	private void initBody(HttpRequestNodeBody body, WebClient.RequestBodySpec requestSpec, OverAllState state)
+			throws HttpNodeException {
 		switch (body.getType()) {
 			case NONE:
 				break;
@@ -164,7 +165,8 @@ public class HttpNode implements NodeAction {
 				Object jsonObject;
 				try {
 					jsonObject = gson.fromJson(jsonTemplate, Object.class);
-				} catch (JsonSyntaxException e) {
+				}
+				catch (JsonSyntaxException e) {
 					throw new HttpNodeException("Failed to parse JSON body: " + e.getMessage());
 				}
 				requestSpec.headers(h -> h.setContentType(MediaType.APPLICATION_JSON));
@@ -173,7 +175,7 @@ public class HttpNode implements NodeAction {
 			case X_WWW_FORM_URLENCODED:
 				MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
 				for (BodyData item : body.getData()) {
-					String key   = replaceVariables(item.getKey(), state);
+					String key = replaceVariables(item.getKey(), state);
 					String value = replaceVariables(item.getValue(), state);
 					form.add(key, value);
 				}
@@ -192,7 +194,8 @@ public class HttpNode implements NodeAction {
 							}
 						};
 						multipart.add(key, resource);
-					} else {
+					}
+					else {
 						String value = replaceVariables(item.getValue(), state);
 						multipart.add(key, value);
 					}
@@ -212,8 +215,7 @@ public class HttpNode implements NodeAction {
 					}
 				};
 				MediaType mediaType = StringUtils.hasText(fileItem.getMimeType())
-						? MediaType.parseMediaType(fileItem.getMimeType())
-						: MediaType.APPLICATION_OCTET_STREAM;
+						? MediaType.parseMediaType(fileItem.getMimeType()) : MediaType.APPLICATION_OCTET_STREAM;
 				requestSpec.headers(h -> h.setContentType(mediaType));
 				requestSpec.body(BodyInserters.fromResource(resource));
 				break;
@@ -246,20 +248,22 @@ public class HttpNode implements NodeAction {
 		if (isFileResponse(responseEntity)) {
 			String filename = extractFilename(responseEntity.getHeaders());
 			String mimeType = Optional.ofNullable(responseEntity.getHeaders().getContentType())
-					.map(MediaType::toString)
-					.orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);
+				.map(MediaType::toString)
+				.orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);
 
-			InMemoryFileStorage.FileRecord record =
-					InMemoryFileStorage.save(body, mimeType, filename);
+			InMemoryFileStorage.FileRecord record = InMemoryFileStorage.save(body, mimeType, filename);
 
 			result.put("files", Collections.singletonList(record.getId()));
-		} else {
+		}
+		else {
 			String text = new String(body, StandardCharsets.UTF_8);
 			try {
-				Type mapType = new TypeToken<Map<String, Object>>() {}.getType();
+				Type mapType = new TypeToken<Map<String, Object>>() {
+				}.getType();
 				Map<String, Object> map = new Gson().fromJson(text, mapType);
 				result.put("body", map);
-			} catch (JsonSyntaxException ex) {
+			}
+			catch (JsonSyntaxException ex) {
 				result.put("body", text);
 			}
 		}
@@ -276,12 +280,9 @@ public class HttpNode implements NodeAction {
 		return UUID.randomUUID().toString();
 	}
 
-
 	private boolean isFileResponse(ResponseEntity<?> response) {
 		HttpHeaders headers = response.getHeaders();
-		String contentType = Optional.ofNullable(headers.getContentType())
-				.map(MediaType::toString)
-				.orElse("");
+		String contentType = Optional.ofNullable(headers.getContentType()).map(MediaType::toString).orElse("");
 		if (headers.containsKey(HttpHeaders.CONTENT_DISPOSITION)) {
 			String cd = headers.getFirst(HttpHeaders.CONTENT_DISPOSITION);
 			if (cd != null && (cd.startsWith("attachment") || cd.contains("filename="))) {
@@ -301,15 +302,13 @@ public class HttpNode implements NodeAction {
 			try {
 				new String((byte[]) Objects.requireNonNull(response.getBody()), StandardCharsets.UTF_8);
 				return false;
-			} catch (Exception ex) {
+			}
+			catch (Exception ex) {
 				return true;
 			}
 		}
-		return contentType.startsWith("image/")
-				|| contentType.startsWith("audio/")
-				|| contentType.startsWith("video/");
+		return contentType.startsWith("image/") || contentType.startsWith("audio/") || contentType.startsWith("video/");
 	}
-
 
 	public static class HttpRequestNodeBody {
 
@@ -377,8 +376,7 @@ public class HttpNode implements NodeAction {
 
 		private AuthConfig authConfig;
 
-		private RetryConfig retryConfig = new RetryConfig(
-				DEFAULT_MAX_RETRIES, DEFAULT_MAX_RETRY_INTERVAL, true);
+		private RetryConfig retryConfig = new RetryConfig(DEFAULT_MAX_RETRIES, DEFAULT_MAX_RETRY_INTERVAL, true);
 
 		private String outputKey;
 
