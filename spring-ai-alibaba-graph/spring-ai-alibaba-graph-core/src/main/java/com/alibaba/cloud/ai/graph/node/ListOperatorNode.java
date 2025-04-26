@@ -104,6 +104,47 @@ public class ListOperatorNode<T extends ListOperatorNode.ListElement> implements
 			return value.toString();
 		}
 
+		// 一些预定义的Predicate和Comparator，可以供用户直接使用
+		public boolean isInteger() {
+			return value instanceof Integer;
+		}
+
+		public boolean isDouble() {
+			return value instanceof Double;
+		}
+
+		public boolean greater(Number val) {
+			return Double.compare(value.doubleValue(), val.doubleValue()) > 0;
+		}
+
+		public boolean less(Number val) {
+			return Double.compare(value.doubleValue(), val.doubleValue()) < 0;
+		}
+
+		public boolean noGreater(Number val) {
+			return Double.compare(value.doubleValue(), val.doubleValue()) <= 0;
+		}
+
+		public boolean noLess(Number val) {
+			return Double.compare(value.doubleValue(), val.doubleValue()) >= 0;
+		}
+
+		public boolean equal(Number val) {
+			return Double.compare(value.doubleValue(), val.doubleValue()) == 0;
+		}
+
+		public boolean noEqual(Number val) {
+			return Double.compare(value.doubleValue(), val.doubleValue()) != 0;
+		}
+
+		public int compareTo(NumberElement other) {
+			return Double.compare(this.value.doubleValue(), other.value.doubleValue());
+		}
+
+		public int compareToReverse(NumberElement other) {
+			return Double.compare(other.value.doubleValue(), this.value.doubleValue());
+		}
+
 	}
 
 	public static class StringElement implements ListElement {
@@ -200,112 +241,93 @@ public class ListOperatorNode<T extends ListOperatorNode.ListElement> implements
 					+ ", transferMethod='" + transferMethod + '\'' + '}';
 		}
 
-	}
-
-	public interface ListElementFilterEnum<T extends ListElement> {
-
-		Predicate<T> getFilter();
-
-	}
-
-	public interface ListElementComparatorEnum<T extends ListElement> {
-
-		Comparator<T> getComparator();
-
-	}
-
-	public enum StringElementFilterEnum implements ListElementFilterEnum<StringElement> {
-
-		;
-		private final Predicate<StringElement> filter;
-
-		StringElementFilterEnum(Predicate<StringElement> filter) {
-			this.filter = filter;
+		// 一些预定义的Predicate和Comparator，可以供用户直接使用
+		public boolean includeExtension(String... extensions) {
+			for (String extension : extensions) {
+				if (this.extension.equals(extension)) {
+					return true;
+				}
+			}
+			return false;
 		}
 
-		@Override
-		public Predicate<StringElement> getFilter() {
-			return this.filter;
+		public boolean excludeExtension(String... extensions) {
+			for (String extension : extensions) {
+				if (this.extension.equals(extension)) {
+					return false;
+				}
+			}
+			return true;
 		}
 
-	}
-
-	public enum NumberElementFilterEnum implements ListElementFilterEnum<NumberElement> {
-
-		;
-		private final Predicate<NumberElement> filter;
-
-		NumberElementFilterEnum(Predicate<NumberElement> filter) {
-			this.filter = filter;
+		public boolean includeType(String... types) {
+			for (String type : types) {
+				if (this.type.equals(type)) {
+					return true;
+				}
+			}
+			return false;
 		}
 
-		@Override
-		public Predicate<NumberElement> getFilter() {
-			return this.filter;
+		public boolean excludeType(String... types) {
+			for (String type : types) {
+				if (this.type.equals(type)) {
+					return false;
+				}
+			}
+			return true;
 		}
 
-	}
-
-	public enum FileElementFilterEnum implements ListElementFilterEnum<FileElement> {
-
-		;
-		private final Predicate<FileElement> filter;
-
-		FileElementFilterEnum(Predicate<FileElement> filter) {
-			this.filter = filter;
+		public boolean sizeNoBiggerThan(Integer sizeLimit) {
+			return this.size.compareTo(sizeLimit) <= 0;
 		}
 
-		@Override
-		public Predicate<FileElement> getFilter() {
-			return this.filter;
+		public boolean sizeNoLessThan(Integer sizeLimit) {
+			return this.size.compareTo(sizeLimit) >= 0;
 		}
 
-	}
-
-	public enum StringElementComparatorEnum implements ListElementComparatorEnum<StringElement> {
-
-		;
-		private final Comparator<StringElement> comparator;
-
-		StringElementComparatorEnum(Comparator<StringElement> comparator) {
-			this.comparator = comparator;
+		public boolean nameStartWith(String prefix) {
+			return this.name.startsWith(prefix);
 		}
 
-		@Override
-		public Comparator<StringElement> getComparator() {
-			return this.comparator;
+		public boolean nameEndWith(String suffix) {
+			return this.name.endsWith(suffix);
 		}
 
-	}
-
-	public enum NumberElementComparatorEnum implements ListElementComparatorEnum<NumberElement> {
-
-		;
-		private final Comparator<NumberElement> comparator;
-
-		NumberElementComparatorEnum(Comparator<NumberElement> comparator) {
-			this.comparator = comparator;
+		public boolean nameContains(String sub) {
+			return this.name.contains(sub);
 		}
 
-		@Override
-		public Comparator<NumberElement> getComparator() {
-			return this.comparator;
+		public int compareType(FileElement other) {
+			return this.type.compareTo(other.type);
 		}
 
-	}
-
-	public enum FileElementComparatorEnum implements ListElementComparatorEnum<FileElement> {
-
-		;
-		private final Comparator<FileElement> comparator;
-
-		FileElementComparatorEnum(Comparator<FileElement> comparator) {
-			this.comparator = comparator;
+		public int compareTypeReverse(FileElement other) {
+			return other.type.compareTo(this.type);
 		}
 
-		@Override
-		public Comparator<FileElement> getComparator() {
-			return this.comparator;
+		public int compareSize(FileElement other) {
+			return this.size.compareTo(other.size);
+		}
+
+		public int compareSizeReverse(FileElement other) {
+			return other.type.compareTo(this.type);
+		}
+
+		public int compareName(FileElement other) {
+			return this.name.compareTo(other.name);
+		}
+
+		public int compareNameReverse(FileElement other) {
+			return other.name.compareTo(this.name);
+		}
+
+		public int compareExtension(FileElement other) {
+			return this.extension.compareTo(other.extension);
+		}
+
+		public int compareExtensionReverse(FileElement other) {
+			return other.extension.compareTo(this.extension);
 		}
 
 	}
@@ -345,18 +367,8 @@ public class ListOperatorNode<T extends ListOperatorNode.ListElement> implements
 			return this;
 		}
 
-		public Builder<T> filter(ListElementFilterEnum<T> filterEnum) {
-			filters.add(filterEnum.getFilter());
-			return this;
-		}
-
 		public Builder<T> comparator(Comparator<T> comparator) {
 			comparators.add(comparator);
-			return this;
-		}
-
-		public Builder<T> comparator(ListElementComparatorEnum<T> comparatorEnum) {
-			comparators.add(comparatorEnum.getComparator());
 			return this;
 		}
 
