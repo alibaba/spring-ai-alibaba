@@ -42,7 +42,7 @@ public class KnowledgeRetrievalNode implements NodeAction {
 
 	private String enableRankerKey;
 
-	private Boolean enableRanker=false;
+	private Boolean enableRanker = false;
 
 	private String rerankModelKey;
 
@@ -129,7 +129,7 @@ public class KnowledgeRetrievalNode implements NodeAction {
 	}
 
 	private List<Document> ranking(Query query, List<Document> documents, DocumentRanker documentRanker) {
-		if (documents.size() == 1) {
+		if (documents.size() <= 1) {
 			return documents;
 		}
 		try {
