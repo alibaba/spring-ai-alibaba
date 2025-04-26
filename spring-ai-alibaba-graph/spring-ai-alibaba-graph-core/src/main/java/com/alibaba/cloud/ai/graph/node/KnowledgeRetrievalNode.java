@@ -178,11 +178,11 @@ public class KnowledgeRetrievalNode implements NodeAction {
 				if (Objects.nonNull(query) && StringUtils.hasText(query.text())) {
 					RerankRequest rerankRequest = new RerankRequest(query.text(), documents, rerankOptions);
 					RerankResponse rerankResp = rerankModel.call(rerankRequest);
-
+					Map<String, Document> docMap = documents.stream()
+						.collect(Collectors.toMap(Document::getId, Function.identity()));
 					rerankResp.getResults().forEach(res -> {
 						Document outputDocs = res.getOutput();
-						Map<String, Document> docMap = documents.stream()
-							.collect(Collectors.toMap(Document::getId, Function.identity()));
+
 						Document doc = docMap.get(outputDocs.getId());
 						if (doc != null)
 							reorderDocs.add(doc);
