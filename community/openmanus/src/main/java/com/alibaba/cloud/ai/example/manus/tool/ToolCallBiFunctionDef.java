@@ -27,10 +27,10 @@ public interface ToolCallBiFunctionDef extends BiFunction<String, ToolContext, T
 
 	/**
 	 * 获取工具组的名称
-	 * 
 	 * @return 返回工具的唯一标识名称
 	 */
 	String getServiceGroup();
+
 	/**
 	 * 获取工具的名称
 	 * @return 返回工具的唯一标识名称

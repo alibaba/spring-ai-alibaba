@@ -558,12 +558,10 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		return run(t);
 	}
 
-
 	@Override
 	public String getServiceGroup() {
 		return "default-service-group";
 	}
-
 
 	@Override
 	public String getName() {

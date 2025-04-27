@@ -155,5 +155,4 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 		return "default-service-group";
 	}
 
-
 }
