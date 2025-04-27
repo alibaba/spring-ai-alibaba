@@ -209,4 +209,9 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 		// do nothing
 	}
 
+	@Override
+	public String getServiceGroup() {
+		return "default-service-group";
+	}
+
 }

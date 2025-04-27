@@ -384,4 +384,10 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	// return textFileService.getFileState(planId);
 	// }
 
+	@Override
+	public String getServiceGroup() {
+		return "default-service-group";
+	}
+
+
 }

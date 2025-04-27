@@ -19,6 +19,8 @@ package com.alibaba.cloud.ai.example.manus.planning;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoader;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpTool;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
@@ -27,7 +29,6 @@ import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.planning.finalizer.PlanFinalizer;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.DocLoaderTool;
-import com.alibaba.cloud.ai.example.manus.tool.McpTool;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
 import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
@@ -168,8 +169,14 @@ public class PlanningFactory {
 		toolDefinitions.add(new TextFileOperator(CodeUtils.WORKING_DIR, textFileService));
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
-		for (ToolCallback toolCallback : mcpService.getFunctionCallbacks()) {
-			toolDefinitions.add(new McpTool(toolCallback));
+		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks();
+		for (McpServiceEntity toolCallback : functionCallbacks) {
+			String serviceGroup = toolCallback.getServiceGroup();
+			ToolCallback[] tCallbacks = toolCallback.getAsyncMcpToolCallbackProvider().getToolCallbacks();
+			for(ToolCallback tCallback : tCallbacks) {
+				// 这里的 serviceGroup 是工具的名称
+				toolDefinitions.add(new McpTool(tCallback, serviceGroup));
+			}
 		}
 
 		// 为每个工具创建 FunctionToolCallback
