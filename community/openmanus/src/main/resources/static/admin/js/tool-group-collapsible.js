@@ -53,8 +53,6 @@
             initializedHeaders.add(header);
         });
         
-        // 标记为已初始化
-        initialized = true;
     }
 
     // 初始化函数，同时支持直接调用和动态加载后调用

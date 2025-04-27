@@ -407,7 +407,7 @@ class AdminUI {
     /**
      * 显示工具选择对话框
      */
-    showToolSelectionDialog(availableTools, onSelect) {
+    showToolSelectionDialog(availableTools, currentTools, onSelect) {
         // 创建遮罩层
         const overlay = document.createElement('div');
         overlay.className = 'dialog-overlay';
@@ -435,8 +435,14 @@ class AdminUI {
         const toolListContainer = dialog.querySelector('.tool-list-container');
         const searchInput = dialog.querySelector('.tool-search');
         
-        // 复制工具列表以便于排序
+        // 复制工具列表以便于排序和处理
         const toolsCopy = [...availableTools];
+        
+        // 为每个工具添加isSelected属性，标记其是否已被当前Agent选择
+        toolsCopy.forEach(tool => {
+            // 默认未选中
+            tool.isSelected = currentTools.includes(tool.key);
+        });
         
         // 按服务组对工具进行分组
         const groupedTools = this.groupToolsByServiceGroup(toolsCopy);
@@ -454,7 +460,7 @@ class AdminUI {
                     sortedTools.sort((a, b) => (a.name || a.key).localeCompare(b.name || b.key));
                     break;
                 case 'enabled':
-                    sortedTools.sort((a, b) => (b.enabled ? 1 : 0) - (a.enabled ? 1 : 0));
+                    sortedTools.sort((a, b) => (b.isSelected ? 1 : 0) - (a.isSelected ? 1 : 0));
                     break;
                 case 'group':
                 default:
@@ -503,7 +509,7 @@ class AdminUI {
             const tool = toolsCopy.find(t => t.key === toolKey);
             
             if (tool) {
-                tool.enabled = e.target.checked;
+                tool.isSelected = e.target.checked;
             }
         };
         
@@ -520,7 +526,7 @@ class AdminUI {
             // 更新该组中所有工具的启用状态
             toolsCopy.forEach(tool => {
                 if ((tool.serviceGroup || '未分组') === groupName) {
-                    tool.enabled = isEnabled;
+                    tool.isSelected = isEnabled;
                 }
             });
             
@@ -671,11 +677,7 @@ class AdminUI {
                         <option value="enabled">按启用状态排序</option>
                     </select>
                 </div>
-                <div class="filter-options">
-                    <label class="filter-label">
-                        <input type="checkbox" class="show-enabled-only"> 仅显示已启用
-                    </label>
-                </div>
+               
             </div>
         `;
         
@@ -692,7 +694,7 @@ class AdminUI {
         // 遍历每个组
         Object.keys(groupedTools).sort().forEach((group, index) => {
             const tools = groupedTools[group];
-            const enabledTools = tools.filter(tool => tool.enabled).length;
+            const enabledTools = tools.filter(tool => tool.isSelected).length;
             
             // 添加组标题，默认除第一个外都是收起状态
             const isCollapsed = index > 0 ? 'collapsed' : '';
@@ -724,8 +726,8 @@ class AdminUI {
                             ${tool.description ? `<div class="tool-selection-desc">${tool.description}</div>` : ''}
                         </div>
                         <div class="tool-actions">
-                            <label class="tool-enable-switch" title="${tool.enabled ? '已启用' : '已禁用'}">
-                                <input type="checkbox" class="tool-enable-checkbox" ${tool.enabled ? 'checked' : ''}>
+                            <label class="tool-enable-switch" title="${tool.isSelected ? '已启用' : '已禁用'}">
+                                <input type="checkbox" class="tool-enable-checkbox" ${tool.isSelected ? 'checked' : ''}>
                                 <span class="tool-enable-slider"></span>
                             </label>
                         </div>
