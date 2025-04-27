@@ -435,20 +435,102 @@ class AdminUI {
         const toolListContainer = dialog.querySelector('.tool-list-container');
         const searchInput = dialog.querySelector('.tool-search');
         
-        // 渲染工具选择列表
-        this.renderToolSelectionList(toolListContainer, availableTools);
+        // 复制工具列表以便于排序
+        const toolsCopy = [...availableTools];
+        
+        // 按服务组对工具进行分组
+        const groupedTools = this.groupToolsByServiceGroup(toolsCopy);
+        
+        // 渲染分组后的工具选择列表
+        this.renderToolSelectionList(toolListContainer, groupedTools);
+        
+        // 排序功能
+        const handleSort = (e) => {
+            const sortMethod = e.target.value;
+            let sortedTools = [...toolsCopy];
+            
+            switch(sortMethod) {
+                case 'name':
+                    sortedTools.sort((a, b) => (a.name || a.key).localeCompare(b.name || b.key));
+                    break;
+                case 'enabled':
+                    sortedTools.sort((a, b) => (b.enabled ? 1 : 0) - (a.enabled ? 1 : 0));
+                    break;
+                case 'group':
+                default:
+                    // 默认按服务组排序，在 groupToolsByServiceGroup 中处理
+                    break;
+            }
+            
+            // 更新当前工具列表
+            const filteredGroupedTools = this.groupToolsByServiceGroup(sortedTools);
+            
+            // 重新渲染工具列表
+            this.renderToolSelectionList(toolListContainer, filteredGroupedTools);
+            
+            // 重新绑定事件（因为DOM已重新生成）
+            addToolListEventListeners();
+        };
         
         // 搜索功能
         const handleSearch = (e) => {
             const searchText = e.target.value.toLowerCase();
-            const filteredTools = availableTools.filter(tool => 
+            const filteredTools = toolsCopy.filter(tool => 
                 tool.key.toLowerCase().includes(searchText) || 
-                (tool.description && tool.description.toLowerCase().includes(searchText))
+                (tool.name && tool.name.toLowerCase().includes(searchText)) ||
+                (tool.description && tool.description.toLowerCase().includes(searchText)) ||
+                (tool.serviceGroup && tool.serviceGroup.toLowerCase().includes(searchText))
             );
-            this.renderToolSelectionList(toolListContainer, filteredTools);
+            
+            // 重新分组过滤后的工具
+            const filteredGroupedTools = this.groupToolsByServiceGroup(filteredTools);
+            
+            // 渲染过滤后的分组工具
+            this.renderToolSelectionList(toolListContainer, filteredGroupedTools);
+            
+            // 重新绑定事件（因为DOM已重新生成）
+            addToolListEventListeners();
         };
         
-        searchInput.addEventListener('input', handleSearch);
+        // 处理工具启用/禁用状态
+        const handleToolEnableToggle = (e) => {
+            if (!e.target.classList.contains('tool-enable-checkbox')) return;
+            
+            const toolItem = e.target.closest('.tool-selection-item');
+            if (!toolItem) return;
+            
+            const toolKey = toolItem.dataset.toolKey;
+            const tool = toolsCopy.find(t => t.key === toolKey);
+            
+            if (tool) {
+                tool.enabled = e.target.checked;
+            }
+        };
+        
+        // 处理组级别启用/禁用
+        const handleGroupEnableToggle = (e) => {
+            if (!e.target.classList.contains('group-enable-checkbox')) return;
+            
+            const groupHeader = e.target.closest('.tool-group-header');
+            if (!groupHeader) return;
+            
+            const groupName = groupHeader.dataset.group;
+            const isEnabled = e.target.checked;
+            
+            // 更新该组中所有工具的启用状态
+            toolsCopy.forEach(tool => {
+                if ((tool.serviceGroup || '未分组') === groupName) {
+                    tool.enabled = isEnabled;
+                }
+            });
+            
+            // 更新UI中该组所有工具的复选框状态
+            const groupContent = groupHeader.nextElementSibling;
+            const checkboxes = groupContent.querySelectorAll('.tool-enable-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = isEnabled;
+            });
+        };
         
         // 显示对话框和遮罩
         overlay.style.display = 'block';
@@ -456,24 +538,108 @@ class AdminUI {
         setTimeout(() => overlay.classList.add('show'), 10);
         
         // 处理工具选择
-        let selectedTool = null;
-        const handleToolClick = (e) => {
-            const item = e.target.closest('.tool-selection-item');
-            if (item) {
-                toolListContainer.querySelectorAll('.tool-selection-item').forEach(el => {
-                    el.classList.remove('selected');
-                });
-                item.classList.add('selected');
-                selectedTool = availableTools.find(tool => tool.key === item.dataset.toolKey);
+        let selectedTools = [];
+        const handleToolSelection = (e) => {
+            // 忽略启用/禁用复选框点击导致的事件冒泡
+            if (e.target.classList.contains('tool-enable-checkbox')) return;
+            
+            // 处理单个工具选择
+            const toolItem = e.target.closest('.tool-selection-item');
+            if (toolItem) {
+                const isSelected = toolItem.classList.toggle('selected');
+                const toolKey = toolItem.dataset.toolKey;
+                
+                if (isSelected) {
+                    // 添加到已选工具列表
+                    const tool = toolsCopy.find(t => t.key === toolKey);
+                    if (tool && !selectedTools.some(t => t.key === toolKey)) {
+                        selectedTools.push(tool);
+                    }
+                } else {
+                    // 从已选工具列表中移除
+                    selectedTools = selectedTools.filter(t => t.key !== toolKey);
+                }
             }
         };
-
-        toolListContainer.addEventListener('click', handleToolClick);
+        
+        // 处理组标题点击（全选/取消全选）
+        const handleGroupToggle = (e) => {
+            if (!e.target.classList.contains('group-toggle')) return;
+            
+            const groupHeader = e.target.closest('.tool-group-header');
+            if (!groupHeader) return;
+            
+            const groupName = groupHeader.dataset.group;
+            const groupContent = groupHeader.nextElementSibling;
+            const groupItems = groupContent.querySelectorAll('.tool-selection-item');
+            
+            // 检查当前组内是否所有工具都被选中
+            const allSelected = Array.from(groupItems).every(item => item.classList.contains('selected'));
+            
+            // 根据当前状态进行全选或取消全选
+            groupItems.forEach(item => {
+                const toolKey = item.dataset.toolKey;
+                
+                if (allSelected) {
+                    // 取消全选
+                    item.classList.remove('selected');
+                    selectedTools = selectedTools.filter(t => t.key !== toolKey);
+                } else {
+                    // 全选
+                    item.classList.add('selected');
+                    
+                    if (!selectedTools.some(t => t.key === toolKey)) {
+                        const tool = toolsCopy.find(t => t.key === toolKey);
+                        if (tool) {
+                            selectedTools.push(tool);
+                        }
+                    }
+                }
+            });
+        };
+        
+        // 为工具列表添加事件监听器
+        const addToolListEventListeners = () => {
+            // 绑定排序事件
+            const sortSelect = toolListContainer.querySelector('.tool-sort-select');
+            if (sortSelect) {
+                sortSelect.addEventListener('change', handleSort);
+            }
+            
+            // 绑定工具选择事件
+            const toolItems = toolListContainer.querySelectorAll('.tool-selection-item');
+            toolItems.forEach(item => {
+                item.addEventListener('click', handleToolSelection);
+            });
+            
+            // 绑定工具启用状态切换事件
+            const toolEnableCheckboxes = toolListContainer.querySelectorAll('.tool-enable-checkbox');
+            toolEnableCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', handleToolEnableToggle);
+            });
+            
+            // 绑定组切换事件
+            const groupToggles = toolListContainer.querySelectorAll('.group-toggle');
+            groupToggles.forEach(toggle => {
+                toggle.addEventListener('click', handleGroupToggle);
+            });
+            
+            // 绑定组启用状态切换事件
+            const groupEnableCheckboxes = toolListContainer.querySelectorAll('.group-enable-checkbox');
+            groupEnableCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', handleGroupEnableToggle);
+            });
+        };
+        
+        // 初始绑定事件
+        searchInput.addEventListener('input', handleSearch);
+        addToolListEventListeners();
         
         // 确认按钮
         const handleConfirm = () => {
-            if (selectedTool) {
-                onSelect(selectedTool);
+            if (selectedTools.length > 0) {
+                // 调用回调函数，传递所有选中的工具
+                selectedTools.forEach(tool => onSelect(tool));
             }
             closeDialog();
         };
@@ -504,27 +670,98 @@ class AdminUI {
                 
                 // 清理事件监听器
                 searchInput.removeEventListener('input', handleSearch);
-                toolListContainer.removeEventListener('click', handleToolClick);
                 dialog.querySelector('.confirm-btn').removeEventListener('click', handleConfirm);
                 dialog.querySelector('.cancel-btn').removeEventListener('click', handleCancel);
                 document.removeEventListener('keydown', handleKeyDown);
             }, 300);
         };
     }
+    
+    /**
+     * 按服务组对工具进行分组
+     * @param {Array} tools - 工具列表
+     * @returns {Object} - 按serviceGroup分组后的工具对象
+     */
+    groupToolsByServiceGroup(tools) {
+        const groupedTools = {};
+        
+        // 将工具按照serviceGroup分组
+        tools.forEach(tool => {
+            const group = tool.serviceGroup || '未分组';
+            if (!groupedTools[group]) {
+                groupedTools[group] = [];
+            }
+            groupedTools[group].push(tool);
+        });
+        
+        return groupedTools;
+    }
 
     /**
      * 渲染工具选择列表
      * @private
      */
-    renderToolSelectionList(container, tools) {
-        container.innerHTML = tools.map(tool => `
-            <div class="tool-selection-item" data-tool-key="${tool.key}">
-                <div class="tool-info">
-                    <div class="tool-selection-name">${tool.key}</div>
-                    ${tool.description ? `<div class="tool-selection-desc">${tool.description}</div>` : ''}
-                </div>
+    renderToolSelectionList(container, groupedTools) {
+        let html = '';
+        
+        // 添加排序选项
+        html += `
+            <div class="tool-sort-options">
+                <label>排序方式：</label>
+                <select class="tool-sort-select">
+                    <option value="group">按服务组排序</option>
+                    <option value="name">按名称排序</option>
+                    <option value="enabled">按启用状态排序</option>
+                </select>
             </div>
-        `).join('');
+        `;
+        
+        // 遍历每个组
+        Object.keys(groupedTools).sort().forEach(group => {
+            const tools = groupedTools[group];
+            
+            // 添加组标题
+            html += `
+                <div class="tool-group">
+                    <div class="tool-group-header" data-group="${group}">
+                        <span class="group-name">${group}</span>
+                        <span class="group-count">(${tools.length})</span>
+                        <div class="group-actions">
+                            <span class="group-toggle">选择全部</span>
+                            <label class="group-enable-all">
+                                <input type="checkbox" class="group-enable-checkbox"> 启用全部
+                            </label>
+                        </div>
+                    </div>
+                    <div class="tool-group-content">
+            `;
+            
+            // 添加该组下的所有工具
+            tools.forEach(tool => {
+                html += `
+                    <div class="tool-selection-item" data-tool-key="${tool.key}" data-group="${group}">
+                        <div class="tool-info">
+                            <div class="tool-selection-name">${tool.name || tool.key}</div>
+                            ${tool.description ? `<div class="tool-selection-desc">${tool.description}</div>` : ''}
+                        </div>
+                        <div class="tool-actions">
+                            <label class="tool-enable-switch">
+                                <input type="checkbox" class="tool-enable-checkbox" ${tool.enabled ? 'checked' : ''}>
+                                <span class="tool-enable-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // 关闭组容器
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
     }
 
     /**
