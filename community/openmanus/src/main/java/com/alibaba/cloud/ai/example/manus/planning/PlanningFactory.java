@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.DynamicAgentLoad
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpServiceEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpTool;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpStateHolderService;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.creator.PlanCreator;
@@ -100,6 +101,9 @@ public class PlanningFactory {
 	@Autowired
 	private DynamicAgentLoader dynamicAgentLoader;
 
+	@Autowired
+	private McpStateHolderService mcpStateHolderService;
+
 	public PlanningFactory(ChromeDriverService chromeDriverService, PlanExecutionRecorder recorder,
 			ManusProperties manusProperties, TextFileService textFileService, McpService mcpService) {
 		this.chromeDriverService = chromeDriverService;
@@ -173,21 +177,21 @@ public class PlanningFactory {
 		for (McpServiceEntity toolCallback : functionCallbacks) {
 			String serviceGroup = toolCallback.getServiceGroup();
 			ToolCallback[] tCallbacks = toolCallback.getAsyncMcpToolCallbackProvider().getToolCallbacks();
-			for(ToolCallback tCallback : tCallbacks) {
+			for (ToolCallback tCallback : tCallbacks) {
 				// 这里的 serviceGroup 是工具的名称
-				toolDefinitions.add(new McpTool(tCallback, serviceGroup));
+				toolDefinitions.add(new McpTool(tCallback, serviceGroup, planId, mcpStateHolderService));
 			}
 		}
 
 		// 为每个工具创建 FunctionToolCallback
 		for (ToolCallBiFunctionDef toolDefinition : toolDefinitions) {
 			FunctionToolCallback functionToolcallback = FunctionToolCallback
-				.builder(toolDefinition.getName(), toolDefinition)
-				.description(toolDefinition.getDescription())
-				.inputSchema(toolDefinition.getParameters())
-				.inputType(toolDefinition.getInputType())
-				.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
-				.build();
+					.builder(toolDefinition.getName(), toolDefinition)
+					.description(toolDefinition.getDescription())
+					.inputSchema(toolDefinition.getParameters())
+					.inputType(toolDefinition.getInputType())
+					.toolMetadata(ToolMetadata.builder().returnDirect(toolDefinition.isReturnDirect()).build())
+					.build();
 			toolDefinition.setPlanId(planId);
 			ToolCallBackContext functionToolcallbackContext = new ToolCallBackContext(functionToolcallback,
 					toolDefinition);
@@ -205,10 +209,10 @@ public class PlanningFactory {
 
 		// 2. 创建 RequestConfig 并设置超时
 		RequestConfig requestConfig = RequestConfig.custom()
-			.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
-			.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
-			.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
-			.build();
+				.setConnectTimeout(Timeout.of(10, TimeUnit.MINUTES)) // 设置连接超时
+				.setResponseTimeout(Timeout.of(10, TimeUnit.MINUTES))
+				.setConnectionRequestTimeout(Timeout.of(10, TimeUnit.MINUTES))
+				.build();
 
 		// 3. 创建 CloseableHttpClient 并应用配置
 		HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();

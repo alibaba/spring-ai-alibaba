@@ -104,10 +104,12 @@ class AdminEvents {
             const currentTools = Array.from(document.querySelectorAll('.tool-item'))
                 .map(item => item.querySelector('.tool-name').textContent);
             
-            const newTools = availableTools.filter(tool => !currentTools.includes(tool.key));
+            // 检查是否还有可用工具未添加
+            const hasNewTools = availableTools.some(tool => !currentTools.includes(tool.key));
             
-            if (newTools.length > 0) {
-                adminUI.showToolSelectionDialog(newTools, (selectedTool) => {
+            if (hasNewTools) {
+                // 传递所有可用工具，同时也传递当前工具列表，以便在对话框中标记哪些已添加
+                adminUI.showToolSelectionDialog(availableTools, currentTools, (selectedTool) => {
                     const toolList = document.querySelector('.tool-list');
                     const toolHtml = `
                         <div class="tool-item">
