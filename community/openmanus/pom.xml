@@ -6,6 +6,8 @@
 
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-openmanus</artifactId>
+    <name>Spring AI Alibaba Starter Openmanus</name>
+    <description>Openmanus implementation for Spring AI Alibaba</description>
     <version>0.0.8</version>
 
     <properties>
