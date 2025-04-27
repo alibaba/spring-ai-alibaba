@@ -215,7 +215,7 @@ public class PlanTemplateController {
 				context.setPlan(plan);
 
 				// 从记录中获取用户请求
-				context.setUserRequest(template.getUserRequest());
+				context.setUserRequest(template.getTitle());
 			}
 			catch (Exception e) {
 				logger.error("解析计划JSON或获取用户请求失败", e);

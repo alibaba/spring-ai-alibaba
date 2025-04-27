@@ -85,8 +85,11 @@ public class McpTool implements ToolCallBiFunctionDef {
 			result = "";
 		}
 		// 这里可以将结果存储到McpStateHolderService中
-		McpState mcpState = new McpState();
-		mcpState = mcpStateHolderService.putIfAbsent(planId, mcpState);
+		McpState mcpState = mcpStateHolderService.getMcpState(planId);
+		if (mcpState == null) {
+			mcpState = new McpState();
+			mcpStateHolderService.setMcpState(planId, mcpState);
+		}
 		mcpState.setState(result);
 
 		return new ToolExecuteResult(result);
