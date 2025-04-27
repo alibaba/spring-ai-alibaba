@@ -23,7 +23,7 @@ import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
  */
 public class ExecutionStep {
 
-	private int stepIndex;
+	private Integer stepIndex;
 
 	private String stepRequirement;
 
@@ -31,11 +31,11 @@ public class ExecutionStep {
 
 	private BaseAgent agent;
 
-	public int getStepIndex() {
+	public Integer getStepIndex() {
 		return stepIndex;
 	}
 
-	public void setStepIndex(int stepIndex) {
+	public void setStepIndex(Integer stepIndex) {
 		this.stepIndex = stepIndex;
 	}
 
