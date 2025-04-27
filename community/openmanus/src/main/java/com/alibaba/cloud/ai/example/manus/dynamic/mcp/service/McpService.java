@@ -1,29 +1,7 @@
 /*
  * Copyright 2025 the original author or authors.
  *
- * Licensed under the Apache 					// 获取URL和base_uri
-					String url = mcpServerConfig.getUrl();
-					String baseUri = mcpServerConfig.getBaseUri();
-					
-					// 如果URL为空但base_uri不为空，则使用base_uri
-					if ((url == null || url.isEmpty()) && baseUri != null && !baseUri.isEmpty()) {
-						url = baseUri;
-						log.info("Using base_uri instead of url: {}", url);
-					}
-					
-					// 移除末尾的斜杠，避免与baseUrl组合时产生路径问题
-					if (url.endsWith("/")) {
-						url = url.substring(0, url.length() - 1);
-					}
-					
-					log.info("Connecting to SSE endpoint: {}", url);
-					
-					// 创建WebClient并添加必要的请求头
-					WebClient webClient = WebClient.builder()
-							.baseUrl(url)
-							.defaultHeader("Accept", "text/event-stream")
-							.defaultHeader("Content-Type", "application/json")
-							.build();2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
