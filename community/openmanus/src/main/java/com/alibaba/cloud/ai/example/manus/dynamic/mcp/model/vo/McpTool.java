@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.tool;
+package com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
@@ -26,8 +27,14 @@ public class McpTool implements ToolCallBiFunctionDef {
 
 	private BaseAgent agent;
 
-	public McpTool(ToolCallback toolCallback) {
+	private String serviceNameString;
+
+	
+
+	public McpTool(ToolCallback toolCallback , String serviceNameString ) {
 		this.toolCallback = toolCallback;
+		this.serviceNameString = serviceNameString;
+
 	}
 
 	@Override
@@ -73,6 +80,12 @@ public class McpTool implements ToolCallBiFunctionDef {
 	@Override
 	public void cleanup(String planId) {
 
+	}
+
+
+	@Override
+	public String getServiceGroup() {
+		return serviceNameString;
 	}
 
 }

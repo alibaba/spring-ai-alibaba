@@ -25,6 +25,8 @@ public class Tool {
 
 	private boolean enabled;
 
+	private String serviceGroup;
+
 	// Getters and Setters
 	public String getKey() {
 		return key;
@@ -56,6 +58,14 @@ public class Tool {
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public String getServiceGroup() {
+		return serviceGroup;
+	}
+
+	public void setServiceGroup(String serviceGroup) {
+		this.serviceGroup = serviceGroup;
 	}
 
 }
