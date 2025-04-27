@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo;
 
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpStateHolderService;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import org.springframework.ai.chat.model.ToolContext;
@@ -25,16 +25,18 @@ public class McpTool implements ToolCallBiFunctionDef {
 
 	private final ToolCallback toolCallback;
 
-	private BaseAgent agent;
+	private String planId;
 
 	private String serviceNameString;
 
+	private McpStateHolderService mcpStateHolderService;
 	
 
-	public McpTool(ToolCallback toolCallback , String serviceNameString ) {
+	public McpTool(ToolCallback toolCallback , String serviceNameString,String planId , McpStateHolderService mcpStateHolderService  ) {
 		this.toolCallback = toolCallback;
 		this.serviceNameString = serviceNameString;
-
+		this.planId = planId;
+		this.mcpStateHolderService = mcpStateHolderService;
 	}
 
 	@Override
@@ -64,22 +66,35 @@ public class McpTool implements ToolCallBiFunctionDef {
 
 	@Override
 	public void setPlanId(String planId) {
-
+		this.planId = planId;
 	}
 
 	@Override
 	public String getCurrentToolStateString() {
+		McpState mcpState = mcpStateHolderService.getMcpState(planId);
+		if (mcpState != null) {
+			return mcpState.getState();
+		}
 		return "";
 	}
 
 	@Override
 	public ToolExecuteResult apply(String s, ToolContext toolContext) {
-		return new ToolExecuteResult(toolCallback.call(s, toolContext));
+		String result = toolCallback.call(s, toolContext);
+		if (result == null) {
+			result = "";
+		}
+		// 这里可以将结果存储到McpStateHolderService中
+		McpState mcpState = new McpState();
+		mcpState = mcpStateHolderService.putIfAbsent(planId, mcpState);
+		mcpState.setState(result);
+
+		return new ToolExecuteResult(result);
 	}
 
 	@Override
 	public void cleanup(String planId) {
-
+		mcpStateHolderService.removeMcpState(planId);
 	}
 
 

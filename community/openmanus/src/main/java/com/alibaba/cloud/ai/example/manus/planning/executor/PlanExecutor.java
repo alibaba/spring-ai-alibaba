@@ -47,7 +47,8 @@ public class PlanExecutor {
 
 	protected final PlanExecutionRecorder recorder;
 
-	Pattern pattern = Pattern.compile("\\[([A-Z_]+)\\]");
+	// 匹配字符串开头的方括号，支持中文和其他字符
+	Pattern pattern = Pattern.compile("^\\s*\\[([^\\]]+)\\]");
 
 	private final List<DynamicAgentEntity> agents;
 
@@ -124,7 +125,8 @@ public class PlanExecutor {
 	private String getStepFromStepReq(String stepRequirement) {
 		Matcher matcher = pattern.matcher(stepRequirement);
 		if (matcher.find()) {
-			return matcher.group(1);
+			// 对匹配到的内容进行trim和转小写处理
+			return matcher.group(1).trim().toLowerCase();
 		}
 		return "DEFAULT_AGENT"; // Default agent if no match found
 	}
