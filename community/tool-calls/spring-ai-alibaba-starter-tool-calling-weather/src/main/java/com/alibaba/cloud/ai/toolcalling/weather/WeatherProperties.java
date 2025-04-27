@@ -15,22 +15,18 @@
  */
 package com.alibaba.cloud.ai.toolcalling.weather;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author 31445
  */
 @ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.weather")
-public class WeatherProperties {
+public class WeatherProperties extends CommonToolCallProperties {
 
-	private String apiKey;
-
-	public String getApiKey() {
-		return apiKey;
-	}
-
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
+	public WeatherProperties() {
+		super("https://api.weatherapi.com/");
+		this.setPropertiesFromEnv("WEATHER_API_KEY", null, null, null);
 	}
 
 }
