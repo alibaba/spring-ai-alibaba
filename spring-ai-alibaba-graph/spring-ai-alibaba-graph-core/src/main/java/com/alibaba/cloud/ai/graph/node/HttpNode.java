@@ -310,52 +310,6 @@ public class HttpNode implements NodeAction {
 		return contentType.startsWith("image/") || contentType.startsWith("audio/") || contentType.startsWith("video/");
 	}
 
-	public static class HttpRequestNodeBody {
-
-		private BodyType type;
-
-		private List<BodyData> data = new ArrayList<>();
-
-		public HttpRequestNodeBody() {
-			this.type = BodyType.NONE;
-		}
-
-		public HttpRequestNodeBody(BodyType type, List<BodyData> data) {
-			this.type = type;
-			this.data = data != null ? data : List.of();
-		}
-
-		public static HttpRequestNodeBody from(Object raw) {
-			if (raw == null) {
-				return new HttpRequestNodeBody(BodyType.NONE, null);
-			}
-			if (raw instanceof String) {
-				BodyData bd = new BodyData();
-				bd.setType(BodyType.RAW_TEXT);
-				bd.setValue((String) raw);
-				return new HttpRequestNodeBody(BodyType.RAW_TEXT, List.of(bd));
-			}
-			throw new IllegalArgumentException("Unsupported body type: " + raw.getClass());
-		}
-
-		public BodyType getType() {
-			return type;
-		}
-
-		public void setType(BodyType type) {
-			this.type = type;
-		}
-
-		public List<BodyData> getData() {
-			return data;
-		}
-
-		public void setData(List<BodyData> data) {
-			this.data = data;
-		}
-
-	}
-
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -427,6 +381,52 @@ public class HttpNode implements NodeAction {
 
 		public HttpNode build() {
 			return new HttpNode(this);
+		}
+
+	}
+
+	public static class HttpRequestNodeBody {
+
+		private BodyType type;
+
+		private List<BodyData> data = new ArrayList<>();
+
+		public HttpRequestNodeBody() {
+			this.type = BodyType.NONE;
+		}
+
+		public HttpRequestNodeBody(BodyType type, List<BodyData> data) {
+			this.type = type;
+			this.data = data != null ? data : List.of();
+		}
+
+		public static HttpRequestNodeBody from(Object raw) {
+			if (raw == null) {
+				return new HttpRequestNodeBody(BodyType.NONE, null);
+			}
+			if (raw instanceof String) {
+				BodyData bd = new BodyData();
+				bd.setType(BodyType.RAW_TEXT);
+				bd.setValue((String) raw);
+				return new HttpRequestNodeBody(BodyType.RAW_TEXT, List.of(bd));
+			}
+			throw new IllegalArgumentException("Unsupported body type: " + raw.getClass());
+		}
+
+		public BodyType getType() {
+			return type;
+		}
+
+		public void setType(BodyType type) {
+			this.type = type;
+		}
+
+		public List<BodyData> getData() {
+			return data;
+		}
+
+		public void setData(List<BodyData> data) {
+			this.data = data;
 		}
 
 	}
