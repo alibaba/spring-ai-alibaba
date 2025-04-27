@@ -218,7 +218,6 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 		// do nothing
 	}
 
-
 	@Override
 	public String getServiceGroup() {
 		return "default-service-group";

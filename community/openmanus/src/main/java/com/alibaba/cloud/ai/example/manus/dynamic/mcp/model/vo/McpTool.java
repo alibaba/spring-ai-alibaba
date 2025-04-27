@@ -30,9 +30,9 @@ public class McpTool implements ToolCallBiFunctionDef {
 	private String serviceNameString;
 
 	private McpStateHolderService mcpStateHolderService;
-	
 
-	public McpTool(ToolCallback toolCallback , String serviceNameString,String planId , McpStateHolderService mcpStateHolderService  ) {
+	public McpTool(ToolCallback toolCallback, String serviceNameString, String planId,
+			McpStateHolderService mcpStateHolderService) {
 		this.toolCallback = toolCallback;
 		this.serviceNameString = serviceNameString;
 		this.planId = planId;
@@ -99,7 +99,6 @@ public class McpTool implements ToolCallBiFunctionDef {
 	public void cleanup(String planId) {
 		mcpStateHolderService.removeMcpState(planId);
 	}
-
 
 	@Override
 	public String getServiceGroup() {

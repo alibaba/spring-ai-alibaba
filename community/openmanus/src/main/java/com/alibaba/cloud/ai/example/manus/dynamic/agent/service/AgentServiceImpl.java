@@ -170,16 +170,18 @@ public class AgentServiceImpl implements AgentService {
 		entity.setSystemPrompt(config.getSystemPrompt());
 		entity.setNextStepPrompt(config.getNextStepPrompt());
 		List<String> availableTools = config.getAvailableTools();
-		
+
 		// 确保工具列表中至少包含 TerminateTool
-		if (availableTools == null || !availableTools.contains(com.alibaba.cloud.ai.example.manus.tool.TerminateTool.name)) {
+		if (availableTools == null
+				|| !availableTools.contains(com.alibaba.cloud.ai.example.manus.tool.TerminateTool.name)) {
 			if (availableTools == null) {
 				availableTools = new java.util.ArrayList<>();
 			}
-			log.info("为Agent[{}]添加必要的工具: {}", config.getName(), com.alibaba.cloud.ai.example.manus.tool.TerminateTool.name);
+			log.info("为Agent[{}]添加必要的工具: {}", config.getName(),
+					com.alibaba.cloud.ai.example.manus.tool.TerminateTool.name);
 			availableTools.add(com.alibaba.cloud.ai.example.manus.tool.TerminateTool.name);
 		}
-		
+
 		entity.setAvailableToolKeys(availableTools);
 		entity.setClassName(config.getName());
 	}

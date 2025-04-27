@@ -63,37 +63,38 @@ public class McpController {
 	@PostMapping("/add")
 	public ResponseEntity<String> add(@RequestBody McpConfigRequestVO requestVO) throws IOException {
 		String configJson = requestVO.getConfigJson();
-		
+
 		// 检查是否是简短格式（没有mcpServers包装）的JSON
 		try {
 			ObjectMapper objectMapper = new ObjectMapper();
 			JsonNode jsonNode = objectMapper.readTree(configJson);
-			
+
 			// 如果不包含mcpServers字段，则需要转换为完整格式
 			if (!jsonNode.has("mcpServers")) {
 				logger.info("Detected short format JSON, converting to full format");
-				
+
 				// 检查是否是简单的键值对格式（不包含外层大括号）
 				if (configJson.trim().startsWith("\"") && configJson.contains(":")) {
 					// 简单键值对格式，需要添加外层大括号
 					configJson = "{" + configJson + "}";
 				}
-				
+
 				// 创建完整的配置格式
 				StringBuilder fullJsonBuilder = new StringBuilder();
 				fullJsonBuilder.append("{\n  \"mcpServers\": ");
 				fullJsonBuilder.append(configJson);
 				fullJsonBuilder.append("\n}");
-				
+
 				// 更新requestVO中的configJson
 				configJson = fullJsonBuilder.toString();
 				requestVO.setConfigJson(configJson);
 				logger.info("Converted to full format: {}", configJson);
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.warn("Error checking JSON format, proceeding with original format", e);
 		}
-		
+
 		mcpService.addMcpServer(requestVO);
 		return ResponseEntity.ok("success");
 	}
@@ -107,6 +108,5 @@ public class McpController {
 		mcpService.removeMcpServer(id);
 		return ResponseEntity.ok("Success");
 	}
-
 
 }

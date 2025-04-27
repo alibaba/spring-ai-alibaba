@@ -230,7 +230,7 @@ public class ExecutionPlan {
 					// 调用ExecutionStep的fromJson方法创建步骤
 					ExecutionStep step = ExecutionStep.fromJson(stepNode);
 					Integer stepIndexValFromJson = step.getStepIndex();
-					if(stepIndexValFromJson != null) {
+					if (stepIndexValFromJson != null) {
 						stepIndex = stepIndexValFromJson;
 					}
 					else {
