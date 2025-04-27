@@ -67,6 +67,25 @@ public class WebClientTool {
 	}
 
 	/**
+	 * default webClient with customized HeaderConsumer
+	 */
+	public WebClientTool(Consumer<HttpHeaders> httpHeadersConsumer, JsonParseTool jsonParseTool,
+			CommonToolCallProperties properties) {
+		this.jsonParseTool = jsonParseTool;
+		this.properties = properties;
+		this.webClient = WebClient.builder()
+			.clientConnector(createHttpConnector())
+			.baseUrl(properties.getBaseUrl())
+			.defaultHeaders(httpHeadersConsumer)
+			.defaultStatusHandler(HttpStatusCode::is4xxClientError,
+					CommonToolCallConstants.DEFAULT_WEBCLIENT_4XX_EXCEPTION)
+			.defaultStatusHandler(HttpStatusCode::is5xxServerError,
+					CommonToolCallConstants.DEFAULT_WEBCLIENT_5XX_EXCEPTION)
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(CommonToolCallConstants.MAX_MEMORY_SIZE))
+			.build();
+	}
+
+	/**
 	 * Creates webClient with customized HeaderConsumer and ExceptionFunction
 	 */
 	public WebClientTool(Consumer<HttpHeaders> httpHeadersConsumer,
