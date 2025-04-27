@@ -114,7 +114,6 @@ class AdminEvents {
                     const toolHtml = `
                         <div class="tool-item">
                             <span class="tool-name">${selectedTool.key}</span>
-                            <button class="delete-tool-btn" data-tool="${selectedTool.key}">×</button>
                         </div>
                     `;
                     toolList.insertAdjacentHTML('beforeend', toolHtml);
@@ -127,17 +126,6 @@ class AdminEvents {
         }
     }
 
-    /**
-     * 处理工具列表点击事件
-     */
-    handleToolListClick(event) {
-        if (event.target.classList.contains('delete-tool-btn')) {
-            const toolItem = event.target.closest('.tool-item');
-            if (toolItem) {
-                toolItem.remove();
-            }
-        }
-    }
 
     /**
      * 处理删除Agent

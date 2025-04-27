@@ -399,7 +399,6 @@ class AdminUI {
         this.agentDetailForm.toolList.innerHTML = tools.map(tool => `
             <div class="tool-item">
                 <span class="tool-name">${tool}</span>
-                <button class="delete-tool-btn" data-tool="${tool}">×</button>
             </div>
         `).join('');
     }
@@ -510,6 +509,29 @@ class AdminUI {
             
             if (tool) {
                 tool.isSelected = e.target.checked;
+w                
+                // 如果取消选中，从已选工具列表中移除
+                if (!e.target.checked) {
+                    // 从当前DOM中移除该工具项
+                    const toolElements = document.querySelectorAll('.tool-item');
+                    toolElements.forEach(elem => {
+                        const toolName = elem.querySelector('.tool-name');
+                        if (toolName && toolName.textContent === toolKey) {
+                            elem.remove();
+                        }
+                    });
+                    
+                    // 从selectedTools数组中也移除
+                    const index = selectedTools.findIndex(t => t.key === toolKey);
+                    if (index !== -1) {
+                        selectedTools.splice(index, 1);
+                    }
+                } else {
+                    // 如果选中且不在selectedTools中，添加到selectedTools
+                    if (!selectedTools.some(t => t.key === toolKey)) {
+                        selectedTools.push(tool);
+                    }
+                }
             }
         };
         
@@ -538,6 +560,16 @@ class AdminUI {
                         if (index !== -1) {
                             selectedTools.splice(index, 1);
                         }
+                        
+                        // 同时从界面上移除已添加的工具项
+                        const toolElements = document.querySelectorAll('.tool-item');
+                        toolElements.forEach(elem => {
+                            const toolName = elem.querySelector('.tool-name');
+                            if (toolName && (tool.serviceGroup || '未分组') === groupName && 
+                                toolName.textContent === tool.key) {
+                                elem.remove();
+                            }
+                        });
                     }
                 }
             });

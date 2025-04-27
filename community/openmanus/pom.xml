@@ -6,7 +6,7 @@
 
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-openmanus</artifactId>
-    <version>0.0.8</version>
+    <version>0.0.9</version>
 
     <properties>
         <java.version>17</java.version>

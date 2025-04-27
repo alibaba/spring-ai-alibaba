@@ -69,13 +69,10 @@
                         <span class="icon-agent"></span>
                         <span class="category-label">Agent配置</span>
                     </li>
-                    <li class="category-item" data-category="tool">
-                        <span class="icon-tool"></span>
-                        <span class="category-label">Tool配置(coming soon）</span>
-                    </li>
+                  
                     <li class="category-item" data-category="mcp">
                         <span class="icon-mcp"></span>
-                        <span class="category-label">MCP配置</span>
+                        <span class="category-label">Tools/MCP配置</span>
                     </li>
                 </ul>
             </nav>
@@ -222,20 +219,18 @@
                                 <div class="tool-list">
                                     <div class="tool-item">
                                         <span class="tool-name">search（demo)</span>
-                                        <button class="delete-tool-btn">×</button>
+                                       
                                     </div>
                                     <div class="tool-item">
                                         <span class="tool-name">calculator(demo)</span>
-                                        <button class="delete-tool-btn">×</button>
                                     </div>
                                     <div class="tool-item">
                                         <span class="tool-name">weather(demo)</span>
-                                        <button class="delete-tool-btn">×</button>
                                     </div>
                                 </div>
                                 <button class="add-tool-btn">
                                     <span class="icon-add"></span>
-                                    添加工具
+                                    添加/删除当前Agent能使用的工具
                                 </button>
                             </div>
                             
@@ -253,37 +248,7 @@
                     </div>
                 </div>
 
-                <!-- Tool配置面板 - 初始隐藏 -->
-                <div class="config-panel" id="tool-config">
-                    <h2 class="panel-title">Tool配置(coming soon)</h2>
-                    
-                    <div class="config-group">
-                        <h3 class="group-title">工具启用设置</h3>
-                        <div class="config-item checkbox-item">
-                            <input type="checkbox" id="enable-search-tool" checked>
-                            <label for="enable-search-tool">启用搜索工具</label>
-                        </div>
-                        <div class="config-item checkbox-item">
-                            <input type="checkbox" id="enable-calculator-tool" checked>
-                            <label for="enable-calculator-tool">启用计算器工具</label>
-                        </div>
-                        <div class="config-item checkbox-item">
-                            <input type="checkbox" id="enable-weather-tool">
-                            <label for="enable-weather-tool">启用天气工具</label>
-                        </div>
-                    </div>
-                    
-                    <div class="config-group">
-                        <h3 class="group-title">API配置</h3>
-                        <div class="config-item">
-                            <label for="weather-api-key">天气API密钥</label>
-                            <input type="text" id="weather-api-key" placeholder="输入API密钥">
-                        </div>
-                        <div class="config-item">
-                            <button class="secondary-btn" id="test-weather-api">测试连接</button>
-                        </div>
-                    </div>
-                </div>
+              
 
                 <!-- MCP配置面板 - 初始隐藏 -->
                 <div class="config-panel" id="mcp-config">
