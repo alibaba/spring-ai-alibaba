@@ -44,9 +44,7 @@ public class ParameterParsingNode implements NodeAction {
 			### Input
 			Text: {inputText}
 			### Parameters:
-			{{#parameters}}
-			- {{name}} ({{type}}): {{description}} .
-			{{/parameters}}
+			{parameters}
 			### Output Constraints
 			- Return ONLY a valid JSON object containing all defined keys.
 			- Missing values must be set to null.
@@ -110,7 +108,7 @@ public class ParameterParsingNode implements NodeAction {
 
 		Map<String, Object> promptInput = new HashMap<>();
 		promptInput.put("inputText", inputText);
-		promptInput.put("parameters", parameters);
+		promptInput.put("parameters", formatParameters(parameters));
 
 		List<Message> messages = new ArrayList<>();
 		UserMessage userMessage1 = new UserMessage(PARAMETER_PARSING_USER_PROMPT_1);
@@ -140,6 +138,20 @@ public class ParameterParsingNode implements NodeAction {
 			throw new RuntimeException("Invalid JSON response from model: " + rawJson, e);
 		}
 		return updateState;
+	}
+
+	private String formatParameters(List<Map<String, String>> parameters) {
+		StringBuilder builder = new StringBuilder();
+		for (Map<String, String> param : parameters) {
+			builder.append("- ")
+				.append(param.get("name"))
+				.append(" (")
+				.append(param.get("type"))
+				.append("): ")
+				.append(param.get("description"))
+				.append("\n");
+		}
+		return builder.toString();
 	}
 
 	public static Builder builder() {
