@@ -155,7 +155,6 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 		this.planId = planId;
 	}
 
-
 	@Override
 	public String getServiceGroup() {
 		return "default-service-group";

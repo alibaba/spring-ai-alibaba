@@ -389,5 +389,4 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 		return "default-service-group";
 	}
 
-
 }
