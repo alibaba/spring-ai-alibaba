@@ -139,6 +139,11 @@ public class Bash implements ToolCallBiFunctionDef {
 		return run(s);
 	}
 
+	@Override
+	public String getServiceGroup() {
+		return "default-service-group";
+	}
+
 	private String planId;
 
 	@Override
