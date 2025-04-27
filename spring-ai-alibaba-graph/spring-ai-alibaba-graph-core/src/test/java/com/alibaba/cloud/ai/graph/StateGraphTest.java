@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,15 +52,15 @@ public class StateGraphTest {
 
 	@Test
 	void testValidation() throws Exception {
-
-		StateGraph workflow = new StateGraph(new OverAllState());
-		GraphStateException exception = assertThrows(GraphStateException.class, workflow::compile);
+		OverAllState overAllState = new OverAllState();
+		StateGraph workflow = new StateGraph();
+		GraphStateException exception = assertThrows(GraphStateException.class, () -> workflow.compile(overAllState));
 		System.out.println(exception.getMessage());
 		assertEquals("missing Entry Point", exception.getMessage());
 
 		workflow.addEdge(START, "agent_1");
 
-		exception = assertThrows(GraphStateException.class, workflow::compile);
+		exception = assertThrows(GraphStateException.class, () -> workflow.compile(overAllState));
 		assertEquals("edge sourceId 'agent_1' refers to undefined node!", exception.getMessage());
 
 		workflow.addNode("agent_1", node_async((state) -> {
@@ -67,11 +68,11 @@ public class StateGraphTest {
 			return Map.of("prop1", "test");
 		}));
 
-		assertNotNull(workflow.compile());
+		assertNotNull(workflow.compile(overAllState));
 
 		workflow.addEdge("agent_1", END);
 
-		assertNotNull(workflow.compile());
+		assertNotNull(workflow.compile(overAllState));
 
 		exception = assertThrows(GraphStateException.class, () -> workflow.addEdge(END, "agent_1"));
 		log.info("{}", exception.getMessage());
@@ -87,7 +88,7 @@ public class StateGraphTest {
 
 		workflow.addEdge("agent_2", "agent_3");
 
-		exception = assertThrows(GraphStateException.class, workflow::compile);
+		exception = assertThrows(GraphStateException.class, () -> workflow.compile(overAllState));
 		log.info("{}", exception.getMessage());
 
 		exception = assertThrows(GraphStateException.class,
@@ -99,14 +100,14 @@ public class StateGraphTest {
 	@Test
 	public void testRunningOneNode() throws Exception {
 		OverAllState overAllState = new OverAllState().registerKeyAndStrategy("prop1", (o, o2) -> o2);
-		StateGraph workflow = new StateGraph(overAllState).addEdge(START, "agent_1")
+		StateGraph workflow = new StateGraph().addEdge(START, "agent_1")
 			.addNode("agent_1", node_async(state -> {
 				log.info("agent_1\n{}", state);
 				return Map.of("prop1", "test");
 			}))
 			.addEdge("agent_1", END);
 
-		CompiledGraph app = workflow.compile();
+		CompiledGraph app = workflow.compile(overAllState);
 
 		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 		System.out.println("result = " + result);
@@ -121,7 +122,7 @@ public class StateGraphTest {
 	@Test
 	void testWithAppender() throws Exception {
 		OverAllState overAllState = getOverAllState();
-		StateGraph workflow = new StateGraph(overAllState).addNode("agent_1", node_async(state -> {
+		StateGraph workflow = new StateGraph().addNode("agent_1", node_async(state -> {
 			System.out.println("agent_1");
 			return Map.of("messages", "message1");
 		})).addNode("agent_2", node_async(state -> {
@@ -143,7 +144,7 @@ public class StateGraphTest {
 			.addEdge(StateGraph.START, "agent_1")
 			.addEdge("agent_3", StateGraph.END);
 
-		CompiledGraph app = workflow.compile();
+		CompiledGraph app = workflow.compile(overAllState);
 
 		Optional<OverAllState> result = app.invoke(Map.of());
 
@@ -180,7 +181,7 @@ public class StateGraphTest {
 	@Test
 	void testWithAppenderOneRemove() throws Exception {
 		OverAllState overAllState = getOverAllState();
-		StateGraph workflow = new StateGraph(overAllState).addNode("agent_1", node_async(state -> {
+		StateGraph workflow = new StateGraph().addNode("agent_1", node_async(state -> {
 			log.info("agent_1");
 			return Map.of("messages", "message1");
 		})).addNode("agent_2", node_async(state -> {
@@ -201,7 +202,7 @@ public class StateGraphTest {
 			.addEdge(START, "agent_1")
 			.addEdge("agent_3", END);
 
-		CompiledGraph app = workflow.compile();
+		CompiledGraph app = workflow.compile(overAllState);
 
 		Optional<OverAllState> result = app.invoke(Map.of());
 
@@ -217,7 +218,7 @@ public class StateGraphTest {
 	@Test
 	void testWithAppenderOneAppendOneRemove() throws Exception {
 		OverAllState overAllState = getOverAllState();
-		StateGraph workflow = new StateGraph(overAllState)
+		StateGraph workflow = new StateGraph()
 			.addNode("agent_1", node_async(state -> Map.of("messages", "message1")))
 			.addNode("agent_2", node_async(state -> Map.of("messages", new String[] { "message2" })))
 			.addNode("agent_3",
@@ -239,7 +240,7 @@ public class StateGraphTest {
 			.addEdge(START, "agent_1")
 			.addEdge("agent_4", END);
 
-		CompiledGraph app = workflow.compile();
+		CompiledGraph app = workflow.compile(overAllState);
 
 		Optional<OverAllState> result = app.invoke(Map.of());
 
@@ -283,7 +284,7 @@ public class StateGraphTest {
 
 		var step3 = node_async((OverAllState state) -> Map.of("messages", "step3"));
 
-		var workflowParent = new StateGraph(overAllState).addNode("step_1", step1)
+		var workflowParent = new StateGraph().addNode("step_1", step1)
 			.addNode("step_2", step2)
 			.addNode("step_3", step3)
 			.addNode("subgraph", workflowChild)
@@ -292,7 +293,7 @@ public class StateGraphTest {
 			.addEdge("step_2", "subgraph")
 			.addEdge("subgraph", "step_3")
 			.addEdge("step_3", END)
-			.compile();
+			.compile(overAllState);
 		// todo：
 		var result = workflowParent.stream(Map.of())
 			.stream()
@@ -317,7 +318,7 @@ public class StateGraphTest {
 	@Test
 	void testWithParallelBranch() throws Exception {
 		OverAllState overAllState = getOverAllState();
-		var workflow = new StateGraph(overAllState).addNode("A", makeNode("A"))
+		var workflow = new StateGraph().addNode("A", makeNode("A"))
 			.addNode("A1", makeNode("A1"))
 			.addNode("A2", makeNode("A2"))
 			.addNode("A3", makeNode("A3"))
@@ -333,7 +334,7 @@ public class StateGraphTest {
 			.addEdge(START, "A")
 			.addEdge("C", END);
 
-		var app = workflow.compile();
+		var app = workflow.compile(overAllState);
 
 		var result = app.stream()
 			.stream()
@@ -345,7 +346,7 @@ public class StateGraphTest {
 		assertIterableEquals(List.of("A", "A1", "A2", "A3", "B", "C"),
 				(List<String>) result.get().value("messages").get());
 
-		workflow = new StateGraph(getOverAllState()).addNode("A", makeNode("A"))
+		workflow = new StateGraph().addNode("A", makeNode("A"))
 			.addNode("A1", makeNode("A1"))
 			.addNode("A2", makeNode("A2"))
 			.addNode("A3", makeNode("A3"))
@@ -360,7 +361,7 @@ public class StateGraphTest {
 			.addEdge(START, "A3")
 			.addEdge("C", END);
 
-		app = workflow.compile();
+		app = workflow.compile(getOverAllState());
 
 		result = app.stream()
 			.stream()
@@ -378,7 +379,7 @@ public class StateGraphTest {
 	void testWithParallelBranchWithErrors() throws Exception {
 
 		// ONLY ONE TARGET
-		var onlyOneTarget = new StateGraph(getOverAllState()).addNode("A", makeNode("A"))
+		var onlyOneTarget = new StateGraph().addNode("A", makeNode("A"))
 			.addNode("A1", makeNode("A1"))
 			.addNode("A2", makeNode("A2"))
 			.addNode("A3", makeNode("A3"))
@@ -394,11 +395,11 @@ public class StateGraphTest {
 			.addEdge(START, "A")
 			.addEdge("C", END);
 
-		var exception = assertThrows(GraphStateException.class, onlyOneTarget::compile);
+		var exception = assertThrows(GraphStateException.class, () -> onlyOneTarget.compile(getOverAllState()));
 		assertEquals("parallel node [A] must have only one target, but [B, C] have been found!",
 				exception.getMessage());
 
-		var noConditionalEdge = new StateGraph(getOverAllState()).addNode("A", makeNode("A"))
+		var noConditionalEdge = new StateGraph().addNode("A", makeNode("A"))
 			.addNode("A1", makeNode("A1"))
 			.addNode("A2", makeNode("A2"))
 			.addNode("A3", makeNode("A3"))
@@ -417,7 +418,7 @@ public class StateGraphTest {
 				() -> noConditionalEdge.addConditionalEdges("A", edge_async(state -> "next"), Map.of("next", "A2")));
 		assertEquals("conditional edge from 'A' already exist!", exception.getMessage());
 
-		var noConditionalEdgeOnBranch = new StateGraph(getOverAllState()).addNode("A", makeNode("A"))
+		var noConditionalEdgeOnBranch = new StateGraph().addNode("A", makeNode("A"))
 			.addNode("A1", makeNode("A1"))
 			.addNode("A2", makeNode("A2"))
 			.addNode("A3", makeNode("A3"))
@@ -433,12 +434,12 @@ public class StateGraphTest {
 			.addEdge(START, "A")
 			.addEdge("C", END);
 
-		exception = assertThrows(GraphStateException.class, noConditionalEdgeOnBranch::compile);
+		exception = assertThrows(GraphStateException.class, () -> noConditionalEdgeOnBranch.compile(getOverAllState()));
 		assertEquals(
 				"parallel node doesn't support conditional branch, but on [A] a conditional branch on [A3] have been found!",
 				exception.getMessage());
 
-		var noDuplicateTarget = new StateGraph(getOverAllState()).addNode("A", makeNode("A"))
+		var noDuplicateTarget = new StateGraph().addNode("A", makeNode("A"))
 			.addNode("A1", makeNode("A1"))
 			.addNode("A2", makeNode("A2"))
 			.addNode("A3", makeNode("A3"))
@@ -455,7 +456,7 @@ public class StateGraphTest {
 			.addEdge(START, "A")
 			.addEdge("C", END);
 
-		exception = assertThrows(GraphStateException.class, noDuplicateTarget::compile);
+		exception = assertThrows(GraphStateException.class,() -> noDuplicateTarget.compile(getOverAllState()) );
 		assertEquals("edge [A] has duplicate targets [A2]!", exception.getMessage());
 
 	}
@@ -471,14 +472,14 @@ public class StateGraphTest {
 		else {
 			plainTextStateSerializer = new StateGraph.GsonSerializer();
 		}
-		StateGraph workflow = new StateGraph(overAllState, plainTextStateSerializer).addEdge(START, "agent_1")
+		StateGraph workflow = new StateGraph(plainTextStateSerializer).addEdge(START, "agent_1")
 			.addNode("agent_1", node_async(state -> {
 				log.info("agent_1\n{}", state);
 				return Map.of("prop1", "test");
 			}))
 			.addEdge("agent_1", END);
 
-		CompiledGraph app = workflow.compile();
+		CompiledGraph app = workflow.compile(overAllState);
 
 		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 		System.out.println("result = " + result);

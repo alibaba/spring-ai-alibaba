@@ -125,18 +125,10 @@ public class StateGraph {
 
 	final Edges edges = new Edges();
 
-	private OverAllState overAllState;
 
 	private String name;
 
-	public OverAllState getOverAllState() {
-		return overAllState;
-	}
 
-	public StateGraph setOverAllState(OverAllState overAllState) {
-		this.overAllState = overAllState;
-		return this;
-	}
 
 	private final PlainTextStateSerializer stateSerializer;
 
@@ -184,37 +176,24 @@ public class StateGraph {
 
 	/**
 	 * Instantiates a new State graph.
-	 * @param overAllState the over all state
 	 * @param plainTextStateSerializer the plain text state serializer
 	 */
-	public StateGraph(OverAllState overAllState, PlainTextStateSerializer plainTextStateSerializer) {
-		this.overAllState = overAllState;
+	public StateGraph(PlainTextStateSerializer plainTextStateSerializer) {
 		this.stateSerializer = plainTextStateSerializer;
 	}
 
-	public StateGraph(String name, OverAllState overAllState) {
+	public StateGraph(String name) {
 		this.name = name;
-		this.overAllState = overAllState;
 		this.stateSerializer = new GsonSerializer();
 	}
 
-	/**
-	 * Instantiates a new State graph.
-	 * @param overAllState the over all state
-	 */
-	public StateGraph(OverAllState overAllState) {
-		this.overAllState = overAllState;
-		this.stateSerializer = new GsonSerializer();
-	}
 
 	public StateGraph(String name, AgentStateFactory<OverAllState> factory) {
 		this.name = name;
-		this.overAllState = factory.apply(Map.of());
 		this.stateSerializer = new GsonSerializer2(factory);
 	}
 
 	public StateGraph(AgentStateFactory<OverAllState> factory) {
-		this.overAllState = factory.apply(Map.of());
 		this.stateSerializer = new GsonSerializer2(factory);
 	}
 
@@ -229,13 +208,7 @@ public class StateGraph {
 		return name;
 	}
 
-	/**
-	 * Key strategies map.
-	 * @return the map
-	 */
-	public Map<String, KeyStrategy> keyStrategies() {
-		return overAllState.keyStrategies();
-	}
+
 
 	/**
 	 * Gets state serializer.
@@ -340,17 +313,6 @@ public class StateGraph {
 		}
 
 		subGraph.validateGraph();
-		OverAllState subGraphOverAllState = subGraph.getOverAllState();
-		OverAllState superOverAllState = getOverAllState();
-		if (subGraphOverAllState != null) {
-			Map<String, KeyStrategy> strategies = subGraphOverAllState.keyStrategies();
-			for (Map.Entry<String, KeyStrategy> strategyEntry : strategies.entrySet()) {
-				if (!superOverAllState.containStrategy(strategyEntry.getKey())) {
-					superOverAllState.registerKeyAndStrategy(strategyEntry.getKey(), strategyEntry.getValue());
-				}
-			}
-		}
-		subGraph.setOverAllState(getOverAllState());
 
 		var node = new SubStateGraphNode(id, subGraph);
 
@@ -439,12 +401,12 @@ public class StateGraph {
 	 * @return a compiled graph
 	 * @throws GraphStateException if there are errors related to the graph state
 	 */
-	public CompiledGraph compile(CompileConfig config) throws GraphStateException {
+	public CompiledGraph compile(CompileConfig config,OverAllState overAllState) throws GraphStateException {
 		Objects.requireNonNull(config, "config cannot be null");
 
 		validateGraph();
 
-		return new CompiledGraph(this, config);
+		return new CompiledGraph(this,overAllState, config);
 	}
 
 	/**
@@ -452,12 +414,12 @@ public class StateGraph {
 	 * @return a compiled graph
 	 * @throws GraphStateException if there are errors related to the graph state
 	 */
-	public CompiledGraph compile() throws GraphStateException {
+	public CompiledGraph compile(OverAllState overAllState) throws GraphStateException {
 		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
 		return compile(CompileConfig.builder()
 			.plainTextStateSerializer(new JacksonSerializer())
 			.saverConfig(saverConfig)
-			.build());
+			.build(),overAllState);
 	}
 
 	/**

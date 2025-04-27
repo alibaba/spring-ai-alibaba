@@ -132,17 +132,13 @@ public class ReactAgent {
 		return compiledGraph;
 	}
 
-	public CompiledGraph getAndCompileGraph(CompileConfig compileConfig) throws GraphStateException {
-		this.compiledGraph = getStateGraph().compile(compileConfig);
-		return this.compiledGraph;
-	}
 
 	public CompiledGraph getAndCompileGraph() throws GraphStateException {
 		if (this.compileConfig == null) {
-			this.compiledGraph = getStateGraph().compile();
+			this.compiledGraph = getStateGraph().compile(new OverAllState());
 		}
 		else {
-			this.compiledGraph = getStateGraph().compile(this.compileConfig);
+			this.compiledGraph = getStateGraph().compile(this.compileConfig,new OverAllState());
 		}
 		return this.compiledGraph;
 	}
@@ -165,7 +161,7 @@ public class ReactAgent {
 			this.state = defaultState;
 		}
 
-		return new StateGraph(name, state).addNode("agent", node_async(this.llmNode))
+		return new StateGraph(name).addNode("agent", node_async(this.llmNode))
 			.addNode("tool", node_async(this.toolNode))
 			.addEdge(START, "agent")
 			.addConditionalEdges("agent", edge_async(this::think), Map.of("continue", "tool", "end", END))

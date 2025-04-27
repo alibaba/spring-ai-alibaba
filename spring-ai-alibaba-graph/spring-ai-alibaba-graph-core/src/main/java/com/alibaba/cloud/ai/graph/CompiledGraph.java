@@ -64,6 +64,8 @@ public class CompiledGraph {
 
 	public final StateGraph stateGraph;
 
+	private final OverAllState overAllState;
+
 	final Map<String, AsyncNodeActionWithConfig> nodes = new LinkedHashMap<>();
 
 	final Map<String, EdgeValue> edges = new LinkedHashMap<>();
@@ -78,8 +80,9 @@ public class CompiledGraph {
 	 * Constructs a CompiledGraph with the given StateGraph.
 	 * @param stateGraph the StateGraph to be used in this CompiledGraph
 	 */
-	protected CompiledGraph(StateGraph stateGraph, CompileConfig compileConfig) throws GraphStateException {
+	protected CompiledGraph(StateGraph stateGraph,OverAllState overAllState, CompileConfig compileConfig) throws GraphStateException {
 		this.stateGraph = stateGraph;
+		this.overAllState = overAllState;
 
 		this.processedData = ProcessedNodesEdgesAndConfig.process(stateGraph, compileConfig);
 
@@ -147,7 +150,7 @@ public class CompiledGraph {
 					.map(target -> nodes.get(target.id()))
 					.toList();
 
-				var parallelNode = new ParallelNode(e.sourceId(), actions, stateGraph.keyStrategies());
+				var parallelNode = new ParallelNode(e.sourceId(), actions, overAllState.keyStrategies());
 
 				nodes.put(parallelNode.id(), parallelNode.actionFactory().apply(compileConfig));
 
@@ -214,7 +217,7 @@ public class CompiledGraph {
 		// merge values with checkpoint values
 		Checkpoint branchCheckpoint = saver.get(config)
 			.map(Checkpoint::new)
-			.map(cp -> cp.updateState(values, stateGraph.getOverAllState().keyStrategies()))
+			.map(cp -> cp.updateState(values, overAllState.keyStrategies()))
 			.orElseThrow(() -> (new IllegalStateException("Missing Checkpoint!")));
 
 		String nextNodeId = null;
@@ -328,8 +331,8 @@ public class CompiledGraph {
 
 		return compileConfig.checkpointSaver()
 			.flatMap(saver -> saver.get(config))
-			.map(cp -> OverAllState.updateState(cp.getState(), inputs, stateGraph.keyStrategies()))
-			.orElseGet(() -> OverAllState.updateState(new HashMap<>(), inputs, stateGraph.keyStrategies()));
+			.map(cp -> OverAllState.updateState(cp.getState(), inputs, overAllState.keyStrategies()))
+			.orElseGet(() -> OverAllState.updateState(new HashMap<>(), inputs, overAllState.keyStrategies()));
 	}
 
 	OverAllState cloneState(Map<String, Object> data)
@@ -346,12 +349,20 @@ public class CompiledGraph {
 	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
 		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(
-				stateGraph.getOverAllState().input(inputs), config);
+				overAllState.input(inputs), config);
 
 		return new AsyncGenerator.WithEmbed<>(generator);
 	}
 
-	public AsyncGenerator<NodeOutput> stream(OverAllState overAllState, RunnableConfig config) {
+	private AsyncGenerator<NodeOutput> stream(OverAllState overAllState, RunnableConfig config) {
+		Objects.requireNonNull(config, "config cannot be null");
+		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(
+				overAllState, config);
+
+		return new AsyncGenerator.WithEmbed<>(generator);
+	}
+
+	public AsyncGenerator<NodeOutput> stream( RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
 		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(overAllState, config);
 
@@ -364,12 +375,11 @@ public class CompiledGraph {
 	 * @return an AsyncGenerator stream of NodeOutput
 	 */
 	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs) {
-		stateGraph.getOverAllState().input(inputs);
-		return this.stream(stateGraph.getOverAllState(), RunnableConfig.builder().build());
+		return this.stream(inputs,RunnableConfig.builder().build());
 	}
 
 	public AsyncGenerator<NodeOutput> stream() {
-		return this.stream(stateGraph.getOverAllState(), RunnableConfig.builder().build());
+		return this.stream(RunnableConfig.builder().build());
 	}
 
 	/**
@@ -380,11 +390,10 @@ public class CompiledGraph {
 	 * Optional
 	 */
 	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config) {
-		stateGraph.getOverAllState().input(inputs);
 		return stream(inputs, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
 
-	public Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) {
+	private Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) {
 		return stream(overAllState, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
 
@@ -395,7 +404,7 @@ public class CompiledGraph {
 	 * Optional
 	 */
 	public Optional<OverAllState> invoke(Map<String, Object> inputs) {
-		return this.invoke(stateGraph.getOverAllState().input(inputs), RunnableConfig.builder().build());
+		return this.invoke(inputs, RunnableConfig.builder().build());
 	}
 
 	/**
@@ -420,7 +429,7 @@ public class CompiledGraph {
 		Objects.requireNonNull(config, "config cannot be null");
 
 		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(
-				stateGraph.getOverAllState().input(inputs), config.withStreamMode(StreamMode.SNAPSHOTS));
+				overAllState.input(inputs), config.withStreamMode(StreamMode.SNAPSHOTS));
 		return new AsyncGenerator.WithEmbed<>(generator);
 	}
 
@@ -586,7 +595,7 @@ public class CompiledGraph {
 							if (data instanceof Map<?, ?>) {
 								// Assume that subgraph return complete state
 								currentState = OverAllState.updateState(new HashMap<>(), (Map<String, Object>) data,
-										stateGraph.keyStrategies());
+										overAllState.keyStrategies());
 							}
 							else {
 								throw new IllegalArgumentException("Embedded generator must return a Map");
@@ -629,7 +638,7 @@ public class CompiledGraph {
 
 			return action.apply(withState).thenApply(partialState -> {
 				try {
-					currentState = OverAllState.updateState(currentState, partialState, stateGraph.keyStrategies());
+					currentState = OverAllState.updateState(currentState, partialState, overAllState.keyStrategies());
 					nextNodeId = nextNodeId(currentNodeId, currentState);
 
 					Optional<Checkpoint> cp = addCheckpoint(config, currentNodeId, currentState, nextNodeId);

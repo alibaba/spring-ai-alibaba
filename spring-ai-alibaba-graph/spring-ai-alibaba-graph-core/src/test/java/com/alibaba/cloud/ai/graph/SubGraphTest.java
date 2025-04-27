@@ -101,7 +101,7 @@ public class SubGraphTest {
 			.addEdge("B1", "B2")
 			.addEdge("B2", END);
 
-		var workflowParent = new StateGraph(getOverAllState()).addNode("A", _makeNode("A"))
+		var workflowParent = new StateGraph().addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addEdge(START, "A")
@@ -112,7 +112,7 @@ public class SubGraphTest {
 		var B_B1 = SubGraphNode.formatId("B", "B1");
 		var B_B2 = SubGraphNode.formatId("B", "B2");
 
-		var app = workflowParent.compile();
+		var app = workflowParent.compile(getOverAllState());
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, "C", END), _execute(app, Map.of()));
 
@@ -127,7 +127,7 @@ public class SubGraphTest {
 			.addEdge("B1", "B2")
 			.addEdge("B2", END);
 
-		var workflowParent = new StateGraph(getOverAllState()).addNode("A", _makeNode("A"))
+		var workflowParent = new StateGraph().addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
@@ -147,7 +147,7 @@ public class SubGraphTest {
 		var B_B1 = SubGraphNode.formatId("B", "B1");
 		var B_B2 = SubGraphNode.formatId("B", "B2");
 
-		var app = workflowParent.compile();
+		var app = workflowParent.compile(getOverAllState());
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, "C", END), _execute(app, Map.of()));
 
@@ -164,7 +164,7 @@ public class SubGraphTest {
 			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))
 			.addEdge("C", END);
 
-		var workflowParent = new StateGraph(getOverAllState()).addNode("A", _makeNode("A"))
+		var workflowParent = new StateGraph().addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
@@ -185,7 +185,7 @@ public class SubGraphTest {
 		var B_B2 = SubGraphNode.formatId("B", "B2");
 		var B_C = SubGraphNode.formatId("B", "C");
 
-		var app = workflowParent.compile();
+		var app = workflowParent.compile(getOverAllState());
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, "C", END), _execute(app, Map.of()));
 
@@ -203,7 +203,7 @@ public class SubGraphTest {
 			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))
 			.addEdge("C", END);
 
-		var workflowParent = new StateGraph(overAllState).addNode("A", _makeNode("A"))
+		var workflowParent = new StateGraph().addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
@@ -219,13 +219,13 @@ public class SubGraphTest {
 
 		SaverConfig saver = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
 
-		var withSaver = workflowParent.compile(CompileConfig.builder().saverConfig(saver).build());
+		var withSaver = workflowParent.compile(CompileConfig.builder().saverConfig(saver).build(),overAllState);
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, "C", END), _execute(withSaver, Map.of()));
 
 		// INTERRUPT AFTER B1
 		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saver).interruptAfter(B_B1).build();
-		var interruptAfterB1 = workflowParent.compile(compileConfig);
+		var interruptAfterB1 = workflowParent.compile(compileConfig,overAllState);
 		assertIterableEquals(List.of(START, "A", B_B1), _execute(interruptAfterB1, Map.of()));
 
 		// RESUME AFTER B1
@@ -234,9 +234,8 @@ public class SubGraphTest {
 
 		// INTERRUPT AFTER B2
 		OverAllState overAllState1 = getOverAllState();
-		workflowParent.setOverAllState(overAllState1);
 		var interruptAfterB2 = workflowParent
-			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B2).build());
+			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B2).build(),overAllState1);
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2), _execute(interruptAfterB2, Map.of()));
 
@@ -246,9 +245,8 @@ public class SubGraphTest {
 
 		// INTERRUPT BEFORE C
 		OverAllState overAllState2 = getOverAllState();
-		workflowParent.setOverAllState(overAllState2);
 		var interruptBeforeC = workflowParent
-			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("C").build());
+			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("C").build(),overAllState2);
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C), _execute(interruptBeforeC, Map.of()));
 
@@ -258,9 +256,8 @@ public class SubGraphTest {
 
 		// INTERRUPT BEFORE SUBGRAPH B
 		OverAllState overAllState3 = getOverAllState();
-		workflowParent.setOverAllState(overAllState3);
 		var interruptBeforeSubgraphB = workflowParent
-			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("B").build());
+			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("B").build(),overAllState3);
 		assertIterableEquals(List.of(START, "A"), _execute(interruptBeforeSubgraphB, Map.of()));
 
 		// RESUME AFTER SUBGRAPH B
@@ -269,9 +266,8 @@ public class SubGraphTest {
 
 		// INTERRUPT AFTER SUBGRAPH B
 		OverAllState overAllState4 = getOverAllState();
-		workflowParent.setOverAllState(overAllState4);
 		var exception = assertThrows(GraphStateException.class,
-				() -> workflowParent.compile(CompileConfig.builder().saverConfig(saver).interruptAfter("B").build()));
+				() -> workflowParent.compile(CompileConfig.builder().saverConfig(saver).interruptAfter("B").build(),overAllState4));
 
 		assertEquals(
 				"'interruption after' on subgraph is not supported yet! consider to use 'interruption before' node: 'C'",
@@ -290,7 +286,7 @@ public class SubGraphTest {
 			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))
 			.addEdge("C", END);
 
-		var workflowParent = new StateGraph(overAllState).addNode("A", _makeNode("A"))
+		var workflowParent = new StateGraph().addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
@@ -312,7 +308,7 @@ public class SubGraphTest {
 		var B_B2 = SubGraphNode.formatId("B", "B2");
 		var B_C = SubGraphNode.formatId("B", "C");
 
-		var app = workflowParent.compile();
+		var app = workflowParent.compile(overAllState);
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, "C", END), _execute(app, Map.of()));
 
@@ -329,7 +325,7 @@ public class SubGraphTest {
 			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))
 			.addEdge("C", END);
 
-		var workflowParent = new StateGraph(overAllState).addNode("A", _makeNode("A"))
+		var workflowParent = new StateGraph().addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addNode("C1", _makeNode("C1"))
@@ -348,15 +344,14 @@ public class SubGraphTest {
 
 		SaverConfig saver = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
 
-		var withSaver = workflowParent.compile(CompileConfig.builder().saverConfig(saver).build());
+		var withSaver = workflowParent.compile(CompileConfig.builder().saverConfig(saver).build(),overAllState);
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, "C1", "C", END), _execute(withSaver, Map.of()));
 
 		// INTERRUPT AFTER B1
 		OverAllState overAllState0 = getOverAllState();
-		workflowParent.setOverAllState(overAllState0);
 		var interruptAfterB1 = workflowParent
-			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B1).build());
+			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B1).build(),overAllState0);
 		assertIterableEquals(List.of(START, "A", B_B1), _execute(interruptAfterB1, Map.of()));
 
 		// RESUME AFTER B1
@@ -365,9 +360,8 @@ public class SubGraphTest {
 
 		// INTERRUPT AFTER B2
 		OverAllState overAllState1 = getOverAllState();
-		workflowParent.setOverAllState(overAllState1);
 		var interruptAfterB2 = workflowParent
-			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B2).build());
+			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B2).build(),overAllState1);
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2), _execute(interruptAfterB2, Map.of()));
 
@@ -377,9 +371,8 @@ public class SubGraphTest {
 
 		// INTERRUPT BEFORE C
 		OverAllState overAllState2 = getOverAllState();
-		workflowParent.setOverAllState(overAllState2);
 		var interruptBeforeC = workflowParent
-			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("C").build());
+			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("C").build(),overAllState2);
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, "C1"), _execute(interruptBeforeC, Map.of()));
 
@@ -389,9 +382,8 @@ public class SubGraphTest {
 
 		// INTERRUPT BEFORE SUBGRAPH B
 		OverAllState overAllState3 = getOverAllState();
-		workflowParent.setOverAllState(overAllState3);
 		var interruptBeforeB = workflowParent
-			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("B").build());
+			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("B").build(),overAllState3);
 		assertIterableEquals(List.of(START, "A"), _execute(interruptBeforeB, Map.of()));
 
 		// RESUME BEFORE SUBGRAPH B
@@ -402,9 +394,8 @@ public class SubGraphTest {
 		// INTERRUPT AFTER SUBGRAPH B
 		//
 		OverAllState overAllState4 = getOverAllState();
-		workflowParent.setOverAllState(overAllState4);
 		var exception = assertThrows(GraphStateException.class,
-				() -> workflowParent.compile(CompileConfig.builder().saverConfig(saver).interruptAfter("B").build()));
+				() -> workflowParent.compile(CompileConfig.builder().saverConfig(saver).interruptAfter("B").build(),overAllState4));
 
 		assertEquals("'interruption after' on subgraph is not supported yet!", exception.getMessage());
 
@@ -427,7 +418,7 @@ public class SubGraphTest {
 		// .compile(compileConfig)
 		;
 
-		var workflowParent = new StateGraph(overAllState).addNode("step_1", _makeNode("step1"))
+		var workflowParent = new StateGraph().addNode("step_1", _makeNode("step1"))
 			.addNode("step_2", _makeNode("step2"))
 			.addNode("step_3", _makeNode("step3"))
 			.addNode("subgraph", workflowChild)
@@ -436,7 +427,7 @@ public class SubGraphTest {
 			.addEdge("step_2", "subgraph")
 			.addEdge("subgraph", "step_3")
 			.addEdge("step_3", END)
-			.compile(compileConfig);
+			.compile(compileConfig,overAllState);
 
 		var result = workflowParent.stream()
 			.stream()
@@ -466,20 +457,19 @@ public class SubGraphTest {
 		// .compile(compileConfig)
 		;
 
-		var workflowParent = new StateGraph(overAllState).addNode("step_1", _makeNode("step1"))
+		var workflowParent = new StateGraph().addNode("step_1", _makeNode("step1"))
 			.addNode("step_2", _makeNode("step2"))
 			.addNode("step_3", _makeNode("step3"))
 			.addNode("subgraph", AsyncNodeActionWithConfig.node_async((t, config) -> {
 				// Reference the parent class Overallstate or create a new one
-				workflowChild.setOverAllState(t);
-				return workflowChild.compile().invoke(Map.of()).orElseThrow().data();
+				return workflowChild.compile(t).invoke(Map.of()).orElseThrow().data();
 			}))
 			.addEdge(START, "step_1")
 			.addEdge("step_1", "step_2")
 			.addEdge("step_2", "subgraph")
 			.addEdge("subgraph", "step_3")
 			.addEdge("step_3", END)
-			.compile(compileConfig);
+			.compile(overAllState);
 
 		var result = workflowParent.stream()
 			.stream()

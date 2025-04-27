@@ -96,9 +96,7 @@ public class OpenmanusHumanController {
 
 		SupervisorAgent supervisorAgent = new SupervisorAgent(planningTool);
 		ReactAgent planningAgent = new ReactAgent("planningAgent", planningClient, resolver, 10);
-		planningAgent.getAndCompileGraph();
 		ReactAgent stepAgent = new ReactAgent("stepAgent", stepClient, resolver, 10);
-		stepAgent.getAndCompileGraph();
 		HumanNode humanNode = new HumanNode();
 
 		StateGraph graph2 = new StateGraph(stateFactory)

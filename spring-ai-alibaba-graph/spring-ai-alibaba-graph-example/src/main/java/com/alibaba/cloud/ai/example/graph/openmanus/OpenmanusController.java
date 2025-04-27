@@ -94,9 +94,7 @@ public class OpenmanusController {
 		SupervisorAgent supervisorAgent = new SupervisorAgent(PlanningTool.INSTANCE);
 		ReactAgent planningAgent = new ReactAgent("planningAgent", planningClient, Builder.getFunctionCallbackList(),
 				10);
-		planningAgent.getAndCompileGraph();
 		ReactAgent stepAgent = new ReactAgent("stepAgent", stepClient, Builder.getManusAgentFunctionCallbacks(), 10);
-		stepAgent.getAndCompileGraph();
 
 		StateGraph graph = new StateGraph(stateFactory)
 			.addNode("planning_agent", planningAgent.asAsyncNodeAction("input", "plan"))
