@@ -2,12 +2,19 @@
  * 工具组折叠功能
  */
 (function() {
-    // 用于跟踪初始化状态的标志
-    let initialized = false;
+    // 用于跟踪已初始化的标题元素
+    const initializedHeaders = new Set();
     
     function initGroupCollapsible() {
+        console.log('初始化工具组折叠功能');
+        
         // 在每个组标题中添加折叠图标
         document.querySelectorAll('.tool-group-header').forEach((header, index) => {
+            // 使用自定义属性标记已初始化的元素，避免重复添加
+            if (header.hasAttribute('data-collapsible-initialized')) {
+                return;
+            }
+            
             // 创建折叠图标
             const collapseIcon = document.createElement('span');
             collapseIcon.className = 'collapse-icon';
@@ -16,6 +23,10 @@
             
             // 获取对应的内容区域
             const contentArea = header.nextElementSibling;
+            if (!contentArea) {
+                console.warn('折叠组标题没有对应的内容区域:', header);
+                return;
+            }
             
             // 默认情况下，只有第一个组是展开的，其他都折叠
             if (index > 0) {
@@ -36,7 +47,14 @@
                 // 切换内容区域的折叠状态
                 contentArea.classList.toggle('collapsed');
             });
+            
+            // 标记此标题元素已初始化
+            header.setAttribute('data-collapsible-initialized', 'true');
+            initializedHeaders.add(header);
         });
+        
+        // 标记为已初始化
+        initialized = true;
     }
 
     // 初始化函数，同时支持直接调用和动态加载后调用
