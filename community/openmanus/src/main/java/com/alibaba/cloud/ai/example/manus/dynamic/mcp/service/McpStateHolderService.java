@@ -22,8 +22,4 @@ public class McpStateHolderService {
     public void removeMcpState(String key) {
         mcpStateMap.remove(key);
     }
-
-    public McpState putIfAbsent(String key, McpState state) {
-        return mcpStateMap.putIfAbsent(key, state);
-    }
 }
