@@ -21,7 +21,6 @@ import com.alibaba.cloud.ai.service.StudioObservabilityService;
 import com.alibaba.cloud.ai.service.impl.StudioObservabilityServiceImpl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import java.util.logging.Logger;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -29,6 +28,8 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.logging.Logger;
 
 /**
  * @author XiaoYunTao

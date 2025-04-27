@@ -365,11 +365,13 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 				case "screenshot": {
 					TakesScreenshot screenshot = (TakesScreenshot) driver;
 					String base64Screenshot = screenshot.getScreenshotAs(OutputType.BASE64);
+					interactiveTextProcessor.refreshCache(driver);
 					return new ToolExecuteResult(
 							"Screenshot captured (base64 length: " + base64Screenshot.length() + ")");
 				}
 				case "get_html": {
 					String html = driver.getPageSource();
+					interactiveTextProcessor.refreshCache(driver);
 					return new ToolExecuteResult(
 							html.length() > MAX_LENGTH ? html.substring(0, MAX_LENGTH) + "..." : html);
 				}
@@ -377,6 +379,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 					String body = driver.findElement(By.tagName("body")).getText();
 					log.info("get_text body is {}", body);
 
+					interactiveTextProcessor.refreshCache(driver);
 					return new ToolExecuteResult(body);
 				}
 				case "execute_js": {
