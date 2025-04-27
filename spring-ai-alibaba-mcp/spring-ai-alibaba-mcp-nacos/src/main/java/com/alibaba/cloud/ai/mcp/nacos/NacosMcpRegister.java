@@ -167,6 +167,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			McpServerInfo mcpServerInfo = new McpServerInfo();
 			mcpServerInfo.setName(this.serverInfo.name());
 			mcpServerInfo.setVersion(this.serverInfo.version());
+			mcpServerInfo.setDescription(this.serverInfo.name());
 			mcpServerInfo.setEnabled(true);
 			if ("stdio".equals(this.type)) {
 				mcpServerInfo.setProtocol("local");

@@ -183,11 +183,8 @@ public class NacosMcpRegistryProperties {
 		if (StringUtils.isEmpty(this.ip)) {
 			this.ip = NetUtils.localIP();
 		}
-		if (DEFAULT_NAMESPACE.equals(this.serviceNamespace)) {
-			this.serviceNamespace = "";
-		}
 		if (StringUtils.isBlank(this.serviceNamespace)) {
-			this.serviceNamespace = "";
+			this.serviceNamespace = DEFAULT_NAMESPACE;
 		}
 		if (StringUtils.isBlank(this.sseExportContextPath)) {
 			String path = environment.getProperty("server.servlet.context-path");
