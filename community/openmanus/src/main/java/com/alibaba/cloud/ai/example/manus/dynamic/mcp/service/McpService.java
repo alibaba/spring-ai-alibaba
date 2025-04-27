@@ -56,7 +56,6 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
-import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -109,9 +108,12 @@ public class McpService implements InitializingBean {
 					// 获取URL和base_uri
 					String url = mcpServerConfig.getUrl();
 					
-					
+					// 移除末尾的"/sse"部分
+					if (url.endsWith("/sse")) {
+						url = url.substring(0, url.length() - 4); // 移除末尾的"/sse"
+					}
 					// 移除末尾的斜杠，避免与baseUrl组合时产生路径问题
-					if (url.endsWith("/")) {
+					else if (url.endsWith("/")) {
 						url = url.substring(0, url.length() - 1);
 					}
 					
