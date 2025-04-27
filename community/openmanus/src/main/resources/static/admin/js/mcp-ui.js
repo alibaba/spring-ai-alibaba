@@ -80,14 +80,9 @@ class McpUI {
                         <div class="connection-type-desc">本地mcp server，目前市面上主流的是这个</div>
                     </div>
                     <div class="connection-type-option">
-                        <input type="radio" id="mcp-connection-type-streaming" name="mcp-connection-type" value="STREAMING">
-                        <label for="mcp-connection-type-streaming">STREAMING</label>
-                        <div class="connection-type-desc">一种远程mcp server协议，如果是个远程服务，首先推荐这种</div>
-                    </div>
-                    <div class="connection-type-option">
                         <input type="radio" id="mcp-connection-type-sse" name="mcp-connection-type" value="SSE">
                         <label for="mcp-connection-type-sse">SSE</label>
-                        <div class="connection-type-desc">另一种远程mcp server 链接协议</div>
+                        <div class="connection-type-desc">一种远程mcp server 链接协议，目前推荐</div>
                     </div>
                 </div>
             </div>
@@ -95,21 +90,21 @@ class McpUI {
                 <label for="mcp-config-input">mcp json配置：</label>
                 <textarea id="mcp-config-input" rows="12" placeholder="请输入MCP服务器配置JSON。
 
-例如：
-{
-  &quot;mcpServers&quot;: {
-    &quot;github&quot;: {
-      &quot;command&quot;: &quot;npx&quot;,
-      &quot;args&quot;: [
-        &quot;-y&quot;,
-        &quot;@modelcontextprotocol/server-github&quot;
-      ],
-      &quot;env&quot;: {
-        &quot;GITHUB_PERSONAL_ACCESS_TOKEN&quot;: &quot;<YOUR_TOKEN>&quot;
-      }
-    }
-  }
-}"></textarea>
+        例如：
+        {
+        &quot;mcpServers&quot;: {
+            &quot;github&quot;: {
+            &quot;command&quot;: &quot;npx&quot;,
+            &quot;args&quot;: [
+                &quot;-y&quot;,
+                &quot;@modelcontextprotocol/server-github&quot;
+            ],
+            &quot;env&quot;: {
+                &quot;GITHUB_PERSONAL_ACCESS_TOKEN&quot;: &quot;<YOUR_TOKEN>&quot;
+            }
+            }
+        }
+        }"></textarea>
             </div>
             <div class="mcp-form-actions">
                 <button class="submit-mcp-btn" id="submit-mcp-btn">提交</button>
@@ -119,10 +114,10 @@ class McpUI {
                 <ol>
                     <li>找到你要用的mcp server的配置json：
                         <ul class="indented-list">
-                            <li><strong>本地</strong>：可以在<a href="https://mcp.so" target="_blank">mcp.so</a>上找到，需要你有Node.js环境并理解你要配置的json里面的每一个项，
+                            <li><strong>本地(STDIO)</strong>：可以在<a href="https://mcp.so" target="_blank">mcp.so</a>上找到，需要你有Node.js环境并理解你要配置的json里面的每一个项，
                                 做对应调整比如配置ak</li>
-                            <li><strong>远程服务</strong>：<a href="https://mcp.higress.ai/" target="_blank">mcp.higress.ai/</a>上可以找到，
-                                有SSE和STREAMING两种，目前STREAMING协议官方更推荐一些</li>
+                            <li><strong>远程服务(SSE)</strong>：<a href="https://mcp.higress.ai/" target="_blank">mcp.higress.ai/</a>上可以找到，
+                                有SSE和STREAMING两种，目前SSE协议更完备一些</li>
                         </ul>
                     </li>
                     <li>将json配置复制到上面的输入框，本地选STUDIO，远程选STREAMING或SSE，提交</li>

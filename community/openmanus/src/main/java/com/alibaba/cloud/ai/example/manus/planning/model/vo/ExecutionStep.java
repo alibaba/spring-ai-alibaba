@@ -88,7 +88,6 @@ public class ExecutionStep {
 	public String toJson() {
 		StringBuilder json = new StringBuilder();
 		json.append("    {");
-		json.append("\"stepIndex\": ").append(stepIndex).append(", ");
 		json.append("\"stepRequirement\": \"").append(stepRequirement.replace("\"", "\\\"")).append("\" ");
 
 		if (result != null && !result.isEmpty()) {
