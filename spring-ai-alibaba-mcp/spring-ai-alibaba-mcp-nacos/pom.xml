@@ -12,8 +12,8 @@
 	
 	<artifactId>spring-ai-alibaba-mcp-nacos</artifactId>
 	<version>${revision}</version>
-	<name>spring-ai-alibaba-mcp-nacos</name>
-	<description>spring-ai-alibaba-mcp-nacos</description>
+	<name>Spring AI Alibaba MCP Nacos</name>
+	<description>Nacos MCP for Spring AI Alibaba</description>
 
 	<properties>
 		<java.version>17</java.version>
@@ -49,6 +49,7 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>${spring-boot.version}</version>
 			</plugin>
 		</plugins>
 	</build>
