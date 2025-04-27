@@ -527,6 +527,18 @@ class AdminUI {
             toolsCopy.forEach(tool => {
                 if ((tool.serviceGroup || '未分组') === groupName) {
                     tool.isSelected = isEnabled;
+                    
+                    // 如果启用工具，并且该工具尚未添加到selectedTools中，则添加它
+                    if (isEnabled && !selectedTools.some(t => t.key === tool.key)) {
+                        selectedTools.push(tool);
+                    }
+                    // 如果禁用工具，则从selectedTools中移除
+                    else if (!isEnabled) {
+                        const index = selectedTools.findIndex(t => t.key === tool.key);
+                        if (index !== -1) {
+                            selectedTools.splice(index, 1);
+                        }
+                    }
                 }
             });
             
