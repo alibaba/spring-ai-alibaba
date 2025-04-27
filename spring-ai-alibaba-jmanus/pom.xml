@@ -5,7 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.alibaba.cloud.ai</groupId>
-    <artifactId>spring-ai-alibaba-openmanus</artifactId>
+     <name>Spring AI Alibaba JManus</name>
+    <artifactId>spring-ai-alibaba-jmanus</artifactId>
     <version>0.0.9</version>
 
     <properties>
