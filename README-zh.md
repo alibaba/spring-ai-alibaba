@@ -4,6 +4,8 @@
 
 [English](./README.md) | [日本語](./README-ja.md)
 
+> 由社区驱动的Java版本OpenManus 已经到达可用版本 ，可以访问 了解 [spring-ai-alibaba-jmanus](./spring-ai-alibaba-jmanus) module.
+
 ## 快速开始
 
 请参考[快速开始](https://java2ai.com/docs/dev/get-started/) 了解如何使用 Spring AI Alibaba 快速开发生成式 AI 应用。
