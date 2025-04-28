@@ -124,19 +124,19 @@ public abstract class BaseAgent {
 
 				- Current Date:
 				%s
-				- Plan message:
+				- 全局计划信息:
 				{planStatus}
 
-				- CURRENT TASK STEP  IS :
+				- 当前要做的步骤要求 :
 				STEP {currentStepIndex} :{stepText}
 
-				ExtraParams for this step:
+				- 当前步骤的上下文信息:
 				{extraParams}
 
-				IMPORTANT INSTRUCTIONS:
-				1. When using tools, execute them directly without explanations
-				2. Do not provide reasoning or descriptions before tool calls
-				3. Focus on immediate action rather than explanation
+				重要说明：
+				1. 使用工具调用时，不需要额外的任何解释说明！
+				2. 不要在工具调用前提供推理或描述！
+				3. 专注于立即行动而非解释！
 
 				""".formatted(osName, osVersion, osArch, currentDateTime);
 
