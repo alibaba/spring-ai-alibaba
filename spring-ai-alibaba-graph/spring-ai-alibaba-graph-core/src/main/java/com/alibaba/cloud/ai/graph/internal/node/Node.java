@@ -81,8 +81,8 @@ public class Node {
 		return false;
 	}
 
-	public Node withIdUpdated(Function<String, String> newId) {
-		return new Node(newId.apply(id), actionFactory);
+	public Node withIdUpdated(Function<String, String> idMapper) {
+		return new Node(idMapper.apply(id), actionFactory);
 	}
 
 	/**

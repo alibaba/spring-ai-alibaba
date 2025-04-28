@@ -33,13 +33,13 @@ public record EdgeValue(String id, EdgeCondition value) {
 		this(null, value);
 	}
 
-	EdgeValue withTargetIdsUpdated(Function<String, EdgeValue> target) {
+	EdgeValue withTargetIdsUpdated(Function<String, EdgeValue> idMapper) {
 		if (id != null) {
-			return target.apply(id);
+			return idMapper.apply(id);
 		}
 
 		var newMappings = value.mappings().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> {
-			var v = target.apply(e.getValue());
+			var v = idMapper.apply(e.getValue());
 			return (v.id() != null) ? v.id() : e.getValue();
 		}));
 
