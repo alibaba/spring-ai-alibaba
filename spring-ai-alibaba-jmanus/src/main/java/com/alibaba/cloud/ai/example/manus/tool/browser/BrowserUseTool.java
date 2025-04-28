@@ -210,37 +210,18 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 
 	public ToolExecuteResult run(String toolInput) {
 		log.info("BrowserUseTool toolInput:" + toolInput);
-		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
-		});
-
-		String action = null;
-		if (toolInputMap.get("action") != null) {
-			action = (String) toolInputMap.get("action");
-		}
-		String url = null;
-		if (toolInputMap.get("url") != null) {
-			url = (String) toolInputMap.get("url");
-		}
-		Integer index = null;
-		if (toolInputMap.get("index") != null) {
-			index = (Integer) toolInputMap.get("index");
-		}
-		String text = null;
-		if (toolInputMap.get("text") != null) {
-			text = (String) toolInputMap.get("text");
-		}
-		String script = null;
-		if (toolInputMap.get("script") != null) {
-			script = (String) toolInputMap.get("script");
-		}
-		Integer scrollAmount = null;
-		if (toolInputMap.get("scroll_amount") != null) {
-			scrollAmount = (Integer) toolInputMap.get("scroll_amount");
-		}
-		Integer tabId = null;
-		if (toolInputMap.get("tab_id") != null) {
-			tabId = (Integer) toolInputMap.get("tab_id");
-		}
+		
+		// 直接将JSON字符串解析为BrowserRequestVO对象
+		BrowserRequestVO requestVO = JSON.parseObject(toolInput, BrowserRequestVO.class);
+		
+		// 从RequestVO中获取参数
+		String action = requestVO.getAction();
+		String url = requestVO.getUrl();
+		Integer index = requestVO.getIndex();
+		String text = requestVO.getText();
+		String script = requestVO.getScript();
+		Integer scrollAmount = requestVO.getScrollAmount();
+		Integer tabId = requestVO.getTabId();
 		try {
 			if (action == null) {
 				return new ToolExecuteResult("Action parameter is required");

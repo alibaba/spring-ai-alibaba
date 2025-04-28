@@ -51,7 +51,7 @@ import com.alibaba.fastjson.JSON;
  */
 @SpringBootTest(classes = OpenManusSpringBootApplication.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@Disabled("仅用于本地测试，CI 环境跳过") // 添加这一行
+// @Disabled("仅用于本地测试，CI 环境跳过") // 添加这一行
 class BrowserUseToolSpringTest {
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseToolSpringTest.class);
@@ -186,8 +186,7 @@ class BrowserUseToolSpringTest {
 			ToolExecuteResult screenshotResult = executeAction("screenshot", null);
 			Assertions.assertTrue(screenshotResult.getOutput().contains("Screenshot captured"), "获取截图失败");
 
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
@@ -195,8 +194,9 @@ class BrowserUseToolSpringTest {
 
 	/**
 	 * 导航到指定URL并验证可交互元素的通用方法
-	 * @param tool BrowserUseTool实例
-	 * @param url 目标URL
+	 * 
+	 * @param tool             BrowserUseTool实例
+	 * @param url              目标URL
 	 * @param expectedElements 期望在页面中出现的元素关键词列表
 	 * @return 获取到的可交互元素字符串
 	 */
@@ -256,8 +256,7 @@ class BrowserUseToolSpringTest {
 
 			log.info("测试成功完成！");
 
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
@@ -276,8 +275,7 @@ class BrowserUseToolSpringTest {
 
 			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
 			log.info("GitHub搜索页面测试成功完成！");
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
@@ -295,8 +293,7 @@ class BrowserUseToolSpringTest {
 
 			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
 			log.info("Nacos页面测试成功完成！");
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
@@ -314,172 +311,168 @@ class BrowserUseToolSpringTest {
 
 			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
 			log.info("百度首页测试成功完成！");
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
 	}
 
-	// @Test
-	// @Order(7)
-	// @DisplayName("测试CSDN网站登录功能")
-	// void testCsdnLogin() {
-	// try {
-	// // 步骤1: 导航到CSDN网站
-	// String testUrl = "https://www.csdn.net/";
-	// log.info("步骤1: 导航到CSDN网站");
-	// ToolExecuteResult navigateResult = executeAction("navigate", testUrl);
-	// Assertions.assertEquals("Navigated to " + testUrl, navigateResult.getOutput(),
-	// "导航到CSDN网站失败");
+	@Test
+	@Order(7)
+	@DisplayName("测试CSDN网站登录功能")
+	void testCsdnLogin() {
+		try {
+			// 步骤1: 导航到CSDN网站
+			String testUrl = "https://www.csdn.net/";
+			log.info("步骤1: 导航到CSDN网站");
+			ToolExecuteResult navigateResult = executeAction("navigate", testUrl);
+			Assertions.assertEquals("Navigated to " + testUrl, navigateResult.getOutput(),
+					"导航到CSDN网站失败");
 
-	// // 获取可交互元素
-	// log.info("步骤2: 获取并查找登录元素");
-	// Map<String, Object> state = browserUseTool.getCurrentState();
-	// String elements = (String) state.get("interactive_elements");
-	// Assertions.assertNotNull(elements, "获取可交互元素失败");
-	// log.info("获取到的可交互元素: {}", elements);
+			// 获取可交互元素
+			log.info("步骤2: 获取并查找登录元素");
+			Map<String, Object> state = browserUseTool.getCurrentState();
+			String elements = (String) state.get("interactive_elements");
+			Assertions.assertNotNull(elements, "获取可交互元素失败");
+			log.info("获取到的可交互元素: {}", elements);
 
-	// // 步骤2: 查找"登录"按钮的索引
-	// String[] elementLines = elements.split("\n");
-	// int loginButtonIndex = -1;
+			// 步骤2: 查找"登录"按钮的索引
+			String[] elementLines = elements.split("\n");
+			int loginButtonIndex = -1;
 
-	// for (int i = 0; i < elementLines.length; i++) {
-	// String line = elementLines[i];
-	// if (line.contains("登录")) {
-	// loginButtonIndex = i;
-	// log.info("找到登录按钮，索引: {}", loginButtonIndex);
-	// break;
-	// }
-	// }
+			for (int i = 0; i < elementLines.length; i++) {
+				String line = elementLines[i];
+				if (line.contains("登录")) {
+					loginButtonIndex = i;
+					log.info("找到登录按钮，索引: {}", loginButtonIndex);
+					break;
+				}
+			}
 
-	// Assertions.assertNotEquals(-1, loginButtonIndex, "未找到登录按钮");
+			Assertions.assertNotEquals(-1, loginButtonIndex, "未找到登录按钮");
 
-	// // 步骤3: 点击"登录"按钮
-	// log.info("步骤3: 点击登录按钮");
-	// ToolExecuteResult clickLoginResult = executeAction("click", null, loginButtonIndex,
-	// null);
-	// Assertions.assertTrue(clickLoginResult.getOutput().contains("Clicked"),
-	// "点击登录按钮失败");
+			// 步骤3: 点击"登录"按钮
+			log.info("步骤3: 点击登录按钮");
+			ToolExecuteResult clickLoginResult = executeAction("click", null, loginButtonIndex,
+					null);
+			Assertions.assertTrue(clickLoginResult.getOutput().contains("Clicked"),
+					"点击登录按钮失败");
 
-	// // 等待登录对话框加载
-	// log.info("等待登录对话框加载...");
-	// Thread.sleep(2000);
+			// 等待登录对话框加载
+			log.info("等待登录对话框加载...");
+			Thread.sleep(2000);
 
-	// // 获取更新后的交互元素
-	// state = browserUseTool.getCurrentState();
-	// elements = (String) state.get("interactive_elements");
-	// elementLines = elements.split("\n");
+			// 获取更新后的交互元素
+			state = browserUseTool.getCurrentState();
+			elements = (String) state.get("interactive_elements");
+			elementLines = elements.split("\n");
 
-	// // 步骤4: 查找并点击"密码登录"选项
-	// log.info("步骤4: 查找并点击'密码登录'选项");
-	// int passwordLoginTabIndex = -1;
+			// 步骤4: 查找并点击"密码登录"选项
+			log.info("步骤4: 查找并点击'密码登录'选项");
+			int passwordLoginTabIndex = -1;
 
-	// for (int i = 0; i < elementLines.length; i++) {
-	// String line = elementLines[i];
-	// if (line.contains("密码登录")) {
-	// passwordLoginTabIndex = i;
-	// log.info("找到密码登录选项，索引: {}", passwordLoginTabIndex);
-	// break;
-	// }
-	// }
+			for (int i = 0; i < elementLines.length; i++) {
+				String line = elementLines[i];
+				if (line.contains("密码登录")) {
+					passwordLoginTabIndex = i;
+					log.info("找到密码登录选项，索引: {}", passwordLoginTabIndex);
+					break;
+				}
+			}
 
-	// Assertions.assertNotEquals(-1, passwordLoginTabIndex, "未找到密码登录选项");
+			Assertions.assertNotEquals(-1, passwordLoginTabIndex, "未找到密码登录选项");
 
-	// // 点击"密码登录"选项
-	// ToolExecuteResult clickPasswordLoginResult = executeAction("click", null,
-	// passwordLoginTabIndex, null);
-	// Assertions.assertTrue(clickPasswordLoginResult.getOutput().contains("Clicked"),
-	// "点击密码登录选项失败");
+			// 点击"密码登录"选项
+			ToolExecuteResult clickPasswordLoginResult = executeAction("click", null,
+					passwordLoginTabIndex, null);
+			Assertions.assertTrue(clickPasswordLoginResult.getOutput().contains("Clicked"),
+					"点击密码登录选项失败");
 
-	// // 等待密码登录表单加载
-	// log.info("等待密码登录表单加载...");
-	// Thread.sleep(1000);
+			// 等待密码登录表单加载
+			log.info("等待密码登录表单加载...");
+			Thread.sleep(1000);
 
-	// // 获取更新后的交互元素
-	// state = browserUseTool.getCurrentState();
-	// elements = (String) state.get("interactive_elements");
-	// elementLines = elements.split("\n");
+			// 获取更新后的交互元素
+			state = browserUseTool.getCurrentState();
+			elements = (String) state.get("interactive_elements");
+			elementLines = elements.split("\n");
 
-	// // 步骤5: 查找用户名和密码输入框
-	// log.info("步骤5: 查找用户名和密码输入框");
-	// int usernameInputIndex = -1;
-	// int passwordInputIndex = -1;
+			// 步骤5: 查找用户名和密码输入框
+			log.info("步骤5: 查找用户名和密码输入框");
+			int usernameInputIndex = -1;
+			int passwordInputIndex = -1;
 
-	// for (int i = 0; i < elementLines.length; i++) {
-	// String line = elementLines[i];
-	// // 查找用户名输入框(可能是email、phone或username相关的input)
-	// if (line.contains("input") && (line.contains("email") || line.contains("phone") ||
-	// line.contains("user") || line.contains("account") || line.contains("name"))) {
-	// usernameInputIndex = i;
-	// log.info("找到用户名输入框，索引: {}", usernameInputIndex);
-	// }
-	// // 查找密码输入框
-	// else if (line.contains("input") && (line.contains("password") ||
-	// line.contains("pwd"))) {
-	// passwordInputIndex = i;
-	// log.info("找到密码输入框，索引: {}", passwordInputIndex);
-	// }
-	// }
+			for (int i = 0; i < elementLines.length; i++) {
+				String line = elementLines[i];
+				// 查找用户名输入框(可能是email、phone或username相关的input)
+				if (line.contains("input") && (line.contains("email") || line.contains("phone") ||
+						line.contains("user") || line.contains("account") || line.contains("name"))) {
+					usernameInputIndex = i;
+					log.info("找到用户名输入框，索引: {}", usernameInputIndex);
+				}
+				// 查找密码输入框
+				else if (line.contains("input") && (line.contains("password") ||
+						line.contains("pwd"))) {
+					passwordInputIndex = i;
+					log.info("找到密码输入框，索引: {}", passwordInputIndex);
+				}
+			}
 
-	// Assertions.assertNotEquals(-1, usernameInputIndex, "未找到用户名输入框");
-	// Assertions.assertNotEquals(-1, passwordInputIndex, "未找到密码输入框");
+			Assertions.assertNotEquals(-1, usernameInputIndex, "未找到用户名输入框");
+			Assertions.assertNotEquals(-1, passwordInputIndex, "未找到密码输入框");
 
-	// // 步骤6: 在用户名输入框中输入"123"
-	// log.info("步骤6: 在用户名输入框中输入'123'");
-	// ToolExecuteResult usernameInputResult = executeAction("input_text", null,
-	// usernameInputIndex, "123");
-	// Assertions.assertTrue(usernameInputResult.getOutput().contains("Successfully input
-	// '123'"), "在用户名输入框输入文本失败");
+			// 步骤6: 在用户名输入框中输入"123"
+			log.info("步骤6: 在用户名输入框中输入'123'");
+			ToolExecuteResult usernameInputResult = executeAction("input_text", null,
+					usernameInputIndex, "123");
+			Assertions.assertTrue(usernameInputResult.getOutput().contains("Successfully input'123'"), "在用户名输入框输入文本失败");
 
-	// // 步骤7: 在密码输入框中输入"546"
-	// log.info("步骤7: 在密码输入框中输入'546'");
-	// ToolExecuteResult passwordInputResult = executeAction("input_text", null,
-	// passwordInputIndex, "546");
-	// Assertions.assertTrue(passwordInputResult.getOutput().contains("Successfully input
-	// '546'"), "在密码输入框输入文本失败");
+			// 步骤7: 在密码输入框中输入"546"
+			log.info("步骤7: 在密码输入框中输入'546'");
+			ToolExecuteResult passwordInputResult = executeAction("input_text", null,
+					passwordInputIndex, "546");
+			Assertions.assertTrue(passwordInputResult.getOutput().contains("Successfully input '546'"), "在密码输入框输入文本失败");
 
-	// // 步骤8: 验证输入是否成功
-	// log.info("步骤8: 验证输入是否成功");
-	// state = browserUseTool.getCurrentState();
-	// String updatedElements = (String) state.get("interactive_elements");
-	// String[] updatedElementLines = updatedElements.split("\n");
+			// 步骤8: 验证输入是否成功
+			log.info("步骤8: 验证输入是否成功");
+			state = browserUseTool.getCurrentState();
+			String updatedElements = (String) state.get("interactive_elements");
+			String[] updatedElementLines = updatedElements.split("\n");
 
-	// // 验证用户名和密码输入框的值
-	// boolean usernameVerified = false;
-	// boolean passwordVerified = false;
+			// 验证用户名和密码输入框的值
+			boolean usernameVerified = false;
+			boolean passwordVerified = false;
 
-	// for (String line : updatedElementLines) {
-	// if (line.contains("value=\"123\"") && (line.contains("email") ||
-	// line.contains("phone") ||
-	// line.contains("user") || line.contains("account") || line.contains("name"))) {
-	// usernameVerified = true;
-	// log.info("验证用户名输入成功: {}", line);
-	// }
-	// if (line.contains("value=\"546\"") && (line.contains("password") ||
-	// line.contains("pwd"))) {
-	// passwordVerified = true;
-	// log.info("验证密码输入成功: {}", line);
-	// }
-	// }
+			for (String line : updatedElementLines) {
+				if (line.contains("value=\"123\"") && (line.contains("email") ||
+						line.contains("phone") ||
+						line.contains("user") || line.contains("account") || line.contains("name"))) {
+					usernameVerified = true;
+					log.info("验证用户名输入成功: {}", line);
+				}
+				if (line.contains("value=\"546\"") && (line.contains("password") ||
+						line.contains("pwd"))) {
+					passwordVerified = true;
+					log.info("验证密码输入成功: {}", line);
+				}
+			}
 
-	// Assertions.assertTrue(usernameVerified, "用户名未成功输入");
-	// Assertions.assertTrue(passwordVerified, "密码未成功输入");
-	// log.info("用户名和密码输入验证成功！");
+			Assertions.assertTrue(usernameVerified, "用户名未成功输入");
+			Assertions.assertTrue(passwordVerified, "密码未成功输入");
+			log.info("用户名和密码输入验证成功！");
 
-	// // 获取截图作为证据
-	// log.info("获取页面截图作为证据");
-	// ToolExecuteResult screenshotResult = executeAction("screenshot", null);
-	// Assertions.assertTrue(screenshotResult.getOutput().contains("Screenshot captured"),
-	// "获取截图失败");
+			// 获取截图作为证据
+			log.info("获取页面截图作为证据");
+			ToolExecuteResult screenshotResult = executeAction("screenshot", null);
+			Assertions.assertTrue(screenshotResult.getOutput().contains("Screenshot captured"),
+					"获取截图失败");
 
-	// log.info("CSDN登录测试完成");
-	// }
-	// catch (Exception e) {
-	// log.error("测试过程中发生错误", e);
-	// Assertions.fail("测试执行失败: " + e.getMessage());
-	// }
-	// }
+			log.info("CSDN登录测试完成");
+		} catch (Exception e) {
+			log.error("测试过程中发生错误", e);
+			Assertions.fail("测试执行失败: " + e.getMessage());
+		}
+	}
 
 	// 辅助方法：执行浏览器操作
 	private ToolExecuteResult executeAction(String action, String url) {
