@@ -154,7 +154,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 					}
 				});
 			}
-			
+
 			String serverInfoContent = this.configService.getConfig(this.serverInfo.name() + "-mcp-server.json",
 					serverGroup, 3000);
 			String serverDescription = this.serverInfo.name();
