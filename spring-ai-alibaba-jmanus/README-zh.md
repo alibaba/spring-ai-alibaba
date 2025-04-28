@@ -4,8 +4,6 @@
 
 Spring AI 对 [OpenManus](https://github.com/mannaandpoem/OpenManus/) 的 Java 实现。
 
-https://github.com/user-attachments/assets/fc8153bc-8353-4d5c-8789-755d2fd7c4f3
-
 # 功能特性
 
 Spring AI Alibaba Java Manus 提供以下关键功能：
