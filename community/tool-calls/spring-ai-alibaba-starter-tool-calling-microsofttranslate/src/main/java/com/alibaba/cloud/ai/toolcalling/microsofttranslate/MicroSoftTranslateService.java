@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.toolcalling.microsofttranslate;
 
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -38,34 +39,52 @@ public class MicroSoftTranslateService
 
 	private static final Logger logger = LoggerFactory.getLogger(MicroSoftTranslateService.class);
 
-	private static final String TRANSLATE_HOST_URL = "https://api.cognitive.microsofttranslator.com";
+	// private static final String TRANSLATE_HOST_URL =
+	// "https://api.cognitive.microsofttranslator.com";
 
 	private static final String TRANSLATE_PATH = "/microsofttranslate?api-version=3.0";
 
-	private final WebClient webClient;
+	// public static final String OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";
 
-	public MicroSoftTranslateService(MicroSoftTranslateProperties properties) {
-		assert StringUtils.hasText(properties.getApiKey());
-		this.webClient = WebClient.builder()
-			.defaultHeader(MicroSoftTranslateProperties.OCP_APIM_SUBSCRIPTION_KEY, properties.getApiKey())
-			.defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-			.build();
+	// private final WebClient webClient;
+
+	private final WebClientTool webClientTool;
+
+	public MicroSoftTranslateService(WebClientTool webClientTool) {
+		// assert StringUtils.hasText(properties.getApiKey());
+		// this.webClient = WebClient.builder()
+		// .defaultHeader(OCP_APIM_SUBSCRIPTION_KEY, properties.getApiKey())
+		// .defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+		// .build();
+		this.webClientTool = webClientTool;
 	}
+	//
+	// public MicroSoftTranslateService(MicroSoftTranslateProperties properties) {
+	// assert StringUtils.hasText(properties.getApiKey());
+	// this.webClient = WebClient.builder()
+	// .defaultHeader(OCP_APIM_SUBSCRIPTION_KEY, properties.getApiKey())
+	// .defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+	// .build();
+	// }
 
 	@Override
 	public Response apply(Request request) {
 		if (request == null || !StringUtils.hasText(request.text) || !StringUtils.hasText(request.targetLanguage)) {
 			return null;
 		}
-		String url = UriComponentsBuilder.fromHttpUrl(TRANSLATE_HOST_URL + TRANSLATE_PATH)
-			.queryParam("to", request.targetLanguage)
-			.toUriString();
+		// String url = UriComponentsBuilder.fromHttpUrl(TRANSLATE_HOST_URL +
+		// TRANSLATE_PATH)
+		// .queryParam("to", request.targetLanguage)
+		// .toUriString();
 		try {
 			String body = constructRequestBody(request);
-			Mono<String> responseMono = webClient.post().uri(url).bodyValue(body).retrieve().bodyToMono(String.class);
+			// Mono<String> responseMono =
+			// webClient.post().uri(url).bodyValue(body).retrieve().bodyToMono(String.class);
 
-			String responseData = responseMono.block();
-			assert responseData != null;
+			String responseData = webClientTool.post(TRANSLATE_PATH, body).block();
+
+			// String responseData = responseMono.block();
+			// assert responseData != null;
 			logger.info("Translation request: {}, response: {}", request.text, responseData);
 
 			return parseResponse(responseData);
