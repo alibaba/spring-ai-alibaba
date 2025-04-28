@@ -1,8 +1,22 @@
-# Spring AI Alibaba OpenManus
+# Spring AI Alibaba Java Manus
 
-The Spring AI implementation of <a href="https://github.com/mannaandpoem/OpenManus/" target="_blank">OpenManus</a>.
+[English](./README.md) | [中文](./README-zh.md)
+
+The Spring AI implementation of <a href="https://github.com/mannaandpoem/OpenManus/" target="_blank">OpenManus</a>
 
 https://github.com/user-attachments/assets/fc8153bc-8353-4d5c-8789-755d2fd7c4f3
+
+# features 
+
+Spring AI Alibaba Java Manus provides the following key features:
+
+1. **Perfect Implementation of OpenManus Multi-Agent Framework**: A comprehensive implementation that faithfully recreates the OpenManus architecture in Java with Spring AI.
+
+2. **Agent Configuration via Web Interface**: Easily configure agents through an intuitive web-based administration interface without modifying code.
+
+3. **MCP (Model Context Protocol) Integration**: Seamless integration with Model Context Protocol allows agents to interact with various models and services.
+
+4. **PLAN-ACT Pattern Support**: Implements the powerful PLAN-ACT pattern for sophisticated reasoning and execution workflows.
 
 ## How to Run
 
