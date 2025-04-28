@@ -103,17 +103,17 @@ public class ExecutionPlan {
 
 	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
-		state.append("Plan: ").append("\n").append(title).append(")\n");
+		state.append("全局目标 : ").append("\n").append(title).append(")\n");
 
-		state.append("\n- Execution Parameters: ").append("\n");
+		state.append("\n- 执行参数: ").append("\n");
 		if (executionParams != null && !executionParams.isEmpty()) {
 			state.append(executionParams).append("\n\n");
 		}
 		else {
-			state.append("No execution parameters provided.\n\n");
+			state.append("未提供执行参数。\n\n");
 		}
 
-		state.append("- Steps:\n");
+		state.append("- 全局步骤计划:\n");
 		state.append(getStepsExecutionStateStringFormat(onlyCompletedAndFirstInProgress));
 
 		return state.toString();
@@ -154,7 +154,7 @@ public class ExecutionPlan {
 				case NOT_STARTED -> "[not_started]";
 				default -> "[ ]";
 			};
-			state.append("* step ")
+			state.append("步骤 ")
 				.append(i)
 				.append(": ")
 				.append(symbol)
@@ -162,7 +162,11 @@ public class ExecutionPlan {
 				.append(step.getStepRequirement())
 				.append("\n")
 				.append("\n");
-			state.append("  step execution result: ").append("\n").append(step.getResult()).append("\n");
+			String result = step.getResult();
+			if (result != null && !result.isEmpty()) {
+				state.append("该步骤的执行结果: ").append("\n").append(result).append("\n");
+			}
+
 		}
 		return state.toString();
 	}
