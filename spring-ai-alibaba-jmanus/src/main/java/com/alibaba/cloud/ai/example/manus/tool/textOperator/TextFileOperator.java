@@ -77,23 +77,23 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	private final String TOOL_NAME = "text_file_operator";
 
 	private final String TOOL_DESCRIPTION = """
-			Operate on text files (including md, html, css, java, etc) with various actions:
-			- open: Open and read a text file, YOU MUST OPEN A FILE FIRST !
-			- replace: Replace specific text in the file
-			- get_text: Get current content of the file
-			- save: Save and close the file
-			- append: Append content to the file
-			- count_words: Count words in the current file
+			对文本文件（包括 md、html、css、java 等）执行各种操作：
+			- open: 打开并读取文本文件，您必须先打开文件！
+			- replace: 替换文件中的特定文本
+			- get_text: 获取文件的当前内容
+			- save: 保存并关闭文件
+			- append: 向文件追加内容
+			- count_words: 统计当前文件中的单词数量
 
-			Supported file types include:
-			- Text files (.txt)
-			- Markdown files (.md, .markdown)
-			- Web files (.html, .css, .scss, .sass, .less)
-			- Programming files (.java, .py, .js, .ts, .jsx, .tsx)
-			- Configuration files (.xml, .json, .yaml, .yml, .properties)
-			- Script files (.sh, .bat, .cmd)
-			- Log files (.log)
-			- And more text-based file types
+			支持的文件类型包括：
+			- 文本文件 (.txt)
+			- Markdown 文件 (.md, .markdown)
+			- 网页文件 (.html, .css, .scss, .sass, .less)
+			- 编程文件 (.java, .py, .js, .ts, .jsx, .tsx)
+			- 配置文件 (.xml, .json, .yaml, .yml, .properties)
+			- 脚本文件 (.sh, .bat, .cmd)
+			- 日志文件 (.log)
+			- 以及更多基于文本的文件类型
 			""";
 
 	public OpenAiApi.FunctionTool getToolDefinition() {
