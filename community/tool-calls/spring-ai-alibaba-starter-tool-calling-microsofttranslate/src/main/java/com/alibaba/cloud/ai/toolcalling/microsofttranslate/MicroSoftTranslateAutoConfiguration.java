@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.toolcalling.microsofttranslate;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -36,8 +38,12 @@ public class MicroSoftTranslateAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Implement natural language translation capabilities.")
-	public MicroSoftTranslateService microSoftTranslateFunction(MicroSoftTranslateProperties properties) {
-		return new MicroSoftTranslateService(properties);
+	public MicroSoftTranslateService microSoftTranslateFunction(MicroSoftTranslateProperties properties,
+			JsonParseTool jsonParseTool) {
+		WebClientTool webClientTool = new WebClientTool(headers -> {
+			headers.set("Ocp-Apim-Subscription-Key", properties.getApiKey());
+		}, jsonParseTool, properties);
+		return new MicroSoftTranslateService(webClientTool);
 	}
 
 }
