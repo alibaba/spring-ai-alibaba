@@ -11,12 +11,14 @@ https://github.com/user-attachments/assets/fc8153bc-8353-4d5c-8789-755d2fd7c4f3
 Spring AI Alibaba Java Manus 提供以下关键功能：
 
 1. **完美实现 OpenManus 多 Agent 框架**：使用 Spring AI 和 Java 全面实现 OpenManus 架构。
-
+![Image](https://github.com/user-attachments/assets/f27b763e-9c68-44e0-a57d-4f31d04c0200)
 2. **通过网页界面配置 Agent**：通过直观的网页管理界面轻松配置 agent，无需修改代码。
-
+![Image](https://github.com/user-attachments/assets/96d5902a-f741-4e82-9007-136cf4c56bb0)
 3. **MCP (Model Context Protocol) 接入 Agent**：无缝集成 Model Context Protocol，使 agent 能够与各种模型和服务交互。
-
+![Image](https://github.com/user-attachments/assets/df24679a-77f1-4e66-a15f-5e0fadcffacf)
 4. **支持 PLAN-ACT 模式**：实现强大的 PLAN-ACT 模式，支持复杂的推理和执行工作流。
+![Image](https://github.com/user-attachments/assets/d00fc59d-3f10-4163-a548-784eb21f77d6)
+
 
 ## 运行方法
 
