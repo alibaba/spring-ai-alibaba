@@ -58,6 +58,12 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
         </dependency>
+        
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-common</artifactId>
+            <version>${revision}</version>
+        </dependency>
 
         <dependency>
             <groupId>cn.hutool</groupId>
