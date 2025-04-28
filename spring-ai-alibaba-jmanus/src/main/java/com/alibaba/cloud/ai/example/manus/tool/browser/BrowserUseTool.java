@@ -16,6 +16,20 @@
 package com.alibaba.cloud.ai.example.manus.tool.browser;
 
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.BrowserRequestVO;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ClickByElementAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.CloseTabAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ExecuteJsAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetHtmlAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetTextAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.InputTextAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.KeyEnterAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.NavigateAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.NewTabAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.RefreshAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ScreenShotAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ScrollAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.SwitchTabAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
@@ -55,11 +69,9 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		this.chromeDriverService = chromeDriverService;
 	}
 
-	private WebDriver getDriver() {
+	public WebDriver getDriver() {
 		return chromeDriverService.getDriver(planId);
 	}
-
-	private final int MAX_LENGTH = 20000;
 
 	private final String PARAMETERS = """
 			{
@@ -175,253 +187,68 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 
 	public FunctionToolCallback getFunctionToolCallback(ChromeDriverService chromeDriverService) {
 		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
-			.description(description)
-			.inputSchema(PARAMETERS)
-			.inputType(String.class)
-			.build();
-	}
-
-	private void simulateHumanBehavior(WebElement element) {
-		try {
-
-			// 添加随机延迟
-			Thread.sleep(new Random().nextInt(500) + 200);
-		}
-		catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
-	}
-
-	private void typeWithHumanDelay(WebElement element, String text) {
-		simulateHumanBehavior(element);
-
-		// 模拟人类输入速度
-		Random random = new Random();
-		for (char c : text.toCharArray()) {
-			element.sendKeys(String.valueOf(c));
-			try {
-				Thread.sleep(random.nextInt(100) + 50);
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
+				.description(description)
+				.inputSchema(PARAMETERS)
+				.inputType(String.class)
+				.build();
 	}
 
 	public ToolExecuteResult run(String toolInput) {
 		log.info("BrowserUseTool toolInput:" + toolInput);
-		
+
 		// 直接将JSON字符串解析为BrowserRequestVO对象
 		BrowserRequestVO requestVO = JSON.parseObject(toolInput, BrowserRequestVO.class);
-		
+
 		// 从RequestVO中获取参数
 		String action = requestVO.getAction();
-		String url = requestVO.getUrl();
-		Integer index = requestVO.getIndex();
-		String text = requestVO.getText();
-		String script = requestVO.getScript();
-		Integer scrollAmount = requestVO.getScrollAmount();
-		Integer tabId = requestVO.getTabId();
 		try {
 			if (action == null) {
 				return new ToolExecuteResult("Action parameter is required");
 			}
-			WebDriver driver = getDriver();
 			switch (action) {
 				case "navigate": {
-
-					if (url == null) {
-						return new ToolExecuteResult("URL is required for 'navigate' action");
-					}
-					driver.get(url);
-					refreshTabsInfo(driver); // 刷新标签页信息
-					interactiveTextProcessor.refreshCache(driver);
-					return new ToolExecuteResult("Navigated to " + url);
+					return new NavigateAction(this).execute(requestVO);
 				}
 				case "click": {
-					List<WebElementWrapper> interactiveElements = getInteractiveElements(driver);
-					if (index == null) {
-						return new ToolExecuteResult("Index is required for 'click' action");
-					}
-
-					if (index < 0 || index >= interactiveElements.size()) {
-						return new ToolExecuteResult("Element with index " + index + " not found");
-					}
-
-					WebElementWrapper elementWrapper = interactiveElements.get(index);
-					elementWrapper.prepareForInteraction(driver);
-					WebElement element = elementWrapper.getElement();
-					log.info("Clicking element: {}", (element != null ? element.getText() : "No text"));
-
-					// 记录点击前的窗口状态
-					Set<String> beforeWindowHandles = driver.getWindowHandles();
-					String currentUrl = driver.getCurrentUrl();
-
-					// 执行点击操作
-					simulateHumanBehavior(element);
-					try {
-						element.click();
-					}
-					catch (ElementClickInterceptedException e) {
-						// 如果普通点击失败，尝试使用 JavaScript 点击
-						JavascriptExecutor js = (JavascriptExecutor) driver;
-						js.executeScript("arguments[0].click();", element);
-					}
-
-					// 等待页面变化（最多等待10秒）
-					WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-					try {
-						// 检查是否有新窗口打开
-						Set<String> afterWindowHandles = driver.getWindowHandles();
-						if (afterWindowHandles.size() > beforeWindowHandles.size()) {
-							// 找出新打开的窗口
-							afterWindowHandles.removeAll(beforeWindowHandles);
-							String newHandle = afterWindowHandles.iterator().next();
-
-							// 切换到新窗口
-							driver.switchTo().window(newHandle);
-							log.info("New tab detected, switched to: {}", driver.getCurrentUrl());
-							refreshTabsInfo(driver); // 刷新标签页信息
-							return new ToolExecuteResult(
-									"Clicked element and opened in new tab: " + driver.getCurrentUrl());
-						}
-
-						// 检查URL是否发生变化
-						boolean urlChanged = wait.until(d -> !d.getCurrentUrl().equals(currentUrl));
-						if (urlChanged) {
-							log.info("Page navigated to: {}", driver.getCurrentUrl());
-							refreshTabsInfo(driver); // 刷新标签页信息
-							return new ToolExecuteResult("Clicked element and navigated to: " + driver.getCurrentUrl());
-						}
-						refreshTabsInfo(driver); // 刷新标签页信息
-						interactiveTextProcessor.refreshCache(driver);
-						// 如果没有明显变化，返回普通点击成功消息
-						return new ToolExecuteResult("Clicked element at index " + index);
-
-					}
-					catch (TimeoutException e) {
-						// 如果超时，检查是否仍在原页面
-						if (!driver.getCurrentUrl().equals(currentUrl)) {
-							return new ToolExecuteResult("Clicked and page changed to: " + driver.getCurrentUrl());
-						}
-						return new ToolExecuteResult(
-								"Clicked element at index " + index + " (no visible navigation occurred)");
-					}
+					return new ClickByElementAction(this).execute(requestVO);
 				}
 				case "input_text": {
-					if (index == null || text == null) {
-						return new ToolExecuteResult("Index and text are required for 'input_text' action");
-					}
-					List<WebElementWrapper> interactiveElements = getInteractiveElements(driver);
-					if (index < 0 || index >= interactiveElements.size()) {
-						return new ToolExecuteResult("Element with index " + index + " not found");
-					}
-					WebElementWrapper inputElementWrapper = interactiveElements.get(index);
-					inputElementWrapper.prepareForInteraction(driver);
-					WebElement inputElement = inputElementWrapper.getElement();
-					if (!inputElement.getTagName().equals("input") && !inputElement.getTagName().equals("textarea")) {
-						return new ToolExecuteResult("Element at index " + index + " is not an input element");
-					}
-					typeWithHumanDelay(inputElement, text);
-					refreshTabsInfo(driver); // 刷新标签页信息
-					interactiveTextProcessor.refreshCache(driver);
-					return new ToolExecuteResult("Successfully input '" + text + "' into element at index " + index);
+					return new InputTextAction(this).execute(requestVO);
 				}
 				case "key_enter": {
-					if (index == null) {
-						return new ToolExecuteResult("Index is required for 'key_enter' action");
-					}
-					List<WebElementWrapper> interactiveElements = getInteractiveElements(driver);
-					if (index < 0 || index >= interactiveElements.size()) {
-						return new ToolExecuteResult("Element with index " + index + " not found");
-					}
-					WebElementWrapper enterElementWrapper = interactiveElements.get(index);
-					enterElementWrapper.prepareForInteraction(driver);
-					WebElement enterElement = enterElementWrapper.getElement();
-					enterElement.sendKeys(Keys.RETURN);
-					refreshTabsInfo(driver); // 刷新标签页信息
-					interactiveTextProcessor.refreshCache(driver);
-					return new ToolExecuteResult("Hit the enter key at index " + index);
+					return new KeyEnterAction(this).execute(requestVO);
 				}
 				case "screenshot": {
-					TakesScreenshot screenshot = (TakesScreenshot) driver;
-					String base64Screenshot = screenshot.getScreenshotAs(OutputType.BASE64);
-					interactiveTextProcessor.refreshCache(driver);
-					return new ToolExecuteResult(
-							"Screenshot captured (base64 length: " + base64Screenshot.length() + ")");
+					return new ScreenShotAction(this).execute(requestVO);
 				}
 				case "get_html": {
-					String html = driver.getPageSource();
-					interactiveTextProcessor.refreshCache(driver);
-					return new ToolExecuteResult(
-							html.length() > MAX_LENGTH ? html.substring(0, MAX_LENGTH) + "..." : html);
+					return new GetHtmlAction(this).execute(requestVO);
 				}
 				case "get_text": {
-					String body = driver.findElement(By.tagName("body")).getText();
-					log.info("get_text body is {}", body);
-
-					interactiveTextProcessor.refreshCache(driver);
-					return new ToolExecuteResult(body);
+					return new GetTextAction(this).execute(requestVO);
 				}
 				case "execute_js": {
-					if (script == null) {
-						return new ToolExecuteResult("Script is required for 'execute_js' action");
-					}
-					JavascriptExecutor jsExecutor = (JavascriptExecutor) driver;
-					Object result = jsExecutor.executeScript(script);
-					refreshTabsInfo(driver); // 刷新标签页信息
-					interactiveTextProcessor.refreshCache(driver);
-					if (result == null) {
-
-						return new ToolExecuteResult("Successfully executed JavaScript code.");
-					}
-					else {
-						return new ToolExecuteResult(result.toString());
-					}
+					return new ExecuteJsAction(this).execute(requestVO);
 				}
 				case "scroll": {
-					if (scrollAmount == null) {
-						return new ToolExecuteResult("Scroll amount is required for 'scroll' action");
-					}
-					((JavascriptExecutor) driver).executeScript("window.scrollBy(0," + scrollAmount + ");");
-					String direction = scrollAmount > 0 ? "down" : "up";
-					return new ToolExecuteResult("Scrolled " + direction + " by " + Math.abs(scrollAmount) + " pixels");
+					return new ScrollAction(this).execute(requestVO);
 				}
 				case "new_tab": {
-					if (url == null) {
-						return new ToolExecuteResult("URL is required for 'new_tab' action");
-					}
-					((JavascriptExecutor) driver).executeScript("window.open('" + url + "', '_blank');");
-					refreshTabsInfo(driver); // 刷新标签页信息
-					interactiveTextProcessor.refreshCache(driver);
-					return new ToolExecuteResult("Opened new tab with URL " + url);
+					return new NewTabAction(this).execute(requestVO);
 				}
 				case "close_tab": {
-					driver.close();
-					refreshTabsInfo(driver); // 刷新标签页信息
-					interactiveTextProcessor.refreshCache(driver);
-					return new ToolExecuteResult("Closed current tab");
+					return new CloseTabAction(this).execute(requestVO);
 				}
 				case "switch_tab": {
-					if (tabId == null) {
-						return new ToolExecuteResult("Tab ID is out of range for 'switch_tab' action");
-					}
-					Object[] windowHandles = driver.getWindowHandles().toArray();
-					driver.switchTo().window(windowHandles[tabId].toString());
-					refreshTabsInfo(driver); // 刷新标签页信息
-					interactiveTextProcessor.refreshCache(driver);
-					return new ToolExecuteResult("Switched to tab " + tabId);
+					return new SwitchTabAction(this).execute(requestVO);
 				}
 				case "refresh": {
-					driver.navigate().refresh();
-					interactiveTextProcessor.refreshCache(driver);
-					return new ToolExecuteResult("Refreshed current page");
+					return new RefreshAction(this).execute(requestVO);
 				}
 				default:
 					return new ToolExecuteResult("Unknown action: " + action);
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			if (e instanceof ElementNotInteractableException) {
 				String errorMessage = String.format(
 						"""
@@ -442,15 +269,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		}
 	}
 
-	/**
-	 * 通过InteractiveTextProcessor获取可交互元素
-	 * @param driver WebDriver实例
-	 * @return 可交互元素列表
-	 */
-	private List<WebElementWrapper> getInteractiveElements(WebDriver driver) {
-		return interactiveTextProcessor.getInteractiveElements(driver);
-	}
-
 	private String getInteractiveElementsInfo(WebDriver driver) {
 		return interactiveTextProcessor.getInteractiveElementsInfo(driver);
 	}
@@ -459,26 +277,11 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		if (cachedTabs != null) {
 			return cachedTabs;
 		}
-		return refreshTabsInfo(driver);
+		return new RefreshAction(this).refreshTabsInfo(driver);
 	}
 
-	/**
-	 * 这个方法是为了让getCurrentStatus 不会刷新页面，减少在Mac上主动唤起的次数 否则太烦了 ， 每个step要调起这个东西两次。 都会强制把 页面唤起到
-	 * active啥事都没办法干了。
-	 * @param driver
-	 * @return
-	 */
-	private List<Map<String, Object>> refreshTabsInfo(WebDriver driver) {
-		Set<String> windowHandles = driver.getWindowHandles();
-		List<Map<String, Object>> tabs = new ArrayList<>();
-		String currentHandle = driver.getWindowHandle();
-		for (String handle : windowHandles) {
-			driver.switchTo().window(handle);
-			tabs.add(Map.of("url", driver.getCurrentUrl(), "title", driver.getTitle(), "id", handle));
-		}
-		driver.switchTo().window(currentHandle); // 切回原始标签页
+	public void setTabsInfo(List<Map<String, Object>> tabs) {
 		this.cachedTabs = tabs;
-		return tabs;
 	}
 
 	public Map<String, Object> getCurrentState() {
@@ -528,8 +331,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 
 			return state;
 
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("Failed to get browser state", e);
 			state.put("error", "Failed to get browser state: " + e.getMessage());
 			return state;

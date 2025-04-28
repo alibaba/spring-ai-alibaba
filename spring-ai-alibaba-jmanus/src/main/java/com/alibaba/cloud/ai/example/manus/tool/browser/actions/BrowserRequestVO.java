@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.example.manus.tool.browser;
+package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
 import com.alibaba.fastjson.annotation.JSONField;
 
@@ -62,147 +62,63 @@ public class BrowserRequestVO {
      */
     @JSONField(name = "tab_id")
     private Integer tabId;
-    
-    // Getters and Setters
-    
+
     public String getAction() {
         return action;
     }
-    
+
     public void setAction(String action) {
         this.action = action;
     }
-    
+
     public String getUrl() {
         return url;
     }
-    
+
     public void setUrl(String url) {
         this.url = url;
     }
-    
+
     public Integer getIndex() {
         return index;
     }
-    
+
     public void setIndex(Integer index) {
         this.index = index;
     }
-    
+
     public String getText() {
         return text;
     }
-    
+
     public void setText(String text) {
         this.text = text;
     }
-    
+
     public String getScript() {
         return script;
     }
-    
+
     public void setScript(String script) {
         this.script = script;
     }
-    
+
     public Integer getScrollAmount() {
         return scrollAmount;
     }
-    
+
     public void setScrollAmount(Integer scrollAmount) {
         this.scrollAmount = scrollAmount;
     }
-    
+
     public Integer getTabId() {
         return tabId;
     }
-    
+
     public void setTabId(Integer tabId) {
         this.tabId = tabId;
     }
     
-    @Override
-    public String toString() {
-        return "BrowserRequestVO{" +
-                "action='" + action + '\'' +
-                ", url='" + url + '\'' +
-                ", index=" + index +
-                ", text='" + text + '\'' +
-                ", script='" + script + '\'' +
-                ", scrollAmount=" + scrollAmount +
-                ", tabId=" + tabId +
-                '}';
-    }
-}
-    
     // Getters and Setters
     
-    public String getAction() {
-        return action;
-    }
-    
-    public void setAction(String action) {
-        this.action = action;
-    }
-    
-    public String getUrl() {
-        return url;
-    }
-    
-    public void setUrl(String url) {
-        this.url = url;
-    }
-    
-    public Integer getIndex() {
-        return index;
-    }
-    
-    public void setIndex(Integer index) {
-        this.index = index;
-    }
-    
-    public String getText() {
-        return text;
-    }
-    
-    public void setText(String text) {
-        this.text = text;
-    }
-    
-    public String getScript() {
-        return script;
-    }
-    
-    public void setScript(String script) {
-        this.script = script;
-    }
-    
-    public Integer getScrollAmount() {
-        return scrollAmount;
-    }
-    
-    public void setScrollAmount(Integer scrollAmount) {
-        this.scrollAmount = scrollAmount;
-    }
-    
-    public Integer getTabId() {
-        return tabId;
-    }
-    
-    public void setTabId(Integer tabId) {
-        this.tabId = tabId;
-    }
-    
-    @Override
-    public String toString() {
-        return "BrowserRequestVO{" +
-                "action='" + action + '\'' +
-                ", url='" + url + '\'' +
-                ", index=" + index +
-                ", text='" + text + '\'' +
-                ", script='" + script + '\'' +
-                ", scrollAmount=" + scrollAmount +
-                ", tabId=" + tabId +
-                '}';
-    }
 }
