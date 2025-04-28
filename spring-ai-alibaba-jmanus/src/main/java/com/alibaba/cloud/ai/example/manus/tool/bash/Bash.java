@@ -60,10 +60,10 @@ public class Bash implements ToolCallBiFunctionDef {
 
 	private final String description = String.format(
 			"""
-					Execute a bash command in the terminal (Current OS: %s).
-						* Long running commands: For commands that may run indefinitely, it should be run in the background and the output should be redirected to a file, e.g. command = `python3 app.py > server.log 2>&1 &`.
-						* Interactive: If a bash command returns exit code `-1`, this means the process is not yet finished. The assistant must then send a second call to terminal with an empty `command` (which will retrieve any additional logs), or it can send additional text (set `command` to the text) to STDIN of the running process, or it can send command=`ctrl+c` to interrupt the process.
-						* Timeout: If a command execution result says "Command timed out. Sending SIGINT to the process", the assistant should retry running the command in the background.
+					在终端中执行bash命令（当前操作系统：%s）。
+						* 长时间运行的命令：对于可能无限期运行的命令，应该在后台运行并将输出重定向到文件，例如：command = `python3 app.py > server.log 2>&1 &`。
+						* 交互式命令：如果bash命令返回退出码`-1`，这意味着进程尚未完成。助手必须发送第二个带有空`command`的终端调用（这将检索任何其他日志），或者可以发送额外的文本（将`command`设置为文本）到运行进程的STDIN，或者可以发送command=`ctrl+c`中断进程。
+						* 超时处理：如果命令执行结果显示"Command timed out. Sending SIGINT to the process"，助手应尝试在后台重新运行该命令。
 
 					""",
 			osName);
