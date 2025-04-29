@@ -159,51 +159,97 @@ public class GetElementPositionByNameAction extends BrowserAction {
             function findElementsByText(searchText) {
               const elements = Array.from(document.querySelectorAll('*'));
               const matchedElements = [];
+              const processedElements = new Set(); // 用于避免重复处理相同元素
               
-              elements.filter(el => {
-                const text = (el.textContent || '').trim();
-                if (text.includes(searchText)) {
-                  const rect = el.getBoundingClientRect();
-                  matchedElements.push({
-                    x: Math.round(rect.left + rect.width / 2),
-                    y: Math.round(rect.top + rect.height / 2),
-                    width: rect.width,
-                    height: rect.height,
-                    left: rect.left,
-                    top: rect.top,
-                    elementText: text
-                  });
-                  return true;
-                }
-                
-                const id = (el.id || '').toString();
-                const className = String(el.className || '');
-                const name = (el.getAttribute('name') || '').toString();
-                const alt = (el.getAttribute('alt') || '').toString();
-                const title = (el.getAttribute('title') || '').toString();
-                const ariaLabel = (el.getAttribute('aria-label') || '').toString();
-                
-                if (id.includes(searchText) || 
-                    className.includes(searchText) || 
-                    name.includes(searchText) || 
-                    alt.includes(searchText) || 
-                    title.includes(searchText) || 
-                    ariaLabel.includes(searchText)) {
-                  const rect = el.getBoundingClientRect();
-                  matchedElements.push({
-                    x: Math.round(rect.left + rect.width / 2),
-                    y: Math.round(rect.top + rect.height / 2),
-                    width: rect.width,
-                    height: rect.height,
-                    left: rect.left,
-                    top: rect.top,
-                    elementText: text
-                  });
-                  return true;
-                }
-                
-                return false;
+              // 按照元素DOM树深度排序，优先处理最内层的元素
+              elements.sort((a, b) => {
+                const depthA = getElementDepth(a);
+                const depthB = getElementDepth(b);
+                return depthB - depthA; // 深度大的排在前面
               });
+              
+              function getElementDepth(el) {
+                let depth = 0;
+                let parent = el.parentNode;
+                while (parent) {
+                  depth++;
+                  parent = parent.parentNode;
+                }
+                return depth;
+              }
+              
+              // 只保留可能是交互目标的元素类型
+              const filteredElements = elements.filter(el => {
+                const tagName = el.tagName.toLowerCase();
+                return tagName === 'a' || tagName === 'button' || tagName === 'input' || 
+                       tagName === 'select' || tagName === 'textarea' || tagName === 'label' ||
+                       tagName === 'div' || tagName === 'span' || tagName === 'li' || 
+                       el.getAttribute('role') === 'button' || 
+                       el.getAttribute('tabindex') === '0';
+              });
+              
+              for (const el of filteredElements) {
+                // 跳过已处理的元素
+                if (processedElements.has(el)) continue;
+                
+                const text = (el.textContent || '').trim();
+                let matched = false;
+                
+                // 精确匹配优先
+                if (text === searchText) {
+                  matched = true;
+                }
+                // 然后考虑包含关系
+                else if (text.includes(searchText)) {
+                  matched = true;
+                }
+                // 如果文本内容不匹配，检查其他属性
+                else {
+                  const id = (el.id || '').toString();
+                  const className = String(el.className || '');
+                  const name = (el.getAttribute('name') || '').toString();
+                  const alt = (el.getAttribute('alt') || '').toString();
+                  const title = (el.getAttribute('title') || '').toString();
+                  const ariaLabel = (el.getAttribute('aria-label') || '').toString();
+                  
+                  if (id === searchText || name === searchText || alt === searchText || 
+                      title === searchText || ariaLabel === searchText) {
+                    matched = true;
+                  }
+                  else if (id.includes(searchText) || className.includes(searchText) || 
+                      name.includes(searchText) || alt.includes(searchText) || 
+                      title.includes(searchText) || ariaLabel.includes(searchText)) {
+                    matched = true;
+                  }
+                }
+                
+                if (matched) {
+                  // 将匹配元素及其所有父元素标记为已处理
+                  let current = el;
+                  while (current && current !== document) {
+                    processedElements.add(current);
+                    current = current.parentNode;
+                  }
+                  
+                  // 获取元素位置信息
+                  const rect = el.getBoundingClientRect();
+                  // 过滤掉尺寸为0或区域不在可视范围内的元素
+                  if (rect.width > 0 && rect.height > 0 && 
+                      rect.top >= 0 && rect.left >= 0 && 
+                      rect.bottom <= window.innerHeight && 
+                      rect.right <= window.innerWidth) {
+                    matchedElements.push({
+                      x: Math.round(rect.left + rect.width / 2),
+                      y: Math.round(rect.top + rect.height / 2),
+                      width: rect.width,
+                      height: rect.height,
+                      left: rect.left,
+                      top: rect.top,
+                      elementText: text
+                    });
+                  }
+                }
+              }
               
               return matchedElements;
             }
