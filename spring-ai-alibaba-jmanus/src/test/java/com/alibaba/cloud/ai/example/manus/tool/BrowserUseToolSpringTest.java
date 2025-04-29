@@ -75,11 +75,15 @@ class BrowserUseToolSpringTest {
 
 	@BeforeEach
 	void setUp() {
-		browserUseTool = new BrowserUseTool(chromeDriverService);
+
 		manusProperties.setBrowserHeadless(false);
+		chromeDriverService.setManusProperties(manusProperties);
+		browserUseTool = new BrowserUseTool(chromeDriverService);
 		DummyBaseAgent agent = new DummyBaseAgent(llmService, planExecutionRecorder, manusProperties);
 		agent.setPlanId("plan_123123124124124");
 		browserUseTool.setPlanId(agent.getPlanId());
+		
+		
 	}
 
 	private static class DummyBaseAgent extends BaseAgent {
@@ -373,7 +377,7 @@ class BrowserUseToolSpringTest {
 
 			// 创建请求对象并设置元素名称
 			BrowserRequestVO positionRequest = new BrowserRequestVO();
-			positionRequest.setText("APP登录");
+			positionRequest.setElementName("APP登录");
 
 			// 执行GetElementPositionByNameAction获取元素位置
 			GetElementPositionByNameAction positionAction = new GetElementPositionByNameAction(browserUseTool);
