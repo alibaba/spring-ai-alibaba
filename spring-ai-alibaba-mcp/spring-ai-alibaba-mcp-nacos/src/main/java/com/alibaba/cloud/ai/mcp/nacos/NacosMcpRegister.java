@@ -156,9 +156,20 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				});
 			}
 
+			String serverInfoContent = this.configService.getConfig(this.serverInfo.name() + "-mcp-server.json",
+					serverGroup, 3000);
+			String serverDescription = this.serverInfo.name();
+			if (serverInfoContent != null) {
+				Map<String, Object> serverInfoMap = JsonUtils.deserialize(serverInfoContent, Map.class);
+				if (serverInfoMap.containsKey("description")) {
+					serverDescription = (String) serverInfoMap.get("description");
+				}
+			}
+
 			McpServerInfo mcpServerInfo = new McpServerInfo();
 			mcpServerInfo.setName(this.serverInfo.name());
 			mcpServerInfo.setVersion(this.serverInfo.version());
+			mcpServerInfo.setDescription(serverDescription);
 			mcpServerInfo.setEnabled(true);
 			if ("stdio".equals(this.type)) {
 				mcpServerInfo.setProtocol("local");
