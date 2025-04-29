@@ -52,7 +52,7 @@ public class ChromeDriverService implements ApplicationRunner {
 
 	private final ConcurrentHashMap<String, ChromeDriver> drivers = new ConcurrentHashMap<>();
 
-	private final ManusProperties manusProperties;
+	private  ManusProperties manusProperties;
 
 	private final ConcurrentHashMap<String, Object> driverLocks = new ConcurrentHashMap<>();
 
@@ -343,6 +343,9 @@ public class ChromeDriverService implements ApplicationRunner {
 	public void cleanup() {
 		log.info("Spring container shutting down - cleaning up Chrome resources");
 		cleanupAllChromeProcesses();
+	}
+	public void setManusProperties(ManusProperties manusProperties) {
+		this.manusProperties = manusProperties;
 	}
 
 }
