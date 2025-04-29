@@ -377,12 +377,12 @@ class BrowserUseToolSpringTest {
 
 			// 创建请求对象并设置元素名称
 			BrowserRequestVO positionRequest = new BrowserRequestVO();
-			positionRequest.setElementName("APP登录");
+			positionRequest.setElementName("验证码登录");
 
 			// 执行GetElementPositionByNameAction获取元素位置
 			GetElementPositionByNameAction positionAction = new GetElementPositionByNameAction(browserUseTool);
 			ToolExecuteResult positionResult = positionAction.execute(positionRequest);
-			log.info("获取到'APP登录'元素位置信息: {}", positionResult.getOutput());
+			log.info("获取到'验证码登录'元素位置信息: {}", positionResult.getOutput());
 
 			// 解析JSON结果获取坐标
 			List<?> positionsList = JSON.parseArray(positionResult.getOutput());
@@ -394,7 +394,7 @@ class BrowserUseToolSpringTest {
 			Number yNumber = (Number) elementPosition.get("y");
 			Integer x = xNumber.intValue();
 			Integer y = yNumber.intValue();
-			log.info("APP登录元素坐标: x={}, y={}", x, y);
+			log.info("验证码登录元素坐标: x={}, y={}", x, y);
 
 			// 使用MoveToAndClickAction通过坐标点击元素
 			BrowserRequestVO clickRequest = new BrowserRequestVO();
@@ -404,7 +404,7 @@ class BrowserUseToolSpringTest {
 			MoveToAndClickAction clickAction = new MoveToAndClickAction(browserUseTool);
 			ToolExecuteResult clickResult = clickAction.execute(clickRequest);
 			log.info("点击结果: {}", clickResult.getOutput());
-			Assertions.assertTrue(clickResult.getOutput().contains("Clicked"), "点击APP登录元素失败");
+			Assertions.assertTrue(clickResult.getOutput().contains("Clicked"), "点击验证码登录元素失败");
 
 			// 等待密码登录表单加载
 			log.info("等待密码登录表单加载...");
@@ -415,69 +415,81 @@ class BrowserUseToolSpringTest {
 			elements = (String) state.get("interactive_elements");
 			elementLines = elements.split("\n");
 
-			// 步骤5: 查找用户名和密码输入框
-			log.info("步骤5: 查找用户名和密码输入框");
-			int usernameInputIndex = -1;
-			int passwordInputIndex = -1;
+			// 步骤5: 查找手机号输入框
+			log.info("步骤5: 查找手机号输入框");
+			int phoneInputIndex = -1;
+			int verifyCodeButtonIndex = -1;
 
 			for (int i = 0; i < elementLines.length; i++) {
 				String line = elementLines[i];
-				// 查找用户名输入框(可能是email、phone或username相关的input)
-				if (line.contains("input") && (line.contains("email") || line.contains("phone") ||
-						line.contains("user") || line.contains("account") || line.contains("name"))) {
-					usernameInputIndex = i;
-					log.info("找到用户名输入框，索引: {}", usernameInputIndex);
+				// 查找手机号输入框(可能包含phone、tel或mobile相关的input)
+				if (line.contains("input") && (line.contains("phone") || line.contains("tel") || 
+						line.contains("mobile") || line.contains("手机"))) {
+					phoneInputIndex = i;
+					log.info("找到手机号输入框，索引: {}", phoneInputIndex);
 				}
-				// 查找密码输入框
-				else if (line.contains("input") && (line.contains("password") ||
-						line.contains("pwd"))) {
-					passwordInputIndex = i;
-					log.info("找到密码输入框，索引: {}", passwordInputIndex);
+				// 查找获取验证码按钮
+				else if ((line.contains("button") || line.contains("a ")) && 
+						line.contains("验证码")) {
+					verifyCodeButtonIndex = i;
+					log.info("找到获取验证码按钮，索引: {}", verifyCodeButtonIndex);
 				}
 			}
 
-			Assertions.assertNotEquals(-1, usernameInputIndex, "未找到用户名输入框");
-			Assertions.assertNotEquals(-1, passwordInputIndex, "未找到密码输入框");
+			Assertions.assertNotEquals(-1, phoneInputIndex, "未找到手机号输入框");
+			
+			// 步骤6: 在手机号输入框中输入"123456789"
+			log.info("步骤6: 在手机号输入框中输入'123456789'");
+			ToolExecuteResult phoneInputResult = executeAction("input_text", null,
+					phoneInputIndex, "123456789");
+			Assertions.assertTrue(phoneInputResult.getOutput().contains("Successfully input"), "在手机号输入框输入文本失败");
 
-			// 步骤6: 在用户名输入框中输入"123"
-			log.info("步骤6: 在用户名输入框中输入'123'");
-			ToolExecuteResult usernameInputResult = executeAction("input_text", null,
-					usernameInputIndex, "123");
-			Assertions.assertTrue(usernameInputResult.getOutput().contains("Successfully input'123'"), "在用户名输入框输入文本失败");
+			// 获取更新后的交互元素，因为输入手机号后界面可能会变化
+			state = browserUseTool.getCurrentState();
+			elements = (String) state.get("interactive_elements");
+			elementLines = elements.split("\n");
+			
+			// 如果之前未找到验证码按钮，重新查找
+			if (verifyCodeButtonIndex == -1) {
+				for (int i = 0; i < elementLines.length; i++) {
+					String line = elementLines[i];
+					if ((line.contains("button") || line.contains("a ")) && 
+							line.contains("验证码")) {
+						verifyCodeButtonIndex = i;
+						log.info("找到获取验证码按钮，索引: {}", verifyCodeButtonIndex);
+						break;
+					}
+				}
+			}
+			
+			Assertions.assertNotEquals(-1, verifyCodeButtonIndex, "未找到获取验证码按钮");
 
-			// 步骤7: 在密码输入框中输入"546"
-			log.info("步骤7: 在密码输入框中输入'546'");
-			ToolExecuteResult passwordInputResult = executeAction("input_text", null,
-					passwordInputIndex, "546");
-			Assertions.assertTrue(passwordInputResult.getOutput().contains("Successfully input '546'"), "在密码输入框输入文本失败");
+			// 步骤7: 点击获取验证码按钮
+			log.info("步骤7: 点击获取验证码按钮");
+			ToolExecuteResult verifyCodeButtonResult = executeAction("click", null,
+					verifyCodeButtonIndex, null);
+			Assertions.assertTrue(verifyCodeButtonResult.getOutput().contains("Clicked"), "点击获取验证码按钮失败");
 
-			// 步骤8: 验证输入是否成功
-			log.info("步骤8: 验证输入是否成功");
+			// 步骤8: 验证手机号输入是否成功
+			log.info("步骤8: 验证手机号输入是否成功");
 			state = browserUseTool.getCurrentState();
 			String updatedElements = (String) state.get("interactive_elements");
 			String[] updatedElementLines = updatedElements.split("\n");
 
-			// 验证用户名和密码输入框的值
-			boolean usernameVerified = false;
-			boolean passwordVerified = false;
+			// 验证手机号输入框的值
+			boolean phoneVerified = false;
 
 			for (String line : updatedElementLines) {
-				if (line.contains("value=\"123\"") && (line.contains("email") ||
-						line.contains("phone") ||
-						line.contains("user") || line.contains("account") || line.contains("name"))) {
-					usernameVerified = true;
-					log.info("验证用户名输入成功: {}", line);
-				}
-				if (line.contains("value=\"546\"") && (line.contains("password") ||
-						line.contains("pwd"))) {
-					passwordVerified = true;
-					log.info("验证密码输入成功: {}", line);
+				if (line.contains("value=\"123456789\"") && (line.contains("phone") || 
+						line.contains("tel") || line.contains("mobile") || line.contains("手机"))) {
+					phoneVerified = true;
+					log.info("验证手机号输入成功: {}", line);
+					break;
 				}
 			}
 
-			Assertions.assertTrue(usernameVerified, "用户名未成功输入");
-			Assertions.assertTrue(passwordVerified, "密码未成功输入");
-			log.info("用户名和密码输入验证成功！");
+			Assertions.assertTrue(phoneVerified, "手机号未成功输入");
+			log.info("手机号输入验证成功，并已请求验证码！");
 
 			// 获取截图作为证据
 			log.info("获取页面截图作为证据");
