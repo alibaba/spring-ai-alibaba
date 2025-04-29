@@ -67,8 +67,6 @@ public class MoveToAndClickAction extends BrowserAction {
             );
         }
         
-        // 等待页面变化（最多等待10秒）
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         try {
             // 检查是否有新窗口打开
             Set<String> afterWindowHandles = driver.getWindowHandles();
@@ -81,18 +79,11 @@ public class MoveToAndClickAction extends BrowserAction {
                 driver.switchTo().window(newHandle);
                 log.info("New tab detected, switched to: {}", driver.getCurrentUrl());
                 refreshTabsInfo(driver); // 刷新标签页信息
+                interactiveTextProcessor.refreshCache(driver);
                 return new ToolExecuteResult(
                         "Clicked at position (" + x + ", " + y + ") and opened in new tab: " + driver.getCurrentUrl());
             }
 
-            // 检查URL是否发生变化
-            boolean urlChanged = wait.until(d -> !d.getCurrentUrl().equals(currentUrl));
-            if (urlChanged) {
-                log.info("Page navigated to: {}", driver.getCurrentUrl());
-                refreshTabsInfo(driver); // 刷新标签页信息
-                return new ToolExecuteResult("Clicked at position (" + x + ", " + y + ") and navigated to: " + driver.getCurrentUrl());
-            }
-            
             refreshTabsInfo(driver); // 刷新标签页信息
             interactiveTextProcessor.refreshCache(driver);
             // 如果没有明显变化，返回普通点击成功消息

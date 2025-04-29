@@ -33,10 +33,11 @@ public abstract class BrowserAction {
     public abstract ToolExecuteResult execute(BrowserRequestVO request) throws Exception;
 
     protected final BrowserUseTool browserUseTool;
-    protected final InteractiveTextProcessor interactiveTextProcessor = new InteractiveTextProcessor();
+    protected final InteractiveTextProcessor interactiveTextProcessor ;
 
     public BrowserAction(BrowserUseTool browserUseTool) {
         this.browserUseTool = browserUseTool;
+        this.interactiveTextProcessor = browserUseTool.getInteractiveTextProcessor();
     }
 
     /**
