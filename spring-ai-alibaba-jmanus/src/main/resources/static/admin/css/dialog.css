@@ -1,0 +1,552 @@
+/* dialog.css - 对话框样式 */
+
+/* 工具选择对话框 */
+.tool-selection-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #f9f9fa; /* 与内框匹配的背景色 */
+    padding: 24px;
+    border-radius: 10px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+    width: 700px; /* 增加宽度，更好地展示分组内容 */
+    max-width: 92vw;
+    z-index: 1100;
+    max-height: 85vh; /* 限制最大高度 */
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    overflow: hidden; /* 防止内容溢出 */
+}
+
+.dialog-header {
+    margin-bottom: 16px;
+    border-bottom: 1px solid #e8eaed;
+    padding-bottom: 16px;
+    background-color: white; /* 添加白色背景，使标题区域突出 */
+    margin: -24px -24px 16px -24px; /* 扩展到边缘 */
+    padding: 24px;
+    border-radius: 10px 10px 0 0; /* 只保留上方的圆角 */
+}
+
+.dialog-header h3 {
+    font-size: 20px;
+    font-weight: 500;
+    color: #202124;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+}
+
+.dialog-header h3::before {
+    content: "🛠️";
+    margin-right: 10px;
+    font-size: 22px;
+}
+
+.tool-search {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #dadce0;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #f9f9fa;
+    transition: all 0.25s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05) inset;
+}
+
+.tool-search:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26,115,232,0.12);
+    background-color: #fff;
+}
+
+.tool-search::placeholder {
+    color: #80868b;
+}
+
+.tool-list-container {
+    flex: 1;
+    overflow-y: auto; /* 设置垂直滚动 */
+    margin: 16px 0;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 16px;
+    background-color: #f9f9fa;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04) inset;
+    max-height: calc(60vh - 100px); /* 限制最大高度为视窗高度的60%减去头部和底部的空间 */
+    min-height: 150px; /* 确保有最小高度 */
+}
+
+.tool-summary {
+    margin-bottom: 16px;
+    padding: 10px;
+    background-color: #f1f3f4;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #5f6368;
+    display: flex;
+    align-items: center;
+}
+
+.summary-text {
+    font-weight: 500;
+}
+
+/* 排序和过滤选项 */
+.tool-sort-options {
+    background-color: #fff;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    border: 1px solid #e0e0e0;
+}
+
+.sort-filter-row {
+    display: flex;
+    align-items: center;
+}
+
+.tool-sort-options label {
+    font-size: 14px;
+    color: #5f6368;
+    margin-right: 10px;
+    font-weight: 500;
+}
+
+.tool-sort-select {
+    padding: 8px 12px;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    background-color: #fff;
+    font-size: 14px;
+    color: #202124;
+    cursor: pointer;
+    min-width: 150px;
+}
+
+.tool-sort-select:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26,115,232,0.1);
+}
+
+.filter-options {
+    display: flex;
+    align-items: center;
+}
+
+.filter-label {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #5f6368;
+    cursor: pointer;
+}
+
+.filter-label input {
+    margin-right: 8px;
+}
+
+/* 工具组样式 */
+.tool-group {
+    margin-bottom: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    transition: all 0.25s ease;
+}
+
+.tool-group:hover {
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+}
+
+.tool-group:last-child {
+    margin-bottom: 0;
+}
+
+.tool-group-header {
+    background-color: #f1f3f4;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #e0e0e0;
+    cursor: pointer;
+    transition: background-color 0.25s ease;
+    position: relative;
+}
+
+.tool-group-header:hover {
+    background-color: #e8eaed;
+}
+
+/* 添加折叠指示器 */
+.tool-group-header::after {
+    content: "▼";
+    font-size: 12px;
+    color: #5f6368;
+    position: absolute;
+    right: 12px;
+    transition: transform 0.3s ease;
+}
+
+/* 折叠状态的指示器 */
+.tool-group-header.collapsed::after {
+    transform: rotate(-90deg);
+}
+
+.group-title-area {
+    display: flex;
+    align-items: center;
+}
+
+.group-icon {
+    margin-right: 10px;
+    font-size: 18px;
+}
+
+.group-name {
+    font-weight: 600;
+    color: #202124;
+    font-size: 15px;
+}
+
+.group-count {
+    color: #5f6368;
+    font-size: 13px;
+    margin-left: 8px;
+    background-color: #e8eaed;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.group-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.group-toggle {
+    color: #1a73e8;
+    font-size: 13px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.group-toggle:hover {
+    color: #1557b0;
+    text-decoration: underline;
+}
+
+.group-enable-all {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 13px;
+    color: #5f6368;
+}
+
+.group-enable-checkbox {
+    margin-right: 6px;
+}
+
+/* 工具项样式 */
+.tool-selection-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f3f4;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    position: relative;
+    background-color: #fff;
+}
+
+.tool-selection-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.tool-selection-item:hover {
+    background-color: #f8f9fa;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.tool-selection-item.selected {
+    background-color: #e8f0fe;
+    border-left: 3px solid #1a73e8;
+}
+
+.tool-selection-item.enabled {
+    background-color: #f1f8ff;
+}
+
+.tool-info {
+    flex: 1;
+    padding-left: 8px;
+}
+
+.tool-selection-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #202124;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.tool-selection-name::before {
+    content: "*";  /* 更换为清晰可见的齿轮图标 */
+    font-size: 14px;
+    margin-right: 8px;
+    opacity: 0.8;
+}
+
+.tool-selection-desc {
+    font-size: 13px;
+    color: #5f6368;
+    line-height: 1.4;
+    padding-left: 24px;
+}
+
+/* 工具操作区域 */
+.tool-actions {
+    display: flex;
+    align-items: center;
+    min-width: 50px;
+    justify-content: flex-end;
+}
+
+/* 开关样式 */
+.tool-enable-switch {
+    position: relative;
+    display: inline-block;
+    width: 38px;
+    height: 22px;
+    margin-left: 10px;
+}
+
+.tool-enable-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.tool-enable-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .3s;
+    border-radius: 22px;
+}
+
+.tool-enable-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+input:checked + .tool-enable-slider {
+    background-color: #1a73e8;
+}
+
+input:focus + .tool-enable-slider {
+    box-shadow: 0 0 1px #1a73e8;
+}
+
+input:checked + .tool-enable-slider:before {
+    transform: translateX(16px);
+}
+
+/* 底部按钮区域 */
+.dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 16px;
+    margin-top: 16px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.dialog-btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dialog-btn-secondary {
+    background-color: #f1f3f4;
+    color: #5f6368;
+    border: 1px solid #dadce0;
+    margin-right: 12px;
+}
+
+.dialog-btn-secondary:hover {
+    background-color: #e8eaed;
+    color: #202124;
+}
+
+.dialog-btn-primary {
+    background-color: #1a73e8;
+    color: white;
+    border: 1px solid #1a73e8;
+}
+
+.dialog-btn-primary:hover {
+    background-color: #1557b0;
+    border-color: #1557b0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* 对话框遮罩层 */
+.dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.dialog-overlay.show {
+    opacity: 1;
+}
+
+/* 确认对话框 */
+.confirm-dialog {
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+    width: 400px;
+    max-width: 90vw;
+    transform: scale(0.95);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.confirm-dialog.show {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.dialog-content {
+    margin-bottom: 24px;
+}
+
+.dialog-message {
+    font-size: 16px;
+    line-height: 1.5;
+    color: #202124;
+}
+
+.dialog-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+/* 更新 save-agent-btn 和 dialog 按钮共享的基础样式 */
+.save-agent-btn,
+.dialog-footer button {
+    min-width: 80px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.save-agent-btn,
+.dialog-footer .confirm-btn {
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+}
+
+.save-agent-btn:hover,
+.dialog-footer .confirm-btn:hover {
+    background-color: #1557b0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+/* 对话框按钮区域 */
+.dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+/* 对话框按钮基础样式 */
+.dialog-footer button,
+.confirm-btn,
+.cancel-btn {
+    min-width: 80px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* 确认按钮样式 */
+.confirm-btn {
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+}
+
+.confirm-btn:hover {
+    background-color: #1557b0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+/* 取消按钮样式 */
+.cancel-btn {
+    background-color: #fff;
+    color: #1a73e8;
+    border: 1px solid #1a73e8;
+}
+
+.cancel-btn:hover {
+    background-color: #f8f9fa;
+}
