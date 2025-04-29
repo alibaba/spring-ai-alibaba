@@ -30,24 +30,19 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.RefreshAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ScreenShotAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ScrollAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.SwitchTabAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.TypeReference;
 
 import org.openqa.selenium.*;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.HashMap;
-import java.util.Set;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
-
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -92,7 +87,9 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			                "switch_tab",
 			                "new_tab",
 			                "close_tab",
-			                "refresh"
+			                "refresh",
+			                "get_element_position",
+			                "move_to_and_click"
 			            ],
 			            "description": "The browser action to perform"
 			        },
@@ -119,6 +116,18 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			        "tab_id": {
 			            "type": "integer",
 			            "description": "Tab ID for 'switch_tab' action"
+			        },
+			        "element_name": {
+			            "type": "string",
+			            "description": "Element name for 'get_element_position' action"
+			        },
+			        "position_x": {
+			            "type": "integer",
+			            "description": "X coordinate for 'move_to_and_click' action"
+			        },
+			        "position_y": {
+			            "type": "integer",
+			            "description": "Y coordinate for 'move_to_and_click' action"
 			        }
 			    },
 			    "required": [
@@ -149,6 +158,13 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			        ],
 			        "scroll": [
 			            "scroll_amount"
+			        ],
+			        "get_element_position": [
+			            "element_name"
+			        ],
+			        "move_to_and_click": [
+			            "position_x",
+			            "position_y"
 			        ]
 			    }
 			}
@@ -172,6 +188,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			- 'new_tab'：打开新标签页
 			- 'close_tab'：关闭当前标签页
 			- 'refresh'：刷新当前页面
+			- 'get_element_position'：通过元素名称获取元素的位置坐标(x,y)
+			- 'move_to_and_click'：移动到指定的绝对位置(x,y)并点击
 			""";
 
 	public OpenAiApi.FunctionTool getToolDefinition() {
@@ -244,6 +262,12 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 				}
 				case "refresh": {
 					return new RefreshAction(this).execute(requestVO);
+				}
+				case "get_element_position": {
+					return new GetElementPositionByNameAction(this).execute(requestVO);
+				}
+				case "move_to_and_click": {
+					return new MoveToAndClickAction(this).execute(requestVO);
 				}
 				default:
 					return new ToolExecuteResult("Unknown action: " + action);
