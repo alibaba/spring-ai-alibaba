@@ -76,6 +76,7 @@ public class WebClientTool {
 		this.webClient = WebClient.builder()
 			.clientConnector(createHttpConnector())
 			.baseUrl(properties.getBaseUrl())
+			.defaultHeaders(httpHeadersConsumer)
 			.defaultStatusHandler(HttpStatusCode::is4xxClientError,
 					CommonToolCallConstants.DEFAULT_WEBCLIENT_4XX_EXCEPTION)
 			.defaultStatusHandler(HttpStatusCode::is5xxServerError,
