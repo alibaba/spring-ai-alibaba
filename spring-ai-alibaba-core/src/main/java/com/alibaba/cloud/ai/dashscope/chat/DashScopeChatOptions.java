@@ -36,7 +36,7 @@ import org.springframework.util.Assert;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions {
 
-	// @formatter:off
+    // @formatter:off
   /** ID of the model to use. */
   @JsonProperty("model")
   private String model;
@@ -380,6 +380,16 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
   public static DashscopeChatOptionsBuilder builder() {
     return new DashscopeChatOptionsBuilder();
   }
+  @JsonIgnore
+  private Boolean interruptible = false;
+
+  public Boolean getInterruptible() {
+    return interruptible;
+  }
+
+  public void setInterruptible(Boolean interruptible) {
+    this.interruptible = interruptible;
+  }
 
   public static class DashscopeChatOptionsBuilder {
     private DashScopeChatOptions options;
@@ -500,6 +510,12 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
       this.options.multiModel = multiModel;
       return this;
     }
+    private Boolean interruptible;
+
+    public DashscopeChatOptionsBuilder withInterruptible(Boolean interruptible) {
+      this.options.interruptible = interruptible;
+      return this;
+    }
 
     public DashScopeChatOptions build() {
       return this.options;
@@ -508,26 +524,27 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
 
   public static DashScopeChatOptions fromOptions(DashScopeChatOptions fromOptions){
     return DashScopeChatOptions.builder()
-        .withModel(fromOptions.getModel())
-        .withTemperature(fromOptions.getTemperature())
-        .withMaxToken(fromOptions.getMaxTokens())
-        .withTopP(fromOptions.getTopP())
-        .withTopK(fromOptions.getTopK())
-        .withSeed(fromOptions.getSeed())
-        .withStop(fromOptions.getStop())
-        .withResponseFormat(fromOptions.getResponseFormat())
-        .withStream(fromOptions.getStream())
-        .withEnableSearch(fromOptions.enableSearch)
-        .withIncrementalOutput(fromOptions.getIncrementalOutput())
-        .withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-        .withFunctions(fromOptions.getFunctions())
-        .withRepetitionPenalty(fromOptions.getRepetitionPenalty())
-        .withTools(fromOptions.getTools())
-        .withToolContext(fromOptions.getToolContext())
-        .withMultiModel(fromOptions.getMultiModel())
-        .withProxyToolCalls(fromOptions.getProxyToolCalls())
-        .withVlHighResolutionImages(fromOptions.getVlHighResolutionImages())
-        .build();
+            .withModel(fromOptions.getModel())
+            .withTemperature(fromOptions.getTemperature())
+            .withMaxToken(fromOptions.getMaxTokens())
+            .withTopP(fromOptions.getTopP())
+            .withTopK(fromOptions.getTopK())
+            .withSeed(fromOptions.getSeed())
+            .withStop(fromOptions.getStop())
+            .withResponseFormat(fromOptions.getResponseFormat())
+            .withStream(fromOptions.getStream())
+            .withEnableSearch(fromOptions.enableSearch)
+            .withIncrementalOutput(fromOptions.getIncrementalOutput())
+            .withFunctionCallbacks(fromOptions.getFunctionCallbacks())
+            .withFunctions(fromOptions.getFunctions())
+            .withRepetitionPenalty(fromOptions.getRepetitionPenalty())
+            .withTools(fromOptions.getTools())
+            .withToolContext(fromOptions.getToolContext())
+            .withMultiModel(fromOptions.getMultiModel())
+            .withProxyToolCalls(fromOptions.getProxyToolCalls())
+            .withVlHighResolutionImages(fromOptions.getVlHighResolutionImages())
+            .withInterruptible(fromOptions.getInterruptible())
+            .build();
   }
 
   @Override

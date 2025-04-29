@@ -39,6 +39,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequestPara
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.FunctionTool;
 import com.alibaba.cloud.ai.dashscope.chat.observation.DashScopeChatModelObservationConvention;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
+import com.alibaba.cloud.ai.dashscope.common.StreamInterruptManager;
 import com.alibaba.cloud.ai.dashscope.metadata.DashScopeAiUsage;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -298,7 +299,22 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 			.doFinally(s -> observation.stop())
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
-			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
+			Flux<ChatResponse> shared = flux.publish().autoConnect(2);
+
+			if (!(prompt.getOptions() instanceof DashScopeChatOptions opts
+					&& Boolean.TRUE.equals(opts.getInterruptible()))) {
+				return new MessageAggregator().aggregate(shared, observationContext::setResponse);
+			}
+
+			Flux<ChatResponse> interruptible = shared
+					.take(1)
+					.flatMap(first -> {
+						String requestId = first.getMetadata().getId();
+						StreamInterruptManager.register(requestId);
+						return StreamInterruptManager.wrapFluxWithInterrupt(shared, requestId);
+					});
+
+			return new MessageAggregator().aggregate(interruptible, observationContext::setResponse);
 		});
 	}
 
@@ -350,7 +366,7 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 		Set<String> enabledToolsToUse = new HashSet<>();
 
-		DashScopeChatOptions options = DashScopeChatOptions.builder().build();
+		DashScopeChatOptions options = DashScopeChatOptions.builder().withInterruptible(true).build();
 		if (prompt.getOptions() != null) {
 			DashScopeChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
 					ChatOptions.class, DashScopeChatOptions.class);
