@@ -188,7 +188,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			- 'new_tab'：打开新标签页
 			- 'close_tab'：关闭当前标签页
 			- 'refresh'：刷新当前页面
-			- 'get_element_position'：通过元素名称获取元素的位置坐标(x,y)
+			- 'get_element_position'：通过关键词获取元素的位置坐标(x,y)
 			- 'move_to_and_click'：移动到指定的绝对位置(x,y)并点击
 			""";
 
@@ -273,6 +273,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 					return new ToolExecuteResult("Unknown action: " + action);
 			}
 		} catch (Exception e) {
+			log.error("Browser action '" + action + "' failed", e);
 			if (e instanceof ElementNotInteractableException) {
 				String errorMessage = String.format(
 						"""
