@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.toolcalling.weather;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -35,8 +37,11 @@ public class WeatherAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Use api.weather to get weather information.")
-	public WeatherService getWeatherServiceFunction(WeatherProperties properties) {
-		return new WeatherService(properties);
+	public WeatherService getWeatherServiceFunction(WeatherProperties properties, JsonParseTool jsonParseTool) {
+
+		return new WeatherService(
+				new WebClientTool(headers -> headers.add("key", properties.getApiKey()), jsonParseTool, properties),
+				jsonParseTool);
 	}
 
 }

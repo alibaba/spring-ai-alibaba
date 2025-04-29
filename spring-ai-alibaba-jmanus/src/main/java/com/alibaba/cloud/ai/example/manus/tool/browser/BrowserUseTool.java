@@ -145,21 +145,21 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	private final String name = "browser_use";
 
 	private final String description = """
-			Interact with a web browser to perform various actions such as navigation, element interaction,搜索类优先考虑此工具
-			content extraction, and tab management. Supported actions include:
-			- 'navigate': Go to a specific URL, use https://baidu.com by default
-			- 'click': Click an element by index
-			- 'input_text': Input text into an element, for 百度(Baidu), the index of the input button is
-			- 'key_enter': Hit the Enter key
-			- 'screenshot': Capture a screenshot
-			- 'get_html': Get page HTML content
-			- 'get_text': Get text content of the page
-			- 'execute_js': Execute JavaScript code
-			- 'scroll': Scroll the page
-			- 'switch_tab': Switch to a specific tab
-			- 'new_tab': Open a new tab
-			- 'close_tab': Close the current tab
-			- 'refresh': Refresh the current page
+			与网页浏览器交互，执行各种操作，如导航、元素交互、内容提取和标签页管理。搜索类优先考虑此工具。
+			支持的操作包括：
+			- 'navigate'：访问特定URL，默认使用https://baidu.com
+			- 'click'：按索引点击元素
+			- 'input_text'：在元素中输入文本，对于百度(Baidu)，输入框的索引是
+			- 'key_enter'：按回车键
+			- 'screenshot'：捕获屏幕截图
+			- 'get_html'：获取页面HTML内容
+			- 'get_text'：获取页面文本内容
+			- 'execute_js'：执行JavaScript代码
+			- 'scroll'：滚动页面
+			- 'switch_tab'：切换到特定标签页
+			- 'new_tab'：打开新标签页
+			- 'close_tab'：关闭当前标签页
+			- 'refresh'：刷新当前页面
 			""";
 
 	public OpenAiApi.FunctionTool getToolDefinition() {
