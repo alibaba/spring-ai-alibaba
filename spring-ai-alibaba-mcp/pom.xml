@@ -13,5 +13,7 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>spring-ai-alibaba-mcp-nacos</module>
+		<module>spring-ai-alibaba-mcp-nacos-client</module>
 	</modules>
+
 </project>
