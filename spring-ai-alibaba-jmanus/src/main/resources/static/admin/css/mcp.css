@@ -1,0 +1,236 @@
+/* mcp.css - MCP配置相关样式 */
+
+/* MCP配置面板布局 */
+.mcp-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* MCP表格样式 */
+.mcp-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.mcp-table thead {
+    background-color: #f8f9fa;
+}
+
+.mcp-table th, 
+.mcp-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #e1e2e3;
+}
+
+.mcp-table tbody tr:hover {
+    background-color: #f1f3f4;
+}
+
+.mcp-action-cell {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.mcp-table .action-btn {
+    margin-left: 8px;
+}
+
+/* 添加MCP服务器区域 */
+.add-mcp-container {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.add-mcp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.add-mcp-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #202124;
+}
+
+.mcp-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.mcp-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mcp-form-group label {
+    font-weight: 500;
+    color: #202124;
+}
+
+/* 连接类型选项 */
+.connection-type-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 5px;
+    padding-left: 10px;
+}
+
+.connection-type-option {
+    display: flex;
+    flex-direction: column;
+    padding-left: 25px;
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.connection-type-option input[type="radio"] {
+    position: absolute;
+    left: 0;
+    top: 3px;
+}
+
+.connection-type-option label {
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.connection-type-desc {
+    font-size: 13px;
+    color: #5f6368;
+    margin-left: 5px;
+}
+
+.mcp-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.submit-mcp-btn {
+    padding: 10px 20px;
+    background-color: #1a73e8;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.submit-mcp-btn:hover {
+    background-color: #1557b0;
+}
+
+/* 使用说明样式 */
+.mcp-form-instructions {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f5f7fa;
+    border-radius: 6px;
+    border-left: 4px solid #1a73e8;
+}
+
+.mcp-form-instructions h3 {
+    margin-top: 0;
+    color: #1a73e8;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.mcp-form-instructions ol {
+    padding-left: 25px;
+    margin-bottom: 0;
+}
+
+.mcp-form-instructions li {
+    margin-bottom: 10px;
+    color: #202124;
+}
+
+.mcp-form-instructions li:last-child {
+    margin-bottom: 0;
+}
+
+/* 缩进列表样式 */
+.indented-list {
+    padding-left: 20px !important;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    list-style-type: none; /* 移除默认列表符号 */
+}
+
+.indented-list li {
+    margin-bottom: 10px;
+    padding-left: 15px;
+    position: relative;
+    color: #5f6368;
+}
+
+.indented-list li:before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: #1a73e8;
+}
+
+.indented-list li strong {
+    color: #202124;
+}
+
+/* MCP服务器名称样式 */
+.mcp-server-name {
+    font-weight: 500;
+    color: #202124;
+}
+
+.connection-type-badge {
+    display: inline-block;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background-color: #e8f0fe;
+    color: #1a73e8;
+}
+
+/* 空状态提示 */
+.empty-state {
+    text-align: center;
+    padding: 40px 0;
+    color: #5f6368;
+}
+
+.empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #dadce0;
+}
+
+.empty-state-text {
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+/* 删除按钮样式 */
+.delete-mcp-btn {
+    color: #ea4335;
+    border-color: #ea4335;
+}
+
+.delete-mcp-btn:hover {
+    background-color: rgba(234, 67, 53, 0.1);
+}
