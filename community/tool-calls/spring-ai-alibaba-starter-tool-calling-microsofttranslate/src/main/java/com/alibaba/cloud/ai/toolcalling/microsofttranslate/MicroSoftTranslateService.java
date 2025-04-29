@@ -23,11 +23,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriComponentsBuilder;
-import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.List;
@@ -42,7 +38,7 @@ public class MicroSoftTranslateService
 	// private static final String TRANSLATE_HOST_URL =
 	// "https://api.cognitive.microsofttranslator.com";
 
-	private static final String TRANSLATE_PATH = "/microsofttranslate?api-version=3.0";
+	private static final String TRANSLATE_PATH = "/translate?api-version=3.0";
 
 	// public static final String OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";
 
