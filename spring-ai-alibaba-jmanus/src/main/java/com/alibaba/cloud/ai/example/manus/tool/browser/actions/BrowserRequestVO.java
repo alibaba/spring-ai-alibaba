@@ -26,7 +26,8 @@ public class BrowserRequestVO {
     /**
      * 浏览器操作类型
      * 支持: navigate, click, input_text, key_enter, screenshot, get_html, get_text,
-     * execute_js, scroll, switch_tab, new_tab, close_tab, refresh
+     * execute_js, scroll, switch_tab, new_tab, close_tab, refresh, 
+     * get_element_position, move_to_and_click
      */
     private String action;
     
@@ -62,6 +63,24 @@ public class BrowserRequestVO {
      */
     @JSONField(name = "tab_id")
     private Integer tabId;
+    
+    /**
+     * 元素名称，用于get_element_position操作
+     */
+    @JSONField(name = "element_name")
+    private String elementName;
+    
+    /**
+     * X坐标，用于move_to_and_click操作
+     */
+    @JSONField(name = "position_x")
+    private Integer positionX;
+    
+    /**
+     * Y坐标，用于move_to_and_click操作
+     */
+    @JSONField(name = "position_y")
+    private Integer positionY;
 
     public String getAction() {
         return action;
@@ -119,6 +138,27 @@ public class BrowserRequestVO {
         this.tabId = tabId;
     }
     
-    // Getters and Setters
-    
+    public String getElementName() {
+        return elementName;
+    }
+
+    public void setElementName(String elementName) {
+        this.elementName = elementName;
+    }
+
+    public Integer getPositionX() {
+        return positionX;
+    }
+
+    public void setPositionX(Integer positionX) {
+        this.positionX = positionX;
+    }
+
+    public Integer getPositionY() {
+        return positionY;
+    }
+
+    public void setPositionY(Integer positionY) {
+        this.positionY = positionY;
+    }
 }
