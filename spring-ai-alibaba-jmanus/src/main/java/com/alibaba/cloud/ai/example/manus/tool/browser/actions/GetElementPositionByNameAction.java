@@ -21,32 +21,21 @@ public class GetElementPositionByNameAction extends BrowserAction {
     }
 
     /**
-     * 元素位置信息类，用于存储每个匹配元素的位置和相关信息
+     * 元素位置信息类，用于存储每个匹配元素的全局位置和文本信息
      */
     public static class ElementPosition {
-        private int x;                  // 元素中心点的x坐标
-        private int y;                  // 元素中心点的y坐标
-        private double width;           // 元素宽度
-        private double height;          // 元素高度
-        private double left;            // 元素左边界
-        private double top;             // 元素上边界
-        private String elementText;     // 元素文本内容
-        private String iframePath;      // 元素所在iframe路径
+        private int x;                  // It holds the absolute x coordinate
+        private int y;                  // It holds the absolute y coordinate
+        private String elementText;     // Element text content
 
         // 构造函数
         public ElementPosition() {}
         
-        // 所有属性的构造函数
-        public ElementPosition(int x, int y, double width, double height, double left, double top, 
-                              String elementText, String iframePath) {
+        // 构造函数，只包含必要字段
+        public ElementPosition(int x, int y, String elementText) {
             this.x = x;
             this.y = y;
-            this.width = width;
-            this.height = height;
-            this.left = left;
-            this.top = top;
             this.elementText = elementText;
-            this.iframePath = iframePath;
         }
 
         // Getters and Setters
@@ -66,52 +55,12 @@ public class GetElementPositionByNameAction extends BrowserAction {
             this.y = y;
         }
 
-        public double getWidth() {
-            return width;
-        }
-
-        public void setWidth(double width) {
-            this.width = width;
-        }
-
-        public double getHeight() {
-            return height;
-        }
-
-        public void setHeight(double height) {
-            this.height = height;
-        }
-
-        public double getLeft() {
-            return left;
-        }
-
-        public void setLeft(double left) {
-            this.left = left;
-        }
-
-        public double getTop() {
-            return top;
-        }
-
-        public void setTop(double top) {
-            this.top = top;
-        }
-
         public String getElementText() {
             return elementText;
         }
 
         public void setElementText(String elementText) {
             this.elementText = elementText;
-        }
-
-        public String getIframePath() {
-            return iframePath;
-        }
-
-        public void setIframePath(String iframePath) {
-            this.iframePath = iframePath;
         }
     }
 
@@ -152,6 +101,38 @@ public class GetElementPositionByNameAction extends BrowserAction {
     @SuppressWarnings("unchecked")
     private void findAndProcessElementsByJS(WebDriver driver, JavascriptExecutor js, 
             String elementName, List<ElementPosition> results, String iframePath) {
+        
+        // 获取iframe的位置信息(如果在iframe中)
+        int iframeOffsetX = 0;
+        int iframeOffsetY = 0;
+        
+        if (!iframePath.isEmpty()) {
+            // 切换到默认内容获取iframe位置
+            driver.switchTo().defaultContent();
+            
+            // 解析iframe路径并依次遍历查找
+            String[] pathParts = iframePath.split("/");
+            
+            for (int i = 0; i < pathParts.length; i++) {
+                try {
+                    int index = Integer.parseInt(pathParts[i]);
+                    List<WebElement> frames = driver.findElements(By.tagName("iframe"));
+                    
+                    if (index < frames.size()) {
+                        WebElement frame = frames.get(index);
+                        // 获取iframe的位置
+                        org.openqa.selenium.Point framePosition = frame.getLocation();
+                        iframeOffsetX += framePosition.getX();
+                        iframeOffsetY += framePosition.getY();
+                        
+                        // 切换到该iframe
+                        driver.switchTo().frame(index);
+                    }
+                } catch (Exception e) {
+                    log.warn("Error calculating iframe position for path {}: {}", iframePath, e.getMessage());
+                }
+            }
+        }
         
         // 执行JavaScript来查找元素并获取位置信息
         List<Map<String, Object>> elements = (List<Map<String, Object>>) js.executeScript(
@@ -241,10 +222,6 @@ public class GetElementPositionByNameAction extends BrowserAction {
                     matchedElements.push({
                       x: Math.round(rect.left + rect.width / 2),
                       y: Math.round(rect.top + rect.height / 2),
-                      width: rect.width,
-                      height: rect.height,
-                      left: rect.left,
-                      top: rect.top,
                       elementText: text
                     });
                   }
@@ -262,20 +239,33 @@ public class GetElementPositionByNameAction extends BrowserAction {
                 // 创建新的ElementPosition对象
                 ElementPosition position = new ElementPosition();
                 
-                // 转换基本属性
-                position.setX(((Number) element.get("x")).intValue());
-                position.setY(((Number) element.get("y")).intValue());
-                position.setWidth(((Number) element.get("width")).doubleValue());
-                position.setHeight(((Number) element.get("height")).doubleValue());
-                position.setLeft(((Number) element.get("left")).doubleValue());
-                position.setTop(((Number) element.get("top")).doubleValue());
+                // 计算全局坐标（iframe偏移量 + 元素在iframe内的坐标）
+                int globalX = ((Number) element.get("x")).intValue() + iframeOffsetX;
+                int globalY = ((Number) element.get("y")).intValue() + iframeOffsetY;
                 
-                // 设置字符串属性
+                // 设置全局坐标
+                position.setX(globalX);
+                position.setY(globalY);
+                
+                // 设置元素文本
                 position.setElementText((String) element.get("elementText"));
-                position.setIframePath(iframePath);
                 
                 // 添加到结果列表
                 results.add(position);
+            }
+        }
+        
+        // 如果在iframe中，恢复到当前iframe的上下文
+        if (!iframePath.isEmpty()) {
+            driver.switchTo().defaultContent();
+            String[] pathParts = iframePath.split("/");
+            for (int i = 0; i < pathParts.length; i++) {
+                try {
+                    int index = Integer.parseInt(pathParts[i]);
+                    driver.switchTo().frame(index);
+                } catch (Exception e) {
+                    log.warn("Error switching back to iframe {}: {}", iframePath, e.getMessage());
+                }
             }
         }
     }
@@ -343,7 +333,7 @@ public class GetElementPositionByNameAction extends BrowserAction {
             String currentPath = parentPath.isEmpty() ? String.valueOf(i) : parentPath + "/" + i;
             
             try {
-                // 获取iframe的HTML内容和属性进行调试
+                // 获取iframe的属性进行调试
                 String iframeSrc = iframe.getAttribute("src") != null ? iframe.getAttribute("src") : "no-src";
                 String iframeId = iframe.getAttribute("id") != null ? iframe.getAttribute("id") : "no-id";
                 String iframeClass = iframe.getAttribute("class") != null ? iframe.getAttribute("class") : "no-class";
@@ -352,26 +342,13 @@ public class GetElementPositionByNameAction extends BrowserAction {
                 // 切换到iframe
                 driver.switchTo().frame(iframe);
                 
-                // 记录iframe的document信息
+                // 记录iframe的文档信息
                 JavascriptExecutor js = (JavascriptExecutor) driver;
                 String iframeUrl = (String) js.executeScript("return document.location.href");
                 String iframeTitle = (String) js.executeScript("return document.title");
                 log.info("iframe内部信息: url={}, title={}", iframeUrl, iframeTitle);
                 
-                // 获取iframe的HTML大小
-                String iframeHtmlSize = (String) js.executeScript(
-                    "return 'HTML长度: ' + document.documentElement.outerHTML.length + ' 字节';"
-                );
-                log.info("iframe HTML大小: {}", iframeHtmlSize);
-                
-                // 获取iframe的原始HTML内容（前1000个字符作为摘要）
-                String iframeRawHtml = (String) js.executeScript(
-                    "var html = document.documentElement.outerHTML; " +
-                    "return html.length > 5000 ? html.substring(0, 1000) + '...(省略剩余内容)' : html;"
-                );
-                log.info("iframe原始HTML(摘要): {}", iframeRawHtml);
-                
-                // 方法2：使用JavaScript查找元素，无论是否是交互式的
+                // 使用JavaScript查找元素（此方法内会处理全局坐标）
                 findAndProcessElementsByJS(driver, js, elementName, results, currentPath);
                 
                 // 递归处理嵌套iframe
