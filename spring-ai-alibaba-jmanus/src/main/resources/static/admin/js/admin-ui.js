@@ -284,9 +284,14 @@ class AdminUI {
         
         // 添加事件处理
         inputElem.addEventListener('change', (e) => {
-            const value = config.inputType === 'BOOLEAN' 
-                ? e.target.checked.toString() 
-                : e.target.value;
+            let value;
+            
+            // 对BOOLEAN和CHECKBOX类型都使用checked属性转换为true/false字符串
+            if (config.inputType === 'BOOLEAN' || config.inputType === 'CHECKBOX') {
+                value = e.target.checked.toString();
+            } else {
+                value = e.target.value;
+            }
             
             // 更新配置模型中的值
             configModel.updateGroupConfigValue('manus', config.id, value);
