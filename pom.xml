@@ -102,7 +102,7 @@
         <module>community/memories/spring-ai-alibaba-redis-memory</module>
         <module>community/memories/spring-ai-alibaba-jdbc-memory</module>
 
-        <module>community/openmanus</module>
+        <module>spring-ai-alibaba-jmanus</module>
 
     </modules>
 
