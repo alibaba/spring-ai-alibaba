@@ -43,6 +43,9 @@ import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.ChromeDriverService;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.BrowserRequestVO;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 
@@ -73,7 +76,7 @@ class BrowserUseToolSpringTest {
 	@BeforeEach
 	void setUp() {
 		browserUseTool = new BrowserUseTool(chromeDriverService);
-		manusProperties.setBrowserHeadless(true);
+		manusProperties.setBrowserHeadless(false);
 		DummyBaseAgent agent = new DummyBaseAgent(llmService, planExecutionRecorder, manusProperties);
 		agent.setPlanId("plan_123123124124124");
 		browserUseTool.setPlanId(agent.getPlanId());
@@ -247,7 +250,7 @@ class BrowserUseToolSpringTest {
 			List<String> expectedElements = Arrays.asList("search", "textarea");
 
 			// 使用通用方法进行测试
-			String elements = navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
+			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
 
 			// 获取截图（可选）
 			log.info("获取页面截图作为证据");
@@ -365,28 +368,39 @@ class BrowserUseToolSpringTest {
 			// 获取更新后的交互元素
 			state = browserUseTool.getCurrentState();
 			elements = (String) state.get("interactive_elements");
-			elementLines = elements.split("\n");
+			elementLines = elements.split("\n"); // 步骤4: 使用GetElementPositionByNameAction查找"APP登录"元素并通过坐标点击
+			log.info("步骤4: 使用GetElementPositionByNameAction查找'APP登录'元素");
 
-			// 步骤4: 查找并点击"密码登录"选项
-			log.info("步骤4: 查找并点击'密码登录'选项");
-			int passwordLoginTabIndex = -1;
+			// 创建请求对象并设置元素名称
+			BrowserRequestVO positionRequest = new BrowserRequestVO();
+			positionRequest.setText("APP登录");
 
-			for (int i = 0; i < elementLines.length; i++) {
-				String line = elementLines[i];
-				if (line.contains("密码登录")) {
-					passwordLoginTabIndex = i;
-					log.info("找到密码登录选项，索引: {}", passwordLoginTabIndex);
-					break;
-				}
-			}
+			// 执行GetElementPositionByNameAction获取元素位置
+			GetElementPositionByNameAction positionAction = new GetElementPositionByNameAction(browserUseTool);
+			ToolExecuteResult positionResult = positionAction.execute(positionRequest);
+			log.info("获取到'APP登录'元素位置信息: {}", positionResult.getOutput());
 
-			Assertions.assertNotEquals(-1, passwordLoginTabIndex, "未找到密码登录选项");
+			// 解析JSON结果获取坐标
+			List<?> positionsList = JSON.parseArray(positionResult.getOutput());
+			Assertions.assertFalse(positionsList.isEmpty(), "未找到'APP登录'元素");
 
-			// 点击"密码登录"选项
-			ToolExecuteResult clickPasswordLoginResult = executeAction("click", null,
-					passwordLoginTabIndex, null);
-			Assertions.assertTrue(clickPasswordLoginResult.getOutput().contains("Clicked"),
-					"点击密码登录选项失败");
+			// 获取第一个匹配元素的位置信息
+			Map<?, ?> elementPosition = (Map<?, ?>) positionsList.get(0);
+			Number xNumber = (Number) elementPosition.get("x");
+			Number yNumber = (Number) elementPosition.get("y");
+			Integer x = xNumber.intValue();
+			Integer y = yNumber.intValue();
+			log.info("APP登录元素坐标: x={}, y={}", x, y);
+
+			// 使用MoveToAndClickAction通过坐标点击元素
+			BrowserRequestVO clickRequest = new BrowserRequestVO();
+			clickRequest.setPositionY(x);
+			clickRequest.setPositionY(y);
+
+			MoveToAndClickAction clickAction = new MoveToAndClickAction(browserUseTool);
+			ToolExecuteResult clickResult = clickAction.execute(clickRequest);
+			log.info("点击结果: {}", clickResult.getOutput());
+			Assertions.assertTrue(clickResult.getOutput().contains("Clicked"), "点击APP登录元素失败");
 
 			// 等待密码登录表单加载
 			log.info("等待密码登录表单加载...");
