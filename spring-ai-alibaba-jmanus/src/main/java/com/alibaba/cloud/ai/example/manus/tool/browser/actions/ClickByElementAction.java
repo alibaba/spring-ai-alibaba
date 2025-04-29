@@ -86,13 +86,7 @@ public class ClickByElementAction extends BrowserAction {
                         "Clicked element and opened in new tab: " + driver.getCurrentUrl());
             }
 
-            // 检查URL是否发生变化
-            boolean urlChanged = wait.until(d -> !d.getCurrentUrl().equals(currentUrl));
-            if (urlChanged) {
-                log.info("Page navigated to: {}", driver.getCurrentUrl());
-                refreshTabsInfo(driver); // 刷新标签页信息
-                return new ToolExecuteResult("Clicked element and navigated to: " + driver.getCurrentUrl());
-            }
+       
             refreshTabsInfo(driver); // 刷新标签页信息
             interactiveTextProcessor.refreshCache(driver);
             // 如果没有明显变化，返回普通点击成功消息

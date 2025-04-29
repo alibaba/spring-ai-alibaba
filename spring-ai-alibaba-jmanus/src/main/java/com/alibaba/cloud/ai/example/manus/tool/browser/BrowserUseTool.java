@@ -467,4 +467,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		}
 	}
 
+	public InteractiveTextProcessor getInteractiveTextProcessor() {
+		return interactiveTextProcessor;
+	}
+
 }
