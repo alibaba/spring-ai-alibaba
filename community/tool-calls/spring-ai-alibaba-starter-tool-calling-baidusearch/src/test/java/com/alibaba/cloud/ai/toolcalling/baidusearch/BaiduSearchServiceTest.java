@@ -26,7 +26,6 @@ class BaiduSearchServiceTest {
 
 	private final BaiduSearchService baiduSearchService = new BaiduSearchService();
 
-	@Disabled("Due to anti crawling reasons, we are temporarily unable to succeed and waiting for repairs")
 	@Test
 	void apply() {
 		BaiduSearchService.Request request = new BaiduSearchService.Request("Spring AI", 10);
