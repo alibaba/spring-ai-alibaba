@@ -24,6 +24,7 @@ import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.HashMap;
 import java.util.List;
@@ -68,16 +69,17 @@ public class MicroSoftTranslateService
 		if (request == null || !StringUtils.hasText(request.text) || !StringUtils.hasText(request.targetLanguage)) {
 			return null;
 		}
-		// String url = UriComponentsBuilder.fromHttpUrl(TRANSLATE_HOST_URL +
-		// TRANSLATE_PATH)
-		// .queryParam("to", request.targetLanguage)
-		// .toUriString();
+		String uri = UriComponentsBuilder.fromHttpUrl(TRANSLATE_PATH)
+			.queryParam("to", request.targetLanguage)
+			.toUriString();
+		logger.info("Request uri: {}", uri);
 		try {
 			String body = constructRequestBody(request);
+			logger.info("Request body: {}", body);
 			// Mono<String> responseMono =
 			// webClient.post().uri(url).bodyValue(body).retrieve().bodyToMono(String.class);
 
-			String responseData = webClientTool.post(TRANSLATE_PATH, body).block();
+			String responseData = webClientTool.post(uri, body).block();
 
 			// String responseData = responseMono.block();
 			// assert responseData != null;
