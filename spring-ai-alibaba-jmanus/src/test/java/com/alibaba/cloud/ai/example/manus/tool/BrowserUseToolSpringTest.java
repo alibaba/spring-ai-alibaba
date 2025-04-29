@@ -398,7 +398,7 @@ class BrowserUseToolSpringTest {
 
 			// 使用MoveToAndClickAction通过坐标点击元素
 			BrowserRequestVO clickRequest = new BrowserRequestVO();
-			clickRequest.setPositionY(x);
+			clickRequest.setPositionX(x);
 			clickRequest.setPositionY(y);
 
 			MoveToAndClickAction clickAction = new MoveToAndClickAction(browserUseTool);
