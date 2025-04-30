@@ -29,6 +29,7 @@ import org.springframework.ai.mcp.client.autoconfigure.configurer.McpAsyncClient
 import org.springframework.ai.mcp.client.autoconfigure.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -63,7 +64,7 @@ public class NacosMcpClientAutoConfiguration {
 	public List<LoadbalancedMcpSyncClient> loadbalancedMcpSyncClientList(
 			ObjectProvider<McpSyncClientConfigurer> mcpSyncClientConfigurerProvider,
 			McpClientCommonProperties commonProperties,
-			ObjectProvider<Map<String, List<NamedClientMcpTransport>>> server2NamedTransportProvider,
+			@Qualifier("server2NamedTransport") ObjectProvider<Map<String, List<NamedClientMcpTransport>>> server2NamedTransportProvider,
 			ObjectProvider<NamingService> namingServiceProvider) {
 		NamingService namingService = namingServiceProvider.getObject();
 		McpSyncClientConfigurer mcpSyncClientConfigurer = mcpSyncClientConfigurerProvider.getObject();
@@ -108,7 +109,7 @@ public class NacosMcpClientAutoConfiguration {
 	public List<LoadbalancedMcpAsyncClient> loadbalancedMcpAsyncClientList(
 			ObjectProvider<McpAsyncClientConfigurer> mcpAsyncClientConfigurerProvider,
 			McpClientCommonProperties commonProperties,
-			ObjectProvider<Map<String, List<NamedClientMcpTransport>>> server2NamedTransportProvider,
+			@Qualifier("server2NamedTransport") ObjectProvider<Map<String, List<NamedClientMcpTransport>>> server2NamedTransportProvider,
 			ObjectProvider<NamingService> namingServiceProvider) {
 		NamingService namingService = namingServiceProvider.getObject();
 		McpAsyncClientConfigurer mcpAsyncClientConfigurer = mcpAsyncClientConfigurerProvider.getObject();

@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.mcp.nacos.client.transport;
 
-import com.alibaba.cloud.ai.mcp.nacos.client.utils.SpringBeanUtils;
+import com.alibaba.cloud.ai.mcp.nacos.client.utils.ApplicationContextHolder;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.listener.Event;
@@ -244,11 +244,10 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 	}
 
 	private void updateClientList(List<Instance> currentInstances) {
-		SpringBeanUtils springBeanUtils = SpringBeanUtils.getInstance();
-		McpClientCommonProperties commonProperties = springBeanUtils.getBean(McpClientCommonProperties.class);
-		McpSyncClientConfigurer mcpSyncClientConfigurer = springBeanUtils.getBean(McpSyncClientConfigurer.class);
-		ObjectMapper objectMapper = springBeanUtils.getBean(ObjectMapper.class);
-		WebClient.Builder webClientBuilderTemplate = springBeanUtils.getBean(WebClient.Builder.class);
+		McpClientCommonProperties commonProperties = ApplicationContextHolder.getBean(McpClientCommonProperties.class);
+		McpSyncClientConfigurer mcpSyncClientConfigurer = ApplicationContextHolder.getBean(McpSyncClientConfigurer.class);
+		ObjectMapper objectMapper = ApplicationContextHolder.getBean(ObjectMapper.class);
+		WebClient.Builder webClientBuilderTemplate = ApplicationContextHolder.getBean(WebClient.Builder.class);
 
 		// 移除的实例列表
 		List<Instance> removeInstances = instances.stream()
