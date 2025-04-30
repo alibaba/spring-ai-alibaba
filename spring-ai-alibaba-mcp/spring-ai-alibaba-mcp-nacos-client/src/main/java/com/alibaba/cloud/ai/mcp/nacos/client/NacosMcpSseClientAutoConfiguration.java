@@ -83,8 +83,8 @@ public class NacosMcpSseClientAutoConfiguration {
 
 					WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(url);
 					WebFluxSseClientTransport transport = new WebFluxSseClientTransport(webClientBuilder, objectMapper);
-					namedTransports.add(
-							new NamedClientMcpTransport(serviceName + "-" + instance.getInstanceId(), transport));
+					namedTransports
+						.add(new NamedClientMcpTransport(serviceName + "-" + instance.getInstanceId(), transport));
 				}
 
 				server2NamedTransport.put(serviceName, namedTransports);
