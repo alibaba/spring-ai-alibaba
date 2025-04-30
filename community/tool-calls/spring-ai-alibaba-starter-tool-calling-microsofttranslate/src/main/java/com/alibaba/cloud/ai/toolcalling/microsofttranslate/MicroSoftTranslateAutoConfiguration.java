@@ -24,6 +24,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
+import org.springframework.http.HttpHeaders;
 
 /**
  * @author 31445
@@ -43,6 +44,7 @@ public class MicroSoftTranslateAutoConfiguration {
 		WebClientTool webClientTool = new WebClientTool((headers) -> {
 			headers.add("Ocp-Apim-Subscription-Key", properties.getApiKey());
 			headers.set("Ocp-Apim-Subscription-Region", properties.getRegion());
+			headers.set(HttpHeaders.CONTENT_TYPE, "application/json");
 		}, jsonParseTool, properties);
 		return new MicroSoftTranslateService(webClientTool);
 	}
