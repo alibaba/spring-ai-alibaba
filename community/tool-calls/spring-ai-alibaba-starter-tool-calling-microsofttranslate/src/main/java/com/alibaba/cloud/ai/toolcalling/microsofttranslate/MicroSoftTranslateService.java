@@ -36,33 +36,13 @@ public class MicroSoftTranslateService
 
 	private static final Logger logger = LoggerFactory.getLogger(MicroSoftTranslateService.class);
 
-	// private static final String TRANSLATE_HOST_URL =
-	// "https://api.cognitive.microsofttranslator.com";
-
 	private static final String TRANSLATE_PATH = "/translate?api-version=3.0";
-
-	// public static final String OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";
-
-	// private final WebClient webClient;
 
 	private final WebClientTool webClientTool;
 
 	public MicroSoftTranslateService(WebClientTool webClientTool) {
-		// assert StringUtils.hasText(properties.getApiKey());
-		// this.webClient = WebClient.builder()
-		// .defaultHeader(OCP_APIM_SUBSCRIPTION_KEY, properties.getApiKey())
-		// .defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-		// .build();
 		this.webClientTool = webClientTool;
 	}
-	//
-	// public MicroSoftTranslateService(MicroSoftTranslateProperties properties) {
-	// assert StringUtils.hasText(properties.getApiKey());
-	// this.webClient = WebClient.builder()
-	// .defaultHeader(OCP_APIM_SUBSCRIPTION_KEY, properties.getApiKey())
-	// .defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-	// .build();
-	// }
 
 	@Override
 	public Response apply(Request request) {
@@ -76,15 +56,16 @@ public class MicroSoftTranslateService
 		try {
 			String body = constructRequestBody(request);
 			logger.info("Request body: {}", body);
-			// Mono<String> responseMono =
-			// webClient.post().uri(url).bodyValue(body).retrieve().bodyToMono(String.class);
 
-			String responseData = webClientTool.post(uri, body).block();
+			String responseData = webClientTool.getWebClient()
+				.post()
+				.uri(uri)
+				.bodyValue(body)
+				.retrieve()
+				.bodyToMono(String.class)
+				.block();
 
-			// String responseData = responseMono.block();
-			// assert responseData != null;
 			logger.info("Translation request: {}, response: {}", request.text, responseData);
-
 			return parseResponse(responseData);
 		}
 		catch (Exception e) {
