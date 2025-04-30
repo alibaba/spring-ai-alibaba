@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.client.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.autoconfigure.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
+import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
@@ -62,16 +63,28 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 
 	public LoadbalancedMcpSyncClient(String serviceName, List<McpSyncClient> mcpSyncClientList,
 			NamingService namingService) {
+		Assert.notNull(serviceName, "Service name must not be null");
+		Assert.notNull(mcpSyncClientList, "McpSyncClient list must not be null");
+		Assert.notNull(namingService, "NamingService must not be null");
+
 		this.serviceName = serviceName;
 		this.mcpSyncClientList = mcpSyncClientList;
-		assert namingService != null;
+
 		try {
-			this.instances = namingService.selectInstances(serviceName, true);
 			this.namingService = namingService;
-			this.namingService.subscribe(serviceName, this);
+			this.instances = namingService.selectInstances(serviceName, true);
 		}
 		catch (NacosException e) {
 			throw new RuntimeException(String.format("Failed to get instances for service: %s", serviceName));
+		}
+	}
+
+	public void subscribe() {
+		try {
+			this.namingService.subscribe(this.serviceName, this);
+		}
+		catch (NacosException e) {
+			throw new RuntimeException(String.format("Failed to subscribe to service: %s", this.serviceName));
 		}
 	}
 
