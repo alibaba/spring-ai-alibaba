@@ -56,7 +56,7 @@ public class OpenmanusController {
 	private CompiledGraph compiledGraph;
 
 	// 也可以使用如下的方式注入 ChatClient
-	public OpenmanusController(@Qualifier("dashscopeChatModel") ChatModel chatModel) throws GraphStateException {
+	public OpenmanusController(ChatModel chatModel) throws GraphStateException {
 
 		this.planningClient = ChatClient.builder(chatModel)
 			.defaultSystem(PLANNING_SYSTEM_PROMPT)
