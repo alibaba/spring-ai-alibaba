@@ -62,8 +62,8 @@ public class NacosMcpSseClientAutoConfiguration {
 		}
 	}
 
-	@Bean
-	public Map<String, List<NamedClientMcpTransport>> nacosMcpSseClient(
+	@Bean(name = "server2NamedTransport")
+	public Map<String, List<NamedClientMcpTransport>> server2NamedTransport(
 			NacosMcpSseClientProperties nacosMcpSseClientProperties, NamingService namingService,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
 			ObjectProvider<ObjectMapper> objectMapperProvider) {
@@ -83,7 +83,8 @@ public class NacosMcpSseClientAutoConfiguration {
 
 					WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(url);
 					WebFluxSseClientTransport transport = new WebFluxSseClientTransport(webClientBuilder, objectMapper);
-					new NamedClientMcpTransport(serviceName + "-" + instance.getInstanceId(), transport);
+					namedTransports.add(
+							new NamedClientMcpTransport(serviceName + "-" + instance.getInstanceId(), transport));
 				}
 
 				server2NamedTransport.put(serviceName, namedTransports);
