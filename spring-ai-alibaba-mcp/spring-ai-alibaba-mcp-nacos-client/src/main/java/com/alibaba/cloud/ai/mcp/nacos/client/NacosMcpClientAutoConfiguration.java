@@ -89,15 +89,17 @@ public class NacosMcpClientAutoConfiguration {
 				if (commonProperties.isInitialized()) {
 					syncClient.initialize();
 				}
-
 				mcpSyncClients.add(syncClient);
 			}
 
-			loadbalancedMcpSyncClients.add(LoadbalancedMcpSyncClient.builder()
+			LoadbalancedMcpSyncClient loadbalancedMcpSyncClient = LoadbalancedMcpSyncClient.builder()
 				.serviceName(serviceName)
 				.mcpSyncClientList(mcpSyncClients)
 				.namingService(namingService)
-				.build());
+				.build();
+			loadbalancedMcpSyncClient.subscribe();
+
+			loadbalancedMcpSyncClients.add(loadbalancedMcpSyncClient);
 		}
 
 		return loadbalancedMcpSyncClients;
@@ -138,11 +140,15 @@ public class NacosMcpClientAutoConfiguration {
 				mcpAsyncClients.add(syncClient);
 			}
 
-			loadbalancedMcpAsyncClients.add(LoadbalancedMcpAsyncClient.builder()
+			LoadbalancedMcpAsyncClient loadbalancedMcpAsyncClient = LoadbalancedMcpAsyncClient.builder()
 				.serviceName(serviceName)
 				.mcpAsyncClientList(mcpAsyncClients)
 				.namingService(namingService)
-				.build());
+				.build();
+
+			loadbalancedMcpAsyncClient.subscribe();
+
+			loadbalancedMcpAsyncClients.add(loadbalancedMcpAsyncClient);
 		}
 		return loadbalancedMcpAsyncClients;
 	}
