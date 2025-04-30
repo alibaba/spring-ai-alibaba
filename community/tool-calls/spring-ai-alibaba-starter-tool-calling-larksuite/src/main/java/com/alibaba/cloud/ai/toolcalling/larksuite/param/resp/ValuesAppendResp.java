@@ -13,20 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.toolcalling.weather;
+package com.alibaba.cloud.ai.toolcalling.larksuite.param.resp;
 
-import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import com.lark.oapi.core.response.BaseResponse;
 
 /**
- * @author 31445
+ * @author NewGK
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.weather")
-public class WeatherProperties extends CommonToolCallProperties {
-
-	public WeatherProperties() {
-		super("https://api.weatherapi.com/");
-		this.setPropertiesFromEnv("WEATHER_API_KEY", null, null, null);
-	}
+public class ValuesAppendResp extends BaseResponse<ValuesAppendRespBody> {
 
 }
