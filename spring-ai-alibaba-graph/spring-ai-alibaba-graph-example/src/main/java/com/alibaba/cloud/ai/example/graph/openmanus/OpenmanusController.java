@@ -33,6 +33,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,7 +56,7 @@ public class OpenmanusController {
 	private CompiledGraph compiledGraph;
 
 	// 也可以使用如下的方式注入 ChatClient
-	public OpenmanusController(ChatModel chatModel) throws GraphStateException {
+	public OpenmanusController(@Qualifier("dashscopeChatModel") ChatModel chatModel) throws GraphStateException {
 
 		this.planningClient = ChatClient.builder(chatModel)
 			.defaultSystem(PLANNING_SYSTEM_PROMPT)
