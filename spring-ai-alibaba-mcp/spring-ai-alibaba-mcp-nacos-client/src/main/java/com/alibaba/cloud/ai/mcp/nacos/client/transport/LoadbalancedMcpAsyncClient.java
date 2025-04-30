@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.client.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.autoconfigure.configurer.McpAsyncClientConfigurer;
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
+import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
@@ -61,22 +62,30 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 
 	private List<Instance> instances;
 
-	public LoadbalancedMcpAsyncClient(String serviceName, List<McpAsyncClient> mcpAsyncClientList) {
-		this(serviceName, mcpAsyncClientList, null);
-	}
-
 	public LoadbalancedMcpAsyncClient(String serviceName, List<McpAsyncClient> mcpAsyncClientList,
 			NamingService namingService) {
+		Assert.notNull(serviceName, "serviceName cannot be null");
+		Assert.notNull(mcpAsyncClientList, "mcpAsyncClientList cannot be null");
+		Assert.notNull(namingService, "namingService cannot be null");
+
 		this.serviceName = serviceName;
 		this.mcpAsyncClientList = mcpAsyncClientList;
-		assert namingService != null;
+
 		try {
-			this.instances = namingService.selectInstances(serviceName, true);
 			this.namingService = namingService;
-			this.namingService.subscribe(serviceName, this);
+			this.instances = namingService.selectInstances(serviceName, true);
 		}
 		catch (NacosException e) {
 			throw new RuntimeException(String.format("Failed to get instances for service: %s", serviceName));
+		}
+	}
+
+	public void subscribe() {
+		try {
+			this.namingService.subscribe(this.serviceName, this);
+		}
+		catch (NacosException e) {
+			throw new RuntimeException(String.format("Failed to subscribe to service: %s", this.serviceName));
 		}
 	}
 
