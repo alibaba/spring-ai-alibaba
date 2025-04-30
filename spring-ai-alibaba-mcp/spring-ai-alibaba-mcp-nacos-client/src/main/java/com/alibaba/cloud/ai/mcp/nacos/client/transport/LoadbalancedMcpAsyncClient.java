@@ -260,7 +260,8 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 
 	private void updateClientList(List<Instance> currentInstances) {
 		McpClientCommonProperties commonProperties = ApplicationContextHolder.getBean(McpClientCommonProperties.class);
-		McpAsyncClientConfigurer mcpSyncClientConfigurer = ApplicationContextHolder.getBean(McpAsyncClientConfigurer.class);
+		McpAsyncClientConfigurer mcpSyncClientConfigurer = ApplicationContextHolder
+			.getBean(McpAsyncClientConfigurer.class);
 		ObjectMapper objectMapper = ApplicationContextHolder.getBean(ObjectMapper.class);
 		WebClient.Builder webClientBuilderTemplate = ApplicationContextHolder.getBean(WebClient.Builder.class);
 
