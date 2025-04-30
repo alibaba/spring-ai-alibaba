@@ -68,7 +68,7 @@ public class OpenmanusHumanController {
 	private PlanningTool planningTool = new PlanningTool();
 
 	// 也可以使用如下的方式注入 ChatClient
-	public OpenmanusHumanController(@Qualifier("dashscopeChatModel") ChatModel chatModel) {
+	public OpenmanusHumanController(ChatModel chatModel) {
 		this.planningClient = ChatClient.builder(chatModel)
 			.defaultSystem(planningPrompt)
 			.defaultAdvisors(new SimpleLoggerAdvisor())
