@@ -136,7 +136,7 @@ public class BibtexDocumentParser implements DocumentParser {
 						}
 						catch (IOException e) {
 							// Log the exception and continue with the next file
-							logger.warn("Failed to read file: " + fileName, e);
+							logger.warn("Failed to read file: {}", fileName, e);
 						}
 
 					}
