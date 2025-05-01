@@ -123,21 +123,21 @@ public class NacosMcpClientAutoConfiguration {
 			List<NamedClientMcpTransport> namedTransports = entry.getValue();
 			List<McpAsyncClient> mcpAsyncClients = new ArrayList<>();
 
-			McpAsyncClient syncClient;
+			McpAsyncClient asyncClient;
 			for (NamedClientMcpTransport namedTransport : namedTransports) {
 				McpSchema.Implementation clientInfo = new McpSchema.Implementation(
 						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
 						commonProperties.getVersion());
-				McpClient.AsyncSpec syncSpec = McpClient.async(namedTransport.transport())
+				McpClient.AsyncSpec asyncSpec = McpClient.async(namedTransport.transport())
 					.clientInfo(clientInfo)
 					.requestTimeout(commonProperties.getRequestTimeout());
-				syncSpec = mcpAsyncClientConfigurer.configure(namedTransport.name(), syncSpec);
-				syncClient = syncSpec.build();
+				asyncSpec = mcpAsyncClientConfigurer.configure(namedTransport.name(), asyncSpec);
+				asyncClient = asyncSpec.build();
 				if (commonProperties.isInitialized()) {
-					syncClient.initialize().block();
+					asyncClient.initialize().block();
 				}
 
-				mcpAsyncClients.add(syncClient);
+				mcpAsyncClients.add(asyncClient);
 			}
 
 			LoadbalancedMcpAsyncClient loadbalancedMcpAsyncClient = LoadbalancedMcpAsyncClient.builder()

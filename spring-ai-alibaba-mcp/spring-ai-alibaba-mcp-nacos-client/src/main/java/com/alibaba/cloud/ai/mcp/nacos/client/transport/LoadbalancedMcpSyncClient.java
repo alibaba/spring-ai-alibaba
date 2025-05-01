@@ -273,22 +273,27 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 			.filter(instance -> !instances.contains(instance))
 			.collect(Collectors.toList());
 
-		// 删除McpAsyncClient实例
+		// 删除McpSyncClient实例
 		List<String> clientInfoNames = removeInstances.stream()
 			.map(instance -> connectedClientName(commonProperties.getName(),
 					this.serviceName + "-" + instance.getInstanceId()))
 			.toList();
 		Iterator<McpSyncClient> iterator = mcpSyncClientList.iterator();
 		while (iterator.hasNext()) {
-			McpSyncClient mcpAsyncClient = iterator.next();
-			McpSchema.Implementation clientInfo = mcpAsyncClient.getClientInfo();
+			McpSyncClient mcpSyncClient = iterator.next();
+			McpSchema.Implementation clientInfo = mcpSyncClient.getClientInfo();
 			if (clientInfoNames.contains(clientInfo.name())) {
-				logger.info("Removing McpAsyncClient: {}", clientInfo.name());
-				iterator.remove();
+				logger.info("Removing McpsyncClient: {}", clientInfo.name());
+				if (mcpSyncClient.closeGracefully()) {
+					iterator.remove();
+				}
+				else {
+					logger.warn("Failed to remove mcpSyncClient: {}", clientInfo.name());
+				}
 			}
 		}
 
-		// 新增McpAsyncClient实例
+		// 新增McpSyncClient实例
 		McpSyncClient syncClient;
 		for (Instance instance : addInstances) {
 			String baseUrl = instance.getMetadata().getOrDefault("scheme", "http") + "://" + instance.getIp() + ":"
