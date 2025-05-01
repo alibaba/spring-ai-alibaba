@@ -24,7 +24,6 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.ai.document.Document;
 import org.springframework.http.ResponseEntity;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;

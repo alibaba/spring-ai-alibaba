@@ -16,9 +16,6 @@
 package com.alibaba.cloud.ai.dashscope.rag;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.QueryFileResponseData;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.UploadLeaseResponse;
-import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

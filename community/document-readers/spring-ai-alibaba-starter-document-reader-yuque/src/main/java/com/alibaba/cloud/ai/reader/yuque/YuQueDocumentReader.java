@@ -18,10 +18,8 @@ package com.alibaba.cloud.ai.reader.yuque;
 import com.alibaba.cloud.ai.document.DocumentParser;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
-import org.springframework.ai.reader.ExtractedTextFormatter;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
