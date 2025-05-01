@@ -294,13 +294,15 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 			McpAsyncClient mcpAsyncClient = iterator.next();
 			McpSchema.Implementation clientInfo = mcpAsyncClient.getClientInfo();
 			if (clientInfoNames.contains(clientInfo.name())) {
-				logger.info("Removed McpAsyncClient: {}", clientInfo.name());
-				iterator.remove();
+				logger.info("Removing McpAsyncClient: {}", clientInfo.name());
+				mcpAsyncClient.closeGracefully().subscribe(v -> {
+					iterator.remove();
+				}, e -> logger.error("Failed to remove McpAsyncClient: {}", clientInfo.name(), e));
 			}
 		}
 
 		// 新增McpAsyncClient实例
-		McpAsyncClient syncClient;
+		McpAsyncClient asyncClient;
 		for (Instance instance : addInstances) {
 			String baseUrl = instance.getMetadata().getOrDefault("scheme", "http") + "://" + instance.getIp() + ":"
 					+ instance.getPort();
@@ -312,16 +314,16 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 			McpSchema.Implementation clientInfo = new McpSchema.Implementation(
 					this.connectedClientName(commonProperties.getName(), namedTransport.name()),
 					commonProperties.getVersion());
-			McpClient.AsyncSpec syncSpec = McpClient.async(namedTransport.transport())
+			McpClient.AsyncSpec asyncSpec = McpClient.async(namedTransport.transport())
 				.clientInfo(clientInfo)
 				.requestTimeout(commonProperties.getRequestTimeout());
-			syncSpec = mcpSyncClientConfigurer.configure(namedTransport.name(), syncSpec);
-			syncClient = syncSpec.build();
+			asyncSpec = mcpSyncClientConfigurer.configure(namedTransport.name(), asyncSpec);
+			asyncClient = asyncSpec.build();
 			if (commonProperties.isInitialized()) {
-				syncClient.initialize().block();
+				asyncClient.initialize().block();
 			}
 			logger.info("Added McpAsyncClient: {}", clientInfo.name());
-			mcpAsyncClientList.add(syncClient);
+			mcpAsyncClientList.add(asyncClient);
 		}
 
 		this.instances = currentInstances;
