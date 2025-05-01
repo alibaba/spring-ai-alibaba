@@ -81,7 +81,7 @@ public class DocLoaderTool implements Function<String, ToolExecuteResult> {
 	}
 
 	public ToolExecuteResult run(String toolInput) {
-		log.info("DocLoaderTool toolInput:" + toolInput);
+		log.info("DocLoaderTool toolInput:{}", toolInput);
 		try {
 			Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 			});

@@ -189,7 +189,7 @@ public class ArxivDocumentReader implements DocumentReader {
 					}
 				}
 				catch (IOException e) {
-					logger.error("Failed to process arXiv paper: " + result.getEntryId(), e);
+					logger.error("Failed to process arXiv paper: {}", result.getEntryId(), e);
 				}
 				finally {
 					// Clean up temporary files
