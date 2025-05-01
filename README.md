@@ -16,13 +16,13 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 
 1. Add `spring-ai-alibaba-starter` dependency to your project.
 
- ```xml
- <dependency>
-  <groupId>com.alibaba.cloud.ai</groupId>
-  <artifactId>spring-ai-alibaba-starter</artifactId>
-  <version>1.0.0-M6.1</version>
- </dependency>
- ```
+  ```xml
+  <dependency>
+   <groupId>com.alibaba.cloud.ai</groupId>
+   <artifactId>spring-ai-alibaba-starter</artifactId>
+   <version>1.0.0-M6.1</version>
+  </dependency>
+  ```
 
  > NOTICE: Since spring-ai related packages haven't been published to the central repo yet, it's needed to add the following maven repository to your project in order to successfully resolve artifacts like  spring-ai-core.
  >
@@ -52,25 +52,25 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 
 2. Inject `ChatClient`
 
- ```java
- @RestController
- public class ChatController {
-
-  private final ChatClient chatClient;
-
-  public ChatController(ChatClient.Builder builder) {
-   this.chatClient = builder.build();
+  ```java
+  @RestController
+  public class ChatController {
+  
+   private final ChatClient chatClient;
+  
+   public ChatController(ChatClient.Builder builder) {
+    this.chatClient = builder.build();
+   }
+  
+   @GetMapping("/chat")
+   public String chat(String input) {
+    return this.chatClient.prompt()
+      .user(input)
+      .call()
+      .content();
+   }
   }
-
-  @GetMapping("/chat")
-  public String chat(String input) {
-   return this.chatClient.prompt()
-     .user(input)
-     .call()
-     .content();
-  }
- }
- ```
+  ```
 
 ## Examples
 
