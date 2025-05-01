@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.toolcalling.microsofttranslate;
 
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -22,11 +23,8 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
-import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.List;
@@ -38,18 +36,12 @@ public class MicroSoftTranslateService
 
 	private static final Logger logger = LoggerFactory.getLogger(MicroSoftTranslateService.class);
 
-	private static final String TRANSLATE_HOST_URL = "https://api.cognitive.microsofttranslator.com";
+	private static final String TRANSLATE_PATH = "/translate?api-version=3.0";
 
-	private static final String TRANSLATE_PATH = "/microsofttranslate?api-version=3.0";
+	private final WebClientTool webClientTool;
 
-	private final WebClient webClient;
-
-	public MicroSoftTranslateService(MicroSoftTranslateProperties properties) {
-		assert StringUtils.hasText(properties.getApiKey());
-		this.webClient = WebClient.builder()
-			.defaultHeader(MicroSoftTranslateProperties.OCP_APIM_SUBSCRIPTION_KEY, properties.getApiKey())
-			.defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-			.build();
+	public MicroSoftTranslateService(WebClientTool webClientTool) {
+		this.webClientTool = webClientTool;
 	}
 
 	@Override
@@ -57,17 +49,23 @@ public class MicroSoftTranslateService
 		if (request == null || !StringUtils.hasText(request.text) || !StringUtils.hasText(request.targetLanguage)) {
 			return null;
 		}
-		String url = UriComponentsBuilder.fromHttpUrl(TRANSLATE_HOST_URL + TRANSLATE_PATH)
+		String uri = UriComponentsBuilder.fromHttpUrl(TRANSLATE_PATH)
 			.queryParam("to", request.targetLanguage)
 			.toUriString();
+		logger.info("Request uri: {}", uri);
 		try {
 			String body = constructRequestBody(request);
-			Mono<String> responseMono = webClient.post().uri(url).bodyValue(body).retrieve().bodyToMono(String.class);
+			logger.info("Request body: {}", body);
 
-			String responseData = responseMono.block();
-			assert responseData != null;
+			String responseData = webClientTool.getWebClient()
+				.post()
+				.uri(uri)
+				.bodyValue(body)
+				.retrieve()
+				.bodyToMono(String.class)
+				.block();
+
 			logger.info("Translation request: {}, response: {}", request.text, responseData);
-
 			return parseResponse(responseData);
 		}
 		catch (Exception e) {
