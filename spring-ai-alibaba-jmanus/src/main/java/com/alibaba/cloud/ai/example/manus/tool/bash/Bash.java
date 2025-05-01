@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.bash;
 
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
@@ -91,8 +90,8 @@ public class Bash implements ToolCallBiFunctionDef {
 	private String lastResult = "";
 
 	public ToolExecuteResult run(String toolInput) {
-		log.info("Bash toolInput:" + toolInput);
-		log.info("Current operating system: " + osName);
+		log.info("Bash toolInput:{}", toolInput);
+		log.info("Current operating system: {}", osName);
 		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 		});
 		String command = (String) toolInputMap.get("command");
@@ -103,7 +102,7 @@ public class Bash implements ToolCallBiFunctionDef {
 
 		// 使用ShellExecutorFactory创建对应操作系统的执行器
 		ShellCommandExecutor executor = ShellExecutorFactory.createExecutor();
-		log.info("Using shell executor for OS: " + osName);
+		log.info("Using shell executor for OS: {}", osName);
 		List<String> result = executor.execute(commandList, workingDirectoryPath);
 		this.lastResult = String.join("\n", result);
 		return new ToolExecuteResult(JSON.toJSONString(result));
@@ -170,7 +169,7 @@ public class Bash implements ToolCallBiFunctionDef {
 
 	@Override
 	public void cleanup(String planId) {
-		log.info("Cleaned up resources for plan: " + planId);
+		log.info("Cleaned up resources for plan: {}", planId);
 	}
 
 }

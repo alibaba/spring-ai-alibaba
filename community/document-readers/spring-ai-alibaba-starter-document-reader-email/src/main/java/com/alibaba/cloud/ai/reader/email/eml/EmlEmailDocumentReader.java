@@ -28,9 +28,7 @@ import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
 import javax.mail.Multipart;
 import javax.mail.Part;
-import java.io.File;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.util.*;
 
 /**
@@ -157,7 +155,7 @@ public class EmlEmailDocumentReader implements DocumentReader {
 			return documents;
 		}
 		catch (Exception e) {
-			log.error("Failed to read email file: " + emailResource.getFilename(), e);
+			log.error("Failed to read email file: {}", emailResource.getFilename(), e);
 			throw new RuntimeException("Failed to read email file", e);
 		}
 	}
