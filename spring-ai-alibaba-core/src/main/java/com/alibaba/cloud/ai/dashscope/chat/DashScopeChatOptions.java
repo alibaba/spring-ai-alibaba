@@ -195,7 +195,7 @@ public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions
 
   @Override
   public Integer getMaxTokens() {
-    return null;
+    return maxTokens;
   }
 
   public Integer setMaxTokens() {
