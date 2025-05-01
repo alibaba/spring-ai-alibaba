@@ -87,7 +87,7 @@ public class PlanExecutor {
 		String stepType = getStepFromStepReq(step.getStepRequirement());
 		BaseAgent executor = getExecutorForStep(stepType, context);
 		if (executor == null) {
-			logger.error("No executor found for step type: " + stepType);
+			logger.error("No executor found for step type: {}", stepType);
 			step.setResult("No executor found for step type: " + stepType);
 			return;
 		}
@@ -113,7 +113,7 @@ public class PlanExecutor {
 
 		}
 		catch (Exception e) {
-			logger.error("Error executing step: " + e.getMessage(), e);
+			logger.error("Error executing step: {}", e.getMessage(), e);
 			step.setResult("Execution failed: " + e.getMessage());
 		}
 		finally {

@@ -112,7 +112,7 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	}
 
 	public ToolExecuteResult run(String toolInput) {
-		log.info("TextFileOperator toolInput:" + toolInput);
+		log.info("TextFileOperator toolInput:{}", toolInput);
 		try {
 			Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 			});

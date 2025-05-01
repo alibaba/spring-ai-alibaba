@@ -108,7 +108,7 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 
 			logger.info("baidu search: {},result number:{}", request.query, results.size());
 			for (SearchResult d : results) {
-				logger.info(d.title() + "\n" + d.abstractText());
+				logger.info("{}\n{}", d.title(), d.abstractText());
 			}
 			return new Response(results.subList(0, Math.min(results.size(), limit)));
 		}

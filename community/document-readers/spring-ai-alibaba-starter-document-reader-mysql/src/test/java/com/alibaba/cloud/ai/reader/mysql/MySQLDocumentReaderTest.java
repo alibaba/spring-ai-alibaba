@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.reader.mysql;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.ai.document.Document;
