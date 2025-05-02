@@ -64,7 +64,8 @@ public class OceanBaseVectorStore extends AbstractObservationVectorStore impleme
 	private static final Double DEFAULT_SIMILARITY_THRESHOLD = 0.0;
 
 	private static final String CREATE_TABLE_SQL_TEMPLATE = "CREATE TABLE IF NOT EXISTS %s ("
-			+ "id BIGINT PRIMARY KEY, " + "vector VECTOR(384) NOT NULL, " + "description text, " + "metadata text)";
+			+ "id varchar(100) PRIMARY KEY, " + "vector VECTOR(384) NOT NULL, " + "description text, "
+			+ "metadata text)";
 
 	private static final String INSERT_DOC_SQL_TEMPLATE = "INSERT INTO %s (id, vector, description, metadata) VALUES (?, ?, ?, ?)";
 
@@ -125,7 +126,7 @@ public class OceanBaseVectorStore extends AbstractObservationVectorStore impleme
 				Document doc = documents.get(i);
 				Map<String, String> metadata = createMetadata(doc);
 				String vectorString = convertEmbeddingToString(embeddings.get(i));
-				pstmt.setLong(1, Long.parseLong(doc.getId()));
+				pstmt.setString(1, doc.getId());
 				pstmt.setString(2, vectorString);
 				pstmt.setString(3, doc.getText());
 				pstmt.setString(4, objectMapper.writeValueAsString(metadata));
@@ -201,7 +202,7 @@ public class OceanBaseVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	private Document extractDocumentFromResultSet(ResultSet rs) throws SQLException, JsonProcessingException {
-		long id = rs.getLong("id");
+		String id = rs.getString("id");
 		String vectorMetadata = rs.getString("metadata");
 		String distance = rs.getString("distance");
 		Map<String, String> metadata = extractMetadata(vectorMetadata);
