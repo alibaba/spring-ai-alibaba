@@ -15,9 +15,6 @@
  */
 package com.alibaba.cloud.ai.dashscope.protocol;
 
-import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okio.ByteString;
@@ -27,14 +24,10 @@ import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Test cases for DashScopeWebSocketClient. Tests cover WebSocket connection, message

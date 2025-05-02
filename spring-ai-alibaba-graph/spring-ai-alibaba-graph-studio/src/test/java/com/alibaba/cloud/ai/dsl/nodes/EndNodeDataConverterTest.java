@@ -60,7 +60,7 @@ public class EndNodeDataConverterTest {
 		assertNotNull(endNodeData);
 		assertEquals(endNodeData.getInputs().get(0).getNamespace(), "1733474977788");
 		assertEquals(endNodeData.getInputs().get(0).getName(), "useLLM");
-		log.info("endNodeData dify dsl parse: " + endNodeData);
+		log.info("endNodeData dify dsl parse: {}", endNodeData);
 
 	}
 
@@ -80,7 +80,7 @@ public class EndNodeDataConverterTest {
 		assertEquals(value_selector.get(0), "1733474977788");
 		assertEquals(value_selector.get(1), "useLLM");
 		String endNodeDataDifyDSL = serializer.dump(difyAnswerNodeMap);
-		log.info("endNodeData dify dsl dump: " + endNodeDataDifyDSL);
+		log.info("endNodeData dify dsl dump: {}", endNodeDataDifyDSL);
 	}
 
 	/**
@@ -98,7 +98,7 @@ public class EndNodeDataConverterTest {
 		assertNotNull(endNodeData);
 		assertEquals("output", endNodeData.getOutputs().get(0).getName());
 		assertEquals("output", endNodeData.getOutputs().get(0).getName());
-		log.info("endNodeData custom dsl parse: " + endNodeData);
+		log.info("endNodeData custom dsl parse: {}", endNodeData);
 	}
 
 	/**
@@ -117,7 +117,7 @@ public class EndNodeDataConverterTest {
 		assertEquals(inputsMap.size(), 1);
 		assertEquals(inputsMap.get(0).get("namespace"), "1733474977788");
 		assertEquals(inputsMap.get(0).get("label"), "useLLM");
-		log.info("endNodeData custom dsl dump: " + serializer.dump(customAnswerNodeMap));
+		log.info("endNodeData custom dsl dump: {}", serializer.dump(customAnswerNodeMap));
 
 	}
 

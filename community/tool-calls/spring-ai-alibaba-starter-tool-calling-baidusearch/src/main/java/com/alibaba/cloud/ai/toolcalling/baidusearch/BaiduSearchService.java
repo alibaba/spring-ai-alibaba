@@ -34,6 +34,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
+import java.nio.charset.Charset;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,10 +60,7 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 
 	private static final String[] USER_AGENTS = {
 			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/120.0.0.0 Safari/537.36",
-			"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
-			"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15" };
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36" };
 
 	private static final int CONNECT_TIMEOUT_MILLIS = 5000;
 
@@ -75,12 +73,9 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 	public BaiduSearchService() {
 		this.webClient = WebClient.builder()
 			.defaultHeader(HttpHeaders.USER_AGENT, USER_AGENTS[random.nextInt(USER_AGENTS.length)])
-			.defaultHeader(HttpHeaders.ACCEPT,
-					"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
-			.defaultHeader(HttpHeaders.ACCEPT_ENCODING, "gzip, deflate")
-			.defaultHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
 			.defaultHeader(HttpHeaders.REFERER, "https://www.baidu.com/")
-			.defaultHeader(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9,ja;q=0.8")
+			.defaultHeader(HttpHeaders.CONNECTION, "keep-alive")
+			.defaultHeader(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9")
 			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_MEMORY_IN_MB))
 			.clientConnector(new ReactorClientHttpConnector(HttpClient.create()
 				.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECT_TIMEOUT_MILLIS)
@@ -98,7 +93,11 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 
 		String url = BAIDU_SEARCH_API_URL + request.query;
 		try {
-			Mono<String> responseMono = webClient.get().uri(url).retrieve().bodyToMono(String.class);
+			Mono<String> responseMono = webClient.get()
+				.uri(url)
+				.acceptCharset(Charset.forName("UTF-8"))
+				.retrieve()
+				.bodyToMono(String.class);
 			String html = responseMono.block();
 			assert html != null;
 
@@ -109,7 +108,7 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 
 			logger.info("baidu search: {},result number:{}", request.query, results.size());
 			for (SearchResult d : results) {
-				logger.info(d.title() + "\n" + d.abstractText());
+				logger.info("{}\n{}", d.title(), d.abstractText());
 			}
 			return new Response(results.subList(0, Math.min(results.size(), limit)));
 		}

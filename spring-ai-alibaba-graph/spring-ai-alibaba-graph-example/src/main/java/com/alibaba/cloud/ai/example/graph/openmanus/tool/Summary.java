@@ -70,7 +70,7 @@ public class Summary implements BiFunction<String, ToolContext, ToolExecuteResul
 	}
 
 	public ToolExecuteResult run(String toolInput) {
-		log.info("Summary toolInput:" + toolInput);
+		log.info("Summary toolInput:{}", toolInput);
 		return new ToolExecuteResult(toolInput);
 	}
 
