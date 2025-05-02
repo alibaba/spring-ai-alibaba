@@ -13,7 +13,7 @@
 	<packaging>pom</packaging>
 	<modules>
 		<module>spring-ai-alibaba-mcp-nacos</module>
-        <module>spring-ai-alibaba-mcp-dynamic-server</module>
+        <module>spring-ai-alibaba-mcp-nacos-dynamic-server</module>
         <module>spring-ai-alibaba-mcp-nacos-common</module>
     </modules>
 </project>

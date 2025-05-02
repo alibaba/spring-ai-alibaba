@@ -21,7 +21,7 @@
 
 <dependency>
     <groupId>com.alibaba.cloud.ai</groupId>
-    <artifactId>spring-ai-alibaba-mcp-dynamic-server</artifactId>
+    <artifactId>spring-ai-alibaba-mcp-nacos-dynamic-server</artifactId>
 </dependency>
 
 <!--WebMvc SSE-->
