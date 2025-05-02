@@ -69,14 +69,14 @@ import java.util.concurrent.TimeUnit;
 @AutoConfiguration(after = MpcServerAutoConfiguration.class)
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
-public class DynamicMcpServerAutoConfiguration implements ApplicationContextAware {
+public class NacosDynamicMcpServerAutoConfiguration implements ApplicationContextAware {
 
 	@Override
 	public void setApplicationContext(@NonNull final ApplicationContext applicationContext) throws BeansException {
 		SpringBeanUtils.getInstance().setApplicationContext(applicationContext);
 	}
 
-	private static final Logger log = LoggerFactory.getLogger(DynamicMcpServerAutoConfiguration.class);
+	private static final Logger log = LoggerFactory.getLogger(NacosDynamicMcpServerAutoConfiguration.class);
 
 	@Resource
 	private McpDynamicServerProperties mcpDynamicServerProperties;
