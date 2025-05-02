@@ -66,7 +66,7 @@
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-arxiv</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-github</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-poi</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-encent-cos</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-tencent-cos</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-larksuite</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-yuque</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-obsidian</module>
@@ -93,6 +93,7 @@
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-bibtex</module>
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-multi-modality</module>
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-directory</module>
+        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-yaml</module>
 
         <module>community/vector-stores/spring-ai-alibaba-starter-tair-store</module>
         <module>community/vector-stores/spring-ai-alibaba-starter-analyticdb-store</module>
