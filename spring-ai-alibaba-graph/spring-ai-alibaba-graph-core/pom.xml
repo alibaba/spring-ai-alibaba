@@ -69,9 +69,32 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-core</artifactId>
-            <version>${project.parent.version}</version>
-            <scope>test</scope>
+            <version>${revision}</version>
         </dependency>
+
+      <dependency>
+          <groupId>com.alibaba.cloud.ai</groupId>
+          <artifactId>spring-ai-alibaba-starter-document-parser-tika</artifactId>
+          <version>${revision}</version>
+      </dependency>
+
+      <dependency>
+          <groupId>com.alibaba.cloud.ai</groupId>
+          <artifactId>spring-ai-alibaba-starter-document-parser-markdown</artifactId>
+          <version>${revision}</version>
+      </dependency>
+
+      <dependency>
+          <groupId>com.alibaba.cloud.ai</groupId>
+          <artifactId>spring-ai-alibaba-starter-document-parser-bshtml</artifactId>
+          <version>${revision}</version>
+      </dependency>
+
+      <dependency>
+          <groupId>com.alibaba.cloud.ai</groupId>
+          <artifactId>spring-ai-alibaba-starter-document-parser-yaml</artifactId>
+          <version>${revision}</version>
+      </dependency>
 
       <dependency>
           <groupId>com.alibaba</groupId>
