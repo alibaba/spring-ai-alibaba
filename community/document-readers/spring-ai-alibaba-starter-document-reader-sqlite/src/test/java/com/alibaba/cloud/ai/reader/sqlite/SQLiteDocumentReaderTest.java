@@ -15,16 +15,18 @@
  */
 package com.alibaba.cloud.ai.reader.sqlite;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
-import org.springframework.ai.document.Document;
-
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+
+import org.springframework.ai.document.Document;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Test cases for SQLite document reader Note: Requires a running SQLite instance with test
@@ -64,7 +66,7 @@ public class SQLiteDocumentReaderTest {
 		List<String> metadataColumns = Arrays.asList(metadataColumnsStr.split(","));
 
 		// Setup test SQLite resource
-		sqLiteResource = new sqLiteResource(host, port, database, username, password, query, contentColumns,
+		sqLiteResource = new SQLiteResource(host, port, database, username, password, query, contentColumns,
 				metadataColumns);
 
 		reader = new SQLiteDocumentReader(sqLiteResource);

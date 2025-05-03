@@ -15,10 +15,12 @@
  */
 package com.alibaba.cloud.ai.reader.sqlite;
 
+import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +37,7 @@ import org.springframework.ai.document.DocumentReader;
  **/
 public class SQLiteDocumentReader implements DocumentReader {
 
-	private final sqLiteResource sqLiteResource;
+	private final SQLiteResource sqLiteResource;
 
 	public SQLiteDocumentReader(SQLiteResource sqLiteResource) {
 		this.sqLiteResource = sqLiteResource;
@@ -43,15 +45,14 @@ public class SQLiteDocumentReader implements DocumentReader {
 
 	@Override
 	public List<Document> get() {
-		List<Document> documents = new ArrayList<>();
+		List<Document> documents;
 		try {
 			// Create database connection
 			try (Connection connection = createConnection()) {
 				documents = executeQueryAndProcessResults(connection);
 			}
-		} catch (ClassNotFoundException e) {
-			throw new RuntimeException("SQLite JDBC driver not found", e);
-		} catch (SQLException e) {
+		}
+		catch (SQLException e) {
 			throw new RuntimeException("Error executing SQLite query: " + e.getMessage(), e);
 		}
 		return documents;
