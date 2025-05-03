@@ -30,13 +30,16 @@
     <description>Building AI applications with Spring Boot</description>
 
     <modules>
-        <module>spring-ai-alibaba-core</module>
-        <module>spring-ai-alibaba-starter</module>
-        <module>spring-ai-alibaba-autoconfigure</module>
-        <module>spring-ai-alibaba-studio</module>
-        <module>spring-ai-alibaba-graph</module>
+        <!-- Spring AI Alibaba Modules -->
+        <module>spring-ai-alibaba-bom</module>
         <module>spring-ai-alibaba-mcp</module>
+        <module>spring-ai-alibaba-core</module>
+        <module>spring-ai-alibaba-graph</module>
+        <module>spring-ai-alibaba-studio</module>
+        <module>spring-ai-alibaba-starter</module>
+        <module>spring-ai-alibaba-auto-configurations</module>
 
+        <!-- Spring AI Alibaba Tool Call Plugins -->
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-common</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-time</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidusearch</module>
@@ -63,6 +66,7 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-youdaotranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-duckduckgo</module>
 
+        <!-- Spring AI Alibaba Document Readers -->
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-arxiv</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-github</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-poi</module>
@@ -81,10 +85,12 @@
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-mbox</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-mongodb</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-mysql</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-sqlite</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-bilibili</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-youtube</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-elasticsearch</module>
 
+        <!-- Spring AI Alibaba Document Parsers -->
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-apache-pdfbox</module>
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-markdown</module>
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-tika</module>
@@ -95,14 +101,17 @@
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-directory</module>
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-yaml</module>
 
+        <!-- Spring AI Alibaba Vector Stores -->
         <module>community/vector-stores/spring-ai-alibaba-starter-tair-store</module>
         <module>community/vector-stores/spring-ai-alibaba-starter-analyticdb-store</module>
         <module>community/vector-stores/spring-ai-alibaba-starter-opensearch-store</module>
         <module>community/vector-stores/spring-ai-alibaba-starter-oceanbase-store</module>
 
+        <!-- Spring AI Alibaba Chat Memory Support -->
         <module>community/memories/spring-ai-alibaba-redis-memory</module>
         <module>community/memories/spring-ai-alibaba-jdbc-memory</module>
 
+        <!-- Spring AI Alibaba JManus -->
         <module>spring-ai-alibaba-jmanus</module>
 
     </modules>
@@ -179,7 +188,7 @@
 
     <organization>
         <name>Alibaba Cloud Inc.</name>
-        <url>https://sca.aliyun.com/ai</url>
+        <url>https://java2ai.com</url>
     </organization>
     <scm>
         <url>https://github.com/alibaba/spring-ai-alibaba</url>
