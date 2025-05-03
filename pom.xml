@@ -85,6 +85,7 @@
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-mbox</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-mongodb</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-mysql</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-sqlite</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-bilibili</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-youtube</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-elasticsearch</module>
@@ -112,6 +113,7 @@
 
         <!-- Spring AI Alibaba JManus -->
         <module>spring-ai-alibaba-jmanus</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-sqlite</module>
 
     </modules>
 
