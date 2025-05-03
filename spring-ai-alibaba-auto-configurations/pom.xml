@@ -25,10 +25,10 @@
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>spring-ai-alibaba-autoconfigure</artifactId>
-	<description>Spring AI Alibaba Autoconfiguration</description>
+	<artifactId>spring-ai-alibaba-auto-configurations</artifactId>
+	<description>Spring AI Alibaba Auto Configurations</description>
 
-	<name>Spring AI Alibaba Autoconfig</name>
+	<name>Spring AI Alibaba Auto Configurations</name>
 	<url>https://github.com/alibaba/spring-ai-alibaba</url>
 	<scm>
 		<url>https://github.com/alibaba/spring-ai-alibaba</url>
