@@ -26,9 +26,9 @@
 		<relativePath>../../../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>spring-ai-alibaba-starter-document-reader-mysql</artifactId>
-	<name>Spring AI Alibaba Starter Document Reader MySQL</name>
-	<description>Spring AI Alibaba MySQL Document Reader Implementation</description>
+	<artifactId>spring-ai-alibaba-starter-document-reader-sqlite</artifactId>
+	<name>Spring AI Alibaba Starter Document Reader SQLite</name>
+	<description>Spring AI Alibaba SQLite Document Reader Implementation</description>
 	<url>https://github.com/alibaba/spring-ai-alibaba</url>
 	<scm>
 		<url>https://github.com/alibaba/spring-ai-alibaba</url>
