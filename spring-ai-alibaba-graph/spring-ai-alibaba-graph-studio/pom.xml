@@ -30,7 +30,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-autoconfigure</artifactId>
+            <artifactId>spring-ai-alibaba-auto-configurations</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
