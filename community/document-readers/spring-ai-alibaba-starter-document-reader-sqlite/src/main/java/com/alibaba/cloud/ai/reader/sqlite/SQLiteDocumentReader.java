@@ -62,7 +62,8 @@ public class SQLiteDocumentReader implements DocumentReader {
 	 * Create database connection
 	 */
 	private Connection createConnection() throws SQLException {
-		return DriverManager.getConnection(sqLiteResource.getJdbcUrl(), sqLiteResource.getUsername(), sqLiteResource.getPassword());
+		return DriverManager.getConnection(sqLiteResource.getJdbcUrl(), sqLiteResource.getUsername(),
+				sqLiteResource.getPassword());
 	}
 
 	/**
@@ -71,7 +72,7 @@ public class SQLiteDocumentReader implements DocumentReader {
 	private List<Document> executeQueryAndProcessResults(final Connection connection) throws SQLException {
 		final List<Document> documents = new ArrayList<>();
 		try (final Statement statement = connection.createStatement();
-			 final ResultSet resultSet = statement.executeQuery(sqLiteResource.getQuery())) {
+				final ResultSet resultSet = statement.executeQuery(sqLiteResource.getQuery())) {
 
 			final List<String> columnNames = getColumnNames(resultSet.getMetaData());
 			while (resultSet.next()) {
@@ -99,7 +100,8 @@ public class SQLiteDocumentReader implements DocumentReader {
 	/**
 	 * Extract row data
 	 */
-	private Map<String, Object> extractRowData(final ResultSet resultSet, final List<String> columnNames) throws SQLException {
+	private Map<String, Object> extractRowData(final ResultSet resultSet, final List<String> columnNames)
+			throws SQLException {
 		final Map<String, Object> rowData = new HashMap<>();
 		for (int i = 0; i < columnNames.size(); i++) {
 			final String columnName = columnNames.get(i);
@@ -121,7 +123,8 @@ public class SQLiteDocumentReader implements DocumentReader {
 			for (Map.Entry<String, Object> entry : rowData.entrySet()) {
 				appendColumnContent(contentBuilder, entry.getKey(), entry.getValue());
 			}
-		} else {
+		}
+		else {
 			// Only use specified content columns
 			for (String column : contentColumns) {
 				if (rowData.containsKey(column)) {

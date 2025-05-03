@@ -29,8 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Test cases for SQLite document reader Note: Requires a running SQLite instance with test
- * data
+ * Test cases for SQLite document reader Note: Requires a running SQLite instance with
+ * test data
  *
  * @author jens papenhagen
  **/
@@ -98,15 +98,8 @@ public class SQLiteDocumentReaderTest {
 	@Test
 	void testInvalidConnection() {
 		// Test with invalid credentials
-		SQLiteResource invalidResource = new SQLiteResource(
-				"invalid_host",
-				3306,
-				"invalid_db",
-				"invalid_user",
-				"invalid_pass",
-				"SELECT * FROM test_table",
-				null,
-				null);
+		SQLiteResource invalidResource = new SQLiteResource("invalid_host", 3306, "invalid_db", "invalid_user",
+				"invalid_pass", "SELECT * FROM test_table", null, null);
 
 		SQLiteDocumentReader invalidReader = new SQLiteDocumentReader(invalidResource);
 

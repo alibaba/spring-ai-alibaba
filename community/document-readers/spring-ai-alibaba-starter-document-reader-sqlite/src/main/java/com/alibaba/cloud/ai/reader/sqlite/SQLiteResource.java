@@ -18,8 +18,8 @@ package com.alibaba.cloud.ai.reader.sqlite;
 import java.util.List;
 
 /**
- * Configuration class for SQLite document reader Contains connection information and query
- * settings
+ * Configuration class for SQLite document reader Contains connection information and
+ * query settings
  *
  * @author jens papenhagen
  **/

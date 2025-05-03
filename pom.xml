@@ -113,7 +113,6 @@
 
         <!-- Spring AI Alibaba JManus -->
         <module>spring-ai-alibaba-jmanus</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-sqlite</module>
 
     </modules>
 
