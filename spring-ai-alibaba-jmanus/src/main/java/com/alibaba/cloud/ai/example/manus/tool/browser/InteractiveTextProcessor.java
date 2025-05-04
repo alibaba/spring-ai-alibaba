@@ -170,7 +170,7 @@ public class InteractiveTextProcessor {
 				}
 			}
 			catch (Exception e) {
-				log.warn("处理iframe失败，路径: " + currentPath + ", 错误: " + e.getMessage());
+				log.warn("处理iframe失败，路径: {}, 错误: {}", currentPath, e.getMessage());
 				// 确保即使处理某个iframe失败，也回到正确的上下文
 				if (parentIframe == null) {
 					driver.switchTo().defaultContent();

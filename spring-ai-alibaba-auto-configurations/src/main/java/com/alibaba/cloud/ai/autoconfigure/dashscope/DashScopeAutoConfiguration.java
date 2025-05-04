@@ -26,7 +26,6 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
-import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;

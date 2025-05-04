@@ -113,7 +113,7 @@ public class PlanningTool implements BiFunction<String, ToolContext, String> {
 
 	public String run(String toolInput, ToolContext context) {
 		try {
-			log.info("PlanningTool toolInput:" + toolInput);
+			log.info("PlanningTool toolInput:{}", toolInput);
 			Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 			});
 

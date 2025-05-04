@@ -32,7 +32,6 @@ import java.util.Random;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -209,7 +208,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	}
 
 	public ToolExecuteResult run(String toolInput) {
-		log.info("BrowserUseTool toolInput:" + toolInput);
+		log.info("BrowserUseTool toolInput:{}", toolInput);
 		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 		});
 

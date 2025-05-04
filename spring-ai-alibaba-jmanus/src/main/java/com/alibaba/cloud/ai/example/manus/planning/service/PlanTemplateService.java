@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplate;
 import com.alibaba.cloud.ai.example.manus.planning.model.po.PlanTemplateVersion;
-import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.repository.PlanTemplateRepository;
 import com.alibaba.cloud.ai.example.manus.planning.repository.PlanTemplateVersionRepository;
 import com.fasterxml.jackson.databind.JsonNode;

@@ -16,15 +16,9 @@
 package com.alibaba.cloud.ai.dashscope.api;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-import java.util.Arrays;
-import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import com.alibaba.cloud.ai.dashscope.protocol.DashScopeWebSocketClient;
 
 /**
  * Tests for DashScopeSpeechSynthesisApi class functionality

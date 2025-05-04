@@ -18,6 +18,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+
 	<parent>
 		<groupId>com.alibaba.cloud.ai</groupId>
 		<artifactId>spring-ai-alibaba</artifactId>
@@ -25,10 +26,10 @@
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>spring-ai-alibaba-autoconfigure</artifactId>
-	<description>Spring AI Alibaba Autoconfiguration</description>
+	<artifactId>spring-ai-alibaba-auto-configurations</artifactId>
+	<description>Spring AI Alibaba Auto Configurations</description>
 
-	<name>Spring AI Alibaba Autoconfig</name>
+	<name>Spring AI Alibaba Auto Configurations</name>
 	<url>https://github.com/alibaba/spring-ai-alibaba</url>
 	<scm>
 		<url>https://github.com/alibaba/spring-ai-alibaba</url>

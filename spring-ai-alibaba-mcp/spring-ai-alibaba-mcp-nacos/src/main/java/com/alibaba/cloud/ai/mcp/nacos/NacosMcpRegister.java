@@ -87,7 +87,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	public NacosMcpRegister(McpAsyncServer mcpAsyncServer, NacosMcpRegistryProperties nacosMcpProperties, String type) {
 		this.mcpAsyncServer = mcpAsyncServer;
-		log.info("Mcp server type: " + type);
+		log.info("Mcp server type: {}", type);
 		this.type = type;
 		this.nacosMcpProperties = nacosMcpProperties;
 

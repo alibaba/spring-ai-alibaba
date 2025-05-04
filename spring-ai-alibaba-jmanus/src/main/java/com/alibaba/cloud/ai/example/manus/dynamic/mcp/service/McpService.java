@@ -63,7 +63,7 @@ public class McpService implements InitializingBean {
 				loadMcpServices(mcpConfigEntity);
 			}
 			catch (Throwable t) {
-				logger.error("Failed to init MCP Client for " + mcpConfigEntity, t);
+				logger.error("Failed to init MCP Client for {}", mcpConfigEntity, t);
 			}
 		}
 	}
@@ -143,7 +143,7 @@ public class McpService implements InitializingBean {
 
 					// 配置MCP客户端
 					configureMcpTransport(serverName, transport);
-					logger.info("STUDIO MCP Client configured for server: " + serverName);
+					logger.info("STUDIO MCP Client configured for server: {}", serverName);
 				}
 				catch (Exception e) {
 					logger.error("Error creating STUDIO transport: ", e);
@@ -166,14 +166,14 @@ public class McpService implements InitializingBean {
 				.build();
 			try {
 				mcpAsyncClient.initialize().block();
-				logger.info("MCP transport configured successfully for: " + mcpServerName);
+				logger.info("MCP transport configured successfully for: {}", mcpServerName);
 
 				AsyncMcpToolCallbackProvider callbackProvider = new AsyncMcpToolCallbackProvider(mcpAsyncClient);
 				McpServiceEntity serviceEntity = new McpServiceEntity(mcpAsyncClient, callbackProvider, mcpServerName);
 				toolCallbackMap.put(mcpServerName, serviceEntity);
 			}
 			catch (Exception e) {
-				logger.error("Failed to initialize MCP transport for " + mcpServerName, e);
+				logger.error("Failed to initialize MCP transport for {}", mcpServerName, e);
 			}
 		}
 	}
