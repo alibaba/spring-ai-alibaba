@@ -25,11 +25,11 @@ import com.alibaba.cloud.ai.mcp.dynamic.server.tools.DynamicToolsInitializer;
 import com.alibaba.cloud.ai.mcp.dynamic.server.utils.SpringBeanUtils;
 import com.alibaba.cloud.ai.mcp.dynamic.server.watcher.DynamicNacosToolsWatcher;
 import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpRegistryProperties;
+import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingFactory;
 import com.alibaba.nacos.api.naming.NamingService;
-import com.alibaba.nacos.client.config.NacosConfigService;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.netty.channel.ChannelOption;
@@ -70,19 +70,19 @@ import java.util.concurrent.TimeUnit;
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 public class NacosDynamicMcpServerAutoConfiguration implements ApplicationContextAware {
-
-	@Override
-	public void setApplicationContext(@NonNull final ApplicationContext applicationContext) throws BeansException {
-		SpringBeanUtils.getInstance().setApplicationContext(applicationContext);
-	}
-
+	
 	private static final Logger log = LoggerFactory.getLogger(NacosDynamicMcpServerAutoConfiguration.class);
-
+	
 	@Resource
 	private McpDynamicServerProperties mcpDynamicServerProperties;
 
 	@Resource
 	private NacosMcpRegistryProperties nacosMcpRegistryProperties;
+	
+	@Override
+	public void setApplicationContext(@NonNull final ApplicationContext applicationContext) throws BeansException {
+		SpringBeanUtils.getInstance().setApplicationContext(applicationContext);
+	}
 
 	@Bean
 	public ToolCallbackProvider callbackProvider(final DynamicToolsInitializer toolsInitializer) {
@@ -118,7 +118,7 @@ public class NacosDynamicMcpServerAutoConfiguration implements ApplicationContex
 
 	@Bean
 	public ConfigService configService() throws NacosException {
-		return new NacosConfigService(nacosMcpRegistryProperties.getNacosProperties());
+		return NacosFactory.createConfigService(nacosMcpRegistryProperties.getNacosProperties());
 	}
 
 	@Bean
