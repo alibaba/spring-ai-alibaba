@@ -12,12 +12,8 @@
 
     <artifactId>spring-ai-alibaba-graph-studio</artifactId>
     <name>Spring AI Graph Studio</name>
+
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <springdoc-openapi-maven-plugin.version>1.4
-        </springdoc-openapi-maven-plugin.version>
     </properties>
 
     <dependencies>
@@ -88,4 +84,5 @@
             </plugin>
         </plugins>
     </build>
+
 </project>
