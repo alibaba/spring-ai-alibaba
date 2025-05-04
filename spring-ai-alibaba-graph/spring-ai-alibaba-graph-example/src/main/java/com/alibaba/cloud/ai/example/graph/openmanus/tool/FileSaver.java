@@ -76,7 +76,7 @@ public class FileSaver implements Function<String, ToolExecuteResult> {
 	}
 
 	public ToolExecuteResult run(String toolInput) {
-		log.info("FileSaver toolInput:" + toolInput);
+		log.info("FileSaver toolInput:{}", toolInput);
 		try {
 			Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 			});

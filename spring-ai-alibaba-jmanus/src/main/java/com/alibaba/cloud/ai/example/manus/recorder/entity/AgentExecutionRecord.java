@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.recorder.entity;
 
-import org.springframework.ai.chat.messages.Message;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
