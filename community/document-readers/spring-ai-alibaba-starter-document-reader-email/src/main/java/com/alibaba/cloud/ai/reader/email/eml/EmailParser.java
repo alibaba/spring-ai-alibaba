@@ -225,7 +225,7 @@ public class EmailParser {
 			}
 		}
 		catch (Exception e) {
-			log.warn("Failed to parse email address: " + data, e);
+			log.warn("Failed to parse email address: {}", data, e);
 			// If parsing fails, try to extract just the email address
 			try {
 				String email = data.trim();
@@ -235,7 +235,7 @@ public class EmailParser {
 				}
 			}
 			catch (Exception ex) {
-				log.error("Failed to extract email from: " + data, ex);
+				log.error("Failed to extract email from: {}", data, ex);
 			}
 			// Return a default value in case of parsing error
 			return new String[] { "Unknown", data };

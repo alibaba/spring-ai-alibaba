@@ -36,10 +36,15 @@
     </scm>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <springdoc-openapi-maven-plugin.version>1.4</springdoc-openapi-maven-plugin.version>
-        <node.version>v18.16.0</node.version>
+        <!-- lombok -->
+        <lombok.version>1.18.30</lombok.version>
+
+        <!-- Jakarta -->
+        <jakarta.version>5.0.0</jakarta.version>
+
+        <!-- Node -->
         <npm.version>9.5.1</npm.version>
+        <node.version>v18.16.0</node.version>
     </properties>
 
     <dependencies>
@@ -76,7 +81,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.30</version>
+            <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -124,7 +129,7 @@
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
-            <version>5.0.0</version>
+            <version>${jakarta.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -142,7 +147,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-autoconfigure</artifactId>
+            <artifactId>spring-ai-alibaba-auto-configurations</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
@@ -245,4 +250,5 @@
             </plugin>
         </plugins>
     </build>
+
 </project>

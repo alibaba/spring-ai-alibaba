@@ -52,7 +52,7 @@ public class CustomDSLAdapterTest {
 		assertNotNull(metadata);
 		assertNotNull(metadata.getId());
 		assertEquals("workflow", metadata.getMode());
-		log.info("map to metadata: " + metadata);
+		log.info("map to metadata: {}", metadata);
 	}
 
 	@Test

@@ -118,7 +118,7 @@ public class PlanFinalizer {
 	private void recordPlanCompletion(ExecutionContext context, String summary) {
 		recorder.recordPlanCompletion(context.getPlan().getPlanId(), summary);
 
-		log.info("Plan completed with ID: " + context.getPlan().getPlanId() + " and summary: " + summary);
+		log.info("Plan completed with ID: {} and summary: {}", context.getPlan().getPlanId(), summary);
 	}
 
 }

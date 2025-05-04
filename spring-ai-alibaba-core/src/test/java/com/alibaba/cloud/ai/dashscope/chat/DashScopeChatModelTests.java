@@ -25,7 +25,6 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput.Choi
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.TokenUsage;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
 import com.alibaba.cloud.ai.dashscope.metadata.DashScopeAiUsage;
-import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

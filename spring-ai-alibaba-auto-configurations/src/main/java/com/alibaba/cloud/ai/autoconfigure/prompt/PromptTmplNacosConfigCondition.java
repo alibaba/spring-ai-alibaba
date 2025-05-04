@@ -50,7 +50,7 @@ public class PromptTmplNacosConfigCondition implements Condition {
 		if (!enabled) {
 			System.setProperty("spring.nacos.config.enabled", "false");
 		}
-		logger.debug("PromptTmplNacosConfigCondition matches enabled: " + enabled);
+		logger.debug("PromptTmplNacosConfigCondition matches enabled: {}",enabled);
 		// @formatter:on
 
 		return enabled;

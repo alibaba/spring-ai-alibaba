@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.parser.tika;
 
 import com.alibaba.cloud.ai.document.DocumentParser;
-import org.apache.tika.exception.ZeroByteFileException;
 import org.apache.tika.parser.AutoDetectParser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
