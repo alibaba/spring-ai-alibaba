@@ -36,7 +36,7 @@ import org.springframework.util.Assert;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DashScopeChatOptions implements FunctionCallingOptions, ChatOptions {
 
-    // @formatter:off
+	// @formatter:off
   /** ID of the model to use. */
   @JsonProperty("model")
   private String model;
