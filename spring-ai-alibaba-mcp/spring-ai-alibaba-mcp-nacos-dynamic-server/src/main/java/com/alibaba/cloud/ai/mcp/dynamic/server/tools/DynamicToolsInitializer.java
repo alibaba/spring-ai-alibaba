@@ -17,7 +17,9 @@
 package com.alibaba.cloud.ai.mcp.dynamic.server.tools;
 
 import com.alibaba.cloud.ai.mcp.dynamic.server.callback.DynamicNacosToolCallback;
+import com.alibaba.cloud.ai.mcp.dynamic.server.callback.DynamicNacosToolCallbackV3;
 import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinition;
+import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinitionV3;
 import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpRegistryProperties;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.naming.NamingService;
@@ -26,10 +28,12 @@ import com.alibaba.nacos.common.utils.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class DynamicToolsInitializer {
 
@@ -64,8 +68,77 @@ public class DynamicToolsInitializer {
 	}
 
 	private List<ToolCallback> handleHighVersion() {
-		// TODO: 3.0.0及以上版本的新逻辑
-		return new ArrayList<>();
+		// 3.0.0及以上版本的新逻辑，分页获取所有 pageItems 并组装 ToolCallback
+		List<Map<String, Object>> mcpServersAllPages = NacosHelper.fetchNacosMcpServersAllPages(webClient,
+				nacosMcpRegistryProperties.getServerAddr(), nacosMcpRegistryProperties.getUsername(),
+				nacosMcpRegistryProperties.getPassword());
+		List<ToolCallback> allTools = new ArrayList<>();
+		for (Map<String, Object> mcpServerInfo : mcpServersAllPages) {
+			List<ToolCallback> tools = parseMcpServerInfo(mcpServerInfo, webClient,
+					nacosMcpRegistryProperties.getServerAddr(), nacosMcpRegistryProperties.getUsername(),
+					nacosMcpRegistryProperties.getPassword());
+			if (CollectionUtils.isNotEmpty(tools)) {
+				allTools.addAll(tools);
+			}
+		}
+		logger.info("Initial tools loading completed (high version) - Found {} tools", allTools.size());
+		return allTools;
+	}
+
+	/**
+	 * 将 mcp server 的 tools转为 Toolcallback。
+	 */
+	@SuppressWarnings("unchecked")
+	private List<ToolCallback> parseMcpServerInfo(Map<String, Object> mcpServerInfo, WebClient webClient,
+			String serverAddr, String username, String password) {
+		Object mcpName = mcpServerInfo.get("name");
+		String url = NacosHelper.getServerUrl(serverAddr);
+		String mcpServerDetail = null;
+		try {
+			mcpServerDetail = webClient.get()
+				.uri(url + "/nacos/v3/admin/ai/mcp?mcpName=" + mcpName)
+				.header("userName", username)
+				.header("password", password)
+				.retrieve()
+				.bodyToMono(String.class)
+				.block();
+			logger.info("Nacos mcp server info (name {}): {}", mcpName, mcpServerDetail);
+			Map<String, Object> serverInfoMap = JacksonUtils.toObj(mcpServerDetail, Map.class);
+			if (serverInfoMap != null && serverInfoMap.containsKey("data")) {
+				Map<String, Object> data = (Map<String, Object>) serverInfoMap.get("data");
+				if (data != null && data.containsKey("toolSpec")) {
+					// 解析工具信息
+					Object toolSpec = data.get("toolSpec");
+					Object remoteServerConfig = data.get("remoteServerConfig");
+					Object localeServerConfig = data.get("localeServerConfig");
+					if (toolSpec != null) {
+						Map<String, Object> toolSpecMap = JacksonUtils.toObj(JacksonUtils.toJson(toolSpec), Map.class);
+						List<Map<String, Object>> tools = (List<Map<String, Object>>) toolSpecMap.get("tools");
+						List<ToolCallback> toolCallbacks = new ArrayList<>();
+						for (Map<String, Object> tool : tools) {
+							String toolName = (String) tool.get("name");
+							String toolDescription = (String) tool.get("description");
+							Object inputSchema = tool.get("inputSchema");
+							ToolDefinition toolDefinition = DynamicNacosToolDefinitionV3.builder()
+								.name(toolName)
+								.description(toolDescription)
+								.serviceName((String) mcpName)
+								.inputSchema(inputSchema)
+								.remoteServerConfig(remoteServerConfig)
+								.localServerConfig(localeServerConfig)
+								.build();
+							toolCallbacks.add(new DynamicNacosToolCallbackV3(toolDefinition));
+						}
+						return toolCallbacks;
+					}
+
+				}
+			}
+		}
+		catch (Exception e) {
+			logger.warn("Failed to get or parse nacos mcp server info (mcpName {})", mcpName, e);
+		}
+		return null;
 	}
 
 	private List<ToolCallback> handleLowVersion() {
