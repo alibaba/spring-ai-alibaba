@@ -116,7 +116,7 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 	}
 
 	public ToolExecuteResult run(String toolInput) {
-		log.info("PythonExecute toolInput:" + toolInput);
+		log.info("PythonExecute toolInput:{}", toolInput);
 		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 		});
 		String code = (String) toolInputMap.get("code");

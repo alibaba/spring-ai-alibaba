@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.toolcalling.common;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -23,6 +25,7 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
@@ -38,6 +41,8 @@ import java.util.function.Function;
  */
 public class WebClientTool {
 
+	private static final Logger log = LoggerFactory.getLogger(WebClientTool.class);
+
 	private final WebClient webClient;
 
 	private final JsonParseTool jsonParseTool;
@@ -47,6 +52,33 @@ public class WebClientTool {
 	private ReactorClientHttpConnector createHttpConnector() {
 		return new ReactorClientHttpConnector(
 				HttpClient.create().responseTimeout(Duration.ofMinutes(properties.getNetworkTimeout())));
+	}
+
+	private ExchangeFilterFunction logRequest() {
+		return ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
+			if (log.isDebugEnabled()) {
+				log.debug("Request: {} {}", clientRequest.method(), clientRequest.url());
+
+				clientRequest.headers()
+					.forEach(
+							(name, values) -> values.forEach(value -> log.debug("Request Header: {}={}", name, value)));
+			}
+			return Mono.just(clientRequest);
+		});
+	}
+
+	private ExchangeFilterFunction logResponse() {
+		return ExchangeFilterFunction.ofResponseProcessor(clientResponse -> {
+			if (log.isDebugEnabled()) {
+				log.debug("Response Status: {}", clientResponse.statusCode());
+
+				clientResponse.headers()
+					.asHttpHeaders()
+					.forEach((name, values) -> values
+						.forEach(value -> log.debug("Response Header: {}={}", name, value)));
+			}
+			return Mono.just(clientResponse);
+		});
 	}
 
 	/**
@@ -67,6 +99,27 @@ public class WebClientTool {
 	}
 
 	/**
+	 * default webClient with customized HeaderConsumer
+	 */
+	public WebClientTool(Consumer<HttpHeaders> httpHeadersConsumer, JsonParseTool jsonParseTool,
+			CommonToolCallProperties properties) {
+		this.jsonParseTool = jsonParseTool;
+		this.properties = properties;
+		this.webClient = WebClient.builder()
+			.clientConnector(createHttpConnector())
+			.baseUrl(properties.getBaseUrl())
+			.defaultHeaders(httpHeadersConsumer)
+			.defaultStatusHandler(HttpStatusCode::is4xxClientError,
+					CommonToolCallConstants.DEFAULT_WEBCLIENT_4XX_EXCEPTION)
+			.defaultStatusHandler(HttpStatusCode::is5xxServerError,
+					CommonToolCallConstants.DEFAULT_WEBCLIENT_5XX_EXCEPTION)
+			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(CommonToolCallConstants.MAX_MEMORY_SIZE))
+			.filter(logRequest())
+			.filter(logResponse())
+			.build();
+	}
+
+	/**
 	 * Creates webClient with customized HeaderConsumer and ExceptionFunction
 	 */
 	public WebClientTool(Consumer<HttpHeaders> httpHeadersConsumer,
@@ -82,6 +135,8 @@ public class WebClientTool {
 			.defaultStatusHandler(HttpStatusCode::is4xxClientError, is4xxException)
 			.defaultStatusHandler(HttpStatusCode::is5xxServerError, is5xxException)
 			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(CommonToolCallConstants.MAX_MEMORY_SIZE))
+			.filter(logRequest())
+			.filter(logResponse())
 			.build();
 	}
 
@@ -159,6 +214,10 @@ public class WebClientTool {
 	 */
 	public <T> Mono<String> post(String uri, T value) {
 		return this.post(uri, new HashMap<>(), value);
+	}
+
+	public WebClient getWebClient() {
+		return webClient;
 	}
 
 }

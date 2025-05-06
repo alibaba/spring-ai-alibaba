@@ -27,9 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
-import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -88,7 +86,7 @@ public class GoogleSearch implements BiFunction<String, ToolContext, ToolExecute
 	}
 
 	public ToolExecuteResult run(String toolInput) {
-		log.info("GoogleSearch toolInput:" + toolInput);
+		log.info("GoogleSearch toolInput:{}", toolInput);
 
 		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 		});
@@ -152,7 +150,7 @@ public class GoogleSearch implements BiFunction<String, ToolContext, ToolExecute
 		else {
 			toret = "No good search result found";
 		}
-		log.warn("SerpapiTool result:" + toret);
+		log.warn("SerpapiTool result:{}", toret);
 		return new ToolExecuteResult(toret);
 	}
 

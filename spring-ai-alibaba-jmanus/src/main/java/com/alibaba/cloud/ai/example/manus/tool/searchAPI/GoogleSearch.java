@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.searchAPI;
 
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi.SerpApiProperties;
@@ -91,7 +90,7 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 	}
 
 	public ToolExecuteResult run(String toolInput) {
-		log.info("GoogleSearch toolInput:" + toolInput);
+		log.info("GoogleSearch toolInput:{}", toolInput);
 
 		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 		});
@@ -158,7 +157,7 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 		else {
 			toret = "No good search result found";
 		}
-		log.warn("SerpapiTool result:" + toret);
+		log.warn("SerpapiTool result:{}", toret);
 		this.lastSearchResults = toret;
 		return new ToolExecuteResult(toret);
 	}
