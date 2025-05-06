@@ -349,8 +349,19 @@ public class InteractiveTextProcessor {
 		StringBuilder resultInfo = new StringBuilder();
 		List<WebElementWrapper> interactiveElements = getInteractiveElements(driver);
 
+		// 使用全局索引计数，不会在iframe内重置
 		for (int i = 0; i < interactiveElements.size(); i++) {
-			String formattedInfo = interactiveElements.get(i).getElementInfoString();
+			// 获取原始信息
+			String originalInfo = interactiveElements.get(i).getElementInfoString();
+			
+			// 如果是空字符串则跳过
+			if (originalInfo.isEmpty()) {
+				continue;
+			}
+			
+			// 替换索引，确保全局唯一
+			// 这里假设原始信息的格式是 "[index] <tag...>text</tag>"
+			String formattedInfo = originalInfo.replaceFirst("\\[\\d+\\]", "[" + i + "]");
 			resultInfo.append(formattedInfo);
 		}
 
