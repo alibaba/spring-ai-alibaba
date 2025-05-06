@@ -21,37 +21,33 @@ import java.util.List;
  * @author yingzi
  * @date 2025/5/6:13:41
  */
-@AutoConfiguration(
-        after = {NacosMcpClientAutoConfiguration.class}
-)
-@EnableConfigurationProperties({McpClientCommonProperties.class})
-@Conditional({McpToolCallbackAutoConfiguration.McpToolCallbackAutoconfigurationCondition.class})
+@AutoConfiguration(after = { NacosMcpClientAutoConfiguration.class })
+@EnableConfigurationProperties({ McpClientCommonProperties.class })
+@Conditional({ McpToolCallbackAutoConfiguration.McpToolCallbackAutoconfigurationCondition.class })
 public class NacosMcpToolCallbackAutoConfiguration {
 
-    public NacosMcpToolCallbackAutoConfiguration() {
-    }
+	public NacosMcpToolCallbackAutoConfiguration() {
+	}
 
-    @Bean(name = "loadbalancedMcpToolCallbacks")
-    @ConditionalOnProperty(
-            prefix = "spring.ai.mcp.client",
-            name = {"type"},
-            havingValue = "SYNC",
-            matchIfMissing = true
-    )
-    public ToolCallbackProvider loadbalancedMcpToolCallbacks(ObjectProvider<List<LoadbalancedMcpSyncClient>> loadbalancedMcpSyncClients) {
-        List<LoadbalancedMcpSyncClient> mcpClients = loadbalancedMcpSyncClients.stream().flatMap(Collection::stream).toList();
-        return new LoadbalancedSyncMcpToolCallbackProvider(mcpClients);
-    }
+	@Bean(name = "loadbalancedMcpToolCallbacks")
+	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "SYNC",
+			matchIfMissing = true)
+	public ToolCallbackProvider loadbalancedMcpToolCallbacks(
+			ObjectProvider<List<LoadbalancedMcpSyncClient>> loadbalancedMcpSyncClients) {
+		List<LoadbalancedMcpSyncClient> mcpClients = loadbalancedMcpSyncClients.stream()
+			.flatMap(Collection::stream)
+			.toList();
+		return new LoadbalancedSyncMcpToolCallbackProvider(mcpClients);
+	}
 
-    @Bean(name = "loadbalancedMcpAsyncToolCallbacks")
-    @ConditionalOnProperty(
-            prefix = "spring.ai.mcp.client",
-            name = {"type"},
-            havingValue = "ASYNC"
-    )
-    public ToolCallbackProvider loadbalancedMcpAsyncToolCallbacks(ObjectProvider<List<LoadbalancedMcpAsyncClient>> loadbalancedMcpAsyncClients) {
-        List<LoadbalancedMcpAsyncClient> mcpClients = loadbalancedMcpAsyncClients.stream().flatMap(Collection::stream).toList();
-        return new LoadbalancedAsyncMcpToolCallbackProvider(mcpClients);
-    }
+	@Bean(name = "loadbalancedMcpAsyncToolCallbacks")
+	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "ASYNC")
+	public ToolCallbackProvider loadbalancedMcpAsyncToolCallbacks(
+			ObjectProvider<List<LoadbalancedMcpAsyncClient>> loadbalancedMcpAsyncClients) {
+		List<LoadbalancedMcpAsyncClient> mcpClients = loadbalancedMcpAsyncClients.stream()
+			.flatMap(Collection::stream)
+			.toList();
+		return new LoadbalancedAsyncMcpToolCallbackProvider(mcpClients);
+	}
 
 }
