@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import org.openqa.selenium.ElementClickInterceptedException;
@@ -23,7 +22,6 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.WebElementWrapper;
@@ -69,7 +67,6 @@ public class ClickByElementAction extends BrowserAction {
         }
 
         // 等待页面变化（最多等待10秒）
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         try {
             // 检查是否有新窗口打开
             Set<String> afterWindowHandles = driver.getWindowHandles();
@@ -86,7 +83,6 @@ public class ClickByElementAction extends BrowserAction {
                         "Clicked element and opened in new tab: " + driver.getCurrentUrl());
             }
 
-       
             refreshTabsInfo(driver); // 刷新标签页信息
             interactiveTextProcessor.refreshCache(driver);
             // 如果没有明显变化，返回普通点击成功消息
