@@ -104,7 +104,7 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 		return this.instances;
 	}
 
-	private McpSyncClient getMcpSyncClient() {
+	public McpSyncClient getMcpSyncClient() {
 		if (mcpSyncClientList.isEmpty()) {
 			throw new IllegalStateException("No McpAsyncClient available");
 		}
