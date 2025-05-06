@@ -51,6 +51,65 @@ public class SpringAiMcpApplication {
     
 }
 ```
+
+*-mcp-tools.json: your mcp tools config
+
+```json
+
+{
+  "protocol": "http",
+  "tools": [
+    {
+      "name": "get_adcode",
+      "description": "get adcode via address",
+      "requestMethod": "GET",
+      "requestPath": "/git/version",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "address"
+          }
+        }
+      }
+    },
+    {
+      "name": "get_address_via_ip",
+      "description": "get address via ip",
+      "requestMethod": "POST",
+      "requestPath": "/getAddress",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string",
+            "description": "ip address"
+          }
+        }
+      }
+    }
+  ],
+  "toolsMeta": {
+    "get_adcode": {
+      "credentialRef": "amap-key.json",
+      "InvokeContext": {
+        "path": "/v3/geocode/geo",
+        "method": "GET"
+      }
+    },
+    "get_address_via_ip": {
+      "credentialRef": "amap-key.json",
+      "InvokeContext": {
+        "path": "/v3/ip",
+        "method": "GET"
+      }
+    }
+  }
+}
+```
+
+```
 application.yaml
 ```yaml
 spring:
