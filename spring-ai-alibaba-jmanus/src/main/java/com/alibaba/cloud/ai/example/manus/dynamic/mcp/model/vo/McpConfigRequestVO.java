@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo;
 
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigType;
-
 /**
  * MCP配置请求值对象，用于接收前端传递的配置信息
  */

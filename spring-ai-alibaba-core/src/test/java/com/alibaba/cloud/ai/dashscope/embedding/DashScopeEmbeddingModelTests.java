@@ -28,7 +28,6 @@ import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 
 import java.util.Arrays;
 import java.util.List;

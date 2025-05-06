@@ -16,7 +16,6 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.mcp.controller;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigEntity;
-import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.po.McpConfigType;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpConfigRequestVO;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.model.vo.McpConfigVO;
 import com.alibaba.cloud.ai.example.manus.dynamic.mcp.service.McpService;
@@ -33,7 +32,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
 @RestController

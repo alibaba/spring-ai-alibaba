@@ -15,18 +15,10 @@
  */
 package com.alibaba.cloud.ai.reader.email.msg;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.poi.hmef.Attachment;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.document.MetadataMode;
 import org.springframework.util.StringUtils;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**

@@ -191,7 +191,7 @@ public abstract class BaseAgent {
 
 			while (currentStep < maxSteps && !state.equals(AgentState.COMPLETED)) {
 				currentStep++;
-				log.info("Executing round " + currentStep + "/" + maxSteps);
+				log.info("Executing round {}/{}", currentStep, maxSteps);
 
 				AgentExecResult stepResult = step();
 
@@ -200,7 +200,7 @@ public abstract class BaseAgent {
 				}
 				else {
 					// 更新全局状态以保持一致性
-					log.info("Agent state: " + stepResult.getState());
+					log.info("Agent state: {}", stepResult.getState());
 					state = stepResult.getState();
 				}
 
