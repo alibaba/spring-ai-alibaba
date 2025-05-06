@@ -134,21 +134,19 @@ public class GetElementPositionByNameAction extends BrowserAction {
             }
         }
         
-        // 执行JavaScript来查找元素并获取位置信息
+        // 执行JavaScript来查找元素并获取位置信息（支持关键词模糊匹配）
         List<Map<String, Object>> elements = (List<Map<String, Object>>) js.executeScript(
             """
-            function findElementsByText(searchText) {
+            function findElementsByKeyword(keyword) {
               const elements = Array.from(document.querySelectorAll('*'));
               const matchedElements = [];
-              const processedElements = new Set(); // 用于避免重复处理相同元素
-              
+              const processedElements = new Set();
               // 按照元素DOM树深度排序，优先处理最内层的元素
               elements.sort((a, b) => {
                 const depthA = getElementDepth(a);
                 const depthB = getElementDepth(b);
-                return depthB - depthA; // 深度大的排在前面
+                return depthB - depthA;
               });
-              
               function getElementDepth(el) {
                 let depth = 0;
                 let parent = el.parentNode;
@@ -158,7 +156,6 @@ public class GetElementPositionByNameAction extends BrowserAction {
                 }
                 return depth;
               }
-              
               // 只保留可能是交互目标的元素类型
               const filteredElements = elements.filter(el => {
                 const tagName = el.tagName.toLowerCase();
@@ -168,42 +165,33 @@ public class GetElementPositionByNameAction extends BrowserAction {
                        el.getAttribute('role') === 'button' || 
                        el.getAttribute('tabindex') === '0';
               });
-              
               for (const el of filteredElements) {
-                // 跳过已处理的元素
                 if (processedElements.has(el)) continue;
-                
                 const text = (el.textContent || '').trim();
                 let matched = false;
-                
-                // 精确匹配优先
-                if (text === searchText) {
+                // 关键词模糊匹配（只要包含即可）
+                if (text && keyword && text.toLowerCase().includes(keyword.toLowerCase())) {
                   matched = true;
                 }
-                // 然后考虑包含关系
-                else if (text.includes(searchText)) {
-                  matched = true;
-                }
-                // 如果文本内容不匹配，检查其他属性
-                else {
+                // 检查其他属性
+                if (!matched) {
                   const id = (el.id || '').toString();
                   const className = String(el.className || '');
                   const name = (el.getAttribute('name') || '').toString();
                   const alt = (el.getAttribute('alt') || '').toString();
                   const title = (el.getAttribute('title') || '').toString();
                   const ariaLabel = (el.getAttribute('aria-label') || '').toString();
-                  
-                  if (id === searchText || name === searchText || alt === searchText || 
-                      title === searchText || ariaLabel === searchText) {
-                    matched = true;
-                  }
-                  else if (id.includes(searchText) || className.includes(searchText) || 
-                      name.includes(searchText) || alt.includes(searchText) || 
-                      title.includes(searchText) || ariaLabel.includes(searchText)) {
+                  if (
+                    (id && id.toLowerCase().includes(keyword.toLowerCase())) ||
+                    (className && className.toLowerCase().includes(keyword.toLowerCase())) ||
+                    (name && name.toLowerCase().includes(keyword.toLowerCase())) ||
+                    (alt && alt.toLowerCase().includes(keyword.toLowerCase())) ||
+                    (title && title.toLowerCase().includes(keyword.toLowerCase())) ||
+                    (ariaLabel && ariaLabel.toLowerCase().includes(keyword.toLowerCase()))
+                  ) {
                     matched = true;
                   }
                 }
-                
                 if (matched) {
                   // 将匹配元素及其所有父元素标记为已处理
                   let current = el;
@@ -211,10 +199,8 @@ public class GetElementPositionByNameAction extends BrowserAction {
                     processedElements.add(current);
                     current = current.parentNode;
                   }
-                  
                   // 获取元素位置信息
                   const rect = el.getBoundingClientRect();
-                  // 过滤掉尺寸为0或区域不在可视范围内的元素
                   if (rect.width > 0 && rect.height > 0 && 
                       rect.top >= 0 && rect.left >= 0 && 
                       rect.bottom <= window.innerHeight && 
@@ -227,10 +213,9 @@ public class GetElementPositionByNameAction extends BrowserAction {
                   }
                 }
               }
-              
               return matchedElements;
             }
-            return findElementsByText(arguments[0]);
+            return findElementsByKeyword(arguments[0]);
             """,
             elementName);
         
