@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool;
 
-import com.alibaba.cloud.ai.example.manus.agent.AgentState;
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 import org.slf4j.Logger;
@@ -102,7 +100,7 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 	}
 
 	public ToolExecuteResult run(String toolInput) {
-		log.info("Terminate toolInput: " + toolInput);
+		log.info("Terminate toolInput: {}", toolInput);
 		this.lastTerminationMessage = toolInput;
 		this.isTerminated = true;
 		this.terminationTimestamp = java.time.LocalDateTime.now().toString();

@@ -16,9 +16,6 @@
 package com.alibaba.cloud.ai.graph;
 
 import java.util.List;
-import java.util.Map;
-
-import com.alibaba.cloud.ai.graph.state.AgentState;
 
 /**
  * Initialization data for the graph.

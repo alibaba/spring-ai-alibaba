@@ -18,21 +18,14 @@ package com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi;
 import static com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi.SerpApiProperties.SERP_API_URL;
 import static com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi.SerpApiProperties.USER_AGENT_VALUE;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
