@@ -16,32 +16,40 @@ import java.util.Map;
  * @date 2025/5/6:14:38
  */
 public class LoadbalancedAsyncMcpToolCallback implements ToolCallback {
-    private final LoadbalancedMcpAsyncClient mcpClients;
-    private final McpSchema.Tool tool;
 
-    public LoadbalancedAsyncMcpToolCallback(LoadbalancedMcpAsyncClient mcpClient, McpSchema.Tool tool) {
-        this.mcpClients = mcpClient;
-        this.tool = tool;
-    }
+	private final LoadbalancedMcpAsyncClient mcpClients;
 
-    public ToolDefinition getToolDefinition() {
-        return ToolDefinition.builder().name(McpToolUtils.prefixedToolName(this.mcpClients.getClientInfo().name(), this.tool.name())).description(this.tool.description()).inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema())).build();
-    }
+	private final McpSchema.Tool tool;
 
-    public String call(String functionInput) {
-        Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
-        return (String)this.mcpClients.callTool(new McpSchema.CallToolRequest(this.tool.name(), arguments)).map((response) -> {
-            if (response.isError() != null && response.isError()) {
-                throw new IllegalStateException("Error calling tool: " + String.valueOf(response.content()));
-            } else {
-                return ModelOptionsUtils.toJsonString(response.content());
-            }
-        }).block();
-    }
+	public LoadbalancedAsyncMcpToolCallback(LoadbalancedMcpAsyncClient mcpClient, McpSchema.Tool tool) {
+		this.mcpClients = mcpClient;
+		this.tool = tool;
+	}
 
-    public String call(String toolArguments, ToolContext toolContext) {
-        return this.call(toolArguments);
-    }
+	public ToolDefinition getToolDefinition() {
+		return ToolDefinition.builder()
+			.name(McpToolUtils.prefixedToolName(this.mcpClients.getClientInfo().name(), this.tool.name()))
+			.description(this.tool.description())
+			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
+			.build();
+	}
+
+	public String call(String functionInput) {
+		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
+		return (String) this.mcpClients.callTool(new McpSchema.CallToolRequest(this.tool.name(), arguments))
+			.map((response) -> {
+				if (response.isError() != null && response.isError()) {
+					throw new IllegalStateException("Error calling tool: " + String.valueOf(response.content()));
+				}
+				else {
+					return ModelOptionsUtils.toJsonString(response.content());
+				}
+			})
+			.block();
+	}
+
+	public String call(String toolArguments, ToolContext toolContext) {
+		return this.call(toolArguments);
+	}
 
 }
-
