@@ -34,7 +34,17 @@ public class NacosHelper {
 
 	private static final Logger logger = LoggerFactory.getLogger(NacosHelper.class);
 
+	private static volatile String nacosVersion;
+
 	private NacosHelper() {
+	}
+
+	public static String getServerUrl(final String serverAddr) {
+		String url = serverAddr;
+		if (!url.startsWith("http://") && !url.startsWith("https://")) {
+			url = "http://" + url;
+		}
+		return url;
 	}
 
 	public static int compareVersion(String v1, String v2) {
@@ -52,28 +62,35 @@ public class NacosHelper {
 
 	@SuppressWarnings("unchecked")
 	public static String fetchNacosVersion(WebClient webClient, String serverAddr) {
-		if (!serverAddr.startsWith("http://") && !serverAddr.startsWith("https://")) {
-			serverAddr = "http://" + serverAddr;
+		if (nacosVersion == null) {
+			synchronized (NacosHelper.class) {
+				if (nacosVersion == null) {
+					if (!serverAddr.startsWith("http://") && !serverAddr.startsWith("https://")) {
+						serverAddr = "http://" + serverAddr;
+					}
+					try {
+						String serverInfo = webClient.get()
+							.uri(serverAddr + "/nacos/v1/console/server/state")
+							.retrieve()
+							.bodyToMono(String.class)
+							.block();
+						logger.info("Nacos server info: {}", serverInfo);
+						Map<String, Object> serverInfoMap = JacksonUtils.toObj(serverInfo, Map.class);
+						Object versionObj = serverInfoMap.get("version");
+						nacosVersion = versionObj != null ? versionObj.toString() : null;
+					}
+					catch (WebClientResponseException webClientResponseException) {
+						logger.error("Failed to get nacos server version", webClientResponseException);
+						nacosVersion = "3.0.0";
+					}
+					catch (Exception e) {
+						logger.warn("Failed to get or parse nacos server version", e);
+						nacosVersion = null;
+					}
+				}
+			}
 		}
-		try {
-			String serverInfo = webClient.get()
-				.uri(serverAddr + "/nacos/v1/console/server/state")
-				.retrieve()
-				.bodyToMono(String.class)
-				.block();
-			logger.info("Nacos server info: {}", serverInfo);
-			Map<String, Object> serverInfoMap = JacksonUtils.toObj(serverInfo, Map.class);
-			Object versionObj = serverInfoMap.get("version");
-			return versionObj != null ? versionObj.toString() : null;
-		}
-		catch (WebClientResponseException webClientResponseException) {
-			logger.error("Failed to get nacos server version", webClientResponseException);
-			return "3.0.0";
-		}
-		catch (Exception e) {
-			logger.warn("Failed to get or parse nacos server version", e);
-			return null;
-		}
+		return nacosVersion;
 	}
 
 	public static List<String> listAllServices(NamingService namingService, String serviceGroup) throws NacosException {
@@ -96,6 +113,58 @@ public class NacosHelper {
 	public static boolean hasHealthyEnabledInstance(List<Instance> instances) {
 		return instances != null
 				&& instances.stream().anyMatch(instance -> instance.isHealthy() && instance.isEnabled());
+	}
+
+	/**
+	 * 分页获取所有 pageItems
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String, Object>> fetchNacosMcpServersAllPages(WebClient webClient, String serverAddr,
+			String username, String password) {
+		// 新版本通过api获取所有 mcp信息
+		List<Map<String, Object>> allPageItems = new ArrayList<>();
+		int pageNo = 1;
+		int pageSize = 100;
+		int pagesAvailable = 1;
+		do {
+			String url = NacosHelper.getServerUrl(serverAddr);
+			String mcpServers = null;
+			try {
+				mcpServers = webClient.get()
+					.uri(url + "/nacos/v3/admin/ai/mcp/list?pageNo=" + pageNo + "&pageSize=" + pageSize)
+					.header("userName", username)
+					.header("password", password)
+					.retrieve()
+					.bodyToMono(String.class)
+					.block();
+				logger.info("Nacos mcp server info (page {}): {}", pageNo, mcpServers);
+				Map<String, Object> serverInfoMap = JacksonUtils.toObj(mcpServers, Map.class);
+				if (serverInfoMap != null && serverInfoMap.containsKey("data")) {
+					Map<String, Object> data = (Map<String, Object>) serverInfoMap.get("data");
+					if (data != null && data.containsKey("pageItems")) {
+						List<Map<String, Object>> pageItems = (List<Map<String, Object>>) data.get("pageItems");
+						if (pageItems != null) {
+							allPageItems.addAll(pageItems);
+						}
+					}
+					// 分页信息
+					Object pagesAvailableObj = data.get("pagesAvailable");
+					if (pagesAvailableObj instanceof Number) {
+						pagesAvailable = ((Number) pagesAvailableObj).intValue();
+					}
+					else {
+						pagesAvailable = 1;
+					}
+				}
+			}
+			catch (Exception e) {
+				logger.warn("Failed to get or parse nacos mcp server info (page {})", pageNo, e);
+				break;
+			}
+			pageNo++;
+		}
+		while (pageNo <= pagesAvailable);
+		return allPageItems;
 	}
 
 }
