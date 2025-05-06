@@ -57,7 +57,7 @@ public class SubGraphTest {
 	}
 
 	private List<String> _execute(CompiledGraph workflow, Map<String, Object> input) throws Exception {
-		return workflow.stream().stream().peek(System.out::println).map(NodeOutput::node).toList();
+		return workflow.stream(workflow.stateGraph.getOverAllState(), RunnableConfig.builder().threadId("SubGraphTest").build()).stream().peek(System.out::println).map(NodeOutput::node).toList();
 	}
 
 	private static void removeFromList(List<Object> result, AppenderChannel.RemoveIdentifier<Object> removeIdentifier) {
