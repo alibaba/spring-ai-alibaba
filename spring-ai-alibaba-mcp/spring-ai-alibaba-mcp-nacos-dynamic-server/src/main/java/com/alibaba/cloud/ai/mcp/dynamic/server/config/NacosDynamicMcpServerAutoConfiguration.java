@@ -91,15 +91,16 @@ public class NacosDynamicMcpServerAutoConfiguration implements ApplicationContex
 
 	@Bean
 	public DynamicToolsInitializer dynamicToolsInitializer(final NamingService namingService,
-			final ConfigService configService) {
-		return new DynamicToolsInitializer(namingService, configService, nacosMcpRegistryProperties);
+			final ConfigService configService, final WebClient webClient) {
+		return new DynamicToolsInitializer(namingService, configService, webClient, nacosMcpRegistryProperties);
 	}
 
 	@Bean(destroyMethod = "stop")
 	public DynamicNacosToolsWatcher nacosInstanceWatcher(final NamingService namingService,
-			final ConfigService configService, final DynamicMcpToolsProvider dynamicMcpToolsProvider) {
+			final ConfigService configService, final DynamicMcpToolsProvider dynamicMcpToolsProvider,
+			final WebClient webClient) {
 		return new DynamicNacosToolsWatcher(namingService, configService, nacosMcpRegistryProperties,
-				dynamicMcpToolsProvider);
+				dynamicMcpToolsProvider, webClient);
 	}
 
 	@Bean
