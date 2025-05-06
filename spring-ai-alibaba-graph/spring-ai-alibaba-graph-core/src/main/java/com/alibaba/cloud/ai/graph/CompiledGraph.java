@@ -89,7 +89,7 @@ public class CompiledGraph {
 				throw StateGraph.Errors.interruptionNodeNotExist.exception(interruption);
 			}
 		}
-		for (String interruption : processedData.interruptsBefore()) {
+		for (String interruption : processedData.interruptsAfter()) {
 			if (!processedData.nodes().anyMatchById(interruption)) {
 				throw StateGraph.Errors.interruptionNodeNotExist.exception(interruption);
 			}
