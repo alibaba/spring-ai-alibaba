@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.mcp.dynamic.server.watcher;
 import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinition;
 import com.alibaba.cloud.ai.mcp.dynamic.server.provider.DynamicMcpToolsProvider;
 import com.alibaba.cloud.ai.mcp.dynamic.server.tools.DynamicNacosToolsInfo;
+import com.alibaba.cloud.ai.mcp.dynamic.server.tools.NacosHelper;
 import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpRegistryProperties;
 import com.alibaba.nacos.api.config.ConfigChangeEvent;
 import com.alibaba.nacos.api.config.ConfigChangeItem;
@@ -29,12 +30,12 @@ import com.alibaba.nacos.api.naming.listener.Event;
 import com.alibaba.nacos.api.naming.listener.EventListener;
 import com.alibaba.nacos.api.naming.listener.NamingEvent;
 import com.alibaba.nacos.api.naming.pojo.Instance;
-import com.alibaba.nacos.api.naming.pojo.ListView;
 import com.alibaba.nacos.client.config.listener.impl.AbstractConfigChangeListener;
 import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.alibaba.nacos.common.utils.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.HashSet;
 import java.util.List;
@@ -63,16 +64,23 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 
 	private final DynamicMcpToolsProvider dynamicMcpToolsProvider;
 
+	private final WebClient webClient;
+
 	// 缓存服务名称和其工具的映射关系
 	private final Map<String, Set<String>> serviceToolsCache = new ConcurrentHashMap<>();
 
+	private volatile String nacosVersion;
+
 	public DynamicNacosToolsWatcher(final NamingService namingService, final ConfigService configService,
 			final NacosMcpRegistryProperties nacosMcpRegistryProperties,
-			final DynamicMcpToolsProvider dynamicMcpToolsProvider) {
+			final DynamicMcpToolsProvider dynamicMcpToolsProvider, final WebClient webClient) {
 		this.namingService = namingService;
 		this.configService = configService;
 		this.nacosMcpRegistryProperties = nacosMcpRegistryProperties;
 		this.dynamicMcpToolsProvider = dynamicMcpToolsProvider;
+		this.webClient = webClient;
+		this.nacosVersion = NacosHelper.fetchNacosVersion(webClient, nacosMcpRegistryProperties.getServerAddr());
+		logger.info("Fetched nacos server version at startup: {}", nacosVersion);
 		// 启动定时任务
 		this.startScheduledPolling();
 	}
@@ -96,45 +104,32 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 		logger.info("Stopped scheduled service polling");
 	}
 
+	private String getNacosVersion() {
+		if (nacosVersion == null) {
+			nacosVersion = NacosHelper.fetchNacosVersion(webClient, nacosMcpRegistryProperties.getServerAddr());
+			logger.info("Fetched nacos server version on demand: {}", nacosVersion);
+		}
+		return nacosVersion;
+	}
+
 	private void watch() {
-		int pageNo = 1;
-		int pageSize = 100;
-		int totalCount = 0;
-
-		// 记录当前轮询中发现的所有服务
+		String version = getNacosVersion();
+		logger.info("Nacos server version: {}", version);
+		if (version != null && NacosHelper.compareVersion(version, "3.0.0") >= 0) {
+			logger.info("Nacos version >= 3.0.0, use new logic (not implemented yet)");
+			return;
+		}
 		Set<String> currentServices = new HashSet<>();
-
 		try {
-			do {
-				ListView<String> services = namingService.getServicesOfServer(pageNo, pageSize,
-						nacosMcpRegistryProperties.getServiceGroup());
-
-				if (pageNo == 1) {
-					totalCount = services.getCount();
-					logger.info("Total count of services: {}", totalCount);
-				}
-
-				List<String> currentPageData = services.getData();
-				logger.info("Page {} - Found {} services", pageNo, currentPageData.size());
-
-				for (String serviceName : currentPageData) {
-					currentServices.add(serviceName);
-					updateServiceTools(serviceName);
-					namingService.subscribe(serviceName, nacosMcpRegistryProperties.getServiceGroup(), this);
-					configService.addListener(serviceName, nacosMcpRegistryProperties.getServiceGroup(), this);
-				}
-
-				int startIndex = (pageNo - 1) * pageSize;
-				if (startIndex + currentPageData.size() >= totalCount) {
-					break;
-				}
-				pageNo++;
+			List<String> allServices = NacosHelper.listAllServices(namingService,
+					nacosMcpRegistryProperties.getServiceGroup());
+			currentServices.addAll(allServices);
+			for (String serviceName : allServices) {
+				updateServiceTools(serviceName);
+				namingService.subscribe(serviceName, nacosMcpRegistryProperties.getServiceGroup(), this);
+				configService.addListener(serviceName, nacosMcpRegistryProperties.getServiceGroup(), this);
 			}
-			while (true);
-
-			// 检查并清理不再存在的服务
 			cleanupStaleServices(currentServices);
-
 		}
 		catch (NacosException e) {
 			logger.error("Failed to poll services list", e);
@@ -177,8 +172,7 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 					nacosMcpRegistryProperties.getServiceGroup());
 
 			// 检查是否有健康且启用的实例
-			boolean hasHealthyEnabledInstance = instances.stream()
-				.anyMatch(instance -> instance.isHealthy() && instance.isEnabled());
+			boolean hasHealthyEnabledInstance = NacosHelper.hasHealthyEnabledInstance(instances);
 
 			// 如果没有实例、没有健康且启用的实例或配置为空，移除所有相关工具
 			if (CollectionUtils.isEmpty(instances) || !hasHealthyEnabledInstance || toolConfig == null) {
@@ -254,7 +248,6 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 
 	@Override
 	public void receiveConfigChange(final ConfigChangeEvent event) {
-		// 配置变更时更新对应服务的工具
 		for (ConfigChangeItem item : event.getChangeItems()) {
 			String dataId = item.getKey();
 			if (dataId != null && dataId.endsWith(toolsConfigSuffix)) {

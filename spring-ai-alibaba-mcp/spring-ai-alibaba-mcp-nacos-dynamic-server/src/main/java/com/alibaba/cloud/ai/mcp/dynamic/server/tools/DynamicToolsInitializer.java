@@ -21,21 +21,16 @@ import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefini
 import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpRegistryProperties;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.naming.NamingService;
-import com.alibaba.nacos.api.naming.pojo.ListView;
 import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.alibaba.nacos.common.utils.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Dynamic tools initializer to handle tool initialization and avoid circular dependencies
- */
-@Component
 public class DynamicToolsInitializer {
 
 	private static final Logger logger = LoggerFactory.getLogger(DynamicToolsInitializer.class);
@@ -46,72 +41,61 @@ public class DynamicToolsInitializer {
 
 	private final ConfigService configService;
 
+	private final WebClient webClient;
+
 	private final NacosMcpRegistryProperties nacosMcpRegistryProperties;
 
-	public DynamicToolsInitializer(NamingService namingService, ConfigService configService,
+	public DynamicToolsInitializer(NamingService namingService, ConfigService configService, WebClient webClient,
 			NacosMcpRegistryProperties nacosMcpRegistryProperties) {
 		this.namingService = namingService;
 		this.configService = configService;
+		this.webClient = webClient;
 		this.nacosMcpRegistryProperties = nacosMcpRegistryProperties;
 	}
 
 	public List<ToolCallback> initializeTools() {
+		String version = NacosHelper.fetchNacosVersion(webClient, nacosMcpRegistryProperties.getServerAddr());
+		logger.info("Nacos server version: {}", version);
+		if (version != null && NacosHelper.compareVersion(version, "3.0.0") >= 0) {
+			logger.info("Nacos version >= 3.0.0, use new logic (not implemented yet)");
+			return handleHighVersion();
+		}
+		return handleLowVersion();
+	}
+
+	private List<ToolCallback> handleHighVersion() {
+		// TODO: 3.0.0及以上版本的新逻辑
+		return new ArrayList<>();
+	}
+
+	private List<ToolCallback> handleLowVersion() {
 		List<ToolCallback> allTools = new ArrayList<>();
-		int pageNo = 1;
-		int pageSize = 100;
-		int totalCount = 0;
-
+		String serviceGroup = nacosMcpRegistryProperties.getServiceGroup();
 		try {
-			do {
-				ListView<String> services = namingService.getServicesOfServer(pageNo, pageSize,
-						nacosMcpRegistryProperties.getServiceGroup());
-
-				if (pageNo == 1) {
-					totalCount = services.getCount();
-					logger.info("Initial tools loading - Total count of services: {}", totalCount);
-				}
-
-				List<String> currentPageData = services.getData();
-				logger.info("Initial tools loading - Page {} - Found {} services", pageNo, currentPageData.size());
-
-				for (String serviceName : currentPageData) {
-					try {
-						String toolConfig = configService.getConfig(serviceName + TOOLS_CONFIG_SUFFIX,
-								nacosMcpRegistryProperties.getServiceGroup(), 5000);
-
-						if (toolConfig != null) {
-							DynamicNacosToolsInfo toolsInfo = JacksonUtils.toObj(toolConfig,
-									DynamicNacosToolsInfo.class);
-							List<DynamicNacosToolDefinition> toolsInNacos = toolsInfo.getTools();
-
-							if (!CollectionUtils.isEmpty(toolsInNacos)) {
-								for (DynamicNacosToolDefinition toolDefinition : toolsInNacos) {
-									toolDefinition.setServiceName(serviceName);
-									allTools.add(new DynamicNacosToolCallback(toolDefinition));
-								}
+			List<String> allServices = NacosHelper.listAllServices(namingService, serviceGroup);
+			for (String serviceName : allServices) {
+				try {
+					String toolConfig = configService.getConfig(serviceName + TOOLS_CONFIG_SUFFIX, serviceGroup, 5000);
+					if (toolConfig != null) {
+						DynamicNacosToolsInfo toolsInfo = JacksonUtils.toObj(toolConfig, DynamicNacosToolsInfo.class);
+						List<DynamicNacosToolDefinition> toolsInNacos = toolsInfo.getTools();
+						if (!CollectionUtils.isEmpty(toolsInNacos)) {
+							for (DynamicNacosToolDefinition toolDefinition : toolsInNacos) {
+								toolDefinition.setServiceName(serviceName);
+								allTools.add(new DynamicNacosToolCallback(toolDefinition));
 							}
 						}
 					}
-					catch (Exception e) {
-						logger.error("Failed to initialize tools for service: {}", serviceName, e);
-					}
 				}
-
-				int startIndex = (pageNo - 1) * pageSize;
-				if (startIndex + currentPageData.size() >= totalCount) {
-					break;
+				catch (Exception e) {
+					logger.error("Failed to initialize tools for service: {}", serviceName, e);
 				}
-				pageNo++;
 			}
-			while (true);
-
 			logger.info("Initial tools loading completed - Found {} tools", allTools.size());
-
 		}
 		catch (Exception e) {
 			logger.error("Failed to initialize tools", e);
 		}
-
 		return allTools;
 	}
 
