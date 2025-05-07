@@ -42,6 +42,16 @@ public final class CommonToolCallConstants {
 
 	public static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
 
+	// 通用 User-Agent 列表
+	public static final String[] USER_AGENTS = {
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36" };
+
+	// 通用超时设置
+	public static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 5000;
+
+	public static final int DEFAULT_RESPONSE_TIMEOUT_SECONDS = 10;
+
 	// default error handler for restclient bean
 	public static final ResponseErrorHandler DEFAULT_RESTCLIENT_ERROR_HANDLER = new ResponseErrorHandler() {
 		@Override
