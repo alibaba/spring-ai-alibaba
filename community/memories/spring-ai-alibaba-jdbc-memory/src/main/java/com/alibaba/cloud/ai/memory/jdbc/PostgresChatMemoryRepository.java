@@ -17,12 +17,8 @@ package com.alibaba.cloud.ai.memory.jdbc;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 
-/**
- * PostgreSQL 实现的聊天记忆存储库
- */
 public class PostgresChatMemoryRepository extends JdbcChatMemoryRepository {
 
-	// PostgreSQL 特定的查询语句
 	private static final String POSTGRES_QUERY_ADD = "INSERT INTO ai_chat_memory (conversation_id, content, type, timestamp) VALUES (?, ?, ?, ?)";
 
 	private static final String POSTGRES_QUERY_GET = "SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY timestamp";
