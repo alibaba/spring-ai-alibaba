@@ -18,11 +18,6 @@ package com.alibaba.cloud.ai.autoconfigure.memory;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/**
- * @author Jonathan Leijendekker
- * @author Thomas Vitale
- * @since 1.0.0
- */
 @ConfigurationProperties(SQLiteChatMemoryProperties.CONFIG_PREFIX)
 public class SQLiteChatMemoryProperties {
 
