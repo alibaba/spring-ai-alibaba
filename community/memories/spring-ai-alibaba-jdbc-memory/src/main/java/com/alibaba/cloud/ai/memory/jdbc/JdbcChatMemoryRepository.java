@@ -76,7 +76,7 @@ public abstract class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	@Override
 	public List<Message> findByConversationId(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
-		return this.jdbcTemplate.query(QUERY_GET, new JdbcChatMemoryRepository.MessageRowMapper(), conversationId);
+		return this.jdbcTemplate.query(getGetSql(), new JdbcChatMemoryRepository.MessageRowMapper(), conversationId);
 	}
 
 	@Override
@@ -85,7 +85,7 @@ public abstract class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
 		this.deleteByConversationId(conversationId);
-		this.jdbcTemplate.batchUpdate(QUERY_ADD,
+		this.jdbcTemplate.batchUpdate(getAddSql(),
 				new JdbcChatMemoryRepository.AddBatchPreparedStatement(conversationId, messages));
 	}
 
@@ -93,6 +93,22 @@ public abstract class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	public void deleteByConversationId(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		this.jdbcTemplate.update(QUERY_CLEAR, conversationId);
+	}
+
+	/**
+	 * Get the SQL statement used to add records
+	 * @return SQL
+	 */
+	protected String getAddSql() {
+		return QUERY_ADD;
+	}
+
+	/**
+	 * Get the SQL statement used for querying records
+	 * @return SQL
+	 */
+	protected String getGetSql() {
+		return QUERY_GET;
 	}
 
 	private record AddBatchPreparedStatement(String conversationId, List<Message> messages,
