@@ -40,19 +40,14 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * 使用 Testcontainers 自动管理 SQL Server 测试环境
- */
 @SpringBootTest(classes = SqlServerChatMemoryRepositoryIT.TestConfiguration.class)
 @Testcontainers
 class SqlServerChatMemoryRepositoryIT {
 
-    // 定义并启动 SQL Server 容器
     @Container
     private static final MSSQLServerContainer<?> sqlServerContainer = new MSSQLServerContainer<>("mcr.microsoft.com/mssql/server:2019-latest")
             .acceptLicense();
 
-    // 动态配置数据源属性
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", sqlServerContainer::getJdbcUrl);
@@ -170,20 +165,17 @@ class SqlServerChatMemoryRepositoryIT {
         private JdbcTemplate jdbcTemplate;
 
         public void initializeDatabase() {
-            // 删除表（如果存在）
             try {
                 jdbcTemplate.execute("IF OBJECT_ID('ai_chat_memory', 'U') IS NOT NULL DROP TABLE ai_chat_memory");
             } catch (Exception e) {
-                // 忽略删除错误
+                // Ignore errors during deletion
             }
 
-            // 创建表
             jdbcTemplate.execute("CREATE TABLE ai_chat_memory ("
                     + "id INT IDENTITY(1,1) PRIMARY KEY, conversation_id NVARCHAR(256) NOT NULL, "
                     + "content NVARCHAR(MAX) NOT NULL, type VARCHAR(100) NOT NULL, timestamp DATETIME2 NOT NULL, "
                     + "CONSTRAINT chk_message_type CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')))");
 
-            // 创建索引
             jdbcTemplate.execute("CREATE INDEX idx_conversation_id ON ai_chat_memory (conversation_id)");
         }
 
