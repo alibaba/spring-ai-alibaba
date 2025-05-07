@@ -20,10 +20,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
-import org.springframework.ai.chat.memory.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.messages.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -39,15 +37,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Integration tests for {@link org.springframework.ai.chat.memory.jdbc.JdbcChatMemoryRepository}.
- *
- * @author Jonathan Leijendekker
- * @author Thomas Vitale
- */
 @SpringBootTest(classes = SQLiteChatMemoryRepositorySQLiteIT.TestConfiguration.class)
 @TestPropertySource(properties = "spring.datasource.url=jdbc:sqlite::memory:")
-//@Sql(scripts = "classpath:org/springframework/ai/chat/memory/jdbc/schema-sqlite.sql")
 class SQLiteChatMemoryRepositorySQLiteIT {
 
 	@Autowired
@@ -81,7 +72,7 @@ class SQLiteChatMemoryRepositorySQLiteIT {
 		assertThat(result.get("conversation_id")).isEqualTo(conversationId);
 		assertThat(result.get("content")).isEqualTo(message.getText());
 		assertThat(result.get("type")).isEqualTo(messageType.name());
-		assertThat(result.get("timestamp")).isInstanceOf(Timestamp.class);
+		assertThat(result.get("timestamp")).isInstanceOf(Long.class);
 	}
 
 	@Test
@@ -106,7 +97,7 @@ class SQLiteChatMemoryRepositorySQLiteIT {
 			assertThat(result.get("conversation_id")).isEqualTo(conversationId);
 			assertThat(result.get("content")).isEqualTo(message.getText());
 			assertThat(result.get("type")).isEqualTo(message.getMessageType().name());
-			assertThat(result.get("timestamp")).isInstanceOf(Timestamp.class);
+			assertThat(result.get("timestamp")).isInstanceOf(Long.class);
 		}
 
 		var count = chatMemoryRepository.findByConversationId(conversationId).size();
@@ -159,14 +150,10 @@ class SQLiteChatMemoryRepositorySQLiteIT {
 		private JdbcTemplate jdbcTemplate;
 
 		public void initializeDatabase() {
-			// 创建SQLite数据库表结构
-			jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS ai_chat_memory (" +
-					"id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-					"conversation_id VARCHAR(255) NOT NULL, " +
-					"content TEXT NOT NULL, " +
-					"type VARCHAR(255) NOT NULL, " +
-					"timestamp TIMESTAMP NOT NULL)");
-			
+			jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS ai_chat_memory ("
+					+ "id INTEGER PRIMARY KEY AUTOINCREMENT, conversation_id VARCHAR(255) NOT NULL, "
+					+ "content TEXT NOT NULL, type VARCHAR(255) NOT NULL, timestamp TIMESTAMP NOT NULL)");
+
 			jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_conversation_id ON ai_chat_memory (conversation_id)");
 		}
 
@@ -174,8 +161,8 @@ class SQLiteChatMemoryRepositorySQLiteIT {
 		ChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate) {
 			this.initializeDatabase();
 			return com.alibaba.cloud.ai.memory.jdbc.SQLiteChatMemoryRepository.sqliteBuilder()
-					.jdbcTemplate(jdbcTemplate)
-					.build();
+				.jdbcTemplate(jdbcTemplate)
+				.build();
 		}
 
 	}
