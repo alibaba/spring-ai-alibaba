@@ -34,7 +34,6 @@
         <module>spring-ai-alibaba-bom</module>
         <module>spring-ai-alibaba-mcp</module>
         <module>spring-ai-alibaba-core</module>
-        <module>spring-ai-alibaba-graph</module>
         <module>spring-ai-alibaba-studio</module>
         <module>spring-ai-alibaba-starter</module>
         <module>spring-ai-alibaba-auto-configurations</module>
@@ -110,6 +109,8 @@
         <!-- Spring AI Alibaba Chat Memory Support -->
         <module>community/memories/spring-ai-alibaba-redis-memory</module>
         <module>community/memories/spring-ai-alibaba-jdbc-memory</module>
+
+        <module>spring-ai-alibaba-graph</module>
 
         <!-- Spring AI Alibaba JManus -->
         <module>spring-ai-alibaba-jmanus</module>
@@ -367,31 +368,31 @@
                             </properties>
                             <quiet>true</quiet>
                             <header>HEADER</header>
-                                <excludes>
-                                    <exclude>**/.antlr/**</exclude>
-                                    <exclude>**/aot.factories</exclude>
-                                    <exclude>**/.sdkmanrc</exclude>
-                                    <exclude>**/*.adoc</exclude>
-                                    <exclude>**/*.puml</exclude>
-                                    <exclude>**/pom.xml</exclude>
-                                    <exclude>**/*.properties</exclude>
-                                    <exclude>**/*.yaml</exclude>
-                                    <exclude>**/*.yml</exclude>
-                                    <exclude>**/*.map</exclude>
-                                    <exclude>**/*.html</exclude>
-                                    <exclude>**/*.xhtml</exclude>
-                                    <exclude>**/*.jsp</exclude>
-                                    <exclude>**/*.js</exclude>
-                                    <exclude>**/*.css</exclude>
-                                    <exclude>**/*.txt</exclude>
-                                    <exclude>**/*.xjb</exclude>
-                                    <exclude>**/*.ftl</exclude>
-                                    <exclude>**/*.xsd</exclude>
-                                    <exclude>**/*.xml</exclude>
-                                    <exclude>**/*.sh</exclude>
-                                    <exclude>**/generated/**</exclude>
-                                    <exclude>**/Dockerfile</exclude>
-                                </excludes>
+                            <excludes>
+                                <exclude>**/.antlr/**</exclude>
+                                <exclude>**/aot.factories</exclude>
+                                <exclude>**/.sdkmanrc</exclude>
+                                <exclude>**/*.adoc</exclude>
+                                <exclude>**/*.puml</exclude>
+                                <exclude>**/pom.xml</exclude>
+                                <exclude>**/*.properties</exclude>
+                                <exclude>**/*.yaml</exclude>
+                                <exclude>**/*.yml</exclude>
+                                <exclude>**/*.map</exclude>
+                                <exclude>**/*.html</exclude>
+                                <exclude>**/*.xhtml</exclude>
+                                <exclude>**/*.jsp</exclude>
+                                <exclude>**/*.js</exclude>
+                                <exclude>**/*.css</exclude>
+                                <exclude>**/*.txt</exclude>
+                                <exclude>**/*.xjb</exclude>
+                                <exclude>**/*.ftl</exclude>
+                                <exclude>**/*.xsd</exclude>
+                                <exclude>**/*.xml</exclude>
+                                <exclude>**/*.sh</exclude>
+                                <exclude>**/generated/**</exclude>
+                                <exclude>**/Dockerfile</exclude>
+                            </excludes>
                         </configuration>
                     </plugin>
 
