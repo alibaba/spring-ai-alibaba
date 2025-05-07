@@ -892,7 +892,7 @@ public class DashScopeApi {
 			@JsonProperty("tools") List<FunctionTool> tools, @JsonProperty("tool_choice") Object toolChoice,
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("vl_high_resolution_images") Boolean vlHighResolutionImages,
-		    @JsonProperty("enable_thinking") Boolean enableThinking) {
+			@JsonProperty("enable_thinking") Boolean enableThinking) {
 
 		/**
 		 * shortcut constructor for chat request parameter
