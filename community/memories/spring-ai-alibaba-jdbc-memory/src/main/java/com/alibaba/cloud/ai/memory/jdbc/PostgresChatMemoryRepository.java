@@ -23,11 +23,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class PostgresChatMemoryRepository extends JdbcChatMemoryRepository {
 
 	// PostgreSQL 特定的查询语句
-	private static final String POSTGRES_QUERY_ADD = 
-		"INSERT INTO ai_chat_memory (conversation_id, content, type, timestamp) VALUES (?, ?, ?, ?)";
-	
-	private static final String POSTGRES_QUERY_GET = 
-		"SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY timestamp";
+	private static final String POSTGRES_QUERY_ADD = "INSERT INTO ai_chat_memory (conversation_id, content, type, timestamp) VALUES (?, ?, ?, ?)";
+
+	private static final String POSTGRES_QUERY_GET = "SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY timestamp";
 
 	private PostgresChatMemoryRepository(JdbcTemplate jdbcTemplate) {
 		super(jdbcTemplate);
@@ -54,16 +52,17 @@ public class PostgresChatMemoryRepository extends JdbcChatMemoryRepository {
 
 	@Override
 	protected String hasTableSql(String tableName) {
-		return String.format("SELECT table_name FROM information_schema.tables WHERE table_name = '%s'", tableName.toLowerCase());
+		return String.format("SELECT table_name FROM information_schema.tables WHERE table_name = '%s'",
+				tableName.toLowerCase());
 	}
 
 	@Override
 	protected String createTableSql(String tableName) {
 		return String.format(
-				"CREATE TABLE %s (id BIGSERIAL PRIMARY KEY, " +
-				"conversation_id VARCHAR(256) NOT NULL, content TEXT NOT NULL, " +
-				"type VARCHAR(100) NOT NULL, timestamp TIMESTAMP NOT NULL, " +
-				"CONSTRAINT chk_message_type CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')))", 
+				"CREATE TABLE %s (id BIGSERIAL PRIMARY KEY, "
+						+ "conversation_id VARCHAR(256) NOT NULL, content TEXT NOT NULL, "
+						+ "type VARCHAR(100) NOT NULL, timestamp TIMESTAMP NOT NULL, "
+						+ "CONSTRAINT chk_message_type CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')))",
 				tableName);
 	}
 
@@ -77,4 +76,4 @@ public class PostgresChatMemoryRepository extends JdbcChatMemoryRepository {
 		return POSTGRES_QUERY_GET;
 	}
 
-} 
+}
