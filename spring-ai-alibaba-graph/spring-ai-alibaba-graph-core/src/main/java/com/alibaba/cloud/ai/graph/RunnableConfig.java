@@ -17,10 +17,11 @@ package com.alibaba.cloud.ai.graph;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 public final class RunnableConfig {
 
-	private String threadId;
+	private String threadId = UUID.randomUUID().toString();
 
 	private String checkPointId;
 
