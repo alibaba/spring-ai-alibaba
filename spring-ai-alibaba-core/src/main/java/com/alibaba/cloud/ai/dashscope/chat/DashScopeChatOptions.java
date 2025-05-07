@@ -145,6 +145,12 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
    */
   private @JsonProperty("vl_high_resolution_images") Boolean vlHighResolutionImages;
 
+
+  /**
+   * Whether to enable the thinking process of the model.
+   */
+  private @JsonProperty("enable_thinking") Boolean enableThinking = true;
+
   /**
    * Tool Function Callbacks to register with the ChatClient. For Prompt Options the
    * functionCallbacks are automatically enabled for the duration of the prompt execution. For
@@ -434,6 +440,14 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
       this.vlHighResolutionImages = vlHighResolutionImages;
   }
 
+  public Boolean getEnableThinking() {
+    return enableThinking;
+  }
+
+  public void setEnableThinking(Boolean enableThinking) {
+    this.enableThinking = enableThinking;
+  }
+
   public Boolean getMultiModel() {
     return multiModel;
   }
@@ -591,6 +605,11 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
       return this;
     }
 
+    public DashscopeChatOptionsBuilder withEnableThinking(Boolean enableThinking) {
+      this.options.enableThinking = enableThinking;
+      return this;
+    }
+
     public DashscopeChatOptionsBuilder withMultiModel(Boolean multiModel) {
       this.options.multiModel = multiModel;
       return this;
@@ -623,6 +642,7 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
             .withMultiModel(fromOptions.getMultiModel())
             .withProxyToolCalls(fromOptions.getProxyToolCalls())
             .withVlHighResolutionImages(fromOptions.getVlHighResolutionImages())
+            .withEnableThinking(fromOptions.getEnableThinking())
             .build();
   }
 
@@ -647,6 +667,7 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
             Objects.equals(tools, that.tools) &&
             Objects.equals(toolChoice, that.toolChoice) &&
             Objects.equals(vlHighResolutionImages, that.vlHighResolutionImages) &&
+            Objects.equals(enableThinking, that.enableThinking) &&
             Objects.equals(toolCallbacks, that.toolCallbacks) &&
             Objects.equals(toolNames, that.toolNames) &&
             Objects.equals(internalToolExecutionEnabled, that.internalToolExecutionEnabled) &&
@@ -660,7 +681,7 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
   public int hashCode() {
     return Objects.hash(model, stream, temperature, seed, topP, topK, stop, enableSearch,
             responseFormat, incrementalOutput, repetitionPenalty, tools, toolChoice,
-            vlHighResolutionImages, toolCallbacks, toolNames,
+            vlHighResolutionImages, enableThinking, toolCallbacks, toolNames,
             internalToolExecutionEnabled, functions, multiModel, toolContext,
             proxyToolCalls);
   }

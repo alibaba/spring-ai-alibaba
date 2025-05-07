@@ -506,7 +506,8 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 				incrementalOutput,
 				options.getTools(),
 				options.getToolChoice(),
-				stream, options.getVlHighResolutionImages()
+				stream, options.getVlHighResolutionImages(),
+				options.getEnableThinking()
 		);
 	}
 
