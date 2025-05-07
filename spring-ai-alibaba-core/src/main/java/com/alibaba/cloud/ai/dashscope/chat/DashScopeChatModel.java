@@ -67,6 +67,8 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -349,11 +351,20 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 	 */
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 		Set<String> enabledToolsToUse = new HashSet<>();
-
+		DashScopeChatOptions updatedRuntimeOptions = null;
 		DashScopeChatOptions options = DashScopeChatOptions.builder().build();
 		if (prompt.getOptions() != null) {
-			DashScopeChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
+			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+						DashScopeChatOptions.class);
+			}
+			else if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(functionCallingOptions, FunctionCallingOptions.class,
+						DashScopeChatOptions.class);
+			}else {
+			updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
 					ChatOptions.class, DashScopeChatOptions.class);
+			}
 
 			enabledToolsToUse.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
 			options = ModelOptionsUtils.merge(updatedRuntimeOptions, options, DashScopeChatOptions.class);
@@ -495,7 +506,8 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 				incrementalOutput,
 				options.getTools(),
 				options.getToolChoice(),
-				stream, options.getVlHighResolutionImages()
+				stream, options.getVlHighResolutionImages(),
+				options.getEnableThinking()
 		);
 	}
 
