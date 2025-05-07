@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.memory.jdbc;
 
 import org.junit.jupiter.api.Test;
@@ -31,7 +30,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
 
