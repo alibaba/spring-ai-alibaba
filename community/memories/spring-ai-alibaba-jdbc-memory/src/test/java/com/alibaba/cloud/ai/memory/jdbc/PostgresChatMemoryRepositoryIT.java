@@ -46,154 +46,152 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 class PostgresChatMemoryRepositoryIT {
 
-    // 定义并启动 PostgreSQL 容器
-    @Container
-    private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:14-alpine");
+	// 定义并启动 PostgreSQL 容器
+	@Container
+	private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:14-alpine");
 
-    // 动态配置数据源属性
-    @DynamicPropertySource
-    static void registerProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresContainer::getUsername);
-        registry.add("spring.datasource.password", postgresContainer::getPassword);
-        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
-    }
+	// 动态配置数据源属性
+	@DynamicPropertySource
+	static void registerProperties(DynamicPropertyRegistry registry) {
+		registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
+		registry.add("spring.datasource.username", postgresContainer::getUsername);
+		registry.add("spring.datasource.password", postgresContainer::getPassword);
+		registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+	}
 
-    @Autowired
-    private ChatMemoryRepository chatMemoryRepository;
+	@Autowired
+	private ChatMemoryRepository chatMemoryRepository;
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
-    @Test
-    void correctChatMemoryRepositoryInstance() {
-        assertThat(chatMemoryRepository).isInstanceOf(ChatMemoryRepository.class);
-    }
+	@Test
+	void correctChatMemoryRepositoryInstance() {
+		assertThat(chatMemoryRepository).isInstanceOf(ChatMemoryRepository.class);
+	}
 
-    @ParameterizedTest
-    @CsvSource({ "Message from assistant,ASSISTANT", "Message from user,USER", "Message from system,SYSTEM" })
-    void saveMessagesSingleMessage(String content, MessageType messageType) {
-        var conversationId = UUID.randomUUID().toString();
-        var message = switch (messageType) {
-            case ASSISTANT -> new AssistantMessage(content + " - " + conversationId);
-            case USER -> new UserMessage(content + " - " + conversationId);
-            case SYSTEM -> new SystemMessage(content + " - " + conversationId);
-            default -> throw new IllegalArgumentException("Type not supported: " + messageType);
-        };
+	@ParameterizedTest
+	@CsvSource({ "Message from assistant,ASSISTANT", "Message from user,USER", "Message from system,SYSTEM" })
+	void saveMessagesSingleMessage(String content, MessageType messageType) {
+		var conversationId = UUID.randomUUID().toString();
+		var message = switch (messageType) {
+			case ASSISTANT -> new AssistantMessage(content + " - " + conversationId);
+			case USER -> new UserMessage(content + " - " + conversationId);
+			case SYSTEM -> new SystemMessage(content + " - " + conversationId);
+			default -> throw new IllegalArgumentException("Type not supported: " + messageType);
+		};
 
-        chatMemoryRepository.saveAll(conversationId, List.of(message));
+		chatMemoryRepository.saveAll(conversationId, List.of(message));
 
-        var query = "SELECT conversation_id, content, type, timestamp FROM ai_chat_memory WHERE conversation_id = ?";
-        var result = jdbcTemplate.queryForMap(query, conversationId);
+		var query = "SELECT conversation_id, content, type, timestamp FROM ai_chat_memory WHERE conversation_id = ?";
+		var result = jdbcTemplate.queryForMap(query, conversationId);
 
-        assertThat(result.size()).isEqualTo(4);
-        assertThat(result.get("conversation_id")).isEqualTo(conversationId);
-        assertThat(result.get("content")).isEqualTo(message.getText());
-        assertThat(result.get("type")).isEqualTo(messageType.name());
-        assertThat(result.get("timestamp")).isNotNull();
-    }
+		assertThat(result.size()).isEqualTo(4);
+		assertThat(result.get("conversation_id")).isEqualTo(conversationId);
+		assertThat(result.get("content")).isEqualTo(message.getText());
+		assertThat(result.get("type")).isEqualTo(messageType.name());
+		assertThat(result.get("timestamp")).isNotNull();
+	}
 
-    @Test
-    void saveMessagesMultipleMessages() {
-        var conversationId = UUID.randomUUID().toString();
-        var messages = List.<Message>of(new AssistantMessage("Message from assistant - " + conversationId),
-                new UserMessage("Message from user - " + conversationId),
-                new SystemMessage("Message from system - " + conversationId));
+	@Test
+	void saveMessagesMultipleMessages() {
+		var conversationId = UUID.randomUUID().toString();
+		var messages = List.<Message>of(new AssistantMessage("Message from assistant - " + conversationId),
+				new UserMessage("Message from user - " + conversationId),
+				new SystemMessage("Message from system - " + conversationId));
 
-        chatMemoryRepository.saveAll(conversationId, messages);
+		chatMemoryRepository.saveAll(conversationId, messages);
 
-        var query = "SELECT conversation_id, content, type, timestamp FROM ai_chat_memory WHERE conversation_id = ? ORDER BY timestamp";
-        var results = jdbcTemplate.queryForList(query, conversationId);
+		var query = "SELECT conversation_id, content, type, timestamp FROM ai_chat_memory WHERE conversation_id = ? ORDER BY timestamp";
+		var results = jdbcTemplate.queryForList(query, conversationId);
 
-        assertThat(results.size()).isEqualTo(messages.size());
+		assertThat(results.size()).isEqualTo(messages.size());
 
-        for (var i = 0; i < messages.size(); i++) {
-            var message = messages.get(i);
-            var result = results.get(i);
+		for (var i = 0; i < messages.size(); i++) {
+			var message = messages.get(i);
+			var result = results.get(i);
 
-            assertThat(result.get("conversation_id")).isNotNull();
-            assertThat(result.get("conversation_id")).isEqualTo(conversationId);
-            assertThat(result.get("content")).isEqualTo(message.getText());
-            assertThat(result.get("type")).isEqualTo(message.getMessageType().name());
-            assertThat(result.get("timestamp")).isNotNull();
-        }
+			assertThat(result.get("conversation_id")).isNotNull();
+			assertThat(result.get("conversation_id")).isEqualTo(conversationId);
+			assertThat(result.get("content")).isEqualTo(message.getText());
+			assertThat(result.get("type")).isEqualTo(message.getMessageType().name());
+			assertThat(result.get("timestamp")).isNotNull();
+		}
 
-        var count = chatMemoryRepository.findByConversationId(conversationId).size();
-        assertThat(count).isEqualTo(messages.size());
+		var count = chatMemoryRepository.findByConversationId(conversationId).size();
+		assertThat(count).isEqualTo(messages.size());
 
-        chatMemoryRepository.saveAll(conversationId, List.of(new UserMessage("Hello")));
+		chatMemoryRepository.saveAll(conversationId, List.of(new UserMessage("Hello")));
 
-        count = chatMemoryRepository.findByConversationId(conversationId).size();
-        assertThat(count).isEqualTo(1);
-    }
+		count = chatMemoryRepository.findByConversationId(conversationId).size();
+		assertThat(count).isEqualTo(1);
+	}
 
-    @Test
-    void findMessagesByConversationId() {
-        var conversationId = UUID.randomUUID().toString();
-        var messages = List.<Message>of(new AssistantMessage("Message from assistant 1 - " + conversationId),
-                new AssistantMessage("Message from assistant 2 - " + conversationId),
-                new UserMessage("Message from user - " + conversationId),
-                new SystemMessage("Message from system - " + conversationId));
+	@Test
+	void findMessagesByConversationId() {
+		var conversationId = UUID.randomUUID().toString();
+		var messages = List.<Message>of(new AssistantMessage("Message from assistant 1 - " + conversationId),
+				new AssistantMessage("Message from assistant 2 - " + conversationId),
+				new UserMessage("Message from user - " + conversationId),
+				new SystemMessage("Message from system - " + conversationId));
 
-        chatMemoryRepository.saveAll(conversationId, messages);
+		chatMemoryRepository.saveAll(conversationId, messages);
 
-        var results = chatMemoryRepository.findByConversationId(conversationId);
+		var results = chatMemoryRepository.findByConversationId(conversationId);
 
-        assertThat(results.size()).isEqualTo(messages.size());
-        assertThat(results).isEqualTo(messages);
-    }
+		assertThat(results.size()).isEqualTo(messages.size());
+		assertThat(results).isEqualTo(messages);
+	}
 
-    @Test
-    void deleteMessagesByConversationId() {
-        var conversationId = UUID.randomUUID().toString();
-        var messages = List.<Message>of(new AssistantMessage("Message from assistant - " + conversationId),
-                new UserMessage("Message from user - " + conversationId),
-                new SystemMessage("Message from system - " + conversationId));
+	@Test
+	void deleteMessagesByConversationId() {
+		var conversationId = UUID.randomUUID().toString();
+		var messages = List.<Message>of(new AssistantMessage("Message from assistant - " + conversationId),
+				new UserMessage("Message from user - " + conversationId),
+				new SystemMessage("Message from system - " + conversationId));
 
-        chatMemoryRepository.saveAll(conversationId, messages);
+		chatMemoryRepository.saveAll(conversationId, messages);
 
-        chatMemoryRepository.deleteByConversationId(conversationId);
+		chatMemoryRepository.deleteByConversationId(conversationId);
 
-        var count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM ai_chat_memory WHERE conversation_id = ?",
-                Integer.class, conversationId);
+		var count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM ai_chat_memory WHERE conversation_id = ?",
+				Integer.class, conversationId);
 
-        assertThat(count).isZero();
-    }
+		assertThat(count).isZero();
+	}
 
-    @SpringBootConfiguration
-    @ImportAutoConfiguration({ DataSourceAutoConfiguration.class, JdbcTemplateAutoConfiguration.class })
-    static class TestConfiguration {
+	@SpringBootConfiguration
+	@ImportAutoConfiguration({ DataSourceAutoConfiguration.class, JdbcTemplateAutoConfiguration.class })
+	static class TestConfiguration {
 
-        @Autowired
-        private JdbcTemplate jdbcTemplate;
+		@Autowired
+		private JdbcTemplate jdbcTemplate;
 
-        public void initializeDatabase() {
-            // 删除表（如果存在）
-            try {
-                jdbcTemplate.execute("DROP TABLE IF EXISTS ai_chat_memory");
-            } catch (Exception e) {
-                // 忽略删除错误
-            }
+		public void initializeDatabase() {
+			// 删除表（如果存在）
+			try {
+				jdbcTemplate.execute("DROP TABLE IF EXISTS ai_chat_memory");
+			}
+			catch (Exception e) {
+				// 忽略删除错误
+			}
 
-            // 创建表 
-            jdbcTemplate.execute("CREATE TABLE ai_chat_memory ("
-                    + "id BIGSERIAL PRIMARY KEY, "
-                    + "conversation_id VARCHAR(256) NOT NULL, "
-                    + "content TEXT NOT NULL, "
-                    + "type VARCHAR(100) NOT NULL, "
-                    + "timestamp TIMESTAMP NOT NULL, "
-                    + "CONSTRAINT chk_message_type CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')))");
+			// 创建表
+			jdbcTemplate.execute("CREATE TABLE ai_chat_memory (" + "id BIGSERIAL PRIMARY KEY, "
+					+ "conversation_id VARCHAR(256) NOT NULL, " + "content TEXT NOT NULL, "
+					+ "type VARCHAR(100) NOT NULL, " + "timestamp TIMESTAMP NOT NULL, "
+					+ "CONSTRAINT chk_message_type CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')))");
 
-            // 创建索引
-            jdbcTemplate.execute("CREATE INDEX idx_conversation_id ON ai_chat_memory (conversation_id)");
-        }
+			// 创建索引
+			jdbcTemplate.execute("CREATE INDEX idx_conversation_id ON ai_chat_memory (conversation_id)");
+		}
 
-        @Bean
-        ChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate) {
-            this.initializeDatabase();
-            return PostgresChatMemoryRepository.postgresBuilder()
-                .jdbcTemplate(jdbcTemplate)
-                .build();
-        }
-    }
-} 
+		@Bean
+		ChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate) {
+			this.initializeDatabase();
+			return PostgresChatMemoryRepository.postgresBuilder().jdbcTemplate(jdbcTemplate).build();
+		}
+
+	}
+
+}

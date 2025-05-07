@@ -23,11 +23,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class OracleChatMemoryRepository extends JdbcChatMemoryRepository {
 
 	// Oracle 特定的查询语句，不使用双引号包裹 timestamp 关键字
-	private static final String ORACLE_QUERY_ADD = 
-		"INSERT INTO ai_chat_memory (conversation_id, content, type, timestamp) VALUES (?, ?, ?, ?)";
-	
-	private static final String ORACLE_QUERY_GET = 
-		"SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY timestamp";
+	private static final String ORACLE_QUERY_ADD = "INSERT INTO ai_chat_memory (conversation_id, content, type, timestamp) VALUES (?, ?, ?, ?)";
+
+	private static final String ORACLE_QUERY_GET = "SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY timestamp";
 
 	private OracleChatMemoryRepository(JdbcTemplate jdbcTemplate) {
 		super(jdbcTemplate);
@@ -60,10 +58,10 @@ public class OracleChatMemoryRepository extends JdbcChatMemoryRepository {
 	@Override
 	protected String createTableSql(String tableName) {
 		return String.format(
-				"CREATE TABLE %s (id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY, " +
-				"conversation_id VARCHAR2(256) NOT NULL, content CLOB NOT NULL, " +
-				"type VARCHAR2(100) NOT NULL, timestamp TIMESTAMP NOT NULL, " +
-				"CONSTRAINT chk_message_type CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')))", 
+				"CREATE TABLE %s (id NUMBER(19) GENERATED ALWAYS AS IDENTITY PRIMARY KEY, "
+						+ "conversation_id VARCHAR2(256) NOT NULL, content CLOB NOT NULL, "
+						+ "type VARCHAR2(100) NOT NULL, timestamp TIMESTAMP NOT NULL, "
+						+ "CONSTRAINT chk_message_type CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')))",
 				tableName);
 	}
 
@@ -77,4 +75,4 @@ public class OracleChatMemoryRepository extends JdbcChatMemoryRepository {
 		return ORACLE_QUERY_GET;
 	}
 
-} 
+}

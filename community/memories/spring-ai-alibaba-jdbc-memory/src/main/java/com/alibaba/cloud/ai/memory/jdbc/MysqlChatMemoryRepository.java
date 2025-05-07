@@ -23,11 +23,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class MysqlChatMemoryRepository extends JdbcChatMemoryRepository {
 
 	// MySQL specific query statements
-	private static final String MYSQL_QUERY_ADD = 
-		"INSERT INTO ai_chat_memory (conversation_id, content, type, timestamp) VALUES (?, ?, ?, ?)";
-	
-	private static final String MYSQL_QUERY_GET = 
-		"SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY timestamp";
+	private static final String MYSQL_QUERY_ADD = "INSERT INTO ai_chat_memory (conversation_id, content, type, timestamp) VALUES (?, ?, ?, ?)";
+
+	private static final String MYSQL_QUERY_GET = "SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY timestamp";
 
 	private MysqlChatMemoryRepository(JdbcTemplate jdbcTemplate) {
 		super(jdbcTemplate);
@@ -54,16 +52,18 @@ public class MysqlChatMemoryRepository extends JdbcChatMemoryRepository {
 
 	@Override
 	protected String hasTableSql(String tableName) {
-		return String.format("SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '%s'", tableName);
+		return String.format(
+				"SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '%s'",
+				tableName);
 	}
 
 	@Override
 	protected String createTableSql(String tableName) {
 		return String.format(
-				"CREATE TABLE %s (id BIGINT AUTO_INCREMENT PRIMARY KEY, " +
-				"conversation_id VARCHAR(256) NOT NULL, content LONGTEXT NOT NULL, " +
-				"type VARCHAR(100) NOT NULL, timestamp TIMESTAMP NOT NULL, " +
-				"CONSTRAINT chk_message_type CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')))", 
+				"CREATE TABLE %s (id BIGINT AUTO_INCREMENT PRIMARY KEY, "
+						+ "conversation_id VARCHAR(256) NOT NULL, content LONGTEXT NOT NULL, "
+						+ "type VARCHAR(100) NOT NULL, timestamp TIMESTAMP NOT NULL, "
+						+ "CONSTRAINT chk_message_type CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')))",
 				tableName);
 	}
 
@@ -77,4 +77,4 @@ public class MysqlChatMemoryRepository extends JdbcChatMemoryRepository {
 		return MYSQL_QUERY_GET;
 	}
 
-} 
+}
