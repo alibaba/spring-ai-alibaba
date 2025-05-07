@@ -25,12 +25,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
-/**
- * Auto-configuration for {@link ChatMemory}.
- *
- * @author Thomas Vitale
- * @since 1.0.0
- */
 @AutoConfiguration
 @ConditionalOnClass({ ChatMemory.class, ChatMemoryRepository.class })
 public class ChatMemoryAutoConfiguration {

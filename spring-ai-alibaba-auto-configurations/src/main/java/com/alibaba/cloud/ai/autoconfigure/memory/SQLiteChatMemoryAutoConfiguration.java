@@ -30,11 +30,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.sql.DataSource;
 
-/**
- * @author Jonathan Leijendekker
- * @author Thomas Vitale
- * @since 1.0.0
- */
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class, before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ SQLiteChatMemoryRepository.class, DataSource.class, JdbcTemplate.class })
 @EnableConfigurationProperties(SQLiteChatMemoryProperties.class)
