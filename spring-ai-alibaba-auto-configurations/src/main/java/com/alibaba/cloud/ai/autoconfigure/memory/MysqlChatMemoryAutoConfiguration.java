@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.autoconfigure.memory;
 
 import com.alibaba.cloud.ai.memory.jdbc.MysqlChatMemoryRepository;
+import com.alibaba.cloud.ai.memory.jdbc.OracleChatMemoryRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
@@ -43,60 +44,10 @@ public class MysqlChatMemoryAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(MysqlChatMemoryAutoConfiguration.class);
 
-	private final MysqlChatMemoryProperties properties;
-
-	public MysqlChatMemoryAutoConfiguration(MysqlChatMemoryProperties properties) {
-		this.properties = properties;
-	}
-
-	/**
-	 * Creates a custom DataSource for MySQL chat memory if enabled in configuration.
-	 * @return a DataSource configured with MySQL chat memory properties
-	 */
-	@Bean
-	@ConditionalOnProperty(prefix = MysqlChatMemoryProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
-	@ConditionalOnMissingBean(name = "mysqlChatMemoryDataSource")
-	public DataSource mysqlChatMemoryDataSource() {
-		logger.info("Creating custom DataSource for MySQL chat memory");
-		return DataSourceBuilder.create()
-			.url(properties.getJdbcUrl())
-			.username(properties.getUsername())
-			.password(properties.getPassword())
-			.driverClassName(properties.getDriverClassName())
-			.build();
-	}
-
-	/**
-	 * Creates a custom JdbcTemplate for MySQL chat memory if custom DataSource is
-	 * enabled.
-	 * @param mysqlChatMemoryDataSource the custom DataSource for MySQL chat memory
-	 * @return a JdbcTemplate configured with the custom DataSource
-	 */
-	@Bean
-	@ConditionalOnProperty(prefix = MysqlChatMemoryProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
-	@ConditionalOnMissingBean(name = "mysqlChatMemoryJdbcTemplate")
-	public JdbcTemplate mysqlChatMemoryJdbcTemplate(
-			@Qualifier("mysqlChatMemoryDataSource") DataSource mysqlChatMemoryDataSource) {
-		logger.info("Creating custom JdbcTemplate for MySQL chat memory");
-		return new JdbcTemplate(mysqlChatMemoryDataSource);
-	}
-
-	/**
-	 * Creates a MySQL chat memory repository with the appropriate JdbcTemplate. If a
-	 * custom DataSource is configured, uses the custom JdbcTemplate; otherwise, falls
-	 * back to the application's default JdbcTemplate.
-	 */
 	@Bean
 	@ConditionalOnMissingBean
-	public ChatMemoryRepository mysqlChatMemoryRepository(
-			@Qualifier("mysqlChatMemoryJdbcTemplate") JdbcTemplate jdbcTemplate) {
-		if (properties.isEnabled()) {
-			logger.info("Configuring MySQL chat memory repository with custom DataSource");
-			JdbcTemplate customTemplate = mysqlChatMemoryJdbcTemplate(mysqlChatMemoryDataSource());
-			return MysqlChatMemoryRepository.mysqlBuilder().jdbcTemplate(customTemplate).build();
-		}
-
-		logger.info("Configuring MySQL chat memory repository with default DataSource");
+	ChatMemoryRepository mysqlChatMemoryRepository(JdbcTemplate jdbcTemplate) {
+		logger.info("Configuring Oracle chat memory repository");
 		return MysqlChatMemoryRepository.mysqlBuilder().jdbcTemplate(jdbcTemplate).build();
 	}
 
