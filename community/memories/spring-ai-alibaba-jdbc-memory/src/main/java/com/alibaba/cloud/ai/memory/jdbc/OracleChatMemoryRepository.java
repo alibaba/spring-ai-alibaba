@@ -18,11 +18,12 @@ package com.alibaba.cloud.ai.memory.jdbc;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * Oracle 实现的聊天记忆存储库
+ * Oracle implementation of the chat memory repository
  */
 public class OracleChatMemoryRepository extends JdbcChatMemoryRepository {
 
-	// Oracle 特定的查询语句，不使用双引号包裹 timestamp 关键字
+	// Oracle specific query statement, not wrapping the 'timestamp' keyword with double
+	// quotes
 	private static final String ORACLE_QUERY_ADD = "INSERT INTO ai_chat_memory (conversation_id, content, type, timestamp) VALUES (?, ?, ?, ?)";
 
 	private static final String ORACLE_QUERY_GET = "SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY timestamp";

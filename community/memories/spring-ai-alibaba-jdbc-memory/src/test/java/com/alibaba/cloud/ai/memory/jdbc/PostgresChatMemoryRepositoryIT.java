@@ -39,18 +39,13 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * 使用 Testcontainers 自动管理 PostgreSQL 测试环境
- */
 @SpringBootTest(classes = PostgresChatMemoryRepositoryIT.TestConfiguration.class)
 @Testcontainers
 class PostgresChatMemoryRepositoryIT {
 
-	// 定义并启动 PostgreSQL 容器
 	@Container
 	private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:14-alpine");
 
-	// 动态配置数据源属性
 	@DynamicPropertySource
 	static void registerProperties(DynamicPropertyRegistry registry) {
 		registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
@@ -168,21 +163,18 @@ class PostgresChatMemoryRepositoryIT {
 		private JdbcTemplate jdbcTemplate;
 
 		public void initializeDatabase() {
-			// 删除表（如果存在）
 			try {
 				jdbcTemplate.execute("DROP TABLE IF EXISTS ai_chat_memory");
 			}
 			catch (Exception e) {
-				// 忽略删除错误
+				// Ignore errors
 			}
 
-			// 创建表
 			jdbcTemplate.execute("CREATE TABLE ai_chat_memory (" + "id BIGSERIAL PRIMARY KEY, "
 					+ "conversation_id VARCHAR(256) NOT NULL, " + "content TEXT NOT NULL, "
 					+ "type VARCHAR(100) NOT NULL, " + "timestamp TIMESTAMP NOT NULL, "
 					+ "CONSTRAINT chk_message_type CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')))");
 
-			// 创建索引
 			jdbcTemplate.execute("CREATE INDEX idx_conversation_id ON ai_chat_memory (conversation_id)");
 		}
 
