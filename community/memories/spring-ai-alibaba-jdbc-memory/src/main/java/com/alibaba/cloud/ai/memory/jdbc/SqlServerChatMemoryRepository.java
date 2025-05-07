@@ -54,4 +54,4 @@ public class SqlServerChatMemoryRepository extends JdbcChatMemoryRepository {
 				+ "    CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')));", tableName);
 	}
 
-} 
+}
