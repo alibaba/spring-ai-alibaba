@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.mcp.dynamic.server.callback;
 
-import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinition;
+import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinitionV3;
 import com.alibaba.cloud.ai.mcp.dynamic.server.utils.SpringBeanUtils;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingService;
@@ -30,6 +30,8 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.lang.NonNull;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.Map;
 
 public class DynamicNacosToolCallbackV3 implements ToolCallback {
 
@@ -60,17 +62,35 @@ public class DynamicNacosToolCallbackV3 implements ToolCallback {
 	@Override
 	public String call(@NonNull final String input, final ToolContext toolContext) {
 		try {
-			logger.info("Tool callback input: {}, toolContext: {}", input, toolContext);
-			DynamicNacosToolDefinition nacosToolDefinition = (DynamicNacosToolDefinition) this.toolDefinition;
+			logger.info("Tool callback: {} input: {}, toolContext: {}", toolDefinition.name(), input,
+					JacksonUtils.toJson(toolContext));
+			DynamicNacosToolDefinitionV3 nacosToolDefinition = (DynamicNacosToolDefinitionV3) this.toolDefinition;
 			logger.info("Tool callback toolDefinition: {}", JacksonUtils.toJson(nacosToolDefinition));
-			Instance instance = namingService.selectOneHealthyInstance(nacosToolDefinition.getServiceName());
-			logger.info("Tool callback instance: {}", JacksonUtils.toJson(instance));
-			String url = "http://" + instance.getIp() + ":" + instance.getPort() + nacosToolDefinition.getRequestPath();
-			logger.info("Tool callback url: {}", url);
-			if (nacosToolDefinition.getRequestMethod().equalsIgnoreCase("POST")) {
-				return webClient.post().uri(url).bodyValue(input).retrieve().bodyToMono(String.class).block();
+			Object remoteServerConfig = nacosToolDefinition.getRemoteServerConfig();
+			String protocol = nacosToolDefinition.getProtocol();
+			if ("http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)) {
+				Map<String, Object> configMap = (Map<String, Object>) remoteServerConfig;
+				Object serviceRef = configMap.get("serviceRef");
+				Object exportPath = configMap.get("exportPath");
+				if (serviceRef != null) {
+					Map<String, Object> refMap = (Map<String, Object>) serviceRef;
+					String serviceName = (String) refMap.get("serviceName");
+					String groupName = (String) refMap.get("groupName");
+					Instance instance = namingService.selectOneHealthyInstance(serviceName, groupName);
+					logger.info("Tool callback instance: {}", JacksonUtils.toJson(instance));
+//					String url = "http://" + instance.getIp() + ":" + instance.getPort() + exportPath;
+//					logger.info("Tool callback url: {}", url);
+					// if
+					// (nacosToolDefinition.getRequestMethod().equalsIgnoreCase("POST")) {
+					// return
+					// webClient.post().uri(url).bodyValue(input).retrieve().bodyToMono(String.class).block();
+					// }
+//					return webClient.get().uri(url).retrieve().bodyToMono(String.class).block();
+					return null;
+				}
 			}
-			return webClient.get().uri(url).retrieve().bodyToMono(String.class).block();
+
+			return "";
 		}
 		catch (NacosException e) {
 			throw new RuntimeException(e);
