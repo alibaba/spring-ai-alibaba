@@ -18,5 +18,7 @@
 		<module>spring-ai-alibaba-mcp-nacos</module>
         <module>spring-ai-alibaba-mcp-nacos-dynamic-server</module>
         <module>spring-ai-alibaba-mcp-nacos-common</module>
-    </modules>
+		<module>spring-ai-alibaba-mcp-nacos-client</module>
+	</modules>
+
 </project>

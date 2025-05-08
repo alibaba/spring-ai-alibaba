@@ -169,20 +169,21 @@ public class AgentServiceImpl implements AgentService {
 		entity.setAgentDescription(config.getDescription());
 		entity.setSystemPrompt(config.getSystemPrompt());
 		entity.setNextStepPrompt(config.getNextStepPrompt());
-		List<String> availableTools = config.getAvailableTools();
 
-		// 确保工具列表中至少包含 TerminateTool
-		if (availableTools == null
-				|| !availableTools.contains(com.alibaba.cloud.ai.example.manus.tool.TerminateTool.name)) {
-			if (availableTools == null) {
-				availableTools = new java.util.ArrayList<>();
-			}
+		// 1. 创建新集合，保证唯一性和顺序
+		java.util.Set<String> toolSet = new java.util.LinkedHashSet<>();
+		List<String> availableTools = config.getAvailableTools();
+		if (availableTools != null) {
+			toolSet.addAll(availableTools);
+		}
+		// 2. 添加 TerminateTool（如不存在）
+		if (!toolSet.contains(com.alibaba.cloud.ai.example.manus.tool.TerminateTool.name)) {
 			log.info("为Agent[{}]添加必要的工具: {}", config.getName(),
 					com.alibaba.cloud.ai.example.manus.tool.TerminateTool.name);
-			availableTools.add(com.alibaba.cloud.ai.example.manus.tool.TerminateTool.name);
+			toolSet.add(com.alibaba.cloud.ai.example.manus.tool.TerminateTool.name);
 		}
-
-		entity.setAvailableToolKeys(availableTools);
+		// 3. 转为 List 并设置
+		entity.setAvailableToolKeys(new java.util.ArrayList<>(toolSet));
 		entity.setClassName(config.getName());
 	}
 
