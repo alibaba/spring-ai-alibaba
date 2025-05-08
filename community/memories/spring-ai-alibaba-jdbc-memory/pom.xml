@@ -65,6 +65,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-model-chat-memory-jdbc</artifactId>
+            <version>${spring-ai.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ojdbc8</artifactId>
             <scope>test</scope>

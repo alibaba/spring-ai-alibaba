@@ -48,45 +48,106 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 
 	private static final int MAX_LENGTH = 3000;
 
-	public static final String PARAMETERS = "{\n" + "\t\"type\": \"object\",\n" + "\t\"properties\": {\n"
-			+ "\t\t\"action\": {\n" + "\t\t\t\"type\": \"string\",\n" + "\t\t\t\"enum\": [\n"
-			+ "\t\t\t\t\"navigate\",\n" + "\t\t\t\t\"click\",\n" + "\t\t\t\t\"input_text\",\n"
-			+ "\t\t\t\t\"key_enter\",\n" + "\t\t\t\t\"screenshot\",\n" + "\t\t\t\t\"get_html\",\n"
-			+ "\t\t\t\t\"get_text\",\n" + "\t\t\t\t\"execute_js\",\n" + "\t\t\t\t\"scroll\",\n"
-			+ "\t\t\t\t\"switch_tab\",\n" + "\t\t\t\t\"new_tab\",\n" + "\t\t\t\t\"close_tab\",\n"
-			+ "\t\t\t\t\"refresh\"\n" + "\t\t\t],\n" + "\t\t\t\"description\": \"The browser action to perform\"\n"
-			+ "\t\t},\n" + "\t\t\"url\": {\n" + "\t\t\t\"type\": \"string\",\n"
-			+ "\t\t\t\"description\": \"URL for 'navigate' or 'new_tab' actions\"\n" + "\t\t},\n" + "\t\t\"index\": {\n"
-			+ "\t\t\t\"type\": \"integer\",\n"
-			+ "\t\t\t\"description\": \"Element index for 'click' or 'input_text' actions\"\n" + "\t\t},\n"
-			+ "\t\t\"text\": {\n" + "\t\t\t\"type\": \"string\",\n"
-			+ "\t\t\t\"description\": \"Text for 'input_text' action\"\n" + "\t\t},\n" + "\t\t\"script\": {\n"
-			+ "\t\t\t\"type\": \"string\",\n" + "\t\t\t\"description\": \"JavaScript code for 'execute_js' action\"\n"
-			+ "\t\t},\n" + "\t\t\"scroll_amount\": {\n" + "\t\t\t\"type\": \"integer\",\n"
-			+ "\t\t\t\"description\": \"Pixels to scroll (positive for down, negative for up) for 'scroll' action\"\n"
-			+ "\t\t},\n" + "\t\t\"tab_id\": {\n" + "\t\t\t\"type\": \"integer\",\n"
-			+ "\t\t\t\"description\": \"Tab ID for 'switch_tab' action\"\n" + "\t\t}\n" + "\t},\n"
-			+ "\t\"required\": [\n" + "\t\t\"action\"\n" + "\t],\n" + "\t\"dependencies\": {\n"
-			+ "\t\t\"navigate\": [\n" + "\t\t\t\"url\"\n" + "\t\t],\n" + "\t\t\"click\": [\n" + "\t\t\t\"index\"\n"
-			+ "\t\t],\n" + "\t\t\"input_text\": [\n" + "\t\t\t\"index\",\n" + "\t\t\t\"text\"\n" + "\t\t],\n"
-			+ "\t\t\"key_enter\": [\n" + "\t\t\t\"index\"\n" + "\t\t],\n" + "\t\t\"execute_js\": [\n"
-			+ "\t\t\t\"script\"\n" + "\t\t],\n" + "\t\t\"switch_tab\": [\n" + "\t\t\t\"tab_id\"\n" + "\t\t],\n"
-			+ "\t\t\"new_tab\": [\n" + "\t\t\t\"url\"\n" + "\t\t],\n" + "\t\t\"scroll\": [\n"
-			+ "\t\t\t\"scroll_amount\"\n" + "\t\t]\n" + "\t}\n" + "}";
+	public static final String PARAMETERS = """
+			{
+			    "type": "object",
+			    "properties": {
+			        "action": {
+			            "type": "string",
+			            "enum": [
+			                "navigate",
+			                "click",
+			                "input_text",
+			                "key_enter",
+			                "screenshot",
+			                "get_html",
+			                "get_text",
+			                "execute_js",
+			                "scroll",
+			                "switch_tab",
+			                "new_tab",
+			                "close_tab",
+			                "refresh"
+			            ],
+			            "description": "The browser action to perform"
+			        },
+			        "url": {
+			            "type": "string",
+			            "description": "URL for 'navigate' or 'new_tab' actions"
+			        },
+			        "index": {
+			            "type": "integer",
+			            "description": "Element index for 'click' or 'input_text' actions"
+			        },
+			        "text": {
+			            "type": "string",
+			            "description": "Text for 'input_text' action"
+			        },
+			        "script": {
+			            "type": "string",
+			            "description": "JavaScript code for 'execute_js' action"
+			        },
+			        "scroll_amount": {
+			            "type": "integer",
+			            "description": "Pixels to scroll (positive for down, negative for up) for 'scroll' action"
+			        },
+			        "tab_id": {
+			            "type": "integer",
+			            "description": "Tab ID for 'switch_tab' action"
+			        }
+			    },
+			    "required": [
+			        "action"
+			    ],
+			    "dependencies": {
+			        "navigate": [
+			            "url"
+			        ],
+			        "click": [
+			            "index"
+			        ],
+			        "input_text": [
+			            "index",
+			            "text"
+			        ],
+			        "key_enter": [
+			            "index"
+			        ],
+			        "execute_js": [
+			            "script"
+			        ],
+			        "switch_tab": [
+			            "tab_id"
+			        ],
+			        "new_tab": [
+			            "url"
+			        ],
+			        "scroll": [
+			            "scroll_amount"
+			        ]
+			    }
+			}
+			""";
 
 	private static final String name = "browser_use";
 
-	public static final String description = "Interact with a web browser to perform various actions such as navigation, element interaction,搜索类优先考虑此工具\n"
-			+ "content extraction, and tab management. Supported actions include:\n"
-			+ "- 'navigate': Go to a specific URL, use https://baidu.com by default\n"
-			+ "- 'click': Click an element by index\n"
-			+ "- 'input_text': Input text into an element, for 百度(Baidu), the index of the input button is \n"
-			+ "- 'key_enter': Hit the Enter key\n" + "- 'screenshot': Capture a screenshot\n"
-			+ "- 'get_html': Get page HTML content\n" + "- 'get_text': Get text content of the page\n" +
-			// "- 'read_links': Get all links on the page\n" +
-			"- 'execute_js': Execute JavaScript code\n" + "- 'scroll': Scroll the page\n"
-			+ "- 'switch_tab': Switch to a specific tab\n" + "- 'new_tab': Open a new tab\n"
-			+ "- 'close_tab': Close the current tab\n" + "- 'refresh': Refresh the current page";
+	public static final String description = """
+			Interact with a web browser to perform various actions such as navigation, element interaction,搜索类优先考虑此工具
+			content extraction, and tab management. Supported actions include:
+			- 'navigate': Go to a specific URL, use https://baidu.com by default
+			- 'click': Click an element by index
+			- 'input_text': Input text into an element, for 百度(Baidu), the index of the input button is
+			- 'key_enter': Hit the Enter key
+			- 'screenshot': Capture a screenshot
+			- 'get_html': Get page HTML content
+			- 'get_text': Get text content of the page
+			- 'execute_js': Execute JavaScript code
+			- 'scroll': Scroll the page
+			- 'switch_tab': Switch to a specific tab
+			- 'new_tab': Open a new tab
+			- 'close_tab': Close the current tab
+			- 'refresh': Refresh the current page
+			""";
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
@@ -117,7 +178,7 @@ public class BrowserUseTool implements Function<String, ToolExecuteResult> {
 	}
 
 	public ToolExecuteResult run(String toolInput) {
-		log.info("BrowserUseTool toolInput:" + toolInput);
+		log.info("BrowserUseTool toolInput:{}", toolInput);
 		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 		});
 

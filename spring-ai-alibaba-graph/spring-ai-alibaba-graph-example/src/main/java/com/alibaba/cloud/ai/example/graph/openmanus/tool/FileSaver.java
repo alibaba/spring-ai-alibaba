@@ -36,18 +36,30 @@ public class FileSaver implements Function<String, ToolExecuteResult> {
 
 	private static final Logger log = LoggerFactory.getLogger(FileSaver.class);
 
-	private static final String PARAMETERS = "{\n" + "\t\"type\": \"object\",\n" + "\t\"properties\": {\n"
-			+ "\t\t\"content\": {\n" + "\t\t\t\"type\": \"string\",\n"
-			+ "\t\t\t\"description\": \"(required) The content to save to the file.\"\n" + "\t\t},\n"
-			+ "\t\t\"file_path\": {\n" + "\t\t\t\"type\": \"string\",\n"
-			+ "\t\t\t\"description\": \"(required) The path where the file should be saved, including filename and extension.\"\n"
-			+ "\t\t}\n" + "\t},\n" + "\t\"required\": [\"content\", \"file_path\"]\n" + "}";
+	private static final String PARAMETERS = """
+			{
+			    "type": "object",
+			    "properties": {
+			        "content": {
+			            "description": "(required) The content to save to the file.",
+			            "type": "string"
+			        },
+			        "file_path": {
+			            "description": "(required) The path where the file should be saved, including filename and extension.",
+			            "type": "string"
+			        }
+			    },
+			    "required": ["content", "file_path"],
+			    "additionalProperties": false
+			}
+			""";
 
 	private static final String name = "file_saver";
 
-	private static final String description = "Save content to a local file at a specified path.\n"
-			+ "Use this tool when you need to save text, code, or generated content to a file on the local filesystem.\n"
-			+ "The tool accepts content and a file path, and saves the content to that location.";
+	private static final String description = """
+			Save content to a local file at a specified path.
+			Use this tool when you need to save text, code, or generated content to a file on the local filesystem.
+			The tool accepts content and a file path, and saves the content to that location.""";
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {
 		OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
@@ -64,7 +76,7 @@ public class FileSaver implements Function<String, ToolExecuteResult> {
 	}
 
 	public ToolExecuteResult run(String toolInput) {
-		log.info("FileSaver toolInput:" + toolInput);
+		log.info("FileSaver toolInput:{}", toolInput);
 		try {
 			Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 			});
