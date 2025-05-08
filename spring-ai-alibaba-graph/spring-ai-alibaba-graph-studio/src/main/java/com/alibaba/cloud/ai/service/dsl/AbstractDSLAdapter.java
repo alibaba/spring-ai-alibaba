@@ -19,10 +19,7 @@ import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.model.AppMetadata;
 import com.alibaba.cloud.ai.model.chatbot.ChatBot;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.Yaml;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,13 +44,13 @@ public abstract class AbstractDSLAdapter implements DSLAdapter {
 			default -> throw new IllegalArgumentException("unsupported mode: " + metadata.getMode());
 		};
 		App app = new App(metadata, spec);
-		log.info("App imported:" + app);
+		log.info("App imported:{}", app);
 		return app;
 	}
 
 	@Override
 	public String exportDSL(App app) {
-		log.info("App exporting: \n" + app);
+		log.info("App exporting: \n{}", app);
 		AppMetadata metadata = app.getMetadata();
 		Map<String, Object> metaMap = metadataToMap(metadata);
 		Map<String, Object> specMap;
@@ -65,7 +62,7 @@ public abstract class AbstractDSLAdapter implements DSLAdapter {
 		Map<String, Object> data = Stream.concat(metaMap.entrySet().stream(), specMap.entrySet().stream())
 			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1));
 		String dsl = getSerializer().dump(data);
-		log.info("App exported: \n" + dsl);
+		log.info("App exported: \n{}", dsl);
 		return dsl;
 	}
 

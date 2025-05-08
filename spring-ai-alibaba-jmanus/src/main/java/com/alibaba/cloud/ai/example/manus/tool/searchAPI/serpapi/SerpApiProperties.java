@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
 public class SerpApiProperties {
 
 	public static final String SERP_API_URL = "https://serpapi.com/search";
