@@ -44,6 +44,12 @@
             <artifactId>plantuml-mit</artifactId>
             <version>1.2024.4</version>
         </dependency>
+      
+        <dependency>
+          <groupId>org.jsoup</groupId>
+          <artifactId>jsoup</artifactId>
+          <version>1.18.3</version>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -73,11 +79,11 @@
             <version>${project.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-studio</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+<!--		<dependency>-->
+<!--			<groupId>com.alibaba.cloud.ai</groupId>-->
+<!--			<artifactId>spring-ai-alibaba-studio</artifactId>-->
+<!--			<version>${project.parent.version}</version>-->
+<!--		</dependency>-->
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>

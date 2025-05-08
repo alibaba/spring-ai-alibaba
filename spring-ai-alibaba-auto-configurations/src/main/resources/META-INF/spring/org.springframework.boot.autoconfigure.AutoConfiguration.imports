@@ -1,2 +1,8 @@
 com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.prompt.PromptTemplateAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.memory.ChatMemoryAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.memory.SQLiteChatMemoryAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.memory.MysqlChatMemoryAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.memory.OracleChatMemoryAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.memory.PostgresChatMemoryAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.memory.SqlServerChatMemoryAutoConfiguration
