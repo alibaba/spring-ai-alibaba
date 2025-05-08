@@ -111,6 +111,7 @@ public class DynamicToolsInitializer {
 					Object toolSpec = data.get("toolSpec");
 					Object remoteServerConfig = data.get("remoteServerConfig");
 					Object localeServerConfig = data.get("localeServerConfig");
+					String protocol = (String) data.get("protocol");
 					if (toolSpec != null) {
 						Map<String, Object> toolSpecMap = JacksonUtils.toObj(JacksonUtils.toJson(toolSpec), Map.class);
 						List<Map<String, Object>> tools = (List<Map<String, Object>>) toolSpecMap.get("tools");
@@ -122,8 +123,8 @@ public class DynamicToolsInitializer {
 							ToolDefinition toolDefinition = DynamicNacosToolDefinitionV3.builder()
 								.name(toolName)
 								.description(toolDescription)
-								.serviceName((String) mcpName)
 								.inputSchema(inputSchema)
+								.protocol(protocol)
 								.remoteServerConfig(remoteServerConfig)
 								.localServerConfig(localeServerConfig)
 								.build();
