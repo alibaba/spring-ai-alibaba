@@ -66,6 +66,19 @@ mvn spring-boot:run
 浏览器访问如下示例链接，查看运行效果：
 * http://localhost:18080/manus/chat?query=帮我查询阿里巴巴近一周的股票信息
 
+## BigTool 示例
+
+在 BigTool 示例中，我们实现了能够访问大量工具的智能体。它能够在海量工具库中精准匹配并高效调用所需的Tool, 减少Tool检索的次数，提高大量工具下处理性能。
+
+本示例将 java.lang.Math 下所有静态方法进行封装，并注册为 Tool（约80个），来模拟多 Tool 场景。通过 Bigtool 进行筛选出 3 个最佳 Tool，进行任务处理。
+
+1. Tool Agent，负责选取最优的工具。
+2. CalculateAgent，负责根据ToolAgent筛选出的工具，执行任务。
+
+浏览器访问如下示例链接，查看运行效果：
+
+* http://localhost:18080/bigtool/search?query=计算0.5的余弦
+
 ## Relection 示例
 
 浏览器访问如下示例链接，查看运行效果：
