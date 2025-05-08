@@ -16,14 +16,8 @@
 package com.alibaba.cloud.ai.dashscope.chat;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletion;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionChunk;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequest;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.*;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput.Choice;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.TokenUsage;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
 import com.alibaba.cloud.ai.dashscope.metadata.DashScopeAiUsage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -48,8 +42,8 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Test cases for DashScopeChatModel. Tests cover basic chat completion, streaming, tool
@@ -277,18 +271,15 @@ class DashScopeChatModelTests {
 	}
 
 	@Test
-    void testErrorHandling() {
-        // Test error handling
-        when(dashScopeApi.chatCompletionEntity(any()))
-                .thenThrow(new RuntimeException("API Error"));
+	void testErrorHandling() {
+		// Test error handling
+		when(dashScopeApi.chatCompletionEntity(any())).thenThrow(new RuntimeException("API Error"));
 
-        Message message = new UserMessage("Test message");
-        Prompt prompt = new Prompt(List.of(message));
+		Message message = new UserMessage("Test message");
+		Prompt prompt = new Prompt(List.of(message));
 
-        assertThatThrownBy(() -> chatModel.call(prompt))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("API Error");
-    }
+		assertThatThrownBy(() -> chatModel.call(prompt)).isInstanceOf(RuntimeException.class).hasMessage("API Error");
+	}
 
 	@Test
 	void testEmptyResponse() {
@@ -310,7 +301,7 @@ class DashScopeChatModelTests {
 		assertThat(response.getMetadata().getUsage()).isNotNull();
 		DashScopeAiUsage aiUsage = (DashScopeAiUsage) response.getMetadata().getUsage();
 		assertThat(aiUsage.getPromptTokens()).isZero();
-		assertThat(aiUsage.getGenerationTokens()).isZero();
+		assertThat(aiUsage.getCompletionTokens()).isZero();
 		assertThat(aiUsage.getTotalTokens()).isZero();
 	}
 
@@ -355,7 +346,7 @@ class DashScopeChatModelTests {
 		assertThat(response.getMetadata().getId()).isEqualTo(TEST_REQUEST_ID);
 		DashScopeAiUsage aiUsage = (DashScopeAiUsage) response.getMetadata().getUsage();
 		assertThat(aiUsage.getPromptTokens()).isEqualTo(10L);
-		assertThat(aiUsage.getGenerationTokens()).isEqualTo(20L);
+		assertThat(aiUsage.getCompletionTokens()).isEqualTo(20);
 		assertThat(aiUsage.getTotalTokens()).isEqualTo(30L);
 	}
 
