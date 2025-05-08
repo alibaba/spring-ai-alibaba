@@ -61,9 +61,8 @@ public class BingSearchService implements Function<BingSearchService.Request, Bi
 	public BingSearchService(BingSearchProperties properties) {
 		assert StringUtils.hasText(properties.getToken()) && properties.getToken().length() == 32;
 		Map<String, String> headers = new HashMap<>();
-		String randomUserAgent = CommonToolCallConstants.USER_AGENTS[ThreadLocalRandom.current()
-			.nextInt(CommonToolCallConstants.USER_AGENTS.length)];
-		headers.put(HttpHeaders.USER_AGENT, randomUserAgent);
+		headers.put(HttpHeaders.USER_AGENT,
+				"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
 		headers.put(BingSearchProperties.OCP_APIM_SUBSCRIPTION_KEY, properties.getToken());
 		this.webClient = CommonToolCallUtils.buildWebClient(headers,
 				CommonToolCallConstants.DEFAULT_CONNECT_TIMEOUT_MILLIS,

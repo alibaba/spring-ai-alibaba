@@ -70,8 +70,7 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 
 	public BaiduSearchService() {
 		Map<String, String> headers = new HashMap<>();
-		String randomUserAgent = CommonToolCallConstants.USER_AGENTS[ThreadLocalRandom.current()
-			.nextInt(CommonToolCallConstants.USER_AGENTS.length)];
+		String randomUserAgent = USER_AGENTS[ThreadLocalRandom.current().nextInt(USER_AGENTS.length)];
 		headers.put(HttpHeaders.USER_AGENT, randomUserAgent);
 		headers.put(HttpHeaders.REFERER, "https://www.baidu.com/");
 		headers.put(HttpHeaders.CONNECTION, "keep-alive");
