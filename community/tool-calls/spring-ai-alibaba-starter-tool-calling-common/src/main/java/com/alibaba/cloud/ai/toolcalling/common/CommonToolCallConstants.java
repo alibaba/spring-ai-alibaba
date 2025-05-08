@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2024-2025 the original author or authors.
  *
@@ -28,31 +29,34 @@ import java.util.function.Function;
  */
 public final class CommonToolCallConstants {
 
-	// toolcall properties prefix in application.yaml
+	// Configuration prefix for tool calling in application.yaml
 	public static final String TOOL_CALLING_CONFIG_PREFIX = "spring.ai.alibaba.toolcalling";
 
+	// Default base URL
 	public static final String DEFAULT_BASE_URL = "/";
 
-	// default timeout minutes
+	// Default network timeout in minutes
 	public static final int DEFAULT_NETWORK_TIMEOUT = 10;
 
 	private static final int MEMORY_SIZE = 5;
 
 	private static final int BYTE_SIZE = 1024;
 
+	// Maximum memory size in bytes (5MB)
 	public static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
 
-	// 通用 User-Agent 列表
+	// Common User-Agent list
 	public static final String[] USER_AGENTS = {
 			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36" };
 
-	// 通用超时设置
+	// Default connection timeout in milliseconds
 	public static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 5000;
 
+	// Default response timeout in seconds
 	public static final int DEFAULT_RESPONSE_TIMEOUT_SECONDS = 10;
 
-	// default error handler for restclient bean
+	// Default error handler for RestClient bean
 	public static final ResponseErrorHandler DEFAULT_RESTCLIENT_ERROR_HANDLER = new ResponseErrorHandler() {
 		@Override
 		public boolean hasError(ClientHttpResponse response) throws IOException {
@@ -66,12 +70,12 @@ public final class CommonToolCallConstants {
 		}
 	};
 
-	// default exceptionFunction for webclient
+	// Default exception handler for WebClient 4xx errors
 	public static final Function<ClientResponse, Mono<? extends Throwable>> DEFAULT_WEBCLIENT_4XX_EXCEPTION = response -> Mono
-		.error(new RuntimeException("Server error, code: " + response.statusCode().value()));
+			.error(new RuntimeException("Server error, code: " + response.statusCode().value()));
 
-	// default exceptionFunction for webclient
+	// Default exception handler for WebClient 5xx errors
 	public static final Function<ClientResponse, Mono<? extends Throwable>> DEFAULT_WEBCLIENT_5XX_EXCEPTION = response -> Mono
-		.error(new RuntimeException("Server error, code: " + response.statusCode().value()));
+			.error(new RuntimeException("Server error, code: " + response.statusCode().value()));
 
 }
