@@ -35,7 +35,6 @@
         <module>spring-ai-alibaba-mcp</module>
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-graph</module>
-        <module>spring-ai-alibaba-studio</module>
         <module>spring-ai-alibaba-starter</module>
         <module>spring-ai-alibaba-auto-configurations</module>
 
@@ -473,5 +472,14 @@
             </releases>
         </repository>
     </repositories>
+
+    <dependencies>
+        <!-- MySQL驱动依赖 -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
 
 </project>

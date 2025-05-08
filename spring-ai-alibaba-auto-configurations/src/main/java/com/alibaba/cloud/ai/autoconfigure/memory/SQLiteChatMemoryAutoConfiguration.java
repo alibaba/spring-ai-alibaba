@@ -39,7 +39,7 @@ public class SQLiteChatMemoryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	ChatMemoryRepository sqliteChatMemoryRepository(JdbcTemplate jdbcTemplate) {
+	SQLiteChatMemoryRepository sqliteChatMemoryRepository(JdbcTemplate jdbcTemplate) {
 		return SQLiteChatMemoryRepository.sqliteBuilder().jdbcTemplate(jdbcTemplate).build();
 	}
 

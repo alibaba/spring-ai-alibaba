@@ -18,12 +18,7 @@
     -->
 
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>com.alibaba.cloud.ai</groupId>
-        <artifactId>spring-ai-alibaba</artifactId>
-        <version>${revision}</version>
-        <relativePath>../pom.xml</relativePath>
-    </parent>
+
 
     <artifactId>spring-ai-alibaba-studio</artifactId>
     <name>Spring AI Alibaba Studio</name>

@@ -21,12 +21,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>com.alibaba.cloud.ai</groupId>
-        <artifactId>spring-ai-alibaba</artifactId>
-        <version>${revision}</version>
-        <relativePath>../../pom.xml</relativePath>
-    </parent>
+<!--    <parent>-->
+<!--        <groupId>com.alibaba.cloud.ai</groupId>-->
+<!--        <artifactId>spring-ai-alibaba</artifactId>-->
+<!--        <version>${revision}</version>-->
+<!--        <relativePath>../../pom.xml</relativePath>-->
+<!--    </parent>-->
 
     <artifactId>spring-ai-alibaba-graph-example</artifactId>
     <version>${revision}</version>
@@ -43,12 +43,6 @@
             <groupId>net.sourceforge.plantuml</groupId>
             <artifactId>plantuml-mit</artifactId>
             <version>1.2024.4</version>
-        </dependency>
-      
-        <dependency>
-          <groupId>org.jsoup</groupId>
-          <artifactId>jsoup</artifactId>
-          <version>1.18.3</version>
         </dependency>
 
         <dependency>
@@ -79,11 +73,11 @@
             <version>${project.version}</version>
         </dependency>
 
-<!--		<dependency>-->
-<!--			<groupId>com.alibaba.cloud.ai</groupId>-->
-<!--			<artifactId>spring-ai-alibaba-studio</artifactId>-->
-<!--			<version>${project.parent.version}</version>-->
-<!--		</dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.alibaba.cloud.ai</groupId>-->
+<!--            <artifactId>spring-ai-alibaba-studio</artifactId>-->
+<!--            <version>${project.version}</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
