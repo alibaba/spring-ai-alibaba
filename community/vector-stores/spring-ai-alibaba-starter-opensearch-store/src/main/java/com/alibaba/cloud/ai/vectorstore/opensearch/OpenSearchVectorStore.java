@@ -20,7 +20,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -205,7 +204,8 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	/**
 	 * Perform a similarity search in the vector store.
-	 * @return List<Document>
+	 * @param request The search request containing the query and parameters.
+	 * @return list of documents
 	 */
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
@@ -325,7 +325,6 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		 * @return The current Builder instance.
 		 * @throws IllegalArgumentException if batchingStrategy is null.
 		 */
-		@NotNull
 		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
 			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
 			this.batchingStrategy = batchingStrategy;
@@ -337,7 +336,6 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		 * with the current settings.
 		 * @return A new instance of OpenSearchVectorStore.
 		 */
-		@NotNull
 		@Override
 		public OpenSearchVectorStore build() {
 			return OpenSearchVectorStore.builder(this.openSearchApi, this.embeddingModel).build();
