@@ -253,7 +253,7 @@ public class CompiledGraph {
 		// merge values with checkpoint values
 		Checkpoint branchCheckpoint = saver.get(config)
 			.map(Checkpoint::new)
-			.map(cp -> cp.updateState(values, stateGraph.getOverAllState().keyStrategies()))
+			.map(cp -> cp.updateState(values, overAllState().keyStrategies()))
 			.orElseThrow(() -> (new IllegalStateException("Missing Checkpoint!")));
 
 		String nextNodeId = null;
@@ -373,8 +373,8 @@ public class CompiledGraph {
 
 		return compileConfig.checkpointSaver()
 			.flatMap(saver -> saver.get(config))
-			.map(cp -> OverAllState.updateState(cp.getState(), inputs, stateGraph.keyStrategies()))
-			.orElseGet(() -> OverAllState.updateState(new HashMap<>(), inputs, stateGraph.keyStrategies()));
+			.map(cp -> OverAllState.updateState(cp.getState(), inputs, overAllState().keyStrategies()))
+			.orElseGet(() -> OverAllState.updateState(new HashMap<>(), inputs, overAllState().keyStrategies()));
 	}
 
 	/**
@@ -698,7 +698,7 @@ public class CompiledGraph {
 							if (data instanceof Map<?, ?>) {
 								// Assume that subgraph return complete state
 								currentState = OverAllState.updateState(new HashMap<>(), (Map<String, Object>) data,
-										stateGraph.keyStrategies());
+										overAllState().keyStrategies());
 							}
 							else {
 								throw new IllegalArgumentException("Embedded generator must return a Map");
@@ -741,7 +741,7 @@ public class CompiledGraph {
 
 			return action.apply(withState).thenApply(partialState -> {
 				try {
-					currentState = OverAllState.updateState(currentState, partialState, stateGraph.keyStrategies());
+					currentState = OverAllState.updateState(currentState, partialState, overAllState().keyStrategies());
 					nextNodeId = nextNodeId(currentNodeId, currentState);
 
 					Optional<Checkpoint> cp = addCheckpoint(config, currentNodeId, currentState, nextNodeId);
