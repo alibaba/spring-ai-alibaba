@@ -16,7 +16,6 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.creator;
 
-import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
@@ -93,7 +92,7 @@ public class PlanCreator {
 
 		}
 		catch (Exception e) {
-			log.error("Error creating plan for request: " + context.getUserRequest(), e);
+			log.error("Error creating plan for request: {}", context.getUserRequest(), e);
 			// 处理异常情况
 			throw new RuntimeException("Failed to create plan", e);
 		}

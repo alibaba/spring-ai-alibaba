@@ -30,13 +30,16 @@
     <description>Building AI applications with Spring Boot</description>
 
     <modules>
-        <module>spring-ai-alibaba-core</module>
-        <module>spring-ai-alibaba-starter</module>
-        <module>spring-ai-alibaba-autoconfigure</module>
-        <module>spring-ai-alibaba-studio</module>
-        <module>spring-ai-alibaba-graph</module>
+        <!-- Spring AI Alibaba Modules -->
+        <module>spring-ai-alibaba-bom</module>
         <module>spring-ai-alibaba-mcp</module>
+        <module>spring-ai-alibaba-core</module>
+        <module>spring-ai-alibaba-graph</module>
+        <module>spring-ai-alibaba-studio</module>
+        <module>spring-ai-alibaba-starter</module>
+        <module>spring-ai-alibaba-auto-configurations</module>
 
+        <!-- Spring AI Alibaba Tool Call Plugins -->
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-common</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-time</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidusearch</module>
@@ -63,10 +66,11 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-youdaotranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-duckduckgo</module>
 
+        <!-- Spring AI Alibaba Document Readers -->
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-arxiv</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-github</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-poi</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-encent-cos</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-tencent-cos</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-larksuite</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-yuque</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-obsidian</module>
@@ -81,10 +85,12 @@
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-mbox</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-mongodb</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-mysql</module>
+        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-sqlite</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-bilibili</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-youtube</module>
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-elasticsearch</module>
 
+        <!-- Spring AI Alibaba Document Parsers -->
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-apache-pdfbox</module>
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-markdown</module>
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-tika</module>
@@ -93,53 +99,82 @@
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-bibtex</module>
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-multi-modality</module>
         <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-directory</module>
+        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-yaml</module>
 
+        <!-- Spring AI Alibaba Vector Stores -->
         <module>community/vector-stores/spring-ai-alibaba-starter-tair-store</module>
         <module>community/vector-stores/spring-ai-alibaba-starter-analyticdb-store</module>
         <module>community/vector-stores/spring-ai-alibaba-starter-opensearch-store</module>
         <module>community/vector-stores/spring-ai-alibaba-starter-oceanbase-store</module>
 
+        <!-- Spring AI Alibaba Chat Memory Support -->
         <module>community/memories/spring-ai-alibaba-redis-memory</module>
         <module>community/memories/spring-ai-alibaba-jdbc-memory</module>
 
+        <!-- Spring AI Alibaba JManus -->
         <module>spring-ai-alibaba-jmanus</module>
 
     </modules>
 
     <properties>
 
-        <revision>1.0.0-M6.2-SNAPSHOT</revision>
+        <revision>1.0.0-M8.1-SNAPSHOT</revision>
 
+        <!-- Maven project basic config -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>17</java.version>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
 
-        <spring-boot.version>3.3.3</spring-boot.version>
-        <springdoc-openapi.version>2.6.0</springdoc-openapi.version>
+        <!-- Spring version -->
+        <spring-ai.version>1.0.0-M8</spring-ai.version>
+        <spring-boot.version>3.4.5</spring-boot.version>
+        <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 
-        <!-- Spring AI -->
-        <spring-ai.version>1.0.0-M6</spring-ai.version>
+        <!-- DashScope SDK Version -->
         <dashscope-sdk-java.version>2.15.1</dashscope-sdk-java.version>
 
+        <!-- Nacos -->
+        <nacos-client.version>2.5.1</nacos-client.version>
+        <nacos-client-mse-extension.version>1.0.4</nacos-client-mse-extension.version>
+        <spring-alibaba-nacos-config.version>2023.0.1.3</spring-alibaba-nacos-config.version>
+
+        <!-- Redis -->
+        <redission.version>3.22.0</redission.version>
+
+        <!-- Json -->
+        <gson.version>2.10.1</gson.version>
+        <fastjson.version>1.2.83</fastjson.version>
+
+        <okhttp.version>4.12.0</okhttp.version>
+
+        <async-generator.version>3.0.0</async-generator.version>
+
+        <commons-codec.version>1.17.0</commons-codec.version>
+        <commons-exec.version>1.3</commons-exec.version>
+        <commons-collections4.version>4.4</commons-collections4.version>
+
+        <opennlp-tools.version>2.3.3</opennlp-tools.version>
+
         <!-- plugin versions -->
-        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
-        <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
-        <maven-failsafe-plugin.version>3.1.2</maven-failsafe-plugin.version>
-        <maven-javadoc-plugin.version>3.5.0</maven-javadoc-plugin.version>
+        <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
+        <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
+        <maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
+        <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
         <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
         <jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
         <flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
-        <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
-        <asciidoctor-maven-plugin.version>2.2.3</asciidoctor-maven-plugin.version>
+        <maven-javadoc-plugin.version>3.5.0</maven-javadoc-plugin.version>
         <maven-assembly-plugin.version>3.7.0</maven-assembly-plugin.version>
+        <maven-failsafe-plugin.version>3.1.2</maven-failsafe-plugin.version>
+        <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
+        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <maven-dependency-plugin.version>3.5.0</maven-dependency-plugin.version>
-        <maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
-        <maven-project-info-reports-plugin.version>3.4.5</maven-project-info-reports-plugin.version>
-        <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
+        <asciidoctor-maven-plugin.version>2.2.3</asciidoctor-maven-plugin.version>
+        <springdoc-openapi-maven-plugin.version>1.4</springdoc-openapi-maven-plugin.version>
         <spring-javaformat-maven-plugin.version>0.0.39</spring-javaformat-maven-plugin.version>
-        <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
+        <maven-project-info-reports-plugin.version>3.4.5</maven-project-info-reports-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -178,7 +213,7 @@
 
     <organization>
         <name>Alibaba Cloud Inc.</name>
-        <url>https://sca.aliyun.com/ai</url>
+        <url>https://java2ai.com</url>
     </organization>
     <scm>
         <url>https://github.com/alibaba/spring-ai-alibaba</url>
@@ -211,6 +246,15 @@
     </developers>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>io.spring.javaformat</groupId>
@@ -332,31 +376,31 @@
                             </properties>
                             <quiet>true</quiet>
                             <header>HEADER</header>
-                                <excludes>
-                                    <exclude>**/.antlr/**</exclude>
-                                    <exclude>**/aot.factories</exclude>
-                                    <exclude>**/.sdkmanrc</exclude>
-                                    <exclude>**/*.adoc</exclude>
-                                    <exclude>**/*.puml</exclude>
-                                    <exclude>**/pom.xml</exclude>
-                                    <exclude>**/*.properties</exclude>
-                                    <exclude>**/*.yaml</exclude>
-                                    <exclude>**/*.yml</exclude>
-                                    <exclude>**/*.map</exclude>
-                                    <exclude>**/*.html</exclude>
-                                    <exclude>**/*.xhtml</exclude>
-                                    <exclude>**/*.jsp</exclude>
-                                    <exclude>**/*.js</exclude>
-                                    <exclude>**/*.css</exclude>
-                                    <exclude>**/*.txt</exclude>
-                                    <exclude>**/*.xjb</exclude>
-                                    <exclude>**/*.ftl</exclude>
-                                    <exclude>**/*.xsd</exclude>
-                                    <exclude>**/*.xml</exclude>
-                                    <exclude>**/*.sh</exclude>
-                                    <exclude>**/generated/**</exclude>
-                                    <exclude>**/Dockerfile</exclude>
-                                </excludes>
+                            <excludes>
+                                <exclude>**/.antlr/**</exclude>
+                                <exclude>**/aot.factories</exclude>
+                                <exclude>**/.sdkmanrc</exclude>
+                                <exclude>**/*.adoc</exclude>
+                                <exclude>**/*.puml</exclude>
+                                <exclude>**/pom.xml</exclude>
+                                <exclude>**/*.properties</exclude>
+                                <exclude>**/*.yaml</exclude>
+                                <exclude>**/*.yml</exclude>
+                                <exclude>**/*.map</exclude>
+                                <exclude>**/*.html</exclude>
+                                <exclude>**/*.xhtml</exclude>
+                                <exclude>**/*.jsp</exclude>
+                                <exclude>**/*.js</exclude>
+                                <exclude>**/*.css</exclude>
+                                <exclude>**/*.txt</exclude>
+                                <exclude>**/*.xjb</exclude>
+                                <exclude>**/*.ftl</exclude>
+                                <exclude>**/*.xsd</exclude>
+                                <exclude>**/*.xml</exclude>
+                                <exclude>**/*.sh</exclude>
+                                <exclude>**/generated/**</exclude>
+                                <exclude>**/Dockerfile</exclude>
+                            </excludes>
                         </configuration>
                     </plugin>
 
