@@ -39,7 +39,7 @@ public class DynamicMcpAsyncToolsProvider implements DynamicMcpToolsProvider {
 			// Ignore exception
 		}
 		// Register the tool with the McpAsyncServer
-		mcpAsyncServer.addTool(McpToolUtils.toAsyncToolRegistration(dynamicNacosToolCallback)).block();
+		mcpAsyncServer.addTool(McpToolUtils.toAsyncToolSpecification(dynamicNacosToolCallback)).block();
 	}
 
 	@Override
