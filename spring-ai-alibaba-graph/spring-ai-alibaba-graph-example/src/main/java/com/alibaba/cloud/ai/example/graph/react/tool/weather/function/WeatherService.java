@@ -18,14 +18,17 @@ package com.alibaba.cloud.ai.example.graph.react.tool.weather.function;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -37,7 +40,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * @author yingzi
- * @date 2025/3/27:11:07
+ * @since 2025/3/27:11:07
  */
 public class WeatherService implements Function<WeatherService.Request, WeatherService.Response> {
 
@@ -78,19 +81,44 @@ public class WeatherService implements Function<WeatherService.Request, WeatherS
 			.toUriString();
 		logger.info("url : {}", url);
 		try {
-			Mono<String> responseMono = webClient.get().uri(url).retrieve().bodyToMono(String.class);
-			String jsonResponse = responseMono.block();
-			assert jsonResponse != null;
-
-			Response response = fromJson(objectMapper.readValue(jsonResponse, new TypeReference<Map<String, Object>>() {
-			}));
-			logger.info("Weather data fetched successfully for city: {}", response.city());
-			return response;
+			return doGetWeatherMock(request);
 		}
 		catch (Exception e) {
 			logger.error("Failed to fetch weather data: {}", e.getMessage());
 			return null;
 		}
+	}
+
+	@NotNull
+	private Response doGetWeatherMock(Request request) throws JsonProcessingException {
+		if (Objects.equals("杭州", request.city())) {
+			return new Response(request.city(), Map.of("temp", 25, "condition", "Sunny"),
+					List.of(Map.of("date", "2025-05-27", "high", 28, "low", 20)));
+		}
+		else if (Objects.equals("上海", request.city())) {
+			return new Response(request.city(), Map.of("temp", 26, "condition", "Sunny"),
+					List.of(Map.of("date", "2025-05-27", "high", 29, "low", 21)));
+		}
+		else if (Objects.equals("南京", request.city())) {
+			return new Response(request.city(), Map.of("temp", 18, "condition", "cloudy"),
+					List.of(Map.of("date", "2025-05-27", "high", 18, "low", 10)));
+		}
+		else {
+			return new Response(request.city(), Map.of("temp", -20, "condition", "Snowy"),
+					List.of(Map.of("date", "2025-05-27", "high", -10, "low", -30)));
+		}
+	}
+
+	@NotNull
+	private Response doGetWeather(String url, Request request) throws JsonProcessingException {
+		Mono<String> responseMono = webClient.get().uri(url).retrieve().bodyToMono(String.class);
+		String jsonResponse = responseMono.block();
+		assert jsonResponse != null;
+
+		Response response = fromJson(objectMapper.readValue(jsonResponse, new TypeReference<Map<String, Object>>() {
+		}));
+		logger.info("Weather data fetched successfully for city: {}", response.city());
+		return response;
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)

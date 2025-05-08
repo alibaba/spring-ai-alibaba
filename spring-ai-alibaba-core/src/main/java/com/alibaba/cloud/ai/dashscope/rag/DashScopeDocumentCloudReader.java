@@ -32,14 +32,14 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.http.ResponseEntity;
 
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.MAX_TRY_COUNT;
+
 /**
  * @author nuocheng.lxm
  * @since 2024/7/22 14:40 百炼云端文档解析，主要是走当前数据中心逻辑
  *
  */
 public class DashScopeDocumentCloudReader implements DocumentReader {
-
-	public static final int MAX_TRY_COUNT = 10;
 
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeDocumentCloudReader.class);
 

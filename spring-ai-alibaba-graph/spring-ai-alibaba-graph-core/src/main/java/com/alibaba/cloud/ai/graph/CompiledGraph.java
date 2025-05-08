@@ -89,7 +89,7 @@ public class CompiledGraph {
 				throw StateGraph.Errors.interruptionNodeNotExist.exception(interruption);
 			}
 		}
-		for (String interruption : processedData.interruptsBefore()) {
+		for (String interruption : processedData.interruptsAfter()) {
 			if (!processedData.nodes().anyMatchById(interruption)) {
 				throw StateGraph.Errors.interruptionNodeNotExist.exception(interruption);
 			}
@@ -415,7 +415,6 @@ public class CompiledGraph {
 	 * @param inputs the input map
 	 * @param config the invoke configuration
 	 * @return an AsyncGenerator stream of NodeOutput
-	 * @throws Exception if there is an error creating the stream
 	 */
 	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
