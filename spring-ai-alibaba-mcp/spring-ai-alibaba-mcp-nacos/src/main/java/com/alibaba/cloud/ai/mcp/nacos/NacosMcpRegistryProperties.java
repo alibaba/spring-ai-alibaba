@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.mcp.nacos;
 
 import com.alibaba.nacos.api.utils.NetUtils;
@@ -86,6 +85,8 @@ public class NacosMcpRegistryProperties {
 
 	boolean serviceRegister = true;
 
+	boolean serviceEphemeral = true;
+
 	@Autowired
 	@JsonIgnore
 	private Environment environment;
@@ -96,6 +97,14 @@ public class NacosMcpRegistryProperties {
 
 	public void setServiceRegister(boolean serviceRegister) {
 		this.serviceRegister = serviceRegister;
+	}
+
+	public boolean isServiceEphemeral() {
+		return serviceEphemeral;
+	}
+
+	public void setServiceEphemeral(boolean serviceEphemeral) {
+		this.serviceEphemeral = serviceEphemeral;
 	}
 
 	public String getSseExportContextPath() {
@@ -183,11 +192,8 @@ public class NacosMcpRegistryProperties {
 		if (StringUtils.isEmpty(this.ip)) {
 			this.ip = NetUtils.localIP();
 		}
-		if (DEFAULT_NAMESPACE.equals(this.serviceNamespace)) {
-			this.serviceNamespace = "";
-		}
 		if (StringUtils.isBlank(this.serviceNamespace)) {
-			this.serviceNamespace = "";
+			this.serviceNamespace = DEFAULT_NAMESPACE;
 		}
 		if (StringUtils.isBlank(this.sseExportContextPath)) {
 			String path = environment.getProperty("server.servlet.context-path");

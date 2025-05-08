@@ -15,14 +15,19 @@
  */
 package com.alibaba.cloud.ai.reader.sqlite;
 
-import org.springframework.ai.document.Document;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.document.DocumentReader;
-
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentReader;
 
 /**
  * SQLite document reader implementation Uses JDBC to connect and fetch data from SQLite,
@@ -32,125 +37,127 @@ import java.util.Map;
  **/
 public class SQLiteDocumentReader implements DocumentReader {
 
-    private final sqLiteResource sqLiteResource;
+	private final SQLiteResource sqLiteResource;
 
-    public SQLiteDocumentReader(SQLiteResource sqLiteResource) {
-        this.sqLiteResource = sqLiteResource;
-    }
+	public SQLiteDocumentReader(SQLiteResource sqLiteResource) {
+		this.sqLiteResource = sqLiteResource;
+	}
 
-    @Override
-    public List<Document> get() {
-        List<Document> documents = new ArrayList<>();
-        try {
-            // Create database connection
-            try (Connection connection = createConnection()) {
-                documents = executeQueryAndProcessResults(connection);
-            }
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("SQLite JDBC driver not found", e);
-        } catch (SQLException e) {
-            throw new RuntimeException("Error executing SQLite query: " + e.getMessage(), e);
-        }
-        return documents;
-    }
+	@Override
+	public List<Document> get() {
+		List<Document> documents;
+		try {
+			// Create database connection
+			try (Connection connection = createConnection()) {
+				documents = executeQueryAndProcessResults(connection);
+			}
+		}
+		catch (SQLException e) {
+			throw new RuntimeException("Error executing SQLite query: " + e.getMessage(), e);
+		}
+		return documents;
+	}
 
-    /**
-     * Create database connection
-     */
-    private Connection createConnection() throws SQLException {
-        return DriverManager.getConnection(sqLiteResource.getJdbcUrl(), sqLiteResource.getUsername(), sqLiteResource.getPassword());
-    }
+	/**
+	 * Create database connection
+	 */
+	private Connection createConnection() throws SQLException {
+		return DriverManager.getConnection(sqLiteResource.getJdbcUrl(), sqLiteResource.getUsername(),
+				sqLiteResource.getPassword());
+	}
 
-    /**
-     * Execute query and process results
-     */
-    private List<Document> executeQueryAndProcessResults(final Connection connection) throws SQLException {
-        final List<Document> documents = new ArrayList<>();
-        try (final Statement statement = connection.createStatement();
-             final ResultSet resultSet = statement.executeQuery(sqLiteResource.getQuery())) {
+	/**
+	 * Execute query and process results
+	 */
+	private List<Document> executeQueryAndProcessResults(final Connection connection) throws SQLException {
+		final List<Document> documents = new ArrayList<>();
+		try (final Statement statement = connection.createStatement();
+				final ResultSet resultSet = statement.executeQuery(sqLiteResource.getQuery())) {
 
-            final List<String> columnNames = getColumnNames(resultSet.getMetaData());
-            while (resultSet.next()) {
-                final Map<String, Object> rowData = extractRowData(resultSet, columnNames);
-                final String content = buildContent(rowData);
-                final Map<String, Object> metadata = buildMetadata(rowData);
-                documents.add(new Document(content, metadata));
-            }
-        }
-        return documents;
-    }
+			final List<String> columnNames = getColumnNames(resultSet.getMetaData());
+			while (resultSet.next()) {
+				final Map<String, Object> rowData = extractRowData(resultSet, columnNames);
+				final String content = buildContent(rowData);
+				final Map<String, Object> metadata = buildMetadata(rowData);
+				documents.add(new Document(content, metadata));
+			}
+		}
+		return documents;
+	}
 
-    /**
-     * Get list of column names
-     */
-    private List<String> getColumnNames(final ResultSetMetaData metaData) throws SQLException {
-        final List<String> columnNames = new ArrayList<>();
-        final int columnCount = metaData.getColumnCount();
-        for (int i = 1; i <= columnCount; i++) {
-            columnNames.add(metaData.getColumnName(i));
-        }
-        return columnNames;
-    }
+	/**
+	 * Get list of column names
+	 */
+	private List<String> getColumnNames(final ResultSetMetaData metaData) throws SQLException {
+		final List<String> columnNames = new ArrayList<>();
+		final int columnCount = metaData.getColumnCount();
+		for (int i = 1; i <= columnCount; i++) {
+			columnNames.add(metaData.getColumnName(i));
+		}
+		return columnNames;
+	}
 
-    /**
-     * Extract row data
-     */
-    private Map<String, Object> extractRowData(final ResultSet resultSet, final List<String> columnNames) throws SQLException {
-        final Map<String, Object> rowData = new HashMap<>();
-        for (int i = 0; i < columnNames.size(); i++) {
-            final String columnName = columnNames.get(i);
-            final Object value = resultSet.getObject(i + 1);
-            rowData.put(columnName, value);
-        }
-        return rowData;
-    }
+	/**
+	 * Extract row data
+	 */
+	private Map<String, Object> extractRowData(final ResultSet resultSet, final List<String> columnNames)
+			throws SQLException {
+		final Map<String, Object> rowData = new HashMap<>();
+		for (int i = 0; i < columnNames.size(); i++) {
+			final String columnName = columnNames.get(i);
+			final Object value = resultSet.getObject(i + 1);
+			rowData.put(columnName, value);
+		}
+		return rowData;
+	}
 
-    /**
-     * Build document content
-     */
-    private String buildContent(final Map<String, Object> rowData) {
-        final StringBuilder contentBuilder = new StringBuilder();
-        final List<String> contentColumns = sqLiteResource.getTextColumns();
+	/**
+	 * Build document content
+	 */
+	private String buildContent(final Map<String, Object> rowData) {
+		final StringBuilder contentBuilder = new StringBuilder();
+		final List<String> contentColumns = sqLiteResource.getTextColumns();
 
-        if (contentColumns == null || contentColumns.isEmpty()) {
-            // If no content columns specified, use all columns
-            for (Map.Entry<String, Object> entry : rowData.entrySet()) {
-                appendColumnContent(contentBuilder, entry.getKey(), entry.getValue());
-            }
-        } else {
-            // Only use specified content columns
-            for (String column : contentColumns) {
-                if (rowData.containsKey(column)) {
-                    appendColumnContent(contentBuilder, column, rowData.get(column));
-                }
-            }
-        }
-        return contentBuilder.toString().trim();
-    }
+		if (contentColumns == null || contentColumns.isEmpty()) {
+			// If no content columns specified, use all columns
+			for (Map.Entry<String, Object> entry : rowData.entrySet()) {
+				appendColumnContent(contentBuilder, entry.getKey(), entry.getValue());
+			}
+		}
+		else {
+			// Only use specified content columns
+			for (String column : contentColumns) {
+				if (rowData.containsKey(column)) {
+					appendColumnContent(contentBuilder, column, rowData.get(column));
+				}
+			}
+		}
+		return contentBuilder.toString().trim();
+	}
 
-    /**
-     * Append column content
-     */
-    private void appendColumnContent(final StringBuilder builder, final String column, final Object value) {
-        builder.append(column).append(": ").append(value).append("\n");
-    }
+	/**
+	 * Append column content
+	 */
+	private void appendColumnContent(final StringBuilder builder, final String column, final Object value) {
+		builder.append(column).append(": ").append(value).append("\n");
+	}
 
-    /**
-     * Build metadata
-     */
-    private Map<String, Object> buildMetadata(final Map<String, Object> rowData) {
-        final Map<String, Object> metadata = new HashMap<>();
-        metadata.put(sqLiteResource.SOURCE, sqLiteResource.getJdbcUrl());
+	/**
+	 * Build metadata
+	 */
+	private Map<String, Object> buildMetadata(final Map<String, Object> rowData) {
+		final Map<String, Object> metadata = new HashMap<>();
+		metadata.put(sqLiteResource.SOURCE, sqLiteResource.getJdbcUrl());
 
-        final List<String> metadataColumns = sqLiteResource.getMetadataColumns();
-        if (metadataColumns != null) {
-            for (String column : metadataColumns) {
-                if (rowData.containsKey(column)) {
-                    metadata.put(column, rowData.get(column));
-                }
-            }
-        }
-        return metadata;
-    }
+		final List<String> metadataColumns = sqLiteResource.getMetadataColumns();
+		if (metadataColumns != null) {
+			for (String column : metadataColumns) {
+				if (rowData.containsKey(column)) {
+					metadata.put(column, rowData.get(column));
+				}
+			}
+		}
+		return metadata;
+	}
 
 }

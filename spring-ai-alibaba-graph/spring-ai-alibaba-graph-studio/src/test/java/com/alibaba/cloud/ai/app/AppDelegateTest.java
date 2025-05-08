@@ -89,7 +89,7 @@ public class AppDelegateTest {
 		App appSaved = appSaver.get(app.id());
 		assert appSaved != null;
 		assert Objects.equals(app.id(), appSaved.id());
-		log.info("app created: " + app);
+		log.info("app created: {}", app);
 	}
 
 	@Test
@@ -97,7 +97,7 @@ public class AppDelegateTest {
 		App app = appDelegate.get("app-delegate-test");
 		assert app != null;
 		assert Objects.equals(app.id(), simpleApp.id());
-		log.info("app get: " + app);
+		log.info("app get: {}", app);
 	}
 
 	@Test
@@ -106,7 +106,7 @@ public class AppDelegateTest {
 		assert apps != null;
 		assert apps.size() == 1;
 		assert Objects.equals(apps.get(0).id(), simpleApp.id());
-		log.info("list apps: " + apps);
+		log.info("list apps: {}", apps);
 	}
 
 	@Test
@@ -116,7 +116,7 @@ public class AppDelegateTest {
 		app.getMetadata().setDescription("description-modified");
 		app = appDelegate.sync(app);
 		assert Objects.equals(app.getMetadata().getDescription(), "description-modified");
-		log.info("app synced" + app);
+		log.info("app synced{}", app);
 	}
 
 	@Test
