@@ -38,7 +38,7 @@ public class DynamicMcpSyncToolsProvider implements DynamicMcpToolsProvider {
 		catch (Exception e) {
 			// Ignore exception
 		}
-		mcpSyncServer.addTool(McpToolUtils.toSyncToolRegistration(dynamicNacosToolCallback));
+		mcpSyncServer.addTool(McpToolUtils.toSyncToolSpecification(dynamicNacosToolCallback));
 	}
 
 	@Override
