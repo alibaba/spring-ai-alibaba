@@ -38,8 +38,8 @@ import io.netty.handler.timeout.WriteTimeoutHandler;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.autoconfigure.mcp.server.McpServerProperties;
-import org.springframework.ai.autoconfigure.mcp.server.MpcServerAutoConfiguration;
+import org.springframework.ai.mcp.server.autoconfigure.McpServerAutoConfiguration;
+import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.BeansException;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -66,7 +66,7 @@ import java.util.concurrent.TimeUnit;
  */
 @EnableConfigurationProperties({ McpDynamicServerProperties.class, NacosMcpRegistryProperties.class,
 		McpServerProperties.class })
-@AutoConfiguration(after = MpcServerAutoConfiguration.class)
+@AutoConfiguration(after = McpServerAutoConfiguration.class)
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 public class NacosDynamicMcpServerAutoConfiguration implements ApplicationContextAware {
