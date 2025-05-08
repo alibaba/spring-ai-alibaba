@@ -15,11 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser;
 
-import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-
-import java.util.Map;
 
 /**
  * WebElement的包装类，同时包含元素本身和元素的详细信息。 这个类使得在处理网页元素时能够一次获取WebElement及其相关信息。
