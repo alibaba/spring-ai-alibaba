@@ -1,0 +1,35 @@
+/* 折叠功能的样式 */
+.tool-group-header {
+    position: relative;
+}
+
+.collapse-icon {
+    position: absolute;
+    right: 12px;
+    font-size: 12px;
+    color: #5f6368;
+    transition: transform 0.3s ease;
+}
+
+.collapse-icon.collapsed {
+    transform: rotate(-90deg);
+}
+
+
+/* 注意: 基本的折叠过渡效果已定义在 collapsible-group.css 中 */
+.tool-group-content {
+    padding: 8px 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    border-radius: 0 0 10px 10px;
+    background-color: #fff;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+
+}
+
+.tool-group-content.collapsed {
+    max-height: 0 !important;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}

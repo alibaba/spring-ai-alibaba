@@ -17,10 +17,11 @@ package com.alibaba.cloud.ai.graph;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 public final class RunnableConfig {
 
-	private String threadId;
+	private String threadId = UUID.randomUUID().toString();
 
 	private String checkPointId;
 
@@ -151,7 +152,7 @@ public final class RunnableConfig {
 
 		/**
 		 * Sets the checkpoint ID for the configuration.
-		 * @param {@code checkPointId} - the ID of the checkpoint to be set
+		 * @param checkPointId - the ID of the checkpoint to be set
 		 * @return {@literal this} - a reference to the current `Builder` instance
 		 */
 		public Builder checkPointId(String checkPointId) {

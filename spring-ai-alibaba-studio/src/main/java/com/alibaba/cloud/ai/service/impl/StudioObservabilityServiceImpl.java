@@ -41,9 +41,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * @Description:
- * @Author: 肖云涛
- * @Date: 2024/12/8
+ * @author 肖云涛
+ * @since 2024/12/8
  */
 public class StudioObservabilityServiceImpl implements StudioObservabilityService {
 

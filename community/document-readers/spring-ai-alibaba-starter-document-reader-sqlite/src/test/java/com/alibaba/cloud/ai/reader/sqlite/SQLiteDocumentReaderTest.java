@@ -15,101 +15,96 @@
  */
 package com.alibaba.cloud.ai.reader.sqlite;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
-import org.springframework.ai.document.Document;
-
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+
+import org.springframework.ai.document.Document;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Test cases for SQLite document reader Note: Requires a running SQLite instance with test
- * data
+ * Test cases for SQLite document reader Note: Requires a running SQLite instance with
+ * test data
  *
  * @author jens papenhagen
  **/
 @EnabledIfSystemProperty(named = "sqlite.host", matches = ".+")
 public class SQLiteDocumentReaderTest {
 
-    private SQLiteResource sqLiteResource;
+	private SQLiteResource sqLiteResource;
 
-    private SQLiteDocumentReader reader;
+	private SQLiteDocumentReader reader;
 
-    @BeforeEach
-    void setUp() {
-        // Read SQLite connection information from system properties
-        String host = System.getProperty("sqlite.host", "localhost");
-        int port = Integer.parseInt(System.getProperty("sqlite.port", "3306"));
-        String database = System.getProperty("sqlite.database", "sqLite"); // Use default
-        // SQLite
-        // database
-        String username = System.getProperty("sqlite.username", "root");
-        String password = System.getProperty("sqlite.password", "root");
-        String query = System.getProperty("sqlite.query", "SELECT * FROM user LIMIT 10;"); // Use
-        // user
-        // table
-        // in
-        // sqLite
-        // database
+	@BeforeEach
+	void setUp() {
+		// Read SQLite connection information from system properties
+		String host = System.getProperty("sqlite.host", "localhost");
+		int port = Integer.parseInt(System.getProperty("sqlite.port", "3306"));
+		String database = System.getProperty("sqlite.database", "sqLite"); // Use default
+		// SQLite
+		// database
+		String username = System.getProperty("sqlite.username", "root");
+		String password = System.getProperty("sqlite.password", "root");
+		String query = System.getProperty("sqlite.query", "SELECT * FROM user LIMIT 10;"); // Use
+		// user
+		// table
+		// in
+		// sqLite
+		// database
 
-        // Read content and metadata columns from system properties
-        String contentColumnsStr = System.getProperty("sqlite.content.columns", "User,Host");
-        String metadataColumnsStr = System.getProperty("sqlite.metadata.columns", "User,Host");
+		// Read content and metadata columns from system properties
+		String contentColumnsStr = System.getProperty("sqlite.content.columns", "User,Host");
+		String metadataColumnsStr = System.getProperty("sqlite.metadata.columns", "User,Host");
 
-        List<String> contentColumns = Arrays.asList(contentColumnsStr.split(","));
-        List<String> metadataColumns = Arrays.asList(metadataColumnsStr.split(","));
+		List<String> contentColumns = Arrays.asList(contentColumnsStr.split(","));
+		List<String> metadataColumns = Arrays.asList(metadataColumnsStr.split(","));
 
-        // Setup test SQLite resource
-        sqLiteResource = new sqLiteResource(host, port, database, username, password, query, contentColumns,
-                metadataColumns);
+		// Setup test SQLite resource
+		sqLiteResource = new SQLiteResource(host, port, database, username, password, query, contentColumns,
+				metadataColumns);
 
-        reader = new SQLiteDocumentReader(sqLiteResource);
-    }
+		reader = new SQLiteDocumentReader(sqLiteResource);
+	}
 
-    @Test
-    void testGetDocuments() {
-        // This test requires a running SQLite instance with test data
-        // You may need to modify the connection details and query using system
-        // properties:
-        // -Dsqlite.host=your_host -Dsqlite.port=your_port -Dsqlite.database=your_db
-        // -Dsqlite.username=your_user -Dsqlite.password=your_pass
+	@Test
+	void testGetDocuments() {
+		// This test requires a running SQLite instance with test data
+		// You may need to modify the connection details and query using system
+		// properties:
+		// -Dsqlite.host=your_host -Dsqlite.port=your_port -Dsqlite.database=your_db
+		// -Dsqlite.username=your_user -Dsqlite.password=your_pass
 
-        List<Document> documents = reader.get();
+		List<Document> documents = reader.get();
 
-        // Basic assertions
-        assertNotNull(documents);
-        assertFalse(documents.isEmpty());
+		// Basic assertions
+		assertNotNull(documents);
+		assertFalse(documents.isEmpty());
 
-        // Test first document
-        Document firstDoc = documents.get(0);
-        assertNotNull(firstDoc);
+		// Test first document
+		Document firstDoc = documents.get(0);
+		assertNotNull(firstDoc);
 
-        // Test document content
-        String content = firstDoc.getText();
-        assertNotNull(content);
-    }
+		// Test document content
+		String content = firstDoc.getText();
+		assertNotNull(content);
+	}
 
-    @Test
-    void testInvalidConnection() {
-        // Test with invalid credentials
-        SQLiteResource invalidResource = new SQLiteResource(
-                "invalid_host",
-                3306,
-                "invalid_db",
-                "invalid_user",
-                "invalid_pass",
-                "SELECT * FROM test_table",
-                null,
-                null);
+	@Test
+	void testInvalidConnection() {
+		// Test with invalid credentials
+		SQLiteResource invalidResource = new SQLiteResource("invalid_host", 3306, "invalid_db", "invalid_user",
+				"invalid_pass", "SELECT * FROM test_table", null, null);
 
-        SQLiteDocumentReader invalidReader = new SQLiteDocumentReader(invalidResource);
+		SQLiteDocumentReader invalidReader = new SQLiteDocumentReader(invalidResource);
 
-        // Should throw RuntimeException
-        assertThrows(RuntimeException.class, invalidReader::get);
-    }
+		// Should throw RuntimeException
+		assertThrows(RuntimeException.class, invalidReader::get);
+	}
 
 }

@@ -15,14 +15,6 @@
  */
 package com.alibaba.cloud.ai.dashscope.chat;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletion;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionChunk;
@@ -45,9 +37,6 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -67,6 +56,8 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -74,6 +65,19 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.MESSAGE_FORMAT;
 
 /**
  * {@link ChatModel} implementation for {@literal Alibaba DashScope} backed by
@@ -85,16 +89,18 @@ import org.springframework.util.StringUtils;
  */
 public class DashScopeChatModel extends AbstractToolCallSupport implements ChatModel {
 
-	public static final String MESSAGE_FORMAT = "messageFormat";
-
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DashScopeChatModelObservationConvention();
 
-	/** Low-level access to the DashScope API */
+	/**
+	 * Low-level access to the DashScope API
+	 */
 	private final DashScopeApi dashscopeApi;
 
-	/** The retry template used to retry the OpenAI API calls. */
+	/**
+	 * The retry template used to retry the OpenAI API calls.
+	 */
 	public final RetryTemplate retryTemplate;
 
 	/**
@@ -102,7 +108,9 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 	 */
 	private final ObservationRegistry observationRegistry;
 
-	/** The default options used for the chat completion requests. */
+	/**
+	 * The default options used for the chat completion requests.
+	 */
 	private DashScopeChatOptions defaultOptions;
 
 	/**
@@ -285,10 +293,12 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 				if (!isProxyToolCalls(prompt, this.defaultOptions) &&
 						isToolCall(response, Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
-					var toolCallConversation = handleToolCalls(prompt, response);
 					// Recursively call the stream method with the tool call message
 					// conversation that contains the call responses.
-					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+					return Flux.defer(() -> {
+						var toolCallConversation = handleToolCalls(prompt, response);
+						return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+					}).subscribeOn(Schedulers.boundedElastic());
 				}
 				else {
 					return Flux.just(response);
@@ -349,11 +359,20 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 	 */
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 		Set<String> enabledToolsToUse = new HashSet<>();
-
+		DashScopeChatOptions updatedRuntimeOptions = null;
 		DashScopeChatOptions options = DashScopeChatOptions.builder().build();
 		if (prompt.getOptions() != null) {
-			DashScopeChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
+			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+						DashScopeChatOptions.class);
+			}
+			else if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(functionCallingOptions, FunctionCallingOptions.class,
+						DashScopeChatOptions.class);
+			}else {
+			updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
 					ChatOptions.class, DashScopeChatOptions.class);
+			}
 
 			enabledToolsToUse.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
 			options = ModelOptionsUtils.merge(updatedRuntimeOptions, options, DashScopeChatOptions.class);
@@ -495,7 +514,8 @@ public class DashScopeChatModel extends AbstractToolCallSupport implements ChatM
 				incrementalOutput,
 				options.getTools(),
 				options.getToolChoice(),
-				stream, options.getVlHighResolutionImages()
+				stream, options.getVlHighResolutionImages(),
+				options.getEnableThinking()
 		);
 	}
 

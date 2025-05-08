@@ -40,6 +40,7 @@ public class DashScopeEmbeddingOptions implements EmbeddingOptions {
 		return new Builder();
 	}
 
+	@Override
 	public String getModel() {
 		return this.model;
 	}
@@ -48,6 +49,7 @@ public class DashScopeEmbeddingOptions implements EmbeddingOptions {
 		this.model = model;
 	}
 
+	@Override
 	public Integer getDimensions() {
 		return this.dimensions;
 	}

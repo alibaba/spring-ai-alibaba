@@ -1,14 +1,14 @@
 ## 如何贡献
 
-## 感谢你为 Spring Ai Alibaba 贡献！
+## 感谢你为 Spring AI Alibaba 贡献！
 
-Spring Ai Alibaba 从开源建设以来，受到了很多社区同学的关注。社区的每一个 Issue ，每一个 PR，都是对整个项目的帮助，都在为建设更好用的 Spring Ai 添砖加瓦。
+Spring AI Alibaba 从开源建设以来，受到了很多社区同学的关注。社区的每一个 Issue ，每一个 PR，都是对整个项目的帮助，都在为建设更好用的 Spring AI 添砖加瓦。
 
 我们真心地感谢为这个项目提出过 Issue 和 PR 的开发者。我们希望有更多社区的开发者加入进来，一起把项目做好。
 
 ## 如何贡献
 
-在贡献代码之前，请您稍微花一些时间了解为 Spring Ai Alibaba 贡献代码的流程。
+在贡献代码之前，请您稍微花一些时间了解为 Spring AI Alibaba 贡献代码的流程。
 
 ### 贡献什么？
 
@@ -41,9 +41,9 @@ fork 出来的代码后，原仓库 main 分支可能出现了新的提交，这
 - 在你本机的 spring-ai-alibaba 目录下，执行 `git checkout main` 切换到 master 分支。
 - 在你本机的 spring-ai-alibaba 目录下，执行 `git rebase upstream/main` rebase 最新代码。
 
-### 配置 Spring Ai 标准的代码格式
+### 配置 Spring AI 标准的代码格式
 
-Spring Ai Alibaba 作为 Spring Ai 的实现之一，在代码规范方面直接沿用了 Spring Ai 项目规范，在正式开始之前请参考相关代码格式规范说明，提交代码前需要先配置好代码格式规范。
+Spring AI Alibaba 作为 Spring AI 的实现之一，在代码规范方面直接沿用了 Spring AI 项目规范，在正式开始之前请参考相关代码格式规范说明，提交代码前需要先配置好代码格式规范。
 
 ### 开发、提交、Push
 
@@ -56,4 +56,4 @@ Spring Ai Alibaba 作为 Spring Ai 的实现之一，在代码规范方面直接
 
 ### 提交 PR
 
-提交 PR，根据 `Pull request template` 写明修改点和实现的功能，等待 code review 和 合并，成为 Spring Ai Alibaba Contributor，为更好用的 Spring Ai Alibaba 做出贡献。
+提交 PR，根据 `Pull request template` 写明修改点和实现的功能，等待 code review 和 合并，成为 Spring AI Alibaba Contributor，为更好用的 Spring AI Alibaba 做出贡献。

@@ -45,12 +45,7 @@ public class OpenSearchApi {
 
 	/**
 	 * Initializes a new instance of the OpenSearchApi class.
-	 * @param properties instanceId The ID of the OpenSearch instance to connect to.
-	 * @param properties endpoint The endpoint URL of the OpenSearch service.
-	 * @param properties accessUserName The username for authenticating with the
-	 * OpenSearch service.
-	 * @param properties accessPassWord The password for authenticating with the
-	 * OpenSearch service.
+	 * @param properties basic configuration for connecting to OpenSearch instance.
 	 * @throws RuntimeException If the initialization fails due to an error in configuring
 	 * or creating the OpenSearch client. The exception message will include details of
 	 * the underlying error.
