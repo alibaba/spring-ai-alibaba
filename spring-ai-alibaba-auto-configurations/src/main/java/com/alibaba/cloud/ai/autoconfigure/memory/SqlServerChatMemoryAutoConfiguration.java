@@ -42,7 +42,7 @@ public class SqlServerChatMemoryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	ChatMemoryRepository sqlServerChatMemoryRepository(JdbcTemplate jdbcTemplate) {
+	SqlServerChatMemoryRepository sqlServerChatMemoryRepository(JdbcTemplate jdbcTemplate) {
 		logger.info("Configuring SQL Server chat memory repository");
 		return SqlServerChatMemoryRepository.sqlServerBuilder().jdbcTemplate(jdbcTemplate).build();
 	}
