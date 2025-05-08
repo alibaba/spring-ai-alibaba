@@ -52,34 +52,65 @@ import static java.lang.String.format;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.stream.Collectors.toList;
 
+/**
+ * The type Compiled graph.
+ */
 public class CompiledGraph {
 
 	private static final Logger log = LoggerFactory.getLogger(CompiledGraph.class);
 
+	/**
+	 * The enum Stream mode.
+	 */
 	public enum StreamMode {
 
-		VALUES, SNAPSHOTS
+		/**
+		 * Values stream mode.
+		 */
+		VALUES,
+		/**
+		 * Snapshots stream mode.
+		 */
+		SNAPSHOTS
 
 	}
 
+	/**
+	 * The State graph.
+	 */
 	public final StateGraph stateGraph;
 
+	private final OverAllState overAllState;
+
+	/**
+	 * The Nodes.
+	 */
 	final Map<String, AsyncNodeActionWithConfig> nodes = new LinkedHashMap<>();
 
+	/**
+	 * The Edges.
+	 */
 	final Map<String, EdgeValue> edges = new LinkedHashMap<>();
 
 	private final ProcessedNodesEdgesAndConfig processedData;
 
 	private int maxIterations = 25;
 
+	/**
+	 * The Compile config.
+	 */
 	public final CompileConfig compileConfig;
 
 	/**
 	 * Constructs a CompiledGraph with the given StateGraph.
 	 * @param stateGraph the StateGraph to be used in this CompiledGraph
+	 * @param compileConfig the compile config
+	 * @throws GraphStateException the graph state exception
 	 */
 	protected CompiledGraph(StateGraph stateGraph, CompileConfig compileConfig) throws GraphStateException {
 		this.stateGraph = stateGraph;
+		this.overAllState = Objects.nonNull(stateGraph.getOverAllStateFactory())
+				? stateGraph.getOverAllStateFactory().create() : stateGraph.getOverAllState();
 
 		this.processedData = ProcessedNodesEdgesAndConfig.process(stateGraph, compileConfig);
 
@@ -158,6 +189,14 @@ public class CompiledGraph {
 			}
 
 		}
+	}
+
+	/**
+	 * Over all state over all state.
+	 * @return the over all state
+	 */
+	public OverAllState overAllState() {
+		return this.overAllState;
 	}
 
 	public Collection<StateSnapshot> getStateHistory(RunnableConfig config) {
@@ -324,6 +363,12 @@ public class CompiledGraph {
 
 	}
 
+	/**
+	 * Gets initial state.
+	 * @param inputs the inputs
+	 * @param config the config
+	 * @return the initial state
+	 */
 	Map<String, Object> getInitialState(Map<String, Object> inputs, RunnableConfig config) {
 
 		return compileConfig.checkpointSaver()
@@ -332,6 +377,15 @@ public class CompiledGraph {
 			.orElseGet(() -> OverAllState.updateState(new HashMap<>(), inputs, stateGraph.keyStrategies()));
 	}
 
+	/**
+	 * Clone state over all state.
+	 * @param data the data
+	 * @return the over all state
+	 * @throws IOException the io exception
+	 * @throws ClassNotFoundException the class not found exception
+	 * @throws InstantiationException the instantiation exception
+	 * @throws IllegalAccessException the illegal access exception
+	 */
 	OverAllState cloneState(Map<String, Object> data)
 			throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
 		return new OverAllState(data);
@@ -345,12 +399,17 @@ public class CompiledGraph {
 	 */
 	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
-		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(
-				stateGraph.getOverAllState().input(inputs), config);
+		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(overAllState().input(inputs), config);
 
 		return new AsyncGenerator.WithEmbed<>(generator);
 	}
 
+	/**
+	 * Stream async generator.
+	 * @param overAllState the over all state
+	 * @param config the config
+	 * @return the async generator
+	 */
 	public AsyncGenerator<NodeOutput> stream(OverAllState overAllState, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
 		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(overAllState, config);
@@ -364,12 +423,15 @@ public class CompiledGraph {
 	 * @return an AsyncGenerator stream of NodeOutput
 	 */
 	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs) {
-		stateGraph.getOverAllState().input(inputs);
-		return this.stream(stateGraph.getOverAllState(), RunnableConfig.builder().build());
+		return this.stream(overAllState().input(inputs), RunnableConfig.builder().build());
 	}
 
+	/**
+	 * Stream async generator.
+	 * @return the async generator
+	 */
 	public AsyncGenerator<NodeOutput> stream() {
-		return this.stream(stateGraph.getOverAllState(), RunnableConfig.builder().build());
+		return this.stream(overAllState(), RunnableConfig.builder().build());
 	}
 
 	/**
@@ -380,10 +442,15 @@ public class CompiledGraph {
 	 * Optional
 	 */
 	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config) {
-		stateGraph.getOverAllState().input(inputs);
 		return stream(inputs, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
 
+	/**
+	 * Invoke optional.
+	 * @param overAllState the over all state
+	 * @param config the config
+	 * @return the optional
+	 */
 	public Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) {
 		return stream(overAllState, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
 	}
@@ -395,11 +462,14 @@ public class CompiledGraph {
 	 * Optional
 	 */
 	public Optional<OverAllState> invoke(Map<String, Object> inputs) {
-		return this.invoke(stateGraph.getOverAllState().input(inputs), RunnableConfig.builder().build());
+		return this.invoke(overAllState.input(inputs), RunnableConfig.builder().build());
 	}
 
 	/**
 	 * Experimental API
+	 * @param feedback the feedback
+	 * @param config the config
+	 * @return the optional
 	 */
 	public Optional<OverAllState> resume(OverAllState.HumanFeedback feedback, RunnableConfig config) {
 		StateSnapshot stateSnapshot = this.getState(config);
@@ -419,8 +489,8 @@ public class CompiledGraph {
 	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
 
-		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(
-				stateGraph.getOverAllState().input(inputs), config.withStreamMode(StreamMode.SNAPSHOTS));
+		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(overAllState().input(inputs),
+				config.withStreamMode(StreamMode.SNAPSHOTS));
 		return new AsyncGenerator.WithEmbed<>(generator);
 	}
 
@@ -468,20 +538,46 @@ public class CompiledGraph {
 	 */
 	public class AsyncNodeGenerator<Output extends NodeOutput> implements AsyncGenerator<Output> {
 
+		/**
+		 * The Current state.
+		 */
 		Map<String, Object> currentState;
 
+		/**
+		 * The Current node id.
+		 */
 		String currentNodeId;
 
+		/**
+		 * The Next node id.
+		 */
 		String nextNodeId;
 
+		/**
+		 * The Over all state.
+		 */
 		OverAllState overAllState;
 
+		/**
+		 * The Iteration.
+		 */
 		int iteration = 0;
 
+		/**
+		 * The Config.
+		 */
 		RunnableConfig config;
 
+		/**
+		 * The Resumed from embed.
+		 */
 		boolean resumedFromEmbed = false;
 
+		/**
+		 * Instantiates a new Async node generator.
+		 * @param overAllState the over all state
+		 * @param config the config
+		 */
 		protected AsyncNodeGenerator(OverAllState overAllState, RunnableConfig config) {
 
 			if (overAllState.isResume()) {
@@ -522,6 +618,11 @@ public class CompiledGraph {
 			}
 		}
 
+		/**
+		 * Instantiates a new Async node generator.
+		 * @param inputs the inputs
+		 * @param config the config
+		 */
 		protected AsyncNodeGenerator(Map<String, Object> inputs, RunnableConfig config) {
 			final boolean isResumeRequest = (inputs == null);
 
@@ -558,11 +659,22 @@ public class CompiledGraph {
 			}
 		}
 
+		/**
+		 * Build node output output.
+		 * @param nodeId the node id
+		 * @return the output
+		 */
 		@SuppressWarnings("unchecked")
 		protected Output buildNodeOutput(String nodeId) {
 			return (Output) NodeOutput.of(nodeId, overAllState);
 		}
 
+		/**
+		 * Build state snapshot output.
+		 * @param checkpoint the checkpoint
+		 * @return the output
+		 * @throws Exception the exception
+		 */
 		@SuppressWarnings("unchecked")
 		protected Output buildStateSnapshot(Checkpoint checkpoint) throws Exception {
 			return (Output) StateSnapshot.of(checkpoint, config, stateGraph.getStateFactory());
@@ -715,13 +827,28 @@ public class CompiledGraph {
 
 }
 
+/**
+ * The type Processed nodes edges and config.
+ */
 record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edges, Set<String> interruptsBefore,
 		Set<String> interruptsAfter) {
 
+	/**
+	 * Instantiates a new Processed nodes edges and config.
+	 * @param stateGraph the state graph
+	 * @param config the config
+	 */
 	ProcessedNodesEdgesAndConfig(StateGraph stateGraph, CompileConfig config) {
 		this(stateGraph.nodes, stateGraph.edges, config.interruptsBefore(), config.interruptsAfter());
 	}
 
+	/**
+	 * Process processed nodes edges and config.
+	 * @param stateGraph the state graph
+	 * @param config the config
+	 * @return the processed nodes edges and config
+	 * @throws GraphStateException the graph state exception
+	 */
 	static ProcessedNodesEdgesAndConfig process(StateGraph stateGraph, CompileConfig config)
 			throws GraphStateException {
 
