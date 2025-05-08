@@ -78,14 +78,16 @@ public class DynamicNacosToolCallbackV3 implements ToolCallback {
 					String groupName = (String) refMap.get("groupName");
 					Instance instance = namingService.selectOneHealthyInstance(serviceName, groupName);
 					logger.info("Tool callback instance: {}", JacksonUtils.toJson(instance));
-//					String url = "http://" + instance.getIp() + ":" + instance.getPort() + exportPath;
-//					logger.info("Tool callback url: {}", url);
+					// String url = "http://" + instance.getIp() + ":" +
+					// instance.getPort() + exportPath;
+					// logger.info("Tool callback url: {}", url);
 					// if
 					// (nacosToolDefinition.getRequestMethod().equalsIgnoreCase("POST")) {
 					// return
 					// webClient.post().uri(url).bodyValue(input).retrieve().bodyToMono(String.class).block();
 					// }
-//					return webClient.get().uri(url).retrieve().bodyToMono(String.class).block();
+					// return
+					// webClient.get().uri(url).retrieve().bodyToMono(String.class).block();
 					return null;
 				}
 			}
