@@ -45,11 +45,6 @@ public final class CommonToolCallConstants {
 	// Maximum memory size in bytes (5MB)
 	public static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
 
-	// Common User-Agent list
-	public static final String[] USER_AGENTS = {
-			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36" };
-
 	// Default connection timeout in milliseconds
 	public static final int DEFAULT_CONNECT_TIMEOUT_MILLIS = 5000;
 
