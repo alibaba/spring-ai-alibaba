@@ -105,7 +105,7 @@
         </dependency>
     </dependencies>
 
-    <build>git
+    <build>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
