@@ -94,8 +94,7 @@ public class CodeUtils {
 
 	public static CodeExecutionResult executeCode(String code, String lang, String filename, Boolean arm64,
 			Map<String, Object> kwargs) {
-		log.info("code:" + code + ", lang:" + lang + ", filename:" + filename + ", arm64:" + arm64 + ", kwargs:"
-				+ kwargs);
+		log.info("code:{}, lang:{}, filename:{}, arm64:{}, kwargs:{}", code, lang, filename, arm64, kwargs);
 
 		if (code == null && filename == null) {
 			String error_msg = "Either code or filename must be provided.";
@@ -138,7 +137,7 @@ public class CodeUtils {
 			}
 		}
 
-		log.info("filepath:" + filepath);
+		log.info("filepath:{}", filepath);
 
 		ExecuteCommandResult executeCommandResult = null;
 		if (lang.equals("python")) {

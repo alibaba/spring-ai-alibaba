@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.dashscope.rag;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
-import com.alibaba.cloud.ai.dashscope.image.DashScopeImageOptions;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;

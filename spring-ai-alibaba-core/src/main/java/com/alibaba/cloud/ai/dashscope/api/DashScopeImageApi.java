@@ -70,8 +70,15 @@ public class DashScopeImageApi {
 	}
 
 	public ResponseEntity<DashScopeImageAsyncReponse> submitImageGenTask(DashScopeImageRequest request) {
+		String url = "/api/v1/services/aigc/";
+		if (request.model().equals("wanx2.1-imageedit") || request.model().equals("wanx-x-painting")
+				|| request.model().equals("wanx-sketch-to-image-lite"))
+			url += "image2image";
+		else
+			url += "text2image";
+		url += "/image-synthesis";
 		return this.restClient.post()
-			.uri("/api/v1/services/aigc/text2image/image-synthesis")
+			.uri(url)
 			// issue: https://github.com/alibaba/spring-ai-alibaba/issues/29
 			.header("X-DashScope-Async", "enable")
 			.body(request)
@@ -114,13 +121,22 @@ public class DashScopeImageApi {
 	) {
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record DashScopeImageRequestInput(@JsonProperty("prompt") String prompt,
-				@JsonProperty("negative_prompt") String negativePrompt, @JsonProperty("ref_img") String refImg) {
+				@JsonProperty("negative_prompt") String negativePrompt, @JsonProperty("ref_img") String refImg,
+				@JsonProperty("function") String function, @JsonProperty("base_image_url") String baseImageUrl,
+				@JsonProperty("mask_image_url") String maskImageUrl,
+				@JsonProperty("sketch_image_url") String sketchImageUrl) {
 		}
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record DashScopeImageRequestParameter(@JsonProperty("style") String style,
 				@JsonProperty("size") String size, @JsonProperty("n") Integer n, @JsonProperty("seed") Integer seed,
-				@JsonProperty("ref_strength") Float refStrength, @JsonProperty("ref_mode") String refMode) {
+				@JsonProperty("ref_strength") Float refStrength, @JsonProperty("ref_mode") String refMode,
+				@JsonProperty("prompt_extend") Boolean promptExtend, @JsonProperty("watermark") Boolean watermark,
+
+				@JsonProperty("sketch_weight") Integer sketchWeight,
+				@JsonProperty("sketch_extraction") Boolean sketchExtraction,
+				@JsonProperty("sketch_color") Integer[][] sketchColor,
+				@JsonProperty("mask_color") Integer[][] maskColor) {
 		}
 	}
 
