@@ -53,7 +53,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-core</artifactId>
+            <artifactId>spring-ai-vector-store</artifactId>
         </dependency>
     </dependencies>
 

@@ -15,17 +15,13 @@
  */
 package com.alibaba.cloud.ai.prompt;
 
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.prompt.*;
+import org.springframework.ai.content.Media;
+import org.springframework.core.io.Resource;
+
 import java.util.List;
 import java.util.Map;
-
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.chat.prompt.PromptTemplateActions;
-import org.springframework.ai.chat.prompt.PromptTemplateMessageActions;
-import org.springframework.ai.model.Media;
-import org.springframework.core.io.Resource;
 
 public class ConfigurablePromptTemplate implements PromptTemplateActions, PromptTemplateMessageActions {
 
@@ -44,12 +40,12 @@ public class ConfigurablePromptTemplate implements PromptTemplateActions, Prompt
 	}
 
 	ConfigurablePromptTemplate(String name, String template, Map<String, Object> model) {
-		this.promptTemplate = new PromptTemplate(template, model);
+		this.promptTemplate = PromptTemplate.builder().template(template).variables(model).build();
 		this.name = name;
 	}
 
 	ConfigurablePromptTemplate(String name, Resource resource, Map<String, Object> model) {
-		this.promptTemplate = new PromptTemplate(resource, model);
+		this.promptTemplate = PromptTemplate.builder().resource(resource).variables(model).build();
 		this.name = name;
 	}
 
