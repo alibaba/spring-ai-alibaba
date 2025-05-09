@@ -30,7 +30,7 @@ ignore_dirs = [
 ignore_suffix = [
     ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico",
     ".webp", ".pdf", ".word", ".docx", ".doc", ".ppt",
-    ".xlsx", ".xls", ".exe", "chromedriver", ".pptx",
+    ".xlsx", ".xls", ".exe", "chromedriver", ".pptx", ".jar"
     ".wav", ".bib", ".cmd", "mvnw", ".bin", ".pcm", ".flac"
 ]
 
