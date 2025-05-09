@@ -46,7 +46,7 @@ public class MysqlChatMemoryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	ChatMemoryRepository mysqlChatMemoryRepository(JdbcTemplate jdbcTemplate) {
+	MysqlChatMemoryRepository mysqlChatMemoryRepository(JdbcTemplate jdbcTemplate) {
 		logger.info("Configuring Oracle chat memory repository");
 		return MysqlChatMemoryRepository.mysqlBuilder().jdbcTemplate(jdbcTemplate).build();
 	}

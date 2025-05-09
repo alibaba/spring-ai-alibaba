@@ -16,35 +16,38 @@
 
 package com.alibaba.cloud.ai.autoconfigure.memory;
 
-import com.alibaba.cloud.ai.memory.jdbc.OracleChatMemoryRepository;
+import com.alibaba.cloud.ai.memory.redis.RedisChatMemoryRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.jdbc.core.JdbcTemplate;
-
-import javax.sql.DataSource;
+import org.springframework.context.annotation.Primary;
+import redis.clients.jedis.Jedis;
 
 /**
- * Auto-configuration for Oracle chat memory repository.
+ * Auto-configuration for Redis chat memory repository.
  */
-@AutoConfiguration(after = JdbcTemplateAutoConfiguration.class, before = ChatMemoryAutoConfiguration.class)
-@ConditionalOnClass({ OracleChatMemoryRepository.class, DataSource.class, JdbcTemplate.class })
-@EnableConfigurationProperties(OracleChatMemoryProperties.class)
-public class OracleChatMemoryAutoConfiguration {
+@AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
+@ConditionalOnClass({ RedisChatMemoryRepository.class, Jedis.class })
+@EnableConfigurationProperties(RedisChatMemoryProperties.class)
+public class RedisChatMemoryAutoConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(OracleChatMemoryAutoConfiguration.class);
+	private static final Logger logger = LoggerFactory.getLogger(RedisChatMemoryAutoConfiguration.class);
 
 	@Bean
 	@ConditionalOnMissingBean
-	OracleChatMemoryRepository oracleChatMemoryRepository(JdbcTemplate jdbcTemplate) {
-		logger.info("Configuring Oracle chat memory repository");
-		return OracleChatMemoryRepository.oracleBuilder().jdbcTemplate(jdbcTemplate).build();
+	RedisChatMemoryRepository redisChatMemoryRepository(RedisChatMemoryProperties properties) {
+		logger.info("Configuring Redis chat memory repository");
+		return RedisChatMemoryRepository.builder()
+			.host(properties.getHost())
+			.port(properties.getPort())
+			.password(properties.getPassword())
+			.timeout(properties.getTimeout())
+			.build();
 	}
 
 }
