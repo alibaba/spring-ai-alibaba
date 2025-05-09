@@ -24,7 +24,7 @@
 	<suppress files="generated-sources" checks="[a-zA-Z0-9]*" />
 	<suppress files="org[\\/]eclipse[\\/]jdt[\\/]internal[\\/]formatter[\\/]linewrap[\\/]WrapPreparator\.java" checks="[a-zA-Z0-9]*" />
 
-	<!-- 需要抑制的类文件列表 -->
-	<!--<suppress files="DashScopeApi.java" checks="FinalClass"/>-->
+	<!-- A list of class files that need to be suppressed -->
+	<suppress files="NacosMcpRegistryProperties.java" checks="FinalClass"/>
 
 </suppressions>
