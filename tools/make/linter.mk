@@ -62,7 +62,7 @@ newline-check: ## Check the newline
 	@$(LOG_TARGET)
 	python tools/scripts/new-line-check.py check
 
-.PHONY newline-fix
+.PHONY: newline-fix
 newline-fix: ## Fix the newline
 	@$(LOG_TARGET)
 	python tools/scripts/new-line-check.py fix
