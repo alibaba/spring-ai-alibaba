@@ -16,9 +16,9 @@
 
 .PHONY: lint
 lint: ## Check files
-# md 文件错误太多了，暂时关闭
-# lint: markdown-lint yaml-lint code-spell
-lint: yaml-lint codespell
+# md There are too many file errors, close temporarily
+# lint: markdown-lint yaml-lint code-spell newline-check
+lint: yaml-lint codespell newline-check
 
 .PHONY: codespell
 codespell: CODESPELL_SKIP := $(shell cat tools/linter/codespell/.codespell.skip | tr \\n ',')
@@ -45,7 +45,7 @@ licenses-check: ## Check the licenses
 	license-eye --version
 	license-eye -c ./tools/linter/license/.licenserc.yaml header check
 
-.PHONY: markdown-lint
+.PHONY: markdown-lint-check
 markdown-lint: ## Check the markdown files.
 	@$(LOG_TARGET)
 	markdownlint --version
@@ -56,3 +56,13 @@ markdown-lint-fix: ## Fix the markdown files style.
 	@$(LOG_TARGET)
 	markdownlint --version
 	markdownlint --config ./tools/linter/markdownlint/markdown_lint_config.yaml --fix .
+
+.PHONY: newline-check
+newline-check: ## Check the newline
+	@$(LOG_TARGET)
+	python tools/scripts/new-line-check.py check
+
+.PHONY newline-fix
+newline-fix: ## Fix the newline
+	@$(LOG_TARGET)
+	python tools/scripts/new-line-check.py fix
