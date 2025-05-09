@@ -115,15 +115,6 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			configProperties.put(PropertyKeyConst.NAMESPACE, configNamespace);
 			this.configService = new NacosConfigService(configProperties);
 			if (this.serverCapabilities.tools() != null) {
-				Field mcpSessionField = clazz.getDeclaredField("mcpSession");
-				mcpSessionField.setAccessible(true);
-				McpClientSession mcpSession = (McpClientSession) mcpSessionField.get(delegateInstance);
-				Field requestHandlersField = McpClientSession.class.getDeclaredField("requestHandlers");
-				requestHandlersField.setAccessible(true);
-				ConcurrentHashMap<String, McpClientSession.RequestHandler<?>> requestHandlers = (ConcurrentHashMap<String, McpClientSession.RequestHandler<?>>) requestHandlersField
-					.get(mcpSession);
-				requestHandlers.put(McpSchema.METHOD_TOOLS_LIST, toolsListRequestHandler());
-
 				String toolsInNacosContent = this.configService.getConfig(this.serverInfo.name() + toolsConfigSuffix,
 						toolsGroup, 3000);
 				if (toolsInNacosContent != null) {
@@ -304,21 +295,6 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 		catch (NacosException e) {
 			log.error("Failed to register mcp server service to nacos", e);
 		}
-	}
-
-	private McpClientSession.RequestHandler<McpSchema.ListToolsResult> toolsListRequestHandler() {
-		return params -> {
-			List<McpSchema.Tool> toolsAll = this.tools.stream()
-				.map(McpServerFeatures.AsyncToolSpecification::tool)
-				.toList();
-			List<McpSchema.Tool> toolsEnable = new ArrayList<>();
-			for (McpSchema.Tool tool : toolsAll) {
-				if (this.toolsMeta.containsKey(tool.name()) && this.toolsMeta.get(tool.name()).getEnabled()) {
-					toolsEnable.add(tool);
-				}
-			}
-			return Mono.just(new McpSchema.ListToolsResult(toolsEnable, null));
-		};
 	}
 
 }
