@@ -26,11 +26,12 @@
 	</module>
 
 	<!-- Root Checks -->
-	<!-- 包含文件开头和文件末尾的换行检查 -->
-	<module name="com.puppycrawl.tools.checkstyle.checks.header.RegexpHeaderCheck">
+	<!-- Contains a line break check at the beginning and end of the file -->
+	<!-- The License Header that does not use CheckStyle is done using the make command in the project -->
+	<!--<module name="com.puppycrawl.tools.checkstyle.checks.header.RegexpHeaderCheck">
 		<property name="headerFile" value="${checkstyle.header.file}" />
 		<property name="fileExtensions" value="java" />
-	</module>
+	</module>-->
 	<module name="com.puppycrawl.tools.checkstyle.checks.NewlineAtEndOfFileCheck" />
 
 	<!-- TreeWalker Checks -->
