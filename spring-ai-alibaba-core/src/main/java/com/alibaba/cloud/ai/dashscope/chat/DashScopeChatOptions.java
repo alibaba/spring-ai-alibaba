@@ -149,7 +149,7 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
   /**
    * Whether to enable the thinking process of the model.
    */
-  private @JsonProperty("enable_thinking") Boolean enableThinking = true;
+  private @JsonProperty("enable_thinking") Boolean enableThinking = false;
 
   /**
    * Tool Function Callbacks to register with the ChatClient. For Prompt Options the
