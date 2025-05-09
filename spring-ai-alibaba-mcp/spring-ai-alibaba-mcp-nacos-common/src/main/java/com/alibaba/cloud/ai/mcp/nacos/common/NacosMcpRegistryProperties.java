@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.alibaba.cloud.ai.mcp.nacos.common;
 
-package com.alibaba.cloud.ai.mcp.nacos;
-
+import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.utils.NetUtils;
 import com.alibaba.nacos.api.utils.StringUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -38,14 +38,6 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.alibaba.nacos.api.PropertyKeyConst.ACCESS_KEY;
-import static com.alibaba.nacos.api.PropertyKeyConst.ENDPOINT;
-import static com.alibaba.nacos.api.PropertyKeyConst.ENDPOINT_PORT;
-import static com.alibaba.nacos.api.PropertyKeyConst.NAMESPACE;
-import static com.alibaba.nacos.api.PropertyKeyConst.PASSWORD;
-import static com.alibaba.nacos.api.PropertyKeyConst.SECRET_KEY;
-import static com.alibaba.nacos.api.PropertyKeyConst.SERVER_ADDR;
-import static com.alibaba.nacos.api.PropertyKeyConst.USERNAME;
 import static java.util.Collections.unmodifiableMap;
 
 /**
@@ -172,7 +164,7 @@ public class NacosMcpRegistryProperties {
 		this.endpoint = endpoint;
 	}
 
-	String getServerAddr() {
+	public String getServerAddr() {
 		return serverAddr;
 	}
 
@@ -180,7 +172,7 @@ public class NacosMcpRegistryProperties {
 		this.serverAddr = serverAddr;
 	}
 
-	String getServiceNamespace() {
+	public String getServiceNamespace() {
 		return serviceNamespace;
 	}
 
@@ -206,26 +198,27 @@ public class NacosMcpRegistryProperties {
 
 	public Properties getNacosProperties() {
 		Properties properties = new Properties();
-		properties.put(SERVER_ADDR, Objects.toString(this.serverAddr, ""));
-		properties.put(USERNAME, Objects.toString(this.username, ""));
-		properties.put(PASSWORD, Objects.toString(this.password, ""));
-		properties.put(NAMESPACE, this.resolveNamespace());
-		properties.put(ACCESS_KEY, Objects.toString(this.accessKey, ""));
-		properties.put(SECRET_KEY, Objects.toString(this.secretKey, ""));
+		properties.put(PropertyKeyConst.SERVER_ADDR, Objects.toString(this.serverAddr, ""));
+		properties.put("groupName", Objects.toString(this.serviceGroup, "DEFAULT_GROUP"));
+		properties.put(PropertyKeyConst.USERNAME, Objects.toString(this.username, ""));
+		properties.put(PropertyKeyConst.PASSWORD, Objects.toString(this.password, ""));
+		properties.put(PropertyKeyConst.NAMESPACE, this.resolveNamespace());
+		properties.put(PropertyKeyConst.ACCESS_KEY, Objects.toString(this.accessKey, ""));
+		properties.put(PropertyKeyConst.SECRET_KEY, Objects.toString(this.secretKey, ""));
 		String endpoint = Objects.toString(this.endpoint, "");
 		if (endpoint.contains(":")) {
 			int index = endpoint.indexOf(":");
-			properties.put(ENDPOINT, endpoint.substring(0, index));
-			properties.put(ENDPOINT_PORT, endpoint.substring(index + 1));
+			properties.put(PropertyKeyConst.ENDPOINT, endpoint.substring(0, index));
+			properties.put(PropertyKeyConst.ENDPOINT_PORT, endpoint.substring(index + 1));
 		}
 		else {
-			properties.put(ENDPOINT, endpoint);
+			properties.put(PropertyKeyConst.ENDPOINT, endpoint);
 		}
 
 		enrichNacosConfigProperties(properties);
 
 		if (StringUtils.isEmpty(this.serverAddr) && StringUtils.isEmpty(this.endpoint)) {
-			properties.put(SERVER_ADDR, DEFAULT_ADDRESS);
+			properties.put(PropertyKeyConst.SERVER_ADDR, DEFAULT_ADDRESS);
 		}
 
 		return properties;
