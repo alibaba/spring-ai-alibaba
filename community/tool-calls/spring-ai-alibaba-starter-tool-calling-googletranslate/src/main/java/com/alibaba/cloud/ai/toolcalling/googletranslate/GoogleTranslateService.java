@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.toolcalling.googletranslate;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
+import com.alibaba.cloud.ai.toolcalling.common.ResponseHandler;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientConfig;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -51,34 +54,29 @@ public class GoogleTranslateService
 	public GoogleTranslateService(GoogleTranslateProperties properties) {
 		assert StringUtils.hasText(properties.getApiKey());
 		this.properties = properties;
-		this.webClient = WebClient.builder().defaultHeader("Content-Type", "application/json").build();
+		Map<String, String> headers = new HashMap<>();
+		headers.put("Content-Type", "application/json");
+		this.webClient = WebClientConfig.createDefaultWebClient(headers);
 	}
 
 	@Override
 	public Response apply(Request request) {
-		if (request == null || request.text == null || request.text.isEmpty()
-				|| !StringUtils.hasText(properties.getApiKey()) || !StringUtils.hasText(request.targetLanguage)) {
+		if (!CommonToolCallUtils.validateRequestParams(request, request.text, request.targetLanguage)) {
 			return null;
 		}
 
-		String requestUrl = UriComponentsBuilder.fromHttpUrl(TRANSLATE_HOST + TRANSLATE_PATH)
-			.queryParam("key", properties.getApiKey())
-			.queryParam("target", request.targetLanguage)
-			.queryParam("q", request.text)
-			.queryParam("format", "text")
-			.toUriString();
-		try {
-			Mono<String> responseMono = webClient.post().uri(requestUrl).retrieve().bodyToMono(String.class);
+		return CommonToolCallUtils.handleServiceError("GoogleTranslate", () -> {
+			String requestUrl = UriComponentsBuilder.fromHttpUrl(TRANSLATE_HOST + TRANSLATE_PATH)
+				.queryParam("key", properties.getApiKey())
+				.queryParam("target", request.targetLanguage)
+				.queryParam("q", request.text)
+				.queryParam("format", "text")
+				.toUriString();
 
-			String responseData = responseMono.block();
-			assert responseData != null;
-			log.info("GoogleTranslation request: {}, response: {}", request.text, responseData);
-			return parseResponseData(responseData, request.text);
-		}
-		catch (Exception e) {
-			log.error("Using the googleTranslate service failed due to {}", e.getMessage());
-		}
-		return null;
+			String responseData = webClient.post().uri(requestUrl).retrieve().bodyToMono(String.class).block();
+
+			return ResponseHandler.handleResponse(responseData, data -> parseResponseData(data, request.text), log);
+		}, log);
 	}
 
 	private Response parseResponseData(String responseData, List<String> query) {
@@ -100,7 +98,7 @@ public class GoogleTranslateService
 			return new Response(translationResult);
 		}
 		catch (Exception e) {
-			log.error("failed to convert the response to json object  due to {}", e.getMessage());
+			log.error("Failed to parse response data: {}", e.getMessage());
 			return null;
 		}
 	}
@@ -111,6 +109,7 @@ public class GoogleTranslateService
 		log.info("Translate Text Failed. message:{} code:{}", errorMessage, code);
 	}
 
+	@JsonClassDescription("Request to translate text to the target language")
 	public record Request(
 			@JsonProperty(required = true,
 					value = "text") @JsonPropertyDescription("Content that needs to be translated") List<String> text,
