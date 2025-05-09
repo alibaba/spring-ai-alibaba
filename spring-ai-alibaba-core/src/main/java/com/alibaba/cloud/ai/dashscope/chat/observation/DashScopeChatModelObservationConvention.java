@@ -40,11 +40,6 @@ public class DashScopeChatModelObservationConvention extends DefaultChatModelObs
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
-	@Override
-	public String getName() {
-		return DEFAULT_NAME;
-	}
-
 	// Request
 	@Override
 	protected KeyValues requestStopSequences(KeyValues keyValues, ChatModelObservationContext context) {
