@@ -92,20 +92,18 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 		this.nacosMcpProperties = nacosMcpProperties;
 
 		try {
-			Class clazz = McpAsyncServer.class;
+			Class<?> clazz = Class.forName("io.modelcontextprotocol.server.McpAsyncServer$AsyncServerImpl");
+			Field delegateField = McpAsyncServer.class.getDeclaredField("delegate");
+			delegateField.setAccessible(true);
+			Object delegateInstance = delegateField.get(mcpAsyncServer);
 
-			Field serverInfoField = clazz.getDeclaredField("serverInfo");
-			serverInfoField.setAccessible(true);
-			this.serverInfo = (McpSchema.Implementation) serverInfoField.get(mcpAsyncServer);
-
-			Field serverCapabilitiesField = clazz.getDeclaredField("serverCapabilities");
-			serverCapabilitiesField.setAccessible(true);
-			this.serverCapabilities = (McpSchema.ServerCapabilities) serverCapabilitiesField.get(mcpAsyncServer);
+			this.serverInfo = mcpAsyncServer.getServerInfo();
+			this.serverCapabilities = mcpAsyncServer.getServerCapabilities();
 
 			Field toolsField = clazz.getDeclaredField("tools");
 			toolsField.setAccessible(true);
 			this.tools = (CopyOnWriteArrayList<McpServerFeatures.AsyncToolSpecification>) toolsField
-				.get(mcpAsyncServer);
+				.get(delegateInstance);
 
 			this.toolsMeta = new HashMap<>();
 			this.tools.forEach(toolRegistration -> {
@@ -119,7 +117,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			if (this.serverCapabilities.tools() != null) {
 				Field mcpSessionField = clazz.getDeclaredField("mcpSession");
 				mcpSessionField.setAccessible(true);
-				McpClientSession mcpSession = (McpClientSession) mcpSessionField.get(mcpAsyncServer);
+				McpClientSession mcpSession = (McpClientSession) mcpSessionField.get(delegateInstance);
 				Field requestHandlersField = McpClientSession.class.getDeclaredField("requestHandlers");
 				requestHandlersField.setAccessible(true);
 				ConcurrentHashMap<String, McpClientSession.RequestHandler<?>> requestHandlers = (ConcurrentHashMap<String, McpClientSession.RequestHandler<?>>) requestHandlersField
