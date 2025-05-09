@@ -884,6 +884,14 @@ public class DashScopeApi {
 	 * "my_function"}} forces the model to call that function. none is the default when no
 	 * functions are present. auto is the default if functions are present. Use the
 	 * {@link ToolChoiceBuilder} to create the tool choice value.
+	 * @param stream Whether to stream back partial progress. If set, tokens will be sent
+	 * as data-only server-sent events as they become available, with the stream
+	 * terminated by a data: [DONE] message.
+	 * @param vlHighResolutionImages Whether to generate high-resolution images for
+	 * visualization.
+	 * @param enableThinking Whether to enable the model to think before generating
+	 * responses. This is useful for complex tasks where the model needs to reason through
+	 * the problem before providing an answer.
 	 *
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -898,7 +906,7 @@ public class DashScopeApi {
 			@JsonProperty("tools") List<FunctionTool> tools, @JsonProperty("tool_choice") Object toolChoice,
 			@JsonProperty("stream") Boolean stream,
 			@JsonProperty("vl_high_resolution_images") Boolean vlHighResolutionImages,
-		    @JsonProperty("enable_thinking") Boolean enableThinking) {
+			@JsonProperty("enable_thinking") Boolean enableThinking) {
 
 		/**
 		 * shortcut constructor for chat request parameter
