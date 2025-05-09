@@ -15,6 +15,10 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphStateException;
@@ -25,16 +29,13 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
-
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -77,7 +78,7 @@ public class ReactAgent {
 		this.graph = initGraph();
 	}
 
-	public ReactAgent(String name, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations)
+	public ReactAgent(String name, ChatClient chatClient, List<ToolCallback> tools, int maxIterations)
 			throws GraphStateException {
 		this.name = name;
 		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey("messages").build();
@@ -86,7 +87,7 @@ public class ReactAgent {
 		this.graph = initGraph();
 	}
 
-	public ReactAgent(String name, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations,
+	public ReactAgent(String name, ChatClient chatClient, List<ToolCallback> tools, int maxIterations,
 			OverAllState state, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc)
 			throws GraphStateException {
 		this.name = name;
@@ -248,7 +249,7 @@ public class ReactAgent {
 
 		private ChatClient chatClient;
 
-		private List<FunctionCallback> tools;
+		private List<ToolCallback> tools;
 
 		private ToolCallbackResolver resolver;
 
@@ -270,7 +271,7 @@ public class ReactAgent {
 			return this;
 		}
 
-		public Builder tools(List<FunctionCallback> tools) {
+		public Builder tools(List<ToolCallback> tools) {
 			this.tools = tools;
 			return this;
 		}
