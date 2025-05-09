@@ -35,7 +35,7 @@
         <module>spring-ai-alibaba-mcp</module>
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-graph</module>
-        <module>spring-ai-alibaba-studio</module>
+<!--        <module>spring-ai-alibaba-studio</module>-->
         <module>spring-ai-alibaba-starter</module>
         <module>spring-ai-alibaba-auto-configurations</module>
 
@@ -305,9 +305,10 @@
                         <phase>validate</phase>
                         <inherited>true</inherited>
                         <configuration>
+                            <consoleOutput>true</consoleOutput>
                             <skip>${disable.checks}</skip>
-                            <configLocation>src/checkstyle/checkstyle.xml</configLocation>
-                            <headerLocation>src/checkstyle/checkstyle-header.txt</headerLocation>
+                            <configLocation>tools/src/checkstyle/checkstyle.xml</configLocation>
+                            <headerLocation>tools/src/checkstyle/checkstyle-header.txt</headerLocation>
                             <includeTestSourceDirectory>true</includeTestSourceDirectory>
                             <propertyExpansion>
                                 checkstyle.build.directory=${project.build.directory}
@@ -315,9 +316,9 @@
                                 checkstyle.additional.suppressions.file=${project.basedir}/tools/src/checkstyle/checkstyle-suppressions.xml
                                 checkstyle.header.file=${project.basedir}/tools/src/checkstyle/checkstyle-header.txt
                             </propertyExpansion>
-                            <consoleOutput>true</consoleOutput>
                             <failsOnError>${maven-checkstyle-plugin.failsOnError}
                             </failsOnError>
+                            <violationSeverity>warning</violationSeverity>
                             <failOnViolation>
                                 ${maven-checkstyle-plugin.failOnViolation}
                             </failOnViolation>
@@ -454,6 +455,15 @@
             </plugin>
         </plugins>
     </build>
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </reporting>
 
     <repositories>
         <repository>
