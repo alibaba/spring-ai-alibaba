@@ -79,7 +79,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-jdbc-memory</artifactId>
+            <artifactId>spring-ai-alibaba-starter-memory-jdbc</artifactId>
             <version>${revision}</version>
             <optional>true</optional>
         </dependency>
@@ -93,7 +93,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-redis-memory</artifactId>
+            <artifactId>spring-ai-alibaba-starter-memory-redis</artifactId>
             <version>${revision}</version>
         </dependency>
 
