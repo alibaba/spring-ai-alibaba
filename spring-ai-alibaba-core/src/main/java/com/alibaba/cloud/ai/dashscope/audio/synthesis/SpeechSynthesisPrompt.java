@@ -16,52 +16,97 @@
 package com.alibaba.cloud.ai.dashscope.audio.synthesis;
 
 import org.springframework.ai.model.ModelRequest;
+import org.springframework.core.io.Resource;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author kevinlin09
+ * Represents a prompt for speech synthesis. This class contains the text to be
+ * synthesized and any additional options.
  */
 public class SpeechSynthesisPrompt implements ModelRequest<List<SpeechSynthesisMessage>> {
 
-	private final List<SpeechSynthesisMessage> messages;
+	private final List<SpeechSynthesisMessage> instructions;
 
 	private final SpeechSynthesisOptions options;
 
-	public SpeechSynthesisPrompt(String contents) {
-		this(new SpeechSynthesisMessage(contents));
+	public SpeechSynthesisPrompt(String text) {
+		this(text, null);
 	}
 
-	public SpeechSynthesisPrompt(SpeechSynthesisMessage message) {
-		this(Collections.singletonList(message));
+	public SpeechSynthesisPrompt(String text, SpeechSynthesisOptions options) {
+		this.instructions = new ArrayList<>();
+		this.instructions.add(new SpeechSynthesisMessage(text));
+		this.options = options;
 	}
 
-	public SpeechSynthesisPrompt(List<SpeechSynthesisMessage> messages) {
-		this(messages, null);
+	public SpeechSynthesisPrompt(List<SpeechSynthesisMessage> instructions) {
+		this(instructions, null);
 	}
 
-	public SpeechSynthesisPrompt(String contents, SpeechSynthesisOptions options) {
-		this(new SpeechSynthesisMessage(contents), options);
-	}
-
-	public SpeechSynthesisPrompt(SpeechSynthesisMessage message, SpeechSynthesisOptions options) {
-		this(Collections.singletonList(message), options);
-	}
-
-	public SpeechSynthesisPrompt(List<SpeechSynthesisMessage> messages, SpeechSynthesisOptions options) {
-		this.messages = messages;
+	public SpeechSynthesisPrompt(List<SpeechSynthesisMessage> instructions, SpeechSynthesisOptions options) {
+		this.instructions = instructions;
 		this.options = options;
 	}
 
 	@Override
-	public SpeechSynthesisOptions getOptions() {
-		return this.options;
+	public List<SpeechSynthesisMessage> getInstructions() {
+		return instructions;
 	}
 
-	@Override
-	public List<SpeechSynthesisMessage> getInstructions() {
-		return this.messages;
+	public SpeechSynthesisOptions getOptions() {
+		return options;
+	}
+
+	public static class SpeechSynthesisInstruction {
+
+		private final String text;
+
+		private final Resource audio;
+
+		private final String voice;
+
+		private final String language;
+
+		private final Float speed;
+
+		private final Float volume;
+
+		public SpeechSynthesisInstruction(String text, Resource audio, String voice, String language, Float speed,
+				Float volume) {
+			this.text = text;
+			this.audio = audio;
+			this.voice = voice;
+			this.language = language;
+			this.speed = speed;
+			this.volume = volume;
+		}
+
+		public String getText() {
+			return text;
+		}
+
+		public Resource getAudio() {
+			return audio;
+		}
+
+		public String getVoice() {
+			return voice;
+		}
+
+		public String getLanguage() {
+			return language;
+		}
+
+		public Float getSpeed() {
+			return speed;
+		}
+
+		public Float getVolume() {
+			return volume;
+		}
+
 	}
 
 }

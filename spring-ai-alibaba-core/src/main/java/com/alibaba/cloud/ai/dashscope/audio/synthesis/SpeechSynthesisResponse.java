@@ -16,60 +16,106 @@
 package com.alibaba.cloud.ai.dashscope.audio.synthesis;
 
 import org.springframework.ai.model.ModelResponse;
-import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisResult;
-import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisResponseMetadata;
+import org.springframework.ai.model.ResponseMetadata;
 
-import java.util.Collections;
+import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
- * @author kevinlin09
+ * Represents the response from a speech synthesis operation. This class contains the
+ * synthesized audio data and any additional metadata.
  */
 public class SpeechSynthesisResponse implements ModelResponse<SpeechSynthesisResult> {
 
 	private final SpeechSynthesisResult result;
 
-	private final SpeechSynthesisResponseMetadata metadata;
+	private final Map<String, Object> metadata;
 
 	public SpeechSynthesisResponse(SpeechSynthesisResult result) {
-		this(result, SpeechSynthesisResponseMetadata.NULL);
+		this(result, null);
 	}
 
-	public SpeechSynthesisResponse(SpeechSynthesisResult result, SpeechSynthesisResponseMetadata metadata) {
+	public SpeechSynthesisResponse(SpeechSynthesisResult result, Map<String, Object> metadata) {
 		this.result = result;
 		this.metadata = metadata;
 	}
 
 	@Override
 	public SpeechSynthesisResult getResult() {
-		return this.result;
+		return null;
 	}
 
 	@Override
 	public List<SpeechSynthesisResult> getResults() {
-		return Collections.singletonList(this.result);
+		return null;
 	}
 
 	@Override
-	public SpeechSynthesisResponseMetadata getMetadata() {
-		return this.metadata;
+	public ResponseMetadata getMetadata() {
+		return null;
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) {
+		if (this == o)
 			return true;
-		}
-		if (!(o instanceof SpeechSynthesisResponse that)) {
+		if (!(o instanceof SpeechSynthesisResponse that))
 			return false;
-		}
-		return Objects.equals(this.result, that.result) && Objects.equals(this.metadata, that.metadata);
+		return Objects.equals(result, that.result) && Objects.equals(metadata, that.metadata);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.result, this.metadata);
+		return Objects.hash(result, metadata);
+	}
+
+	public static class SpeechSynthesisOutput {
+
+		private final ByteBuffer audio;
+
+		private final String format;
+
+		private final Integer sampleRate;
+
+		public SpeechSynthesisOutput(ByteBuffer audio) {
+			this(audio, null, null);
+		}
+
+		public SpeechSynthesisOutput(ByteBuffer audio, String format, Integer sampleRate) {
+			this.audio = audio;
+			this.format = format;
+			this.sampleRate = sampleRate;
+		}
+
+		public ByteBuffer getAudio() {
+			return audio;
+		}
+
+		public String getFormat() {
+			return format;
+		}
+
+		public Integer getSampleRate() {
+			return sampleRate;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o)
+				return true;
+			if (!(o instanceof SpeechSynthesisOutput that))
+				return false;
+			return Objects.equals(audio, that.audio) && Objects.equals(format, that.format)
+					&& Objects.equals(sampleRate, that.sampleRate);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(audio, format, sampleRate);
+		}
+
 	}
 
 }

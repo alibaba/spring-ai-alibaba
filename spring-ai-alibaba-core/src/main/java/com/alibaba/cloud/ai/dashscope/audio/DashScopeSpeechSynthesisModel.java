@@ -17,6 +17,10 @@ package com.alibaba.cloud.ai.dashscope.audio;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
 import com.alibaba.cloud.ai.dashscope.audio.synthesis.*;
+import com.alibaba.cloud.ai.dashscope.audio.observation.SpeechSynthesisContext;
+import com.alibaba.cloud.ai.dashscope.audio.observation.DashScopeAudioObservationConvention;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +32,8 @@ import reactor.core.publisher.Flux;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
+import org.springframework.util.Assert;
+
 /**
  * @author kevinlin09
  */
@@ -35,11 +41,17 @@ public class DashScopeSpeechSynthesisModel implements SpeechSynthesisModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeSpeechSynthesisModel.class);
 
+	private static final DashScopeAudioObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DashScopeAudioObservationConvention();
+
 	private final DashScopeSpeechSynthesisApi api;
 
-	private final DashScopeSpeechSynthesisOptions options;
+	private final DashScopeSpeechSynthesisOptions defaultOptions;
 
 	private final RetryTemplate retryTemplate;
+
+	private final ObservationRegistry observationRegistry;
+
+	private DashScopeAudioObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public DashScopeSpeechSynthesisModel(DashScopeSpeechSynthesisApi api) {
 		this(api, DashScopeSpeechSynthesisOptions.builder().withModel("sambert-zhichu-v1").build());
@@ -49,45 +61,104 @@ public class DashScopeSpeechSynthesisModel implements SpeechSynthesisModel {
 		this(api, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
-	public DashScopeSpeechSynthesisModel(DashScopeSpeechSynthesisApi api, DashScopeSpeechSynthesisOptions options,
-			RetryTemplate retryTemplate) {
+	public DashScopeSpeechSynthesisModel(DashScopeSpeechSynthesisApi api,
+			DashScopeSpeechSynthesisOptions defaultOptions, RetryTemplate retryTemplate) {
+		this(api, defaultOptions, retryTemplate, ObservationRegistry.NOOP);
+	}
+
+	public DashScopeSpeechSynthesisModel(DashScopeSpeechSynthesisApi api,
+			DashScopeSpeechSynthesisOptions defaultOptions, RetryTemplate retryTemplate,
+			ObservationRegistry observationRegistry) {
 		this.api = api;
-		this.options = options;
+		this.defaultOptions = defaultOptions;
 		this.retryTemplate = retryTemplate;
+		this.observationRegistry = observationRegistry;
 	}
 
 	@Override
 	public SpeechSynthesisResponse call(SpeechSynthesisPrompt prompt) {
-		Flux<SpeechSynthesisResponse> flux = this.stream(prompt);
-		return flux.reduce((resp1, resp2) -> {
-			ByteBuffer combinedBuffer = ByteBuffer.allocate(resp1.getResult().getOutput().getAudio().remaining()
-					+ resp2.getResult().getOutput().getAudio().remaining());
-			combinedBuffer.put(resp1.getResult().getOutput().getAudio());
-			combinedBuffer.put(resp2.getResult().getOutput().getAudio());
-			combinedBuffer.flip();
+		SpeechSynthesisContext context = new SpeechSynthesisContext();
+		context.setPrompt(prompt);
+		context.setModelName(defaultOptions.getModel());
+		context.setFormat(defaultOptions.getResponseFormat().toString());
+		context.setSampleRate(defaultOptions.getSampleRate());
+		if (!prompt.getInstructions().isEmpty()) {
+			context.setInputLength((long) prompt.getInstructions().get(0).getText().length());
+		}
 
-			return new SpeechSynthesisResponse(new SpeechSynthesisResult(new SpeechSynthesisOutput(combinedBuffer)));
-		}).block();
+		return Observation.createNotStarted(observationConvention, () -> {
+			try {
+				SpeechSynthesisResponse response = retryTemplate.execute(retryContext -> {
+					DashScopeSpeechSynthesisApi.Request request = createRequest(prompt);
+					DashScopeSpeechSynthesisApi.Response apiResponse = api.call(request);
+					SpeechSynthesisOutput output = new SpeechSynthesisOutput(apiResponse.getAudio());
+					SpeechSynthesisResult result = new SpeechSynthesisResult(output);
+					return new SpeechSynthesisResponse(result);
+				});
+
+				context.setResponse(response);
+				if (response != null && response.getResult() != null && response.getResult().getOutput() != null) {
+					context.setOutputLength((long) response.getResult().getOutput().getAudio().remaining());
+				}
+				return context;
+			}
+			catch (Exception e) {
+				context.setError(e);
+				throw e;
+			}
+		}, observationRegistry).observe(() -> {
+			try {
+				return retryTemplate.execute(retryContext -> {
+					DashScopeSpeechSynthesisApi.Request request = createRequest(prompt);
+					DashScopeSpeechSynthesisApi.Response apiResponse = api.call(request);
+					SpeechSynthesisOutput output = new SpeechSynthesisOutput(apiResponse.getAudio());
+					SpeechSynthesisResult result = new SpeechSynthesisResult(output);
+					return new SpeechSynthesisResponse(result);
+				});
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		});
 	}
 
 	@Override
 	public Flux<SpeechSynthesisResponse> stream(SpeechSynthesisPrompt prompt) {
-		return this.retryTemplate.execute(ctx -> this.api.streamOut(createRequest(prompt))
-			.map(SpeechSynthesisOutput::new)
-			.map(SpeechSynthesisResult::new)
-			.map(SpeechSynthesisResponse::new));
+		SpeechSynthesisContext context = new SpeechSynthesisContext();
+		context.setPrompt(prompt);
+		context.setModelName(defaultOptions.getModel());
+		context.setFormat(defaultOptions.getResponseFormat().toString());
+		context.setSampleRate(defaultOptions.getSampleRate());
+		if (!prompt.getInstructions().isEmpty()) {
+			context.setInputLength((long) prompt.getInstructions().get(0).getText().length());
+		}
+
+		return Observation.createNotStarted(observationConvention, () -> context, observationRegistry).observe(() -> {
+			try {
+				DashScopeSpeechSynthesisApi.Request request = createRequest(prompt);
+				return api.streamOut(request).map(audioBuffer -> {
+					SpeechSynthesisOutput output = new SpeechSynthesisOutput(audioBuffer);
+					SpeechSynthesisResult result = new SpeechSynthesisResult(output);
+					SpeechSynthesisResponse response = new SpeechSynthesisResponse(result);
+					if (response != null && response.getResult() != null && response.getResult().getOutput() != null) {
+						context.setOutputLength((long) response.getResult().getOutput().getAudio().remaining());
+					}
+					return response;
+				});
+			}
+			catch (Exception e) {
+				context.setError(e);
+				throw new RuntimeException(e);
+			}
+		});
 	}
 
 	public DashScopeSpeechSynthesisApi.Request createRequest(SpeechSynthesisPrompt prompt) {
 		DashScopeSpeechSynthesisOptions options = DashScopeSpeechSynthesisOptions.builder().build();
 		if (prompt.getOptions() != null) {
-			DashScopeSpeechSynthesisOptions runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
-					SpeechSynthesisOptions.class, DashScopeSpeechSynthesisOptions.class);
-
-			options = ModelOptionsUtils.merge(runtimeOptions, options, DashScopeSpeechSynthesisOptions.class);
+			options = ModelOptionsUtils.merge(prompt.getOptions(), options, DashScopeSpeechSynthesisOptions.class);
 		}
-
-		options = ModelOptionsUtils.merge(options, this.options, DashScopeSpeechSynthesisOptions.class);
+		options = ModelOptionsUtils.merge(options, this.defaultOptions, DashScopeSpeechSynthesisOptions.class);
 
 		return new DashScopeSpeechSynthesisApi.Request(
 				new DashScopeSpeechSynthesisApi.Request.RequestHeader("run-task", UUID.randomUUID().toString(), "out"),
@@ -102,10 +173,9 @@ public class DashScopeSpeechSynthesisModel implements SpeechSynthesisModel {
 								options.getEnableWordTimestamp())));
 	}
 
-	private SpeechSynthesisResponse toResponse(DashScopeSpeechSynthesisApi.Response apiResponse) {
-		SpeechSynthesisOutput output = new SpeechSynthesisOutput(apiResponse.getAudio());
-		SpeechSynthesisResult result = new SpeechSynthesisResult(output);
-		return new SpeechSynthesisResponse(result);
+	public void setObservationConvention(DashScopeAudioObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
 	}
 
 }
