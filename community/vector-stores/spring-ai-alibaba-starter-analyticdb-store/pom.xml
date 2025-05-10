@@ -26,7 +26,7 @@
     </parent>
 
     <name>Spring AI Alibaba Starter Store AnalyticDB</name>
-    <artifactId>spring-ai-alibaba-starter-analyticdb-store</artifactId>
+    <artifactId>spring-ai-alibaba-starter-store-analyticdb</artifactId>
     <packaging>jar</packaging>
 
     <properties>
