@@ -79,6 +79,14 @@ public class DashScopeWebSocketClient extends WebSocketListener {
 		return flux;
 	}
 
+	public ByteBuffer callBinaryOut(String text) {
+		ByteBuffer[] result = new ByteBuffer[1];
+		Flux<ByteBuffer> flux = streamBinaryOut(text);
+		flux.blockFirst();
+		flux.subscribe(buffer -> result[0] = buffer);
+		return result[0];
+	}
+
 	public Flux<String> streamTextOut(Flux<ByteBuffer> binary) {
 		Flux<String> flux = Flux.<String>create(emitter -> {
 			this.text_emitter = emitter;
