@@ -488,4 +488,27 @@ public class StateGraphTest {
 		assertIterableEquals(sortMap(expected), sortMap(result.get().data()));
 	}
 
+	public OverAllStateFactory overAllStateFactory() {
+		return () -> new OverAllState().registerKeyAndStrategy("prop1", (o, o2) -> o2);
+	}
+
+	@Test
+	public void testCreateStateGraph() throws Exception {
+		StateGraph workflow = new StateGraph(overAllStateFactory()).addEdge(START, "agent_1")
+			.addNode("agent_1", node_async(state -> {
+				log.info("agent_1\n{}", state);
+				return Map.of("prop1", "test");
+			}))
+			.addEdge("agent_1", END);
+
+		CompiledGraph app = workflow.compile();
+
+		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+		System.out.println("result = " + result);
+		assertTrue(result.isPresent());
+
+		Map<String, String> expected = Map.of("input", "test1", "prop1", "test");
+		assertIterableEquals(sortMap(expected), sortMap(result.get().data()));
+	}
+
 }
