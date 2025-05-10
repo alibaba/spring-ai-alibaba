@@ -78,6 +78,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-function-calling-dingtalk</finalName>
+        <finalName>spring-ai-alibaba-starter-tool-calling-dingtalk</finalName>
     </build>
 </project>
