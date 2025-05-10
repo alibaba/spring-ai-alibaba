@@ -51,7 +51,7 @@ public class DashScopeSpeechSynthesisModel implements SpeechSynthesisModel {
 
 	private final ObservationRegistry observationRegistry;
 
-	private DashScopeAudioObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
+	private final DashScopeAudioObservationConvention observationConvention;
 
 	public DashScopeSpeechSynthesisModel(DashScopeSpeechSynthesisApi api) {
 		this(api, DashScopeSpeechSynthesisOptions.builder().withModel("sambert-zhichu-v1").build());
@@ -73,6 +73,7 @@ public class DashScopeSpeechSynthesisModel implements SpeechSynthesisModel {
 		this.defaultOptions = defaultOptions;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
+		this.observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 	}
 
 	@Override
@@ -171,11 +172,6 @@ public class DashScopeSpeechSynthesisModel implements SpeechSynthesisModel {
 								options.getSampleRate(), options.getSpeed(), options.getResponseFormat().getValue(),
 								options.getPitch(), options.getEnablePhonemeTimestamp(),
 								options.getEnableWordTimestamp())));
-	}
-
-	public void setObservationConvention(DashScopeAudioObservationConvention observationConvention) {
-		Assert.notNull(observationConvention, "observationConvention cannot be null");
-		this.observationConvention = observationConvention;
 	}
 
 }
