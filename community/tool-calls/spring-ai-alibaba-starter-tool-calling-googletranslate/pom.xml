@@ -68,6 +68,6 @@
 
 
     <build>
-        <finalName>spring-ai-alibaba-tool-calling-googletranslate</finalName>
+        <finalName>spring-ai-alibaba-starter-tool-calling-googletranslate</finalName>
     </build>
 </project>
