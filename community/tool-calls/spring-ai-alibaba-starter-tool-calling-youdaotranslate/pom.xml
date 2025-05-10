@@ -62,6 +62,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-tool-calling-youdaotranslate</finalName>
+        <finalName>spring-ai-alibaba-starter-tool-calling-youdaotranslate</finalName>
     </build>
 </project>

@@ -72,6 +72,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-tool-calling-bingsearch</finalName>
+        <finalName>spring-ai-alibaba-starter-tool-calling-bingsearch</finalName>
     </build>
 </project>
