@@ -95,6 +95,19 @@ public class DashScopeSpeechSynthesisApi {
     }
     // @formatter:on
 
+	public Response call(Request request) {
+		try {
+			String message = (new ObjectMapper()).writeValueAsString(request);
+			ByteBuffer audio = this.webSocketClient.callBinaryOut(message);
+			Response response = new Response();
+			response.audio = audio;
+			return response;
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	public Flux<ByteBuffer> streamOut(Request request) {
 		try {
 			String message = (new ObjectMapper()).writeValueAsString(request);
