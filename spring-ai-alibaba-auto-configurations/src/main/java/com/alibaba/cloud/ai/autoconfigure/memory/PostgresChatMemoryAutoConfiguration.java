@@ -42,7 +42,7 @@ public class PostgresChatMemoryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	ChatMemoryRepository postgresChatMemoryRepository(JdbcTemplate jdbcTemplate) {
+	PostgresChatMemoryRepository postgresChatMemoryRepository(JdbcTemplate jdbcTemplate) {
 		logger.info("Configuring PostgreSQL chat memory repository");
 		return PostgresChatMemoryRepository.postgresBuilder().jdbcTemplate(jdbcTemplate).build();
 	}

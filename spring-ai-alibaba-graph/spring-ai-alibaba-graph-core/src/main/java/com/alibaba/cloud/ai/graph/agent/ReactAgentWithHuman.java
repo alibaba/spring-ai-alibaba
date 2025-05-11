@@ -15,6 +15,11 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
+
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphStateException;
@@ -27,18 +32,14 @@ import com.alibaba.cloud.ai.graph.exception.GraphInterruptException;
 import com.alibaba.cloud.ai.graph.node.HumanNode;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.util.StringUtils;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Function;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -71,7 +72,7 @@ public class ReactAgentWithHuman {
 
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
-	public ReactAgentWithHuman(String prompt, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations)
+	public ReactAgentWithHuman(String prompt, ChatClient chatClient, List<ToolCallback> tools, int maxIterations)
 			throws GraphStateException {
 		this.llmNode = LlmNode.builder()
 			.chatClient(chatClient)
@@ -83,7 +84,7 @@ public class ReactAgentWithHuman {
 		this.graph = initGraph();
 	}
 
-	public ReactAgentWithHuman(String prompt, ChatClient chatClient, List<FunctionCallback> tools, int maxIterations,
+	public ReactAgentWithHuman(String prompt, ChatClient chatClient, List<ToolCallback> tools, int maxIterations,
 			OverAllState state, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc,
 			Function<OverAllState, Boolean> shouldInterruptFunc) throws GraphStateException {
 		this.llmNode = LlmNode.builder()
@@ -259,7 +260,7 @@ public class ReactAgentWithHuman {
 
 		private String prompt;
 
-		private List<FunctionCallback> tools;
+		private List<ToolCallback> tools;
 
 		private ToolCallbackResolver resolver;
 
@@ -283,7 +284,7 @@ public class ReactAgentWithHuman {
 			return this;
 		}
 
-		public Builder tools(List<FunctionCallback> tools) {
+		public Builder tools(List<ToolCallback> tools) {
 			this.tools = tools;
 			return this;
 		}

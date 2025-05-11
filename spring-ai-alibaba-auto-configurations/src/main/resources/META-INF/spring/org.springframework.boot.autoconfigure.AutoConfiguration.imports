@@ -6,3 +6,4 @@ com.alibaba.cloud.ai.autoconfigure.memory.MysqlChatMemoryAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.memory.OracleChatMemoryAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.memory.PostgresChatMemoryAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.memory.SqlServerChatMemoryAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.memory.RedisChatMemoryAutoConfiguration

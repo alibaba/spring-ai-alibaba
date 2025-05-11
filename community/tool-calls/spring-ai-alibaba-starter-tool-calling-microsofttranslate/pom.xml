@@ -66,6 +66,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-tool-calling-microsofttranslate</finalName>
+        <finalName>spring-ai-alibaba-starter-tool-calling-microsofttranslate</finalName>
     </build>
 </project>
