@@ -100,27 +100,30 @@ class AdminEvents {
      */
     handleAddTool() {
         const availableTools = agentConfigModel.availableTools;
+        // currentTools are the keys/names of tools currently displayed in the agent's tool list
+        const currentTools = Array.from(document.querySelectorAll('.tool-list .tool-item .tool-name'))
+            .map(item => item.textContent);
+            
         if (availableTools && availableTools.length > 0) {
-            const currentTools = Array.from(document.querySelectorAll('.tool-item'))
-                .map(item => item.querySelector('.tool-name').textContent);
-            
-            // 检查是否还有可用工具未添加
-            const hasNewTools = availableTools.some(tool => !currentTools.includes(tool.key));
-            
-            if (hasNewTools) {
-                // 传递所有可用工具，同时也传递当前工具列表，以便在对话框中标记哪些已添加
-                adminUI.showToolSelectionDialog(availableTools, currentTools, (selectedTool) => {
-                    const toolList = document.querySelector('.tool-list');
-                    const toolHtml = `
-                        <div class="tool-item">
-                            <span class="tool-name">${selectedTool.key}</span>
-                        </div>
-                    `;
-                    toolList.insertAdjacentHTML('beforeend', toolHtml);
+            // The onSelect callback now receives the complete list of tools that should be active.
+            adminUI.showToolSelectionDialog(availableTools, currentTools, (finalSelectedToolsArray) => {
+                const toolList = document.querySelector('.tool-list');
+                toolList.innerHTML = ''; // Clear the current list
+
+                finalSelectedToolsArray.forEach(selectedTool => {
+                    // Assuming selectedTool is an object and has a 'key' property for its name/identifier.
+                    // Adjust 'selectedTool.key' if the actual property name is different (e.g., name, id).
+                    const toolName = selectedTool.key || selectedTool.name; // Use key, fallback to name
+                    if (toolName) {
+                        const toolHtml = `
+                            <div class="tool-item">
+                                <span class="tool-name">${toolName}</span>
+                            </div>
+                        `;
+                        toolList.insertAdjacentHTML('beforeend', toolHtml);
+                    }
                 });
-            } else {
-                adminUI.showError('没有更多可用的工具');
-            }
+            });
         } else {
             adminUI.showError('工具列表未加载或为空');
         }
