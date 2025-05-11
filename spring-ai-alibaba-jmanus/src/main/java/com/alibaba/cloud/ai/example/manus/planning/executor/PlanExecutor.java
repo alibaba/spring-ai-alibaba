@@ -66,6 +66,8 @@ public class PlanExecutor {
 	 * @return 执行结果
 	 */
 	public void executeAllSteps(ExecutionContext context) {
+		
+
 		recordPlanExecutionStart(context);
 		ExecutionPlan plan = context.getPlan();
 		List<ExecutionStep> steps = plan.getSteps();
