@@ -15,20 +15,21 @@
  */
 package com.alibaba.cloud.ai.graph.node;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.tool.resolution.ToolCallbackResolver;
-import org.springframework.util.StringUtils;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
+
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+import org.springframework.util.StringUtils;
 
 public class ToolNode implements NodeAction {
 
@@ -36,7 +37,7 @@ public class ToolNode implements NodeAction {
 
 	private String outputKey;
 
-	private List<FunctionCallback> toolCallbacks = new ArrayList<>();
+	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	private AssistantMessage assistantMessage;
 
@@ -46,12 +47,12 @@ public class ToolNode implements NodeAction {
 		this.toolCallbackResolver = resolver;
 	}
 
-	public ToolNode(List<FunctionCallback> toolCallbacks, ToolCallbackResolver resolver) {
+	public ToolNode(List<ToolCallback> toolCallbacks, ToolCallbackResolver resolver) {
 		this.toolCallbacks = toolCallbacks;
 		this.toolCallbackResolver = resolver;
 	}
 
-	void setToolCallbacks(List<FunctionCallback> toolCallbacks) {
+	void setToolCallbacks(List<ToolCallback> toolCallbacks) {
 		this.toolCallbacks = toolCallbacks;
 	}
 
@@ -89,7 +90,7 @@ public class ToolNode implements NodeAction {
 			String toolName = toolCall.name();
 			String toolArgs = toolCall.arguments();
 
-			FunctionCallback toolCallback = this.resolve(toolName);
+			ToolCallback toolCallback = this.resolve(toolName);
 
 			String toolResult = toolCallback.call(toolArgs, new ToolContext(Map.of("state", state)));
 			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName, toolResult));
@@ -97,9 +98,9 @@ public class ToolNode implements NodeAction {
 		return new ToolResponseMessage(toolResponses, Map.of());
 	}
 
-	private FunctionCallback resolve(String toolName) {
+	private ToolCallback resolve(String toolName) {
 		return toolCallbacks.stream()
-			.filter(callback -> callback.getName().equals(toolName))
+			.filter(callback -> callback.getToolDefinition().name().equals(toolName))
 			.findFirst()
 			.orElseGet(() -> toolCallbackResolver.resolve(toolName));
 
@@ -115,7 +116,7 @@ public class ToolNode implements NodeAction {
 
 		private String outputKey;
 
-		private List<FunctionCallback> toolCallbacks = new ArrayList<>();
+		private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 		private List<String> toolNames = new ArrayList<>();
 
@@ -134,7 +135,7 @@ public class ToolNode implements NodeAction {
 			return this;
 		}
 
-		public Builder toolCallbacks(List<FunctionCallback> toolCallbacks) {
+		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
 			this.toolCallbacks = toolCallbacks;
 			return this;
 		}
