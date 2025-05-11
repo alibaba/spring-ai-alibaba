@@ -44,6 +44,8 @@ public class DynamicNacosToolDefinitionV3 implements ToolDefinition {
 
 	private Object inputSchema;
 
+	private Object toolsMeta;
+
 	public DynamicNacosToolDefinitionV3() {
 	}
 
@@ -58,7 +60,7 @@ public class DynamicNacosToolDefinitionV3 implements ToolDefinition {
 
 	public DynamicNacosToolDefinitionV3(final String name, final String description, final Object inputSchema,
 			final String version, final String protocol, final Object remoteServerConfig,
-			final Object localServerConfig, final Object credentials, final Boolean enabled) {
+			final Object localServerConfig, final Object credentials, final Object toolsMeta, final Boolean enabled) {
 		Assert.hasText(name, "name cannot be null or empty");
 		Assert.hasText(description, "description cannot be null or empty");
 		Assert.notNull(inputSchema, "inputSchema cannot be null or empty");
@@ -70,6 +72,7 @@ public class DynamicNacosToolDefinitionV3 implements ToolDefinition {
 		this.remoteServerConfig = remoteServerConfig;
 		this.localServerConfig = localServerConfig;
 		this.credentials = credentials;
+		this.toolsMeta = toolsMeta;
 		this.enabled = enabled;
 	}
 
@@ -161,6 +164,14 @@ public class DynamicNacosToolDefinitionV3 implements ToolDefinition {
 		this.protocol = protocol;
 	}
 
+	public Object getToolsMeta() {
+		return toolsMeta;
+	}
+
+	public void setToolsMeta(final Object toolsMeta) {
+		this.toolsMeta = toolsMeta;
+	}
+
 	public static final class Builder {
 
 		private String name;
@@ -180,6 +191,8 @@ public class DynamicNacosToolDefinitionV3 implements ToolDefinition {
 		private Boolean enabled;
 
 		private Object inputSchema;
+
+		private Object toolsMeta;
 
 		private Builder() {
 		}
@@ -229,13 +242,19 @@ public class DynamicNacosToolDefinitionV3 implements ToolDefinition {
 			return this;
 		}
 
+		public DynamicNacosToolDefinitionV3.Builder toolsMeta(final Object toolsMeta) {
+			this.toolsMeta = toolsMeta;
+			return this;
+		}
+
 		public ToolDefinition build() {
 			if (!StringUtils.isNoneBlank(this.description)) {
 				this.description = ToolUtils.getToolDescriptionFromName(this.name);
 			}
 
 			return new DynamicNacosToolDefinitionV3(this.name, this.description, this.inputSchema, this.version,
-					this.protocol, this.remoteServerConfig, this.localServerConfig, this.credentials, this.enabled);
+					this.protocol, this.remoteServerConfig, this.localServerConfig, this.credentials, this.toolsMeta,
+					this.enabled);
 		}
 
 	}

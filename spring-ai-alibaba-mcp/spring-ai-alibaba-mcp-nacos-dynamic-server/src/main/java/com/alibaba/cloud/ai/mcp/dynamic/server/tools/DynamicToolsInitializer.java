@@ -115,11 +115,30 @@ public class DynamicToolsInitializer {
 					if (toolSpec != null) {
 						Map<String, Object> toolSpecMap = JacksonUtils.toObj(JacksonUtils.toJson(toolSpec), Map.class);
 						List<Map<String, Object>> tools = (List<Map<String, Object>>) toolSpecMap.get("tools");
+						Map<String, Object> toolsMeta = (Map<String, Object>) toolSpecMap.get("toolsMeta");
 						List<ToolCallback> toolCallbacks = new ArrayList<>();
 						for (Map<String, Object> tool : tools) {
 							String toolName = (String) tool.get("name");
 							String toolDescription = (String) tool.get("description");
 							Object inputSchema = tool.get("inputSchema");
+							Object metaInfo = toolsMeta.getOrDefault(toolName, new Object());
+
+							// 判断 metaInfo.enabled 是否为 true
+							boolean enabled = false;
+							if (metaInfo instanceof Map) {
+								Object enabledObj = ((Map<?, ?>) metaInfo).get("enabled");
+								if (enabledObj instanceof Boolean) {
+									enabled = (Boolean) enabledObj;
+								}
+								else if (enabledObj instanceof String) {
+									enabled = Boolean.parseBoolean((String) enabledObj);
+								}
+							}
+							if (!enabled) {
+								logger.info("Tool {} is disabled by metaInfo, skipping.", toolName);
+								continue;
+							}
+
 							ToolDefinition toolDefinition = DynamicNacosToolDefinitionV3.builder()
 								.name(toolName)
 								.description(toolDescription)
@@ -127,6 +146,7 @@ public class DynamicToolsInitializer {
 								.protocol(protocol)
 								.remoteServerConfig(remoteServerConfig)
 								.localServerConfig(localeServerConfig)
+								.toolsMeta(metaInfo)
 								.build();
 							toolCallbacks.add(new DynamicNacosToolCallbackV3(toolDefinition));
 						}
