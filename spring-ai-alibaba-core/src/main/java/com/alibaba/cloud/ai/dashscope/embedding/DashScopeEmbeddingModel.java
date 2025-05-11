@@ -27,7 +27,12 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.embedding.*;
+import org.springframework.ai.embedding.AbstractEmbeddingModel;
+import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingRequest;
+import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
@@ -123,7 +128,6 @@ public class DashScopeEmbeddingModel extends AbstractEmbeddingModel {
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(request)
 			.provider(DashScopeApiConstants.PROVIDER_NAME)
-			.requestOptions(requestOptions)
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION

@@ -26,7 +26,7 @@
     </parent>
 
     <name>Spring AI Alibaba Starter Store AnalyticDB</name>
-    <artifactId>spring-ai-alibaba-starter-analyticdb-store</artifactId>
+    <artifactId>spring-ai-alibaba-starter-store-analyticdb</artifactId>
     <packaging>jar</packaging>
 
     <properties>
@@ -52,12 +52,12 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-core</artifactId>
+            <artifactId>spring-ai-vector-store</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
 
         <dependency>
