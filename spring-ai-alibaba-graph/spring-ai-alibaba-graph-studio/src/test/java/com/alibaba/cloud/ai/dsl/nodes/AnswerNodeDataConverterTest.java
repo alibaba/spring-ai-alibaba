@@ -63,7 +63,7 @@ public class AnswerNodeDataConverterTest {
 		assertEquals(1, inputs.size());
 		assertEquals("1733282983968", inputs.get(0).getNamespace());
 		assertEquals("output", inputs.get(0).getName());
-		log.info("answer node dify dsl parse: " + answerNodeData);
+		log.info("answer node dify dsl parse: {}", answerNodeData);
 	}
 
 	@Test
@@ -75,7 +75,7 @@ public class AnswerNodeDataConverterTest {
 		assertNotNull(answerNodeDataMap);
 		assertEquals("答案是：{{#1733282983968.output#}}", answerNodeDataMap.get("answer"));
 		String answerNodeDataString = serializer.dump(answerNodeDataMap);
-		log.info("answer node dify dsl dump: " + answerNodeDataString);
+		log.info("answer node dify dsl dump: {}", answerNodeDataString);
 	}
 
 	/**
@@ -96,7 +96,7 @@ public class AnswerNodeDataConverterTest {
 		assertEquals(1, inputs.size());
 		assertEquals("llm", inputs.get(0).getNamespace());
 		assertEquals("text", inputs.get(0).getName());
-		log.info("answer node custom dsl parse: " + answerNodeData);
+		log.info("answer node custom dsl parse: {}", answerNodeData);
 	}
 
 	@Test
@@ -113,7 +113,7 @@ public class AnswerNodeDataConverterTest {
 		assertEquals("llm", inputMaps.get(0).get("namespace"));
 		assertEquals("text", inputMaps.get(0).get("name"));
 		String answerNodeDataString = serializer.dump(answerNodeDataMap);
-		log.info("answer node custom dsl dump: " + answerNodeDataString);
+		log.info("answer node custom dsl dump: {}", answerNodeDataString);
 	}
 
 }

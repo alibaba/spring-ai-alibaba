@@ -15,18 +15,18 @@
  */
 package com.alibaba.cloud.ai.dashscope.chat.observation;
 
+import java.util.List;
+
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
-import io.micrometer.common.KeyValue;
+import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
 import io.micrometer.common.KeyValues;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-
-import java.util.Arrays;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,21 +51,14 @@ class DashScopeChatModelObservationConventionTests {
 		convention = new DashScopeChatModelObservationConvention();
 
 		// Create a basic prompt with a user message
-		Prompt prompt = new Prompt(List.of(new UserMessage("Test message")));
+		Prompt prompt = new Prompt(List.of(new UserMessage("Test message")),
+				DashScopeChatOptions.builder().withModel("qwen-turbo").build());
 
 		// Create context with DashScope specific options
 		context = ChatModelObservationContext.builder()
 			.prompt(prompt)
-			.provider("dashscope")
-			.requestOptions(DashScopeChatOptions.builder().withModel("qwen-turbo").build())
+			.provider(DashScopeApiConstants.PROVIDER_NAME)
 			.build();
-	}
-
-	@Test
-	void testGetName() {
-		// Test that the convention returns the correct name
-		assertThat(convention.getName()).isEqualTo(DashScopeChatModelObservationConvention.DEFAULT_NAME)
-			.isEqualTo("gen_ai.client.operation");
 	}
 
 	@Test

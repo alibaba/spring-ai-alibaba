@@ -55,7 +55,7 @@ public class CustomerServiceController {
 		public String apply(OverAllState state) throws Exception {
 
 			String classifierOutput = (String) state.value("classifier_output").orElse("");
-			logger.info("classifierOutput: " + classifierOutput);
+			logger.info("classifierOutput: {}", classifierOutput);
 
 			if (classifierOutput.contains("positive")) {
 				return "positive";
@@ -71,7 +71,7 @@ public class CustomerServiceController {
 		public String apply(OverAllState state) throws Exception {
 
 			String classifierOutput = (String) state.value("classifier_output").orElse("");
-			logger.info("classifierOutput: " + classifierOutput);
+			logger.info("classifierOutput: {}", classifierOutput);
 
 			Map<String, String> classifierMap = new HashMap<>();
 			classifierMap.put("after-sale", "after-sale");

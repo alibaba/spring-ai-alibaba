@@ -67,7 +67,7 @@ public class StartNodeDataConverterTest {
 		assertEquals("useLLM", startInputs.get(1).getVariable());
 		assertEquals("paragraph", startInputs.get(0).getType());
 		assertEquals("select", startInputs.get(1).getType());
-		log.info("startNodeData dify dsl parse: " + startNodeData);
+		log.info("startNodeData dify dsl parse: {}", startNodeData);
 	}
 
 	@Test
@@ -96,7 +96,7 @@ public class StartNodeDataConverterTest {
 		assertEquals(2, options.size());
 		assertEquals("yes", options.get(0));
 		assertEquals("no", options.get(1));
-		log.info("startNodeData dify dsl dump: " + serializer.dump(difyStartNodeDataMap));
+		log.info("startNodeData dify dsl dump: {}", serializer.dump(difyStartNodeDataMap));
 	}
 
 	/**
@@ -128,7 +128,7 @@ public class StartNodeDataConverterTest {
 		assertEquals("select", startInputs.get(1).getType());
 		assertEquals("yes", startInputs.get(1).getOptions().get(0));
 		assertEquals("no", startInputs.get(1).getOptions().get(1));
-		log.info("startNodeData custom dsl parse: " + startNodeData);
+		log.info("startNodeData custom dsl parse: {}", startNodeData);
 	}
 
 	@Test
@@ -160,7 +160,7 @@ public class StartNodeDataConverterTest {
 		assertEquals(2, options.size());
 		assertEquals("yes", options.get(0));
 		assertEquals("no", options.get(1));
-		log.info("startNodeData custom dsl dump: " + serializer.dump(customStartNodeDataMap));
+		log.info("startNodeData custom dsl dump: {}", serializer.dump(customStartNodeDataMap));
 	}
 
 }
