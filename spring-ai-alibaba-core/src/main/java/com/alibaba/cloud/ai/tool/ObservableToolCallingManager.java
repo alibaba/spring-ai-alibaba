@@ -35,10 +35,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -103,33 +100,24 @@ public class ObservableToolCallingManager implements ToolCallingManager {
 	public List<ToolDefinition> resolveToolDefinitions(ToolCallingChatOptions chatOptions) {
 		Assert.notNull(chatOptions, "chatOptions cannot be null");
 
-		List<FunctionCallback> toolCallbacks = new ArrayList<>(chatOptions.getToolCallbacks());
+		List<ToolCallback> toolCallbacks = new ArrayList<>(chatOptions.getToolCallbacks());
 		for (String toolName : chatOptions.getToolNames()) {
 			// Skip the tool if it is already present in the request toolCallbacks.
 			// That might happen if a tool is defined in the options
 			// both as a ToolCallback and as a tool name.
-			if (chatOptions.getToolCallbacks().stream().anyMatch(tool -> tool.getName().equals(toolName))) {
+			if (chatOptions.getToolCallbacks()
+					.stream()
+					.anyMatch(tool -> tool.getToolDefinition().name().equals(toolName))) {
 				continue;
 			}
-			FunctionCallback toolCallback = toolCallbackResolver.resolve(toolName);
+			ToolCallback toolCallback = this.toolCallbackResolver.resolve(toolName);
 			if (toolCallback == null) {
 				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
 			}
 			toolCallbacks.add(toolCallback);
 		}
 
-		return toolCallbacks.stream().map(functionCallback -> {
-			if (functionCallback instanceof ToolCallback toolCallback) {
-				return toolCallback.getToolDefinition();
-			}
-			else {
-				return ToolDefinition.builder()
-					.name(functionCallback.getName())
-					.description(functionCallback.getDescription())
-					.inputSchema(functionCallback.getInputTypeSchema())
-					.build();
-			}
-		}).toList();
+		return toolCallbacks.stream().map(toolCallback -> toolCallback.getToolDefinition()).toList();
 	}
 
 	@Override
@@ -137,25 +125,16 @@ public class ObservableToolCallingManager implements ToolCallingManager {
 		Assert.notNull(prompt, "prompt cannot be null");
 		Assert.notNull(chatResponse, "chatResponse cannot be null");
 
-		// According to
-		// org.springframework.ai.openai.api.OpenAiStreamFunctionCallingHelper.merge, we
-		// couldn't handle more than one tool calls in a single completion because of
-		// missing the
-		// extraction of the tool call's index.
 		Optional<Generation> toolCallGeneration = chatResponse.getResults()
-			.stream()
-			.filter(g -> !CollectionUtils.isEmpty(g.getOutput().getToolCalls()))
-			.findFirst();
+				.stream()
+				.filter(g -> !CollectionUtils.isEmpty(g.getOutput().getToolCalls()))
+				.findFirst();
 
 		if (toolCallGeneration.isEmpty()) {
 			throw new IllegalStateException("No tool call requested by the chat model");
 		}
 
 		AssistantMessage assistantMessage = toolCallGeneration.get().getOutput();
-
-		if (assistantMessage.getToolCalls().size() > 1) {
-			assistantMessage = mergeToolCalls(assistantMessage);
-		}
 
 		ToolContext toolContext = buildToolContext(prompt, assistantMessage);
 
@@ -166,9 +145,101 @@ public class ObservableToolCallingManager implements ToolCallingManager {
 				assistantMessage, internalToolExecutionResult.toolResponseMessage());
 
 		return ToolExecutionResult.builder()
-			.conversationHistory(conversationHistory)
-			.returnDirect(internalToolExecutionResult.returnDirect())
-			.build();
+				.conversationHistory(conversationHistory)
+				.returnDirect(internalToolExecutionResult.returnDirect())
+				.build();
+	}
+
+	private static ToolContext buildToolContext(Prompt prompt, AssistantMessage assistantMessage) {
+		Map<String, Object> toolContextMap = Map.of();
+
+		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions
+				&& !CollectionUtils.isEmpty(toolCallingChatOptions.getToolContext())) {
+			toolContextMap = new HashMap<>(toolCallingChatOptions.getToolContext());
+
+			List<Message> messageHistory = new ArrayList<>(prompt.copy().getInstructions());
+			messageHistory.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
+					assistantMessage.getToolCalls()));
+
+			toolContextMap.put(ToolContext.TOOL_CALL_HISTORY,
+					buildConversationHistoryBeforeToolExecution(prompt, assistantMessage));
+		}
+
+		return new ToolContext(toolContextMap);
+	}
+
+	private static List<Message> buildConversationHistoryBeforeToolExecution(Prompt prompt,
+			AssistantMessage assistantMessage) {
+		List<Message> messageHistory = new ArrayList<>(prompt.copy().getInstructions());
+		messageHistory.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
+				assistantMessage.getToolCalls()));
+		return messageHistory;
+	}
+
+	/**
+	 * Execute the tool call and return the response message.
+	 */
+	private InternalToolExecutionResult executeToolCall(Prompt prompt, AssistantMessage assistantMessage,
+			ToolContext toolContext) {
+		List<ToolCallback> toolCallbacks = List.of();
+		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+			toolCallbacks = toolCallingChatOptions.getToolCallbacks();
+		}
+
+		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
+
+		Boolean returnDirect = null;
+
+		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+
+			logger.debug("Executing tool call: {}", toolCall.name());
+
+			String toolName = toolCall.name();
+			String toolInputArguments = toolCall.arguments();
+
+			ToolCallback toolCallback = toolCallbacks.stream()
+					.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
+					.findFirst()
+					.orElseGet(() -> this.toolCallbackResolver.resolve(toolName));
+
+			if (toolCallback == null) {
+				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
+			}
+
+			if (returnDirect == null) {
+				returnDirect = toolCallback.getToolMetadata().returnDirect();
+			}
+			else {
+				returnDirect = returnDirect && toolCallback.getToolMetadata().returnDirect();
+			}
+
+			ArmsToolCallingObservationContext observationContext = ArmsToolCallingObservationContext.builder()
+					.toolCall(toolCall)
+					.description(toolCallback.getToolDefinition().description())
+					.returnDirect(returnDirect)
+					.build();
+
+			String toolResult = ArmsToolCallingObservationDocumentation.EXECUTE_TOOL_OPERATION
+					.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+							this.observationRegistry)
+					.observe(() -> {
+						String result;
+						try {
+							result = toolCallback.call(toolInputArguments, toolContext);
+						}
+						catch (ToolExecutionException ex) {
+							observationContext.setError(ex);
+							result = toolExecutionExceptionProcessor.process(ex);
+						}
+
+						observationContext.setToolResult(result);
+						return result;
+					});
+
+			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName, toolResult));
+		}
+
+		return new InternalToolExecutionResult(new ToolResponseMessage(toolResponses, Map.of()), returnDirect);
 	}
 
 	/**
@@ -205,109 +276,6 @@ public class ObservableToolCallingManager implements ToolCallingManager {
 		}
 		return new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(), toolCalls,
 				assistantMessage.getMedia());
-	}
-
-	private static ToolContext buildToolContext(Prompt prompt, AssistantMessage assistantMessage) {
-		Map<String, Object> toolContextMap = Map.of();
-
-		if (prompt.getOptions() instanceof FunctionCallingOptions functionOptions
-				&& !CollectionUtils.isEmpty(functionOptions.getToolContext())) {
-			toolContextMap = new HashMap<>(functionOptions.getToolContext());
-
-			List<Message> messageHistory = new ArrayList<>(prompt.copy().getInstructions());
-			messageHistory.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
-					assistantMessage.getToolCalls()));
-
-			toolContextMap.put(ToolContext.TOOL_CALL_HISTORY,
-					buildConversationHistoryBeforeToolExecution(prompt, assistantMessage));
-		}
-
-		return new ToolContext(toolContextMap);
-	}
-
-	private static List<Message> buildConversationHistoryBeforeToolExecution(Prompt prompt,
-			AssistantMessage assistantMessage) {
-		List<Message> messageHistory = new ArrayList<>(prompt.copy().getInstructions());
-		messageHistory.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
-				assistantMessage.getToolCalls()));
-		return messageHistory;
-	}
-
-	/**
-	 * Execute the tool call and return the response message. To ensure backward
-	 * compatibility, both {@link ToolCallback} and {@link FunctionCallback} are
-	 * supported.
-	 */
-	private InternalToolExecutionResult executeToolCall(Prompt prompt, AssistantMessage assistantMessage,
-			ToolContext toolContext) {
-		List<FunctionCallback> toolCallbacks = List.of();
-		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			toolCallbacks = toolCallingChatOptions.getToolCallbacks();
-		}
-		else if (prompt.getOptions() instanceof FunctionCallingOptions functionOptions) {
-			toolCallbacks = functionOptions.getFunctionCallbacks();
-		}
-
-		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
-
-		Boolean returnDirect = null;
-
-		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-
-			logger.debug("Executing tool call: {}", toolCall.name());
-
-			String toolName = toolCall.name();
-			String toolInputArguments = toolCall.arguments();
-
-			FunctionCallback toolCallback = toolCallbacks.stream()
-				.filter(tool -> toolName.equals(tool.getName()))
-				.findFirst()
-				.orElseGet(() -> toolCallbackResolver.resolve(toolName));
-
-			if (toolCallback == null) {
-				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
-			}
-
-			if (returnDirect == null && toolCallback instanceof ToolCallback callback) {
-				returnDirect = callback.getToolMetadata().returnDirect();
-			}
-			else if (toolCallback instanceof ToolCallback callback) {
-				returnDirect = returnDirect && callback.getToolMetadata().returnDirect();
-			}
-			else if (returnDirect == null) {
-				// This is a temporary solution to ensure backward compatibility with
-				// FunctionCallback.
-				// TODO: remove this block when FunctionCallback is removed.
-				returnDirect = false;
-			}
-
-			ArmsToolCallingObservationContext observationContext = ArmsToolCallingObservationContext.builder()
-				.toolCall(toolCall)
-				.description(toolCallback.getDescription())
-				.returnDirect(returnDirect)
-				.build();
-
-			String toolResult = ArmsToolCallingObservationDocumentation.EXECUTE_TOOL_OPERATION
-				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-						this.observationRegistry)
-				.observe(() -> {
-					String result;
-					try {
-						result = toolCallback.call(toolInputArguments, toolContext);
-					}
-					catch (ToolExecutionException ex) {
-						observationContext.setError(ex);
-						result = toolExecutionExceptionProcessor.process(ex);
-					}
-
-					observationContext.setToolResult(result);
-					return result;
-				});
-
-			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName, toolResult));
-		}
-
-		return new InternalToolExecutionResult(new ToolResponseMessage(toolResponses, Map.of()), returnDirect);
 	}
 
 	private List<Message> buildConversationHistoryAfterToolExecution(List<Message> previousMessages,
