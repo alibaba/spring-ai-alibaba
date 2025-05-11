@@ -70,6 +70,10 @@ public class SinaNewsService implements Function<SinaNewsService.Request, SinaNe
 		return new Response(hotEvents);
 	}
 
+	protected WebClient getWebClient() {
+		return WEB_CLIENT;
+	}
+
 	protected JsonNode fetchDataFromApi() {
 		return WEB_CLIENT.get()
 			.uri(API_URL)
