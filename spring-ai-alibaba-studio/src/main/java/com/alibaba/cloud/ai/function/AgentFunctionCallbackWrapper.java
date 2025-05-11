@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.function;
 
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,18 +25,18 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.resolution.TypeResolverHelper;
+import org.springframework.ai.util.json.schema.SchemaType;
 import org.springframework.util.Assert;
 
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
 @EqualsAndHashCode
-public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolContext, O>, FunctionCallback {
+public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolContext, O>, ToolCallback {
 
 	@Getter
 	private final String name;
@@ -87,6 +90,11 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 		return this.responseConverter.apply(response);
 	}
 
+	@Override
+	public ToolDefinition getToolDefinition() {
+		return ToolDefinition.builder().name(name).description(description).inputSchema(inputTypeSchema).build();
+	}
+
 	public String call(String functionArguments) {
 		I request = fromJson(functionArguments, inputType);
 		return andThen(responseConverter).apply(request, null);
@@ -130,7 +138,7 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 
 		private final Function<I, O> function;
 
-		private FunctionCallback.SchemaType schemaType;
+		private SchemaType schemaType;
 
 		private Function<O, String> responseConverter;
 
@@ -139,7 +147,7 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 		private ObjectMapper objectMapper;
 
 		public Builder(BiFunction<I, ToolContext, O> biFunction) {
-			this.schemaType = FunctionCallback.SchemaType.JSON_SCHEMA;
+			this.schemaType = SchemaType.JSON_SCHEMA;
 			this.responseConverter = ModelOptionsUtils::toJsonString;
 			this.objectMapper = (new ObjectMapper()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 				.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
@@ -150,7 +158,7 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 		}
 
 		public Builder(Function<I, O> function) {
-			this.schemaType = FunctionCallback.SchemaType.JSON_SCHEMA;
+			this.schemaType = SchemaType.JSON_SCHEMA;
 			this.responseConverter = ModelOptionsUtils::toJsonString;
 			this.objectMapper = (new ObjectMapper()).disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 				.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
@@ -195,7 +203,7 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 			return this;
 		}
 
-		public Builder<I, O> withSchemaType(FunctionCallback.SchemaType schemaType) {
+		public Builder<I, O> withSchemaType(SchemaType schemaType) {
 			Assert.notNull(schemaType, "SchemaType must not be null");
 			this.schemaType = schemaType;
 			return this;
@@ -216,7 +224,7 @@ public class AgentFunctionCallbackWrapper<I, O> implements BiFunction<I, ToolCon
 			}
 
 			if (inputTypeSchema == null) {
-				boolean upperCaseTypeValues = schemaType == FunctionCallback.SchemaType.OPEN_API_SCHEMA;
+				boolean upperCaseTypeValues = schemaType == SchemaType.OPEN_API_SCHEMA;
 				inputTypeSchema = ModelOptionsUtils.getJsonSchema(inputType, upperCaseTypeValues);
 			}
 

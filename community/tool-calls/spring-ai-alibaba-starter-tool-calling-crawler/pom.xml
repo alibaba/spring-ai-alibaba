@@ -56,6 +56,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-tool-calling-crewler</finalName>
+        <finalName>spring-ai-alibaba-starter-tool-calling-crewler</finalName>
     </build>
 </project>

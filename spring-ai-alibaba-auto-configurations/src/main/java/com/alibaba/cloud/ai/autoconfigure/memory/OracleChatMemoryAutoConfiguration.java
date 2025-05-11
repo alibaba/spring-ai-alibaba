@@ -42,7 +42,7 @@ public class OracleChatMemoryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	ChatMemoryRepository oracleChatMemoryRepository(JdbcTemplate jdbcTemplate) {
+	OracleChatMemoryRepository oracleChatMemoryRepository(JdbcTemplate jdbcTemplate) {
 		logger.info("Configuring Oracle chat memory repository");
 		return OracleChatMemoryRepository.oracleBuilder().jdbcTemplate(jdbcTemplate).build();
 	}
