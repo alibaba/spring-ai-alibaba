@@ -15,6 +15,10 @@
  */
 package com.alibaba.cloud.ai.toolcalling.baidusearch;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
+import com.alibaba.cloud.ai.toolcalling.common.ResponseHandler;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientConfig;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -27,12 +31,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 
 /**
@@ -46,65 +52,67 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 
 	private static final int MAX_RESULTS = 20;
 
-	private static final int Memory_Size = 5;
+	private static final int MEMORY_SIZE = 5;
 
-	private static final int Memory_Unit = 1024;
+	private static final int MEMORY_UNIT = 1024;
 
-	private static final int Max_Memory_In_MB = Memory_Size * Memory_Unit * Memory_Unit;
+	private static final int MAX_MEMORY_IN_MB = MEMORY_SIZE * MEMORY_UNIT * MEMORY_UNIT;
+
+	private static final String[] USER_AGENTS = {
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36" };
+
+	private static final int CONNECT_TIMEOUT_MILLIS = 5000;
+
+	private static final int RESPONSE_TIMEOUT_SECONDS = 10;
 
 	private final WebClient webClient;
 
 	public BaiduSearchService() {
-		this.webClient = WebClient.builder()
-			.defaultHeader(HttpHeaders.USER_AGENT,
-					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
-			.defaultHeader(HttpHeaders.ACCEPT,
-					"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
-			.defaultHeader(HttpHeaders.ACCEPT_ENCODING, "gzip, deflate")
-			.defaultHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
-			.defaultHeader(HttpHeaders.REFERER, "https://www.baidu.com/")
-			.defaultHeader(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9,ja;q=0.8")
-			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(Max_Memory_In_MB))
-			.build();
+		Map<String, String> headers = new HashMap<>();
+		String randomUserAgent = USER_AGENTS[ThreadLocalRandom.current().nextInt(USER_AGENTS.length)];
+		headers.put(HttpHeaders.USER_AGENT, randomUserAgent);
+		headers.put(HttpHeaders.REFERER, "https://www.baidu.com/");
+		headers.put(HttpHeaders.CONNECTION, "keep-alive");
+		headers.put(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9");
+		this.webClient = WebClientConfig.createDefaultWebClient(headers);
 	}
 
 	@Override
 	public BaiduSearchService.Response apply(BaiduSearchService.Request request) {
-		if (request == null || !StringUtils.hasText(request.query)) {
+		if (!CommonToolCallUtils.validateRequestParams(request, request.query)) {
 			return null;
 		}
 
-		int limit = request.limit == 0 ? MAX_RESULTS : request.limit;
+		return CommonToolCallUtils.handleServiceError("BaiduSearch", () -> {
+			int limit = request.limit == null ? MAX_RESULTS : request.limit;
+			String url = BAIDU_SEARCH_API_URL + request.query;
 
-		String url = BAIDU_SEARCH_API_URL + request.query;
-		try {
-			Mono<String> responseMono = webClient.get().uri(url).retrieve().bodyToMono(String.class);
-			String html = responseMono.block();
-			assert html != null;
+			String html = webClient.get()
+				.uri(url)
+				.acceptCharset(Charset.forName("UTF-8"))
+				.retrieve()
+				.bodyToMono(String.class)
+				.block();
 
-			List<SearchResult> results = parseHtml(html);
+			List<SearchResult> results = ResponseHandler.handleResponse(html, this::parseHtml, logger);
+
 			if (CollectionUtils.isEmpty(results)) {
 				return null;
 			}
 
 			logger.info("baidu search: {},result number:{}", request.query, results.size());
 			for (SearchResult d : results) {
-				logger.info(d.title() + "\n" + d.abstractText());
+				logger.info("{}\n{}", d.title(), d.abstractText());
 			}
 			return new Response(results.subList(0, Math.min(results.size(), limit)));
-		}
-		catch (Exception e) {
-			logger.error("failed to invoke baidu search caused by:{}", e.getMessage());
-			return null;
-		}
-
+		}, logger);
 	}
 
 	private List<SearchResult> parseHtml(String htmlContent) {
 		try {
 			Document doc = Jsoup.parse(htmlContent);
-			Element contentLeft = doc.selectFirst("div#content_left"); // 选择具有特定 ID 的 div
-			// 元素
+			Element contentLeft = doc.selectFirst("div#content_left");
 			Elements divContents = contentLeft.children();
 			List<SearchResult> listData = new ArrayList<>();
 
@@ -157,7 +165,7 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 					}
 				}
 				catch (Exception e) {
-					logger.error("failed to parse baidu search html,caused by:{}", e.getMessage());
+					logger.error("Failed to parse search result: {}", e.getMessage());
 					continue;
 				}
 
@@ -167,7 +175,7 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 			return listData;
 		}
 		catch (Exception e) {
-			logger.error("failed to parse baidu search html,caused by:{}", e.getMessage());
+			logger.error("Failed to parse HTML content: {}", e.getMessage());
 			return null;
 		}
 	}
@@ -175,10 +183,9 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonClassDescription("Baidu search API request")
 	public record Request(
-			@JsonProperty(required = true,
-					value = "query") @JsonPropertyDescription("The query keyword e.g. Alibaba") String query,
-			@JsonProperty(required = true,
-					value = "limit") @JsonPropertyDescription("The limit count of the number of returned results e.g. 20") int limit) {
+			@JsonProperty(required = true, value = "query") @JsonPropertyDescription("The search query") String query,
+			@JsonProperty(required = false,
+					value = "limit") @JsonPropertyDescription("Maximum number of results to return") Integer limit) {
 
 	}
 
