@@ -16,11 +16,7 @@
 package com.alibaba.cloud.ai.tool.observation;
 
 import io.micrometer.observation.Observation.Context;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.util.Assert;
 
 public class ArmsToolCallingObservationContext extends Context {
