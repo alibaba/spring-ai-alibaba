@@ -89,7 +89,8 @@ public class DashScopeImageOptions implements ImageOptions {
 	private Float refStrength;
 
 	/**
-	 * The format in which the generated images are returned. Must be one of url or b64_json.
+	 * The format in which the generated images are returned. Must be one of url or
+	 * b64_json.
 	 */
 	@JsonProperty("response_format")
 	private String responseFormat;

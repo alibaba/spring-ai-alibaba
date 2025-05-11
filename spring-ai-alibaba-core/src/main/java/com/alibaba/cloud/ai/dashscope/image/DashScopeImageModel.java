@@ -176,15 +176,11 @@ public class DashScopeImageModel implements ImageModel {
 		var output = asyncResp.output();
 		var results = output.results();
 		ImageResponseMetadata md = toMetadata(asyncResp);
-		List<ImageGeneration> gens = results == null
-				? List.of()
-				: results.stream()
-				.map(r -> new ImageGeneration(new Image(r.url(), null)))
-				.toList();
+		List<ImageGeneration> gens = results == null ? List.of()
+				: results.stream().map(r -> new ImageGeneration(new Image(r.url(), null))).toList();
 
 		return new ImageResponse(gens, md);
 	}
-
 
 	private DashScopeImageApi.DashScopeImageRequest constructImageRequest(ImagePrompt imagePrompt,
 			DashScopeImageOptions options) {
