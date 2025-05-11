@@ -28,9 +28,12 @@ import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.backoff.FixedBackOffPolicy;
+import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -79,6 +82,11 @@ public class DashScopeImageModel implements ImageModel {
 
 		this.dashScopeImageApi = dashScopeImageApi;
 		this.defaultOptions = options;
+		SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy(MAX_RETRY_COUNT);
+		FixedBackOffPolicy backOff = new FixedBackOffPolicy();
+		backOff.setBackOffPeriod(15_000L);
+		retryTemplate.setRetryPolicy(retryPolicy);
+		retryTemplate.setBackOffPolicy(backOff);
 		this.retryTemplate = retryTemplate;
 	}
 
@@ -89,34 +97,24 @@ public class DashScopeImageModel implements ImageModel {
 
 		String taskId = submitImageGenTask(request);
 		if (taskId == null) {
-			return new ImageResponse(List.of());
+			return new ImageResponse(List.of(), toMetadataEmpty());
 		}
 
-		int retryCount = 0;
-		while (retryCount < MAX_RETRY_COUNT) {
-			DashScopeImageApi.DashScopeImageAsyncReponse getResultResponse = getImageGenTask(taskId);
-			if (getResultResponse != null) {
-				DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput output = getResultResponse
-					.output();
-				String taskStatus = output.taskStatus();
-				switch (taskStatus) {
-					case "SUCCEEDED" -> {
-						return toImageResponse(output);
-					}
-					case "FAILED", "UNKNOWN" -> {
-						return new ImageResponse(List.of());
-					}
+		return retryTemplate.execute(ctx -> {
+			DashScopeImageApi.DashScopeImageAsyncReponse resp = getImageGenTask(taskId);
+			if (resp != null) {
+				String status = resp.output().taskStatus();
+				if ("SUCCEEDED".equals(status)) {
+					return toImageResponse(resp);
+				}
+				if ("FAILED".equals(status) || "UNKNOWN".equals(status)) {
+					return new ImageResponse(List.of(), toMetadata(resp));
 				}
 			}
-			try {
-				Thread.sleep(15000L);
-				retryCount++;
-			}
-			catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-		}
-		return new ImageResponse(List.of());
+			throw new RuntimeException("Image generation still pending");
+		}, context -> {
+			return new ImageResponse(List.of(), toMetadataTimeout(taskId));
+		});
 	}
 
 	public String submitImageGenTask(ImagePrompt request) {
@@ -174,19 +172,19 @@ public class DashScopeImageModel implements ImageModel {
 		this.defaultOptions = options;
 	}
 
-	private ImageResponse toImageResponse(
-			DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput output) {
-		List<DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseResult> genImageList = output
-			.results();
-		if (genImageList == null || genImageList.isEmpty()) {
-			return new ImageResponse(List.of());
-		}
-		List<ImageGeneration> imageGenerationList = genImageList.stream()
-			.map(entry -> new ImageGeneration(new Image(entry.url(), null)))
-			.toList();
+	private ImageResponse toImageResponse(DashScopeImageApi.DashScopeImageAsyncReponse asyncResp) {
+		var output = asyncResp.output();
+		var results = output.results();
+		ImageResponseMetadata md = toMetadata(asyncResp);
+		List<ImageGeneration> gens = results == null
+				? List.of()
+				: results.stream()
+				.map(r -> new ImageGeneration(new Image(r.url(), null)))
+				.toList();
 
-		return new ImageResponse(imageGenerationList);
+		return new ImageResponse(gens, md);
 	}
+
 
 	private DashScopeImageApi.DashScopeImageRequest constructImageRequest(ImagePrompt imagePrompt,
 			DashScopeImageOptions options) {
@@ -201,6 +199,42 @@ public class DashScopeImageModel implements ImageModel {
 						options.getRefMode(), options.getPromptExtend(), options.getWatermark(),
 						options.getSketchWeight(), options.getSketchExtraction(), options.getSketchColor(),
 						options.getMaskColor()));
+	}
+
+	private ImageResponseMetadata toMetadata(DashScopeImageApi.DashScopeImageAsyncReponse re) {
+		DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput out = re.output();
+		DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseTaskMetrics tm = out.taskMetrics();
+		DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseUsage usage = re.usage();
+
+		ImageResponseMetadata md = new ImageResponseMetadata();
+
+		if (usage != null) {
+			md.put("imageCount", usage.imageCount());
+		}
+		if (tm != null) {
+			md.put("taskTotal", tm.total());
+			md.put("taskSucceeded", tm.SUCCEEDED());
+			md.put("taskFailed", tm.FAILED());
+		}
+		md.put("requestId", re.requestId());
+		md.put("taskStatus", out.taskStatus());
+		md.put("code", out.code());
+		md.put("message", out.message());
+
+		return md;
+	}
+
+	private ImageResponseMetadata toMetadataEmpty() {
+		ImageResponseMetadata md = new ImageResponseMetadata();
+		md.put("taskStatus", "NO_TASK_ID");
+		return md;
+	}
+
+	private ImageResponseMetadata toMetadataTimeout(String taskId) {
+		ImageResponseMetadata md = new ImageResponseMetadata();
+		md.put("taskId", taskId);
+		md.put("taskStatus", "TIMED_OUT");
+		return md;
 	}
 
 }
