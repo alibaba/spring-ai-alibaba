@@ -17,25 +17,25 @@
 -->
 
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		 xmlns="http://maven.apache.org/POM/4.0.0"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<groupId>com.alibaba.cloud.ai</groupId>
-		<artifactId>spring-ai-alibaba</artifactId>
-		<version>${revision}</version>
-		<relativePath>../pom.xml</relativePath>
-	</parent>
+    <parent>
+        <groupId>com.alibaba.cloud.ai</groupId>
+        <artifactId>spring-ai-alibaba</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
 
-	<artifactId>spring-ai-alibaba-graph</artifactId>
-	<name>Spring AI Alibaba Graph</name>
-	<packaging>pom</packaging>
+    <artifactId>spring-ai-alibaba-graph</artifactId>
+    <name>Spring AI Alibaba Graph</name>
+    <packaging>pom</packaging>
 
-	<modules>
-		<module>spring-ai-alibaba-graph-core</module>
-		<module>spring-ai-alibaba-graph-studio</module>
-		<module>spring-ai-alibaba-graph-example</module>
-	</modules>
+    <modules>
+        <module>spring-ai-alibaba-graph-core</module>
+        <module>spring-ai-alibaba-graph-studio</module>
+        <module>spring-ai-alibaba-graph-example</module>
+    </modules>
 
 </project>

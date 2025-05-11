@@ -97,7 +97,7 @@ class DashScopeAgentApiTests {
 		lenient().when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
 
 		// Setup RestClient mock chain
-		lenient().when(restClientBuilder.baseUrl(any())).thenReturn(restClientBuilder);
+		lenient().when(restClientBuilder.baseUrl(any(String.class))).thenReturn(restClientBuilder);
 		lenient().when(restClientBuilder.defaultHeaders(any())).thenReturn(restClientBuilder);
 		lenient().when(restClientBuilder.defaultStatusHandler(any())).thenReturn(restClientBuilder);
 		lenient().when(restClientBuilder.build()).thenReturn(restClient);
