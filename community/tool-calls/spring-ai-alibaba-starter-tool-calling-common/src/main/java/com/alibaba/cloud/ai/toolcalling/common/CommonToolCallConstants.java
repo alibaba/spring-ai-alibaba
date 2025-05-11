@@ -67,10 +67,10 @@ public final class CommonToolCallConstants {
 
 	// Default exception handler for WebClient 4xx errors
 	public static final Function<ClientResponse, Mono<? extends Throwable>> DEFAULT_WEBCLIENT_4XX_EXCEPTION = response -> Mono
-			.error(new RuntimeException("Server error, code: " + response.statusCode().value()));
+		.error(new RuntimeException("Server error, code: " + response.statusCode().value()));
 
 	// Default exception handler for WebClient 5xx errors
 	public static final Function<ClientResponse, Mono<? extends Throwable>> DEFAULT_WEBCLIENT_5XX_EXCEPTION = response -> Mono
-			.error(new RuntimeException("Server error, code: " + response.statusCode().value()));
+		.error(new RuntimeException("Server error, code: " + response.statusCode().value()));
 
 }

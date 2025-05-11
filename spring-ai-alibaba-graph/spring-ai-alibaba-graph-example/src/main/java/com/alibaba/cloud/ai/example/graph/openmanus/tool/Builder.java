@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.example.graph.openmanus.tool;
 
 import java.util.List;
 
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.ToolCallback;
 
 public class Builder {
@@ -32,11 +31,11 @@ public class Builder {
 				FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback());
 	}
 
-	public static List<FunctionCallback> getFunctionCallbackList() {
+	public static List<ToolCallback> getFunctionCallbackList() {
 		return List.of(PlanningTool.getFunctionToolCallback());
 	}
 
-	public static List<FunctionCallback> getManusAgentFunctionCallbacks() {
+	public static List<ToolCallback> getManusAgentFunctionCallbacks() {
 		return List.of(GoogleSearch.getFunctionToolCallback(), BrowserUseTool.getFunctionToolCallback(),
 				FileSaver.getFunctionToolCallback(), PythonExecute.getFunctionToolCallback());
 	}

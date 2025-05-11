@@ -47,7 +47,7 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-tool-calling-baidutranslate</finalName>
+        <finalName>spring-ai-alibaba-starter-tool-calling-baidutranslate</finalName>
     </build>
 
 </project>
