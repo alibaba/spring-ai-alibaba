@@ -13,17 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.graph.node.code;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeBlock;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig;
@@ -37,6 +27,14 @@ import org.apache.commons.exec.ExecuteWatchdog;
 import org.apache.commons.exec.PumpStreamHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author HeYQ
@@ -56,15 +54,8 @@ public class LocalCommandlineCodeExecutor implements CodeExecutor {
 			String language = codeBlock.language();
 			String code = codeBlock.code();
 			logger.info("\n>>>>>>>> EXECUTING CODE BLOCK {} (inferred language is {})...", i + 1, language);
-
-			if (Set.of("bash", "shell", "sh", "python").contains(language.toLowerCase())) {
-				result = executeCode(language, code, codeExecutionConfig);
-			}
-			else {
-				// the language is not supported, then return an error message.
-				result = new CodeExecutionResult(1, "unknown language " + language);
-			}
-
+			// "bash", "shell", "sh", "python"
+			result = executeCode(language, code, codeExecutionConfig);
 			allLogs.append("\n").append(result.logs());
 			if (result.exitCode() != 0) {
 				return new CodeExecutionResult(result.exitCode(), allLogs.toString());
@@ -85,7 +76,7 @@ public class LocalCommandlineCodeExecutor implements CodeExecutor {
 		}
 		String workDir = config.getWorkDir();
 		String codeHash = DigestUtils.md5Hex(code);
-		String fileExt = language.startsWith("python") ? "py" : language;
+		String fileExt = getFileExtForLanguage(language);
 		String filename = String.format("tmp_code_%s.%s", codeHash, fileExt);
 
 		// write the code string to a file specified by the filename.
@@ -140,8 +131,18 @@ public class LocalCommandlineCodeExecutor implements CodeExecutor {
 
 	private String getExecutableForLanguage(String language) throws Exception {
 		return switch (language) {
-			case "python" -> language;
+			case "python3", "python" -> language;
 			case "shell", "bash", "sh", "powershell" -> "sh";
+			case "nodejs" -> "node";
+			default -> throw new Exception("Language not recognized in code execution:" + language);
+		};
+	}
+
+	private String getFileExtForLanguage(String language) throws Exception {
+		return switch (language) {
+			case "python3", "python" -> "py";
+			case "shell", "bash", "sh", "powershell" -> "sh";
+			case "nodejs" -> "js";
 			default -> throw new Exception("Language not recognized in code execution:" + language);
 		};
 	}

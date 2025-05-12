@@ -33,6 +33,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.HashMap;
+import java.util.concurrent.ThreadLocalRandom;
+
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 
 /**
  * @author KrakenZJC
@@ -55,12 +60,13 @@ public class BingSearchService implements Function<BingSearchService.Request, Bi
 
 	public BingSearchService(BingSearchProperties properties) {
 		assert StringUtils.hasText(properties.getToken()) && properties.getToken().length() == 32;
-		this.webClient = WebClient.builder()
-			.defaultHeader(HttpHeaders.USER_AGENT,
-					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
-			.defaultHeader(BingSearchProperties.OCP_APIM_SUBSCRIPTION_KEY, properties.getToken())
-			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_MEMORY_SIZE))
-			.build();
+		Map<String, String> headers = new HashMap<>();
+		headers.put(HttpHeaders.USER_AGENT,
+				"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+		headers.put(BingSearchProperties.OCP_APIM_SUBSCRIPTION_KEY, properties.getToken());
+		this.webClient = CommonToolCallUtils.buildWebClient(headers,
+				CommonToolCallConstants.DEFAULT_CONNECT_TIMEOUT_MILLIS,
+				CommonToolCallConstants.DEFAULT_RESPONSE_TIMEOUT_SECONDS, CommonToolCallConstants.MAX_MEMORY_SIZE);
 	}
 
 	@Override

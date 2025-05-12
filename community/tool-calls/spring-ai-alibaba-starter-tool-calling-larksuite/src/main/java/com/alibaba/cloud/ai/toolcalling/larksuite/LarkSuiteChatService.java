@@ -45,6 +45,7 @@ public class LarkSuiteChatService implements Function<LarkSuiteChatService.IMCha
 	public CreateMessageResp apply(IMChatRequest request) {
 		Client client = Client.newBuilder(larkSuiteProperties.getAppId(), larkSuiteProperties.getAppSecret()).build();
 		CreateMessageReq req = CreateMessageReq.newBuilder()
+			.receiveIdType(request.receiveIdType())
 			.createMessageReqBody(CreateMessageReqBody.newBuilder()
 				.receiveId(request.receiveId())
 				.msgType(request.msgType())
@@ -71,6 +72,7 @@ public class LarkSuiteChatService implements Function<LarkSuiteChatService.IMCha
 	}
 
 	public record IMChatRequest(@JsonProperty(required = true, value = "receive_id") String receiveId,
+			@JsonProperty(required = true, value = "receive_id_type", defaultValue = "open_id") String receiveIdType,
 			@JsonProperty(required = true, value = "msg_type") String msgType,
 			@JsonProperty(required = true, value = "content") String content,
 			@JsonProperty(required = false, value = "uuid") String uuid) {

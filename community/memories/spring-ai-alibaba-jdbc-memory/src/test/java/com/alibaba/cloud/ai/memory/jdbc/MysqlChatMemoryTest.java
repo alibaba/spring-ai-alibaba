@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 
@@ -41,7 +42,8 @@ class MysqlChatMemoryTest {
 		MysqlChatMemory chatMemory = new MysqlChatMemory("root", "123456",
 				"jdbc:mysql://127.0.0.1:3306/spring_ai_alibaba_chat_memory");
 		String apiKey = System.getenv().getOrDefault("AI_DASHSCOPE_API_KEY", "test-api-key");
-		ChatClient chatClient = ChatClient.create(new DashScopeChatModel(new DashScopeApi(apiKey)));
+		ChatClient chatClient = ChatClient
+			.create(DashScopeChatModel.builder().dashScopeApi(new DashScopeApi(apiKey)).build());
 		String content1 = chatClient.prompt()
 			.advisors(new MessageChatMemoryAdvisor(chatMemory))
 			.system("你是一个AI聊天小助手，给人提供情绪价值。")
