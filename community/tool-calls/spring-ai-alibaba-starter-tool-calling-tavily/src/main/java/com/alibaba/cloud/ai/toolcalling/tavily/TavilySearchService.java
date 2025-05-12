@@ -12,7 +12,6 @@ import java.util.function.Function;
 
 public class TavilySearchService implements Function<TavilySearchSchema.Request, TavilySearchSchema.Response> {
 
-
 	private static final Logger logger = LoggerFactory.getLogger(TavilySearchService.class);
 
 	private static final String TAVILY_SEARCH_API = "https://api.tavily.com/search";
@@ -20,14 +19,11 @@ public class TavilySearchService implements Function<TavilySearchSchema.Request,
 	private final WebClient webClient;
 
 	public TavilySearchService(TavilySearchProperties properties) {
-		final Map<String, String> headers = Map.of(
-				"Authorization", "Bearer " + properties.getToken(),
-				"Content-Type", "application/json"
-		);
+		final Map<String, String> headers = Map.of("Authorization", "Bearer " + properties.getToken(), "Content-Type",
+				"application/json");
 		this.webClient = CommonToolCallUtils.buildWebClient(headers,
 				CommonToolCallConstants.DEFAULT_CONNECT_TIMEOUT_MILLIS,
-				CommonToolCallConstants.DEFAULT_RESPONSE_TIMEOUT_SECONDS,
-				CommonToolCallConstants.MAX_MEMORY_SIZE);
+				CommonToolCallConstants.DEFAULT_RESPONSE_TIMEOUT_SECONDS, CommonToolCallConstants.MAX_MEMORY_SIZE);
 	}
 
 	@Override
@@ -37,15 +33,18 @@ public class TavilySearchService implements Function<TavilySearchSchema.Request,
 		}
 
 		try {
-			return webClient.post().uri(TAVILY_SEARCH_API)
-					.bodyValue(request)
-					.retrieve()
-					.bodyToMono(TavilySearchSchema.Response.class)
-					.block();
+			return webClient.post()
+				.uri(TAVILY_SEARCH_API)
+				.bodyValue(request)
+				.retrieve()
+				.bodyToMono(TavilySearchSchema.Response.class)
+				.block();
 
-		} catch (Exception ex) {
+		}
+		catch (Exception ex) {
 			logger.error("tavily search error: {}", ex.getMessage());
 			return null;
 		}
 	}
+
 }
