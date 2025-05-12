@@ -15,41 +15,36 @@
  */
 package com.alibaba.cloud.ai.dashscope.rag;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
-import org.springframework.ai.chat.model.ChatModel;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Arrays;
 
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.RETRIEVED_DOCUMENTS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -149,44 +144,43 @@ class DashScopeDocumentRetrievalAdvisorTests {
 	}
 
 	@Test
-    void testGeneratePromptWithEmptyDocuments() {
-        // Prepare test data
-        when(documentRetriever.retrieve(any(Query.class))).thenReturn(Collections.emptyList());
+	void testGeneratePromptWithEmptyDocuments() {
+		// Prepare test data
+		when(documentRetriever.retrieve(any(Query.class))).thenReturn(Collections.emptyList());
 
-        // Generate prompt
-        Map<String, Object> userParams = new HashMap<>();
-        Map<String, Object> adviseContext = new HashMap<>();
-        AdvisedRequest request = AdvisedRequest.builder()
-                .userText(TEST_QUERY)
-                .userParams(userParams)
-                .adviseContext(adviseContext)
-                .chatModel(chatModel)
-                .build();
+		// Generate prompt
+		Map<String, Object> userParams = new HashMap<>();
+		Map<String, Object> adviseContext = new HashMap<>();
+		AdvisedRequest request = AdvisedRequest.builder()
+				.userText(TEST_QUERY)
+				.userParams(userParams)
+				.adviseContext(adviseContext)
+				.chatModel(chatModel)
+				.build();
 
-        // Create a valid ChatResponse with Generation and metadata
-        Map<String, Object> metadata = new HashMap<>();
-        metadata.put("finishReason", ChatCompletionFinishReason.STOP.name());
-        AssistantMessage assistantMessage = new AssistantMessage("Test response", metadata);
-        ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder()
-                .finishReason(ChatCompletionFinishReason.STOP.name())
-                .build();
-        Generation generation = new Generation(assistantMessage, generationMetadata);
-        ChatResponse chatResponse = new ChatResponse(List.of(generation));
+		// Create a valid ChatResponse with Generation and metadata
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("finishReason", ChatCompletionFinishReason.STOP.name());
+		AssistantMessage assistantMessage = new AssistantMessage("Test response", metadata);
+		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder()
+				.finishReason(ChatCompletionFinishReason.STOP.name())
+				.build();
+		Generation generation = new Generation(assistantMessage, generationMetadata);
+		ChatResponse chatResponse = new ChatResponse(List.of(generation));
 
-        // Create adviseContext with empty document map
-        Map<String, Object> responseAdviseContext = new HashMap<>();
-        Map<String, Document> documentMap = new HashMap<>();
-        responseAdviseContext.put(RETRIEVED_DOCUMENTS, documentMap);
+		// Create adviseContext with empty document map
+		Map<String, Object> responseAdviseContext = new HashMap<>();
+		Map<String, Document> documentMap = new HashMap<>();
+		responseAdviseContext.put(RETRIEVED_DOCUMENTS, documentMap);
 
-        AdvisedResponse response = advisor.aroundCall(request,
-                chain -> new AdvisedResponse(chatResponse, responseAdviseContext));
+		AdvisedResponse response = advisor.aroundCall(request,
+				chain -> new AdvisedResponse(chatResponse, responseAdviseContext));
 
-        // Verify response
-        assertThat(response).isNotNull();
-        assertThat(response.adviseContext()).containsKey(RETRIEVED_DOCUMENTS);
-        assertThat((Map<?, ?>) response.adviseContext().get(RETRIEVED_DOCUMENTS))
-                .isEmpty();
-    }
+		// Verify response
+		assertThat(response).isNotNull();
+		assertThat(response.adviseContext()).containsKey(RETRIEVED_DOCUMENTS);
+		assertThat((Map<?, ?>) response.adviseContext().get(RETRIEVED_DOCUMENTS)).isEmpty();
+	}
 
 	@Test
 	void testProcessChatResponse() {
