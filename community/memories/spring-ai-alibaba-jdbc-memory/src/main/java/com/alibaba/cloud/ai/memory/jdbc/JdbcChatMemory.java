@@ -30,6 +30,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -126,18 +128,17 @@ public abstract class JdbcChatMemory implements ChatMemory, AutoCloseable {
 
 	@Override
 	public void add(String conversationId, List<Message> messages) {
-		try {
+		String sql = "INSERT INTO " + tableName + " (conversation_id, content, type, timestamp) VALUES (?, ?, ?, ?)";
+		try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
 			for (Message message : messages) {
-				String sql = "INSERT INTO " + tableName + " (messages, conversation_id, type) VALUES (?, ?, ?)";
-				try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
-					stmt.setString(1, message.getText());
-					stmt.setString(2, conversationId);
-					stmt.setString(3, message.getMessageType().name());
-					stmt.executeUpdate();
-				}
+				stmt.setString(1, conversationId);
+				stmt.setString(2, message.getText());
+				stmt.setString(3, message.getMessageType().name());
+				stmt.setTimestamp(4, Timestamp.from(Instant.now()));
+				stmt.addBatch();
 			}
-		}
-		catch (Exception e) {
+			stmt.executeBatch();
+		} catch (SQLException e) {
 			logger.error("Error adding messages to {} chat memory", jdbcType(), e);
 			throw new RuntimeException(e);
 		}
@@ -145,7 +146,34 @@ public abstract class JdbcChatMemory implements ChatMemory, AutoCloseable {
 
 	@Override
 	public List<Message> get(String conversationId, int lastN) {
-		return this.selectMessageById(conversationId, lastN);
+		String sql = "SELECT content, type FROM " + tableName + " WHERE conversation_id = ? ORDER BY timestamp";
+		if (lastN > 0) {
+			sql += " LIMIT ?";
+		}
+
+		List<Message> messages = new ArrayList<>();
+		try (PreparedStatement stmt = this.connection.prepareStatement(sql)) {
+			stmt.setString(1, conversationId);
+			if (lastN > 0) {
+				stmt.setInt(2, lastN);
+			}
+			ResultSet rs = stmt.executeQuery();
+			while (rs.next()) {
+				String content = rs.getString("content");
+				MessageType type = MessageType.valueOf(rs.getString("type"));
+				Message message = switch (type) {
+					case USER -> new UserMessage(content);
+					case ASSISTANT -> new AssistantMessage(content);
+					case SYSTEM -> new SystemMessage(content);
+					default -> throw new IllegalArgumentException("Unknown message type: " + type);
+				};
+				messages.add(message);
+			}
+		} catch (SQLException e) {
+			logger.error("Error retrieving messages from {} chat memory", jdbcType(), e);
+			throw new RuntimeException(e);
+		}
+		return messages;
 	}
 
 	@Override
