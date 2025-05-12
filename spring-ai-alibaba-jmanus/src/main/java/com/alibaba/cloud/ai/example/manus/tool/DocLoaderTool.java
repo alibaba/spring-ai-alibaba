@@ -45,7 +45,7 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 			    "properties": {
 			        "file_type": {
 			            "type": "string",
-			            "description": "(required) File type, such as pdf, docx, xlsx, csv, etc.."
+			            "description": "(required) File type, only support pdf file."
 			        },
 			        "file_path": {
 			            "type": "string",
