@@ -41,9 +41,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
-import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
-import com.jayway.jsonpath.JsonPath;
 
 import java.io.IOException;
 import java.net.URI;
@@ -79,46 +77,13 @@ public class DynamicNacosToolCallbackV3 implements ToolCallback {
 	}
 
 	/**
-	 * 解析工具配置并执行请求
-	 */
-	public Mono<String> executeToolRequest(String configJson, Map<String, Object> args, String baseUrl) {
-		try {
-			logger.info("[executeToolRequest] configJson: {} args: {} baseUrl: {}", configJson, args, baseUrl);
-			JsonNode rootNode = objectMapper.readTree(configJson);
-			logger.info("[executeToolRequest] rootNode: {}", rootNode);
-			JsonNode toolsNode = rootNode.path("tools");
-			logger.info("[executeToolRequest] toolsNode: {}", toolsNode);
-			return processToolRequest(rootNode, args, baseUrl);
-		}
-		catch (Exception e) {
-			logger.error("Failed to parse tool configuration", e);
-			return Mono.error(e);
-		}
-	}
-
-	/**
 	 * 处理工具请求
 	 */
 	private Mono<String> processToolRequest(String configJson, Map<String, Object> args, String baseUrl) {
 		try {
-			logger.info("[processToolRequest] configJson: {} args: {} baseUrl: {}", configJson, args, baseUrl);
-			JsonNode rootNode = objectMapper.readTree(configJson);
-			logger.info("[processToolRequest] rootNode: {}", rootNode);
-			JsonNode toolsNode = rootNode.path("tools");
-			logger.info("[processToolRequest] toolsNode: {}", toolsNode);
-			return processToolRequest(rootNode, args, baseUrl);
-		}
-		catch (Exception e) {
-			logger.error("Failed to process tool request", e);
-			return Mono.error(e);
-		}
-	}
-
-	/**
-	 * 处理工具请求
-	 */
-	private Mono<String> processToolRequest(JsonNode toolConfig, Map<String, Object> args, String baseUrl) {
-		try {
+			logger.info("[executeToolRequest] configJson: {} args: {} baseUrl: {}", configJson, args, baseUrl);
+			JsonNode toolConfig = objectMapper.readTree(configJson);
+			logger.info("[executeToolRequest] toolConfig: {}", toolConfig);
 			logger.info("[processToolRequest] toolConfig: {} args: {} baseUrl: {}", toolConfig, args, baseUrl);
 			JsonNode argsNode = toolConfig.path("args");
 			Map<String, Object> processedArgs;
@@ -159,7 +124,8 @@ public class DynamicNacosToolCallbackV3 implements ToolCallback {
 			}
 
 			// 创建WebClient
-			WebClient client = webClientBuilder.baseUrl(baseUrl != null ? baseUrl : "http://localhost").build();
+			baseUrl = baseUrl != null ? baseUrl : "http://localhost";
+			WebClient client = webClientBuilder.baseUrl(baseUrl).build();
 
 			// 构建并执行请求
 			return buildAndExecuteRequest(client, requestTemplate, toolConfig.path("responseTemplate"), processedArgs,
@@ -232,6 +198,7 @@ public class DynamicNacosToolCallbackV3 implements ToolCallback {
 		// 执行请求
 		return headersSpec.retrieve()
 			.bodyToMono(String.class)
+			.doOnNext(responseBody -> logger.info("[buildAndExecuteRequest] received responseBody: {}", responseBody))
 			.map(responseBody -> processResponse(responseBody, responseTemplate, args));
 	}
 
@@ -507,7 +474,7 @@ public class DynamicNacosToolCallbackV3 implements ToolCallback {
 								String configJson = objectMapper.writeValueAsString(jsonGoTemplate);
 								logger.info("[executeToolRequest] configJson: {} args: {} baseUrl: {}", configJson,
 										args, baseUrl);
-								return executeToolRequest(configJson, args, baseUrl).block();
+								return processToolRequest(configJson, args, baseUrl).block();
 							}
 							catch (Exception e) {
 								logger.error("Failed to execute tool request", e);
