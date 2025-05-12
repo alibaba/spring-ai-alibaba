@@ -46,3 +46,7 @@ spring-ai-alibaba-examples/playground-flight-booking/src/main/bundles/
 # windows os
 /extensions/
 /h2-data/
+
+# checkstyle report files
+**/checkstyle-report.xml
+**/spring-ai-alibaba-jmanus/logs/*

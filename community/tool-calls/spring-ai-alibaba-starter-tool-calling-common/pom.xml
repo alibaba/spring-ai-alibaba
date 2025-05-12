@@ -89,7 +89,7 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-tool-calling-commontoolcall</finalName>
+        <finalName>spring-ai-alibaba-starter-tool-calling-common</finalName>
     </build>
 
 </project>
