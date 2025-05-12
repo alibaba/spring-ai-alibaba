@@ -15,29 +15,38 @@
  */
 package com.alibaba.cloud.ai.dashscope.chat;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.*;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletion;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionChunk;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput.Choice;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionRequest;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.TokenUsage;
 import com.alibaba.cloud.ai.dashscope.metadata.DashScopeAiUsage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.mockito.Mockito;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.http.ResponseEntity;
-import reactor.core.publisher.Flux;
-import reactor.test.StepVerifier;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -67,6 +76,8 @@ class DashScopeChatModelTests {
 
 	private static final String TEST_RESPONSE = "I'm doing well, thank you for asking!";
 
+	private static final String EMPTY_INPUT_SCHEMA = "{\"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\"type\": \"object\",\"properties\": {}}";
+
 	private DashScopeApi dashScopeApi;
 
 	private DashScopeChatModel chatModel;
@@ -84,7 +95,7 @@ class DashScopeChatModelTests {
 			.withTopK(50)
 			.withSeed(1234)
 			.build();
-		chatModel = new DashScopeChatModel(dashScopeApi, defaultOptions);
+		chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).defaultOptions(defaultOptions).build();
 	}
 
 	@Test
@@ -186,17 +197,23 @@ class DashScopeChatModelTests {
 	@Test
 	void testToolCalls() {
 		// Test tool calls functionality
-		FunctionCallback weatherCallback = mock(FunctionCallback.class);
-		when(weatherCallback.getName()).thenReturn("get_weather");
-		when(weatherCallback.getDescription()).thenReturn("Get weather information");
+		ToolCallback weatherCallback = mock(ToolCallback.class);
+		when(weatherCallback.getToolDefinition()).thenReturn(DefaultToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather information")
+			.inputSchema(EMPTY_INPUT_SCHEMA)
+			.build());
 
 		// Create options with tool
 		DashScopeChatOptions options = DashScopeChatOptions.builder()
 			.withModel("qwen-turbo")
-			.withFunctionCallbacks(List.of(weatherCallback))
+			.withToolCallbacks(List.of(weatherCallback))
 			.build();
 
-		DashScopeChatModel toolChatModel = new DashScopeChatModel(dashScopeApi, options);
+		DashScopeChatModel toolChatModel = DashScopeChatModel.builder()
+			.dashScopeApi(dashScopeApi)
+			.defaultOptions(options)
+			.build();
 
 		// Mock API responses for tool call
 		String toolCallResponse = "{\"name\": \"get_weather\", \"arguments\": \"{\\\"location\\\": \\\"Beijing\\\"}\"}";
@@ -224,17 +241,23 @@ class DashScopeChatModelTests {
 	@Test
 	void testStreamToolCalls() {
 		// Test streaming tool calls
-		FunctionCallback weatherCallback = mock(FunctionCallback.class);
-		when(weatherCallback.getName()).thenReturn("get_weather");
-		when(weatherCallback.getDescription()).thenReturn("Get weather information");
+		ToolCallback weatherCallback = mock(ToolCallback.class);
+		when(weatherCallback.getToolDefinition()).thenReturn(DefaultToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather information")
+			.inputSchema(EMPTY_INPUT_SCHEMA)
+			.build());
 
 		DashScopeChatOptions options = DashScopeChatOptions.builder()
 			.withModel("qwen-turbo")
-			.withFunctionCallbacks(List.of(weatherCallback))
+			.withToolCallbacks(List.of(weatherCallback))
 			.withStream(true)
 			.build();
 
-		DashScopeChatModel toolChatModel = new DashScopeChatModel(dashScopeApi, options);
+		DashScopeChatModel toolChatModel = DashScopeChatModel.builder()
+			.dashScopeApi(dashScopeApi)
+			.defaultOptions(options)
+			.build();
 
 		// Mock streaming tool call responses
 		String chunk1 = "{\"name\": \"get_";
@@ -299,7 +322,7 @@ class DashScopeChatModelTests {
 		assertThat(response.getResults()).isEmpty();
 		// Verify usage metadata
 		assertThat(response.getMetadata().getUsage()).isNotNull();
-		DashScopeAiUsage aiUsage = (DashScopeAiUsage) response.getMetadata().getUsage();
+		DefaultUsage aiUsage = (DefaultUsage) response.getMetadata().getUsage();
 		assertThat(aiUsage.getPromptTokens()).isZero();
 		assertThat(aiUsage.getCompletionTokens()).isZero();
 		assertThat(aiUsage.getTotalTokens()).isZero();
@@ -344,7 +367,7 @@ class DashScopeChatModelTests {
 
 		assertThat(response.getMetadata()).isNotNull();
 		assertThat(response.getMetadata().getId()).isEqualTo(TEST_REQUEST_ID);
-		DashScopeAiUsage aiUsage = (DashScopeAiUsage) response.getMetadata().getUsage();
+		DefaultUsage aiUsage = (DefaultUsage) response.getMetadata().getUsage();
 		assertThat(aiUsage.getPromptTokens()).isEqualTo(10L);
 		assertThat(aiUsage.getCompletionTokens()).isEqualTo(20);
 		assertThat(aiUsage.getTotalTokens()).isEqualTo(30L);
@@ -355,7 +378,10 @@ class DashScopeChatModelTests {
 		// Test handling of invalid model name
 		DashScopeChatOptions invalidOptions = DashScopeChatOptions.builder().withModel("invalid-model").build();
 
-		DashScopeChatModel invalidModel = new DashScopeChatModel(dashScopeApi, invalidOptions);
+		DashScopeChatModel invalidModel = DashScopeChatModel.builder()
+			.dashScopeApi(dashScopeApi)
+			.defaultOptions(invalidOptions)
+			.build();
 		Message message = new UserMessage(TEST_PROMPT);
 		Prompt prompt = new Prompt(List.of(message));
 
@@ -410,7 +436,10 @@ class DashScopeChatModelTests {
 			.withTopK(50)
 			.withSeed(1234)
 			.build();
-		DashScopeChatModel deepseekModel = new DashScopeChatModel(realApi, deepseekOptions);
+		DashScopeChatModel deepseekModel = DashScopeChatModel.builder()
+			.dashScopeApi(realApi)
+			.defaultOptions(deepseekOptions)
+			.build();
 
 		// Create a complex prompt with multiple messages
 		SystemMessage systemMessage = new SystemMessage(
