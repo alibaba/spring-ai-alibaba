@@ -31,6 +31,7 @@ public class GoogleTranslateProperties extends CommonToolCallProperties {
 
 	public GoogleTranslateProperties() {
 		super("https://translation.googleapis.com/language/translate/v2");
+		this.setPropertiesFromEnv("GOOGLE_TRANSLATE_APIKEY", null, null, null);
 	}
 
 }

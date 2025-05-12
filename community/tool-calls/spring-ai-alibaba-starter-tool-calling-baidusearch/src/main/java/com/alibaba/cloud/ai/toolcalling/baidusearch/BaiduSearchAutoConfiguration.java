@@ -45,7 +45,7 @@ public class BaiduSearchAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Use baidu search engine to query for the latest news.")
-	public BaiduSearchService baiduSearchFunction(JsonParseTool jsonParseTool, BaiduSearchProperties properties) {
+	public BaiduSearchService baiduSearch(JsonParseTool jsonParseTool, BaiduSearchProperties properties) {
 		Consumer<HttpHeaders> consumer = headers -> {
 			headers.add(HttpHeaders.USER_AGENT,
 					DEFAULT_USER_AGENTS[ThreadLocalRandom.current().nextInt(DEFAULT_USER_AGENTS.length)]);

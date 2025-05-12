@@ -37,8 +37,7 @@ public class GoogleTranslateAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Implement natural language translation capabilities.")
-	public GoogleTranslateService googleTranslateFunction(JsonParseTool jsonParseTool,
-			GoogleTranslateProperties properties) {
+	public GoogleTranslateService googleTranslate(JsonParseTool jsonParseTool, GoogleTranslateProperties properties) {
 		return new GoogleTranslateService(properties,
 				WebClientTool.builder(jsonParseTool, properties).httpHeadersConsumer(headers -> {
 					headers.add("Content-Type", "application/json");

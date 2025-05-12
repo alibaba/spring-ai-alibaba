@@ -36,6 +36,7 @@ public class BingSearchProperties extends CommonToolCallProperties {
 
 	public BingSearchProperties() {
 		super("https://api.bing.microsoft.com");
+		this.setPropertiesFromEnv(null, null, null, "BING_SEARCH_TOKEN");
 	}
 
 }
