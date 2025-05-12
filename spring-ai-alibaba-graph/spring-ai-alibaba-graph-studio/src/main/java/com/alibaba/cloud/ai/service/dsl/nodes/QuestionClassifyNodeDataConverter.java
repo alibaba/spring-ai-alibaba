@@ -85,13 +85,13 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 						List.of(QuestionClassifierNodeData.DEFAULT_OUTPUT_SCHEMA))
 					.setModel(modelConfig);
 
-				// covert instructions
+				// convert instructions
 				String instruction = (String) data.get("instructions");
 				if (instruction != null && !instruction.isBlank()) {
 					nodeData.setInstruction(instruction);
 				}
 
-				// covert classes
+				// convert classes
 				if (data.containsKey("classes")) {
 					List<Map<String, Object>> classes = (List<Map<String, Object>>) data.get("classes");
 					nodeData.setClasses(classes.stream()
