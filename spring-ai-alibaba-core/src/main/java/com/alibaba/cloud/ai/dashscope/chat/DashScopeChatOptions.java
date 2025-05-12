@@ -16,7 +16,13 @@
 
 package com.alibaba.cloud.ai.dashscope.chat;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeResponseFormat;
@@ -26,7 +32,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.Assert;
@@ -35,7 +40,7 @@ import org.springframework.util.Assert;
  * @author nottyjay
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions {
+public class DashScopeChatOptions implements ToolCallingChatOptions {
 
 	// @formatter:off
   /** ID of the model to use. */
@@ -149,20 +154,13 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
   /**
    * Whether to enable the thinking process of the model.
    */
-  private @JsonProperty("enable_thinking") Boolean enableThinking = true;
+  private @JsonProperty("enable_thinking") Boolean enableThinking = false;
 
-  /**
-   * Tool Function Callbacks to register with the ChatClient. For Prompt Options the
-   * functionCallbacks are automatically enabled for the duration of the prompt execution. For
-   * Default Options the functionCallbacks are registered but disabled by default. Use the
-   * enableFunctions to set the functions from the registry to be used by the ChatClient chat
-   * completion requests.
-   */
   /**
    * Collection of {@link ToolCallback}s to be used for tool calling in the chat completion requests.
    */
   @JsonIgnore
-  private List<FunctionCallback> toolCallbacks = new ArrayList<>();
+  private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
   /**
    * Collection of tool names to be resolved at runtime and used for tool calling in the chat completion requests.
@@ -177,33 +175,12 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
   private Boolean internalToolExecutionEnabled;
 
   /**
-   * List of functions, identified by their names, to configure for function calling in the chat
-   * completion requests. Functions with those names must exist in the functionCallbacks registry.
-   * The {@link #functionCallbacks} from the PromptOptions are automatically enabled for the
-   * duration of the prompt execution.
-   *
-   * <p>Note that function enabled with the default options are enabled for all chat completion
-   * requests. This could impact the token count and the billing. If the functions is set in a
-   * prompt options, then the enabled functions are only active for the duration of this prompt
-   * execution.
-   */
-  @JsonIgnore private Set<String> functions = new HashSet<>();
-
-  /**
    * Indicates whether the request involves multiple models
    */
   private @JsonProperty("multi_model") Boolean multiModel = false;
 
-  /**
-   * If true, the Spring AI will not handle the function calls internally, but will proxy them to the client.
-   * It is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results.
-   * If false, the Spring AI will handle the function calls internally.
-   */
   @JsonIgnore
-  private Boolean proxyToolCalls;
-
-  @JsonIgnore
-  private Map<String, Object> toolContext;
+  private Map<String, Object> toolContext = new HashMap<>();;
 
   @Override
   public String getModel() {
@@ -336,24 +313,14 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
   }
 
   @Override
-  public Boolean getProxyToolCalls() {
-    return this.proxyToolCalls;
-  }
-
-  @Override
-  public void setProxyToolCalls(Boolean proxyToolCalls) {
-    this.proxyToolCalls = proxyToolCalls;
-  }
-
-  @Override
   @JsonIgnore
-  public List<FunctionCallback> getToolCallbacks() {
+  public List<ToolCallback> getToolCallbacks() {
     return this.toolCallbacks;
   }
 
   @Override
   @JsonIgnore
-  public void setToolCallbacks(List<FunctionCallback> toolCallbacks) {
+  public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
     Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
     Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
     this.toolCallbacks = toolCallbacks;
@@ -376,7 +343,7 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
 
   @Override
   @JsonIgnore
-  public Boolean isInternalToolExecutionEnabled() {
+  public Boolean getInternalToolExecutionEnabled() {
     return this.internalToolExecutionEnabled;
   }
 
@@ -384,34 +351,6 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
   @JsonIgnore
   public void setInternalToolExecutionEnabled(Boolean internalToolExecutionEnabled) {
     this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-  }
-
-  @Override
-  @Deprecated
-  @JsonIgnore
-  public List<FunctionCallback> getFunctionCallbacks() {
-    return this.getToolCallbacks();
-  }
-
-  @Override
-  @Deprecated
-  @JsonIgnore
-  public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-    this.setToolCallbacks(functionCallbacks);
-  }
-
-  @Override
-  @Deprecated
-  @JsonIgnore
-  public Set<String> getFunctions() {
-    return this.getToolNames();
-  }
-
-  @Override
-  @Deprecated
-  @JsonIgnore
-  public void setFunctions(Set<String> functions) {
-    this.setToolNames(functions);
   }
 
   @Override
@@ -528,7 +467,7 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
     }
 
     public DashscopeChatOptionsBuilder withToolCallbacks(
-            List<FunctionCallback> toolCallbacks) {
+            List<ToolCallback> toolCallbacks) {
       Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
       Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
       this.options.toolCallbacks = toolCallbacks;
@@ -551,32 +490,6 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
 
     public DashscopeChatOptionsBuilder withInternalToolExecutionEnabled(Boolean internalToolExecutionEnabled) {
       this.options.internalToolExecutionEnabled = internalToolExecutionEnabled;
-      return this;
-    }
-
-    @Deprecated
-    public DashscopeChatOptionsBuilder withFunctionCallbacks(
-            List<FunctionCallback> functionCallbacks) {
-      this.options.setToolCallbacks(functionCallbacks);
-      return this;
-    }
-
-    @Deprecated
-    public DashscopeChatOptionsBuilder withFunction(String functionName) {
-      Assert.hasText(functionName, "Function name must not be empty");
-      this.options.toolNames.add(functionName);
-      return this;
-    }
-
-    @Deprecated
-    public DashscopeChatOptionsBuilder withFunctions(Set<String> functionNames) {
-      Assert.notNull(functionNames, "Function names must not be null");
-      this.options.setToolNames(functionNames);
-      return this;
-    }
-
-    public DashscopeChatOptionsBuilder withProxyToolCalls(Boolean proxyToolCalls) {
-      this.options.proxyToolCalls = proxyToolCalls;
       return this;
     }
 
@@ -635,12 +548,11 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
             .withIncrementalOutput(fromOptions.getIncrementalOutput())
             .withToolCallbacks(fromOptions.getToolCallbacks())
             .withToolNames(fromOptions.getToolNames())
-            .withInternalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
+            .withInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
             .withRepetitionPenalty(fromOptions.getRepetitionPenalty())
             .withTools(fromOptions.getTools())
             .withToolContext(fromOptions.getToolContext())
             .withMultiModel(fromOptions.getMultiModel())
-            .withProxyToolCalls(fromOptions.getProxyToolCalls())
             .withVlHighResolutionImages(fromOptions.getVlHighResolutionImages())
             .withEnableThinking(fromOptions.getEnableThinking())
             .build();
@@ -671,10 +583,8 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
             Objects.equals(toolCallbacks, that.toolCallbacks) &&
             Objects.equals(toolNames, that.toolNames) &&
             Objects.equals(internalToolExecutionEnabled, that.internalToolExecutionEnabled) &&
-            Objects.equals(functions, that.functions) &&
             Objects.equals(multiModel, that.multiModel) &&
-            Objects.equals(toolContext, that.toolContext) &&
-            Objects.equals(proxyToolCalls, that.proxyToolCalls);
+            Objects.equals(toolContext, that.toolContext);
   }
 
   @Override
@@ -682,8 +592,7 @@ public class DashScopeChatOptions implements ToolCallingChatOptions, ChatOptions
     return Objects.hash(model, stream, temperature, seed, topP, topK, stop, enableSearch,
             responseFormat, incrementalOutput, repetitionPenalty, tools, toolChoice,
             vlHighResolutionImages, enableThinking, toolCallbacks, toolNames,
-            internalToolExecutionEnabled, functions, multiModel, toolContext,
-            proxyToolCalls);
+            internalToolExecutionEnabled, multiModel, toolContext);
   }
 
   @Override

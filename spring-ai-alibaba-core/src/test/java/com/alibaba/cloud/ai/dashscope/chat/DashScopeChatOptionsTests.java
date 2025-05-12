@@ -15,18 +15,19 @@
  */
 package com.alibaba.cloud.ai.dashscope.chat;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeResponseFormat;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.ai.model.function.FunctionCallback;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeResponseFormat;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import org.springframework.ai.tool.ToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -115,23 +116,21 @@ class DashScopeChatOptionsTests {
 	}
 
 	@Test
-	void testFunctionCallbacks() {
+	void testToolCallbacks() {
 		// Test function callbacks related methods
-		FunctionCallback callback1 = Mockito.mock(FunctionCallback.class);
-		FunctionCallback callback2 = Mockito.mock(FunctionCallback.class);
-		Mockito.when(callback1.getName()).thenReturn("test1");
-		Mockito.when(callback2.getName()).thenReturn("test2");
+		ToolCallback callback1 = Mockito.mock(ToolCallback.class);
+		ToolCallback callback2 = Mockito.mock(ToolCallback.class);
 
-		List<FunctionCallback> callbacks = Arrays.asList(callback1, callback2);
+		List<ToolCallback> callbacks = Arrays.asList(callback1, callback2);
 		Set<String> functions = new HashSet<>(Arrays.asList("test1", "test2"));
 
 		DashScopeChatOptions options = DashScopeChatOptions.builder()
-			.withFunctionCallbacks(callbacks)
-			.withFunctions(functions)
+			.withToolCallbacks(callbacks)
+			.withToolNames(functions)
 			.build();
 
-		assertThat(options.getFunctionCallbacks()).containsExactlyElementsOf(callbacks);
-		assertThat(options.getFunctions()).containsExactlyInAnyOrderElementsOf(functions);
+		assertThat(options.getToolCallbacks()).containsExactlyElementsOf(callbacks);
+		assertThat(options.getToolNames()).containsExactlyInAnyOrderElementsOf(functions);
 	}
 
 	@Test

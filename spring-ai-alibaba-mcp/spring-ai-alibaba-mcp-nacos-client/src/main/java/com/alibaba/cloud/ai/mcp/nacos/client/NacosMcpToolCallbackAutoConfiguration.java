@@ -39,7 +39,7 @@ import java.util.List;
  */
 @AutoConfiguration(after = { NacosMcpClientAutoConfiguration.class })
 @EnableConfigurationProperties({ McpClientCommonProperties.class })
-@Conditional({ McpToolCallbackAutoConfiguration.McpToolCallbackAutoconfigurationCondition.class })
+@Conditional({ McpToolCallbackAutoConfiguration.McpToolCallbackAutoConfigurationCondition.class })
 public class NacosMcpToolCallbackAutoConfiguration {
 
 	public NacosMcpToolCallbackAutoConfiguration() {

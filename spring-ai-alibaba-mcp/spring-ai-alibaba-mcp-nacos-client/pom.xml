@@ -20,14 +20,12 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring-ai.version>1.0.0-M7</spring-ai.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-autoconfigure-mcp-client</artifactId>
-            <version>${spring-ai.version}</version>
         </dependency>
 
         <dependency>
@@ -35,10 +33,10 @@
             <artifactId>spring-ai-alibaba-mcp-nacos</artifactId>
             <version>${revision}</version>
         </dependency>
+        
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
-            <version>${spring-ai.version}</version>
         </dependency>
 
     </dependencies>

@@ -40,12 +40,12 @@ public class ConfigurablePromptTemplate implements PromptTemplateActions, Prompt
 	}
 
 	ConfigurablePromptTemplate(String name, String template, Map<String, Object> model) {
-		this.promptTemplate = new PromptTemplate(template, model);
+		this.promptTemplate = PromptTemplate.builder().template(template).variables(model).build();
 		this.name = name;
 	}
 
 	ConfigurablePromptTemplate(String name, Resource resource, Map<String, Object> model) {
-		this.promptTemplate = new PromptTemplate(resource, model);
+		this.promptTemplate = PromptTemplate.builder().resource(resource).variables(model).build();
 		this.name = name;
 	}
 
