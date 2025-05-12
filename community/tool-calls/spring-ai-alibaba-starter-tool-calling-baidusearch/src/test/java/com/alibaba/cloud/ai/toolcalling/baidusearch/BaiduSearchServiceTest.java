@@ -17,16 +17,12 @@
 package com.alibaba.cloud.ai.toolcalling.baidusearch;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class BaiduSearchServiceTest {
 
 	private final BaiduSearchService baiduSearchService = new BaiduSearchService();
 
-	@Disabled("Due to anti crawling reasons, we are temporarily unable to succeed and waiting for repairs")
 	@Test
 	void apply() {
 		BaiduSearchService.Request request = new BaiduSearchService.Request("Spring AI", 10);

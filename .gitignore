@@ -39,10 +39,14 @@ target/
 spring-ai-alibaba-examples/playground-flight-booking/frontend/generated/
 spring-ai-alibaba-examples/playground-flight-booking/src/main/bundles/
 /spring-ai-alibaba-examples/playground-flight-booking-example/
-**/community/openmanus/extensions/*
+**/spring-ai-alibaba-jmanus/extensions/*
 **/venv/*
-**/community/openmanus/h2-data/*
+**/spring-ai-alibaba-jmanus/h2-data/*
 
 # windows os
 /extensions/
 /h2-data/
+
+# checkstyle report files
+**/checkstyle-report.xml
+**/spring-ai-alibaba-jmanus/logs/*

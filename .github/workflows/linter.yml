@@ -20,13 +20,9 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - '**.java'
   pull_request:
     branches:
       - main
-    paths-ignore:
-      - '**.java'
 
 permissions:
   contents: read

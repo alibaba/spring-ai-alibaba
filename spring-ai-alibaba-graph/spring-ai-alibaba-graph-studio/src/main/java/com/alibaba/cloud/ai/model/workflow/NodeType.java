@@ -36,7 +36,11 @@ public enum NodeType {
 
 	HUMAN("human", "unsupported"),
 
-	BRANCH("branch", "if-else");
+	BRANCH("branch", "if-else"),
+
+	DOC_EXTRACTOR("document-extractor", "document-extractor"),
+
+	QUESTION_CLASSIFIER("question-classifier", "question-classifier");
 
 	private String value;
 
