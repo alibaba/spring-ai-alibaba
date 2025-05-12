@@ -40,6 +40,10 @@ public class JsonParseTool {
 			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 	}
 
+	public JsonParseTool(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
+
 	public <T> String objectToJson(T obj) throws JsonProcessingException {
 		return objectMapper.writeValueAsString(obj);
 	}
