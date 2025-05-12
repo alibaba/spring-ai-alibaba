@@ -33,9 +33,9 @@ import org.springframework.core.io.ByteArrayResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Test cases for DashScopeAudioObservationConvention. Tests cover both audio transcription
- * and speech synthesis scenarios, including observation names, audio parameters handling,
- * and key value generation.
+ * Test cases for DashScopeAudioObservationConvention. Tests cover both audio
+ * transcription and speech synthesis scenarios, including observation names, audio
+ * parameters handling, and key value generation.
  *
  * @author Inlines10
  * @author <a href="mailto:yuluo08290126@gmail.com">Inlines10</a>
@@ -43,181 +43,172 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class DashScopeAudioObservationConventionTests {
 
-    private DashScopeAudioObservationConvention convention;
-    private AudioTranscriptionContext transcriptionContext;
-    private SpeechSynthesisContext synthesisContext;
+	private DashScopeAudioObservationConvention convention;
 
-    @BeforeEach
-    void setUp() {
-        convention = new DashScopeAudioObservationConvention();
+	private AudioTranscriptionContext transcriptionContext;
 
-        // Set up audio transcription context
-        transcriptionContext = new AudioTranscriptionContext();
-        transcriptionContext.setModelName("speech-translation-v1");
-        transcriptionContext.setFormat("wav");
-        transcriptionContext.setSampleRate(16000);
-        transcriptionContext.setPrompt(new AudioTranscriptionPrompt(new ByteArrayResource(new byte[1024])));
+	private SpeechSynthesisContext synthesisContext;
 
-        // Set up speech synthesis context
-        synthesisContext = new SpeechSynthesisContext();
-        synthesisContext.setModelName("sambert-zhichu-v1");
-        synthesisContext.setFormat("mp3");
-        synthesisContext.setSampleRate(16000);
-        synthesisContext.setPrompt(new SpeechSynthesisPrompt("Test text"));
-    }
+	@BeforeEach
+	void setUp() {
+		convention = new DashScopeAudioObservationConvention();
 
-    @Test
-    void testGetName() {
-        assertThat(convention.getName())
-            .isEqualTo("spring.ai.alibaba.audio");
-    }
+		// Set up audio transcription context
+		transcriptionContext = new AudioTranscriptionContext();
+		transcriptionContext.setModelName("speech-translation-v1");
+		transcriptionContext.setFormat("wav");
+		transcriptionContext.setSampleRate(16000);
+		transcriptionContext.setPrompt(new AudioTranscriptionPrompt(new ByteArrayResource(new byte[1024])));
 
-    @Test
-    void testGetContextualName() {
-        // Test audio transcription context name
-        assertThat(convention.getContextualName(transcriptionContext))
-            .isEqualTo("spring.ai.audio.transcription");
+		// Set up speech synthesis context
+		synthesisContext = new SpeechSynthesisContext();
+		synthesisContext.setModelName("sambert-zhichu-v1");
+		synthesisContext.setFormat("mp3");
+		synthesisContext.setSampleRate(16000);
+		synthesisContext.setPrompt(new SpeechSynthesisPrompt("Test text"));
+	}
 
-        // Test speech synthesis context name
-        assertThat(convention.getContextualName(synthesisContext))
-            .isEqualTo("spring.ai.audio.synthesis");
+	@Test
+	void testGetName() {
+		assertThat(convention.getName()).isEqualTo("spring.ai.alibaba.audio");
+	}
 
-        // Test unknown context
-        assertThat(convention.getContextualName(new Observation.Context()))
-            .isEqualTo("spring.ai.alibaba.audio");
-    }
+	@Test
+	void testGetContextualName() {
+		// Test audio transcription context name
+		assertThat(convention.getContextualName(transcriptionContext)).isEqualTo("spring.ai.audio.transcription");
 
-    @Test
-    void testLowCardinalityKeyValuesForTranscription() {
-        // Set transcription options
-        transcriptionContext.setPrompt(new AudioTranscriptionPrompt(
-                new ByteArrayResource(new byte[1024]),
-                DashScopeAudioTranscriptionOptions.builder()
-                        .withModel("speech-translation-v1")
-                        .withFormat(DashScopeAudioTranscriptionOptions.AudioFormat.WAV)
-                        .withSampleRate(16000)
-                        .build()
-        ));
+		// Test speech synthesis context name
+		assertThat(convention.getContextualName(synthesisContext)).isEqualTo("spring.ai.audio.synthesis");
 
-        KeyValues keyValues = convention.getLowCardinalityKeyValues(transcriptionContext);
+		// Test unknown context
+		assertThat(convention.getContextualName(new Observation.Context())).isEqualTo("spring.ai.alibaba.audio");
+	}
 
-        assertThat(keyValues).hasSize(3)
-            .contains(KeyValue.of("model", "speech-translation-v1"))
-            .contains(KeyValue.of("format", "wav"))
-            .contains(KeyValue.of("sample_rate", "16000"));
-    }
+	@Test
+	void testLowCardinalityKeyValuesForTranscription() {
+		// Set transcription options
+		transcriptionContext.setPrompt(new AudioTranscriptionPrompt(new ByteArrayResource(new byte[1024]),
+				DashScopeAudioTranscriptionOptions.builder()
+					.withModel("speech-translation-v1")
+					.withFormat(DashScopeAudioTranscriptionOptions.AudioFormat.WAV)
+					.withSampleRate(16000)
+					.build()));
 
-    @Test
-    void testLowCardinalityKeyValuesForSynthesis() {
-        // Set synthesis options
-        synthesisContext.setPrompt(new SpeechSynthesisPrompt(
-                "Test text",
-                DashScopeSpeechSynthesisOptions.builder()
-                        .withModel("sambert-zhichu-v1")
-                        .withResponseFormat(DashScopeSpeechSynthesisApi.ResponseFormat.MP3)  // 使用字符串表示格式
-                        .withSampleRate(16000)
-                        .withVoice("female")
-                        .withVolume(50)
-                        .withSpeed(1.0)
-                        .build()
-        ));
+		KeyValues keyValues = convention.getLowCardinalityKeyValues(transcriptionContext);
 
+		assertThat(keyValues).hasSize(3)
+			.contains(KeyValue.of("model", "speech-translation-v1"))
+			.contains(KeyValue.of("format", "wav"))
+			.contains(KeyValue.of("sample_rate", "16000"));
+	}
 
+	@Test
+	void testLowCardinalityKeyValuesForSynthesis() {
+		// Set synthesis options
+		synthesisContext.setPrompt(new SpeechSynthesisPrompt("Test text",
+				DashScopeSpeechSynthesisOptions.builder()
+					.withModel("sambert-zhichu-v1")
+					.withResponseFormat(DashScopeSpeechSynthesisApi.ResponseFormat.MP3) // 使用字符串表示格式
+					.withSampleRate(16000)
+					.withVoice("female")
+					.withVolume(50)
+					.withSpeed(1.0)
+					.build()));
 
-        KeyValues keyValues = convention.getLowCardinalityKeyValues(synthesisContext);
+		KeyValues keyValues = convention.getLowCardinalityKeyValues(synthesisContext);
 
-        assertThat(keyValues).hasSize(3)
-            .contains(KeyValue.of("model", "sambert-zhichu-v1"))
-            .contains(KeyValue.of("format", "mp3"))
-            .contains(KeyValue.of("sample_rate", "16000"));
-    }
+		assertThat(keyValues).hasSize(3)
+			.contains(KeyValue.of("model", "sambert-zhichu-v1"))
+			.contains(KeyValue.of("format", "mp3"))
+			.contains(KeyValue.of("sample_rate", "16000"));
+	}
 
-    @Test
-    void testHighCardinalityKeyValuesForTranscription() {
-        // Set high cardinality data for transcription context
-        transcriptionContext.setInputLength(1024L);
-        transcriptionContext.setOutputLength(2048L);
-        transcriptionContext.setDuration(5000L);
+	@Test
+	void testHighCardinalityKeyValuesForTranscription() {
+		// Set high cardinality data for transcription context
+		transcriptionContext.setInputLength(1024L);
+		transcriptionContext.setOutputLength(2048L);
+		transcriptionContext.setDuration(5000L);
 
-        KeyValues keyValues = convention.getHighCardinalityKeyValues(transcriptionContext);
+		KeyValues keyValues = convention.getHighCardinalityKeyValues(transcriptionContext);
 
-        assertThat(keyValues).hasSize(3)
-            .contains(KeyValue.of("input_length", "1024"))
-            .contains(KeyValue.of("output_length", "2048"))
-            .contains(KeyValue.of("duration", "5000"));
-    }
+		assertThat(keyValues).hasSize(3)
+			.contains(KeyValue.of("input_length", "1024"))
+			.contains(KeyValue.of("output_length", "2048"))
+			.contains(KeyValue.of("duration", "5000"));
+	}
 
-    @Test
-    void testHighCardinalityKeyValuesForSynthesis() {
-        // Set high cardinality data for synthesis context
-        synthesisContext.setInputLength(100L);
-        synthesisContext.setOutputLength(1000L);
-        synthesisContext.setDuration(3000L);
+	@Test
+	void testHighCardinalityKeyValuesForSynthesis() {
+		// Set high cardinality data for synthesis context
+		synthesisContext.setInputLength(100L);
+		synthesisContext.setOutputLength(1000L);
+		synthesisContext.setDuration(3000L);
 
-        KeyValues keyValues = convention.getHighCardinalityKeyValues(synthesisContext);
+		KeyValues keyValues = convention.getHighCardinalityKeyValues(synthesisContext);
 
-        assertThat(keyValues).hasSize(3)
-            .contains(KeyValue.of("input_length", "100"))
-            .contains(KeyValue.of("output_length", "1000"))
-            .contains(KeyValue.of("duration", "3000"));
-    }
+		assertThat(keyValues).hasSize(3)
+			.contains(KeyValue.of("input_length", "100"))
+			.contains(KeyValue.of("output_length", "1000"))
+			.contains(KeyValue.of("duration", "3000"));
+	}
 
-    @Test
-    void testErrorHandling() {
-        // Test error handling - transcription
-        transcriptionContext.setError(new RuntimeException("Transcription error"));
-        KeyValues transcriptionKeyValues = convention.getHighCardinalityKeyValues(transcriptionContext);
-        assertThat(transcriptionKeyValues).hasSize(1)
-            .contains(KeyValue.of("error", "Transcription error"));
+	@Test
+	void testErrorHandling() {
+		// Test error handling - transcription
+		transcriptionContext.setError(new RuntimeException("Transcription error"));
+		KeyValues transcriptionKeyValues = convention.getHighCardinalityKeyValues(transcriptionContext);
+		assertThat(transcriptionKeyValues).hasSize(1).contains(KeyValue.of("error", "Transcription error"));
 
-        // Test error handling - synthesis
-        synthesisContext.setError(new RuntimeException("Synthesis error"));
-        KeyValues synthesisKeyValues = convention.getHighCardinalityKeyValues(synthesisContext);
-        assertThat(synthesisKeyValues).hasSize(1)
-            .contains(KeyValue.of("error", "Synthesis error"));
-    }
+		// Test error handling - synthesis
+		synthesisContext.setError(new RuntimeException("Synthesis error"));
+		KeyValues synthesisKeyValues = convention.getHighCardinalityKeyValues(synthesisContext);
+		assertThat(synthesisKeyValues).hasSize(1).contains(KeyValue.of("error", "Synthesis error"));
+	}
 
-    @Test
-    void testSupportsContext() {
-        // Test supported context types
-        assertThat(convention.supportsContext(transcriptionContext)).isTrue();
-        assertThat(convention.supportsContext(synthesisContext)).isTrue();
-        assertThat(convention.supportsContext(new Observation.Context())).isFalse();
-    }
+	@Test
+	void testSupportsContext() {
+		// Test supported context types
+		assertThat(convention.supportsContext(transcriptionContext)).isTrue();
+		assertThat(convention.supportsContext(synthesisContext)).isTrue();
+		assertThat(convention.supportsContext(new Observation.Context())).isFalse();
+	}
 
-    @Test
-    void testEmptyContext() {
-        // Test empty context
-        AudioTranscriptionContext emptyTranscriptionContext = new AudioTranscriptionContext();
-        SpeechSynthesisContext emptySynthesisContext = new SpeechSynthesisContext();
+	@Test
+	void testEmptyContext() {
+		// Test empty context
+		AudioTranscriptionContext emptyTranscriptionContext = new AudioTranscriptionContext();
+		SpeechSynthesisContext emptySynthesisContext = new SpeechSynthesisContext();
 
-        KeyValues transcriptionKeyValues = convention.getLowCardinalityKeyValues(emptyTranscriptionContext);
-        KeyValues synthesisKeyValues = convention.getLowCardinalityKeyValues(emptySynthesisContext);
+		KeyValues transcriptionKeyValues = convention.getLowCardinalityKeyValues(emptyTranscriptionContext);
+		KeyValues synthesisKeyValues = convention.getLowCardinalityKeyValues(emptySynthesisContext);
 
-        assertThat(transcriptionKeyValues).isEmpty();
-        assertThat(synthesisKeyValues).isEmpty();
-    }
+		assertThat(transcriptionKeyValues).isEmpty();
+		assertThat(synthesisKeyValues).isEmpty();
+	}
 
-    @Test
-    void testStreamingContext() {
-        // Test streaming context - transcription
-        transcriptionContext.setStreaming(true);
-        transcriptionContext.setChunkCount(5);
-        transcriptionContext.setTotalChunks(10);
+	@Test
+	void testStreamingContext() {
+		// Test streaming context - transcription
+		transcriptionContext.setStreaming(true);
+		transcriptionContext.setChunkCount(5);
+		transcriptionContext.setTotalChunks(10);
 
-        KeyValues transcriptionKeyValues = convention.getHighCardinalityKeyValues(transcriptionContext);
-        assertThat(transcriptionKeyValues).hasSize(2)
-            .contains(KeyValue.of("chunk_count", "5"))
-            .contains(KeyValue.of("total_chunks", "10"));
+		KeyValues transcriptionKeyValues = convention.getHighCardinalityKeyValues(transcriptionContext);
+		assertThat(transcriptionKeyValues).hasSize(2)
+			.contains(KeyValue.of("chunk_count", "5"))
+			.contains(KeyValue.of("total_chunks", "10"));
 
-        // Test streaming context - synthesis
-        synthesisContext.setStreaming(true);
-        synthesisContext.setChunkCount(3);
-        synthesisContext.setTotalChunks(6);
+		// Test streaming context - synthesis
+		synthesisContext.setStreaming(true);
+		synthesisContext.setChunkCount(3);
+		synthesisContext.setTotalChunks(6);
 
-        KeyValues synthesisKeyValues = convention.getHighCardinalityKeyValues(synthesisContext);
-        assertThat(synthesisKeyValues).hasSize(2)
-            .contains(KeyValue.of("chunk_count", "3"))
-            .contains(KeyValue.of("total_chunks", "6"));
-    }
+		KeyValues synthesisKeyValues = convention.getHighCardinalityKeyValues(synthesisContext);
+		assertThat(synthesisKeyValues).hasSize(2)
+			.contains(KeyValue.of("chunk_count", "3"))
+			.contains(KeyValue.of("total_chunks", "6"));
+	}
+
 }

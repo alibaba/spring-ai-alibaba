@@ -40,9 +40,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 /**
- * Test cases for DashScopeSpeechSynthesisModel's observability features.
- * Tests cover both synchronous and streaming scenarios, including observation names,
- * audio parameters handling, and key value generation.
+ * Test cases for DashScopeSpeechSynthesisModel's observability features. Tests cover both
+ * synchronous and streaming scenarios, including observation names, audio parameters
+ * handling, and key value generation.
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
@@ -50,188 +50,190 @@ import static org.mockito.Mockito.when;
  */
 class DashScopeSpeechSynthesisModelObservationTests {
 
-    @Mock
-    private DashScopeSpeechSynthesisApi api;
+	@Mock
+	private DashScopeSpeechSynthesisApi api;
 
-    @Mock
-    private ObservationRegistry observationRegistry;
+	@Mock
+	private ObservationRegistry observationRegistry;
 
-    private DashScopeSpeechSynthesisModel model;
-    private DashScopeSpeechSynthesisOptions options;
-    private RetryTemplate retryTemplate;
+	private DashScopeSpeechSynthesisModel model;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        options = DashScopeSpeechSynthesisOptions.builder()
-                .withModel("sambert-zhichu-v1")
-                .withResponseFormat(DashScopeSpeechSynthesisApi.ResponseFormat.MP3)
-                .withSampleRate(16000)
-                .withVoice("female")
-                .withVolume(50)
-                .withSpeed(1.0)
-                .build();
-        retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
-        model = new DashScopeSpeechSynthesisModel(api, options, retryTemplate, observationRegistry);
-    }
+	private DashScopeSpeechSynthesisOptions options;
 
-    private DashScopeSpeechSynthesisApi.Response createResponse(ByteBuffer audioBuffer) {
-        try {
-            DashScopeSpeechSynthesisApi.Response response = new DashScopeSpeechSynthesisApi.Response();
-            Field audioField = DashScopeSpeechSynthesisApi.Response.class.getDeclaredField("audio");
-            audioField.setAccessible(true);
-            audioField.set(response, audioBuffer);
-            return response;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create response", e);
-        }
-    }
+	private RetryTemplate retryTemplate;
 
-    @Test
-    void testSynchronousCallObservation() {
-        // 准备测试数据
-        String testText = "测试文本";
-        SpeechSynthesisPrompt prompt = new SpeechSynthesisPrompt(testText);
-        ByteBuffer audioBuffer = ByteBuffer.wrap(new byte[1024]);
+	@BeforeEach
+	void setUp() {
+		MockitoAnnotations.openMocks(this);
+		options = DashScopeSpeechSynthesisOptions.builder()
+			.withModel("sambert-zhichu-v1")
+			.withResponseFormat(DashScopeSpeechSynthesisApi.ResponseFormat.MP3)
+			.withSampleRate(16000)
+			.withVoice("female")
+			.withVolume(50)
+			.withSpeed(1.0)
+			.build();
+		retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+		model = new DashScopeSpeechSynthesisModel(api, options, retryTemplate, observationRegistry);
+	}
 
-        // 模拟API响应
-        DashScopeSpeechSynthesisApi.Response apiResponse = createResponse(audioBuffer);
-        when(api.call(any())).thenReturn(apiResponse);
+	private DashScopeSpeechSynthesisApi.Response createResponse(ByteBuffer audioBuffer) {
+		try {
+			DashScopeSpeechSynthesisApi.Response response = new DashScopeSpeechSynthesisApi.Response();
+			Field audioField = DashScopeSpeechSynthesisApi.Response.class.getDeclaredField("audio");
+			audioField.setAccessible(true);
+			audioField.set(response, audioBuffer);
+			return response;
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Failed to create response", e);
+		}
+	}
 
-        // 执行测试
-        SpeechSynthesisResponse response = model.call(prompt);
+	@Test
+	void testSynchronousCallObservation() {
+		// 准备测试数据
+		String testText = "测试文本";
+		SpeechSynthesisPrompt prompt = new SpeechSynthesisPrompt(testText);
+		ByteBuffer audioBuffer = ByteBuffer.wrap(new byte[1024]);
 
-        // 验证结果
-        assertThat(response).isNotNull();
-        assertThat(response.getResult()).isNotNull();
-        assertThat(response.getResult().getOutput()).isNotNull();
-        assertThat(response.getResult().getOutput().getAudio()).isNotNull();
-    }
+		// 模拟API响应
+		DashScopeSpeechSynthesisApi.Response apiResponse = createResponse(audioBuffer);
+		when(api.call(any())).thenReturn(apiResponse);
 
-    @Test
-    void testStreamingCallObservation() {
-        // 准备测试数据
-        String testText = "测试文本";
-        SpeechSynthesisPrompt prompt = new SpeechSynthesisPrompt(testText);
-        ByteBuffer audioBuffer1 = ByteBuffer.wrap(new byte[512]);
-        ByteBuffer audioBuffer2 = ByteBuffer.wrap(new byte[512]);
+		// 执行测试
+		SpeechSynthesisResponse response = model.call(prompt);
 
-        // 模拟API流式响应
-        when(api.streamOut(any())).thenReturn(Flux.just(audioBuffer1, audioBuffer2));
+		// 验证结果
+		assertThat(response).isNotNull();
+		assertThat(response.getResult()).isNotNull();
+		assertThat(response.getResult().getOutput()).isNotNull();
+		assertThat(response.getResult().getOutput().getAudio()).isNotNull();
+	}
 
-        // 执行测试
-        Flux<SpeechSynthesisResponse> responseFlux = model.stream(prompt);
+	@Test
+	void testStreamingCallObservation() {
+		// 准备测试数据
+		String testText = "测试文本";
+		SpeechSynthesisPrompt prompt = new SpeechSynthesisPrompt(testText);
+		ByteBuffer audioBuffer1 = ByteBuffer.wrap(new byte[512]);
+		ByteBuffer audioBuffer2 = ByteBuffer.wrap(new byte[512]);
 
-        // 验证结果
-        StepVerifier.create(responseFlux)
-                .expectNextCount(2)
-                .verifyComplete();
-    }
+		// 模拟API流式响应
+		when(api.streamOut(any())).thenReturn(Flux.just(audioBuffer1, audioBuffer2));
 
-    @Test
-    void testErrorHandlingObservation() {
-        // 准备测试数据
-        String testText = "测试文本";
-        SpeechSynthesisPrompt prompt = new SpeechSynthesisPrompt(testText);
+		// 执行测试
+		Flux<SpeechSynthesisResponse> responseFlux = model.stream(prompt);
 
-        // 模拟API错误
-        when(api.call(any())).thenThrow(new RuntimeException("API调用失败"));
+		// 验证结果
+		StepVerifier.create(responseFlux).expectNextCount(2).verifyComplete();
+	}
 
-        // 执行测试并验证异常
-        try {
-            model.call(prompt);
-        } catch (Exception e) {
-            assertThat(e).isInstanceOf(RuntimeException.class);
-            assertThat(e.getMessage()).isEqualTo("API调用失败");
-        }
-    }
+	@Test
+	void testErrorHandlingObservation() {
+		// 准备测试数据
+		String testText = "测试文本";
+		SpeechSynthesisPrompt prompt = new SpeechSynthesisPrompt(testText);
 
-    @Test
-    void testStreamingErrorHandlingObservation() {
-        // 准备测试数据
-        String testText = "测试文本";
-        SpeechSynthesisPrompt prompt = new SpeechSynthesisPrompt(testText);
+		// 模拟API错误
+		when(api.call(any())).thenThrow(new RuntimeException("API调用失败"));
 
-        // 模拟API流式错误
-        when(api.streamOut(any())).thenReturn(Flux.error(new RuntimeException("流式处理失败")));
+		// 执行测试并验证异常
+		try {
+			model.call(prompt);
+		}
+		catch (Exception e) {
+			assertThat(e).isInstanceOf(RuntimeException.class);
+			assertThat(e.getMessage()).isEqualTo("API调用失败");
+		}
+	}
 
-        // 执行测试
-        Flux<SpeechSynthesisResponse> responseFlux = model.stream(prompt);
+	@Test
+	void testStreamingErrorHandlingObservation() {
+		// 准备测试数据
+		String testText = "测试文本";
+		SpeechSynthesisPrompt prompt = new SpeechSynthesisPrompt(testText);
 
-        // 验证错误处理
-        StepVerifier.create(responseFlux)
-                .expectError(RuntimeException.class)
-                .verify();
-    }
+		// 模拟API流式错误
+		when(api.streamOut(any())).thenReturn(Flux.error(new RuntimeException("流式处理失败")));
 
-    @Test
-    void testEmptyPromptHandling() {
-        // 准备空提示
-        SpeechSynthesisPrompt emptyPrompt = new SpeechSynthesisPrompt("");
+		// 执行测试
+		Flux<SpeechSynthesisResponse> responseFlux = model.stream(prompt);
 
-        // 模拟API响应
-        ByteBuffer audioBuffer = ByteBuffer.wrap(new byte[1024]);
-        DashScopeSpeechSynthesisApi.Response apiResponse = createResponse(audioBuffer);
-        when(api.call(any())).thenReturn(apiResponse);
+		// 验证错误处理
+		StepVerifier.create(responseFlux).expectError(RuntimeException.class).verify();
+	}
 
-        // 执行测试
-        SpeechSynthesisResponse response = model.call(emptyPrompt);
+	@Test
+	void testEmptyPromptHandling() {
+		// 准备空提示
+		SpeechSynthesisPrompt emptyPrompt = new SpeechSynthesisPrompt("");
 
-        // 验证结果
-        assertThat(response).isNotNull();
-        assertThat(response.getResult()).isNotNull();
-    }
+		// 模拟API响应
+		ByteBuffer audioBuffer = ByteBuffer.wrap(new byte[1024]);
+		DashScopeSpeechSynthesisApi.Response apiResponse = createResponse(audioBuffer);
+		when(api.call(any())).thenReturn(apiResponse);
 
-    @Test
-    void testCustomOptionsObservation() {
-        // 准备自定义选项
-        DashScopeSpeechSynthesisOptions customOptions = DashScopeSpeechSynthesisOptions.builder()
-                .withModel("custom-model")
-                .withResponseFormat(DashScopeSpeechSynthesisApi.ResponseFormat.WAV)
-                .withSampleRate(44100)
-                .withVoice("male")
-                .withVolume(75)
-                .withSpeed(1.5)
-                .build();
+		// 执行测试
+		SpeechSynthesisResponse response = model.call(emptyPrompt);
 
-        // 创建带自定义选项的模型
-        DashScopeSpeechSynthesisModel customModel = new DashScopeSpeechSynthesisModel(api, customOptions, retryTemplate, observationRegistry);
+		// 验证结果
+		assertThat(response).isNotNull();
+		assertThat(response.getResult()).isNotNull();
+	}
 
-        // 准备测试数据
-        String testText = "测试文本";
-        SpeechSynthesisPrompt prompt = new SpeechSynthesisPrompt(testText);
-        ByteBuffer audioBuffer = ByteBuffer.wrap(new byte[1024]);
+	@Test
+	void testCustomOptionsObservation() {
+		// 准备自定义选项
+		DashScopeSpeechSynthesisOptions customOptions = DashScopeSpeechSynthesisOptions.builder()
+			.withModel("custom-model")
+			.withResponseFormat(DashScopeSpeechSynthesisApi.ResponseFormat.WAV)
+			.withSampleRate(44100)
+			.withVoice("male")
+			.withVolume(75)
+			.withSpeed(1.5)
+			.build();
 
-        // 模拟API响应
-        DashScopeSpeechSynthesisApi.Response apiResponse = createResponse(audioBuffer);
-        when(api.call(any())).thenReturn(apiResponse);
+		// 创建带自定义选项的模型
+		DashScopeSpeechSynthesisModel customModel = new DashScopeSpeechSynthesisModel(api, customOptions, retryTemplate,
+				observationRegistry);
 
-        // 执行测试
-        SpeechSynthesisResponse response = customModel.call(prompt);
+		// 准备测试数据
+		String testText = "测试文本";
+		SpeechSynthesisPrompt prompt = new SpeechSynthesisPrompt(testText);
+		ByteBuffer audioBuffer = ByteBuffer.wrap(new byte[1024]);
 
-        // 验证结果
-        assertThat(response).isNotNull();
-        assertThat(response.getResult()).isNotNull();
-    }
+		// 模拟API响应
+		DashScopeSpeechSynthesisApi.Response apiResponse = createResponse(audioBuffer);
+		when(api.call(any())).thenReturn(apiResponse);
 
-    @Test
-    void testObservationContext() {
-        // 准备测试数据
-        String testText = "测试文本";
-        SpeechSynthesisPrompt prompt = new SpeechSynthesisPrompt(testText);
-        ByteBuffer audioBuffer = ByteBuffer.wrap(new byte[1024]);
+		// 执行测试
+		SpeechSynthesisResponse response = customModel.call(prompt);
 
-        // 模拟API响应
-        DashScopeSpeechSynthesisApi.Response apiResponse = createResponse(audioBuffer);
-        when(api.call(any())).thenReturn(apiResponse);
+		// 验证结果
+		assertThat(response).isNotNull();
+		assertThat(response.getResult()).isNotNull();
+	}
 
-        // 执行测试
-        SpeechSynthesisResponse response = model.call(prompt);
+	@Test
+	void testObservationContext() {
+		// 准备测试数据
+		String testText = "测试文本";
+		SpeechSynthesisPrompt prompt = new SpeechSynthesisPrompt(testText);
+		ByteBuffer audioBuffer = ByteBuffer.wrap(new byte[1024]);
 
-        // 验证观察上下文
-        assertThat(response).isNotNull();
-        assertThat(response.getResult()).isNotNull();
-        assertThat(response.getResult().getOutput()).isNotNull();
-        assertThat(response.getResult().getOutput().getAudio()).isNotNull();
-    }
+		// 模拟API响应
+		DashScopeSpeechSynthesisApi.Response apiResponse = createResponse(audioBuffer);
+		when(api.call(any())).thenReturn(apiResponse);
+
+		// 执行测试
+		SpeechSynthesisResponse response = model.call(prompt);
+
+		// 验证观察上下文
+		assertThat(response).isNotNull();
+		assertThat(response.getResult()).isNotNull();
+		assertThat(response.getResult().getOutput()).isNotNull();
+		assertThat(response.getResult().getOutput().getAudio()).isNotNull();
+	}
+
 }

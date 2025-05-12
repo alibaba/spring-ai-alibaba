@@ -20,8 +20,7 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 
 /**
- * Context class for audio transcription observations. This class holds the
- * context
+ * Context class for audio transcription observations. This class holds the context
  * information for audio transcription operations.
  */
 public class AudioTranscriptionContext extends Observation.Context {
@@ -145,4 +144,5 @@ public class AudioTranscriptionContext extends Observation.Context {
 	public void setTotalChunks(Integer totalChunks) {
 		this.totalChunks = totalChunks;
 	}
+
 }

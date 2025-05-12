@@ -36,7 +36,8 @@ public class DashScopeAudioObservationConvention implements ObservationConventio
 	public String getContextualName(Observation.Context context) {
 		if (context instanceof AudioTranscriptionContext) {
 			return "spring.ai.audio.transcription";
-		} else if (context instanceof SpeechSynthesisContext) {
+		}
+		else if (context instanceof SpeechSynthesisContext) {
 			return "spring.ai.audio.synthesis";
 		}
 		return NAME;
@@ -48,12 +49,13 @@ public class DashScopeAudioObservationConvention implements ObservationConventio
 
 		if (context instanceof AudioTranscriptionContext audioContext) {
 			keyValues = keyValues.and(KeyValue.of("model", audioContext.getModelName()))
-					.and(KeyValue.of("format", audioContext.getFormat()))
-					.and(KeyValue.of("sample_rate", String.valueOf(audioContext.getSampleRate())));
-		} else if (context instanceof SpeechSynthesisContext synthesisContext) {
+				.and(KeyValue.of("format", audioContext.getFormat()))
+				.and(KeyValue.of("sample_rate", String.valueOf(audioContext.getSampleRate())));
+		}
+		else if (context instanceof SpeechSynthesisContext synthesisContext) {
 			keyValues = keyValues.and(KeyValue.of("model", synthesisContext.getModelName()))
-					.and(KeyValue.of("format", synthesisContext.getFormat()))
-					.and(KeyValue.of("sample_rate", String.valueOf(synthesisContext.getSampleRate())));
+				.and(KeyValue.of("format", synthesisContext.getFormat()))
+				.and(KeyValue.of("sample_rate", String.valueOf(synthesisContext.getSampleRate())));
 		}
 
 		return keyValues;
@@ -65,21 +67,22 @@ public class DashScopeAudioObservationConvention implements ObservationConventio
 
 		if (context instanceof AudioTranscriptionContext audioContext) {
 			keyValues = keyValues.and(KeyValue.of("input_length", String.valueOf(audioContext.getInputLength())))
-					.and(KeyValue.of("output_length", String.valueOf(audioContext.getOutputLength())))
-					.and(KeyValue.of("duration", String.valueOf(audioContext.getDuration())));
+				.and(KeyValue.of("output_length", String.valueOf(audioContext.getOutputLength())))
+				.and(KeyValue.of("duration", String.valueOf(audioContext.getDuration())));
 
 			if (Boolean.TRUE.equals(audioContext.getStreaming())) {
 				keyValues = keyValues.and(KeyValue.of("chunk_count", String.valueOf(audioContext.getChunkCount())))
-						.and(KeyValue.of("total_chunks", String.valueOf(audioContext.getTotalChunks())));
+					.and(KeyValue.of("total_chunks", String.valueOf(audioContext.getTotalChunks())));
 			}
-		} else if (context instanceof SpeechSynthesisContext synthesisContext) {
+		}
+		else if (context instanceof SpeechSynthesisContext synthesisContext) {
 			keyValues = keyValues.and(KeyValue.of("input_length", String.valueOf(synthesisContext.getInputLength())))
-					.and(KeyValue.of("output_length", String.valueOf(synthesisContext.getOutputLength())))
-					.and(KeyValue.of("duration", String.valueOf(synthesisContext.getDuration())));
+				.and(KeyValue.of("output_length", String.valueOf(synthesisContext.getOutputLength())))
+				.and(KeyValue.of("duration", String.valueOf(synthesisContext.getDuration())));
 
 			if (Boolean.TRUE.equals(synthesisContext.getStreaming())) {
 				keyValues = keyValues.and(KeyValue.of("chunk_count", String.valueOf(synthesisContext.getChunkCount())))
-						.and(KeyValue.of("total_chunks", String.valueOf(synthesisContext.getTotalChunks())));
+					.and(KeyValue.of("total_chunks", String.valueOf(synthesisContext.getTotalChunks())));
 			}
 		}
 
