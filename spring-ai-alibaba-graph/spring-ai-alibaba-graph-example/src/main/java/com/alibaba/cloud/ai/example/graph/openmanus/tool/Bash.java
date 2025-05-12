@@ -82,7 +82,7 @@ public class Bash implements Function<String, ToolExecuteResult> {
 	}
 
 	public ToolExecuteResult run(String toolInput) {
-		log.info("Bash toolInput:" + toolInput);
+		log.info("Bash toolInput:{}", toolInput);
 		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
 		});
 		String command = (String) toolInputMap.get("command");

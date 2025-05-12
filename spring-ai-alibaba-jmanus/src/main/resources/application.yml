@@ -34,3 +34,8 @@ spring:
     console:
       enabled: true
       path: /h2-console
+logging:
+  file:
+    name: ./logs/info.log
+  level:
+    root: INFO

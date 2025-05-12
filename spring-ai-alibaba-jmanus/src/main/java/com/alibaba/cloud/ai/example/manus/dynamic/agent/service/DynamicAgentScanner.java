@@ -75,7 +75,7 @@ public class DynamicAgentScanner {
 					}
 				}
 				catch (ClassNotFoundException e) {
-					log.error("加载类失败: " + beanDefinition.getBeanClassName(), e);
+					log.error("加载类失败: {}", beanDefinition.getBeanClassName(), e);
 				}
 			}
 

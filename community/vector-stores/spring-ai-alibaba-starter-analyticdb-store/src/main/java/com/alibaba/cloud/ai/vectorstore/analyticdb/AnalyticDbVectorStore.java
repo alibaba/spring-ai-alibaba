@@ -169,7 +169,7 @@ public class AnalyticDbVectorStore extends AbstractObservationVectorStore implem
 				.setNamespacePassword(this.config.getNamespacePassword())
 				.setCollection(this.collectionName);
 			this.client.describeCollection(describeRequest);
-			logger.debug("collection" + this.collectionName + "already exists");
+			logger.debug("collection{}already exists", this.collectionName);
 		}
 		catch (TeaException e) {
 			if (Objects.equals(e.getStatusCode(), 404)) {
@@ -191,7 +191,7 @@ public class AnalyticDbVectorStore extends AbstractObservationVectorStore implem
 					.setMetadata(metadata)
 					.setFullTextRetrievalFields(CONTENT_FIELD_NAME);
 				this.client.createCollection(createRequest);
-				logger.debug("collection" + this.collectionName + "created");
+				logger.debug("collection{}created", this.collectionName);
 			}
 			else {
 				throw new RuntimeException(

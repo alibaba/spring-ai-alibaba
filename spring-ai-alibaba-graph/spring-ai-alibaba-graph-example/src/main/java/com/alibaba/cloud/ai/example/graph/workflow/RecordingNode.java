@@ -34,11 +34,11 @@ public class RecordingNode implements NodeAction {
 
 		Map<String, Object> updatedState = new HashMap<>();
 		if (feedback.contains("positive")) {
-			logger.info("Received positive feedback: " + feedback);
+			logger.info("Received positive feedback: {}", feedback);
 			updatedState.put("solution", "Praise, no action taken.");
 		}
 		else {
-			logger.info("Received negative feedback: " + feedback);
+			logger.info("Received negative feedback: {}", feedback);
 			updatedState.put("solution", feedback);
 		}
 
