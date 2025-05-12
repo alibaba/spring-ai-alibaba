@@ -205,20 +205,18 @@ public class DashScopeImageModel implements ImageModel {
 
 		ImageResponseMetadata md = new ImageResponseMetadata();
 
-        Optional.ofNullable(usage)
-                .map(DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseUsage::imageCount)
-                .ifPresent(count -> md.put("imageCount", count));
-        Optional.ofNullable(tm).ifPresent(metrics -> {
-            md.put("taskTotal", metrics.total());
-            md.put("taskSucceeded", metrics.SUCCEEDED());
-            md.put("taskFailed", metrics.FAILED());
-        });
+		Optional.ofNullable(usage)
+			.map(DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseUsage::imageCount)
+			.ifPresent(count -> md.put("imageCount", count));
+		Optional.ofNullable(tm).ifPresent(metrics -> {
+			md.put("taskTotal", metrics.total());
+			md.put("taskSucceeded", metrics.SUCCEEDED());
+			md.put("taskFailed", metrics.FAILED());
+		});
 		md.put("requestId", re.requestId());
 		md.put("taskStatus", out.taskStatus());
-        Optional.ofNullable(out.code())
-                .ifPresent(code -> md.put("code", code));
-        Optional.ofNullable(out.message())
-                .ifPresent(msg -> md.put("message", msg));
+		Optional.ofNullable(out.code()).ifPresent(code -> md.put("code", code));
+		Optional.ofNullable(out.message()).ifPresent(msg -> md.put("message", msg));
 
 		return md;
 	}
