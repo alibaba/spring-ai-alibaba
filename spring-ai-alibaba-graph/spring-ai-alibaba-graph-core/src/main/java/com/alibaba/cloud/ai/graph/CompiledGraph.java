@@ -686,18 +686,26 @@ public class CompiledGraph {
 				.stream()
 				.filter(e -> e.getValue() instanceof AsyncGenerator)
 				.findFirst()
-				.map(e -> {
-					final AsyncGenerator<Output> generator = (AsyncGenerator<Output>) e.getValue();
+				.map(generatorEntry -> {
+					final AsyncGenerator<Output> generator = (AsyncGenerator<Output>) generatorEntry.getValue();
 					return Data.composeWith(generator.map(n -> {
 						n.setSubGraph(true);
 						return n;
 					}), data -> {
 
 						if (data != null) {
-
 							if (data instanceof Map<?, ?>) {
-								// Assume that subgraph return complete state
-								currentState = OverAllState.updateState(new HashMap<>(), (Map<String, Object>) data,
+								// Assume that the whatever used appender channel doesn't
+								// accept duplicates
+								var partialStateWithoutGenerator = partialState.entrySet()
+									.stream()
+									.filter(e -> !Objects.equals(e.getKey(), generatorEntry.getKey()))
+									.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+								var intermediateState = OverAllState.updateState(currentState,
+										partialStateWithoutGenerator, overAllState().keyStrategies());
+
+								currentState = OverAllState.updateState(currentState, intermediateState,
 										overAllState().keyStrategies());
 							}
 							else {
