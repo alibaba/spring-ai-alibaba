@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.dashscope.metadata.observation;
+package com.alibaba.cloud.ai.dashscope.audio.observation;
 
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisOptions;
@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisResponse;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.ObservationRegistry.ObservationConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -31,17 +32,18 @@ import org.springframework.retry.support.RetryTemplate;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Test cases for DashScopeSpeechSynthesisModel's observability features. Covers both
- * synchronous and streaming scenarios, including observation names, audio parameter
- * handling, and key-value generation.
+ * Test cases for DashScopeSpeechSynthesisModel's observability features. Tests cover both
+ * synchronous and streaming scenarios, including observation names, audio parameters
+ * handling, and key value generation.
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
@@ -52,8 +54,9 @@ class DashScopeSpeechSynthesisModelObservationTests {
 	@Mock
 	private DashScopeSpeechSynthesisApi api;
 
-	@Mock
 	private ObservationRegistry observationRegistry;
+
+	private ObservationConfig observationConfig;
 
 	private DashScopeSpeechSynthesisModel model;
 
@@ -64,6 +67,13 @@ class DashScopeSpeechSynthesisModelObservationTests {
 	@BeforeEach
 	void setUp() {
 		MockitoAnnotations.openMocks(this);
+
+		// Initialize ObservationRegistry
+		observationRegistry = mock(ObservationRegistry.class);
+		observationConfig = mock(ObservationConfig.class);
+		when(observationRegistry.observationConfig()).thenReturn(observationConfig);
+		when(observationConfig.isObservationEnabled(any(), any())).thenReturn(true);
+
 		options = DashScopeSpeechSynthesisOptions.builder()
 			.withModel("sambert-zhichu-v1")
 			.withResponseFormat(DashScopeSpeechSynthesisApi.ResponseFormat.MP3)
@@ -76,19 +86,6 @@ class DashScopeSpeechSynthesisModelObservationTests {
 		model = new DashScopeSpeechSynthesisModel(api, options, retryTemplate, observationRegistry);
 	}
 
-	private DashScopeSpeechSynthesisApi.Response createResponse(ByteBuffer audioBuffer) {
-		try {
-			DashScopeSpeechSynthesisApi.Response response = new DashScopeSpeechSynthesisApi.Response();
-			Field audioField = DashScopeSpeechSynthesisApi.Response.class.getDeclaredField("audio");
-			audioField.setAccessible(true);
-			audioField.set(response, audioBuffer);
-			return response;
-		}
-		catch (Exception e) {
-			throw new RuntimeException("Failed to create response", e);
-		}
-	}
-
 	@Test
 	void testSynchronousCallObservation() {
 		// Prepare test data
@@ -97,13 +94,14 @@ class DashScopeSpeechSynthesisModelObservationTests {
 		ByteBuffer audioBuffer = ByteBuffer.wrap(new byte[1024]);
 
 		// Mock API response
-		DashScopeSpeechSynthesisApi.Response apiResponse = createResponse(audioBuffer);
+		DashScopeSpeechSynthesisApi.Response apiResponse = new DashScopeSpeechSynthesisApi.Response();
+		apiResponse.audio = audioBuffer;
 		when(api.call(any())).thenReturn(apiResponse);
 
 		// Execute test
 		SpeechSynthesisResponse response = model.call(prompt);
 
-		// Verify result
+		// Verify results
 		assertThat(response).isNotNull();
 		assertThat(response.getResult()).isNotNull();
 		assertThat(response.getResult().getOutput()).isNotNull();
@@ -124,7 +122,7 @@ class DashScopeSpeechSynthesisModelObservationTests {
 		// Execute test
 		Flux<SpeechSynthesisResponse> responseFlux = model.stream(prompt);
 
-		// Verify result
+		// Verify results
 		StepVerifier.create(responseFlux).expectNextCount(2).verifyComplete();
 	}
 
@@ -170,13 +168,14 @@ class DashScopeSpeechSynthesisModelObservationTests {
 
 		// Mock API response
 		ByteBuffer audioBuffer = ByteBuffer.wrap(new byte[1024]);
-		DashScopeSpeechSynthesisApi.Response apiResponse = createResponse(audioBuffer);
+		DashScopeSpeechSynthesisApi.Response apiResponse = new DashScopeSpeechSynthesisApi.Response();
+		apiResponse.audio = audioBuffer;
 		when(api.call(any())).thenReturn(apiResponse);
 
 		// Execute test
 		SpeechSynthesisResponse response = model.call(emptyPrompt);
 
-		// Verify result
+		// Verify results
 		assertThat(response).isNotNull();
 		assertThat(response.getResult()).isNotNull();
 	}
@@ -203,13 +202,14 @@ class DashScopeSpeechSynthesisModelObservationTests {
 		ByteBuffer audioBuffer = ByteBuffer.wrap(new byte[1024]);
 
 		// Mock API response
-		DashScopeSpeechSynthesisApi.Response apiResponse = createResponse(audioBuffer);
+		DashScopeSpeechSynthesisApi.Response apiResponse = new DashScopeSpeechSynthesisApi.Response();
+		apiResponse.audio = audioBuffer;
 		when(api.call(any())).thenReturn(apiResponse);
 
 		// Execute test
 		SpeechSynthesisResponse response = customModel.call(prompt);
 
-		// Verify result
+		// Verify results
 		assertThat(response).isNotNull();
 		assertThat(response.getResult()).isNotNull();
 	}
@@ -222,7 +222,8 @@ class DashScopeSpeechSynthesisModelObservationTests {
 		ByteBuffer audioBuffer = ByteBuffer.wrap(new byte[1024]);
 
 		// Mock API response
-		DashScopeSpeechSynthesisApi.Response apiResponse = createResponse(audioBuffer);
+		DashScopeSpeechSynthesisApi.Response apiResponse = new DashScopeSpeechSynthesisApi.Response();
+		apiResponse.audio = audioBuffer;
 		when(api.call(any())).thenReturn(apiResponse);
 
 		// Execute test

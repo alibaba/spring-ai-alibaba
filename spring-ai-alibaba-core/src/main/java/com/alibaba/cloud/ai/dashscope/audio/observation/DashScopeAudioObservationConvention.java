@@ -25,7 +25,7 @@ import io.micrometer.observation.ObservationConvention;
  */
 public class DashScopeAudioObservationConvention implements ObservationConvention<Observation.Context> {
 
-	private static final String NAME = "spring.ai.audio";
+	private static final String NAME = "spring.ai.alibaba.audio";
 
 	@Override
 	public String getName() {
@@ -66,23 +66,26 @@ public class DashScopeAudioObservationConvention implements ObservationConventio
 		KeyValues keyValues = KeyValues.empty();
 
 		if (context instanceof AudioTranscriptionContext audioContext) {
-			keyValues = keyValues.and(KeyValue.of("input_length", String.valueOf(audioContext.getInputLength())))
-				.and(KeyValue.of("output_length", String.valueOf(audioContext.getOutputLength())))
-				.and(KeyValue.of("duration", String.valueOf(audioContext.getDuration())));
-
 			if (Boolean.TRUE.equals(audioContext.getStreaming())) {
 				keyValues = keyValues.and(KeyValue.of("chunk_count", String.valueOf(audioContext.getChunkCount())))
 					.and(KeyValue.of("total_chunks", String.valueOf(audioContext.getTotalChunks())));
 			}
+			else {
+				keyValues = keyValues.and(KeyValue.of("input_length", String.valueOf(audioContext.getInputLength())))
+					.and(KeyValue.of("output_length", String.valueOf(audioContext.getOutputLength())))
+					.and(KeyValue.of("duration", String.valueOf(audioContext.getDuration())));
+			}
 		}
 		else if (context instanceof SpeechSynthesisContext synthesisContext) {
-			keyValues = keyValues.and(KeyValue.of("input_length", String.valueOf(synthesisContext.getInputLength())))
-				.and(KeyValue.of("output_length", String.valueOf(synthesisContext.getOutputLength())))
-				.and(KeyValue.of("duration", String.valueOf(synthesisContext.getDuration())));
-
 			if (Boolean.TRUE.equals(synthesisContext.getStreaming())) {
 				keyValues = keyValues.and(KeyValue.of("chunk_count", String.valueOf(synthesisContext.getChunkCount())))
 					.and(KeyValue.of("total_chunks", String.valueOf(synthesisContext.getTotalChunks())));
+			}
+			else {
+				keyValues = keyValues
+					.and(KeyValue.of("input_length", String.valueOf(synthesisContext.getInputLength())))
+					.and(KeyValue.of("output_length", String.valueOf(synthesisContext.getOutputLength())))
+					.and(KeyValue.of("duration", String.valueOf(synthesisContext.getDuration())));
 			}
 		}
 
