@@ -298,9 +298,34 @@ public class StateGraph {
 	 * @param overAllState the over all state
 	 * @param plainTextStateSerializer the plain text state serializer
 	 */
+	@Deprecated
 	public StateGraph(OverAllState overAllState, PlainTextStateSerializer plainTextStateSerializer) {
 		this.overAllState = overAllState;
 		this.stateSerializer = plainTextStateSerializer;
+	}
+
+	/**
+	 * Instantiates a new State graph.
+	 * @param name the name
+	 * @param overAllStateFactory the over all state factory
+	 * @param plainTextStateSerializer the plain text state serializer
+	 */
+	public StateGraph(String name, OverAllStateFactory overAllStateFactory,
+			PlainTextStateSerializer plainTextStateSerializer) {
+		this.name = name;
+		this.overAllStateFactory = overAllStateFactory;
+		this.stateSerializer = plainTextStateSerializer;
+	}
+
+	/**
+	 * Instantiates a new State graph.
+	 * @param name the name
+	 * @param overAllStateFactory the over all state factory
+	 */
+	public StateGraph(String name, OverAllStateFactory overAllStateFactory) {
+		this.name = name;
+		this.overAllStateFactory = overAllStateFactory;
+		this.stateSerializer = new GsonSerializer();
 	}
 
 	/**
@@ -327,6 +352,7 @@ public class StateGraph {
 	 * @param name the name
 	 * @param overAllState the over all state
 	 */
+	@Deprecated
 	public StateGraph(String name, OverAllState overAllState) {
 		this.name = name;
 		this.overAllState = overAllState;
@@ -337,29 +363,10 @@ public class StateGraph {
 	 * Instantiates a new State graph.
 	 * @param overAllState the over all state
 	 */
+	@Deprecated
 	public StateGraph(OverAllState overAllState) {
 		this.overAllState = overAllState;
 		this.stateSerializer = new GsonSerializer();
-	}
-
-	/**
-	 * Instantiates a new State graph.
-	 * @param name the name
-	 * @param factory the factory
-	 */
-	public StateGraph(String name, AgentStateFactory<OverAllState> factory) {
-		this.name = name;
-		this.overAllState = factory.apply(Map.of());
-		this.stateSerializer = new GsonSerializer2(factory);
-	}
-
-	/**
-	 * Instantiates a new State graph.
-	 * @param factory the factory
-	 */
-	public StateGraph(AgentStateFactory<OverAllState> factory) {
-		this.overAllState = factory.apply(Map.of());
-		this.stateSerializer = new GsonSerializer2(factory);
 	}
 
 	/**

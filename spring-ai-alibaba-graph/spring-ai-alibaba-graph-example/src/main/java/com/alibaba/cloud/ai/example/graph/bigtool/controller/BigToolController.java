@@ -61,13 +61,12 @@ public class BigToolController {
 		this.initializeVectorStore();
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
 
-		AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
+		OverAllStateFactory stateFactory = () -> {
 			OverAllState state = new OverAllState();
 			state.registerKeyAndStrategy(INPUT_KEY, new ReplaceStrategy());
 			state.registerKeyAndStrategy(HIT_TOOL, new ReplaceStrategy());
 			state.registerKeyAndStrategy(SOLUTION, new ReplaceStrategy());
 			state.registerKeyAndStrategy(TOOL_LIST, new ReplaceStrategy());
-			state.input(inputs);
 			return state;
 		};
 
