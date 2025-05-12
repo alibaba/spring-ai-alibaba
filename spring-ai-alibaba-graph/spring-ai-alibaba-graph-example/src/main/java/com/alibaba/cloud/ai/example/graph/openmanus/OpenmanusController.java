@@ -20,11 +20,7 @@ import java.util.Map;
 
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.Builder;
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.PlanningTool;
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.GraphRepresentation;
-import com.alibaba.cloud.ai.graph.GraphStateException;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -80,14 +76,13 @@ public class OpenmanusController {
 
 	public void initGraph() throws GraphStateException {
 
-		AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
+		OverAllStateFactory stateFactory = () -> {
 			OverAllState state = new OverAllState();
 			state.registerKeyAndStrategy("plan", new ReplaceStrategy());
 			state.registerKeyAndStrategy("step_prompt", new ReplaceStrategy());
 			state.registerKeyAndStrategy("step_output", new ReplaceStrategy());
 			state.registerKeyAndStrategy("final_output", new ReplaceStrategy());
 
-			state.input(inputs);
 			return state;
 		};
 
