@@ -30,6 +30,17 @@ public class BaiduSearchProperties extends CommonToolCallProperties {
 
 	public BaiduSearchProperties() {
 		super("https://www.baidu.com/s?wd=");
+		this.maxResults = 50;
+	}
+
+	private Integer maxResults;
+
+	public Integer getMaxResults() {
+		return maxResults;
+	}
+
+	public void setMaxResults(Integer maxResults) {
+		this.maxResults = maxResults;
 	}
 
 }
