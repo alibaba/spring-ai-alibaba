@@ -1,0 +1,500 @@
+/* plan-template.css - 计划模板页面样式 */
+
+/* 计划容器 - 整体布局 */
+.plan-container {
+    padding: 0 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: calc(100vh - 120px);
+    overflow-y: auto;
+}
+
+/* 通用的部分样式 */
+.plan-input-section,
+.plan-result-section,
+.plan-json-section,
+.plan-execution-section {
+    background-color: #fff;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    padding: 16px;
+    transition: box-shadow 0.3s ease;
+}
+
+.plan-input-section:hover,
+.plan-result-section:hover,
+.plan-json-section:hover,
+.plan-execution-section:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e8eaed;
+}
+
+.section-header h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #202124;
+    margin: 0;
+}
+
+.section-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* 输入区域样式 */
+.plan-input-section {
+    flex: 0 0 auto;
+}
+
+.input-field {
+    margin-bottom: 15px;
+}
+
+.input-field label {
+    display: block;
+    font-weight: 500;
+    color: #5f6368;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.input-field textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    font-size: 14px;
+    resize: vertical;
+    font-family: inherit;
+    transition: border-color 0.2s ease;
+}
+
+.input-field textarea:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+}
+
+.submit-area {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.submit-btn {
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.submit-btn:hover {
+    background-color: #1557b0;
+}
+
+/* 计划文本预览区域 */
+.plan-result-section {
+    flex: 1 0 auto;
+}
+
+.plan-text-preview {
+    position: relative;
+    min-height: 200px;
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.preview-content {
+    padding: 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #e8eaed;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #202124;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    min-height: 200px;
+}
+
+.code-view {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    font-size: 13px;
+}
+
+/* 占位文本样式 */
+.placeholder-text {
+    color: #9aa0a6;
+    font-style: italic;
+    text-align: center;
+    margin-top: 80px;
+}
+
+/* 编辑模式 */
+.hidden {
+    display: none;
+}
+
+#plan-text-editor,
+#plan-json-editor {
+    width: 100%;
+    min-height: 200px;
+    padding: 12px;
+    border: 1px solid #1a73e8;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.5;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    resize: vertical;
+    background-color: #fff;
+}
+
+#plan-text-editor:focus,
+#plan-json-editor:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+}
+
+/* JSON预览区域 */
+.plan-json-section {
+    flex: 1 0 auto;
+}
+
+.plan-json-preview {
+    position: relative;
+    min-height: 200px;
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+/* 底部操作按钮 */
+.plan-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 0;
+}
+
+/* API调用链接区域 */
+.api-call-link {
+    flex: 1;
+    font-size: 14px;
+    color: #5f6368;
+}
+
+/* API URL容器 */
+.api-url-container {
+    margin-top: 5px;
+}
+
+/* API说明文本 */
+.api-description {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+}
+
+/* 执行按钮区域 */
+.execution-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* 清空参数按钮 */
+#clearParamBtn {
+    margin-right: 10px;
+}
+
+.primary-btn {
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 16px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.primary-btn:hover {
+    background-color: #1557b0;
+}
+
+.secondary-btn {
+    background-color: #fff;
+    color: #1a73e8;
+    border: 1px solid #1a73e8;
+    border-radius: 4px;
+    padding: 10px 16px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.secondary-btn:hover {
+    background-color: #f8f9fa;
+    border-color: #174ea6;
+}
+
+/* 历史记录列表 */
+.plan-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.plan-history-item {
+    padding: 12px;
+    border: 1px solid #e8eaed;
+    border-radius: 6px;
+    background-color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.plan-history-item:hover {
+    background-color: #f8f9fa;
+    border-color: #dadce0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.history-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.history-date {
+    font-size: 12px;
+    color: #5f6368;
+}
+
+.history-status {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.history-status.completed {
+    background-color: #e6f4ea;
+    color: #137333;
+}
+
+.history-status.failed {
+    background-color: #fce8e6;
+    color: #c5221f;
+}
+
+.history-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #202124;
+    margin-bottom: 4px;
+}
+
+.history-steps {
+    font-size: 12px;
+    color: #5f6368;
+}
+
+/* 对话框样式 */
+.dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
+}
+
+.dialog-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.dialog-container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    width: 500px;
+    max-width: 90vw;
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+}
+
+.dialog-overlay.show .dialog-container {
+    transform: scale(1);
+}
+
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e8eaed;
+}
+
+.dialog-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #202124;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #5f6368;
+    cursor: pointer;
+}
+
+.dialog-content {
+    padding: 20px;
+    font-size: 14px;
+    color: #202124;
+}
+
+.dialog-plan-summary {
+    margin-top: 16px;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #e8eaed;
+    border-radius: 4px;
+}
+
+.dialog-plan-summary h4 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #202124;
+}
+
+.plan-step-count {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #5f6368;
+    text-align: right;
+}
+
+.dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid #e8eaed;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .plan-container {
+        padding: 0 10px 10px;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .section-actions {
+        width: 100%;
+    }
+}
+
+/* 左侧任务列表中的任务项操作区域 */
+.task-actions {
+    display: none;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10; /* 确保按钮显示在上层 */
+}
+
+/* 当鼠标悬停在任务项上时显示操作按钮 - 临时禁用 */
+
+.task-item:hover .task-actions {
+    display: flex;
+}
+
+/* 强制显示操作按钮，便于调试 */
+/* 注释掉悬停效果以便检查样式
+.task-actions {
+    display: flex !important;
+}
+*/
+/* 删除任务按钮样式 */
+.delete-task-btn {
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    color: #666;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.delete-task-btn:hover {
+    background-color: #ff4d4f;
+    color: white;
+    border-color: #ff4d4f;
+}
+
+/* 保存计划按钮右下角定位样式 */
+.save-plan-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 15px;
+}
+
+.plan-json-section {
+    position: relative;
+    padding-bottom: 60px; /* 为底部按钮预留空间 */
+}
+
+.plan-json-section .save-plan-container {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+}

@@ -38,8 +38,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
 
         <dependency>
@@ -57,9 +57,15 @@
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
         </dependency>
+        
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-common</artifactId>
+            <version>${revision}</version>
+        </dependency>
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-tool-calling-microsofttranslate</finalName>
+        <finalName>spring-ai-alibaba-starter-tool-calling-microsofttranslate</finalName>
     </build>
 </project>

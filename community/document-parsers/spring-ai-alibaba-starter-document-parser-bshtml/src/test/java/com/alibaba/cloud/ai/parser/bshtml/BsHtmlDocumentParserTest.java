@@ -25,7 +25,6 @@ import org.springframework.ai.document.Document;
 
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

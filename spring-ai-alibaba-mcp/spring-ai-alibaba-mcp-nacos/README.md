@@ -7,6 +7,7 @@
     <artifactId>spring-ai-alibaba-mcp-nacos</artifactId>
 </dependency>
 
+<!--    WebMvc mode and WebFlux mode, choose one-->
 <!--WebMvc SSE-->
 <dependency>
     <groupId>org.springframework.ai</groupId>

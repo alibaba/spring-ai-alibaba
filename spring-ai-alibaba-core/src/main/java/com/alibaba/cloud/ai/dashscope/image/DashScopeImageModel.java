@@ -194,10 +194,13 @@ public class DashScopeImageModel implements ImageModel {
 		return new DashScopeImageApi.DashScopeImageRequest(options.getModel(),
 				new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestInput(
 						imagePrompt.getInstructions().get(0).getText(), options.getNegativePrompt(),
-						options.getRefImg()),
+						options.getRefImg(), options.getFunction(), options.getBaseImageUrl(),
+						options.getMaskImageUrl(), options.getSketchImageUrl()),
 				new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestParameter(options.getStyle(),
 						options.getSize(), options.getN(), options.getSeed(), options.getRefStrength(),
-						options.getRefMode()));
+						options.getRefMode(), options.getPromptExtend(), options.getWatermark(),
+						options.getSketchWeight(), options.getSketchExtraction(), options.getSketchColor(),
+						options.getMaskColor()));
 	}
 
 }

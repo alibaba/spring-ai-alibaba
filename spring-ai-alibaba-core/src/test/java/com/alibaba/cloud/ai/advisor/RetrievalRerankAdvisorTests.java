@@ -25,7 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.document.Document;
@@ -179,32 +178,31 @@ class RetrievalRerankAdvisorTests {
 	}
 
 	/**
-     * 测试空文档检索的 aroundCall
-     */
-    @Test
-    void testAroundCallWithEmptyDocuments() {
-        // 设置 Mock 行为返回空列表
-        when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(Collections.emptyList());
+	 * 测试空文档检索的 aroundCall
+	 */
+	@Test
+	void testAroundCallWithEmptyDocuments() {
+		// 设置 Mock 行为返回空列表
+		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(Collections.emptyList());
 
-        // 创建包含空文档列表的 adviseContext
-        Map<String, Object> adviseContext = new HashMap<>();
-        adviseContext.put(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS, Collections.emptyList());
-        AdvisedResponse mockResponse = new AdvisedResponse(testResponse.response(), adviseContext);
+		// 创建包含空文档列表的 adviseContext
+		Map<String, Object> adviseContext = new HashMap<>();
+		adviseContext.put(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS, Collections.emptyList());
+		AdvisedResponse mockResponse = new AdvisedResponse(testResponse.response(), adviseContext);
 
-        when(callChain.nextAroundCall(any())).thenReturn(mockResponse);
+		when(callChain.nextAroundCall(any())).thenReturn(mockResponse);
 
-        // 执行测试
-        AdvisedResponse response = advisor.aroundCall(testRequest, callChain);
+		// 执行测试
+		AdvisedResponse response = advisor.aroundCall(testRequest, callChain);
 
-        // 验证响应
-        assertThat(response).isNotNull();
-        assertThat(response.adviseContext()).containsKey(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS);
-        assertThat(response.adviseContext().get(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS))
-                .isNotNull()
-                .isInstanceOf(List.class)
-                .asList()
-                .isEmpty();
-    }
+		// 验证响应
+		assertThat(response).isNotNull();
+		assertThat(response.adviseContext()).containsKey(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS);
+		assertThat(response.adviseContext().get(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS)).isNotNull()
+			.isInstanceOf(List.class)
+			.asList()
+			.isEmpty();
+	}
 
 	/**
 	 * 测试流式处理的 aroundStream
