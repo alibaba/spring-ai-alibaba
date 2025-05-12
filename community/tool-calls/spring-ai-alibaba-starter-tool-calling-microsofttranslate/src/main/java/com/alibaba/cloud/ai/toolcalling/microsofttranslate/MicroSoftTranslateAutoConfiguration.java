@@ -41,11 +41,13 @@ public class MicroSoftTranslateAutoConfiguration {
 	@Description("Implement natural language translation capabilities.")
 	public MicroSoftTranslateService microSoftTranslateFunction(MicroSoftTranslateProperties properties,
 			JsonParseTool jsonParseTool) {
-		WebClientTool webClientTool = new WebClientTool((headers) -> {
-			headers.add("Ocp-Apim-Subscription-Key", properties.getApiKey());
-			headers.set("Ocp-Apim-Subscription-Region", properties.getRegion());
-			headers.set(HttpHeaders.CONTENT_TYPE, "application/json");
-		}, jsonParseTool, properties);
+		WebClientTool webClientTool = WebClientTool.builder(jsonParseTool, properties)
+			.httpHeadersConsumer((headers) -> {
+				headers.add("Ocp-Apim-Subscription-Key", properties.getApiKey());
+				headers.set("Ocp-Apim-Subscription-Region", properties.getRegion());
+				headers.set(HttpHeaders.CONTENT_TYPE, "application/json");
+			})
+			.build();
 		return new MicroSoftTranslateService(webClientTool);
 	}
 
