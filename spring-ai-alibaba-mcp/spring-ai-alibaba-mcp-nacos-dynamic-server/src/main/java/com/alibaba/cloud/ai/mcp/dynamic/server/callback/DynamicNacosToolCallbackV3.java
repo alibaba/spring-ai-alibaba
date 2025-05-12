@@ -17,6 +17,8 @@
 package com.alibaba.cloud.ai.mcp.dynamic.server.callback;
 
 import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinitionV3;
+import com.alibaba.cloud.ai.mcp.dynamic.server.jsontemplate.RequestTemplateParser;
+import com.alibaba.cloud.ai.mcp.dynamic.server.jsontemplate.ResponseTemplateParser;
 import com.alibaba.cloud.ai.mcp.dynamic.server.utils.SpringBeanUtils;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingService;
@@ -34,22 +36,16 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriBuilder;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.alibaba.cloud.ai.mcp.dynamic.server.jsontemplate.RequestTemplateInfo;
 
 public class DynamicNacosToolCallbackV3 implements ToolCallback {
 
@@ -81,7 +77,6 @@ public class DynamicNacosToolCallbackV3 implements ToolCallback {
 	 */
 	private Mono<String> processToolRequest(String configJson, Map<String, Object> args, String baseUrl) {
 		try {
-			logger.info("[executeToolRequest] configJson: {} args: {} baseUrl: {}", configJson, args, baseUrl);
 			JsonNode toolConfig = objectMapper.readTree(configJson);
 			logger.info("[executeToolRequest] toolConfig: {}", toolConfig);
 			logger.info("[processToolRequest] toolConfig: {} args: {} baseUrl: {}", toolConfig, args, baseUrl);
@@ -172,8 +167,9 @@ public class DynamicNacosToolCallbackV3 implements ToolCallback {
 	private Mono<String> buildAndExecuteRequest(WebClient client, JsonNode requestTemplate, JsonNode responseTemplate,
 			Map<String, Object> args, String baseUrl) {
 
-		String url = requestTemplate.path("url").asText();
-		String method = requestTemplate.path("method").asText();
+		RequestTemplateInfo info = RequestTemplateParser.parseRequestTemplate(requestTemplate);
+		String url = info.url;
+		String method = info.method;
 		HttpMethod httpMethod = HttpMethod.valueOf(method);
 
 		// 处理URL中的路径参数
@@ -182,20 +178,20 @@ public class DynamicNacosToolCallbackV3 implements ToolCallback {
 
 		// 构建请求
 		WebClient.RequestBodySpec requestBodySpec = client.method(httpMethod)
-			.uri(builder -> buildUri(builder, processedUrl, requestTemplate, args));
+			.uri(builder -> RequestTemplateParser.buildUri(builder, processedUrl, info, args));
 
 		// 添加请求头
-		addHeaders(requestBodySpec, requestTemplate.path("headers"), args);
+		RequestTemplateParser.addHeaders(requestBodySpec, info.headers, args, this::processTemplateString);
 
 		// 处理请求体
-		WebClient.RequestHeadersSpec<?> headersSpec = addRequestBody(requestBodySpec, requestTemplate, args);
+		WebClient.RequestHeadersSpec<?> headersSpec = RequestTemplateParser.addRequestBody(requestBodySpec, info, args,
+				this::processTemplateString, objectMapper, logger);
 
 		// 输出最终请求信息
 		String fullUrl = baseUrl.endsWith("/") && processedUrl.startsWith("/") ? baseUrl + processedUrl.substring(1)
 				: baseUrl + processedUrl;
 		logger.info("[buildAndExecuteRequest] final request: method={} url={} args={}", method, fullUrl, args);
 
-		// 执行请求
 		return headersSpec.retrieve()
 			.bodyToMono(String.class)
 			.doOnNext(responseBody -> logger.info("[buildAndExecuteRequest] received responseBody: {}", responseBody))
@@ -203,160 +199,18 @@ public class DynamicNacosToolCallbackV3 implements ToolCallback {
 	}
 
 	/**
-	 * 构建URI，处理查询参数
-	 */
-	private URI buildUri(UriBuilder builder, String processedUrl, JsonNode requestTemplate, Map<String, Object> args) {
-		builder.path(processedUrl);
-
-		// 处理argsToUrlParam选项
-		boolean argsToUrlParam = requestTemplate.path("argsToUrlParam").asBoolean(false);
-		if (argsToUrlParam) {
-			for (Map.Entry<String, Object> entry : args.entrySet()) {
-				String key = entry.getKey();
-				Object value = entry.getValue();
-
-				if (value != null) {
-					if (value instanceof final Collection<?> collection) {
-						for (Object item : collection) {
-							builder.queryParam(key, item);
-						}
-					}
-					else {
-						builder.queryParam(key, value);
-					}
-				}
-			}
-		}
-
-		return builder.build();
-	}
-
-	/**
-	 * 添加请求头
-	 */
-	private void addHeaders(WebClient.RequestBodySpec requestSpec, JsonNode headersNode, Map<String, Object> args) {
-		if (headersNode.isArray()) {
-			for (JsonNode header : headersNode) {
-				String key = header.path("key").asText();
-				String valueTemplate = header.path("value").asText();
-
-				// 处理请求头中的模板变量
-				String value = processTemplateString(valueTemplate, args);
-				requestSpec.header(key, value);
-			}
-		}
-	}
-
-	/**
-	 * 添加请求体
-	 */
-	private WebClient.RequestHeadersSpec<?> addRequestBody(WebClient.RequestBodySpec requestSpec,
-			JsonNode requestTemplate, Map<String, Object> args) {
-		// 检查互斥选项
-		boolean hasBody = requestTemplate.has("body") && !requestTemplate.path("body").asText().isEmpty();
-		boolean argsToJsonBody = requestTemplate.path("argsToJsonBody").asBoolean(false);
-		boolean argsToFormBody = requestTemplate.path("argsToFormBody").asBoolean(false);
-		boolean argsToUrlParam = requestTemplate.path("argsToUrlParam").asBoolean(false);
-
-		int optionCount = (hasBody ? 1 : 0) + (argsToJsonBody ? 1 : 0) + (argsToFormBody ? 1 : 0)
-				+ (argsToUrlParam ? 1 : 0);
-		if (optionCount > 1) {
-			throw new IllegalArgumentException(
-					"Only one of body, argsToJsonBody, argsToFormBody, or argsToUrlParam should be specified");
-		}
-
-		if (hasBody) {
-			// 使用模板字符串作为请求体
-			String bodyTemplate = requestTemplate.path("body").asText();
-			String processedBody = processTemplateString(bodyTemplate, args);
-
-			// 假设body是JSON格式
-			return requestSpec.contentType(MediaType.APPLICATION_JSON).bodyValue(processedBody);
-		}
-		else if (argsToJsonBody) {
-			// 使用参数作为JSON请求体
-			try {
-				String jsonBody = objectMapper.writeValueAsString(args);
-				return requestSpec.contentType(MediaType.APPLICATION_JSON).bodyValue(jsonBody);
-			}
-			catch (JsonProcessingException e) {
-				logger.error("Failed to create JSON request body", e);
-				return requestSpec;
-			}
-		}
-		else if (argsToFormBody) {
-			// 使用参数作为表单请求体
-			MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-			args.forEach((key, value) -> {
-				if (value != null) {
-					formData.add(key, value.toString());
-				}
-			});
-
-			return requestSpec.contentType(MediaType.APPLICATION_FORM_URLENCODED)
-				.body(BodyInserters.fromFormData(formData));
-		}
-
-		// 如果没有请求体，返回requestSpec
-		return requestSpec;
-	}
-
-	/**
 	 * 处理响应
 	 */
-	@SuppressWarnings("unchecked")
 	private String processResponse(String responseBody, JsonNode responseTemplate, Map<String, Object> args) {
 		logger.info("[processResponse] received responseBody: {}", responseBody);
 		String result = null;
 		if (!responseTemplate.isEmpty()) {
 			if (responseTemplate.has("body") && !responseTemplate.path("body").asText().isEmpty()) {
 				String bodyTemplate = responseTemplate.path("body").asText();
-				// 新增：支持jsonPath表达式
-				if (bodyTemplate.startsWith("{{$") && bodyTemplate.endsWith("}}")) {
-					String jsonPathExpr = bodyTemplate.substring(2, bodyTemplate.length() - 2).trim();
-					// 判断是否为JSON
-					String trimmed = responseBody.trim();
-					boolean isJson = (trimmed.startsWith("{") && trimmed.endsWith("}"))
-							|| (trimmed.startsWith("[") && trimmed.endsWith("]"));
-					if (isJson) {
-						try {
-							Object value = com.jayway.jsonpath.JsonPath.read(responseBody, jsonPathExpr);
-							result = value != null ? value.toString() : "";
-							logger.info("[processResponse] jsonPath result: {}", result);
-							return result;
-						}
-						catch (Exception e) {
-							logger.warn("Failed to parse responseBody with jsonPath: {}", jsonPathExpr, e);
-							result = "";
-							logger.info("[processResponse] jsonPath result: {}", result);
-							return result;
-						}
-					}
-					else {
-						logger.info("[processResponse] responseBody is not JSON, return as is for jsonPath template");
-						result = responseBody;
-						logger.info("[processResponse] result: {}", result);
-						return result;
-					}
-				}
-				try {
-					JsonNode responseJson = objectMapper.readTree(responseBody);
-					Map<String, Object> responseData = objectMapper.convertValue(responseJson, Map.class);
-					Map<String, Object> templateData = new HashMap<>(args);
-					templateData.putAll(responseData);
-					result = processTemplateString(bodyTemplate, templateData);
-					logger.info("[processResponse] template result: {}", result);
-					return result;
-				}
-				catch (IOException e) {
-					logger.info("[processResponse] responseBody is not JSON, fallback to raw response for template");
-					// 关键：把 responseBody 作为 data["."] 传递
-					Map<String, Object> rawMap = new HashMap<>();
-					rawMap.put(".", responseBody);
-					result = processTemplateString(bodyTemplate, rawMap);
-					logger.info("[processResponse] template result: {}", result);
-					return result;
-				}
+				// 统一交给 ResponseTemplateParser 处理
+				result = ResponseTemplateParser.parse(responseBody, bodyTemplate);
+				logger.info("[processResponse] ResponseTemplateParser result: {}", result);
+				return result;
 			}
 			else if (responseTemplate.has("prependBody") || responseTemplate.has("appendBody")) {
 				String prependText = responseTemplate.path("prependBody").asText("");
@@ -432,7 +286,7 @@ public class DynamicNacosToolCallbackV3 implements ToolCallback {
 			// input解析
 			logger.info("[call] input string: {}", input);
 			Map<String, Object> args = new HashMap<>();
-			if (input != null && !input.isEmpty()) {
+			if (!input.isEmpty()) {
 				try {
 					args = objectMapper.readValue(input, Map.class);
 					logger.info("[call] parsed args: {}", args);
@@ -481,6 +335,9 @@ public class DynamicNacosToolCallbackV3 implements ToolCallback {
 								return "";
 							}
 						}
+					}
+					else {
+						logger.warn("[call] templates not found in toolsMeta");
 					}
 				}
 			}
