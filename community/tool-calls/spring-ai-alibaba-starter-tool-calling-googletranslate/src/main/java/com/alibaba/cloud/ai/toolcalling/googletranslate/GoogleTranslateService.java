@@ -16,8 +16,6 @@
 package com.alibaba.cloud.ai.toolcalling.googletranslate;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
-import com.alibaba.cloud.ai.toolcalling.common.ResponseHandler;
-import com.alibaba.cloud.ai.toolcalling.common.WebClientConfig;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -28,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
-import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.List;
@@ -61,7 +58,7 @@ public class GoogleTranslateService
 
 	@Override
 	public Response apply(Request request) {
-		if (!CommonToolCallUtils.validateRequestParams(request, request.text, request.targetLanguage)) {
+		if (CommonToolCallUtils.isInvalidateRequestParams(request, request.text, request.targetLanguage)) {
 			return null;
 		}
 
@@ -75,7 +72,7 @@ public class GoogleTranslateService
 
 			String responseData = webClient.post().uri(requestUrl).retrieve().bodyToMono(String.class).block();
 
-			return ResponseHandler.handleResponse(responseData, data -> parseResponseData(data, request.text), log);
+			return CommonToolCallUtils.handleResponse(responseData, data -> parseResponseData(data, request.text), log);
 		}, log);
 	}
 
