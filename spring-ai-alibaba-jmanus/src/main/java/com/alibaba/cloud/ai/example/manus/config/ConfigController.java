@@ -36,7 +36,7 @@ public class ConfigController {
 	private ConfigService configService;
 
 	@GetMapping("/group/{groupName}")
-	public ResponseEntity<List<ConfigEntity>> getConfigsByGroup(@PathVariable String groupName) {
+	public ResponseEntity<List<ConfigEntity>> getConfigsByGroup(@PathVariable("groupName") String groupName) {
 		return ResponseEntity.ok(configService.getConfigsByGroup(groupName));
 	}
 
