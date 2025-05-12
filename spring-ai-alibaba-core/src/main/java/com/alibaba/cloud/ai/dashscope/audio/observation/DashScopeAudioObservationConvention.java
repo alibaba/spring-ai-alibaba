@@ -25,7 +25,7 @@ import io.micrometer.observation.ObservationConvention;
  */
 public class DashScopeAudioObservationConvention implements ObservationConvention<Observation.Context> {
 
-	private static final String NAME = "spring.ai.audio";
+	private static final String NAME = "spring.ai.alibaba.audio";
 
 	@Override
 	public String getName() {
