@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.dashscope.image;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import org.slf4j.Logger;
@@ -67,7 +68,7 @@ public class DashScopeImageModel implements ImageModel {
 	 */
 	private final RetryTemplate retryTemplate;
 
-	private static final int MAX_RETRY_COUNT = 10;
+	private static final int MAX_RETRY_COUNT = 3;
 
 	public DashScopeImageModel(DashScopeImageApi dashScopeImageApi) {
 		this(dashScopeImageApi, DashScopeImageOptions.builder().build(), RetryUtils.DEFAULT_RETRY_TEMPLATE);
@@ -198,24 +199,26 @@ public class DashScopeImageModel implements ImageModel {
 	}
 
 	private ImageResponseMetadata toMetadata(DashScopeImageApi.DashScopeImageAsyncReponse re) {
-		DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput out = re.output();
-		DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseTaskMetrics tm = out.taskMetrics();
-		DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseUsage usage = re.usage();
+		var out = re.output();
+		var tm = out.taskMetrics();
+		var usage = re.usage();
 
 		ImageResponseMetadata md = new ImageResponseMetadata();
 
-		if (usage != null) {
-			md.put("imageCount", usage.imageCount());
-		}
-		if (tm != null) {
-			md.put("taskTotal", tm.total());
-			md.put("taskSucceeded", tm.SUCCEEDED());
-			md.put("taskFailed", tm.FAILED());
-		}
+        Optional.ofNullable(usage)
+                .map(DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseUsage::imageCount)
+                .ifPresent(count -> md.put("imageCount", count));
+        Optional.ofNullable(tm).ifPresent(metrics -> {
+            md.put("taskTotal", metrics.total());
+            md.put("taskSucceeded", metrics.SUCCEEDED());
+            md.put("taskFailed", metrics.FAILED());
+        });
 		md.put("requestId", re.requestId());
 		md.put("taskStatus", out.taskStatus());
-		md.put("code", out.code());
-		md.put("message", out.message());
+        Optional.ofNullable(out.code())
+                .ifPresent(code -> md.put("code", code));
+        Optional.ofNullable(out.message())
+                .ifPresent(msg -> md.put("message", msg));
 
 		return md;
 	}
