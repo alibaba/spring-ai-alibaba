@@ -47,7 +47,7 @@ public class AgentController {
 	}
 
 	@GetMapping("/{id}")
-	public ResponseEntity<AgentConfig> getAgentById(@PathVariable String id) {
+	public ResponseEntity<AgentConfig> getAgentById(@PathVariable("id") String id) {
 		return ResponseEntity.ok(agentService.getAgentById(id));
 	}
 
@@ -57,13 +57,14 @@ public class AgentController {
 	}
 
 	@PutMapping("/{id}")
-	public ResponseEntity<AgentConfig> updateAgent(@PathVariable String id, @RequestBody AgentConfig agentConfig) {
+	public ResponseEntity<AgentConfig> updateAgent(@PathVariable("id") String id,
+			@RequestBody AgentConfig agentConfig) {
 		agentConfig.setId(id);
 		return ResponseEntity.ok(agentService.updateAgent(agentConfig));
 	}
 
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> deleteAgent(@PathVariable String id) {
+	public ResponseEntity<Void> deleteAgent(@PathVariable("id") String id) {
 		try {
 			agentService.deleteAgent(id);
 			return ResponseEntity.ok().build();
