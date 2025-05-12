@@ -106,12 +106,6 @@ public class WebClientTool {
 		return webClient.get()
 			.uri(uriBuilder -> uriBuilder.path(uri).queryParams(params).build(variables))
 			.retrieve()
-			.onStatus(HttpStatusCode::is4xxClientError,
-					response -> Mono
-						.error(new RuntimeException("Client error, code: " + response.statusCode().value())))
-			.onStatus(HttpStatusCode::is5xxServerError,
-					response -> Mono
-						.error(new RuntimeException("Server error, code: " + response.statusCode().value())))
 			.bodyToMono(String.class);
 	}
 
@@ -140,12 +134,6 @@ public class WebClientTool {
 				.contentType(mediaType)
 				.bodyValue(json)
 				.retrieve()
-				.onStatus(HttpStatusCode::is4xxClientError,
-						response -> Mono
-							.error(new RuntimeException("Client error, code: " + response.statusCode().value())))
-				.onStatus(HttpStatusCode::is5xxServerError,
-						response -> Mono
-							.error(new RuntimeException("Server error, code: " + response.statusCode().value())))
 				.bodyToMono(String.class))
 			.onErrorMap(JsonProcessingException.class, e -> new RuntimeException("Serialization failed", e));
 	}
