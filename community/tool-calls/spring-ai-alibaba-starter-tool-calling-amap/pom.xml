@@ -62,6 +62,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-tool-calling-amap</finalName>
+        <finalName>spring-ai-alibaba-starter-tool-calling-amap</finalName>
     </build>
 </project>

@@ -61,6 +61,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-tool-calling-duckduckgo</finalName>
+        <finalName>spring-ai-alibaba-starter-tool-calling-duckduckgo</finalName>
     </build>
 </project>

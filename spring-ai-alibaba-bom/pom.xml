@@ -298,38 +298,38 @@
             <!-- Spring AI Alibaba Vector Stores -->
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-analyticdb-store</artifactId>
+                <artifactId>spring-ai-alibaba-starter-store-analyticdb</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-oceanbase-store</artifactId>
+                <artifactId>spring-ai-alibaba-starter-store-oceanbase</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-opensearch-store</artifactId>
+                <artifactId>spring-ai-alibaba-starter-store-opensearch</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-tair-store</artifactId>
+                <artifactId>spring-ai-alibaba-starter-store-tair</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <!-- Spring AI Alibaba Chat Memory -->
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-jdbc-memory</artifactId>
+                <artifactId>spring-ai-alibaba-starter-memory-jdbc</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-redis-memory</artifactId>
+                <artifactId>spring-ai-alibaba-starter-memory-redis</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -588,7 +588,7 @@
                             <flattenMode>ossrh</flattenMode>
                             <pomElements>
                                 <distributionManagement>remove</distributionManagement>
-                                <dependencyManagement>remove</dependencyManagement>
+                                <dependencyManagement>expand</dependencyManagement>
                                 <repositories>remove</repositories>
                                 <scm>keep</scm>
                                 <url>keep</url>

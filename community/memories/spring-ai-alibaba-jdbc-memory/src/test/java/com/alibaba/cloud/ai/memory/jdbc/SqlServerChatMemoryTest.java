@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -42,7 +43,8 @@ class SqlServerChatMemoryTest {
 		ChatMemory chatMemory = new SqlServerChatMemory("sa", "qWeR124563",
 				"jdbc:sqlserver://localhost:1433;database=spring_ai_alibaba_chat_memory;encrypt=true;trustServerCertificate=true");
 		String apiKey = System.getenv().getOrDefault("AI_DASHSCOPE_API_KEY", "test-api-key");
-		ChatClient chatClient = ChatClient.create(new DashScopeChatModel(new DashScopeApi(apiKey)));
+		ChatClient chatClient = ChatClient
+			.create(DashScopeChatModel.builder().dashScopeApi(new DashScopeApi(apiKey)).build());
 		String content1 = chatClient.prompt()
 			.advisors(new MessageChatMemoryAdvisor(chatMemory))
 			.user("我是张三😄")
