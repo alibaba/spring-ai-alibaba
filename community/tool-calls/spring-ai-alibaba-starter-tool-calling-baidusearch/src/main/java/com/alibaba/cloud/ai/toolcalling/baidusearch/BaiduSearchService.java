@@ -35,6 +35,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 /**
  * @author KrakenZJC
@@ -61,9 +63,10 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 
 		return CommonToolCallUtils.handleServiceError("BaiduSearch", () -> {
 			int limit = request.limit == null ? properties.getMaxResults() : request.limit;
-			String url = properties.getBaseUrl() + request.query;
-
-			String html = webClientTool.get(url).block();
+			String url = properties.getBaseUrl();
+			MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+			params.add("wd", request.query);
+			String html = webClientTool.get(url, params).block();
 
 			List<SearchResult> results = CommonToolCallUtils.handleResponse(html, this::parseHtml, logger);
 

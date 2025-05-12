@@ -39,7 +39,7 @@ public class BingSearchAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Use bing search engine to query for the latest news.")
-	public BingSearchService bingSearchFunction(JsonParseTool jsonParseTool, BingSearchProperties properties) {
+	public BingSearchService bingSearch(JsonParseTool jsonParseTool, BingSearchProperties properties) {
 		return new BingSearchService(
 				WebClientTool.builder(jsonParseTool, properties).httpHeadersConsumer(httpHeaders -> {
 					httpHeaders.add(HttpHeaders.USER_AGENT,
