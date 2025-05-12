@@ -71,6 +71,8 @@ public class KnowledgeRetrievalNode implements NodeAction {
 
 	private VectorStore vectorStore;
 
+	List<Document> documents;
+
 	private static final Logger logger = LoggerFactory.getLogger(KnowledgeRetrievalNode.class);
 
 	public KnowledgeRetrievalNode() {
@@ -99,7 +101,7 @@ public class KnowledgeRetrievalNode implements NodeAction {
 			.vectorStore(vectorStore)
 			.build();
 		Query query = new Query(userPrompt);
-		List<Document> documents = documentRetriever.retrieve(query);
+		documents = documentRetriever.retrieve(query);
 		documents = enableRanker
 				? ranking(query, documents, new KnowledgeRetrievalDocumentRanker(rerankModel, rerankOptions))
 				: documents;
@@ -108,9 +110,12 @@ public class KnowledgeRetrievalNode implements NodeAction {
 			newUserPrompt.append("Document: ").append(document.getFormattedContent()).append("\n");
 		}
 		Map<String, Object> updatedState = new HashMap<>();
-		updatedState.put("user_prompt", newUserPrompt);
+
 		if (StringUtils.hasLength(this.userPromptKey)) {
-			updatedState.put(this.userPromptKey, newUserPrompt);
+			updatedState.put(this.userPromptKey, newUserPrompt.toString());
+		}
+		else {
+			updatedState.put("user_prompt", newUserPrompt.toString());
 		}
 		return updatedState;
 	}
@@ -130,7 +135,7 @@ public class KnowledgeRetrievalNode implements NodeAction {
 			this.filterExpression = (Filter.Expression) state.value(filterExpressionKey).orElse(this.filterExpression);
 		}
 		if (StringUtils.hasLength(enableRankerKey)) {
-			this.enableRanker = (Boolean) state.value(enableRankerKey).orElse(this.enableRankerKey);
+			this.enableRanker = (Boolean) state.value(enableRankerKey).orElse(this.enableRanker);
 		}
 		if (StringUtils.hasLength(rerankModelKey)) {
 			this.rerankModel = (RerankModel) state.value(rerankModelKey).orElse(this.rerankModel);
@@ -174,7 +179,6 @@ public class KnowledgeRetrievalNode implements NodeAction {
 
 			try {
 				List<Document> reorderDocs = new ArrayList<>();
-				rerankOptions.setTopN(documents.size());
 				if (Objects.nonNull(query) && StringUtils.hasText(query.text())) {
 					RerankRequest rerankRequest = new RerankRequest(query.text(), documents, rerankOptions);
 					RerankResponse rerankResp = rerankModel.call(rerankRequest);
