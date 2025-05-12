@@ -39,7 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class KnowledgeRetrievalNodeTest {
 
-
 	private static final Logger logger = LoggerFactory.getLogger(KnowledgeRetrievalNode.class);
 
 	List<Document> documents = List.of(new Document(
@@ -101,7 +100,7 @@ public class KnowledgeRetrievalNodeTest {
 			.build();
 	}
 
-  	@Test
+	@Test
 	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	void testTopK() throws Exception {
 
