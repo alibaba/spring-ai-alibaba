@@ -106,6 +106,18 @@ public class JsonParseTool {
 	}
 
 	/**
+	 * Get the string value of obj.fieldName1.fileName2... from the JSON.
+	 * @param json json string
+	 * @param fieldNames keyNames
+	 */
+	public String getDepthFieldValueAsString(String json, String... fieldNames) throws JsonProcessingException {
+		for (String fieldName : fieldNames) {
+			json = getFieldValueAsString(json, fieldName);
+		}
+		return json;
+	}
+
+	/**
 	 * Assign 'value' to 'fieldName' in the JSON
 	 * @param json json string
 	 * @param fieldName fieldName
