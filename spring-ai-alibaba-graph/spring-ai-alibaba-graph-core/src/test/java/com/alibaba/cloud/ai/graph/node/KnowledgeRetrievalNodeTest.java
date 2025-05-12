@@ -58,14 +58,16 @@ public class KnowledgeRetrievalNodeTest {
 
 					)));
 
-	DashScopeApi dashScopeApi = new DashScopeApi(System.getenv("DASHSCOPE_API_KEY"));
+	String apiKey = System.getenv().getOrDefault("AI_DASHSCOPE_API_KEY", "test-api-key");
+
+	DashScopeApi dashScopeApi = new DashScopeApi(System.getenv(apiKey));
 
 	EmbeddingModel embeddingModel = new DashScopeEmbeddingModel(dashScopeApi, MetadataMode.EMBED,
 			DashScopeEmbeddingOptions.builder().withModel("text-embedding-v2").build());
 
 	SimpleVectorStore simpleVectorStore = SimpleVectorStore.builder(embeddingModel).build();
 
-	RerankModel rerankModel = new DashScopeRerankModel(new DashScopeApi(System.getenv("DASHSCOPE_API_KEY")));
+	RerankModel rerankModel = new DashScopeRerankModel(new DashScopeApi(System.getenv(apiKey)));
 
 	Filter.Expression filterExpression = new FilterExpressionBuilder().eq("type", "instruction").build();
 
