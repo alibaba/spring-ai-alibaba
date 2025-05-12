@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -528,8 +529,9 @@ public class StateGraphTest {
 			.addNode("processData", node_async(s -> {
 				// 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
 				final List<String> data = asList("这是", "一个", "流式", "输出", "测试");
+				AtomicInteger timeOff = new AtomicInteger(1);
 				final AsyncGenerator<NodeOutput> it = AsyncGenerator.collect(data.iterator(),
-						(index, add) -> add.accept(of("processData", index, 500, s)));
+						(index, add) -> add.accept(of("processData", index, 500L * timeOff.getAndIncrement(), s)));
 				return Map.of("messages", it);
 			}))
 			.addNode("generateResponse", node_async(s -> {
