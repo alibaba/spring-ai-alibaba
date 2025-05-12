@@ -20,7 +20,8 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 
 /**
- * Context class for audio transcription observations. This class holds the context
+ * Context class for audio transcription observations. This class holds the
+ * context
  * information for audio transcription operations.
  */
 public class AudioTranscriptionContext extends Observation.Context {
@@ -42,6 +43,12 @@ public class AudioTranscriptionContext extends Observation.Context {
 	private AudioTranscriptionResponse response;
 
 	private Throwable error;
+
+	private Integer chunkCount;
+
+	private Boolean streaming;
+
+	private Integer totalChunks;
 
 	public String getModelName() {
 		return modelName;
@@ -115,4 +122,27 @@ public class AudioTranscriptionContext extends Observation.Context {
 		this.error = error;
 	}
 
+	public Integer getChunkCount() {
+		return chunkCount;
+	}
+
+	public void setChunkCount(Integer chunkCount) {
+		this.chunkCount = chunkCount;
+	}
+
+	public Boolean getStreaming() {
+		return streaming;
+	}
+
+	public void setStreaming(Boolean streaming) {
+		this.streaming = streaming;
+	}
+
+	public Integer getTotalChunks() {
+		return totalChunks;
+	}
+
+	public void setTotalChunks(Integer totalChunks) {
+		this.totalChunks = totalChunks;
+	}
 }

@@ -38,6 +38,36 @@ public class SpeechSynthesisContext extends Observation.Context {
 
 	private Long duration;
 
+	private Integer chunkCount;
+
+	private Boolean streaming;
+
+	private Integer totalChunks;
+
+	public Integer getChunkCount() {
+		return chunkCount;
+	}
+
+	public void setChunkCount(Integer chunkCount) {
+		this.chunkCount = chunkCount;
+	}
+
+	public Boolean getStreaming() {
+		return streaming;
+	}
+
+	public void setStreaming(Boolean streaming) {
+		this.streaming = streaming;
+	}
+
+	public Integer getTotalChunks() {
+		return totalChunks;
+	}
+
+	public void setTotalChunks(Integer totalChunks) {
+		this.totalChunks = totalChunks;
+	}
+
 	private SpeechSynthesisPrompt prompt;
 
 	private SpeechSynthesisResponse response;
