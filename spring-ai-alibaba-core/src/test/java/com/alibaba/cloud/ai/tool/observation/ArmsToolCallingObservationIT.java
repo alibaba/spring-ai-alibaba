@@ -48,11 +48,11 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.SimpleApiKey;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -103,9 +103,10 @@ public class ArmsToolCallingObservationIT {
 	// @formatter:off
     String response = ChatClient.create(this.chatModel).prompt()
         .user("Turn the light on in the living room")
-        .functions(FunctionCallback.builder()
-            .function("turnsLightOnInTheLivingRoom", () -> state.put("Light", "ON"))
-            .build())
+				.tools(FunctionToolCallback.builder("turnsLightOnInTheLivingRoom", () -> state.put("Light", "ON"))
+						.description("Get the weather in location")
+						.inputType(MockWeatherService.Request.class)
+						.build())
         .call()
         .content();
     // @formatter:on
@@ -120,8 +121,7 @@ public class ArmsToolCallingObservationIT {
 	void functionCallTest() {
 		functionCallTest(OpenAiChatOptions.builder()
 			.model(TEST_MODEL)
-			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
@@ -156,8 +156,7 @@ public class ArmsToolCallingObservationIT {
 
 		functionCallTest(OpenAiChatOptions.builder()
 			.model(TEST_MODEL)
-			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", biFunction)
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", biFunction)
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
@@ -170,12 +169,10 @@ public class ArmsToolCallingObservationIT {
 
 		streamFunctionCallTest(OpenAiChatOptions.builder()
 			.model(TEST_MODEL)
-			.functionCallbacks(List.of((FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
-				// .responseConverter(response -> "" + response.temp() + response.unit())
-				.build())))
+				.build()))
 			.build());
 	}
 
@@ -206,11 +203,10 @@ public class ArmsToolCallingObservationIT {
 		};
 
 		OpenAiChatOptions promptOptions = OpenAiChatOptions.builder()
-			.functionCallbacks(List.of((FunctionCallback.builder()
-				.function("getCurrentWeather", biFunction)
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", biFunction)
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
-				.build())))
+				.build()))
 			.toolContext(Map.of("sessionId", "123"))
 			.build();
 
