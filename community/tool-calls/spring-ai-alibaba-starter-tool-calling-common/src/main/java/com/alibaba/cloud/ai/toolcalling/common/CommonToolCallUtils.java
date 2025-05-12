@@ -15,21 +15,14 @@
  */
 package com.alibaba.cloud.ai.toolcalling.common;
 
-import java.time.Duration;
 import java.util.Arrays;
-import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.netty.http.client.HttpClient;
 
 /**
  * @author vlsmb
@@ -58,33 +51,20 @@ public final class CommonToolCallUtils {
 
 	}
 
+	/**
+	 * MultiValueMap builder
+	 * @author vlsmb
+	 * @return builder
+	 * @param <K> Key Type
+	 * @param <V> Value Type
+	 */
 	public static <K, V> MultiValueMapBuilder<K, V> multiValueMapBuilder() {
 		return new MultiValueMapBuilder<>();
 	}
 
 	/**
-	 * Build a common WebClient with custom headers, timeout, and memory parameters.
-	 * @param headers Custom headers
-	 * @param connectTimeoutMillis Connection timeout in milliseconds
-	 * @param responseTimeoutSeconds Response timeout in seconds
-	 * @param maxInMemorySize Maximum memory size in bytes
-	 * @return WebClient instance
-	 */
-	public static WebClient buildWebClient(Map<String, String> headers, int connectTimeoutMillis,
-			int responseTimeoutSeconds, int maxInMemorySize) {
-		WebClient.Builder builder = WebClient.builder();
-		if (headers != null) {
-			headers.forEach(builder::defaultHeader);
-		}
-		builder.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(maxInMemorySize));
-		builder.clientConnector(new ReactorClientHttpConnector(HttpClient.create()
-			.option(io.netty.channel.ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMillis)
-			.responseTimeout(Duration.ofSeconds(responseTimeoutSeconds))));
-		return builder.build();
-	}
-
-	/**
 	 * Common error handling method.
+	 * @author inlines10
 	 * @param serviceName Service name
 	 * @param operation Operation to execute
 	 * @param logger Logger instance
@@ -102,28 +82,33 @@ public final class CommonToolCallUtils {
 
 	/**
 	 * Common parameter validation method.
+	 * @author inlines10
 	 * @param params Parameters to validate
-	 * @return Validation result
+	 * @return if params is invalid, return true
 	 */
-	public static boolean validateRequestParams(Object... params) {
-		return Arrays.stream(params)
+	public static boolean isInvalidateRequestParams(Object... params) {
+		return !Arrays.stream(params)
 			.allMatch(param -> param != null && (!(param instanceof String) || StringUtils.hasText((String) param)));
 	}
 
 	/**
-	 * Common JSON response parsing method.
-	 * @param responseData Response data
-	 * @param typeReference Target type reference
+	 * Handle service response with error handling and logging
+	 * @author inlines10
+	 * @param responseData Raw response data
+	 * @param parser Function to parse the response
 	 * @param logger Logger instance
-	 * @return Parsed result
+	 * @return Parsed response or null if handling fails
 	 */
-	public static <T> T parseJsonResponse(String responseData, TypeReference<T> typeReference, Logger logger) {
+	public static <T> T handleResponse(String responseData, Function<String, T> parser, Logger logger) {
+		if (responseData == null) {
+			logger.error("Response data is null");
+			return null;
+		}
 		try {
-			ObjectMapper mapper = new ObjectMapper();
-			return mapper.readValue(responseData, typeReference);
+			return parser.apply(responseData);
 		}
 		catch (Exception e) {
-			logger.error("Failed to parse response data: {}", e.getMessage());
+			logger.error("Failed to handle response: {}", e.getMessage());
 			return null;
 		}
 	}
