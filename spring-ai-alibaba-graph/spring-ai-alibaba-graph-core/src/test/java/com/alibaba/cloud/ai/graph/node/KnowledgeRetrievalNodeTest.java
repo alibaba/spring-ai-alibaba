@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankOptions;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.model.RerankModel;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -37,6 +38,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class KnowledgeRetrievalNodeTest {
+
 
 	private static final Logger logger = LoggerFactory.getLogger(KnowledgeRetrievalNode.class);
 
@@ -60,14 +62,14 @@ public class KnowledgeRetrievalNodeTest {
 
 	String apiKey = System.getenv().getOrDefault("AI_DASHSCOPE_API_KEY", "test-api-key");
 
-	DashScopeApi dashScopeApi = new DashScopeApi(System.getenv(apiKey));
+	DashScopeApi dashScopeApi = new DashScopeApi(apiKey);
 
 	EmbeddingModel embeddingModel = new DashScopeEmbeddingModel(dashScopeApi, MetadataMode.EMBED,
 			DashScopeEmbeddingOptions.builder().withModel("text-embedding-v2").build());
 
 	SimpleVectorStore simpleVectorStore = SimpleVectorStore.builder(embeddingModel).build();
 
-	RerankModel rerankModel = new DashScopeRerankModel(new DashScopeApi(System.getenv(apiKey)));
+	RerankModel rerankModel = new DashScopeRerankModel(dashScopeApi);
 
 	Filter.Expression filterExpression = new FilterExpressionBuilder().eq("type", "instruction").build();
 
@@ -99,7 +101,8 @@ public class KnowledgeRetrievalNodeTest {
 			.build();
 	}
 
-	@Test
+  	@Test
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	void testTopK() throws Exception {
 
 		simpleVectorStore.add(documents);
@@ -119,6 +122,7 @@ public class KnowledgeRetrievalNodeTest {
 	}
 
 	@Test
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	void testSimilarityThreshold() throws Exception {
 
 		simpleVectorStore.add(documents);
@@ -138,6 +142,7 @@ public class KnowledgeRetrievalNodeTest {
 	}
 
 	@Test
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	void testFilterExpression() throws Exception {
 
 		simpleVectorStore.add(documents);
@@ -157,6 +162,7 @@ public class KnowledgeRetrievalNodeTest {
 	}
 
 	@Test
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	void testRerank() throws Exception {
 
 		simpleVectorStore.add(documents);
