@@ -33,7 +33,6 @@ public class HttpStreamController {
 
 	private StateGraph workflow;
 
-
 	@PostConstruct
 	public void init() throws GraphStateException {
 		// 定义工作流
