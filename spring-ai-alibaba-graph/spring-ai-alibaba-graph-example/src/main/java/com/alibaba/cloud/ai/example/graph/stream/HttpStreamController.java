@@ -33,7 +33,6 @@ public class HttpStreamController {
 
 	private StateGraph workflow;
 
-	private ObjectMapper objectMapper = new ObjectMapper();
 
 	@PostConstruct
 	public void init() throws GraphStateException {
@@ -82,7 +81,6 @@ public class HttpStreamController {
 		// 使用 CompiledGraph 的流式功能
 		AsyncGenerator<NodeOutput> generator = compiledGraph.stream(inputData,
 				RunnableConfig.builder().threadId(threadId).build());
-
 		// 处理流式输出
 		generator.forEachAsync(output -> {
 			try {
