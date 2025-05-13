@@ -55,22 +55,9 @@ public class RestClientTool {
 	}
 
 	/**
-	 * default restClient
-	 */
-	public RestClientTool(JsonParseTool jsonParseTool, CommonToolCallProperties properties) {
-		this.jsonParseTool = jsonParseTool;
-		this.properties = properties;
-		this.restClient = RestClient.builder()
-			.requestFactory(createRequestFactory())
-			.baseUrl(properties.getBaseUrl())
-			.defaultStatusHandler(CommonToolCallConstants.DEFAULT_RESTCLIENT_ERROR_HANDLER)
-			.build();
-	}
-
-	/**
 	 * Creates restClient with customized HeaderConsumer and ErrorHandler
 	 */
-	public RestClientTool(Consumer<HttpHeaders> httpHeadersConsumer, ResponseErrorHandler errorHandler,
+	private RestClientTool(Consumer<HttpHeaders> httpHeadersConsumer, ResponseErrorHandler errorHandler,
 			CommonToolCallProperties properties, JsonParseTool jsonParseTool) {
 		this.jsonParseTool = jsonParseTool;
 		this.properties = properties;
@@ -139,6 +126,48 @@ public class RestClientTool {
 	 */
 	public <T> String post(String uri, T value) {
 		return this.post(uri, new HashMap<>(), value);
+	}
+
+	public static class Builder {
+
+		private final JsonParseTool jsonParseTool;
+
+		private final CommonToolCallProperties properties;
+
+		private ResponseErrorHandler errorHandler;
+
+		private Consumer<HttpHeaders> httpHeadersConsumer;
+
+		Builder(JsonParseTool jsonParseTool, CommonToolCallProperties properties) {
+			this.jsonParseTool = jsonParseTool;
+			this.properties = properties;
+			this.errorHandler = CommonToolCallConstants.DEFAULT_RESTCLIENT_ERROR_HANDLER;
+			this.httpHeadersConsumer = httpHeaders -> {
+			};
+		}
+
+		public Builder errorHandler(ResponseErrorHandler errorHandler) {
+			this.errorHandler = errorHandler;
+			return this;
+		}
+
+		public Builder httpHeadersConsumer(Consumer<HttpHeaders> httpHeadersConsumer) {
+			this.httpHeadersConsumer = httpHeadersConsumer;
+			return this;
+		}
+
+		public RestClientTool build() {
+			return new RestClientTool(httpHeadersConsumer, errorHandler, properties, jsonParseTool);
+		}
+
+	}
+
+	public static Builder builder(JsonParseTool jsonParseTool, CommonToolCallProperties properties) {
+		return new Builder(jsonParseTool, properties);
+	}
+
+	public RestClient getRestClient() {
+		return restClient;
 	}
 
 }

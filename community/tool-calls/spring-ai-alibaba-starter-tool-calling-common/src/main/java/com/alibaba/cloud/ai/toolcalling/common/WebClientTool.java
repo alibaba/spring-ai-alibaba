@@ -82,47 +82,9 @@ public class WebClientTool {
 	}
 
 	/**
-	 * default webClient
-	 */
-	public WebClientTool(JsonParseTool jsonParseTool, CommonToolCallProperties properties) {
-		this.jsonParseTool = jsonParseTool;
-		this.properties = properties;
-		this.webClient = WebClient.builder()
-			.clientConnector(createHttpConnector())
-			.baseUrl(properties.getBaseUrl())
-			.defaultStatusHandler(HttpStatusCode::is4xxClientError,
-					CommonToolCallConstants.DEFAULT_WEBCLIENT_4XX_EXCEPTION)
-			.defaultStatusHandler(HttpStatusCode::is5xxServerError,
-					CommonToolCallConstants.DEFAULT_WEBCLIENT_5XX_EXCEPTION)
-			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(CommonToolCallConstants.MAX_MEMORY_SIZE))
-			.build();
-	}
-
-	/**
-	 * default webClient with customized HeaderConsumer
-	 */
-	public WebClientTool(Consumer<HttpHeaders> httpHeadersConsumer, JsonParseTool jsonParseTool,
-			CommonToolCallProperties properties) {
-		this.jsonParseTool = jsonParseTool;
-		this.properties = properties;
-		this.webClient = WebClient.builder()
-			.clientConnector(createHttpConnector())
-			.baseUrl(properties.getBaseUrl())
-			.defaultHeaders(httpHeadersConsumer)
-			.defaultStatusHandler(HttpStatusCode::is4xxClientError,
-					CommonToolCallConstants.DEFAULT_WEBCLIENT_4XX_EXCEPTION)
-			.defaultStatusHandler(HttpStatusCode::is5xxServerError,
-					CommonToolCallConstants.DEFAULT_WEBCLIENT_5XX_EXCEPTION)
-			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(CommonToolCallConstants.MAX_MEMORY_SIZE))
-			.filter(logRequest())
-			.filter(logResponse())
-			.build();
-	}
-
-	/**
 	 * Creates webClient with customized HeaderConsumer and ExceptionFunction
 	 */
-	public WebClientTool(Consumer<HttpHeaders> httpHeadersConsumer,
+	private WebClientTool(Consumer<HttpHeaders> httpHeadersConsumer,
 			Function<ClientResponse, Mono<? extends Throwable>> is4xxException,
 			Function<ClientResponse, Mono<? extends Throwable>> is5xxException, CommonToolCallProperties properties,
 			JsonParseTool jsonParseTool) {
@@ -144,12 +106,6 @@ public class WebClientTool {
 		return webClient.get()
 			.uri(uriBuilder -> uriBuilder.path(uri).queryParams(params).build(variables))
 			.retrieve()
-			.onStatus(HttpStatusCode::is4xxClientError,
-					response -> Mono
-						.error(new RuntimeException("Client error, code: " + response.statusCode().value())))
-			.onStatus(HttpStatusCode::is5xxServerError,
-					response -> Mono
-						.error(new RuntimeException("Server error, code: " + response.statusCode().value())))
 			.bodyToMono(String.class);
 	}
 
@@ -178,12 +134,6 @@ public class WebClientTool {
 				.contentType(mediaType)
 				.bodyValue(json)
 				.retrieve()
-				.onStatus(HttpStatusCode::is4xxClientError,
-						response -> Mono
-							.error(new RuntimeException("Client error, code: " + response.statusCode().value())))
-				.onStatus(HttpStatusCode::is5xxServerError,
-						response -> Mono
-							.error(new RuntimeException("Server error, code: " + response.statusCode().value())))
 				.bodyToMono(String.class))
 			.onErrorMap(JsonProcessingException.class, e -> new RuntimeException("Serialization failed", e));
 	}
@@ -218,6 +168,52 @@ public class WebClientTool {
 
 	public WebClient getWebClient() {
 		return webClient;
+	}
+
+	public static class Builder {
+
+		private final JsonParseTool jsonParseTool;
+
+		private final CommonToolCallProperties properties;
+
+		private Consumer<HttpHeaders> httpHeadersConsumer;
+
+		private Function<ClientResponse, Mono<? extends Throwable>> is4xxException;
+
+		private Function<ClientResponse, Mono<? extends Throwable>> is5xxException;
+
+		private Builder(JsonParseTool jsonParseTool, CommonToolCallProperties properties) {
+			this.jsonParseTool = jsonParseTool;
+			this.properties = properties;
+			this.httpHeadersConsumer = httpHeaders -> {
+			};
+			this.is4xxException = CommonToolCallConstants.DEFAULT_WEBCLIENT_4XX_EXCEPTION;
+			this.is5xxException = CommonToolCallConstants.DEFAULT_WEBCLIENT_5XX_EXCEPTION;
+		}
+
+		public Builder httpHeadersConsumer(Consumer<HttpHeaders> httpHeadersConsumer) {
+			this.httpHeadersConsumer = httpHeadersConsumer;
+			return this;
+		}
+
+		public Builder is4xxException(Function<ClientResponse, Mono<? extends Throwable>> is4xxException) {
+			this.is4xxException = is4xxException;
+			return this;
+		}
+
+		public Builder is5xxException(Function<ClientResponse, Mono<? extends Throwable>> is5xxException) {
+			this.is5xxException = is5xxException;
+			return this;
+		}
+
+		public WebClientTool build() {
+			return new WebClientTool(httpHeadersConsumer, is4xxException, is5xxException, properties, jsonParseTool);
+		}
+
+	}
+
+	public static Builder builder(JsonParseTool jsonParseTool, CommonToolCallProperties properties) {
+		return new Builder(jsonParseTool, properties);
 	}
 
 }
