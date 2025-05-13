@@ -18,9 +18,9 @@ package com.alibaba.cloud.ai.mcp.dynamic.server.tools;
 
 import com.alibaba.cloud.ai.mcp.dynamic.server.callback.DynamicNacosToolCallback;
 import com.alibaba.cloud.ai.mcp.dynamic.server.callback.DynamicNacosToolCallbackV3;
+import com.alibaba.cloud.ai.mcp.dynamic.server.config.NacosMcpDiscoveryProperties;
 import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinition;
 import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinitionV3;
-import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpRegistryProperties;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.common.utils.CollectionUtils;
@@ -47,18 +47,18 @@ public class DynamicToolsInitializer {
 
 	private final WebClient webClient;
 
-	private final NacosMcpRegistryProperties nacosMcpRegistryProperties;
+	private final NacosMcpDiscoveryProperties nacosMcpDiscoveryProperties;
 
 	public DynamicToolsInitializer(NamingService namingService, ConfigService configService, WebClient webClient,
-			NacosMcpRegistryProperties nacosMcpRegistryProperties) {
+			NacosMcpDiscoveryProperties nacosMcpDiscoveryProperties) {
 		this.namingService = namingService;
 		this.configService = configService;
 		this.webClient = webClient;
-		this.nacosMcpRegistryProperties = nacosMcpRegistryProperties;
+		this.nacosMcpDiscoveryProperties = nacosMcpDiscoveryProperties;
 	}
 
 	public List<ToolCallback> initializeTools() {
-		String version = NacosHelper.fetchNacosVersion(webClient, nacosMcpRegistryProperties.getServerAddr());
+		String version = NacosHelper.fetchNacosVersion(webClient, nacosMcpDiscoveryProperties.getServerAddr());
 		logger.info("Nacos server version: {}", version);
 		if (version != null && NacosHelper.compareVersion(version, "3.0.0") >= 0) {
 			logger.info("Nacos version >= 3.0.0, use new logic");
@@ -70,13 +70,13 @@ public class DynamicToolsInitializer {
 	private List<ToolCallback> handleHighVersion() {
 		// 3.0.0及以上版本的新逻辑，分页获取所有 pageItems 并组装 ToolCallback
 		List<Map<String, Object>> mcpServersAllPages = NacosHelper.fetchNacosMcpServersAllPages(webClient,
-				nacosMcpRegistryProperties.getServerAddr(), nacosMcpRegistryProperties.getUsername(),
-				nacosMcpRegistryProperties.getPassword());
+				nacosMcpDiscoveryProperties.getServerAddr(), nacosMcpDiscoveryProperties.getUsername(),
+				nacosMcpDiscoveryProperties.getPassword());
 		List<ToolCallback> allTools = new ArrayList<>();
 		for (Map<String, Object> mcpServerInfo : mcpServersAllPages) {
 			List<ToolCallback> tools = parseMcpServerInfo(mcpServerInfo, webClient,
-					nacosMcpRegistryProperties.getServerAddr(), nacosMcpRegistryProperties.getUsername(),
-					nacosMcpRegistryProperties.getPassword());
+					nacosMcpDiscoveryProperties.getServerAddr(), nacosMcpDiscoveryProperties.getUsername(),
+					nacosMcpDiscoveryProperties.getPassword());
 			if (CollectionUtils.isNotEmpty(tools)) {
 				allTools.addAll(tools);
 			}
@@ -164,7 +164,7 @@ public class DynamicToolsInitializer {
 
 	private List<ToolCallback> handleLowVersion() {
 		List<ToolCallback> allTools = new ArrayList<>();
-		String serviceGroup = nacosMcpRegistryProperties.getServiceGroup();
+		String serviceGroup = nacosMcpDiscoveryProperties.getServiceGroup();
 		try {
 			List<String> allServices = NacosHelper.listAllServices(namingService, serviceGroup);
 			for (String serviceName : allServices) {
