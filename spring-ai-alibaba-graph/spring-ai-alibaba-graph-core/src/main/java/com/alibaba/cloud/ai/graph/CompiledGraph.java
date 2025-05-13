@@ -702,11 +702,8 @@ public class CompiledGraph {
 									.filter(e -> !Objects.equals(e.getKey(), generatorEntry.getKey()))
 									.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-								var intermediateState = OverAllState.updateState(currentState,
+								currentState = OverAllState.updateState(currentState,
 										partialStateWithoutGenerator, overAllState().keyStrategies());
-
-								currentState = OverAllState.updateState(currentState, intermediateState,
-										overAllState().keyStrategies());
 							}
 							else {
 								throw new IllegalArgumentException("Embedded generator must return a Map");
