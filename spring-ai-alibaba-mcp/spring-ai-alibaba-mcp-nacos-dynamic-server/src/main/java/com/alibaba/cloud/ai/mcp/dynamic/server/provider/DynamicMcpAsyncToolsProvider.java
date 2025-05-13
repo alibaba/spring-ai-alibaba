@@ -17,11 +17,8 @@
 package com.alibaba.cloud.ai.mcp.dynamic.server.provider;
 
 import com.alibaba.cloud.ai.mcp.dynamic.server.callback.DynamicNacosToolCallback;
-import com.alibaba.cloud.ai.mcp.dynamic.server.callback.DynamicNacosToolCallbackV3;
-import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinition;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import org.springframework.ai.mcp.McpToolUtils;
-import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 
 public class DynamicMcpAsyncToolsProvider implements DynamicMcpToolsProvider {
@@ -34,23 +31,14 @@ public class DynamicMcpAsyncToolsProvider implements DynamicMcpToolsProvider {
 
 	@Override
 	public void addTool(final ToolDefinition toolDefinition) {
+		DynamicNacosToolCallback dynamicNacosToolCallback = new DynamicNacosToolCallback(toolDefinition);
 		try {
 			removeTool(toolDefinition.name());
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			// Ignore exception
 		}
-		ToolCallback toolCallback;
-		if (toolDefinition instanceof DynamicNacosToolDefinition) {
-			toolCallback = new DynamicNacosToolCallback(toolDefinition);
-		}
-		else {
-			toolCallback = new DynamicNacosToolCallbackV3(toolDefinition);
-		}
-
 		// Register the tool with the McpAsyncServer
-		mcpAsyncServer.addTool(McpToolUtils.toAsyncToolSpecification(toolCallback)).block();
-
+		mcpAsyncServer.addTool(McpToolUtils.toAsyncToolSpecification(dynamicNacosToolCallback)).block();
 	}
 
 	@Override

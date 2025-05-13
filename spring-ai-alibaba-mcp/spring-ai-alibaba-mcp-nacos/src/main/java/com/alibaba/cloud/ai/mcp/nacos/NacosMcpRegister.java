@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.mcp.nacos;
 
-import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpRegistryProperties;
 import com.alibaba.cloud.ai.mcp.nacos.model.McpServerInfo;
 import com.alibaba.cloud.ai.mcp.nacos.model.McpToolsInfo;
 import com.alibaba.cloud.ai.mcp.nacos.model.RemoteServerConfigInfo;
@@ -35,13 +34,11 @@ import com.alibaba.nacos.client.naming.NacosNamingService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
-import io.modelcontextprotocol.spec.McpClientSession;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.context.WebServerInitializedEvent;
 import org.springframework.context.ApplicationListener;
-import reactor.core.publisher.Mono;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -49,7 +46,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;

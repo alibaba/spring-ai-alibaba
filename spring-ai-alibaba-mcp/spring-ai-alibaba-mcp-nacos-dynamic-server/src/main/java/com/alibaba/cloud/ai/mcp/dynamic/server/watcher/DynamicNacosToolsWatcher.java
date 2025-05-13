@@ -18,8 +18,6 @@ package com.alibaba.cloud.ai.mcp.dynamic.server.watcher;
 
 import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinition;
 import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinitionV3;
-import com.alibaba.cloud.ai.mcp.dynamic.server.callback.DynamicNacosToolCallback;
-import com.alibaba.cloud.ai.mcp.dynamic.server.callback.DynamicNacosToolCallbackV3;
 import com.alibaba.cloud.ai.mcp.dynamic.server.provider.DynamicMcpToolsProvider;
 import com.alibaba.cloud.ai.mcp.dynamic.server.tools.DynamicNacosToolsInfo;
 import com.alibaba.cloud.ai.mcp.dynamic.server.tools.NacosHelper;
@@ -100,8 +98,7 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 			if (!scheduler.awaitTermination(60, TimeUnit.SECONDS)) {
 				scheduler.shutdownNow();
 			}
-		}
-		catch (InterruptedException e) {
+		} catch (InterruptedException e) {
 			scheduler.shutdownNow();
 			Thread.currentThread().interrupt();
 		}
@@ -135,11 +132,9 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 				configService.addListener(serviceName, nacosMcpRegistryProperties.getServiceGroup(), this);
 			}
 			cleanupStaleServices(currentServices);
-		}
-		catch (NacosException e) {
+		} catch (NacosException e) {
 			logger.error("Failed to poll services list", e);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Unexpected error during service polling", e);
 		}
 	}
@@ -157,8 +152,7 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 					try {
 						logger.info("Removing tool: {} for stale service: {}", toolName, staleService);
 						dynamicMcpToolsProvider.removeTool(toolName);
-					}
-					catch (Exception e) {
+					} catch (Exception e) {
 						logger.error("Failed to remove tool: {} for service: {}", toolName, staleService, e);
 					}
 				}
@@ -218,11 +212,9 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 			// 更新缓存
 			serviceToolsCache.put(serviceName, currentTools);
 
-		}
-		catch (NacosException e) {
+		} catch (NacosException e) {
 			logger.error("Failed to update tools for service: {}", serviceName, e);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Unexpected error while updating tools for service: {}", serviceName, e);
 		}
 	}
@@ -234,8 +226,7 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 				try {
 					logger.info("Removing tool: {} for service: {}", toolName, serviceName);
 					dynamicMcpToolsProvider.removeTool(toolName);
-				}
-				catch (Exception e) {
+				} catch (Exception e) {
 					logger.error("Failed to remove tool: {} for service: {}", toolName, serviceName, e);
 				}
 			}
@@ -282,8 +273,7 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 
 			// Clean up stale services
 			cleanupStaleServices(currentServices);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Failed to handle high version services", e);
 		}
 	}
@@ -292,12 +282,12 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 		try {
 			String url = NacosHelper.getServerUrl(nacosMcpRegistryProperties.getServerAddr());
 			String mcpServerDetail = webClient.get()
-				.uri(url + "/nacos/v3/admin/ai/mcp?mcpName=" + mcpName)
-				.header("userName", nacosMcpRegistryProperties.getUsername())
-				.header("password", nacosMcpRegistryProperties.getPassword())
-				.retrieve()
-				.bodyToMono(String.class)
-				.block();
+					.uri(url + "/nacos/v3/admin/ai/mcp?mcpName=" + mcpName)
+					.header("userName", nacosMcpRegistryProperties.getUsername())
+					.header("password", nacosMcpRegistryProperties.getPassword())
+					.retrieve()
+					.bodyToMono(String.class)
+					.block();
 
 			logger.info("Nacos mcp server info (name {}): {}", mcpName, mcpServerDetail);
 			Map<String, Object> serverInfoMap = JacksonUtils.toObj(mcpServerDetail, Map.class);
@@ -327,8 +317,7 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 								Object enabledObj = ((Map<?, ?>) metaInfo).get("enabled");
 								if (enabledObj instanceof Boolean) {
 									enabled = (Boolean) enabledObj;
-								}
-								else if (enabledObj instanceof String) {
+								} else if (enabledObj instanceof String) {
 									enabled = Boolean.parseBoolean((String) enabledObj);
 								}
 							}
@@ -340,14 +329,14 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 
 							// Create and add tool definition
 							ToolDefinition toolDefinition = DynamicNacosToolDefinitionV3.builder()
-								.name(toolName)
-								.description((String) tool.get("description"))
-								.inputSchema(tool.get("inputSchema"))
-								.protocol(protocol)
-								.remoteServerConfig(remoteServerConfig)
-								.localServerConfig(localeServerConfig)
-								.toolsMeta(metaInfo)
-								.build();
+									.name(toolName)
+									.description((String) tool.get("description"))
+									.inputSchema(tool.get("inputSchema"))
+									.protocol(protocol)
+									.remoteServerConfig(remoteServerConfig)
+									.localServerConfig(localeServerConfig)
+									.toolsMeta(metaInfo)
+									.build();
 
 							dynamicMcpToolsProvider.addTool(toolDefinition);
 						}
@@ -368,8 +357,7 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 					}
 				}
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Failed to update tools for high version service: {}", mcpName, e);
 		}
 	}
