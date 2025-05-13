@@ -30,7 +30,7 @@ import java.util.List;
 public class InteractiveTextProcessor {
 
 	private static final Logger log = LoggerFactory.getLogger(InteractiveTextProcessor.class);
-
+	
 	/**
 	 * 用于存储交互式元素的缓存列表
 	 */

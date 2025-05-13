@@ -33,7 +33,7 @@ public class NavigateAction extends BrowserAction {
             return new ToolExecuteResult("URL is required for 'navigate' action");
         }
 
-        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        Page page = browserUseTool.getDriver(); // 获取 Playwright 的 Page 实例
         page.navigate(url); // 使用 Playwright 的 navigate 方法
 
         browserUseTool.getInteractiveTextProcessor().refreshCache(page);

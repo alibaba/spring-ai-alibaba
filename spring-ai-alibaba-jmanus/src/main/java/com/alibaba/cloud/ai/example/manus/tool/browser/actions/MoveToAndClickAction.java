@@ -38,7 +38,7 @@ public class MoveToAndClickAction extends BrowserAction {
             return new ToolExecuteResult("X and Y coordinates are required for 'move_to_and_click' action");
         }
 
-        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        Page page = browserUseTool.getDriver(); // 获取 Playwright 的 Page 实例
 
         // 记录点击前的窗口状态
         List<String> beforeWindowHandles = page.context().pages().stream().map(Page::url).toList();

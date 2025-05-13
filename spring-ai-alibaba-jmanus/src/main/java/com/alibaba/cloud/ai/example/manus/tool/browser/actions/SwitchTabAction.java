@@ -34,7 +34,7 @@ public class SwitchTabAction extends BrowserAction {
             return new ToolExecuteResult("Tab ID is out of range for 'switch_tab' action");
         }
 
-        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        Page page = browserUseTool.getDriver(); // 获取 Playwright 的 Page 实例
         Page targetPage = page.context().pages().get(tabId); // 切换到指定的标签页
         if (targetPage == null) {
             return new ToolExecuteResult("Tab ID " + tabId + " does not exist");

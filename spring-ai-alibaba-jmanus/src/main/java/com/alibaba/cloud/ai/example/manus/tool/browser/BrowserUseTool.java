@@ -35,6 +35,7 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAct
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.ElementHandle;
 import org.slf4j.Logger;
@@ -58,11 +59,13 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 
 	private String planId;
 
+	private Page pageOfPlan;
+
 	public BrowserUseTool(ChromeDriverService chromeDriverService) {
 		this.chromeDriverService = chromeDriverService;
 	}
 
-	public Browser getDriver() {
+	public Page getDriver() {
 		return chromeDriverService.getDriver(planId);
 	}
 
@@ -281,12 +284,12 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			Map<String, Object> tabInfo = new HashMap<>();
 			tabInfo.put("url", p.url());
 			tabInfo.put("title", p.title());
+			
 			return tabInfo;
 		}).toList();
 	}
 
-	public Map<String, Object> getCurrentState() {
-		Page page = getDriver().newPage();
+	public Map<String, Object> getCurrentState(Page page) {
 		Map<String, Object> state = new HashMap<>();
 
 		try {
@@ -301,7 +304,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			state.put("tabs", tabs);
 
 			// 获取可交互元素
-			List<ElementHandle> interactiveElements = page.querySelectorAll("[data-interactive]");
+			List<ElementHandle> interactiveElements = interactiveTextProcessor.getInteractiveElements(page);
 			state.put("interactive_elements", interactiveElements.stream().map(ElementHandle::textContent).toList());
 
 			return state;
@@ -356,8 +359,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 
 	@Override
 	public String getCurrentToolStateString() {
-		Map<String, Object> state = getCurrentState();
-
+		Map<String, Object> state = getCurrentState(pageOfPlan);
 		// 构建URL和标题信息
 		String urlInfo = String.format("\n   URL: %s\n   Title: %s", state.get("url"), state.get("title"));
 
