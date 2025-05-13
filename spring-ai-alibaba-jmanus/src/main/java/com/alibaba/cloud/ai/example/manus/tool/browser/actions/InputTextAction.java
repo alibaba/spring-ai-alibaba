@@ -18,16 +18,13 @@ package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 import java.util.List;
 import java.util.Random;
 
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import com.microsoft.playwright.ElementHandle;
+import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
-import com.alibaba.cloud.ai.example.manus.tool.browser.WebElementWrapper;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class InputTextAction extends BrowserAction {
-    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(InputTextAction.class);
-
     public InputTextAction(BrowserUseTool browserUseTool) {
         super(browserUseTool);
     }
@@ -37,36 +34,32 @@ public class InputTextAction extends BrowserAction {
         Integer index = request.getIndex();
         String text = request.getText();
 
-        WebDriver driver = browserUseTool.getDriver();
+        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
         if (index == null || text == null) {
             return new ToolExecuteResult("Index and text are required for 'input_text' action");
         }
-        if (index == null || text == null) {
-            return new ToolExecuteResult("Index and text are required for 'input_text' action");
-        }
-        List<WebElementWrapper> interactiveElements = getInteractiveElements(driver);
+
+        List<ElementHandle> interactiveElements = page.querySelectorAll("[data-interactive]"); // 替代 Selenium 的 getInteractiveElements
         if (index < 0 || index >= interactiveElements.size()) {
             return new ToolExecuteResult("Element with index " + index + " not found");
         }
-        WebElementWrapper inputElementWrapper = interactiveElements.get(index);
-        inputElementWrapper.prepareForInteraction(driver);
-        WebElement inputElement = inputElementWrapper.getElement();
-        if (!inputElement.getTagName().equals("input") && !inputElement.getTagName().equals("textarea")) {
+
+        ElementHandle inputElement = interactiveElements.get(index);
+        String tagName = inputElement.evaluate("el => el.tagName.toLowerCase()").toString();
+        if (!tagName.equals("input") && !tagName.equals("textarea")) {
             return new ToolExecuteResult("Element at index " + index + " is not an input element");
         }
+
         typeWithHumanDelay(inputElement, text);
-        refreshTabsInfo(driver); // 刷新标签页信息
-        interactiveTextProcessor.refreshCache(driver);
+        browserUseTool.getInteractiveTextProcessor().refreshCache(page);
         return new ToolExecuteResult("Successfully input '" + text + "' into element at index " + index);
     }
 
-    private void typeWithHumanDelay(WebElement element, String text) {
-        simulateHumanBehavior(element);
-
+    private void typeWithHumanDelay(ElementHandle element, String text) {
         // 模拟人类输入速度
         Random random = new Random();
         for (char c : text.toCharArray()) {
-            element.sendKeys(String.valueOf(c));
+            element.evaluate("(el, char) => el.value += char", String.valueOf(c)); // 使用 evaluate 模拟输入
             try {
                 Thread.sleep(random.nextInt(100) + 50);
             } catch (InterruptedException e) {

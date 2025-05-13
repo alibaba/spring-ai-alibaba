@@ -15,9 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.TakesScreenshot;
-import org.openqa.selenium.WebDriver;
+import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
@@ -30,12 +28,12 @@ public class ScreenShotAction extends BrowserAction {
 
     @Override
     public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        WebDriver driver = browserUseTool.getDriver();
-        TakesScreenshot screenshot = (TakesScreenshot) driver;
-        String base64Screenshot = screenshot.getScreenshotAs(OutputType.BASE64);
-        interactiveTextProcessor.refreshCache(driver);
+        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        byte[] screenshot = page.screenshot(); // 捕获屏幕截图
+        String base64Screenshot = java.util.Base64.getEncoder().encodeToString(screenshot);
+
+        browserUseTool.getInteractiveTextProcessor().refreshCache(page);
         return new ToolExecuteResult(
                 "Screenshot captured (base64 length: " + base64Screenshot.length() + ")");
     }
-
 }

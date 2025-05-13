@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2025 the original author or authors.
  *
@@ -16,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import org.openqa.selenium.WebDriver;
+import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
@@ -31,15 +30,16 @@ public class SwitchTabAction extends BrowserAction {
     @Override
     public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
         Integer tabId = request.getTabId();
-        WebDriver driver = browserUseTool.getDriver();
         if (tabId == null || tabId < 0) {
             return new ToolExecuteResult("Tab ID is out of range for 'switch_tab' action");
         }
-        Object[] windowHandles = driver.getWindowHandles().toArray();
-        driver.switchTo().window(windowHandles[tabId].toString());
-        refreshTabsInfo(driver); // 刷新标签页信息
-        interactiveTextProcessor.refreshCache(driver);
+
+        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        Page targetPage = page.context().pages().get(tabId); // 切换到指定的标签页
+        if (targetPage == null) {
+            return new ToolExecuteResult("Tab ID " + tabId + " does not exist");
+        }
+        browserUseTool.getInteractiveTextProcessor().refreshCache(targetPage);
         return new ToolExecuteResult("Switched to tab " + tabId);
     }
-
 }

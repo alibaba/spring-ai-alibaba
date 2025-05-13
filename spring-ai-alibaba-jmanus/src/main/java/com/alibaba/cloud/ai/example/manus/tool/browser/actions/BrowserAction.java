@@ -16,54 +16,35 @@
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
-
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveTextProcessor;
-import com.alibaba.cloud.ai.example.manus.tool.browser.WebElementWrapper;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.microsoft.playwright.ElementHandle;
+import com.microsoft.playwright.Page;
 
 public abstract class BrowserAction {
     public abstract ToolExecuteResult execute(BrowserRequestVO request) throws Exception;
 
     protected final BrowserUseTool browserUseTool;
-    protected final InteractiveTextProcessor interactiveTextProcessor ;
+    protected final InteractiveTextProcessor interactiveTextProcessor;
 
     public BrowserAction(BrowserUseTool browserUseTool) {
         this.browserUseTool = browserUseTool;
         this.interactiveTextProcessor = browserUseTool.getInteractiveTextProcessor();
     }
 
+
     /**
-     * 这个方法是为了让getCurrentStatus 不会刷新页面，减少在Mac上主动唤起的次数 否则太烦了 ， 每个step要调起这个东西两次。 都会强制把
-     * 页面唤起到
-     * active啥事都没办法干了。
-     * 
-     * @param driver
-     * @return
+     * 模拟人类行为
+     * @param element Playwright的ElementHandle实例
      */
-    public List<Map<String, Object>> refreshTabsInfo(WebDriver driver) {
-        Set<String> windowHandles = driver.getWindowHandles();
-        List<Map<String, Object>> tabs = new ArrayList<>();
-        String currentHandle = driver.getWindowHandle();
-        for (String handle : windowHandles) {
-            driver.switchTo().window(handle);
-            tabs.add(Map.of("url", driver.getCurrentUrl(), "title", driver.getTitle(), "id", handle));
-        }
-        driver.switchTo().window(currentHandle); // 切回原始标签页
-        browserUseTool.setTabsInfo(tabs);
-        return tabs;
-    }
-
-    protected void simulateHumanBehavior(WebElement element) {
+    protected void simulateHumanBehavior(ElementHandle element) {
         try {
-
             // 添加随机延迟
             Thread.sleep(new Random().nextInt(500) + 200);
         } catch (InterruptedException e) {
@@ -73,12 +54,10 @@ public abstract class BrowserAction {
 
     /**
      * 通过InteractiveTextProcessor获取可交互元素
-     * 
-     * @param driver WebDriver实例
+     * @param page Playwright的Page实例
      * @return 可交互元素列表
      */
-    protected List<WebElementWrapper> getInteractiveElements(WebDriver driver) {
-        return interactiveTextProcessor.getInteractiveElements(driver);
+    protected List<ElementHandle> getInteractiveElements(Page page) {
+        return interactiveTextProcessor.getInteractiveElements(page);
     }
-
 }

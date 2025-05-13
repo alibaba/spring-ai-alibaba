@@ -16,15 +16,11 @@
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
 import java.util.List;
-import java.util.Set;
-import org.openqa.selenium.ElementClickInterceptedException;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.TimeoutException;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+
+import com.microsoft.playwright.ElementHandle;
+import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
-import com.alibaba.cloud.ai.example.manus.tool.browser.WebElementWrapper;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class ClickByElementAction extends BrowserAction {
@@ -40,62 +36,45 @@ public class ClickByElementAction extends BrowserAction {
         if (index == null) {
             return new ToolExecuteResult("Index is required for 'click' action");
         }
-        WebDriver driver = browserUseTool.getDriver();
-        List<WebElementWrapper> interactiveElements = getInteractiveElements(driver);
+
+        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        List<ElementHandle> interactiveElements = page.querySelectorAll("[data-interactive]"); // 替代 Selenium 的 getInteractiveElements
 
         if (index < 0 || index >= interactiveElements.size()) {
             return new ToolExecuteResult("Element with index " + index + " not found");
         }
 
-        WebElementWrapper elementWrapper = interactiveElements.get(index);
-        elementWrapper.prepareForInteraction(driver);
-        WebElement element = elementWrapper.getElement();
-        log.info("Clicking element: {}", (element != null ? element.getText() : "No text"));
+        ElementHandle element = interactiveElements.get(index);
+        log.info("Clicking element: {}", element.textContent());
 
         // 记录点击前的窗口状态
-        Set<String> beforeWindowHandles = driver.getWindowHandles();
-        String currentUrl = driver.getCurrentUrl();
+        List<String> beforeWindowHandles = page.context().pages().stream().map(Page::url).toList();
+        String currentUrl = page.url();
 
         // 执行点击操作
-        simulateHumanBehavior(element);
-        try {
-            element.click();
-        } catch (ElementClickInterceptedException e) {
-            // 如果普通点击失败，尝试使用 JavaScript 点击
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            js.executeScript("arguments[0].click();", element);
-        }
+        element.click();
 
         // 等待页面变化（最多等待10秒）
-        try {
-            // 检查是否有新窗口打开
-            Set<String> afterWindowHandles = driver.getWindowHandles();
-            if (afterWindowHandles.size() > beforeWindowHandles.size()) {
-                // 找出新打开的窗口
-                afterWindowHandles.removeAll(beforeWindowHandles);
-                String newHandle = afterWindowHandles.iterator().next();
+        page.waitForTimeout(10000);
 
-                // 切换到新窗口
-                driver.switchTo().window(newHandle);
-                log.info("New tab detected, switched to: {}", driver.getCurrentUrl());
-                refreshTabsInfo(driver); // 刷新标签页信息
-                return new ToolExecuteResult(
-                        "Clicked element and opened in new tab: " + driver.getCurrentUrl());
+        // 检查是否有新窗口打开
+        List<String> afterWindowHandles = page.context().pages().stream().map(Page::url).toList();
+        if (afterWindowHandles.size() > beforeWindowHandles.size()) {
+            // 找出新打开的窗口
+            afterWindowHandles.removeAll(beforeWindowHandles);
+            String newHandle = afterWindowHandles.get(0);
+
+            // 切换到新窗口
+            Page newPage = page.context().pages().stream().filter(p -> p.url().equals(newHandle)).findFirst().orElse(null);
+            if (newPage != null) {
+                log.info("New tab detected, switched to: {}", newPage.url());
+                return new ToolExecuteResult("Clicked element and opened in new tab: " + newPage.url());
             }
-
-            refreshTabsInfo(driver); // 刷新标签页信息
-            interactiveTextProcessor.refreshCache(driver);
-            // 如果没有明显变化，返回普通点击成功消息
-            return new ToolExecuteResult("Clicked element at index " + index);
-
-        } catch (TimeoutException e) {
-            // 如果超时，检查是否仍在原页面
-            if (!driver.getCurrentUrl().equals(currentUrl)) {
-                return new ToolExecuteResult("Clicked and page changed to: " + driver.getCurrentUrl());
-            }
-            return new ToolExecuteResult(
-                    "Clicked element at index " + index + " (no visible navigation occurred)");
         }
+
+        browserUseTool.getInteractiveTextProcessor().refreshCache(page);
+        // 如果没有明显变化，返回普通点击成功消息
+        return new ToolExecuteResult("Clicked element at index " + index);
     }
 
 }

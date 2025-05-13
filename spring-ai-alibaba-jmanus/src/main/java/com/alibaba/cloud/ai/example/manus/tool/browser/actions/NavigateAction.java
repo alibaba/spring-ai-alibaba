@@ -15,17 +15,12 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import java.util.List;
-import java.util.Map;
-
-import org.openqa.selenium.WebDriver;
+import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
-import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveTextProcessor;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class NavigateAction extends BrowserAction {
-   
 
     public NavigateAction(BrowserUseTool browserUseTool) {
         super(browserUseTool);
@@ -37,11 +32,11 @@ public class NavigateAction extends BrowserAction {
         if (url == null) {
             return new ToolExecuteResult("URL is required for 'navigate' action");
         }
-        WebDriver driver = browserUseTool.getDriver();
-        driver.get(url);
-        refreshTabsInfo(driver); // 刷新标签页信息
-        interactiveTextProcessor.refreshCache(driver);
+
+        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        page.navigate(url); // 使用 Playwright 的 navigate 方法
+
+        browserUseTool.getInteractiveTextProcessor().refreshCache(page);
         return new ToolExecuteResult("Navigated to " + url);
     }
-
 }

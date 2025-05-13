@@ -16,12 +16,11 @@
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
 import java.util.List;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+
+import com.microsoft.playwright.ElementHandle;
+import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
-import com.alibaba.cloud.ai.example.manus.tool.browser.WebElementWrapper;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class KeyEnterAction extends BrowserAction {
@@ -32,22 +31,21 @@ public class KeyEnterAction extends BrowserAction {
 
     @Override
     public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        WebDriver driver = browserUseTool.getDriver();
         Integer index = request.getIndex();
         if (index == null) {
             return new ToolExecuteResult("Index is required for 'key_enter' action");
         }
-        List<WebElementWrapper> interactiveElements = getInteractiveElements(driver);
+
+        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        List<ElementHandle> interactiveElements = page.querySelectorAll("[data-interactive]"); // 替代 Selenium 的 getInteractiveElements
         if (index < 0 || index >= interactiveElements.size()) {
             return new ToolExecuteResult("Element with index " + index + " not found");
         }
-        WebElementWrapper enterElementWrapper = interactiveElements.get(index);
-        enterElementWrapper.prepareForInteraction(driver);
-        WebElement enterElement = enterElementWrapper.getElement();
-        enterElement.sendKeys(Keys.RETURN);
-        refreshTabsInfo(driver); // 刷新标签页信息
-        interactiveTextProcessor.refreshCache(driver);
+
+        ElementHandle enterElement = interactiveElements.get(index);
+        enterElement.press("Enter"); // 使用 Playwright 的 press 方法模拟按下回车键
+
+        browserUseTool.getInteractiveTextProcessor().refreshCache(page);
         return new ToolExecuteResult("Hit the enter key at index " + index);
     }
-
 }
