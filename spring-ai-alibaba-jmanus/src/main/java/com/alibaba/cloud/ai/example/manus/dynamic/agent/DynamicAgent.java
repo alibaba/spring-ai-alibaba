@@ -113,7 +113,7 @@ public class DynamicAgent extends ReActAgent {
 				.prompt(userPrompt)
 				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getPlanId())
 					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
-				.tools(getToolCallList())
+				.toolCallbacks(getToolCallList())
 				.call()
 				.chatResponse();
 
