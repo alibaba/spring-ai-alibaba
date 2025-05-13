@@ -1,5 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <!--
        Copyright 2025-2026 the original author or authors.
@@ -26,13 +26,13 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-studio</artifactId>
-    <name>Spring AI Alibaba Studio</name>
     <packaging>jar</packaging>
+    <name>Spring AI Alibaba Studio</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
-        <url>https://github.com/alibaba/spring-ai-alibaba</url>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
         <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
 
     <properties>
@@ -159,20 +159,20 @@
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-maven-plugin</artifactId>
                 <version>${springdoc-openapi-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>integration-test</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                    </execution>
-                </executions>
                 <configuration>
                     <apiDocsUrl>http://localhost:8080/v3/api-docs.yaml</apiDocsUrl>
                     <outputFileName>openapi.yaml</outputFileName>
                     <outputDir>${project.basedir}/src/main/resources</outputDir>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>integration-test</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <phase>compile</phase>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Windows OS has a problem when packaging and compiling studio modules, -->
@@ -227,10 +227,10 @@
                 <executions>
                     <execution>
                         <id>copy-react-build</id>
-                        <phase>process-resources</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
+                        <phase>process-resources</phase>
                         <configuration>
                             <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
                             <resources>

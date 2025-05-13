@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.alibaba.cloud.ai</groupId>
@@ -9,14 +7,14 @@
         <version>${revision}</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-    
-    <version>${revision}</version>
     <artifactId>spring-ai-alibaba-mcp-nacos-dynamic-server</artifactId>
-    
+
+    <version>${revision}</version>
+
     <properties>
         <java.version>17</java.version>
     </properties>
-    
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -48,19 +46,18 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
         </dependency>
-        
-        
+
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-mcp</artifactId>
         </dependency>
-        
+
         <dependency>
             <groupId>io.modelcontextprotocol.sdk</groupId>
             <artifactId>mcp</artifactId>
             <version>0.9.0</version>
         </dependency>
-        
+
         <dependency>
             <groupId>io.modelcontextprotocol.sdk</groupId>
             <artifactId>mcp-spring-webflux</artifactId>
@@ -72,7 +69,7 @@
             <version>${project.parent.version}</version>
         </dependency>
     </dependencies>
-    
+
     <build>
         <plugins>
             <plugin>

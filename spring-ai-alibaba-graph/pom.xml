@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!--
    Copyright 2025-2026 the original author or authors.
 
@@ -15,10 +14,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 -->
-
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -29,8 +25,8 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-graph</artifactId>
-    <name>Spring AI Alibaba Graph</name>
     <packaging>pom</packaging>
+    <name>Spring AI Alibaba Graph</name>
 
     <modules>
         <module>spring-ai-alibaba-graph-core</module>
