@@ -13,30 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.toolcalling.bingsearch;
+package com.alibaba.cloud.ai.toolcalling.baidusearch;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
 
 /**
- * @author KrakenZJC
- **/
-@EnableConfigurationProperties
-@ConfigurationProperties(prefix = BingSearchProperties.BING_SEARCH_PREFIX)
-public class BingSearchProperties extends CommonToolCallProperties {
+ * @author vlsmb
+ */
+@ConfigurationProperties(prefix = BaiduSearchProperties.BAIDU_SEARCH_PREFIX)
+public class BaiduSearchProperties extends CommonToolCallProperties {
 
-	public static final String OCP_APIM_SUBSCRIPTION_KEY = "Ocp-Apim-Subscription-Key";
+	protected static final String BAIDU_SEARCH_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".baidu.search";
 
-	protected static final String BING_SEARCH_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".bingsearch";
+	public BaiduSearchProperties() {
+		super("https://www.baidu.com/s?wd=");
+		this.maxResults = 50;
+	}
 
-	public static final String BING_SEARCH_PATH = "/v7.0/search";
+	private Integer maxResults;
 
-	public BingSearchProperties() {
-		super("https://api.bing.microsoft.com");
-		this.setPropertiesFromEnv(null, null, null, "BING_SEARCH_TOKEN");
+	public Integer getMaxResults() {
+		return maxResults;
+	}
+
+	public void setMaxResults(Integer maxResults) {
+		this.maxResults = maxResults;
 	}
 
 }
