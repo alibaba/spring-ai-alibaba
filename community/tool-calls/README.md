@@ -32,7 +32,7 @@ public class BaiduTranslateProperties extends CommonToolCallProperties {
 ```
 7. 在Function Impl中，JSON的序列化与反序列化统一使用`spring-ai-alibaba-starter-tool-calling-common`模块的`JsonParseTool`对象，common模块自动注入了一个默认的Bean，如果有特殊需求也可以自定义`objectMapper`，在`AutoConfiguration`中覆盖原有的`JsonParseTool`的Bean。
 HTTP请求统一使用common模块的`RestClientTool`或者`WebClientTool`的对象，该类有`builder`方法，必要`CommonToolCallProperties`和`JsonParseTool`对象，根据需要也可以自定义其他对象。
-8. Auto Configruation 类中，应该声明一个Function Impl的Bean，供用户使用，例如：
+8. Auto Configuration 类中，应该声明一个Function Impl的Bean，供用户使用，例如：
 
 ```java
 @Configuration
