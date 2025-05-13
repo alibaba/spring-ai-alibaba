@@ -24,7 +24,7 @@
 
     <packaging>pom</packaging>
 
-    <name>spring-ai-alibaba-bom</name>
+    <name>Spring AI Alibaba Bom</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <description>Bill of Materials POM (BOM) for the Spring AI Alibaba modules</description>
 
@@ -800,7 +800,6 @@
                             </execution>
                         </executions>
                     </plugin>
-
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
@@ -852,7 +851,6 @@
                     </plugin>
                 </plugins>
             </build>
-
             <distributionManagement>
                 <snapshotRepository>
                     <id>ossrh</id>
