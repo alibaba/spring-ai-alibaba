@@ -61,8 +61,8 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 		1. 使用'get_text'操作获取页面内容，而不是滚动
 		2. 不用担心内容可见性或视口位置
 		3. 专注于基于文本的信息提取
-		4. 直接处理获取的文本数据
-		5. 重要：你必须在回复中使用至少一个工具才能取得进展！
+		4. 如果用户明确选择了某个元素，但元素没有出现在可交互元素里，要使用get_element_position 获取元素位置，然后 move_to_and_click 点击该元素
+		5. 重要：你必须在回复中使用至少一个工具！
 
 		考虑可见的内容和当前视口之外可能存在的内容。
 		有条理地行动 - 记住你的进度和迄今为止学到的知识。

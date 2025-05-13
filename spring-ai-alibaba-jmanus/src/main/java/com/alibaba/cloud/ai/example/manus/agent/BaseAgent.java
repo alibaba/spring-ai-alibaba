@@ -136,7 +136,9 @@ public abstract class BaseAgent {
 				重要说明：
 				1. 使用工具调用时，不需要额外的任何解释说明！
 				2. 不要在工具调用前提供推理或描述！
-				3. 专注于立即行动而非解释！
+				3. 做且只做当前要做的步骤要求中的内容
+				4. 如果当前要做的步骤要求已经做完，则调用terminate工具来完成当前步骤。
+				5. 全局目标 是用来有个全局认识的，不要在当前步骤中去完成这个全局目标。
 
 				""".formatted(osName, osVersion, osArch, currentDateTime);
 
