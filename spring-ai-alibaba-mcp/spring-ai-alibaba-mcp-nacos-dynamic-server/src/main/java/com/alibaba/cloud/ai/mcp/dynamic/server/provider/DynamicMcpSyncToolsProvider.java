@@ -36,13 +36,15 @@ public class DynamicMcpSyncToolsProvider implements DynamicMcpToolsProvider {
 	public void addTool(final ToolDefinition toolDefinition) {
 		try {
 			removeTool(toolDefinition.name());
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			// Ignore exception
 		}
 		ToolCallback toolCallback;
 		if (toolDefinition instanceof DynamicNacosToolDefinition) {
 			toolCallback = new DynamicNacosToolCallback(toolDefinition);
-		} else {
+		}
+		else {
 			toolCallback = new DynamicNacosToolCallbackV3(toolDefinition);
 		}
 
