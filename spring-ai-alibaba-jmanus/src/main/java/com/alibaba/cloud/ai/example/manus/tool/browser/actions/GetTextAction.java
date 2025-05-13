@@ -15,26 +15,25 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
+import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class GetTextAction extends BrowserAction {
     private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GetTextAction.class);
+
     public GetTextAction(BrowserUseTool browserUseTool) {
         super(browserUseTool);
     }
 
     @Override
     public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        WebDriver driver = browserUseTool.getDriver();
-        String body = driver.findElement(By.tagName("body")).getText();
+        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        String body = page.textContent("body"); // 使用 Playwright 获取页面文本内容
         log.info("get_text body is {}", body);
 
-        interactiveTextProcessor.refreshCache(driver);
+        browserUseTool.getInteractiveTextProcessor().refreshCache(page); // 刷新缓存
         return new ToolExecuteResult(body);
     }
-
 }

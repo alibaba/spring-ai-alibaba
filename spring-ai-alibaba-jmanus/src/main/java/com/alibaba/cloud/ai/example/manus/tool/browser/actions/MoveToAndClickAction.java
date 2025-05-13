@@ -15,14 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import java.time.Duration;
-import java.util.Set;
+import java.util.List;
 
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.TimeoutException;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.interactions.Actions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
@@ -38,64 +33,43 @@ public class MoveToAndClickAction extends BrowserAction {
     public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
         Integer x = request.getPositionX();
         Integer y = request.getPositionY();
-        
+
         if (x == null || y == null) {
             return new ToolExecuteResult("X and Y coordinates are required for 'move_to_and_click' action");
         }
-        
-        WebDriver driver = browserUseTool.getDriver();
-        
+
+        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+
         // 记录点击前的窗口状态
-        Set<String> beforeWindowHandles = driver.getWindowHandles();
-        String currentUrl = driver.getCurrentUrl();
-        
+        List<String> beforeWindowHandles = page.context().pages().stream().map(Page::url).toList();
+
         try {
-            // 方法1: 使用Actions API (推荐，但有些浏览器可能不支持)
-            Actions actions = new Actions(driver);
-            actions.moveByOffset(x, y).click().perform();
+            // 使用 Playwright 的 mouse API 移动并点击
+            page.mouse().move(x, y);
+            page.mouse().click(x, y);
             log.info("Clicked at position ({}, {})", x, y);
         } catch (Exception e) {
-            log.warn("Failed to click using Actions API, falling back to JavaScript", e);
-            
-            // 方法2: 使用JavaScript (备选方案)
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            js.executeScript(
-                "var evt = document.createEvent('MouseEvents');" +
-                "evt.initMouseEvent('click', true, true, window, 0, 0, 0, arguments[0], arguments[1], false, false, false, false, 0, null);" +
-                "document.elementFromPoint(arguments[0], arguments[1]).dispatchEvent(evt);", 
-                x, y
-            );
+            log.error("Failed to click at position ({}, {})", x, y, e);
+            return new ToolExecuteResult("Failed to click at position (" + x + ", " + y + ")");
         }
-        
-        try {
-            // 检查是否有新窗口打开
-            Set<String> afterWindowHandles = driver.getWindowHandles();
-            if (afterWindowHandles.size() > beforeWindowHandles.size()) {
-                // 找出新打开的窗口
-                afterWindowHandles.removeAll(beforeWindowHandles);
-                String newHandle = afterWindowHandles.iterator().next();
 
-                // 切换到新窗口
-                driver.switchTo().window(newHandle);
-                log.info("New tab detected, switched to: {}", driver.getCurrentUrl());
-                refreshTabsInfo(driver); // 刷新标签页信息
-                interactiveTextProcessor.refreshCache(driver);
-                return new ToolExecuteResult(
-                        "Clicked at position (" + x + ", " + y + ") and opened in new tab: " + driver.getCurrentUrl());
+        // 检查是否有新窗口打开
+        List<String> afterWindowHandles = page.context().pages().stream().map(Page::url).toList();
+        if (afterWindowHandles.size() > beforeWindowHandles.size()) {
+            // 找出新打开的窗口
+            afterWindowHandles.removeAll(beforeWindowHandles);
+            String newHandle = afterWindowHandles.get(0);
+
+            // 切换到新窗口
+            Page newPage = page.context().pages().stream().filter(p -> p.url().equals(newHandle)).findFirst().orElse(null);
+            if (newPage != null) {
+                log.info("New tab detected, switched to: {}", newPage.url());
+                browserUseTool.getInteractiveTextProcessor().refreshCache(newPage);
+                return new ToolExecuteResult("Clicked at position (" + x + ", " + y + ") and opened in new tab: " + newPage.url());
             }
-
-            refreshTabsInfo(driver); // 刷新标签页信息
-            interactiveTextProcessor.refreshCache(driver);
-            // 如果没有明显变化，返回普通点击成功消息
-            return new ToolExecuteResult("Clicked at position (" + x + ", " + y + ")");
-
-        } catch (TimeoutException e) {
-            // 如果超时，检查是否仍在原页面
-            if (!driver.getCurrentUrl().equals(currentUrl)) {
-                return new ToolExecuteResult("Clicked at position (" + x + ", " + y + ") and page changed to: " + driver.getCurrentUrl());
-            }
-            return new ToolExecuteResult(
-                    "Clicked at position (" + x + ", " + y + ") (no visible navigation occurred)");
         }
+        browserUseTool.getInteractiveTextProcessor().refreshCache(page);
+        // 如果没有明显变化，返回普通点击成功消息
+        return new ToolExecuteResult("Clicked at position (" + x + ", " + y + ")");
     }
 }

@@ -15,8 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebDriver;
+import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
@@ -33,13 +32,13 @@ public class ExecuteJsAction extends BrowserAction {
         if (script == null) {
             return new ToolExecuteResult("Script is required for 'execute_js' action");
         }
-        WebDriver driver = browserUseTool.getDriver();
-        JavascriptExecutor jsExecutor = (JavascriptExecutor) driver;
-        Object result = jsExecutor.executeScript(script);
-        refreshTabsInfo(driver); // 刷新标签页信息
-        interactiveTextProcessor.refreshCache(driver);
-        if (result == null) {
 
+        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        Object result = page.evaluate(script);
+
+        browserUseTool.getInteractiveTextProcessor().refreshCache(page);
+
+        if (result == null) {
             return new ToolExecuteResult("Successfully executed JavaScript code.");
         } else {
             return new ToolExecuteResult(result.toString());

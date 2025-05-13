@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import org.openqa.selenium.WebDriver;
+import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
@@ -29,11 +29,10 @@ public class RefreshAction extends BrowserAction {
 
     @Override
     public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        WebDriver driver = browserUseTool.getDriver();
-        driver.navigate().refresh();
-        refreshTabsInfo(driver); // 刷新标签页信息
-        interactiveTextProcessor.refreshCache(driver);
+        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        page.reload(); // 刷新当前页面
+
+        browserUseTool.getInteractiveTextProcessor().refreshCache(page);
         return new ToolExecuteResult("Refreshed current page");
     }
-    
 }

@@ -15,8 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebDriver;
+import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
@@ -30,14 +29,15 @@ public class NewTabAction extends BrowserAction {
 
     @Override
     public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        WebDriver driver = browserUseTool.getDriver();
         String url = request.getUrl();
         if (url == null) {
             return new ToolExecuteResult("URL is required for 'new_tab' action");
         }
-        ((JavascriptExecutor) driver).executeScript("window.open('" + url + "', '_blank');");
-        refreshTabsInfo(driver); // 刷新标签页信息
-        interactiveTextProcessor.refreshCache(driver);
+
+        Page page = browserUseTool.getDriver().newPage(); // 打开新标签页
+        page.navigate(url); // 导航到指定 URL
+
+        browserUseTool.getInteractiveTextProcessor().refreshCache(page);
         return new ToolExecuteResult("Opened new tab with URL " + url);
     }
 
