@@ -166,4 +166,8 @@ public class RestClientTool {
 		return new Builder(jsonParseTool, properties);
 	}
 
+	public RestClient getRestClient() {
+		return restClient;
+	}
+
 }
