@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import org.openqa.selenium.WebDriver;
+import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
@@ -30,9 +30,11 @@ public class GetHtmlAction extends BrowserAction {
 
     @Override
     public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        WebDriver driver = browserUseTool.getDriver();
-        String html = driver.getPageSource();
-        interactiveTextProcessor.refreshCache(driver);
+        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        String html = page.content(); // 获取页面 HTML 内容
+
+        browserUseTool.getInteractiveTextProcessor().refreshCache(page); // 刷新交互式文本缓存
+
         return new ToolExecuteResult(
                 html.length() > MAX_LENGTH ? html.substring(0, MAX_LENGTH) + "..." : html);
     }

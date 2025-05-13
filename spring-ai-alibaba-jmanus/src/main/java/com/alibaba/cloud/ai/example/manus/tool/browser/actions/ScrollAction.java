@@ -15,8 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.WebDriver;
+import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
@@ -31,14 +30,15 @@ public class ScrollAction extends BrowserAction {
     @Override
     public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
         Integer scrollAmount = request.getScrollAmount();
-      
+
         if (scrollAmount == null) {
             return new ToolExecuteResult("Scroll amount is required for 'scroll' action");
         }
-        WebDriver driver = browserUseTool.getDriver();
-        ((JavascriptExecutor) driver).executeScript("window.scrollBy(0," + scrollAmount + ");");
+
+        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        page.evaluate("window.scrollBy(0, arguments[0])", scrollAmount); // 使用 Playwright 执行滚动
+
         String direction = scrollAmount > 0 ? "down" : "up";
         return new ToolExecuteResult("Scrolled " + direction + " by " + Math.abs(scrollAmount) + " pixels");
     }
-
 }

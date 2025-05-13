@@ -62,7 +62,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		this.chromeDriverService = chromeDriverService;
 	}
 
-	private Browser getDriver() {
+	public Browser getDriver() {
 		return chromeDriverService.getDriver(planId);
 	}
 
@@ -362,12 +362,10 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		String urlInfo = String.format("\n   URL: %s\n   Title: %s", state.get("url"), state.get("title"));
 
 		// 构建标签页信息
-		@SuppressWarnings("unchecked")
 		List<Map<String, Object>> tabs = (List<Map<String, Object>>) state.get("tabs");
 		String tabsInfo = (tabs != null) ? String.format("\n   %d tab(s) available", tabs.size()) : "";
 
 		// 获取滚动信息
-		@SuppressWarnings("unchecked")
 		Map<String, Object> scrollInfo = (Map<String, Object>) state.get("scroll_info");
 		String contentAbove = "";
 		String contentBelow = "";
@@ -421,14 +419,5 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		return interactiveTextProcessor;
 	}
 
-	public void refreshTabsInfo(Page page) {
-		List<Map<String, Object>> tabsInfo = page.context().pages().stream().map(p -> {
-			Map<String, Object> tabInfo = new HashMap<>();
-			tabInfo.put("url", p.url());
-			tabInfo.put("title", p.title());
-			return tabInfo;
-		}).toList();
-		log.info("Tabs info refreshed: {}", tabsInfo);
-	}
 
 }
