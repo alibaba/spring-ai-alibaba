@@ -26,12 +26,12 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @EnableConfigurationProperties(TavilySearchProperties.class)
 @ConditionalOnClass(TavilySearchService.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.tavily-search", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.tavilysearch", name = "enabled", havingValue = "true")
 public class TavilySearchAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("Use tavily search engine to query")
+	@Description("Provides a TavilySearchService bean for performing searches using the Tavily search engine.")
 	public TavilySearchService tavilySearchFunction(TavilySearchProperties properties) {
 		return new TavilySearchService(properties);
 	}
