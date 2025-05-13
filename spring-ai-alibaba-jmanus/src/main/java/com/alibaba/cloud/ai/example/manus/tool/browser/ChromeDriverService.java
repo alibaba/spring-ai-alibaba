@@ -139,36 +139,36 @@ public class ChromeDriverService implements ApplicationRunner {
 		log.info("ChromeDriver path initialized: {}", chromeDriverPath);
 	}
 
-    private String getChromeDriverPath(Map<OsType, String> chromeDriverMap) throws IOException, URISyntaxException {
-        if (chromeDriverMap.size() != 1) {
-            throw new IllegalArgumentException("Chrome Driver Map 中的元素数量非法，必须且只能包含一个元素");
-        }
-        // 获取 ChromeDriver 的路径
-        String chromeDriverPath = chromeDriverMap.values().iterator().next();
+	private String getChromeDriverPath(Map<OsType, String> chromeDriverMap) throws IOException, URISyntaxException {
+		if (chromeDriverMap.size() != 1) {
+			throw new IllegalArgumentException("Chrome Driver Map 中的元素数量非法，必须且只能包含一个元素");
+		}
+		// 获取 ChromeDriver 的路径
+		String chromeDriverPath = chromeDriverMap.values().iterator().next();
 
-        // 获取资源 URL
-        URL resource = getClass().getClassLoader().getResource(chromeDriverPath);
-        if (resource == null) {
-            throw new IllegalStateException("ChromeDriver not found: " + chromeDriverPath);
-        }
-        // 判断资源是否在 JAR 包中
-        Path resolvedPath;
-        if (resource.getProtocol().equals("jar")) {
-            // 资源在 JAR 包中，需要提取到临时文件
-            try (InputStream inputStream = resource.openStream()) {
-                Path tempFile = Files.createTempFile("chromedriver", ".tmp");
-                Files.copy(inputStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
-                resolvedPath = tempFile;
-                tempFile.toFile().deleteOnExit(); // 程序退出时删除临时文件
-            }
-        }
-        else {
-            // 资源在文件系统中，直接转换为 Path
-            resolvedPath = Paths.get(resource.toURI());
-        }
-        // 返回绝对路径
-        return resolvedPath.toAbsolutePath().toString();
-    }
+		// 获取资源 URL
+		URL resource = getClass().getClassLoader().getResource(chromeDriverPath);
+		if (resource == null) {
+			throw new IllegalStateException("ChromeDriver not found: " + chromeDriverPath);
+		}
+		// 判断资源是否在 JAR 包中
+		Path resolvedPath;
+		if (resource.getProtocol().equals("jar")) {
+			// 资源在 JAR 包中，需要提取到临时文件
+			try (InputStream inputStream = resource.openStream()) {
+				Path tempFile = Files.createTempFile("chromedriver", ".tmp");
+				Files.copy(inputStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
+				resolvedPath = tempFile;
+				tempFile.toFile().deleteOnExit(); // 程序退出时删除临时文件
+			}
+		}
+		else {
+			// 资源在文件系统中，直接转换为 Path
+			resolvedPath = Paths.get(resource.toURI());
+		}
+		// 返回绝对路径
+		return resolvedPath.toAbsolutePath().toString();
+	}
 
 	private enum OsType {
 

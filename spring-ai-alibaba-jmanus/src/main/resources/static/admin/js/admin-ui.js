@@ -434,14 +434,16 @@ class AdminUI {
         const toolListContainer = dialog.querySelector('.tool-list-container');
         const searchInput = dialog.querySelector('.tool-search');
         
-        // 复制工具列表以便于排序和处理
-        const toolsCopy = [...availableTools];
+        // 复制工具列表以便于排序和处理 (Deep copy to avoid modifying original objects)
+        const toolsCopy = JSON.parse(JSON.stringify(availableTools));
         
         // 为每个工具添加isSelected属性，标记其是否已被当前Agent选择
         toolsCopy.forEach(tool => {
-            // 默认未选中
             tool.isSelected = currentTools.includes(tool.key);
         });
+        
+        // 初始化对话框本地的 selectedTools 数组
+        let selectedTools = toolsCopy.filter(tool => tool.isSelected);
         
         // 按服务组对工具进行分组
         const groupedTools = this.groupToolsByServiceGroup(toolsCopy);
@@ -505,34 +507,26 @@ class AdminUI {
             if (!toolItem) return;
             
             const toolKey = toolItem.dataset.toolKey;
-            const tool = toolsCopy.find(t => t.key === toolKey);
+            const toolInDialog = toolsCopy.find(t => t.key === toolKey);
             
-            if (tool) {
-                tool.isSelected = e.target.checked;
-w                
-                // 如果取消选中，从已选工具列表中移除
-                if (!e.target.checked) {
-                    // 从当前DOM中移除该工具项
-                    const toolElements = document.querySelectorAll('.tool-item');
-                    toolElements.forEach(elem => {
-                        const toolName = elem.querySelector('.tool-name');
-                        if (toolName && toolName.textContent === toolKey) {
-                            elem.remove();
-                        }
-                    });
-                    
-                    // 从selectedTools数组中也移除
-                    const index = selectedTools.findIndex(t => t.key === toolKey);
+            if (toolInDialog) {
+                toolInDialog.isSelected = e.target.checked; // Update the master copy for the dialog
+
+                if (e.target.checked) {
+                    // If checked, ensure it's in the dialog's selectedTools array
+                    if (!selectedTools.some(st => st.key === toolKey)) {
+                        selectedTools.push(toolInDialog);
+                    }
+                } else {
+                    // If unchecked, remove it from the dialog's selectedTools array
+                    const index = selectedTools.findIndex(st => st.key === toolKey);
                     if (index !== -1) {
                         selectedTools.splice(index, 1);
                     }
-                } else {
-                    // 如果选中且不在selectedTools中，添加到selectedTools
-                    if (!selectedTools.some(t => t.key === toolKey)) {
-                        selectedTools.push(tool);
-                    }
                 }
             }
+            // Update group counts display if necessary (can be done by re-rendering or specific update)
+            // For now, focusing on the core logic of selectedTools
         };
         
         // 处理组级别启用/禁用
@@ -545,41 +539,41 @@ w
             const groupName = groupHeader.dataset.group;
             const isEnabled = e.target.checked;
             
-            // 更新该组中所有工具的启用状态
-            toolsCopy.forEach(tool => {
-                if ((tool.serviceGroup || '未分组') === groupName) {
-                    tool.isSelected = isEnabled;
+            toolsCopy.forEach(toolInDialog => {
+                if ((toolInDialog.serviceGroup || '未分组') === groupName) {
+                    toolInDialog.isSelected = isEnabled;
                     
-                    // 如果启用工具，并且该工具尚未添加到selectedTools中，则添加它
-                    if (isEnabled && !selectedTools.some(t => t.key === tool.key)) {
-                        selectedTools.push(tool);
-                    }
-                    // 如果禁用工具，则从selectedTools中移除
-                    else if (!isEnabled) {
-                        const index = selectedTools.findIndex(t => t.key === tool.key);
+                    if (isEnabled) {
+                        // If enabling group, ensure tool is in dialog's selectedTools
+                        if (!selectedTools.some(st => st.key === toolInDialog.key)) {
+                            selectedTools.push(toolInDialog);
+                        }
+                    } else {
+                        // If disabling group, remove tool from dialog's selectedTools
+                        const index = selectedTools.findIndex(st => st.key === toolInDialog.key);
                         if (index !== -1) {
                             selectedTools.splice(index, 1);
                         }
-                        
-                        // 同时从界面上移除已添加的工具项
-                        const toolElements = document.querySelectorAll('.tool-item');
-                        toolElements.forEach(elem => {
-                            const toolName = elem.querySelector('.tool-name');
-                            if (toolName && (tool.serviceGroup || '未分组') === groupName && 
-                                toolName.textContent === tool.key) {
-                                elem.remove();
-                            }
-                        });
                     }
                 }
             });
             
-            // 更新UI中该组所有工具的复选框状态
+            // Update UI of individual checkboxes within this group in the dialog
             const groupContent = groupHeader.nextElementSibling;
-            const checkboxes = groupContent.querySelectorAll('.tool-enable-checkbox');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = isEnabled;
-            });
+            if (groupContent) {
+                const checkboxes = groupContent.querySelectorAll('.tool-selection-item .tool-enable-checkbox');
+                checkboxes.forEach(checkbox => {
+                    const toolItemCheckbox = checkbox.closest('.tool-selection-item');
+                    if (toolItemCheckbox) {
+                        const toolKey = toolItemCheckbox.dataset.toolKey;
+                        const toolInGroup = toolsCopy.find(t => t.key === toolKey && (t.serviceGroup || '未分组') === groupName);
+                        if (toolInGroup) {
+                            checkbox.checked = toolInGroup.isSelected;
+                        }
+                    }
+                });
+            }
+            // Update group counts display if necessary
         };
         
         // 显示对话框和遮罩
@@ -588,7 +582,6 @@ w
         setTimeout(() => overlay.classList.add('show'), 10);
         
         // 处理工具选择
-        let selectedTools = [];
         const handleToolSelection = (e) => {
             // 忽略启用/禁用复选框点击导致的事件冒泡
             if (e.target.classList.contains('tool-enable-checkbox')) return;
@@ -643,10 +636,9 @@ w
         
         // 确认按钮
         const handleConfirm = () => {
-            if (selectedTools.length > 0) {
-                // 调用回调函数，传递所有选中的工具
-                selectedTools.forEach(tool => onSelect(tool));
-            }
+            // 直接将 selectedTools 数组传递给 onSelect 回调
+            // 即使 selectedTools 为空数组，回调函数也应该能正确处理
+            onSelect(selectedTools); 
             closeDialog();
         };
         
