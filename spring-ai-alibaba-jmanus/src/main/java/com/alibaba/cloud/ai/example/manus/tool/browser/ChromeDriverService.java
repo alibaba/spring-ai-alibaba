@@ -42,7 +42,7 @@ public class ChromeDriverService {
 	private Playwright playwright;
 	private final ConcurrentHashMap<String, Browser> drivers = new ConcurrentHashMap<>();
 	private final Lock driverLock = new ReentrantLock();
-	private final ManusProperties manusProperties;
+	private  ManusProperties manusProperties;
 	public ChromeDriverService(ManusProperties manusProperties) {
 		this.manusProperties = manusProperties;
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -166,6 +166,9 @@ public class ChromeDriverService {
 	public void cleanup() {
 		log.info("Spring container shutting down - cleaning up Browser resources");
 		cleanupAllPlaywrightProcesses();
+	}
+	public void setManusProperties(ManusProperties manusProperties) {
+		this.manusProperties = manusProperties;
 	}
 
 }
