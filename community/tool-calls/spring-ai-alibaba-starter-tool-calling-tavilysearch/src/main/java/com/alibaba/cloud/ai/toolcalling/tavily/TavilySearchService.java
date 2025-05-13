@@ -15,13 +15,56 @@
  */
 package com.alibaba.cloud.ai.toolcalling.tavily;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
-public class TavilySearchSchema {
+public class TavilySearchService implements Function<TavilySearchService.Request, TavilySearchService.Response> {
+
+	private static final Logger logger = LoggerFactory.getLogger(TavilySearchService.class);
+
+	private static final String TAVILY_SEARCH_API = "https://api.tavily.com/search";
+
+	private final WebClient webClient;
+
+	public TavilySearchService(TavilySearchProperties properties) {
+		final Map<String, String> headers = Map.of("Authorization", "Bearer " + properties.getToken(), "Content-Type",
+				"application/json");
+		this.webClient = CommonToolCallUtils.buildWebClient(headers,
+				CommonToolCallConstants.DEFAULT_CONNECT_TIMEOUT_MILLIS,
+				CommonToolCallConstants.DEFAULT_RESPONSE_TIMEOUT_SECONDS, CommonToolCallConstants.MAX_MEMORY_SIZE);
+	}
+
+	@Override
+	public TavilySearchService.Response apply(TavilySearchService.Request request) {
+		if (request == null || !StringUtils.hasText(request.query())) {
+			return null;
+		}
+
+		try {
+			return webClient.post()
+				.uri(TAVILY_SEARCH_API)
+				.bodyValue(request)
+				.retrieve()
+				.bodyToMono(TavilySearchService.Response.class)
+				.block();
+
+		}
+		catch (Exception ex) {
+			logger.error("tavily search error: {}", ex.getMessage());
+			return null;
+		}
+	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record Request(@JsonProperty("query") String query, @JsonProperty("topic") String topic,
@@ -34,6 +77,10 @@ public class TavilySearchSchema {
 			@JsonProperty("include_image_descriptions") Boolean includeImageDescriptions,
 			@JsonProperty("include_domains") List<String> includeDomains,
 			@JsonProperty("exclude_domains") List<String> excludeDomains) implements Serializable {
+
+		public static Request simpleQuery(String query) {
+			return new Request(query, null, null, null, null, null, null, null, null, null, null, null, null);
+		}
 	}
 
 	public record ResponseImage(@JsonProperty("url") String url,
@@ -52,10 +99,6 @@ public class TavilySearchSchema {
 			@JsonProperty("images") List<ResponseImage> images, @JsonProperty("results") List<ResponseResult> results,
 			@JsonProperty("response_time") String responseTime,
 			@JsonProperty("detail") ResponseErrorDetail detail) implements Serializable {
-	}
-
-	public static Request simpleQuery(String query) {
-		return new Request(query, null, null, null, null, null, null, null, null, null, null, null, null);
 	}
 
 }

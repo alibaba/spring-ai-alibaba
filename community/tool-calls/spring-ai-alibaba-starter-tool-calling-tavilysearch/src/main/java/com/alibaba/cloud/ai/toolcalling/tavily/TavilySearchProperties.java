@@ -19,7 +19,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 @EnableConfigurationProperties
-@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.tavily-search")
+@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.tavilysearch")
 public class TavilySearchProperties {
 
 	private String token;

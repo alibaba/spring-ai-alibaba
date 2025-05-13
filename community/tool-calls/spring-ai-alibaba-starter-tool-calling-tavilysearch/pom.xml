@@ -10,7 +10,7 @@
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-starter-tool-calling-tavily</artifactId>
+    <artifactId>spring-ai-alibaba-starter-tool-calling-tavilysearch</artifactId>
     <name>Spring AI Alibaba Starter Tool Calling Tavily Search</name>
     <description>Tavily search tool for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
