@@ -39,8 +39,8 @@
     <dependencies>
 
         <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
 
         <dependency>
@@ -79,6 +79,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-tool-calling-weather</finalName>
+        <finalName>spring-ai-alibaba-starter-tool-calling-weather</finalName>
     </build>
 </project>
