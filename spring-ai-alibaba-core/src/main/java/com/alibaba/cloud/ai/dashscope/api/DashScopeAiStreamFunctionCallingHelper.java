@@ -113,7 +113,7 @@ public class DashScopeAiStreamFunctionCallingHelper {
 				toolCalls.addAll(previous.toolCalls().subList(0, previous.toolCalls().size() - 1));
 			}
 		}
-		if (current.toolCalls() != null) {
+		if (!CollectionUtils.isEmpty(current.toolCalls())) {
 			if (current.toolCalls().size() > 1) {
 				throw new IllegalStateException("Currently only one tool call is supported per message!");
 			}

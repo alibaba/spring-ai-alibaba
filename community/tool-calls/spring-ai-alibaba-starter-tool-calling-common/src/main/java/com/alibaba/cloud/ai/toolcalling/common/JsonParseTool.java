@@ -40,6 +40,10 @@ public class JsonParseTool {
 			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 	}
 
+	public JsonParseTool(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
+
 	public <T> String objectToJson(T obj) throws JsonProcessingException {
 		return objectMapper.writeValueAsString(obj);
 	}
@@ -103,6 +107,18 @@ public class JsonParseTool {
 		JsonNode rootNode = objectMapper.readTree(json);
 		JsonNode fieldNode = rootNode.path(fieldName);
 		return fieldNode.toString();
+	}
+
+	/**
+	 * Get the string value of obj.fieldName1.fileName2... from the JSON.
+	 * @param json json string
+	 * @param fieldNames keyNames
+	 */
+	public String getDepthFieldValueAsString(String json, String... fieldNames) throws JsonProcessingException {
+		for (String fieldName : fieldNames) {
+			json = getFieldValueAsString(json, fieldName);
+		}
+		return json;
 	}
 
 	/**
