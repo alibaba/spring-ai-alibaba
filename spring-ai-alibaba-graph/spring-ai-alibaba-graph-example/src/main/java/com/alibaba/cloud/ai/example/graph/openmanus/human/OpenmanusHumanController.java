@@ -21,12 +21,7 @@ import java.util.Optional;
 
 import com.alibaba.cloud.ai.example.graph.openmanus.SupervisorAgent;
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.PlanningTool;
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.GraphRepresentation;
-import com.alibaba.cloud.ai.graph.GraphStateException;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.node.HumanNode;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
@@ -83,14 +78,13 @@ public class OpenmanusHumanController {
 
 	@GetMapping("/init")
 	public void initGraph() throws GraphStateException {
-		AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
+		OverAllStateFactory stateFactory = () -> {
 			OverAllState state = new OverAllState();
 			state.registerKeyAndStrategy("plan", (o1, o2) -> o2);
 			state.registerKeyAndStrategy("step_prompt", (o1, o2) -> o2);
 			state.registerKeyAndStrategy("step_output", (o1, o2) -> o2);
 			state.registerKeyAndStrategy("final_output", (o1, o2) -> o2);
 
-			state.input(inputs);
 			return state;
 		};
 

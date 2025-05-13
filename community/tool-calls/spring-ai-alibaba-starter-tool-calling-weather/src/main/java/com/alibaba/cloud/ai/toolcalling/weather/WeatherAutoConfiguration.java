@@ -39,9 +39,9 @@ public class WeatherAutoConfiguration {
 	@Description("Use api.weather to get weather information.")
 	public WeatherService getWeatherServiceFunction(WeatherProperties properties, JsonParseTool jsonParseTool) {
 
-		return new WeatherService(
-				new WebClientTool(headers -> headers.add("key", properties.getApiKey()), jsonParseTool, properties),
-				jsonParseTool);
+		return new WeatherService(WebClientTool.builder(jsonParseTool, properties)
+			.httpHeadersConsumer(headers -> headers.add("key", properties.getApiKey()))
+			.build(), jsonParseTool);
 	}
 
 }

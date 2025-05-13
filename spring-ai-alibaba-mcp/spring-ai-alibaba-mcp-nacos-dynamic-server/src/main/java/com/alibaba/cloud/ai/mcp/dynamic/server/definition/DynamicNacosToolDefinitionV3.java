@@ -30,8 +30,6 @@ public class DynamicNacosToolDefinitionV3 implements ToolDefinition {
 
 	private String description;
 
-	private String serviceName;
-
 	private String version;
 
 	private String protocol;
@@ -46,35 +44,35 @@ public class DynamicNacosToolDefinitionV3 implements ToolDefinition {
 
 	private Object inputSchema;
 
+	private Object toolsMeta;
+
 	public DynamicNacosToolDefinitionV3() {
 	}
 
-	public DynamicNacosToolDefinitionV3(final String name, final String description, final String serviceName,
-			final String inputSchema) {
+	public DynamicNacosToolDefinitionV3(final String name, final String description, final String inputSchema) {
 		Assert.hasText(name, "name cannot be null or empty");
 		Assert.hasText(description, "description cannot be null or empty");
 		Assert.hasText(inputSchema, "inputSchema cannot be null or empty");
 		this.name = name;
 		this.description = description;
-		this.serviceName = serviceName;
 		this.inputSchema = inputSchema;
 	}
 
-	public DynamicNacosToolDefinitionV3(final String name, final String description, final String serviceName,
-			final Object inputSchema, final String version, final String protocol, final Object remoteServerConfig,
-			final Object localServerConfig, final Object credentials, final Boolean enabled) {
+	public DynamicNacosToolDefinitionV3(final String name, final String description, final Object inputSchema,
+			final String version, final String protocol, final Object remoteServerConfig,
+			final Object localServerConfig, final Object credentials, final Object toolsMeta, final Boolean enabled) {
 		Assert.hasText(name, "name cannot be null or empty");
 		Assert.hasText(description, "description cannot be null or empty");
 		Assert.notNull(inputSchema, "inputSchema cannot be null or empty");
 		this.name = name;
 		this.description = description;
-		this.serviceName = serviceName;
 		this.inputSchema = inputSchema;
 		this.version = version;
 		this.protocol = protocol;
 		this.remoteServerConfig = remoteServerConfig;
 		this.localServerConfig = localServerConfig;
 		this.credentials = credentials;
+		this.toolsMeta = toolsMeta;
 		this.enabled = enabled;
 	}
 
@@ -116,14 +114,6 @@ public class DynamicNacosToolDefinitionV3 implements ToolDefinition {
 
 	public void setInputSchema(final Object inputSchema) {
 		this.inputSchema = inputSchema;
-	}
-
-	public String getServiceName() {
-		return serviceName;
-	}
-
-	public void setServiceName(final String serviceName) {
-		this.serviceName = serviceName;
 	}
 
 	public String getVersion() {
@@ -174,13 +164,19 @@ public class DynamicNacosToolDefinitionV3 implements ToolDefinition {
 		this.protocol = protocol;
 	}
 
+	public Object getToolsMeta() {
+		return toolsMeta;
+	}
+
+	public void setToolsMeta(final Object toolsMeta) {
+		this.toolsMeta = toolsMeta;
+	}
+
 	public static final class Builder {
 
 		private String name;
 
 		private String description;
-
-		private String serviceName;
 
 		private String version;
 
@@ -196,6 +192,8 @@ public class DynamicNacosToolDefinitionV3 implements ToolDefinition {
 
 		private Object inputSchema;
 
+		private Object toolsMeta;
+
 		private Builder() {
 		}
 
@@ -206,11 +204,6 @@ public class DynamicNacosToolDefinitionV3 implements ToolDefinition {
 
 		public DynamicNacosToolDefinitionV3.Builder description(final String description) {
 			this.description = description;
-			return this;
-		}
-
-		public DynamicNacosToolDefinitionV3.Builder serviceName(final String serviceName) {
-			this.serviceName = serviceName;
 			return this;
 		}
 
@@ -249,13 +242,18 @@ public class DynamicNacosToolDefinitionV3 implements ToolDefinition {
 			return this;
 		}
 
+		public DynamicNacosToolDefinitionV3.Builder toolsMeta(final Object toolsMeta) {
+			this.toolsMeta = toolsMeta;
+			return this;
+		}
+
 		public ToolDefinition build() {
 			if (!StringUtils.isNoneBlank(this.description)) {
 				this.description = ToolUtils.getToolDescriptionFromName(this.name);
 			}
 
-			return new DynamicNacosToolDefinitionV3(this.name, this.description, this.serviceName, this.inputSchema,
-					this.version, this.protocol, this.remoteServerConfig, this.localServerConfig, this.credentials,
+			return new DynamicNacosToolDefinitionV3(this.name, this.description, this.inputSchema, this.version,
+					this.protocol, this.remoteServerConfig, this.localServerConfig, this.credentials, this.toolsMeta,
 					this.enabled);
 		}
 
