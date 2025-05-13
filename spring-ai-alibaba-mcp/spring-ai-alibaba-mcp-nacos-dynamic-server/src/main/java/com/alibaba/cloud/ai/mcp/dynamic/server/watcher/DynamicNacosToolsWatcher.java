@@ -16,12 +16,13 @@
 
 package com.alibaba.cloud.ai.mcp.dynamic.server.watcher;
 
-import com.alibaba.cloud.ai.mcp.dynamic.server.config.NacosMcpDiscoveryProperties;
+import com.alibaba.cloud.ai.mcp.dynamic.server.config.NacosMcpDynamicProperties;
 import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinition;
 import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinitionV3;
 import com.alibaba.cloud.ai.mcp.dynamic.server.provider.DynamicMcpToolsProvider;
 import com.alibaba.cloud.ai.mcp.dynamic.server.tools.DynamicNacosToolsInfo;
 import com.alibaba.cloud.ai.mcp.dynamic.server.tools.NacosHelper;
+import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpProperties;
 import com.alibaba.nacos.api.config.ConfigChangeEvent;
 import com.alibaba.nacos.api.config.ConfigChangeItem;
 import com.alibaba.nacos.api.config.ConfigService;
@@ -62,7 +63,9 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 
 	private final ConfigService configService;
 
-	private final NacosMcpDiscoveryProperties nacosMcpDiscoveryProperties;
+	private final NacosMcpProperties nacosMcpProperties;
+
+	private final NacosMcpDynamicProperties nacosMcpDynamicProperties;
 
 	private final DynamicMcpToolsProvider dynamicMcpToolsProvider;
 
@@ -74,14 +77,15 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 	private volatile String nacosVersion;
 
 	public DynamicNacosToolsWatcher(final NamingService namingService, final ConfigService configService,
-			final NacosMcpDiscoveryProperties nacosMcpDiscoveryProperties,
+			final NacosMcpProperties nacosMcpProperties, final NacosMcpDynamicProperties nacosMcpDynamicProperties,
 			final DynamicMcpToolsProvider dynamicMcpToolsProvider, final WebClient webClient) {
 		this.namingService = namingService;
 		this.configService = configService;
-		this.nacosMcpDiscoveryProperties = nacosMcpDiscoveryProperties;
+		this.nacosMcpProperties = nacosMcpProperties;
+		this.nacosMcpDynamicProperties = nacosMcpDynamicProperties;
 		this.dynamicMcpToolsProvider = dynamicMcpToolsProvider;
 		this.webClient = webClient;
-		this.nacosVersion = NacosHelper.fetchNacosVersion(webClient, nacosMcpDiscoveryProperties.getServerAddr());
+		this.nacosVersion = NacosHelper.fetchNacosVersion(webClient, nacosMcpProperties.getServerAddr());
 		logger.info("Fetched nacos server version at startup: {}", nacosVersion);
 		// 启动定时任务
 		this.startScheduledPolling();
@@ -108,7 +112,7 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 
 	private String getNacosVersion() {
 		if (nacosVersion == null) {
-			nacosVersion = NacosHelper.fetchNacosVersion(webClient, nacosMcpDiscoveryProperties.getServerAddr());
+			nacosVersion = NacosHelper.fetchNacosVersion(webClient, nacosMcpProperties.getServerAddr());
 			logger.info("Fetched nacos server version on demand: {}", nacosVersion);
 		}
 		return nacosVersion;
@@ -122,24 +126,28 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 			handleHighVersion();
 			return;
 		}
-		Set<String> currentServices = new HashSet<>();
-		try {
-			List<String> allServices = NacosHelper.listAllServices(namingService,
-					nacosMcpDiscoveryProperties.getServiceGroup());
-			currentServices.addAll(allServices);
-			for (String serviceName : allServices) {
+
+		List<String> serviceNames = nacosMcpDynamicProperties.getServiceNames();
+		if (CollectionUtils.isEmpty(serviceNames)) {
+			logger.warn("No service names configured, no tools will be watched");
+			return;
+		}
+
+		Set<String> currentServices = new HashSet<>(serviceNames);
+		for (String serviceName : serviceNames) {
+			try {
 				updateServiceTools(serviceName);
-				namingService.subscribe(serviceName, nacosMcpDiscoveryProperties.getServiceGroup(), this);
-				configService.addListener(serviceName, nacosMcpDiscoveryProperties.getServiceGroup(), this);
+				namingService.subscribe(serviceName, nacosMcpDynamicProperties.getServiceGroup(), this);
+				configService.addListener(serviceName, nacosMcpDynamicProperties.getServiceGroup(), this);
 			}
-			cleanupStaleServices(currentServices);
+			catch (NacosException e) {
+				logger.error("Failed to subscribe to service: {}", serviceName, e);
+			}
+			catch (Exception e) {
+				logger.error("Unexpected error during service subscription: {}", serviceName, e);
+			}
 		}
-		catch (NacosException e) {
-			logger.error("Failed to poll services list", e);
-		}
-		catch (Exception e) {
-			logger.error("Unexpected error during service polling", e);
-		}
+		cleanupStaleServices(currentServices);
 	}
 
 	private void cleanupStaleServices(Set<String> currentServices) {
@@ -168,11 +176,11 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 	private void updateServiceTools(String serviceName) {
 		try {
 			String toolConfig = configService.getConfig(serviceName + toolsConfigSuffix,
-					nacosMcpDiscoveryProperties.getServiceGroup(), 5000);
+					nacosMcpDynamicProperties.getServiceGroup(), 5000);
 
 			// 获取该服务当前的实例列表
 			List<Instance> instances = namingService.getAllInstances(serviceName,
-					nacosMcpDiscoveryProperties.getServiceGroup());
+					nacosMcpDynamicProperties.getServiceGroup());
 
 			// 检查是否有健康且启用的实例
 			boolean hasHealthyEnabledInstance = NacosHelper.hasHealthyEnabledInstance(instances);
@@ -262,37 +270,31 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 	}
 
 	private void handleHighVersion() {
-		try {
-			List<Map<String, Object>> mcpServersAllPages = NacosHelper.fetchNacosMcpServersAllPages(webClient,
-					nacosMcpDiscoveryProperties.getServerAddr(), nacosMcpDiscoveryProperties.getUsername(),
-					nacosMcpDiscoveryProperties.getPassword());
+		List<String> serviceNames = nacosMcpDynamicProperties.getServiceNames();
+		if (CollectionUtils.isEmpty(serviceNames)) {
+			logger.warn("No service names configured, no tools will be watched");
+			return;
+		}
 
-			// Track current services for cleanup
-			Set<String> currentServices = new HashSet<>();
-
-			for (Map<String, Object> mcpServerInfo : mcpServersAllPages) {
-				Object mcpName = mcpServerInfo.get("name");
-				if (mcpName != null) {
-					currentServices.add(mcpName.toString());
-					updateHighVersionServiceTools(mcpName.toString());
-				}
+		Set<String> currentServices = new HashSet<>(serviceNames);
+		for (String serviceName : serviceNames) {
+			try {
+				updateHighVersionServiceTools(serviceName);
 			}
-
-			// Clean up stale services
-			cleanupStaleServices(currentServices);
+			catch (Exception e) {
+				logger.error("Failed to update tools for service: {}", serviceName, e);
+			}
 		}
-		catch (Exception e) {
-			logger.error("Failed to handle high version services", e);
-		}
+		cleanupStaleServices(currentServices);
 	}
 
 	private void updateHighVersionServiceTools(String mcpName) {
 		try {
-			String url = NacosHelper.getServerUrl(nacosMcpDiscoveryProperties.getServerAddr());
+			String url = NacosHelper.getServerUrl(nacosMcpProperties.getServerAddr());
 			String mcpServerDetail = webClient.get()
 				.uri(url + "/nacos/v3/admin/ai/mcp?mcpName=" + mcpName)
-				.header("userName", nacosMcpDiscoveryProperties.getUsername())
-				.header("password", nacosMcpDiscoveryProperties.getPassword())
+				.header("userName", nacosMcpProperties.getUsername())
+				.header("password", nacosMcpProperties.getPassword())
 				.retrieve()
 				.bodyToMono(String.class)
 				.block();

@@ -15,23 +15,17 @@
  */
 package com.alibaba.cloud.ai.mcp.dynamic.server.config;
 
-import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpProperties;
-import com.alibaba.nacos.api.PropertyKeyConst;
-import com.alibaba.nacos.api.utils.StringUtils;
-import jakarta.annotation.PostConstruct;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.Properties;
-
-import static com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpProperties.CONFIG_PREFIX;
 
 /**
  * @author aias00
  */
-@ConfigurationProperties(prefix = CONFIG_PREFIX + ".discovery")
-public class NacosMcpDiscoveryProperties extends NacosMcpProperties {
+@ConfigurationProperties(prefix = NacosMcpDynamicProperties.CONFIG_PREFIX)
+public class NacosMcpDynamicProperties {
+
+	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.nacos.dynamic";
 
 	String serviceNamespace;
 
@@ -61,31 +55,6 @@ public class NacosMcpDiscoveryProperties extends NacosMcpProperties {
 
 	void setServiceNamespace(String serviceNamespace) {
 		this.serviceNamespace = serviceNamespace;
-	}
-
-	@PostConstruct
-	public void init() throws Exception {
-		super.init();
-		if (StringUtils.isBlank(this.serviceNamespace)) {
-			this.serviceNamespace = DEFAULT_NAMESPACE;
-		}
-	}
-
-	public Properties getNacosProperties() {
-		Properties properties = super.getNacosProperties();
-		properties.put("groupName", Objects.toString(this.serviceGroup, "DEFAULT_GROUP"));
-		properties.put(PropertyKeyConst.NAMESPACE, this.resolveNamespace());
-		enrichNacosConfigProperties(properties);
-		return properties;
-	}
-
-	private String resolveNamespace() {
-		if (DEFAULT_NAMESPACE.equals(this.serviceNamespace)) {
-			return "";
-		}
-		else {
-			return Objects.toString(this.serviceNamespace, "");
-		}
 	}
 
 }

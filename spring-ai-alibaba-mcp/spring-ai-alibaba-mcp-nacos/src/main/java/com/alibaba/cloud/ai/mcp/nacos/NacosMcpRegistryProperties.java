@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.mcp.nacos;
 
-import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpProperties;
-import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.utils.StringUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.PostConstruct;
@@ -24,16 +22,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.env.Environment;
 
-import java.util.Objects;
-import java.util.Properties;
-
-import static com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpProperties.CONFIG_PREFIX;
-
 /**
  * @author Sunrisea
  */
-@ConfigurationProperties(prefix = CONFIG_PREFIX + ".registry")
-public class NacosMcpRegistryProperties extends NacosMcpProperties {
+@ConfigurationProperties(prefix = NacosMcpRegistryProperties.CONFIG_PREFIX)
+public class NacosMcpRegistryProperties {
+
+	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.nacos.registry";
 
 	String serviceNamespace;
 
@@ -91,33 +86,11 @@ public class NacosMcpRegistryProperties extends NacosMcpProperties {
 
 	@PostConstruct
 	public void init() throws Exception {
-		super.init();
-		if (StringUtils.isBlank(this.serviceNamespace)) {
-			this.serviceNamespace = DEFAULT_NAMESPACE;
-		}
 		if (StringUtils.isBlank(this.sseExportContextPath)) {
 			String path = environment.getProperty("server.servlet.context-path");
 			if (!StringUtils.isBlank(path)) {
 				this.sseExportContextPath = path;
 			}
-		}
-	}
-
-	public Properties getNacosProperties() {
-		Properties properties = super.getNacosProperties();
-		properties.put("groupName", Objects.toString(this.serviceGroup, "DEFAULT_GROUP"));
-		properties.put(PropertyKeyConst.NAMESPACE, this.resolveNamespace());
-		enrichNacosConfigProperties(properties);
-
-		return properties;
-	}
-
-	private String resolveNamespace() {
-		if (DEFAULT_NAMESPACE.equals(this.serviceNamespace)) {
-			return "";
-		}
-		else {
-			return Objects.toString(this.serviceNamespace, "");
 		}
 	}
 

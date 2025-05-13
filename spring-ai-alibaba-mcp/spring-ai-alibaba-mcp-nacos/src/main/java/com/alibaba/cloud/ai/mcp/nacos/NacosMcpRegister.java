@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.mcp.nacos;
 
+import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpProperties;
 import com.alibaba.cloud.ai.mcp.nacos.model.McpServerInfo;
 import com.alibaba.cloud.ai.mcp.nacos.model.McpToolsInfo;
 import com.alibaba.cloud.ai.mcp.nacos.model.RemoteServerConfigInfo;
@@ -67,7 +68,9 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	private String type;
 
-	private NacosMcpRegistryProperties nacosMcpProperties;
+	private NacosMcpRegistryProperties nacosMcpRegistryProperties;
+
+	private NacosMcpProperties nacosMcpProperties;
 
 	private McpSchema.Implementation serverInfo;
 
@@ -81,11 +84,13 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	private ConfigService configService;
 
-	public NacosMcpRegister(McpAsyncServer mcpAsyncServer, NacosMcpRegistryProperties nacosMcpProperties, String type) {
+	public NacosMcpRegister(McpAsyncServer mcpAsyncServer, NacosMcpProperties nacosMcpProperties,
+			NacosMcpRegistryProperties nacosMcpRegistryProperties, String type) {
 		this.mcpAsyncServer = mcpAsyncServer;
 		log.info("Mcp server type: {}", type);
 		this.type = type;
 		this.nacosMcpProperties = nacosMcpProperties;
+		this.nacosMcpRegistryProperties = nacosMcpRegistryProperties;
 
 		try {
 			Class<?> clazz = Class.forName("io.modelcontextprotocol.server.McpAsyncServer$AsyncServerImpl");
@@ -162,12 +167,12 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			}
 			else {
 				ServiceRefInfo serviceRefInfo = new ServiceRefInfo();
-				serviceRefInfo.setNamespaceId(nacosMcpProperties.getServiceNamespace());
+				serviceRefInfo.setNamespaceId(nacosMcpRegistryProperties.getServiceNamespace());
 				serviceRefInfo.setServiceName(this.serverInfo.name() + "-mcp-service");
-				serviceRefInfo.setGroupName(nacosMcpProperties.getServiceGroup());
+				serviceRefInfo.setGroupName(nacosMcpRegistryProperties.getServiceGroup());
 				RemoteServerConfigInfo remoteServerConfigInfo = new RemoteServerConfigInfo();
 				remoteServerConfigInfo.setServiceRef(serviceRefInfo);
-				String contextPath = nacosMcpProperties.getSseExportContextPath();
+				String contextPath = nacosMcpRegistryProperties.getSseExportContextPath();
 				if (StringUtils.isBlank(contextPath)) {
 					contextPath = "";
 				}
@@ -273,7 +278,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	@Override
 	public void onApplicationEvent(WebServerInitializedEvent event) {
-		if ("stdio".equals(this.type) || !nacosMcpProperties.isServiceRegister()) {
+		if ("stdio".equals(this.type) || !nacosMcpRegistryProperties.isServiceRegister()) {
 			log.info("No need to register mcp server service to nacos");
 			return;
 		}
@@ -283,9 +288,9 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			Instance instance = new Instance();
 			instance.setIp(nacosMcpProperties.getIp());
 			instance.setPort(port);
-			instance.setEphemeral(nacosMcpProperties.isServiceEphemeral());
+			instance.setEphemeral(nacosMcpRegistryProperties.isServiceEphemeral());
 			namingService.registerInstance(this.serverInfo.name() + "-mcp-service",
-					nacosMcpProperties.getServiceGroup(), instance);
+					nacosMcpRegistryProperties.getServiceGroup(), instance);
 			log.info("Register mcp server service to nacos successfully");
 		}
 		catch (NacosException e) {
