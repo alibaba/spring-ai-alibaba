@@ -29,7 +29,7 @@ public class RefreshAction extends BrowserAction {
 
     @Override
     public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        Page page = browserUseTool.getDriver(); // 获取 Playwright 的 Page 实例
         page.reload(); // 刷新当前页面
 
         browserUseTool.getInteractiveTextProcessor().refreshCache(page);

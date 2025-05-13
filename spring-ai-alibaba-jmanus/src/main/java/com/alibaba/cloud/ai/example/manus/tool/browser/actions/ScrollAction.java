@@ -35,7 +35,7 @@ public class ScrollAction extends BrowserAction {
             return new ToolExecuteResult("Scroll amount is required for 'scroll' action");
         }
 
-        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        Page page = browserUseTool.getDriver(); // 获取 Playwright 的 Page 实例
         page.evaluate("window.scrollBy(0, arguments[0])", scrollAmount); // 使用 Playwright 执行滚动
 
         String direction = scrollAmount > 0 ? "down" : "up";

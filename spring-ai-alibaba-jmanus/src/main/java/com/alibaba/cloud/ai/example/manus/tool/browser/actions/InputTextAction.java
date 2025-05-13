@@ -34,12 +34,12 @@ public class InputTextAction extends BrowserAction {
         Integer index = request.getIndex();
         String text = request.getText();
 
-        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        Page page = browserUseTool.getDriver(); // 获取 Playwright 的 Page 实例
         if (index == null || text == null) {
             return new ToolExecuteResult("Index and text are required for 'input_text' action");
         }
 
-        List<ElementHandle> interactiveElements = page.querySelectorAll("[data-interactive]"); // 替代 Selenium 的 getInteractiveElements
+        List<ElementHandle> interactiveElements =  getInteractiveElements(page);; // 替代 Selenium 的 getInteractiveElements
         if (index < 0 || index >= interactiveElements.size()) {
             return new ToolExecuteResult("Element with index " + index + " not found");
         }
