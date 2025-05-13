@@ -20,7 +20,7 @@ Spring AI Alibaba JDBC Memory 模块是Spring AI Alibaba项目的一个组件，
 ```xml
 <dependency>
     <groupId>com.alibaba.spring.ai</groupId>
-    <artifactId>spring-ai-alibaba-jdbc-memory</artifactId>
+    <artifactId>spring-ai-alibaba-starter-memory-jdbc</artifactId>
     <version>${latest.version}</version>
 </dependency>
 ```
