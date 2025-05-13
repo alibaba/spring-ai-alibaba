@@ -40,170 +40,169 @@ import org.springframework.util.StringUtils;
  */
 public class DashScopeAiStreamFunctionCallingHelper {
 
-	private Boolean incrementalOutput = false;
+    private Boolean incrementalOutput = false;
 
-	public DashScopeAiStreamFunctionCallingHelper() {
-	}
+    public DashScopeAiStreamFunctionCallingHelper() {
+    }
 
-	public DashScopeAiStreamFunctionCallingHelper(Boolean incrementalOutput) {
-		this.incrementalOutput = incrementalOutput;
-	}
+    public DashScopeAiStreamFunctionCallingHelper(Boolean incrementalOutput) {
+        this.incrementalOutput = incrementalOutput;
+    }
 
-	/**
-	 * Merge the previous and current ChatCompletionChunk into a single one.
-	 * @param previous the previous ChatCompletionChunk
-	 * @param current the current ChatCompletionChunk
-	 * @return the merged ChatCompletionChunk
-	 */
-	public ChatCompletionChunk merge(ChatCompletionChunk previous, ChatCompletionChunk current) {
-		if (previous == null) {
-			return current;
-		}
+    /**
+     * Merge the previous and current ChatCompletionChunk into a single one.
+     *
+     * @param previous the previous ChatCompletionChunk
+     * @param current  the current ChatCompletionChunk
+     * @return the merged ChatCompletionChunk
+     */
+    public ChatCompletionChunk merge(ChatCompletionChunk previous, ChatCompletionChunk current) {
+        if (previous == null) {
+            return current;
+        }
 
-		String id = (current.requestId() != null ? current.requestId() : previous.requestId());
-		TokenUsage usage = (current.usage() != null ? current.usage() : previous.usage());
+        String id = (current.requestId() != null ? current.requestId() : previous.requestId());
+        TokenUsage usage = (current.usage() != null ? current.usage() : previous.usage());
 
-		Choice previousChoice0 = previous.output() == null ? null : previous.output().choices().get(0);
-		Choice currentChoice0 = current.output() == null ? null : current.output().choices().get(0);
+        Choice previousChoice0 = previous.output() == null ? null : previous.output().choices().get(0);
+        Choice currentChoice0 = current.output() == null ? null : current.output().choices().get(0);
 
-		// compatibility of incremental_output false for streaming function call
-		if (!incrementalOutput && isStreamingToolFunctionCall(current)) {
-			if (!isStreamingToolFunctionCallFinish(current)) {
-				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, List.of(new Choice(null, null))),
-						usage);
-			}
-			else {
-				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, List.of(currentChoice0)), usage);
-			}
-		}
+        // compatibility of incremental_output false for streaming function call
+        if (!incrementalOutput && isStreamingToolFunctionCall(current)) {
+            if (!isStreamingToolFunctionCallFinish(current)) {
+                return new ChatCompletionChunk(id, new ChatCompletionOutput(null, List.of(new Choice(null, null))),
+                        usage);
+            } else {
+                return new ChatCompletionChunk(id, new ChatCompletionOutput(null, List.of(currentChoice0)), usage);
+            }
+        }
 
-		Choice choice = merge(previousChoice0, currentChoice0);
-		List<Choice> chunkChoices = choice == null ? List.of() : List.of(choice);
-		return new ChatCompletionChunk(id, new ChatCompletionOutput(null, chunkChoices), usage);
-	}
+        Choice choice = merge(previousChoice0, currentChoice0);
+        List<Choice> chunkChoices = choice == null ? List.of() : List.of(choice);
+        return new ChatCompletionChunk(id, new ChatCompletionOutput(null, chunkChoices), usage);
+    }
 
-	private Choice merge(Choice previous, Choice current) {
-		if (previous == null) {
-			return current;
-		}
+    private Choice merge(Choice previous, Choice current) {
+        if (previous == null) {
+            return current;
+        }
 
-		ChatCompletionFinishReason finishReason = (current.finishReason() != null ? current.finishReason()
-				: previous.finishReason());
+        ChatCompletionFinishReason finishReason = (current.finishReason() != null ? current.finishReason()
+                : previous.finishReason());
 
-		ChatCompletionMessage message = merge(previous.message(), current.message());
-		return new Choice(finishReason, message);
-	}
+        ChatCompletionMessage message = merge(previous.message(), current.message());
+        return new Choice(finishReason, message);
+    }
 
-	private ChatCompletionMessage merge(ChatCompletionMessage previous, ChatCompletionMessage current) {
+    private ChatCompletionMessage merge(ChatCompletionMessage previous, ChatCompletionMessage current) {
 
-		String content = (current.content() != null ? current.content()
-				: (previous.content() != null) ? previous.content() : "");
-		Role role = (current.role() != null ? current.role() : previous.role());
-		role = (role != null ? role : Role.ASSISTANT); // default to ASSISTANT (if null
-		String name = (StringUtils.hasText(current.name()) ? current.name() : previous.name());
-		String toolCallId = (StringUtils.hasText(current.toolCallId()) ? current.toolCallId() : previous.toolCallId());
-		String reasoningContent = (current.reasoningContent() != null ? current.reasoningContent()
-				: previous.reasoningContent());
+        String content = (current.content() != null ? current.content()
+                : (previous.content() != null) ? previous.content() : "");
+        Role role = (current.role() != null ? current.role() : previous.role());
+        role = (role != null ? role : Role.ASSISTANT); // default to ASSISTANT (if null
+        String name = (StringUtils.hasText(current.name()) ? current.name() : previous.name());
+        String toolCallId = (StringUtils.hasText(current.toolCallId()) ? current.toolCallId() : previous.toolCallId());
+        String reasoningContent = (current.reasoningContent() != null ? current.reasoningContent()
+                : previous.reasoningContent());
 
-		List<ToolCall> toolCalls = new ArrayList<>();
-		ToolCall lastPreviousTooCall = null;
-		if (previous.toolCalls() != null) {
-			lastPreviousTooCall = previous.toolCalls().get(previous.toolCalls().size() - 1);
-			if (previous.toolCalls().size() > 1) {
-				toolCalls.addAll(previous.toolCalls().subList(0, previous.toolCalls().size() - 1));
-			}
-		}
-		if (current.toolCalls() != null) {
-			if (current.toolCalls().size() > 1) {
-				throw new IllegalStateException("Currently only one tool call is supported per message!");
-			}
-			var currentToolCall = current.toolCalls().iterator().next();
-			if (StringUtils.hasText(currentToolCall.id())) {
-				if (lastPreviousTooCall != null) {
-					toolCalls.add(lastPreviousTooCall);
-				}
-				toolCalls.add(currentToolCall);
-			}
-			else {
-				toolCalls.add(merge(lastPreviousTooCall, currentToolCall));
-			}
-		}
-		else {
-			if (lastPreviousTooCall != null) {
-				toolCalls.add(lastPreviousTooCall);
-			}
-		}
-		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, reasoningContent);
-	}
+        List<ToolCall> toolCalls = new ArrayList<>();
+        ToolCall lastPreviousTooCall = null;
+        if (previous.toolCalls() != null) {
+            lastPreviousTooCall = previous.toolCalls().get(previous.toolCalls().size() - 1);
+            if (previous.toolCalls().size() > 1) {
+                toolCalls.addAll(previous.toolCalls().subList(0, previous.toolCalls().size() - 1));
+            }
+        }
+        if (!CollectionUtils.isEmpty(current.toolCalls())) {
+            if (current.toolCalls().size() > 1) {
+                throw new IllegalStateException("Currently only one tool call is supported per message!");
+            }
+            var currentToolCall = current.toolCalls().iterator().next();
+            if (StringUtils.hasText(currentToolCall.id())) {
+                if (lastPreviousTooCall != null) {
+                    toolCalls.add(lastPreviousTooCall);
+                }
+                toolCalls.add(currentToolCall);
+            } else {
+                toolCalls.add(merge(lastPreviousTooCall, currentToolCall));
+            }
+        } else {
+            if (lastPreviousTooCall != null) {
+                toolCalls.add(lastPreviousTooCall);
+            }
+        }
+        return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, reasoningContent);
+    }
 
-	private ToolCall merge(ToolCall previous, ToolCall current) {
-		if (previous == null) {
-			return current;
-		}
-		String id = (StringUtils.hasText(current.id()) ? current.id() : previous.id());
-		String type = (StringUtils.hasText(current.type()) ? current.type() : previous.type());
-		ChatCompletionFunction function = merge(previous.function(), current.function());
-		return new ToolCall(id, type, function);
-	}
+    private ToolCall merge(ToolCall previous, ToolCall current) {
+        if (previous == null) {
+            return current;
+        }
+        String id = (StringUtils.hasText(current.id()) ? current.id() : previous.id());
+        String type = (StringUtils.hasText(current.type()) ? current.type() : previous.type());
+        ChatCompletionFunction function = merge(previous.function(), current.function());
+        return new ToolCall(id, type, function);
+    }
 
-	private ChatCompletionFunction merge(ChatCompletionFunction previous, ChatCompletionFunction current) {
-		if (previous == null) {
-			return current;
-		}
-		String name = (StringUtils.hasText(current.name()) ? current.name() : previous.name());
-		StringBuilder arguments = new StringBuilder();
-		if (previous.arguments() != null) {
-			arguments.append(previous.arguments());
-		}
-		if (current.arguments() != null) {
-			arguments.append(current.arguments());
-		}
-		return new ChatCompletionFunction(name, arguments.toString());
-	}
+    private ChatCompletionFunction merge(ChatCompletionFunction previous, ChatCompletionFunction current) {
+        if (previous == null) {
+            return current;
+        }
+        String name = (StringUtils.hasText(current.name()) ? current.name() : previous.name());
+        StringBuilder arguments = new StringBuilder();
+        if (previous.arguments() != null) {
+            arguments.append(previous.arguments());
+        }
+        if (current.arguments() != null) {
+            arguments.append(current.arguments());
+        }
+        return new ChatCompletionFunction(name, arguments.toString());
+    }
 
-	/**
-	 * @param chatCompletion the ChatCompletionChunk to check
-	 * @return true if the ChatCompletionChunk is a streaming tool function call.
-	 */
-	public boolean isStreamingToolFunctionCall(ChatCompletionChunk chatCompletion) {
+    /**
+     * @param chatCompletion the ChatCompletionChunk to check
+     * @return true if the ChatCompletionChunk is a streaming tool function call.
+     */
+    public boolean isStreamingToolFunctionCall(ChatCompletionChunk chatCompletion) {
 
-		if (chatCompletion == null || chatCompletion.output() == null
-				|| CollectionUtils.isEmpty(chatCompletion.output().choices())) {
-			return false;
-		}
+        if (chatCompletion == null || chatCompletion.output() == null
+                || CollectionUtils.isEmpty(chatCompletion.output().choices())) {
+            return false;
+        }
 
-		var choice = chatCompletion.output().choices().get(0);
-		if (choice == null || choice.message() == null) {
-			return false;
-		}
-		return !CollectionUtils.isEmpty(choice.message().toolCalls());
-	}
+        var choice = chatCompletion.output().choices().get(0);
+        if (choice == null || choice.message() == null) {
+            return false;
+        }
+        return !CollectionUtils.isEmpty(choice.message().toolCalls());
+    }
 
-	/**
-	 * @param chatCompletion the ChatCompletionChunk to check
-	 * @return true if the ChatCompletionChunk is a streaming tool function call and it is
-	 * the last one.
-	 */
-	public boolean isStreamingToolFunctionCallFinish(ChatCompletionChunk chatCompletion) {
+    /**
+     * @param chatCompletion the ChatCompletionChunk to check
+     * @return true if the ChatCompletionChunk is a streaming tool function call and it is
+     * the last one.
+     */
+    public boolean isStreamingToolFunctionCallFinish(ChatCompletionChunk chatCompletion) {
 
-		if (chatCompletion == null || CollectionUtils.isEmpty(chatCompletion.output().choices())) {
-			return false;
-		}
+        if (chatCompletion == null || CollectionUtils.isEmpty(chatCompletion.output().choices())) {
+            return false;
+        }
 
-		var choice = chatCompletion.output().choices().get(0);
-		if (choice == null || choice.message() == null) {
-			return false;
-		}
-		return choice.finishReason() == ChatCompletionFinishReason.TOOL_CALLS;
-	}
+        var choice = chatCompletion.output().choices().get(0);
+        if (choice == null || choice.message() == null) {
+            return false;
+        }
+        return choice.finishReason() == ChatCompletionFinishReason.TOOL_CALLS;
+    }
 
-	/**
-	 * Convert the ChatCompletionChunk into a ChatCompletion. The Usage is set to null.
-	 * @param chunk the ChatCompletionChunk to convert
-	 * @return the ChatCompletion
-	 */
-	public ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
-		return new ChatCompletion(chunk.requestId(), chunk.output(), chunk.usage());
-	}
+    /**
+     * Convert the ChatCompletionChunk into a ChatCompletion. The Usage is set to null.
+     *
+     * @param chunk the ChatCompletionChunk to convert
+     * @return the ChatCompletion
+     */
+    public ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
+        return new ChatCompletion(chunk.requestId(), chunk.output(), chunk.usage());
+    }
 
 }
