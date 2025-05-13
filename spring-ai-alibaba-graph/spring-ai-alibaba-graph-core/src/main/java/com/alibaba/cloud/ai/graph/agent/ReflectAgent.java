@@ -15,11 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-import com.alibaba.cloud.ai.graph.CompileConfig;
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.GraphStateException;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -90,11 +86,10 @@ public class ReflectAgent {
 			throws GraphStateException {
 		this.maxIterations = maxIterations;
 		logger.debug("Creating reflection graph with max iterations: {}", maxIterations);
-		AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
+		OverAllStateFactory stateFactory = () -> {
 			OverAllState state = new OverAllState();
 			state.registerKeyAndStrategy(MESSAGES, new ReplaceStrategy());
 			state.registerKeyAndStrategy(ITERATION_NUM, new ReplaceStrategy());
-			state.input(inputs);
 			return state;
 		};
 
