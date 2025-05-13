@@ -36,8 +36,8 @@ public class KeyEnterAction extends BrowserAction {
             return new ToolExecuteResult("Index is required for 'key_enter' action");
         }
 
-        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
-        List<ElementHandle> interactiveElements = page.querySelectorAll("[data-interactive]"); // 替代 Selenium 的 getInteractiveElements
+        Page page = browserUseTool.getDriver(); // 获取 Playwright 的 Page 实例
+        List<ElementHandle> interactiveElements = getInteractiveElements(page); // 替代 Selenium 的 getInteractiveElements
         if (index < 0 || index >= interactiveElements.size()) {
             return new ToolExecuteResult("Element with index " + index + " not found");
         }

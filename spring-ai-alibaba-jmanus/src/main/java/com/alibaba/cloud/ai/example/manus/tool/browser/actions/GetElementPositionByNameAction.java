@@ -68,7 +68,7 @@ public class GetElementPositionByNameAction extends BrowserAction {
             return new ToolExecuteResult("Element name is required for 'get_element_position' action");
         }
 
-        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        Page page = browserUseTool.getDriver(); // 获取 Playwright 的 Page 实例
 
         // 结果列表，存储所有匹配的元素位置
         List<ElementPosition> positionResults = new ArrayList<>();

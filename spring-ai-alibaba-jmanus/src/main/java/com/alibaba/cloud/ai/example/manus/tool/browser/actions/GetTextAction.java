@@ -29,7 +29,7 @@ public class GetTextAction extends BrowserAction {
 
     @Override
     public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        Page page = browserUseTool.getDriver().newPage(); // 获取 Playwright 的 Page 实例
+        Page page = browserUseTool.getDriver(); // 获取 Playwright 的 Page 实例
         String body = page.textContent("body"); // 使用 Playwright 获取页面文本内容
         log.info("get_text body is {}", body);
 

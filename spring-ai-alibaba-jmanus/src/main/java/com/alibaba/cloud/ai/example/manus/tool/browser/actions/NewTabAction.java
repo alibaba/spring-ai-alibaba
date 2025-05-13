@@ -34,7 +34,7 @@ public class NewTabAction extends BrowserAction {
             return new ToolExecuteResult("URL is required for 'new_tab' action");
         }
 
-        Page page = browserUseTool.getDriver().newPage(); // 打开新标签页
+        Page page = browserUseTool.getDriver(); // 打开新标签页
         page.navigate(url); // 导航到指定 URL
 
         browserUseTool.getInteractiveTextProcessor().refreshCache(page);
