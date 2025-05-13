@@ -170,27 +170,27 @@ class DocumentRetrievalAdvisorTests {
 	}
 
 	/**
-     * Test aroundCall with empty document retrieval
-     */
-    @Test
-    void testAroundCallWithEmptyDocuments() {
-        // Setup document retriever mock to return empty list
-        when(documentRetriever.retrieve(any(Query.class))).thenReturn(Collections.emptyList());
+	 * Test aroundCall with empty document retrieval
+	 */
+	@Test
+	void testAroundCallWithEmptyDocuments() {
+		// Setup document retriever mock to return empty list
+		when(documentRetriever.retrieve(any(Query.class))).thenReturn(Collections.emptyList());
 
-        // Mock the response to include empty documents list in adviseContext
-        Map<String, Object> adviseContext = new HashMap<>();
-        adviseContext.put(DocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS, Collections.emptyList());
-        AdvisedResponse mockResponse = new AdvisedResponse(testResponse.response(), adviseContext);
-        when(callChain.nextAroundCall(any(AdvisedRequest.class))).thenReturn(mockResponse);
+		// Mock the response to include empty documents list in adviseContext
+		Map<String, Object> adviseContext = new HashMap<>();
+		adviseContext.put(DocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS, Collections.emptyList());
+		AdvisedResponse mockResponse = new AdvisedResponse(testResponse.response(), adviseContext);
+		when(callChain.nextAroundCall(any(AdvisedRequest.class))).thenReturn(mockResponse);
 
-        // Execute aroundCall
-        AdvisedResponse response = advisor.aroundCall(testRequest, callChain);
+		// Execute aroundCall
+		AdvisedResponse response = advisor.aroundCall(testRequest, callChain);
 
-        // Verify response
-        assertThat(response).isNotNull();
-        assertThat(response.adviseContext().get(DocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS))
-                .isEqualTo(Collections.emptyList());
-    }
+		// Verify response
+		assertThat(response).isNotNull();
+		assertThat(response.adviseContext().get(DocumentRetrievalAdvisor.RETRIEVED_DOCUMENTS))
+			.isEqualTo(Collections.emptyList());
+	}
 
 	/**
 	 * Test aroundStream with successful document retrieval
@@ -272,19 +272,19 @@ class DocumentRetrievalAdvisorTests {
 	}
 
 	/**
-     * Test user text advise formatting
-     */
-    @Test
-    void testUserTextAdviseFormatting() {
-        // Setup document retriever mock
-        when(documentRetriever.retrieve(any(Query.class))).thenReturn(List.of(testDocument));
-        when(callChain.nextAroundCall(any(AdvisedRequest.class))).thenReturn(testResponse);
+	 * Test user text advise formatting
+	 */
+	@Test
+	void testUserTextAdviseFormatting() {
+		// Setup document retriever mock
+		when(documentRetriever.retrieve(any(Query.class))).thenReturn(List.of(testDocument));
+		when(callChain.nextAroundCall(any(AdvisedRequest.class))).thenReturn(testResponse);
 
-        // Execute aroundCall
-        advisor.aroundCall(testRequest, callChain);
+		// Execute aroundCall
+		advisor.aroundCall(testRequest, callChain);
 
-        // Verify that the user text is properly formatted with the advise text
-        assertThat(testRequest.userText()).contains(TEST_USER_TEXT);
-    }
+		// Verify that the user text is properly formatted with the advise text
+		assertThat(testRequest.userText()).contains(TEST_USER_TEXT);
+	}
 
 }

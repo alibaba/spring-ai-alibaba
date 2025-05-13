@@ -16,54 +16,83 @@
 package com.alibaba.cloud.ai.memory.redis.serializer;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.model.Media;
+import org.springframework.ai.chat.messages.*;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 
+/**
+ * Custom JSON deserializer for Message objects
+ */
 public class MessageDeserializer extends JsonDeserializer<Message> {
 
 	private static final Logger logger = LoggerFactory.getLogger(MessageDeserializer.class);
 
-	public Message deserialize(JsonParser p, DeserializationContext ctxt) {
-		ObjectMapper mapper = (ObjectMapper) p.getCodec();
-		JsonNode node = null;
-		Message message = null;
-		try {
-			node = mapper.readTree(p);
-			String messageType = node.get("messageType").asText();
-			switch (messageType) {
-				case "USER" -> message = new UserMessage(node.get("text").asText(),
-						mapper.convertValue(node.get("media"), new TypeReference<Collection<Media>>() {
-						}), mapper.convertValue(node.get("metadata"), new TypeReference<Map<String, Object>>() {
-						}));
-				case "ASSISTANT" -> message = new AssistantMessage(node.get("text").asText(),
-						mapper.convertValue(node.get("metadata"), new TypeReference<Map<String, Object>>() {
-						}), (List<AssistantMessage.ToolCall>) mapper.convertValue(node.get("toolCalls"),
-								new TypeReference<Collection<AssistantMessage.ToolCall>>() {
-								}),
-						(List<Media>) mapper.convertValue(node.get("media"), new TypeReference<Collection<Media>>() {
-						}));
-				default -> throw new IllegalArgumentException("Unknown message type: " + messageType);
+	private static final Map<String, Function<String, Message>> MESSAGE_FACTORIES = new HashMap<>();
+
+	static {
+		MESSAGE_FACTORIES.put("USER", UserMessage::new);
+		MESSAGE_FACTORIES.put("ASSISTANT", AssistantMessage::new);
+		MESSAGE_FACTORIES.put("SYSTEM", SystemMessage::new);
+	}
+
+	@Override
+	public Message deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+		JsonNode node = p.getCodec().readTree(p);
+
+		logger.debug("Deserializing message: {}", node);
+
+		// If node is plain text, create a UserMessage by default
+		if (node.isTextual()) {
+			return new UserMessage(node.asText());
+		}
+
+		// Extract message type
+		String type = extractMessageType(node);
+
+		// Extract content
+		String content = extractContent(node);
+
+		// Create corresponding message object based on type
+		return Optional.ofNullable(type).map(String::toUpperCase).map(MESSAGE_FACTORIES::get).orElseGet(() -> {
+			if (type == null) {
+				logger.warn("Message type not found, defaulting to USER");
 			}
-			;
-		}
-		catch (IOException e) {
-			logger.error("Error deserializing message", e);
-		}
-		return message;
+			else {
+				logger.warn("Unknown message type: {}, defaulting to USER", type);
+			}
+			return MESSAGE_FACTORIES.get("USER");
+		}).apply(content);
+	}
+
+	/**
+	 * Extract message type from JsonNode
+	 */
+	private String extractMessageType(JsonNode node) {
+		return Optional.ofNullable(node.get("messageType"))
+			.map(JsonNode::asText)
+			.orElseGet(() -> Optional.ofNullable(node.get("type"))
+				.map(JsonNode::asText)
+				.orElseGet(
+						() -> Optional.ofNullable(node.get("role")).map(n -> n.asText().toUpperCase()).orElse(null)));
+	}
+
+	/**
+	 * Extract message content from JsonNode
+	 */
+	private String extractContent(JsonNode node) {
+		return Optional.ofNullable(node.get("content"))
+			.map(JsonNode::asText)
+			.orElseGet(
+					() -> Optional.ofNullable(node.get("text")).map(JsonNode::asText).orElseGet(() -> node.toString()));
 	}
 
 }

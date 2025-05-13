@@ -18,8 +18,8 @@ package com.alibaba.cloud.ai.reader.sqlite;
 import java.util.List;
 
 /**
- * Configuration class for SQLite document reader Contains connection information and query
- * settings
+ * Configuration class for SQLite document reader Contains connection information and
+ * query settings
  *
  * @author jens papenhagen
  **/
@@ -55,7 +55,7 @@ public class SQLiteResource {
 	public static final String DEFAULT_PASSWORD = "root";
 
 	public SQLiteResource(String host, int port, String database, String username, String password, String query,
-						  List<String> contentColumns, List<String> metadataColumns) {
+			List<String> contentColumns, List<String> metadataColumns) {
 		this.host = host;
 		this.port = port;
 		this.database = database;
@@ -76,7 +76,7 @@ public class SQLiteResource {
 	 * @param metadataColumns Columns to include in document metadata
 	 */
 	public SQLiteResource(String database, String username, String password, String query, List<String> contentColumns,
-						  List<String> metadataColumns) {
+			List<String> metadataColumns) {
 		this(DEFAULT_HOST, DEFAULT_PORT, database, username, password, query, contentColumns, metadataColumns);
 	}
 

@@ -1,0 +1,24 @@
+{
+  "groups": [],
+  "properties": [
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.dynamic.service-namespace",
+      "type": "java.lang.String",
+      "description": "If dynamic read mcp server info from nacos.",
+      "defaultValue": "false"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.dynamic.service-group",
+      "type": "java.lang.String",
+      "description": "If dynamic read mcp server info from nacos.",
+      "defaultValue": "false"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.dynamic.service-names",
+      "type": "java.lang.String",
+      "description": "If dynamic read mcp server info from nacos.",
+      "defaultValue": "false"
+    }
+  ],
+  "hints": []
+}

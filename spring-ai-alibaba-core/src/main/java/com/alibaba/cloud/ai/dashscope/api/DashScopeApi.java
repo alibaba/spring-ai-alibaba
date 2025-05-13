@@ -15,18 +15,6 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
 import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
 import com.alibaba.cloud.ai.dashscope.common.ErrorCodeEnum;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetrieverOptions;
@@ -36,26 +24,29 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.net.URI;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_PARSER_NAME;
@@ -69,7 +60,9 @@ public class DashScopeApi {
 
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
-	/** Default chat model */
+	/**
+	 * Default chat model
+	 */
 	public static final String DEFAULT_CHAT_MODEL = ChatModel.QWEN_PLUS.getModel();
 
 	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.EMBEDDING_V2.getValue();
@@ -131,16 +124,24 @@ public class DashScopeApi {
 	 */
 	public enum ChatModel {
 
-		/** 模型支持8k tokens上下文，为了保证正常的使用和输出，API限定用户输入为6k tokens。 */
+		/**
+		 * 模型支持8k tokens上下文，为了保证正常的使用和输出，API限定用户输入为6k tokens。
+		 */
 		QWEN_PLUS("qwen-plus"),
 
-		/** 模型支持32k tokens上下文，为了保证正常的使用和输出，API限定用户输入为30k tokens。 */
+		/**
+		 * 模型支持32k tokens上下文，为了保证正常的使用和输出，API限定用户输入为30k tokens。
+		 */
 		QWEN_TURBO("qwen-turbo"),
 
-		/** 模型支持8k tokens上下文，为了保证正常的使用和输出，API限定用户输入为6k tokens。 */
+		/**
+		 * 模型支持8k tokens上下文，为了保证正常的使用和输出，API限定用户输入为6k tokens。
+		 */
 		QWEN_MAX("qwen-max"),
 
-		/** 模型支持30k tokens上下文，为了保证正常的使用和输出，API限定用户输入为28k tokens。 */
+		/**
+		 * 模型支持30k tokens上下文，为了保证正常的使用和输出，API限定用户输入为28k tokens。
+		 */
 		QWEN_MAX_LONGCONTEXT("qwen-max-longcontext");
 
 		private final String model;
@@ -214,13 +215,8 @@ public class DashScopeApi {
 		}
 
 		@Override
-		public Long getGenerationTokens() {
-			return null;
-		}
-
-		@Override
 		public Integer getCompletionTokens() {
-			return 0;
+			return null;
 		}
 
 		@Override
@@ -840,7 +836,6 @@ public class DashScopeApi {
 	 *
 	 * @param model ID of the model to use.
 	 * @param input request input of chat.
-	 *
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record ChatCompletionRequest(@JsonProperty("model") String model,
@@ -884,6 +879,14 @@ public class DashScopeApi {
 	 * "my_function"}} forces the model to call that function. none is the default when no
 	 * functions are present. auto is the default if functions are present. Use the
 	 * {@link ToolChoiceBuilder} to create the tool choice value.
+	 * @param stream Whether to stream back partial progress. If set, tokens will be sent
+	 * as data-only server-sent events as they become available, with the stream
+	 * terminated by a data: [DONE] message.
+	 * @param vlHighResolutionImages Whether to generate high-resolution images for
+	 * visualization.
+	 * @param enableThinking Whether to enable the model to think before generating
+	 * responses. This is useful for complex tasks where the model needs to reason through
+	 * the problem before providing an answer.
 	 *
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -897,13 +900,14 @@ public class DashScopeApi {
 			@JsonProperty("incremental_output") Boolean incrementalOutput,
 			@JsonProperty("tools") List<FunctionTool> tools, @JsonProperty("tool_choice") Object toolChoice,
 			@JsonProperty("stream") Boolean stream,
-			@JsonProperty("vl_high_resolution_images") Boolean vlHighResolutionImages) {
+			@JsonProperty("vl_high_resolution_images") Boolean vlHighResolutionImages,
+			@JsonProperty("enable_thinking") Boolean enableThinking) {
 
 		/**
 		 * shortcut constructor for chat request parameter
 		 */
 		public ChatCompletionRequestParameter() {
-			this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+			this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1275,7 +1279,6 @@ public class DashScopeApi {
 	 * @param model ID of the model to use.
 	 * @param input dashscope rerank input.
 	 * @param parameters rerank parameters.
-	 *
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record RerankRequest(@JsonProperty("model") String model, @JsonProperty("input") RerankRequestInput input,

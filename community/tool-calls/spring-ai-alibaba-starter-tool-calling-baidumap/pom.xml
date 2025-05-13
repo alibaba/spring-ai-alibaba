@@ -46,6 +46,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-tool-calling-baidumap</finalName>
+        <finalName>spring-ai-alibaba-starter-tool-calling-baidumap</finalName>
     </build>
 </project>

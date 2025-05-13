@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.mcp.nacos;
 
+import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpProperties;
 import com.alibaba.cloud.ai.mcp.nacos.model.McpServerInfo;
 import com.alibaba.cloud.ai.mcp.nacos.model.McpToolsInfo;
 import com.alibaba.cloud.ai.mcp.nacos.model.RemoteServerConfigInfo;
@@ -34,13 +35,11 @@ import com.alibaba.nacos.client.naming.NacosNamingService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
-import io.modelcontextprotocol.spec.DefaultMcpSession;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.context.WebServerInitializedEvent;
 import org.springframework.context.ApplicationListener;
-import reactor.core.publisher.Mono;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -48,7 +47,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -70,13 +68,15 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	private String type;
 
-	private NacosMcpRegistryProperties nacosMcpProperties;
+	private NacosMcpRegistryProperties nacosMcpRegistryProperties;
+
+	private NacosMcpProperties nacosMcpProperties;
 
 	private McpSchema.Implementation serverInfo;
 
 	private McpAsyncServer mcpAsyncServer;
 
-	private CopyOnWriteArrayList<McpServerFeatures.AsyncToolRegistration> tools;
+	private CopyOnWriteArrayList<McpServerFeatures.AsyncToolSpecification> tools;
 
 	private Map<String, ToolMetaInfo> toolsMeta;
 
@@ -84,26 +84,27 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	private ConfigService configService;
 
-	public NacosMcpRegister(McpAsyncServer mcpAsyncServer, NacosMcpRegistryProperties nacosMcpProperties, String type) {
+	public NacosMcpRegister(McpAsyncServer mcpAsyncServer, NacosMcpProperties nacosMcpProperties,
+			NacosMcpRegistryProperties nacosMcpRegistryProperties, String type) {
 		this.mcpAsyncServer = mcpAsyncServer;
 		log.info("Mcp server type: {}", type);
 		this.type = type;
 		this.nacosMcpProperties = nacosMcpProperties;
+		this.nacosMcpRegistryProperties = nacosMcpRegistryProperties;
 
 		try {
-			Class clazz = McpAsyncServer.class;
+			Class<?> clazz = Class.forName("io.modelcontextprotocol.server.McpAsyncServer$AsyncServerImpl");
+			Field delegateField = McpAsyncServer.class.getDeclaredField("delegate");
+			delegateField.setAccessible(true);
+			Object delegateInstance = delegateField.get(mcpAsyncServer);
 
-			Field serverInfoField = clazz.getDeclaredField("serverInfo");
-			serverInfoField.setAccessible(true);
-			this.serverInfo = (McpSchema.Implementation) serverInfoField.get(mcpAsyncServer);
-
-			Field serverCapabilitiesField = clazz.getDeclaredField("serverCapabilities");
-			serverCapabilitiesField.setAccessible(true);
-			this.serverCapabilities = (McpSchema.ServerCapabilities) serverCapabilitiesField.get(mcpAsyncServer);
+			this.serverInfo = mcpAsyncServer.getServerInfo();
+			this.serverCapabilities = mcpAsyncServer.getServerCapabilities();
 
 			Field toolsField = clazz.getDeclaredField("tools");
 			toolsField.setAccessible(true);
-			this.tools = (CopyOnWriteArrayList<McpServerFeatures.AsyncToolRegistration>) toolsField.get(mcpAsyncServer);
+			this.tools = (CopyOnWriteArrayList<McpServerFeatures.AsyncToolSpecification>) toolsField
+				.get(delegateInstance);
 
 			this.toolsMeta = new HashMap<>();
 			this.tools.forEach(toolRegistration -> {
@@ -115,22 +116,13 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			configProperties.put(PropertyKeyConst.NAMESPACE, configNamespace);
 			this.configService = new NacosConfigService(configProperties);
 			if (this.serverCapabilities.tools() != null) {
-				Field mcpSessionField = clazz.getDeclaredField("mcpSession");
-				mcpSessionField.setAccessible(true);
-				DefaultMcpSession mcpSession = (DefaultMcpSession) mcpSessionField.get(mcpAsyncServer);
-				Field requestHandlersField = DefaultMcpSession.class.getDeclaredField("requestHandlers");
-				requestHandlersField.setAccessible(true);
-				ConcurrentHashMap<String, DefaultMcpSession.RequestHandler<?>> requestHandlers = (ConcurrentHashMap<String, DefaultMcpSession.RequestHandler<?>>) requestHandlersField
-					.get(mcpSession);
-				requestHandlers.put(McpSchema.METHOD_TOOLS_LIST, toolsListRequestHandler());
-
 				String toolsInNacosContent = this.configService.getConfig(this.serverInfo.name() + toolsConfigSuffix,
 						toolsGroup, 3000);
 				if (toolsInNacosContent != null) {
 					updateTools(toolsInNacosContent);
 				}
 				List<McpSchema.Tool> toolsNeedtoRegister = this.tools.stream()
-					.map(McpServerFeatures.AsyncToolRegistration::tool)
+					.map(McpServerFeatures.AsyncToolSpecification::tool)
 					.toList();
 				McpToolsInfo mcpToolsInfo = new McpToolsInfo();
 				mcpToolsInfo.setTools(toolsNeedtoRegister);
@@ -175,12 +167,12 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			}
 			else {
 				ServiceRefInfo serviceRefInfo = new ServiceRefInfo();
-				serviceRefInfo.setNamespaceId(nacosMcpProperties.getServiceNamespace());
+				serviceRefInfo.setNamespaceId(nacosMcpRegistryProperties.getServiceNamespace());
 				serviceRefInfo.setServiceName(this.serverInfo.name() + "-mcp-service");
-				serviceRefInfo.setGroupName(nacosMcpProperties.getServiceGroup());
+				serviceRefInfo.setGroupName(nacosMcpRegistryProperties.getServiceGroup());
 				RemoteServerConfigInfo remoteServerConfigInfo = new RemoteServerConfigInfo();
 				remoteServerConfigInfo.setServiceRef(serviceRefInfo);
-				String contextPath = nacosMcpProperties.getSseExportContextPath();
+				String contextPath = nacosMcpRegistryProperties.getSseExportContextPath();
 				if (StringUtils.isBlank(contextPath)) {
 					contextPath = "";
 				}
@@ -204,8 +196,8 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 		}
 	}
 
-	private void updateToolDescription(McpServerFeatures.AsyncToolRegistration localToolRegistration,
-			McpSchema.Tool toolInNacos, List<McpServerFeatures.AsyncToolRegistration> toolsRegistrationNeedToUpdate)
+	private void updateToolDescription(McpServerFeatures.AsyncToolSpecification localToolRegistration,
+			McpSchema.Tool toolInNacos, List<McpServerFeatures.AsyncToolSpecification> toolsRegistrationNeedToUpdate)
 			throws JsonProcessingException {
 		Boolean changed = false;
 		if (localToolRegistration.tool().description() != null
@@ -237,7 +229,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			McpSchema.Tool toolNeededUpdate = new McpSchema.Tool(localToolRegistration.tool().name(),
 					toolInNacos.description(), JsonUtils.serialize(localInputSchemaMap));
 			toolsRegistrationNeedToUpdate
-				.add(new McpServerFeatures.AsyncToolRegistration(toolNeededUpdate, localToolRegistration.call()));
+				.add(new McpServerFeatures.AsyncToolSpecification(toolNeededUpdate, localToolRegistration.call()));
 		}
 
 	}
@@ -251,10 +243,10 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				changed = true;
 				this.toolsMeta = toolsInfo.getToolsMeta();
 			}
-			List<McpServerFeatures.AsyncToolRegistration> toolsRegistrationNeedToUpdate = new ArrayList<>();
+			List<McpServerFeatures.AsyncToolSpecification> toolsRegistrationNeedToUpdate = new ArrayList<>();
 			Map<String, McpSchema.Tool> toolsInNacosMap = toolsInNacos.stream()
 				.collect(Collectors.toMap(McpSchema.Tool::name, tool -> tool));
-			for (McpServerFeatures.AsyncToolRegistration toolRegistration : this.tools) {
+			for (McpServerFeatures.AsyncToolSpecification toolRegistration : this.tools) {
 				String name = toolRegistration.tool().name();
 				if (!toolsInNacosMap.containsKey(name)) {
 					continue;
@@ -263,7 +255,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				updateToolDescription(toolRegistration, toolInNacos, toolsRegistrationNeedToUpdate);
 				break;
 			}
-			for (McpServerFeatures.AsyncToolRegistration toolRegistration : toolsRegistrationNeedToUpdate) {
+			for (McpServerFeatures.AsyncToolSpecification toolRegistration : toolsRegistrationNeedToUpdate) {
 				for (int i = 0; i < this.tools.size(); i++) {
 					if (this.tools.get(i).tool().name().equals(toolRegistration.tool().name())) {
 						this.tools.set(i, toolRegistration);
@@ -286,7 +278,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	@Override
 	public void onApplicationEvent(WebServerInitializedEvent event) {
-		if ("stdio".equals(this.type) || !nacosMcpProperties.isServiceRegister()) {
+		if ("stdio".equals(this.type) || !nacosMcpRegistryProperties.isServiceRegister()) {
 			log.info("No need to register mcp server service to nacos");
 			return;
 		}
@@ -296,29 +288,14 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			Instance instance = new Instance();
 			instance.setIp(nacosMcpProperties.getIp());
 			instance.setPort(port);
-			instance.setEphemeral(nacosMcpProperties.isServiceEphemeral());
+			instance.setEphemeral(nacosMcpRegistryProperties.isServiceEphemeral());
 			namingService.registerInstance(this.serverInfo.name() + "-mcp-service",
-					nacosMcpProperties.getServiceGroup(), instance);
+					nacosMcpRegistryProperties.getServiceGroup(), instance);
 			log.info("Register mcp server service to nacos successfully");
 		}
 		catch (NacosException e) {
 			log.error("Failed to register mcp server service to nacos", e);
 		}
-	}
-
-	private DefaultMcpSession.RequestHandler<McpSchema.ListToolsResult> toolsListRequestHandler() {
-		return params -> {
-			List<McpSchema.Tool> toolsAll = this.tools.stream()
-				.map(McpServerFeatures.AsyncToolRegistration::tool)
-				.toList();
-			List<McpSchema.Tool> toolsEnable = new ArrayList<>();
-			for (McpSchema.Tool tool : toolsAll) {
-				if (this.toolsMeta.containsKey(tool.name()) && this.toolsMeta.get(tool.name()).getEnabled()) {
-					toolsEnable.add(tool);
-				}
-			}
-			return Mono.just(new McpSchema.ListToolsResult(toolsEnable, null));
-		};
 	}
 
 }
