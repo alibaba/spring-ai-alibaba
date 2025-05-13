@@ -17,6 +17,9 @@
 package com.alibaba.cloud.ai.mcp.dynamic.server.watcher;
 
 import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinition;
+import com.alibaba.cloud.ai.mcp.dynamic.server.definition.DynamicNacosToolDefinitionV3;
+import com.alibaba.cloud.ai.mcp.dynamic.server.callback.DynamicNacosToolCallback;
+import com.alibaba.cloud.ai.mcp.dynamic.server.callback.DynamicNacosToolCallbackV3;
 import com.alibaba.cloud.ai.mcp.dynamic.server.provider.DynamicMcpToolsProvider;
 import com.alibaba.cloud.ai.mcp.dynamic.server.tools.DynamicNacosToolsInfo;
 import com.alibaba.cloud.ai.mcp.dynamic.server.tools.NacosHelper;
@@ -35,6 +38,7 @@ import com.alibaba.nacos.common.utils.CollectionUtils;
 import com.alibaba.nacos.common.utils.JacksonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.HashSet;
@@ -116,7 +120,8 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 		String version = getNacosVersion();
 		logger.info("Nacos server version: {}", version);
 		if (version != null && NacosHelper.compareVersion(version, "3.0.0") >= 0) {
-			logger.info("Nacos version >= 3.0.0, use new logic (not implemented yet)");
+			logger.info("Nacos version >= 3.0.0, using new logic");
+			handleHighVersion();
 			return;
 		}
 		Set<String> currentServices = new HashSet<>();
@@ -255,6 +260,117 @@ public class DynamicNacosToolsWatcher extends AbstractConfigChangeListener imple
 				logger.info("Received config change event for service: {}", serviceName);
 				updateServiceTools(serviceName);
 			}
+		}
+	}
+
+	private void handleHighVersion() {
+		try {
+			List<Map<String, Object>> mcpServersAllPages = NacosHelper.fetchNacosMcpServersAllPages(webClient,
+					nacosMcpRegistryProperties.getServerAddr(), nacosMcpRegistryProperties.getUsername(),
+					nacosMcpRegistryProperties.getPassword());
+
+			// Track current services for cleanup
+			Set<String> currentServices = new HashSet<>();
+
+			for (Map<String, Object> mcpServerInfo : mcpServersAllPages) {
+				Object mcpName = mcpServerInfo.get("name");
+				if (mcpName != null) {
+					currentServices.add(mcpName.toString());
+					updateHighVersionServiceTools(mcpName.toString());
+				}
+			}
+
+			// Clean up stale services
+			cleanupStaleServices(currentServices);
+		}
+		catch (Exception e) {
+			logger.error("Failed to handle high version services", e);
+		}
+	}
+
+	private void updateHighVersionServiceTools(String mcpName) {
+		try {
+			String url = NacosHelper.getServerUrl(nacosMcpRegistryProperties.getServerAddr());
+			String mcpServerDetail = webClient.get()
+				.uri(url + "/nacos/v3/admin/ai/mcp?mcpName=" + mcpName)
+				.header("userName", nacosMcpRegistryProperties.getUsername())
+				.header("password", nacosMcpRegistryProperties.getPassword())
+				.retrieve()
+				.bodyToMono(String.class)
+				.block();
+
+			logger.info("Nacos mcp server info (name {}): {}", mcpName, mcpServerDetail);
+			Map<String, Object> serverInfoMap = JacksonUtils.toObj(mcpServerDetail, Map.class);
+			if (serverInfoMap != null && serverInfoMap.containsKey("data")) {
+				Map<String, Object> data = (Map<String, Object>) serverInfoMap.get("data");
+				if (data != null && data.containsKey("toolSpec")) {
+					Object toolSpec = data.get("toolSpec");
+					Object remoteServerConfig = data.get("remoteServerConfig");
+					Object localeServerConfig = data.get("localeServerConfig");
+					String protocol = (String) data.get("protocol");
+
+					if (toolSpec != null) {
+						Map<String, Object> toolSpecMap = JacksonUtils.toObj(JacksonUtils.toJson(toolSpec), Map.class);
+						List<Map<String, Object>> tools = (List<Map<String, Object>>) toolSpecMap.get("tools");
+						Map<String, Object> toolsMeta = (Map<String, Object>) toolSpecMap.get("toolsMeta");
+
+						// Update tools cache
+						Set<String> currentTools = new HashSet<>();
+						for (Map<String, Object> tool : tools) {
+							String toolName = (String) tool.get("name");
+							currentTools.add(toolName);
+
+							// Check if tool is enabled
+							Object metaInfo = toolsMeta.getOrDefault(toolName, new Object());
+							boolean enabled = false;
+							if (metaInfo instanceof Map) {
+								Object enabledObj = ((Map<?, ?>) metaInfo).get("enabled");
+								if (enabledObj instanceof Boolean) {
+									enabled = (Boolean) enabledObj;
+								}
+								else if (enabledObj instanceof String) {
+									enabled = Boolean.parseBoolean((String) enabledObj);
+								}
+							}
+
+							if (!enabled) {
+								logger.info("Tool {} is disabled by metaInfo, skipping.", toolName);
+								continue;
+							}
+
+							// Create and add tool definition
+							ToolDefinition toolDefinition = DynamicNacosToolDefinitionV3.builder()
+								.name(toolName)
+								.description((String) tool.get("description"))
+								.inputSchema(tool.get("inputSchema"))
+								.protocol(protocol)
+								.remoteServerConfig(remoteServerConfig)
+								.localServerConfig(localeServerConfig)
+								.toolsMeta(metaInfo)
+								.build();
+
+							dynamicMcpToolsProvider.addTool(toolDefinition);
+						}
+
+						// Get previous tools for this service
+						Set<String> previousTools = serviceToolsCache.getOrDefault(mcpName, new HashSet<>());
+
+						// Remove obsolete tools
+						Set<String> toolsToRemove = new HashSet<>(previousTools);
+						toolsToRemove.removeAll(currentTools);
+						for (String toolName : toolsToRemove) {
+							logger.info("Removing obsolete tool: {} for service: {}", toolName, mcpName);
+							dynamicMcpToolsProvider.removeTool(toolName);
+						}
+
+						// Update cache
+						serviceToolsCache.put(mcpName, currentTools);
+					}
+				}
+			}
+		}
+		catch (Exception e) {
+			logger.error("Failed to update tools for high version service: {}", mcpName, e);
 		}
 	}
 
