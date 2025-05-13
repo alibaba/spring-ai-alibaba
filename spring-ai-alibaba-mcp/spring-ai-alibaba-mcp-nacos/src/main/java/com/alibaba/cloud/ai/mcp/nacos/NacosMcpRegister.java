@@ -22,8 +22,7 @@ import com.alibaba.cloud.ai.mcp.nacos.model.McpToolsInfo;
 import com.alibaba.cloud.ai.mcp.nacos.model.RemoteServerConfigInfo;
 import com.alibaba.cloud.ai.mcp.nacos.model.ServiceRefInfo;
 import com.alibaba.cloud.ai.mcp.nacos.model.ToolMetaInfo;
-import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpRegistryProperties;
-import com.alibaba.cloud.ai.mcp.nacos.model.*;
+import com.alibaba.cloud.ai.mcp.nacos.model.McpNacosConstant;
 import com.alibaba.cloud.ai.mcp.nacos.utils.JsonUtils;
 import com.alibaba.cloud.ai.mcp.nacos.utils.MD5Utils;
 import com.alibaba.nacos.api.config.ConfigService;
@@ -80,7 +79,6 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	private final Long TIME_OUT_MS = 3000L;
 
-	public NacosMcpRegister(McpAsyncServer mcpAsyncServer, NacosMcpRegistryProperties nacosMcpProperties, String type) {
 	public NacosMcpRegister(McpAsyncServer mcpAsyncServer, NacosMcpProperties nacosMcpProperties,
 			NacosMcpRegistryProperties nacosMcpRegistryProperties, String type) {
 		this.mcpAsyncServer = mcpAsyncServer;
@@ -168,7 +166,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			else {
 				ServiceRefInfo serviceRefInfo = new ServiceRefInfo();
 				serviceRefInfo.setNamespaceId(nacosMcpRegistryProperties.getServiceNamespace());
-				serviceRefInfo.setServiceName(this.serverInfo.name() + "-mcp-service");
+				serviceRefInfo.setServiceName(this.serverInfo.name() + McpNacosConstant.SERVER_NAME_SUFFIX);
 				serviceRefInfo.setGroupName(nacosMcpRegistryProperties.getServiceGroup());
 				RemoteServerConfigInfo remoteServerConfigInfo = new RemoteServerConfigInfo();
 				remoteServerConfigInfo.setServiceRef(serviceRefInfo);
@@ -304,8 +302,10 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			// 配置对应的工具信息
 			String toolConfig = configService.getConfig(this.serverInfo.name() + McpNacosConstant.TOOLS_CONFIG_SUFFIX,
 					McpNacosConstant.TOOLS_GROUP, TIME_OUT_MS);
-			McpToolsInfo toolsInfo = JsonUtils.deserialize(toolConfig, McpToolsInfo.class);
-			List<String> toolNames = toolsInfo.getTools()
+            McpToolsInfo toolsInfo = null;
+			toolsInfo = JsonUtils.deserialize(toolConfig, McpToolsInfo.class);
+
+            List<String> toolNames = toolsInfo.getTools()
 				.stream()
 				.map(McpSchema.Tool::name)
 				.collect(Collectors.toList());
@@ -314,12 +314,14 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			instance.setIp(nacosMcpProperties.getIp());
 			instance.setPort(port);
 			instance.setEphemeral(nacosMcpRegistryProperties.isServiceEphemeral());
-			namingService.registerInstance(this.serverInfo.name() + "-mcp-service",
+			namingService.registerInstance(this.serverInfo.name() + McpNacosConstant.SERVER_NAME_SUFFIX,
 					nacosMcpRegistryProperties.getServiceGroup(), instance);
 			log.info("Register mcp server service to nacos successfully");
 		}
 		catch (NacosException e) {
 			log.error("Failed to register mcp server service to nacos", e);
+		} catch (JsonProcessingException e) {
+			log.error("parse tools failed", e);
 		}
 	}
 
