@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.mcp.nacos.client;
 import com.alibaba.cloud.ai.mcp.nacos.client.transport.LoadbalancedMcpAsyncClient;
 import com.alibaba.cloud.ai.mcp.nacos.client.transport.LoadbalancedMcpSyncClient;
 import com.alibaba.nacos.api.naming.NamingService;
+import com.alibaba.nacos.client.config.NacosConfigService;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -62,90 +63,50 @@ public class NacosMcpClientAutoConfiguration {
 	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "SYNC",
 			matchIfMissing = true)
 	public List<LoadbalancedMcpSyncClient> loadbalancedMcpSyncClientList(
-			ObjectProvider<McpSyncClientConfigurer> mcpSyncClientConfigurerProvider,
-			McpClientCommonProperties commonProperties,
 			@Qualifier("server2NamedTransport") ObjectProvider<Map<String, List<NamedClientMcpTransport>>> server2NamedTransportProvider,
-			ObjectProvider<NamingService> namingServiceProvider) {
+			ObjectProvider<NamingService> namingServiceProvider,
+			ObjectProvider<NacosConfigService> nacosConfigServiceProvider) {
 		NamingService namingService = namingServiceProvider.getObject();
-		McpSyncClientConfigurer mcpSyncClientConfigurer = mcpSyncClientConfigurerProvider.getObject();
+		NacosConfigService nacosConfigService = nacosConfigServiceProvider.getObject();
 
 		List<LoadbalancedMcpSyncClient> loadbalancedMcpSyncClients = new ArrayList<>();
 		Map<String, List<NamedClientMcpTransport>> server2NamedTransport = server2NamedTransportProvider.getObject();
 		for (Map.Entry<String, List<NamedClientMcpTransport>> entry : server2NamedTransport.entrySet()) {
 			String serviceName = entry.getKey();
-			List<NamedClientMcpTransport> namedTransports = entry.getValue();
-			List<McpSyncClient> mcpSyncClients = new ArrayList<>();
-
-			McpSyncClient syncClient;
-			for (NamedClientMcpTransport namedTransport : namedTransports) {
-				McpSchema.Implementation clientInfo = new McpSchema.Implementation(
-						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
-						commonProperties.getVersion());
-				McpClient.SyncSpec syncSpec = McpClient.sync(namedTransport.transport())
-					.clientInfo(clientInfo)
-					.requestTimeout(commonProperties.getRequestTimeout());
-				syncSpec = mcpSyncClientConfigurer.configure(namedTransport.name(), syncSpec);
-				syncClient = syncSpec.build();
-				if (commonProperties.isInitialized()) {
-					syncClient.initialize();
-				}
-				mcpSyncClients.add(syncClient);
-			}
 
 			LoadbalancedMcpSyncClient loadbalancedMcpSyncClient = LoadbalancedMcpSyncClient.builder()
 				.serviceName(serviceName)
-				.mcpSyncClientList(mcpSyncClients)
 				.namingService(namingService)
+				.nacosConfigService(nacosConfigService)
 				.build();
+			loadbalancedMcpSyncClient.init();
 			loadbalancedMcpSyncClient.subscribe();
 
 			loadbalancedMcpSyncClients.add(loadbalancedMcpSyncClient);
 		}
-
 		return loadbalancedMcpSyncClients;
-
 	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "ASYNC")
 	public List<LoadbalancedMcpAsyncClient> loadbalancedMcpAsyncClientList(
-			ObjectProvider<McpAsyncClientConfigurer> mcpAsyncClientConfigurerProvider,
-			McpClientCommonProperties commonProperties,
 			@Qualifier("server2NamedTransport") ObjectProvider<Map<String, List<NamedClientMcpTransport>>> server2NamedTransportProvider,
-			ObjectProvider<NamingService> namingServiceProvider) {
+			ObjectProvider<NamingService> namingServiceProvider,
+			ObjectProvider<NacosConfigService> nacosConfigServiceProvider) {
 		NamingService namingService = namingServiceProvider.getObject();
-		McpAsyncClientConfigurer mcpAsyncClientConfigurer = mcpAsyncClientConfigurerProvider.getObject();
+		NacosConfigService nacosConfigService = nacosConfigServiceProvider.getObject();
 
 		List<LoadbalancedMcpAsyncClient> loadbalancedMcpAsyncClients = new ArrayList<>();
 		Map<String, List<NamedClientMcpTransport>> server2NamedTransport = server2NamedTransportProvider.getObject();
 		for (Map.Entry<String, List<NamedClientMcpTransport>> entry : server2NamedTransport.entrySet()) {
 			String serviceName = entry.getKey();
-			List<NamedClientMcpTransport> namedTransports = entry.getValue();
-			List<McpAsyncClient> mcpAsyncClients = new ArrayList<>();
-
-			McpAsyncClient asyncClient;
-			for (NamedClientMcpTransport namedTransport : namedTransports) {
-				McpSchema.Implementation clientInfo = new McpSchema.Implementation(
-						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
-						commonProperties.getVersion());
-				McpClient.AsyncSpec asyncSpec = McpClient.async(namedTransport.transport())
-					.clientInfo(clientInfo)
-					.requestTimeout(commonProperties.getRequestTimeout());
-				asyncSpec = mcpAsyncClientConfigurer.configure(namedTransport.name(), asyncSpec);
-				asyncClient = asyncSpec.build();
-				if (commonProperties.isInitialized()) {
-					asyncClient.initialize().block();
-				}
-
-				mcpAsyncClients.add(asyncClient);
-			}
 
 			LoadbalancedMcpAsyncClient loadbalancedMcpAsyncClient = LoadbalancedMcpAsyncClient.builder()
 				.serviceName(serviceName)
-				.mcpAsyncClientList(mcpAsyncClients)
 				.namingService(namingService)
+				.nacosConfigService(nacosConfigService)
 				.build();
-
+			loadbalancedMcpAsyncClient.init();
 			loadbalancedMcpAsyncClient.subscribe();
 
 			loadbalancedMcpAsyncClients.add(loadbalancedMcpAsyncClient);
