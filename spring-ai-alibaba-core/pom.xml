@@ -14,10 +14,7 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
 -->
-
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -26,17 +23,17 @@
         <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-
-    <url>https://github.com/alibaba/spring-ai-alibaba</url>
-    <name>Spring AI Alibaba Core</name>
-    <packaging>jar</packaging>
     <artifactId>spring-ai-alibaba-core</artifactId>
+    <packaging>jar</packaging>
+    <name>Spring AI Alibaba Core</name>
     <description>Spring AI Alibaba core module, DashScope 4 Spring AI Implementation</description>
 
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+
     <scm>
-        <url>https://github.com/alibaba/spring-ai-alibaba</url>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
         <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
 
     <dependencies>

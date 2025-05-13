@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!--
    Copyright 2023-2024 the original author or authors.
 
@@ -15,10 +14,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 -->
-
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -30,9 +26,9 @@
 
     <artifactId>spring-ai-alibaba-graph-example</artifactId>
     <version>${revision}</version>
+    <name>Spring AI Alibaba Graph Examples</name>
 
     <description>Spring AI Alibaba Graph Example</description>
-    <name>Spring AI Alibaba Graph Examples</name>
 
     <properties>
         <gson.version>2.10.1</gson.version>
@@ -44,11 +40,11 @@
             <artifactId>plantuml-mit</artifactId>
             <version>1.2024.4</version>
         </dependency>
-      
+
         <dependency>
-          <groupId>org.jsoup</groupId>
-          <artifactId>jsoup</artifactId>
-          <version>1.18.3</version>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.18.3</version>
         </dependency>
 
         <dependency>
@@ -79,11 +75,11 @@
             <version>${project.version}</version>
         </dependency>
 
-<!--		<dependency>-->
-<!--			<groupId>com.alibaba.cloud.ai</groupId>-->
-<!--			<artifactId>spring-ai-alibaba-studio</artifactId>-->
-<!--			<version>${project.parent.version}</version>-->
-<!--		</dependency>-->
+        <!--		<dependency>-->
+        <!--			<groupId>com.alibaba.cloud.ai</groupId>-->
+        <!--			<artifactId>spring-ai-alibaba-studio</artifactId>-->
+        <!--			<version>${project.parent.version}</version>-->
+        <!--		</dependency>-->
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
