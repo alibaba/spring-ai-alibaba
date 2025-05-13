@@ -61,7 +61,7 @@ public class DynamicToolsInitializer {
 		String version = NacosHelper.fetchNacosVersion(webClient, nacosMcpRegistryProperties.getServerAddr());
 		logger.info("Nacos server version: {}", version);
 		if (version != null && NacosHelper.compareVersion(version, "3.0.0") >= 0) {
-			logger.info("Nacos version >= 3.0.0, use new logic (not implemented yet)");
+			logger.info("Nacos version >= 3.0.0, use new logic");
 			return handleHighVersion();
 		}
 		return handleLowVersion();
