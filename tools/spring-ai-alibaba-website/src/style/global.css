@@ -1,0 +1,42 @@
+/* 集成的默认注入的 base.css 文件 */
+@tailwind base;
+
+.sl-markdown-content img,
+.sl-markdown-content picture,
+.sl-markdown-content video,
+.sl-markdown-content canvas,
+.sl-markdown-content svg,
+.sl-markdown-content iframe
+ {
+	display: block;
+	max-width: 100%;
+	height: auto;
+}
+@tailwind components;
+@tailwind utilities;
+
+
+.header {
+  padding: 0 !important;
+	border-bottom: none !important;
+}
+
+/* 解决starlight的menu按钮位置问题（daisyui影响） */
+starlight-menu-button button{
+	top: 4rem !important;
+}
+
+/* 解决starlight的toc按钮位置问题（daisyui影响） */
+#starlight__mobile-toc{
+	#starlight__on-this-page--mobile{
+		.toggle{
+			width: auto;
+			height: auto;
+			border-radius: .5rem;
+			background-color: transparent;
+		}
+	}
+	.dropdown{
+		display: block;
+	}
+}

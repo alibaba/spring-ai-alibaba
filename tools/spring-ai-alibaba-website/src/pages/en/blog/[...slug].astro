@@ -1,0 +1,193 @@
+---
+import { type CollectionEntry, getCollection } from "astro:content";
+import BlogPost from "@components/markdownSet/MarkdownDetail.astro";
+import TocComponent from "@components/markdownSet/TocComponents/TocComponent.astro";
+import BaseLayout from "@layouts/BaseLayout.astro";
+import { Button } from "@serverless-cd/goat-ui";
+import { Icon } from "@astrojs/starlight/components";
+import Sidebar from "@components/starlight/Sidebar.astro";
+import { useTranslations } from "@i18n/util";
+import {SITE} from "@utils/config";
+import Pagination from "@astrojs/starlight/components/Pagination.astro";
+
+const t = useTranslations(Astro);
+
+export async function getStaticPaths() {
+	const posts = await getCollection("blog");
+	return posts.map((post) => ({
+		params: { slug: post.slug },
+		props: post,
+	}));
+}
+
+const blogArticle = {
+	article: "blog.article.technical",
+	case: "blog.article.case.best.practices",
+	ecosystem: "blog.article.ecosystem.articles",
+	announcement: "blog.activity.community.announcement",
+	release: "blog.activity.release.statement",
+	committer: "page.blog.news.personnel.promotion",
+	cooperate: "page.blog.news.community.cooperation",
+	"activity-preview": "blog.activity.preview.event",
+	"activity-detail": "blog.activity.detail.event",
+	'expertConsultation': 'wuyi.meet-professor.title',
+};
+
+type Props = CollectionEntry<"blog">;
+
+const post = Astro.props;
+
+const { Content, headings } = await post.render();
+
+const posts = await getCollection("blog");
+
+const sortedPosts = posts.sort(
+	(a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf(),
+);
+
+const articlePosts = [
+	{
+		type: "group",
+		label: blogArticle[post.data.category]
+			? t(blogArticle[post.data.category])
+			: post.data.category,
+		entries: [],
+	},
+];
+
+let currentIndex;
+
+sortedPosts.forEach((item) => {
+	if (item.data.category === post.data.category) {
+		if (post.id === item.id) currentIndex = articlePosts[0].entries.length;
+		articlePosts[0].entries.push({
+			type: "link",
+			label: item.data.title,
+			href: `/blog/${item.slug}/`,
+			isCurrent: post.id === item.id,
+			attrs: {},
+		});
+	}
+});
+
+const prev = articlePosts[0].entries[currentIndex - 1];
+const next = articlePosts[0].entries[currentIndex + 1];
+const baseLayout_title = post?.data?.title || `${SITE.name} Blog`;
+const description = post?.data?.description || "";
+const keywords = post?.data?.keywords || "";
+---
+
+<span class="blog-slug-wrapper">
+	<BaseLayout align="docs" title={baseLayout_title} channel={t("commmon.header.comm.blog")} description={description} keywords={keywords}>
+		<div class="w-full">
+			<div
+				class="w-[20%] sidebar-content fixed overflow-auto h-full hidden 2xl:inline-block xl:inline-block lg:inline-block md:inline-block"
+			>
+				<Sidebar sidebar={articlePosts} />
+			</div>
+			<div
+				class="w-full 2xl:ml-[20%] xl:ml-[20%] lg:ml-[20%] md:ml-[20%] 2xl:w-[60%] xl:w-[60%] lg:w-[80%] md:w-[80%] inline-block"
+			>
+				<div id="back-btn" class="pt-4 pl-6">
+					<Button
+						variant="secondary"
+						target="_self"
+						class="rounded-3xl"
+					>
+						<Icon name="left-arrow" class="text-lg align-middle" />
+						<span class="ml-0.5">BACK</span>
+					</Button>
+				</div>
+				<BlogPost {...post.data}>
+					<Content />
+				</BlogPost>
+				<div class="pb-6">
+					{
+						(prev || next) && (
+							<Pagination
+								labels={{
+									"page.previousLink": t("commmon.base.page.previousLink"),
+									"page.nextLink": t("commmon.base.page.nextLink"),
+								}}
+								pagination={{
+									prev: prev,
+									next: next,
+								}}
+							/>
+						)
+					}
+				</div>
+			</div>
+			<div
+				class="right-sidebar-panel w-[18%] fixed h-full hidden 2xl:inline-block xl:inline-block"
+			>
+				<TocComponent headings={headings} />
+			</div>
+		</div>
+	</BaseLayout>
+</span>
+<script>
+		function addBackBtnClick (){
+		const url = new URL(window.location.href);
+		let source = url.searchParams.get("source");
+		if(source) {
+			source = source.replace(/_/g, "/");
+		};
+		const backBtn: HTMLAnchorElement = document.querySelector("#back-btn a");
+		if(backBtn){
+			backBtn.onclick = (e) => {
+				e.preventDefault();
+				const params = new URLSearchParams(window.location.search);
+				params.delete("source")
+
+				let newPathname = ""
+				if (source && source !== 'undefined') {
+						newPathname = `/${source}/`;
+				} else {
+						newPathname = '/blog/';
+				}
+				const newUrl = `${newPathname}${params.toString() ? `?${params.toString()}` : ''}`;
+
+				window.location.href = newUrl; 
+			};
+		}
+		
+	}
+	document.addEventListener("astro:page-load",addBackBtnClick);
+	document.addEventListener("DOMContentLoaded", addBackBtnClick)
+</script>
+
+
+<style is:global>
+	.blog-slug-wrapper {
+		.sidebar-content {
+			height: 100%;
+			padding: 1rem var(--sl-sidebar-pad-x) 0;
+			flex-direction: column;
+			gap: 1rem;
+		}
+		.right-sidebar-panel {
+			flex-direction: column;
+			justify-content: space-between;
+			height: calc(100vh - 3.5rem);
+			padding: 1rem var(--sl-sidebar-pad-x);
+		}
+		.right-sidebar-panel h2 {
+			color: var(--sl-color-white);
+			font-size: var(--sl-text-h5);
+			font-weight: 600;
+			line-height: var(--sl-line-height-headings);
+			margin-bottom: 0.5rem;
+		}
+		.right-sidebar-panel a {
+			display: block;
+			font-size: var(--sl-text-xs);
+			text-decoration: none;
+			color: var(--sl-color-gray-3);
+			overflow-wrap: anywhere;
+		}
+		.right-sidebar-panel a:hover {
+			color: var(--sl-color-white);
+		}
+	}
+</style>

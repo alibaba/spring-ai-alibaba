@@ -1,0 +1,14 @@
+---
+import BaseLayout from "@layouts/BaseLayout.astro";
+import CompaniesFeedback from "@components/home/CompaniesFeedback.astro";
+import CloudFooter from "@components/common/Footer.astro";
+import { useTranslations } from "@i18n/util";
+import HomeFooter from '@components/ai/Footer.astro';
+
+const t = useTranslations(Astro);
+---
+
+<BaseLayout title={t("plugin.title")} description={t("plugin.description")}>
+  <div style="margin:100px;text-align:center;">Page under construction......</div>
+  <HomeFooter/>
+</BaseLayout>

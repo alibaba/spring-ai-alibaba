@@ -1,0 +1,62 @@
+---
+import BaseLayout from "@layouts/BaseLayout.astro";
+import CompaniesFeedback from "@components/home/CompaniesFeedback.astro";
+import CloudFooter from "@components/common/Footer.astro";
+import McpHub from "@components/plugin/McpHub/index";
+import { useTranslations } from "@i18n/util";
+import HomeFooter from "@components/ai/Footer.astro";
+import { getCollection } from "astro:content";
+import { isChinese } from "@i18n/util";
+import McpIntroduce from "@components/plugin/McpIntroduce.astro";
+
+const t = useTranslations(Astro);
+const ifzh = isChinese(Astro);
+const lang = ifzh ? "zh-cn" : "en";
+
+const Functionality = {
+  ai: {
+    description: "AI",
+    children: [
+      { key: "api-consumer", label: "大模型API消费" },
+      { key: "api-dev", label: "大模型API开发" },
+      { key: "api-o11y", label: "大模型API观测" },
+      { key: "api-provider", label: "大模型API供应" },
+      { key: "others", label: "其他工具" },
+    ],
+  },
+  authentication: { description: "认证" },
+  transformation: { description: "转换" },
+  traffic: { description: "流量" },
+  security: { description: "安全" },
+};
+
+// 拿到插件的文档
+const posts = [{}, {}, {}, {}];
+
+const generateLink = (slug) => {
+  const arr = slug.split("/" + lang);
+  return (
+    (lang === "en" ? "/en" : "") + "/docs/" + arr.join("") + "/?source=plugin"
+  );
+};
+
+const dataSource = posts.map((item) => {
+  return {
+    Img: "",
+    Title: "title",
+    Tiers: "企业版",
+    Des: "desc",
+    Link: "link",
+    SecondaryTitle: "secTitle",
+    Functionality: "Functionality",
+    SupportBy: "SupportBy",
+    GithubHigressUrl: "url",
+  };
+});
+---
+
+<BaseLayout title={t("mcp.title")} description={t("mcp.description")}>
+  <McpIntroduce />
+  <McpHub client:load dataSource={dataSource} />
+  <HomeFooter />
+</BaseLayout>

@@ -1,0 +1,40 @@
+---
+import { useTranslations } from "@i18n/util";
+const t = useTranslations(Astro);
+---
+
+<plugin-introduce
+  class="introduce flex flex-col justify-center items-center bg-neutral/[0.8]"
+>
+  <div class="plugin-container flex flex-col">
+    <div
+      class="text-[56px] leading-[56px] font-bold text-base-100 mb-7 mt-[68px]"
+    >
+      Welcome to Spring AI Alibaba Plugin Hub
+    </div>
+    <div
+      class="mb-[126px] text-base-100 text-[18px] leading-[18px] font-medium"
+    >
+      {t('plugin.introduction.des')}
+    </div>
+  </div>
+</plugin-introduce>
+<style>
+  plugin-introduce {
+    .plugin-container {
+      width: 85.125rem;
+      overflow: hidden;
+    }
+
+    @media (min-width: 50rem) and (max-width: 86rem) {
+      .plugin-container {
+        width: 100%;
+      }
+    }
+    @media (max-width: 50rem) {
+      .plugin-container {
+        width: 100%;
+      }
+    }
+  }
+</style>

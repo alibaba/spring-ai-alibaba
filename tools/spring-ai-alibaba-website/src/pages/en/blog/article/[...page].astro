@@ -1,0 +1,125 @@
+---
+import type { GetStaticPathsOptions } from "astro";
+import BaseLayout from "@layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import Pagination from "@components/common/Paginate/Pagination.astro";
+import { BLOG_CATEGORY } from "@/constant";
+import BlogTop from "@components/markdownSet/BlogTop.astro";
+import { useTranslations } from "@i18n/util";
+import SimpleContainer from '@components/markdownSet/SimpleContainer.astro';
+import type { Post } from '@/types';
+const t = useTranslations(Astro);
+
+// 分页数据在page参数中传递
+const { page } = Astro.props;
+
+const allPages = [...Array(page.lastPage).keys()].map((num) => {
+    return `/blog/article${num === 0 ? "" : `/${String(num + 1)}`}`;
+});
+
+export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
+    const posts = await getCollection("blog");
+
+    const sortedPosts = posts.sort(
+        (a, b) =>
+            new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf(),
+    );
+
+    const articlePosts = sortedPosts.filter((post) => {
+        return post.data.category === "article";
+    });
+    return paginate(articlePosts, { pageSize: 9 });
+}
+---
+
+<BaseLayout title={t("blog.article.technical")} channel={t("commmon.header.comm.blog")}>
+    <BlogTop 
+        title={t("blog.article.technical")} 
+        type="blog-sub" 
+        source="blog"
+        type="home"
+        category={BLOG_CATEGORY}
+        activeCategory="article"
+    />
+    <div
+        class="flex flex-col items-center gap-20 py-8 lg:p-12 xl:p-20 bg-error"
+    >
+        <SimpleContainer 
+            pageList={page.data as Post[]}
+        />
+
+        <Pagination restRoute allPages={allPages} page={page} class="mx-auto" />
+    </div>
+</BaseLayout>
+<style>
+    main {
+        width: 960px;
+    }
+    ul {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+    }
+    ul li {
+        width: calc(50% - 1rem);
+    }
+    ul li * {
+        text-decoration: none;
+        transition: 0.2s ease;
+    }
+    ul li:first-child {
+        width: 100%;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+    ul li:first-child img {
+        width: 100%;
+    }
+    ul li:first-child .title {
+        font-size: 2.369rem;
+    }
+    ul li img {
+        margin-bottom: 0.5rem;
+        border-radius: 12px;
+    }
+    ul li a {
+        display: block;
+    }
+    .title {
+        margin: 0;
+        color: rgb(var(--black));
+        line-height: 1;
+    }
+    .date {
+        margin: 0;
+        color: rgb(var(--gray));
+    }
+    ul li a:hover h4,
+    ul li a:hover .date {
+        color: rgb(var(--accent));
+    }
+    ul a:hover img {
+        box-shadow: var(--box-shadow);
+    }
+    @media (max-width: 50rem) {
+        .blog-article {
+            padding: 0 1.5rem;
+        }
+        ul {
+            gap: 0.5em;
+        }
+        ul li {
+            width: 100%;
+            text-align: center;
+        }
+        ul li:first-child {
+            margin-bottom: 0;
+        }
+        ul li:first-child .title {
+            font-size: 1.563em;
+        }
+    }
+</style>

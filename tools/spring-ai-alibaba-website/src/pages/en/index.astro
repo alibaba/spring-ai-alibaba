@@ -1,0 +1,26 @@
+---
+import { useTranslations } from "@i18n/util";
+import BaseLayout from "@layouts/BaseLayout.astro";
+import HomeIntroduce from '@components/home/HomeIntroduce.astro';
+import ChooseReason from '@components/home/ChooseReason.astro';
+import CompaniesFeedback from '@components/home/CompaniesFeedback.astro';
+import OverviewImage from '@components/home/OverViewImage/index.astro';
+import HomeSolutionsCard from '@components/home/HomeSolutionsCard.astro';
+import HomeFooter from '@components/common/Footer.astro';
+
+const t = useTranslations(Astro);
+
+---
+
+<BaseLayout
+  title={t('home.title')}
+  description={t('home.description')}
+>
+    <HomeIntroduce/>
+    <ChooseReason />
+    <CompaniesFeedback />
+    <OverviewImage />
+    <HomeFooter>
+        <HomeSolutionsCard slot="after-footer" />
+    </HomeFooter>
+</BaseLayout>
