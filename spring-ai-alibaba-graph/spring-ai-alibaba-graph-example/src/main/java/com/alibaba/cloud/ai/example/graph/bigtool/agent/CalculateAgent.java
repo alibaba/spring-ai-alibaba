@@ -81,7 +81,7 @@ public class CalculateAgent implements NodeAction {
 		ChatResponse response = chatClient.prompt()
 			.system(CLASSIFIER_PROMPT_TEMPLATE)
 			.user(inputText)
-			.tools(toolCallbacks)
+			.toolCallbacks(toolCallbacks)
 			.call()
 			.chatResponse();
 
