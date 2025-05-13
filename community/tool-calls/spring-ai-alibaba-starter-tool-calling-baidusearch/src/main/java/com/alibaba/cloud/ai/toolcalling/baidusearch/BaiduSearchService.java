@@ -15,7 +15,14 @@
  */
 package com.alibaba.cloud.ai.toolcalling.baidusearch;
 
-import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
+
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 import com.alibaba.cloud.ai.toolcalling.common.ResponseHandler;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientConfig;
@@ -29,17 +36,10 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Function;
 
 /**
  * @author KrakenZJC
@@ -90,7 +90,7 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 
 			String html = webClient.get()
 				.uri(url)
-				.acceptCharset(Charset.forName("UTF-8"))
+				.acceptCharset(StandardCharsets.UTF_8)
 				.retrieve()
 				.bodyToMono(String.class)
 				.block();
