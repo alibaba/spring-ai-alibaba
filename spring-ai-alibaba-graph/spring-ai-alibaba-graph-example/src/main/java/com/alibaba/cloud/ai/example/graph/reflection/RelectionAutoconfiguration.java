@@ -96,10 +96,9 @@ public class RelectionAutoconfiguration {
 
 			List<Message> messages = (List<Message>) overAllState.value(MESSAGES).get();
 
-			AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
+			OverAllStateFactory stateFactory = () -> {
 				OverAllState state = new OverAllState();
 				state.registerKeyAndStrategy(MESSAGES, new AppendStrategy());
-				state.input(inputs);
 				return state;
 			};
 
@@ -175,10 +174,9 @@ public class RelectionAutoconfiguration {
 		public Map<String, Object> apply(OverAllState allState) throws Exception {
 			List<Message> messages = (List<Message>) allState.value(MESSAGES).get();
 
-			AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
+			OverAllStateFactory stateFactory = () -> {
 				OverAllState state = new OverAllState();
 				state.registerKeyAndStrategy(MESSAGES, new AppendStrategy());
-				state.input(inputs);
 				return state;
 			};
 

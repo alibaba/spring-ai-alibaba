@@ -77,7 +77,7 @@ public class PlanCreator {
 
 			ChatClient.CallResponseSpec response = llmService.getPlanningChatClient()
 				.prompt(prompt)
-				.tools(List.of(planningTool.getFunctionToolCallback()))
+				.toolCallbacks(List.of(planningTool.getFunctionToolCallback()))
 				.advisors(memoryAdvisor -> memoryAdvisor.param("chat_memory_conversation_id", planId)
 					.param("chat_memory_retrieve_size", 100))
 				.call();
