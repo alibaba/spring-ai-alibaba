@@ -87,9 +87,7 @@ public class DynamicToolsInitializer {
 					.block();
 
 				if (mcpServerDetail != null) {
-					List<ToolCallback> tools = parseMcpServerInfo(JacksonUtils.toObj(mcpServerDetail, Map.class),
-							webClient, nacosMcpProperties.getServerAddr(), nacosMcpProperties.getUsername(),
-							nacosMcpProperties.getPassword());
+					List<ToolCallback> tools = parseMcpServerInfo(JacksonUtils.toObj(mcpServerDetail, Map.class));
 					if (CollectionUtils.isNotEmpty(tools)) {
 						allTools.addAll(tools);
 					}
@@ -107,23 +105,11 @@ public class DynamicToolsInitializer {
 	 * 将 mcp server 的 tools转为 Toolcallback。
 	 */
 	@SuppressWarnings("unchecked")
-	private List<ToolCallback> parseMcpServerInfo(Map<String, Object> mcpServerInfo, WebClient webClient,
-			String serverAddr, String username, String password) {
+	private List<ToolCallback> parseMcpServerInfo(Map<String, Object> mcpServerInfo) {
 		Object mcpName = mcpServerInfo.get("name");
-		String url = NacosHelper.getServerUrl(serverAddr);
-		String mcpServerDetail = null;
 		try {
-			mcpServerDetail = webClient.get()
-				.uri(url + "/nacos/v3/admin/ai/mcp?mcpName=" + mcpName)
-				.header("userName", username)
-				.header("password", password)
-				.retrieve()
-				.bodyToMono(String.class)
-				.block();
-			logger.info("Nacos mcp server info (name {}): {}", mcpName, mcpServerDetail);
-			Map<String, Object> serverInfoMap = JacksonUtils.toObj(mcpServerDetail, Map.class);
-			if (serverInfoMap != null && serverInfoMap.containsKey("data")) {
-				Map<String, Object> data = (Map<String, Object>) serverInfoMap.get("data");
+			if (mcpServerInfo.containsKey("data")) {
+				Map<String, Object> data = (Map<String, Object>) mcpServerInfo.get("data");
 				if (data != null && data.containsKey("toolSpec")) {
 					// 解析工具信息
 					Object toolSpec = data.get("toolSpec");
