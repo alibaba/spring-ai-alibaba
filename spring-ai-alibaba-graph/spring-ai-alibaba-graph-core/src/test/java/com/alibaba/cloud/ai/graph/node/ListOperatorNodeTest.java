@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.OverAllStateFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -110,11 +111,10 @@ public class ListOperatorNodeTest {
 			.comparator(ListOperatorNode.NumberElement::compareToReverse)
 			.limitNumber(10)
 			.build();
-		AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
+		OverAllStateFactory stateFactory = () -> {
 			OverAllState state = new OverAllState();
 			state.registerKeyAndStrategy("input", new ReplaceStrategy());
 			state.registerKeyAndStrategy("output", new ReplaceStrategy());
-			state.input(inputs);
 			return state;
 		};
 		CompiledGraph compiledGraph = new StateGraph("ListOperatorNode Workflow Demo", stateFactory)
