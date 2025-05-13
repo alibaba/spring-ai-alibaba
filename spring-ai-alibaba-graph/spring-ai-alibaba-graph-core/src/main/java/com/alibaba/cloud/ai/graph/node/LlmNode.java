@@ -118,7 +118,7 @@ public class LlmNode implements NodeAction {
 				.user(userPrompt)
 				.messages(messages)
 				.advisors(advisors)
-				.tools(toolCallbacks)
+				.toolCallbacks(toolCallbacks)
 				.stream()
 				.chatResponse();
 		}
@@ -128,7 +128,7 @@ public class LlmNode implements NodeAction {
 					.system(systemPrompt)
 					.messages(messages)
 					.advisors(advisors)
-					.tools(toolCallbacks)
+					.toolCallbacks(toolCallbacks)
 					.stream()
 					.chatResponse();
 			}
@@ -137,7 +137,7 @@ public class LlmNode implements NodeAction {
 					.user(userPrompt)
 					.messages(messages)
 					.advisors(advisors)
-					.tools(toolCallbacks)
+					.toolCallbacks(toolCallbacks)
 					.stream()
 					.chatResponse();
 			}
@@ -145,7 +145,7 @@ public class LlmNode implements NodeAction {
 				return chatClient.prompt()
 					.messages(messages)
 					.advisors(advisors)
-					.tools(toolCallbacks)
+					.toolCallbacks(toolCallbacks)
 					.stream()
 					.chatResponse();
 			}
@@ -160,7 +160,7 @@ public class LlmNode implements NodeAction {
 				.user(userPrompt)
 				.messages(messages)
 				.advisors(advisors)
-				.tools(toolCallbacks)
+				.toolCallbacks(toolCallbacks)
 				.call()
 				.chatResponse();
 		}
@@ -170,7 +170,7 @@ public class LlmNode implements NodeAction {
 					.system(systemPrompt)
 					.messages(messages)
 					.advisors(advisors)
-					.tools(toolCallbacks)
+					.toolCallbacks(toolCallbacks)
 					.call()
 					.chatResponse();
 			}
@@ -179,7 +179,7 @@ public class LlmNode implements NodeAction {
 					.user(userPrompt)
 					.messages(messages)
 					.advisors(advisors)
-					.tools(toolCallbacks)
+					.toolCallbacks(toolCallbacks)
 					.call()
 					.chatResponse();
 			}
@@ -187,7 +187,7 @@ public class LlmNode implements NodeAction {
 				return chatClient.prompt()
 					.messages(messages)
 					.advisors(advisors)
-					.tools(toolCallbacks)
+					.toolCallbacks(toolCallbacks)
 					.call()
 					.chatResponse();
 			}
