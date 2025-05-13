@@ -20,4 +20,4 @@ jobs:
           server-username: OSSRH_USERNAME
           server-password: OSSRH_PASSWORD
       - name: Deploy with Maven
-        run: mvn -B deploy -DskipTests
+        run: mvn -B deploy -DskipTests -Prelease
