@@ -64,8 +64,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author aias00
  */
-@EnableConfigurationProperties({ McpDynamicServerProperties.class, NacosMcpDynamicProperties.class,
-		McpServerProperties.class })
+@EnableConfigurationProperties({ McpDynamicServerProperties.class, NacosMcpProperties.class,
+		NacosMcpDynamicProperties.class, McpServerProperties.class })
 @AutoConfiguration(after = McpServerAutoConfiguration.class)
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
