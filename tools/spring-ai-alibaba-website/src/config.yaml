@@ -5,65 +5,63 @@ site:
   trailingSlash: 'always'
   websiteGithubUrl: 'https://github.com/springaialibaba/spring-ai-alibaba-website/blob/main'
   githubUrl: 'https://github.com/springaialibaba/spring-ai-alibaba-website'
-  logoUrl: "/saa_logo.png"
-  downloadEbooks: "https://developer.aliyun.com/ebook/7565"
+  logoUrl: '/saa_logo.png'
+  downloadEbooks: 'https://developer.aliyun.com/ebook/7565'
 
 analytics:
   vendors:
     googleAnalytics:
-      id: G-NP3B57ZGEF # or "G-XXXXXXXXXX"
+      id: 'G-NP3B57ZGEF'  # or "G-XXXXXXXXXX"
     baiduAnalytics:
-      id: 0b8bbee27b5404c869dded46a59bdc8d
-      verification: code-wzq5sw7io3
+      id: '0b8bbee27b5404c869dded46a59bdc8d'
+      verification: 'code-wzq5sw7io3'
     aesAnalytics:
-      pid: b3kPns
+      pid: 'b3kPns'
     clarityAlalytics:
-      id: l4jzj6wbhh
-
+      id: 'l4jzj6wbhh'
 
 # Default SEO metadata
 metadata:
   title:
-    default: AstroWind
+    default: 'AstroWind'
     template: '%s — AstroWind'
-  description: "\U0001F680 Suitable for Startups, Small Business, Sass Websites, Professional Portfolios, Marketing Websites, Landing Pages & Blogs."
+  description: "🚀 Suitable for Startups, Small Business, Sass Websites, Professional Portfolios, Marketing Websites, Landing Pages & Blogs."
   robots:
     index: true
     follow: true
   openGraph:
-    site_name: AstroWind
+    site_name: 'AstroWind'
     images:
       - url: '~/assets/images/default.png'
         width: 1200
         height: 628
-    type: website
+    type: 'website'
   twitter:
     handle: '@onwidget'
     site: '@onwidget'
-    cardType: summary_large_image
-
+    cardType: 'summary_large_image'
 
 ui:
   colors:
-    # 主按钮颜色，一般为主色中间的颜色
-    primary: "#5DC07E" # green-08
-    # 次按钮的颜色，一般为灰色调最浅颜色
-    secondary: "#F6F8F8" #moss-01
-    # 强调色。"Header"中的联系我们
-    accent: "#418B47" #green-10
-    # 中性色。作为大标题的字体颜色
-    neutral: "#0C1D0D" #green-14
-    # 基础色，用做首页的背景色1
-    base-100: "#F6F8F8" # moss-01
-    # 信息颜色。Headline的上方小字, Fotter商标字体颜色
-    info: "#666963" #gray-10
-    # 成功。 Header的分割符、主要特性中的分割符、companiesfeedback中的isGray的背景颜色
-    success: "#7E9B99" #moss-08
-    # 警告。header中的toggle-trigger-atc颜色
-    warning: "#597371" #moss-10
-    # 错误。搜索等组件的bgcolor
-    error: "#EBEFEF" #moss-02
-    # 静音 companiesfeedback中的isLight的背景颜色
-    muted: "#D3EDD5" #green-03
-    # 搜索/语言切换组件的文字颜色
-    link: "#DDE4E4" #moss-03
+    # Primary button color, usually the medium tone of the main color
+    primary: '#5DC07E'  # green-08
+    # Secondary button color, usually the lightest shade of gray
+    secondary: '#F6F8F8'  # moss-01
+    # Accent color, used for "Contact Us" in the header
+    accent: '#418B47'  # green-10
+    # Neutral color, used for large headline text
+    neutral: '#0C1D0D'  # green-14
+    # Base color, used as background color 1 on the homepage
+    base-100: '#F6F8F8'  # moss-01
+    # Info color, used for small text above headlines and footer trademark text
+    info: '#666963'  # gray-10
+    # Success color, used for header separators and section dividers in features or feedback
+    success: '#7E9B99'  # moss-08
+    # Warning color, used for toggle-trigger-atc in the header
+    warning: '#597371'  # moss-10
+    # Error color, used as background for components like search
+    error: '#EBEFEF'  # moss-02
+    # Muted background color, used for isLight mode in companies feedback
+    muted: '#D3EDD5'  # green-03
+    # Text color for search/language switch components
+    link: '#DDE4E4'  # moss-03
