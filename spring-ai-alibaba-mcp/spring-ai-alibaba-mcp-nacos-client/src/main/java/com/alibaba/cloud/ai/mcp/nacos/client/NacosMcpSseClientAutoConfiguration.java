@@ -55,8 +55,7 @@ public class NacosMcpSseClientAutoConfiguration {
 	}
 
 	@Bean
-	public NamingService nacosNamingService(NacosMcpProperties nacosMcpProperties,
-			NacosMcpRegistryProperties nacosMcpRegistryProperties) {
+	public NamingService nacosNamingService(NacosMcpProperties nacosMcpProperties) {
 		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
 		try {
 			return NamingFactory.createNamingService(nacosProperties);
@@ -67,8 +66,8 @@ public class NacosMcpSseClientAutoConfiguration {
 	}
 
 	@Bean
-	public NacosConfigService nacosConfigService(NacosMcpRegistryProperties nacosMcpRegistryProperties) {
-		Properties nacosProperties = nacosMcpRegistryProperties.getNacosProperties();
+	public NacosConfigService nacosConfigService(NacosMcpProperties nacosMcpProperties) {
+		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
 		try {
 			return new NacosConfigService(nacosProperties);
 		}

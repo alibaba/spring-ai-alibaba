@@ -302,10 +302,10 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			// 配置对应的工具信息
 			String toolConfig = configService.getConfig(this.serverInfo.name() + McpNacosConstant.TOOLS_CONFIG_SUFFIX,
 					McpNacosConstant.TOOLS_GROUP, TIME_OUT_MS);
-            McpToolsInfo toolsInfo = null;
+			McpToolsInfo toolsInfo = null;
 			toolsInfo = JsonUtils.deserialize(toolConfig, McpToolsInfo.class);
 
-            List<String> toolNames = toolsInfo.getTools()
+			List<String> toolNames = toolsInfo.getTools()
 				.stream()
 				.map(McpSchema.Tool::name)
 				.collect(Collectors.toList());
@@ -320,7 +320,8 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 		}
 		catch (NacosException e) {
 			log.error("Failed to register mcp server service to nacos", e);
-		} catch (JsonProcessingException e) {
+		}
+		catch (JsonProcessingException e) {
 			log.error("parse tools failed", e);
 		}
 	}
