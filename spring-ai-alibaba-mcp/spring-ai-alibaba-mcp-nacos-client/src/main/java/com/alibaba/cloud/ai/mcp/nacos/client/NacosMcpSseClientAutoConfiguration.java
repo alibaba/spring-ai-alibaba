@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.mcp.nacos.client;
 
 import com.alibaba.cloud.ai.mcp.nacos.NacosMcpRegistryProperties;
+import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpProperties;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingFactory;
 import com.alibaba.nacos.api.naming.NamingService;
@@ -43,7 +44,8 @@ import java.util.Properties;
  * @date 2025/4/29:08:47
  */
 @AutoConfiguration
-@EnableConfigurationProperties({ NacosMcpSseClientProperties.class, NacosMcpRegistryProperties.class })
+@EnableConfigurationProperties({ NacosMcpSseClientProperties.class, NacosMcpProperties.class,
+		NacosMcpRegistryProperties.class })
 public class NacosMcpSseClientAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(NacosMcpSseClientAutoConfiguration.class);
@@ -52,8 +54,9 @@ public class NacosMcpSseClientAutoConfiguration {
 	}
 
 	@Bean
-	public NamingService nacosNamingService(NacosMcpRegistryProperties nacosMcpRegistryProperties) {
-		Properties nacosProperties = nacosMcpRegistryProperties.getNacosProperties();
+	public NamingService nacosNamingService(NacosMcpProperties nacosMcpProperties,
+			NacosMcpRegistryProperties nacosMcpRegistryProperties) {
+		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
 		try {
 			return NamingFactory.createNamingService(nacosProperties);
 		}

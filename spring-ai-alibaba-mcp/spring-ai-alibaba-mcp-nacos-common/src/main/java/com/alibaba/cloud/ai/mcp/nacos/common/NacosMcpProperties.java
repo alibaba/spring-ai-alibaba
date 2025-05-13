@@ -43,7 +43,7 @@ import static java.util.Collections.unmodifiableMap;
 /**
  * @author Sunrisea
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.mcp.nacos")
+@ConfigurationProperties(prefix = NacosMcpProperties.CONFIG_PREFIX)
 public class NacosMcpProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.nacos";
