@@ -48,15 +48,17 @@ public class YoudaoTranslateService
 
 	private final String appSecret;
 
-    private final JsonParseTool jsonParseTool;
+	private final JsonParseTool jsonParseTool;
+
 	private final WebClientTool webClientTool;
 
-	public YoudaoTranslateService(YoudaoTranslateProperties properties, JsonParseTool jsonParseTool, WebClientTool webClientTool) {
+	public YoudaoTranslateService(YoudaoTranslateProperties properties, JsonParseTool jsonParseTool,
+			WebClientTool webClientTool) {
 		this.appKey = properties.getAppKey();
 		this.appSecret = properties.getAppSecret();
-        this.jsonParseTool = jsonParseTool;
-        this.webClientTool = webClientTool;
-    }
+		this.jsonParseTool = jsonParseTool;
+		this.webClientTool = webClientTool;
+	}
 
 	@Override
 	public Response apply(Request request) {
@@ -67,23 +69,20 @@ public class YoudaoTranslateService
 		String salt = UUID.randomUUID().toString();
 		try {
 			MultiValueMap<String, String> params = CommonToolCallUtils.<String, String>multiValueMapBuilder()
-					.add("q", request.text)
-					.add("from", request.sourceLanguage)
-					.add("to", request.targetLanguage)
-					.add("appKey", appKey)
-					.add("salt", salt)
-					.add("sign", calculateSign(appKey, appSecret, request.text, salt, curtime))
-					.add("signType", "v3")
-					.add("curtime", curtime)
-					.build();
+				.add("q", request.text)
+				.add("from", request.sourceLanguage)
+				.add("to", request.targetLanguage)
+				.add("appKey", appKey)
+				.add("salt", salt)
+				.add("sign", calculateSign(appKey, appSecret, request.text, salt, curtime))
+				.add("signType", "v3")
+				.add("curtime", curtime)
+				.build();
 
-			String responseData = webClientTool.post(
-					"api",
-					CommonToolCallUtils.<String, String>multiValueMapBuilder().build(),
-					Map.of(),
-					params,
-					MediaType.APPLICATION_FORM_URLENCODED
-			).block();
+			String responseData = webClientTool
+				.post("api", CommonToolCallUtils.<String, String>multiValueMapBuilder().build(), Map.of(), params,
+						MediaType.APPLICATION_FORM_URLENCODED)
+				.block();
 
 			assert responseData != null;
 			logger.debug("Translation request: {}, response: {}", request.text, responseData);
@@ -110,7 +109,7 @@ public class YoudaoTranslateService
 
 	@JsonClassDescription("Response to translate text to a target language")
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	public record Response(String errorCode,
-						   @JsonProperty("translation") List<String> translatedTexts) {
+	public record Response(String errorCode, @JsonProperty("translation") List<String> translatedTexts) {
 	}
+
 }

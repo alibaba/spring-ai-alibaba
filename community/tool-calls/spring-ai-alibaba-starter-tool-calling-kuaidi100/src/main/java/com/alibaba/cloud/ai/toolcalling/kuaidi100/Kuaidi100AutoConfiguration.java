@@ -44,16 +44,15 @@ public class Kuaidi100AutoConfiguration {
 	@Description("Query courier tracking information")
 	public Kuaidi100Service queryTrackFunction(Kuaidi100Properties kuaidi100Properties) {
 		JsonParseTool jsonParseTool = createJsonParseTool();
-		RestClientTool restClientTool = RestClientTool
-				.builder(jsonParseTool, kuaidi100Properties)
-				.build();
+		RestClientTool restClientTool = RestClientTool.builder(jsonParseTool, kuaidi100Properties).build();
 		return new Kuaidi100Service(kuaidi100Properties, jsonParseTool, restClientTool);
 	}
 
 	public static JsonParseTool createJsonParseTool() {
 		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
-				.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 		return new JsonParseTool(objectMapper);
 	}
+
 }

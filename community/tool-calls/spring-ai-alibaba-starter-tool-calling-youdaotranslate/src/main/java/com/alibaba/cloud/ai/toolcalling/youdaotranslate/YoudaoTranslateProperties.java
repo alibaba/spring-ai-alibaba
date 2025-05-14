@@ -25,6 +25,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class YoudaoTranslateProperties extends CommonToolCallProperties {
 
 	public static final String PREFIX = "spring.ai.alibaba.toolcalling.youdaotranslate";
+
 	public static final String YOUDAO_TRANSLATE_BASE_URL = "https://openapi.youdao.com";
 
 	public String getAppKey() {
@@ -39,4 +40,5 @@ public class YoudaoTranslateProperties extends CommonToolCallProperties {
 		super(YOUDAO_TRANSLATE_BASE_URL);
 		setPropertiesFromEnv("YOUDAO_APP_KEY", "YOUDAO_APP_SECRET", null, null);
 	}
+
 }

@@ -38,7 +38,7 @@ public class YoudaoTranslateAutoConfiguration {
 	@ConditionalOnMissingBean
 	@Description("use youdao translation to achieve translation")
 	public YoudaoTranslateService youdaoTranslateFunction(YoudaoTranslateProperties properties,
-														  JsonParseTool jsonParseTool) {
+			JsonParseTool jsonParseTool) {
 		WebClientTool webClientTool = WebClientTool.builder(jsonParseTool, properties).build();
 		return new YoudaoTranslateService(properties, jsonParseTool, webClientTool);
 	}
