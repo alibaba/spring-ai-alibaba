@@ -1,1 +1,1 @@
-com.alibaba.cloud.ai.mcp.dynamic.server.config.NacosDynamicMcpServerAutoConfiguration
+com.alibaba.cloud.ai.mcp.nacos.dynamic.server.config.NacosDynamicMcpServerAutoConfiguration
