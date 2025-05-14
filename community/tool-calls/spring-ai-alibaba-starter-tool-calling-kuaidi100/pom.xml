@@ -62,12 +62,6 @@
             <artifactId>spring-ai-alibaba-starter-tool-calling-common</artifactId>
             <version>${revision}</version>
         </dependency>
-
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-        </dependency>
     </dependencies>
 
     <build>
