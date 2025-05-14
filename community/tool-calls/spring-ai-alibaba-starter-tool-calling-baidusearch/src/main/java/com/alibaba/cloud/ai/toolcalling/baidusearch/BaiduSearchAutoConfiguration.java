@@ -15,27 +15,44 @@
  */
 package com.alibaba.cloud.ai.toolcalling.baidusearch;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
+import org.springframework.http.HttpHeaders;
+
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
+
+import static com.alibaba.cloud.ai.toolcalling.baidusearch.BaiduSearchProperties.BAIDU_SEARCH_PREFIX;
+import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.DEFAULT_USER_AGENTS;
+
 /**
  * @author KrakenZJC
  **/
-
 @Configuration
-@ConditionalOnClass(BaiduSearchService.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.baidusearch", name = "enabled", havingValue = "true")
+@EnableConfigurationProperties(BaiduSearchProperties.class)
+@ConditionalOnProperty(prefix = BAIDU_SEARCH_PREFIX, name = "enabled", havingValue = "true")
 public class BaiduSearchAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Use baidu search engine to query for the latest news.")
-	public BaiduSearchService baiduSearchFunction() {
-		return new BaiduSearchService();
+	public BaiduSearchService baiduSearch(JsonParseTool jsonParseTool, BaiduSearchProperties properties) {
+		Consumer<HttpHeaders> consumer = headers -> {
+			headers.add(HttpHeaders.USER_AGENT,
+					DEFAULT_USER_AGENTS[ThreadLocalRandom.current().nextInt(DEFAULT_USER_AGENTS.length)]);
+			headers.add(HttpHeaders.REFERER, "https://www.baidu.com/");
+			headers.add(HttpHeaders.CONNECTION, "keep-alive");
+			headers.add(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9");
+		};
+		return new BaiduSearchService(jsonParseTool, properties,
+				WebClientTool.builder(jsonParseTool, properties).httpHeadersConsumer(consumer).build());
 	}
 
 }

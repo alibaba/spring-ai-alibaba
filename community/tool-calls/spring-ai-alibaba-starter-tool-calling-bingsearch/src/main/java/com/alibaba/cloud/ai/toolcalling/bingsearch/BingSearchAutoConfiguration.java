@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.toolcalling.bingsearch;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -22,6 +24,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
+import org.springframework.http.HttpHeaders;
+import org.springframework.util.StringUtils;
 
 /**
  * @author KrakenZJC
@@ -35,8 +39,16 @@ public class BingSearchAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Use bing search engine to query for the latest news.")
-	public BingSearchService bingSearchFunction(BingSearchProperties properties) {
-		return new BingSearchService(properties);
+	public BingSearchService bingSearch(JsonParseTool jsonParseTool, BingSearchProperties properties) {
+		return new BingSearchService(
+				WebClientTool.builder(jsonParseTool, properties).httpHeadersConsumer(httpHeaders -> {
+					httpHeaders.add(HttpHeaders.USER_AGENT,
+							"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+					if (!StringUtils.hasText(properties.getToken()) || properties.getToken().length() != 32) {
+						throw new IllegalArgumentException("token is empty or invalid");
+					}
+					httpHeaders.add(BingSearchProperties.OCP_APIM_SUBSCRIPTION_KEY, properties.getToken());
+				}).build(), properties, jsonParseTool);
 	}
 
 }

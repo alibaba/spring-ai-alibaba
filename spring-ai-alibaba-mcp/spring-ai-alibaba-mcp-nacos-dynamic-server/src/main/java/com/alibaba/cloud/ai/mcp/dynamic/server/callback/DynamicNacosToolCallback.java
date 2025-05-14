@@ -60,7 +60,7 @@ public class DynamicNacosToolCallback implements ToolCallback {
 	@Override
 	public String call(@NonNull final String input, final ToolContext toolContext) {
 		try {
-			logger.info("Tool callback input: {}, toolContext: {}", input, toolContext);
+			logger.info("Tool callback: {} input: {}, toolContext: {}", toolDefinition.name(), input, toolContext);
 			DynamicNacosToolDefinition nacosToolDefinition = (DynamicNacosToolDefinition) this.toolDefinition;
 			logger.info("Tool callback toolDefinition: {}", JacksonUtils.toJson(nacosToolDefinition));
 			Instance instance = namingService.selectOneHealthyInstance(nacosToolDefinition.getServiceName());

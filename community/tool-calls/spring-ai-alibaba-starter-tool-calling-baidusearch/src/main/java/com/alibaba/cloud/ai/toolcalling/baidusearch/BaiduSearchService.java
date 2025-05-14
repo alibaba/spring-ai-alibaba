@@ -15,10 +15,14 @@
  */
 package com.alibaba.cloud.ai.toolcalling.baidusearch;
 
-import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
-import com.alibaba.cloud.ai.toolcalling.common.ResponseHandler;
-import com.alibaba.cloud.ai.toolcalling.common.WebClientConfig;
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -29,17 +33,8 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
-import org.springframework.util.CollectionUtils;
-import org.springframework.web.reactive.function.client.WebClient;
 
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Function;
+import org.springframework.util.CollectionUtils;
 
 /**
  * @author KrakenZJC
@@ -48,54 +43,35 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 
 	private static final Logger logger = LoggerFactory.getLogger(BaiduSearchService.class);
 
-	private static final String BAIDU_SEARCH_API_URL = "https://www.baidu.com/s?wd=";
+	private final WebClientTool webClientTool;
 
-	private static final int MAX_RESULTS = 20;
+	private final BaiduSearchProperties properties;
 
-	private static final int MEMORY_SIZE = 5;
-
-	private static final int MEMORY_UNIT = 1024;
-
-	private static final int MAX_MEMORY_IN_MB = MEMORY_SIZE * MEMORY_UNIT * MEMORY_UNIT;
-
-	private static final String[] USER_AGENTS = {
-			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36" };
-
-	private static final int CONNECT_TIMEOUT_MILLIS = 5000;
-
-	private static final int RESPONSE_TIMEOUT_SECONDS = 10;
-
-	private final WebClient webClient;
-
-	public BaiduSearchService() {
-		Map<String, String> headers = new HashMap<>();
-		String randomUserAgent = USER_AGENTS[ThreadLocalRandom.current().nextInt(USER_AGENTS.length)];
-		headers.put(HttpHeaders.USER_AGENT, randomUserAgent);
-		headers.put(HttpHeaders.REFERER, "https://www.baidu.com/");
-		headers.put(HttpHeaders.CONNECTION, "keep-alive");
-		headers.put(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9");
-		this.webClient = WebClientConfig.createDefaultWebClient(headers);
+	public BaiduSearchService(JsonParseTool jsonParseTool, BaiduSearchProperties properties,
+			WebClientTool webClientTool) {
+		this.webClientTool = webClientTool;
+		this.properties = properties;
 	}
 
 	@Override
 	public BaiduSearchService.Response apply(BaiduSearchService.Request request) {
-		if (!CommonToolCallUtils.validateRequestParams(request, request.query)) {
+		if (CommonToolCallUtils.isInvalidateRequestParams(request, request.query)) {
 			return null;
 		}
 
 		return CommonToolCallUtils.handleServiceError("BaiduSearch", () -> {
-			int limit = request.limit == null ? MAX_RESULTS : request.limit;
-			String url = BAIDU_SEARCH_API_URL + request.query;
+			int limit = request.limit == null ? properties.getMaxResults() : request.limit;
+			String url = properties.getBaseUrl() + request.query;
 
-			String html = webClient.get()
+			String html = webClientTool.getWebClient()
+				.get()
 				.uri(url)
-				.acceptCharset(Charset.forName("UTF-8"))
+				.acceptCharset(StandardCharsets.UTF_8)
 				.retrieve()
 				.bodyToMono(String.class)
 				.block();
 
-			List<SearchResult> results = ResponseHandler.handleResponse(html, this::parseHtml, logger);
+			List<SearchResult> results = CommonToolCallUtils.handleResponse(html, this::parseHtml, logger);
 
 			if (CollectionUtils.isEmpty(results)) {
 				return null;

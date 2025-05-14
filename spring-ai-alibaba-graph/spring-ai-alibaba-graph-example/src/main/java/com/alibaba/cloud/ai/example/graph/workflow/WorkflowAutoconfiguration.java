@@ -19,10 +19,7 @@ package com.alibaba.cloud.ai.example.graph.workflow;
 import java.util.List;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.graph.GraphRepresentation;
-import com.alibaba.cloud.ai.graph.GraphStateException;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.node.QuestionClassifierNode;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -46,12 +43,11 @@ public class WorkflowAutoconfiguration {
 
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
 
-		AgentStateFactory<OverAllState> stateFactory = (inputs) -> {
+		OverAllStateFactory stateFactory = () -> {
 			OverAllState state = new OverAllState();
 			state.registerKeyAndStrategy("input", new ReplaceStrategy());
 			state.registerKeyAndStrategy("classifier_output", new ReplaceStrategy());
 			state.registerKeyAndStrategy("solution", new ReplaceStrategy());
-			state.input(inputs);
 			return state;
 		};
 
