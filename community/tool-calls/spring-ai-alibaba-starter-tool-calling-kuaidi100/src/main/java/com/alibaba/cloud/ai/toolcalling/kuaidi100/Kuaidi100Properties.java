@@ -19,9 +19,11 @@ import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * <a href="https://api.kuaidi100.com/manager/v2/myinfo/enterprise">获取快递100的授权key和customer值</a>，它们分别对应配置项 apiKey和appId。<br>
+ * <a href="https://api.kuaidi100.com/manager/v2/myinfo/enterprise">Obtain the
+ * authorization key and customer value for kuaidi100.com</a>, They correspond to the
+ * configuration items apiKey and appId respectively.<br>
  *
- * 还可以通过环境变量来设置：<br>
+ * You can also set it through environment variables:<br>
  * KUAIDI100_KEY<br>
  * KUAIDI100_CUSTOMER<br>
  *
@@ -33,9 +35,6 @@ public class Kuaidi100Properties extends CommonToolCallProperties {
 
 	public static final String PREFIX = "spring.ai.alibaba.toolcalling.kuaidi100";
 
-	/**
-	 * 查询物流信息
-	 */
 	public static final String QUERY_BASE_URL = "https://www.kuaidi100.com/";
 
 	public Kuaidi100Properties() {
@@ -50,4 +49,5 @@ public class Kuaidi100Properties extends CommonToolCallProperties {
 	public String getCustomer() {
 		return getAppId();
 	}
+
 }
