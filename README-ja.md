@@ -18,7 +18,7 @@ Spring AI Alibaba を使用して生成的 AI を Spring Boot アプリケーシ
  <dependency>
   <groupId>com.alibaba.cloud.ai</groupId>
   <artifactId>spring-ai-alibaba-starter</artifactId>
-  <version>1.0.0-M6.1</version>
+  <version>1.0.0-M8.1-SNAPSHOT</version>
  </dependency>
  ```
 
