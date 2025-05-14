@@ -15,45 +15,39 @@
  */
 package com.alibaba.cloud.ai.toolcalling.kuaidi100;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * <a href="https://api.kuaidi100.com/manager/v2/myinfo/enterprise">获取快递100的授权key和customer值</a>，它们分别对应配置项 apiKey和appId。<br>
+ *
+ * 还可以通过环境变量来设置：<br>
+ * KUAIDI100_KEY<br>
+ * KUAIDI100_CUSTOMER<br>
+ *
  * @author XiaoYunTao
  * @since 2024/12/25
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.kuaidi100")
-public class Kuaidi100Properties {
+@ConfigurationProperties(prefix = Kuaidi100Properties.PREFIX)
+public class Kuaidi100Properties extends CommonToolCallProperties {
+
+	public static final String PREFIX = "spring.ai.alibaba.toolcalling.kuaidi100";
 
 	/**
-	 * 授权key <a href="https://api.kuaidi100.com/manager/v2/myinfo/enterprise">获取授权key</a>
+	 * 查询物流信息
 	 */
-	private String key;
+	public static final String QUERY_BASE_URL = "https://www.kuaidi100.com/";
 
-	/**
-	 * customer
-	 * <a href="https://api.kuaidi100.com/manager/v2/myinfo/enterprise">获取customer</a>
-	 */
-	private String customer;
-
-	public Kuaidi100Properties(String key, String customer) {
-		this.key = key;
-		this.customer = customer;
-	}
-
-	public void setKey(String key) {
-		this.key = key;
-	}
-
-	public void setCustomer(String customer) {
-		this.customer = customer;
+	public Kuaidi100Properties() {
+		super(QUERY_BASE_URL);
+		this.setPropertiesFromEnv("KUAIDI100_KEY", null, "KUAIDI100_CUSTOMER", null);
 	}
 
 	public String getKey() {
-		return key;
+		return getApiKey();
 	}
 
 	public String getCustomer() {
-		return customer;
+		return getAppId();
 	}
-
 }
