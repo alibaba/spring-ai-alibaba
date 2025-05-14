@@ -15,46 +15,53 @@
  */
 package com.alibaba.cloud.ai.toolcalling.kuaidi100;
 
-import com.fasterxml.jackson.annotation.JsonClassDescription;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.google.gson.Gson;
-import com.kuaidi100.sdk.api.AutoNum;
-import com.kuaidi100.sdk.api.QueryTrack;
-import com.kuaidi100.sdk.request.AutoNumReq;
-import com.kuaidi100.sdk.request.QueryTrackParam;
-import com.kuaidi100.sdk.request.QueryTrackReq;
-import com.kuaidi100.sdk.response.QueryTrackResp;
-import com.kuaidi100.sdk.utils.SignUtils;
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.RestClientTool;
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.DigestUtils;
+import org.springframework.util.MultiValueMap;
 
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
  * @author XiaoYunTao
+ * @author Allen Hu
  * @since 2024/12/25
  */
-public class Kuaidi100Service implements Function<Kuaidi100Service.Request, QueryTrackResp> {
+public class Kuaidi100Service implements Function<Kuaidi100Service.Request, Kuaidi100Service.QueryTrackResponse> {
 
 	private static final Logger logger = LoggerFactory.getLogger(Kuaidi100Service.class);
 
-	private final Gson gson = new Gson();
-
-	private final AutoNum autoNum = new AutoNum();
-
 	final Kuaidi100Properties kuaidi100Properties;
+	private final JsonParseTool jsonParseTool;
+    private final RestClientTool restClientTool;
 
-	public Kuaidi100Service(Kuaidi100Properties kuaidi100Properties) {
+	public Kuaidi100Service(Kuaidi100Properties kuaidi100Properties, JsonParseTool jsonParseTool, RestClientTool restClientTool) {
 		this.kuaidi100Properties = kuaidi100Properties;
-	}
+        this.jsonParseTool = jsonParseTool;
+        this.restClientTool = restClientTool;
+    }
 
 	@Override
-	public QueryTrackResp apply(Kuaidi100Service.Request request) {
-		QueryTrackResp queryTrackResp;
+	public Kuaidi100Service.QueryTrackResponse apply(Kuaidi100Service.Request request) {
+		Kuaidi100Service.QueryTrackResponse queryTrackResp;
 		try {
-			queryTrackResp = queryTrack(request.num());
+			String key = kuaidi100Properties.getKey();
+			String customer = kuaidi100Properties.getCustomer();
+			String num = request.num();
+			String company = queryCourierCompany(num, key);
+			Assert.hasText(company, "Courier company not found.");
+			queryTrackResp = queryCourierTrack(num, company, key, customer);
 			logger.debug("queryTrackResp: {}", queryTrackResp);
 		}
 		catch (Exception e) {
@@ -64,35 +71,37 @@ public class Kuaidi100Service implements Function<Kuaidi100Service.Request, Quer
 		return queryTrackResp;
 	}
 
-	private QueryTrackResp queryTrack(String num) throws Exception {
-		String key = kuaidi100Properties.getKey();
-		String customer = kuaidi100Properties.getCustomer();
-
-		QueryTrackParam queryTrackParam = createQueryTrackParam(num, key);
-		String param = gson.toJson(queryTrackParam);
-
-		QueryTrackReq queryTrackReq = createQueryTrackReq(customer, param, key);
-		return new QueryTrack().queryTrack(queryTrackReq);
+	private String queryCourierCompany(String num, String key) throws Exception {
+		MultiValueMap<String,String> params = CommonToolCallUtils.<String,String>multiValueMapBuilder()
+				.add("num", num)
+				.add("key", key)
+				.build();
+		String body = restClientTool.get("autonumber/auto", params);
+		try {
+			List<QueryComResponse> queryComResponses = jsonParseTool.jsonToList(body, QueryComResponse.class);
+			return !CollectionUtils.isEmpty(queryComResponses) ? queryComResponses.get(0).getComCode() : null;
+		} catch (JsonProcessingException e) {
+			throw new Kuaidi100Exception(body, e);
+		}
 	}
 
-	private QueryTrackParam createQueryTrackParam(String num, String key) throws Exception {
-		AutoNumReq autoNumReq = new AutoNumReq();
-		autoNumReq.setNum(num);
-		autoNumReq.setKey(key);
-		String company = autoNum.getFirstComByNum(autoNumReq);
-
-		QueryTrackParam queryTrackParam = new QueryTrackParam();
-		queryTrackParam.setCom(company);
-		queryTrackParam.setNum(num);
-		return queryTrackParam;
-	}
-
-	private QueryTrackReq createQueryTrackReq(String customer, String param, String key) {
-		QueryTrackReq queryTrackReq = new QueryTrackReq();
-		queryTrackReq.setParam(param);
-		queryTrackReq.setCustomer(customer);
-		queryTrackReq.setSign(SignUtils.querySign(param, key, customer));
-		return queryTrackReq;
+	private QueryTrackResponse queryCourierTrack(String num, String com, String key, String customer) throws Exception {
+		QueryTrackParam queryTrackParam = new QueryTrackParam(com, num);
+		String param = jsonParseTool.objectToJson(queryTrackParam);
+		String sign = DigestUtils.md5DigestAsHex((param + key + customer).getBytes()).toUpperCase();
+		MultiValueMap<String,String> params = CommonToolCallUtils.<String,String>multiValueMapBuilder()
+				.add("param", param)
+				.add("customer", customer)
+				.add("sign", sign)
+				.build();
+		String body = restClientTool.post(
+				"poll/query.do",
+				CommonToolCallUtils.<String,String>multiValueMapBuilder().build(),
+				Map.of(),
+				params,
+				MediaType.APPLICATION_FORM_URLENCODED
+		);
+		return jsonParseTool.jsonToObject(body, QueryTrackResponse.class);
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -101,4 +110,74 @@ public class Kuaidi100Service implements Function<Kuaidi100Service.Request, Quer
 			@JsonProperty(required = true, value = "num") @JsonPropertyDescription("tracking number") String num) {
 	}
 
+	@Data
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class QueryComResponse {
+
+		public String lengthPre;
+		private String comCode;
+		private String noPre;
+		private String noCount;
+	}
+
+	@Data
+	public static class QueryTrackParam {
+		private String com;
+		private String num;
+
+		public QueryTrackParam(String com, String num) {
+			this.com = com;
+			this.num = num;
+		}
+	}
+
+	@Data
+	@JsonClassDescription("Query courier tracking information")
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class QueryTrackResponse {
+		private String message;
+		private String nu;
+		private String ischeck;
+		private String com;
+		private String status;
+		private List<QueryTrackData> data;
+		private String state;
+		private String condition;
+		private QueryTrackRouteInfo routeInfo;
+		private String returnCode;
+		private boolean result;
+	}
+
+	@Data
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class QueryTrackData {
+		private String time;
+		private String context;
+		private String ftime;
+		private String areaCode;
+		private String areaName;
+		private String status;
+		private String areaCenter;
+		private String areaPinYin;
+		private String statusCode;
+	}
+
+	@Data
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class QueryTrackRouteInfo {
+		private QueryTrackPosition from;
+		private QueryTrackPosition cur;
+		private QueryTrackPosition to;
+	}
+
+	@Data
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class QueryTrackPosition {
+		private String number;
+		private String name;
+	}
 }
