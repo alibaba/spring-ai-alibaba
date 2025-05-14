@@ -42,128 +42,96 @@ import java.util.function.Function;
  */
 public class Kuaidi100Service implements Function<Kuaidi100Service.Request, Kuaidi100Service.QueryTrackResponse> {
 
-    private static final Logger logger = LoggerFactory.getLogger(Kuaidi100Service.class);
+	private static final Logger logger = LoggerFactory.getLogger(Kuaidi100Service.class);
 
-    final Kuaidi100Properties kuaidi100Properties;
-    private final JsonParseTool jsonParseTool;
-    private final RestClientTool restClientTool;
+	final Kuaidi100Properties kuaidi100Properties;
 
-    public Kuaidi100Service(Kuaidi100Properties kuaidi100Properties, JsonParseTool jsonParseTool, RestClientTool restClientTool) {
-        this.kuaidi100Properties = kuaidi100Properties;
-        this.jsonParseTool = jsonParseTool;
-        this.restClientTool = restClientTool;
-    }
+	private final JsonParseTool jsonParseTool;
 
-    @Override
-    public Kuaidi100Service.QueryTrackResponse apply(Kuaidi100Service.Request request) {
-        Kuaidi100Service.QueryTrackResponse queryTrackResp;
-        try {
-            String key = kuaidi100Properties.getKey();
-            String customer = kuaidi100Properties.getCustomer();
-            String num = request.num();
-            String company = queryCourierCompany(num, key);
-            Assert.hasText(company, "Courier company not found.");
-            queryTrackResp = queryCourierTrack(num, company, key, customer);
-            logger.debug("queryTrackResp: {}", queryTrackResp);
-        } catch (Exception e) {
-            logger.error("Error occurred while querying track!", e);
-            throw new Kuaidi100Exception("Error querying track.", e);
-        }
-        return queryTrackResp;
-    }
+	private final RestClientTool restClientTool;
 
-    private String queryCourierCompany(String num, String key) throws Exception {
-        MultiValueMap<String, String> params = CommonToolCallUtils.<String, String>multiValueMapBuilder()
-                .add("num", num)
-                .add("key", key)
-                .build();
-        String body = restClientTool.get("autonumber/auto", params);
-        try {
-            List<QueryComResponse> queryComResponses = jsonParseTool.jsonToList(body, QueryComResponse.class);
-            return !CollectionUtils.isEmpty(queryComResponses) ? queryComResponses.get(0).comCode() : null;
-        } catch (JsonProcessingException e) {
-            throw new Kuaidi100Exception(body, e);
-        }
-    }
+	public Kuaidi100Service(Kuaidi100Properties kuaidi100Properties, JsonParseTool jsonParseTool,
+			RestClientTool restClientTool) {
+		this.kuaidi100Properties = kuaidi100Properties;
+		this.jsonParseTool = jsonParseTool;
+		this.restClientTool = restClientTool;
+	}
 
-    private QueryTrackResponse queryCourierTrack(String num, String com, String key, String customer) throws Exception {
-        QueryTrackParam queryTrackParam = new QueryTrackParam(com, num);
-        String param = jsonParseTool.objectToJson(queryTrackParam);
-        String sign = DigestUtils.md5DigestAsHex((param + key + customer).getBytes()).toUpperCase();
-        MultiValueMap<String, String> params = CommonToolCallUtils.<String, String>multiValueMapBuilder()
-                .add("param", param)
-                .add("customer", customer)
-                .add("sign", sign)
-                .build();
-        String body = restClientTool.post(
-                "poll/query.do",
-                CommonToolCallUtils.<String, String>multiValueMapBuilder().build(),
-                Map.of(),
-                params,
-                MediaType.APPLICATION_FORM_URLENCODED
-        );
-        return jsonParseTool.jsonToObject(body, QueryTrackResponse.class);
-    }
+	@Override
+	public Kuaidi100Service.QueryTrackResponse apply(Kuaidi100Service.Request request) {
+		Kuaidi100Service.QueryTrackResponse queryTrackResp;
+		try {
+			String key = kuaidi100Properties.getKey();
+			String customer = kuaidi100Properties.getCustomer();
+			String num = request.num();
+			String company = queryCourierCompany(num, key);
+			Assert.hasText(company, "Courier company not found.");
+			queryTrackResp = queryCourierTrack(num, company, key, customer);
+			logger.debug("queryTrackResp: {}", queryTrackResp);
+		}
+		catch (Exception e) {
+			logger.error("Error occurred while querying track!", e);
+			throw new Kuaidi100Exception("Error querying track.", e);
+		}
+		return queryTrackResp;
+	}
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    @JsonClassDescription("Methods for real-time courier tracking")
-    public record Request(
-            @JsonProperty(required = true, value = "num") @JsonPropertyDescription("tracking number") String num) {
-    }
+	private String queryCourierCompany(String num, String key) throws Exception {
+		MultiValueMap<String, String> params = CommonToolCallUtils.<String, String>multiValueMapBuilder()
+			.add("num", num)
+			.add("key", key)
+			.build();
+		String body = restClientTool.get("autonumber/auto", params);
+		try {
+			List<QueryComResponse> queryComResponses = jsonParseTool.jsonToList(body, QueryComResponse.class);
+			return !CollectionUtils.isEmpty(queryComResponses) ? queryComResponses.get(0).comCode() : null;
+		}
+		catch (JsonProcessingException e) {
+			throw new Kuaidi100Exception(body, e);
+		}
+	}
 
-    public record QueryComResponse(
-            String lengthPre,
-            String comCode,
-            String noPre,
-            String noCount
-    ) {
-    }
+	private QueryTrackResponse queryCourierTrack(String num, String com, String key, String customer) throws Exception {
+		QueryTrackParam queryTrackParam = new QueryTrackParam(com, num);
+		String param = jsonParseTool.objectToJson(queryTrackParam);
+		String sign = DigestUtils.md5DigestAsHex((param + key + customer).getBytes()).toUpperCase();
+		MultiValueMap<String, String> params = CommonToolCallUtils.<String, String>multiValueMapBuilder()
+			.add("param", param)
+			.add("customer", customer)
+			.add("sign", sign)
+			.build();
+		String body = restClientTool.post("poll/query.do",
+				CommonToolCallUtils.<String, String>multiValueMapBuilder().build(), Map.of(), params,
+				MediaType.APPLICATION_FORM_URLENCODED);
+		return jsonParseTool.jsonToObject(body, QueryTrackResponse.class);
+	}
 
-    public record QueryTrackParam(
-            String com,
-            String num
-    ) {
-    }
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonClassDescription("Methods for real-time courier tracking")
+	public record Request(
+			@JsonProperty(required = true, value = "num") @JsonPropertyDescription("tracking number") String num) {
+	}
 
-    @JsonClassDescription("Query courier tracking information")
-    public record QueryTrackResponse(
-            String message,
-            String nu,
-            String ischeck,
-            String com,
-            String status,
-            List<QueryTrackData> data,
-            String state,
-            String condition,
-            QueryTrackRouteInfo routeInfo,
-            String returnCode,
-            boolean result
-    ) {
-    }
+	public record QueryComResponse(String lengthPre, String comCode, String noPre, String noCount) {
+	}
 
-    public record QueryTrackData(
-            String time,
-            String context,
-            String ftime,
-            String areaCode,
-            String areaName,
-            String status,
-            String areaCenter,
-            String areaPinYin,
-            String statusCode
-    ) {
-    }
+	public record QueryTrackParam(String com, String num) {
+	}
 
-    public record QueryTrackRouteInfo(
-            QueryTrackPosition from,
-            QueryTrackPosition cur,
-            QueryTrackPosition to
-    ) {
-    }
+	@JsonClassDescription("Query courier tracking information")
+	public record QueryTrackResponse(String message, String nu, String ischeck, String com, String status,
+			List<QueryTrackData> data, String state, String condition, QueryTrackRouteInfo routeInfo, String returnCode,
+			boolean result) {
+	}
 
-    public record QueryTrackPosition(
-            String number,
-            String name
-    ) {
-    }
+	public record QueryTrackData(String time, String context, String ftime, String areaCode, String areaName,
+			String status, String areaCenter, String areaPinYin, String statusCode) {
+	}
+
+	public record QueryTrackRouteInfo(QueryTrackPosition from, QueryTrackPosition cur, QueryTrackPosition to) {
+	}
+
+	public record QueryTrackPosition(String number, String name) {
+	}
+
 }
