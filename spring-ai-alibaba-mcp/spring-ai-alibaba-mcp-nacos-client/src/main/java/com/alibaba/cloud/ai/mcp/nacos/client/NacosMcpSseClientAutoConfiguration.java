@@ -22,6 +22,7 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingFactory;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.pojo.Instance;
+import com.alibaba.nacos.client.config.NacosConfigService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
 import org.slf4j.Logger;
@@ -54,11 +55,21 @@ public class NacosMcpSseClientAutoConfiguration {
 	}
 
 	@Bean
-	public NamingService nacosNamingService(NacosMcpProperties nacosMcpProperties,
-			NacosMcpRegistryProperties nacosMcpRegistryProperties) {
+	public NamingService nacosNamingService(NacosMcpProperties nacosMcpProperties) {
 		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
 		try {
 			return NamingFactory.createNamingService(nacosProperties);
+		}
+		catch (NacosException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Bean
+	public NacosConfigService nacosConfigService(NacosMcpProperties nacosMcpProperties) {
+		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
+		try {
+			return new NacosConfigService(nacosProperties);
 		}
 		catch (NacosException e) {
 			throw new RuntimeException(e);
