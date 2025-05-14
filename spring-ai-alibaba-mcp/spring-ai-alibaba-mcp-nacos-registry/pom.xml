@@ -10,10 +10,10 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-mcp-nacos</artifactId>
+    <artifactId>spring-ai-alibaba-mcp-nacos-registry</artifactId>
     <version>${revision}</version>
-    <name>spring-ai-alibaba-mcp-nacos</name>
-    <description>spring-ai-alibaba-mcp-nacos</description>
+    <name>spring-ai-alibaba-mcp-nacos-registry</name>
+    <description>spring-ai-alibaba-mcp-nacos-registry</description>
 
     <properties>
     </properties>
