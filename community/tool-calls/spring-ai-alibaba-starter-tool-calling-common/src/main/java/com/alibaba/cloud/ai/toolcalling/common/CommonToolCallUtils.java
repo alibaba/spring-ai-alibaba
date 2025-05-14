@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,8 +15,14 @@
  */
 package com.alibaba.cloud.ai.toolcalling.common;
 
+import java.util.Arrays;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import org.slf4j.Logger;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 
 /**
  * @author vlsmb
@@ -24,7 +30,6 @@ import org.springframework.util.MultiValueMap;
 public final class CommonToolCallUtils {
 
 	private CommonToolCallUtils() {
-
 	}
 
 	public static class MultiValueMapBuilder<K, V> {
@@ -46,8 +51,66 @@ public final class CommonToolCallUtils {
 
 	}
 
+	/**
+	 * MultiValueMap builder
+	 * @author vlsmb
+	 * @return builder
+	 * @param <K> Key Type
+	 * @param <V> Value Type
+	 */
 	public static <K, V> MultiValueMapBuilder<K, V> multiValueMapBuilder() {
 		return new MultiValueMapBuilder<>();
+	}
+
+	/**
+	 * Common error handling method.
+	 * @author inlines10
+	 * @param serviceName Service name
+	 * @param operation Operation to execute
+	 * @param logger Logger instance
+	 * @return Operation result
+	 */
+	public static <T> T handleServiceError(String serviceName, Supplier<T> operation, Logger logger) {
+		try {
+			return operation.get();
+		}
+		catch (Exception e) {
+			logger.error("Failed to invoke {} service due to: {}", serviceName, e.getMessage());
+			return null;
+		}
+	}
+
+	/**
+	 * Common parameter validation method.
+	 * @author inlines10
+	 * @param params Parameters to validate
+	 * @return if params is invalid, return true
+	 */
+	public static boolean isInvalidateRequestParams(Object... params) {
+		return !Arrays.stream(params)
+			.allMatch(param -> param != null && (!(param instanceof String) || StringUtils.hasText((String) param)));
+	}
+
+	/**
+	 * Handle service response with error handling and logging
+	 * @author inlines10
+	 * @param responseData Raw response data
+	 * @param parser Function to parse the response
+	 * @param logger Logger instance
+	 * @return Parsed response or null if handling fails
+	 */
+	public static <T> T handleResponse(String responseData, Function<String, T> parser, Logger logger) {
+		if (responseData == null) {
+			logger.error("Response data is null");
+			return null;
+		}
+		try {
+			return parser.apply(responseData);
+		}
+		catch (Exception e) {
+			logger.error("Failed to handle response: {}", e.getMessage());
+			return null;
+		}
 	}
 
 }

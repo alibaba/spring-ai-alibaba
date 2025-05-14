@@ -63,6 +63,6 @@
     </dependencies>
 
     <build>
-        <finalName>spring-ai-alibaba-tool-calling-alitranslate</finalName>
+        <finalName>spring-ai-alibaba-starter-tool-calling-alitranslate</finalName>
     </build>
 </project>

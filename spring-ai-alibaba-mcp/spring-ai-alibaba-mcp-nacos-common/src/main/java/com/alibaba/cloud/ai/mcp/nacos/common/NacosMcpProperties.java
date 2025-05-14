@@ -43,24 +43,20 @@ import static java.util.Collections.unmodifiableMap;
 /**
  * @author Sunrisea
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.mcp.nacos")
-public class NacosMcpRegistryProperties {
+@ConfigurationProperties(prefix = NacosMcpProperties.CONFIG_PREFIX)
+public class NacosMcpProperties {
+
+	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.nacos";
 
 	public static final String DEFAULT_NAMESPACE = "public";
 
 	public static final String DEFAULT_ADDRESS = "127.0.0.1:8848";
 
-	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.nacos";
-
 	private static final Pattern PATTERN = Pattern.compile("-(\\w)");
 
-	private static final Logger log = LoggerFactory.getLogger(NacosMcpRegistryProperties.class);
+	private static final Logger log = LoggerFactory.getLogger(NacosMcpProperties.class);
 
 	String serverAddr;
-
-	String serviceNamespace;
-
-	String serviceGroup = "DEFAULT_GROUP";
 
 	String username;
 
@@ -74,47 +70,9 @@ public class NacosMcpRegistryProperties {
 
 	String ip;
 
-	String sseExportContextPath;
-
-	boolean serviceRegister = true;
-
-	boolean serviceEphemeral = true;
-
 	@Autowired
 	@JsonIgnore
 	private Environment environment;
-
-	public boolean isServiceRegister() {
-		return serviceRegister;
-	}
-
-	public void setServiceRegister(boolean serviceRegister) {
-		this.serviceRegister = serviceRegister;
-	}
-
-	public boolean isServiceEphemeral() {
-		return serviceEphemeral;
-	}
-
-	public void setServiceEphemeral(boolean serviceEphemeral) {
-		this.serviceEphemeral = serviceEphemeral;
-	}
-
-	public String getSseExportContextPath() {
-		return sseExportContextPath;
-	}
-
-	public void setSseExportContextPath(String sseExportContextPath) {
-		this.sseExportContextPath = sseExportContextPath;
-	}
-
-	public String getServiceGroup() {
-		return serviceGroup;
-	}
-
-	public void setServiceGroup(String serviceGroup) {
-		this.serviceGroup = serviceGroup;
-	}
 
 	public String getUsername() {
 		return username;
@@ -172,37 +130,18 @@ public class NacosMcpRegistryProperties {
 		this.serverAddr = serverAddr;
 	}
 
-	public String getServiceNamespace() {
-		return serviceNamespace;
-	}
-
-	void setServiceNamespace(String serviceNamespace) {
-		this.serviceNamespace = serviceNamespace;
-	}
-
 	@PostConstruct
 	public void init() throws Exception {
 		if (StringUtils.isEmpty(this.ip)) {
 			this.ip = NetUtils.localIP();
-		}
-		if (StringUtils.isBlank(this.serviceNamespace)) {
-			this.serviceNamespace = DEFAULT_NAMESPACE;
-		}
-		if (StringUtils.isBlank(this.sseExportContextPath)) {
-			String path = environment.getProperty("server.servlet.context-path");
-			if (!StringUtils.isBlank(path)) {
-				this.sseExportContextPath = path;
-			}
 		}
 	}
 
 	public Properties getNacosProperties() {
 		Properties properties = new Properties();
 		properties.put(PropertyKeyConst.SERVER_ADDR, Objects.toString(this.serverAddr, ""));
-		properties.put("groupName", Objects.toString(this.serviceGroup, "DEFAULT_GROUP"));
 		properties.put(PropertyKeyConst.USERNAME, Objects.toString(this.username, ""));
 		properties.put(PropertyKeyConst.PASSWORD, Objects.toString(this.password, ""));
-		properties.put(PropertyKeyConst.NAMESPACE, this.resolveNamespace());
 		properties.put(PropertyKeyConst.ACCESS_KEY, Objects.toString(this.accessKey, ""));
 		properties.put(PropertyKeyConst.SECRET_KEY, Objects.toString(this.secretKey, ""));
 		String endpoint = Objects.toString(this.endpoint, "");
@@ -224,15 +163,6 @@ public class NacosMcpRegistryProperties {
 		return properties;
 	}
 
-	private String resolveNamespace() {
-		if (DEFAULT_NAMESPACE.equals(this.serviceNamespace)) {
-			return "";
-		}
-		else {
-			return Objects.toString(this.serviceNamespace, "");
-		}
-	}
-
 	protected void enrichNacosConfigProperties(Properties nacosConfigProperties) {
 		if (environment == null) {
 			return;
@@ -246,7 +176,7 @@ public class NacosMcpRegistryProperties {
 
 	protected String resolveKey(String key) {
 		Matcher matcher = PATTERN.matcher(key);
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		while (matcher.find()) {
 			matcher.appendReplacement(sb, matcher.group(1).toUpperCase());
 		}

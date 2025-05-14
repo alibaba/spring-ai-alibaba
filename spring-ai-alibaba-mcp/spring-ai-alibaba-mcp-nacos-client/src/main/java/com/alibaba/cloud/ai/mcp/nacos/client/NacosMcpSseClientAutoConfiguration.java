@@ -16,11 +16,13 @@
 
 package com.alibaba.cloud.ai.mcp.nacos.client;
 
-import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpRegistryProperties;
+import com.alibaba.cloud.ai.mcp.nacos.NacosMcpRegistryProperties;
+import com.alibaba.cloud.ai.mcp.nacos.common.NacosMcpProperties;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingFactory;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.pojo.Instance;
+import com.alibaba.nacos.client.config.NacosConfigService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
 import org.slf4j.Logger;
@@ -43,7 +45,8 @@ import java.util.Properties;
  * @date 2025/4/29:08:47
  */
 @AutoConfiguration
-@EnableConfigurationProperties({ NacosMcpSseClientProperties.class, NacosMcpRegistryProperties.class })
+@EnableConfigurationProperties({ NacosMcpSseClientProperties.class, NacosMcpProperties.class,
+		NacosMcpRegistryProperties.class })
 public class NacosMcpSseClientAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(NacosMcpSseClientAutoConfiguration.class);
@@ -52,10 +55,21 @@ public class NacosMcpSseClientAutoConfiguration {
 	}
 
 	@Bean
-	public NamingService nacosNamingService(NacosMcpRegistryProperties nacosMcpRegistryProperties) {
-		Properties nacosProperties = nacosMcpRegistryProperties.getNacosProperties();
+	public NamingService nacosNamingService(NacosMcpProperties nacosMcpProperties) {
+		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
 		try {
 			return NamingFactory.createNamingService(nacosProperties);
+		}
+		catch (NacosException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Bean
+	public NacosConfigService nacosConfigService(NacosMcpProperties nacosMcpProperties) {
+		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
+		try {
+			return new NacosConfigService(nacosProperties);
 		}
 		catch (NacosException e) {
 			throw new RuntimeException(e);
