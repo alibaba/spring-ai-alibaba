@@ -179,14 +179,14 @@ public class McpService implements InitializingBean {
 	}
 
 	public void addMcpServer(McpConfigRequestVO mcpConfig) throws IOException {
-		List<McpConfigEntity> entities = insertOrupdateMcpRepo(mcpConfig);
+		List<McpConfigEntity> entities = insertOrUpdateMcpRepo(mcpConfig);
 		// 先添加客户端
 		for (McpConfigEntity entity : entities) {
 			loadMcpServices(entity);
 		}
 	}
 
-	public List<McpConfigEntity> insertOrupdateMcpRepo(McpConfigRequestVO mcpConfigVO) throws IOException {
+	public List<McpConfigEntity> insertOrUpdateMcpRepo(McpConfigRequestVO mcpConfigVO) throws IOException {
 		List<McpConfigEntity> entityList = new ArrayList<>();
 		try (JsonParser jsonParser = new ObjectMapper().createParser(mcpConfigVO.getConfigJson())) {
 			McpServersConfig mcpServerConfig = jsonParser.readValueAs(McpServersConfig.class);
@@ -254,13 +254,20 @@ public class McpService implements InitializingBean {
 
 	public void removeMcpServer(long id) {
 		Optional<McpConfigEntity> mcpConfigEntity = mcpConfigRepository.findById(id);
-		if (mcpConfigEntity.isPresent()) {
-			McpServiceEntity serviceEntity = toolCallbackMap.remove(mcpConfigEntity.get().getMcpServerName());
-			if (serviceEntity != null) {
-				serviceEntity.getMcpAsyncClient().close();
-			}
-			mcpConfigRepository.delete(mcpConfigEntity.get());
+		mcpConfigEntity.ifPresent(this::removeMcpServer);
+	}
+
+	public void removeMcpServer(String mcpServerName) {
+		var mcpConfig = mcpConfigRepository.findByMcpServerName(mcpServerName);
+		removeMcpServer(mcpConfig);
+	}
+
+	private void removeMcpServer(McpConfigEntity mcpConfig) {
+		McpServiceEntity serviceEntity = toolCallbackMap.remove(mcpConfig.getMcpServerName());
+		if (serviceEntity != null) {
+			serviceEntity.getMcpAsyncClient().close();
 		}
+		mcpConfigRepository.delete(mcpConfig);
 	}
 
 	public List<McpConfigEntity> getMcpServers() {
