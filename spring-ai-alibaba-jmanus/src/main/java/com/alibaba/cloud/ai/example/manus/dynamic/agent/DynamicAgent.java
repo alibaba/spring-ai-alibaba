@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -75,17 +76,17 @@ public class DynamicAgent extends ReActAgent {
 
 	private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
 
-	public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-			ManusProperties manusProperties, String name, String description, String systemPrompt,
-			String nextStepPrompt, List<String> availableToolKeys, ToolCallingManager toolCallingManager) {
-		super(llmService, planExecutionRecorder, manusProperties);
-		this.agentName = name;
-		this.agentDescription = description;
-		this.systemPrompt = systemPrompt;
-		this.nextStepPrompt = nextStepPrompt;
-		this.availableToolKeys = availableToolKeys;
-		this.toolCallingManager = toolCallingManager;
-	}
+   public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
+		   ManusProperties manusProperties, String name, String description, String systemPrompt,
+		   String nextStepPrompt, List<String> availableToolKeys, ToolCallingManager toolCallingManager) {
+	   super(llmService, planExecutionRecorder, manusProperties);
+	   this.agentName = name;
+	   this.agentDescription = description;
+	   this.systemPrompt = systemPrompt;
+	   this.nextStepPrompt = nextStepPrompt;
+	   this.availableToolKeys = availableToolKeys;
+	   this.toolCallingManager = toolCallingManager;
+   }
 
 	@Override
 	protected boolean think() {
@@ -107,13 +108,13 @@ public class DynamicAgent extends ReActAgent {
 			log.debug("Messages prepared for the prompt: {}", messages);
 
 			userPrompt = new Prompt(messages, chatOptions);
-
-			response = llmService.getAgentChatClient(getPlanId())
-				.getChatClient()
+			List<ToolCallback> callbacks = getToolCallList();
+			ChatClient chatClient = llmService.getAgentChatClient();
+			response = chatClient
 				.prompt(userPrompt)
 				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getPlanId())
 					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
-				.toolCallbacks(getToolCallList())
+				.toolCallbacks(callbacks)
 				.call()
 				.chatResponse();
 
@@ -160,7 +161,7 @@ public class DynamicAgent extends ReActAgent {
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
 				.get(toolExecutionResult.conversationHistory().size() - 1);
 
-			llmService.getAgentChatClient(getPlanId()).getMemory().add(getPlanId(), toolResponseMessage);
+			llmService.getAgentMemory().add(getPlanId(), toolResponseMessage);
 			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
 
 			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), llmCallResponse));
@@ -183,7 +184,7 @@ public class DynamicAgent extends ReActAgent {
 			ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse(toolCall.id(),
 					toolCall.name(), "Error: " + e.getMessage());
 			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(List.of(toolResponse), Map.of());
-			llmService.getAgentChatClient(getPlanId()).getMemory().add(getPlanId(), toolResponseMessage);
+			llmService.getAgentMemory().add(getPlanId(), toolResponseMessage);
 			log.error(e.getMessage());
 
 			thinkActRecord.recordError(e.getMessage());

@@ -34,10 +34,10 @@ public abstract class ReActAgent extends BaseAgent {
 	 * @param planExecutionRecorder 计划执行记录器，用于记录执行过程
 	 * @param manusProperties Manus配置属性
 	 */
-	public ReActAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-			ManusProperties manusProperties) {
-		super(llmService, planExecutionRecorder, manusProperties);
-	}
+	   public ReActAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
+					   ManusProperties manusProperties) {
+			   super(llmService, planExecutionRecorder, manusProperties);
+	   }
 
 	/**
 	 * 执行思考过程，判断是否需要采取行动

@@ -31,7 +31,7 @@ public class GetTextAction extends BrowserAction {
 	@Override
 	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
 		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
-		String body = page.textContent("body"); // 使用 Playwright 获取页面文本内容
+		String body = page.innerText("body"); // 使用 Playwright 获取页面可见文本内容
 		log.info("get_text body is {}", body);
 
 		return new ToolExecuteResult(body);

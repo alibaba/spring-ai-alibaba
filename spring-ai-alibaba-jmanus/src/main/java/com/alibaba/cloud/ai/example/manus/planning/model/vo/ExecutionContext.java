@@ -45,6 +45,9 @@ public class ExecutionContext {
 	/** 计划执行是否成功的标志 */
 	private boolean success = false;
 
+	/** 是否使用记忆， 场景是 如果只构建计划，那么不应该用记忆，否则记忆无法删除*/
+	private boolean useMemory = false;
+
 	/**
 	 * 获取计划ID
 	 * @return 计划的唯一标识符
@@ -133,6 +136,7 @@ public class ExecutionContext {
 		return resultSummary;
 	}
 
+	
 	/**
 	 * 设置执行结果摘要
 	 * @param resultSummary 执行结果的摘要说明
@@ -151,6 +155,14 @@ public class ExecutionContext {
 		this.plan = context.getPlan();
 		this.userRequest = context.getUserRequest();
 		this.resultSummary = context.getResultSummary();
+	}
+
+	public boolean isUseMemory() {
+		return useMemory;
+	}
+
+	public void setUseMemory(boolean useMemory) {
+		this.useMemory = useMemory;
 	}
 
 }

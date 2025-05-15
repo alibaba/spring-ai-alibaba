@@ -127,7 +127,7 @@ public abstract class BaseAgent {
 				- 全局计划信息:
 				{planStatus}
 
-				- 当前要做的步骤要求 :
+				- 当前要做的步骤要求(这个步骤是需要当前智能体完成的!) :
 				STEP {currentStepIndex} :{stepText}
 
 				- 当前步骤的上下文信息:
@@ -162,13 +162,13 @@ public abstract class BaseAgent {
 
 	public abstract List<ToolCallback> getToolCallList();
 
-	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-			ManusProperties manusProperties) {
-		this.llmService = llmService;
-		this.planExecutionRecorder = planExecutionRecorder;
-		this.manusProperties = manusProperties;
-		this.maxSteps = manusProperties.getMaxSteps();
-	}
+	   public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
+					   ManusProperties manusProperties) {
+			   this.llmService = llmService;
+			   this.planExecutionRecorder = planExecutionRecorder;
+			   this.manusProperties = manusProperties;
+			   this.maxSteps = manusProperties.getMaxSteps();
+	   }
 
 	public String run(Map<String, Object> data) {
 		currentStep = 0;
@@ -242,7 +242,7 @@ public abstract class BaseAgent {
 			state = AgentState.COMPLETED; // Reset state after execution
 
 			agentRecord.setStatus(state.toString());
-			llmService.removeAgentChatClient(planId);
+			llmService.clearAgentMemory(planId);
 		}
 		return results.isEmpty() ? "" : results.get(results.size() - 1);
 	}
@@ -275,7 +275,7 @@ public abstract class BaseAgent {
 	 */
 	protected boolean isStuck() {
 		// 目前判断是如果三次没有调用工具就认为是卡住了，就退出当前step。
-		List<Message> memoryEntries = llmService.getAgentChatClient(getPlanId()).getMemory().get(getPlanId(), 6);
+		List<Message> memoryEntries = llmService.getAgentMemory().get(getPlanId());
 		int zeroToolCallCount = 0;
 		for (Message msg : memoryEntries) {
 			if (msg instanceof AssistantMessage) {
