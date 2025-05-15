@@ -44,7 +44,7 @@ public class Kuaidi100Service implements Function<Kuaidi100Service.Request, Kuai
 
 	private static final Logger logger = LoggerFactory.getLogger(Kuaidi100Service.class);
 
-	final Kuaidi100Properties kuaidi100Properties;
+	private final Kuaidi100Properties kuaidi100Properties;
 
 	private final JsonParseTool jsonParseTool;
 
