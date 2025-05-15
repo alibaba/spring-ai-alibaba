@@ -24,12 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
@@ -99,11 +94,20 @@ public class McpController {
 
 	/**
 	 * Remove MCP Server
-	 * @param mcpServerName MCP Server Name
+	 * @param id MCP Config ID
 	 */
 	@GetMapping("/remove")
 	public ResponseEntity<String> remove(@RequestParam("id") long id) throws IOException {
 		mcpService.removeMcpServer(id);
+		return ResponseEntity.ok("Success");
+	}
+
+	/**
+	 * remove mcp server by name
+	 */
+	@PostMapping("/remove/{name}")
+	public ResponseEntity<String> removeByName(@PathVariable("name") String mcpServerName) throws IOException {
+		mcpService.removeMcpServer(mcpServerName);
 		return ResponseEntity.ok("Success");
 	}
 

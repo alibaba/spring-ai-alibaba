@@ -254,13 +254,20 @@ public class McpService implements InitializingBean {
 
 	public void removeMcpServer(long id) {
 		Optional<McpConfigEntity> mcpConfigEntity = mcpConfigRepository.findById(id);
-		if (mcpConfigEntity.isPresent()) {
-			McpServiceEntity serviceEntity = toolCallbackMap.remove(mcpConfigEntity.get().getMcpServerName());
-			if (serviceEntity != null) {
-				serviceEntity.getMcpAsyncClient().close();
-			}
-			mcpConfigRepository.delete(mcpConfigEntity.get());
+        mcpConfigEntity.ifPresent(this::removeMcpServer);
+	}
+
+	public void removeMcpServer(String mcpServerName) {
+		var mcpConfig = mcpConfigRepository.findByMcpServerName(mcpServerName);
+		removeMcpServer(mcpConfig);
+	}
+
+	private void removeMcpServer(McpConfigEntity mcpConfig) {
+		McpServiceEntity serviceEntity = toolCallbackMap.remove(mcpConfig.getMcpServerName());
+		if (serviceEntity != null) {
+			serviceEntity.getMcpAsyncClient().close();
 		}
+		mcpConfigRepository.delete(mcpConfig);
 	}
 
 	public List<McpConfigEntity> getMcpServers() {
