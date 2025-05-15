@@ -20,9 +20,11 @@ import com.alibaba.cloud.ai.memory.jdbc.OracleChatMemoryRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -33,15 +35,18 @@ import javax.sql.DataSource;
 /**
  * Auto-configuration for Oracle chat memory repository.
  */
-@AutoConfiguration(after = JdbcTemplateAutoConfiguration.class, before = ChatMemoryAutoConfiguration.class)
+@AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
 @ConditionalOnClass({ OracleChatMemoryRepository.class, DataSource.class, JdbcTemplate.class })
+@ConditionalOnProperty(prefix = "spring.ai.memory.oracle", name = "enabled", havingValue = "true",
+		matchIfMissing = false)
 @EnableConfigurationProperties(OracleChatMemoryProperties.class)
 public class OracleChatMemoryAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(OracleChatMemoryAutoConfiguration.class);
 
 	@Bean
-	@ConditionalOnMissingBean
+	@Qualifier("oracleChatMemoryRepository")
+	@ConditionalOnMissingBean(name = "oracleChatMemoryRepository")
 	OracleChatMemoryRepository oracleChatMemoryRepository(JdbcTemplate jdbcTemplate) {
 		logger.info("Configuring Oracle chat memory repository");
 		return OracleChatMemoryRepository.oracleBuilder().jdbcTemplate(jdbcTemplate).build();

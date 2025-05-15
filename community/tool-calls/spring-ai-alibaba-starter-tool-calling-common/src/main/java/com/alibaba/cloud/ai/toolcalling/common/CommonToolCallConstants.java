@@ -16,12 +16,14 @@
  */
 package com.alibaba.cloud.ai.toolcalling.common;
 
+import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.function.Function;
 
 /**
@@ -51,6 +53,11 @@ public final class CommonToolCallConstants {
 	// Default response timeout in seconds
 	public static final int DEFAULT_RESPONSE_TIMEOUT_SECONDS = 10;
 
+	// Default Agents
+	public static final String[] DEFAULT_USER_AGENTS = {
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36" };
+
 	// Default error handler for RestClient bean
 	public static final ResponseErrorHandler DEFAULT_RESTCLIENT_ERROR_HANDLER = new ResponseErrorHandler() {
 		@Override
@@ -58,8 +65,9 @@ public final class CommonToolCallConstants {
 			return response.getStatusCode().isError();
 		}
 
+		// original method is deprecated
 		@Override
-		public void handleError(ClientHttpResponse response) throws IOException {
+		public void handleError(URI url, HttpMethod method, ClientHttpResponse response) throws IOException {
 			throw new RuntimeException(
 					"Server error, code: " + response.getStatusCode() + ", message: " + response.getStatusText());
 		}
