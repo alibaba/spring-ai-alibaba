@@ -271,8 +271,7 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 	 * Called only on Flux elements that contain a finish reason. Usually the last element
 	 * in the Flux. The response advisor can modify the elements before they are returned
 	 * to the client.<br />
-	 * Inspired by
-	 * {@link RetrievalRerankAdvisor}.
+	 * Inspired by {@link RetrievalRerankAdvisor}.
 	 */
 	private Predicate<AdvisedResponse> onFinishReason() {
 
