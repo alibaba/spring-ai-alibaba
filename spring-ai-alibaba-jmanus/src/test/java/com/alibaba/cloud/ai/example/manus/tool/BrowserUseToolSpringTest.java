@@ -135,7 +135,7 @@ class BrowserUseToolSpringTest {
 			log.info("步骤1: 导航到百度");
 			ToolExecuteResult navigateResult = executeAction("navigate", "https://www.baidu.com");
 			Assertions.assertEquals("Navigated to https://www.baidu.com", navigateResult.getOutput(), "导航到百度失败");
-			Page page = browserUseTool.getDriver();
+			Page page = browserUseTool.getDriver().getCurrentPage();
 			// 步骤2: 获取并验证可交互元素
 			log.info("步骤2: 获取可交互元素并分析");
 			Map<String, Object> state = browserUseTool.getCurrentState(page);
@@ -214,7 +214,7 @@ class BrowserUseToolSpringTest {
 		ToolExecuteResult navigateResult = executeAction("navigate", url);
 		Assertions.assertEquals("Navigated to " + url, navigateResult.getOutput(), "导航失败");
 
-		Page page = browserUseTool.getDriver();
+		Page page = browserUseTool.getDriver().getCurrentPage();
 		// 步骤2: 获取并验证可交互元素
 		log.info("步骤2: 获取可交互元素");
 		Map<String, Object> state = tool.getCurrentState(page);
@@ -341,7 +341,7 @@ class BrowserUseToolSpringTest {
 			ToolExecuteResult navigateResult = executeAction("navigate", testUrl);
 			Assertions.assertEquals("Navigated to " + testUrl, navigateResult.getOutput(), "导航到CSDN网站失败");
 
-			Page page = browserUseTool.getDriver();
+			Page page = browserUseTool.getDriver().getCurrentPage();
 			// 获取可交互元素
 			log.info("步骤2: 获取并查找登录元素");
 			Map<String, Object> state = browserUseTool.getCurrentState(page);
