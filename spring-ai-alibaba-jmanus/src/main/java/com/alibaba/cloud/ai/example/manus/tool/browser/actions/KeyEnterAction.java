@@ -21,6 +21,7 @@ import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
+import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class KeyEnterAction extends BrowserAction {
@@ -36,16 +37,23 @@ public class KeyEnterAction extends BrowserAction {
             return new ToolExecuteResult("Index is required for 'key_enter' action");
         }
 
-        Page page = browserUseTool.getDriver(); // 获取 Playwright 的 Page 实例
-        List<ElementHandle> interactiveElements = getInteractiveElements(page); // 替代 Selenium 的 getInteractiveElements
-        if (index < 0 || index >= interactiveElements.size()) {
+        Page page = getCurrentPage();
+        // 获取注册表
+        var driverWrapper = getDriverWrapper();
+        var registry = driverWrapper.getInteractiveElementRegistry();
+        // 获取目标元素
+        var elementOpt = registry.getElementById(index);
+        if (elementOpt.isEmpty()) {
             return new ToolExecuteResult("Element with index " + index + " not found");
         }
-
-        ElementHandle enterElement = interactiveElements.get(index);
-        enterElement.press("Enter"); // 使用 Playwright 的 press 方法模拟按下回车键
-
-        browserUseTool.getInteractiveTextProcessor().refreshCache(page);
+        InteractiveElement enterElement = elementOpt.get();
+        // 执行回车操作
+        try {
+            enterElement.getLocator().press("Enter");
+        } catch (Exception e) {
+            return new ToolExecuteResult("Failed to press Enter on element at index " + index + ": " + e.getMessage());
+        }
+        refreshElements(page);
         return new ToolExecuteResult("Hit the enter key at index " + index);
     }
 }

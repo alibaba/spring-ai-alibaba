@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2025 the original author or authors.
  *
@@ -15,14 +16,12 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
-import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveTextProcessor;
+import com.alibaba.cloud.ai.example.manus.tool.browser.DriverWrapper;
+import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Page;
@@ -30,17 +29,15 @@ import com.microsoft.playwright.Page;
 public abstract class BrowserAction {
     public abstract ToolExecuteResult execute(BrowserRequestVO request) throws Exception;
 
-    protected final BrowserUseTool browserUseTool;
-    protected final InteractiveTextProcessor interactiveTextProcessor;
+    private final BrowserUseTool browserUseTool;
 
     public BrowserAction(BrowserUseTool browserUseTool) {
         this.browserUseTool = browserUseTool;
-        this.interactiveTextProcessor = browserUseTool.getInteractiveTextProcessor();
     }
-
 
     /**
      * 模拟人类行为
+     * 
      * @param element Playwright的ElementHandle实例
      */
     protected void simulateHumanBehavior(ElementHandle element) {
@@ -51,13 +48,42 @@ public abstract class BrowserAction {
             Thread.currentThread().interrupt();
         }
     }
+        /**
+     * 获取 DriverWrapper 实例
+     * @return DriverWrapper
+     */
+    protected DriverWrapper getDriverWrapper() {
+        return browserUseTool.getDriver();
+    }
 
     /**
-     * 通过InteractiveTextProcessor获取可交互元素
+     * 获取当前页面 Page 实例
+     * @return 当前 Playwright 的 Page 实例
+     */
+    protected Page getCurrentPage() {
+        DriverWrapper driverWrapper = getDriverWrapper();
+        return driverWrapper.getCurrentPage();
+    }
+
+
+    /**
+     * 获取可交互元素
+     * 
      * @param page Playwright的Page实例
      * @return 可交互元素列表
      */
-    protected List<ElementHandle> getInteractiveElements(Page page) {
-        return interactiveTextProcessor.getInteractiveElements(page);
+    protected List<InteractiveElement> getInteractiveElements(Page page) {
+        DriverWrapper driverWrapper = browserUseTool.getDriver();
+        return driverWrapper.getInteractiveElementRegistry().getAllElements();
+    }
+
+    /**
+     * 刷新页面中的可交互元素
+     * 
+     * @param page 网页对象
+     */
+    protected void refreshElements(Page page) {
+        DriverWrapper driverWrapper = browserUseTool.getDriver();
+        driverWrapper.getInteractiveElementRegistry().refresh(page);
     }
 }
