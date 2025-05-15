@@ -25,6 +25,8 @@ import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
@@ -55,11 +57,12 @@ public class PlanCreator {
 
 	/**
 	 * 根据用户请求创建执行计划
+	 * 
 	 * @param userRequest 用户请求
 	 * @return 计划创建结果
 	 */
 	public void createPlan(ExecutionContext context) {
-
+		 boolean useMemory = context.isUseMemory();
 		String planId = context.getPlanId();
 		if (planId == null || planId.isEmpty()) {
 			throw new IllegalArgumentException("Plan ID cannot be null or empty");
@@ -75,12 +78,13 @@ public class PlanCreator {
 			PromptTemplate promptTemplate = new PromptTemplate(planPrompt);
 			Prompt prompt = promptTemplate.create();
 
-			ChatClient.CallResponseSpec response = llmService.getPlanningChatClient()
-				.prompt(prompt)
-				.toolCallbacks(List.of(planningTool.getFunctionToolCallback()))
-				.advisors(memoryAdvisor -> memoryAdvisor.param("chat_memory_conversation_id", planId)
-					.param("chat_memory_retrieve_size", 100))
-				.call();
+			ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient()
+					.prompt(prompt)
+					.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
+			if (useMemory) {
+				requestSpec.advisors(new MessageChatMemoryAdvisor(llmService.getConversationMemory()));
+			}
+			ChatClient.CallResponseSpec response = requestSpec.call();
 			String outputText = response.chatResponse().getResult().getOutput().getText();
 			// 检查计划是否创建成功
 			if (planId.equals(planningTool.getCurrentPlanId())) {
@@ -90,8 +94,7 @@ public class PlanCreator {
 			}
 			context.setPlan(currentPlan);
 
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("Error creating plan for request: {}", context.getUserRequest(), e);
 			// 处理异常情况
 			throw new RuntimeException("Failed to create plan", e);
@@ -100,6 +103,7 @@ public class PlanCreator {
 
 	/**
 	 * 构建代理信息字符串
+	 * 
 	 * @param agents 代理列表
 	 * @return 格式化的代理信息
 	 */
@@ -107,19 +111,20 @@ public class PlanCreator {
 		StringBuilder agentsInfo = new StringBuilder("Available Agents:\n");
 		for (DynamicAgentEntity agent : agents) {
 			agentsInfo.append("- Agent Name: ")
-				.append(agent.getAgentName())
-				.append("\n  Description: ")
-				.append(agent.getAgentDescription())
-				.append("\n");
+					.append(agent.getAgentName())
+					.append("\n  Description: ")
+					.append(agent.getAgentDescription())
+					.append("\n");
 		}
 		return agentsInfo.toString();
 	}
 
 	/**
 	 * 生成计划提示
-	 * @param request 用户请求
+	 * 
+	 * @param request    用户请求
 	 * @param agentsInfo 代理信息
-	 * @param planId 计划ID
+	 * @param planId     计划ID
 	 * @return 格式化的提示字符串
 	 */
 	private String generatePlanPrompt(String request, String agentsInfo, String planId) {

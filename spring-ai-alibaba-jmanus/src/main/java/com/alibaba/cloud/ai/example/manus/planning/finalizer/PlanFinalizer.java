@@ -49,7 +49,8 @@ public class PlanFinalizer {
 
 	/**
 	 * 生成计划执行总结
-	 * @param userRequest 原始用户请求
+	 * 
+	 * @param userRequest     原始用户请求
 	 * @param executionResult 执行结果
 	 * @return 格式化的总结文本
 	 */
@@ -92,26 +93,28 @@ public class PlanFinalizer {
 			Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 
 			ChatResponse response = llmService.getPlanningChatClient()
-				.prompt(prompt)
-				.advisors(memoryAdvisor -> memoryAdvisor.param("chat_memory_conversation_id", plan.getPlanId())
-					.param("chat_memory_retrieve_size", 100))
-				.call()
-				.chatResponse();
+					.prompt(prompt)
+					.advisors(memoryAdvisor -> memoryAdvisor.param("chat_memory_conversation_id", plan.getPlanId())
+							.param("chat_memory_retrieve_size", 100))
+					.call()
+					.chatResponse();
 
 			String summary = response.getResult().getOutput().getText();
 			context.setResultSummary(summary);
 
 			recordPlanCompletion(context, summary);
 			log.info("Generated summary: {}", summary);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("Error generating summary with LLM", e);
 			throw new RuntimeException("Failed to generate summary", e);
+		} finally {
+			llmService.clearConversationMemory(plan.getPlanId());
 		}
 	}
 
 	/**
 	 * Record plan completion
+	 * 
 	 * @param context The execution context
 	 * @param summary The summary of the plan execution
 	 */

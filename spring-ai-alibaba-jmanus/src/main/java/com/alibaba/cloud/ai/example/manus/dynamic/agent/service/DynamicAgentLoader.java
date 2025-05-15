@@ -33,7 +33,7 @@ public class DynamicAgentLoader {
 
 	private final DynamicAgentRepository repository;
 
-	private final LlmService llmService;
+	   private final LlmService llmService;
 
 	private final PlanExecutionRecorder recorder;
 
@@ -41,14 +41,14 @@ public class DynamicAgentLoader {
 
 	private final ToolCallingManager toolCallingManager;
 
-	public DynamicAgentLoader(DynamicAgentRepository repository, @Lazy LlmService llmService,
-			PlanExecutionRecorder recorder, ManusProperties properties, @Lazy ToolCallingManager toolCallingManager) {
-		this.repository = repository;
-		this.llmService = llmService;
-		this.recorder = recorder;
-		this.properties = properties;
-		this.toolCallingManager = toolCallingManager;
-	}
+	   public DynamicAgentLoader(DynamicAgentRepository repository, @Lazy LlmService llmService,
+					   PlanExecutionRecorder recorder, ManusProperties properties, @Lazy ToolCallingManager toolCallingManager) {
+			   this.repository = repository;
+			   this.llmService = llmService;
+			   this.recorder = recorder;
+			   this.properties = properties;
+			   this.toolCallingManager = toolCallingManager;
+	   }
 
 	public DynamicAgent loadAgent(String agentName) {
 		DynamicAgentEntity entity = repository.findByAgentName(agentName);
