@@ -254,7 +254,7 @@ public class McpService implements InitializingBean {
 
 	public void removeMcpServer(long id) {
 		Optional<McpConfigEntity> mcpConfigEntity = mcpConfigRepository.findById(id);
-        mcpConfigEntity.ifPresent(this::removeMcpServer);
+		mcpConfigEntity.ifPresent(this::removeMcpServer);
 	}
 
 	public void removeMcpServer(String mcpServerName) {
