@@ -21,18 +21,20 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class GetTextAction extends BrowserAction {
-    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GetTextAction.class);
 
-    public GetTextAction(BrowserUseTool browserUseTool) {
-        super(browserUseTool);
-    }
+	private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GetTextAction.class);
 
-    @Override
-    public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
-        String body = page.textContent("body"); // 使用 Playwright 获取页面文本内容
-        log.info("get_text body is {}", body);
+	public GetTextAction(BrowserUseTool browserUseTool) {
+		super(browserUseTool);
+	}
 
-        return new ToolExecuteResult(body);
-    }
+	@Override
+	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
+		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
+		String body = page.textContent("body"); // 使用 Playwright 获取页面文本内容
+		log.info("get_text body is {}", body);
+
+		return new ToolExecuteResult(body);
+	}
+
 }

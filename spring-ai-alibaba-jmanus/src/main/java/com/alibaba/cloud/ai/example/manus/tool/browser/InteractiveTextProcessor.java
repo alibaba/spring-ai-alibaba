@@ -53,7 +53,6 @@ public class InteractiveTextProcessor {
 
 	/**
 	 * 刷新页面中的所有交互元素，包括iframe中的
-	 * 
 	 * @param page 要处理的页面
 	 */
 	public void refreshCache(Page page) {
@@ -64,26 +63,23 @@ public class InteractiveTextProcessor {
 
 	/**
 	 * 获取指定索引的交互元素
-	 * 
 	 * @param index 全局索引
 	 * @return 该索引对应的交互元素，如果不存在则返回空
 	 */
 	public Optional<InteractiveElement> getElementByIndex(int index) {
 		return elementRegistry.getElementById(index);
 	}
-	
+
 	/**
 	 * 获取所有交互元素的列表
-	 * 
 	 * @return 交互元素列表
 	 */
 	public List<InteractiveElement> getAllElements() {
 		return elementRegistry.getAllElements();
 	}
-	
+
 	/**
 	 * 获取特定类型的交互元素列表
-	 * 
 	 * @param tagName 元素的HTML标签名
 	 * @return 匹配该类型的元素列表
 	 */
@@ -93,7 +89,6 @@ public class InteractiveTextProcessor {
 
 	/**
 	 * 点击指定索引的元素
-	 * 
 	 * @param index 元素全局索引
 	 * @return 操作是否成功
 	 */
@@ -106,7 +101,6 @@ public class InteractiveTextProcessor {
 
 	/**
 	 * 在指定索引的输入元素中填写文本
-	 * 
 	 * @param index 元素全局索引
 	 * @param text 要填写的文本
 	 * @return 操作是否成功
@@ -120,16 +114,14 @@ public class InteractiveTextProcessor {
 
 	/**
 	 * 获取网页中所有可交互元素的详细信息
-	 * 
 	 * @return 格式化后的元素信息字符串
 	 */
 	public String getInteractiveElementsInfo() {
 		return elementRegistry.generateElementsInfoText();
 	}
-	
+
 	/**
 	 * 获取交互元素总数
-	 * 
 	 * @return 元素数量
 	 */
 	public int getElementCount() {
@@ -138,7 +130,6 @@ public class InteractiveTextProcessor {
 
 	/**
 	 * 根据元素索引执行自定义操作
-	 * 
 	 * @param index 元素索引
 	 * @param action 要执行的操作
 	 * @return 操作是否成功

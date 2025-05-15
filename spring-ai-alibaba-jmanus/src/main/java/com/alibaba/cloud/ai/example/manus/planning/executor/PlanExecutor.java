@@ -66,7 +66,6 @@ public class PlanExecutor {
 	 * @return 执行结果
 	 */
 	public void executeAllSteps(ExecutionContext context) {
-		
 
 		recordPlanExecutionStart(context);
 		ExecutionPlan plan = context.getPlan();
@@ -119,9 +118,14 @@ public class PlanExecutor {
 			step.setResult("Execution failed: " + e.getMessage());
 		}
 		finally {
+			// release the agent
+			releaseResources();
 			recordStepEnd(step, context);
 		}
 
+	}
+
+	private void releaseResources() {
 	}
 
 	private String getStepFromStepReq(String stepRequirement) {
