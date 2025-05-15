@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -77,17 +78,17 @@ public class DynamicAgent extends ReActAgent {
 
 	private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
 
-   public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-		   ManusProperties manusProperties, String name, String description, String systemPrompt,
-		   String nextStepPrompt, List<String> availableToolKeys, ToolCallingManager toolCallingManager) {
-	   super(llmService, planExecutionRecorder, manusProperties);
-	   this.agentName = name;
-	   this.agentDescription = description;
-	   this.systemPrompt = systemPrompt;
-	   this.nextStepPrompt = nextStepPrompt;
-	   this.availableToolKeys = availableToolKeys;
-	   this.toolCallingManager = toolCallingManager;
-   }
+	public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
+			ManusProperties manusProperties, String name, String description, String systemPrompt,
+			String nextStepPrompt, List<String> availableToolKeys, ToolCallingManager toolCallingManager) {
+		super(llmService, planExecutionRecorder, manusProperties);
+		this.agentName = name;
+		this.agentDescription = description;
+		this.systemPrompt = systemPrompt;
+		this.nextStepPrompt = nextStepPrompt;
+		this.availableToolKeys = availableToolKeys;
+		this.toolCallingManager = toolCallingManager;
+	}
 
 	@Override
 	protected boolean think() {
@@ -160,7 +161,23 @@ public class DynamicAgent extends ReActAgent {
 
 			// 工具调用循环
 			while (chatResponse != null && chatResponse.hasToolCalls()) {
-				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(promptWithMemory, chatResponse);
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(promptWithMemory,
+						chatResponse);
+				// 处理工具调用结果
+				List<ToolCall> toolCalls = chatResponse.getResult().getOutput().getToolCalls();
+
+				Map<String,String> toolEnvDataMap = new HashMap<>();
+				for (ToolCall toolCall : toolCalls) {
+					// 调用工具来收集上下文，如果工具支持的话
+					toolEnvDataMap.put(toolCall.name(), collectEnvData(toolCall.name()));
+				}
+				StringBuilder toolEnvDataBuilder = new StringBuilder();
+				for (Map.Entry<String, String> entry : toolEnvDataMap.entrySet()) {
+					toolEnvDataBuilder.append(entry.getKey()).append("工具的上下文信息 :\n ").append(entry.getValue()).append("\n");
+				}
+				
+				addEnvData(EXECUTION_ENV_KEY_STRING, toolEnvDataBuilder.toString());
+				setData(getData());
 				chatMemory.add(conversationId, toolExecutionResult.conversationHistory()
 						.get(toolExecutionResult.conversationHistory().size() - 1));
 				promptWithMemory = new Prompt(chatMemory.get(conversationId), userPrompt.getOptions());
@@ -233,8 +250,7 @@ public class DynamicAgent extends ReActAgent {
 				if (toolCallback != null) {
 					toolCallbacks.add(toolCallback.getToolCallback());
 				}
-			}
-			else {
+			} else {
 				log.warn("Tool callback for {} not found in the map.", toolKey);
 			}
 		}
