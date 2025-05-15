@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
+import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
@@ -54,10 +55,13 @@ public class PlanExecutor {
 
 	private final AgentService agentService;
 
-	public PlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder, AgentService agentService) {
+	private LlmService llmService;
+
+	public PlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder, AgentService agentService, LlmService llmService) {
 		this.agents = agents;
 		this.recorder = recorder;
 		this.agentService = agentService;
+		this.llmService = llmService;
 	}
 
 	/**
@@ -78,7 +82,8 @@ public class PlanExecutor {
 			}
 			context.setSuccess(true);
 		} finally {
-			
+			String planId  =  context.getPlanId();
+			llmService.clearAgentMemory(planId);
 		}
 	}
 
@@ -122,15 +127,11 @@ public class PlanExecutor {
 			logger.error("Error executing step: {}", e.getMessage(), e);
 			step.setResult("Execution failed: " + e.getMessage());
 		} finally {
-			// release the agent
-			releaseResources();
 			recordStepEnd(step, context);
 		}
 
 	}
 
-	private void releaseResources() {
-	}
 
 	private String getStepFromStepReq(String stepRequirement) {
 		Matcher matcher = pattern.matcher(stepRequirement);
