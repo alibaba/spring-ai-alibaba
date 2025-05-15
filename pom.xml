@@ -14,20 +14,38 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
 -->
-
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba</artifactId>
     <version>${revision}</version>
 
     <packaging>pom</packaging>
-    <url>https://github.com/alibaba/spring-ai-alibaba</url>
 
     <name>Spring AI Alibaba</name>
     <description>Building AI applications with Spring Boot</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+
+    <organization>
+        <name>Alibaba Cloud Inc.</name>
+        <url>https://java2ai.com</url>
+    </organization>
+    <licenses>
+        <license>
+            <name>Apache 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <id>chickenlj</id>
+            <name>Jun Liu</name>
+            <email>ken.lj.hz@gmail.com</email>
+            <organization>Alibaba Cloud</organization>
+            <organizationUrl>https://aliyun.com</organizationUrl>
+        </developer>
+    </developers>
 
     <modules>
         <!-- Spring AI Alibaba Modules -->
@@ -118,6 +136,19 @@
         <module>spring-ai-alibaba-arms-observation-autoconfigure</module>
 
     </modules>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
+    <issueManagement>
+        <system>Github Issues</system>
+        <url>https://github.com/alibaba/spring-ai-alibaba/issues</url>
+    </issueManagement>
+    <ciManagement>
+        <system>Github Actions</system>
+        <url>https://github.com/alibaba/spring-ai-alibaba/actions</url>
+    </ciManagement>
 
     <properties>
 
@@ -168,7 +199,6 @@
         <surefireArgLine>-Xms512m -Xmx1024m</surefireArgLine>
 
         <!-- plugin versions -->
-        <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
         <maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
         <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
@@ -185,6 +215,7 @@
         <springdoc-openapi-maven-plugin.version>1.4</springdoc-openapi-maven-plugin.version>
         <spring-javaformat-maven-plugin.version>0.0.39</spring-javaformat-maven-plugin.version>
         <maven-project-info-reports-plugin.version>3.4.5</maven-project-info-reports-plugin.version>
+        <sorter-maven-plugin.version>1.0.1</sorter-maven-plugin.version>
 
         <!-- CheckStyle Maven Plugin -->
         <maven-checkstyle-plugin.version>3.5.0</maven-checkstyle-plugin.version>
@@ -227,39 +258,24 @@
         </dependencies>
     </dependencyManagement>
 
-    <organization>
-        <name>Alibaba Cloud Inc.</name>
-        <url>https://java2ai.com</url>
-    </organization>
-    <scm>
-        <url>https://github.com/alibaba/spring-ai-alibaba</url>
-        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
-        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
-    </scm>
-    <issueManagement>
-        <system>Github Issues</system>
-        <url>https://github.com/alibaba/spring-ai-alibaba/issues</url>
-    </issueManagement>
-    <ciManagement>
-        <system>Github Actions</system>
-        <url>https://github.com/alibaba/spring-ai-alibaba/actions</url>
-    </ciManagement>
-    <licenses>
-        <license>
-            <name>Apache 2.0</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-    <developers>
-        <developer>
-            <id>chickenlj</id>
-            <name>Jun Liu</name>
-            <email>ken.lj.hz@gmail.com</email>
-            <organization>Alibaba Cloud</organization>
-            <organizationUrl>https://aliyun.com</organizationUrl>
-        </developer>
-    </developers>
+    <repositories>
+        <repository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+        </repository>
+        <repository>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <id>spring-snapshots</id>
+            <name>Spring Snapshots</name>
+            <url>https://repo.spring.io/snapshot</url>
+        </repository>
+    </repositories>
 
     <build>
         <pluginManagement>
@@ -278,11 +294,11 @@
                 <version>${spring-javaformat-maven-plugin.version}</version>
                 <executions>
                     <execution>
-                        <phase>validate</phase>
-                        <inherited>true</inherited>
                         <goals>
                             <goal>validate</goal>
                         </goals>
+                        <phase>validate</phase>
+                        <inherited>true</inherited>
                     </execution>
                 </executions>
             </plugin>
@@ -305,6 +321,9 @@
                 <executions>
                     <execution>
                         <id>checkstyle-validation</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
                         <phase>validate</phase>
                         <inherited>true</inherited>
                         <configuration>
@@ -313,22 +332,14 @@
                             <configLocation>tools/src/checkstyle/checkstyle.xml</configLocation>
                             <headerLocation>tools/src/checkstyle/checkstyle-header.txt</headerLocation>
                             <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                            <propertyExpansion>
-                                checkstyle.build.directory=${project.build.directory}
+                            <propertyExpansion>checkstyle.build.directory=${project.build.directory}
                                 checkstyle.suppressions.file=${project.basedir}/tools/src/checkstyle/checkstyle-suppressions.xml
                                 checkstyle.additional.suppressions.file=${project.basedir}/tools/src/checkstyle/checkstyle-suppressions.xml
-                                checkstyle.header.file=${project.basedir}/tools/src/checkstyle/checkstyle-header.txt
-                            </propertyExpansion>
-                            <failsOnError>${maven-checkstyle-plugin.failsOnError}
-                            </failsOnError>
+                                checkstyle.header.file=${project.basedir}/tools/src/checkstyle/checkstyle-header.txt</propertyExpansion>
+                            <failsOnError>${maven-checkstyle-plugin.failsOnError}</failsOnError>
                             <violationSeverity>warning</violationSeverity>
-                            <failOnViolation>
-                                ${maven-checkstyle-plugin.failOnViolation}
-                            </failOnViolation>
+                            <failOnViolation>${maven-checkstyle-plugin.failOnViolation}</failOnViolation>
                         </configuration>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
                     </execution>
                 </executions>
             </plugin>
@@ -360,17 +371,17 @@
                     </execution>
                     <execution>
                         <id>java-compile</id>
-                        <phase>compile</phase>
                         <goals>
                             <goal>compile</goal>
                         </goals>
+                        <phase>compile</phase>
                     </execution>
                     <execution>
                         <id>java-test-compile</id>
-                        <phase>test-compile</phase>
                         <goals>
                             <goal>testCompile</goal>
                         </goals>
+                        <phase>test-compile</phase>
                     </execution>
                 </executions>
             </plugin>
@@ -411,10 +422,10 @@
                 <executions>
                     <execution>
                         <id>generate-sources</id>
-                        <phase>package</phase>
                         <goals>
                             <goal>jar</goal>
                         </goals>
+                        <phase>package</phase>
                     </execution>
                 </executions>
             </plugin>
@@ -425,10 +436,10 @@
                 <executions>
                     <execution>
                         <id>flatten</id>
-                        <phase>process-resources</phase>
                         <goals>
                             <goal>flatten</goal>
                         </goals>
+                        <phase>process-resources</phase>
                         <configuration>
                             <updatePomFile>true</updatePomFile>
                             <flattenMode>ossrh</flattenMode>
@@ -444,8 +455,21 @@
                     </execution>
                     <execution>
                         <id>clean</id>
-                        <phase>clean</phase>
                         <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <phase>clean</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>io.github.tonycody.maven.plugins</groupId>
+                <artifactId>sorter-maven-plugin</artifactId>
+                <version>${sorter-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>sort</goal>
                             <goal>clean</goal>
                         </goals>
                     </execution>
@@ -467,24 +491,5 @@
             </plugin>
         </plugins>
     </reporting>
-
-    <repositories>
-        <repository>
-            <id>spring-milestones</id>
-            <name>Spring Milestones</name>
-            <url>https://repo.spring.io/milestone</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>spring-snapshots</id>
-            <name>Spring Snapshots</name>
-            <url>https://repo.spring.io/snapshot</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-        </repository>
-    </repositories>
 
 </project>
