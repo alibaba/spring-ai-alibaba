@@ -26,7 +26,6 @@ import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserType;
-import com.microsoft.playwright.Page;
 
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
@@ -40,10 +39,11 @@ import org.springframework.stereotype.Service;
 public class ChromeDriverService {
 
 	private static final Logger log = LoggerFactory.getLogger(ChromeDriverService.class);
-	private Playwright playwright;
-	private final ConcurrentHashMap<String, Page> drivers = new ConcurrentHashMap<>();
+
+	private final ConcurrentHashMap<String, DriverWrapper> drivers = new ConcurrentHashMap<>();
 	private final Lock driverLock = new ReentrantLock();
-	private  ManusProperties manusProperties;
+	private ManusProperties manusProperties;
+
 	public ChromeDriverService(ManusProperties manusProperties) {
 		this.manusProperties = manusProperties;
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -51,16 +51,17 @@ public class ChromeDriverService {
 			cleanupAllPlaywrightProcesses();
 		}));
 	}
-	public Page getDriver(String planId) {
+
+	public DriverWrapper getDriver(String planId) {
 		if (planId == null) {
 			throw new IllegalArgumentException("planId cannot be null");
 		}
 
-		Page currentDriver = drivers.get(planId);
+		DriverWrapper currentDriver = drivers.get(planId);
 		if (currentDriver != null) {
 			return currentDriver;
 		}
-		
+
 		try {
 			driverLock.lock();
 			currentDriver = drivers.get(planId);
@@ -73,7 +74,7 @@ public class ChromeDriverService {
 		} finally {
 			driverLock.unlock();
 		}
-		
+
 		return currentDriver;
 	}
 
@@ -87,15 +88,17 @@ public class ChromeDriverService {
 	}
 
 	public void closeDriverForPlan(String planId) {
-		Page driver = drivers.remove(planId);
+		DriverWrapper driver = drivers.remove(planId);
 		if (driver != null) {
 			driver.close();
 		}
 	}
 
-	private Page createNewDriver() {
+	private DriverWrapper createNewDriver() {
+		Playwright playwright = null;
 		try {
-			if(playwright == null) {
+
+			if (playwright == null) {
 				playwright = Playwright.create();
 			}
 			BrowserType.LaunchOptions options = new BrowserType.LaunchOptions();
@@ -116,14 +119,14 @@ public class ChromeDriverService {
 			if (manusProperties.getBrowserHeadless()) {
 				log.info("启用 Playwright headless 模式");
 				options.setHeadless(true);
-			}else{
+			} else {
 				log.info("启用 Playwright 非 headless 模式");
 				options.setHeadless(false);
 			}
 
 			Browser browser = playwright.chromium().launch(options);
 			log.info("Created new Playwright Browser instance with anti-detection");
-			return browser.newPage();
+			return new DriverWrapper(playwright, browser, browser.newPage());
 		} catch (Exception e) {
 			if (playwright != null) {
 				try {
@@ -145,12 +148,12 @@ public class ChromeDriverService {
 		return userAgents.get(new Random().nextInt(userAgents.size()));
 	}
 
-
 	@PreDestroy
 	public void cleanup() {
 		log.info("Spring container shutting down - cleaning up Browser resources");
 		cleanupAllPlaywrightProcesses();
 	}
+
 	public void setManusProperties(ManusProperties manusProperties) {
 		this.manusProperties = manusProperties;
 	}

@@ -38,7 +38,7 @@ public class MoveToAndClickAction extends BrowserAction {
             return new ToolExecuteResult("X and Y coordinates are required for 'move_to_and_click' action");
         }
 
-        Page page = browserUseTool.getDriver(); // 获取 Playwright 的 Page 实例
+        Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
 
         // 记录点击前的窗口状态
         List<String> beforeWindowHandles = page.context().pages().stream().map(Page::url).toList();
@@ -64,11 +64,11 @@ public class MoveToAndClickAction extends BrowserAction {
             Page newPage = page.context().pages().stream().filter(p -> p.url().equals(newHandle)).findFirst().orElse(null);
             if (newPage != null) {
                 log.info("New tab detected, switched to: {}", newPage.url());
-                browserUseTool.getInteractiveTextProcessor().refreshCache(newPage);
+                refreshElements(newPage);
                 return new ToolExecuteResult("Clicked at position (" + x + ", " + y + ") and opened in new tab: " + newPage.url());
             }
         }
-        browserUseTool.getInteractiveTextProcessor().refreshCache(page);
+        refreshElements(page);
         // 如果没有明显变化，返回普通点击成功消息
         return new ToolExecuteResult("Clicked at position (" + x + ", " + y + ")");
     }

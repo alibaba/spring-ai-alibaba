@@ -17,143 +17,134 @@ package com.alibaba.cloud.ai.example.manus.tool.browser;
 
 import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Frame;
+import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.Locator.WaitForOptions;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Frame.InnerHTMLOptions;
+import com.microsoft.playwright.Frame.LocatorOptions;
+import com.microsoft.playwright.options.LoadState;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 专门处理网页中交互式文本元素的工具类。 提供了查找、分析和处理网页中文本内容的功能。
+ * 使用InteractiveElementRegistry管理页面中所有交互元素，提供全局索引访问能力。
  */
 public class InteractiveTextProcessor {
 
 	private static final Logger log = LoggerFactory.getLogger(InteractiveTextProcessor.class);
+
+	/**
+	 * 存储和管理页面中的交互式元素
+	 */
+	private final InteractiveElementRegistry elementRegistry;
+
+	/**
+	 * 构造函数
+	 */
+	public InteractiveTextProcessor() {
+		this.elementRegistry = new InteractiveElementRegistry();
+	}
+
+	/**
+	 * 刷新页面中的所有交互元素，包括iframe中的
+	 * 
+	 * @param page 要处理的页面
+	 */
+	public void refreshCache(Page page) {
+		// 使用registry刷新页面元素
+		elementRegistry.refresh(page);
+		log.info("已刷新页面元素，共找到 {} 个交互元素", elementRegistry.size());
+	}
+
+	/**
+	 * 获取指定索引的交互元素
+	 * 
+	 * @param index 全局索引
+	 * @return 该索引对应的交互元素，如果不存在则返回空
+	 */
+	public Optional<InteractiveElement> getElementByIndex(int index) {
+		return elementRegistry.getElementById(index);
+	}
 	
 	/**
-	 * 用于存储交互式元素的缓存列表
+	 * 获取所有交互元素的列表
+	 * 
+	 * @return 交互元素列表
 	 */
-	private List<ElementHandle> interactiveElementsCache;
-
+	public List<InteractiveElement> getAllElements() {
+		return elementRegistry.getAllElements();
+	}
+	
 	/**
-	 * 用于选择交互式元素的CSS选择器
+	 * 获取特定类型的交互元素列表
+	 * 
+	 * @param tagName 元素的HTML标签名
+	 * @return 匹配该类型的元素列表
 	 */
-	private static final String INTERACTIVE_ELEMENTS_SELECTOR = "a, button, input, select, textarea[type='search'], textarea, "
-			+ "[role='button'], [role='link'], [role='textbox'], [role='search'], [role='searchbox']";
-
-	public void refreshCache(Page page) {
-		// 清空现有缓存
-		this.interactiveElementsCache = new ArrayList<>();
-
-		// 等待页面完全加载
-		waitForPageLoad(page);
-
-		// 先获取主文档中的元素
-		List<ElementHandle> mainDocElements = getInteractiveElementsInner(page);
-		this.interactiveElementsCache.addAll(mainDocElements);
-
-		// 获取并处理所有iframe中的元素
-		processIframes(page);
+	public List<InteractiveElement> getElementsByTagName(String tagName) {
+		return elementRegistry.getElementsByTagName(tagName);
 	}
 
 	/**
-	 * 等待页面完全加载，包括iframe和动态内容
-	 * @param page Page实例
+	 * 点击指定索引的元素
+	 * 
+	 * @param index 元素全局索引
+	 * @return 操作是否成功
 	 */
-	private void waitForPageLoad(Page page) {
-		try {
-			page.waitForLoadState(); // 等待页面达到'load'状态
-			log.info("页面加载成功");
-		} catch (Exception e) {
-			log.warn("等待页面加载时出错: {}", e.getMessage());
-		}
+	public boolean clickElement(int index) {
+		return elementRegistry.performAction(index, element -> {
+			element.getLocator().click();
+			log.info("点击了索引为 {} 的元素: {}", index, element.toString());
+		});
 	}
 
 	/**
-	 * 递归处理页面中的所有iframe元素
-	 * @param page Page实例
+	 * 在指定索引的输入元素中填写文本
+	 * 
+	 * @param index 元素全局索引
+	 * @param text 要填写的文本
+	 * @return 操作是否成功
 	 */
-	private void processIframes(Page page) {
-		List<Frame> frames = page.frames();
-		log.info("找到 {} 个iframe", frames.size());
-		for (Frame frame : frames) {
-			try {
-				// 获取iframe中的交互元素并添加到缓存
-				List<ElementHandle> iframeElements = getInteractiveElementsInner(frame);
-				this.interactiveElementsCache.addAll(iframeElements);
-			} catch (Exception e) {
-				log.warn("处理iframe时出错: {}", e.getMessage());
-			}
-		}
-	}
-
-	/**
-	 * 获取网页中所有可交互的元素
-	 * @param page Page实例
-	 * @return 包装后的可交互元素列表
-	 */
-	public List<ElementHandle> getInteractiveElements(Page page) {
-		if (interactiveElementsCache == null) {
-			refreshCache(page);
-		}
-		return interactiveElementsCache;
-	}
-
-	/**
-	 * 刷新缓存中的可交互元素
-	 * @param page Page实例
-	 * @return 当前文档中的交互元素列表
-	 */
-	private List<ElementHandle> getInteractiveElementsInner(Page page) {
-		try {
-			return page.querySelectorAll(INTERACTIVE_ELEMENTS_SELECTOR);
-		} catch (Exception e) {
-			log.warn("获取交互元素时出错: {}", e.getMessage());
-			return new ArrayList<>();
-		}
-	}
-
-	/**
-	 * 刷新缓存中的可交互元素
-	 * @param frame Frame实例
-	 * @return 当前iframe中的交互元素列表
-	 */
-	private List<ElementHandle> getInteractiveElementsInner(Frame frame) {
-		try {
-			return frame.querySelectorAll(INTERACTIVE_ELEMENTS_SELECTOR);
-		} catch (Exception e) {
-			log.warn("Error fetching interactive elements from frame: {}", e.getMessage());
-			return new ArrayList<>();
-		}
+	public boolean fillText(int index, String text) {
+		return elementRegistry.performAction(index, element -> {
+			element.getLocator().fill(text);
+			log.info("在索引为 {} 的元素中填写了文本: {}", index, text);
+		});
 	}
 
 	/**
 	 * 获取网页中所有可交互元素的详细信息
-	 * @param page Page实例
+	 * 
 	 * @return 格式化后的元素信息字符串
 	 */
-	public String getInteractiveElementsInfo(Page page) {
-		StringBuilder resultInfo = new StringBuilder();
-		List<ElementHandle> interactiveElements = getInteractiveElements(page);
+	public String getInteractiveElementsInfo() {
+		return elementRegistry.generateElementsInfoText();
+	}
+	
+	/**
+	 * 获取交互元素总数
+	 * 
+	 * @return 元素数量
+	 */
+	public int getElementCount() {
+		return elementRegistry.size();
+	}
 
-		// 使用全局索引计数，不会在iframe内重置
-		for (int i = 0; i < interactiveElements.size(); i++) {
-			// 获取原始信息
-			String originalInfo = (String) interactiveElements.get(i).evaluate("element => element.outerHTML");
-			
-			// 如果是空字符串则跳过
-			if (originalInfo == null || originalInfo.isEmpty()) {
-				continue;
-			}
-			
-			// 替换索引，确保全局唯一
-			// 这里假设原始信息的格式是 "[index] <tag...>text</tag>"
-			String formattedInfo = originalInfo.replaceFirst("\\[\\d+\\]", "[" + i + "]");
-			resultInfo.append(formattedInfo);
-		}
-
-		return resultInfo.toString();
+	/**
+	 * 根据元素索引执行自定义操作
+	 * 
+	 * @param index 元素索引
+	 * @param action 要执行的操作
+	 * @return 操作是否成功
+	 */
+	public boolean performAction(int index, InteractiveElementRegistry.ElementAction action) {
+		return elementRegistry.performAction(index, action);
 	}
 
 }

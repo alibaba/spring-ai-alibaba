@@ -17,11 +17,13 @@ package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
 import java.util.List;
 
-import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
+import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement;
+// import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+
 
 public class ClickByElementAction extends BrowserAction {
     private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ClickByElementAction.class);
@@ -37,42 +39,46 @@ public class ClickByElementAction extends BrowserAction {
             return new ToolExecuteResult("Index is required for 'click' action");
         }
 
-        Page page = browserUseTool.getDriver(); // 获取 Playwright 的 Page 实例
-        List<ElementHandle> interactiveElements = getInteractiveElements(page); // 替代 Selenium 的 getInteractiveElements
+        Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
+
+        // 获取交互元素（InteractiveElement）
+        List<InteractiveElement> interactiveElements = getInteractiveElements(page);
 
         if (index < 0 || index >= interactiveElements.size()) {
             return new ToolExecuteResult("Element with index " + index + " not found");
         }
 
-        ElementHandle element = interactiveElements.get(index);
-        log.info("Clicking element: {}", element.textContent());
+        InteractiveElement element = interactiveElements.get(index);
+        log.info("Clicking element: {}", element.getText());
 
-        // 记录点击前的窗口状态
-        List<String> beforeWindowHandles = page.context().pages().stream().map(Page::url).toList();
-        String currentUrl = page.url();
+        // 使用 Playwright 的事件监听等待新页面
+        Page newPage = null;
+        try {
+            // 启动等待新页面事件（异步）
+            com.microsoft.playwright.BrowserContext context = page.context();
+            final Page[] newPageHolder = new Page[1];
+            context.onPage(p -> newPageHolder[0] = p);
 
-        // 执行点击操作
-        element.click();
+            // 执行点击操作
+            element.getLocator().click();
 
-        // 等待页面变化（最多等待10秒）
-        page.waitForTimeout(10000);
-
-        // 检查是否有新窗口打开
-        List<String> afterWindowHandles = page.context().pages().stream().map(Page::url).toList();
-        if (afterWindowHandles.size() > beforeWindowHandles.size()) {
-            // 找出新打开的窗口
-            afterWindowHandles.removeAll(beforeWindowHandles);
-            String newHandle = afterWindowHandles.get(0);
-
-            // 切换到新窗口
-            Page newPage = page.context().pages().stream().filter(p -> p.url().equals(newHandle)).findFirst().orElse(null);
+            // 最多等待10秒新页面出现
+            long start = System.currentTimeMillis();
+            while (newPageHolder[0] == null && System.currentTimeMillis() - start < 10000) {
+                Thread.sleep(100);
+            }
+            newPage = newPageHolder[0];
             if (newPage != null) {
+                newPage.waitForLoadState(com.microsoft.playwright.options.LoadState.DOMCONTENTLOADED);
                 log.info("New tab detected, switched to: {}", newPage.url());
                 return new ToolExecuteResult("Clicked element and opened in new tab: " + newPage.url());
             }
+        } catch (Exception e) {
+            log.warn("Exception while waiting for new page: {}", e.getMessage());
         }
 
-        browserUseTool.getInteractiveTextProcessor().refreshCache(page);
+        // 重新刷新页面元素
+        refreshElements(page);
         // 如果没有明显变化，返回普通点击成功消息
         return new ToolExecuteResult("Clicked element at index " + index);
     }

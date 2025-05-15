@@ -29,7 +29,7 @@ public class CloseTabAction extends BrowserAction {
 
     @Override
     public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        Page page = browserUseTool.getDriver(); // 获取 Playwright 的 Page 实例
+        Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
 
         // 关闭当前页面
         page.close();

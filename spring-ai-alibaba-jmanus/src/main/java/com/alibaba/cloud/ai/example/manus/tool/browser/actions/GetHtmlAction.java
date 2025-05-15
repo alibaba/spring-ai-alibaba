@@ -30,11 +30,8 @@ public class GetHtmlAction extends BrowserAction {
 
     @Override
     public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        Page page = browserUseTool.getDriver(); // 获取 Playwright 的 Page 实例
+        Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
         String html = page.content(); // 获取页面 HTML 内容
-
-        browserUseTool.getInteractiveTextProcessor().refreshCache(page); // 刷新交互式文本缓存
-
         return new ToolExecuteResult(
                 html.length() > MAX_LENGTH ? html.substring(0, MAX_LENGTH) + "..." : html);
     }
