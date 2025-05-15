@@ -57,7 +57,7 @@ public class YoudaoTranslateProperties extends CommonToolCallProperties {
 
 	public YoudaoTranslateProperties() {
 		super(YOUDAO_TRANSLATE_BASE_URL);
-		setPropertiesFromEnv("YOUDAO_APP_ID", "YOUDAO_APP_SECRET", null, null);
+		setPropertiesFromEnv(null, "YOUDAO_APP_SECRET", "YOUDAO_APP_ID", null);
 	}
 
 }
