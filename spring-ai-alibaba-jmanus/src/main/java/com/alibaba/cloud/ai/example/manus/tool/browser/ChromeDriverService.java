@@ -41,7 +41,9 @@ public class ChromeDriverService {
 	private static final Logger log = LoggerFactory.getLogger(ChromeDriverService.class);
 
 	private final ConcurrentHashMap<String, DriverWrapper> drivers = new ConcurrentHashMap<>();
+
 	private final Lock driverLock = new ReentrantLock();
+
 	private ManusProperties manusProperties;
 
 	public ChromeDriverService(ManusProperties manusProperties) {
@@ -71,7 +73,8 @@ public class ChromeDriverService {
 			log.info("Creating new Playwright Browser instance for planId: {}", planId);
 			currentDriver = createNewDriver();
 			drivers.put(planId, currentDriver);
-		} finally {
+		}
+		finally {
 			driverLock.unlock();
 		}
 
@@ -82,7 +85,8 @@ public class ChromeDriverService {
 		try {
 			drivers.clear();
 			log.info("Successfully cleaned up all Playwright processes	");
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Error cleaning up Browser processes", e);
 		}
 	}
@@ -104,22 +108,17 @@ public class ChromeDriverService {
 			BrowserType.LaunchOptions options = new BrowserType.LaunchOptions();
 
 			// 基础配置
-			options.setArgs(Arrays.asList(
-					"--remote-allow-origins=*",
-					"--disable-blink-features=AutomationControlled",
-					"--disable-infobars",
-					"--disable-notifications",
-					"--disable-dev-shm-usage",
-					"--lang=zh-CN,zh,en-US,en",
-					"--user-agent=" + getRandomUserAgent(),
-					"--window-size=1920,1080" // 默认窗口大小
+			options.setArgs(Arrays.asList("--remote-allow-origins=*", "--disable-blink-features=AutomationControlled",
+					"--disable-infobars", "--disable-notifications", "--disable-dev-shm-usage",
+					"--lang=zh-CN,zh,en-US,en", "--user-agent=" + getRandomUserAgent(), "--window-size=1920,1080" // 默认窗口大小
 			));
 
 			// 根据配置决定是否使用 headless 模式
 			if (manusProperties.getBrowserHeadless()) {
 				log.info("启用 Playwright headless 模式");
 				options.setHeadless(true);
-			} else {
+			}
+			else {
 				log.info("启用 Playwright 非 headless 模式");
 				options.setHeadless(false);
 			}
@@ -127,11 +126,13 @@ public class ChromeDriverService {
 			Browser browser = playwright.chromium().launch(options);
 			log.info("Created new Playwright Browser instance with anti-detection");
 			return new DriverWrapper(playwright, browser, browser.newPage());
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			if (playwright != null) {
 				try {
 					playwright.close();
-				} catch (Exception ex) {
+				}
+				catch (Exception ex) {
 					log.warn("Failed to close failed Playwright instance", ex);
 				}
 			}

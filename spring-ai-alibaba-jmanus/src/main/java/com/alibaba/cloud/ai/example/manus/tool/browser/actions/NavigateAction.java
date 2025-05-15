@@ -22,20 +22,21 @@ import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class NavigateAction extends BrowserAction {
 
-    public NavigateAction(BrowserUseTool browserUseTool) {
-        super(browserUseTool);
-    }
+	public NavigateAction(BrowserUseTool browserUseTool) {
+		super(browserUseTool);
+	}
 
-    @Override
-    public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        String url = request.getUrl();
-        if (url == null) {
-            return new ToolExecuteResult("URL is required for 'navigate' action");
-        }
-        Page page =  getCurrentPage(); // 获取 Playwright 的 Page 实例
-        page.navigate(url); // 使用 Playwright 的 navigate 方法
+	@Override
+	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
+		String url = request.getUrl();
+		if (url == null) {
+			return new ToolExecuteResult("URL is required for 'navigate' action");
+		}
+		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
+		page.navigate(url); // 使用 Playwright 的 navigate 方法
 
-        refreshElements(page);
-        return new ToolExecuteResult("Navigated to " + url);
-    }
+		refreshElements(page);
+		return new ToolExecuteResult("Navigated to " + url);
+	}
+
 }

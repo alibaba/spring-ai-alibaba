@@ -18,147 +18,145 @@ package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 import com.alibaba.fastjson.annotation.JSONField;
 
 /**
- * 浏览器工具请求对象
- * 用于封装浏览器操作的请求参数
+ * 浏览器工具请求对象 用于封装浏览器操作的请求参数
  */
 public class BrowserRequestVO {
-    
-    /**
-     * 浏览器操作类型
-     * 支持: navigate, click, input_text, key_enter, screenshot, get_html, get_text,
-     * execute_js, scroll, switch_tab, new_tab, close_tab, refresh, 
-     * get_element_position, move_to_and_click
-     */
-    private String action;
-    
-    /**
-     * URL地址，用于navigate和new_tab操作
-     */
-    private String url;
-    
-    /**
-     * 元素索引，用于click、input_text和key_enter操作
-     */
-    private Integer index;
-    
-    /**
-     * 要输入的文本，用于input_text操作
-     */
-    private String text;
-    
-    /**
-     * JavaScript代码，用于execute_js操作
-     */
-    private String script;
-    
-    /**
-     * 滚动像素，用于scroll操作
-     * 正数向下滚动，负数向上滚动
-     */
-    @JSONField(name = "scroll_amount")
-    private Integer scrollAmount;
-    
-    /**
-     * 标签页ID，用于switch_tab操作
-     */
-    @JSONField(name = "tab_id")
-    private Integer tabId;
-    
-    /**
-     * 元素名称，用于get_element_position操作
-     */
-    @JSONField(name = "element_name")
-    private String elementName;
-    
-    /**
-     * X坐标，用于move_to_and_click操作
-     */
-    @JSONField(name = "position_x")
-    private Integer positionX;
-    
-    /**
-     * Y坐标，用于move_to_and_click操作
-     */
-    @JSONField(name = "position_y")
-    private Integer positionY;
 
-    public String getAction() {
-        return action;
-    }
+	/**
+	 * 浏览器操作类型 支持: navigate, click, input_text, key_enter, screenshot, get_html, get_text,
+	 * execute_js, scroll, switch_tab, new_tab, close_tab, refresh, get_element_position,
+	 * move_to_and_click
+	 */
+	private String action;
 
-    public void setAction(String action) {
-        this.action = action;
-    }
+	/**
+	 * URL地址，用于navigate和new_tab操作
+	 */
+	private String url;
 
-    public String getUrl() {
-        return url;
-    }
+	/**
+	 * 元素索引，用于click、input_text和key_enter操作
+	 */
+	private Integer index;
 
-    public void setUrl(String url) {
-        this.url = url;
-    }
+	/**
+	 * 要输入的文本，用于input_text操作
+	 */
+	private String text;
 
-    public Integer getIndex() {
-        return index;
-    }
+	/**
+	 * JavaScript代码，用于execute_js操作
+	 */
+	private String script;
 
-    public void setIndex(Integer index) {
-        this.index = index;
-    }
+	/**
+	 * 滚动像素，用于scroll操作 正数向下滚动，负数向上滚动
+	 */
+	@JSONField(name = "scroll_amount")
+	private Integer scrollAmount;
 
-    public String getText() {
-        return text;
-    }
+	/**
+	 * 标签页ID，用于switch_tab操作
+	 */
+	@JSONField(name = "tab_id")
+	private Integer tabId;
 
-    public void setText(String text) {
-        this.text = text;
-    }
+	/**
+	 * 元素名称，用于get_element_position操作
+	 */
+	@JSONField(name = "element_name")
+	private String elementName;
 
-    public String getScript() {
-        return script;
-    }
+	/**
+	 * X坐标，用于move_to_and_click操作
+	 */
+	@JSONField(name = "position_x")
+	private Integer positionX;
 
-    public void setScript(String script) {
-        this.script = script;
-    }
+	/**
+	 * Y坐标，用于move_to_and_click操作
+	 */
+	@JSONField(name = "position_y")
+	private Integer positionY;
 
-    public Integer getScrollAmount() {
-        return scrollAmount;
-    }
+	public String getAction() {
+		return action;
+	}
 
-    public void setScrollAmount(Integer scrollAmount) {
-        this.scrollAmount = scrollAmount;
-    }
+	public void setAction(String action) {
+		this.action = action;
+	}
 
-    public Integer getTabId() {
-        return tabId;
-    }
+	public String getUrl() {
+		return url;
+	}
 
-    public void setTabId(Integer tabId) {
-        this.tabId = tabId;
-    }
-    
-    public String getElementName() {
-        return elementName;
-    }
+	public void setUrl(String url) {
+		this.url = url;
+	}
 
-    public void setElementName(String elementName) {
-        this.elementName = elementName;
-    }
+	public Integer getIndex() {
+		return index;
+	}
 
-    public Integer getPositionX() {
-        return positionX;
-    }
+	public void setIndex(Integer index) {
+		this.index = index;
+	}
 
-    public void setPositionX(Integer positionX) {
-        this.positionX = positionX;
-    }
+	public String getText() {
+		return text;
+	}
 
-    public Integer getPositionY() {
-        return positionY;
-    }
+	public void setText(String text) {
+		this.text = text;
+	}
 
-    public void setPositionY(Integer positionY) {
-        this.positionY = positionY;
-    }
+	public String getScript() {
+		return script;
+	}
+
+	public void setScript(String script) {
+		this.script = script;
+	}
+
+	public Integer getScrollAmount() {
+		return scrollAmount;
+	}
+
+	public void setScrollAmount(Integer scrollAmount) {
+		this.scrollAmount = scrollAmount;
+	}
+
+	public Integer getTabId() {
+		return tabId;
+	}
+
+	public void setTabId(Integer tabId) {
+		this.tabId = tabId;
+	}
+
+	public String getElementName() {
+		return elementName;
+	}
+
+	public void setElementName(String elementName) {
+		this.elementName = elementName;
+	}
+
+	public Integer getPositionX() {
+		return positionX;
+	}
+
+	public void setPositionX(Integer positionX) {
+		this.positionX = positionX;
+	}
+
+	public Integer getPositionY() {
+		return positionY;
+	}
+
+	public void setPositionY(Integer positionY) {
+		this.positionY = positionY;
+	}
+
 }

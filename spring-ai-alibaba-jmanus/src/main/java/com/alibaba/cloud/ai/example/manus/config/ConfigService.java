@@ -64,60 +64,61 @@ public class ConfigService {
 
 	private void initializeConfig(Object bean) {
 		Arrays.stream(bean.getClass().getDeclaredFields())
-				.filter(field -> field.isAnnotationPresent(ConfigProperty.class))
-				.forEach(field -> {
-					ConfigProperty annotation = field.getAnnotation(ConfigProperty.class);
-					String configPath = annotation.path();
+			.filter(field -> field.isAnnotationPresent(ConfigProperty.class))
+			.forEach(field -> {
+				ConfigProperty annotation = field.getAnnotation(ConfigProperty.class);
+				String configPath = annotation.path();
 
-					// 检查配置是否已存在
-					if (!configRepository.existsByConfigPath(configPath)) {
-						// 创建新的配置实体
-						ConfigEntity entity = new ConfigEntity();
-						entity.setConfigGroup(annotation.group());
-						entity.setConfigSubGroup(annotation.subGroup());
-						entity.setConfigKey(annotation.key());
-						entity.setConfigPath(configPath);
-						entity.setDescription(annotation.description());
-						entity.setDefaultValue(annotation.defaultValue());
-						entity.setInputType(annotation.inputType());
+				// 检查配置是否已存在
+				if (!configRepository.existsByConfigPath(configPath)) {
+					// 创建新的配置实体
+					ConfigEntity entity = new ConfigEntity();
+					entity.setConfigGroup(annotation.group());
+					entity.setConfigSubGroup(annotation.subGroup());
+					entity.setConfigKey(annotation.key());
+					entity.setConfigPath(configPath);
+					entity.setDescription(annotation.description());
+					entity.setDefaultValue(annotation.defaultValue());
+					entity.setInputType(annotation.inputType());
 
-						// 尝试从环境中获取配置值
-						String value = environment.getProperty(configPath);
-						if (value != null) {
-							entity.setConfigValue(value);
-						} else {
-							entity.setConfigValue(annotation.defaultValue());
-						}
-
-						// 如果是SELECT类型，保存选项JSON
-						if (annotation.inputType().name().equals("SELECT") && annotation.options().length > 0) {
-							// 将选项转换为JSON字符串
-							ConfigOption[] options = annotation.options();
-							StringBuilder optionsJson = new StringBuilder("[");
-							for (int i = 0; i < options.length; i++) {
-								if (i > 0)
-									optionsJson.append(",");
-								optionsJson.append("{")
-										.append("\"value\":\"")
-										.append(options[i].value())
-										.append("\",")
-										.append("\"label\":\"")
-										.append(options[i].label())
-										.append("\"")
-										.append("}");
-							}
-							optionsJson.append("]");
-							entity.setOptionsJson(optionsJson.toString());
-						}
-
-						// 保存配置
-						log.debug("Creating new config: {}", configPath);
-						configRepository.save(entity);
-
-						// 设置字段值
-						setFieldValue(bean, field, entity.getConfigValue());
+					// 尝试从环境中获取配置值
+					String value = environment.getProperty(configPath);
+					if (value != null) {
+						entity.setConfigValue(value);
 					}
-				});
+					else {
+						entity.setConfigValue(annotation.defaultValue());
+					}
+
+					// 如果是SELECT类型，保存选项JSON
+					if (annotation.inputType().name().equals("SELECT") && annotation.options().length > 0) {
+						// 将选项转换为JSON字符串
+						ConfigOption[] options = annotation.options();
+						StringBuilder optionsJson = new StringBuilder("[");
+						for (int i = 0; i < options.length; i++) {
+							if (i > 0)
+								optionsJson.append(",");
+							optionsJson.append("{")
+								.append("\"value\":\"")
+								.append(options[i].value())
+								.append("\",")
+								.append("\"label\":\"")
+								.append(options[i].label())
+								.append("\"")
+								.append("}");
+						}
+						optionsJson.append("]");
+						entity.setOptionsJson(optionsJson.toString());
+					}
+
+					// 保存配置
+					log.debug("Creating new config: {}", configPath);
+					configRepository.save(entity);
+
+					// 设置字段值
+					setFieldValue(bean, field, entity.getConfigValue());
+				}
+			});
 	}
 
 	public String getConfigValue(String configPath) {
@@ -140,7 +141,7 @@ public class ConfigService {
 	@Transactional
 	public void updateConfig(String configPath, String newValue) {
 		ConfigEntity entity = configRepository.findByConfigPath(configPath)
-				.orElseThrow(() -> new IllegalArgumentException("Config not found: " + configPath));
+			.orElseThrow(() -> new IllegalArgumentException("Config not found: " + configPath));
 
 		entity.setConfigValue(newValue);
 		configRepository.save(entity);
@@ -155,9 +156,9 @@ public class ConfigService {
 
 	private void updateBeanConfig(Object bean, String configPath, String newValue) {
 		Arrays.stream(bean.getClass().getDeclaredFields())
-				.filter(field -> field.isAnnotationPresent(ConfigProperty.class))
-				.filter(field -> field.getAnnotation(ConfigProperty.class).path().equals(configPath))
-				.forEach(field -> setFieldValue(bean, field, newValue));
+			.filter(field -> field.isAnnotationPresent(ConfigProperty.class))
+			.filter(field -> field.getAnnotation(ConfigProperty.class).path().equals(configPath))
+			.forEach(field -> setFieldValue(bean, field, newValue));
 	}
 
 	private void setFieldValue(Object bean, Field field, String value) {
@@ -168,7 +169,8 @@ public class ConfigService {
 			Object convertedValue = convertValue(value, field.getType());
 			field.set(bean, convertedValue);
 
-		} catch (IllegalAccessException e) {
+		}
+		catch (IllegalAccessException e) {
 			log.error("Failed to set field value", e);
 		}
 	}
@@ -179,15 +181,19 @@ public class ConfigService {
 
 		if (targetType == String.class) {
 			return value;
-		} else if (targetType == Boolean.class || targetType == boolean.class) {
+		}
+		else if (targetType == Boolean.class || targetType == boolean.class) {
 			if ("on".equalsIgnoreCase(value))
 				return Boolean.TRUE;
 			return Boolean.valueOf(value);
-		} else if (targetType == Integer.class || targetType == int.class) {
+		}
+		else if (targetType == Integer.class || targetType == int.class) {
 			return Integer.valueOf(value);
-		} else if (targetType == Long.class || targetType == long.class) {
+		}
+		else if (targetType == Long.class || targetType == long.class) {
 			return Long.valueOf(value);
-		} else if (targetType == Double.class || targetType == double.class) {
+		}
+		else if (targetType == Double.class || targetType == double.class) {
 			return Double.valueOf(value);
 		}
 
@@ -204,7 +210,7 @@ public class ConfigService {
 
 	public void resetConfig(String configPath) {
 		ConfigEntity entity = configRepository.findByConfigPath(configPath)
-				.orElseThrow(() -> new IllegalArgumentException("Config not found: " + configPath));
+			.orElseThrow(() -> new IllegalArgumentException("Config not found: " + configPath));
 
 		entity.setConfigValue(entity.getDefaultValue());
 		configRepository.save(entity);
@@ -216,7 +222,6 @@ public class ConfigService {
 
 	/**
 	 * 根据配置组名获取配置项
-	 * 
 	 * @param groupName 配置组名
 	 * @return 该组的所有配置项
 	 */
@@ -226,14 +231,13 @@ public class ConfigService {
 
 	/**
 	 * 批量更新配置项
-	 * 
 	 * @param configs 需要更新的配置项列表
 	 */
 	@Transactional
 	public void batchUpdateConfigs(List<ConfigEntity> configs) {
 		for (ConfigEntity config : configs) {
 			ConfigEntity existingConfig = configRepository.findById(config.getId())
-					.orElseThrow(() -> new IllegalArgumentException("Config not found with ID: " + config.getId()));
+				.orElseThrow(() -> new IllegalArgumentException("Config not found with ID: " + config.getId()));
 
 			// 只更新配置值
 			existingConfig.setConfigValue(config.getConfigValue());
@@ -242,8 +246,8 @@ public class ConfigService {
 			// 更新所有使用此配置的Bean
 			Map<String, Object> configBeans = applicationContext.getBeansWithAnnotation(ConfigurationProperties.class);
 			configBeans.values()
-					.forEach(bean -> updateBeanConfig(bean, existingConfig.getConfigPath(),
-							existingConfig.getConfigValue()));
+				.forEach(bean -> updateBeanConfig(bean, existingConfig.getConfigPath(),
+						existingConfig.getConfigValue()));
 		}
 	}
 

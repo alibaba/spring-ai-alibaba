@@ -194,7 +194,8 @@ class BrowserUseToolSpringTest {
 			ToolExecuteResult screenshotResult = executeAction("screenshot", null);
 			Assertions.assertTrue(screenshotResult.getOutput().contains("Screenshot captured"), "获取截图失败");
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
@@ -202,9 +203,8 @@ class BrowserUseToolSpringTest {
 
 	/**
 	 * 导航到指定URL并验证可交互元素的通用方法
-	 * 
-	 * @param tool             BrowserUseTool实例
-	 * @param url              目标URL
+	 * @param tool BrowserUseTool实例
+	 * @param url 目标URL
 	 * @param expectedElements 期望在页面中出现的元素关键词列表
 	 * @return 获取到的可交互元素字符串
 	 */
@@ -265,7 +265,8 @@ class BrowserUseToolSpringTest {
 
 			log.info("测试成功完成！");
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
@@ -284,7 +285,8 @@ class BrowserUseToolSpringTest {
 
 			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
 			log.info("GitHub搜索页面测试成功完成！");
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
@@ -302,7 +304,8 @@ class BrowserUseToolSpringTest {
 
 			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
 			log.info("Nacos页面测试成功完成！");
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
@@ -320,7 +323,8 @@ class BrowserUseToolSpringTest {
 
 			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
 			log.info("百度首页测试成功完成！");
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
@@ -335,8 +339,7 @@ class BrowserUseToolSpringTest {
 			String testUrl = "https://www.csdn.net/";
 			log.info("步骤1: 导航到CSDN网站");
 			ToolExecuteResult navigateResult = executeAction("navigate", testUrl);
-			Assertions.assertEquals("Navigated to " + testUrl, navigateResult.getOutput(),
-					"导航到CSDN网站失败");
+			Assertions.assertEquals("Navigated to " + testUrl, navigateResult.getOutput(), "导航到CSDN网站失败");
 
 			Page page = browserUseTool.getDriver();
 			// 获取可交互元素
@@ -369,10 +372,8 @@ class BrowserUseToolSpringTest {
 
 			// 步骤3: 点击"登录"按钮
 			log.info("步骤3: 点击登录按钮");
-			ToolExecuteResult clickLoginResult = executeAction("click", null, loginButtonIndex,
-					null);
-			Assertions.assertTrue(clickLoginResult.getOutput().contains("Clicked"),
-					"点击登录按钮失败");
+			ToolExecuteResult clickLoginResult = executeAction("click", null, loginButtonIndex, null);
+			Assertions.assertTrue(clickLoginResult.getOutput().contains("Clicked"), "点击登录按钮失败");
 
 			// 等待登录对话框加载
 			log.info("等待登录对话框加载...");
@@ -381,7 +382,8 @@ class BrowserUseToolSpringTest {
 			// 获取更新后的交互元素
 			state = browserUseTool.getCurrentState(page);
 			elements = (String) state.get("interactive_elements");
-			elementLines = elements.split("\n"); // 步骤4: 使用GetElementPositionByNameAction查找"APP登录"元素并通过坐标点击
+			elementLines = elements.split("\n"); // 步骤4:
+													// 使用GetElementPositionByNameAction查找"APP登录"元素并通过坐标点击
 			log.info("步骤4: 使用GetElementPositionByNameAction查找'APP登录'元素");
 
 			// 创建请求对象并设置元素名称
@@ -442,8 +444,7 @@ class BrowserUseToolSpringTest {
 						log.info("找到手机号输入框，索引: {}", phoneInputIndex);
 					}
 					// 查找获取验证码按钮
-					else if ((line.contains("button") || line.contains("a ")) &&
-							line.contains("获取验证码")) {
+					else if ((line.contains("button") || line.contains("a ")) && line.contains("获取验证码")) {
 						verifyCodeButtonIndex = elementIndex;
 						log.info("找到获取验证码按钮，索引: {}", verifyCodeButtonIndex);
 					}
@@ -454,8 +455,7 @@ class BrowserUseToolSpringTest {
 
 			// 步骤6: 在手机号输入框中输入"123456789"
 			log.info("步骤6: 在手机号输入框中输入'123456789'");
-			ToolExecuteResult phoneInputResult = executeAction("input_text", null,
-					phoneInputIndex, "123456789");
+			ToolExecuteResult phoneInputResult = executeAction("input_text", null, phoneInputIndex, "123456789");
 			Assertions.assertTrue(phoneInputResult.getOutput().contains("Successfully input"), "在手机号输入框输入文本失败");
 
 			// 获取更新后的交互元素，因为输入手机号后界面可能会变化
@@ -484,7 +484,8 @@ class BrowserUseToolSpringTest {
 			log.info("手机号输入验证成功，并已请求验证码！");
 
 			log.info("CSDN登录测试完成");
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}

@@ -21,21 +21,22 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class CloseTabAction extends BrowserAction {
-    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CloseTabAction.class);
 
-    public CloseTabAction(BrowserUseTool browserUseTool) {
-        super(browserUseTool);
-    }
+	private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CloseTabAction.class);
 
-    @Override
-    public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
+	public CloseTabAction(BrowserUseTool browserUseTool) {
+		super(browserUseTool);
+	}
 
-        // 关闭当前页面
-        page.close();
+	@Override
+	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
+		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
 
-        // 刷新标签页信息
-        return new ToolExecuteResult("Closed current tab");
-    }
+		// 关闭当前页面
+		page.close();
+
+		// 刷新标签页信息
+		return new ToolExecuteResult("Closed current tab");
+	}
 
 }

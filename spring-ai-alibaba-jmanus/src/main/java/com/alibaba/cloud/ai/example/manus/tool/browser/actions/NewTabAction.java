@@ -21,21 +21,22 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class NewTabAction extends BrowserAction {
-    public NewTabAction(BrowserUseTool browserUseTool) {
-        super(browserUseTool);
-    }
 
-    @Override
-    public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        String url = request.getUrl();
-        if (url == null) {
-            return new ToolExecuteResult("URL is required for 'new_tab' action");
-        }
+	public NewTabAction(BrowserUseTool browserUseTool) {
+		super(browserUseTool);
+	}
 
-        Page page = getCurrentPage(); // 打开新标签页
-        page.navigate(url); // 导航到指定 URL
-        refreshElements(page); // 刷新元素缓存
-        return new ToolExecuteResult("Opened new tab with URL " + url);
-    }
+	@Override
+	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
+		String url = request.getUrl();
+		if (url == null) {
+			return new ToolExecuteResult("URL is required for 'new_tab' action");
+		}
+
+		Page page = getCurrentPage(); // 打开新标签页
+		page.navigate(url); // 导航到指定 URL
+		refreshElements(page); // 刷新元素缓存
+		return new ToolExecuteResult("Opened new tab with URL " + url);
+	}
 
 }
