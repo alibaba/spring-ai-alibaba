@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.document.DocumentWithScore;
 import com.alibaba.cloud.ai.model.RerankModel;
 import com.alibaba.cloud.ai.model.RerankRequest;
 import com.alibaba.cloud.ai.model.RerankResponse;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.advisor.api.*;
@@ -160,6 +161,7 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 		});
 	}
 
+	@NotNull
 	@Override
 	public String getName() {
 		return this.getClass().getSimpleName();
@@ -270,7 +272,7 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 	 * in the Flux. The response advisor can modify the elements before they are returned
 	 * to the client.<br />
 	 * Inspired by
-	 * {@link org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor}.
+	 * {@link RetrievalRerankAdvisor}.
 	 */
 	private Predicate<AdvisedResponse> onFinishReason() {
 
