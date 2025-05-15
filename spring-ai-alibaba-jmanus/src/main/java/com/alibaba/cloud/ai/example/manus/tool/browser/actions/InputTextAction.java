@@ -26,49 +26,54 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class InputTextAction extends BrowserAction {
-    public InputTextAction(BrowserUseTool browserUseTool) {
-        super(browserUseTool);
-    }
 
-    @Override
-    public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        Integer index = request.getIndex();
-        String text = request.getText();
+	public InputTextAction(BrowserUseTool browserUseTool) {
+		super(browserUseTool);
+	}
 
-        Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
-        if (index == null || text == null) {
-            return new ToolExecuteResult("Index and text are required for 'input_text' action");
-        }
+	@Override
+	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
+		Integer index = request.getIndex();
+		String text = request.getText();
 
-        // 获取交互元素（InteractiveElement）
-        List<InteractiveElement> interactiveElements = getInteractiveElements(page);
-        if (index < 0 || index >= interactiveElements.size()) {
-            return new ToolExecuteResult("Element with index " + index + " not found");
-        }
+		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
+		if (index == null || text == null) {
+			return new ToolExecuteResult("Index and text are required for 'input_text' action");
+		}
 
-        com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement inputElement = interactiveElements.get(index);
-        String tagName = inputElement.getTagName();
-        if (!"input".equals(tagName) && !"textarea".equals(tagName)) {
-            return new ToolExecuteResult("Element at index " + index + " is not an input element");
-        }
+		// 获取交互元素（InteractiveElement）
+		List<InteractiveElement> interactiveElements = getInteractiveElements(page);
+		if (index < 0 || index >= interactiveElements.size()) {
+			return new ToolExecuteResult("Element with index " + index + " not found");
+		}
 
-        typeWithHumanDelay(inputElement.getLocator().elementHandle(), text);
-        // 直接通过 InteractiveElementRegistry 刷新缓存，避免使用已废弃方法
-        refreshElements(page);
-        return new ToolExecuteResult("Successfully input '" + text + "' into element at index " + index);
-    }
+		com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement inputElement = interactiveElements
+			.get(index);
+		String tagName = inputElement.getTagName();
+		if (!"input".equals(tagName) && !"textarea".equals(tagName)) {
+			return new ToolExecuteResult("Element at index " + index + " is not an input element");
+		}
 
-    private void typeWithHumanDelay(ElementHandle element, String text) {
-        // 模拟人类输入速度
-        Random random = new Random();
-        for (char c : text.toCharArray()) {
-            element.evaluate("(el, char) => el.value += char", String.valueOf(c)); // 使用 evaluate 模拟输入
-            try {
-                Thread.sleep(random.nextInt(100) + 50);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
+		typeWithHumanDelay(inputElement.getLocator().elementHandle(), text);
+		// 直接通过 InteractiveElementRegistry 刷新缓存，避免使用已废弃方法
+		refreshElements(page);
+		return new ToolExecuteResult("Successfully input '" + text + "' into element at index " + index);
+	}
+
+	private void typeWithHumanDelay(ElementHandle element, String text) {
+		// 模拟人类输入速度
+		Random random = new Random();
+		for (char c : text.toCharArray()) {
+			element.evaluate("(el, char) => el.value += char", String.valueOf(c)); // 使用
+																					// evaluate
+																					// 模拟输入
+			try {
+				Thread.sleep(random.nextInt(100) + 50);
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		}
+	}
 
 }

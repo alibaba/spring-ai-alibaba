@@ -45,8 +45,6 @@ public class ExecutionContext {
 	/** 计划执行是否成功的标志 */
 	private boolean success = false;
 
-	
-
 	/**
 	 * 获取计划ID
 	 * @return 计划的唯一标识符

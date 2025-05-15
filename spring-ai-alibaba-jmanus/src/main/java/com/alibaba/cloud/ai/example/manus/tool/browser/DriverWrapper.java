@@ -5,53 +5,57 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 
 public class DriverWrapper {
-    private Playwright  playwright;
-    private Page currentPage;
-    private Browser browser;
-    private InteractiveElementRegistry interactiveElementRegistry;
 
-    public DriverWrapper(Playwright playwright, Browser browser, Page currentPage) {
-        this.playwright = playwright;
-        this.currentPage = currentPage;
-        this.browser = browser;
-        this.interactiveElementRegistry = new InteractiveElementRegistry();
-    }
+	private Playwright playwright;
 
-    public InteractiveElementRegistry getInteractiveElementRegistry() {
-        return interactiveElementRegistry;
-    }
+	private Page currentPage;
 
-    public Playwright getPlaywright() {
-        return playwright;
-    }
+	private Browser browser;
 
-    public void setPlaywright(Playwright playwright) {
-        this.playwright = playwright;
-    }
+	private InteractiveElementRegistry interactiveElementRegistry;
 
-    public Page getCurrentPage() {
-        return currentPage;
-    }
+	public DriverWrapper(Playwright playwright, Browser browser, Page currentPage) {
+		this.playwright = playwright;
+		this.currentPage = currentPage;
+		this.browser = browser;
+		this.interactiveElementRegistry = new InteractiveElementRegistry();
+	}
 
-    public void setCurrentPage(Page currentPage) {
-        this.currentPage = currentPage;
-    }
+	public InteractiveElementRegistry getInteractiveElementRegistry() {
+		return interactiveElementRegistry;
+	}
 
-    public Browser getBrowser() {
-        return browser;
-    }
+	public Playwright getPlaywright() {
+		return playwright;
+	}
 
-    public void setBrowser(Browser browser) {
-        this.browser = browser;
-    }
-    
+	public void setPlaywright(Playwright playwright) {
+		this.playwright = playwright;
+	}
 
-    public void close() {
-        if (this.currentPage != null) {
-            this.currentPage.close();
-        }
-        if (this.browser != null) {
-            this.browser.close();
-        }
-    }
+	public Page getCurrentPage() {
+		return currentPage;
+	}
+
+	public void setCurrentPage(Page currentPage) {
+		this.currentPage = currentPage;
+	}
+
+	public Browser getBrowser() {
+		return browser;
+	}
+
+	public void setBrowser(Browser browser) {
+		this.browser = browser;
+	}
+
+	public void close() {
+		if (this.currentPage != null) {
+			this.currentPage.close();
+		}
+		if (this.browser != null) {
+			this.browser.close();
+		}
+	}
+
 }

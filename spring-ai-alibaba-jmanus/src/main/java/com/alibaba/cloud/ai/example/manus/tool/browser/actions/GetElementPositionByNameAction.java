@@ -13,135 +13,145 @@ import com.alibaba.fastjson.JSON;
 
 public class GetElementPositionByNameAction extends BrowserAction {
 
-    public GetElementPositionByNameAction(BrowserUseTool browserUseTool) {
-        super(browserUseTool);
-    }
+	public GetElementPositionByNameAction(BrowserUseTool browserUseTool) {
+		super(browserUseTool);
+	}
 
-    /**
-     * 元素位置信息类，用于存储每个匹配元素的全局位置和文本信息
-     */
-    public static class ElementPosition {
-        private int x;                  // It holds the absolute x coordinate
-        private int y;                  // It holds the absolute y coordinate
-        private String elementText;     // Element text content
+	/**
+	 * 元素位置信息类，用于存储每个匹配元素的全局位置和文本信息
+	 */
+	public static class ElementPosition {
 
-        // 构造函数
-        public ElementPosition() {}
-        
-        // 构造函数，只包含必要字段
-        public ElementPosition(int x, int y, String elementText) {
-            this.x = x;
-            this.y = y;
-            this.elementText = elementText;
-        }
+		private int x; // It holds the absolute x coordinate
 
-        // Getters and Setters
-        public int getX() {
-            return x;
-        }
+		private int y; // It holds the absolute y coordinate
 
-        public void setX(int x) {
-            this.x = x;
-        }
+		private String elementText; // Element text content
 
-        public int getY() {
-            return y;
-        }
+		// 构造函数
+		public ElementPosition() {
+		}
 
-        public void setY(int y) {
-            this.y = y;
-        }
+		// 构造函数，只包含必要字段
+		public ElementPosition(int x, int y, String elementText) {
+			this.x = x;
+			this.y = y;
+			this.elementText = elementText;
+		}
 
-        public String getElementText() {
-            return elementText;
-        }
+		// Getters and Setters
+		public int getX() {
+			return x;
+		}
 
-        public void setElementText(String elementText) {
-            this.elementText = elementText;
-        }
-    }
+		public void setX(int x) {
+			this.x = x;
+		}
 
-    @Override
-    public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        String elementName = request.getElementName();
-        if (elementName == null || elementName.isEmpty()) {
-            return new ToolExecuteResult("Element name is required for 'get_element_position' action");
-        }
+		public int getY() {
+			return y;
+		}
 
-        Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
+		public void setY(int y) {
+			this.y = y;
+		}
 
-        // 结果列表，存储所有匹配的元素位置
-        List<ElementPosition> positionResults = new ArrayList<>();
+		public String getElementText() {
+			return elementText;
+		}
 
+		public void setElementText(String elementText) {
+			this.elementText = elementText;
+		}
 
-        // 主页面处理
-        findAndProcessElementsByLocatorForPage(page, elementName, positionResults);
+	}
 
-        // 处理所有 iframe 中的元素
-        for (Frame frame : page.frames()) {
-            findAndProcessElementsByLocatorForFrame(frame, elementName, positionResults);
-        }
+	@Override
+	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
+		String elementName = request.getElementName();
+		if (elementName == null || elementName.isEmpty()) {
+			return new ToolExecuteResult("Element name is required for 'get_element_position' action");
+		}
 
-        // 返回结果
-        String resultJson = JSON.toJSONString(positionResults);
-        return new ToolExecuteResult(resultJson);
-    }
+		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
 
-    private void findAndProcessElementsByLocatorForPage(Page page, String elementName, List<ElementPosition> results) {
-        com.microsoft.playwright.Locator locator = page.locator("*");
-        int count = locator.count();
-        for (int i = 0; i < count; i++) {
-            com.microsoft.playwright.Locator nthLocator = locator.nth(i);
-            String text = null;
-            try {
-                text = nthLocator.textContent();
-            } catch (Exception e) {
-                continue;
-            }
-            if (text != null && text.toLowerCase().contains(elementName.toLowerCase())) {
-                com.microsoft.playwright.options.BoundingBox box = null;
-                try {
-                    box = nthLocator.boundingBox();
-                } catch (Exception e) {
-                    continue;
-                }
-                if (box != null) {
-                    ElementPosition position = new ElementPosition();
-                    position.setX((int) (box.x + box.width / 2));
-                    position.setY((int) (box.y + box.height / 2));
-                    position.setElementText(text.trim());
-                    results.add(position);
-                }
-            }
-        }
-    }
+		// 结果列表，存储所有匹配的元素位置
+		List<ElementPosition> positionResults = new ArrayList<>();
 
-    private void findAndProcessElementsByLocatorForFrame(Frame frame, String elementName, List<ElementPosition> results) {
-        com.microsoft.playwright.Locator locator = frame.locator("*");
-        int count = locator.count();
-        for (int i = 0; i < count; i++) {
-            com.microsoft.playwright.Locator nthLocator = locator.nth(i);
-            String text = null;
-            try {
-                text = nthLocator.textContent();
-            } catch (Exception e) {
-                continue;
-            }
-            if (text != null && text.toLowerCase().contains(elementName.toLowerCase())) {
-                com.microsoft.playwright.options.BoundingBox box = null;
-                try {
-                    box = nthLocator.boundingBox();
-                } catch (Exception e) {
-                    continue;
-                }
-                if (box != null) {
-                    ElementPosition position = new ElementPosition();
-                    position.setX((int) (box.x + box.width / 2));
-                    position.setY((int) (box.y + box.height / 2));
-                    position.setElementText(text.trim());
-                    results.add(position);
-                }
-            }
-        }
-    }
+		// 主页面处理
+		findAndProcessElementsByLocatorForPage(page, elementName, positionResults);
+
+		// 处理所有 iframe 中的元素
+		for (Frame frame : page.frames()) {
+			findAndProcessElementsByLocatorForFrame(frame, elementName, positionResults);
+		}
+
+		// 返回结果
+		String resultJson = JSON.toJSONString(positionResults);
+		return new ToolExecuteResult(resultJson);
+	}
+
+	private void findAndProcessElementsByLocatorForPage(Page page, String elementName, List<ElementPosition> results) {
+		com.microsoft.playwright.Locator locator = page.locator("*");
+		int count = locator.count();
+		for (int i = 0; i < count; i++) {
+			com.microsoft.playwright.Locator nthLocator = locator.nth(i);
+			String text = null;
+			try {
+				text = nthLocator.textContent();
+			}
+			catch (Exception e) {
+				continue;
+			}
+			if (text != null && text.toLowerCase().contains(elementName.toLowerCase())) {
+				com.microsoft.playwright.options.BoundingBox box = null;
+				try {
+					box = nthLocator.boundingBox();
+				}
+				catch (Exception e) {
+					continue;
+				}
+				if (box != null) {
+					ElementPosition position = new ElementPosition();
+					position.setX((int) (box.x + box.width / 2));
+					position.setY((int) (box.y + box.height / 2));
+					position.setElementText(text.trim());
+					results.add(position);
+				}
+			}
+		}
+	}
+
+	private void findAndProcessElementsByLocatorForFrame(Frame frame, String elementName,
+			List<ElementPosition> results) {
+		com.microsoft.playwright.Locator locator = frame.locator("*");
+		int count = locator.count();
+		for (int i = 0; i < count; i++) {
+			com.microsoft.playwright.Locator nthLocator = locator.nth(i);
+			String text = null;
+			try {
+				text = nthLocator.textContent();
+			}
+			catch (Exception e) {
+				continue;
+			}
+			if (text != null && text.toLowerCase().contains(elementName.toLowerCase())) {
+				com.microsoft.playwright.options.BoundingBox box = null;
+				try {
+					box = nthLocator.boundingBox();
+				}
+				catch (Exception e) {
+					continue;
+				}
+				if (box != null) {
+					ElementPosition position = new ElementPosition();
+					position.setX((int) (box.x + box.width / 2));
+					position.setY((int) (box.y + box.height / 2));
+					position.setElementText(text.trim());
+					results.add(position);
+				}
+			}
+		}
+	}
+
 }

@@ -52,9 +52,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseTool.class);
 
 	private final ChromeDriverService chromeDriverService;
-	
-	private String planId;
 
+	private String planId;
 
 	public BrowserUseTool(ChromeDriverService chromeDriverService) {
 		this.chromeDriverService = chromeDriverService;
@@ -63,7 +62,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	public DriverWrapper getDriver() {
 		return chromeDriverService.getDriver(planId);
 	}
-
 
 	private final String PARAMETERS = """
 			{
@@ -200,12 +198,13 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		return instance;
 	}
 
-	public FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(ChromeDriverService chromeDriverService) {
+	public FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback(
+			ChromeDriverService chromeDriverService) {
 		return FunctionToolCallback.builder(name, getInstance(chromeDriverService))
-				.description(description)
-				.inputSchema(PARAMETERS)
-				.inputType(String.class)
-				.build();
+			.description(description)
+			.inputSchema(PARAMETERS)
+			.inputType(String.class)
+			.build();
 	}
 
 	public ToolExecuteResult run(String toolInput) {
@@ -269,7 +268,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 				default:
 					return new ToolExecuteResult("Unknown action: " + action);
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Browser action '" + action + "' failed", e);
 			return new ToolExecuteResult("Browser action '" + action + "' failed: " + e.getMessage());
 		}
@@ -280,7 +280,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			Map<String, Object> tabInfo = new HashMap<>();
 			tabInfo.put("url", p.url());
 			tabInfo.put("title", p.title());
-			
+
 			return tabInfo;
 		}).toList();
 	}
@@ -299,12 +299,15 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			List<Map<String, Object>> tabs = getTabsInfo(page);
 			state.put("tabs", tabs);
 
-			String interactiveElements = chromeDriverService.getDriver(planId).getInteractiveElementRegistry().generateElementsInfoText();
+			String interactiveElements = chromeDriverService.getDriver(planId)
+				.getInteractiveElementRegistry()
+				.generateElementsInfoText();
 			state.put("interactive_elements", interactiveElements);
 
 			return state;
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Failed to get browser state", e);
 			state.put("error", "Failed to get browser state: " + e.getMessage());
 			return state;
@@ -398,6 +401,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 
 		return retString;
 	}
+
 	// cleanup 方法已经存在，只需确保它符合接口规范
 	@Override
 	public void cleanup(String planId) {
@@ -406,7 +410,5 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			this.chromeDriverService.closeDriverForPlan(planId);
 		}
 	}
-
-
 
 }

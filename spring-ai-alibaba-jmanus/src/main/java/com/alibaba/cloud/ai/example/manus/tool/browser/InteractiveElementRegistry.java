@@ -53,17 +53,11 @@ public class InteractiveElementRegistry {
     private final Map<Integer, InteractiveElement> indexToElementMap = new HashMap<>();
 
     /**
-     * 页面引用
-     */
-    private Page page;
-
-    /**
      * 刷新指定页面的所有交互元素
      * 
      * @param page 要处理的页面
      */
     public void refresh(Page page) {
-        this.page = page;
         clearCache();
         waitForPageLoad(page);
         processMainPageElements(page);

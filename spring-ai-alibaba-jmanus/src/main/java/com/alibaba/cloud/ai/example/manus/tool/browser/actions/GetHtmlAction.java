@@ -22,18 +22,17 @@ import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class GetHtmlAction extends BrowserAction {
 
-    private final int MAX_LENGTH = 50000;
+	private final int MAX_LENGTH = 50000;
 
-    public GetHtmlAction(BrowserUseTool browserUseTool) {
-        super(browserUseTool);
-    }
+	public GetHtmlAction(BrowserUseTool browserUseTool) {
+		super(browserUseTool);
+	}
 
-    @Override
-    public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
-        String html = page.content(); // 获取页面 HTML 内容
-        return new ToolExecuteResult(
-                html.length() > MAX_LENGTH ? html.substring(0, MAX_LENGTH) + "..." : html);
-    }
+	@Override
+	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
+		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
+		String html = page.content(); // 获取页面 HTML 内容
+		return new ToolExecuteResult(html.length() > MAX_LENGTH ? html.substring(0, MAX_LENGTH) + "..." : html);
+	}
 
 }

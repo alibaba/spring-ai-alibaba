@@ -21,16 +21,18 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class RefreshAction extends BrowserAction {
-    public RefreshAction(BrowserUseTool browserUseTool) {
-        super(browserUseTool);
-    }
 
-    @Override
-    public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
-        page.reload(); // 刷新当前页面
+	public RefreshAction(BrowserUseTool browserUseTool) {
+		super(browserUseTool);
+	}
 
-        refreshElements(page); // 刷新缓存
-        return new ToolExecuteResult("Refreshed current page");
-    }
+	@Override
+	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
+		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
+		page.reload(); // 刷新当前页面
+
+		refreshElements(page); // 刷新缓存
+		return new ToolExecuteResult("Refreshed current page");
+	}
+
 }
