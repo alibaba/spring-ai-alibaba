@@ -94,8 +94,7 @@ public class PlanFinalizer {
 
 			ChatResponse response = llmService.getPlanningChatClient()
 					.prompt(prompt)
-					.advisors(memoryAdvisor -> memoryAdvisor.param("chat_memory_conversation_id", plan.getPlanId())
-							.param("chat_memory_retrieve_size", 100))
+					
 					.call()
 					.chatResponse();
 
