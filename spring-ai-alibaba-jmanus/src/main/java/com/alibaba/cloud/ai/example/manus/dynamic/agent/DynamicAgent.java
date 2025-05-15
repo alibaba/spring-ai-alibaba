@@ -28,6 +28,7 @@ import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvis
 import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -112,8 +113,6 @@ public class DynamicAgent extends ReActAgent {
 			ChatClient chatClient = llmService.getAgentChatClient();
 			response = chatClient
 				.prompt(userPrompt)
-				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getPlanId())
-					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
 				.toolCallbacks(callbacks)
 				.call()
 				.chatResponse();
