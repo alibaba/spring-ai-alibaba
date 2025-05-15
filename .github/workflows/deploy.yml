@@ -1,8 +1,6 @@
 name: Deploy to Maven Repository
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 jobs:
   deploy:
     name: Deploy to Maven Repository
