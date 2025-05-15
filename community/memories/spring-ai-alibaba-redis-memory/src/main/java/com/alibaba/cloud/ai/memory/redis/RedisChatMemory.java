@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.memory.redis.serializer.MessageDeserializer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
@@ -49,13 +50,15 @@ public class RedisChatMemory implements ChatMemory, AutoCloseable {
 
 	private final ObjectMapper objectMapper;
 
+	private final Integer lastN;
+
 	public RedisChatMemory() {
 
-		this(DEFAULT_HOST, DEFAULT_PORT, DEFAULT_PASSWORD);
+		this(DEFAULT_HOST, DEFAULT_PORT, DEFAULT_PASSWORD, Integer.MAX_VALUE);
 	}
 
-	public RedisChatMemory(String host, int port, String password) {
-
+	public RedisChatMemory(String host, int port, String password, Integer lastN) {
+		this.lastN = lastN;
 		JedisPoolConfig poolConfig = new JedisPoolConfig();
 
 		this.jedisPool = new JedisPool(poolConfig, host, port, 2000, password);
@@ -87,7 +90,7 @@ public class RedisChatMemory implements ChatMemory, AutoCloseable {
 	}
 
 	@Override
-	public List<Message> get(String conversationId, int lastN) {
+	public List<Message> get(@NotNull String conversationId) {
 
 		String key = DEFAULT_KEY_PREFIX + conversationId;
 
@@ -107,6 +110,11 @@ public class RedisChatMemory implements ChatMemory, AutoCloseable {
 		logger.info("Retrieved {} messages for conversationId: {}", messages.size(), conversationId);
 
 		return messages;
+	}
+
+	@Override
+	public List<Message> get(String conversationId, int lastN) {
+		throw new UnsupportedOperationException("This method is deprecated. Use get() instead.");
 	}
 
 	@Override
