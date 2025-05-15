@@ -97,25 +97,27 @@ public class DynamicAgent extends ReActAgent {
 		planExecutionRecorder.recordThinkActExecution(getPlanId(), planExecutionRecord.getId(), thinkActRecord);
 
 		try {
+			// 构建初始 prompt
 			List<Message> messages = new ArrayList<>();
 			addThinkPrompt(messages);
-
 			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
 			Message nextStepMessage = getNextStepWithEnvMessage();
 			messages.add(nextStepMessage);
-			thinkActRecord.startThinking(messages.toString());// The `ToolCallAgent` class
-			// in the
-
+			thinkActRecord.startThinking(messages.toString());
 			log.debug("Messages prepared for the prompt: {}", messages);
 
 			userPrompt = new Prompt(messages, chatOptions);
 			List<ToolCallback> callbacks = getToolCallList();
 			ChatClient chatClient = llmService.getAgentChatClient();
-			response = chatClient
-				.prompt(userPrompt)
-				.toolCallbacks(callbacks)
-				.call()
-				.chatResponse();
+			ChatMemory chatMemory = llmService.getAgentMemory();
+			String conversationId = getPlanId();
+			// 先把 instructions 放入 memory
+			chatMemory.add(conversationId, userPrompt.getInstructions());
+
+			// 构造带 memory 的 prompt
+			Prompt promptWithMemory = new Prompt(chatMemory.get(conversationId), chatOptions);
+			response = chatClient.prompt(promptWithMemory).toolCallbacks(callbacks).call().chatResponse();
+			chatMemory.add(conversationId, response.getResult().getOutput());
 
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			String responseByLLm = response.getResult().getOutput().getText();
@@ -139,8 +141,7 @@ public class DynamicAgent extends ReActAgent {
 			thinkActRecord.setStatus("SUCCESS");
 
 			return !toolCalls.isEmpty();
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()));
 			thinkActRecord.recordError(e.getMessage());
 			return false;
@@ -150,44 +151,41 @@ public class DynamicAgent extends ReActAgent {
 	@Override
 	protected AgentExecResult act() {
 		try {
-			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
+			String conversationId = getPlanId();
+			ChatMemory chatMemory = llmService.getAgentMemory();
+			ChatClient chatClient = llmService.getAgentChatClient();
+			List<ToolCallback> callbacks = getToolCallList();
+			Prompt promptWithMemory = userPrompt;
+			ChatResponse chatResponse = response;
 
-			thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
-			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
+			// 工具调用循环
+			while (chatResponse != null && chatResponse.hasToolCalls()) {
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(promptWithMemory, chatResponse);
+				chatMemory.add(conversationId, toolExecutionResult.conversationHistory()
+						.get(toolExecutionResult.conversationHistory().size() - 1));
+				promptWithMemory = new Prompt(chatMemory.get(conversationId), userPrompt.getOptions());
+				chatResponse = chatClient.prompt(promptWithMemory).toolCallbacks(callbacks).call().chatResponse();
+				chatMemory.add(conversationId, chatResponse.getResult().getOutput());
+			}
 
-			addEnvData(EXECUTION_ENV_KEY_STRING, collectEnvData(toolCall.name()));
-			setData(getData());
-			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
-				.get(toolExecutionResult.conversationHistory().size() - 1);
-
-			llmService.getAgentMemory().add(getPlanId(), toolResponseMessage);
-			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
-
-			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), llmCallResponse));
-
+			// 取最终回复
+			String llmCallResponse = chatResponse.getResult().getOutput().getText();
+			log.info(String.format("🔧 Tool executing result: %s", llmCallResponse));
 			thinkActRecord.finishAction(llmCallResponse, "SUCCESS");
-			String toolcallName = toolCall.name();
-			AgentExecResult agentExecResult = null;
-			// 如果是终止工具，则返回完成状态
-			// 否则返回运行状态
+
+			// 判断终止工具
+			List<ToolCall> toolCalls = chatResponse.getResult().getOutput().getToolCalls();
+			String toolcallName = !toolCalls.isEmpty() ? toolCalls.get(0).name() : null;
+			AgentExecResult agentExecResult;
 			if (TerminateTool.name.equals(toolcallName)) {
 				agentExecResult = new AgentExecResult(llmCallResponse, AgentState.COMPLETED);
-			}
-			else {
+			} else {
 				agentExecResult = new AgentExecResult(llmCallResponse, AgentState.IN_PROGRESS);
 			}
 			return agentExecResult;
-		}
-		catch (Exception e) {
-			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
-			ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse(toolCall.id(),
-					toolCall.name(), "Error: " + e.getMessage());
-			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(List.of(toolResponse), Map.of());
-			llmService.getAgentMemory().add(getPlanId(), toolResponseMessage);
-			log.error(e.getMessage());
-
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
 			thinkActRecord.recordError(e.getMessage());
-
 			return new AgentExecResult(e.getMessage(), AgentState.FAILED);
 		}
 	}
