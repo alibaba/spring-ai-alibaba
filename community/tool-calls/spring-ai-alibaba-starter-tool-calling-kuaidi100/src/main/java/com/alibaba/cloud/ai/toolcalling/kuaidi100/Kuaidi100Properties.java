@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.toolcalling.kuaidi100;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -33,13 +34,31 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = Kuaidi100Properties.PREFIX)
 public class Kuaidi100Properties extends CommonToolCallProperties {
 
-	public static final String PREFIX = "spring.ai.alibaba.toolcalling.kuaidi100";
+	public static final String PREFIX = CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX + ".kuaidi100";
 
 	public static final String QUERY_BASE_URL = "https://www.kuaidi100.com/";
 
 	public Kuaidi100Properties() {
 		super(QUERY_BASE_URL);
 		this.setPropertiesFromEnv("KUAIDI100_KEY", null, "KUAIDI100_CUSTOMER", null);
+	}
+
+	/**
+	 * @param key key value
+	 * @deprecated use {@link #setApiKey(String)} instead
+	 */
+	@Deprecated
+	public void setKey(String key) {
+		this.setApiKey(key);
+	}
+
+	/**
+	 * @param customer customer value
+	 * @deprecated use {@link #setAppId(String)} instead
+	 */
+	@Deprecated
+	public void setCustomer(String customer) {
+		this.setAppId(customer);
 	}
 
 	public String getKey() {
