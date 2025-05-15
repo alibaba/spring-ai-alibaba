@@ -132,6 +132,9 @@
         <!-- Spring AI Alibaba JManus -->
         <module>spring-ai-alibaba-jmanus</module>
 
+        <!-- Spring AI Alibaba ARMS Extension -->
+        <module>spring-ai-alibaba-arms-observation-autoconfigure</module>
+
     </modules>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>

@@ -20,24 +20,27 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 
 @AutoConfiguration
 @ConditionalOnClass({ ChatMemory.class, ChatMemoryRepository.class })
 public class ChatMemoryAutoConfiguration {
 
-	@Bean
-	@ConditionalOnMissingBean
+	@Bean("inMemoryChatMemoryRepository")
+	@Primary
+	@ConditionalOnMissingBean(name = "inMemoryChatMemoryRepository")
 	ChatMemoryRepository chatMemoryRepository() {
 		return new InMemoryChatMemoryRepository();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	ChatMemory chatMemory(ChatMemoryRepository chatMemoryRepository) {
+	ChatMemory chatMemory(@Qualifier("inMemoryChatMemoryRepository") ChatMemoryRepository chatMemoryRepository) {
 		return MessageWindowChatMemory.builder().chatMemoryRepository(chatMemoryRepository).build();
 	}
 
