@@ -179,14 +179,14 @@ public class McpService implements InitializingBean {
 	}
 
 	public void addMcpServer(McpConfigRequestVO mcpConfig) throws IOException {
-		List<McpConfigEntity> entities = insertOrupdateMcpRepo(mcpConfig);
+		List<McpConfigEntity> entities = insertOrUpdateMcpRepo(mcpConfig);
 		// 先添加客户端
 		for (McpConfigEntity entity : entities) {
 			loadMcpServices(entity);
 		}
 	}
 
-	public List<McpConfigEntity> insertOrupdateMcpRepo(McpConfigRequestVO mcpConfigVO) throws IOException {
+	public List<McpConfigEntity> insertOrUpdateMcpRepo(McpConfigRequestVO mcpConfigVO) throws IOException {
 		List<McpConfigEntity> entityList = new ArrayList<>();
 		try (JsonParser jsonParser = new ObjectMapper().createParser(mcpConfigVO.getConfigJson())) {
 			McpServersConfig mcpServerConfig = jsonParser.readValueAs(McpServersConfig.class);
