@@ -34,8 +34,6 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositio
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
-import com.microsoft.playwright.Browser;
-import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.ElementHandle;
 import org.slf4j.Logger;
@@ -54,20 +52,18 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseTool.class);
 
 	private final ChromeDriverService chromeDriverService;
-
-	private final InteractiveTextProcessor interactiveTextProcessor = new InteractiveTextProcessor();
-
+	
 	private String planId;
 
-	private Page pageOfPlan;
 
 	public BrowserUseTool(ChromeDriverService chromeDriverService) {
 		this.chromeDriverService = chromeDriverService;
 	}
 
-	public Page getDriver() {
+	public DriverWrapper getDriver() {
 		return chromeDriverService.getDriver(planId);
 	}
+
 
 	private final String PARAMETERS = """
 			{
@@ -303,9 +299,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			List<Map<String, Object>> tabs = getTabsInfo(page);
 			state.put("tabs", tabs);
 
-			// 获取可交互元素
-			List<ElementHandle> interactiveElements = interactiveTextProcessor.getInteractiveElements(page);
-			state.put("interactive_elements", interactiveElements.stream().map(ElementHandle::textContent).toList());
+			String interactiveElements = chromeDriverService.getDriver(planId).getInteractiveElementRegistry().generateElementsInfoText();
+			state.put("interactive_elements", interactiveElements);
 
 			return state;
 
@@ -359,7 +354,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 
 	@Override
 	public String getCurrentToolStateString() {
-		Map<String, Object> state = getCurrentState(pageOfPlan);
+		DriverWrapper driver = getDriver();
+		Map<String, Object> state = getCurrentState(driver.getCurrentPage());
 		// 构建URL和标题信息
 		String urlInfo = String.format("\n   URL: %s\n   Title: %s", state.get("url"), state.get("title"));
 
@@ -402,12 +398,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 
 		return retString;
 	}
-
-	// @Override
-	// public ChromeDriver getInstance(String planId) {
-	// return this.chromeDriverService.getDriver(planId);
-	// }
-
 	// cleanup 方法已经存在，只需确保它符合接口规范
 	@Override
 	public void cleanup(String planId) {
@@ -417,9 +407,6 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		}
 	}
 
-	public InteractiveTextProcessor getInteractiveTextProcessor() {
-		return interactiveTextProcessor;
-	}
 
 
 }

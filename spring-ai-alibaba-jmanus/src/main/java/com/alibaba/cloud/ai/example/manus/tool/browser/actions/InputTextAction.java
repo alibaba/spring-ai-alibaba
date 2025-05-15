@@ -22,6 +22,7 @@ import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Page;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
+import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class InputTextAction extends BrowserAction {
@@ -34,24 +35,26 @@ public class InputTextAction extends BrowserAction {
         Integer index = request.getIndex();
         String text = request.getText();
 
-        Page page = browserUseTool.getDriver(); // 获取 Playwright 的 Page 实例
+        Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
         if (index == null || text == null) {
             return new ToolExecuteResult("Index and text are required for 'input_text' action");
         }
 
-        List<ElementHandle> interactiveElements =  getInteractiveElements(page);; // 替代 Selenium 的 getInteractiveElements
+        // 获取交互元素（InteractiveElement）
+        List<InteractiveElement> interactiveElements = getInteractiveElements(page);
         if (index < 0 || index >= interactiveElements.size()) {
             return new ToolExecuteResult("Element with index " + index + " not found");
         }
 
-        ElementHandle inputElement = interactiveElements.get(index);
-        String tagName = inputElement.evaluate("el => el.tagName.toLowerCase()").toString();
-        if (!tagName.equals("input") && !tagName.equals("textarea")) {
+        com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement inputElement = interactiveElements.get(index);
+        String tagName = inputElement.getTagName();
+        if (!"input".equals(tagName) && !"textarea".equals(tagName)) {
             return new ToolExecuteResult("Element at index " + index + " is not an input element");
         }
 
-        typeWithHumanDelay(inputElement, text);
-        browserUseTool.getInteractiveTextProcessor().refreshCache(page);
+        typeWithHumanDelay(inputElement.getLocator().elementHandle(), text);
+        // 直接通过 InteractiveElementRegistry 刷新缓存，避免使用已废弃方法
+        refreshElements(page);
         return new ToolExecuteResult("Successfully input '" + text + "' into element at index " + index);
     }
 

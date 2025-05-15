@@ -21,8 +21,6 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class NewTabAction extends BrowserAction {
-    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(NewTabAction.class);
-
     public NewTabAction(BrowserUseTool browserUseTool) {
         super(browserUseTool);
     }
@@ -34,10 +32,9 @@ public class NewTabAction extends BrowserAction {
             return new ToolExecuteResult("URL is required for 'new_tab' action");
         }
 
-        Page page = browserUseTool.getDriver(); // 打开新标签页
+        Page page = getCurrentPage(); // 打开新标签页
         page.navigate(url); // 导航到指定 URL
-
-        browserUseTool.getInteractiveTextProcessor().refreshCache(page);
+        refreshElements(page); // 刷新元素缓存
         return new ToolExecuteResult("Opened new tab with URL " + url);
     }
 
