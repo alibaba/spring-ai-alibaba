@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.toolcalling.youdaotranslate;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -24,12 +25,30 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = YoudaoTranslateProperties.PREFIX)
 public class YoudaoTranslateProperties extends CommonToolCallProperties {
 
-	public static final String PREFIX = "spring.ai.alibaba.toolcalling.youdaotranslate";
+	public static final String PREFIX = CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX + ".youdaotranslate";
 
 	public static final String YOUDAO_TRANSLATE_BASE_URL = "https://openapi.youdao.com";
 
+	/**
+	 * @param appKey youdao AppId
+	 * @deprecated use {@link #setAppId(String)} instead
+	 */
+	@Deprecated
+	public void setAppKey(String appKey) {
+		this.setAppId(appKey);
+	}
+
+	/**
+	 * @param appSecret youdao AppSecret
+	 * @deprecated use {@link #setSecretKey(String)} instead
+	 */
+	@Deprecated
+	public void setAppSecret(String appSecret) {
+		this.setSecretKey(appSecret);
+	}
+
 	public String getAppKey() {
-		return getApiKey();
+		return getAppId();
 	}
 
 	public String getAppSecret() {
@@ -38,7 +57,7 @@ public class YoudaoTranslateProperties extends CommonToolCallProperties {
 
 	public YoudaoTranslateProperties() {
 		super(YOUDAO_TRANSLATE_BASE_URL);
-		setPropertiesFromEnv("YOUDAO_APP_KEY", "YOUDAO_APP_SECRET", null, null);
+		setPropertiesFromEnv("YOUDAO_APP_ID", "YOUDAO_APP_SECRET", null, null);
 	}
 
 }
