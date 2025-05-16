@@ -95,14 +95,25 @@ public class DynamicAgent extends ReActAgent {
 		planExecutionRecorder.recordThinkActExecution(getPlanId(), planExecutionRecord.getId(), thinkActRecord);
 
 		try {
+			return executeWithRetry(3);
+		} catch (Exception e) {
+			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()), e);
+			thinkActRecord.recordError(e.getMessage());
+			return false;
+		}
+	}
+
+	private boolean executeWithRetry(int maxRetries) throws Exception {
+		int attempt = 0;
+		while (attempt < maxRetries) {
+			attempt++;
 			List<Message> messages = new ArrayList<>();
 			addThinkPrompt(messages);
 
 			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
 			Message nextStepMessage = getNextStepWithEnvMessage();
 			messages.add(nextStepMessage);
-			thinkActRecord.startThinking(messages.toString());// The `ToolCallAgent` class
-			// in the
+			thinkActRecord.startThinking(messages.toString());
 
 			log.debug("Messages prepared for the prompt: {}", messages);
 
@@ -124,26 +135,21 @@ public class DynamicAgent extends ReActAgent {
 			log.info(String.format("✨ %s's thoughts: %s", getName(), responseByLLm));
 			log.info(String.format("🛠️ %s selected %d tools to use", getName(), toolCalls.size()));
 
-			if (responseByLLm != null && !responseByLLm.isEmpty()) {
-				log.info(String.format("💬 %s's response: %s", getName(), responseByLLm));
-			}
 			if (!toolCalls.isEmpty()) {
 				log.info(String.format("🧰 Tools being prepared: %s",
 						toolCalls.stream().map(ToolCall::name).collect(Collectors.toList())));
 				thinkActRecord.setActionNeeded(true);
 				thinkActRecord.setToolName(toolCalls.get(0).name());
 				thinkActRecord.setToolParameters(toolCalls.get(0).arguments());
+				thinkActRecord.setStatus("SUCCESS");
+				return true;
 			}
 
-			thinkActRecord.setStatus("SUCCESS");
+			log.warn("Attempt {}: No tools selected. Retrying...", attempt);
+		}
 
-			return !toolCalls.isEmpty();
-		}
-		catch (Exception e) {
-			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()));
-			thinkActRecord.recordError(e.getMessage());
-			return false;
-		}
+		thinkActRecord.setStatus("FAILED");
+		return false;
 	}
 
 	@Override
@@ -210,7 +216,7 @@ public class DynamicAgent extends ReActAgent {
 	}
 
 	private Map<String, Object> getMergedData() {
-		Map<String, Object> data = super.getInitSettingData();
+		Map<String, Object> data =  new HashMap<>();
 		data.putAll(getInitSettingData());
 		data.put(PlanExecutor.EXECUTION_ENV_STRING_KEY, convertEnvDataToString());
 		return data;
