@@ -15,19 +15,18 @@
  */
 package com.alibaba.cloud.ai.toolcalling.youdaotranslate;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriComponentsBuilder;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
@@ -38,37 +37,27 @@ import static com.alibaba.cloud.ai.toolcalling.youdaotranslate.AuthTools.calcula
 
 /**
  * @author Yeaury
+ * @author Allen Hu
  */
 public class YoudaoTranslateService
 		implements Function<YoudaoTranslateService.Request, YoudaoTranslateService.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(YoudaoTranslateService.class);
 
-	private static final String YOUDAO_TRANSLATE_HOST_URL = "https://openapi.youdao.com/api";
-
 	private final String appKey;
 
 	private final String appSecret;
 
-	private final WebClient webClient;
+	private final JsonParseTool jsonParseTool;
 
-	private static final int MEMORY_SIZE = 5;
+	private final WebClientTool webClientTool;
 
-	private static final int BYTE_SIZE = 1024;
-
-	private static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
-
-	public YoudaoTranslateService(YoudaoTranslateProperties properties) {
+	public YoudaoTranslateService(YoudaoTranslateProperties properties, JsonParseTool jsonParseTool,
+			WebClientTool webClientTool) {
 		this.appKey = properties.getAppKey();
 		this.appSecret = properties.getAppSecret();
-		this.webClient = WebClient.builder()
-			.defaultHeader(HttpHeaders.USER_AGENT, HttpHeaders.USER_AGENT)
-			.defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-			.defaultHeader(HttpHeaders.ACCEPT_ENCODING, "gzip, deflate")
-			.defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-			.defaultHeader(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9,ja;q=0.8")
-			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_MEMORY_SIZE))
-			.build();
+		this.jsonParseTool = jsonParseTool;
+		this.webClientTool = webClientTool;
 	}
 
 	@Override
@@ -79,35 +68,31 @@ public class YoudaoTranslateService
 		String curtime = String.valueOf(System.currentTimeMillis() / 1000);
 		String salt = UUID.randomUUID().toString();
 		try {
-			String url = UriComponentsBuilder.fromHttpUrl(YOUDAO_TRANSLATE_HOST_URL)
-				.queryParam("q", request.text)
-				.queryParam("from", request.sourceLanguage)
-				.queryParam("to", request.targetLanguage)
-				.queryParam("appKey", appKey)
-				.queryParam("salt", salt)
-				.queryParam("sign", calculateSign(appKey, appSecret, request.text, salt, curtime))
-				.queryParam("signType", "v3")
-				.queryParam("curtime", curtime)
-				.build()
-				.toUriString();
+			MultiValueMap<String, String> params = CommonToolCallUtils.<String, String>multiValueMapBuilder()
+				.add("q", request.text)
+				.add("from", request.sourceLanguage)
+				.add("to", request.targetLanguage)
+				.add("appKey", appKey)
+				.add("salt", salt)
+				.add("sign", calculateSign(appKey, appSecret, request.text, salt, curtime))
+				.add("signType", "v3")
+				.add("curtime", curtime)
+				.build();
 
-			Mono<String> response = webClient.get().uri(url).retrieve().bodyToMono(String.class);
-			String responseData = response.block();
-			System.out.println(responseData);
+			String responseData = webClientTool
+				.post("api", CommonToolCallUtils.<String, String>multiValueMapBuilder().build(), Map.of(), params,
+						MediaType.APPLICATION_FORM_URLENCODED)
+				.block();
+
 			assert responseData != null;
-			logger.info("Translation request: {}, response: {}", request.text, responseData);
-			Gson gson = new Gson();
-			Map<String, Object> responseMap = gson.fromJson(responseData, new TypeToken<Map<String, Object>>() {
-			}.getType());
-			if (responseMap.containsKey("translation")) {
-				return new Response((List<String>) responseMap.get("translation"));
-			}
+			logger.debug("Translation request: {}, response: {}", request.text, responseData);
+
+			return jsonParseTool.jsonToObject(responseData, Response.class);
 		}
 		catch (Exception e) {
 			logger.error("Failed to invoke Youdao translate API due to: {}", e.getMessage());
 			return null;
 		}
-		return null;
 	}
 
 	@JsonClassDescription("Request to translate text to a target language")
@@ -123,7 +108,8 @@ public class YoudaoTranslateService
 	}
 
 	@JsonClassDescription("Response to translate text to a target language")
-	public record Response(List<String> translatedTexts) {
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record Response(String errorCode, @JsonProperty("translation") List<String> translatedTexts) {
 	}
 
 }
