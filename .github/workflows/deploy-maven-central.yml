@@ -17,7 +17,13 @@ jobs:
           server-id: ossrh
           server-username: OSSRH_USERNAME
           server-password: OSSRH_PASSWORD
+      - name: Add execute permission to mvnw
+        run: chmod +x mvnw
       - name: Deploy with Maven
         run: |
           ./mvnw -B clean install -DskipTests
           ./mvnw -B clean deploy -Psonatype
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
