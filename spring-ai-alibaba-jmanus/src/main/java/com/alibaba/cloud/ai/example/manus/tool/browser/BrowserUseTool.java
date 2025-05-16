@@ -382,7 +382,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 
 		// 构建最终的状态字符串
 		String retString = String.format("""
-				When you see [Current state starts here], focus on the following:
+				
 				- Current URL and page title:
 				%s
 
