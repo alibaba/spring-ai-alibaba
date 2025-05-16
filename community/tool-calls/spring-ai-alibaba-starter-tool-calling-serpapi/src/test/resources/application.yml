@@ -1,7 +1,0 @@
-spring:
-  ai:
-    alibaba:
-      toolcalling:
-        serpapi:
-          enabled: true
-          engine: google
