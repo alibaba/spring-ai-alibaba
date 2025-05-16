@@ -28,8 +28,8 @@ public class SQLiteChatMemory extends JdbcChatMemory {
 		super(username, password, jdbcUrl);
 	}
 
-	public SQLiteChatMemory(String username, String password, String jdbcUrl, String tableName) {
-		super(username, password, jdbcUrl, tableName);
+	public SQLiteChatMemory(String username, String password, String jdbcUrl, String tableName, Integer lastN) {
+		super(username, password, jdbcUrl, tableName, lastN);
 	}
 
 	public SQLiteChatMemory(Connection connection) {

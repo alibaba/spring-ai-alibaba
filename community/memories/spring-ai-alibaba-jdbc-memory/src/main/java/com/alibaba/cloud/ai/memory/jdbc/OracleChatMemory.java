@@ -28,8 +28,8 @@ public class OracleChatMemory extends JdbcChatMemory {
 		super(username, password, url);
 	}
 
-	public OracleChatMemory(String username, String password, String url, String tableName) {
-		super(username, password, url, tableName);
+	public OracleChatMemory(String username, String password, String url, String tableName, Integer lastN) {
+		super(username, password, url, tableName, lastN);
 	}
 
 	public OracleChatMemory(Connection connection) {

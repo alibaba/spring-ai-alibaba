@@ -114,7 +114,25 @@ public class RedisChatMemory implements ChatMemory, AutoCloseable {
 
 	@Override
 	public List<Message> get(String conversationId, int lastN) {
-		throw new UnsupportedOperationException("This method is deprecated. Use get() instead.");
+
+		String key = DEFAULT_KEY_PREFIX + conversationId;
+
+		List<String> messageStrings = jedis.lrange(key, -lastN, -1);
+		List<Message> messages = new ArrayList<>();
+
+		for (String messageString : messageStrings) {
+			try {
+				Message message = objectMapper.readValue(messageString, Message.class);
+				messages.add(message);
+			}
+			catch (JsonProcessingException e) {
+				throw new RuntimeException("Error deserializing message", e);
+			}
+		}
+
+		logger.info("Retrieved {} messages for conversationId: {}", messages.size(), conversationId);
+
+		return messages;
 	}
 
 	@Override

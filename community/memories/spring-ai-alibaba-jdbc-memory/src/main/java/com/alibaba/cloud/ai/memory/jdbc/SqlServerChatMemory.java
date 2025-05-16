@@ -28,8 +28,8 @@ public class SqlServerChatMemory extends JdbcChatMemory {
 		super(username, password, url);
 	}
 
-	public SqlServerChatMemory(String username, String password, String jdbcUrl, String tableName) {
-		super(username, password, jdbcUrl, tableName);
+	public SqlServerChatMemory(String username, String password, String jdbcUrl, String tableName, Integer lastN) {
+		super(username, password, jdbcUrl, tableName, lastN);
 	}
 
 	public SqlServerChatMemory(Connection connection) {

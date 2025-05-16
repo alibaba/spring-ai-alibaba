@@ -148,8 +148,9 @@ public abstract class JdbcChatMemory implements ChatMemory, AutoCloseable {
 
 	@Override
 	public List<Message> get(String conversationId, int lastN) {
-		throw new UnsupportedOperationException("This method is deprecated. Use get() instead.");
+		return this.selectMessageById(conversationId, lastN);
 	}
+
 
 	@Override
 	public List<Message> get(String conversationId) {

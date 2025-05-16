@@ -28,8 +28,8 @@ public class MysqlChatMemory extends JdbcChatMemory {
 		super(username, password, jdbcUrl);
 	}
 
-	public MysqlChatMemory(String username, String password, String jdbcUrl, String tableName) {
-		super(username, password, jdbcUrl, tableName);
+	public MysqlChatMemory(String username, String password, String jdbcUrl, String tableName, Integer lastN) {
+		super(username, password, jdbcUrl, tableName, lastN);
 	}
 
 	public MysqlChatMemory(Connection connection) {

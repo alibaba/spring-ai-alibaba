@@ -28,8 +28,8 @@ public class PostgresChatMemory extends JdbcChatMemory {
 		super(username, password, url);
 	}
 
-	public PostgresChatMemory(String username, String password, String jdbcUrl, String tableName) {
-		super(username, password, jdbcUrl, tableName);
+	public PostgresChatMemory(String username, String password, String jdbcUrl, String tableName, Integer lastN) {
+		super(username, password, jdbcUrl, tableName, lastN);
 	}
 
 	public PostgresChatMemory(Connection connection) {
