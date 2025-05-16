@@ -52,6 +52,10 @@ public abstract class JdbcChatMemory implements ChatMemory, AutoCloseable {
 		this(username, password, jdbcUrl, DEFAULT_TABLE_NAME, Integer.MAX_VALUE);
 	}
 
+	protected JdbcChatMemory(String username, String password, String jdbcUrl, String tableName) {
+		this(username, password, jdbcUrl, tableName, Integer.MAX_VALUE);
+	}
+
 	protected JdbcChatMemory(String username, String password, String jdbcUrl, String tableName, Integer lastN) {
 		this.lastN = lastN;
 		this.tableName = tableName;
