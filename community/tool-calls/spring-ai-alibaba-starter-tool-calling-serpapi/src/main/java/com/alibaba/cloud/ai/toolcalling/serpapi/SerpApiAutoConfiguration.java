@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.toolcalling.serpapi;
 
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -30,7 +29,6 @@ import org.springframework.context.annotation.Description;
  * @author sixiyida
  */
 @Configuration
-@ConditionalOnClass(SerpApiService.class)
 @EnableConfigurationProperties(SerpApiProperties.class)
 @ConditionalOnProperty(prefix = SerpApiProperties.SERP_API_PREFIX, name = "enabled", havingValue = "true")
 public class SerpApiAutoConfiguration {

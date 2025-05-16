@@ -4,3 +4,4 @@ spring:
       toolcalling:
         serpapi:
           enabled: true
+          engine: google
