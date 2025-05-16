@@ -46,11 +46,14 @@ public abstract class JdbcChatMemory implements ChatMemory, AutoCloseable {
 
 	private final String tableName;
 
+	private Integer lastN;
+
 	protected JdbcChatMemory(String username, String password, String jdbcUrl) {
-		this(username, password, jdbcUrl, DEFAULT_TABLE_NAME);
+		this(username, password, jdbcUrl, DEFAULT_TABLE_NAME, Integer.MAX_VALUE);
 	}
 
-	protected JdbcChatMemory(String username, String password, String jdbcUrl, String tableName) {
+	protected JdbcChatMemory(String username, String password, String jdbcUrl, String tableName, Integer lastN) {
+		this.lastN = lastN;
 		this.tableName = tableName;
 		try {
 			this.connection = DriverManager.getConnection(jdbcUrl, username, password);
@@ -145,6 +148,11 @@ public abstract class JdbcChatMemory implements ChatMemory, AutoCloseable {
 
 	@Override
 	public List<Message> get(String conversationId, int lastN) {
+		throw new UnsupportedOperationException("This method is deprecated. Use get() instead.");
+	}
+
+	@Override
+	public List<Message> get(String conversationId) {
 		return this.selectMessageById(conversationId, lastN);
 	}
 
