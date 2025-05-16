@@ -1,0 +1,6 @@
+spring:
+  ai:
+    alibaba:
+      toolcalling:
+        duckduckgo:
+          enabled: true

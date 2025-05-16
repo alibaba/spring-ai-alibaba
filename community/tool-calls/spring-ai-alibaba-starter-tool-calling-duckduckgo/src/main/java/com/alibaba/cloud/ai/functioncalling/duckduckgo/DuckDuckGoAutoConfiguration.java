@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.functioncalling.duckduckgo;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -24,18 +26,21 @@ import org.springframework.context.annotation.Description;
 
 /**
  * @author 北极星
+ * @author sixiyida
  */
+
 @Configuration
 @EnableConfigurationProperties(DuckDuckGoProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.functioncalling.duckduckgo", name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnProperty(prefix = DuckDuckGoProperties.DUCKDUCKGO_PREFIX, name = "enabled", havingValue = "true")
 public class DuckDuckGoAutoConfiguration {
 
-	@ConditionalOnMissingBean
 	@Bean
-	@Description("use duckduckgo engine to search news.")
-	public DuckDuckGoQueryNewsService duckDuckGoQueryNewsFunction(DuckDuckGoProperties duckDuckGoProperties) {
-		return new DuckDuckGoQueryNewsService(duckDuckGoProperties);
+	@ConditionalOnMissingBean
+	@Description("Use DuckDuckGo search to query for the latest news.")
+	public DuckDuckGoQueryNewsService duckDuckGoQueryNewsService(JsonParseTool jsonParseTool,
+			DuckDuckGoProperties duckDuckGoProperties) {
+		WebClientTool webClientTool = WebClientTool.builder(jsonParseTool, duckDuckGoProperties).build();
+		return new DuckDuckGoQueryNewsService(duckDuckGoProperties, webClientTool);
 	}
 
 }
