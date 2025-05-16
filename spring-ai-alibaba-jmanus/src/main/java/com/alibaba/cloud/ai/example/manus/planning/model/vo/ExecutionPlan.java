@@ -103,7 +103,10 @@ public class ExecutionPlan {
 
 	public String getPlanExecutionStateStringFormat(boolean onlyCompletedAndFirstInProgress) {
 		StringBuilder state = new StringBuilder();
-		state.append("全局目标 (全局目标只是一个方向性指导，你在当前请求内不需要完成全局目标，只需要关注当前正在执行的步骤即可): ").append("\n").append(title).append("\n");
+		state.append("全局目标 (全局目标只是一个方向性指导，你在当前请求内不需要完成全局目标，只需要关注当前正在执行的步骤即可): ")
+			.append("\n")
+			.append(title)
+			.append("\n");
 
 		state.append("\n- 执行参数: ").append("\n");
 		if (executionParams != null && !executionParams.isEmpty()) {

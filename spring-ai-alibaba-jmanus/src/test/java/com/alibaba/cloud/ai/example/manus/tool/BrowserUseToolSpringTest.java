@@ -90,7 +90,7 @@ class BrowserUseToolSpringTest {
 
 		public DummyBaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 				ManusProperties manusProperties) {
-			super(llmService, planExecutionRecorder, manusProperties,new HashMap<>());
+			super(llmService, planExecutionRecorder, manusProperties, new HashMap<>());
 
 		}
 

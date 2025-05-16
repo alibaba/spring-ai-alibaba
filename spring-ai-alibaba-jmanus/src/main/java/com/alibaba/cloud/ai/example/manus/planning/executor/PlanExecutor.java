@@ -57,8 +57,11 @@ public class PlanExecutor {
 
 	// Define static final strings for the keys used in executorParams
 	public static final String PLAN_STATUS_KEY = "planStatus";
+
 	public static final String CURRENT_STEP_INDEX_KEY = "currentStepIndex";
+
 	public static final String STEP_TEXT_KEY = "stepText";
+
 	public static final String EXTRA_PARAMS_KEY = "extraParams";
 
 	public static final String EXECUTION_ENV_STRING_KEY = "current_step_env_data";
@@ -73,7 +76,6 @@ public class PlanExecutor {
 
 	/**
 	 * 执行整个计划的所有步骤
-	 * 
 	 * @param plan 要执行的计划
 	 * @return 执行结果
 	 */
@@ -88,7 +90,8 @@ public class PlanExecutor {
 				executeStep(step, context);
 			}
 			context.setSuccess(true);
-		} finally {
+		}
+		finally {
 			String planId = context.getPlanId();
 			llmService.clearAgentMemory(planId);
 		}
@@ -96,7 +99,6 @@ public class PlanExecutor {
 
 	/**
 	 * 执行单个步骤
-	 * 
 	 * @param executor 执行器
 	 * @param stepInfo 步骤信息
 	 * @return 步骤执行结果
@@ -117,8 +119,6 @@ public class PlanExecutor {
 			initSettings.put(CURRENT_STEP_INDEX_KEY, String.valueOf(stepIndex));
 			initSettings.put(STEP_TEXT_KEY, stepText);
 			initSettings.put(EXTRA_PARAMS_KEY, context.getPlan().getExecutionParams());
-			initSettings.put(EXECUTION_ENV_STRING_KEY, "");
-
 			BaseAgent executor = getExecutorForStep(stepType, context, initSettings);
 			if (executor == null) {
 				logger.error("No executor found for step type: {}", stepType);
@@ -127,14 +127,16 @@ public class PlanExecutor {
 			}
 			step.setAgent(executor);
 			executor.setState(AgentState.IN_PROGRESS);
-			String stepResultStr = executor.run(initSettings);
+			String stepResultStr = executor.run();
 			// Execute the step
 			step.setResult(stepResultStr);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Error executing step: {}", e.getMessage(), e);
 			step.setResult("Execution failed: " + e.getMessage());
-		} finally {
+		}
+		finally {
 			recordStepEnd(step, context);
 		}
 
@@ -151,7 +153,6 @@ public class PlanExecutor {
 
 	/**
 	 * 获取步骤的执行器
-	 * 
 	 * @param stepType 步骤类型
 	 * @return 对应的执行器
 	 */
@@ -215,8 +216,7 @@ public class PlanExecutor {
 
 	/**
 	 * 记录步骤执行完成
-	 * 
-	 * @param step    执行的步骤
+	 * @param step 执行的步骤
 	 * @param context 执行上下文
 	 */
 	private void recordStepEnd(ExecutionStep step, ExecutionContext context) {
