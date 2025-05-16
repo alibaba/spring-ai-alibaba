@@ -54,7 +54,7 @@ public class ClickByElementAction extends BrowserAction {
 		// 获取点击前的所有页面，用于后续比较
 		Page newPage = null;
 		try {
-            
+
 			com.microsoft.playwright.BrowserContext context = page.context();
 			// 获取点击前的所有页面和它们的URL
 			List<Page> pagesBefore = context.pages();
@@ -64,12 +64,12 @@ public class ClickByElementAction extends BrowserAction {
 				existingPageUrls.add(existingPage.url());
 			}
 			log.info("Pages before click: {} with URLs: {}", pagesBefore.size(), existingPageUrls);
-			
+
 			// 直接在当前线程中使用waitForPopup
 			try {
 				// 设置监听器和超时
 				WaitForPopupOptions options = new WaitForPopupOptions().setTimeout(10000); // 设置10秒超时
-				
+
 				log.info("Setting up popup listener and executing click...");
 				// 执行waitForPopup，它会同时监听popup事件并执行点击操作
 				newPage = page.waitForPopup(options, () -> {
@@ -77,19 +77,21 @@ public class ClickByElementAction extends BrowserAction {
 						log.info("Executing click action on: {}", element.getText());
 						element.getLocator().click();
 						log.info("Click action completed");
-					} catch (Exception e) {
+					}
+					catch (Exception e) {
 						log.error("Error during click: {}", e.getMessage());
 						throw new RuntimeException(e);
 					}
 				});
-				
+
 				if (newPage != null) {
 					log.info("Popup detected with URL: {}", newPage.url());
 				}
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				log.info("No popup detected or error: {}", e.getMessage());
 			}
-			
+
 			if (newPage != null) {
 				newPage.waitForLoadState(com.microsoft.playwright.options.LoadState.DOMCONTENTLOADED);
 				log.info("New tab detected, switched to: {}", newPage.url());

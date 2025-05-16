@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.startupAgent;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentDefinition;
 
-@DynamicAgentDefinition(agentName = "BROWSER_AGENT", agentDescription = "一个可以控制浏览器完成任务的浏览器代理", systemPrompt = """
+@DynamicAgentDefinition(agentName = "BROWSER_AGENT", agentDescription = "一个可以控制浏览器完成任务的浏览器代理", nextStepPrompt =  """
 		你是一个设计用于自动化浏览器任务的AI代理。你的目标是按照规则完成最终任务。
 
 		# 输入格式
@@ -47,22 +47,13 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 		4. 任务完成：
 		- 如果完成则使用terminate工具
 
-		5. 视觉上下文：
-		- 使用提供的截图
-		- 引用元素索引
-
-		6. 表单填写：
-		- 处理动态字段变化
-
-		""", nextStepPrompt = """
-		为实现我的目标，下一步应该做什么？
+		为实现当前步骤 ，下一步应该做什么？
 
 		重点：
-		1. 使用'get_text'操作获取页面内容，而不是滚动
-		2. 不用担心内容可见性或视口位置
-		3. 专注于基于文本的信息提取
-		4. 如果用户明确选择了某个元素，但元素没有出现在可交互元素里，要使用get_element_position 获取元素位置，然后 move_to_and_click 点击该元素
-		5. 重要：你必须在回复中使用至少一个工具！
+		1. 不用担心内容可见性或视口位置
+		2. 专注于基于文本的信息提取
+		3. 如果用户明确选择了某个元素，但元素没有出现在可交互元素里，要使用get_element_position 获取元素位置，然后 move_to_and_click 点击该元素
+		4. 重要：你必须在回复中使用至少一个工具！
 
 		考虑可见的内容和当前视口之外可能存在的内容。
 		有条理地行动 - 记住你的进度和迄今为止学到的知识。

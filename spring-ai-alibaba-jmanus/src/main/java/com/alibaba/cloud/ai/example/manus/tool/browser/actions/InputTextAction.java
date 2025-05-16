@@ -57,7 +57,8 @@ public class InputTextAction extends BrowserAction {
 		typeWithHumanDelay(inputElement.getLocator().elementHandle(), text);
 		// 直接通过 InteractiveElementRegistry 刷新缓存，避免使用已废弃方法
 		refreshElements(page);
-		return new ToolExecuteResult("成功输入: '" + text + "' 到指定的对象, 对象当前状态为 ：  " + inputElement.getOuterHtml() + " 。 其索引编号为 ： " + index);
+		return new ToolExecuteResult(
+				"成功输入: '" + text + "' 到指定的对象, 对象当前状态为 ：  " + inputElement.getOuterHtml() + " 。 其索引编号为 ： " + index);
 	}
 
 	private void typeWithHumanDelay(ElementHandle element, String text) {

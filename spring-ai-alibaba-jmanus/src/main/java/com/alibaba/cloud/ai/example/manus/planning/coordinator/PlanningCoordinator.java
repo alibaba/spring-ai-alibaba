@@ -30,7 +30,6 @@ public class PlanningCoordinator {
 	private final PlanExecutor planExecutor;
 
 	private final PlanFinalizer planFinalizer;
-	
 
 	public PlanningCoordinator(PlanCreator planCreator, PlanExecutor planExecutor, PlanFinalizer planFinalizer) {
 		this.planCreator = planCreator;
