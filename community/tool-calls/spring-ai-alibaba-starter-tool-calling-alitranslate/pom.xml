@@ -55,9 +55,15 @@
         </dependency>
 
         <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-common</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.aliyun</groupId>
             <artifactId>alibabacloud-alimt20181012</artifactId>
-            <version>1.0.2</version>
+            <version>1.0.3</version>
         </dependency>
 
     </dependencies>
