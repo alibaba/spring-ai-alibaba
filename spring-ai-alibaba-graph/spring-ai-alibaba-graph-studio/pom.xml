@@ -11,8 +11,6 @@
     <artifactId>spring-ai-alibaba-graph-studio</artifactId>
     <name>Spring AI Graph Studio</name>
 
-    <properties></properties>
-
     <dependencies>
 
         <dependency>
