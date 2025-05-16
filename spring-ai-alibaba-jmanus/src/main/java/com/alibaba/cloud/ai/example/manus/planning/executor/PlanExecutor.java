@@ -110,7 +110,6 @@ public class PlanExecutor {
 
 			int stepIndex = step.getStepIndex();
 
-			recordStepStart(step, context);
 			String planStatus = context.getPlan().getPlanExecutionStateStringFormat(true);
 
 			String stepText = step.getStepRequirement();
@@ -127,6 +126,8 @@ public class PlanExecutor {
 			}
 			step.setAgent(executor);
 			executor.setState(AgentState.IN_PROGRESS);
+
+			recordStepStart(step, context);
 			String stepResultStr = executor.run();
 			// Execute the step
 			step.setResult(stepResultStr);

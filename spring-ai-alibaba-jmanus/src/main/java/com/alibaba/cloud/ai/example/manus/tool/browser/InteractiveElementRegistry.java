@@ -179,7 +179,7 @@ public class InteractiveElementRegistry {
 	public String generateElementsInfoText() {
 		StringBuilder result = new StringBuilder();
 		for (InteractiveElement element : interactiveElements) {
-			result.append(element.toString()).append("\n");
+			result.append(element.toString().replace("\n", "")).append("\n");
 		}
 		return result.toString();
 	}
