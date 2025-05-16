@@ -29,10 +29,10 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @ConditionalOnClass(AliTranslateService.class)
 @EnableConfigurationProperties(AliTranslateProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.alitranslate", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = AliTranslateProperties.PREFIX, name = "enabled", havingValue = "true")
 public class AliTranslateAutoConfiguration {
 
-	@Bean
+	@Bean(destroyMethod = "close")
 	@ConditionalOnMissingBean
 	@Description("Implement natural language translation capabilities.")
 	public AliTranslateService aliTranslateFunction(AliTranslateProperties properties) {
