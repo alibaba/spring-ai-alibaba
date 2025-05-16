@@ -153,7 +153,8 @@ public class DynamicAgent extends ReActAgent {
 	@Override
 	protected AgentExecResult act() {
 		try {
-			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
+			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
+			ToolCall toolCall = toolCalls.get(0);
 
 			thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);

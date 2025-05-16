@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * 执行上下文类，用于在计划的创建、执行和总结过程中传递和维护状态信息。 该类作为计划执行流程中的核心数据载体，在
  * {@link com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator}
@@ -27,6 +30,11 @@ package com.alibaba.cloud.ai.example.manus.planning.model.vo;
  */
 public class ExecutionContext {
 
+	private Map<String,String> toolsContext = new HashMap<>();
+
+	/**
+	 * 工具上下文，存储工具执行的上下文信息
+	 */
 	/** 计划的唯一标识符 */
 	private String planId;
 
@@ -110,6 +118,18 @@ public class ExecutionContext {
 	 */
 	public void setSuccess(boolean success) {
 		this.success = success;
+	}
+
+	public Map<String, String> getToolsContext() {
+		return toolsContext;
+	}
+
+	public void setToolsContext(Map<String, String> toolsContext) {
+		this.toolsContext = toolsContext;
+	}
+
+	public void addToolContext(String toolsKey, String value) {
+		this.toolsContext.put(toolsKey, value);
 	}
 
 	/**
