@@ -234,7 +234,7 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		try {
 			DeleteByQueryResponse response = client.deleteByQuery(d -> d.index(INDEX_NAME)
-					.query(q -> q.term(t -> t.field("conversationId.keyword").value(conversationId))));
+					.query(q -> q.term(t -> t.field("conversationId").value(conversationId))));
 
 			if (response.failures().size() > 0) {
 				throw new RuntimeException("Error deleting messages for conversation: " + conversationId);
