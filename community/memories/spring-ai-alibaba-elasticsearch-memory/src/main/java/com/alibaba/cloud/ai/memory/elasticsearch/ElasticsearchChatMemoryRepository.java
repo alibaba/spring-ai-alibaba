@@ -77,7 +77,8 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 		try {
 			this.client = createClient();
 			createIndexIfNotExists();
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new RuntimeException("Failed to create Elasticsearch client", e);
 		}
 	}
@@ -90,11 +91,11 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 
 	private void createIndex() throws IOException {
 		client.indices()
-				.create(c -> c.index(INDEX_NAME)
-						.mappings(m -> m.properties("conversationId", p -> p.keyword(k -> k))
-								.properties("messageType", p -> p.keyword(k -> k))
-								.properties("messageText", p -> p.text(t -> t))
-								.properties("timestamp", p -> p.date(d -> d))));
+			.create(c -> c.index(INDEX_NAME)
+				.mappings(m -> m.properties("conversationId", p -> p.keyword(k -> k))
+					.properties("messageType", p -> p.keyword(k -> k))
+					.properties("messageText", p -> p.text(t -> t))
+					.properties("timestamp", p -> p.date(d -> d))));
 	}
 
 	public void recreateIndex() throws IOException {
@@ -113,7 +114,8 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 				String[] parts = node.split(":");
 				return new HttpHost(parts[0], Integer.parseInt(parts[1]), config.getScheme());
 			}).toArray(HttpHost[]::new);
-		} else {
+		}
+		else {
 			// Fallback to single node configuration
 			httpHosts = new HttpHost[] { new HttpHost(config.getHost(), config.getPort(), config.getScheme()) };
 		}
@@ -129,14 +131,15 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 			// Create SSL context if using HTTPS
 			if ("https".equalsIgnoreCase(config.getScheme())) {
 				SSLContext sslContext = SSLContextBuilder.create()
-						.loadTrustMaterial(null, (chains, authType) -> true)
-						.build();
+					.loadTrustMaterial(null, (chains, authType) -> true)
+					.build();
 
 				restClientBuilder.setHttpClientConfigCallback(
 						httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)
-								.setSSLContext(sslContext)
-								.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE));
-			} else {
+							.setSSLContext(sslContext)
+							.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE));
+			}
+			else {
 				restClientBuilder.setHttpClientConfigCallback(
 						httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
 			}
@@ -151,15 +154,16 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 	public List<String> findConversationIds() {
 		try {
 			SearchResponse<ChatMessage> response = client
-					.search(s -> s.index(INDEX_NAME).size(10000).query(q -> q.matchAll(m -> m)), ChatMessage.class);
+				.search(s -> s.index(INDEX_NAME).size(10000).query(q -> q.matchAll(m -> m)), ChatMessage.class);
 
 			return response.hits()
-					.hits()
-					.stream()
-					.map(hit -> hit.source().getConversationId())
-					.distinct()
-					.collect(Collectors.toList());
-		} catch (IOException e) {
+				.hits()
+				.stream()
+				.map(hit -> hit.source().getConversationId())
+				.distinct()
+				.collect(Collectors.toList());
+		}
+		catch (IOException e) {
 			throw new RuntimeException("Error finding conversation IDs", e);
 		}
 	}
@@ -170,21 +174,22 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 		try {
 			logger.info("Finding messages for conversation: {}", conversationId);
 			SearchResponse<ChatMessage> response = client.search(s -> s.index(INDEX_NAME)
-					.query(q -> q.term(t -> t.field("conversationId").value(conversationId)))
-					.sort(sort -> sort
-							.field(f -> f.field("timestamp").order(co.elastic.clients.elasticsearch._types.SortOrder.Asc))),
+				.query(q -> q.term(t -> t.field("conversationId").value(conversationId)))
+				.sort(sort -> sort
+					.field(f -> f.field("timestamp").order(co.elastic.clients.elasticsearch._types.SortOrder.Asc))),
 					ChatMessage.class);
 
 			List<Message> messages = response.hits()
-					.hits()
-					.stream()
-					.map(hit -> hit.source().toSpringMessage())
-					.filter(Objects::nonNull)
-					.collect(Collectors.toList());
+				.hits()
+				.stream()
+				.map(hit -> hit.source().toSpringMessage())
+				.filter(Objects::nonNull)
+				.collect(Collectors.toList());
 
 			logger.info("Found {} messages for conversation: {}", messages.size(), conversationId);
 			return messages;
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			logger.error("Error finding messages for conversation: {}", conversationId, e);
 			throw new RuntimeException("Error finding messages for conversation: " + conversationId, e);
 		}
@@ -213,17 +218,18 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 			if (response.errors()) {
 				logger.error("Error saving messages: {}",
 						response.items()
-								.stream()
-								.filter(item -> item.error() != null)
-								.map(item -> item.error().reason())
-								.collect(Collectors.joining(", ")));
+							.stream()
+							.filter(item -> item.error() != null)
+							.map(item -> item.error().reason())
+							.collect(Collectors.joining(", ")));
 				throw new RuntimeException("Error saving messages to Elasticsearch");
 			}
 
 			// Ensure index is refreshed immediately
 			client.indices().refresh(r -> r.index(INDEX_NAME));
 			logger.info("Successfully saved {} messages for conversation {}", messages.size(), conversationId);
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			logger.error("Error saving messages", e);
 			throw new RuntimeException("Error saving messages", e);
 		}
@@ -233,13 +239,14 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 	public void deleteByConversationId(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		try {
-			DeleteByQueryResponse response = client.deleteByQuery(d -> d.index(INDEX_NAME)
-					.query(q -> q.term(t -> t.field("conversationId").value(conversationId))));
+			DeleteByQueryResponse response = client.deleteByQuery(
+					d -> d.index(INDEX_NAME).query(q -> q.term(t -> t.field("conversationId").value(conversationId))));
 
 			if (response.failures().size() > 0) {
 				throw new RuntimeException("Error deleting messages for conversation: " + conversationId);
 			}
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new RuntimeException("Error deleting messages", e);
 		}
 	}
@@ -248,9 +255,9 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		try {
 			SearchResponse<ChatMessage> response = client.search(s -> s.index(INDEX_NAME)
-					.query(q -> q.term(t -> t.field("conversationId").value(conversationId)))
-					.sort(sort -> sort
-							.field(f -> f.field("timestamp").order(co.elastic.clients.elasticsearch._types.SortOrder.Asc))),
+				.query(q -> q.term(t -> t.field("conversationId").value(conversationId)))
+				.sort(sort -> sort
+					.field(f -> f.field("timestamp").order(co.elastic.clients.elasticsearch._types.SortOrder.Asc))),
 					ChatMessage.class);
 
 			List<ChatMessage> messages = response.hits().hits().stream().map(Hit::source).collect(Collectors.toList());
@@ -275,7 +282,8 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 				// Force refresh the index to make changes available immediately
 				client.indices().refresh(r -> r.index(INDEX_NAME));
 			}
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new RuntimeException("Error clearing over limit messages", e);
 		}
 	}
@@ -292,39 +300,39 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 	public String rawSearchQuery(String conversationId) throws IOException {
 		// Get the raw source field to inspect document structure
 		var allResponse = client
-				.search(s -> s.index(INDEX_NAME).query(q -> q.matchAll(m -> m)).size(100).source(src -> src.fetch(true)) // Explicitly
-				// request
-				// source
-				// fields
-						, Void.class);
+			.search(s -> s.index(INDEX_NAME).query(q -> q.matchAll(m -> m)).size(100).source(src -> src.fetch(true)) // Explicitly
+			// request
+			// source
+			// fields
+					, Void.class);
 
 		// Try both keyword and non-keyword field for conversationId
 		var byIdResponseKeyword = client.search(s -> s.index(INDEX_NAME)
-				.query(q -> q.term(t -> t.field("conversationId.keyword").value(conversationId)))
-				.size(100)
-				.source(src -> src.fetch(true)), Void.class);
+			.query(q -> q.term(t -> t.field("conversationId.keyword").value(conversationId)))
+			.size(100)
+			.source(src -> src.fetch(true)), Void.class);
 
 		var byIdResponseNoKeyword = client.search(s -> s.index(INDEX_NAME)
-				.query(q -> q.term(t -> t.field("conversationId").value(conversationId)))
-				.size(100)
-				.source(src -> src.fetch(true)), Void.class);
+			.query(q -> q.term(t -> t.field("conversationId").value(conversationId)))
+			.size(100)
+			.source(src -> src.fetch(true)), Void.class);
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("=== All documents (").append(allResponse.hits().total().value()).append(") ===\n");
 		sb.append(allResponse.toString()).append("\n\n");
 
 		sb.append("=== Documents for conversation with keyword field ")
-				.append(conversationId)
-				.append(" (")
-				.append(byIdResponseKeyword.hits().total().value())
-				.append(") ===\n");
+			.append(conversationId)
+			.append(" (")
+			.append(byIdResponseKeyword.hits().total().value())
+			.append(") ===\n");
 		sb.append(byIdResponseKeyword.toString()).append("\n\n");
 
 		sb.append("=== Documents for conversation without keyword field ")
-				.append(conversationId)
-				.append(" (")
-				.append(byIdResponseNoKeyword.hits().total().value())
-				.append(") ===\n");
+			.append(conversationId)
+			.append(" (")
+			.append(byIdResponseNoKeyword.hits().total().value())
+			.append(") ===\n");
 		sb.append(byIdResponseNoKeyword.toString());
 
 		return sb.toString();
@@ -415,7 +423,8 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 					return new UserMessage("Legacy message - please reindex");
 				}
 				return null;
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				logger.error("Error converting message", e);
 				return new UserMessage("Error: " + e.getMessage());
 			}
