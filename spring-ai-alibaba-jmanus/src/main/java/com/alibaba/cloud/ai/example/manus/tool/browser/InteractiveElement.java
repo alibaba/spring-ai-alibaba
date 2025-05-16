@@ -438,7 +438,11 @@ public class InteractiveElement {
 	 */
 	@Override
 	public String toString() {
-		return String.format("[%d] %s: %s", index, tagName, text.isEmpty() ? outerHtml : text);
+		String content = text.isEmpty() ? outerHtml : text;
+		if (content.length() > 500) {
+			content = content.substring(0, 500) + " ... " + content.substring(content.length() - 100);
+		}
+		return String.format("[%d] %s: %s", index, tagName, content);
 	}
 
 }
