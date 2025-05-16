@@ -248,7 +248,7 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		try {
 			SearchResponse<ChatMessage> response = client.search(s -> s.index(INDEX_NAME)
-					.query(q -> q.term(t -> t.field("conversationId.keyword").value(conversationId)))
+					.query(q -> q.term(t -> t.field("conversationId").value(conversationId)))
 					.sort(sort -> sort
 							.field(f -> f.field("timestamp").order(co.elastic.clients.elasticsearch._types.SortOrder.Asc))),
 					ChatMessage.class);
@@ -271,6 +271,9 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 				if (bulkResponse.errors()) {
 					throw new RuntimeException("Error saving messages to Elasticsearch");
 				}
+
+				// Force refresh the index to make changes available immediately
+				client.indices().refresh(r -> r.index(INDEX_NAME));
 			}
 		} catch (IOException e) {
 			throw new RuntimeException("Error clearing over limit messages", e);
