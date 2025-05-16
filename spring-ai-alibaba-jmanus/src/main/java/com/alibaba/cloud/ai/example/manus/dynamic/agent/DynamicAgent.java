@@ -59,8 +59,6 @@ public class DynamicAgent extends ReActAgent {
 
 	private final String agentDescription;
 
-	private final String systemPrompt;
-
 	private final String nextStepPrompt;
 
 	private ToolCallbackProvider toolCallbackProvider;
@@ -75,24 +73,22 @@ public class DynamicAgent extends ReActAgent {
 
 	private final ToolCallingManager toolCallingManager;
 
+	public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
+			ManusProperties manusProperties, String name, String description, String nextStepPrompt,
+			List<String> availableToolKeys, ToolCallingManager toolCallingManager,
+			Map<String, Object> initialAgentSetting) {
+		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting);
+		this.agentName = name;
+		this.agentDescription = description;
+		this.nextStepPrompt = nextStepPrompt;
+		this.availableToolKeys = availableToolKeys;
+		this.toolCallingManager = toolCallingManager;
+	}
 
-   public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-		   ManusProperties manusProperties, String name, String description, String systemPrompt,
-		   String nextStepPrompt, List<String> availableToolKeys, ToolCallingManager toolCallingManager, Map<String, Object> initialAgentSetting) {
-	   super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting);
-	   this.agentName = name;
-	   this.agentDescription = description;
-	   this.systemPrompt = systemPrompt;
-	   this.nextStepPrompt = nextStepPrompt;
-	   this.availableToolKeys = availableToolKeys;
-	   this.toolCallingManager = toolCallingManager;
-   }
-
-   
-   
 	@Override
 	protected boolean think() {
 		collectAndSetEnvDataForTools();
+
 		AgentExecutionRecord planExecutionRecord = planExecutionRecorder.getCurrentAgentExecutionRecord(getPlanId());
 		thinkActRecord = new ThinkActRecord(planExecutionRecord.getId());
 		thinkActRecord.setActStartTime(LocalDateTime.now());
@@ -111,13 +107,11 @@ public class DynamicAgent extends ReActAgent {
 			log.debug("Messages prepared for the prompt: {}", messages);
 
 			userPrompt = new Prompt(messages, chatOptions);
-			
+
 			List<ToolCallback> callbacks = getToolCallList();
 			ChatClient chatClient = llmService.getAgentChatClient();
-			response = chatClient
-				.prompt(userPrompt)
-				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getPlanId())
-					)
+			response = chatClient.prompt(userPrompt)
+				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getPlanId()))
 				.toolCallbacks(callbacks)
 				.call()
 				.chatResponse();
@@ -161,7 +155,6 @@ public class DynamicAgent extends ReActAgent {
 			thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
 
-			addEnvData(PlanExecutor.EXECUTION_ENV_STRING_KEY, collectEnvData(toolCall.name()));
 			// setData(getData());
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
 				.get(toolExecutionResult.conversationHistory().size() - 1);
@@ -210,23 +203,31 @@ public class DynamicAgent extends ReActAgent {
 
 	@Override
 	protected Message getNextStepWithEnvMessage() {
-		String nextStepPrompt = """
 
-				当前步骤的环境信息是:
-				{current_step_env_data}
-
-				""";
-		nextStepPrompt = nextStepPrompt += this.nextStepPrompt;
-		PromptTemplate promptTemplate = new PromptTemplate(nextStepPrompt);
-		Message userMessage = promptTemplate.createMessage(getData());
+		PromptTemplate promptTemplate = new PromptTemplate(this.nextStepPrompt);
+		Message userMessage = promptTemplate.createMessage(getMergedData());
 		return userMessage;
+	}
+
+	private Map<String, Object> getMergedData() {
+		Map<String, Object> data = super.getInitSettingData();
+		data.putAll(getInitSettingData());
+		data.put(PlanExecutor.EXECUTION_ENV_STRING_KEY, convertEnvDataToString());
+		return data;
 	}
 
 	@Override
 	protected Message addThinkPrompt(List<Message> messages) {
 		super.addThinkPrompt(messages);
-		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(this.systemPrompt);
-		Message systemMessage = promptTemplate.createMessage(getData());
+		String envPrompt = """
+
+				当前步骤的环境信息是:
+				{current_step_env_data}
+
+				""";
+
+		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(envPrompt);
+		Message systemMessage = promptTemplate.createMessage(getMergedData());
 		messages.add(systemMessage);
 		return systemMessage;
 	}
@@ -250,7 +251,7 @@ public class DynamicAgent extends ReActAgent {
 	}
 
 	public void addEnvData(String key, String value) {
-		Map<String, Object> data = super.getData();
+		Map<String, Object> data = super.getInitSettingData();
 		if (data == null) {
 			throw new IllegalStateException("Data map is null. Cannot add environment data.");
 		}
@@ -272,15 +273,34 @@ public class DynamicAgent extends ReActAgent {
 
 	public void collectAndSetEnvDataForTools() {
 
-        Map<String, Object> toolEnvDataMap = new HashMap<>();
+		Map<String, Object> toolEnvDataMap = new HashMap<>();
 
-        for (String toolKey : availableToolKeys) {
-            String envData = collectEnvData(toolKey);
-            toolEnvDataMap.put(toolKey, envData);
-        }
-
+		for (String toolKey : availableToolKeys) {
+			String envData = collectEnvData(toolKey);
+			toolEnvDataMap.put(toolKey, envData);
+		}
+		Map<String, Object> oldMap = getEnvData();
 		log.info("收集到的工具环境数据: {}", toolEnvDataMap);
-        setEnvData(toolEnvDataMap);
-    }
+		if (oldMap != null) {
+			// 合并旧数据和新数据
+			toolEnvDataMap.putAll(oldMap);
+		}
+		setEnvData(toolEnvDataMap);
+	}
+
+	public String convertEnvDataToString() {
+		StringBuilder envDataStringBuilder = new StringBuilder();
+
+		for (String toolKey : availableToolKeys) {
+			Object value = getEnvData().get(toolKey);
+			if (value == null || value.toString().isEmpty()) {
+				continue; // Skip tools with no data
+			}
+			envDataStringBuilder.append(toolKey).append(" 的上下文信息：\n");
+			envDataStringBuilder.append("    ").append(value.toString()).append("\n");
+		}
+
+		return envDataStringBuilder.toString();
+	}
 
 }

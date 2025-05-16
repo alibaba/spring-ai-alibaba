@@ -57,12 +57,11 @@ public class PlanCreator {
 
 	/**
 	 * 根据用户请求创建执行计划
-	 * 
 	 * @param userRequest 用户请求
 	 * @return 计划创建结果
 	 */
 	public void createPlan(ExecutionContext context) {
-		 boolean useMemory = context.isUseMemory();
+		boolean useMemory = context.isUseMemory();
 		String planId = context.getPlanId();
 		if (planId == null || planId.isEmpty()) {
 			throw new IllegalArgumentException("Plan ID cannot be null or empty");
@@ -79,8 +78,8 @@ public class PlanCreator {
 			Prompt prompt = promptTemplate.create();
 
 			ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient()
-					.prompt(prompt)
-					.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
+				.prompt(prompt)
+				.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
 			if (useMemory) {
 				requestSpec.advisors(new MessageChatMemoryAdvisor(llmService.getConversationMemory()));
 			}
@@ -94,7 +93,8 @@ public class PlanCreator {
 			}
 			context.setPlan(currentPlan);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Error creating plan for request: {}", context.getUserRequest(), e);
 			// 处理异常情况
 			throw new RuntimeException("Failed to create plan", e);
@@ -103,7 +103,6 @@ public class PlanCreator {
 
 	/**
 	 * 构建代理信息字符串
-	 * 
 	 * @param agents 代理列表
 	 * @return 格式化的代理信息
 	 */
@@ -111,20 +110,19 @@ public class PlanCreator {
 		StringBuilder agentsInfo = new StringBuilder("Available Agents:\n");
 		for (DynamicAgentEntity agent : agents) {
 			agentsInfo.append("- Agent Name: ")
-					.append(agent.getAgentName())
-					.append("\n  Description: ")
-					.append(agent.getAgentDescription())
-					.append("\n");
+				.append(agent.getAgentName())
+				.append("\n  Description: ")
+				.append(agent.getAgentDescription())
+				.append("\n");
 		}
 		return agentsInfo.toString();
 	}
 
 	/**
 	 * 生成计划提示
-	 * 
-	 * @param request    用户请求
+	 * @param request 用户请求
 	 * @param agentsInfo 代理信息
-	 * @param planId     计划ID
+	 * @param planId 计划ID
 	 * @return 格式化的提示字符串
 	 */
 	private String generatePlanPrompt(String request, String agentsInfo, String planId) {

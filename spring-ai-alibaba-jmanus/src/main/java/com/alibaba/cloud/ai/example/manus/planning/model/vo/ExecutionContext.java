@@ -30,7 +30,7 @@ import java.util.Map;
  */
 public class ExecutionContext {
 
-	private Map<String,String> toolsContext = new HashMap<>();
+	private Map<String, String> toolsContext = new HashMap<>();
 
 	/**
 	 * 工具上下文，存储工具执行的上下文信息
@@ -53,7 +53,7 @@ public class ExecutionContext {
 	/** 计划执行是否成功的标志 */
 	private boolean success = false;
 
-	/** 是否使用记忆， 场景是 如果只构建计划，那么不应该用记忆，否则记忆无法删除*/
+	/** 是否使用记忆， 场景是 如果只构建计划，那么不应该用记忆，否则记忆无法删除 */
 	private boolean useMemory = false;
 
 	/**
@@ -156,7 +156,6 @@ public class ExecutionContext {
 		return resultSummary;
 	}
 
-	
 	/**
 	 * 设置执行结果摘要
 	 * @param resultSummary 执行结果的摘要说明
