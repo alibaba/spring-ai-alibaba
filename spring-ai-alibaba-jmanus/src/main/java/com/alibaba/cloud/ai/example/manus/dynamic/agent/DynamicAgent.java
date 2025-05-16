@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2025 the original author or authors.
  *
@@ -18,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -45,6 +45,7 @@ import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
+import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
@@ -74,12 +75,11 @@ public class DynamicAgent extends ReActAgent {
 
 	private final ToolCallingManager toolCallingManager;
 
-	private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
 
    public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 		   ManusProperties manusProperties, String name, String description, String systemPrompt,
-		   String nextStepPrompt, List<String> availableToolKeys, ToolCallingManager toolCallingManager) {
-	   super(llmService, planExecutionRecorder, manusProperties);
+		   String nextStepPrompt, List<String> availableToolKeys, ToolCallingManager toolCallingManager, Map<String, Object> initialAgentSetting) {
+	   super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting);
 	   this.agentName = name;
 	   this.agentDescription = description;
 	   this.systemPrompt = systemPrompt;
@@ -89,8 +89,10 @@ public class DynamicAgent extends ReActAgent {
    }
 
    
+   
 	@Override
 	protected boolean think() {
+		collectAndSetEnvDataForTools();
 		AgentExecutionRecord planExecutionRecord = planExecutionRecorder.getCurrentAgentExecutionRecord(getPlanId());
 		thinkActRecord = new ThinkActRecord(planExecutionRecord.getId());
 		thinkActRecord.setActStartTime(LocalDateTime.now());
@@ -159,8 +161,8 @@ public class DynamicAgent extends ReActAgent {
 			thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
 
-			addEnvData(EXECUTION_ENV_KEY_STRING, collectEnvData(toolCall.name()));
-			setData(getData());
+			addEnvData(PlanExecutor.EXECUTION_ENV_STRING_KEY, collectEnvData(toolCall.name()));
+			// setData(getData());
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
 				.get(toolExecutionResult.conversationHistory().size() - 1);
 
@@ -210,7 +212,7 @@ public class DynamicAgent extends ReActAgent {
 	protected Message getNextStepWithEnvMessage() {
 		String nextStepPrompt = """
 
-				CURRENT STEP ENVIRONMENT STATUS:
+				当前步骤的环境信息是:
 				{current_step_env_data}
 
 				""";
@@ -267,5 +269,18 @@ public class DynamicAgent extends ReActAgent {
 		// 如果没有找到对应的工具回调上下文，返回空字符串
 		return "";
 	}
+
+	public void collectAndSetEnvDataForTools() {
+
+        Map<String, Object> toolEnvDataMap = new HashMap<>();
+
+        for (String toolKey : availableToolKeys) {
+            String envData = collectEnvData(toolKey);
+            toolEnvDataMap.put(toolKey, envData);
+        }
+
+		log.info("收集到的工具环境数据: {}", toolEnvDataMap);
+        setEnvData(toolEnvDataMap);
+    }
 
 }
