@@ -55,7 +55,7 @@ import com.microsoft.playwright.Page;
  */
 @SpringBootTest(classes = OpenManusSpringBootApplication.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-// @Disabled("仅用于本地测试，CI 环境跳过") // 添加这一行
+ @Disabled("仅用于本地测试，CI 环境跳过") // 添加这一行
 class BrowserUseToolSpringTest {
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseToolSpringTest.class);
@@ -159,7 +159,7 @@ class BrowserUseToolSpringTest {
 			// 步骤4: 在搜索框中输入文本
 			log.info("步骤4: 在搜索框中输入'Hello World'");
 			ToolExecuteResult inputResult = executeAction("input_text", null, searchInputIndex, "Hello World");
-			Assertions.assertTrue(inputResult.getOutput().contains("Successfully input 'Hello World'"), "在搜索框输入文本失败");
+			Assertions.assertTrue(inputResult.getOutput().contains("Hello World"), "在搜索框输入文本失败");
 
 			// 步骤5: 重新获取状态并查找搜索按钮
 			log.info("步骤5: 定位搜索按钮");
@@ -189,13 +189,23 @@ class BrowserUseToolSpringTest {
 			String searchResults = textResult.getOutput();
 			Assertions.assertTrue(searchResults.contains("Hello World"), "搜索结果中未找到 'Hello World'");
 
-			// 步骤8: 获取截图作为证据（可选）
-			log.info("步骤8: 获取页面截图");
-			ToolExecuteResult screenshotResult = executeAction("screenshot", null);
-			Assertions.assertTrue(screenshotResult.getOutput().contains("Screenshot captured"), "获取截图失败");
+			state = browserUseTool.getCurrentState(page);
+			elements = (String) state.get("interactive_elements");
+			searchButtonIndex = -1;
+			elementLines = elements.split("\n");
+			for (int i = 0; i < elementLines.length; i++) {
+				if (elementLines[i].contains("hello world")&& elementLines[i].contains("百度百科") && elementLines[i].contains("程序代码")) {
+					searchButtonIndex = i;
+					break;
+				}
+			}
+			clickResult = executeAction("click", null, searchButtonIndex, null);
+			Assertions.assertTrue(clickResult.getOutput().contains("Clicked"), "点击搜索按钮失败");
 
-		}
-		catch (Exception e) {
+
+			log.info("登录 success ");
+
+		} catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
@@ -203,8 +213,9 @@ class BrowserUseToolSpringTest {
 
 	/**
 	 * 导航到指定URL并验证可交互元素的通用方法
-	 * @param tool BrowserUseTool实例
-	 * @param url 目标URL
+	 * 
+	 * @param tool             BrowserUseTool实例
+	 * @param url              目标URL
 	 * @param expectedElements 期望在页面中出现的元素关键词列表
 	 * @return 获取到的可交互元素字符串
 	 */
@@ -265,8 +276,7 @@ class BrowserUseToolSpringTest {
 
 			log.info("测试成功完成！");
 
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
@@ -285,8 +295,7 @@ class BrowserUseToolSpringTest {
 
 			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
 			log.info("GitHub搜索页面测试成功完成！");
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
@@ -304,8 +313,7 @@ class BrowserUseToolSpringTest {
 
 			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
 			log.info("Nacos页面测试成功完成！");
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
@@ -323,8 +331,7 @@ class BrowserUseToolSpringTest {
 
 			navigateAndVerifyElements(browserUseTool, testUrl, expectedElements);
 			log.info("百度首页测试成功完成！");
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
@@ -484,8 +491,7 @@ class BrowserUseToolSpringTest {
 			log.info("手机号输入验证成功，并已请求验证码！");
 
 			log.info("CSDN登录测试完成");
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}

@@ -54,26 +54,47 @@ public class InputTextAction extends BrowserAction {
 			return new ToolExecuteResult("Element at index " + index + " is not an input element");
 		}
 
-		typeWithHumanDelay(inputElement.getLocator().elementHandle(), text);
+		// 先清空输入框内容
+		ElementHandle handle = inputElement.getLocator().elementHandle();
+		handle.click();
+		handle.fill("");
+
+		// 再输入新内容
+		typeWithHumanDelay(handle, text);
 		// 直接通过 InteractiveElementRegistry 刷新缓存，避免使用已废弃方法
+        String latestOuterHtml = handle.evaluate("el => el.outerHTML").toString();
 		refreshElements(page);
 		return new ToolExecuteResult(
-				"成功输入: '" + text + "' 到指定的对象, 对象当前状态为 ：  " + inputElement.getOuterHtml() + " 。 其索引编号为 ： " + index);
+				"成功输入: '" + text + "' 到指定的对象, 对象当前状态为 ：  " + latestOuterHtml + " 。 其索引编号为 ： " + index);
 	}
 
 	private void typeWithHumanDelay(ElementHandle element, String text) {
 		// 模拟人类输入速度
 		Random random = new Random();
+		
+		// 首先点击元素以确保获得焦点
+		element.click();
+		
 		for (char c : text.toCharArray()) {
-			element.evaluate("(el, char) => el.value += char", String.valueOf(c)); // 使用
-																					// evaluate
-																					// 模拟输入
 			try {
-				Thread.sleep(random.nextInt(100) + 50);
+				// 使用type方法代替evaluate，以触发正确的键盘事件
+				element.type(String.valueOf(c), new ElementHandle.TypeOptions().setDelay(random.nextInt(100) + 50));
+				
+				// 在字符之间添加一个短暂的停顿，使输入更加自然
+				Thread.sleep(random.nextInt(50) + 20);
 			}
 			catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
+				break;
 			}
+		}
+		
+		try {
+			// 输入完成后增加一个短暂的停顿
+			Thread.sleep(random.nextInt(150) + 100);
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 		}
 	}
 

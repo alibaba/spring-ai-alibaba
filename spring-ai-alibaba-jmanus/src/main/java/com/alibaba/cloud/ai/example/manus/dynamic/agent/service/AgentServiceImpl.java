@@ -90,13 +90,7 @@ public class AgentServiceImpl implements AgentService {
 			}
 
 			DynamicAgentEntity entity = new DynamicAgentEntity();
-			// 这里的SystemPrompt属性已经废弃，直接使用nextStepPrompt
-			if (config.getSystemPrompt() != null || !config.getSystemPrompt().trim().isEmpty()) {
-				log.warn(
-						"Agent[{}]的SystemPrompt不为空， 但属性已经废弃，只保留nextPrompt， 本次忽略该属性，如需要该内容在prompt生效，请直接更新界面的唯一的那个prompt , 当前制定的值: {}",
-						config.getName(), config.getSystemPrompt());
-				config.setSystemPrompt(null);
-			}
+			entity = mergePrompts(entity, config.getName());
 			updateEntityFromConfig(entity, config);
 			entity = repository.save(entity);
 			log.info("成功创建新Agent: {}", config.getName());
@@ -154,6 +148,7 @@ public class AgentServiceImpl implements AgentService {
 
 	private AgentConfig mapToAgentConfig(DynamicAgentEntity entity) {
 		AgentConfig config = new AgentConfig();
+		entity = mergePrompts(entity, entity.getAgentName());
 		config.setId(entity.getId().toString());
 		config.setName(entity.getAgentName());
 		config.setDescription(entity.getAgentDescription());
@@ -167,16 +162,9 @@ public class AgentServiceImpl implements AgentService {
 	private void updateEntityFromConfig(DynamicAgentEntity entity, AgentConfig config) {
 		entity.setAgentName(config.getName());
 		entity.setAgentDescription(config.getDescription());
-
-		// 这里的SystemPrompt属性已经废弃，直接使用nextStepPrompt
-		if (config.getSystemPrompt() != null || !config.getSystemPrompt().trim().isEmpty()) {
-			log.warn(
-					"Agent[{}]的SystemPrompt不为空， 但属性已经废弃，只保留nextPrompt， 本次忽略该属性，如需要该内容在prompt生效，请直接更新界面的唯一的那个prompt , 当前制定的值: {}",
-					config.getName(), config.getSystemPrompt());
-			config.setSystemPrompt(null);
-		}
-
-		entity.setNextStepPrompt(config.getNextStepPrompt());
+		String nextStepPrompt = config.getNextStepPrompt();
+		entity = mergePrompts(entity, config.getName());
+		entity.setNextStepPrompt(nextStepPrompt);
 
 		// 1. 创建新集合，保证唯一性和顺序
 		java.util.Set<String> toolSet = new java.util.LinkedHashSet<>();
@@ -193,6 +181,23 @@ public class AgentServiceImpl implements AgentService {
 		// 3. 转为 List 并设置
 		entity.setAvailableToolKeys(new java.util.ArrayList<>(toolSet));
 		entity.setClassName(config.getName());
+	}
+
+	private DynamicAgentEntity mergePrompts(DynamicAgentEntity entity,String agentName) {
+		// 这里的SystemPrompt属性已经废弃，直接使用nextStepPrompt
+		if (entity.getSystemPrompt() != null || !entity.getSystemPrompt().trim().isEmpty()) {
+			String systemPrompt = entity.getSystemPrompt();
+			String nextPrompt = entity.getNextStepPrompt();
+			// 这里的SystemPrompt属性已经废弃，直接使用nextStepPrompt
+			if (nextPrompt != null && !nextPrompt.trim().isEmpty()) {
+				nextPrompt = systemPrompt + "\n" + nextPrompt;
+			}
+			log.warn(
+					"Agent[{}]的SystemPrompt不为空， 但属性已经废弃，只保留nextPrompt， 本次将agent 的内容合并，如需要该内容在prompt生效，请直接更新界面的唯一的那个prompt , 当前制定的值: {}",
+					agentName, nextPrompt);
+			entity.setSystemPrompt(null);
+		}
+		return entity;
 	}
 
 	@Override

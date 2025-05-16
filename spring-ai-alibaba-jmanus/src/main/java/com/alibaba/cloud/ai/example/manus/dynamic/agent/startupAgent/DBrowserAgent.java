@@ -21,15 +21,16 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 		你是一个设计用于自动化浏览器任务的AI代理。你的目标是按照规则完成最终任务。
 
 		# 输入格式
-		[index]<type>文本</type>
-		- index：交互的数字标识符
-		- type：HTML元素类型（按钮、输入框等）
-		- 文本：元素描述
+		[index] type : 文本 
+			- index : 交互的数字标识符
+			- type : HTML元素类型（按钮 a : 、输入框 input: 等）
+			- 文本：元素描述
 		示例：
-		[33]<button>提交表单</button>
+			[33] input: 提交表单
+			[12] a: 登录
+			[45] button: 注册
 
 		- 只有带有[]中数字索引的元素可交互
-		- 不带[]的元素仅提供上下文
 
 		# 响应规则
 		1. 操作：你一次只可以做一个tool call 操作
