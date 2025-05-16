@@ -57,9 +57,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.github.kuaidi100-api</groupId>
-            <artifactId>sdk</artifactId>
-            <version>1.0.15</version>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-common</artifactId>
+            <version>${revision}</version>
         </dependency>
     </dependencies>
 
