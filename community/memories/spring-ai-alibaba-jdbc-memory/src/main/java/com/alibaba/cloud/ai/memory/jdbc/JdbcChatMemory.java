@@ -151,7 +151,6 @@ public abstract class JdbcChatMemory implements ChatMemory, AutoCloseable {
 		return this.selectMessageById(conversationId, lastN);
 	}
 
-
 	@Override
 	public List<Message> get(String conversationId) {
 		return this.selectMessageById(conversationId, lastN);
