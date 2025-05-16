@@ -182,13 +182,13 @@ public class AgentServiceImpl implements AgentService {
 	}
 
 	@Override
-	public BaseAgent createDynamicBaseAgent(String name, String planId) {
+	public BaseAgent createDynamicBaseAgent(String name, String planId, Map<String, Object> initialAgentSetting) {
 
 		log.info("创建新的BaseAgent: {}, planId: {}", name, planId);
 
 		try {
 			// 通过dynamicAgentLoader加载已存在的Agent
-			DynamicAgent agent = dynamicAgentLoader.loadAgent(name);
+			DynamicAgent agent = dynamicAgentLoader.loadAgent(name, initialAgentSetting);
 
 			// 设置planId
 			agent.setPlanId(planId);
