@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.executor;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
@@ -62,16 +63,17 @@ public class PlanExecutor {
 
 	/**
 	 * 执行整个计划的所有步骤
-	 * @param plan 要执行的计划
-	 * @return 执行结果
+	 * @param context 执行上下文，包含用户请求和执行的过程信息
 	 */
 	public void executeAllSteps(ExecutionContext context) {
 		recordPlanExecutionStart(context);
 		ExecutionPlan plan = context.getPlan();
 		List<ExecutionStep> steps = plan.getSteps();
 
-		for (ExecutionStep step : steps) {
-			executeStep(step, context);
+		if (CollectionUtil.isNotEmpty(steps)) {
+			for (ExecutionStep step : steps) {
+				executeStep(step, context);
+			}
 		}
 		context.setSuccess(true);
 	}
