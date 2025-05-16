@@ -1,0 +1,23 @@
+name: Deploy to Maven Central
+on:
+  workflow_dispatch:
+jobs:
+  deploy:
+    name: Deploy to Maven Central
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+          server-id: ossrh
+          server-username: OSSRH_USERNAME
+          server-password: OSSRH_PASSWORD
+      - name: Deploy with Maven
+        run: |
+        ./mvnw -B clean install -DskipTests
+        ./mvnw -B clean deploy -Psonatype
