@@ -1,4 +1,4 @@
-name: Deploy to Maven Central
+name: 📤 Deploy to Maven Central
 on:
   workflow_dispatch:
 jobs:
