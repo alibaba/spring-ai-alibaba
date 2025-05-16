@@ -35,8 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import static com.alibaba.cloud.ai.toolcalling.serpapi.SerpApiProperties.USER_AGENT_VALUE;
-
 /**
  * @author 北极星
  * @author sixiyida
@@ -109,7 +107,7 @@ public class SerpApiService implements Function<SerpApiService.Request, SerpApiS
 				String link = (String) result.get("link");
 
 				try {
-					Document document = Jsoup.connect(link).userAgent(USER_AGENT_VALUE).get();
+					Document document = Jsoup.connect(link).userAgent(SerpApiProperties.USER_AGENT_VALUE).get();
 					String textContent = document.body().text();
 					resultList.add(new SearchResult(title, textContent));
 				}
