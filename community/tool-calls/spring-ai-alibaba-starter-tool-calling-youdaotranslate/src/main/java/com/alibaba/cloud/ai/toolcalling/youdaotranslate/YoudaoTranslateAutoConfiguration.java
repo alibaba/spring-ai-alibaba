@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.toolcalling.youdaotranslate;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -29,14 +31,16 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @ConditionalOnClass(YoudaoTranslateService.class)
 @EnableConfigurationProperties(YoudaoTranslateProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.youdaotranslate", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = YoudaoTranslateProperties.PREFIX, name = "enabled", havingValue = "true")
 public class YoudaoTranslateAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("use youdao translation to achieve translation")
-	public YoudaoTranslateService youdaoTranslateFunction(YoudaoTranslateProperties properties) {
-		return new YoudaoTranslateService(properties);
+	public YoudaoTranslateService youdaoTranslateFunction(YoudaoTranslateProperties properties,
+			JsonParseTool jsonParseTool) {
+		WebClientTool webClientTool = WebClientTool.builder(jsonParseTool, properties).build();
+		return new YoudaoTranslateService(properties, jsonParseTool, webClientTool);
 	}
 
 }
