@@ -92,13 +92,13 @@ class DashScopeImageModelTests {
 		mockSuccessfulImageGeneration();
 
 		DashScopeImageOptions customOptions = DashScopeImageOptions.builder()
-				.withModel(TEST_MODEL)
-				.withN(2)
-				.withWidth(1024)
-				.withHeight(1024)
-				.withStyle("photography")
-				.withSeed(42)
-				.build();
+			.withModel(TEST_MODEL)
+			.withN(2)
+			.withWidth(1024)
+			.withHeight(1024)
+			.withStyle("photography")
+			.withSeed(42)
+			.build();
 
 		ImagePrompt prompt = new ImagePrompt(TEST_PROMPT, customOptions);
 		ImageResponse response = imageModel.call(prompt);
@@ -133,15 +133,15 @@ class DashScopeImageModelTests {
 	void testNullPrompt() {
 		// Test handling of null prompt
 		assertThatThrownBy(() -> imageModel.call(null)).isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("Prompt");
+			.hasMessageContaining("Prompt");
 	}
 
 	@Test
 	void testEmptyPrompt() {
 		// Test handling of empty prompt
 		assertThatThrownBy(() -> imageModel.call(new ImagePrompt(new ArrayList<>())))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("Prompt");
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Prompt");
 	}
 
 	private void mockSuccessfulImageGeneration() {
