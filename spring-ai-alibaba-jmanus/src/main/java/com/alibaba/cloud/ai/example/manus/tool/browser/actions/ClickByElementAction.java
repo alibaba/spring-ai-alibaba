@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 import java.util.List;
 
 import com.microsoft.playwright.Page;
-
+import com.microsoft.playwright.Page.WaitForPopupOptions;
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement;
 // import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement;
@@ -54,6 +54,7 @@ public class ClickByElementAction extends BrowserAction {
 		// 获取点击前的所有页面，用于后续比较
 		Page newPage = null;
 		try {
+            
 			com.microsoft.playwright.BrowserContext context = page.context();
 			// 获取点击前的所有页面和它们的URL
 			List<Page> pagesBefore = context.pages();
@@ -64,33 +65,31 @@ public class ClickByElementAction extends BrowserAction {
 			}
 			log.info("Pages before click: {} with URLs: {}", pagesBefore.size(), existingPageUrls);
 			
-			// 执行点击操作
-			element.getLocator().click();
-			
-			// 等待并检查是否有新页面
-			long start = System.currentTimeMillis();
-			while (System.currentTimeMillis() - start < 10000) { // 最多等待10秒
-				List<Page> pagesAfter = context.pages();
+			// 直接在当前线程中使用waitForPopup
+			try {
+				// 设置监听器和超时
+				WaitForPopupOptions options = new WaitForPopupOptions().setTimeout(10000); // 设置10秒超时
 				
-				// 如果页面数量增加，寻找是哪个新页面
-				if (pagesAfter.size() > pagesBefore.size()) {
-					// 检查每个页面，找出URL不在原来集合中的页面
-					for (Page candidatePage : pagesAfter) {
-						String url = candidatePage.url();
-						// 如果这个URL不在之前的集合中，那么这是一个新页面
-						if (!existingPageUrls.contains(url)) {
-							newPage = candidatePage;
-							log.info("New page detected with URL: {}", url);
-							break;
-						}
+				log.info("Setting up popup listener and executing click...");
+				// 执行waitForPopup，它会同时监听popup事件并执行点击操作
+				newPage = page.waitForPopup(options, () -> {
+					try {
+						log.info("Executing click action on: {}", element.getText());
+						element.getLocator().click();
+						log.info("Click action completed");
+					} catch (Exception e) {
+						log.error("Error during click: {}", e.getMessage());
+						throw new RuntimeException(e);
 					}
-					// 如果找到了新页面，退出循环
-					if (newPage != null) {
-						break;
-					}
+				});
+				
+				if (newPage != null) {
+					log.info("Popup detected with URL: {}", newPage.url());
 				}
-				Thread.sleep(100);
+			} catch (Exception e) {
+				log.info("No popup detected or error: {}", e.getMessage());
 			}
+			
 			if (newPage != null) {
 				newPage.waitForLoadState(com.microsoft.playwright.options.LoadState.DOMCONTENTLOADED);
 				log.info("New tab detected, switched to: {}", newPage.url());
