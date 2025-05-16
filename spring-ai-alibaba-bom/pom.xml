@@ -764,10 +764,11 @@
             </build>
         </profile>
         <profile>
-            <id>release</id>
+            <id>sonatype</id>
             <properties>
                 <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
                 <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
+                <maven.test.skip>true</maven.test.skip>
             </properties>
             <build>
                 <plugins>

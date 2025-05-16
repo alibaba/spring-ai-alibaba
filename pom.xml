@@ -14,7 +14,8 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba</artifactId>
@@ -337,7 +338,8 @@
                             <propertyExpansion>checkstyle.build.directory=${project.build.directory}
                                 checkstyle.suppressions.file=${project.basedir}/tools/src/checkstyle/checkstyle-suppressions.xml
                                 checkstyle.additional.suppressions.file=${project.basedir}/tools/src/checkstyle/checkstyle-suppressions.xml
-                                checkstyle.header.file=${project.basedir}/tools/src/checkstyle/checkstyle-header.txt</propertyExpansion>
+                                checkstyle.header.file=${project.basedir}/tools/src/checkstyle/checkstyle-header.txt
+                            </propertyExpansion>
                             <failsOnError>${maven-checkstyle-plugin.failsOnError}</failsOnError>
                             <violationSeverity>warning</violationSeverity>
                             <failOnViolation>${maven-checkstyle-plugin.failOnViolation}</failOnViolation>
@@ -492,13 +494,57 @@
         <profile>
             <id>sonatype</id>
             <properties>
+                <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
+                <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
                 <maven.test.skip>true</maven.test.skip>
             </properties>
             <build>
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${maven-javadoc-plugin.version}</version>
+                        <configuration>
+                            <doclint>all,-missing</doclint>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>flatten-maven-plugin</artifactId>
+                        <version>${flatten-maven-plugin.version}</version>
+                        <configuration>
+                            <updatePomFile>true</updatePomFile>
+                            <flattenMode>resolveCiFriendliesOnly</flattenMode>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>flatten</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>flatten</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>flatten.clean</id>
+                                <phase>clean</phase>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven-gpg-plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -515,7 +561,7 @@
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.7.0</version>
+                        <version>${nexus-staging-maven-plugin.version}</version>
                         <extensions>true</extensions>
                         <configuration>
                             <serverId>ossrh</serverId>
