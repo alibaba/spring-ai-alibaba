@@ -23,7 +23,9 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.InMemoryChatMemory;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.stereotype.Service;
@@ -294,11 +296,7 @@ public class LlmService {
 
 	// private final ChatClient chatClient;
 
-	private ChatMemory memory = new InMemoryChatMemory();
-
 	private final ChatClient planningChatClient;
-
-	private ChatMemory planningMemory = new InMemoryChatMemory();
 
 	private final ChatClient finalizeChatClient;
 
@@ -309,9 +307,14 @@ public class LlmService {
 	public LlmService(ChatModel chatModel) {
 		this.chatModel = chatModel;
 		// 执行和总结规划，用相同的memory
+		ChatMemoryRepository planningMemory = new InMemoryChatMemoryRepository();
+		MessageWindowChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(planningMemory)
+			.maxMessages(2000)
+			.build();
 		this.planningChatClient = ChatClient.builder(chatModel)
 			.defaultSystem(PLANNING_SYSTEM_PROMPT)
-			.defaultAdvisors(new MessageChatMemoryAdvisor(planningMemory))
+			.defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.defaultOptions(OpenAiChatOptions.builder().temperature(0.1).build())
 			.build();
@@ -324,7 +327,7 @@ public class LlmService {
 		// .build();
 
 		this.finalizeChatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(new MessageChatMemoryAdvisor(planningMemory))
+			.defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.build();
 
@@ -353,14 +356,18 @@ public class LlmService {
 
 	public AgentChatClientWrapper getAgentChatClient(String planId) {
 		return agentClients.computeIfAbsent(planId, k -> {
-			ChatMemory agentMemory = new InMemoryChatMemory();
+			InMemoryChatMemoryRepository agentMemory = new InMemoryChatMemoryRepository();
+			MessageWindowChatMemory chatMemory = MessageWindowChatMemory.builder()
+				.chatMemoryRepository(agentMemory)
+				.maxMessages(2000)
+				.build();
 			ChatClient agentChatClient = ChatClient.builder(chatModel)
-				.defaultAdvisors(new MessageChatMemoryAdvisor(agentMemory))
+				.defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
 				.defaultAdvisors(new SimpleLoggerAdvisor())
 				.defaultOptions(
 						OpenAiChatOptions.builder().internalToolExecutionEnabled(false).temperature(0.1).build())
 				.build();
-			return new AgentChatClientWrapper(agentChatClient, agentMemory);
+			return new AgentChatClientWrapper(agentChatClient, chatMemory);
 		});
 	}
 
@@ -377,10 +384,6 @@ public class LlmService {
 
 	public ChatClient getFinalizeChatClient() {
 		return finalizeChatClient;
-	}
-
-	public ChatMemory getPlanningMemory() {
-		return planningMemory;
 	}
 
 	public ChatModel getChatModel() {
