@@ -41,7 +41,7 @@ spring:
         port: 6379
 ```
 
-### 示例代码
+### 示例代码一
 
 ```java
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,3 +91,39 @@ public class ChatController {
     }
 }
 ```
+
+### 示例代码二
+
+因为新版的spring-ai-alibaba-starter-memory-redis和spring-ai原生的关于memory的get接口更新了。
+
+这里就只演示新版get接口的更改，每个人写法不同，这里仅作参考。
+
+**1.在构造时需传入LastN**
+
+```java
+@Configuration
+public class RedisAdvisor {
+
+    @Bean
+    public RedisChatMemory redisChatMemory(RedisProperties redisProperties) {
+        //这里的RedisProperties就是写了个配置文件的映射文件，避免硬编码填入redis参数，根据自己情况自己写
+        return new RedisChatMemory(
+                redisProperties.getHost(),
+                redisProperties.getPort(),
+                redisProperties.getPassword(),
+                redisProperties.getLastN()
+        );
+    }
+}
+```
+
+**2.get方法无需再传入LastN**
+
+```java
+@Override
+public Result getNowHistory(Long chatIdString) {
+    List<Message> chatRecord =  redisChatMemory.get(String.valueOf(chatId));//仅需chatId一个参数
+    return Result.okResult(chatRecord);
+}
+```
+
