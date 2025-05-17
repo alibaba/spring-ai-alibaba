@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.toolcalling.duckduckgo;
 
-import com.alibaba.cloud.ai.functioncalling.duckduckgo.DuckDuckGoAutoConfiguration;
-import com.alibaba.cloud.ai.functioncalling.duckduckgo.DuckDuckGoQueryNewsService;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallAutoConfiguration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -28,7 +26,7 @@ import java.util.Map;
 /**
  * @author sixiyida
  */
-@SpringBootTest(properties = "debug=true",
+@SpringBootTest(properties = { "debug=true", "spring.ai.alibaba.toolcalling.duckduckgo.enabled=true" },
 		classes = { DuckDuckGoAutoConfiguration.class, CommonToolCallAutoConfiguration.class })
 public class DuckDuckGoQueryNewsServiceTest {
 

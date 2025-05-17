@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.functioncalling.duckduckgo;
+package com.alibaba.cloud.ai.toolcalling.duckduckgo;
 
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
@@ -23,6 +23,12 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
+import org.springframework.http.HttpHeaders;
+
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
+
+import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.DEFAULT_USER_AGENTS;
 
 /**
  * @author 北极星
@@ -37,9 +43,16 @@ public class DuckDuckGoAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Use DuckDuckGo search to query for the latest news.")
-	public DuckDuckGoQueryNewsService duckDuckGoQueryNewsService(JsonParseTool jsonParseTool,
+	public DuckDuckGoQueryNewsService duckDuckGoQueryNews(JsonParseTool jsonParseTool,
 			DuckDuckGoProperties duckDuckGoProperties) {
-		WebClientTool webClientTool = WebClientTool.builder(jsonParseTool, duckDuckGoProperties).build();
+		Consumer<HttpHeaders> consumer = headers -> {
+			headers.add(HttpHeaders.USER_AGENT,
+					DEFAULT_USER_AGENTS[ThreadLocalRandom.current().nextInt(DEFAULT_USER_AGENTS.length)]);
+			headers.add(HttpHeaders.CONNECTION, "keep-alive");
+		};
+		WebClientTool webClientTool = WebClientTool.builder(jsonParseTool, duckDuckGoProperties)
+			.httpHeadersConsumer(consumer)
+			.build();
 		return new DuckDuckGoQueryNewsService(duckDuckGoProperties, webClientTool);
 	}
 

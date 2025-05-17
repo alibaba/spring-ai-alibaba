@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.functioncalling.duckduckgo;
+package com.alibaba.cloud.ai.toolcalling.duckduckgo;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
