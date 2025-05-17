@@ -22,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.function.Function;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 /**
  * @author 北极星
@@ -46,8 +48,18 @@ public class YuqueQueryBookService
 			return null;
 		}
 		String uri = "/" + queryBookRequest.bookId + "/docs";
+		MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+		if (queryBookRequest.slug() != null) {
+			params.add("slug", queryBookRequest.slug());
+		}
+		if (queryBookRequest.title() != null) {
+			params.add("title", queryBookRequest.title());
+		}
+		if (queryBookRequest.id() != null) {
+			params.add("id", queryBookRequest.id());
+		}
 		try {
-			String json = webClientTool.get(uri, queryBookRequest).block();
+			String json = webClientTool.get(uri, params).block();
 			return jsonParseTool.jsonToObject(json, queryBookResponse.class);
 		}
 		catch (Exception e) {
