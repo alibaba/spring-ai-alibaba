@@ -24,11 +24,14 @@ import org.springframework.http.MediaType;
  */
 @EnableConfigurationProperties
 @ConfigurationProperties(prefix = CrawlerJinaProperties.JINA_PROPERTIES_PREFIX)
-public class CrawlerJinaProperties {
+public class CrawlerJinaProperties extends CommonToolCallProperties {
 
 	public static final String JINA_PROPERTIES_PREFIX = CrawlerConstants.CONFIG_PREFIX + "jina";
 
-	private String token;
+	public CrawlerJinaProperties() {
+		super(CrawlerConstants.JINA_BASE_URL);
+		this.setPropertiesFromEnv("JINA_API_KEY", null, null, "JINA_TOKEN");
+	}
 
 	private Boolean enabled;
 
@@ -60,12 +63,14 @@ public class CrawlerJinaProperties {
 
 	private Boolean withShadowDom;
 
+	@Deprecated
 	public String getToken() {
-		return token;
+		return super.getToken();
 	}
 
+	@Deprecated
 	public void setToken(String token) {
-		this.token = token;
+		super.setToken(token);
 	}
 
 	public Boolean getEnabled() {
