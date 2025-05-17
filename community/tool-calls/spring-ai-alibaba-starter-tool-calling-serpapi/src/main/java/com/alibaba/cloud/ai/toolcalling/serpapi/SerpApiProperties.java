@@ -32,13 +32,13 @@ public class SerpApiProperties extends CommonToolCallProperties {
 
 	protected static final String SERP_API_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".serpapi";
 
+	public static final String USER_AGENT_VALUE = DEFAULT_USER_AGENTS[ThreadLocalRandom.current()
+		.nextInt(DEFAULT_USER_AGENTS.length)];
+
 	public SerpApiProperties() {
 		super("https://serpapi.com/search");
 		this.setPropertiesFromEnv("SERPAPI_KEY", null, null, null);
 	}
-
-	public static final String USER_AGENT_VALUE = DEFAULT_USER_AGENTS[ThreadLocalRandom.current()
-		.nextInt(DEFAULT_USER_AGENTS.length)];
 
 	private String engine;
 

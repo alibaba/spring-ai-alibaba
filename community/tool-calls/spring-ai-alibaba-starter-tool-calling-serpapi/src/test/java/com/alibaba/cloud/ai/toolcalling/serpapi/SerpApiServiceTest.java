@@ -24,7 +24,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 /**
  * @author sixiyida
  */
-@SpringBootTest(properties = "debug=true",
+@SpringBootTest(
+		properties = { "debug=true", "spring.ai.alibaba.toolcalling.serpapi.enabled=true",
+				"spring.ai.alibaba.toolcalling.serpapi.engine=google" },
 		classes = { SerpApiAutoConfiguration.class, CommonToolCallAutoConfiguration.class })
 public class SerpApiServiceTest {
 
