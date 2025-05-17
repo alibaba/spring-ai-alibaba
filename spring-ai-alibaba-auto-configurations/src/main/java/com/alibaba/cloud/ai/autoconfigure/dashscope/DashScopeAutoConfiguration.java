@@ -15,7 +15,13 @@
  */
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
-import com.alibaba.cloud.ai.dashscope.api.*;
+import java.time.Duration;
+
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeAudioTranscriptionApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionModel;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
@@ -23,12 +29,12 @@ import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
 import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankModel;
 import io.micrometer.observation.ObservationRegistry;
-import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
+
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
-import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -41,7 +47,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.web.client.ClientHttpRequestFactories;
 import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
 import org.springframework.boot.web.client.RestClientCustomizer;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -49,9 +54,6 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import java.time.Duration;
-import java.util.List;
 
 import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUtils.resolveConnectionProperties;
 
@@ -64,11 +66,12 @@ import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUt
 @ConditionalOnClass(DashScopeApi.class)
 @AutoConfiguration(after = {
 		RestClientAutoConfiguration.class,
-		WebClientAutoConfiguration.class,
-		SpringAiRetryAutoConfiguration.class})
+		SpringAiRetryAutoConfiguration.class,
+        ToolCallingAutoConfiguration.class})
 @ImportAutoConfiguration(classes = {
 		SpringAiRetryAutoConfiguration.class,
 		RestClientAutoConfiguration.class,
+		ToolCallingAutoConfiguration.class,
 		WebClientAutoConfiguration.class
 })
 @EnableConfigurationProperties({
@@ -90,16 +93,6 @@ public class DashScopeAutoConfiguration {
 						.withReadTimeout(Duration.ofSeconds(commonProperties.getReadTimeout()))));
 	}
 
-	@Bean
-	@ConditionalOnMissingBean
-	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
-
-		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
-		manager.setApplicationContext(context);
-
-		return manager;
-	}
-
 	/**
 	 * Spring AI Alibaba DashScope Chat Configuration.
 	 */
@@ -118,8 +111,7 @@ public class DashScopeAutoConfiguration {
 				DashScopeChatProperties chatProperties,
 				RestClient.Builder restClientBuilder,
 				WebClient.Builder webClientBuilder,
-				List<FunctionCallback> toolFunctionCallbacks,
-				FunctionCallbackResolver functionCallbackResolver,
+				ToolCallingManager toolCallingManager,
 				RetryTemplate retryTemplate,
 				ResponseErrorHandler responseErrorHandler,
 				ObjectProvider<ObservationRegistry> observationRegistry,
@@ -137,8 +129,7 @@ public class DashScopeAutoConfiguration {
 			var dashscopeModel = new DashScopeChatModel(
 					dashscopeApi,
 					chatProperties.getOptions(),
-					functionCallbackResolver,
-					toolFunctionCallbacks,
+					toolCallingManager,
 					retryTemplate,
 					observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP)
 			);

@@ -13,17 +13,18 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-bom</artifactId>
-    <version>1.0.0-M6.2-SNAPSHOT</version>
+    <version>1.0.0-M8.1-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
-    <name>spring-ai-alibaba-bom</name>
+    <name>Spring AI Alibaba Bom</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <description>Bill of Materials POM (BOM) for the Spring AI Alibaba modules</description>
 
@@ -96,7 +97,6 @@
         <maven-project-info-reports-plugin.version>3.4.5</maven-project-info-reports-plugin.version>
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
         <spring-javaformat-maven-plugin.version>0.0.39</spring-javaformat-maven-plugin.version>
-        <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -298,38 +298,38 @@
             <!-- Spring AI Alibaba Vector Stores -->
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-analyticdb-store</artifactId>
+                <artifactId>spring-ai-alibaba-starter-store-analyticdb</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-oceanbase-store</artifactId>
+                <artifactId>spring-ai-alibaba-starter-store-oceanbase</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-opensearch-store</artifactId>
+                <artifactId>spring-ai-alibaba-starter-store-opensearch</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-tair-store</artifactId>
+                <artifactId>spring-ai-alibaba-starter-store-tair</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <!-- Spring AI Alibaba Chat Memory -->
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-jdbc-memory</artifactId>
+                <artifactId>spring-ai-alibaba-starter-memory-jdbc</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-redis-memory</artifactId>
+                <artifactId>spring-ai-alibaba-starter-memory-redis</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -588,7 +588,7 @@
                             <flattenMode>ossrh</flattenMode>
                             <pomElements>
                                 <distributionManagement>remove</distributionManagement>
-                                <dependencyManagement>remove</dependencyManagement>
+                                <dependencyManagement>expand</dependencyManagement>
                                 <repositories>remove</repositories>
                                 <scm>keep</scm>
                                 <url>keep</url>
@@ -636,7 +636,7 @@
                         <configuration>
                             <properties>
                                 <owner>the original author or authors.</owner>
-                                <email/>
+                                <email />
                                 <year>2024</year>
                             </properties>
                             <quiet>true</quiet>
@@ -687,7 +687,8 @@
                             <excludePackageNames>
                                 org.springframework.ai.sample.*,org.springframework.ai.testcontainers.service.connection.*
                             </excludePackageNames>
-                            <overview>${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
+                            <overview>
+                                ${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
                             <detectJavaApiLink>false</detectJavaApiLink>
                             <doclint>none</doclint>
                             <!--							<doclint>all,-missing</doclint>-->
@@ -764,6 +765,10 @@
         </profile>
         <profile>
             <id>release</id>
+            <properties>
+                <maven-gpg-plugin.version>3.0.1</maven-gpg-plugin.version>
+                <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -795,7 +800,6 @@
                             </execution>
                         </executions>
                     </plugin>
-
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
@@ -809,7 +813,6 @@
                             </execution>
                         </executions>
                     </plugin>
-
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>flatten-maven-plugin</artifactId>
@@ -835,19 +838,27 @@
                             </execution>
                         </executions>
                     </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>${nexus-staging-maven-plugin.version}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>ossrh</serverId>
+                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
                 </plugins>
             </build>
-
             <distributionManagement>
                 <snapshotRepository>
-                    <id>sonatype-nexus-snapshots</id>
-                    <name>Sonatype Nexus Snapshots</name>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+                    <id>ossrh</id>
+                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
                 </snapshotRepository>
                 <repository>
-                    <id>sonatype-nexus-staging</id>
-                    <name>Nexus Release Repository</name>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                    <id>ossrh</id>
+                    <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
                 </repository>
             </distributionManagement>
         </profile>

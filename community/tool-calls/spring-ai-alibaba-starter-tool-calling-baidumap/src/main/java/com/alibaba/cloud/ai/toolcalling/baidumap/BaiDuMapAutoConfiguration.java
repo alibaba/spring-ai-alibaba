@@ -59,7 +59,7 @@ public class BaiDuMapAutoConfiguration {
 
 	@Bean
 	public BaiDuMapTools baiDuMapTools(BaiDuMapProperties properties, JsonParseTool jsonParseTool) {
-		return new BaiDuMapTools(properties, new WebClientTool(jsonParseTool, properties), jsonParseTool);
+		return new BaiDuMapTools(properties, WebClientTool.builder(jsonParseTool, properties).build(), jsonParseTool);
 	}
 
 }
