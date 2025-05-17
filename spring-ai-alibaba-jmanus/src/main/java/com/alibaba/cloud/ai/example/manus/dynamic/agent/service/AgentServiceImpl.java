@@ -56,12 +56,6 @@ public class AgentServiceImpl implements AgentService {
 	private LlmService llmService;
 
 	@Autowired
-	private PlanExecutionRecorder planExecutionRecorder;
-
-	@Autowired
-	private ManusProperties manusProperties;
-
-	@Autowired
 	@Lazy
 	private ToolCallingManager toolCallingManager;
 
@@ -81,7 +75,7 @@ public class AgentServiceImpl implements AgentService {
 	@Override
 	public AgentConfig getAgentById(String id) {
 		DynamicAgentEntity entity = repository.findById(Long.parseLong(id))
-			.orElseThrow(() -> new IllegalArgumentException("Agent not found: " + id));
+				.orElseThrow(() -> new IllegalArgumentException("Agent not found: " + id));
 		return mapToAgentConfig(entity);
 	}
 
@@ -97,12 +91,12 @@ public class AgentServiceImpl implements AgentService {
 			}
 
 			DynamicAgentEntity entity = new DynamicAgentEntity();
+			entity = mergePrompts(entity, config.getName());
 			updateEntityFromConfig(entity, config);
 			entity = repository.save(entity);
 			log.info("成功创建新Agent: {}", config.getName());
 			return mapToAgentConfig(entity);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.warn("创建Agent过程中发生异常: {}，错误信息: {}", config.getName(), e.getMessage());
 			// 如果是唯一性约束违反异常，尝试返回已存在的Agent
 			if (e.getMessage() != null && e.getMessage().contains("Unique")) {
@@ -119,7 +113,7 @@ public class AgentServiceImpl implements AgentService {
 	@Override
 	public AgentConfig updateAgent(AgentConfig config) {
 		DynamicAgentEntity entity = repository.findById(Long.parseLong(config.getId()))
-			.orElseThrow(() -> new IllegalArgumentException("Agent not found: " + config.getId()));
+				.orElseThrow(() -> new IllegalArgumentException("Agent not found: " + config.getId()));
 		updateEntityFromConfig(entity, config);
 		entity = repository.save(entity);
 		return mapToAgentConfig(entity);
@@ -128,7 +122,7 @@ public class AgentServiceImpl implements AgentService {
 	@Override
 	public void deleteAgent(String id) {
 		DynamicAgentEntity entity = repository.findById(Long.parseLong(id))
-			.orElseThrow(() -> new IllegalArgumentException("Agent not found: " + id));
+				.orElseThrow(() -> new IllegalArgumentException("Agent not found: " + id));
 
 		if (DEFAULT_AGENT_NAME.equals(entity.getAgentName())) {
 			throw new IllegalArgumentException("不能删除默认 Agent");
@@ -155,6 +149,7 @@ public class AgentServiceImpl implements AgentService {
 
 	private AgentConfig mapToAgentConfig(DynamicAgentEntity entity) {
 		AgentConfig config = new AgentConfig();
+		entity = mergePrompts(entity, entity.getAgentName());
 		config.setId(entity.getId().toString());
 		config.setName(entity.getAgentName());
 		config.setDescription(entity.getAgentDescription());
@@ -168,8 +163,9 @@ public class AgentServiceImpl implements AgentService {
 	private void updateEntityFromConfig(DynamicAgentEntity entity, AgentConfig config) {
 		entity.setAgentName(config.getName());
 		entity.setAgentDescription(config.getDescription());
-		entity.setSystemPrompt(config.getSystemPrompt());
-		entity.setNextStepPrompt(config.getNextStepPrompt());
+		String nextStepPrompt = config.getNextStepPrompt();
+		entity = mergePrompts(entity, config.getName());
+		entity.setNextStepPrompt(nextStepPrompt);
 
 		// 1. 创建新集合，保证唯一性和顺序
 		java.util.Set<String> toolSet = new java.util.LinkedHashSet<>();
@@ -188,14 +184,31 @@ public class AgentServiceImpl implements AgentService {
 		entity.setClassName(config.getName());
 	}
 
+	private DynamicAgentEntity mergePrompts(DynamicAgentEntity entity,String agentName) {
+		// 这里的SystemPrompt属性已经废弃，直接使用nextStepPrompt
+		if (entity.getSystemPrompt() != null || !entity.getSystemPrompt().trim().isEmpty()) {
+			String systemPrompt = entity.getSystemPrompt();
+			String nextPrompt = entity.getNextStepPrompt();
+			// 这里的SystemPrompt属性已经废弃，直接使用nextStepPrompt
+			if (nextPrompt != null && !nextPrompt.trim().isEmpty()) {
+				nextPrompt = systemPrompt + "\n" + nextPrompt;
+			}
+			log.warn(
+					"Agent[{}]的SystemPrompt不为空， 但属性已经废弃，只保留nextPrompt， 本次将agent 的内容合并，如需要该内容在prompt生效，请直接更新界面的唯一的那个prompt , 当前制定的值: {}",
+					agentName, nextPrompt);
+			entity.setSystemPrompt(null);
+		}
+		return entity;
+	}
+
 	@Override
-	public BaseAgent createDynamicBaseAgent(String name, String planId) {
+	public BaseAgent createDynamicBaseAgent(String name, String planId, Map<String, Object> initialAgentSetting) {
 
 		log.info("创建新的BaseAgent: {}, planId: {}", name, planId);
 
 		try {
 			// 通过dynamicAgentLoader加载已存在的Agent
-			DynamicAgent agent = dynamicAgentLoader.loadAgent(name);
+			DynamicAgent agent = dynamicAgentLoader.loadAgent(name, initialAgentSetting);
 
 			// 设置planId
 			agent.setPlanId(planId);
@@ -213,8 +226,7 @@ public class AgentServiceImpl implements AgentService {
 			log.info("成功加载BaseAgent: {}, 可用工具数量: {}", name, agent.getToolCallList().size());
 
 			return agent;
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("加载BaseAgent过程中发生异常: {}, 错误信息: {}", name, e.getMessage(), e);
 			throw new RuntimeException("加载BaseAgent失败: " + e.getMessage(), e);
 		}

@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 
 import java.util.List;
+import java.util.Map;
 
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.model.Tool;
@@ -40,6 +41,6 @@ public interface AgentService {
 	 * @param planId 计划ID，用于标识代理所属的计划
 	 * @return 创建的BaseAgent对象
 	 */
-	BaseAgent createDynamicBaseAgent(String name, String planId);
+	BaseAgent createDynamicBaseAgent(String name, String planId, Map<String, Object> initialAgentSetting);
 
 }

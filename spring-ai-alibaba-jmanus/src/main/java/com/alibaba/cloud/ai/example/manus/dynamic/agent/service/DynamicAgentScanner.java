@@ -98,7 +98,6 @@ public class DynamicAgentScanner {
 		// 更新所有字段
 		entity.setAgentName(annotation.agentName());
 		entity.setAgentDescription(annotation.agentDescription());
-		entity.setSystemPrompt(annotation.systemPrompt());
 		entity.setNextStepPrompt(annotation.nextStepPrompt());
 		entity.setAvailableToolKeys(Arrays.asList(annotation.availableToolKeys()));
 		entity.setClassName(clazz.getName());

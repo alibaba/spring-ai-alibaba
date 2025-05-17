@@ -25,6 +25,8 @@ import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
@@ -59,7 +61,7 @@ public class PlanCreator {
 	 * @return 计划创建结果
 	 */
 	public void createPlan(ExecutionContext context) {
-
+		boolean useMemory = context.isUseMemory();
 		String planId = context.getPlanId();
 		if (planId == null || planId.isEmpty()) {
 			throw new IllegalArgumentException("Plan ID cannot be null or empty");
@@ -75,12 +77,13 @@ public class PlanCreator {
 			PromptTemplate promptTemplate = new PromptTemplate(planPrompt);
 			Prompt prompt = promptTemplate.create();
 
-			ChatClient.CallResponseSpec response = llmService.getPlanningChatClient()
+			ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient()
 				.prompt(prompt)
-				.toolCallbacks(List.of(planningTool.getFunctionToolCallback()))
-				.advisors(memoryAdvisor -> memoryAdvisor.param("chat_memory_conversation_id", planId)
-					.param("chat_memory_retrieve_size", 100))
-				.call();
+				.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
+			if (useMemory) {
+				requestSpec.advisors(new MessageChatMemoryAdvisor(llmService.getConversationMemory()));
+			}
+			ChatClient.CallResponseSpec response = requestSpec.call();
 			String outputText = response.chatResponse().getResult().getOutput().getText();
 			// 检查计划是否创建成功
 			if (planId.equals(planningTool.getCurrentPlanId())) {

@@ -11,7 +11,6 @@ class AdminUI {
         this.agentDetailForm = {
             name: document.getElementById('agent-detail-name'),
             description: document.getElementById('agent-detail-desc'),
-            systemPrompt: document.getElementById('agent-think-prompt'),
             nextStepPrompt: document.getElementById('agent-next-prompt'),
             toolList: document.querySelector('.tool-list')
         };
@@ -284,9 +283,14 @@ class AdminUI {
         
         // 添加事件处理
         inputElem.addEventListener('change', (e) => {
-            const value = config.inputType === 'BOOLEAN' 
-                ? e.target.checked.toString() 
-                : e.target.value;
+            let value;
+            
+            // 对BOOLEAN和CHECKBOX类型都使用checked属性转换为true/false字符串
+            if (config.inputType === 'BOOLEAN' || config.inputType === 'CHECKBOX') {
+                value = e.target.checked.toString();
+            } else {
+                value = e.target.value;
+            }
             
             // 更新配置模型中的值
             configModel.updateGroupConfigValue('manus', config.id, value);
@@ -387,7 +391,6 @@ class AdminUI {
     showAgentDetails(agent) {
         this.agentDetailForm.name.value = agent.name || '';
         this.agentDetailForm.description.value = agent.description || '';
-        this.agentDetailForm.systemPrompt.value = agent.systemPrompt || '';
         this.agentDetailForm.nextStepPrompt.value = agent.nextStepPrompt || '';
         this.renderAgentToolList(agent.availableTools || []);
     }
@@ -787,7 +790,6 @@ class AdminUI {
     clearAgentDetails() {
         this.agentDetailForm.name.value = '';
         this.agentDetailForm.description.value = '';
-        this.agentDetailForm.systemPrompt.value = '';
         this.agentDetailForm.nextStepPrompt.value = '';
         this.agentDetailForm.toolList.innerHTML = '';
     }
@@ -802,7 +804,6 @@ class AdminUI {
         return {
             name: this.agentDetailForm.name.value,
             description: this.agentDetailForm.description.value,
-            systemPrompt: this.agentDetailForm.systemPrompt.value,
             nextStepPrompt: this.agentDetailForm.nextStepPrompt.value,
             availableTools: tools
         };

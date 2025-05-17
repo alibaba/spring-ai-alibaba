@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.agent;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
@@ -35,8 +37,8 @@ public abstract class ReActAgent extends BaseAgent {
 	 * @param manusProperties Manus配置属性
 	 */
 	public ReActAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-			ManusProperties manusProperties) {
-		super(llmService, planExecutionRecorder, manusProperties);
+			ManusProperties manusProperties, Map<String, Object> initialAgentSetting) {
+		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting);
 	}
 
 	/**

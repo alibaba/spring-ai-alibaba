@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * 执行上下文类，用于在计划的创建、执行和总结过程中传递和维护状态信息。 该类作为计划执行流程中的核心数据载体，在
  * {@link com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator}
@@ -27,6 +30,11 @@ package com.alibaba.cloud.ai.example.manus.planning.model.vo;
  */
 public class ExecutionContext {
 
+	private Map<String, String> toolsContext = new HashMap<>();
+
+	/**
+	 * 工具上下文，存储工具执行的上下文信息
+	 */
 	/** 计划的唯一标识符 */
 	private String planId;
 
@@ -44,6 +52,9 @@ public class ExecutionContext {
 
 	/** 计划执行是否成功的标志 */
 	private boolean success = false;
+
+	/** 是否使用记忆， 场景是 如果只构建计划，那么不应该用记忆，否则记忆无法删除 */
+	private boolean useMemory = false;
 
 	/**
 	 * 获取计划ID
@@ -109,6 +120,18 @@ public class ExecutionContext {
 		this.success = success;
 	}
 
+	public Map<String, String> getToolsContext() {
+		return toolsContext;
+	}
+
+	public void setToolsContext(Map<String, String> toolsContext) {
+		this.toolsContext = toolsContext;
+	}
+
+	public void addToolContext(String toolsKey, String value) {
+		this.toolsContext.put(toolsKey, value);
+	}
+
 	/**
 	 * 获取用户的原始请求内容
 	 * @return 用户请求的字符串
@@ -151,6 +174,14 @@ public class ExecutionContext {
 		this.plan = context.getPlan();
 		this.userRequest = context.getUserRequest();
 		this.resultSummary = context.getResultSummary();
+	}
+
+	public boolean isUseMemory() {
+		return useMemory;
+	}
+
+	public void setUseMemory(boolean useMemory) {
+		this.useMemory = useMemory;
 	}
 
 }
