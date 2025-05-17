@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.toolcalling.serpapi;
+package com.alibaba.cloud.ai.toolcalling.duckduckgo;
 
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
@@ -34,23 +34,26 @@ import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.DE
  * @author 北极星
  * @author sixiyida
  */
+
 @Configuration
-@EnableConfigurationProperties(SerpApiProperties.class)
-@ConditionalOnProperty(prefix = SerpApiProperties.SERP_API_PREFIX, name = "enabled", havingValue = "true")
-public class SerpApiAutoConfiguration {
+@EnableConfigurationProperties(DuckDuckGoProperties.class)
+@ConditionalOnProperty(prefix = DuckDuckGoProperties.DUCKDUCKGO_PREFIX, name = "enabled", havingValue = "true")
+public class DuckDuckGoAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@Description("Use SerpApi search to query for the latest news.")
-	public SerpApiService serpApi(JsonParseTool jsonParseTool, SerpApiProperties serpApiProperties) {
+	@Description("Use DuckDuckGo search to query for the latest news.")
+	public DuckDuckGoQueryNewsService duckDuckGoQueryNews(JsonParseTool jsonParseTool,
+			DuckDuckGoProperties duckDuckGoProperties) {
 		Consumer<HttpHeaders> consumer = headers -> {
-			headers.add(HttpHeaders.USER_AGENT, SerpApiProperties.USER_AGENT_VALUE);
+			headers.add(HttpHeaders.USER_AGENT,
+					DEFAULT_USER_AGENTS[ThreadLocalRandom.current().nextInt(DEFAULT_USER_AGENTS.length)]);
 			headers.add(HttpHeaders.CONNECTION, "keep-alive");
 		};
-		WebClientTool webClientTool = WebClientTool.builder(jsonParseTool, serpApiProperties)
+		WebClientTool webClientTool = WebClientTool.builder(jsonParseTool, duckDuckGoProperties)
 			.httpHeadersConsumer(consumer)
 			.build();
-		return new SerpApiService(serpApiProperties, jsonParseTool, webClientTool);
+		return new DuckDuckGoQueryNewsService(duckDuckGoProperties, webClientTool);
 	}
 
 }
