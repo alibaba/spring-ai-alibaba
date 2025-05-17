@@ -18,8 +18,18 @@ package com.alibaba.cloud.ai.toolcalling.alitranslate;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.StringUtils;
 
 /**
+ * <p>
+ * Aliyun Translation Service Configuration Attributes Class
+ * </p>
+ * Fields that must be configured:<br>
+ * - Aliyun accessKeyId: Set {@link #setAccessKeyId(String)} or the environment variable
+ * {@code ALITRANSLATE_ACCESS_KEY_ID}.<br>
+ * - Aliyun accessKeySecret: Set {@link #setSecretKey(String)} or the environment variable
+ * {@code ALITRANSLATE_ACCESS_KEY_SECRET}.<br>
+ *
  * @author yunlong
  * @author Allen Hu
  */
@@ -31,24 +41,15 @@ public class AliTranslateProperties extends CommonToolCallProperties {
 	private String region;
 
 	public AliTranslateProperties() {
-		this.setPropertiesFromEnv("ALITRANSLATE_ACCESS_KEY_ID", "ALITRANSLATE_ACCESS_KEY_SECRET", null, null);
-	}
-
-	public String getAccessKeyId() {
-		return getApiKey();
+		this.setPropertiesFromEnv(null, "ALITRANSLATE_ACCESS_KEY_SECRET", null, null);
+		String accessKeyIdEnv = "ALITRANSLATE_ACCESS_KEY_ID";
+		if (!StringUtils.hasText(this.getAccessKeyId())) {
+			this.setAccessKeyId(System.getenv(accessKeyIdEnv));
+		}
 	}
 
 	public String getAccessKeySecret() {
 		return getSecretKey();
-	}
-
-	/**
-	 * @param accessKeyId AccessKeyId
-	 * @deprecated use {@link #setApiKey(String)} instead
-	 */
-	@Deprecated
-	public void setAccessKeyId(String accessKeyId) {
-		this.setApiKey(accessKeyId);
 	}
 
 	/**
