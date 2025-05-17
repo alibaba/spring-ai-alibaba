@@ -40,7 +40,8 @@ public class BaiduTranslateAutoConfiguration {
 	@Description("Baidu translation function for general text translation")
 	public BaiduTranslateService baiduTranslate(BaiduTranslateProperties properties, JsonParseTool jsonParseTool) {
 
-		return new BaiduTranslateService(properties, new RestClientTool(jsonParseTool, properties), jsonParseTool);
+		return new BaiduTranslateService(properties, RestClientTool.builder(jsonParseTool, properties).build(),
+				jsonParseTool);
 	}
 
 }

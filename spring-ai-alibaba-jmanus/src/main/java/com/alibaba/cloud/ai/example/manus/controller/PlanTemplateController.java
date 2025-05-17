@@ -153,8 +153,9 @@ public class PlanTemplateController {
 	 * @return 结果状态
 	 */
 	@GetMapping("/execute/{planTemplateId}")
-	public ResponseEntity<Map<String, Object>> executePlanByTemplateIdGet(@PathVariable String planTemplateId,
-			@RequestParam(required = false) Map<String, String> allParams) {
+	public ResponseEntity<Map<String, Object>> executePlanByTemplateIdGet(
+			@PathVariable("planTemplateId") String planTemplateId,
+			@RequestParam(required = false, name = "allParams") Map<String, String> allParams) {
 		if (planTemplateId == null || planTemplateId.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "计划模板ID不能为空"));
 		}
