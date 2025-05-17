@@ -27,8 +27,6 @@ import java.util.regex.Pattern;
  */
 public class RegexService implements Function<RegexService.RegexRequest, Object> {
 
-
-
 	/**
 	 * Applies this function to the given argument.
 	 * @param regexRequest the function argument
