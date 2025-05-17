@@ -145,7 +145,7 @@ public class AliTranslateService
 					value = "targetLanguage") @JsonPropertyDescription("Target language to alitranslate into, default is en") String targetLanguage) {
 
 		public Request(@JsonProperty("text") String text) {
-			this(text, LANGUAGE_CODE_ZH, LANGUAGE_CODE_EN); // 默认目标语言为英语
+			this(text, LANGUAGE_CODE_ZH, LANGUAGE_CODE_EN);
 		}
 	}
 

@@ -31,7 +31,7 @@ public class AliTranslateProperties extends CommonToolCallProperties {
 	private String region;
 
 	public AliTranslateProperties() {
-		this.setPropertiesFromEnv("ACCESS_KEY_ID", "ACCESS_KEY_SECRET", null, null);
+		this.setPropertiesFromEnv("ALITRANSLATE_ACCESS_KEY_ID", "ALITRANSLATE_ACCESS_KEY_SECRET", null, null);
 	}
 
 	public String getAccessKeyId() {
