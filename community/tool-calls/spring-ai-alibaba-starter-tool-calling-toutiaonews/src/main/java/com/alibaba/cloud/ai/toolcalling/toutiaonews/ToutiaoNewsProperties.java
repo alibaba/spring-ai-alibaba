@@ -13,30 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.toolcalling.yuque;
+package com.alibaba.cloud.ai.toolcalling.toutiaonews;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/**
- * @author 北极星
- */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.yuque")
-public class YuqueProperties extends CommonToolCallProperties {
+@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.toutiaonews")
+public class ToutiaoNewsProperties extends CommonToolCallProperties {
 
-	private String authToken;
-
-	public YuqueProperties() {
-		super("https://www.yuque.com/api/v2/repo");
-	}
-
-	public String getAuthToken() {
-		return authToken;
-	}
-
-	public YuqueProperties setAuthToken(String authToken) {
-		this.authToken = authToken;
-		return this;
+	public ToutiaoNewsProperties() {
+		super("https://www.toutiao.com/hot-event/hot-board/?origin=toutiao_pc");
 	}
 
 }
