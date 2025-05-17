@@ -35,7 +35,7 @@ public class AliTranslateAutoConfiguration {
 	@Bean(destroyMethod = "close")
 	@ConditionalOnMissingBean
 	@Description("Implement natural language translation capabilities.")
-	public AliTranslateService aliTranslateFunction(AliTranslateProperties properties) {
+	public AliTranslateService aliTranslateService(AliTranslateProperties properties) {
 		return new AliTranslateService(properties);
 	}
 
