@@ -15,15 +15,13 @@
  */
 package com.alibaba.cloud.ai.toolcalling.yuque;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.http.HttpMethod;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.function.Function;
-
-import static com.alibaba.cloud.ai.toolcalling.yuque.YuqueProperties.BASE_URL;
 
 /**
  * @author 北极星
@@ -31,23 +29,31 @@ import static com.alibaba.cloud.ai.toolcalling.yuque.YuqueProperties.BASE_URL;
 public class YuqueQueryBookService
 		implements Function<YuqueQueryBookService.queryBookRequest, YuqueQueryBookService.queryBookResponse> {
 
-	private final WebClient webClient;
+	private static final Logger logger = LoggerFactory.getLogger(YuqueQueryBookService.class);
 
-	public YuqueQueryBookService(YuqueProperties yuqueProperties) {
-		this.webClient = WebClient.builder()
-			.baseUrl(BASE_URL)
-			.defaultHeader("X-Auth-Token", yuqueProperties.getAuthToken())
-			.build();
+	private final WebClientTool webClientTool;
 
+	private final JsonParseTool jsonParseTool;
+
+	public YuqueQueryBookService(WebClientTool webClientTool, JsonParseTool jsonParseTool) {
+		this.webClientTool = webClientTool;
+		this.jsonParseTool = jsonParseTool;
 	}
 
 	@Override
 	public queryBookResponse apply(queryBookRequest queryBookRequest) {
-		Mono<YuqueQueryBookService.queryBookResponse> queryBookResponseMono = webClient.method(HttpMethod.GET)
-			.uri("/{book_id}/docs", queryBookRequest.bookId)
-			.retrieve()
-			.bodyToMono(queryBookResponse.class);
-		return queryBookResponseMono.block();
+		if (queryBookRequest == null || queryBookRequest.bookId == null) {
+			return null;
+		}
+		String uri = "/" + queryBookRequest.bookId + "/docs";
+		try {
+			String json = webClientTool.get(uri, queryBookRequest).block();
+			return jsonParseTool.jsonToObject(json, queryBookResponse.class);
+		}
+		catch (Exception e) {
+			logger.error("Failed to query the Yuque book.", e);
+			return null;
+		}
 	}
 
 	protected record queryBookRequest(@JsonProperty("slug") String slug, @JsonProperty("title") String title,
