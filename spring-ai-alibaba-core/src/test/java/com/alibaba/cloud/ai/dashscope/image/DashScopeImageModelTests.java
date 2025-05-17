@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncR
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseResult;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseUsage;
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -41,7 +42,7 @@ import static org.mockito.Mockito.when;
  * async task handling, error handling, and edge cases.
  *
  * @author yuluo
- * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
+ * @author polaris
  * @author brianxiadong
  * @since 1.0.0-M5.1
  */
@@ -69,7 +70,8 @@ class DashScopeImageModelTests {
 		// Initialize mock objects and test instances
 		dashScopeImageApi = Mockito.mock(DashScopeImageApi.class);
 		defaultOptions = DashScopeImageOptions.builder().withModel(TEST_MODEL).withN(1).build();
-		imageModel = new DashScopeImageModel(dashScopeImageApi, defaultOptions, RetryTemplate.builder().build());
+		imageModel = new DashScopeImageModel(dashScopeImageApi, defaultOptions, RetryTemplate.builder().build(),
+				ObservationRegistry.NOOP);
 	}
 
 	@Test

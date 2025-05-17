@@ -25,6 +25,7 @@ import java.util.Arrays;
 /**
  * @author nuocheng.lxm
  * @author yuluo
+ * @author Polaris
  * @since 2024/8/16 11:29
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -45,13 +46,13 @@ public class DashScopeImageOptions implements ImageOptions {
 	/**
 	 * The width of the generated images. Must be one of 720, 1024, 1280
 	 */
-	@JsonProperty("size_width")
+	@JsonProperty("width")
 	private Integer width;
 
 	/**
 	 * The height of the generated images. Must be one of 720, 1024, 1280
 	 */
-	@JsonProperty("size_height")
+	@JsonProperty("height")
 	private Integer height;
 
 	/**
@@ -87,6 +88,13 @@ public class DashScopeImageOptions implements ImageOptions {
 	 */
 	@JsonProperty("ref_strength")
 	private Float refStrength;
+
+	/**
+	 * The format in which the generated images are returned. Must be one of url or
+	 * b64_json.
+	 */
+	@JsonProperty("response_format")
+	private String responseFormat;
 
 	/**
 	 * refer mode,Must be one of repaint,refonly
@@ -251,9 +259,10 @@ public class DashScopeImageOptions implements ImageOptions {
 
 	@Override
 	public String getResponseFormat() {
-		return null;
+		return this.responseFormat;
 	}
 
+	@Override
 	public String getStyle() {
 		return this.style;
 	}
@@ -270,6 +279,7 @@ public class DashScopeImageOptions implements ImageOptions {
 		return (this.width != null && this.height != null) ? this.width + "*" + this.height : null;
 	}
 
+	@Deprecated
 	public void setSize(String size) {
 		this.size = size;
 	}
@@ -379,6 +389,7 @@ public class DashScopeImageOptions implements ImageOptions {
 			return this;
 		}
 
+		@Deprecated
 		public Builder withSize(String size) {
 			options.setSize(size);
 			return this;
@@ -436,6 +447,11 @@ public class DashScopeImageOptions implements ImageOptions {
 
 		public Builder withMaskColor(Integer[][] maskColor) {
 			this.options.maskColor = maskColor;
+			return this;
+		}
+
+		public Builder withResponseFormat(String responseFormat) {
+			this.options.responseFormat = responseFormat;
 			return this;
 		}
 
