@@ -15,24 +15,23 @@
  */
 package com.alibaba.cloud.ai.toolcalling.bingsearch;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
+
+import static com.alibaba.cloud.ai.toolcalling.bingsearch.BingSearchProperties.BING_SEARCH_PATH;
 
 /**
  * @author KrakenZJC
@@ -41,26 +40,17 @@ public class BingSearchService implements Function<BingSearchService.Request, Bi
 
 	private static final Logger logger = LoggerFactory.getLogger(BingSearchService.class);
 
-	private static final String BING_SEARCH_HOST_URL = "https://api.bing.microsoft.com";
+	private final WebClientTool webClientTool;
 
-	private static final String BING_SEARCH_PATH = "/v7.0/search";
+	private final BingSearchProperties properties;
 
-	private final WebClient webClient;
+	private final JsonParseTool jsonParseTool;
 
-	private static final int MEMORY_SIZE = 5;
-
-	private static final int BYTE_SIZE = 1024;
-
-	private static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
-
-	public BingSearchService(BingSearchProperties properties) {
-		assert StringUtils.hasText(properties.getToken()) && properties.getToken().length() == 32;
-		this.webClient = WebClient.builder()
-			.defaultHeader(HttpHeaders.USER_AGENT,
-					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
-			.defaultHeader(BingSearchProperties.OCP_APIM_SUBSCRIPTION_KEY, properties.getToken())
-			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_MEMORY_SIZE))
-			.build();
+	public BingSearchService(WebClientTool webClientTool, BingSearchProperties properties,
+			JsonParseTool jsonParseTool) {
+		this.webClientTool = webClientTool;
+		this.properties = properties;
+		this.jsonParseTool = jsonParseTool;
 	}
 
 	@Override
@@ -69,32 +59,27 @@ public class BingSearchService implements Function<BingSearchService.Request, Bi
 			return null;
 		}
 
-		String url = BING_SEARCH_HOST_URL + BING_SEARCH_PATH + "?responseFilter=webPages&q="
+		String url = properties.getBaseUrl() + BING_SEARCH_PATH + "?responseFilter=webPages&q="
 				+ URLEncoder.encode(request.query, StandardCharsets.UTF_8);
 
 		try {
-			Mono<String> responseMono = webClient.get().uri(url).retrieve().bodyToMono(String.class);
+			Mono<String> responseMono = webClientTool.get(url);
 			String responseData = responseMono.block();
 			assert responseData != null;
 			logger.info("bing search: {},result:{}", request.query, responseData);
 
-			Gson gson = new Gson();
-			Map<String, Object> responseMap = gson.fromJson(responseData, new TypeToken<Map<String, Object>>() {
-			}.getType());
-			if (responseMap.containsKey("webPages")) {
-				Map<String, Object> webPages = (Map<String, Object>) responseMap.get("webPages");
-				if (webPages.containsKey("value")) {
-					List<Map<String, Object>> valueList = (List<Map<String, Object>>) webPages.get("value");
-					if (!valueList.isEmpty()) {
-						Map<String, Object> value = valueList.get(0);
-						if (value.containsKey("snippet")) {
-							String snippet = (String) value.get("snippet");
-							return new Response(snippet);
-						}
-					}
+			try {
+				String valueListStr = jsonParseTool.getDepthFieldValueAsString(responseData, "webPages", "value");
+				List<String> valueList = jsonParseTool.jsonToList(valueListStr, String.class);
+				if (valueList.isEmpty()) {
+					throw new RuntimeException("bing search result is empty");
 				}
+				String value = valueList.get(0);
+				return new Response(jsonParseTool.getFieldValueAsString(value, "snippet"));
 			}
-			return new Response(responseData);
+			catch (Exception ignored) {
+				return new Response(responseData);
+			}
 		}
 		catch (Exception e) {
 			logger.error("failed to invoke bing search caused by:{}", e.getMessage());

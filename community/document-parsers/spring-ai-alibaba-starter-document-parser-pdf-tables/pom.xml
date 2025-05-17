@@ -14,66 +14,63 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.alibaba.cloud.ai</groupId>
+        <artifactId>spring-ai-alibaba</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../../pom.xml</relativePath>
+    </parent>
 
-	<parent>
-		<groupId>com.alibaba.cloud.ai</groupId>
-		<artifactId>spring-ai-alibaba</artifactId>
-		<version>${revision}</version>
-		<relativePath>../../../pom.xml</relativePath>
-	</parent>
+    <artifactId>spring-ai-alibaba-starter-document-parser-pdf-tables</artifactId>
 
-	<artifactId>spring-ai-alibaba-starter-document-parser-pdf-tables</artifactId>
+    <name>Spring AI Alibaba Starter Document Parser Pdf Tables</name>
+    <description>document-parser-pdf-tables for Spring AI Alibaba</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
 
-	<name>Spring AI Alibaba Starter Document Parser Pdf Tables</name>
-	<description>document-parser-pdf-tables for Spring AI Alibaba</description>
-	<url>https://github.com/alibaba/spring-ai-alibaba</url>
-	<scm>
-		<url>https://github.com/alibaba/spring-ai-alibaba</url>
-		<connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
-		<developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
-	</scm>
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
-	<properties>
-		<maven.compiler.source>17</maven.compiler.source>
-		<maven.compiler.target>17</maven.compiler.target>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	</properties>
+    <dependencies>
 
-	<dependencies>
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-core</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
 
-		<dependency>
-			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>spring-ai-alibaba-core</artifactId>
-			<version>${project.parent.version}</version>
-		</dependency>
+        <!-- test dependencies -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-test</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-		<!-- test dependencies -->
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-test</artifactId>
-			<scope>test</scope>
-		</dependency>
+        <dependency>
+            <groupId>fr.neolegal</groupId>
+            <artifactId>tabula</artifactId>
+            <version>1.0.12</version>
+        </dependency>
+    </dependencies>
 
-		<dependency>
-			<groupId>fr.neolegal</groupId>
-			<artifactId>tabula</artifactId>
-			<version>1.0.12</version>
-		</dependency>
-	</dependencies>
-
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<version>${spring-boot.version}</version>
-			</plugin>
-		</plugins>
-	</build>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot.version}</version>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

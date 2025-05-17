@@ -95,7 +95,7 @@ public class ManusController {
 	 * @return 执行记录的 JSON 表示
 	 */
 	@GetMapping("/details/{planId}")
-	public synchronized ResponseEntity<String> getExecutionDetails(@PathVariable String planId) {
+	public synchronized ResponseEntity<String> getExecutionDetails(@PathVariable("planId") String planId) {
 		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId);
 
 		if (planRecord == null) {
@@ -111,7 +111,7 @@ public class ManusController {
 	 * @return 删除操作的结果
 	 */
 	@DeleteMapping("/details/{planId}")
-	public ResponseEntity<Map<String, String>> removeExecutionDetails(@PathVariable String planId) {
+	public ResponseEntity<Map<String, String>> removeExecutionDetails(@PathVariable("planId") String planId) {
 		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId);
 		if (planRecord == null) {
 			return ResponseEntity.notFound().build();

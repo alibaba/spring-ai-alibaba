@@ -19,15 +19,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletion;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput.Choice;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionChunk;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.TokenUsage;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.ChatCompletionFunction;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.Role;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.ToolCall;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput.Choice;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.TokenUsage;
 
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -113,7 +113,7 @@ public class DashScopeAiStreamFunctionCallingHelper {
 				toolCalls.addAll(previous.toolCalls().subList(0, previous.toolCalls().size() - 1));
 			}
 		}
-		if (current.toolCalls() != null) {
+		if (!CollectionUtils.isEmpty(current.toolCalls())) {
 			if (current.toolCalls().size() > 1) {
 				throw new IllegalStateException("Currently only one tool call is supported per message!");
 			}
@@ -167,7 +167,8 @@ public class DashScopeAiStreamFunctionCallingHelper {
 	 */
 	public boolean isStreamingToolFunctionCall(ChatCompletionChunk chatCompletion) {
 
-		if (chatCompletion == null || CollectionUtils.isEmpty(chatCompletion.output().choices())) {
+		if (chatCompletion == null || chatCompletion.output() == null
+				|| CollectionUtils.isEmpty(chatCompletion.output().choices())) {
 			return false;
 		}
 

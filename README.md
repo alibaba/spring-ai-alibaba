@@ -20,7 +20,7 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
    <dependency>
         <groupId>com.alibaba.cloud.ai</groupId>
         <artifactId>spring-ai-alibaba-starter</artifactId>
-        <version>1.0.0-M6.1</version>
+        <version>1.0.0-M8.1-SNAPSHOT</version>
    </dependency>
    ```
 
@@ -129,3 +129,4 @@ Some of this project's ideas and codes are inspired by or rewrote from the follo
 * [Spring AI](https://github.com/spring-projects/spring-ai), a Spring-friendly API and abstractions for developing AI applications licensed under the Apache License 2.0.
 * [Langgraph](https://github.com/langchain-ai/langgraph), a library for building stateful, multi-actor applications with LLMs, used to create agent and multi-agent workflows licensed under the MIT license.
 * [Langgraph4J](https://github.com/bsorrentino/langgraph4j), a porting of original [LangGraph](https://github.com/langchain-ai/langgraph) from the [LangChain AI project](https://github.com/langchain-ai) in Java fashion.
+* [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/w9lsky/spring-ai-alibaba)
