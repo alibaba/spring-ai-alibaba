@@ -40,7 +40,7 @@ public class YuqueAutoConfiguration {
 	@Description("Use yuque api to invoke a http request to create a doc.")
 	public YuqueQueryDocService createYuqueDocFunction(YuqueProperties yuqueProperties, JsonParseTool jsonParseTool) {
 		return new YuqueQueryDocService(WebClientTool.builder(jsonParseTool, yuqueProperties)
-			.httpHeadersConsumer(headers -> headers.set("X-Auth-Token", yuqueProperties.getAuthToken()))
+			.httpHeadersConsumer(headers -> headers.set("X-Auth-Token", yuqueProperties.getToken()))
 			.build(), jsonParseTool);
 	}
 

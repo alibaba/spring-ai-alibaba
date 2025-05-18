@@ -58,8 +58,7 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-tool-calling-common</artifactId>
-            <version>1.0.0-M8.1-SNAPSHOT</version>
-            <scope>compile</scope>
+            <version>${revision}</version>
         </dependency>
 
     </dependencies>
