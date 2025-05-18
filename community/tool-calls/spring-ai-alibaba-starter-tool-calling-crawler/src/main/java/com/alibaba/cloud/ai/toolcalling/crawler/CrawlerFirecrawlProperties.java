@@ -35,6 +35,8 @@ public class CrawlerFirecrawlProperties extends CommonToolCallProperties {
 		this.setPropertiesFromEnv(null, null, null, "FIRECRAWL_TOKEN");
 	}
 
+	private Boolean enabled;
+
 	private String mode = CrawlerConstants.FirecrawlMode.SCRAPE;
 
 	private String[] formats = new String[] { CrawlerConstants.FirecrawlFormats.MARKDOWN };
@@ -125,14 +127,22 @@ public class CrawlerFirecrawlProperties extends CommonToolCallProperties {
 		this.excludeTags = excludeTags;
 	}
 
+	public Boolean getEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
+
 	@Override
 	public String toString() {
 
 		return "CrawlerFirecrawlProperties{" + "token='" + super.getToken() + '\'' + ", removeBase64Images="
-				+ removeBase64Images + ", skipTlsVerification=" + skipTlsVerification + ", mobile=" + mobile
-				+ ", waitFor=" + waitFor + ", formats=" + formats + ", onlyMainContent=" + onlyMainContent
-				+ ", includeTags=" + Arrays.toString(includeTags) + ", excludeTags=" + Arrays.toString(excludeTags)
-				+ '}';
+				+ ",enabled=" + enabled + removeBase64Images + ", skipTlsVerification=" + skipTlsVerification
+				+ ", mobile=" + mobile + ", waitFor=" + waitFor + ", formats=" + formats + ", onlyMainContent="
+				+ onlyMainContent + ", includeTags=" + Arrays.toString(includeTags) + ", excludeTags="
+				+ Arrays.toString(excludeTags) + '}';
 	}
 
 }
