@@ -15,21 +15,13 @@
  */
 package com.alibaba.cloud.ai.dashscope.image;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
+import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.springframework.ai.image.Image;
-import org.springframework.ai.image.ImageGeneration;
-import org.springframework.ai.image.ImageModel;
-import org.springframework.ai.image.ImageOptions;
-import org.springframework.ai.image.ImagePrompt;
-import org.springframework.ai.image.ImageResponse;
-import org.springframework.ai.image.ImageResponseMetadata;
+import org.springframework.ai.image.*;
 import org.springframework.ai.image.observation.DefaultImageModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationContext;
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
@@ -42,9 +34,10 @@ import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants;
-import io.micrometer.observation.Observation;
-import io.micrometer.observation.ObservationRegistry;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * @author nuocheng.lxm
@@ -61,6 +54,8 @@ public class DashScopeImageModel implements ImageModel {
 	 */
 	private static final String DEFAULT_MODEL = "wanx-v1";
 
+	private static final int MAX_RETRY_COUNT = 10;
+
 	/**
 	 * Low-level access to the DashScope Image API.
 	 */
@@ -75,8 +70,6 @@ public class DashScopeImageModel implements ImageModel {
 	 * The retry template used to retry the OpenAI Image API calls.
 	 */
 	private final RetryTemplate retryTemplate;
-
-	private static final int MAX_RETRY_COUNT = 10;
 
 	/**
 	 * Observation registry used for instrumentation.
@@ -128,10 +121,14 @@ public class DashScopeImageModel implements ImageModel {
 		this.observationRegistry = observationRegistry;
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	@Override
 	public ImageResponse call(ImagePrompt request) {
 		Assert.notNull(request, "Prompt must not be null");
-		Assert.isTrue(!CollectionUtils.isEmpty(request.getInstructions()), "Prompt messages must not be empty");
+		Assert.isTrue(!CollectionUtils.isEmpty(request.getInstructions()), "Prompt messages must " + "not be empty");
 
 		String taskId = submitImageGenTask(request);
 		if (taskId == null) {
@@ -291,6 +288,48 @@ public class DashScopeImageModel implements ImageModel {
 	public void setObservationConvention(ImageModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
+	}
+
+	public static final class Builder {
+
+		private DashScopeImageApi dashScopeImageApi;
+
+		private DashScopeImageOptions defaultOptions = DashScopeImageOptions.builder()
+			.withModel(DEFAULT_MODEL)
+			.withN(1)
+			.build();
+
+		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+
+		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
+
+		private Builder() {
+		}
+
+		public DashScopeImageModel.Builder dashScopeApi(DashScopeImageApi dashScopeImageApi) {
+			this.dashScopeImageApi = dashScopeImageApi;
+			return this;
+		}
+
+		public Builder defaultOptions(DashScopeImageOptions defaultOptions) {
+			this.defaultOptions = defaultOptions;
+			return this;
+		}
+
+		public Builder retryTemplate(RetryTemplate retryTemplate) {
+			this.retryTemplate = retryTemplate;
+			return this;
+		}
+
+		public Builder observationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
+		}
+
+		public DashScopeImageModel build() {
+			return new DashScopeImageModel(dashScopeImageApi, defaultOptions, retryTemplate, observationRegistry);
+		}
+
 	}
 
 }
