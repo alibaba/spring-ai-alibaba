@@ -39,7 +39,7 @@ public class RegexService implements Function<RegexService.RegexRequest, Object>
 		return RegexUtils.findAll(expression, content, group, new ArrayList<>());
 	}
 
-	record RegexRequest(@JsonProperty("content") String content, @JsonProperty("expression") Pattern expression,
+	public record RegexRequest(@JsonProperty("content") String content, @JsonProperty("expression") Pattern expression,
 			@JsonProperty("group") int group) {
 	}
 
