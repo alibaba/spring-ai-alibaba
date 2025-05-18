@@ -34,8 +34,6 @@ public class CrawlerJinaProperties extends CommonToolCallProperties {
 		this.setPropertiesFromEnv("JINA_API_KEY", null, null, "JINA_TOKEN");
 	}
 
-	private Boolean enabled;
-
 	private MediaType accept = MediaType.asMediaType(MediaType.APPLICATION_JSON);
 
 	private String targetSelector;
@@ -63,24 +61,6 @@ public class CrawlerJinaProperties extends CommonToolCallProperties {
 	private Boolean withIframe;
 
 	private Boolean withShadowDom;
-
-	@Deprecated
-	public String getToken() {
-		return super.getToken();
-	}
-
-	@Deprecated
-	public void setToken(String token) {
-		super.setToken(token);
-	}
-
-	public Boolean getEnabled() {
-		return enabled;
-	}
-
-	public void setEnabled(Boolean enabled) {
-		this.enabled = enabled;
-	}
 
 	public MediaType getAccept() {
 		return accept;
@@ -196,7 +176,7 @@ public class CrawlerJinaProperties extends CommonToolCallProperties {
 
 	@Override
 	public String toString() {
-		return "CrawlerJinaProperties{" + "token='" + "**********" + '\'' + ", enabled=" + enabled
+		return "CrawlerJinaProperties{" + "token='" + "**********" + '\'' + ", enabled=" + super.isEnabled()
 				+ ", targetSelector='" + targetSelector + '\'' + ", waitForSelector='" + waitForSelector + '\''
 				+ ", removeSelector='" + removeSelector + '\'' + ", retainImages='" + retainImages + '\''
 				+ ", withLinksSummary=" + withLinksSummary + ", withImagesSummary=" + withImagesSummary

@@ -35,8 +35,6 @@ public class CrawlerFirecrawlProperties extends CommonToolCallProperties {
 		this.setPropertiesFromEnv(null, null, null, "FIRECRAWL_TOKEN");
 	}
 
-	private Boolean enabled;
-
 	private String mode = CrawlerConstants.FirecrawlMode.SCRAPE;
 
 	private String[] formats = new String[] { CrawlerConstants.FirecrawlFormats.MARKDOWN };
@@ -54,24 +52,6 @@ public class CrawlerFirecrawlProperties extends CommonToolCallProperties {
 	private String[] includeTags;
 
 	private String[] excludeTags;
-
-	@Deprecated
-	public String getToken() {
-		return super.getToken();
-	}
-
-	@Deprecated
-	public void setToken(String token) {
-		super.setToken(token);
-	}
-
-	public Boolean getEnabled() {
-		return enabled;
-	}
-
-	public void setEnabled(Boolean enabled) {
-		this.enabled = enabled;
-	}
 
 	public String getMode() {
 		return mode;
@@ -148,11 +128,11 @@ public class CrawlerFirecrawlProperties extends CommonToolCallProperties {
 	@Override
 	public String toString() {
 
-		return "CrawlerFirecrawlProperties{" + "token='" + super.getToken() + '\'' + ", enabled=" + enabled
-				+ ", removeBase64Images=" + removeBase64Images + ", skipTlsVerification=" + skipTlsVerification
-				+ ", mobile=" + mobile + ", waitFor=" + waitFor + ", formats=" + formats + ", onlyMainContent="
-				+ onlyMainContent + ", includeTags=" + Arrays.toString(includeTags) + ", excludeTags="
-				+ Arrays.toString(excludeTags) + '}';
+		return "CrawlerFirecrawlProperties{" + "token='" + super.getToken() + '\'' + ", removeBase64Images="
+				+ removeBase64Images + ", skipTlsVerification=" + skipTlsVerification + ", mobile=" + mobile
+				+ ", waitFor=" + waitFor + ", formats=" + formats + ", onlyMainContent=" + onlyMainContent
+				+ ", includeTags=" + Arrays.toString(includeTags) + ", excludeTags=" + Arrays.toString(excludeTags)
+				+ '}';
 	}
 
 }
