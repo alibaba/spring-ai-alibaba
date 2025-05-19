@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.toolcalling.toutiaonews;
 
 import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.DEFAULT_USER_AGENTS;
+import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
 
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
@@ -37,7 +38,7 @@ import org.springframework.http.MediaType;
  */
 @Configuration
 @ConditionalOnClass(ToutiaoNewsSearchHotEventsService.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.toutiaonews", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = ToutiaoNewsProperties.TOUTIAO_NEWS_PREFIX, name = "enabled", havingValue = "true")
 @EnableConfigurationProperties(ToutiaoNewsProperties.class)
 public class ToutiaoNewsAutoConfiguration {
 

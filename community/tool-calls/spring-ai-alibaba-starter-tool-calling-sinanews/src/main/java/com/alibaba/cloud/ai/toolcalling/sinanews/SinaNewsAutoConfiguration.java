@@ -37,7 +37,7 @@ import org.springframework.http.MediaType;
  */
 @Configuration
 @ConditionalOnClass(SinaNewsService.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.sinanews", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = SinaNewsProperties.SINA_NEWS_PREFIX, name = "enabled", havingValue = "true")
 @EnableConfigurationProperties(SinaNewsProperties.class)
 public class SinaNewsAutoConfiguration {
 

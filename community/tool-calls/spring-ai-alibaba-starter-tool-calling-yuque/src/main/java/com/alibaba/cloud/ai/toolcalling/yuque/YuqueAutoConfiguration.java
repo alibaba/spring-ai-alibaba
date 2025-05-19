@@ -30,7 +30,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author 北极星
  */
 @Configuration
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.yuque", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = YuqueProperties.YUQUE_PREFIX, name = "enabled", havingValue = "true")
 @ConditionalOnClass
 @EnableConfigurationProperties(YuqueProperties.class)
 public class YuqueAutoConfiguration {
