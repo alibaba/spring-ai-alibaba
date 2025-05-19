@@ -44,6 +44,7 @@ public class PlanningCoordinator {
 	 */
 	public ExecutionContext createPlan(ExecutionContext context) {
 		// 只执行创建计划步骤
+		context.setUseMemory(false);
 		planCreator.createPlan(context);
 		return context;
 	}
@@ -54,6 +55,7 @@ public class PlanningCoordinator {
 	 * @return 执行总结
 	 */
 	public ExecutionContext executePlan(ExecutionContext context) {
+		context.setUseMemory(true);
 		// 1. 创建计划
 		planCreator.createPlan(context);
 
