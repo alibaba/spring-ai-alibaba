@@ -23,68 +23,67 @@ import java.util.function.Function;
 
 public class HumanNode implements NodeAction {
 
-  // always or conditioned
-  private final String interruptStrategy;
-  private final String humanFeedbackMessage;
-  private Function<OverAllState, Boolean> interruptCondition;
-  private Function<OverAllState, Map<String, Object>> stateUpdateFunc;
+	// always or conditioned
+	private final String interruptStrategy;
 
-  public HumanNode() {
-    this.interruptStrategy = "always";
-    this.humanFeedbackMessage = "interrupt";
-  }
+	private final String humanFeedbackMessage;
 
-  public HumanNode(
-      String interruptStrategy,
-      Function<OverAllState, Boolean> interruptCondition,
-      String humanFeedbackMessage) {
-    this.humanFeedbackMessage = humanFeedbackMessage;
-    this.interruptStrategy = interruptStrategy;
-    this.interruptCondition = interruptCondition;
-  }
+	private Function<OverAllState, Boolean> interruptCondition;
 
-  public HumanNode(
-      String interruptStrategy,
-      Function<OverAllState, Boolean> interruptCondition,
-      Function<OverAllState, Map<String, Object>> stateUpdateFunc,
-      String humanFeedbackMessage) {
-    this.humanFeedbackMessage = humanFeedbackMessage;
-    this.interruptStrategy = interruptStrategy;
-    this.interruptCondition = interruptCondition;
-    this.stateUpdateFunc = stateUpdateFunc;
-  }
+	private Function<OverAllState, Map<String, Object>> stateUpdateFunc;
 
-  //
-  @Override
-  public Map<String, Object> apply(OverAllState state) throws GraphInterruptException {
-    var shouldInterrupt =
-        interruptStrategy.equals("always")
-            || (interruptStrategy.equals("conditioned") && interruptCondition.apply(state));
-    if (shouldInterrupt) {
-      interrupt(state);
-      Map<String, Object> data = Map.of();
-      if (state.humanFeedback() != null) {
-        if (stateUpdateFunc != null) {
-          data = stateUpdateFunc.apply(state);
-        } else {
-          // todo, check and only update keys defined in state.
-          data = state.updateState(state.humanFeedback().data());
-        }
-      }
+	public HumanNode() {
+		this.interruptStrategy = "always";
+		this.humanFeedbackMessage = "interrupt";
+	}
 
-      state.withoutResume();
-      return data;
-    }
-    return Map.of();
-  }
+	public HumanNode(String interruptStrategy, Function<OverAllState, Boolean> interruptCondition,
+			String humanFeedbackMessage) {
+		this.humanFeedbackMessage = humanFeedbackMessage;
+		this.interruptStrategy = interruptStrategy;
+		this.interruptCondition = interruptCondition;
+	}
 
-  private void interrupt(OverAllState state) throws GraphInterruptException {
-    if (state.humanFeedback() == null || !state.isResume()) {
-      throw new GraphInterruptException(humanFeedbackMessage);
-    }
-  }
+	public HumanNode(String interruptStrategy, Function<OverAllState, Boolean> interruptCondition,
+			Function<OverAllState, Map<String, Object>> stateUpdateFunc, String humanFeedbackMessage) {
+		this.humanFeedbackMessage = humanFeedbackMessage;
+		this.interruptStrategy = interruptStrategy;
+		this.interruptCondition = interruptCondition;
+		this.stateUpdateFunc = stateUpdateFunc;
+	}
 
-  public String think(OverAllState state) {
-    return state.humanFeedback().nextNodeId();
-  }
+	//
+	@Override
+	public Map<String, Object> apply(OverAllState state) throws GraphInterruptException {
+		var shouldInterrupt = interruptStrategy.equals("always")
+				|| (interruptStrategy.equals("conditioned") && interruptCondition.apply(state));
+		if (shouldInterrupt) {
+			interrupt(state);
+			Map<String, Object> data = Map.of();
+			if (state.humanFeedback() != null) {
+				if (stateUpdateFunc != null) {
+					data = stateUpdateFunc.apply(state);
+				}
+				else {
+					// todo, check and only update keys defined in state.
+					data = state.updateState(state.humanFeedback().data());
+				}
+			}
+
+			state.withoutResume();
+			return data;
+		}
+		return Map.of();
+	}
+
+	private void interrupt(OverAllState state) throws GraphInterruptException {
+		if (state.humanFeedback() == null || !state.isResume()) {
+			throw new GraphInterruptException(humanFeedbackMessage);
+		}
+	}
+
+	public String think(OverAllState state) {
+		return state.humanFeedback().nextNodeId();
+	}
+
 }
