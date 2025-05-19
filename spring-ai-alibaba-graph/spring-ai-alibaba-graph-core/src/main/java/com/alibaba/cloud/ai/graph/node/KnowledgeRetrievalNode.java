@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
-import org.springframework.ai.rag.postretrieval.ranking.DocumentRanker;
+import org.springframework.ai.rag.postretrieval.document.DocumentPostProcessor;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -148,12 +148,13 @@ public class KnowledgeRetrievalNode implements NodeAction {
 		}
 	}
 
-	private List<Document> ranking(Query query, List<Document> documents, DocumentRanker documentRanker) {
+	private List<Document> ranking(Query query, List<Document> documents, DocumentPostProcessor documentPostProcessor) {
 		if (documents.size() <= 1) {
 			return documents;
 		}
+
 		try {
-			List<Document> rankedDocuments = documentRanker.rank(query, documents);
+			List<Document> rankedDocuments = documentPostProcessor.process(query, documents);
 			return rankedDocuments;
 		}
 		catch (Exception e) {
@@ -162,7 +163,7 @@ public class KnowledgeRetrievalNode implements NodeAction {
 		}
 	}
 
-	public class KnowledgeRetrievalDocumentRanker implements DocumentRanker {
+	public static class KnowledgeRetrievalDocumentRanker implements DocumentPostProcessor {
 
 		private RerankModel rerankModel;
 
@@ -173,9 +174,14 @@ public class KnowledgeRetrievalNode implements NodeAction {
 			this.rerankOptions = rerankOptions;
 		}
 
+		@Override
+		public List<Document> apply(Query query, List<Document> documents) {
+			return List.of();
+		}
+
 		@NotNull
 		@Override
-		public List<Document> rank(@Nullable Query query, @Nullable List<Document> documents) {
+		public List<Document> process(@Nullable Query query, @Nullable List<Document> documents) {
 
 			try {
 				List<Document> reorderDocs = new ArrayList<>();
@@ -188,8 +194,9 @@ public class KnowledgeRetrievalNode implements NodeAction {
 						Document outputDocs = res.getOutput();
 
 						Document doc = docMap.get(outputDocs.getId());
-						if (doc != null)
+						if (doc != null) {
 							reorderDocs.add(doc);
+						}
 					});
 				}
 
