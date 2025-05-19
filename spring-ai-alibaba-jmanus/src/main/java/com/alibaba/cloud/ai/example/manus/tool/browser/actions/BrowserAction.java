@@ -82,5 +82,4 @@ public abstract class BrowserAction {
 		return driverWrapper.getInteractiveElementRegistry().getAllElements(page);
 	}
 
-
 }
