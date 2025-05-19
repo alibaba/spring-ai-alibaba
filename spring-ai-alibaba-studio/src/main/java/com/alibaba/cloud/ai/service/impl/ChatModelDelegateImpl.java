@@ -31,6 +31,7 @@ import com.alibaba.cloud.ai.vo.ActionResult;
 import com.alibaba.cloud.ai.vo.ChatModelRunResult;
 import com.alibaba.cloud.ai.vo.TelemetryResult;
 import com.alibaba.fastjson.JSONException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.tracing.Tracer;
 import lombok.extern.slf4j.Slf4j;
@@ -156,7 +157,7 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 					try {
 						log.info("set chat options, {}", objectMapper.writeValueAsString(chatOptions));
 					}
-					catch (JSONException e) {
+					catch (JSONException | JsonProcessingException e) {
 						throw new RuntimeException("Failed to serialize JSON", e);
 					}
 					dashScopeChatModel.setDashScopeChatOptions(chatOptions);
@@ -196,7 +197,7 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 					var dashScopeImageApi = new DashScopeImageApi(key);
 					dashScopeImageModel = new DashScopeImageModel(dashScopeImageApi, imageOptions);
 				}
-				catch (JSONException e) {
+				catch (JSONException | JsonProcessingException e) {
 					throw new RuntimeException("Failed to serialize JSON", e);
 				}
 			}
