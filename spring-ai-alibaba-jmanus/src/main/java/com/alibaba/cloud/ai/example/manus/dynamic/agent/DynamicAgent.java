@@ -24,8 +24,6 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
-import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
@@ -50,6 +48,8 @@ import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
+
+import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 public class DynamicAgent extends ReActAgent {
 
@@ -135,7 +135,7 @@ public class DynamicAgent extends ReActAgent {
 			List<ToolCallback> callbacks = getToolCallList();
 			ChatClient chatClient = llmService.getAgentChatClient();
 			response = chatClient.prompt(userPrompt)
-				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getPlanId()))
+				.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, getPlanId()))
 				.toolCallbacks(callbacks)
 				.call()
 				.chatResponse();
