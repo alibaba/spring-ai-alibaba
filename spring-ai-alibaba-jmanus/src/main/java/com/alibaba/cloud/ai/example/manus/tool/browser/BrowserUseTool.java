@@ -90,7 +90,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			        },
 			        "url": {
 			            "type": "string",
-			            "description": "URL for 'navigate' or 'new_tab' actions"
+			            "description": "URL for 'navigate' or 'new_tab' actions , don't support get_text and get_html"
 			        },
 			        "index": {
 			            "type": "integer",
@@ -175,8 +175,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			- 'input_text'：在元素中输入文本，对于百度(Baidu)，输入框的索引是
 			- 'key_enter'：按回车键
 			- 'screenshot'：捕获屏幕截图
-			- 'get_html'：获取页面HTML内容
-			- 'get_text'：获取页面文本内容
+			- 'get_html'：获取当前页面的HTML内容(不支持url参数)
+			- 'get_text'：获取当前页面文本内容(不支持url参数)
 			- 'execute_js'：执行JavaScript代码
 			- 'scroll'：滚动页面
 			- 'switch_tab'：切换到特定标签页
@@ -365,7 +365,14 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		// 构建标签页信息
 		List<Map<String, Object>> tabs = (List<Map<String, Object>>) state.get("tabs");
 		String tabsInfo = (tabs != null) ? String.format("\n   %d tab(s) available", tabs.size()) : "";
-
+		if (tabs != null) {
+			for (int i = 0; i < tabs.size(); i++) {
+				Map<String, Object> tab = tabs.get(i);
+				String tabUrl = (String) tab.get("url");
+				String tabTitle = (String) tab.get("title");
+				tabsInfo += String.format("\n   [%d] %s: %s", i, tabTitle, tabUrl);
+			}
+		}
 		// 获取滚动信息
 		Map<String, Object> scrollInfo = (Map<String, Object>) state.get("scroll_info");
 		String contentAbove = "";

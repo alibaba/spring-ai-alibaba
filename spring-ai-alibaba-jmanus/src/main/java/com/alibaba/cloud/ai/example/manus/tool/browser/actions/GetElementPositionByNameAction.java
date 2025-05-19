@@ -135,6 +135,64 @@ public class GetElementPositionByNameAction extends BrowserAction {
 						ElementPosition position = new ElementPosition(x, y, elementText);
 						results.add(position);
 						uniqueSet.add(uniqueKey);
+						// 高亮该元素（带边框和中心点+文本）
+						try {
+							String highlightScript = String.format("""
+								(function() {
+									var box = {left: %f, top: %f, width: %f, height: %f};
+									var x = %d, y = %d, label = %s;
+									var highlight = document.createElement('div');
+									highlight.style.position = 'fixed';
+									highlight.style.left = box.left + 'px';
+									highlight.style.top = box.top + 'px';
+									highlight.style.width = box.width + 'px';
+									highlight.style.height = box.height + 'px';
+									highlight.style.border = '3px solid #ff0000';
+									highlight.style.background = 'rgba(255,0,0,0.08)';
+									highlight.style.zIndex = 999999;
+									highlight.style.pointerEvents = 'none';
+									highlight.style.boxSizing = 'border-box';
+									// 中心点
+									var center = document.createElement('div');
+									center.style.position = 'fixed';
+									center.style.left = (x - 8) + 'px';
+									center.style.top = (y - 8) + 'px';
+									center.style.width = '16px';
+									center.style.height = '16px';
+									center.style.borderRadius = '50%';
+									center.style.background = '#ff0000';
+									center.style.zIndex = 1000000;
+									center.style.pointerEvents = 'none';
+									// 文本标签
+									var tag = document.createElement('div');
+									tag.style.position = 'fixed';
+									tag.style.left = (x + 10) + 'px';
+									tag.style.top = (y - 18) + 'px';
+									tag.style.color = '#fff';
+									tag.style.background = 'rgba(255,0,0,0.85)';
+									tag.style.padding = '2px 8px';
+									tag.style.fontSize = '14px';
+									tag.style.borderRadius = '6px';
+									tag.style.zIndex = 1000001;
+									tag.style.pointerEvents = 'none';
+									tag.innerText = label;
+									document.body.appendChild(highlight);
+									document.body.appendChild(center);
+									document.body.appendChild(tag);
+									setTimeout(function() {
+										try { document.body.removeChild(highlight); } catch(e){}
+										try { document.body.removeChild(center); } catch(e){}
+										try { document.body.removeChild(tag); } catch(e){}
+									}, 1200);
+								})();
+							""",
+								box.x, box.y, box.width, box.height,
+								x, y, JSON.toJSONString(elementText)
+							);
+							frame.evaluate(highlightScript);
+						} catch (Exception e) {
+							// 忽略高亮异常
+						}
 					}
 				}
 			}
