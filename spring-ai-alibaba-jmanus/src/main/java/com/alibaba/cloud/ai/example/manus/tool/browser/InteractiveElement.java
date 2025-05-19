@@ -332,6 +332,7 @@ public class InteractiveElement {
 		}
 		return result.toString();
 	}
+
 	/**
 	 * 点击指定索引的元素
 	 * @param index 元素全局索引
