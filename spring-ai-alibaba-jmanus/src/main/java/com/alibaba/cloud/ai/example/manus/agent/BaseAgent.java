@@ -81,6 +81,8 @@ public abstract class BaseAgent {
 
 	protected PlanExecutionRecorder planExecutionRecorder;
 
+	public abstract void clearUp(String planId);
+
 	/**
 	 * 获取智能体的名称
 	 *

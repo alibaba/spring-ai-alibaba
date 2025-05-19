@@ -80,20 +80,26 @@ public class PlanExecutor {
 	 * @return 执行结果
 	 */
 	public void executeAllSteps(ExecutionContext context) {
-
+		BaseAgent executor = null;
 		try {
 			recordPlanExecutionStart(context);
 			ExecutionPlan plan = context.getPlan();
 			List<ExecutionStep> steps = plan.getSteps();
 
 			for (ExecutionStep step : steps) {
-				executeStep(step, context);
+				BaseAgent executorinStep = executeStep(step, context);
+				if (executorinStep != null) {
+					executor = executorinStep;
+				}
 			}
 			context.setSuccess(true);
 		}
 		finally {
 			String planId = context.getPlanId();
 			llmService.clearAgentMemory(planId);
+			if (executor != null) {
+				executor.clearUp(planId);
+			}
 		}
 	}
 
@@ -103,7 +109,7 @@ public class PlanExecutor {
 	 * @param stepInfo 步骤信息
 	 * @return 步骤执行结果
 	 */
-	private void executeStep(ExecutionStep step, ExecutionContext context) {
+	private BaseAgent executeStep(ExecutionStep step, ExecutionContext context) {
 
 		try {
 			String stepType = getStepFromStepReq(step.getStepRequirement());
@@ -122,7 +128,7 @@ public class PlanExecutor {
 			if (executor == null) {
 				logger.error("No executor found for step type: {}", stepType);
 				step.setResult("No executor found for step type: " + stepType);
-				return;
+				return null;
 			}
 			step.setAgent(executor);
 			executor.setState(AgentState.IN_PROGRESS);
@@ -131,7 +137,7 @@ public class PlanExecutor {
 			String stepResultStr = executor.run();
 			// Execute the step
 			step.setResult(stepResultStr);
-
+			return executor;
 		}
 		catch (Exception e) {
 			logger.error("Error executing step: {}", e.getMessage(), e);
@@ -140,7 +146,7 @@ public class PlanExecutor {
 		finally {
 			recordStepEnd(step, context);
 		}
-
+		return null;
 	}
 
 	private String getStepFromStepReq(String stepRequirement) {

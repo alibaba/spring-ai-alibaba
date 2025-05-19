@@ -124,6 +124,11 @@ class BrowserUseToolSpringTest {
 			return null;
 		}
 
+		@Override
+		public void clearUp(String planId) {
+			return;
+		}
+
 	}
 
 	@Test
