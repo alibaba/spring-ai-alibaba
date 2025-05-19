@@ -38,7 +38,8 @@ public class GetTextAction extends BrowserAction {
 				if (text != null && !text.isEmpty()) {
 					allText.append(text).append("\n");
 				}
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				// 忽略没有body的frame
 			}
 		}
