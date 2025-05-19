@@ -301,7 +301,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 
 			String interactiveElements = chromeDriverService.getDriver(planId)
 				.getInteractiveElementRegistry()
-				.generateElementsInfoText();
+				.generateElementsInfoText(page);
 			state.put("interactive_elements", interactiveElements);
 
 			return state;

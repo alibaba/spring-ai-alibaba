@@ -54,7 +54,6 @@ public class KeyEnterAction extends BrowserAction {
 		catch (Exception e) {
 			return new ToolExecuteResult("Failed to press Enter on element at index " + index + ": " + e.getMessage());
 		}
-		refreshElements(page);
 		return new ToolExecuteResult("Hit the enter key at index " + index);
 	}
 

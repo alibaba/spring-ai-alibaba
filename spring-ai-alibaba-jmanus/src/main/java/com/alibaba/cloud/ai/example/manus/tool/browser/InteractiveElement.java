@@ -332,22 +332,6 @@ public class InteractiveElement {
 		}
 		return result.toString();
 	}
-
-	/**
-	 * 过滤并获取特定类型的元素
-	 * @param tagName 要筛选的HTML标签名
-	 * @return 过滤后的元素列表
-	 */
-	public List<InteractiveElement> getElementsByTagName(String tagName) {
-		List<InteractiveElement> filteredElements = new ArrayList<>();
-		for (InteractiveElement element : allElements) {
-			if (element.getTagName().equalsIgnoreCase(tagName)) {
-				filteredElements.add(element);
-			}
-		}
-		return filteredElements;
-	}
-
 	/**
 	 * 点击指定索引的元素
 	 * @param index 元素全局索引

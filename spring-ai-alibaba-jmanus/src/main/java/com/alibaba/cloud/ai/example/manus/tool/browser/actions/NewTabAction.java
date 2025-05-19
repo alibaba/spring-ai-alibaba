@@ -35,7 +35,6 @@ public class NewTabAction extends BrowserAction {
 
 		Page page = getCurrentPage(); // 打开新标签页
 		page.navigate(url); // 导航到指定 URL
-		refreshElements(page); // 刷新元素缓存
 		return new ToolExecuteResult("Opened new tab with URL " + url);
 	}
 
