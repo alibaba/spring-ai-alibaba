@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.toolcalling.crawler;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.MediaType;
@@ -24,13 +25,14 @@ import org.springframework.http.MediaType;
  */
 @EnableConfigurationProperties
 @ConfigurationProperties(prefix = CrawlerJinaProperties.JINA_PROPERTIES_PREFIX)
-public class CrawlerJinaProperties {
+public class CrawlerJinaProperties extends CommonToolCallProperties {
 
 	public static final String JINA_PROPERTIES_PREFIX = CrawlerConstants.CONFIG_PREFIX + "jina";
 
-	private String token;
-
-	private Boolean enabled;
+	public CrawlerJinaProperties() {
+		super(CrawlerConstants.JINA_BASE_URL);
+		this.setPropertiesFromEnv("JINA_API_KEY", null, null, "JINA_TOKEN");
+	}
 
 	private MediaType accept = MediaType.asMediaType(MediaType.APPLICATION_JSON);
 
@@ -59,22 +61,6 @@ public class CrawlerJinaProperties {
 	private Boolean withIframe;
 
 	private Boolean withShadowDom;
-
-	public String getToken() {
-		return token;
-	}
-
-	public void setToken(String token) {
-		this.token = token;
-	}
-
-	public Boolean getEnabled() {
-		return enabled;
-	}
-
-	public void setEnabled(Boolean enabled) {
-		this.enabled = enabled;
-	}
 
 	public MediaType getAccept() {
 		return accept;
@@ -190,7 +176,7 @@ public class CrawlerJinaProperties {
 
 	@Override
 	public String toString() {
-		return "CrawlerJinaProperties{" + "token='" + "**********" + '\'' + ", enabled=" + enabled
+		return "CrawlerJinaProperties{" + "token='" + "**********" + '\'' + ", enabled=" + super.isEnabled()
 				+ ", targetSelector='" + targetSelector + '\'' + ", waitForSelector='" + waitForSelector + '\''
 				+ ", removeSelector='" + removeSelector + '\'' + ", retainImages='" + retainImages + '\''
 				+ ", withLinksSummary=" + withLinksSummary + ", withImagesSummary=" + withImagesSummary
