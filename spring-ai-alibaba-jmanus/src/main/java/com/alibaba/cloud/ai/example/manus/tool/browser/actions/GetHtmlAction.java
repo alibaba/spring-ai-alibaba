@@ -39,7 +39,8 @@ public class GetHtmlAction extends BrowserAction {
 					allHtml.append("<!-- frame: ").append(frame.url()).append(" -->\n");
 					allHtml.append(html).append("\n\n");
 				}
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				// 忽略异常
 			}
 		}

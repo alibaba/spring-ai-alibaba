@@ -73,6 +73,18 @@ public class DynamicAgent extends ReActAgent {
 
 	private final ToolCallingManager toolCallingManager;
 
+	public void clearUp(String planId) {
+		Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContext();
+		for (ToolCallBackContext toolCallBack : toolCallBackContext.values()) {
+			try {
+				toolCallBack.getFunctionInstance().cleanup(planId);
+			}
+			catch (Exception e) {
+				log.error("Error cleaning up tool callback context: {}", e.getMessage(), e);
+			}
+		}
+	}
+
 	public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 			ManusProperties manusProperties, String name, String description, String nextStepPrompt,
 			List<String> availableToolKeys, ToolCallingManager toolCallingManager,
