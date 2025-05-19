@@ -85,8 +85,9 @@ public class AgentServiceImpl implements AgentService {
 			// 检查是否已存在同名Agent
 			DynamicAgentEntity existingAgent = repository.findByAgentName(config.getName());
 			if (existingAgent != null) {
-				log.info("发现同名Agent: {}，返回已存在的Agent", config.getName());
-				return mapToAgentConfig(existingAgent);
+				log.info("发现同名Agent: {}，更新Agent", config.getName());
+				config.setId(existingAgent.getId().toString());
+				return updateAgent(config);
 			}
 
 			DynamicAgentEntity entity = new DynamicAgentEntity();
