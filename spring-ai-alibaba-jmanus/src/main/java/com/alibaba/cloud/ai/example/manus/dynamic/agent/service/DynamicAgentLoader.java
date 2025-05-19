@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.example.manus.dynamic.agent.service;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.context.annotation.Lazy;
@@ -50,15 +51,14 @@ public class DynamicAgentLoader {
 		this.toolCallingManager = toolCallingManager;
 	}
 
-	public DynamicAgent loadAgent(String agentName) {
+	public DynamicAgent loadAgent(String agentName, Map<String, Object> initialAgentSetting) {
 		DynamicAgentEntity entity = repository.findByAgentName(agentName);
 		if (entity == null) {
 			throw new IllegalArgumentException("Agent not found: " + agentName);
 		}
 
 		return new DynamicAgent(llmService, recorder, properties, entity.getAgentName(), entity.getAgentDescription(),
-				entity.getSystemPrompt(), entity.getNextStepPrompt(), entity.getAvailableToolKeys(),
-				toolCallingManager);
+				entity.getNextStepPrompt(), entity.getAvailableToolKeys(), toolCallingManager, initialAgentSetting);
 	}
 
 	public List<DynamicAgentEntity> getAllAgents() {
