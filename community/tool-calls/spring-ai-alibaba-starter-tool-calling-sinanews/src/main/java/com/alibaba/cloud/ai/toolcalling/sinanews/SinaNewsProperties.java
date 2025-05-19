@@ -16,9 +16,12 @@
 package com.alibaba.cloud.ai.toolcalling.sinanews;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
+@ConfigurationProperties(prefix = SinaNewsProperties.SINA_NEWS_PREFIX)
 public class SinaNewsProperties extends CommonToolCallProperties {
 
+	protected static final String SINA_NEWS_PREFIX = "spring.ai.alibaba.toolcalling.sinanews";
 	public SinaNewsProperties() {
 		super("https://newsapp.sina.cn/api/hotlist?newsId=HB-1-snhs%2Ftop_news_list-all");
 	}

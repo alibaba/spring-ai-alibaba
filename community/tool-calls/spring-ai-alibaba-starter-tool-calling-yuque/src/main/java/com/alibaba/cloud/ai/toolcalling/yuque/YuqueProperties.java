@@ -21,9 +21,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * @author 北极星
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.yuque")
+@ConfigurationProperties(prefix = YuqueProperties.YUQUE_PREFIX)
 public class YuqueProperties extends CommonToolCallProperties {
 
+	protected static final String YUQUE_PREFIX = "spring.ai.alibaba.toolcalling.yuque";
 	public YuqueProperties() {
 		super("https://www.yuque.com/api/v2/repo");
 	}
