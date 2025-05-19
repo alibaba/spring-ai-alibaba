@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Page.WaitForLoadStateOptions;
 import com.microsoft.playwright.options.LoadState;
+
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
@@ -30,14 +31,22 @@ public class NavigateAction extends BrowserAction {
 	@Override
 	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
 		String url = request.getUrl();
+		Integer timeout = getBrowserUseTool().getManusProperties().getBrowserRequestTimeout();
+		if (timeout == null) {
+			timeout = 30; // 默认超时时间为 30 秒
+		}
 		if (url == null) {
 			return new ToolExecuteResult("URL is required for 'navigate' action");
 		}
 		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
-		page.navigate(url,new Page.NavigateOptions().setTimeout(180000) ); // 使用 Playwright 的 navigate 方法
+		page.navigate(url, new Page.NavigateOptions().setTimeout(timeout * 1000)); // 使用
+																					// Playwright
+																					// 的
+																					// navigate
+																					// 方法
 
-        // 在调用 page.content() 之前，确保页面已完全加载
-         page.waitForLoadState(LoadState.DOMCONTENTLOADED,new WaitForLoadStateOptions().setTimeout(180000));
+		// 在调用 page.content() 之前，确保页面已完全加载
+		page.waitForLoadState(LoadState.DOMCONTENTLOADED, new WaitForLoadStateOptions().setTimeout(timeout * 1000));
 
 		refreshElements(page);
 		return new ToolExecuteResult("Navigated to " + url);

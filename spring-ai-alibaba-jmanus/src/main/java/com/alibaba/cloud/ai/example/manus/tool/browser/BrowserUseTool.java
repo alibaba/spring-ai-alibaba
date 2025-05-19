@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser;
 
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.BrowserRequestVO;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ClickByElementAction;
@@ -35,7 +36,6 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAct
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.ElementHandle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -382,7 +382,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 
 		// 构建最终的状态字符串
 		String retString = String.format("""
-				
+
 				- Current URL and page title:
 				%s
 
@@ -409,6 +409,10 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			log.info("Cleaning up Chrome resources for plan: {}", planId);
 			this.chromeDriverService.closeDriverForPlan(planId);
 		}
+	}
+
+	public ManusProperties getManusProperties() {
+		return this.chromeDriverService.getManusProperties();
 	}
 
 }

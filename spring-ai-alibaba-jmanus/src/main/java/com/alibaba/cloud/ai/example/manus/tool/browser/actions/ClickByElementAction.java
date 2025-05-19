@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
 import java.util.List;
 
+import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Page.WaitForPopupOptions;
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
@@ -55,7 +56,7 @@ public class ClickByElementAction extends BrowserAction {
 		Page newPage = null;
 		try {
 
-			com.microsoft.playwright.BrowserContext context = page.context();
+			BrowserContext context = page.context();
 			// 获取点击前的所有页面和它们的URL
 			List<Page> pagesBefore = context.pages();
 			// 存储现有页面的URL集合，用于后续比较
@@ -67,8 +68,10 @@ public class ClickByElementAction extends BrowserAction {
 
 			// 直接在当前线程中使用waitForPopup
 			try {
+				Integer timeout = getBrowserUseTool().getManusProperties().getBrowserRequestTimeout();
 				// 设置监听器和超时
-				WaitForPopupOptions options = new WaitForPopupOptions().setTimeout(10000); // 设置10秒超时
+				// 设置predicate，只要有新tab弹出就立即返回
+				WaitForPopupOptions options = new WaitForPopupOptions().setTimeout(2000).setPredicate(p -> true); // 只要有新tab就立即返回
 
 				log.info("Setting up popup listener and executing click...");
 				// 执行waitForPopup，它会同时监听popup事件并执行点击操作

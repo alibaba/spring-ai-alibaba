@@ -62,8 +62,12 @@ public class InteractiveElementRegistry {
 	public void refresh(Page page) {
 		clearCache();
 		waitForPageLoad(page);
-		processMainPageElements(page);
-		processIframeElements(page);
+		// 统一处理所有 frame（包括主页面和所有iframe）
+		List<Frame> frames = page.frames();
+		log.info("统一处理所有 frame, 共 {} 个", frames.size());
+		for (Frame frame : frames) {
+			processFrameElements(frame);
+		}
 		log.info("已加载 {} 个交互式元素", interactiveElements.size());
 	}
 
@@ -87,41 +91,6 @@ public class InteractiveElementRegistry {
 		catch (Exception e) {
 			log.warn("等待页面加载时出错: {}", e.getMessage());
 		}
-	}
-
-	/**
-	 * 处理主页面中的交互元素
-	 * @param page Page实例
-	 */
-	private void processMainPageElements(Page page) {
-		try {
-			Locator elementLocator = page.locator(INTERACTIVE_ELEMENTS_SELECTOR);
-			int count = elementLocator.count();
-			log.info("找到 {} 个主页面交互元素", count);
-
-			for (int i = 0; i < count; i++) {
-				Locator locator = elementLocator.nth(i);
-				int globalIndex = interactiveElements.size();
-				InteractiveElement element = new InteractiveElement(globalIndex, locator, page);
-				interactiveElements.add(element);
-				indexToElementMap.put(globalIndex, element);
-			}
-		}
-		catch (Exception e) {
-			log.warn("处理主页面元素时出错: {}", e.getMessage());
-		}
-	}
-
-	/**
-	 * 处理页面中所有iframe的交互元素
-	 * @param page Page实例
-	 */
-	private void processIframeElements(Page page) {
-		List<Frame> frames = page.frames();
-		log.info("找到 {} 个iframe", frames.size());
-
-		// 排除主框架
-		frames.stream().filter(frame -> frame != page.mainFrame()).forEach(this::processFrameElements);
 	}
 
 	/**

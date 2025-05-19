@@ -27,7 +27,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				2) 查看或检查文件内容
 				3) 执行内容操作（追加或替换）
 				4) 保存并关闭文件以持久化更改
-				
+
 				为实现我的目标，下一步应该做什么？
 
 				请记住：
