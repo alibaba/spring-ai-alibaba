@@ -62,7 +62,6 @@ public class InputTextAction extends BrowserAction {
 		// 再输入新内容
 		typeWithHumanDelay(handle, text);
 		// 直接通过 InteractiveElementRegistry 刷新缓存，避免使用已废弃方法
-		refreshElements(page);
 		return new ToolExecuteResult("成功输入: '" + text + "' 到指定的对象.其索引编号为 ： " + index);
 	}
 

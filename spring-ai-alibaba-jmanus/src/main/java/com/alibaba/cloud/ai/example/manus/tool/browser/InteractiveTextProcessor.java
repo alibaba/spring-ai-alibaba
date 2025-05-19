@@ -15,19 +15,10 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser;
 
-import com.microsoft.playwright.ElementHandle;
-import com.microsoft.playwright.Frame;
-import com.microsoft.playwright.Locator;
-import com.microsoft.playwright.Locator.WaitForOptions;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.Frame.InnerHTMLOptions;
-import com.microsoft.playwright.Frame.LocatorOptions;
-import com.microsoft.playwright.options.LoadState;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -74,17 +65,8 @@ public class InteractiveTextProcessor {
 	 * 获取所有交互元素的列表
 	 * @return 交互元素列表
 	 */
-	public List<InteractiveElement> getAllElements() {
-		return elementRegistry.getAllElements();
-	}
-
-	/**
-	 * 获取特定类型的交互元素列表
-	 * @param tagName 元素的HTML标签名
-	 * @return 匹配该类型的元素列表
-	 */
-	public List<InteractiveElement> getElementsByTagName(String tagName) {
-		return elementRegistry.getElementsByTagName(tagName);
+	public List<InteractiveElement> getAllElements(Page page) {
+		return elementRegistry.getAllElements(page);
 	}
 
 	/**
@@ -116,8 +98,8 @@ public class InteractiveTextProcessor {
 	 * 获取网页中所有可交互元素的详细信息
 	 * @return 格式化后的元素信息字符串
 	 */
-	public String getInteractiveElementsInfo() {
-		return elementRegistry.generateElementsInfoText();
+	public String getInteractiveElementsInfo(Page page) {
+		return elementRegistry.generateElementsInfoText(page);
 	}
 
 	/**

@@ -31,7 +31,6 @@ public class RefreshAction extends BrowserAction {
 		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
 		page.reload(); // 刷新当前页面
 
-		refreshElements(page); // 刷新缓存
 		return new ToolExecuteResult("Refreshed current page");
 	}
 

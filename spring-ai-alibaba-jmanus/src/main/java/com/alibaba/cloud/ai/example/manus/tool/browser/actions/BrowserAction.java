@@ -79,16 +79,8 @@ public abstract class BrowserAction {
 	 */
 	protected List<InteractiveElement> getInteractiveElements(Page page) {
 		DriverWrapper driverWrapper = browserUseTool.getDriver();
-		return driverWrapper.getInteractiveElementRegistry().getAllElements();
+		return driverWrapper.getInteractiveElementRegistry().getAllElements(page);
 	}
 
-	/**
-	 * 刷新页面中的可交互元素
-	 * @param page 网页对象
-	 */
-	protected void refreshElements(Page page) {
-		DriverWrapper driverWrapper = browserUseTool.getDriver();
-		driverWrapper.getInteractiveElementRegistry().refresh(page);
-	}
 
 }

@@ -120,7 +120,8 @@ public class InteractiveElementRegistry {
 	 * 获取所有交互元素列表
 	 * @return 交互元素列表
 	 */
-	public List<InteractiveElement> getAllElements() {
+	public List<InteractiveElement> getAllElements(Page page) {
+		refresh(page);
 		return new ArrayList<>(interactiveElements);
 	}
 
@@ -145,27 +146,12 @@ public class InteractiveElementRegistry {
 	 * 生成所有元素的详细信息文本
 	 * @return 格式化的元素信息字符串
 	 */
-	public String generateElementsInfoText() {
+	public String generateElementsInfoText(Page page) {
 		StringBuilder result = new StringBuilder();
-		for (InteractiveElement element : interactiveElements) {
+		for (InteractiveElement element : getAllElements(page)) {
 			result.append(element.toString().replace("\n", "")).append("\n");
 		}
 		return result.toString();
-	}
-
-	/**
-	 * 过滤并获取特定类型的元素
-	 * @param tagName 要筛选的HTML标签名
-	 * @return 过滤后的元素列表
-	 */
-	public List<InteractiveElement> getElementsByTagName(String tagName) {
-		List<InteractiveElement> filteredElements = new ArrayList<>();
-		for (InteractiveElement element : interactiveElements) {
-			if (element.getTagName().equalsIgnoreCase(tagName)) {
-				filteredElements.add(element);
-			}
-		}
-		return filteredElements;
 	}
 
 	/**

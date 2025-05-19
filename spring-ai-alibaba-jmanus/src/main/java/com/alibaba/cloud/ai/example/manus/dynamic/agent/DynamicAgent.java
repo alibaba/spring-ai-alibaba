@@ -302,7 +302,7 @@ public class DynamicAgent extends ReActAgent {
 			String envData = collectEnvData(toolKey);
 			toolEnvDataMap.put(toolKey, envData);
 		}
-		log.info("收集到的工具环境数据: {}", toolEnvDataMap);
+		log.debug("收集到的工具环境数据: {}", toolEnvDataMap);
 
 		setEnvData(toolEnvDataMap);
 	}
