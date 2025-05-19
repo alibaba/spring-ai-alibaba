@@ -57,7 +57,8 @@ public class DynamicAgentLoader {
 			throw new IllegalArgumentException("Agent not found: " + agentName);
 		}
 
-		return new DynamicAgent(llmService, recorder, properties, entity.getAgentName(), entity.getAgentDescription(), entity.getNextStepPrompt(), entity.getAvailableToolKeys(), toolCallingManager, initialAgentSetting);
+		return new DynamicAgent(llmService, recorder, properties, entity.getAgentName(), entity.getAgentDescription(),
+				entity.getNextStepPrompt(), entity.getAvailableToolKeys(), toolCallingManager, initialAgentSetting);
 	}
 
 	public List<DynamicAgentEntity> getAllAgents() {

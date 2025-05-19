@@ -36,6 +36,10 @@ public abstract class BrowserAction {
 		this.browserUseTool = browserUseTool;
 	}
 
+	public BrowserUseTool getBrowserUseTool() {
+		return browserUseTool;
+	}
+
 	/**
 	 * 模拟人类行为
 	 * @param element Playwright的ElementHandle实例
@@ -55,6 +59,7 @@ public abstract class BrowserAction {
 	 * @return DriverWrapper
 	 */
 	protected DriverWrapper getDriverWrapper() {
+
 		return browserUseTool.getDriver();
 	}
 
