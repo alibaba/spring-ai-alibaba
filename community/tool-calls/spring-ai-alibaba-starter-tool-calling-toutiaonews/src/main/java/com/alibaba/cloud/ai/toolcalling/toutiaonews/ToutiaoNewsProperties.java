@@ -24,6 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class ToutiaoNewsProperties extends CommonToolCallProperties {
 
 	protected static final String TOUTIAO_NEWS_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".toutiaonews";
+
 	public ToutiaoNewsProperties() {
 		super("https://www.toutiao.com/hot-event/hot-board/?origin=toutiao_pc");
 	}
