@@ -17,11 +17,11 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.startupAgent;
 
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentDefinition;
 
-@DynamicAgentDefinition(agentName = "BROWSER_AGENT", agentDescription = "一个可以控制浏览器完成任务的浏览器代理", nextStepPrompt =  """
+@DynamicAgentDefinition(agentName = "BROWSER_AGENT", agentDescription = "一个可以控制浏览器完成任务的浏览器代理", nextStepPrompt = """
 		你是一个设计用于自动化浏览器任务的AI代理。你的目标是按照规则完成最终任务。
 
 		# 输入格式
-		[index] type : 文本 
+		[index] type : 文本
 			- index : 交互的数字标识符
 			- type : HTML元素类型（按钮 a : 、输入框 input: 等）
 			- 文本：元素描述

@@ -96,7 +96,8 @@ public class DynamicAgent extends ReActAgent {
 
 		try {
 			return executeWithRetry(3);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()), e);
 			thinkActRecord.recordError(e.getMessage());
 			return false;
@@ -122,10 +123,10 @@ public class DynamicAgent extends ReActAgent {
 			List<ToolCallback> callbacks = getToolCallList();
 			ChatClient chatClient = llmService.getAgentChatClient();
 			response = chatClient.prompt(userPrompt)
-					.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getPlanId()))
-					.toolCallbacks(callbacks)
-					.call()
-					.chatResponse();
+				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getPlanId()))
+				.toolCallbacks(callbacks)
+				.call()
+				.chatResponse();
 
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			String responseByLLm = response.getResult().getOutput().getText();
@@ -163,7 +164,7 @@ public class DynamicAgent extends ReActAgent {
 
 			// setData(getData());
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
-					.get(toolExecutionResult.conversationHistory().size() - 1);
+				.get(toolExecutionResult.conversationHistory().size() - 1);
 
 			llmService.getAgentMemory().add(getPlanId(), toolResponseMessage);
 			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
@@ -177,11 +178,13 @@ public class DynamicAgent extends ReActAgent {
 			// 否则返回运行状态
 			if (TerminateTool.name.equals(toolcallName)) {
 				agentExecResult = new AgentExecResult(llmCallResponse, AgentState.COMPLETED);
-			} else {
+			}
+			else {
 				agentExecResult = new AgentExecResult(llmCallResponse, AgentState.IN_PROGRESS);
 			}
 			return agentExecResult;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
 			ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse(toolCall.id(),
 					toolCall.name(), "Error: " + e.getMessage());
@@ -246,7 +249,8 @@ public class DynamicAgent extends ReActAgent {
 				if (toolCallback != null) {
 					toolCallbacks.add(toolCallback.getToolCallback());
 				}
-			} else {
+			}
+			else {
 				log.warn("Tool callback for {} not found in the map.", toolKey);
 			}
 		}
@@ -281,7 +285,7 @@ public class DynamicAgent extends ReActAgent {
 		Map<String, Object> oldMap = getEnvData();
 		toolEnvDataMap.putAll(oldMap);
 
-		//用新数据覆盖旧数据
+		// 用新数据覆盖旧数据
 		for (String toolKey : availableToolKeys) {
 			String envData = collectEnvData(toolKey);
 			toolEnvDataMap.put(toolKey, envData);

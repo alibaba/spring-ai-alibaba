@@ -1,9 +1,25 @@
+/*
+ * Copyright 2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
-import com.microsoft.playwright.ElementHandle;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Frame;
 
@@ -68,6 +84,7 @@ public class GetElementPositionByNameAction extends BrowserAction {
 
 	@Override
 	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
+		boolean isDebug = getBrowserUseTool().getManusProperties().getBrowserDebug();
 		String elementName = request.getElementName();
 		if (elementName == null || elementName.isEmpty()) {
 			return new ToolExecuteResult("Element name is required for 'get_element_position' action");
@@ -75,24 +92,22 @@ public class GetElementPositionByNameAction extends BrowserAction {
 
 		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
 
-		// 结果列表，存储所有匹配的元素位置
+		// 用于去重的集合
+		Set<String> uniqueSet = new HashSet<>();
 		List<ElementPosition> positionResults = new ArrayList<>();
 
-		// 主页面处理
-		findAndProcessElementsByLocatorForPage(page, elementName, positionResults);
-
-		// 处理所有 iframe 中的元素
+		// 统一处理所有 frame（包括主页面和所有iframe）
 		for (Frame frame : page.frames()) {
-			findAndProcessElementsByLocatorForFrame(frame, elementName, positionResults);
+			findAndProcessElementsByLocatorForFrame(frame, elementName, positionResults, uniqueSet, isDebug);
 		}
-
-		// 返回结果
 		String resultJson = JSON.toJSONString(positionResults);
 		return new ToolExecuteResult(resultJson);
 	}
 
-	private void findAndProcessElementsByLocatorForPage(Page page, String elementName, List<ElementPosition> results) {
-		com.microsoft.playwright.Locator locator = page.locator("*");
+	private void findAndProcessElementsByLocatorForFrame(Frame frame, String elementName, List<ElementPosition> results,
+			Set<String> uniqueSet, boolean isDebug) {
+		// 只查找可见且文本包含elementName的元素，不包含style标签
+		com.microsoft.playwright.Locator locator = frame.getByText(elementName);
 		int count = locator.count();
 		for (int i = 0; i < count; i++) {
 			com.microsoft.playwright.Locator nthLocator = locator.nth(i);
@@ -103,7 +118,7 @@ public class GetElementPositionByNameAction extends BrowserAction {
 			catch (Exception e) {
 				continue;
 			}
-			if (text != null && text.toLowerCase().contains(elementName.toLowerCase())) {
+			if (text != null) {
 				com.microsoft.playwright.options.BoundingBox box = null;
 				try {
 					box = nthLocator.boundingBox();
@@ -112,43 +127,15 @@ public class GetElementPositionByNameAction extends BrowserAction {
 					continue;
 				}
 				if (box != null) {
-					ElementPosition position = new ElementPosition();
-					position.setX((int) (box.x + box.width / 2));
-					position.setY((int) (box.y + box.height / 2));
-					position.setElementText(text.trim());
-					results.add(position);
-				}
-			}
-		}
-	}
-
-	private void findAndProcessElementsByLocatorForFrame(Frame frame, String elementName,
-			List<ElementPosition> results) {
-		com.microsoft.playwright.Locator locator = frame.locator("*");
-		int count = locator.count();
-		for (int i = 0; i < count; i++) {
-			com.microsoft.playwright.Locator nthLocator = locator.nth(i);
-			String text = null;
-			try {
-				text = nthLocator.textContent();
-			}
-			catch (Exception e) {
-				continue;
-			}
-			if (text != null && text.toLowerCase().contains(elementName.toLowerCase())) {
-				com.microsoft.playwright.options.BoundingBox box = null;
-				try {
-					box = nthLocator.boundingBox();
-				}
-				catch (Exception e) {
-					continue;
-				}
-				if (box != null) {
-					ElementPosition position = new ElementPosition();
-					position.setX((int) (box.x + box.width / 2));
-					position.setY((int) (box.y + box.height / 2));
-					position.setElementText(text.trim());
-					results.add(position);
+					int x = (int) (box.x + box.width / 2);
+					int y = (int) (box.y + box.height / 2);
+					String elementText = text.trim();
+					String uniqueKey = x + "," + y + "," + elementText;
+					if (!uniqueSet.contains(uniqueKey)) {
+						ElementPosition position = new ElementPosition(x, y, elementText);
+						results.add(position);
+						uniqueSet.add(uniqueKey);
+					}
 				}
 			}
 		}

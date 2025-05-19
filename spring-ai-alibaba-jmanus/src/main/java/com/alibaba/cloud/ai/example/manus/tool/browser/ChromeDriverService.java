@@ -159,4 +159,8 @@ public class ChromeDriverService {
 		this.manusProperties = manusProperties;
 	}
 
+	public ManusProperties getManusProperties() {
+		return manusProperties;
+	}
+
 }
