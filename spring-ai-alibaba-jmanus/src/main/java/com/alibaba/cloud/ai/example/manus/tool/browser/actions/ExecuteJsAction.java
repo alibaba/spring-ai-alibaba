@@ -36,8 +36,6 @@ public class ExecuteJsAction extends BrowserAction {
 		Page page = getCurrentPage(); // 获取 Playwright 的 Page 实例
 		Object result = page.evaluate(script);
 
-		refreshElements(page); // 刷新元素缓存
-
 		if (result == null) {
 			return new ToolExecuteResult("Successfully executed JavaScript code.");
 		}

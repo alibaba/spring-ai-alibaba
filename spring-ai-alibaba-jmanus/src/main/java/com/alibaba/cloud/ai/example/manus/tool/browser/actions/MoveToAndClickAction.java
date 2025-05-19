@@ -71,12 +71,10 @@ public class MoveToAndClickAction extends BrowserAction {
 				.orElse(null);
 			if (newPage != null) {
 				log.info("New tab detected, switched to: {}", newPage.url());
-				refreshElements(newPage);
 				return new ToolExecuteResult(
 						"Clicked at position (" + x + ", " + y + ") and opened in new tab: " + newPage.url());
 			}
 		}
-		refreshElements(page);
 		// 如果没有明显变化，返回普通点击成功消息
 		return new ToolExecuteResult("Clicked at position (" + x + ", " + y + ")");
 	}

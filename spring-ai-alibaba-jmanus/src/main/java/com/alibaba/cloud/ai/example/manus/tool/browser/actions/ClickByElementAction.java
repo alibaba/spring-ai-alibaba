@@ -99,7 +99,6 @@ public class ClickByElementAction extends BrowserAction {
 				newPage.waitForLoadState(com.microsoft.playwright.options.LoadState.DOMCONTENTLOADED);
 				log.info("New tab detected, switched to: {}", newPage.url());
 				getDriverWrapper().setCurrentPage(newPage);
-				refreshElements(newPage);
 				return new ToolExecuteResult("Clicked element and opened in new tab: " + newPage.url());
 			}
 		}
@@ -107,8 +106,6 @@ public class ClickByElementAction extends BrowserAction {
 			log.warn("Exception while waiting for new page: {}", e.getMessage());
 		}
 
-		// 重新刷新页面元素
-		refreshElements(page);
 		// 如果没有明显变化，返回普通点击成功消息
 		return new ToolExecuteResult("Clicked element at index " + index);
 	}
