@@ -43,12 +43,38 @@ public class MoveToAndClickAction extends BrowserAction {
 
 		// 记录点击前的窗口状态
 		List<String> beforeWindowHandles = page.context().pages().stream().map(Page::url).toList();
-
+		boolean isDebug = getBrowserUseTool().getManusProperties().getBrowserDebug();
 		try {
-			// 使用 Playwright 的 mouse API 移动并点击
+			// 1. 滚动到目标位置（让目标点尽量在视窗中央）
+			int scrollX = Math.max(0, x - page.viewportSize().width / 2);
+			int scrollY = Math.max(0, y - page.viewportSize().height / 2);
+			page.evaluate("(args) => window.scrollTo({left: args[0], top: args[1], behavior: 'instant'})",
+					new Object[] { scrollX, scrollY });
+
+			String markerId = "__move_click_marker__";
+			if (isDebug) {
+				// 2. 注入大红点（仅debug模式）
+				page.evaluate("(args) => {\n" + "  const [x, y, id] = args;\n"
+						+ "  let dot = document.getElementById(id);\n" + "  if (!dot) {\n"
+						+ "    dot = document.createElement('div');\n" + "    dot.id = id;\n"
+						+ "    dot.style.position = 'absolute';\n" + "    dot.style.left = x + 'px';\n"
+						+ "    dot.style.top = y + 'px';\n" + "    dot.style.width = '24px';\n"
+						+ "    dot.style.height = '24px';\n" + "    dot.style.background = 'red';\n"
+						+ "    dot.style.borderRadius = '50%';\n" + "    dot.style.zIndex = 99999;\n"
+						+ "    dot.style.boxShadow = '0 0 8px 4px #f00';\n" + "    dot.style.pointerEvents = 'none';\n"
+						+ "    document.body.appendChild(dot);\n" + "  }\n" + "}", new Object[] { x, y, markerId });
+			}
+
+			// 3. 鼠标移动并点击
 			page.mouse().move(x, y);
 			page.mouse().click(x, y);
 			log.info("Clicked at position ({}, {})", x, y);
+
+			if (isDebug) {
+				// 4. 移除大红点（仅debug模式）
+				page.evaluate("(id) => { const dot = document.getElementById(id); if (dot) dot.remove(); }",
+						new Object[] { markerId });
+			}
 		}
 		catch (Exception e) {
 			log.error("Failed to click at position ({}, {})", x, y, e);
