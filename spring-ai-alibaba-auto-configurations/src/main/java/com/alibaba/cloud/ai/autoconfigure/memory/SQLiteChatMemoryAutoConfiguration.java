@@ -20,9 +20,11 @@ import com.alibaba.cloud.ai.memory.jdbc.SQLiteChatMemoryRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -30,16 +32,23 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.sql.DataSource;
 
-@AutoConfiguration(after = JdbcTemplateAutoConfiguration.class, before = ChatMemoryAutoConfiguration.class)
+/**
+ * Auto-configuration for SQLite chat memory repository.
+ */
+@AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
 @ConditionalOnClass({ SQLiteChatMemoryRepository.class, DataSource.class, JdbcTemplate.class })
+@ConditionalOnProperty(prefix = "spring.ai.memory.sqlite", name = "enabled", havingValue = "true",
+		matchIfMissing = false)
 @EnableConfigurationProperties(SQLiteChatMemoryProperties.class)
 public class SQLiteChatMemoryAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(SQLiteChatMemoryAutoConfiguration.class);
 
 	@Bean
-	@ConditionalOnMissingBean
+	@Qualifier("sqliteChatMemoryRepository")
+	@ConditionalOnMissingBean(name = "sqliteChatMemoryRepository")
 	SQLiteChatMemoryRepository sqliteChatMemoryRepository(JdbcTemplate jdbcTemplate) {
+		logger.info("Configuring SQLite chat memory repository");
 		return SQLiteChatMemoryRepository.sqliteBuilder().jdbcTemplate(jdbcTemplate).build();
 	}
 
