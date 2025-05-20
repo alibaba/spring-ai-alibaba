@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.vo.ActionResult;
 import com.alibaba.cloud.ai.vo.ChatClientRunResult;
 import com.alibaba.cloud.ai.vo.TelemetryResult;
 import io.micrometer.tracing.Tracer;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +36,8 @@ import java.util.UUID;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.DefaultChatClient;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ReflectionUtils;
@@ -130,19 +133,17 @@ public class ChatClientDelegateImpl implements ChatClientDelegate {
 					client.setDefaultSystemParams(defaultChatClientRequest.getSystemParams());
 					client.setChatOptions(defaultChatClientRequest.getChatOptions());
 					client.setAdvisors(defaultChatClientRequest.getAdvisors());
-					// todo 扩展其他项
 
 					// 获取是否开启memory
-					// TODO AbstractChatMemoryAdvisor 类已删除，需优化该部分
-					// for (Advisor advisor : defaultChatClientRequest.getAdvisors()) {
-					// try {
-					// Class<?> clazz = advisor.getClass();
-					// client.setIsMemoryEnabled(AbstractChatMemoryAdvisor.class.isAssignableFrom(clazz));
-					// }
-					// catch (Exception e) {
-					// client.setIsMemoryEnabled(false);
-					// }
-					// }
+					for (Advisor advisor : defaultChatClientRequest.getAdvisors()) {
+						try {
+							Class<?> clazz = advisor.getClass();
+							client.setIsMemoryEnabled(BaseChatMemoryAdvisor.class.isAssignableFrom(clazz));
+						}
+						catch (Exception e) {
+							client.setIsMemoryEnabled(false);
+						}
+					}
 
 					// 获取chatModel并设置
 					// 目前仅支持 ModelType.CHAT 类型，暂不支持其他类型的Model
