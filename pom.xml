@@ -54,8 +54,6 @@
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-graph</module>
         <module>spring-ai-alibaba-studio</module>
-        <module>spring-ai-alibaba-starter</module>
-        <module>spring-ai-alibaba-auto-configurations</module>
 
         <!-- Spring AI Alibaba Tool Call Plugins -->
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-common</module>
@@ -132,10 +130,25 @@
 
         <!-- Spring AI Alibaba JManus -->
         <module>spring-ai-alibaba-jmanus</module>
-
-        <!-- Spring AI Alibaba ARMS Extension -->
-        <module>spring-ai-alibaba-arms-observation-autoconfigure</module>
         <module>spring-ai-alibaba-deepresearch</module>
+
+        <!-- Spring AI Alibaba Autoconfigure -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-dashscope</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-arms-observation</module>
+        <!-- Spring AI Alibaba MCP -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-client</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-server</module>
+        <!-- Spring AI Alibaba Nacos Prompt Template -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-prompt</module>
+        <!-- Spring AI Alibaba Memory -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
+
+        <module>spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
+        <module>spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
+        <module>spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-client</module>
+        <module>spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-server</module>
+        <module>spring-boot-starters/spring-ai-alibaba-starter-nacos-prompt</module>
+        <module>spring-boot-starters/spring-ai-alibaba-starter-memory</module>
 
     </modules>
     <scm>
@@ -155,7 +168,7 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.0.0-M8.1-SNAPSHOT</revision>
+        <revision>1.0.0-RC1.1</revision>
 
         <!-- Maven project basic config -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -165,7 +178,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- Spring version -->
-        <spring-ai.version>1.0.0-M8</spring-ai.version>
+        <spring-ai.version>1.0.0-RC1</spring-ai.version>
         <spring-boot.version>3.4.5</spring-boot.version>
         <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 
