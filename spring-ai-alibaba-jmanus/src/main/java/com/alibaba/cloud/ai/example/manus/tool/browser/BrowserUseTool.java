@@ -17,22 +17,7 @@ package com.alibaba.cloud.ai.example.manus.tool.browser;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.BrowserRequestVO;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ClickByElementAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.CloseTabAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ExecuteJsAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetHtmlAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetTextAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.InputTextAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.KeyEnterAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.NavigateAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.NewTabAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.RefreshAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ScreenShotAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.ScrollAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.SwitchTabAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
-import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
+import com.alibaba.cloud.ai.example.manus.tool.browser.actions.*;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.fastjson.JSON;
 import com.microsoft.playwright.Page;
@@ -84,7 +69,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			                "close_tab",
 			                "refresh",
 			                "get_element_position",
-			                "move_to_and_click"
+			                "move_to_and_click",
+			                "wait"
 			            ],
 			            "description": "The browser action to perform"
 			        },
@@ -123,6 +109,10 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			        "position_y": {
 			            "type": "integer",
 			            "description": "Y coordinate for 'move_to_and_click' action"
+			        },
+			        "wait_seconds": {
+			             "type": "integer",
+			             "description": "Seconds to wait for 'wait' action, default is 15 seconds if not specified"
 			        }
 			    },
 			    "required": [
@@ -160,6 +150,9 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			        "move_to_and_click": [
 			            "position_x",
 			            "position_y"
+			        ],
+			        "wait": [
+			             "wait_seconds"
 			        ]
 			    }
 			}
@@ -185,6 +178,7 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			- 'refresh'：刷新当前页面
 			- 'get_element_position'：通过关键词获取元素的位置坐标(x,y)
 			- 'move_to_and_click'：移动到指定的绝对位置(x,y)并点击
+			- 'wait'：等待指定的秒数，默认为15秒
 			""";
 
 	public OpenAiApi.FunctionTool getToolDefinition() {
@@ -264,6 +258,9 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 				}
 				case "move_to_and_click": {
 					return new MoveToAndClickAction(this).execute(requestVO);
+				}
+				case "wait": {
+					return new WaitAction(this).execute(requestVO);
 				}
 				default:
 					return new ToolExecuteResult("Unknown action: " + action);
