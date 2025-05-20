@@ -45,15 +45,14 @@ public class ToutiaoNewsAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Get the news from the toutiao news (获取今日头条新闻).")
-	public ToutiaoNewsSearchHotEventsService getToutiaoNewsFunction(JsonParseTool jsonParseTool,
+	public ToutiaoNewsSearchHotEventsService getToutiaoNews(JsonParseTool jsonParseTool,
 			ToutiaoNewsProperties properties) {
 		Consumer<HttpHeaders> consumer = headers -> {
 			headers.add(HttpHeaders.USER_AGENT,
 					DEFAULT_USER_AGENTS[ThreadLocalRandom.current().nextInt(DEFAULT_USER_AGENTS.length)]);
 			headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
-			headers.add(HttpHeaders.ACCEPT_ENCODING, "gzip, deflate");
 			headers.add(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9,ja;q=0.8");
-			headers.add(HttpHeaders.CONNECTION, "application/json");
+			headers.add(HttpHeaders.CONTENT_TYPE, "application/json");
 		};
 		return new ToutiaoNewsSearchHotEventsService(jsonParseTool, properties,
 				WebClientTool.builder(jsonParseTool, properties).httpHeadersConsumer(consumer).build());

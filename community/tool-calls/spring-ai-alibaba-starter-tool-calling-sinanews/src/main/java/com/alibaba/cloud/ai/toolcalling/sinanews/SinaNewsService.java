@@ -57,7 +57,7 @@ public class SinaNewsService implements Function<SinaNewsService.Request, SinaNe
 
 	protected JsonNode fetchDataFromApi() {
 		try {
-			String json = webClientTool.get(properties.getBaseUrl()).block();
+			String json = webClientTool.get("").block();
 
 			return jsonParseTool.jsonToObject(json, JsonNode.class);
 		}

@@ -44,14 +44,13 @@ public class SinaNewsAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Get the news from the Sina news (获取新浪新闻).")
-	public SinaNewsService getSinaNewsFunction(JsonParseTool jsonParseTool, SinaNewsProperties properties) {
+	public SinaNewsService getSinaNews(JsonParseTool jsonParseTool, SinaNewsProperties properties) {
 		Consumer<HttpHeaders> consumer = headers -> {
 			headers.add(HttpHeaders.USER_AGENT,
 					DEFAULT_USER_AGENTS[ThreadLocalRandom.current().nextInt(DEFAULT_USER_AGENTS.length)]);
 			headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
-			headers.add(HttpHeaders.ACCEPT_ENCODING, "gzip, deflate");
 			headers.add(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9,ja;q=0.8");
-			headers.add(HttpHeaders.CONNECTION, "application/json");
+			headers.add(HttpHeaders.CONTENT_TYPE, "application/json");
 		};
 		return new SinaNewsService(jsonParseTool, properties,
 				WebClientTool.builder(jsonParseTool, properties).httpHeadersConsumer(consumer).build());

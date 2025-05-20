@@ -29,7 +29,7 @@ import java.util.function.Function;
 public class YuqueUpdateDocService
 		implements Function<YuqueUpdateDocService.updateDocRequest, YuqueUpdateDocService.updateDocResponse> {
 
-	private static final Logger logger = LoggerFactory.getLogger(YuqueQueryDocService.class);
+	private static final Logger logger = LoggerFactory.getLogger(YuqueUpdateDocService.class);
 
 	private final WebClientTool webClientTool;
 
