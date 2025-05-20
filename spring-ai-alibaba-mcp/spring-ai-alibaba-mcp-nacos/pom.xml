@@ -14,8 +14,6 @@
     <name>Spring AI Alibaba MCP Nacos</name>
     <description>Nacos MCP for Spring AI Alibaba</description>
 
-    <properties></properties>
-
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
