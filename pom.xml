@@ -129,6 +129,7 @@
         <!-- Spring AI Alibaba Chat Memory Support -->
         <module>community/memories/spring-ai-alibaba-redis-memory</module>
         <module>community/memories/spring-ai-alibaba-jdbc-memory</module>
+        <module>community/memories/spring-ai-alibaba-elasticsearch-memory</module>
 
         <!-- Spring AI Alibaba JManus -->
         <module>spring-ai-alibaba-jmanus</module>
