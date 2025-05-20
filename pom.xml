@@ -210,6 +210,8 @@
 
         <opennlp-tools.version>2.3.3</opennlp-tools.version>
 
+        <json-path.version>2.9.0</json-path.version>
+
         <!-- CheckStyle Plugin -->
         <disable.checks>true</disable.checks>
 
