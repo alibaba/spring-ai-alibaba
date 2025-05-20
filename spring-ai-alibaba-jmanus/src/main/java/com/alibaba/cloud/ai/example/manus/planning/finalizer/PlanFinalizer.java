@@ -91,8 +91,7 @@ public class PlanFinalizer {
 
 			ChatResponse response = llmService.getPlanningChatClient()
 				.prompt(prompt)
-				.advisors(memoryAdvisor -> memoryAdvisor.param("chat_memory_conversation_id", plan.getPlanId())
-					.param("chat_memory_retrieve_size", 100))
+
 				.call()
 				.chatResponse();
 
@@ -105,6 +104,9 @@ public class PlanFinalizer {
 		catch (Exception e) {
 			log.error("Error generating summary with LLM", e);
 			throw new RuntimeException("Failed to generate summary", e);
+		}
+		finally {
+			llmService.clearConversationMemory(plan.getPlanId());
 		}
 	}
 

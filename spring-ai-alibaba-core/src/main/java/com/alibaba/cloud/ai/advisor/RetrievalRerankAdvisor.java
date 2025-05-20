@@ -20,9 +20,14 @@ import com.alibaba.cloud.ai.document.DocumentWithScore;
 import com.alibaba.cloud.ai.model.RerankModel;
 import com.alibaba.cloud.ai.model.RerankRequest;
 import com.alibaba.cloud.ai.model.RerankResponse;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.*;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
@@ -51,7 +56,7 @@ import static java.util.stream.Collectors.toList;
  * @since 1.0.0-M2
  */
 
-public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
+public class RetrievalRerankAdvisor implements CallAdvisor, StreamAdvisor {
 
 	private static final Logger logger = LoggerFactory.getLogger(RetrievalRerankAdvisor.class);
 
@@ -128,28 +133,27 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 	}
 
 	@Override
-	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
+	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
+		chatClientRequest = this.before(chatClientRequest);
 
-		advisedRequest = this.before(advisedRequest);
+		ChatClientResponse chatClientResponse = callAdvisorChain.nextCall(chatClientRequest);
 
-		AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
-
-		return this.after(advisedResponse);
+		return this.after(chatClientResponse);
 	}
 
 	@Override
-	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
-
+	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
+			StreamAdvisorChain streamAdvisorChain) {
 		// This can be executed by both blocking and non-blocking Threads
 		// E.g. a command line or Tomcat blocking Thread implementation
 		// or by a WebFlux dispatch in a non-blocking manner.
-		Flux<AdvisedResponse> advisedResponses = (this.protectFromBlocking) ?
+		Flux<ChatClientResponse> advisedResponses = (this.protectFromBlocking) ?
 		// @formatter:off
-				Mono.just(advisedRequest)
+				Mono.just(chatClientRequest)
 						.publishOn(Schedulers.boundedElastic())
 						.map(this::before)
-						.flatMapMany(request -> chain.nextAroundStream(request))
-				: chain.nextAroundStream(this.before(advisedRequest));
+						.flatMapMany(request -> streamAdvisorChain.nextStream(request))
+				: streamAdvisorChain.nextStream(this.before(chatClientRequest));
 		// @formatter:on
 
 		return advisedResponses.map(ar -> {
@@ -160,6 +164,7 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 		});
 	}
 
+	@NotNull
 	@Override
 	public String getName() {
 		return this.getClass().getSimpleName();
@@ -180,12 +185,16 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 
 	}
 
-	protected List<Document> doRerank(AdvisedRequest request, List<Document> documents) {
+	protected List<Document> doRerank(ChatClientRequest request, List<Document> documents) {
 		if (CollectionUtils.isEmpty(documents)) {
 			return documents;
 		}
-
-		var rerankRequest = new RerankRequest(request.userText(), documents);
+		String userText = "";
+		List<Message> messages = new LinkedList<>(request.prompt().getInstructions());
+		if (!messages.isEmpty() && messages.get(messages.size() - 1) instanceof UserMessage userMessage) {
+			userText = userMessage.getText();
+		}
+		var rerankRequest = new RerankRequest(userText, documents);
 		RerankResponse response = rerankModel.call(rerankRequest);
 		logger.debug("reranked documents: {}", response);
 		if (response == null || response.getResults() == null) {
@@ -200,52 +209,19 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 			.collect(toList());
 	}
 
-	private AdvisedRequest before(AdvisedRequest request) {
-
-		var context = new HashMap<>(request.adviseContext());
-
-		// 1. Advise the system text.
-		String advisedUserText = request.userText() + System.lineSeparator() + this.userTextAdvise;
-
-		var searchRequestToUse = SearchRequest.from(this.searchRequest)
-			.query(request.userText())
-			.filterExpression(doGetFilterExpression(context))
-			.build();
-
-		// 2. Search for similar documents in the vector store.
-		logger.debug("searchRequestToUse: {}", searchRequestToUse);
-		List<Document> documents = this.vectorStore.similaritySearch(searchRequestToUse);
-		logger.debug("retrieved documents: {}", documents);
-
-		// 3. Rerank documents for query
-		documents = doRerank(request, documents);
-
-		context.put(RETRIEVED_DOCUMENTS, documents);
-
-		// 4. Create the context from the documents.
-		String documentContext = documents.stream()
-			.map(Document::getText)
-			.collect(Collectors.joining(System.lineSeparator()));
-
-		// 5. Advise the user parameters.
-		Map<String, Object> advisedUserParams = new HashMap<>(request.userParams());
-		advisedUserParams.put("question_answer_context", documentContext);
-
-		return AdvisedRequest.from(request)
-			.userText(advisedUserText)
-			.userParams(advisedUserParams)
-			.adviseContext(context)
-			.build();
+	private ChatClientRequest before(ChatClientRequest request) {
+		// TODO 需要补充新版本实现
+		return request;
 	}
 
-	private AdvisedResponse after(AdvisedResponse advisedResponse) {
+	private ChatClientResponse after(ChatClientResponse advisedResponse) {
 		// fix meta data loss issue since ChatResponse.from won't copy meta info like id,
 		// model, usage, etc. This will
 		// be changed once new version of spring ai core is updated.
 		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder();
-		metadataBuilder.keyValue(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
+		metadataBuilder.keyValue(RETRIEVED_DOCUMENTS, advisedResponse.context().get(RETRIEVED_DOCUMENTS));
 
-		ChatResponseMetadata metadata = advisedResponse.response().getMetadata();
+		ChatResponseMetadata metadata = advisedResponse.chatResponse().getMetadata();
 		if (metadata != null) {
 			metadataBuilder.id(metadata.getId());
 			metadataBuilder.model(metadata.getModel());
@@ -259,22 +235,21 @@ public class RetrievalRerankAdvisor implements CallAroundAdvisor, StreamAroundAd
 			}
 		}
 
-		ChatResponse chatResponse = new ChatResponse(advisedResponse.response().getResults(), metadataBuilder.build());
-		return new AdvisedResponse(chatResponse, advisedResponse.adviseContext());
+		ChatResponse chatResponse = new ChatResponse(advisedResponse.chatResponse().getResults(),
+				metadataBuilder.build());
+		return new ChatClientResponse(chatResponse, advisedResponse.context());
 	}
 
 	/**
-	 * Controls whether {@link RetrievalRerankAdvisor#after(AdvisedResponse)} should be
-	 * executed.<br />
+	 * Controls whether {@link RetrievalRerankAdvisor#after)} should be executed.<br />
 	 * Called only on Flux elements that contain a finish reason. Usually the last element
 	 * in the Flux. The response advisor can modify the elements before they are returned
 	 * to the client.<br />
-	 * Inspired by
-	 * {@link org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor}.
+	 * Inspired by {@link RetrievalRerankAdvisor}.
 	 */
-	private Predicate<AdvisedResponse> onFinishReason() {
+	private Predicate<ChatClientResponse> onFinishReason() {
 
-		return (advisedResponse) -> advisedResponse.response()
+		return (advisedResponse) -> advisedResponse.chatResponse()
 			.getResults()
 			.stream()
 			.anyMatch(result -> result != null && result.getMetadata() != null

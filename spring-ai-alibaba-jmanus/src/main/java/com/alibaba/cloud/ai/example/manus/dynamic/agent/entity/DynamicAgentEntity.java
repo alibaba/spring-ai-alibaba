@@ -43,6 +43,7 @@ public class DynamicAgentEntity {
 	private String agentDescription;
 
 	@Column(nullable = false, length = 40000)
+	@Deprecated
 	private String systemPrompt;
 
 	@Column(nullable = false, length = 40000)
@@ -81,10 +82,20 @@ public class DynamicAgentEntity {
 		this.agentDescription = agentDescription;
 	}
 
+	/**
+	 * 以后不用这个了， 把两段合并为一段 nextStepPrompt 。 目前实现会忽略这个内容了。
+	 * @return
+	 */
+	@Deprecated
 	public String getSystemPrompt() {
 		return systemPrompt;
 	}
 
+	/**
+	 * 以后不用这个了， 把两段合并为一段 nextStepPrompt 。 目前实现会忽略这个内容了。
+	 * @return
+	 */
+	@Deprecated
 	public void setSystemPrompt(String systemPrompt) {
 		this.systemPrompt = systemPrompt;
 	}

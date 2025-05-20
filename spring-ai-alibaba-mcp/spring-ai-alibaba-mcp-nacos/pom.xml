@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -12,11 +11,10 @@
 
     <artifactId>spring-ai-alibaba-mcp-nacos</artifactId>
     <version>${revision}</version>
-    <name>spring-ai-alibaba-mcp-nacos</name>
-    <description>spring-ai-alibaba-mcp-nacos</description>
+    <name>Spring AI Alibaba MCP Nacos</name>
+    <description>Nacos MCP for Spring AI Alibaba</description>
 
-    <properties>
-    </properties>
+    <properties></properties>
 
     <dependencies>
         <dependency>
@@ -31,20 +29,20 @@
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-mcp-server</artifactId>
-		</dependency>
+        </dependency>
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
         </dependency>
-		<dependency>
-			<groupId>com.alibaba.nacos</groupId>
-			<artifactId>nacos-client</artifactId>
-			<version>${nacos-client.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-annotations</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client</artifactId>
+            <version>${nacos-client.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.projectreactor.netty</groupId>
             <artifactId>reactor-netty-http</artifactId>
@@ -54,7 +52,7 @@
             <artifactId>json-path</artifactId>
             <version>2.9.0</version>
         </dependency>
-	</dependencies>
+    </dependencies>
 
     <build>
         <plugins>
