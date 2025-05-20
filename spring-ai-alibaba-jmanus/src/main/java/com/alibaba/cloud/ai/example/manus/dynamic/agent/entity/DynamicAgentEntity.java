@@ -41,7 +41,7 @@ public class DynamicAgentEntity {
 
 	@Column(nullable = false, length = 1000)
 	private String agentDescription;
-	
+
 	@Column(nullable = true, length = 40000)
 	@Deprecated
 	private String systemPrompt = "";
