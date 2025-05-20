@@ -19,8 +19,9 @@ import java.util.List;
 import java.util.Random;
 
 import com.microsoft.playwright.ElementHandle;
+import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-
+import com.microsoft.playwright.options.WaitForSelectorState;
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
@@ -41,58 +42,45 @@ public class InputTextAction extends BrowserAction {
 			return new ToolExecuteResult("Index and text are required for 'input_text' action");
 		}
 
-		// 获取交互元素（InteractiveElement）
-		List<InteractiveElement> interactiveElements = getInteractiveElements(page);
+		// 获取交互元素（InteractiveElement），支持所有 frame（包括 iframe）
+		List<InteractiveElement> interactiveElements = getInteractiveElements(page); // 已支持递归 frame
 		if (index < 0 || index >= interactiveElements.size()) {
 			return new ToolExecuteResult("Element with index " + index + " not found");
 		}
 
-		com.alibaba.cloud.ai.example.manus.tool.browser.InteractiveElement inputElement = interactiveElements
-			.get(index);
+		InteractiveElement inputElement = interactiveElements.get(index);
+
 		String tagName = inputElement.getTagName();
 		if (!"input".equals(tagName) && !"textarea".equals(tagName)) {
 			return new ToolExecuteResult("Element at index " + index + " is not an input element");
 		}
 
-		// 先清空输入框内容
-		ElementHandle handle = inputElement.getLocator().elementHandle();
-		handle.click();
-		handle.fill("");
-
-		// 再输入新内容
-		typeWithHumanDelay(handle, text);
-		// 直接通过 InteractiveElementRegistry 刷新缓存，避免使用已废弃方法
-		return new ToolExecuteResult("成功输入: '" + text + "' 到指定的对象.其索引编号为 ： " + index);
-	}
-
-	private void typeWithHumanDelay(ElementHandle element, String text) {
-		// 模拟人类输入速度
-		Random random = new Random();
-
-		// 首先点击元素以确保获得焦点
-		element.click();
-
-		for (char c : text.toCharArray()) {
-			try {
-				// 使用type方法代替evaluate，以触发正确的键盘事件
-				element.type(String.valueOf(c), new ElementHandle.TypeOptions().setDelay(random.nextInt(100) + 50));
-
-				// 在字符之间添加一个短暂的停顿，使输入更加自然
-				Thread.sleep(random.nextInt(50) + 20);
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				break;
-			}
-		}
-
+		// 获取元素定位器
+		Locator elementLocator = inputElement.getLocator();
+		// 3. 尝试 fill
 		try {
-			// 输入完成后增加一个短暂的停顿
-			Thread.sleep(random.nextInt(150) + 100);
+			elementLocator.fill(""); // 先清空
+			// 设置每个字符输入间隔 100ms，可根据需要调整
+			com.microsoft.playwright.Locator.PressSequentiallyOptions options = new com.microsoft.playwright.Locator.PressSequentiallyOptions().setDelay(100);
+			elementLocator.pressSequentially(text, options);
+
+		} catch (Exception e) {
+			// 4. fill 失败，尝试 pressSequentially
+			try {
+				elementLocator.fill(""); // 再清空一次
+				elementLocator.fill(text); // 直接填充
+			} catch (Exception e2) {
+				// 5. 还不行，直接用 JS 赋值并触发 input 事件
+				try {
+					elementLocator.evaluate(
+							"(el, value) => { el.value = value; el.dispatchEvent(new Event('input', { bubbles: true })); }",
+							text);
+				} catch (Exception e3) {
+					return new ToolExecuteResult("输入失败: " + e3.getMessage());
+				}
+			}
 		}
-		catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
+		return new ToolExecuteResult("成功输入: '" + text + "' 到指定的对象.其索引编号为 ： " + index);
 	}
 
 }

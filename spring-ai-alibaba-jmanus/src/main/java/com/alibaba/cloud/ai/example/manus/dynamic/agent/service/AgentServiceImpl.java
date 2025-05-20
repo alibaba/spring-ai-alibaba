@@ -197,7 +197,7 @@ public class AgentServiceImpl implements AgentService {
 			log.warn(
 					"Agent[{}]的SystemPrompt不为空， 但属性已经废弃，只保留nextPrompt， 本次将agent 的内容合并，如需要该内容在prompt生效，请直接更新界面的唯一的那个prompt , 当前制定的值: {}",
 					agentName, nextPrompt);
-			entity.setSystemPrompt(null);
+			entity.setSystemPrompt(" ");
 		}
 		return entity;
 	}
