@@ -15,14 +15,19 @@
  */
 package com.alibaba.cloud.ai.toolcalling.common;
 
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.slf4j.Logger;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
 
 /**
  * @author vlsmb
@@ -89,6 +94,27 @@ public final class CommonToolCallUtils {
 	public static boolean isInvalidateRequestParams(Object... params) {
 		return !Arrays.stream(params)
 			.allMatch(param -> param != null && (!(param instanceof String) || StringUtils.hasText((String) param)));
+	}
+
+	/**
+	 * Build a common WebClient with custom headers, timeout, and memory parameters.
+	 * @param headers Custom headers
+	 * @param connectTimeoutMillis Connection timeout in milliseconds
+	 * @param responseTimeoutSeconds Response timeout in seconds
+	 * @param maxInMemorySize Maximum memory size in bytes
+	 * @return WebClient instance
+	 */
+	public static WebClient buildWebClient(Map<String, String> headers, int connectTimeoutMillis,
+			int responseTimeoutSeconds, int maxInMemorySize) {
+		WebClient.Builder builder = WebClient.builder();
+		if (headers != null) {
+			headers.forEach(builder::defaultHeader);
+		}
+		builder.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(maxInMemorySize));
+		builder.clientConnector(new ReactorClientHttpConnector(HttpClient.create()
+			.option(io.netty.channel.ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMillis)
+			.responseTimeout(Duration.ofSeconds(responseTimeoutSeconds))));
+		return builder.build();
 	}
 
 	/**
