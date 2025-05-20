@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
-public class WaitAction extends BrowserAction{
+public class WaitAction extends BrowserAction {
 
     private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GetTextAction.class);
 
@@ -30,7 +30,7 @@ public class WaitAction extends BrowserAction{
     @Override
     public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
         try {
-            if (request.getWaitSeconds() == null){
+            if (request.getWaitSeconds() == null) {
                 log.warn("Wait seconds is null, set to 60 seconds");
                 request.setWaitSeconds(60);
             }

@@ -78,6 +78,7 @@ public class BrowserRequestVO {
 	 */
 	@JSONField(name = "position_y")
 	private Integer positionY;
+
 	/**
 	 * 等待的秒数，用于wait操作
 	 */
