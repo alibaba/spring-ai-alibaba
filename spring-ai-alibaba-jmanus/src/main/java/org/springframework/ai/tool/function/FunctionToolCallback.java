@@ -68,7 +68,7 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 	private final ToolCallResultConverter toolCallResultConverter;
 
 	public FunctionToolCallback(ToolDefinition toolDefinition, @Nullable ToolMetadata toolMetadata, Type toolInputType,
-								BiFunction<I, ToolContext, O> toolFunction, @Nullable ToolCallResultConverter toolCallResultConverter) {
+			BiFunction<I, ToolContext, O> toolFunction, @Nullable ToolCallResultConverter toolCallResultConverter) {
 		Assert.notNull(toolDefinition, "toolDefinition cannot be null");
 		Assert.notNull(toolInputType, "toolInputType cannot be null");
 		Assert.notNull(toolFunction, "toolFunction cannot be null");
@@ -215,12 +215,12 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 		public FunctionToolCallback<I, O> build() {
 			Assert.notNull(this.inputType, "inputType cannot be null");
 			var toolDefinition = DefaultToolDefinition.builder()
-					.name(this.name)
-					.description(StringUtils.hasText(this.description) ? this.description
-							: ToolUtils.getToolDescriptionFromName(this.name))
-					.inputSchema(StringUtils.hasText(this.inputSchema) ? this.inputSchema
-							: JsonSchemaGenerator.generateForType(this.inputType))
-					.build();
+				.name(this.name)
+				.description(StringUtils.hasText(this.description) ? this.description
+						: ToolUtils.getToolDescriptionFromName(this.name))
+				.inputSchema(StringUtils.hasText(this.inputSchema) ? this.inputSchema
+						: JsonSchemaGenerator.generateForType(this.inputType))
+				.build();
 			return new FunctionToolCallback<>(toolDefinition, this.toolMetadata, this.inputType, this.toolFunction,
 					this.toolCallResultConverter);
 		}
