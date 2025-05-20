@@ -135,6 +135,7 @@
 
         <!-- Spring AI Alibaba ARMS Extension -->
         <module>spring-ai-alibaba-arms-observation-autoconfigure</module>
+        <module>spring-ai-alibaba-deepresearch</module>
 
     </modules>
     <scm>

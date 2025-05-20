@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: spring-ai-alibaba-deepresearch
+
+  ai:
+    openai:
+      api-key: ${DASHSCOPE_API_KEY}
+      base-url: https://dashscope.aliyuncs.com/compatible-mode
+      chat:
+        options:
+          model: qwen-max
+    tavily:
+      api-key: ${TAVILY_API_KEY}
+      max-results: 3
+      include-raw-content: true
+      include-images: true
+      include-image-descriptions: true
+    mcp:
+      client:
+        sse:
+          servers-configuration: classpath:mcp-servers.json
+        stdio:
+          servers-configuration: classpath:mcp-servers.json
+        toolcallback:
+          enabled: true
+
+
+logging:
+  level:
+    com.alibaba.cloud.ai.example.deepresearch: debug
