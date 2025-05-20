@@ -53,6 +53,7 @@
         <module>spring-ai-alibaba-mcp</module>
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-graph</module>
+        <module>spring-ai-alibaba-jmanus</module>
         <module>spring-ai-alibaba-studio</module>
 
         <!-- Spring AI Alibaba Tool Call Plugins -->
@@ -125,33 +126,34 @@
         <module>community/vector-stores/spring-ai-alibaba-starter-oceanbase-store</module>
 
         <!-- Spring AI Alibaba Chat Memory Support -->
-        <module>community/memories/spring-ai-alibaba-redis-memory</module>
         <module>community/memories/spring-ai-alibaba-jdbc-memory</module>
+        <module>community/memories/spring-ai-alibaba-redis-memory</module>
         <module>community/memories/spring-ai-alibaba-elasticsearch-memory</module>
 
-        <!-- Spring AI Alibaba JManus -->
-        <module>spring-ai-alibaba-jmanus</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
+
+        <!-- Spring AI Alibaba ARMS Extension -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-arms-observation</module>
 
         <!-- Spring AI Alibaba Autoconfigure -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-dashscope</module>
-        <!-- Spring AI Alibaba ARMS Extension -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-arms-observation</module>
+
         <!-- Spring AI Alibaba MCP -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-client</module>
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-server</module>
+
         <!-- Spring AI Alibaba Nacos Prompt Template -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-prompt</module>
-        <!-- Spring AI Alibaba Memory -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
 
-        <module>spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
-        <module>spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
-        <module>spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-client</module>
-        <module>spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-server</module>
-        <module>spring-boot-starters/spring-ai-alibaba-starter-nacos-prompt</module>
-        <module>spring-boot-starters/spring-ai-alibaba-starter-memory</module>
-
+        <!-- Spring AI Alibaba Spring Boot Starters -->
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-memory</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-prompt</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-client</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-server</module>
     </modules>
+
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
         <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
@@ -172,9 +174,9 @@
         <revision>1.0.0-RC1.1</revision>
 
         <!-- Maven project basic config -->
+        <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <java.version>17</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
