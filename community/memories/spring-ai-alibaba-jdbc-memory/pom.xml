@@ -64,7 +64,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-model-chat-memory-jdbc</artifactId>
+            <artifactId>spring-ai-model-chat-memory-repository-jdbc</artifactId>
             <version>${spring-ai.version}</version>
         </dependency>
 

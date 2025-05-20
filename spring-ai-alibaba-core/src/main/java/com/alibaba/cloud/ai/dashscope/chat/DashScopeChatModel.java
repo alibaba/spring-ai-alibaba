@@ -55,7 +55,6 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.chat.metadata.UsageUtils;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -72,6 +71,7 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -319,7 +319,7 @@ public class DashScopeChatModel implements ChatModel {
 
 		DashScopeApi.TokenUsage usage = chatCompletion.usage();
 		Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(usage) : new EmptyUsage();
-		Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
+		Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
 
 		return new ChatResponse(generations, this.from(chatCompletion, accumulatedUsage));
 	}
