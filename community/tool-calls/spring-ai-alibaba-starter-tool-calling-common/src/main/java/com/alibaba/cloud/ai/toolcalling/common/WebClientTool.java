@@ -166,6 +166,31 @@ public class WebClientTool {
 		return this.post(uri, new HashMap<>(), value);
 	}
 
+	public <T> Mono<String> put(String uri, MultiValueMap<String, String> params, Map<String, ?> variables, T value,
+			MediaType mediaType) {
+		return Mono.fromCallable(() -> {
+			if (mediaType.equals(MediaType.APPLICATION_JSON))
+				return jsonParseTool.objectToJson(value);
+			else
+				return value;
+		})
+			.flatMap(json -> webClient.put()
+				.uri(uriBuilder -> uriBuilder.path(uri).queryParams(params).build(variables))
+				.contentType(mediaType)
+				.bodyValue(json)
+				.retrieve()
+				.bodyToMono(String.class))
+			.onErrorMap(JsonProcessingException.class, e -> new RuntimeException("Serialization failed", e));
+	}
+
+	public <T> Mono<String> put(String uri, T value) {
+		return this.put(uri, new LinkedMultiValueMap<>(), new HashMap<>(), value, MediaType.APPLICATION_JSON);
+	}
+
+	public Mono<String> delete(String uri) {
+		return webClient.delete().uri(uri).retrieve().bodyToMono(String.class);
+	}
+
 	public WebClient getWebClient() {
 		return webClient;
 	}
