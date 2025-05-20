@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2025 the original author or authors.
  *
@@ -18,17 +17,19 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import io.micrometer.common.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
-import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -44,10 +45,13 @@ import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
+import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
+
+import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 public class DynamicAgent extends ReActAgent {
 
@@ -56,8 +60,6 @@ public class DynamicAgent extends ReActAgent {
 	private final String agentName;
 
 	private final String agentDescription;
-
-	private final String systemPrompt;
 
 	private final String nextStepPrompt;
 
@@ -73,15 +75,25 @@ public class DynamicAgent extends ReActAgent {
 
 	private final ToolCallingManager toolCallingManager;
 
-	private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
+	public void clearUp(String planId) {
+		Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContext();
+		for (ToolCallBackContext toolCallBack : toolCallBackContext.values()) {
+			try {
+				toolCallBack.getFunctionInstance().cleanup(planId);
+			}
+			catch (Exception e) {
+				log.error("Error cleaning up tool callback context: {}", e.getMessage(), e);
+			}
+		}
+	}
 
 	public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-			ManusProperties manusProperties, String name, String description, String systemPrompt,
-			String nextStepPrompt, List<String> availableToolKeys, ToolCallingManager toolCallingManager) {
-		super(llmService, planExecutionRecorder, manusProperties);
+			ManusProperties manusProperties, String name, String description, String nextStepPrompt,
+			List<String> availableToolKeys, ToolCallingManager toolCallingManager,
+			Map<String, Object> initialAgentSetting) {
+		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting);
 		this.agentName = name;
 		this.agentDescription = description;
-		this.systemPrompt = systemPrompt;
 		this.nextStepPrompt = nextStepPrompt;
 		this.availableToolKeys = availableToolKeys;
 		this.toolCallingManager = toolCallingManager;
@@ -89,31 +101,44 @@ public class DynamicAgent extends ReActAgent {
 
 	@Override
 	protected boolean think() {
+		collectAndSetEnvDataForTools();
+
 		AgentExecutionRecord planExecutionRecord = planExecutionRecorder.getCurrentAgentExecutionRecord(getPlanId());
 		thinkActRecord = new ThinkActRecord(planExecutionRecord.getId());
 		thinkActRecord.setActStartTime(LocalDateTime.now());
 		planExecutionRecorder.recordThinkActExecution(getPlanId(), planExecutionRecord.getId(), thinkActRecord);
 
 		try {
+			return executeWithRetry(3);
+		}
+		catch (Exception e) {
+			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()), e);
+			thinkActRecord.recordError(e.getMessage());
+			return false;
+		}
+	}
+
+	private boolean executeWithRetry(int maxRetries) throws Exception {
+		int attempt = 0;
+		while (attempt < maxRetries) {
+			attempt++;
 			List<Message> messages = new ArrayList<>();
 			addThinkPrompt(messages);
 
 			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
 			Message nextStepMessage = getNextStepWithEnvMessage();
 			messages.add(nextStepMessage);
-			thinkActRecord.startThinking(messages.toString());// The `ToolCallAgent` class
-			// in the
+			thinkActRecord.startThinking(messages.toString());
 
 			log.debug("Messages prepared for the prompt: {}", messages);
 
 			userPrompt = new Prompt(messages, chatOptions);
 
-			response = llmService.getAgentChatClient(getPlanId())
-				.getChatClient()
-				.prompt(userPrompt)
-				.advisors(memoryAdvisor -> memoryAdvisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, getPlanId())
-					.param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 100))
-				.toolCallbacks(getToolCallList())
+			List<ToolCallback> callbacks = getToolCallList();
+			ChatClient chatClient = llmService.getAgentChatClient();
+			response = chatClient.prompt(userPrompt)
+				.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, getPlanId()))
+				.toolCallbacks(callbacks)
 				.call()
 				.chatResponse();
 
@@ -125,42 +150,37 @@ public class DynamicAgent extends ReActAgent {
 			log.info(String.format("✨ %s's thoughts: %s", getName(), responseByLLm));
 			log.info(String.format("🛠️ %s selected %d tools to use", getName(), toolCalls.size()));
 
-			if (responseByLLm != null && !responseByLLm.isEmpty()) {
-				log.info(String.format("💬 %s's response: %s", getName(), responseByLLm));
-			}
 			if (!toolCalls.isEmpty()) {
 				log.info(String.format("🧰 Tools being prepared: %s",
 						toolCalls.stream().map(ToolCall::name).collect(Collectors.toList())));
 				thinkActRecord.setActionNeeded(true);
 				thinkActRecord.setToolName(toolCalls.get(0).name());
 				thinkActRecord.setToolParameters(toolCalls.get(0).arguments());
+				thinkActRecord.setStatus("SUCCESS");
+				return true;
 			}
 
-			thinkActRecord.setStatus("SUCCESS");
+			log.warn("Attempt {}: No tools selected. Retrying...", attempt);
+		}
 
-			return !toolCalls.isEmpty();
-		}
-		catch (Exception e) {
-			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()));
-			thinkActRecord.recordError(e.getMessage());
-			return false;
-		}
+		thinkActRecord.setStatus("FAILED");
+		return false;
 	}
 
 	@Override
 	protected AgentExecResult act() {
 		try {
-			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
+			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
+			ToolCall toolCall = toolCalls.get(0);
 
 			thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
 
-			addEnvData(EXECUTION_ENV_KEY_STRING, collectEnvData(toolCall.name()));
-			setData(getData());
+			// setData(getData());
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
 				.get(toolExecutionResult.conversationHistory().size() - 1);
 
-			llmService.getAgentChatClient(getPlanId()).getMemory().add(getPlanId(), toolResponseMessage);
+			llmService.getAgentMemory().add(getPlanId(), toolResponseMessage);
 			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
 
 			log.info(String.format("🔧 Tool %s's executing result: %s", getName(), llmCallResponse));
@@ -183,7 +203,7 @@ public class DynamicAgent extends ReActAgent {
 			ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse(toolCall.id(),
 					toolCall.name(), "Error: " + e.getMessage());
 			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(List.of(toolResponse), Map.of());
-			llmService.getAgentChatClient(getPlanId()).getMemory().add(getPlanId(), toolResponseMessage);
+			llmService.getAgentMemory().add(getPlanId(), toolResponseMessage);
 			log.error(e.getMessage());
 
 			thinkActRecord.recordError(e.getMessage());
@@ -204,23 +224,33 @@ public class DynamicAgent extends ReActAgent {
 
 	@Override
 	protected Message getNextStepWithEnvMessage() {
-		String nextStepPrompt = """
-
-				CURRENT STEP ENVIRONMENT STATUS:
-				{current_step_env_data}
-
-				""";
-		nextStepPrompt = nextStepPrompt += this.nextStepPrompt;
-		PromptTemplate promptTemplate = new PromptTemplate(nextStepPrompt);
-		Message userMessage = promptTemplate.createMessage(getData());
+		if (StringUtils.isBlank(this.nextStepPrompt)) {
+			return new UserMessage("");
+		}
+		PromptTemplate promptTemplate = new PromptTemplate(this.nextStepPrompt);
+		Message userMessage = promptTemplate.createMessage(getMergedData());
 		return userMessage;
+	}
+
+	private Map<String, Object> getMergedData() {
+		Map<String, Object> data = new HashMap<>();
+		data.putAll(getInitSettingData());
+		data.put(PlanExecutor.EXECUTION_ENV_STRING_KEY, convertEnvDataToString());
+		return data;
 	}
 
 	@Override
 	protected Message addThinkPrompt(List<Message> messages) {
 		super.addThinkPrompt(messages);
-		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(this.systemPrompt);
-		Message systemMessage = promptTemplate.createMessage(getData());
+		String envPrompt = """
+
+				当前步骤的环境信息是:
+				{current_step_env_data}
+
+				""";
+
+		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(envPrompt);
+		Message systemMessage = promptTemplate.createMessage(getMergedData());
 		messages.add(systemMessage);
 		return systemMessage;
 	}
@@ -244,7 +274,7 @@ public class DynamicAgent extends ReActAgent {
 	}
 
 	public void addEnvData(String key, String value) {
-		Map<String, Object> data = super.getData();
+		Map<String, Object> data = super.getInitSettingData();
 		if (data == null) {
 			throw new IllegalStateException("Data map is null. Cannot add environment data.");
 		}
@@ -262,6 +292,38 @@ public class DynamicAgent extends ReActAgent {
 		}
 		// 如果没有找到对应的工具回调上下文，返回空字符串
 		return "";
+	}
+
+	public void collectAndSetEnvDataForTools() {
+
+		Map<String, Object> toolEnvDataMap = new HashMap<>();
+
+		Map<String, Object> oldMap = getEnvData();
+		toolEnvDataMap.putAll(oldMap);
+
+		// 用新数据覆盖旧数据
+		for (String toolKey : availableToolKeys) {
+			String envData = collectEnvData(toolKey);
+			toolEnvDataMap.put(toolKey, envData);
+		}
+		log.debug("收集到的工具环境数据: {}", toolEnvDataMap);
+
+		setEnvData(toolEnvDataMap);
+	}
+
+	public String convertEnvDataToString() {
+		StringBuilder envDataStringBuilder = new StringBuilder();
+
+		for (String toolKey : availableToolKeys) {
+			Object value = getEnvData().get(toolKey);
+			if (value == null || value.toString().isEmpty()) {
+				continue; // Skip tools with no data
+			}
+			envDataStringBuilder.append(toolKey).append(" 的上下文信息：\n");
+			envDataStringBuilder.append("    ").append(value.toString()).append("\n");
+		}
+
+		return envDataStringBuilder.toString();
 	}
 
 }

@@ -15,10 +15,12 @@
  */
 package com.alibaba.cloud.ai.example.manus.planning.executor;
 
+import cn.hutool.core.collection.CollectionUtil;
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
+import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
@@ -41,8 +43,6 @@ import org.slf4j.LoggerFactory;
  */
 public class PlanExecutor {
 
-	private static final String EXECUTION_ENV_KEY_STRING = "current_step_env_data";
-
 	private static final Logger logger = LoggerFactory.getLogger(PlanExecutor.class);
 
 	protected final PlanExecutionRecorder recorder;
@@ -54,26 +54,56 @@ public class PlanExecutor {
 
 	private final AgentService agentService;
 
-	public PlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder, AgentService agentService) {
+	private LlmService llmService;
+
+	// Define static final strings for the keys used in executorParams
+	public static final String PLAN_STATUS_KEY = "planStatus";
+
+	public static final String CURRENT_STEP_INDEX_KEY = "currentStepIndex";
+
+	public static final String STEP_TEXT_KEY = "stepText";
+
+	public static final String EXTRA_PARAMS_KEY = "extraParams";
+
+	public static final String EXECUTION_ENV_STRING_KEY = "current_step_env_data";
+
+	public PlanExecutor(List<DynamicAgentEntity> agents, PlanExecutionRecorder recorder, AgentService agentService,
+			LlmService llmService) {
 		this.agents = agents;
 		this.recorder = recorder;
 		this.agentService = agentService;
+		this.llmService = llmService;
 	}
 
 	/**
 	 * 执行整个计划的所有步骤
-	 * @param plan 要执行的计划
-	 * @return 执行结果
+	 * @param context 执行上下文，包含用户请求和执行的过程信息
 	 */
 	public void executeAllSteps(ExecutionContext context) {
-		recordPlanExecutionStart(context);
-		ExecutionPlan plan = context.getPlan();
-		List<ExecutionStep> steps = plan.getSteps();
+		BaseAgent executor = null;
+		try {
+			recordPlanExecutionStart(context);
+			ExecutionPlan plan = context.getPlan();
+			List<ExecutionStep> steps = plan.getSteps();
 
-		for (ExecutionStep step : steps) {
-			executeStep(step, context);
+			if (CollectionUtil.isNotEmpty(steps)) {
+				for (ExecutionStep step : steps) {
+					BaseAgent executorinStep = executeStep(step, context);
+					if (executorinStep != null) {
+						executor = executorinStep;
+					}
+				}
+			}
+
+			context.setSuccess(true);
 		}
-		context.setSuccess(true);
+		finally {
+			String planId = context.getPlanId();
+			llmService.clearAgentMemory(planId);
+			if (executor != null) {
+				executor.clearUp(planId);
+			}
+		}
 	}
 
 	/**
@@ -82,35 +112,35 @@ public class PlanExecutor {
 	 * @param stepInfo 步骤信息
 	 * @return 步骤执行结果
 	 */
-	private void executeStep(ExecutionStep step, ExecutionContext context) {
-
-		String stepType = getStepFromStepReq(step.getStepRequirement());
-		BaseAgent executor = getExecutorForStep(stepType, context);
-		if (executor == null) {
-			logger.error("No executor found for step type: {}", stepType);
-			step.setResult("No executor found for step type: " + stepType);
-			return;
-		}
-		int stepIndex = step.getStepIndex();
-
-		step.setAgent(executor);
-		executor.setState(AgentState.IN_PROGRESS);
-		recordStepStart(step, context);
+	private BaseAgent executeStep(ExecutionStep step, ExecutionContext context) {
 
 		try {
+			String stepType = getStepFromStepReq(step.getStepRequirement());
+
+			int stepIndex = step.getStepIndex();
+
 			String planStatus = context.getPlan().getPlanExecutionStateStringFormat(true);
 
 			String stepText = step.getStepRequirement();
-			Map<String, Object> executorParams = new HashMap<>();
-			executorParams.put("planStatus", planStatus);
-			executorParams.put("currentStepIndex", String.valueOf(stepIndex));
-			executorParams.put("stepText", stepText);
-			executorParams.put("extraParams", context.getPlan().getExecutionParams());
-			executorParams.put(EXECUTION_ENV_KEY_STRING, "");
-			String stepResultStr = executor.run(executorParams);
+			Map<String, Object> initSettings = new HashMap<>();
+			initSettings.put(PLAN_STATUS_KEY, planStatus);
+			initSettings.put(CURRENT_STEP_INDEX_KEY, String.valueOf(stepIndex));
+			initSettings.put(STEP_TEXT_KEY, stepText);
+			initSettings.put(EXTRA_PARAMS_KEY, context.getPlan().getExecutionParams());
+			BaseAgent executor = getExecutorForStep(stepType, context, initSettings);
+			if (executor == null) {
+				logger.error("No executor found for step type: {}", stepType);
+				step.setResult("No executor found for step type: " + stepType);
+				return null;
+			}
+			step.setAgent(executor);
+			executor.setState(AgentState.IN_PROGRESS);
+
+			recordStepStart(step, context);
+			String stepResultStr = executor.run();
 			// Execute the step
 			step.setResult(stepResultStr);
-
+			return executor;
 		}
 		catch (Exception e) {
 			logger.error("Error executing step: {}", e.getMessage(), e);
@@ -119,7 +149,7 @@ public class PlanExecutor {
 		finally {
 			recordStepEnd(step, context);
 		}
-
+		return null;
 	}
 
 	private String getStepFromStepReq(String stepRequirement) {
@@ -136,11 +166,12 @@ public class PlanExecutor {
 	 * @param stepType 步骤类型
 	 * @return 对应的执行器
 	 */
-	private BaseAgent getExecutorForStep(String stepType, ExecutionContext context) {
+	private BaseAgent getExecutorForStep(String stepType, ExecutionContext context, Map<String, Object> initSettings) {
 		// 根据步骤类型获取对应的执行器
 		for (DynamicAgentEntity agent : agents) {
 			if (agent.getAgentName().equalsIgnoreCase(stepType)) {
-				return agentService.createDynamicBaseAgent(agent.getAgentName(), context.getPlan().getPlanId());
+				return agentService.createDynamicBaseAgent(agent.getAgentName(), context.getPlan().getPlanId(),
+						initSettings);
 			}
 		}
 		throw new IllegalArgumentException(

@@ -28,8 +28,6 @@ public @interface DynamicAgentDefinition {
 
 	String agentDescription();
 
-	String systemPrompt();
-
 	String nextStepPrompt();
 
 	String[] availableToolKeys();
