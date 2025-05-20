@@ -352,6 +352,7 @@ public class LlmService {
 			.build();
 
 		// // 每个agent执行过程中，用独立的memroy
+
 		this.agentExecutionClient = ChatClient.builder(chatModel)
 			.defaultAdvisors(MessageChatMemoryAdvisor.builder(agentMemory).build())
 			.defaultAdvisors(new SimpleLoggerAdvisor())
