@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -187,7 +188,7 @@ public class AgentServiceImpl implements AgentService {
 
 	private DynamicAgentEntity mergePrompts(DynamicAgentEntity entity, String agentName) {
 		// 这里的SystemPrompt属性已经废弃，直接使用nextStepPrompt
-		if (entity.getSystemPrompt() != null || !entity.getSystemPrompt().trim().isEmpty()) {
+		if (StringUtils.isNotBlank(entity.getSystemPrompt())) {
 			String systemPrompt = entity.getSystemPrompt();
 			String nextPrompt = entity.getNextStepPrompt();
 			// 这里的SystemPrompt属性已经废弃，直接使用nextStepPrompt
@@ -197,7 +198,7 @@ public class AgentServiceImpl implements AgentService {
 			log.warn(
 					"Agent[{}]的SystemPrompt不为空， 但属性已经废弃，只保留nextPrompt， 本次将agent 的内容合并，如需要该内容在prompt生效，请直接更新界面的唯一的那个prompt , 当前制定的值: {}",
 					agentName, nextPrompt);
-			entity.setSystemPrompt(null);
+			entity.setSystemPrompt(" ");
 		}
 		return entity;
 	}

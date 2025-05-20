@@ -55,6 +55,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 		2. 专注于基于文本的信息提取
 		3. 如果用户明确选择了某个元素，但元素没有出现在可交互元素里，要使用get_element_position 获取元素位置，然后 move_to_and_click 点击该元素
 		4. 重要：你必须在回复中使用至少一个工具！
+		5. get_text 和 get_Html都只能获取当前页面的信息，因此不支持url参数
 
 		考虑可见的内容和当前视口之外可能存在的内容。
 		有条理地行动 - 记住你的进度和迄今为止学到的知识。
