@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -56,12 +57,6 @@ public class AgentServiceImpl implements AgentService {
 	private LlmService llmService;
 
 	@Autowired
-	private PlanExecutionRecorder planExecutionRecorder;
-
-	@Autowired
-	private ManusProperties manusProperties;
-
-	@Autowired
 	@Lazy
 	private ToolCallingManager toolCallingManager;
 
@@ -91,11 +86,13 @@ public class AgentServiceImpl implements AgentService {
 			// 检查是否已存在同名Agent
 			DynamicAgentEntity existingAgent = repository.findByAgentName(config.getName());
 			if (existingAgent != null) {
-				log.info("发现同名Agent: {}，返回已存在的Agent", config.getName());
-				return mapToAgentConfig(existingAgent);
+				log.info("发现同名Agent: {}，更新Agent", config.getName());
+				config.setId(existingAgent.getId().toString());
+				return updateAgent(config);
 			}
 
 			DynamicAgentEntity entity = new DynamicAgentEntity();
+			entity = mergePrompts(entity, config.getName());
 			updateEntityFromConfig(entity, config);
 			entity = repository.save(entity);
 			log.info("成功创建新Agent: {}", config.getName());
@@ -154,6 +151,7 @@ public class AgentServiceImpl implements AgentService {
 
 	private AgentConfig mapToAgentConfig(DynamicAgentEntity entity) {
 		AgentConfig config = new AgentConfig();
+		entity = mergePrompts(entity, entity.getAgentName());
 		config.setId(entity.getId().toString());
 		config.setName(entity.getAgentName());
 		config.setDescription(entity.getAgentDescription());
@@ -167,8 +165,9 @@ public class AgentServiceImpl implements AgentService {
 	private void updateEntityFromConfig(DynamicAgentEntity entity, AgentConfig config) {
 		entity.setAgentName(config.getName());
 		entity.setAgentDescription(config.getDescription());
-		entity.setSystemPrompt(config.getSystemPrompt());
-		entity.setNextStepPrompt(config.getNextStepPrompt());
+		String nextStepPrompt = config.getNextStepPrompt();
+		entity = mergePrompts(entity, config.getName());
+		entity.setNextStepPrompt(nextStepPrompt);
 
 		// 1. 创建新集合，保证唯一性和顺序
 		java.util.Set<String> toolSet = new java.util.LinkedHashSet<>();
@@ -187,14 +186,31 @@ public class AgentServiceImpl implements AgentService {
 		entity.setClassName(config.getName());
 	}
 
+	private DynamicAgentEntity mergePrompts(DynamicAgentEntity entity, String agentName) {
+		// 这里的SystemPrompt属性已经废弃，直接使用nextStepPrompt
+		if (StringUtils.isNotBlank(entity.getSystemPrompt())) {
+			String systemPrompt = entity.getSystemPrompt();
+			String nextPrompt = entity.getNextStepPrompt();
+			// 这里的SystemPrompt属性已经废弃，直接使用nextStepPrompt
+			if (nextPrompt != null && !nextPrompt.trim().isEmpty()) {
+				nextPrompt = systemPrompt + "\n" + nextPrompt;
+			}
+			log.warn(
+					"Agent[{}]的SystemPrompt不为空， 但属性已经废弃，只保留nextPrompt， 本次将agent 的内容合并，如需要该内容在prompt生效，请直接更新界面的唯一的那个prompt , 当前制定的值: {}",
+					agentName, nextPrompt);
+			entity.setSystemPrompt(" ");
+		}
+		return entity;
+	}
+
 	@Override
-	public BaseAgent createDynamicBaseAgent(String name, String planId) {
+	public BaseAgent createDynamicBaseAgent(String name, String planId, Map<String, Object> initialAgentSetting) {
 
 		log.info("创建新的BaseAgent: {}, planId: {}", name, planId);
 
 		try {
 			// 通过dynamicAgentLoader加载已存在的Agent
-			DynamicAgent agent = dynamicAgentLoader.loadAgent(name);
+			DynamicAgent agent = dynamicAgentLoader.loadAgent(name, initialAgentSetting);
 
 			// 设置planId
 			agent.setPlanId(planId);
