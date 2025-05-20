@@ -14,10 +14,7 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
 -->
-
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.alibaba.cloud.ai</groupId>
@@ -27,14 +24,14 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-starter-document-parser-bshtml</artifactId>
+    <packaging>jar</packaging>
     <name>Spring AI Alibaba Starter Document Parser Bshtml</name>
     <description>document-parser-bshtml for Spring AI Alibaba</description>
-    <packaging>jar</packaging>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
-        <url>https://github.com/alibaba/spring-ai-alibaba</url>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
         <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
 
     <properties>

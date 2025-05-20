@@ -15,45 +15,58 @@
  */
 package com.alibaba.cloud.ai.toolcalling.kuaidi100;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * <a href="https://api.kuaidi100.com/manager/v2/myinfo/enterprise">Obtain the
+ * authorization key and customer value for kuaidi100.com</a>, They correspond to the
+ * configuration items apiKey and appId respectively.<br>
+ *
+ * You can also set it through environment variables:<br>
+ * KUAIDI100_KEY<br>
+ * KUAIDI100_CUSTOMER<br>
+ *
  * @author XiaoYunTao
  * @since 2024/12/25
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.kuaidi100")
-public class Kuaidi100Properties {
+@ConfigurationProperties(prefix = Kuaidi100Properties.PREFIX)
+public class Kuaidi100Properties extends CommonToolCallProperties {
 
-	/**
-	 * 授权key <a href="https://api.kuaidi100.com/manager/v2/myinfo/enterprise">获取授权key</a>
-	 */
-	private String key;
+	public static final String PREFIX = CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX + ".kuaidi100";
 
-	/**
-	 * customer
-	 * <a href="https://api.kuaidi100.com/manager/v2/myinfo/enterprise">获取customer</a>
-	 */
-	private String customer;
+	public static final String QUERY_BASE_URL = "https://www.kuaidi100.com/";
 
-	public Kuaidi100Properties(String key, String customer) {
-		this.key = key;
-		this.customer = customer;
+	public Kuaidi100Properties() {
+		super(QUERY_BASE_URL);
+		this.setPropertiesFromEnv("KUAIDI100_KEY", null, "KUAIDI100_CUSTOMER", null);
 	}
 
+	/**
+	 * @param key key value
+	 * @deprecated use {@link #setApiKey(String)} instead
+	 */
+	@Deprecated
 	public void setKey(String key) {
-		this.key = key;
+		this.setApiKey(key);
 	}
 
+	/**
+	 * @param customer customer value
+	 * @deprecated use {@link #setAppId(String)} instead
+	 */
+	@Deprecated
 	public void setCustomer(String customer) {
-		this.customer = customer;
+		this.setAppId(customer);
 	}
 
 	public String getKey() {
-		return key;
+		return getApiKey();
 	}
 
 	public String getCustomer() {
-		return customer;
+		return getAppId();
 	}
 
 }

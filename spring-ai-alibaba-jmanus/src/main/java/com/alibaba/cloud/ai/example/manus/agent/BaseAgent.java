@@ -74,9 +74,14 @@ public abstract class BaseAgent {
 
 	private int currentStep = 0;
 
-	private Map<String, Object> data = new HashMap<>();
+	// Change the data map to an immutable object and initialize it properly
+	private final Map<String, Object> initSettingData;
+
+	private Map<String, Object> envData = new HashMap<>();
 
 	protected PlanExecutionRecorder planExecutionRecorder;
+
+	public abstract void clearUp(String planId);
 
 	/**
 	 * 获取智能体的名称
@@ -127,7 +132,7 @@ public abstract class BaseAgent {
 				- 全局计划信息:
 				{planStatus}
 
-				- 当前要做的步骤要求 :
+				- 当前要做的步骤要求(这个步骤是需要当前智能体完成的!) :
 				STEP {currentStepIndex} :{stepText}
 
 				- 当前步骤的上下文信息:
@@ -136,13 +141,15 @@ public abstract class BaseAgent {
 				重要说明：
 				1. 使用工具调用时，不需要额外的任何解释说明！
 				2. 不要在工具调用前提供推理或描述！
-				3. 专注于立即行动而非解释！
+				3. 做且只做当前要做的步骤要求中的内容
+				4. 如果当前要做的步骤要求已经做完，则调用terminate工具来完成当前步骤。
+				5. 全局目标 是用来有个全局认识的，不要在当前步骤中去完成这个全局目标。
 
 				""".formatted(osName, osVersion, osArch, currentDateTime);
 
 		SystemPromptTemplate promptTemplate = new SystemPromptTemplate(stepPrompt);
 
-		Message systemMessage = promptTemplate.createMessage(getData());
+		Message systemMessage = promptTemplate.createMessage(getInitSettingData());
 
 		messages.add(systemMessage);
 		return systemMessage;
@@ -161,20 +168,19 @@ public abstract class BaseAgent {
 	public abstract List<ToolCallback> getToolCallList();
 
 	public BaseAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
-			ManusProperties manusProperties) {
+			ManusProperties manusProperties, Map<String, Object> initialAgentSetting) {
 		this.llmService = llmService;
 		this.planExecutionRecorder = planExecutionRecorder;
 		this.manusProperties = manusProperties;
 		this.maxSteps = manusProperties.getMaxSteps();
+		this.initSettingData = Collections.unmodifiableMap(new HashMap<>(initialAgentSetting));
 	}
 
-	public String run(Map<String, Object> data) {
+	public String run() {
 		currentStep = 0;
 		if (state != AgentState.IN_PROGRESS) {
 			throw new IllegalStateException("Cannot run agent from state: " + state);
 		}
-
-		setData(data);
 
 		// Create agent execution record
 		AgentExecutionRecord agentRecord = new AgentExecutionRecord(getPlanId(), getName(), getDescription());
@@ -240,7 +246,7 @@ public abstract class BaseAgent {
 			state = AgentState.COMPLETED; // Reset state after execution
 
 			agentRecord.setStatus(state.toString());
-			llmService.removeAgentChatClient(planId);
+			llmService.clearAgentMemory(planId);
 		}
 		return results.isEmpty() ? "" : results.get(results.size() - 1);
 	}
@@ -273,7 +279,7 @@ public abstract class BaseAgent {
 	 */
 	protected boolean isStuck() {
 		// 目前判断是如果三次没有调用工具就认为是卡住了，就退出当前step。
-		List<Message> memoryEntries = llmService.getAgentChatClient(getPlanId()).getMemory().get(getPlanId(), 6);
+		List<Message> memoryEntries = llmService.getAgentMemory().get(getPlanId());
 		int zeroToolCallCount = 0;
 		for (Message msg : memoryEntries) {
 			if (msg instanceof AssistantMessage) {
@@ -311,12 +317,8 @@ public abstract class BaseAgent {
 	 * 不要修改这个方法的实现，如果你需要传递上下文，继承并修改setData方法，这样可以提高getData()的的效率。
 	 * @return 包含智能体上下文数据的Map对象
 	 */
-	protected final Map<String, Object> getData() {
-		return data;
-	}
-
-	protected void setData(Map<String, Object> data) {
-		this.data = data;
+	protected final Map<String, Object> getInitSettingData() {
+		return initSettingData;
 	}
 
 	public ManusProperties getManusProperties() {
@@ -342,6 +344,14 @@ public abstract class BaseAgent {
 			return state;
 		}
 
+	}
+
+	public Map<String, Object> getEnvData() {
+		return envData;
+	}
+
+	public void setEnvData(Map<String, Object> envData) {
+		this.envData = Collections.unmodifiableMap(new HashMap<>(envData));
 	}
 
 }

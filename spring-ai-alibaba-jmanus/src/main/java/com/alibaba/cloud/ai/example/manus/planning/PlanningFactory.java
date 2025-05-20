@@ -132,7 +132,7 @@ public class PlanningFactory {
 		PlanningTool planningTool = new PlanningTool();
 
 		PlanCreator planCreator = new PlanCreator(agentEntities, llmService, planningTool, recorder);
-		PlanExecutor planExecutor = new PlanExecutor(agentEntities, recorder, agentService);
+		PlanExecutor planExecutor = new PlanExecutor(agentEntities, recorder, agentService, llmService);
 		PlanFinalizer planFinalizer = new PlanFinalizer(llmService, recorder);
 
 		PlanningCoordinator planningCoordinator = new PlanningCoordinator(planCreator, planExecutor, planFinalizer);
@@ -173,7 +173,7 @@ public class PlanningFactory {
 		toolDefinitions.add(new TextFileOperator(CodeUtils.WORKING_DIR, textFileService));
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
-		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks();
+		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
 		for (McpServiceEntity toolCallback : functionCallbacks) {
 			String serviceGroup = toolCallback.getServiceGroup();
 			ToolCallback[] tCallbacks = toolCallback.getAsyncMcpToolCallbackProvider().getToolCallbacks();
