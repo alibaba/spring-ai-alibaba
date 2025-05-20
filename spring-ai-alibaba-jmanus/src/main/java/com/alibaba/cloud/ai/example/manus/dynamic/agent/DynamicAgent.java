@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import io.micrometer.common.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +31,7 @@ import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -222,7 +224,9 @@ public class DynamicAgent extends ReActAgent {
 
 	@Override
 	protected Message getNextStepWithEnvMessage() {
-
+		if (StringUtils.isBlank(this.nextStepPrompt)) {
+			return new UserMessage("");
+		}
 		PromptTemplate promptTemplate = new PromptTemplate(this.nextStepPrompt);
 		Message userMessage = promptTemplate.createMessage(getMergedData());
 		return userMessage;
