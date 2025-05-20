@@ -20,31 +20,32 @@ import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 
 public class WaitAction extends BrowserAction {
 
-    private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GetTextAction.class);
+	private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GetTextAction.class);
 
-    public WaitAction(BrowserUseTool browserUseTool) {
-        super(browserUseTool);
-    }
+	public WaitAction(BrowserUseTool browserUseTool) {
+		super(browserUseTool);
+	}
 
+	@Override
+	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
+		try {
+			if (request.getWaitSeconds() == null) {
+				log.warn("Wait seconds is null, set to 60 seconds");
+				request.setWaitSeconds(60);
+			}
+			String msg = "🕒 等待 " + request.getWaitSeconds() + " 秒";
+			log.info(msg);
 
-    @Override
-    public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-        try {
-            if (request.getWaitSeconds() == null) {
-                log.warn("Wait seconds is null, set to 60 seconds");
-                request.setWaitSeconds(60);
-            }
-            String msg = "🕒 等待 " + request.getWaitSeconds() + " 秒";
-            log.info(msg);
+			// 执行等待
+			Thread.sleep(request.getWaitSeconds() * 1000);
+			return new ToolExecuteResult(msg);
+		}
+		catch (InterruptedException e) {
+			String errorMsg = "等待操作被中断: " + e.getMessage();
+			log.error(errorMsg, e);
+			return new ToolExecuteResult(errorMsg);
 
-            // 执行等待
-            Thread.sleep(request.getWaitSeconds() * 1000);
-            return new ToolExecuteResult(msg);
-        } catch (InterruptedException e) {
-            String errorMsg = "等待操作被中断: " + e.getMessage();
-            log.error(errorMsg, e);
-            return new ToolExecuteResult(errorMsg);
+		}
+	}
 
-        }
-    }
 }

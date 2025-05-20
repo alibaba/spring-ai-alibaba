@@ -172,4 +172,5 @@ public class BrowserRequestVO {
 	public void setWaitSeconds(Integer waitSeconds) {
 		this.waitSeconds = waitSeconds;
 	}
+
 }
