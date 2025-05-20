@@ -85,9 +85,45 @@ public class ManusProperties {
 		this.consoleQuery = consoleQuery;
 	}
 
+	@ConfigProperty(group = "manus", subGroup = "browser", key = "requestTimeout",
+			path = "manus.browser.requestTimeout", description = "浏览器请求超时时间(秒)", defaultValue = "180",
+			inputType = ConfigInputType.NUMBER)
+	private volatile Integer browserRequestTimeout;
+
+	@ConfigProperty(group = "manus", subGroup = "browser", key = "debug", path = "manus.browser.debug",
+			description = "浏览器debug模式", defaultValue = "false", inputType = ConfigInputType.CHECKBOX,
+			options = { @ConfigOption(value = "true", label = "是"), @ConfigOption(value = "false", label = "否") })
+	private volatile Boolean browserDebug;
+
 	@ConfigProperty(group = "manus", subGroup = "agent", key = "maxSteps", path = "manus.maxSteps",
 			description = "智能体执行最大步数", defaultValue = "20", inputType = ConfigInputType.NUMBER)
 	private volatile Integer maxSteps;
+
+	public Integer getBrowserRequestTimeout() {
+		String configPath = "manus.browser.requestTimeout";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			browserRequestTimeout = Integer.valueOf(value);
+		}
+		return browserRequestTimeout;
+	}
+
+	public void setBrowserRequestTimeout(Integer browserRequestTimeout) {
+		this.browserRequestTimeout = browserRequestTimeout;
+	}
+
+	public Boolean getBrowserDebug() {
+		String configPath = "manus.browser.debug";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			browserDebug = Boolean.valueOf(value);
+		}
+		return browserDebug;
+	}
+
+	public void setBrowserDebug(Boolean browserDebug) {
+		this.browserDebug = browserDebug;
+	}
 
 	public Integer getMaxSteps() {
 		String configPath = "manus.maxSteps";
