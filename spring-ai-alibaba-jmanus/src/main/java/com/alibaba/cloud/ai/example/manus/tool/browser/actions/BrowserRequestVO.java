@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.browser.actions;
 
-import com.alibaba.fastjson.annotation.JSONField;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * 浏览器工具请求对象 用于封装浏览器操作的请求参数
@@ -52,31 +52,31 @@ public class BrowserRequestVO {
 	/**
 	 * 滚动像素，用于scroll操作 正数向下滚动，负数向上滚动
 	 */
-	@JSONField(name = "scroll_amount")
+	@JsonProperty("scroll_amount")
 	private Integer scrollAmount;
 
 	/**
 	 * 标签页ID，用于switch_tab操作
 	 */
-	@JSONField(name = "tab_id")
+	@JsonProperty("tab_id")
 	private Integer tabId;
 
 	/**
 	 * 元素名称，用于get_element_position操作
 	 */
-	@JSONField(name = "element_name")
+	@JsonProperty("element_name")
 	private String elementName;
 
 	/**
 	 * X坐标，用于move_to_and_click操作
 	 */
-	@JSONField(name = "position_x")
+	@JsonProperty("position_x")
 	private Integer positionX;
 
 	/**
 	 * Y坐标，用于move_to_and_click操作
 	 */
-	@JSONField(name = "position_y")
+	@JsonProperty("position_y")
 	private Integer positionY;
 
 	public String getAction() {

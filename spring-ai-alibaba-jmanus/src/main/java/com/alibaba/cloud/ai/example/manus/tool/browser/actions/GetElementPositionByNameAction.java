@@ -20,12 +20,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Frame;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.fastjson.JSON;
 
 public class GetElementPositionByNameAction extends BrowserAction {
 
@@ -100,8 +100,13 @@ public class GetElementPositionByNameAction extends BrowserAction {
 		for (Frame frame : page.frames()) {
 			findAndProcessElementsByLocatorForFrame(frame, elementName, positionResults, uniqueSet, isDebug);
 		}
-		String resultJson = JSON.toJSONString(positionResults);
-		return new ToolExecuteResult(resultJson);
+		// Add exception handling for JSON serialization
+		try {
+			String resultJson = new ObjectMapper().writeValueAsString(positionResults);
+			return new ToolExecuteResult(resultJson);
+		} catch (Exception e) {
+			return new ToolExecuteResult("Error serializing JSON: " + e.getMessage());
+		}
 	}
 
 	private void findAndProcessElementsByLocatorForFrame(Frame frame, String elementName, List<ElementPosition> results,
@@ -185,7 +190,7 @@ public class GetElementPositionByNameAction extends BrowserAction {
 												try { document.body.removeChild(tag); } catch(e){}
 											}, 1200);
 										})();
-									""", box.x, box.y, box.width, box.height, x, y, JSON.toJSONString(elementText));
+									""", box.x, box.y, box.width, box.height, x, y, new ObjectMapper().writeValueAsString(elementText));
 							frame.evaluate(highlightScript);
 						}
 						catch (Exception e) {

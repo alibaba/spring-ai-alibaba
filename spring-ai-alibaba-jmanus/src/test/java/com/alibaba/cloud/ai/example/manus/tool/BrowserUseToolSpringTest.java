@@ -47,7 +47,9 @@ import com.alibaba.cloud.ai.example.manus.tool.browser.actions.BrowserRequestVO;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.GetElementPositionByNameAction;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.MoveToAndClickAction;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.microsoft.playwright.Page;
 
 /**
@@ -73,6 +75,8 @@ class BrowserUseToolSpringTest {
 
 	@Autowired
 	private ManusProperties manusProperties;
+
+	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	@BeforeEach
 	void setUp() {
@@ -411,7 +415,7 @@ class BrowserUseToolSpringTest {
 			log.info("获取到'验证码登录'元素位置信息: {}", positionResult.getOutput());
 
 			// 解析JSON结果获取坐标
-			List<?> positionsList = JSON.parseArray(positionResult.getOutput());
+			List<?> positionsList = objectMapper.readValue(positionResult.getOutput(), new TypeReference<List<?>>() {});
 			Assertions.assertFalse(positionsList.isEmpty(), "未找到'APP登录'元素");
 
 			// 获取第一个匹配元素的位置信息
@@ -522,8 +526,13 @@ class BrowserUseToolSpringTest {
 			params.put("text", text);
 		}
 
-		String toolInput = JSON.toJSONString(params);
-		return browserUseTool.run(toolInput);
+		try {
+			String toolInput = objectMapper.writeValueAsString(params);
+			return browserUseTool.run(toolInput);
+		} catch (JsonProcessingException e) {
+			log.error("Error serializing parameters to JSON", e);
+			throw new RuntimeException("Failed to serialize parameters", e);
+		}
 	}
 
 }

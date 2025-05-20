@@ -23,6 +23,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
+import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserType;
@@ -46,8 +49,71 @@ public class ChromeDriverService {
 
 	private ManusProperties manusProperties;
 
+	// Initialize ObjectMapper instance
+	private static final ObjectMapper objectMapper = new ObjectMapper();
+
+	/**
+	 * 共享目录 用来存cookies
+	 */
+	/**
+	 * 共享目录 用来存cookies
+	 */
+	private String sharedDir;
+
+	/**
+	 * 获取当前共享目录
+	 */
+	public String getSharedDir() {
+		return sharedDir;
+	}
+
+	/**
+	 * 保存所有driver中的cookies到全局共享目录（cookies.json）
+	 */
+	public void saveCookiesToSharedDir() {
+		// 取第一个可用 driver
+		DriverWrapper driver = drivers.values().stream().findFirst().orElse(null);
+		if (driver == null) {
+			log.warn("No driver found for saving cookies");
+			return;
+		}
+		try {
+			List<com.microsoft.playwright.options.Cookie> cookies = driver.getCurrentPage().context().cookies();
+			String cookieFile = sharedDir + "/cookies.json";
+			try (java.io.FileWriter writer = new java.io.FileWriter(cookieFile)) {
+				writer.write(objectMapper.writeValueAsString(cookies));
+			}
+			log.info("Cookies saved to {}", cookieFile);
+		} catch (Exception e) {
+			log.error("Failed to save cookies", e);
+		}
+	}
+
+	/**
+	 * 从全局共享目录加载cookies到所有driver
+	 */
+	public void loadCookiesFromSharedDir() {
+		String cookieFile = sharedDir + "/cookies.json";
+		java.io.File file = new java.io.File(cookieFile);
+		if (!file.exists()) {
+			log.warn("Cookie file does not exist: {}", cookieFile);
+			return;
+		}
+		try (java.io.FileReader reader = new java.io.FileReader(cookieFile)) {
+			// Replace FastJSON's JSON.parseArray with Jackson's objectMapper.readValue
+			List<com.microsoft.playwright.options.Cookie> cookies = objectMapper.readValue(reader, new TypeReference<List<com.microsoft.playwright.options.Cookie>>() {});
+			for (DriverWrapper driver : drivers.values()) {
+				driver.getCurrentPage().context().addCookies(cookies);
+			}
+			log.info("Cookies loaded from {} to all drivers", cookieFile);
+		} catch (Exception e) {
+			log.error("Failed to load cookies for all drivers", e);
+		}
+	}
+
 	public ChromeDriverService(ManusProperties manusProperties) {
 		this.manusProperties = manusProperties;
+		this.sharedDir = CodeUtils.getSharedDirectory(manusProperties.getBaseDir(), "playwright");
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			log.info("JVM shutting down - cleaning up Playwright processes");
 			cleanupAllPlaywrightProcesses();

@@ -1,0 +1,166 @@
+package com.alibaba.cloud.ai.example.manus.tool;
+
+import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.tool.metadata.ToolMetadata;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * LLM表单输入工具：支持带标签的多输入项和描述说明。
+ */
+public class FormInputTool implements ToolCallBiFunctionDef {
+
+    private static final Logger log = LoggerFactory.getLogger(FormInputTool.class);
+
+    private static final String PARAMETERS = """
+        {
+          "type": "object",
+          "properties": {
+            "inputs": {
+              "type": "array",
+              "description": "输入项列表，每项包含 label 和 value 字段",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "label": { "type": "string", "description": "输入项标签" },
+                  "value": { "type": "string", "description": "输入内容" }
+                },
+                "required": ["label", "value"]
+              }
+            },
+            "description": {
+              "type": "string",
+              "description": "如何填写这些输入项的说明"
+            }
+          },
+          "required": ["inputs", "description"]
+        }
+        """;
+
+    public static final String name = "form_input";
+
+    private static final String description = """
+        提供一个带标签的多输入项表单工具。LLM可通过本工具提交多个输入项（每项有label和内容），并附带填写说明。
+        适用于需要结构化输入的场景。
+        """;
+
+    public static OpenAiApi.FunctionTool getToolDefinition() {
+        OpenAiApi.FunctionTool.Function function = new OpenAiApi.FunctionTool.Function(description, name, PARAMETERS);
+        return new OpenAiApi.FunctionTool(function);
+    }
+
+    public static FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback() {
+        return FunctionToolCallback.builder(name, new FormInputTool())
+                .description(description)
+                .inputSchema(PARAMETERS)
+                .inputType(String.class)
+                .toolMetadata(ToolMetadata.builder().returnDirect(true).build())
+                .build();
+    }
+
+    // 数据结构：
+    /**
+     * 表单输入项，包含标签和对应的值。 */
+    public static class InputItem {
+        private String label;
+        private String value;
+        public InputItem() {}
+        public InputItem(String label, String value) { this.label = label; this.value = value; }
+        public String getLabel() { return label; }
+        public void setLabel(String label) { this.label = label; }
+        public String getValue() { return value; }
+        public void setValue(String value) { this.value = value; }
+    }
+    /**
+     * 用户提交的表单数据，包含输入项列表和说明。 */
+    public static class UserFormInput {
+        private List<InputItem> inputs;
+        private String description;
+        public UserFormInput() {}
+        public UserFormInput(List<InputItem> inputs, String description) {
+            this.inputs = inputs;
+            this.description = description;
+        }
+        public List<InputItem> getInputs() { return inputs; }
+        public void setInputs(List<InputItem> inputs) { this.inputs = inputs; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+    }
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Override
+    public ToolExecuteResult apply(String s, ToolContext toolContext) {
+        log.info("FormInputTool input: {}", s);
+        return new ToolExecuteResult(s);
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String getDescription() {
+        return description;
+    }
+
+    @Override
+    public String getParameters() {
+        return PARAMETERS;
+    }
+
+    @Override
+    public Class<?> getInputType() {
+        return Map.class;
+    }
+
+    @Override
+    public boolean isReturnDirect() {
+        return true;
+    }
+
+    @Override
+    public void setPlanId(String planId) {
+        // 可选实现
+    }
+
+    @Override
+    public void cleanup(String planId) {
+        // 可选实现
+    }
+
+    @Override
+    public String getServiceGroup() {
+        return "default-service-group";
+    }
+
+    // 存储用户提交的表单输入
+    private UserFormInput userFormInput;
+
+    /**
+     * 获取当前工具状态，包括表单说明和输入项
+     */
+    @Override
+    public String getCurrentToolStateString() {
+        if (userFormInput == null) {
+            return "FormInputTool 状态：未接收到用户输入";
+        }
+        try {
+            return String.format("FormInputTool 状态：\n说明：%s\n输入项：%s",
+                    userFormInput.getDescription(),
+                    objectMapper.writeValueAsString(userFormInput.getInputs()));
+        } catch (JsonProcessingException e) {
+            log.error("Error serializing userFormInput inputs", e);
+            return "FormInputTool 状态：序列化输入项时出错";
+        }
+    }
+}

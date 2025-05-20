@@ -156,4 +156,21 @@ public class ManusProperties {
 		this.resetAgents = resetAgents;
 	}
 
+	@ConfigProperty(group = "manus", subGroup = "general", key = "baseDir", path = "manus.baseDir",
+			description = "manus根目录", defaultValue = "", inputType = ConfigInputType.TEXT)
+	private volatile String baseDir = "";
+
+	public String getBaseDir() {
+		String configPath = "manus.baseDir";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			baseDir = value;
+		}
+		return baseDir;
+	}
+
+	public void setBaseDir(String baseDir) {
+		this.baseDir = baseDir;
+	}
+
 }

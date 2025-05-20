@@ -64,7 +64,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -87,8 +86,6 @@ public class PlanningFactory {
 	private AgentService agentService;
 
 	private final McpService mcpService;
-
-	private ConcurrentHashMap<String, PlanningCoordinator> flowMap = new ConcurrentHashMap<>();
 
 	@Autowired
 	@Lazy
@@ -113,16 +110,6 @@ public class PlanningFactory {
 		this.mcpService = mcpService;
 	}
 
-	// public PlanningCoordinator getOrCreatePlanningFlow(String planId) {
-	// PlanningCoordinator flow = flowMap.computeIfAbsent(planId, key -> {
-	// return createPlanningCoordinator(planId);
-	// });
-	// return flow;
-	// }
-
-	// public boolean removePlanningFlow(String planId) {
-	// return flowMap.remove(planId) != null;
-	// }
 
 	public PlanningCoordinator createPlanningCoordinator(String planId) {
 
@@ -168,9 +155,9 @@ public class PlanningFactory {
 		// 添加所有工具定义
 		toolDefinitions.add(BrowserUseTool.getInstance(chromeDriverService));
 		toolDefinitions.add(new TerminateTool(planId));
-		toolDefinitions.add(new Bash(CodeUtils.WORKING_DIR));
+		toolDefinitions.add(new Bash(manusProperties));
 		toolDefinitions.add(new DocLoaderTool());
-		toolDefinitions.add(new TextFileOperator(CodeUtils.WORKING_DIR, textFileService));
+		toolDefinitions.add(new TextFileOperator(textFileService));
 		toolDefinitions.add(new GoogleSearch());
 		toolDefinitions.add(new PythonExecute());
 		List<McpServiceEntity> functionCallbacks = mcpService.getFunctionCallbacks(planId);
