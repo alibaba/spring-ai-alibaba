@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import io.micrometer.common.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -187,7 +188,7 @@ public class AgentServiceImpl implements AgentService {
 
 	private DynamicAgentEntity mergePrompts(DynamicAgentEntity entity, String agentName) {
 		// 这里的SystemPrompt属性已经废弃，直接使用nextStepPrompt
-		if (entity.getSystemPrompt() != null || !entity.getSystemPrompt().trim().isEmpty()) {
+		if (StringUtils.isNotBlank(entity.getSystemPrompt())) {
 			String systemPrompt = entity.getSystemPrompt();
 			String nextPrompt = entity.getNextStepPrompt();
 			// 这里的SystemPrompt属性已经废弃，直接使用nextStepPrompt
