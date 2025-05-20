@@ -139,4 +139,25 @@ public final class CommonToolCallUtils {
 		}
 	}
 
+	/**
+	 * Build a common WebClient with custom headers, timeout, and memory parameters.
+	 * @param headers Custom headers
+	 * @param connectTimeoutMillis Connection timeout in milliseconds
+	 * @param responseTimeoutSeconds Response timeout in seconds
+	 * @param maxInMemorySize Maximum memory size in bytes
+	 * @return WebClient instance
+	 */
+	public static WebClient buildWebClient(Map<String, String> headers, int connectTimeoutMillis,
+			int responseTimeoutSeconds, int maxInMemorySize) {
+		WebClient.Builder builder = WebClient.builder();
+		if (headers != null) {
+			headers.forEach(builder::defaultHeader);
+		}
+		builder.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(maxInMemorySize));
+		builder.clientConnector(new ReactorClientHttpConnector(HttpClient.create()
+			.option(io.netty.channel.ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMillis)
+			.responseTimeout(Duration.ofSeconds(responseTimeoutSeconds))));
+		return builder.build();
+	}
+
 }
