@@ -1,6 +1,0 @@
-com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegistryAutoConfiguration
-com.alibaba.cloud.ai.mcp.nacos.client.NacosMcpSseClientAutoConfiguration
-com.alibaba.cloud.ai.mcp.nacos.client.NacosMcpClientAutoConfiguration
-com.alibaba.cloud.ai.mcp.nacos.client.NacosMcpToolCallbackAutoConfiguration
-com.alibaba.cloud.ai.mcp.nacos.dynamic.server.config.NacosDynamicMcpServerAutoConfiguration
-

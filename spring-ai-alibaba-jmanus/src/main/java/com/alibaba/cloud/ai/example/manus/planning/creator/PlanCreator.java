@@ -81,7 +81,7 @@ public class PlanCreator {
 				.prompt(prompt)
 				.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
 			if (useMemory) {
-				requestSpec.advisors(new MessageChatMemoryAdvisor(llmService.getConversationMemory()));
+				requestSpec.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
 			}
 			ChatClient.CallResponseSpec response = requestSpec.call();
 			String outputText = response.chatResponse().getResult().getOutput().getText();
