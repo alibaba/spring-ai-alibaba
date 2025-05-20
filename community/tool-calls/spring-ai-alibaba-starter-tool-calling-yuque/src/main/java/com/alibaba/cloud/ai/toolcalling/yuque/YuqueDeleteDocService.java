@@ -15,14 +15,13 @@
  */
 package com.alibaba.cloud.ai.toolcalling.yuque;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.http.HttpMethod;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
-
-import static com.alibaba.cloud.ai.toolcalling.yuque.YuqueProperties.BASE_URL;
 
 /**
  * @author 北极星
@@ -30,24 +29,31 @@ import static com.alibaba.cloud.ai.toolcalling.yuque.YuqueProperties.BASE_URL;
 public class YuqueDeleteDocService
 		implements Function<YuqueDeleteDocService.deleteDocRequest, YuqueDeleteDocService.deleteDocResponse> {
 
-	private final WebClient webClient;
+	private static final Logger logger = LoggerFactory.getLogger(YuqueDeleteDocService.class);
 
-	public YuqueDeleteDocService(YuqueProperties yuqueProperties) {
-		this.webClient = WebClient.builder()
-			.baseUrl(BASE_URL)
-			.defaultHeader("X-Auth-Token", yuqueProperties.getAuthToken())
-			.build();
+	private final WebClientTool webClientTool;
 
+	private final JsonParseTool jsonParseTool;
+
+	public YuqueDeleteDocService(WebClientTool webClientTool, JsonParseTool jsonParseTool) {
+		this.webClientTool = webClientTool;
+		this.jsonParseTool = jsonParseTool;
 	}
 
 	@Override
 	public YuqueDeleteDocService.deleteDocResponse apply(YuqueDeleteDocService.deleteDocRequest deleteDocRequest) {
-		Mono<YuqueDeleteDocService.deleteDocResponse> deleteDocResponseMono = webClient.method(HttpMethod.DELETE)
-			.uri("/repos/{book_id}/docs/{id}", deleteDocRequest.bookId, deleteDocRequest.id)
-			.retrieve()
-			.bodyToMono(YuqueDeleteDocService.deleteDocResponse.class);
-
-		return deleteDocResponseMono.block();
+		if (deleteDocRequest == null || deleteDocRequest.bookId == null) {
+			return null;
+		}
+		String uri = "/repos/" + deleteDocRequest.bookId + "/docs/" + deleteDocRequest.id;
+		try {
+			String json = webClientTool.delete(uri).block();
+			return jsonParseTool.jsonToObject(json, deleteDocResponse.class);
+		}
+		catch (Exception e) {
+			logger.error("Failed to delete the Yuque document.", e);
+			return null;
+		}
 	}
 
 	protected record deleteDocRequest(@JsonProperty("bookId") String bookId, @JsonProperty("id") String id) {
