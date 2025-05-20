@@ -52,6 +52,7 @@ public class SinaNewsAutoConfiguration {
 			headers.add(HttpHeaders.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9,ja;q=0.8");
 			headers.add(HttpHeaders.CONTENT_TYPE, "application/json");
 		};
+
 		return new SinaNewsService(jsonParseTool, properties,
 				WebClientTool.builder(jsonParseTool, properties).httpHeadersConsumer(consumer).build());
 	}
