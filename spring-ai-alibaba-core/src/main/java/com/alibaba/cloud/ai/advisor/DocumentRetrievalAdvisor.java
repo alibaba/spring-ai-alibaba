@@ -15,23 +15,20 @@
  */
 package com.alibaba.cloud.ai.advisor;
 
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.*;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * Title Document retrieval advisor.<br>
@@ -40,8 +37,7 @@ import java.util.stream.Collectors;
  * @author yuanci.ytb
  * @since 1.0.0-M2
  */
-
-public class DocumentRetrievalAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
+public class DocumentRetrievalAdvisor implements CallAdvisor, StreamAdvisor {
 
 	private static final String DEFAULT_USER_TEXT_ADVISE = """
 			Context information is below.
@@ -86,28 +82,28 @@ public class DocumentRetrievalAdvisor implements CallAroundAdvisor, StreamAround
 	}
 
 	@Override
-	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
+	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
 
-		advisedRequest = this.before(advisedRequest);
+		chatClientRequest = this.before(chatClientRequest);
 
-		AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
+		ChatClientResponse chatClientResponse = callAdvisorChain.nextCall(chatClientRequest);
 
-		return this.after(advisedResponse);
+		return this.after(chatClientResponse);
 	}
 
 	@Override
-	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
-
+	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
+			StreamAdvisorChain streamAdvisorChain) {
 		// This can be executed by both blocking and non-blocking Threads
 		// E.g. a command line or Tomcat blocking Thread implementation
 		// or by a WebFlux dispatch in a non-blocking manner.
-		Flux<AdvisedResponse> advisedResponses = (this.protectFromBlocking) ?
+		Flux<ChatClientResponse> advisedResponses = (this.protectFromBlocking) ?
 		// @formatter:off
-				Mono.just(advisedRequest)
+				Mono.just(chatClientRequest)
 						.publishOn(Schedulers.boundedElastic())
 						.map(this::before)
-						.flatMapMany(chain::nextAroundStream)
-				: chain.nextAroundStream(this.before(advisedRequest));
+						.flatMapMany(streamAdvisorChain::nextStream)
+				: streamAdvisorChain.nextStream(this.before(chatClientRequest));
 		// @formatter:on
 
 		return advisedResponses.map(ar -> {
@@ -128,33 +124,16 @@ public class DocumentRetrievalAdvisor implements CallAroundAdvisor, StreamAround
 		return this.order;
 	}
 
-	private AdvisedRequest before(AdvisedRequest request) {
-
-		var context = new HashMap<>(request.adviseContext());
-		Query query = new Query(request.userText(), request.messages(), context);
-		List<Document> documents = retriever.retrieve(query);
-
-		context.put(RETRIEVED_DOCUMENTS, documents);
-
-		String documentContext = documents.stream()
-			.map(Document::getText)
-			.collect(Collectors.joining(System.lineSeparator()));
-
-		Map<String, Object> advisedUserParams = new HashMap<>(request.userParams());
-		advisedUserParams.put("question_answer_context", documentContext);
-
-		return AdvisedRequest.from(request)
-			.userText(request.userText() + System.lineSeparator() + this.userTextAdvise)
-			.userParams(advisedUserParams)
-			.adviseContext(context)
-			.build();
+	private ChatClientRequest before(ChatClientRequest request) {
+		// TODO 需要补充新版本实现
+		return request;
 	}
 
-	private AdvisedResponse after(AdvisedResponse advisedResponse) {
+	private ChatClientResponse after(ChatClientResponse advisedResponse) {
 		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder();
-		metadataBuilder.keyValue(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
+		metadataBuilder.keyValue(RETRIEVED_DOCUMENTS, advisedResponse.context().get(RETRIEVED_DOCUMENTS));
 
-		ChatResponseMetadata metadata = advisedResponse.response().getMetadata();
+		ChatResponseMetadata metadata = advisedResponse.chatResponse().getMetadata();
 		if (metadata != null) {
 			metadataBuilder.id(metadata.getId());
 			metadataBuilder.model(metadata.getModel());
@@ -168,22 +147,20 @@ public class DocumentRetrievalAdvisor implements CallAroundAdvisor, StreamAround
 			}
 		}
 
-		ChatResponse chatResponse = new ChatResponse(advisedResponse.response().getResults(), metadataBuilder.build());
-		return new AdvisedResponse(chatResponse, advisedResponse.adviseContext());
+		ChatResponse chatResponse = new ChatResponse(advisedResponse.chatResponse().getResults(),
+				metadataBuilder.build());
+		return new ChatClientResponse(chatResponse, advisedResponse.context());
 	}
 
 	/**
-	 * Controls whether {@link DocumentRetrievalAdvisor#after(AdvisedResponse)} should be
-	 * executed.<br />
+	 * Controls whether {@link DocumentRetrievalAdvisor#after} should be executed.<br />
 	 * Called only on Flux elements that contain a finish reason. Usually the last element
 	 * in the Flux. The response advisor can modify the elements before they are returned
 	 * to the client.<br />
-	 * Inspired by
-	 * {@link org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor}.
 	 */
-	private Predicate<AdvisedResponse> onFinishReason() {
+	private Predicate<ChatClientResponse> onFinishReason() {
 
-		return (advisedResponse) -> advisedResponse.response()
+		return (advisedResponse) -> advisedResponse.chatResponse()
 			.getResults()
 			.stream()
 			.anyMatch(result -> result != null && result.getMetadata() != null
