@@ -15,13 +15,11 @@
  */
 package com.alibaba.cloud.ai.toolcalling.toutiaonews;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,31 +34,18 @@ public class ToutiaoNewsSearchHotEventsService
 
 	private static final Logger logger = LoggerFactory.getLogger(ToutiaoNewsSearchHotEventsService.class);
 
-	private static final String API_URL = "https://www.toutiao.com/hot-event/hot-board/?origin" + "=toutiao_pc";
+	private final WebClientTool webClientTool;
 
-	private static final String USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-			+ "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+	private final JsonParseTool jsonParseTool;
 
-	private static final String ACCEPT_ENCODING = "gzip, deflate";
+	private final ToutiaoNewsProperties properties;
 
-	private static final String ACCEPT_LANGUAGE = "zh-CN,zh;q=0.9,ja;q=0.8";
-
-	private static final String CONTENT_TYPE = "application/json";
-
-	private static final int MEMORY_SIZE = 5;
-
-	private static final int BYTE_SIZE = 1024;
-
-	private static final int MAX_MEMORY_SIZE = MEMORY_SIZE * BYTE_SIZE * BYTE_SIZE;
-
-	private static final WebClient WEB_CLIENT = WebClient.builder()
-		.defaultHeader(HttpHeaders.USER_AGENT, USER_AGENT)
-		.defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-		.defaultHeader(HttpHeaders.ACCEPT_ENCODING, ACCEPT_ENCODING)
-		.defaultHeader(HttpHeaders.CONTENT_TYPE, CONTENT_TYPE)
-		.defaultHeader(HttpHeaders.ACCEPT_LANGUAGE, ACCEPT_LANGUAGE)
-		.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_MEMORY_SIZE))
-		.build();
+	public ToutiaoNewsSearchHotEventsService(JsonParseTool jsonParseTool, ToutiaoNewsProperties properties,
+			WebClientTool webClientTool) {
+		this.webClientTool = webClientTool;
+		this.properties = properties;
+		this.jsonParseTool = jsonParseTool;
+	}
 
 	@Override
 	public ToutiaoNewsSearchHotEventsService.Response apply(ToutiaoNewsSearchHotEventsService.Request request) {
@@ -73,14 +58,14 @@ public class ToutiaoNewsSearchHotEventsService
 	}
 
 	protected JsonNode fetchDataFromApi() {
-		return WEB_CLIENT.get()
-			.uri(API_URL)
-			.retrieve()
-			.onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
-					clientResponse -> Mono
-						.error(new RuntimeException("API call failed with " + "status " + clientResponse.statusCode())))
-			.bodyToMono(JsonNode.class)
-			.block();
+		try {
+			String json = webClientTool.get("").block();
+
+			return jsonParseTool.jsonToObject(json, JsonNode.class);
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Failed to fetch or parse Toutiao API data", e);
+		}
 	}
 
 	protected List<HotEvent> parseHotEvents(JsonNode rootNode) {
