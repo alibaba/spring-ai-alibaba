@@ -86,15 +86,15 @@ public class PlanExecutor {
 			ExecutionPlan plan = context.getPlan();
 			List<ExecutionStep> steps = plan.getSteps();
 
-      if (CollectionUtil.isNotEmpty(steps)) {
-        for (ExecutionStep step : steps) {
-				  BaseAgent executorinStep = executeStep(step, context);
-				  if (executorinStep != null) {
-					  executor = executorinStep;
-				  }
-			  }
-      }
-			
+			if (CollectionUtil.isNotEmpty(steps)) {
+				for (ExecutionStep step : steps) {
+					BaseAgent executorinStep = executeStep(step, context);
+					if (executorinStep != null) {
+						executor = executorinStep;
+					}
+				}
+			}
+
 			context.setSuccess(true);
 		}
 		finally {
