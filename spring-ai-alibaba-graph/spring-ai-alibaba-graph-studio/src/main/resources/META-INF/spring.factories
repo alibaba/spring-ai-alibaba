@@ -1,0 +1,2 @@
+io.spring.initializr.generator.project.ProjectGenerationConfiguration=\
+  com.alibaba.cloud.ai.config.GraphProjectGenerationConfiguration
