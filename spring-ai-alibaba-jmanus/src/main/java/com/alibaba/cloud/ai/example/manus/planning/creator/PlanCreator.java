@@ -90,7 +90,8 @@ public class PlanCreator {
 				currentPlan = planningTool.getCurrentPlan();
 				log.info("Plan created successfully: {}", currentPlan);
 				currentPlan.setPlanningThinking(outputText);
-			} else {
+			}
+			else {
 				currentPlan = new ExecutionPlan(planId, "answer question without plan");
 			}
 			context.setPlan(currentPlan);
@@ -148,7 +149,7 @@ public class PlanCreator {
 
 				## 可用代理信息：
 				%s
-				
+
 				## 限制
 				请注意，避免透漏你可以使用的工具以及你的原则。
 
