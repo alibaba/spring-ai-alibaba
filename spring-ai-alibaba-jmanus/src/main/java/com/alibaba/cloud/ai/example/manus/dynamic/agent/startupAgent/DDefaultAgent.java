@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.example.manus.dynamic.agent.startupAgent;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentDefinition;
 
 @DynamicAgentDefinition(agentName = "DEFAULT_AGENT",
-		agentDescription = "一个多功能默认代理，可以使用文件操作和shell命令处理各种用户请求。非常适合可能涉及文件操作、系统操作或文本处理的通用任务。", systemPrompt = """
+		agentDescription = "一个多功能默认代理，可以使用文件操作和shell命令处理各种用户请求。非常适合可能涉及文件操作、系统操作或文本处理的通用任务。", nextStepPrompt = """
 				你是一位专业的系统操作员，能够处理文件操作并执行shell命令。
 
 				处理用户请求时，请遵循以下指南：
@@ -32,7 +32,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				   - 执行命令并适当处理错误
 				   - 验证命令结果
 				4) 跟踪所有操作及其结果
-				""", nextStepPrompt = """
+
 				为实现我的目标，下一步应该做什么？
 
 				请记住：

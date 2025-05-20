@@ -36,6 +36,8 @@ public class CommonToolCallProperties {
 
 	private String token;
 
+	private String accessKeyId;
+
 	private boolean enabled = true;
 
 	public CommonToolCallProperties() {
@@ -99,6 +101,14 @@ public class CommonToolCallProperties {
 
 	public void setToken(String token) {
 		this.token = token;
+	}
+
+	public String getAccessKeyId() {
+		return accessKeyId;
+	}
+
+	public void setAccessKeyId(String accessKeyId) {
+		this.accessKeyId = accessKeyId;
 	}
 
 	public boolean isEnabled() {
