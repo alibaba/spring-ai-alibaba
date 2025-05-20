@@ -1,4 +1,4 @@
-本项目借鉴deer-flow工作，利用spring-ai-alibaba-graph实现深度研究
+本项目利用spring-ai-alibaba-graph实现深度研究
 
 ### 工具
 - tavily API文档：https://docs.tavily.com/documentation/api-reference/endpoint/search
