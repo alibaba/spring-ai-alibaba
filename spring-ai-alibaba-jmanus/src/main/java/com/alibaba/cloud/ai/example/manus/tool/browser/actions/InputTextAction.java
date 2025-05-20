@@ -43,7 +43,8 @@ public class InputTextAction extends BrowserAction {
 		}
 
 		// 获取交互元素（InteractiveElement），支持所有 frame（包括 iframe）
-		List<InteractiveElement> interactiveElements = getInteractiveElements(page); // 已支持递归 frame
+		List<InteractiveElement> interactiveElements = getInteractiveElements(page); // 已支持递归
+																						// frame
 		if (index < 0 || index >= interactiveElements.size()) {
 			return new ToolExecuteResult("Element with index " + index + " not found");
 		}
@@ -61,21 +62,25 @@ public class InputTextAction extends BrowserAction {
 		try {
 			elementLocator.fill(""); // 先清空
 			// 设置每个字符输入间隔 100ms，可根据需要调整
-			com.microsoft.playwright.Locator.PressSequentiallyOptions options = new com.microsoft.playwright.Locator.PressSequentiallyOptions().setDelay(100);
+			com.microsoft.playwright.Locator.PressSequentiallyOptions options = new com.microsoft.playwright.Locator.PressSequentiallyOptions()
+				.setDelay(100);
 			elementLocator.pressSequentially(text, options);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			// 4. fill 失败，尝试 pressSequentially
 			try {
 				elementLocator.fill(""); // 再清空一次
 				elementLocator.fill(text); // 直接填充
-			} catch (Exception e2) {
+			}
+			catch (Exception e2) {
 				// 5. 还不行，直接用 JS 赋值并触发 input 事件
 				try {
 					elementLocator.evaluate(
 							"(el, value) => { el.value = value; el.dispatchEvent(new Event('input', { bubbles: true })); }",
 							text);
-				} catch (Exception e3) {
+				}
+				catch (Exception e3) {
 					return new ToolExecuteResult("输入失败: " + e3.getMessage());
 				}
 			}
