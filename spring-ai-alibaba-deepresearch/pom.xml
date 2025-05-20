@@ -22,10 +22,8 @@
         <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 
-        <spring-ai.version>1.0.0-M8</spring-ai.version>
-
-        <spring-ai-alibaba-graph-core.version>1.0.0-M8.1-SNAPSHOT</spring-ai-alibaba-graph-core.version>
-        <ai-alibaba.version>1.0.0-M8.1-SNAPSHOT</ai-alibaba.version>
+        <spring-ai.version>1.0.0-RC1</spring-ai.version>
+        <spring-ai-alibaba.version>1.0.0-RC1.1</spring-ai-alibaba.version>
     </properties>
 
 
@@ -46,7 +44,7 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-graph-core</artifactId>
-            <version>${spring-ai-alibaba-graph-core.version}</version>
+            <version>${spring-ai-alibaba.version}</version>
         </dependency>
 
         <dependency>

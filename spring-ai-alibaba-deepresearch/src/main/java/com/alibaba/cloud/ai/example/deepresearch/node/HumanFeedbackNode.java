@@ -53,7 +53,7 @@ public class HumanFeedbackNode implements NodeAction {
 			if (StringUtils.hasLength(feedback) && feedback.startsWith("y")) {
 				nextStep = "planner";
 				updated.put("human_next_node", nextStep);
-				updated.put("messages", List.of(new UserMessage(feedback)));
+				updated.put("feed_back", List.of(new UserMessage(feedback)));
 				logger.info("Human feedback: {}", feedback);
 				return updated;
 			}

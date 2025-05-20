@@ -34,6 +34,8 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
+// todo 该类待调整
+
 @Configuration
 public class AgentsConfiguration {
 
@@ -68,9 +70,7 @@ public class AgentsConfiguration {
 			chatClientBuilder.defaultToolCallbacks(build.getToolCallbacks()).build();
 		}
 
-		return chatClientBuilder.defaultTools(mcpTools)
-			.defaultSystem(researcherPrompt.getContentAsString(Charset.defaultCharset()))
-			.build();
+		return chatClientBuilder.defaultSystem(researcherPrompt.getContentAsString(Charset.defaultCharset())).build();
 	}
 
 	@SneakyThrows
