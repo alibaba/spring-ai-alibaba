@@ -183,6 +183,8 @@ public class ConfigService {
 			return value;
 		}
 		else if (targetType == Boolean.class || targetType == boolean.class) {
+			if ("on".equalsIgnoreCase(value))
+				return Boolean.TRUE;
 			return Boolean.valueOf(value);
 		}
 		else if (targetType == Integer.class || targetType == int.class) {

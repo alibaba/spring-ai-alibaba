@@ -81,6 +81,7 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-alitranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-youdaotranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-duckduckgo</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tavilysearch</module>
 
         <!-- Spring AI Alibaba Document Readers -->
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-arxiv</module>
