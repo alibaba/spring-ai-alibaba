@@ -17,15 +17,17 @@
 package com.alibaba.cloud.ai.toolcalling.sensitivefilter;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
+import static com.alibaba.cloud.ai.toolcalling.sensitivefilter.SensitiveFilterProperties.SENSITIVE_FILTER_PREFIX;
 
 /**
  * Configuration properties for sensitive information filter
  *
  * @author Makoto
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.sensitivefilter")
+@ConfigurationProperties(prefix = SensitiveFilterProperties.SENSITIVE_FILTER_PREFIX)
 public class SensitiveFilterProperties {
-
+	protected static final String SENSITIVE_FILTER_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".sensitivefilter";
 	private boolean enabled = true;
 
 	private String replacement = "***";
