@@ -1,0 +1,20 @@
+server:
+  port: 8087
+spring:
+  ai:
+    dashscope:
+      api-key:
+    vectorstore:
+      analytic:
+        collectName:
+        regionId:
+        dbInstanceId:
+        managerAccount:
+        managerAccountPassword:
+        namespace:
+        namespacePassword:
+        defaultTopK:
+        defaultSimilarityThreshold:
+        accessKeyId:
+        accessKeySecret:
+
