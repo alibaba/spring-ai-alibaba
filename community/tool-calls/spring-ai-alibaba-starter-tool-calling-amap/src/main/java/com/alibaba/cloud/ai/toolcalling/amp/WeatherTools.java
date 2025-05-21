@@ -15,6 +15,10 @@
  */
 package com.alibaba.cloud.ai.toolcalling.amp;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -27,16 +31,15 @@ import java.util.concurrent.CompletableFuture;
  */
 public class WeatherTools {
 
-	private final String baseUrl = "https://restapi.amap.com/v3";
 
-	private final AmapProperties amapProperties;
+	private final WebClientTool webClientTool;
 
-	private final HttpClient httpClient;
+	private final AmapProperties amapProperties;;
 
-	public WeatherTools(AmapProperties amapProperties) {
+	public WeatherTools( AmapProperties amapProperties, WebClientTool webClientTool) {
 		this.amapProperties = amapProperties;
+		this.webClientTool = webClientTool;
 
-		this.httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
 
 		if (Objects.isNull(amapProperties.getWebApiKey())) {
 			throw new RuntimeException("Please configure your GaoDe API key in the application.yml file.");
@@ -52,18 +55,15 @@ public class WeatherTools {
 
 		String path = String.format("/geocode/geo?key=%s&address=%s", amapProperties.getWebApiKey(), address);
 
-		HttpRequest httpRequest = createGetRequest(path);
+		String uri = amapProperties.getBaseUrl()+path;
+		try {
+			String json = webClientTool.get(uri).block();
 
-		CompletableFuture<HttpResponse<String>> responseFuture = httpClient.sendAsync(httpRequest,
-				HttpResponse.BodyHandlers.ofString());
-
-		HttpResponse<String> response = responseFuture.join();
-
-		if (response.statusCode() != 200) {
-			throw new RuntimeException("Failed to get address city code");
+			return  json;
 		}
-
-		return response.body();
+		catch (Exception e) {
+			throw new RuntimeException("Failed to get address city code", e);
+		}
 	}
 
 	/**
@@ -75,23 +75,18 @@ public class WeatherTools {
 		String path = String.format("/weather/weatherInfo?key=%s&city=%s&extensions=%s", amapProperties.getWebApiKey(),
 				cityCode, "all");
 
-		HttpRequest httpRequest = createGetRequest(path);
+		String uri = amapProperties.getBaseUrl()+path;
+		try {
+			String json = webClientTool.get(uri).block();
 
-		CompletableFuture<HttpResponse<String>> responseFuture = httpClient.sendAsync(httpRequest,
-				HttpResponse.BodyHandlers.ofString());
-
-		HttpResponse<String> response = responseFuture.join();
-
-		if (response.statusCode() != 200) {
-			throw new RuntimeException("Failed to get weather information");
+			return  json;
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Failed to get weather information", e);
 		}
 
-		return response.body();
 	}
 
-	private HttpRequest createGetRequest(String path) {
-		URI uri = URI.create(baseUrl + path);
-		return HttpRequest.newBuilder().uri(uri).GET().build();
-	}
+
 
 }
