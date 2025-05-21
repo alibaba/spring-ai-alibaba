@@ -7,7 +7,7 @@
     <groupId>com.alibaba.cloud.ai</groupId>
     <name>Spring AI Alibaba JManus</name>
     <artifactId>spring-ai-alibaba-jmanus</artifactId>
-    <version>0.1.2</version>
+    <version>0.2.0</version>
 
     <!-- The required dependencies are maintained separately by the JManus module -->
     <properties>

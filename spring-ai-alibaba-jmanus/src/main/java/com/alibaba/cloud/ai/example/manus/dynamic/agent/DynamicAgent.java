@@ -44,12 +44,15 @@ import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
+import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.AgentExecutionRecord;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
+import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
 
 import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
@@ -176,7 +179,6 @@ public class DynamicAgent extends ReActAgent {
 			thinkActRecord.startAction("Executing tool: " + toolCall.name(), toolCall.name(), toolCall.arguments());
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(userPrompt, response);
 
-			// setData(getData());
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
 				.get(toolExecutionResult.conversationHistory().size() - 1);
 
@@ -187,16 +189,31 @@ public class DynamicAgent extends ReActAgent {
 
 			thinkActRecord.finishAction(llmCallResponse, "SUCCESS");
 			String toolcallName = toolCall.name();
-			AgentExecResult agentExecResult = null;
-			// 如果是终止工具，则返回完成状态
-			// 否则返回运行状态
+
+			// Handle FormInputTool logic
+			if (FormInputTool.name.equals(toolcallName)) {
+				ToolCallBiFunctionDef formInputTooldef = getToolCallBackContext(toolcallName).getFunctionInstance();
+				if(formInputTooldef instanceof FormInputTool) {
+					FormInputTool formInputTool = (FormInputTool) formInputTooldef;
+					// Check if the tool is waiting for user input
+					if (formInputTool.getInputState() == FormInputTool.InputState.AWAITING_USER_INPUT) {
+						log.info("FormInputTool is awaiting user input.");
+						// Wait for user input or timeout
+						waitForUserInputOrTimeout(formInputTool);
+					}
+					if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
+						log.warn("Input timeout occurred for FormInputTool.");
+						return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS);
+					}
+				}
+			}
+
+			// If the tool is TerminateTool, return completed state
 			if (TerminateTool.name.equals(toolcallName)) {
-				agentExecResult = new AgentExecResult(llmCallResponse, AgentState.COMPLETED);
+				return new AgentExecResult(llmCallResponse, AgentState.COMPLETED);
 			}
-			else {
-				agentExecResult = new AgentExecResult(llmCallResponse, AgentState.IN_PROGRESS);
-			}
-			return agentExecResult;
+
+			return new AgentExecResult(llmCallResponse, AgentState.IN_PROGRESS);
 		}
 		catch (Exception e) {
 			ToolCall toolCall = response.getResult().getOutput().getToolCalls().get(0);
@@ -255,6 +272,16 @@ public class DynamicAgent extends ReActAgent {
 		return systemMessage;
 	}
 
+	private ToolCallBackContext getToolCallBackContext(String toolKey) {
+		Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContext();
+		if (toolCallBackContext.containsKey(toolKey)) {
+			return toolCallBackContext.get(toolKey);
+		}
+		else {
+			log.warn("Tool callback for {} not found in the map.", toolKey);
+			return null;
+		}
+	}
 	@Override
 	public List<ToolCallback> getToolCallList() {
 		List<ToolCallback> toolCallbacks = new ArrayList<>();
@@ -326,4 +353,13 @@ public class DynamicAgent extends ReActAgent {
 		return envDataStringBuilder.toString();
 	}
 
+	// Add a method to wait for user input or handle timeout.
+	private void waitForUserInputOrTimeout(FormInputTool formInputTool) {
+		log.info("Waiting for user input or handling timeout for FormInputTool.");
+		// Placeholder logic for waiting or handling timeout
+		// Replace with actual implementation
+		if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
+			log.warn("Input timeout occurred for FormInputTool.");
+		}
+	}
 }

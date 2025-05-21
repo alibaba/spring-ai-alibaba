@@ -10,6 +10,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -97,10 +98,39 @@ public class FormInputTool implements ToolCallBiFunctionDef {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
+    // Replace boolean states with a single enum to represent the input state.
+    public enum InputState {
+        AWAITING_USER_INPUT,
+        INPUT_RECEIVED,
+        INPUT_TIMEOUT
+    }
+
+    private InputState inputState = InputState.INPUT_RECEIVED;
+
+    public InputState getInputState() {
+        return inputState;
+    }
+
+    public void setInputState(InputState inputState) {
+        this.inputState = inputState;
+    }
+
     @Override
     public ToolExecuteResult apply(String s, ToolContext toolContext) {
         log.info("FormInputTool input: {}", s);
+        // Mark that the system is now awaiting user input
+        setInputState(InputState.AWAITING_USER_INPUT);
         return new ToolExecuteResult(s);
+    }
+
+    public void markUserInputReceived() {
+        // Mark that user input has been received and the system can proceed
+        setInputState(InputState.INPUT_RECEIVED);
+    }
+
+    public void handleInputTimeout() {
+        log.warn("Input timeout occurred. No input received from the user.");
+        setInputState(InputState.INPUT_TIMEOUT);
     }
 
     @Override
@@ -144,22 +174,28 @@ public class FormInputTool implements ToolCallBiFunctionDef {
     }
 
     // 存储用户提交的表单输入
-    private UserFormInput userFormInput;
+    private List<UserFormInput> userFormInputs = new ArrayList<>();
 
     /**
      * 获取当前工具状态，包括表单说明和输入项
      */
     @Override
     public String getCurrentToolStateString() {
-        if (userFormInput == null) {
+        if (userFormInputs.isEmpty()) {
             return "FormInputTool 状态：未接收到用户输入";
         }
         try {
-            return String.format("FormInputTool 状态：\n说明：%s\n输入项：%s",
-                    userFormInput.getDescription(),
-                    objectMapper.writeValueAsString(userFormInput.getInputs()));
+            StringBuilder stateBuilder = new StringBuilder("FormInputTool 状态：\n");
+            for (int i = 0; i < userFormInputs.size(); i++) {
+                UserFormInput input = userFormInputs.get(i);
+                stateBuilder.append(String.format("输入轮次 %d:\n说明：%s\n输入项：%s\n",
+                        i + 1,
+                        input.getDescription(),
+                        objectMapper.writeValueAsString(input.getInputs())));
+            }
+            return stateBuilder.toString();
         } catch (JsonProcessingException e) {
-            log.error("Error serializing userFormInput inputs", e);
+            log.error("Error serializing userFormInputs", e);
             return "FormInputTool 状态：序列化输入项时出错";
         }
     }
