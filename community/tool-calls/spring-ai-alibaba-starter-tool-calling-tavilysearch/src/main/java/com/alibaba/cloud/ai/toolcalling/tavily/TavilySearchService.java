@@ -15,34 +15,34 @@
  */
 package com.alibaba.cloud.ai.toolcalling.tavily;
 
-import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
-import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallUtils;
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 
+/**
+ * TavilySearch Service
+ *
+ * @author Allen Hu
+ */
 public class TavilySearchService implements Function<TavilySearchService.Request, TavilySearchService.Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(TavilySearchService.class);
 
-	private static final String TAVILY_SEARCH_API = "https://api.tavily.com/search";
+	private final JsonParseTool jsonParseTool;
 
-	private final WebClient webClient;
+	private final WebClientTool webClientTool;
 
-	public TavilySearchService(TavilySearchProperties properties) {
-		final Map<String, String> headers = Map.of("Authorization", "Bearer " + properties.getToken(), "Content-Type",
-				"application/json");
-		this.webClient = CommonToolCallUtils.buildWebClient(headers,
-				CommonToolCallConstants.DEFAULT_CONNECT_TIMEOUT_MILLIS,
-				CommonToolCallConstants.DEFAULT_RESPONSE_TIMEOUT_SECONDS, CommonToolCallConstants.MAX_MEMORY_SIZE);
+	public TavilySearchService(JsonParseTool jsonParseTool, WebClientTool webClientTool) {
+		this.jsonParseTool = jsonParseTool;
+		this.webClientTool = webClientTool;
 	}
 
 	@Override
@@ -52,13 +52,8 @@ public class TavilySearchService implements Function<TavilySearchService.Request
 		}
 
 		try {
-			return webClient.post()
-				.uri(TAVILY_SEARCH_API)
-				.bodyValue(request)
-				.retrieve()
-				.bodyToMono(TavilySearchService.Response.class)
-				.block();
-
+			String responseData = webClientTool.post("search", request).block();
+			return jsonParseTool.jsonToObject(responseData, Response.class);
 		}
 		catch (Exception ex) {
 			logger.error("tavily search error: {}", ex.getMessage());
