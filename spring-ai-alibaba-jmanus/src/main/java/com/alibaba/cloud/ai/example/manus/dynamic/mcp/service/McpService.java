@@ -207,7 +207,7 @@ public class McpService {
 	}
 
 	public void addMcpServer(McpConfigRequestVO mcpConfig) throws IOException {
-        insertOrUpdateMcpRepo(mcpConfig);
+		insertOrUpdateMcpRepo(mcpConfig);
 		toolCallbackMapCache.invalidateAll();
 	}
 
@@ -292,8 +292,8 @@ public class McpService {
 			return;
 		}
 
-        mcpConfigRepository.delete(mcpConfig);
-        toolCallbackMapCache.invalidateAll();
+		mcpConfigRepository.delete(mcpConfig);
+		toolCallbackMapCache.invalidateAll();
 	}
 
 	public List<McpConfigEntity> getMcpServers() {
