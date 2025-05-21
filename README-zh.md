@@ -24,8 +24,8 @@
 
 <dependency>
     <groupId>com.alibaba.cloud.ai</groupId>
-    <artifactId>spring-ai-alibaba-starter</artifactId>
-    <version>1.0.0.1</version>
+    <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+    <version>1.0.0</version>
 </dependency>
  ```
 
