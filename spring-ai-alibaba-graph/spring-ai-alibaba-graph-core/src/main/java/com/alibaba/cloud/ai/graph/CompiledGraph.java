@@ -178,7 +178,7 @@ public class CompiledGraph {
 					.map(target -> nodes.get(target.id()))
 					.toList();
 
-				var parallelNode = new ParallelNode(e.sourceId(), actions, stateGraph.keyStrategies());
+				var parallelNode = new ParallelNode(e.sourceId(), actions, overAllState().keyStrategies());
 
 				nodes.put(parallelNode.id(), parallelNode.actionFactory().apply(compileConfig));
 
