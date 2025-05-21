@@ -517,6 +517,26 @@ public class StateGraphTest {
 	}
 
 	@Test
+	void testGetResultFromGenerator() throws Exception {
+		var workflow = new StateGraph(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy()))
+			.addEdge(START, "agent_1")
+			.addNode("agent_1", makeNode("agent_1"))
+			.addEdge("agent_1", END);
+
+		var app = workflow.compile();
+
+		var iterator = app.stream(Map.of());
+		for (var i : iterator) {
+			System.out.println(i);
+		}
+
+		var generator = (AsyncGenerator.HasResultValue) iterator;
+
+		System.out.println(generator.resultValue().orElse(null));
+
+	}
+
+	@Test
 	public void testNodeActionStream() throws Exception {
 		StateGraph stateGraph = new StateGraph(
 				() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy())
