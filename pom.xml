@@ -210,6 +210,12 @@
 
         <opennlp-tools.version>2.3.3</opennlp-tools.version>
 
+        <json-path.version>2.9.0</json-path.version>
+
+        <jedis.version>5.2.0</jedis.version>
+
+        <mysql.version>8.0.32</mysql.version>
+
         <!-- CheckStyle Plugin -->
         <disable.checks>true</disable.checks>
 
