@@ -15,29 +15,32 @@
  */
 package com.alibaba.cloud.ai.toolcalling.serpapi;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.util.concurrent.ThreadLocalRandom;
+
+import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.DEFAULT_USER_AGENTS;
+import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
 
 /**
  * @author 北极星
+ * @author sixiyida
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.serpapi")
-public class SerpApiProperties {
+@ConfigurationProperties(prefix = SerpApiProperties.SERP_API_PREFIX)
+public class SerpApiProperties extends CommonToolCallProperties {
 
-	public static final String SERP_API_URL = "https://serpapi.com/search.json";
+	protected static final String SERP_API_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".serpapi";
 
-	public static final String USER_AGENT_VALUE = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+	public static final String USER_AGENT_VALUE = DEFAULT_USER_AGENTS[ThreadLocalRandom.current()
+		.nextInt(DEFAULT_USER_AGENTS.length)];
 
-	private String apikey;
+	public SerpApiProperties() {
+		super("https://serpapi.com/search");
+		this.setPropertiesFromEnv("SERPAPI_KEY", null, null, null);
+	}
 
 	private String engine;
-
-	public String getApikey() {
-		return apikey;
-	}
-
-	public void setApikey(String apikey) {
-		this.apikey = apikey;
-	}
 
 	public String getEngine() {
 		return engine;
