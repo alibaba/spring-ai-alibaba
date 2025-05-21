@@ -207,11 +207,11 @@ public class McpService {
 	}
 
 	public void addMcpServer(McpConfigRequestVO mcpConfig) throws IOException {
-		insertOrupdateMcpRepo(mcpConfig);
+        insertOrUpdateMcpRepo(mcpConfig);
 		toolCallbackMapCache.invalidateAll();
 	}
 
-	public List<McpConfigEntity> insertOrupdateMcpRepo(McpConfigRequestVO mcpConfigVO) throws IOException {
+	public List<McpConfigEntity> insertOrUpdateMcpRepo(McpConfigRequestVO mcpConfigVO) throws IOException {
 		List<McpConfigEntity> entityList = new ArrayList<>();
 		try (JsonParser jsonParser = new ObjectMapper().createParser(mcpConfigVO.getConfigJson())) {
 			McpServersConfig mcpServerConfig = jsonParser.readValueAs(McpServersConfig.class);
@@ -279,8 +279,21 @@ public class McpService {
 
 	public void removeMcpServer(long id) {
 		Optional<McpConfigEntity> mcpConfigEntity = mcpConfigRepository.findById(id);
-		mcpConfigEntity.ifPresent(configEntity -> mcpConfigRepository.delete(configEntity));
-		toolCallbackMapCache.invalidateAll();
+		mcpConfigEntity.ifPresent(this::removeMcpServer);
+	}
+
+	public void removeMcpServer(String mcpServerName) {
+		var mcpConfig = mcpConfigRepository.findByMcpServerName(mcpServerName);
+		removeMcpServer(mcpConfig);
+	}
+
+	private void removeMcpServer(McpConfigEntity mcpConfig) {
+		if (null == mcpConfig) {
+			return;
+		}
+
+        mcpConfigRepository.delete(mcpConfig);
+        toolCallbackMapCache.invalidateAll();
 	}
 
 	public List<McpConfigEntity> getMcpServers() {
