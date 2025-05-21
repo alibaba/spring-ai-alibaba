@@ -35,8 +35,9 @@ public class AmapAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Get weather information according to address from Amap.")
-	public WeatherSearchService gaoDeGetAddressWeather(JsonParseTool jsonParseTool, AmapProperties amapProperties, WebClientTool webClientTool) {
-		return new WeatherSearchService(jsonParseTool, amapProperties,webClientTool);
+	public WeatherSearchService gaoDeGetAddressWeather(JsonParseTool jsonParseTool, AmapProperties amapProperties,
+			WebClientTool webClientTool) {
+		return new WeatherSearchService(jsonParseTool, amapProperties, webClientTool);
 	}
 
 }

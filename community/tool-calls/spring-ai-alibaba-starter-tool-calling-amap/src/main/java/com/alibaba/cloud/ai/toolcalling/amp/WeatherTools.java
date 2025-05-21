@@ -18,21 +18,20 @@ package com.alibaba.cloud.ai.toolcalling.amp;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import java.util.Objects;
 
-
 /**
  * @author YunLong
  */
 public class WeatherTools {
 
-
 	private final WebClientTool webClientTool;
 
-	private final AmapProperties amapProperties;;
+	private final AmapProperties amapProperties;
 
-	public WeatherTools( AmapProperties amapProperties, WebClientTool webClientTool) {
+	;
+
+	public WeatherTools(AmapProperties amapProperties, WebClientTool webClientTool) {
 		this.amapProperties = amapProperties;
 		this.webClientTool = webClientTool;
-
 
 		if (Objects.isNull(amapProperties.getWebApiKey())) {
 			throw new RuntimeException("Please configure your GaoDe API key in the application.yml file.");
@@ -48,11 +47,11 @@ public class WeatherTools {
 
 		String path = String.format("/geocode/geo?key=%s&address=%s", amapProperties.getWebApiKey(), address);
 
-		String uri = amapProperties.getBaseUrl()+path;
+		String uri = amapProperties.getBaseUrl() + path;
 		try {
 			String json = webClientTool.get(uri).block();
 
-			return  json;
+			return json;
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to get address city code", e);
@@ -68,18 +67,16 @@ public class WeatherTools {
 		String path = String.format("/weather/weatherInfo?key=%s&city=%s&extensions=%s", amapProperties.getWebApiKey(),
 				cityCode, "all");
 
-		String uri = amapProperties.getBaseUrl()+path;
+		String uri = amapProperties.getBaseUrl() + path;
 		try {
 			String json = webClientTool.get(uri).block();
 
-			return  json;
+			return json;
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to get weather information", e);
 		}
 
 	}
-
-
 
 }

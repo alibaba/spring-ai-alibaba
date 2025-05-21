@@ -31,11 +31,13 @@ import java.util.function.Function;
 public class WeatherSearchService implements Function<WeatherSearchService.Request, WeatherSearchService.Response> {
 
 	private final WeatherTools weatherTools;
-    private final JsonParseTool jsonParseTool;
 
-	public WeatherSearchService (JsonParseTool jsonParseTool, AmapProperties amapProperties, WebClientTool webClientTool) {
-		weatherTools=new WeatherTools(amapProperties,webClientTool);
-		this.jsonParseTool=jsonParseTool;
+	private final JsonParseTool jsonParseTool;
+
+	public WeatherSearchService(JsonParseTool jsonParseTool, AmapProperties amapProperties,
+			WebClientTool webClientTool) {
+		weatherTools = new WeatherTools(amapProperties, webClientTool);
+		this.jsonParseTool = jsonParseTool;
 	}
 
 	@Override
@@ -46,7 +48,7 @@ public class WeatherSearchService implements Function<WeatherSearchService.Reque
 		String adcode = "";
 
 		try {
-			JsonObject jsonObject = jsonParseTool.jsonToObject(responseBody,JsonObject.class);
+			JsonObject jsonObject = jsonParseTool.jsonToObject(responseBody, JsonObject.class);
 			JsonArray geocodesArray = jsonObject.getAsJsonArray("geocodes");
 			if (geocodesArray != null && !geocodesArray.isEmpty()) {
 				JsonObject firstGeocode = geocodesArray.get(0).getAsJsonObject();

@@ -24,8 +24,10 @@ import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TO
  * @author YunLong
  */
 @ConfigurationProperties(prefix = DingTalkProperties.DING_TALK_PREFIX)
-public class DingTalkProperties  extends CommonToolCallProperties {
+public class DingTalkProperties extends CommonToolCallProperties {
+
 	protected static final String DING_TALK_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".dingtalk";
+
 	private String customRobotAccessToken;
 
 	private String customRobotSignature;

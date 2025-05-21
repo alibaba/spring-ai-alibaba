@@ -27,7 +27,9 @@ import static com.alibaba.cloud.ai.toolcalling.sensitivefilter.SensitiveFilterPr
  */
 @ConfigurationProperties(prefix = SensitiveFilterProperties.SENSITIVE_FILTER_PREFIX)
 public class SensitiveFilterProperties {
+
 	protected static final String SENSITIVE_FILTER_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".sensitivefilter";
+
 	private boolean enabled = true;
 
 	private String replacement = "***";
