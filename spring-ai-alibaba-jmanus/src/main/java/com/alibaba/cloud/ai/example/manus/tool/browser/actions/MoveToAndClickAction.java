@@ -57,12 +57,19 @@ public class MoveToAndClickAction extends BrowserAction {
 				page.evaluate("(args) => {\n" + "  const [x, y, id] = args;\n"
 						+ "  let dot = document.getElementById(id);\n" + "  if (!dot) {\n"
 						+ "    dot = document.createElement('div');\n" + "    dot.id = id;\n"
-						+ "    dot.style.position = 'absolute';\n" + "    dot.style.left = x + 'px';\n"
-						+ "    dot.style.top = y + 'px';\n" + "    dot.style.width = '24px';\n"
+						+ "    dot.style.position = 'absolute';\n" + "    dot.style.left = (x - 12) + 'px';\n"
+						+ "    dot.style.top = (y - 12) + 'px';\n" + "    dot.style.width = '24px';\n"
 						+ "    dot.style.height = '24px';\n" + "    dot.style.background = 'red';\n"
 						+ "    dot.style.borderRadius = '50%';\n" + "    dot.style.zIndex = 99999;\n"
 						+ "    dot.style.boxShadow = '0 0 8px 4px #f00';\n" + "    dot.style.pointerEvents = 'none';\n"
 						+ "    document.body.appendChild(dot);\n" + "  }\n" + "}", new Object[] { x, y, markerId });
+
+				// 监听点击事件
+				page.evaluate("(id) => { const dot = document.getElementById(id); if (dot) { dot.addEventListener('click', () => console.log('Debug: Dot was clicked!')); } }", markerId);
+
+				// 获取鼠标移动后的对应元素并打印
+				String elementInfo = (String) page.evaluate("(args) => { const el = document.elementFromPoint(args[0], args[1]); return el ? el.outerHTML : 'No element'; }", new Object[] { x, y });
+				log.info("Element at position ({}, {}): {}", x, y, elementInfo);
 			}
 
 			// 3. 鼠标移动并点击
