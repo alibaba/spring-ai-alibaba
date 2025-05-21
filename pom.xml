@@ -54,6 +54,7 @@
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-graph</module>
         <module>spring-ai-alibaba-jmanus</module>
+        <module>spring-ai-alibaba-deepresearch</module>
         <module>spring-ai-alibaba-studio</module>
 
         <!-- Spring AI Alibaba Tool Call Plugins -->

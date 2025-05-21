@@ -118,6 +118,12 @@
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-arms-observation</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-starter-memory</artifactId>
                 <version>${project.version}</version>
             </dependency>
