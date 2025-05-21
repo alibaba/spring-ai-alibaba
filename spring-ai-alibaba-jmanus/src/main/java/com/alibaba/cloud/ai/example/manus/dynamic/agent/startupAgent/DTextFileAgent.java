@@ -19,7 +19,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 
 @DynamicAgentDefinition(agentName = "TEXT_FILE_AGENT",
 		agentDescription = "一个文本文件处理代理，可以创建、读取、写入和追加内容到各种基于文本的文件。适用于临时和持久性记录保存。支持多种文件类型，包括markdown、html、源代码和配置文件。",
-		systemPrompt = """
+		nextStepPrompt = """
 				你是一位专业的文本文件操作员。
 
 				一般文件操作工作流程为：
@@ -27,7 +27,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 				2) 查看或检查文件内容
 				3) 执行内容操作（追加或替换）
 				4) 保存并关闭文件以持久化更改
-				""", nextStepPrompt = """
+
 				为实现我的目标，下一步应该做什么？
 
 				请记住：

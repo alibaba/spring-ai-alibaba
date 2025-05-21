@@ -27,8 +27,6 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReaso
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
-import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
-import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -132,13 +130,6 @@ public class DashScopeDocumentRetrievalAdvisor implements BaseAdvisor {
 	}
 
 	@Override
-	@Deprecated
-	public AdvisedRequest before(AdvisedRequest request) {
-		ChatClientRequest chatClientRequest = request.toChatClientRequest();
-		return AdvisedRequest.from(before(chatClientRequest, null));
-	}
-
-	@Override
 	public ChatClientRequest before(ChatClientRequest chatClientRequest, @Nullable AdvisorChain advisorChain) {
 		Map<String, Object> context = new HashMap<>(chatClientRequest.context());
 
@@ -162,13 +153,6 @@ public class DashScopeDocumentRetrievalAdvisor implements BaseAdvisor {
 			.prompt(chatClientRequest.prompt().augmentUserMessage(augmentedQuery.text()))
 			.context(context)
 			.build();
-	}
-
-	@Override
-	@Deprecated
-	public AdvisedResponse after(AdvisedResponse advisedResponse) {
-		ChatClientResponse chatClientResponse = advisedResponse.toChatClientResponse();
-		return AdvisedResponse.from(after(chatClientResponse, null));
 	}
 
 	@Override
