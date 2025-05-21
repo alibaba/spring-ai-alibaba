@@ -20,8 +20,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import io.micrometer.common.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +46,6 @@ import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.ReActAgent;
 import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.llm.LlmService;
-import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory.ToolCallBackContext;
 import com.alibaba.cloud.ai.example.manus.planning.executor.PlanExecutor;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
@@ -53,12 +54,14 @@ import com.alibaba.cloud.ai.example.manus.recorder.entity.ThinkActRecord;
 import com.alibaba.cloud.ai.example.manus.tool.TerminateTool;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 public class DynamicAgent extends ReActAgent {
 
 	private static final Logger log = LoggerFactory.getLogger(DynamicAgent.class);
+    private static final long USER_INPUT_TIMEOUT_MS = 60000; // 60 seconds timeout
 
 	private final String agentName;
 
@@ -78,6 +81,9 @@ public class DynamicAgent extends ReActAgent {
 
 	private final ToolCallingManager toolCallingManager;
 
+    @Autowired // Autowire UserInputService
+    private UserInputService userInputService;
+
 	public void clearUp(String planId) {
 		Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContext();
 		for (ToolCallBackContext toolCallBack : toolCallBackContext.values()) {
@@ -88,6 +94,10 @@ public class DynamicAgent extends ReActAgent {
 				log.error("Error cleaning up tool callback context: {}", e.getMessage(), e);
 			}
 		}
+        // Also remove any pending form input tool for this planId
+        if (userInputService != null) {
+            userInputService.removeFormInputTool(planId);
+        }
 	}
 
 	public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
@@ -192,24 +202,40 @@ public class DynamicAgent extends ReActAgent {
 
 			// Handle FormInputTool logic
 			if (FormInputTool.name.equals(toolcallName)) {
-				ToolCallBiFunctionDef formInputTooldef = getToolCallBackContext(toolcallName).getFunctionInstance();
-				if(formInputTooldef instanceof FormInputTool) {
-					FormInputTool formInputTool = (FormInputTool) formInputTooldef;
+				ToolCallBiFunctionDef formInputToolDef = getToolCallBackContext(toolcallName).getFunctionInstance();
+				if(formInputToolDef instanceof FormInputTool) {
+					FormInputTool formInputTool = (FormInputTool) formInputToolDef;
 					// Check if the tool is waiting for user input
 					if (formInputTool.getInputState() == FormInputTool.InputState.AWAITING_USER_INPUT) {
-						log.info("FormInputTool is awaiting user input.");
+						log.info("FormInputTool is awaiting user input for planId: {}", getPlanId());
+                        userInputService.storeFormInputTool(getPlanId(), formInputTool);
 						// Wait for user input or timeout
 						waitForUserInputOrTimeout(formInputTool);
-					}
-					if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
-						log.warn("Input timeout occurred for FormInputTool.");
-						return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS);
+
+                        // After waiting, check the state again
+                        if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_RECEIVED) {
+                            log.info("User input received for planId: {}", getPlanId());
+                            // The UserInputService.submitUserInputs would have updated the tool's internal state.
+                            // We can now get the updated state string for the LLM.
+                            llmCallResponse = formInputTool.getCurrentToolStateString();
+                            // Update the toolResponseMessage in memory for the next LLM call
+                            ToolResponseMessage.ToolResponse updatedToolResponse = new ToolResponseMessage.ToolResponse(toolCall.id(),
+                                    toolCall.name(), llmCallResponse);
+                            ToolResponseMessage updatedToolResponseMessage = new ToolResponseMessage(List.of(updatedToolResponse), Map.of());
+                            llmService.getAgentMemory().add(getPlanId(), updatedToolResponseMessage);
+
+                        } else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
+						    log.warn("Input timeout occurred for FormInputTool for planId: {}", getPlanId());
+                            userInputService.removeFormInputTool(getPlanId()); // Clean up
+						    return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS); // Or FAILED
+                        }
 					}
 				}
 			}
 
 			// If the tool is TerminateTool, return completed state
 			if (TerminateTool.name.equals(toolcallName)) {
+                userInputService.removeFormInputTool(getPlanId()); // Clean up any pending form
 				return new AgentExecResult(llmCallResponse, AgentState.COMPLETED);
 			}
 
@@ -224,6 +250,7 @@ public class DynamicAgent extends ReActAgent {
 			log.error(e.getMessage());
 
 			thinkActRecord.recordError(e.getMessage());
+            userInputService.removeFormInputTool(getPlanId()); // Clean up on error
 
 			return new AgentExecResult(e.getMessage(), AgentState.FAILED);
 		}
@@ -355,11 +382,35 @@ public class DynamicAgent extends ReActAgent {
 
 	// Add a method to wait for user input or handle timeout.
 	private void waitForUserInputOrTimeout(FormInputTool formInputTool) {
-		log.info("Waiting for user input or handling timeout for FormInputTool.");
-		// Placeholder logic for waiting or handling timeout
-		// Replace with actual implementation
-		if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
-			log.warn("Input timeout occurred for FormInputTool.");
-		}
+        log.info("Waiting for user input for planId: {}...", getPlanId());
+        long startTime = System.currentTimeMillis();
+        while (formInputTool.getInputState() == FormInputTool.InputState.AWAITING_USER_INPUT) {
+            if (System.currentTimeMillis() - startTime > USER_INPUT_TIMEOUT_MS) {
+                log.warn("Timeout waiting for user input for planId: {}", getPlanId());
+                formInputTool.handleInputTimeout(); // This will change its state to INPUT_TIMEOUT
+                break;
+            }
+            try {
+                // Poll for input state change. In a real scenario, this might involve
+                // a more sophisticated mechanism like a Future or a callback from the UI.
+                TimeUnit.MILLISECONDS.sleep(500); // Check every 500ms
+            } catch (InterruptedException e) {
+                log.warn("Interrupted while waiting for user input for planId: {}", getPlanId());
+                Thread.currentThread().interrupt();
+                formInputTool.handleInputTimeout(); // Treat interruption as timeout for simplicity
+                break;
+            }
+        }
+        if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_RECEIVED) {
+            log.info("User input received for planId: {}", getPlanId());
+        } else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
+            log.warn("User input timed out for planId: {}", getPlanId());
+        }
 	}
+
+    // Setter for UserInputService (if not using @Autowired or for testing)
+    public void setUserInputService(UserInputService userInputService) {
+        this.userInputService = userInputService;
+    }
+
 }

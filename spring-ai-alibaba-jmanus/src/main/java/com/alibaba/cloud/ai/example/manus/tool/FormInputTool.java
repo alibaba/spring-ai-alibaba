@@ -10,7 +10,8 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 
-import java.util.ArrayList;
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +35,7 @@ public class FormInputTool implements ToolCallBiFunctionDef {
                   "label": { "type": "string", "description": "输入项标签" },
                   "value": { "type": "string", "description": "输入内容" }
                 },
-                "required": ["label", "value"]
+                "required": ["label"]
               }
             },
             "description": {
@@ -67,7 +68,7 @@ public class FormInputTool implements ToolCallBiFunctionDef {
                 .build();
     }
 
-    // 数据结构：
+    // Data structures:
     /**
      * 表单输入项，包含标签和对应的值。 */
     public static class InputItem {
@@ -98,14 +99,14 @@ public class FormInputTool implements ToolCallBiFunctionDef {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    // Replace boolean states with a single enum to represent the input state.
     public enum InputState {
         AWAITING_USER_INPUT,
         INPUT_RECEIVED,
         INPUT_TIMEOUT
     }
 
-    private InputState inputState = InputState.INPUT_RECEIVED;
+    private InputState inputState = InputState.INPUT_RECEIVED; // Default state
+    private UserFormInput currentFormDefinition; // Stores the form structure defined by LLM and its current values
 
     public InputState getInputState() {
         return inputState;
@@ -118,19 +119,78 @@ public class FormInputTool implements ToolCallBiFunctionDef {
     @Override
     public ToolExecuteResult apply(String s, ToolContext toolContext) {
         log.info("FormInputTool input: {}", s);
-        // Mark that the system is now awaiting user input
-        setInputState(InputState.AWAITING_USER_INPUT);
-        return new ToolExecuteResult(s);
+        try {
+            this.currentFormDefinition = objectMapper.readValue(s, UserFormInput.class);
+            // Initialize values to empty string if null, to ensure they are present for form binding
+            if (this.currentFormDefinition != null && this.currentFormDefinition.getInputs() != null) {
+                for (InputItem item : this.currentFormDefinition.getInputs()) {
+                    if (item.getValue() == null) {
+                        item.setValue(""); // Initialize with empty string
+                    }
+                }
+            }
+            setInputState(InputState.AWAITING_USER_INPUT);
+            // Return the original JSON string 's' which represents the form definition.
+            // The agent can use this or call getLatestUserFormInput() via UserInputService.
+            return new ToolExecuteResult(s);
+        } catch (IOException e) {
+            log.error("Error deserializing form input JSON: {}. Error: {}", s, e.getMessage());
+            // Do not change state to AWAITING_USER_INPUT if parsing fails.
+            // Keep previous state or reset to INPUT_RECEIVED.
+            // this.inputState = InputState.INPUT_RECEIVED; // Or handle error state appropriately
+            this.currentFormDefinition = null; // Clear partially parsed/invalid form
+            return new ToolExecuteResult("{\"error\": \"Failed to parse form input: " + e.getMessage() + "\"}");
+        }
+    }
+
+    /**
+     * 获取由LLM定义的最新表单结构（包括描述和输入项标签及当前值）。
+     * 这个表单结构将用于在前端呈现给用户。
+     * @return 最新的 UserFormInput 对象，如果尚未定义则为 null。
+     */
+    public UserFormInput getLatestUserFormInput() {
+        return this.currentFormDefinition;
+    }
+
+    /**
+     * 设置用户提交的表单输入值。
+     * 这些值将更新 currentFormDefinition 中对应输入项的 value。
+     * @param submittedItems 用户提交的输入项列表 (label-value pairs).
+     */
+    public void setUserFormInputValues(List<InputItem> submittedItems) {
+        if (this.currentFormDefinition == null || this.currentFormDefinition.getInputs() == null) {
+            log.warn("Cannot set user form input values: form definition is missing or has no inputs.");
+            return;
+        }
+        if (submittedItems == null) {
+            log.warn("Submitted items are null. No values to update.");
+            return;
+        }
+
+        Map<String, String> submittedValuesMap = new HashMap<>();
+        for (InputItem submittedItem : submittedItems) {
+            if (submittedItem.getLabel() != null) {
+                 submittedValuesMap.put(submittedItem.getLabel(), submittedItem.getValue());
+            }
+        }
+
+        for (InputItem definitionItem : this.currentFormDefinition.getInputs()) {
+            if (definitionItem.getLabel() != null && submittedValuesMap.containsKey(definitionItem.getLabel())) {
+                definitionItem.setValue(submittedValuesMap.get(definitionItem.getLabel()));
+            }
+        }
+        // The caller (UserInputService) is responsible for calling markUserInputReceived()
     }
 
     public void markUserInputReceived() {
-        // Mark that user input has been received and the system can proceed
         setInputState(InputState.INPUT_RECEIVED);
     }
 
     public void handleInputTimeout() {
-        log.warn("Input timeout occurred. No input received from the user.");
+        log.warn("Input timeout occurred. No input received from the user for form: {}",
+            this.currentFormDefinition != null ? this.currentFormDefinition.getDescription() : "N/A");
         setInputState(InputState.INPUT_TIMEOUT);
+        this.currentFormDefinition = null; // Clear form definition on timeout
     }
 
     @Override
@@ -150,7 +210,7 @@ public class FormInputTool implements ToolCallBiFunctionDef {
 
     @Override
     public Class<?> getInputType() {
-        return Map.class;
+        return String.class;
     }
 
     @Override
@@ -173,30 +233,24 @@ public class FormInputTool implements ToolCallBiFunctionDef {
         return "default-service-group";
     }
 
-    // 存储用户提交的表单输入
-    private List<UserFormInput> userFormInputs = new ArrayList<>();
-
     /**
-     * 获取当前工具状态，包括表单说明和输入项
+     * 获取当前工具状态，包括表单说明和输入项 (包括用户已输入的值 if any)
      */
     @Override
     public String getCurrentToolStateString() {
-        if (userFormInputs.isEmpty()) {
-            return "FormInputTool 状态：未接收到用户输入";
+        if (currentFormDefinition == null) {
+            return String.format("FormInputTool 状态：未定义表单。当前输入状态: %s", inputState.toString());
         }
         try {
             StringBuilder stateBuilder = new StringBuilder("FormInputTool 状态：\n");
-            for (int i = 0; i < userFormInputs.size(); i++) {
-                UserFormInput input = userFormInputs.get(i);
-                stateBuilder.append(String.format("输入轮次 %d:\n说明：%s\n输入项：%s\n",
-                        i + 1,
-                        input.getDescription(),
-                        objectMapper.writeValueAsString(input.getInputs())));
-            }
+            stateBuilder.append(String.format("说明：%s\n输入项：%s\n",
+                    currentFormDefinition.getDescription(),
+                    objectMapper.writeValueAsString(currentFormDefinition.getInputs())));
+            stateBuilder.append(String.format("当前输入状态: %s\n", inputState.toString()));
             return stateBuilder.toString();
         } catch (JsonProcessingException e) {
-            log.error("Error serializing userFormInputs", e);
-            return "FormInputTool 状态：序列化输入项时出错";
+            log.error("Error serializing currentFormDefinition for state string", e);
+            return String.format("FormInputTool 状态：序列化输入项时出错。当前输入状态: %s", inputState.toString());
         }
     }
 }
