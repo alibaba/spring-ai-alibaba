@@ -25,14 +25,12 @@ import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TO
  */
 @ConfigurationProperties(prefix = AmapProperties.AMAP_PREFIX)
 public class AmapProperties extends CommonToolCallProperties{
-
-
-
+	protected static final String AMAP_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".amap";
 	public AmapProperties(String webApiKey) {
 		super( "https://restapi.amap.com/v3");
 		setApiKey(webApiKey);
 	}
-	protected static final String AMAP_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".amap";
+
 	public String getWebApiKey() {
 		return getApiKey();
 	}
