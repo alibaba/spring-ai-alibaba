@@ -25,7 +25,6 @@ import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.cloud.ai.mcp.nacos.service.model.NacosMcpServerEndpoint;
 import com.alibaba.nacos.api.ai.model.mcp.McpEndpointInfo;
 import com.alibaba.nacos.api.exception.NacosException;
-import com.alibaba.nacos.api.utils.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
 import org.slf4j.Logger;
@@ -85,8 +84,9 @@ public class NacosMcpSseClientAutoConfiguration {
         connections.forEach((serverKey, serverName) -> {
             try {
                 NacosMcpServerEndpoint serverEndpoint = nacosMcpOperationService.getServerEndpoint(serverName);
-                if( serverEndpoint == null) {
-                    throw new NacosException(NacosException.NOT_FOUND, "can not find mcp server from nacos: " + serverName );
+                if (serverEndpoint == null) {
+                    throw new NacosException(NacosException.NOT_FOUND,
+                            "can not find mcp server from nacos: " + serverName);
                 }
                 List<NamedClientMcpTransport> namedTransports = new ArrayList<>();
                 for (McpEndpointInfo endpointInfo : serverEndpoint.getMcpEndpointInfoList()) {

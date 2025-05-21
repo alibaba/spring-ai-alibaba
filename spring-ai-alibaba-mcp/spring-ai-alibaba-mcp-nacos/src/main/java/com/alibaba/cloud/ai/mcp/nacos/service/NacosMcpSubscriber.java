@@ -7,6 +7,11 @@ import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
  */
 public interface NacosMcpSubscriber {
     
+    /**
+     * Receive McpServerDetailInfo from Nacos server.
+     *
+     * @param mcpServerDetailInfo the mcp server detail info
+     */
     void receive(McpServerDetailInfo mcpServerDetailInfo);
 
 }
