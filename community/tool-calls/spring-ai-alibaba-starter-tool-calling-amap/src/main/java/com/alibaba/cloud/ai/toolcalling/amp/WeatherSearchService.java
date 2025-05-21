@@ -15,12 +15,13 @@
  */
 package com.alibaba.cloud.ai.toolcalling.amp;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import java.util.function.Function;
 
@@ -31,8 +32,12 @@ public class WeatherSearchService implements Function<WeatherSearchService.Reque
 
 	private final WeatherTools weatherTools;
 
-	public WeatherSearchService(AmapProperties amapProperties) {
-		this.weatherTools = new WeatherTools(amapProperties);
+	private final JsonParseTool jsonParseTool;
+
+	public WeatherSearchService(JsonParseTool jsonParseTool, AmapProperties amapProperties,
+			WebClientTool webClientTool) {
+		weatherTools = new WeatherTools(amapProperties, webClientTool);
+		this.jsonParseTool = jsonParseTool;
 	}
 
 	@Override
@@ -43,7 +48,7 @@ public class WeatherSearchService implements Function<WeatherSearchService.Reque
 		String adcode = "";
 
 		try {
-			JsonObject jsonObject = JsonParser.parseString(responseBody).getAsJsonObject();
+			JsonObject jsonObject = jsonParseTool.jsonToObject(responseBody, JsonObject.class);
 			JsonArray geocodesArray = jsonObject.getAsJsonArray("geocodes");
 			if (geocodesArray != null && !geocodesArray.isEmpty()) {
 				JsonObject firstGeocode = geocodesArray.get(0).getAsJsonObject();

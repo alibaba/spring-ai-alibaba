@@ -66,6 +66,11 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-common</artifactId>
+            <version>${revision}</version>
+        </dependency>
     </dependencies>
 
     <build>
