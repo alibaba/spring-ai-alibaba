@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinat
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
+import com.alibaba.cloud.ai.example.manus.controller.vo.UserInputWaitState;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,6 +125,18 @@ public class ManusController {
 		catch (Exception e) {
 			return ResponseEntity.internalServerError().body(Map.of("error", "删除记录失败: " + e.getMessage()));
 		}
+	}
+
+	/**
+	 * Notify the frontend when the backend is waiting for user input.
+	 * @param planId The ID of the plan.
+	 * @return The state indicating the backend is waiting for input.
+	 */
+	@GetMapping("/wait-for-input/{planId}")
+	public ResponseEntity<UserInputWaitState> notifyUserInputWaitState(@PathVariable("planId") String planId) {
+		// Simulate a waiting state for demonstration purposes
+		UserInputWaitState waitState = new UserInputWaitState(planId, "Waiting for user input", true);
+		return ResponseEntity.ok(waitState);
 	}
 
 }

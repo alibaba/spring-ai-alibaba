@@ -111,8 +111,7 @@ public class ExecutionPlan {
 		state.append("\n- 执行参数: ").append("\n");
 		if (executionParams != null && !executionParams.isEmpty()) {
 			state.append(executionParams).append("\n\n");
-		}
-		else {
+		} else {
 			state.append("未提供执行参数。\n\n");
 		}
 
@@ -124,6 +123,7 @@ public class ExecutionPlan {
 
 	/**
 	 * 获取步骤执行状态的字符串格式
+	 * 
 	 * @param onlyCompletedAndFirstInProgress 当为true时，只输出所有已完成的步骤和第一个进行中的步骤
 	 * @return 格式化的步骤执行状态字符串
 	 */
@@ -157,17 +157,14 @@ public class ExecutionPlan {
 				case NOT_STARTED -> "[not_started]";
 				default -> "[ ]";
 			};
-			state.append("步骤 ")
-				.append(i)
-				.append(": ")
-				.append(symbol)
-				.append(" ")
-				.append(step.getStepRequirement())
-				.append("\n")
-				.append("\n");
+
+			state.append(i + 1).append(".  **步骤 ").append(i).append(":**\n")
+					.append("    *   **状态:** ").append(symbol).append("\n")
+					.append("    *   **操作:** ").append(step.getStepRequirement()).append("\n");
+
 			String result = step.getResult();
 			if (result != null && !result.isEmpty()) {
-				state.append("该步骤的执行结果: ").append("\n").append(result).append("\n");
+				state.append("    *   **结果:** ").append(result).append("\n\n");
 			}
 
 		}
@@ -176,6 +173,7 @@ public class ExecutionPlan {
 
 	/**
 	 * 获取所有步骤执行状态的字符串格式（兼容旧版本）
+	 * 
 	 * @return 格式化的步骤执行状态字符串
 	 */
 	public String getStepsExecutionStateStringFormat() {
@@ -184,6 +182,7 @@ public class ExecutionPlan {
 
 	/**
 	 * 将计划转换为JSON字符串
+	 * 
 	 * @return 计划的JSON字符串表示
 	 */
 	public String toJson() {
@@ -209,7 +208,8 @@ public class ExecutionPlan {
 
 	/**
 	 * 从JSON字符串解析并创建ExecutionPlan对象
-	 * @param planJson JSON字符串
+	 * 
+	 * @param planJson  JSON字符串
 	 * @param newPlanId 新的计划ID（可选，如果提供将覆盖JSON中的planId）
 	 * @return 解析后的ExecutionPlan对象
 	 * @throws Exception 如果解析失败则抛出异常
@@ -239,8 +239,7 @@ public class ExecutionPlan {
 					Integer stepIndexValFromJson = step.getStepIndex();
 					if (stepIndexValFromJson != null) {
 						stepIndex = stepIndexValFromJson;
-					}
-					else {
+					} else {
 						step.setStepIndex(stepIndex);
 					}
 					plan.addStep(step);
