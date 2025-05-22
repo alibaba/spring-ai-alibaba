@@ -14,13 +14,13 @@
   ~ limitations under the License.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-bom</artifactId>
-    <version>1.0.0-RC1.1</version>
+    <version>1.0.0-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
@@ -113,6 +113,12 @@
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-arms-observation</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -697,7 +703,7 @@
                         <configuration>
                             <properties>
                                 <owner>the original author or authors.</owner>
-                                <email />
+                                <email/>
                                 <year>2024</year>
                             </properties>
                             <quiet>true</quiet>
@@ -749,7 +755,8 @@
                                 org.springframework.ai.sample.*,org.springframework.ai.testcontainers.service.connection.*
                             </excludePackageNames>
                             <overview>
-                                ${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
+                                ${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html
+                            </overview>
                             <detectJavaApiLink>false</detectJavaApiLink>
                             <doclint>none</doclint>
                             <!--							<doclint>all,-missing</doclint>-->

@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.dashscope.api;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -45,7 +46,7 @@ public class ApiUtils {
 			headers.setBearerAuth(apiKey);
 			headers.set(HEADER_OPENAPI_SOURCE, SOURCE_FLAG);
 
-			headers.set("user-agent", USER_AGENT);
+			headers.set(HttpHeaders.USER_AGENT, USER_AGENT);
 			if (workspaceId != null) {
 				headers.set(HEADER_WORK_SPACE_ID, workspaceId);
 			}
@@ -59,10 +60,10 @@ public class ApiUtils {
 	public static Map<String, String> getMapContentHeaders(String apiKey, boolean isSecurityCheck, String workspace,
 			Map<String, String> customHeaders) {
 		Map<String, String> headers = new HashMap<>();
-		headers.put("Authorization", "bearer " + apiKey);
-		headers.put("user-agent", USER_AGENT);
+		headers.put(HttpHeaders.AUTHORIZATION, "bearer " + apiKey);
+		headers.put(HttpHeaders.USER_AGENT, USER_AGENT);
 		if (workspace != null && !workspace.isEmpty()) {
-			headers.put("X-DashScope-WorkSpace", workspace);
+			headers.put(HEADER_WORK_SPACE_ID, workspace);
 		}
 		if (isSecurityCheck) {
 			headers.put("X-DashScope-DataInspection", "enable");
@@ -77,35 +78,35 @@ public class ApiUtils {
 			Boolean isAsyncTask, Boolean isSecurityCheck, Boolean isSSE) {
 		return (headers) -> {
 			headers.setBearerAuth(apiKey);
-			headers.set("user-agent", USER_AGENT);
+			headers.set(HttpHeaders.USER_AGENT, USER_AGENT);
 			if (isSecurityCheck) {
 				headers.set("X-DashScope-DataInspection", "enable");
 			}
 
 			if (workspace != null && !workspace.isEmpty()) {
-				headers.set("X-DashScope-WorkSpace", workspace);
+				headers.set(HEADER_WORK_SPACE_ID, workspace);
 			}
 
 			if (isAsyncTask) {
 				headers.set("X-DashScope-Async", "enable");
 			}
 
-			headers.set("Content-Type", "application/json");
+			headers.setContentType(MediaType.APPLICATION_JSON);
 			if (isSSE) {
-				headers.set("Cache-Control", "no-cache");
-				headers.set("Accept", "text/event-stream");
+				headers.set(HttpHeaders.CACHE_CONTROL, "no-cache");
+				headers.setAccept(List.of(MediaType.TEXT_EVENT_STREAM));
 				headers.set("X-Accel-Buffering", "no");
 				headers.set("X-DashScope-SSE", "enable");
 			}
 			else {
-				headers.set("Accept", "application/json; charset=utf-8");
+				headers.setAccept(List.of(MediaType.parseMediaType("application/json; charset=utf-8")));
 			}
 		};
 	}
 
 	public static Consumer<HttpHeaders> getFileUploadHeaders(Map<String, String> input) {
 		return (headers) -> {
-			String contentType = input.remove("Content-Type");
+			String contentType = input.remove(HttpHeaders.CONTENT_TYPE);
 			for (Map.Entry<String, String> entry : input.entrySet()) {
 				headers.set(entry.getKey(), entry.getValue());
 			}
