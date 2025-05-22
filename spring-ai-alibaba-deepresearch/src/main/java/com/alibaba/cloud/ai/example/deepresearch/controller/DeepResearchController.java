@@ -49,7 +49,7 @@ public class DeepResearchController {
 			@RequestParam(value = "enable_background_investigation",
 					defaultValue = "true") boolean enableBackgroundInvestigation,
 			@RequestParam(value = "auto_accepted_plan", defaultValue = "true") boolean autoAcceptedPlan,
-			@RequestParam(value = "thread_id", required = false) int threadId) {
+			@RequestParam(value = "thread_id", required = false, defaultValue = "0") Integer threadId) {
 		UserMessage userMessage = new UserMessage(query);
 		Map<String, Object> objectMap = Map.of("enable_background_investigation", enableBackgroundInvestigation,
 				"auto_accepted_plan", autoAcceptedPlan, "messages", List.of(userMessage));

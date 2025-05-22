@@ -18,29 +18,24 @@ package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.example.deepresearch.tool.WebSearchTool;
-import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.spec.McpSchema;
 import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
-import org.springframework.util.CollectionUtils;
 
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.List;
 
 // todo 该类待调整
 
 @Configuration
 public class AgentsConfiguration {
-
-	@Autowired
-	private List<McpSyncClient> mcpSyncClients; // For sync client
 
 	@Autowired
 	private PythonReplTool pythonReplTool;
@@ -54,42 +49,45 @@ public class AgentsConfiguration {
 	@Value("classpath:prompts/coder.md")
 	private Resource coderPrompt;
 
+	@Bean
+	public ToolCallbackProvider webSearchToolCallbackProvider() {
+		return MethodToolCallbackProvider.builder().toolObjects(webSearchTool).build();
+	}
+
+	@Bean
+	public ToolCallbackProvider pythonReplToolCallbackProvider() {
+		return MethodToolCallbackProvider.builder().toolObjects(pythonReplTool).build();
+	}
+
+	/**
+	 * Create Research Agent ChatClient Bean
+	 * @param chatClientBuilder ChatClientBuilder
+	 * @param listObjectProvider The listObjectProvider comes from McpSyncClient,
+	 * McpAsyncClient and the locally configure ToolCallbackProviders.
+	 * @return ChatClient
+	 */
 	@SneakyThrows
 	@Bean
-	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder) {
-		List<McpSchema.Tool> mcpTools = new ArrayList<>();
-
-		if (CollectionUtils.isEmpty(mcpSyncClients)) {
-			for (McpSyncClient client : mcpSyncClients) {
-				McpSchema.ListToolsResult listToolsResult = client.listTools();
-				mcpTools.addAll(listToolsResult.tools());
-			}
-		}
-		else {
-			MethodToolCallbackProvider build = MethodToolCallbackProvider.builder().toolObjects(webSearchTool).build();
-			chatClientBuilder.defaultToolCallbacks(build.getToolCallbacks()).build();
-		}
-
+	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder,
+			ObjectProvider<List<ToolCallbackProvider>> listObjectProvider) {
+		List<ToolCallbackProvider> toolCallbackProviders = listObjectProvider.getIfAvailable();
+		chatClientBuilder.defaultToolCallbacks(toolCallbackProviders.toArray(new ToolCallbackProvider[0]));
 		return chatClientBuilder.defaultSystem(researcherPrompt.getContentAsString(Charset.defaultCharset())).build();
 	}
 
+	/**
+	 * Create Coder Agent ChatClient Bean
+	 * @param chatClientBuilder ChatClientBuilder
+	 * @param listObjectProvider The listObjectProvider comes from McpSyncClient,
+	 * McpAsyncClient and the locally configure ToolCallbackProviders.
+	 * @return ChatClient
+	 */
 	@SneakyThrows
 	@Bean
-	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder) {
-		List<McpSchema.Tool> mcpTools = new ArrayList<>();
-
-		if (CollectionUtils.isEmpty(mcpSyncClients)) {
-			for (McpSyncClient client : mcpSyncClients) {
-				McpSchema.ListToolsResult listToolsResult = client.listTools();
-				mcpTools.addAll(listToolsResult.tools());
-			}
-			chatClientBuilder.defaultTools(mcpTools);
-		}
-		else {
-			MethodToolCallbackProvider build = MethodToolCallbackProvider.builder().toolObjects(pythonReplTool).build();
-			chatClientBuilder.defaultToolCallbacks(build.getToolCallbacks()).build();
-		}
-
+	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder,
+			ObjectProvider<List<ToolCallbackProvider>> listObjectProvider) {
+		List<ToolCallbackProvider> toolCallbackProviders = listObjectProvider.getIfAvailable();
+		chatClientBuilder.defaultToolCallbacks(toolCallbackProviders.toArray(new ToolCallbackProvider[0]));
 		return chatClientBuilder.defaultSystem(coderPrompt.getContentAsString(Charset.defaultCharset())).build();
 	}
 
