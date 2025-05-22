@@ -54,6 +54,7 @@
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-graph</module>
         <module>spring-ai-alibaba-jmanus</module>
+        <module>spring-ai-alibaba-deepresearch</module>
         <module>spring-ai-alibaba-studio</module>
 
         <!-- Spring AI Alibaba Tool Call Plugins -->
@@ -152,6 +153,7 @@
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-client</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-server</module>
+        <module>spring-ai-alibaba-nl2sql</module>
     </modules>
 
     <scm>
@@ -171,7 +173,7 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.0.0-RC1.1</revision>
+        <revision>1.0.0-SNAPSHOT</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
@@ -181,7 +183,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- Spring version -->
-        <spring-ai.version>1.0.0-RC1</spring-ai.version>
+        <spring-ai.version>1.0.0</spring-ai.version>
         <spring-boot.version>3.4.5</spring-boot.version>
         <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 
@@ -202,13 +204,19 @@
 
         <okhttp.version>4.12.0</okhttp.version>
 
-        <async-generator.version>3.0.0</async-generator.version>
+        <async-generator.version>3.2.0</async-generator.version>
 
         <commons-codec.version>1.17.0</commons-codec.version>
         <commons-exec.version>1.3</commons-exec.version>
         <commons-collections4.version>4.4</commons-collections4.version>
 
         <opennlp-tools.version>2.3.3</opennlp-tools.version>
+
+        <json-path.version>2.9.0</json-path.version>
+
+        <jedis.version>5.2.0</jedis.version>
+
+        <mysql.version>8.0.32</mysql.version>
 
         <!-- CheckStyle Plugin -->
         <disable.checks>true</disable.checks>

@@ -19,7 +19,9 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
+import com.alibaba.cloud.ai.graph.exception.GraphInitKeyErrorException;
 import com.alibaba.cloud.ai.graph.exception.GraphInterruptException;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
@@ -178,7 +180,7 @@ public class CompiledGraph {
 					.map(target -> nodes.get(target.id()))
 					.toList();
 
-				var parallelNode = new ParallelNode(e.sourceId(), actions, stateGraph.keyStrategies());
+				var parallelNode = new ParallelNode(e.sourceId(), actions, overAllState().keyStrategies());
 
 				nodes.put(parallelNode.id(), parallelNode.actionFactory().apply(compileConfig));
 
@@ -614,47 +616,6 @@ public class CompiledGraph {
 				this.overAllState = overAllState;
 				this.nextNodeId = null;
 				this.currentNodeId = StateGraph.START;
-				this.config = config;
-			}
-		}
-
-		/**
-		 * Instantiates a new Async node generator.
-		 * @param inputs the inputs
-		 * @param config the config
-		 */
-		protected AsyncNodeGenerator(Map<String, Object> inputs, RunnableConfig config) {
-			final boolean isResumeRequest = (inputs == null);
-
-			if (isResumeRequest) {
-
-				log.trace("RESUME REQUEST");
-
-				BaseCheckpointSaver saver = compileConfig.checkpointSaver()
-					.orElseThrow(() -> (new IllegalStateException(
-							"inputs cannot be null (ie. resume request) if no checkpoint saver is configured")));
-				Checkpoint startCheckpoint = saver.get(config)
-					.orElseThrow(() -> (new IllegalStateException("Resume request without a saved checkpoint!")));
-
-				this.currentState = startCheckpoint.getState();
-
-				// Reset checkpoint id
-				this.config = config.withCheckPointId(null);
-
-				this.nextNodeId = startCheckpoint.getNextNodeId();
-				this.currentNodeId = null;
-				log.trace("RESUME FROM {}", startCheckpoint.getNodeId());
-			}
-			else {
-
-				log.trace("START");
-
-				Map<String, Object> initState = getInitialState(inputs, config);
-				// patch for backward support of AppendableValue
-				OverAllState initializedState = stateGraph.getStateFactory().apply(initState);
-				this.currentState = initializedState.data();
-				this.nextNodeId = null;
-				this.currentNodeId = START;
 				this.config = config;
 			}
 		}

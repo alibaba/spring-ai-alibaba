@@ -77,9 +77,10 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 
 	private List<Instance> instances;
 
-	public LoadbalancedMcpSyncClient(String serviceName, NamingService namingService,
+	public LoadbalancedMcpSyncClient(String serviceName, String serviceGroup, NamingService namingService,
 			NacosConfigService nacosConfigService) {
 		Assert.notNull(serviceName, "serviceName cannot be null");
+		Assert.notNull(serviceGroup, "serviceGroup cannot be null");
 		Assert.notNull(namingService, "namingService cannot be null");
 		Assert.notNull(nacosConfigService, "nacosConfigService cannot be null");
 
@@ -89,7 +90,7 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 		try {
 			this.namingService = namingService;
 			this.instances = namingService.selectInstances(this.serviceName + McpNacosConstant.SERVER_NAME_SUFFIX,
-					McpNacosConstant.SERVER_GROUP, true);
+					serviceGroup, true);
 		}
 		catch (NacosException e) {
 			throw new RuntimeException(String.format("Failed to get instances for service: %s", serviceName));
@@ -451,12 +452,19 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 
 		private String serviceName;
 
+		private String serviceGroup;
+
 		private NamingService namingService;
 
 		private NacosConfigService nacosConfigService;
 
 		public Builder serviceName(String serviceName) {
 			this.serviceName = serviceName;
+			return this;
+		}
+
+		public Builder serviceGroup(String serviceGroup) {
+			this.serviceGroup = serviceGroup;
 			return this;
 		}
 
@@ -471,7 +479,8 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 		}
 
 		public LoadbalancedMcpSyncClient build() {
-			return new LoadbalancedMcpSyncClient(this.serviceName, this.namingService, this.nacosConfigService);
+			return new LoadbalancedMcpSyncClient(this.serviceName, this.serviceGroup, this.namingService,
+					this.nacosConfigService);
 		}
 
 	}
