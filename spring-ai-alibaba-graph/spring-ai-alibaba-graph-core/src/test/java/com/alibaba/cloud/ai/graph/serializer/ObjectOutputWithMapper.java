@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.serializer.std;
+package com.alibaba.cloud.ai.graph.serializer;
 
-import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +23,7 @@ import java.io.ObjectOutput;
 import java.util.Objects;
 import java.util.Optional;
 
-class ObjectOutputWithMapper implements ObjectOutput {
+public class ObjectOutputWithMapper implements ObjectOutput {
 
 	private static final Logger log = LoggerFactory.getLogger(ObjectOutputWithMapper.class);
 
