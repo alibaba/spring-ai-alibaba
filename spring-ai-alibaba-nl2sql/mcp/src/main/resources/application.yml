@@ -1,5 +1,5 @@
 server:
-  port: 8062 # 服务器端口配置
+  port: 8061 # 服务器端口配置
 spring:
   ai:
     dashscope:
@@ -10,8 +10,8 @@ spring:
         version: 0.0.1           # 服务器版本号
     vectorstore:
       analytic:
-        collectName:
-        regionId:
+        collectName: chatBi
+        regionId: cn-hangzhou
         dbInstanceId:
         managerAccount:
         managerAccountPassword:

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.dbconnector;
 
 import com.alibaba.cloud.ai.dbconnector.bo.ResultSetBO;
@@ -68,24 +83,24 @@ public class SqlExecutor {
 		}
 	}
 
-	private static List<String[]> executeQuery(Connection connection, String databaseOrSchema, String sql)
-			throws SQLException {
+	private static List<String[]> executeQuery(Connection connection, String databaseOrSchema, String sql) throws SQLException {
 		String originalDb = connection.getCatalog();
 		DatabaseMetaData metaData = connection.getMetaData();
 		String dialect = metaData.getDatabaseProductName();
 
-		try (Statement statement = connection.createStatement(); ResultSet rs = statement.executeQuery(sql)) {
+		try (Statement statement = connection.createStatement()){
 
 			if (dialect.equals(DatabaseDialectEnum.MYSQL.code)) {
 				if (StringUtils.isNotEmpty(databaseOrSchema)) {
 					statement.execute("use `" + databaseOrSchema + "`;");
 				}
-			}
-			else if (dialect.equals(DatabaseDialectEnum.POSTGRESQL.code)) {
+			} else if (dialect.equals(DatabaseDialectEnum.POSTGRESQL.code)) {
 				if (StringUtils.isNotEmpty(databaseOrSchema)) {
 					statement.execute("set search_path = '" + databaseOrSchema + "';");
 				}
 			}
+
+			ResultSet rs = statement.executeQuery(sql);
 
 			List<String[]> result = ResultSetConverter.convert(rs);
 

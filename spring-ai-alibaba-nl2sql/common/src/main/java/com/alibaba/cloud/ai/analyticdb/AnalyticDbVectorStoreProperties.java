@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.analyticdb;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
+import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.HashMap;
