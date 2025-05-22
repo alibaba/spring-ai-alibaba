@@ -23,8 +23,10 @@ import com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegister;
 import com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegistryProperties;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.cloud.ai.mcp.nacos.service.model.NacosMcpServerEndpoint;
+import com.alibaba.nacos.api.ai.constant.AiConstants;
 import com.alibaba.nacos.api.ai.model.mcp.McpEndpointInfo;
 import com.alibaba.nacos.api.exception.NacosException;
+import com.alibaba.nacos.api.utils.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
 import org.slf4j.Logger;
@@ -88,6 +90,9 @@ public class NacosMcpSseClientAutoConfiguration {
                     throw new NacosException(NacosException.NOT_FOUND,
                             "can not find mcp server from nacos: " + serverName);
                 }
+                if (!StringUtils.equals(serverEndpoint.getProtocol(), AiConstants.Mcp.MCP_PROTOCOL_SSE)){
+                    throw new Exception("mcp server protocol must be sse");
+                }
                 List<NamedClientMcpTransport> namedTransports = new ArrayList<>();
                 for (McpEndpointInfo endpointInfo : serverEndpoint.getMcpEndpointInfoList()) {
                     String url = "http://" + endpointInfo.getAddress() + ":" + endpointInfo.getPort();
@@ -99,7 +104,7 @@ public class NacosMcpSseClientAutoConfiguration {
                                     serverEndpoint.getExportPath()), transport));
                 }
                 server2NamedTransport.put(serverName, namedTransports);
-            } catch (NacosException e) {
+            } catch (Exception e) {
                 logger.error("get mcp server from nacos: {} error", serverName, e);
             }
         });

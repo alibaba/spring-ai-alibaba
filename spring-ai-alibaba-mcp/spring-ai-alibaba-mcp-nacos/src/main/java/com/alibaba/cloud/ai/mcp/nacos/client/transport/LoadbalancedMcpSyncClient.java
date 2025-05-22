@@ -19,10 +19,9 @@ package com.alibaba.cloud.ai.mcp.nacos.client.transport;
 import com.alibaba.cloud.ai.mcp.nacos.client.utils.ApplicationContextHolder;
 import com.alibaba.cloud.ai.mcp.nacos.client.utils.NacosMcpClientUtils;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
-import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpSubscriber;
 import com.alibaba.cloud.ai.mcp.nacos.service.model.NacosMcpServerEndpoint;
+import com.alibaba.nacos.api.ai.constant.AiConstants;
 import com.alibaba.nacos.api.ai.model.mcp.McpEndpointInfo;
-import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.utils.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,7 +37,10 @@ import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommo
 import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -81,7 +83,10 @@ public class LoadbalancedMcpSyncClient {
 				throw new NacosException(NacosException.NOT_FOUND, String.format("Can not find mcp server from nacos: %s",
 						serverName));
 			}
-		} catch (NacosException e) {
+			if (!StringUtils.equals(serverEndpoint.getProtocol(), AiConstants.Mcp.MCP_PROTOCOL_SSE)){
+				throw new Exception("mcp server protocol must be sse");
+			}
+		} catch (Exception e) {
 			throw new RuntimeException(String.format("Failed to get instances for service: %s", serverName));
 		}
 		commonProperties = ApplicationContextHolder.getBean(McpClientCommonProperties.class);
@@ -102,17 +107,15 @@ public class LoadbalancedMcpSyncClient {
 	
 
 	public void subscribe() {
-		this.nacosMcpOperationService.subscribeNacosMcpServer(this.serverName, new NacosMcpSubscriber() {
-			@Override
-			public void receive(McpServerDetailInfo mcpServerDetailInfo) {
-				List<McpEndpointInfo> mcpEndpointInfoList = mcpServerDetailInfo.getBackendEndpoints();
-				String exportPath = mcpServerDetailInfo.getRemoteServerConfig().getExportPath();
-				String protocol = mcpServerDetailInfo.getProtocol();
-				String realVersion = mcpServerDetailInfo.getVersionDetail().getVersion();
-				NacosMcpServerEndpoint nacosMcpServerEndpoint = new NacosMcpServerEndpoint(mcpEndpointInfoList, exportPath, protocol, realVersion);
-				updateClientList(nacosMcpServerEndpoint);
-			}
-		});
+		this.nacosMcpOperationService.subscribeNacosMcpServer(this.serverName, mcpServerDetailInfo -> {
+            List<McpEndpointInfo> mcpEndpointInfoList = mcpServerDetailInfo.getBackendEndpoints() == null ?
+                    new ArrayList<>() : mcpServerDetailInfo.getBackendEndpoints();
+            String exportPath = mcpServerDetailInfo.getRemoteServerConfig().getExportPath();
+            String protocol = mcpServerDetailInfo.getProtocol();
+            String realVersion = mcpServerDetailInfo.getVersionDetail().getVersion();
+            NacosMcpServerEndpoint nacosMcpServerEndpoint = new NacosMcpServerEndpoint(mcpEndpointInfoList, exportPath, protocol, realVersion);
+            updateClientList(nacosMcpServerEndpoint);
+        });
 	}
 
 	public McpSyncClient getMcpSyncClient() {
@@ -336,7 +339,6 @@ public class LoadbalancedMcpSyncClient {
 		Map<String, McpSyncClient> newKeyToClientMap = new ConcurrentHashMap<>();
 		Map<String, McpSyncClient> oldKeyToClientMap = this.keyToClientMap;
 		Map<String, Integer> newKeyToCountMap = new ConcurrentHashMap<>();
-		Map<String, Integer> oldKeyToCountMap = this.keyToCountMap;
 		for (McpEndpointInfo mcpEndpointInfo : newServerEndpoint.getMcpEndpointInfoList()) {
 			McpSyncClient syncClient = clientByEndpoint(mcpEndpointInfo,newServerEndpoint.getExportPath());
 			String key = NacosMcpClientUtils.getMcpEndpointInfoId(mcpEndpointInfo, newServerEndpoint.getExportPath());

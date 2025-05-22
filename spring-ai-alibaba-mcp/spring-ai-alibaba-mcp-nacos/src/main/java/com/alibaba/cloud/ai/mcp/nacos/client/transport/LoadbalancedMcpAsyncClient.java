@@ -19,10 +19,9 @@ package com.alibaba.cloud.ai.mcp.nacos.client.transport;
 import com.alibaba.cloud.ai.mcp.nacos.client.utils.ApplicationContextHolder;
 import com.alibaba.cloud.ai.mcp.nacos.client.utils.NacosMcpClientUtils;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
-import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpSubscriber;
 import com.alibaba.cloud.ai.mcp.nacos.service.model.NacosMcpServerEndpoint;
+import com.alibaba.nacos.api.ai.constant.AiConstants;
 import com.alibaba.nacos.api.ai.model.mcp.McpEndpointInfo;
-import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.utils.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,7 +38,10 @@ import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -83,9 +85,12 @@ public class LoadbalancedMcpAsyncClient {
 				throw new NacosException(NacosException.NOT_FOUND, String.format("Can not find mcp server from nacos: %s",
 						serverName));
 			}
+			if(!StringUtils.equals(serverEndpoint.getProtocol(), AiConstants.Mcp.MCP_PROTOCOL_SSE)){
+				throw new RuntimeException("mcp server protocol must be sse");
+			}
 		}
-		catch (NacosException e) {
-			throw new RuntimeException(String.format("Failed to get instances for service: %s", serverName));
+		catch (Exception e) {
+			throw new RuntimeException(String.format("Failed to get instances for service: %s", serverName),e);
 		}
 		commonProperties = ApplicationContextHolder.getBean(McpClientCommonProperties.class);
 		mcpAsyncClientConfigurer = ApplicationContextHolder.getBean(McpAsyncClientConfigurer.class);
@@ -104,17 +109,18 @@ public class LoadbalancedMcpAsyncClient {
 	}
 
 	public void subscribe() {
-		this.nacosMcpOperationService.subscribeNacosMcpServer(this.serverName, new NacosMcpSubscriber() {
-			@Override
-			public void receive(McpServerDetailInfo mcpServerDetailInfo) {
-				List<McpEndpointInfo> mcpEndpointInfoList = mcpServerDetailInfo.getBackendEndpoints();
-				String exportPath = mcpServerDetailInfo.getRemoteServerConfig().getExportPath();
-				String protocol = mcpServerDetailInfo.getProtocol();
-				String realVersion = mcpServerDetailInfo.getVersionDetail().getVersion();
-				NacosMcpServerEndpoint nacosMcpServerEndpoint = new NacosMcpServerEndpoint(mcpEndpointInfoList, exportPath, protocol, realVersion);
-				updateClientList(nacosMcpServerEndpoint);
-			}
-		});
+		this.nacosMcpOperationService.subscribeNacosMcpServer(this.serverName, mcpServerDetailInfo -> {
+            List<McpEndpointInfo> mcpEndpointInfoList = mcpServerDetailInfo.getBackendEndpoints() == null ?
+                    new ArrayList<>() : mcpServerDetailInfo.getBackendEndpoints();
+            String exportPath = mcpServerDetailInfo.getRemoteServerConfig().getExportPath();
+            String protocol = mcpServerDetailInfo.getProtocol();
+            String realVersion = mcpServerDetailInfo.getVersionDetail().getVersion();
+            NacosMcpServerEndpoint nacosMcpServerEndpoint = new NacosMcpServerEndpoint(mcpEndpointInfoList, exportPath, protocol, realVersion);
+            if (!StringUtils.equals(protocol, AiConstants.Mcp.MCP_PROTOCOL_SSE)){
+                return;
+            }
+            updateClientList(nacosMcpServerEndpoint);
+        });
 	}
 
 	public McpAsyncClient getMcpAsyncClient() {
@@ -323,7 +329,6 @@ public class LoadbalancedMcpAsyncClient {
 		Map<String, McpAsyncClient> newKeyToClientMap = new ConcurrentHashMap<>();
 		Map<String, McpAsyncClient> oldKeyToClientMap = this.keyToClientMap;
 		Map<String, Integer> newKeyToCountMap = new ConcurrentHashMap<>();
-		Map<String, Integer> oldKeyToCountMap = this.keyToCountMap;
 		for (McpEndpointInfo mcpEndpointInfo : newServerEndpoint.getMcpEndpointInfoList()) {
 			McpAsyncClient syncClient = clientByEndpoint(mcpEndpointInfo,newServerEndpoint.getExportPath());
 			String key = NacosMcpClientUtils.getMcpEndpointInfoId(mcpEndpointInfo, newServerEndpoint.getExportPath());
