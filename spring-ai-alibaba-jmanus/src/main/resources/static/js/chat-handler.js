@@ -6,6 +6,7 @@ const ChatHandler = (() => {
     let lastAgentExecutionId = null;
     let currentDialogRoundId = null;
     let dialogRoundPlans = new Map(); // 存储对话轮次和planId的映射关系
+    let userInputFormContainer = null; // 从 ManusUI 移入
     
     /**
      * 初始化聊天处理器
@@ -17,14 +18,6 @@ const ChatHandler = (() => {
         TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.PLAN_UPDATE, handlePlanUpdate);
         TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.PLAN_COMPLETED, handlePlanComplete);
         TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.DIALOG_ROUND_START, handleDialogRoundStart);
-    };
-
-    /**
-     * 处理用户消息
-     */
-    const handleUserMessage = (message) => {
-        // 交给 UI 模块处理发送消息
-        ManusUI.handleSendMessage(); 
     };
     
     /**
@@ -253,15 +246,200 @@ const ChatHandler = (() => {
             chatArea.scrollTop = chatArea.scrollHeight;
         }
     };
+
+    /**
+     * 滚动到指定元素
+     * @param {HTMLElement} element 
+     */
+    const scrollToElement = (element) => {
+        if (element && typeof element.scrollIntoView === 'function') {
+            element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            scrollToBottom(); // Fallback
+        }
+    };
+
+    /**
+     * 显示用户输入表单 (从 ManusUI 移入)
+     * @param {Object} userInputState - 后端返回的等待输入状态
+     * @param {Object} planDetails - 当前的计划详情，用于定位表单位置
+     * @param {HTMLElement} fallbackChatArea - ManusUI 中的 chatArea 作为备用
+     */
+    const displayUserInputForm = (userInputState, planDetails, fallbackChatArea) => {
+        removeUserInputForm(); // 移除已有的表单
+
+        userInputFormContainer = document.createElement('div');
+        userInputFormContainer.className = 'user-input-form-container'; // 样式类名保持不变
+
+        let formHTML = `<p class="user-input-message">${userInputState.message || '请输入所需信息:'}</p>`;
+        if (userInputState.formDescription) {
+            formHTML += `<p class="form-description">${userInputState.formDescription}</p>`;
+        }
+
+        formHTML += '<form id="userInputForm">';
+        if (userInputState.formInputs && userInputState.formInputs.length > 0) {
+            userInputState.formInputs.forEach(input => {
+                // 为input的id和name创建一个更安全的版本，例如替换空格和特殊字符
+                const safeId = input.label.replace(/\W+/g, '_');
+                formHTML += `
+                    <div class="form-group">
+                        <label for="form-input-${safeId}">${input.label}:</label>
+                        <input type="text" id="form-input-${safeId}" name="${input.label}" value="${input.value || ''}" required>
+                    </div>
+                `;
+            });
+        } else {
+            formHTML += `
+                <div class="form-group">
+                    <label for="form-input-genericInput">输入:</label>
+                    <input type="text" id="form-input-genericInput" name="genericInput" required>
+                </div>
+            `;
+        }
+        formHTML += '<button type="submit" class="submit-user-input-btn">提交</button>';
+        formHTML += '</form>';
+
+        userInputFormContainer.innerHTML = formHTML;
+
+        // 定位表单的插入位置
+        const dialogRoundContainer = findDialogRoundContainerByPlanId(planDetails.planId);
+        const currentChatArea = chatArea || fallbackChatArea; // 使用 ChatHandler 的 chatArea 或传入的 fallback
+
+        if (dialogRoundContainer) {
+            const stepsContainer = dialogRoundContainer.querySelector('.ai-steps-container');
+            if (stepsContainer) {
+                const allAiSections = stepsContainer.querySelectorAll('.ai-section');
+                if (allAiSections && allAiSections.length > planDetails.currentStepIndex) {
+                    const currentStepSection = allAiSections[planDetails.currentStepIndex];
+                    currentStepSection.appendChild(userInputFormContainer);
+                } else {
+                    console.warn('无法找到当前步骤的ai-section来放置用户输入表单，将放置在聊天区域底部。');
+                    if (currentChatArea) currentChatArea.appendChild(userInputFormContainer); // Fallback
+                }
+            } else {
+                console.warn('无法找到ai-steps-container来放置用户输入表单，将放置在聊天区域底部。');
+                if (currentChatArea) currentChatArea.appendChild(userInputFormContainer); // Fallback
+            }
+        } else {
+            console.warn('无法找到dialogRoundContainer来放置用户输入表单，将放置在聊天区域底部。');
+            if (currentChatArea) currentChatArea.appendChild(userInputFormContainer); // Fallback
+        }
+        
+        scrollToElement(userInputFormContainer); // 滚动到表单
+
+        const form = userInputFormContainer.querySelector('#userInputForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const inputs = {};
+            formData.forEach((value, key) => {
+                inputs[key] = value;
+            });
+
+            try {
+                // 在提交前禁用表单，防止重复提交
+                form.querySelector('.submit-user-input-btn').disabled = true;
+                form.querySelector('.submit-user-input-btn').textContent = '提交中...';
+
+                // 注意: ManusAPI 和 activePlanId, updateInputState, pollPlanStatus 需要通过某种方式从 ManusUI 访问
+                // 这里假设它们是全局可访问的，或者通过事件/回调机制处理
+                await ManusAPI.submitFormInput(ManusUI.activePlanId, inputs); 
+                removeUserInputForm();
+                ManusUI.updateInputState(true); 
+                
+                console.log('用户输入已提交，将立即轮询最新状态。');
+                // 直接调用 ManusUI 的 pollPlanStatus 可能不是最佳实践，考虑事件驱动
+                // window.dispatchEvent(new CustomEvent('user-input-submitted')); 
+                // 或者 ManusUI 暴露一个方法来触发轮询
+                // ManusUI.triggerPoll(); 
+                // 暂时直接调用，但提示这部分可能需要重构
+                if (typeof ManusUI !== 'undefined' && ManusUI.pollPlanStatus) {
+                     ManusUI.pollPlanStatus(); 
+                } else {
+                    console.error("ManusUI.pollPlanStatus is not available from ChatHandler");
+                }
+
+            } catch (error) {
+                console.error('提交用户输入失败:', error);
+                const errorMsg = document.createElement('p');
+                errorMsg.className = 'error-message'; 
+                errorMsg.textContent = `提交失败: ${error.message}`;
+                const existingError = form.querySelector('.error-message');
+                if (existingError) {
+                    existingError.remove();
+                }
+                form.appendChild(errorMsg);
+                form.querySelector('.submit-user-input-btn').disabled = false;
+                form.querySelector('.submit-user-input-btn').textContent = '提交';
+            }
+        });
+    };
+
+    /**
+     * 移除用户输入表单 (从 ManusUI 移入)
+     */
+    const removeUserInputForm = () => {
+        if (userInputFormContainer) {
+            userInputFormContainer.remove();
+            userInputFormContainer = null;
+        }
+    };
+
+    /**
+     * 将动态元素附加到指定的对话轮次，并滚动到该元素。
+     * @param {string} planId - 计划ID，用于查找对应的对话轮次容器。
+     * @param {HTMLElement} element - 要附加的HTML元素。
+     */
+    const appendDynamicElementToDialogRound = (planId, element) => {
+        const dialogRoundContainer = findDialogRoundContainerByPlanId(planId);
+        if (dialogRoundContainer) {
+            const stepsContainer = dialogRoundContainer.querySelector('.ai-steps-container');
+            if (stepsContainer && stepsContainer.parentNode === dialogRoundContainer) {
+                // 插入到步骤容器之后
+                dialogRoundContainer.insertBefore(element, stepsContainer.nextSibling);
+            } else {
+                // 追加到对话轮次容器的末尾
+                dialogRoundContainer.appendChild(element);
+            }
+            scrollToElement(element);
+        } else {
+            console.warn(`ChatHandler: Plan ID ${planId} 对应的对话轮次容器未找到。将元素附加到主聊天区域。`);
+            chatArea.appendChild(element); // Fallback
+            scrollToElement(element);
+        }
+    };
+
+    /**
+     * 从聊天区域或指定的对话轮次中移除元素。
+     * @param {string} elementSelector - 要移除的元素的CSS选择器。
+     * @param {string} [planIdContext] - 可选的计划ID，如果提供，则只在对应的对话轮次容器内查找并移除。
+     */
+    const removeElementFromChat = (elementSelector, planIdContext) => {
+        let scope = chatArea; // 默认搜索范围是整个聊天区域
+
+        if (planIdContext) {
+            const dialogRoundContainer = findDialogRoundContainerByPlanId(planIdContext);
+            if (dialogRoundContainer) {
+                scope = dialogRoundContainer; // 在特定的对话轮次容器内搜索
+            } else {
+                console.warn(`ChatHandler: Plan ID ${planIdContext} 对应的对话轮次容器未找到。无法移除元素。`);
+                return; 
+            }
+        }
+
+        const elementToRemove = scope.querySelector(elementSelector);
+        if (elementToRemove) {
+            elementToRemove.remove();
+        } else {
+            // console.warn(`ChatHandler: 选择器 "${elementSelector}" 对应的元素在指定范围内未找到。`);
+        }
+    };
     
     // 返回公开方法
     return {
         init,
-        handleUserMessage,
-        handlePlanUpdate,
-        handlePlanComplete,
-        handleDialogRoundStart,
-        startNewDialogRound,
-        findDialogRoundContainerByPlanId
+        findDialogRoundContainerByPlanId,
+        displayUserInputForm, // 暴露新移入的方法
+        removeUserInputForm // 暴露新移入的方法
     };
 })();

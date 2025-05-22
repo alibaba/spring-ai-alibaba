@@ -14,7 +14,10 @@ const TaskPilotUIEvent = (() => {
         DIALOG_ROUND_UPDATE: 'ui:dialog:round:update',
         PLAN_UPDATE: 'ui:plan:update',
         AGENT_EXECUTION: 'ui:agent:execution',
-        PLAN_COMPLETED: 'ui:plan:completed'
+        PLAN_COMPLETED: 'ui:plan:completed',
+        USER_MESSAGE_SEND_REQUESTED: 'ui:user:message:send_requested', // 新增事件
+        CHAT_INPUT_CLEAR: 'ui:chatinput:clear', // 新增事件：清空聊天输入框
+        CHAT_INPUT_UPDATE_STATE: 'ui:chatinput:updatestate' // 新增事件：更新聊天输入框状态
     };
 
     // 事件发布订阅系统
