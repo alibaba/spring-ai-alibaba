@@ -18,10 +18,15 @@ package com.alibaba.cloud.ai.mcp.nacos.service;
 
 import com.alibaba.cloud.ai.mcp.nacos.client.transport.LoadbalancedMcpAsyncClient;
 import com.alibaba.cloud.ai.mcp.nacos.service.model.NacosMcpServerEndpoint;
+import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.ai.model.mcp.McpEndpointInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
+import com.alibaba.nacos.api.ai.model.mcp.McpServiceRef;
 import com.alibaba.nacos.api.exception.NacosException;
+import com.alibaba.nacos.api.naming.NamingService;
+import com.alibaba.nacos.api.naming.pojo.Instance;
+import com.alibaba.nacos.client.naming.NacosNamingService;
 import com.alibaba.nacos.maintainer.client.ai.AiMaintainerFactory;
 import com.alibaba.nacos.maintainer.client.ai.AiMaintainerService;
 import org.slf4j.Logger;
@@ -45,6 +50,8 @@ public class NacosMcpOperationService {
     
     private AiMaintainerService aiMaintainerService;
     
+    private NamingService namingService;
+    
     private String namespace;
     
     private Map<String, List<NacosMcpSubscriber>> subscribers;
@@ -53,6 +60,7 @@ public class NacosMcpOperationService {
     
     public NacosMcpOperationService(Properties nacosProperties) throws NacosException {
         this.aiMaintainerService = AiMaintainerFactory.createAiMaintainerService(nacosProperties);
+        this.namingService = NacosFactory.createNamingService(nacosProperties);
         this.namespace = nacosProperties.getProperty(PropertyKeyConst.NAMESPACE, "public");
         this.subscribers = new ConcurrentHashMap<>();
         this.executorService = new ScheduledThreadPoolExecutor(1, r -> {
@@ -121,6 +129,17 @@ public class NacosMcpOperationService {
             throw new IllegalArgumentException("mcpNameAndVersion and nacosMcpSubscriber must not be null");
         }
         this.subscribers.computeIfAbsent(mcpNameAndVersion, k -> new ArrayList<>()).add(nacosMcpSubscriber);
+    }
+    
+    public McpEndpointInfo selectEndpoint(McpServiceRef mcpServiceRef) throws NacosException {
+        if (mcpServiceRef == null) {
+            throw new IllegalArgumentException("mcpServiceRef must not be null");
+        }
+        Instance instance = namingService.selectOneHealthyInstance(mcpServiceRef.getServiceName(), mcpServiceRef.getGroupName());
+        McpEndpointInfo mcpEndpointInfo = new McpEndpointInfo();
+        mcpEndpointInfo.setAddress(instance.getIp());
+        mcpEndpointInfo.setPort(instance.getPort());
+        return mcpEndpointInfo;
     }
     
 }

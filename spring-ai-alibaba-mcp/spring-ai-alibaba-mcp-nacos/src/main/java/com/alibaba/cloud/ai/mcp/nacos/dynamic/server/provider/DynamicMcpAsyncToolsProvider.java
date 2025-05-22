@@ -17,34 +17,33 @@
 package com.alibaba.cloud.ai.mcp.nacos.dynamic.server.provider;
 
 import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.callback.DynamicNacosToolCallback;
+import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.definition.DynamicNacosToolDefinition;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import org.springframework.ai.mcp.McpToolUtils;
-import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.ToolCallback;
 
 public class DynamicMcpAsyncToolsProvider implements DynamicMcpToolsProvider {
-
-	private final McpAsyncServer mcpAsyncServer;
-
-	public DynamicMcpAsyncToolsProvider(final McpAsyncServer mcpAsyncServer) {
-		this.mcpAsyncServer = mcpAsyncServer;
-	}
-
-	@Override
-	public void addTool(final ToolDefinition toolDefinition) {
-		DynamicNacosToolCallback dynamicNacosToolCallback = new DynamicNacosToolCallback(toolDefinition);
-		try {
-			removeTool(toolDefinition.name());
-		}
-		catch (Exception e) {
-			// Ignore exception
-		}
-		// Register the tool with the McpAsyncServer
-		mcpAsyncServer.addTool(McpToolUtils.toAsyncToolSpecification(dynamicNacosToolCallback)).block();
-	}
-
-	@Override
-	public void removeTool(final String toolName) {
-		mcpAsyncServer.removeTool(toolName).block();
-	}
-
+    
+    private final McpAsyncServer mcpAsyncServer;
+    
+    public DynamicMcpAsyncToolsProvider(final McpAsyncServer mcpAsyncServer) {
+        this.mcpAsyncServer = mcpAsyncServer;
+    }
+    
+    @Override
+    public void addTool(final DynamicNacosToolDefinition toolDefinition) {
+        try {
+            removeTool(toolDefinition.name());
+        } catch (Exception e) {
+            // Ignore exception
+        }
+        ToolCallback toolCallback = new DynamicNacosToolCallback(toolDefinition);
+        mcpAsyncServer.addTool(McpToolUtils.toAsyncToolSpecification(toolCallback)).block();
+    }
+    
+    @Override
+    public void removeTool(final String toolName) {
+        mcpAsyncServer.removeTool(toolName).block();
+    }
+    
 }

@@ -31,14 +31,14 @@ public class NacosMcpDynamicProperties {
 
 	String serviceGroup = "DEFAULT_GROUP";
 
-	List<String> serviceNames;
+	List<String> serverNames;
 
-	public List<String> getServiceNames() {
-		return serviceNames;
+	public List<String> getServerNames() {
+		return serverNames;
 	}
 
-	public void setServiceNames(List<String> serviceNames) {
-		this.serviceNames = serviceNames;
+	public void setServerNames(List<String> serverNames) {
+		this.serverNames = serverNames;
 	}
 
 	public String getServiceGroup() {

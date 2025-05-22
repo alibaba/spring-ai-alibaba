@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.provider.DynamicToolCallbac
 import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.tools.DynamicToolsInitializer;
 import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.utils.SpringBeanUtils;
 import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.watcher.DynamicNacosToolsWatcher;
+import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.exception.NacosException;
@@ -60,6 +61,7 @@ import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 
 import java.time.Duration;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -82,6 +84,17 @@ public class NacosDynamicMcpServerAutoConfiguration implements ApplicationContex
 
 	@Resource
 	private NacosMcpDynamicProperties nacosMcpDynamicProperties;
+	
+	@Bean
+	@ConditionalOnMissingBean(NacosMcpOperationService.class)
+	public NacosMcpOperationService nacosMcpOperationService() {
+		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
+		try {
+			return new NacosMcpOperationService(nacosProperties);
+		} catch (NacosException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	@Override
 	public void setApplicationContext(@NonNull final ApplicationContext applicationContext) throws BeansException {
@@ -94,17 +107,15 @@ public class NacosDynamicMcpServerAutoConfiguration implements ApplicationContex
 	}
 
 	@Bean
-	public DynamicToolsInitializer dynamicToolsInitializer(final ConfigService configService,
-			final WebClient webClient) {
-		return new DynamicToolsInitializer(configService, webClient, nacosMcpProperties, nacosMcpDynamicProperties);
+	public DynamicToolsInitializer dynamicToolsInitializer(NacosMcpOperationService nacosMcpOperationService) {
+		return new DynamicToolsInitializer(nacosMcpOperationService, nacosMcpDynamicProperties);
 	}
 
 	@Bean(destroyMethod = "stop")
-	public DynamicNacosToolsWatcher nacosInstanceWatcher(final NamingService namingService,
-			final ConfigService configService, final DynamicMcpToolsProvider dynamicMcpToolsProvider,
-			final WebClient webClient) {
-		return new DynamicNacosToolsWatcher(namingService, configService, nacosMcpProperties, nacosMcpDynamicProperties,
-				dynamicMcpToolsProvider, webClient);
+	public DynamicNacosToolsWatcher nacosInstanceWatcher(final DynamicMcpToolsProvider dynamicMcpToolsProvider,
+			final NacosMcpOperationService nacosMcpOperationService) {
+		return new DynamicNacosToolsWatcher(nacosMcpDynamicProperties,
+				nacosMcpOperationService, dynamicMcpToolsProvider);
 	}
 
 	@Bean
@@ -119,16 +130,6 @@ public class NacosDynamicMcpServerAutoConfiguration implements ApplicationContex
 	@ConditionalOnMissingBean(DynamicMcpToolsProvider.class)
 	public DynamicMcpToolsProvider dynamicMcpSyncToolsProvider(final McpSyncServer mcpSyncServer) {
 		return new DynamicMcpSyncToolsProvider(mcpSyncServer);
-	}
-
-	@Bean
-	public ConfigService configService() throws NacosException {
-		return NacosFactory.createConfigService(nacosMcpProperties.getNacosProperties());
-	}
-
-	@Bean
-	public NamingService namingService() throws NacosException {
-		return NamingFactory.createNamingService(nacosMcpProperties.getNacosProperties());
 	}
 
 	@Bean
