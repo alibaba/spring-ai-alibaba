@@ -13,28 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph;
+package com.alibaba.cloud.ai.graph.exception;
 
-public class GraphInitKeyErrorException extends RuntimeException {
+/**
+ * Exception thrown when there is an error during the execution of a graph runner.
+ */
+public class GraphRunnerException extends Exception {
 
-	public GraphInitKeyErrorException() {
-	}
-
-	public GraphInitKeyErrorException(String message) {
-		super(message);
-	}
-
-	public GraphInitKeyErrorException(String message, Throwable cause) {
-		super(message, cause);
-	}
-
-	public GraphInitKeyErrorException(Throwable cause) {
-		super(cause);
-	}
-
-	public GraphInitKeyErrorException(String message, Throwable cause, boolean enableSuppression,
-			boolean writableStackTrace) {
-		super(message, cause, enableSuppression, writableStackTrace);
+	/**
+	 * Constructs a new GraphRunnerException with the specified error message.
+	 * @param errorMessage the detail message
+	 */
+	public GraphRunnerException(String errorMessage) {
+		super(errorMessage);
 	}
 
 }

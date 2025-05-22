@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.serializer.std;
-
-import com.alibaba.cloud.ai.graph.serializer.Serializer;
+package com.alibaba.cloud.ai.graph.serializer;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -125,7 +123,7 @@ public class SerializerMapper {
 		return DEFAULT_SERIALIZER;
 	}
 
-	protected final ObjectOutput objectOutputWithMapper(ObjectOutput out) {
+	public final ObjectOutput objectOutputWithMapper(ObjectOutput out) {
 
 		final ObjectOutputWithMapper mapperOut;
 		if (out instanceof ObjectOutputWithMapper) {
@@ -138,7 +136,7 @@ public class SerializerMapper {
 		return mapperOut;
 	}
 
-	protected final ObjectInput objectInputWithMapper(ObjectInput in) {
+	public final ObjectInput objectInputWithMapper(ObjectInput in) {
 
 		final ObjectInputWithMapper mapperIn;
 		if (in instanceof ObjectInputWithMapper) {
