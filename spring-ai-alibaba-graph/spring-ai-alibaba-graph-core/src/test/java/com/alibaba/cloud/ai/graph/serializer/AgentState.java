@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.state;
+package com.alibaba.cloud.ai.graph.serializer;
+
+import com.alibaba.cloud.ai.graph.state.Channel;
 
 import java.util.AbstractMap;
 import java.util.Collection;

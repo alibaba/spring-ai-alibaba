@@ -13,19 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph;
+package com.alibaba.cloud.ai.graph.exception;
 
-/**
- * Exception thrown when there is an error related to the state of a graph.
- */
-public class GraphStateException extends Exception {
+public class GraphInitKeyErrorException extends RuntimeException {
 
-	/**
-	 * Constructs a new GraphStateException with the specified error message.
-	 * @param errorMessage the detail message
-	 */
-	public GraphStateException(String errorMessage) {
-		super(errorMessage);
+	public GraphInitKeyErrorException() {
+	}
+
+	public GraphInitKeyErrorException(String message) {
+		super(message);
+	}
+
+	public GraphInitKeyErrorException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
+	public GraphInitKeyErrorException(Throwable cause) {
+		super(cause);
+	}
+
+	public GraphInitKeyErrorException(String message, Throwable cause, boolean enableSuppression,
+			boolean writableStackTrace) {
+		super(message, cause, enableSuppression, writableStackTrace);
 	}
 
 }

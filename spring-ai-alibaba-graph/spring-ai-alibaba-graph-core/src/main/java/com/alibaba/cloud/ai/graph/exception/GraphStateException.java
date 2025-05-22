@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph;
+package com.alibaba.cloud.ai.graph.exception;
 
 /**
- * Exception thrown when there is an error during the execution of a graph runner.
+ * Exception thrown when there is an error related to the state of a graph.
  */
-public class GraphRunnerException extends Exception {
+public class GraphStateException extends Exception {
 
 	/**
-	 * Constructs a new GraphRunnerException with the specified error message.
+	 * Constructs a new GraphStateException with the specified error message.
 	 * @param errorMessage the detail message
 	 */
-	public GraphRunnerException(String errorMessage) {
+	public GraphStateException(String errorMessage) {
 		super(errorMessage);
 	}
 
