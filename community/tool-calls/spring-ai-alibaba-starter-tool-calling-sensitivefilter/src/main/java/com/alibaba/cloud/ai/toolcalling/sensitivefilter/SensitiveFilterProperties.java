@@ -41,14 +41,6 @@ public class SensitiveFilterProperties extends CommonToolCallProperties {
 
 	private boolean filterEmail = true;
 
-	public boolean isEnabled() {
-		return super.isEnabled();
-	}
-
-	public void setEnabled(boolean enabled) {
-		super.setEnabled(enabled);
-	}
-
 	public String getReplacement() {
 		return replacement;
 	}
