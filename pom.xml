@@ -153,6 +153,7 @@
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-client</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-server</module>
+        <module>spring-ai-alibaba-nl2sql</module>
     </modules>
 
     <scm>
