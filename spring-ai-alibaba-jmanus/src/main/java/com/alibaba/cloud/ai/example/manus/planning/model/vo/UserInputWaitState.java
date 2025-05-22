@@ -1,11 +1,15 @@
 package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 
 import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
 
 public class UserInputWaitState implements Serializable {
-    private String planId;
+      private String planId;
     private String message;
     private boolean waiting;
+    private String formDescription; // 新增字段：表单描述
+    private List<Map<String, String>> formInputs; // 新增字段：表单输入项
 
     public UserInputWaitState() {
     }
@@ -38,5 +42,21 @@ public class UserInputWaitState implements Serializable {
 
     public void setWaiting(boolean waiting) {
         this.waiting = waiting;
+    }
+
+    public String getFormDescription() {
+        return formDescription;
+    }
+
+    public void setFormDescription(String formDescription) {
+        this.formDescription = formDescription;
+    }
+
+    public List<Map<String, String>> getFormInputs() {
+        return formInputs;
+    }
+
+    public void setFormInputs(List<Map<String, String>> formInputs) {
+        this.formInputs = formInputs;
     }
 }

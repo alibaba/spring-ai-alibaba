@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanIdDispatcher;
 import com.alibaba.cloud.ai.example.manus.planning.coordinator.PlanningCoordinator;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState;
+import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
 
@@ -27,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -49,6 +51,9 @@ public class ManusController {
 
 	@Autowired
 	private PlanIdDispatcher planIdDispatcher;
+
+	@Autowired
+	private UserInputService userInputService;
 
 	/**
 	 * 异步执行 Manus 请求
@@ -103,6 +108,16 @@ public class ManusController {
 			return ResponseEntity.notFound().build();
 		}
 
+		// Check for user input wait state
+		UserInputWaitState waitState = userInputService.getWaitState(planId);
+		if (waitState != null && waitState.isWaiting()) {
+			// If waiting for user input, we might want to return a combined response
+			// or a specific response indicating this. For now, let's assume the client
+			// will also poll the /wait-for-input endpoint.
+			// Alternatively, we could augment the planRecord.toJson() with this info.
+			// For simplicity, keeping them separate for now.
+		}
+
 		return ResponseEntity.ok(planRecord.toJson());
 	}
 
@@ -128,15 +143,50 @@ public class ManusController {
 	}
 
 	/**
-	 * Notify the frontend when the backend is waiting for user input.
+	 * Checks if the backend is waiting for user input for a given plan.
 	 * @param planId The ID of the plan.
-	 * @return The state indicating the backend is waiting for input.
+	 * @return ResponseEntity with UserInputWaitState if waiting, or No Content if not.
 	 */
 	@GetMapping("/wait-for-input/{planId}")
-	public ResponseEntity<UserInputWaitState> notifyUserInputWaitState(@PathVariable("planId") String planId) {
-		// Simulate a waiting state for demonstration purposes
-		UserInputWaitState waitState = new UserInputWaitState(planId, "Waiting for user input", true);
-		return ResponseEntity.ok(waitState);
+	public ResponseEntity<UserInputWaitState> checkUserInputWaitState(@PathVariable("planId") String planId) {
+		UserInputWaitState waitState = userInputService.getWaitState(planId);
+		if (waitState != null && waitState.isWaiting()) {
+			// The formDescription is already part of UserInputWaitState, no need to call getFormDescription() on it again for the log.
+			logger.info("Plan {} is waiting for user input. Form description: {}", planId, waitState.getFormDescription());
+			return ResponseEntity.ok(waitState);
+		}
+		// If not waiting, or no such planId known to userInputService, return 204 No Content
+		return ResponseEntity.noContent().build();
 	}
 
+	/**
+	 * Submits user input for a plan that is waiting.
+	 * @param planId The ID of the plan.
+	 * @param formData The user-submitted form data, expected as Map<String, String>.
+	 * @return ResponseEntity indicating success or failure.
+	 */
+	@PostMapping("/submit-input/{planId}")
+	public ResponseEntity<Map<String, Object>> submitUserInput(@PathVariable("planId") String planId, @RequestBody Map<String, String> formData) { // Changed formData to Map<String, String>
+		try {
+			logger.info("Received user input for plan {}: {}", planId, formData);
+			boolean success = userInputService.submitUserInputs(planId, formData);
+			if (success) {
+				return ResponseEntity.ok(Map.of("message", "Input submitted successfully", "planId", planId));
+			}
+			else {
+				// This case might mean the plan was no longer waiting, or input was invalid.
+				// UserInputService should ideally throw specific exceptions for clearer error handling.
+				logger.warn("Failed to submit user input for plan {}, it might not be waiting or input was invalid.", planId);
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Failed to submit input. Plan not waiting or input invalid.", "planId", planId));
+			}
+		}
+		catch (IllegalArgumentException e) {
+			logger.error("Error submitting user input for plan {}: {}", planId, e.getMessage());
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage(), "planId", planId));
+		}
+		catch (Exception e) {
+			logger.error("Unexpected error submitting user input for plan {}: {}", planId, e.getMessage(), e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "An unexpected error occurred.", "planId", planId));
+		}
+	}
 }

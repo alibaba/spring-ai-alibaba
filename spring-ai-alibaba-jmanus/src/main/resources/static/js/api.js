@@ -2,6 +2,8 @@
  * API 模块 - 处理与后端的所有通信
  */
 const ManusAPI = (() => {
+    const isDebug = true; // <<<< TEMP DEBUG FLAG
+
     // API 基础URL
     const BASE_URL = '/api/executor';
     const PLAN_TEMPLATE_URL = '/api/plan-template';
@@ -327,6 +329,107 @@ const ManusAPI = (() => {
         }
     };
 
+    /**
+     * 检查后端是否正在等待用户输入
+     * @param {string} planId - 计划ID
+     * @returns {Promise<Object|null>} - 如果等待输入，则返回等待状态对象，否则返回null或特定指示对象
+     */
+    const checkWaitForInput = async (planId) => {
+        if (isDebug) {
+            console.log("DEBUG: Mocking checkWaitForInput");
+            // Simulate a 50% chance of requiring input for more dynamic testing
+            if (Math.random() < 0.5) {
+                return {
+                    waiting: true,
+                    message: '调试模式：请输入以下信息以继续。',
+                    formDescription: '这是一个调试用的表单，用于测试用户输入流程。',
+                    formInputs: [
+                        { label: '调试字段1 (文本)', value: '预设值A' },
+                        { label: '调试字段2 (数字)', value: '123' },
+                        { label: '调试字段3 (必需)', value: '' }
+                    ],
+                    planId: planId // Echo back planId for consistency
+                };
+            } else {
+                return null; // Simulate not waiting for input
+            }
+        }
+        try {
+            const response = await fetch(`${BASE_URL}/wait-for-input/${planId}`);
+            if (response.status === 204) { // No Content, not waiting
+                return null;
+            }
+            if (!response.ok) {
+                console.error(`检查等待输入失败: ${response.status}`);
+                // 不抛出错误，允许轮询继续，但记录问题
+                return { error: true, status: response.status }; 
+            }
+            // 期望后端在等待时返回一个包含表单定义等信息的JSON对象
+            // 如果后端返回空内容或非JSON，这里会处理
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                return await response.json();
+            } else {
+                // 如果不是json，但请求成功，可能意味着“不等待”或“已处理”
+                // 根据后端具体实现调整，这里假设成功但非json意味着无需操作
+                return null; 
+            }
+        } catch (error) {
+            console.error('检查等待输入时发生网络错误:', error);
+            // 返回一个错误标记对象，以便调用者可以处理
+            return { error: true, message: error.message };
+        }
+    };
+
+    /**
+     * 提交用户表单输入
+     * @param {string} planId - 计划ID
+     * @param {Object} formData - 用户输入的表单数据
+     * @returns {Promise<Object>} - 提交结果
+     */
+    const submitFormInput = async (planId, formData) => {
+        if (isDebug) {
+            console.log("DEBUG: Mocking submitFormInput", { planId, formData });
+            return new Promise(resolve => {
+                setTimeout(() => { // Simulate network delay
+                    resolve({ success: true, message: '调试模式：表单提交成功！', planId: planId });
+                }, 500);
+            });
+        }
+        try {
+            const response = await fetch(`${BASE_URL}/submit-input/${planId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (!response.ok) {
+                // 尝试解析错误响应体
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch (e) {
+                    errorData = { message: `提交表单输入失败: ${response.status}` };
+                }
+                console.error('提交表单输入失败:', errorData);
+                throw new Error(errorData.message || `提交表单输入失败: ${response.status}`);
+            }
+            // 即使是200 OK，也可能没有响应体，或者响应体表示成功但无特定数据
+            // 检查是否有内容可解析
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                 return await response.json(); // { success: true } or similar
+            }
+            return { success: true }; // 默认成功处理
+
+        } catch (error) {
+            console.error('提交表单输入失败:', error);
+            throw error; // 将错误重新抛出，以便调用者可以处理
+        }
+    };
+
     // 返回公开的方法
     return {
         BASE_URL,
@@ -340,6 +443,8 @@ const ManusAPI = (() => {
         updatePlanTemplate,
         getVersionPlan,
         getAllPlanTemplates,
-        deletePlanTemplate
+        deletePlanTemplate,
+        checkWaitForInput,
+        submitFormInput
     };
 })();

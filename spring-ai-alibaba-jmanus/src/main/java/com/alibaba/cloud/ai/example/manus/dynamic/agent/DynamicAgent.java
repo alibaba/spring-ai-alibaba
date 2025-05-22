@@ -81,8 +81,7 @@ public class DynamicAgent extends ReActAgent {
 
 	private final ToolCallingManager toolCallingManager;
 
-    @Autowired // Autowire UserInputService
-    private UserInputService userInputService;
+    private final UserInputService userInputService;
 
 	public void clearUp(String planId) {
 		Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContext();
@@ -103,13 +102,14 @@ public class DynamicAgent extends ReActAgent {
 	public DynamicAgent(LlmService llmService, PlanExecutionRecorder planExecutionRecorder,
 			ManusProperties manusProperties, String name, String description, String nextStepPrompt,
 			List<String> availableToolKeys, ToolCallingManager toolCallingManager,
-			Map<String, Object> initialAgentSetting) {
+			Map<String, Object> initialAgentSetting , UserInputService userInputService) {
 		super(llmService, planExecutionRecorder, manusProperties, initialAgentSetting);
 		this.agentName = name;
 		this.agentDescription = description;
 		this.nextStepPrompt = nextStepPrompt;
 		this.availableToolKeys = availableToolKeys;
 		this.toolCallingManager = toolCallingManager;
+		this.userInputService = userInputService;
 	}
 
 	@Override
@@ -408,9 +408,5 @@ public class DynamicAgent extends ReActAgent {
         }
 	}
 
-    // Setter for UserInputService (if not using @Autowired or for testing)
-    public void setUserInputService(UserInputService userInputService) {
-        this.userInputService = userInputService;
-    }
 
 }

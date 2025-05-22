@@ -21,6 +21,9 @@ const ManusUI = (() => {
     
     // 轮询并发控制标志
     let isPolling = false;
+
+    // 用户输入表单的容器
+    let userInputFormContainer = null;
     
     // 事件监听器集合
     const eventListeners = {
@@ -196,21 +199,22 @@ const ManusUI = (() => {
             updateInputState(true);
         }
     };
-    
+
     /**
-     * 更新输入区域状态（启用/禁用）
-     * @param {boolean} enabled - 是否启用输入
+     * 更新输入区域的状态（启用/禁用）
      */
     const updateInputState = (enabled) => {
         inputField.disabled = !enabled;
         sendButton.disabled = !enabled;
-        
+        // 可选：更改样式以反映禁用状态
         if (!enabled) {
+            inputField.placeholder = '等待用户输入...';
+            inputField.classList.add('disabled');
             sendButton.classList.add('disabled');
-            inputField.setAttribute('placeholder', '正在处理中，请稍候...');
         } else {
+            inputField.placeholder = '向 JTaskPilot 发送消息';
+            inputField.classList.remove('disabled');
             sendButton.classList.remove('disabled');
-            inputField.setAttribute('placeholder', '向 Manus 发送消息');
         }
     };
     
@@ -237,8 +241,35 @@ const ManusUI = (() => {
                 return;
             }
             
-            // 发送计划更新事件
+            // 如果没有获取到详情，或者详情中没有步骤，则不进行处理
+            if (!details || !details.steps || details.steps.length === 0) {
+                console.log('轮询：未获取到有效详情或步骤为空', details);
+                // 如果planId存在但获取不到details，可能是plan已结束或被删除
+                if (activePlanId && !details) {
+                    console.log(`轮询：Plan ${activePlanId} 可能已结束或被删除，停止轮询。`);
+                    stopPolling(); // 停止轮询
+                    activePlanId = null; // 清空活动ID
+                    updateInputState(true); // 恢复输入框
+                }
+                return; 
+            }
+
+            // 首先，确保UI已更新以反映当前步骤，这样表单可以被放置在正确的位置
             EventSystem.emit('plan-update', details);
+
+            // 然后，检查是否需要用户输入
+            const userInputState = await ManusAPI.checkWaitForInput(activePlanId);
+            if (userInputState && userInputState.waiting) {
+                console.log('轮询：检测到需要用户输入', userInputState);
+                displayUserInputForm(userInputState, details); // 传递details给表单显示函数
+                updateInputState(false); // 禁用主输入框
+                // 注意：这里我们不停止轮询 (stopPolling())，因为用户提交后，我们希望继续当前计划的轮询
+                // 但是，我们需要从pollPlanStatus返回，以避免在等待用户输入时处理计划完成等逻辑
+                return; 
+            }
+
+            // // 正常处理计划更新 -- 这行已上移
+            // EventSystem.emit('plan-update', details);
             
             // 如果有新的智能体执行记录，且sequence size增加了，才发送对应事件
             if (details.agentExecutionSequence) {
@@ -305,11 +336,150 @@ const ManusUI = (() => {
         }
     };
 
-    // 返回公开的方法和事件系统
+    /**
+     * 显示用户输入表单
+     * @param {Object} userInputState - 后端返回的等待输入状态
+     * @param {Object} planDetails - 当前的计划详情，用于定位表单位置
+     */
+    const displayUserInputForm = (userInputState, planDetails) => {
+        removeUserInputForm(); // 移除已有的表单
+
+        userInputFormContainer = document.createElement('div');
+        userInputFormContainer.className = 'user-input-form-container'; // 样式类名保持不变
+
+        let formHTML = `<p class="user-input-message">${userInputState.message || '请输入所需信息:'}</p>`;
+        if (userInputState.formDescription) {
+            formHTML += `<p class="form-description">${userInputState.formDescription}</p>`;
+        }
+
+        formHTML += '<form id="userInputForm">';
+        if (userInputState.formInputs && userInputState.formInputs.length > 0) {
+            userInputState.formInputs.forEach(input => {
+                // 为input的id和name创建一个更安全的版本，例如替换空格和特殊字符
+                const safeId = input.label.replace(/\W+/g, '_');
+                formHTML += `
+                    <div class="form-group">
+                        <label for="form-input-${safeId}">${input.label}:</label>
+                        <input type="text" id="form-input-${safeId}" name="${input.label}" value="${input.value || ''}" required>
+                    </div>
+                `;
+            });
+        } else {
+            formHTML += `
+                <div class="form-group">
+                    <label for="form-input-genericInput">输入:</label>
+                    <input type="text" id="form-input-genericInput" name="genericInput" required>
+                </div>
+            `;
+        }
+        formHTML += '<button type="submit" class="submit-user-input-btn">提交</button>';
+        formHTML += '</form>';
+
+        userInputFormContainer.innerHTML = formHTML;
+
+        // 定位表单的插入位置
+        const dialogRoundContainer = ChatHandler.findDialogRoundContainerByPlanId(planDetails.planId);
+        if (dialogRoundContainer) {
+            const stepsContainer = dialogRoundContainer.querySelector('.ai-steps-container');
+            if (stepsContainer) {
+                const allAiSections = stepsContainer.querySelectorAll('.ai-section');
+                if (allAiSections && allAiSections.length > planDetails.currentStepIndex) {
+                    const currentStepSection = allAiSections[planDetails.currentStepIndex];
+                    currentStepSection.appendChild(userInputFormContainer);
+                } else {
+                    console.warn('无法找到当前步骤的ai-section来放置用户输入表单，将放置在聊天区域底部。');
+                    chatArea.appendChild(userInputFormContainer); // Fallback
+                }
+            } else {
+                console.warn('无法找到ai-steps-container来放置用户输入表单，将放置在聊天区域底部。');
+                chatArea.appendChild(userInputFormContainer); // Fallback
+            }
+        } else {
+            console.warn('无法找到dialogRoundContainer来放置用户输入表单，将放置在聊天区域底部。');
+            chatArea.appendChild(userInputFormContainer); // Fallback
+        }
+        
+        scrollToElement(userInputFormContainer); // 滚动到表单
+
+        const form = userInputFormContainer.querySelector('#userInputForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const inputs = {};
+            formData.forEach((value, key) => {
+                inputs[key] = value;
+            });
+
+            try {
+                // 在提交前禁用表单，防止重复提交
+                form.querySelector('.submit-user-input-btn').disabled = true;
+                form.querySelector('.submit-user-input-btn').textContent = '提交中...';
+
+                await ManusAPI.submitFormInput(activePlanId, inputs); // 使用 submitFormInput
+                removeUserInputForm();
+                updateInputState(true); // 重新启用主输入框
+                
+                // 用户提交后，立即再次轮询以获取更新的状态
+                // 不再需要手动调用 startPolling()，因为 pollPlanStatus 的 return 被移除了
+                // 并且外层轮询定时器仍在运行。我们只需确保下一次轮询会发生。
+                // 为了立即反馈，可以手动触发一次 pollPlanStatus
+                console.log('用户输入已提交，将立即轮询最新状态。');
+                pollPlanStatus(); 
+
+            } catch (error) {
+                console.error('提交用户输入失败:', error);
+                const errorMsg = document.createElement('p');
+                errorMsg.className = 'error-message'; // 确保这个类有样式
+                errorMsg.textContent = `提交失败: ${error.message}`;
+                // 在表单内部显示错误，而不是替换整个表单
+                const existingError = form.querySelector('.error-message');
+                if (existingError) {
+                    existingError.remove();
+                }
+                form.appendChild(errorMsg);
+                // 重新启用提交按钮
+                form.querySelector('.submit-user-input-btn').disabled = false;
+                form.querySelector('.submit-user-input-btn').textContent = '提交';
+            }
+        });
+    };
+
+    /**
+     * 移除用户输入表单
+     */
+    const removeUserInputForm = () => {
+        if (userInputFormContainer) {
+            userInputFormContainer.remove();
+            userInputFormContainer = null;
+        }
+    };
+
+    /**
+     * 滚动到聊天区域底部
+     */
+    const scrollToBottom = () => {
+        chatArea.scrollTop = chatArea.scrollHeight;
+    };
+
+    /**
+     * 滚动到指定元素
+     * @param {HTMLElement} element 
+     */
+    const scrollToElement = (element) => {
+        if (element && typeof element.scrollIntoView === 'function') {
+            element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            scrollToBottom(); // Fallback
+        }
+    };
+
+    // 公开UI模块的方法和事件系统
     return {
         init,
-        handleSendMessage,  // 确保导出 handleSendMessage
+        handleSendMessage,
         EventSystem,
-        UI_EVENTS
+        UI_EVENTS,
+        activePlanId, // 暴露 activePlanId 以便其他模块可能需要访问
+        updateInputState // 暴露以便外部可以控制输入状态
     };
 })();

@@ -1,6 +1,6 @@
 package com.alibaba.cloud.ai.example.manus.planning.service;
 
-import com.alibaba.cloud.ai.example.manus.controller.vo.UserInputWaitState;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
 import org.springframework.stereotype.Service;
 
@@ -46,22 +46,33 @@ public class UserInputService {
         return waitState;
     }
 
-    public void submitUserInputs(String planId, Map<String, String> inputs) {
+    public UserInputWaitState getWaitState(String planId) {
+        FormInputTool tool = getFormInputTool(planId);
+        if (tool != null && tool.getInputState() == FormInputTool.InputState.AWAITING_USER_INPUT) { // Corrected to use getInputState and InputState
+            // Assuming a default message or retrieve from tool if available
+            return createUserInputWaitState(planId, "Awaiting user input.", tool);
+        }
+        return null; // Or a UserInputWaitState with waiting=false
+    }
+
+    public boolean submitUserInputs(String planId, Map<String, String> inputs) { // Changed to return boolean
         FormInputTool formInputTool = getFormInputTool(planId);
-        if (formInputTool != null) {
-            // 将 Map<String, String> 转换为 List<FormInputTool.InputItem>
+        if (formInputTool != null && formInputTool.getInputState() == FormInputTool.InputState.AWAITING_USER_INPUT) { // Corrected to use getInputState and InputState
             List<FormInputTool.InputItem> inputItems = inputs.entrySet().stream()
-                    .map(entry -> new FormInputTool.InputItem(entry.getKey(), entry.getValue()))
+                    .map(entry -> {
+                        return new FormInputTool.InputItem(entry.getKey(), entry.getValue());
+                    })
                     .collect(Collectors.toList());
             
-            // 假设 FormInputTool 有一个方法来处理提交的输入
-            // 例如: formInputTool.processInputs(inputItems);
-            // 这里我们简单地标记用户输入已接收
-            formInputTool.setUserFormInputValues(inputItems); // Corrected method call
+            formInputTool.setUserFormInputValues(inputItems);
             formInputTool.markUserInputReceived();
+            return true;
         } else {
-            // 处理 planId 未找到或工具不存在的情况
-            throw new IllegalArgumentException("FormInputTool not found for planId: " + planId);
+            if (formInputTool == null) {
+                throw new IllegalArgumentException("FormInputTool not found for planId: " + planId);
+            }
+            // If tool exists but not awaiting input
+            return false; 
         }
     }
 }
