@@ -22,7 +22,7 @@ import com.alibaba.cloud.ai.example.graph.openmanus.tool.Builder;
 import com.alibaba.cloud.ai.example.graph.openmanus.tool.PlanningTool;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
-import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import org.springframework.ai.chat.client.ChatClient;

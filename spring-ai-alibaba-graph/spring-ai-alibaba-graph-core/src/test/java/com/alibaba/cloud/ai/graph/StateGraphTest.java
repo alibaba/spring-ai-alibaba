@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;

@@ -16,10 +16,9 @@
 package com.alibaba.cloud.ai.example.graph.stream;
 
 import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import org.bsc.async.AsyncGenerator;
@@ -32,8 +31,6 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionException;
