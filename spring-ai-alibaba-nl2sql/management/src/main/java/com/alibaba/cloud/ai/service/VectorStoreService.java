@@ -186,10 +186,6 @@ public class VectorStoreService {
 			.setCollectionDataFilter(query);
 	}
 
-	// endregion
-
-	// region Schema 初始化相关
-
 	/**
 	 * 初始化数据库 schema 到向量库
 	 * @param schemaInitRequest schema 初始化请求
@@ -279,10 +275,6 @@ public class VectorStoreService {
 		return new ArrayList<>();
 	}
 
-	// endregion
-
-	// region 文档构建工具方法
-
 	public Document convertToDocument(TableInfoBO tableInfoBO, ColumnInfoBO columnInfoBO) {
 		String text = Optional.ofNullable(columnInfoBO.getDescription()).orElse(columnInfoBO.getName());
 		Map<String, Object> metadata = Map.of("name", columnInfoBO.getName(), "tableName", tableInfoBO.getName(),
@@ -300,7 +292,5 @@ public class VectorStoreService {
 				"table");
 		return new Document(tableInfoBO.getName(), text, metadata);
 	}
-
-	// endregion
 
 }
