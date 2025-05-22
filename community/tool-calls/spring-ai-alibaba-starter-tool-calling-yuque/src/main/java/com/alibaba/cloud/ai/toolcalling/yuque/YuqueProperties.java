@@ -15,25 +15,21 @@
  */
 package com.alibaba.cloud.ai.toolcalling.yuque;
 
+import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
+
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author 北极星
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.yuque")
-public class YuqueProperties {
+@ConfigurationProperties(prefix = YuqueProperties.YUQUE_PREFIX)
+public class YuqueProperties extends CommonToolCallProperties {
 
-	public static String BASE_URL = "https://www.yuque.com/api/v2/repo";
+	protected static final String YUQUE_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".yuque";
 
-	private String authToken;
-
-	public String getAuthToken() {
-		return authToken;
-	}
-
-	public YuqueProperties setAuthToken(String authToken) {
-		this.authToken = authToken;
-		return this;
+	public YuqueProperties() {
+		super("https://www.yuque.com/api/v2/repo");
 	}
 
 }

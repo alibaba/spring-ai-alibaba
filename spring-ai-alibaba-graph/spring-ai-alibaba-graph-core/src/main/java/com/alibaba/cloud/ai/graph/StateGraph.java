@@ -385,14 +385,6 @@ public class StateGraph {
 	}
 
 	/**
-	 * Key strategies map.
-	 * @return the map
-	 */
-	public Map<String, KeyStrategy> keyStrategies() {
-		return overAllState.keyStrategies();
-	}
-
-	/**
 	 * Gets state serializer.
 	 * @return the state serializer
 	 */

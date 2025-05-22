@@ -20,7 +20,7 @@
  <dependency>
   <groupId>com.alibaba.cloud.ai</groupId>
   <artifactId>spring-ai-alibaba-starter</artifactId>
-  <version>1.0.0-M8.1-SNAPSHOT</version>
+  <version>1.0.0-RC1.1</version>
  </dependency>
  ```
 
