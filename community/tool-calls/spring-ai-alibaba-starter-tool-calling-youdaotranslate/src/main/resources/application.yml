@@ -1,0 +1,10 @@
+spring:
+  ai:
+    alibaba:
+      toolcalling:
+        youdaotranslate:
+          access-key-id: dd
+          access-key-secret: dd
+
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY}

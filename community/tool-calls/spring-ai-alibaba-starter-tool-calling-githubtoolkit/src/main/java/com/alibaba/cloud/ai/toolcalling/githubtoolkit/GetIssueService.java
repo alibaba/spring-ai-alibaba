@@ -88,11 +88,11 @@ public class GetIssueService implements Function<GetIssueService.Request, Respon
 
 		List<String> labels = new ArrayList<>();
 		try {
-			String labelsJson = jsonParseTool.getFieldValueAsString(json, "labels");
-			if (labelsJson != null && !labelsJson.trim().equals("null") && !labelsJson.trim().isEmpty()) {
-				List<Map<String, Object>> labelObjects = jsonParseTool.jsonToList(labelsJson,
-						new TypeReference<Map<String, Object>>() {
-						});
+			List<Map<String, Object>> labelObjects = jsonParseTool.getFieldValue(json,
+					new TypeReference<List<Map<String, Object>>>() {
+					}, "labels");
+
+			if (labelObjects != null) {
 				labels = labelObjects.stream()
 					.map(labelMap -> (String) labelMap.get("name"))
 					.filter(Objects::nonNull)
@@ -106,11 +106,11 @@ public class GetIssueService implements Function<GetIssueService.Request, Respon
 
 		List<String> assignees = new ArrayList<>();
 		try {
-			String assigneesJson = jsonParseTool.getFieldValueAsString(json, "assignees");
-			if (assigneesJson != null && !assigneesJson.trim().equals("null") && !assigneesJson.trim().isEmpty()) {
-				List<Map<String, Object>> assigneeObjects = jsonParseTool.jsonToList(assigneesJson,
-						new TypeReference<Map<String, Object>>() {
-						});
+			List<Map<String, Object>> assigneeObjects = jsonParseTool.getFieldValue(json,
+					new TypeReference<List<Map<String, Object>>>() {
+					}, "assignees");
+
+			if (assigneeObjects != null) {
 				assignees = assigneeObjects.stream()
 					.map(assigneeMap -> (String) assigneeMap.get("login"))
 					.filter(Objects::nonNull)

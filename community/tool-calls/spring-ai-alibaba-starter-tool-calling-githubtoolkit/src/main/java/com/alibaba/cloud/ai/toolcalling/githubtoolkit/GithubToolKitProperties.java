@@ -36,6 +36,7 @@ public class GithubToolKitProperties extends CommonToolCallProperties {
 
 	public GithubToolKitProperties() {
 		super("https://api.github.com");
+		setPropertiesFromEnv(null, null, null, "GITHUB_TOKEN");
 	}
 
 	public String getOwner() {
@@ -52,22 +53,6 @@ public class GithubToolKitProperties extends CommonToolCallProperties {
 
 	public void setRepository(String repository) {
 		this.repository = repository;
-	}
-
-	/**
-	 * @deprecated Use {@link CommonToolCallProperties#getToken()} instead
-	 */
-	@Deprecated
-	public String getToken() {
-		return super.getToken();
-	}
-
-	/**
-	 * @deprecated Use {@link CommonToolCallProperties#setToken(String)} instead
-	 */
-	@Deprecated
-	public void setToken(String token) {
-		super.setToken(token);
 	}
 
 }
