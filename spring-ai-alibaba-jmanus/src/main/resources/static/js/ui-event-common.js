@@ -17,7 +17,9 @@ const TaskPilotUIEvent = (() => {
         PLAN_COMPLETED: 'ui:plan:completed',
         USER_MESSAGE_SEND_REQUESTED: 'ui:user:message:send_requested', // 新增事件
         CHAT_INPUT_CLEAR: 'ui:chatinput:clear', // 新增事件：清空聊天输入框
-        CHAT_INPUT_UPDATE_STATE: 'ui:chatinput:updatestate' // 新增事件：更新聊天输入框状态
+        CHAT_INPUT_UPDATE_STATE: 'ui:chatinput:updatestate', // 新增事件：更新聊天输入框状态
+        USER_INPUT_FORM_DISPLAY_REQUESTED: 'ui:userinputform:display_requested', // 新增事件：请求显示用户输入表单
+        USER_INPUT_FORM_REMOVE_REQUESTED: 'ui:userinputform:remove_requested'  // 新增事件：请求移除用户输入表单
     };
 
     // 事件发布订阅系统

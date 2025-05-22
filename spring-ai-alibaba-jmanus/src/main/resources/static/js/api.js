@@ -137,10 +137,24 @@ const ManusAPI = (() => {
                 throw new Error(`获取详细信息失败: ${response.status}`);
             }
 
-            return await response.json();
+            // 先获取原始文本进行检查
+            const rawText = await response.text();
+            console.log(`原始响应文本 (planId: ${planId}):`, rawText); // 打印原始文本
+
+            // 尝试解析原始文本
+            try {
+                return JSON.parse(rawText);
+            } catch (jsonParseError) {
+                console.error(`JSON 解析原始文本失败 (planId: ${planId}):`, jsonParseError);
+                console.error("原始文本中可能存在问题的部分，请检查是否有未转义的控制字符。");
+                // 为了让调用方知道这里出错了，并且错误与之前类似，我们重新抛出这个解析错误
+                // 或者根据需要返回一个特定的错误对象或null
+                throw jsonParseError; // 或者 return null; 
+            }
+
         } catch (error) {
             // 记录错误但不抛出异常
-            console.log('获取详细信息失败:', error.message);
+            console.log(`获取详细信息失败 (planId: ${planId}):`, error.message);
             return null;
         }
     };

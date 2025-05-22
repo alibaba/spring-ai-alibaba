@@ -154,7 +154,7 @@ public class DynamicAgent extends ReActAgent {
 				.toolCallbacks(callbacks)
 				.call()
 				.chatResponse();
-
+			
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			String responseByLLm = response.getResult().getOutput().getText();
 

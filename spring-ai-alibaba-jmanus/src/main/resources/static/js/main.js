@@ -5,8 +5,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const initializeApp = async () => {
         try {
             // 1. 初始化 UI 模块（包含基础事件系统）
-            await ManusUI.init();
+            await PlanExecutionManager.init();
             console.log('UI 模块初始化完成');
+
+            await ChatInputHandler.init(); 
 
             // 2. 初始化聊天处理器
             await ChatHandler.init();
@@ -23,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 5. 绑定发送按钮事件（确保在所有模块初始化后进行）
             const sendButton = document.querySelector('.send-btn');
             const inputField = document.querySelector('.input-area input');
-            
+
             sendButton.addEventListener('click', () => {
                 if (inputField.value.trim()) {
                     ChatHandler.handleUserMessage(inputField.value.trim());
@@ -51,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initializeSidebars() {
     const rightSidebar = document.getElementById('rightSidebar');
     const mainContent = document.getElementById('mainContent');
-    
+
     // 右侧边栏切换按钮事件
     document.getElementById('toggleRightSidebarBtn').addEventListener('click', () => {
         rightSidebar.classList.toggle('collapsed');

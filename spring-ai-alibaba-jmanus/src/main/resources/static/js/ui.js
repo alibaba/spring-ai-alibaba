@@ -1,11 +1,7 @@
 /**
  * UI 模块 - 处理用户界面交互 ， 类似controller ，处理定期轮询，请求API数据等一系列动作，是基座。
  */
-const ManusUI = (() => {
-    // 缓存DOM元素
-    let chatArea;
-    // let inputField;
-    // let sendButton;
+const PlanExecutionManager = (() => {
     
     // 当前活动的任务ID
     let activePlanId = null;
@@ -14,7 +10,7 @@ const ManusUI = (() => {
     let lastSequenceSize = 0;
     
     // 轮询间隔（毫秒） - 从2秒增加到6秒
-    const POLL_INTERVAL = 6000;
+    const POLL_INTERVAL = 5000;
     
     // 轮询定时器
     let pollTimer = null;
@@ -26,22 +22,7 @@ const ManusUI = (() => {
      * 初始化UI组件
      */
     const init = () => {
-        // 获取DOM元素
-        chatArea = document.querySelector('.chat-area');
-        // inputField = document.querySelector('.input-area input'); // 由 ChatInputHandler 管理
-        // sendButton = document.querySelector('.send-btn'); // 由 ChatInputHandler 管理
-        
-        // ChatInputHandler.init(handleSendMessage); // 旧的初始化方式
-        ChatInputHandler.init(); // ChatInputHandler 现在通过事件通信
-
-        // 添加事件监听器
-        // sendButton.addEventListener('click', handleSendMessage); // 由 ChatInputHandler 管理
-        // inputField.addEventListener('keypress', (e) => { // 由 ChatInputHandler 管理
-        //     if (e.key === 'Enter') {
-        //         handleSendMessage();
-        //     }
-        // });
-        
+  
         // 初始化事件监听
         initializeEventListeners();
         
@@ -111,7 +92,7 @@ const ManusUI = (() => {
             
             // 更新UI状态，启用发送按钮
             // updateInputState(true); // 改为通过事件通知 ChatInputHandler
-            TaskPilotUIEvent.EventSystem.emit('chatinput:updatestate', { enabled: true });
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_UPDATE_STATE, { enabled: true }); // CORRECTED
         });
 
         // 新增：监听用户请求发送消息的事件
@@ -137,9 +118,9 @@ const ManusUI = (() => {
         }
 
         // 清空输入框 (通过事件通知 ChatInputHandler)
-        TaskPilotUIEvent.EventSystem.emit('chatinput:clear');
+        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_CLEAR); // CORRECTED
         // 禁用输入框 (通过事件通知 ChatInputHandler)
-        TaskPilotUIEvent.EventSystem.emit('chatinput:updatestate', { enabled: false, placeholder: '处理中...' });
+        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_UPDATE_STATE, { enabled: false, placeholder: '处理中...' }); // CORRECTED
 
         try {
             // 发送到API
@@ -166,7 +147,37 @@ const ManusUI = (() => {
             
             // 发生错误时，确保可以再次提交 (通过事件通知 ChatInputHandler)
             // updateInputState(true);
-            TaskPilotUIEvent.EventSystem.emit('chatinput:updatestate', { enabled: true });
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_UPDATE_STATE, { enabled: true }); // CORRECTED
+        }
+    };
+
+    /**
+     * 处理计划完成的通用逻辑
+     * @param {object} details - 计划详情
+     */
+    const _handlePlanCompletion = (details) => {
+        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_COMPLETED, { ...details, planId: activePlanId });
+        lastSequenceSize = 0; // 只在计划完成时重置
+        stopPolling();
+
+        // 计划完成后，删除后端执行详情记录释放资源
+        try {
+            // 延迟一段时间后删除，确保前端已完全处理完成事件
+            setTimeout(async () => {
+                if (!activePlanId) return; // 确保 activePlanId 仍然有效
+                await fetch(`${ManusAPI.BASE_URL}/details/${activePlanId}`, {
+                    method: 'DELETE'
+                });
+                console.log(`已删除已完成的计划执行记录: ${activePlanId}`);
+                activePlanId = null; // 在成功删除后也清空
+            }, 5000); // 5秒后删除
+        } catch (error) {
+            console.log(`删除计划执行记录失败: ${error.message}`);
+        }
+        // 如果不是通过正常轮询停止的，也需要确保 activePlanId 被清空
+        if (details.completed) { // 确保只有在真正完成后才清空
+             activePlanId = null;
+             TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_UPDATE_STATE, { enabled: true });
         }
     };
 
@@ -190,20 +201,25 @@ const ManusUI = (() => {
             // 如果details为null（例如404错误），则跳过处理
             if (!details) {
                 console.log(`无法获取计划 ${activePlanId} 的详情`);
+                isPolling = false; // 重置轮询状态
                 return;
             }
             
             // 如果没有获取到详情，或者详情中没有步骤，则不进行处理
-            if (!details || !details.steps || details.steps.length === 0) {
+            if (!details.steps || details.steps.length === 0) {
                 console.log('轮询：未获取到有效详情或步骤为空', details);
                 // 如果planId存在但获取不到details，可能是plan已结束或被删除
-                if (activePlanId && !details) {
-                    console.log(`轮询：Plan ${activePlanId} 可能已结束或被删除，停止轮询。`);
+                // 或者如果 details.completed 为 true，也表示计划已结束
+                if (details.completed) {
+                    console.log(`轮询：Plan ${activePlanId} 已完成但无步骤，处理完成逻辑。`);
+                    _handlePlanCompletion(details);
+                } else if (activePlanId && !details.planId) { 
+                    console.log(`轮询：Plan ${activePlanId} 可能已结束或被删除（无planId返回），停止轮询。`);
                     stopPolling(); // 停止轮询
                     activePlanId = null; // 清空活动ID
-                    // updateInputState(true); // 恢复输入框 (通过事件通知 ChatInputHandler)
-                    TaskPilotUIEvent.EventSystem.emit('chatinput:updatestate', { enabled: true });
+                    TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_UPDATE_STATE, { enabled: true });
                 }
+                isPolling = false; // 重置轮询状态
                 return; 
             }
 
@@ -214,9 +230,14 @@ const ManusUI = (() => {
             const userInputState = await ManusAPI.checkWaitForInput(activePlanId);
             if (userInputState && userInputState.waiting) {
                 console.log('轮询：检测到需要用户输入', userInputState);
-                ChatHandler.displayUserInputForm(userInputState, details, chatArea); 
-                // updateInputState(false); // 禁用主输入框 (通过事件通知 ChatInputHandler)
-                TaskPilotUIEvent.EventSystem.emit('chatinput:updatestate', { enabled: false, placeholder: '等待用户在表单中输入...' });
+                // ChatHandler.displayUserInputForm(userInputState, details, chatArea); // 旧的直接调用方式
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.USER_INPUT_FORM_DISPLAY_REQUESTED, {
+                    userInputState: userInputState,
+                    planDetails: details
+                    // fallbackChatArea: chatArea // REMOVED
+                });
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_UPDATE_STATE, { enabled: false, placeholder: '等待用户在表单中输入...' });
+                isPolling = false; // 重置轮询状态，因为等待用户输入，暂时不继续轮询
                 return; 
             }
 
@@ -236,22 +257,7 @@ const ManusUI = (() => {
             
             // 如果计划已完成，发送完成事件，重置sequence size并停止轮询
             if (details.completed) {
-                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_COMPLETED, { ...details, planId: activePlanId }); // MODIFIED & Ensured planId
-                lastSequenceSize = 0; // 只在计划完成时重置
-                stopPolling();
-                
-                // 计划完成后，删除后端执行详情记录释放资源
-                try {
-                    // 延迟一段时间后删除，确保前端已完全处理完成事件
-                    setTimeout(async () => {
-                        await fetch(`${ManusAPI.BASE_URL}/details/${activePlanId}`, {
-                            method: 'DELETE'
-                        });
-                        console.log(`已删除已完成的计划执行记录: ${activePlanId}`);
-                    }, 5000); // 5秒后删除
-                } catch (error) {
-                    console.log(`删除计划执行记录失败: ${error.message}`);
-                }
+                _handlePlanCompletion(details); // 调用新的私有函数处理完成逻辑
             }
             
         } catch (error) {
@@ -267,11 +273,7 @@ const ManusUI = (() => {
     const startPolling = () => {
         if (pollTimer) {
             clearInterval(pollTimer);
-        }
-        
-        // 立即执行一次
-        pollPlanStatus();
-        
+        }  
         // 设置定时轮询，间隔已增加到6秒
         pollTimer = setInterval(pollPlanStatus, POLL_INTERVAL);
     };
@@ -284,33 +286,14 @@ const ManusUI = (() => {
             clearInterval(pollTimer);
             pollTimer = null;
         }
-    };
-
-    /**
-     * 滚动到聊天区域底部
-     */
-    const scrollToBottom = () => {
-        chatArea.scrollTop = chatArea.scrollHeight;
-    };
-
-    /**
-     * 滚动到指定元素
-     * @param {HTMLElement} element 
-     */
-    const scrollToElement = (element) => {
-        if (element && typeof element.scrollIntoView === 'function') {
-            element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        } else {
-            scrollToBottom(); // Fallback
-        }
+        // console.log('轮询已停止'); // 可以取消注释以进行调试
     };
 
     // 公开UI模块的方法和事件系统
     return {
         init,
         // handleSendMessage, // 不再直接暴露，通过事件触发
-        activePlanId, 
-        // updateInputState // 不再直接暴露，通过事件控制
-        pollPlanStatus // 暴露 pollPlanStatus 以便 ChatHandler 中的 displayUserInputForm 可以调用
+        get activePlanId() { return activePlanId; }, // 通过 getter 暴露 activePlanId
+      
     };
 })();

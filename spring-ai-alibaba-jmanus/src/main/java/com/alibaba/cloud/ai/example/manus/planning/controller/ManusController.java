@@ -23,6 +23,9 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState;
 import com.alibaba.cloud.ai.example.manus.planning.service.UserInputService;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.recorder.entity.PlanExecutionRecord;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +45,8 @@ public class ManusController {
 
 	private static final Logger logger = LoggerFactory.getLogger(ManusController.class);
 
+    private final ObjectMapper objectMapper;
+
 	@Autowired
 	@Lazy
 	private PlanningFactory planningFactory;
@@ -54,6 +59,15 @@ public class ManusController {
 
 	@Autowired
 	private UserInputService userInputService;
+
+    @Autowired
+    public ManusController(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+        // Register JavaTimeModule to handle LocalDateTime serialization/deserialization
+        this.objectMapper.registerModule(new JavaTimeModule());
+        // Ensure pretty printing is disabled by default for compact JSON
+        // this.objectMapper.disable(com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT);
+    }
 
 	/**
 	 * 异步执行 Manus 请求
@@ -101,7 +115,7 @@ public class ManusController {
 	 * @return 执行记录的 JSON 表示
 	 */
 	@GetMapping("/details/{planId}")
-	public synchronized ResponseEntity<String> getExecutionDetails(@PathVariable("planId") String planId) {
+	public synchronized ResponseEntity<?> getExecutionDetails(@PathVariable("planId") String planId) {
 		PlanExecutionRecord planRecord = planExecutionRecorder.getExecutionRecord(planId);
 
 		if (planRecord == null) {
@@ -114,11 +128,18 @@ public class ManusController {
 			// If waiting for user input, we might want to return a combined response
 			// or a specific response indicating this. For now, let's assume the client
 			// will also poll the /wait-for-input endpoint.
-			// Alternatively, we could augment the planRecord.toJson() with this info.
+			// Alternatively, we could augment the planRecord with this info.
 			// For simplicity, keeping them separate for now.
 		}
 
-		return ResponseEntity.ok(planRecord.toJson());
+		try {
+            // 使用Jackson ObjectMapper将对象转换为JSON字符串
+            String jsonResponse = objectMapper.writeValueAsString(planRecord);
+            return ResponseEntity.ok(jsonResponse);
+        } catch (JsonProcessingException e) {
+            logger.error("Error serializing PlanExecutionRecord to JSON for planId: {}", planId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing request: " + e.getMessage());
+        }
 	}
 
 	/**

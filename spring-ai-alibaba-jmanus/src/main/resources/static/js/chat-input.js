@@ -1,3 +1,6 @@
+/**
+ * 这个对应 输入框 和发送按钮
+ */
 const ChatInputHandler = (() => {
     let inputField;
     let sendButton;
