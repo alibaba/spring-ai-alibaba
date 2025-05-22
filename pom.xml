@@ -54,6 +54,7 @@
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-graph</module>
         <module>spring-ai-alibaba-jmanus</module>
+        <module>spring-ai-alibaba-deepresearch</module>
         <module>spring-ai-alibaba-studio</module>
 
         <!-- Spring AI Alibaba Tool Call Plugins -->
@@ -171,7 +172,7 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.0.0-RC1.1</revision>
+        <revision>1.0.0-SNAPSHOT</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
@@ -181,7 +182,7 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- Spring version -->
-        <spring-ai.version>1.0.0-RC1</spring-ai.version>
+        <spring-ai.version>1.0.0</spring-ai.version>
         <spring-boot.version>3.4.5</spring-boot.version>
         <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 
