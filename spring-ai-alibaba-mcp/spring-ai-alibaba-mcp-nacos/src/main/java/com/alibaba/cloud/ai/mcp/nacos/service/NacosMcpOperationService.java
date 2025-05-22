@@ -21,8 +21,11 @@ import com.alibaba.cloud.ai.mcp.nacos.service.model.NacosMcpServerEndpoint;
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.ai.model.mcp.McpEndpointInfo;
+import com.alibaba.nacos.api.ai.model.mcp.McpEndpointSpec;
+import com.alibaba.nacos.api.ai.model.mcp.McpServerBasicInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServiceRef;
+import com.alibaba.nacos.api.ai.model.mcp.McpToolSpecification;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.pojo.Instance;
@@ -47,22 +50,20 @@ public class NacosMcpOperationService {
     
     private static final Logger logger = LoggerFactory.getLogger(LoadbalancedMcpAsyncClient.class);
     
-    private AiMaintainerService aiMaintainerService;
+    private final AiMaintainerService aiMaintainerService;
     
-    private NamingService namingService;
+    private final NamingService namingService;
     
-    private String namespace;
+    private final String namespace;
     
-    private Map<String, List<NacosMcpSubscriber>> subscribers;
-    
-    private ScheduledExecutorService executorService;
+    private final Map<String, List<NacosMcpSubscriber>> subscribers;
     
     public NacosMcpOperationService(Properties nacosProperties) throws NacosException {
         this.aiMaintainerService = AiMaintainerFactory.createAiMaintainerService(nacosProperties);
         this.namingService = NacosFactory.createNamingService(nacosProperties);
         this.namespace = nacosProperties.getProperty(PropertyKeyConst.NAMESPACE, "public");
         this.subscribers = new ConcurrentHashMap<>();
-        this.executorService = new ScheduledThreadPoolExecutor(1, r -> {
+        ScheduledExecutorService executorService = new ScheduledThreadPoolExecutor(1, r -> {
             Thread t = new Thread(r);
             t.setName("nacos-mcp-operation-service");
             t.setDaemon(true);
@@ -98,7 +99,8 @@ public class NacosMcpOperationService {
         if (mcpServerDetailInfo == null) {
             return null;
         }
-        List<McpEndpointInfo> mcpEndpointInfoList = mcpServerDetailInfo.getBackendEndpoints();
+        List<McpEndpointInfo> mcpEndpointInfoList = mcpServerDetailInfo.getBackendEndpoints() == null ?
+                new ArrayList<>() : mcpServerDetailInfo.getBackendEndpoints();
         String exportPath = mcpServerDetailInfo.getRemoteServerConfig().getExportPath();
         String protocol = mcpServerDetailInfo.getProtocol();
         String realVersion = mcpServerDetailInfo.getVersionDetail().getVersion();
@@ -122,6 +124,13 @@ public class NacosMcpOperationService {
         return aiMaintainerService.getMcpServerDetail(this.namespace, mcpName, version);
     }
     
+    public McpServerDetailInfo getServerDetail(String mcpName, String version) throws NacosException {
+        if (mcpName == null || version == null) {
+            throw new IllegalArgumentException("mcpName must not be null");
+        }
+        return aiMaintainerService.getMcpServerDetail(this.namespace, mcpName, version);
+    }
+    
     
     public void subscribeNacosMcpServer(String mcpNameAndVersion, NacosMcpSubscriber nacosMcpSubscriber) {
         if (mcpNameAndVersion == null || nacosMcpSubscriber == null) {
@@ -140,6 +149,16 @@ public class NacosMcpOperationService {
         mcpEndpointInfo.setAddress(instance.getIp());
         mcpEndpointInfo.setPort(instance.getPort());
         return mcpEndpointInfo;
+    }
+    
+    public boolean createMcpServer(String mcpName, McpServerBasicInfo serverSpec, McpToolSpecification toolSpec,
+            McpEndpointSpec endpointSpec) throws NacosException {
+        endpointSpec.getData().put("namespaceId",this.namespace);
+        return aiMaintainerService.createMcpServer(this.namespace, mcpName, serverSpec, toolSpec, endpointSpec);
+    }
+    
+    public void registerService(String serviceName, String groupName, Instance instance) throws NacosException {
+        this.namingService.registerInstance(serviceName,groupName,instance);
     }
     
 }

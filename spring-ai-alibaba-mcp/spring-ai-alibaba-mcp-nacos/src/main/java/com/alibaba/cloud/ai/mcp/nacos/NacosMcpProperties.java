@@ -56,7 +56,7 @@ public class NacosMcpProperties {
 
 	private static final Logger log = LoggerFactory.getLogger(NacosMcpProperties.class);
 	
-	String namespace;
+	String namespace = DEFAULT_NAMESPACE;
 
 	String serverAddr;
 
