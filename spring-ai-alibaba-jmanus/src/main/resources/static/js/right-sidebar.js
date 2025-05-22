@@ -24,7 +24,7 @@ const RightSidebar = (() => {
         executionProgressElement = document.getElementById('execution-progress');
         
         // 订阅UI相关事件
-        ManusUI.EventSystem.on('plan-update', handlePlanUpdate);
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.PLAN_UPDATE, handlePlanUpdate);
         
         // 添加步骤点击事件委托到聊天区域
         const chatArea = document.querySelector('.chat-area');

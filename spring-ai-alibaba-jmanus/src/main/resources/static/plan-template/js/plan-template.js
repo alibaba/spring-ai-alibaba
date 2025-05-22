@@ -384,20 +384,20 @@ async function pollPlanStatus() {
                     // 触发计划完成事件
                     if (typeof PlanUIEvents !== 'undefined') {
                         console.log("发送计划完成事件，带有完整数据");
-                        PlanUIEvents.EventSystem.emit('plan-completed', finalPlanData);
+                        PlanUIEvents.EventSystem.emit(PlanUIEvents.UI_EVENTS.PLAN_COMPLETED, finalPlanData);
                     }
                 } else {
                     // 如果无法获取最终数据，仍使用当前数据
                     console.log("无法获取最终数据，使用当前数据");
                     if (typeof PlanUIEvents !== 'undefined') {
-                        PlanUIEvents.EventSystem.emit('plan-completed', planData);
+                        PlanUIEvents.EventSystem.emit(PlanUIEvents.UI_EVENTS.PLAN_COMPLETED, planData);
                     }
                 }
             } catch (error) {
                 console.error("获取最终数据失败:", error);
                 // 出错时仍使用当前数据
                 if (typeof PlanUIEvents !== 'undefined') {
-                    PlanUIEvents.EventSystem.emit('plan-completed', planData);
+                    PlanUIEvents.EventSystem.emit(PlanUIEvents.UI_EVENTS.PLAN_COMPLETED, planData);
                 }
             }
 
@@ -433,7 +433,7 @@ function handlePlanData(planData) {
     // 更新UI状态
     updateUIState();
 
-    PlanUIEvents.EventSystem.emit('plan-update', planData);
+    PlanUIEvents.EventSystem.emit(PlanUIEvents.UI_EVENTS.PLAN_UPDATE, planData);
 
     isPolling = false;
 }
@@ -586,7 +586,7 @@ async function executePlan() {
 
             // 模拟发送plan-update事件
             if (currentPlanData) {
-                PlanUIEvents.EventSystem.emit('plan-update', currentPlanData);
+                PlanUIEvents.EventSystem.emit(PlanUIEvents.UI_EVENTS.PLAN_UPDATE, currentPlanData);
             }
         }
 

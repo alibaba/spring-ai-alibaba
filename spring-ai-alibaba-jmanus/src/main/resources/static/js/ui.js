@@ -1,5 +1,5 @@
 /**
- * UI 模块 - 处理用户界面交互
+ * UI 模块 - 处理用户界面交互 ， 类似controller ，处理定期轮询，请求API数据等一系列动作，是基座。
  */
 const ManusUI = (() => {
     // 缓存DOM元素
@@ -25,50 +25,6 @@ const ManusUI = (() => {
     // 用户输入表单的容器
     let userInputFormContainer = null;
     
-    // 事件监听器集合
-    const eventListeners = {
-        'plan-update': [],
-        'agent-execution': [],
-        'plan-completed': []
-    };
-    
-    // UI更新相关的事件类型
-    const UI_EVENTS = {
-        MESSAGE_UPDATE: 'ui:message:update',
-        MESSAGE_COMPLETE: 'ui:message:complete',
-        SECTION_ADD: 'ui:section:add',
-        DIALOG_ROUND_START: 'ui:dialog:round:start',  // 新增：对话轮次开始
-        DIALOG_ROUND_UPDATE: 'ui:dialog:round:update' // 新增：对话轮次更新
-    };
-
-    // 事件发布订阅系统
-    const EventSystem = {
-        // 订阅事件
-        on: (eventName, callback) => {
-            if (!eventListeners[eventName]) {
-                eventListeners[eventName] = [];
-            }
-            eventListeners[eventName].push(callback);
-        },
-        
-        // 发布事件
-        emit: (eventName, data) => {
-            if (eventListeners[eventName]) {
-                // 确保事件数据中包含planId
-                const eventData = data ? { ...data, planId: activePlanId } : { planId: activePlanId };
-                eventListeners[eventName].forEach(callback => callback(eventData));
-            }
-        },
-        
-        // 取消订阅
-        off: (eventName, callback) => {
-            if (eventListeners[eventName]) {
-                eventListeners[eventName] = eventListeners[eventName]
-                    .filter(listener => listener !== callback);
-            }
-        }
-    };
-
     /**
      * 初始化UI组件
      */
@@ -97,53 +53,57 @@ const ManusUI = (() => {
      */
     const initializeEventListeners = () => {
         // 计划相关事件
-        EventSystem.on('plan-update', (details) => {
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.PLAN_UPDATE, (details) => {
             if (!details) return;
             
             // 发出UI更新事件
             if (details.title) {
-                EventSystem.emit(UI_EVENTS.MESSAGE_UPDATE, {
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.MESSAGE_UPDATE, {
                     content: `正在执行: ${details.title}`,
-                    type: 'status'
+                    type: 'status',
+                    planId: activePlanId
                 });
             }
             
             if (details.steps && details.currentStepIndex !== null) {
                 const currentStep = details.steps[details.currentStepIndex];
                 if (currentStep) {
-                    EventSystem.emit(UI_EVENTS.MESSAGE_UPDATE, {
+                    TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.MESSAGE_UPDATE, {
                         content: `[${details.currentStepIndex + 1}/${details.steps.length}] ${currentStep}`,
-                        type: 'step'
+                        type: 'step',
+                        planId: activePlanId
                     });
                 }
             }
         });
 
         // 智能体执行事件
-        EventSystem.on('agent-execution', (record) => {
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.AGENT_EXECUTION, (record) => {
             if (!record) return;
             
             // 发出添加section事件
-            EventSystem.emit(UI_EVENTS.SECTION_ADD, {
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.SECTION_ADD, {
                 agentName: record.agentName,
                 agentDescription: record.agentDescription,
                 request: record.agentRequest,
-                result: record.result
+                result: record.result,
+                planId: activePlanId
             });
 
             if (record.isCompleted) {
-                EventSystem.emit(UI_EVENTS.MESSAGE_COMPLETE);
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.MESSAGE_COMPLETE, { planId: activePlanId });
             }
         });
 
         // 计划完成事件
-        EventSystem.on('plan-completed', (details) => {
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.PLAN_COMPLETED, (details) => {
             if (!details) return;
-            EventSystem.emit(UI_EVENTS.MESSAGE_UPDATE, {
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.MESSAGE_UPDATE, {
                 content: details.summary ? `执行完成: ${details.summary}` : '执行完成',
-                type: 'completion'
+                type: 'completion',
+                planId: activePlanId
             });
-            EventSystem.emit(UI_EVENTS.MESSAGE_COMPLETE);
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.MESSAGE_COMPLETE, { planId: activePlanId });
             stopPolling();
             
             // 清空活动计划ID
@@ -163,9 +123,10 @@ const ManusUI = (() => {
         
         // 如果当前有活动的计划正在执行，则不允许提交新任务
         if (activePlanId) {
-            EventSystem.emit(UI_EVENTS.MESSAGE_UPDATE, {
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.MESSAGE_UPDATE, {
                 content: `当前有任务正在执行，请等待完成后再提交新任务`,
-                type: 'error'
+                type: 'error',
+                planId: activePlanId
             });
             return;
         }
@@ -181,8 +142,8 @@ const ManusUI = (() => {
             activePlanId = response.planId;
             
             // 发出对话轮次开始事件
-            EventSystem.emit(UI_EVENTS.DIALOG_ROUND_START, {
-                planId: activePlanId,
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.DIALOG_ROUND_START, {
+                planId: activePlanId, 
                 query: query
             });
             
@@ -190,9 +151,10 @@ const ManusUI = (() => {
             startPolling();
             
         } catch (error) {
-            EventSystem.emit(UI_EVENTS.MESSAGE_UPDATE, {
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.MESSAGE_UPDATE, {
                 content: `发送失败: ${error.message}`,
-                type: 'error'
+                type: 'error',
+                planId: activePlanId
             });
             
             // 发生错误时，确保可以再次提交
@@ -255,7 +217,7 @@ const ManusUI = (() => {
             }
 
             // 首先，确保UI已更新以反映当前步骤，这样表单可以被放置在正确的位置
-            EventSystem.emit('plan-update', details);
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_UPDATE, { ...details, planId: activePlanId });
 
             // 然后，检查是否需要用户输入
             const userInputState = await ManusAPI.checkWaitForInput(activePlanId);
@@ -268,8 +230,6 @@ const ManusUI = (() => {
                 return; 
             }
 
-            // // 正常处理计划更新 -- 这行已上移
-            // EventSystem.emit('plan-update', details);
             
             // 如果有新的智能体执行记录，且sequence size增加了，才发送对应事件
             if (details.agentExecutionSequence) {
@@ -278,7 +238,7 @@ const ManusUI = (() => {
                     // 只处理新增的记录
                     const newRecords = details.agentExecutionSequence.slice(lastSequenceSize);
                     newRecords.forEach(record => {
-                        EventSystem.emit('agent-execution', record);
+                        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.AGENT_EXECUTION, { ...record, planId: activePlanId }); // MODIFIED & Ensured planId
                     });
                     lastSequenceSize = currentSize;
                 }
@@ -286,7 +246,7 @@ const ManusUI = (() => {
             
             // 如果计划已完成，发送完成事件，重置sequence size并停止轮询
             if (details.completed) {
-                EventSystem.emit('plan-completed', details);
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_COMPLETED, { ...details, planId: activePlanId }); // MODIFIED & Ensured planId
                 lastSequenceSize = 0; // 只在计划完成时重置
                 stopPolling();
                 
@@ -477,8 +437,6 @@ const ManusUI = (() => {
     return {
         init,
         handleSendMessage,
-        EventSystem,
-        UI_EVENTS,
         activePlanId, // 暴露 activePlanId 以便其他模块可能需要访问
         updateInputState // 暴露以便外部可以控制输入状态
     };

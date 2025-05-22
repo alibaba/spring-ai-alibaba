@@ -93,8 +93,8 @@
         ChatHandler.chatArea = document.querySelector('.simple-chat-area');
         
         // 订阅业务事件 - 使用统一的ManusUI.EventSystem
-        ManusUI.EventSystem.on('plan-update', ChatHandler.handlePlanUpdate);
-        ManusUI.EventSystem.on('plan-completed', ChatHandler.handlePlanComplete);
+        ManusUI.EventSystem.on(ManusUI.UI_EVENTS.PLAN_UPDATE, ChatHandler.handlePlanUpdate);
+        ManusUI.EventSystem.on(ManusUI.UI_EVENTS.PLAN_COMPLETED, ChatHandler.handlePlanComplete);
         ManusUI.EventSystem.on(ManusUI.UI_EVENTS.DIALOG_ROUND_START, ChatHandler.handleDialogRoundStart);
         
         console.log('[ChatHandler适配器] 初始化完成，chatArea =', ChatHandler.chatArea);

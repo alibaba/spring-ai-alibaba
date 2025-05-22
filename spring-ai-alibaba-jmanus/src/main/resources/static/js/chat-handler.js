@@ -1,5 +1,5 @@
 /**
- * 聊天内容处理模块
+ * 聊天内容处理模块 , 对应聊天里面用户/Ai的对话显示部分
  */
 const ChatHandler = (() => {
     let chatArea;
@@ -14,9 +14,9 @@ const ChatHandler = (() => {
         chatArea = document.querySelector('.chat-area');
         
         // 订阅业务事件
-        ManusUI.EventSystem.on('plan-update', handlePlanUpdate);
-        ManusUI.EventSystem.on('plan-completed', handlePlanComplete);
-        ManusUI.EventSystem.on(ManusUI.UI_EVENTS.DIALOG_ROUND_START, handleDialogRoundStart);
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.PLAN_UPDATE, handlePlanUpdate);
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.PLAN_COMPLETED, handlePlanComplete);
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.DIALOG_ROUND_START, handleDialogRoundStart);
     };
 
     /**
@@ -24,7 +24,7 @@ const ChatHandler = (() => {
      */
     const handleUserMessage = (message) => {
         // 交给 UI 模块处理发送消息
-        ManusUI.handleSendMessage();
+        ManusUI.handleSendMessage(); 
     };
     
     /**

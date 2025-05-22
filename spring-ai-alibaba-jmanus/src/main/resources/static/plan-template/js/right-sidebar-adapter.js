@@ -38,7 +38,7 @@
         // 使用统一的事件系统，确保事件能正确传递
         // 这里使用ManusUI.EventSystem，它已经在chat-handler-adapter.js中被定义为包装了PlanUIEvents.EventSystem
         if (typeof ManusUI !== 'undefined' && ManusUI.EventSystem) {
-            ManusUI.EventSystem.on('plan-update', RightSidebar.handlePlanUpdate);
+            ManusUI.EventSystem.on(ManusUI.UI_EVENTS.PLAN_UPDATE, RightSidebar.handlePlanUpdate);
             console.log('[RightSidebar适配器] 已订阅plan-update事件');
         } else {
             console.error('[RightSidebar适配器] ManusUI.EventSystem未定义，无法订阅事件');
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function adaptRightSidebar() {
     // 直接订阅PlanUIEvents事件，避免循环触发
     // 统一使用PlanUIEvents作为事件源
-    PlanUIEvents.EventSystem.on('plan-update', (planDetails) => {
+    PlanUIEvents.EventSystem.on(PlanUIEvents.UI_EVENTS.PLAN_UPDATE, (planDetails) => {
         if (!planDetails || !planDetails.planId) return;
         
         console.log('[RightSidebar适配器] 收到plan-update事件');
@@ -99,7 +99,7 @@ function adaptRightSidebar() {
     
     // 从ManusUI到PlanUIEvents
     if (typeof ManusUI !== 'undefined' && ManusUI.EventSystem) {
-        ManusUI.EventSystem.on('plan-update', (planDetails) => {
+        ManusUI.EventSystem.on(ManusUI.UI_EVENTS.PLAN_UPDATE, (planDetails) => {
             if (!planDetails || !planDetails.planId) return;
             console.log('[RightSidebar适配器] ManusUI收到plan-update事件');
         });
