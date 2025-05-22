@@ -33,7 +33,7 @@ public class DingTalkAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Send DingTalk group chat messages using a custom robot")
-	public DingTalkRobotService dingTalkGroupSendMessageByCustomRobotFunction(DingTalkProperties dingTalkProperties) {
+	public DingTalkRobotService dingTalkGroupSendMessageByCustomRobot(DingTalkProperties dingTalkProperties) {
 		return new DingTalkRobotService(dingTalkProperties);
 	}
 

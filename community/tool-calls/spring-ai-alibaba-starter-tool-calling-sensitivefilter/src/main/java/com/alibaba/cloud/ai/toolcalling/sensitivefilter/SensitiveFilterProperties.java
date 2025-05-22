@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.toolcalling.sensitivefilter;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
 import static com.alibaba.cloud.ai.toolcalling.sensitivefilter.SensitiveFilterProperties.SENSITIVE_FILTER_PREFIX;
@@ -26,11 +27,9 @@ import static com.alibaba.cloud.ai.toolcalling.sensitivefilter.SensitiveFilterPr
  * @author Makoto
  */
 @ConfigurationProperties(prefix = SensitiveFilterProperties.SENSITIVE_FILTER_PREFIX)
-public class SensitiveFilterProperties {
+public class SensitiveFilterProperties extends CommonToolCallProperties {
 
 	protected static final String SENSITIVE_FILTER_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".sensitivefilter";
-
-	private boolean enabled = true;
 
 	private String replacement = "***";
 
@@ -43,11 +42,11 @@ public class SensitiveFilterProperties {
 	private boolean filterEmail = true;
 
 	public boolean isEnabled() {
-		return enabled;
+		return super.isEnabled();
 	}
 
 	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
+		super.setEnabled(enabled);
 	}
 
 	public String getReplacement() {

@@ -38,7 +38,7 @@ public class SensitiveFilterAutoConfiguration {
 	@ConditionalOnMissingBean
 	@Description("It is used to filter and replace sensitive information in text, "
 			+ "such as mobile phone numbers, ID numbers, bank card numbers, etc")
-	public SensitiveFilterService sensitiveFilterFunction(SensitiveFilterProperties properties) {
+	public SensitiveFilterService sensitiveFilter(SensitiveFilterProperties properties) {
 		return new SensitiveFilterService(properties);
 	}
 
