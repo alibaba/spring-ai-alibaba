@@ -20,9 +20,9 @@ import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import org.springframework.util.MultiValueMap;
 
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -30,38 +30,66 @@ import java.util.function.Function;
  */
 public class WeatherSearchService implements Function<WeatherSearchService.Request, WeatherSearchService.Response> {
 
-	private final WeatherTools weatherTools;
+	private final WebClientTool webClientTool;
 
 	private final JsonParseTool jsonParseTool;
 
+	private final AmapProperties amapProperties;
+
 	public WeatherSearchService(JsonParseTool jsonParseTool, AmapProperties amapProperties,
 			WebClientTool webClientTool) {
-		weatherTools = new WeatherTools(amapProperties, webClientTool);
+		this.webClientTool = webClientTool;
 		this.jsonParseTool = jsonParseTool;
+		this.amapProperties = amapProperties;
+	}
+
+	/**
+	 * Geographic/Inverse Geocoding
+	 * @param address
+	 * @return https://lbs.amap.com/api/webservice/guide/api/georegeo#s2
+	 */
+	private String getAddressCityCode(String address) {
+		try {
+			return webClientTool
+				.get("/geocode/geo",
+						MultiValueMap.fromSingleValue(Map.of("key", amapProperties.getApiKey(), "address", address)))
+				.block();
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Failed to get address city code", e);
+		}
+	}
+
+	/**
+	 * Weather Information
+	 * @param cityCode
+	 * @return https://lbs.amap.com/api/webservice/guide/api/weatherinfo#s0
+	 */
+	private String getWeather(String cityCode) {
+		try {
+			return webClientTool
+				.get("/weather/weatherInfo",
+						MultiValueMap.fromSingleValue(
+								Map.of("key", amapProperties.getApiKey(), "city", cityCode, "extensions", "all")))
+				.block();
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Failed to get weather information", e);
+		}
+
 	}
 
 	@Override
 	public Response apply(Request request) {
-
-		String responseBody = weatherTools.getAddressCityCode(request.address);
-
-		String adcode = "";
-
+		String responseBody = this.getAddressCityCode(request.address);
 		try {
-			JsonObject jsonObject = jsonParseTool.jsonToObject(responseBody, JsonObject.class);
-			JsonArray geocodesArray = jsonObject.getAsJsonArray("geocodes");
-			if (geocodesArray != null && !geocodesArray.isEmpty()) {
-				JsonObject firstGeocode = geocodesArray.get(0).getAsJsonObject();
-				adcode = firstGeocode.get("adcode").getAsString();
-			}
+			String arrayString = jsonParseTool.getFieldValueAsString(responseBody, "geocodes");
+			String firstElement = jsonParseTool.getFirstElementFromJsonArrayString(arrayString);
+			return new Response(this.getWeather(jsonParseTool.getFieldValue(firstElement, String.class, "adcode")));
 		}
 		catch (Exception e) {
 			return new Response("Error occurred while processing the request.");
 		}
-
-		String weather = weatherTools.getWeather(adcode);
-
-		return new Response(weather);
 	}
 
 	@JsonClassDescription("Get the weather conditions for a specified address.")

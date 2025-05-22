@@ -28,9 +28,9 @@ public class AmapProperties extends CommonToolCallProperties {
 
 	protected static final String AMAP_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".amap";
 
-	public AmapProperties(String webApiKey) {
+	public AmapProperties() {
 		super("https://restapi.amap.com/v3");
-		setApiKey(webApiKey);
+		this.setPropertiesFromEnv("GAODE_AMAP_API_KEY", null, null, null);
 	}
 
 	public String getWebApiKey() {
