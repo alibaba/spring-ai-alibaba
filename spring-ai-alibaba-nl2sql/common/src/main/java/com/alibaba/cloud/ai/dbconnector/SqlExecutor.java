@@ -83,18 +83,20 @@ public class SqlExecutor {
 		}
 	}
 
-	private static List<String[]> executeQuery(Connection connection, String databaseOrSchema, String sql) throws SQLException {
+	private static List<String[]> executeQuery(Connection connection, String databaseOrSchema, String sql)
+			throws SQLException {
 		String originalDb = connection.getCatalog();
 		DatabaseMetaData metaData = connection.getMetaData();
 		String dialect = metaData.getDatabaseProductName();
 
-		try (Statement statement = connection.createStatement()){
+		try (Statement statement = connection.createStatement()) {
 
 			if (dialect.equals(DatabaseDialectEnum.MYSQL.code)) {
 				if (StringUtils.isNotEmpty(databaseOrSchema)) {
 					statement.execute("use `" + databaseOrSchema + "`;");
 				}
-			} else if (dialect.equals(DatabaseDialectEnum.POSTGRESQL.code)) {
+			}
+			else if (dialect.equals(DatabaseDialectEnum.POSTGRESQL.code)) {
 				if (StringUtils.isNotEmpty(databaseOrSchema)) {
 					statement.execute("set search_path = '" + databaseOrSchema + "';");
 				}
