@@ -20,7 +20,6 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
@@ -120,10 +119,10 @@ public class DashScopeMultiModalChatTests {
 
 		// Create media list with URL
 		List<Media> mediaList = List.of(new Media(MimeTypeUtils.IMAGE_PNG,
-				new URI("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg").toURL().toURI()));
+				new URI("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg")));
 
 		// Create user message with media
-		UserMessage message = UserMessage.builder().media(mediaList).text(TEST_PROMPT).build();
+		UserMessage message = UserMessage.builder().text(TEST_PROMPT).media(mediaList).build();
 		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		// Create prompt with options
@@ -196,7 +195,7 @@ public class DashScopeMultiModalChatTests {
 		}
 
 		// Create user message with media
-		UserMessage message = UserMessage.builder().media(mediaList).text(TEST_VIDEO_PROMPT).build();
+		UserMessage message = UserMessage.builder().text(TEST_VIDEO_PROMPT).media(mediaList).build();
 		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.VIDEO);
 
 		// Create prompt with options
@@ -274,10 +273,10 @@ public class DashScopeMultiModalChatTests {
 
 		// Create media list with URL
 		List<Media> mediaList = List.of(new Media(MimeTypeUtils.IMAGE_PNG,
-				new URI("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg").toURL().toURI()));
+				new URI("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg")));
 
 		// Create user message with media
-		UserMessage message = UserMessage.builder().media(mediaList).text(TEST_PROMPT).build();
+		UserMessage message = UserMessage.builder().text(TEST_PROMPT).media(mediaList).build();
 		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		// Create prompt
@@ -350,7 +349,7 @@ public class DashScopeMultiModalChatTests {
 		}
 
 		// Create user message with media
-		UserMessage message = UserMessage.builder().media(mediaList).text(TEST_VIDEO_PROMPT).build();
+		UserMessage message = UserMessage.builder().text(TEST_VIDEO_PROMPT).media(mediaList).build();
 		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.VIDEO);
 
 		// Create prompt
@@ -428,8 +427,8 @@ public class DashScopeMultiModalChatTests {
 
 		// Create user message with resource media and custom prompt
 		UserMessage message = UserMessage.builder()
-			.media(new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")))
 			.text("请详细描述这张图片中的场景，包括人物、动物、环境等细节，并分析图片的情感基调。")
+			.media(new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")))
 			.build();
 		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 

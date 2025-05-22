@@ -16,8 +16,14 @@
 
 package com.alibaba.cloud.ai.example.graph.bigtool.agent;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
@@ -29,11 +35,6 @@ import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import static com.alibaba.cloud.ai.example.graph.bigtool.constants.Constant.*;
 
@@ -75,7 +76,8 @@ public class CalculateAgent implements NodeAction {
 				.inputSchema(JsonSchemaGenerator.generateForMethodInput(toolMethod));
 
 			MethodToolCallback build = MethodToolCallback.builder()
-				.toolDefinition(toolDefinitionBuilder.description(document.getText()).build())
+				.toolDefinition(
+						ToolDefinition.builder().name(toolMethod.getName()).description(document.getText()).build())
 				.toolMethod(toolMethod)
 				.build();
 
