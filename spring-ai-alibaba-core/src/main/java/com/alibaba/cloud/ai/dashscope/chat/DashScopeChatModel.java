@@ -171,7 +171,7 @@ public class DashScopeChatModel implements ChatModel {
 
 	@Override
 	public ChatOptions getDefaultOptions() {
-		return this.defaultOptions;
+		return DashScopeChatOptions.fromOptions(this.defaultOptions);
 	}
 
 	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
