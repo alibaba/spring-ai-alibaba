@@ -27,8 +27,8 @@
  * asynchronous edge actions.</li>
  * <li>{@link com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig} - Interface for
  * asynchronous node actions by config.</li>
- *  <li>{@link com.alibaba.cloud.ai.graph.action.NodeActionWithConfig} - Interface for
- * node actions by config.</li>
+ * <li>{@link com.alibaba.cloud.ai.graph.action.NodeActionWithConfig} - Interface for node
+ * actions by config.</li>
  * </ul>
  *
  */
