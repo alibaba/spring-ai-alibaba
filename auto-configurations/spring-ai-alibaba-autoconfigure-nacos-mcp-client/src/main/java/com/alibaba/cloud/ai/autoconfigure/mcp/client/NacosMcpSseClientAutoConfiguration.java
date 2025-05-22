@@ -18,6 +18,8 @@ package com.alibaba.cloud.ai.autoconfigure.mcp.client;
 
 import com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegistryProperties;
 import com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties;
+import com.alibaba.cloud.ai.mcp.nacos.registry.model.McpNacosConstant;
+import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingFactory;
 import com.alibaba.nacos.api.naming.NamingService;
@@ -55,8 +57,10 @@ public class NacosMcpSseClientAutoConfiguration {
 	}
 
 	@Bean
-	public NamingService nacosNamingService(NacosMcpProperties nacosMcpProperties) {
+	public NamingService nacosNamingService(NacosMcpProperties nacosMcpProperties,
+			NacosMcpRegistryProperties nacosMcpRegistryProperties) {
 		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
+		nacosProperties.put(PropertyKeyConst.NAMESPACE, nacosMcpRegistryProperties.getServiceNamespace());
 		try {
 			return NamingFactory.createNamingService(nacosProperties);
 		}
@@ -66,8 +70,10 @@ public class NacosMcpSseClientAutoConfiguration {
 	}
 
 	@Bean
-	public NacosConfigService nacosConfigService(NacosMcpProperties nacosMcpProperties) {
+	public NacosConfigService nacosConfigService(NacosMcpProperties nacosMcpProperties,
+			NacosMcpRegistryProperties nacosMcpRegistryProperties) {
 		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
+		nacosProperties.put(PropertyKeyConst.NAMESPACE, nacosMcpRegistryProperties.getServiceNamespace());
 		try {
 			return new NacosConfigService(nacosProperties);
 		}
@@ -80,7 +86,7 @@ public class NacosMcpSseClientAutoConfiguration {
 	public Map<String, List<NamedClientMcpTransport>> server2NamedTransport(
 			NacosMcpSseClientProperties nacosMcpSseClientProperties, NamingService namingService,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
-			ObjectProvider<ObjectMapper> objectMapperProvider) {
+			NacosMcpRegistryProperties nacosMcpRegistryProperties, ObjectProvider<ObjectMapper> objectMapperProvider) {
 		Map<String, List<NamedClientMcpTransport>> server2NamedTransport = new HashMap<>();
 		WebClient.Builder webClientBuilderTemplate = (WebClient.Builder) webClientBuilderProvider
 			.getIfAvailable(WebClient::builder);
@@ -89,7 +95,9 @@ public class NacosMcpSseClientAutoConfiguration {
 		Map<String, String> connections = nacosMcpSseClientProperties.getConnections();
 		connections.forEach((serviceKey, serviceName) -> {
 			try {
-				List<Instance> instances = namingService.selectInstances(serviceName, true);
+				List<Instance> instances = namingService.selectInstances(
+						serviceName + McpNacosConstant.SERVER_NAME_SUFFIX, nacosMcpRegistryProperties.getServiceGroup(),
+						true);
 				List<NamedClientMcpTransport> namedTransports = new ArrayList<>();
 				for (Instance instance : instances) {
 					String url = instance.getMetadata().getOrDefault("scheme", "http") + "://" + instance.getIp() + ":"
