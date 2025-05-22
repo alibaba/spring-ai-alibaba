@@ -26,7 +26,6 @@ import com.alibaba.nacos.api.ai.model.mcp.McpServiceRef;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.pojo.Instance;
-import com.alibaba.nacos.client.naming.NacosNamingService;
 import com.alibaba.nacos.maintainer.client.ai.AiMaintainerFactory;
 import com.alibaba.nacos.maintainer.client.ai.AiMaintainerService;
 import org.slf4j.Logger;
@@ -135,7 +134,8 @@ public class NacosMcpOperationService {
         if (mcpServiceRef == null) {
             throw new IllegalArgumentException("mcpServiceRef must not be null");
         }
-        Instance instance = namingService.selectOneHealthyInstance(mcpServiceRef.getServiceName(), mcpServiceRef.getGroupName());
+        Instance instance = namingService.selectOneHealthyInstance(mcpServiceRef.getServiceName(),
+                mcpServiceRef.getGroupName());
         McpEndpointInfo mcpEndpointInfo = new McpEndpointInfo();
         mcpEndpointInfo.setAddress(instance.getIp());
         mcpEndpointInfo.setPort(instance.getPort());

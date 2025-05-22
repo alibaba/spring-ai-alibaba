@@ -27,11 +27,7 @@ import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.tools.DynamicToolsInitializ
 import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.utils.SpringBeanUtils;
 import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.watcher.DynamicNacosToolsWatcher;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
-import com.alibaba.nacos.api.NacosFactory;
-import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.exception.NacosException;
-import com.alibaba.nacos.api.naming.NamingFactory;
-import com.alibaba.nacos.api.naming.NamingService;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.netty.channel.ChannelOption;
@@ -67,121 +63,115 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author aias00
  */
-@EnableConfigurationProperties({ McpDynamicServerProperties.class, NacosMcpProperties.class,
-		NacosMcpDynamicProperties.class, McpServerProperties.class })
+@EnableConfigurationProperties({McpDynamicServerProperties.class, NacosMcpProperties.class,
+        NacosMcpDynamicProperties.class, McpServerProperties.class})
 @AutoConfiguration(after = McpServerAutoConfiguration.class)
-@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
 public class NacosDynamicMcpServerAutoConfiguration implements ApplicationContextAware {
-
-	private static final Logger log = LoggerFactory.getLogger(NacosDynamicMcpServerAutoConfiguration.class);
-
-	@Resource
-	private McpDynamicServerProperties mcpDynamicServerProperties;
-
-	@Resource
-	private NacosMcpProperties nacosMcpProperties;
-
-	@Resource
-	private NacosMcpDynamicProperties nacosMcpDynamicProperties;
-	
-	@Bean
-	@ConditionalOnMissingBean(NacosMcpOperationService.class)
-	public NacosMcpOperationService nacosMcpOperationService() {
-		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
-		try {
-			return new NacosMcpOperationService(nacosProperties);
-		} catch (NacosException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@Override
-	public void setApplicationContext(@NonNull final ApplicationContext applicationContext) throws BeansException {
-		SpringBeanUtils.getInstance().setApplicationContext(applicationContext);
-	}
-
-	@Bean
-	public ToolCallbackProvider callbackProvider(final DynamicToolsInitializer toolsInitializer) {
-		return DynamicToolCallbackProvider.builder().toolCallbacks(toolsInitializer.initializeTools()).build();
-	}
-
-	@Bean
-	public DynamicToolsInitializer dynamicToolsInitializer(NacosMcpOperationService nacosMcpOperationService) {
-		return new DynamicToolsInitializer(nacosMcpOperationService, nacosMcpDynamicProperties);
-	}
-
-	@Bean(destroyMethod = "stop")
-	public DynamicNacosToolsWatcher nacosInstanceWatcher(final DynamicMcpToolsProvider dynamicMcpToolsProvider,
-			final NacosMcpOperationService nacosMcpOperationService) {
-		return new DynamicNacosToolsWatcher(nacosMcpDynamicProperties,
-				nacosMcpOperationService, dynamicMcpToolsProvider);
-	}
-
-	@Bean
-	@ConditionalOnBean(McpAsyncServer.class)
-	@ConditionalOnMissingBean(DynamicMcpToolsProvider.class)
-	public DynamicMcpToolsProvider dynamicMcpAsyncToolsProvider(final McpAsyncServer mcpAsyncServer) {
-		return new DynamicMcpAsyncToolsProvider(mcpAsyncServer);
-	}
-
-	@Bean
-	@ConditionalOnBean(McpSyncServer.class)
-	@ConditionalOnMissingBean(DynamicMcpToolsProvider.class)
-	public DynamicMcpToolsProvider dynamicMcpSyncToolsProvider(final McpSyncServer mcpSyncServer) {
-		return new DynamicMcpSyncToolsProvider(mcpSyncServer);
-	}
-
-	@Bean
-	public WebClient webClient() {
-		// 配置连接池
-		ConnectionProvider provider = ConnectionProvider.builder("http-pool")
-			.maxConnections(mcpDynamicServerProperties.getMaxConnections())
-			.pendingAcquireTimeout(Duration.ofMillis(mcpDynamicServerProperties.getAcquireTimeout()))
-			.maxIdleTime(Duration.ofSeconds(mcpDynamicServerProperties.getMaxIdleTime()))
-			.maxLifeTime(Duration.ofSeconds(mcpDynamicServerProperties.getMaxLifeTime()))
-			.build();
-
-		// 配置 HTTP 客户端
-		HttpClient httpClient = HttpClient.create(provider)
-			// TCP 连接超时
-			.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, mcpDynamicServerProperties.getConnectionTimeout())
-			// 响应超时
-			.responseTimeout(Duration.ofMillis(mcpDynamicServerProperties.getReadTimeout()))
-			.doOnConnected(conn -> conn
-				// 读取超时
-				.addHandlerLast(
-						new ReadTimeoutHandler(mcpDynamicServerProperties.getReadTimeout(), TimeUnit.MILLISECONDS))
-				// 写入超时
-				.addHandlerLast(
-						new WriteTimeoutHandler(mcpDynamicServerProperties.getWriteTimeout(), TimeUnit.MILLISECONDS)));
-
-		return WebClient.builder()
-			.clientConnector(new ReactorClientHttpConnector(httpClient))
-			.filter(logRequest())
-			.filter(logResponse())
-			.build();
-	}
-
-	private ExchangeFilterFunction logRequest() {
-		Logger logger = LoggerFactory.getLogger(WebClient.class);
-		return ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
-			logger.info("Request: {} {}", clientRequest.method(), clientRequest.url());
-			clientRequest.headers()
-				.forEach((name, values) -> values.forEach(value -> log.debug("Request Header: {}={}", name, value)));
-			return Mono.just(clientRequest);
-		});
-	}
-
-	private ExchangeFilterFunction logResponse() {
-		Logger logger = LoggerFactory.getLogger(WebClient.class);
-		return ExchangeFilterFunction.ofResponseProcessor(clientResponse -> {
-			logger.info("Response Status: {}", clientResponse.statusCode());
-			clientResponse.headers()
-				.asHttpHeaders()
-				.forEach((name, values) -> values.forEach(value -> log.debug("Response Header: {}={}", name, value)));
-			return Mono.just(clientResponse);
-		});
-	}
-
+    
+    private static final Logger log = LoggerFactory.getLogger(NacosDynamicMcpServerAutoConfiguration.class);
+    
+    @Resource
+    private McpDynamicServerProperties mcpDynamicServerProperties;
+    
+    @Resource
+    private NacosMcpProperties nacosMcpProperties;
+    
+    @Resource
+    private NacosMcpDynamicProperties nacosMcpDynamicProperties;
+    
+    @Bean
+    @ConditionalOnMissingBean(NacosMcpOperationService.class)
+    public NacosMcpOperationService nacosMcpOperationService() {
+        Properties nacosProperties = nacosMcpProperties.getNacosProperties();
+        try {
+            return new NacosMcpOperationService(nacosProperties);
+        } catch (NacosException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    @Override
+    public void setApplicationContext(@NonNull final ApplicationContext applicationContext) throws BeansException {
+        SpringBeanUtils.getInstance().setApplicationContext(applicationContext);
+    }
+    
+    @Bean
+    public ToolCallbackProvider callbackProvider(final DynamicToolsInitializer toolsInitializer) {
+        return DynamicToolCallbackProvider.builder().toolCallbacks(toolsInitializer.initializeTools()).build();
+    }
+    
+    @Bean
+    public DynamicToolsInitializer dynamicToolsInitializer(NacosMcpOperationService nacosMcpOperationService) {
+        return new DynamicToolsInitializer(nacosMcpOperationService, nacosMcpDynamicProperties);
+    }
+    
+    @Bean(destroyMethod = "stop")
+    public DynamicNacosToolsWatcher nacosInstanceWatcher(final DynamicMcpToolsProvider dynamicMcpToolsProvider,
+            final NacosMcpOperationService nacosMcpOperationService) {
+        return new DynamicNacosToolsWatcher(nacosMcpDynamicProperties, nacosMcpOperationService,
+                dynamicMcpToolsProvider);
+    }
+    
+    @Bean
+    @ConditionalOnBean(McpAsyncServer.class)
+    @ConditionalOnMissingBean(DynamicMcpToolsProvider.class)
+    public DynamicMcpToolsProvider dynamicMcpAsyncToolsProvider(final McpAsyncServer mcpAsyncServer) {
+        return new DynamicMcpAsyncToolsProvider(mcpAsyncServer);
+    }
+    
+    @Bean
+    @ConditionalOnBean(McpSyncServer.class)
+    @ConditionalOnMissingBean(DynamicMcpToolsProvider.class)
+    public DynamicMcpToolsProvider dynamicMcpSyncToolsProvider(final McpSyncServer mcpSyncServer) {
+        return new DynamicMcpSyncToolsProvider(mcpSyncServer);
+    }
+    
+    @Bean
+    public WebClient webClient() {
+        // 配置连接池
+        ConnectionProvider provider = ConnectionProvider.builder("http-pool")
+                .maxConnections(mcpDynamicServerProperties.getMaxConnections())
+                .pendingAcquireTimeout(Duration.ofMillis(mcpDynamicServerProperties.getAcquireTimeout()))
+                .maxIdleTime(Duration.ofSeconds(mcpDynamicServerProperties.getMaxIdleTime()))
+                .maxLifeTime(Duration.ofSeconds(mcpDynamicServerProperties.getMaxLifeTime())).build();
+        
+        // 配置 HTTP 客户端
+        HttpClient httpClient = HttpClient.create(provider)
+                // TCP 连接超时
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, mcpDynamicServerProperties.getConnectionTimeout())
+                // 响应超时
+                .responseTimeout(Duration.ofMillis(mcpDynamicServerProperties.getReadTimeout()))
+                .doOnConnected(conn -> conn
+                        // 读取超时
+                        .addHandlerLast(new ReadTimeoutHandler(mcpDynamicServerProperties.getReadTimeout(),
+                                TimeUnit.MILLISECONDS))
+                        // 写入超时
+                        .addHandlerLast(new WriteTimeoutHandler(mcpDynamicServerProperties.getWriteTimeout(),
+                                TimeUnit.MILLISECONDS)));
+        
+        return WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient)).filter(logRequest())
+                .filter(logResponse()).build();
+    }
+    
+    private ExchangeFilterFunction logRequest() {
+        Logger logger = LoggerFactory.getLogger(WebClient.class);
+        return ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
+            logger.info("Request: {} {}", clientRequest.method(), clientRequest.url());
+            clientRequest.headers().forEach(
+                    (name, values) -> values.forEach(value -> log.debug("Request Header: {}={}", name, value)));
+            return Mono.just(clientRequest);
+        });
+    }
+    
+    private ExchangeFilterFunction logResponse() {
+        Logger logger = LoggerFactory.getLogger(WebClient.class);
+        return ExchangeFilterFunction.ofResponseProcessor(clientResponse -> {
+            logger.info("Response Status: {}", clientResponse.statusCode());
+            clientResponse.headers().asHttpHeaders().forEach(
+                    (name, values) -> values.forEach(value -> log.debug("Response Header: {}={}", name, value)));
+            return Mono.just(clientResponse);
+        });
+    }
+    
 }
