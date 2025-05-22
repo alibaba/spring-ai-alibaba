@@ -55,7 +55,7 @@ public class DynamicNacosToolCallback implements ToolCallback {
 	private static final Logger logger = LoggerFactory.getLogger(DynamicNacosToolCallback.class);
 
 	private final DynamicNacosToolDefinition toolDefinition;
-	
+
 	private final NacosMcpOperationService nacosMcpOperationService;
 
 	private static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{\\{\\s*\\.([\\w]*)\\s*\\}\\}");
@@ -298,7 +298,7 @@ public class DynamicNacosToolCallback implements ToolCallback {
 					logger.error("[call] Failed to parse input to args", e);
 				}
 			}
-			
+
 			McpServerRemoteServiceConfig remoteServerConfig = this.toolDefinition.getRemoteServerConfig();
 			String protocol = this.toolDefinition.getProtocol();
 			if ("http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)) {
@@ -309,7 +309,7 @@ public class DynamicNacosToolCallback implements ToolCallback {
 					McpToolMeta toolMeta = this.toolDefinition.getToolMeta();
 					String baseUrl = protocol + "://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
 
-					if (toolMeta != null && toolMeta.getTemplates()!=null) {
+					if (toolMeta != null && toolMeta.getTemplates() != null) {
 						Map<String, Object> templates = toolMeta.getTemplates();
 						if (templates != null && templates.containsKey("json-go-template")) {
 							Object jsonGoTemplate = templates.get("json-go-template");

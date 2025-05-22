@@ -54,19 +54,18 @@ public class NacosMcpClientAutoConfiguration {
 			matchIfMissing = true)
 	public List<LoadbalancedMcpSyncClient> loadbalancedMcpSyncClientList(
 			@Qualifier("server2NamedTransport") ObjectProvider<Map<String, List<NamedClientMcpTransport>>> server2NamedTransportProvider,
-			ObjectProvider<NacosMcpOperationService> nacosMcpOperationServiceProvider
-	) {
+			ObjectProvider<NacosMcpOperationService> nacosMcpOperationServiceProvider) {
 		NacosMcpOperationService nacosMcpOperationService = nacosMcpOperationServiceProvider.getObject();
-		
+
 		List<LoadbalancedMcpSyncClient> loadbalancedMcpSyncClients = new ArrayList<>();
 		Map<String, List<NamedClientMcpTransport>> server2NamedTransport = server2NamedTransportProvider.getObject();
 		for (Map.Entry<String, List<NamedClientMcpTransport>> entry : server2NamedTransport.entrySet()) {
 			String serverName = entry.getKey();
 
 			LoadbalancedMcpSyncClient loadbalancedMcpSyncClient = LoadbalancedMcpSyncClient.builder()
-					.serverName(serverName)
-					.nacosMcpOperationService(nacosMcpOperationService)
-					.build();
+				.serverName(serverName)
+				.nacosMcpOperationService(nacosMcpOperationService)
+				.build();
 			loadbalancedMcpSyncClient.init();
 			loadbalancedMcpSyncClient.subscribe();
 

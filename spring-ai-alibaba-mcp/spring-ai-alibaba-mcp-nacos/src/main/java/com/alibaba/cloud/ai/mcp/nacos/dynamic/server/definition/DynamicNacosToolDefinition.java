@@ -77,17 +77,17 @@ public class DynamicNacosToolDefinition implements ToolDefinition {
 	}
 
 	@Override
-    public String name() {
+	public String name() {
 		return this.name;
 	}
 
 	@Override
-    public String description() {
+	public String description() {
 		return this.description;
 	}
 
 	@Override
-    public String inputSchema() {
+	public String inputSchema() {
 		return JacksonUtils.toJson(this.inputSchema);
 	}
 
@@ -191,7 +191,8 @@ public class DynamicNacosToolDefinition implements ToolDefinition {
 			return this;
 		}
 
-		public DynamicNacosToolDefinition.Builder remoteServerConfig(final McpServerRemoteServiceConfig remoteServerConfig) {
+		public DynamicNacosToolDefinition.Builder remoteServerConfig(
+				final McpServerRemoteServiceConfig remoteServerConfig) {
 			this.remoteServerConfig = remoteServerConfig;
 			return this;
 		}
@@ -222,8 +223,7 @@ public class DynamicNacosToolDefinition implements ToolDefinition {
 			}
 
 			return new DynamicNacosToolDefinition(this.name, this.description, this.inputSchema, this.version,
-					this.protocol, this.remoteServerConfig, this.toolsMeta,
-					this.enabled);
+					this.protocol, this.remoteServerConfig, this.toolsMeta, this.enabled);
 		}
 
 	}

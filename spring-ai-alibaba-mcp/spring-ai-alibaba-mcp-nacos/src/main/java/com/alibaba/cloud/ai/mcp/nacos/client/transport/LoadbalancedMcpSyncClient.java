@@ -52,7 +52,7 @@ public class LoadbalancedMcpSyncClient {
 	private static final Logger logger = LoggerFactory.getLogger(LoadbalancedMcpAsyncClient.class);
 
 	private final String serverName;
-	
+
 	private final NacosMcpOperationService nacosMcpOperationService;
 
 	private final McpClientCommonProperties commonProperties;
@@ -62,15 +62,14 @@ public class LoadbalancedMcpSyncClient {
 	private final McpSyncClientConfigurer mcpSyncClientConfigurer;
 
 	private final ObjectMapper objectMapper;
-	
+
 	private Map<String, McpSyncClient> keyToClientMap;
 
 	private Map<String, Integer> keyToCountMap;
-	
+
 	private NacosMcpServerEndpoint serverEndpoint;
 
-	public LoadbalancedMcpSyncClient(String serverName,
-			NacosMcpOperationService nacosMcpOperationService) {
+	public LoadbalancedMcpSyncClient(String serverName, NacosMcpOperationService nacosMcpOperationService) {
 		Assert.notNull(serverName, "serviceName cannot be null");
 		Assert.notNull(nacosMcpOperationService, "nacosMcpOperationService cannot be null");
 
@@ -79,14 +78,15 @@ public class LoadbalancedMcpSyncClient {
 
 		try {
 			this.serverEndpoint = this.nacosMcpOperationService.getServerEndpoint(this.serverName);
-			if(this.serverEndpoint == null) {
-				throw new NacosException(NacosException.NOT_FOUND, String.format("Can not find mcp server from nacos: %s",
-						serverName));
+			if (this.serverEndpoint == null) {
+				throw new NacosException(NacosException.NOT_FOUND,
+						String.format("Can not find mcp server from nacos: %s", serverName));
 			}
-			if (!StringUtils.equals(serverEndpoint.getProtocol(), AiConstants.Mcp.MCP_PROTOCOL_SSE)){
+			if (!StringUtils.equals(serverEndpoint.getProtocol(), AiConstants.Mcp.MCP_PROTOCOL_SSE)) {
 				throw new Exception("mcp server protocol must be sse");
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new RuntimeException(String.format("Failed to get instances for service: %s", serverName));
 		}
 		commonProperties = ApplicationContextHolder.getBean(McpClientCommonProperties.class);
@@ -99,23 +99,23 @@ public class LoadbalancedMcpSyncClient {
 		keyToClientMap = new ConcurrentHashMap<>();
 
 		keyToCountMap = new ConcurrentHashMap<>();
-		
-		for(McpEndpointInfo mcpEndpointInfo : serverEndpoint.getMcpEndpointInfoList()){
+
+		for (McpEndpointInfo mcpEndpointInfo : serverEndpoint.getMcpEndpointInfoList()) {
 			updateByAddEndpoint(mcpEndpointInfo, serverEndpoint.getExportPath());
 		}
 	}
-	
 
 	public void subscribe() {
 		this.nacosMcpOperationService.subscribeNacosMcpServer(this.serverName, mcpServerDetailInfo -> {
-            List<McpEndpointInfo> mcpEndpointInfoList = mcpServerDetailInfo.getBackendEndpoints() == null ?
-                    new ArrayList<>() : mcpServerDetailInfo.getBackendEndpoints();
-            String exportPath = mcpServerDetailInfo.getRemoteServerConfig().getExportPath();
-            String protocol = mcpServerDetailInfo.getProtocol();
-            String realVersion = mcpServerDetailInfo.getVersionDetail().getVersion();
-            NacosMcpServerEndpoint nacosMcpServerEndpoint = new NacosMcpServerEndpoint(mcpEndpointInfoList, exportPath, protocol, realVersion);
-            updateClientList(nacosMcpServerEndpoint);
-        });
+			List<McpEndpointInfo> mcpEndpointInfoList = mcpServerDetailInfo.getBackendEndpoints() == null
+					? new ArrayList<>() : mcpServerDetailInfo.getBackendEndpoints();
+			String exportPath = mcpServerDetailInfo.getRemoteServerConfig().getExportPath();
+			String protocol = mcpServerDetailInfo.getProtocol();
+			String realVersion = mcpServerDetailInfo.getVersionDetail().getVersion();
+			NacosMcpServerEndpoint nacosMcpServerEndpoint = new NacosMcpServerEndpoint(mcpEndpointInfoList, exportPath,
+					protocol, realVersion);
+			updateClientList(nacosMcpServerEndpoint);
+		});
 	}
 
 	public McpSyncClient getMcpSyncClient() {
@@ -124,11 +124,7 @@ public class LoadbalancedMcpSyncClient {
 			throw new IllegalStateException("No McpAsyncClient available");
 		}
 		// 从keyToCountMap中挑选value最小的键是哪个
-		String key = keyToCountMap.entrySet()
-			.stream()
-			.min(Map.Entry.comparingByValue())
-			.map(Map.Entry::getKey)
-			.get();
+		String key = keyToCountMap.entrySet().stream().min(Map.Entry.comparingByValue()).map(Map.Entry::getKey).get();
 
 		keyToCountMap.put(key, keyToCountMap.get(key) + 1);
 		// 从clients中找到clientInfoName对应的client
@@ -138,15 +134,15 @@ public class LoadbalancedMcpSyncClient {
 	public List<McpSyncClient> getMcpSyncClientList() {
 		return keyToClientMap.values().stream().toList();
 	}
-	
+
 	public String getServerName() {
 		return serverName;
 	}
-	
+
 	public NacosMcpServerEndpoint getNacosMcpServerEndpoint() {
 		return this.serverEndpoint;
 	}
-	
+
 	public McpSchema.ServerCapabilities getServerCapabilities() {
 		return getMcpSyncClient().getServerCapabilities();
 	}
@@ -275,8 +271,8 @@ public class LoadbalancedMcpSyncClient {
 	}
 
 	// ------------------------------------------------------------------------------------------------------------------------------------------------
-	
-	private McpSyncClient clientByEndpoint(McpEndpointInfo mcpEndpointInfo,String exportPath) {
+
+	private McpSyncClient clientByEndpoint(McpEndpointInfo mcpEndpointInfo, String exportPath) {
 		McpSyncClient syncClient;
 		String baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
 		WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(baseUrl);
@@ -297,52 +293,50 @@ public class LoadbalancedMcpSyncClient {
 		logger.info("Added McpSyncClient: {}", clientInfo.name());
 		return syncClient;
 	}
-	
-	
+
 	private void updateByAddEndpoint(McpEndpointInfo serverEndpoint, String exportPath) {
-		McpSyncClient mcpSyncClient = clientByEndpoint(serverEndpoint,exportPath);
+		McpSyncClient mcpSyncClient = clientByEndpoint(serverEndpoint, exportPath);
 		String key = NacosMcpClientUtils.getMcpEndpointInfoId(serverEndpoint, exportPath);
-		keyToClientMap.putIfAbsent(key,mcpSyncClient);
+		keyToClientMap.putIfAbsent(key, mcpSyncClient);
 		keyToCountMap.putIfAbsent(key, 0);
 	}
-	
+
 	private void updateClientList(NacosMcpServerEndpoint newServerEndpoint) {
 		if (!StringUtils.equals(this.serverEndpoint.getExportPath(), newServerEndpoint.getExportPath())
-			|| !StringUtils.equals(this.serverEndpoint.getVersion(), newServerEndpoint.getVersion())) {
+				|| !StringUtils.equals(this.serverEndpoint.getVersion(), newServerEndpoint.getVersion())) {
 			updateAll(newServerEndpoint);
-		} else {
+		}
+		else {
 			List<McpEndpointInfo> currentMcpEndpointInfoList = this.serverEndpoint.getMcpEndpointInfoList();
 			List<McpEndpointInfo> newMcpEndpointInfoList = newServerEndpoint.getMcpEndpointInfoList();
 			List<McpEndpointInfo> addEndpointInfoList = newMcpEndpointInfoList.stream()
-					.filter(newEndpoint -> currentMcpEndpointInfoList.stream()
-							.noneMatch(currentEndpoint ->
-									currentEndpoint.getAddress().equals(newEndpoint.getAddress()) &&
-											currentEndpoint.getPort() == newEndpoint.getPort()))
-					.toList();
+				.filter(newEndpoint -> currentMcpEndpointInfoList.stream()
+					.noneMatch(currentEndpoint -> currentEndpoint.getAddress().equals(newEndpoint.getAddress())
+							&& currentEndpoint.getPort() == newEndpoint.getPort()))
+				.toList();
 			List<McpEndpointInfo> removeEndpointInfoList = currentMcpEndpointInfoList.stream()
-					.filter(currentEndpoint -> newMcpEndpointInfoList.stream()
-							.noneMatch(newEndpoint ->
-									newEndpoint.getAddress().equals(currentEndpoint.getAddress()) &&
-											newEndpoint.getPort() == currentEndpoint.getPort()))
-					.toList();
+				.filter(currentEndpoint -> newMcpEndpointInfoList.stream()
+					.noneMatch(newEndpoint -> newEndpoint.getAddress().equals(currentEndpoint.getAddress())
+							&& newEndpoint.getPort() == currentEndpoint.getPort()))
+				.toList();
 			for (McpEndpointInfo addEndpointInfo : addEndpointInfoList) {
-				updateByAddEndpoint(addEndpointInfo,newServerEndpoint.getExportPath());
+				updateByAddEndpoint(addEndpointInfo, newServerEndpoint.getExportPath());
 			}
 			for (McpEndpointInfo removeEndpointInfo : removeEndpointInfoList) {
-				updateByRemoveEndpoint(removeEndpointInfo,newServerEndpoint.getExportPath());
+				updateByRemoveEndpoint(removeEndpointInfo, newServerEndpoint.getExportPath());
 			}
 		}
 		this.serverEndpoint = newServerEndpoint;
 	}
-	
+
 	private void updateAll(NacosMcpServerEndpoint newServerEndpoint) {
 		Map<String, McpSyncClient> newKeyToClientMap = new ConcurrentHashMap<>();
 		Map<String, McpSyncClient> oldKeyToClientMap = this.keyToClientMap;
 		Map<String, Integer> newKeyToCountMap = new ConcurrentHashMap<>();
 		for (McpEndpointInfo mcpEndpointInfo : newServerEndpoint.getMcpEndpointInfoList()) {
-			McpSyncClient syncClient = clientByEndpoint(mcpEndpointInfo,newServerEndpoint.getExportPath());
+			McpSyncClient syncClient = clientByEndpoint(mcpEndpointInfo, newServerEndpoint.getExportPath());
 			String key = NacosMcpClientUtils.getMcpEndpointInfoId(mcpEndpointInfo, newServerEndpoint.getExportPath());
-			newKeyToClientMap.putIfAbsent(key,syncClient);
+			newKeyToClientMap.putIfAbsent(key, syncClient);
 			newKeyToCountMap.putIfAbsent(key, 0);
 		}
 		this.keyToClientMap = newKeyToClientMap;
@@ -354,7 +348,7 @@ public class LoadbalancedMcpSyncClient {
 			logger.info("Removed McpSyncClient: {} Success", syncClient.getClientInfo().name());
 		}
 	}
-	
+
 	private void updateByRemoveEndpoint(McpEndpointInfo serverEndpoint, String exportPath) {
 		String key = NacosMcpClientUtils.getMcpEndpointInfoId(serverEndpoint, exportPath);
 		if (keyToClientMap.containsKey(key)) {
@@ -377,9 +371,9 @@ public class LoadbalancedMcpSyncClient {
 	public static class Builder {
 
 		private String serverName;
-		
+
 		private NacosMcpOperationService nacosMcpOperationService;
-		
+
 		public Builder serverName(String serverName) {
 			this.serverName = serverName;
 			return this;

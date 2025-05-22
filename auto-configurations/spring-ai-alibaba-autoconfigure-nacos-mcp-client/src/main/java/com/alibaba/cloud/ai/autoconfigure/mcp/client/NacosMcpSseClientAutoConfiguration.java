@@ -50,64 +50,66 @@ import java.util.Properties;
  * @date 2025/4/29:08:47
  */
 @AutoConfiguration
-@EnableConfigurationProperties({NacosMcpSseClientProperties.class, NacosMcpProperties.class,
-        NacosMcpRegistryProperties.class})
+@EnableConfigurationProperties({ NacosMcpSseClientProperties.class, NacosMcpProperties.class,
+		NacosMcpRegistryProperties.class })
 public class NacosMcpSseClientAutoConfiguration {
-    
-    private static final Logger logger = LoggerFactory.getLogger(NacosMcpSseClientAutoConfiguration.class);
-    
-    public NacosMcpSseClientAutoConfiguration() {
-    }
-    
-    @Bean
-    @ConditionalOnMissingBean(NacosMcpOperationService.class)
-    public NacosMcpOperationService nacosMcpOperationService(NacosMcpProperties nacosMcpProperties) {
-        Properties nacosProperties = nacosMcpProperties.getNacosProperties();
-        try {
-            return new NacosMcpOperationService(nacosProperties);
-        } catch (NacosException e) {
-            throw new RuntimeException(e);
-        }
-    }
-    
-    @Bean(name = "server2NamedTransport")
-    @ConditionalOnBean(NacosMcpRegister.class)
-    public Map<String, List<NamedClientMcpTransport>> server2NamedTransport(
-            NacosMcpSseClientProperties nacosMcpSseClientProperties, NacosMcpOperationService nacosMcpOperationService,
-            ObjectProvider<WebClient.Builder> webClientBuilderProvider,
-            ObjectProvider<ObjectMapper> objectMapperProvider) {
-        Map<String, List<NamedClientMcpTransport>> server2NamedTransport = new HashMap<>();
-        WebClient.Builder webClientBuilderTemplate = (WebClient.Builder) webClientBuilderProvider.getIfAvailable(
-                WebClient::builder);
-        ObjectMapper objectMapper = (ObjectMapper) objectMapperProvider.getIfAvailable(ObjectMapper::new);
-        
-        Map<String, String> connections = nacosMcpSseClientProperties.getConnections();
-        connections.forEach((serverKey, serverName) -> {
-            try {
-                NacosMcpServerEndpoint serverEndpoint = nacosMcpOperationService.getServerEndpoint(serverName);
-                if (serverEndpoint == null) {
-                    throw new NacosException(NacosException.NOT_FOUND,
-                            "can not find mcp server from nacos: " + serverName);
-                }
-                if (!StringUtils.equals(serverEndpoint.getProtocol(), AiConstants.Mcp.MCP_PROTOCOL_SSE)){
-                    throw new Exception("mcp server protocol must be sse");
-                }
-                List<NamedClientMcpTransport> namedTransports = new ArrayList<>();
-                for (McpEndpointInfo endpointInfo : serverEndpoint.getMcpEndpointInfoList()) {
-                    String url = "http://" + endpointInfo.getAddress() + ":" + endpointInfo.getPort();
-                    WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(url);
-                    WebFluxSseClientTransport transport = new WebFluxSseClientTransport(webClientBuilder, objectMapper,
-                            serverEndpoint.getExportPath());
-                    namedTransports.add(new NamedClientMcpTransport(
-                            serverName + "-" + NacosMcpClientUtils.getMcpEndpointInfoId(endpointInfo,
-                                    serverEndpoint.getExportPath()), transport));
-                }
-                server2NamedTransport.put(serverName, namedTransports);
-            } catch (Exception e) {
-                logger.error("get mcp server from nacos: {} error", serverName, e);
-            }
-        });
-        return server2NamedTransport;
-    }
-    
+
+	private static final Logger logger = LoggerFactory.getLogger(NacosMcpSseClientAutoConfiguration.class);
+
+	public NacosMcpSseClientAutoConfiguration() {
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(NacosMcpOperationService.class)
+	public NacosMcpOperationService nacosMcpOperationService(NacosMcpProperties nacosMcpProperties) {
+		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
+		try {
+			return new NacosMcpOperationService(nacosProperties);
+		}
+		catch (NacosException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Bean(name = "server2NamedTransport")
+	@ConditionalOnBean(NacosMcpRegister.class)
+	public Map<String, List<NamedClientMcpTransport>> server2NamedTransport(
+			NacosMcpSseClientProperties nacosMcpSseClientProperties, NacosMcpOperationService nacosMcpOperationService,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
+			ObjectProvider<ObjectMapper> objectMapperProvider) {
+		Map<String, List<NamedClientMcpTransport>> server2NamedTransport = new HashMap<>();
+		WebClient.Builder webClientBuilderTemplate = (WebClient.Builder) webClientBuilderProvider
+			.getIfAvailable(WebClient::builder);
+		ObjectMapper objectMapper = (ObjectMapper) objectMapperProvider.getIfAvailable(ObjectMapper::new);
+
+		Map<String, String> connections = nacosMcpSseClientProperties.getConnections();
+		connections.forEach((serverKey, serverName) -> {
+			try {
+				NacosMcpServerEndpoint serverEndpoint = nacosMcpOperationService.getServerEndpoint(serverName);
+				if (serverEndpoint == null) {
+					throw new NacosException(NacosException.NOT_FOUND,
+							"can not find mcp server from nacos: " + serverName);
+				}
+				if (!StringUtils.equals(serverEndpoint.getProtocol(), AiConstants.Mcp.MCP_PROTOCOL_SSE)) {
+					throw new Exception("mcp server protocol must be sse");
+				}
+				List<NamedClientMcpTransport> namedTransports = new ArrayList<>();
+				for (McpEndpointInfo endpointInfo : serverEndpoint.getMcpEndpointInfoList()) {
+					String url = "http://" + endpointInfo.getAddress() + ":" + endpointInfo.getPort();
+					WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(url);
+					WebFluxSseClientTransport transport = new WebFluxSseClientTransport(webClientBuilder, objectMapper,
+							serverEndpoint.getExportPath());
+					namedTransports.add(new NamedClientMcpTransport(serverName + "-"
+							+ NacosMcpClientUtils.getMcpEndpointInfoId(endpointInfo, serverEndpoint.getExportPath()),
+							transport));
+				}
+				server2NamedTransport.put(serverName, namedTransports);
+			}
+			catch (Exception e) {
+				logger.error("get mcp server from nacos: {} error", serverName, e);
+			}
+		});
+		return server2NamedTransport;
+	}
+
 }

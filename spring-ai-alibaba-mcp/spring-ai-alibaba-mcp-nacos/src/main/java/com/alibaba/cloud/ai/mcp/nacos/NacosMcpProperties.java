@@ -55,7 +55,7 @@ public class NacosMcpProperties {
 	private static final Pattern PATTERN = Pattern.compile("-(\\w)");
 
 	private static final Logger log = LoggerFactory.getLogger(NacosMcpProperties.class);
-	
+
 	String namespace = DEFAULT_NAMESPACE;
 
 	String serverAddr;
@@ -131,15 +131,15 @@ public class NacosMcpProperties {
 	void setServerAddr(String serverAddr) {
 		this.serverAddr = serverAddr;
 	}
-	
+
 	public String getNamespace() {
 		return namespace;
 	}
-	
+
 	public void setNamespace(String namespace) {
 		this.namespace = namespace;
 	}
-	
+
 	@PostConstruct
 	public void init() throws Exception {
 		if (StringUtils.isEmpty(this.ip)) {

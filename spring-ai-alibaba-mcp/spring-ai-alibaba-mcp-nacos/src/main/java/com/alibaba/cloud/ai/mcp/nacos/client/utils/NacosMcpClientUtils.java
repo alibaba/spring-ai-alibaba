@@ -22,9 +22,9 @@ import com.alibaba.nacos.api.ai.model.mcp.McpEndpointInfo;
  * @author zhuoguang
  */
 public class NacosMcpClientUtils {
-    
-    public static String getMcpEndpointInfoId(McpEndpointInfo mcpEndpointInfo, String exportPath){
-        return mcpEndpointInfo.getAddress() + "@@" + mcpEndpointInfo.getPort() + "@@"+ exportPath;
-    }
-    
+
+	public static String getMcpEndpointInfoId(McpEndpointInfo mcpEndpointInfo, String exportPath) {
+		return mcpEndpointInfo.getAddress() + "@@" + mcpEndpointInfo.getPort() + "@@" + exportPath;
+	}
+
 }

@@ -23,27 +23,28 @@ import org.springframework.ai.mcp.McpToolUtils;
 import org.springframework.ai.tool.ToolCallback;
 
 public class DynamicMcpSyncToolsProvider implements DynamicMcpToolsProvider {
-    
-    private final McpSyncServer mcpSyncServer;
-    
-    public DynamicMcpSyncToolsProvider(final McpSyncServer mcpSyncServer) {
-        this.mcpSyncServer = mcpSyncServer;
-    }
-    
-    @Override
-    public void addTool(final DynamicNacosToolDefinition toolDefinition) {
-        try {
-            removeTool(toolDefinition.name());
-        } catch (Exception e) {
-            // Ignore exception
-        }
-        ToolCallback toolCallback = new DynamicNacosToolCallback(toolDefinition);
-        mcpSyncServer.addTool(McpToolUtils.toSyncToolSpecification(toolCallback));
-    }
-    
-    @Override
-    public void removeTool(final String toolName) {
-        mcpSyncServer.removeTool(toolName);
-    }
-    
+
+	private final McpSyncServer mcpSyncServer;
+
+	public DynamicMcpSyncToolsProvider(final McpSyncServer mcpSyncServer) {
+		this.mcpSyncServer = mcpSyncServer;
+	}
+
+	@Override
+	public void addTool(final DynamicNacosToolDefinition toolDefinition) {
+		try {
+			removeTool(toolDefinition.name());
+		}
+		catch (Exception e) {
+			// Ignore exception
+		}
+		ToolCallback toolCallback = new DynamicNacosToolCallback(toolDefinition);
+		mcpSyncServer.addTool(McpToolUtils.toSyncToolSpecification(toolCallback));
+	}
+
+	@Override
+	public void removeTool(final String toolName) {
+		mcpSyncServer.removeTool(toolName);
+	}
+
 }
