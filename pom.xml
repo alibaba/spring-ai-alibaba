@@ -53,9 +53,10 @@
         <module>spring-ai-alibaba-mcp</module>
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-graph</module>
+        <!--<module>spring-ai-alibaba-nl2sql</module>-->
+        <module>spring-ai-alibaba-studio</module>
         <module>spring-ai-alibaba-jmanus</module>
         <module>spring-ai-alibaba-deepresearch</module>
-        <module>spring-ai-alibaba-studio</module>
 
         <!-- Spring AI Alibaba Tool Call Plugins -->
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-common</module>
@@ -153,7 +154,6 @@
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-client</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-server</module>
-        <module>spring-ai-alibaba-nl2sql</module>
     </modules>
 
     <scm>
@@ -173,7 +173,7 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.0.0-SNAPSHOT</revision>
+        <revision>1.0.0.1</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
