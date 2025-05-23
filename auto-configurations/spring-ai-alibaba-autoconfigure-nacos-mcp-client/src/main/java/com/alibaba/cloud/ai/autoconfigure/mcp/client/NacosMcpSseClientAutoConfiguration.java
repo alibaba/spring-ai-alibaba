@@ -16,9 +16,9 @@
 
 package com.alibaba.cloud.ai.autoconfigure.mcp.client;
 
-import com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegistryProperties;
-import com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties;
-import com.alibaba.cloud.ai.mcp.nacos.registry.model.McpNacosConstant;
+import com.alibaba.cloud.ai.mcp.nacos2.registry.NacosMcpRegistryProperties;
+import com.alibaba.cloud.ai.mcp.nacos2.NacosMcpProperties;
+import com.alibaba.cloud.ai.mcp.nacos2.registry.model.McpNacosConstant;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingFactory;

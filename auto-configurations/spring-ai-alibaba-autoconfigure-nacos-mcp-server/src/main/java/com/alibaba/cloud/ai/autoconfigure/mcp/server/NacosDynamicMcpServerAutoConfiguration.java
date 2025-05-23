@@ -16,16 +16,16 @@
 
 package com.alibaba.cloud.ai.autoconfigure.mcp.server;
 
-import com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties;
-import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.config.NacosMcpDynamicProperties;
-import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.properties.McpDynamicServerProperties;
-import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.provider.DynamicMcpAsyncToolsProvider;
-import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.provider.DynamicMcpSyncToolsProvider;
-import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.provider.DynamicMcpToolsProvider;
-import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.provider.DynamicToolCallbackProvider;
-import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.tools.DynamicToolsInitializer;
-import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.utils.SpringBeanUtils;
-import com.alibaba.cloud.ai.mcp.nacos.dynamic.server.watcher.DynamicNacosToolsWatcher;
+import com.alibaba.cloud.ai.mcp.nacos2.NacosMcpProperties;
+import com.alibaba.cloud.ai.mcp.nacos2.dynamic.server.config.NacosMcpDynamicProperties;
+import com.alibaba.cloud.ai.mcp.nacos2.dynamic.server.properties.McpDynamicServerProperties;
+import com.alibaba.cloud.ai.mcp.nacos2.dynamic.server.provider.DynamicMcpAsyncToolsProvider;
+import com.alibaba.cloud.ai.mcp.nacos2.dynamic.server.provider.DynamicMcpSyncToolsProvider;
+import com.alibaba.cloud.ai.mcp.nacos2.dynamic.server.provider.DynamicMcpToolsProvider;
+import com.alibaba.cloud.ai.mcp.nacos2.dynamic.server.provider.DynamicToolCallbackProvider;
+import com.alibaba.cloud.ai.mcp.nacos2.dynamic.server.tools.DynamicToolsInitializer;
+import com.alibaba.cloud.ai.mcp.nacos2.dynamic.server.utils.SpringBeanUtils;
+import com.alibaba.cloud.ai.mcp.nacos2.dynamic.server.watcher.DynamicNacosToolsWatcher;
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.exception.NacosException;

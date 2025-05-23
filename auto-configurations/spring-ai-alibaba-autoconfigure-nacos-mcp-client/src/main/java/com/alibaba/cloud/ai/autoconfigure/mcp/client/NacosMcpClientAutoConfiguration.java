@@ -16,9 +16,9 @@
 
 package com.alibaba.cloud.ai.autoconfigure.mcp.client;
 
-import com.alibaba.cloud.ai.mcp.nacos.client.transport.LoadbalancedMcpAsyncClient;
-import com.alibaba.cloud.ai.mcp.nacos.client.transport.LoadbalancedMcpSyncClient;
-import com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegistryProperties;
+import com.alibaba.cloud.ai.mcp.nacos2.client.transport.LoadbalancedMcpAsyncClient;
+import com.alibaba.cloud.ai.mcp.nacos2.client.transport.LoadbalancedMcpSyncClient;
+import com.alibaba.cloud.ai.mcp.nacos2.registry.NacosMcpRegistryProperties;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.client.config.NacosConfigService;
 import io.modelcontextprotocol.spec.McpSchema;
