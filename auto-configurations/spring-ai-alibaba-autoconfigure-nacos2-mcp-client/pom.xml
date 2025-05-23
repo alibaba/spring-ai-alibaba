@@ -8,10 +8,10 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-autoconfigure-nacos-mcp-client</artifactId>
+    <artifactId>spring-ai-alibaba-autoconfigure-nacos2-mcp-client</artifactId>
 
-    <name>Spring AI Alibaba Nacos Mcp Client Autoconfiguration</name>
-    <description>Spring AI Alibaba Nacos Mcp Client Autoconfiguration</description>
+    <name>Spring AI Alibaba Nacos2 Mcp Client Autoconfiguration</name>
+    <description>Spring AI Alibaba Nacos2 Mcp Client Autoconfiguration</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>

@@ -24,9 +24,9 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-starter-nacos-mcp-server</artifactId>
+    <artifactId>spring-ai-alibaba-starter-nacos2-mcp-server</artifactId>
     <packaging>jar</packaging>
-    <name>Spring AI Alibaba Starter Nacos Mcp Server</name>
+    <name>Spring AI Alibaba Starter Nacos2 Mcp Server</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
@@ -38,7 +38,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-autoconfigure-nacos-mcp-server</artifactId>
+            <artifactId>spring-ai-alibaba-autoconfigure-nacos2-mcp-server</artifactId>
             <version>${revision}</version>
         </dependency>
 
