@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.mcp.nacos.client.transport;
 
-import com.alibaba.cloud.ai.mcp.nacos.client.utils.ApplicationContextHolder;
 import com.alibaba.cloud.ai.mcp.nacos.client.utils.NacosMcpClientUtils;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.cloud.ai.mcp.nacos.service.model.NacosMcpServerEndpoint;
@@ -34,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.client.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.autoconfigure.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -69,12 +69,17 @@ public class LoadbalancedMcpSyncClient {
 
 	private NacosMcpServerEndpoint serverEndpoint;
 
-	public LoadbalancedMcpSyncClient(String serverName, NacosMcpOperationService nacosMcpOperationService) {
+	private final ApplicationContext applicationContext;
+
+	public LoadbalancedMcpSyncClient(String serverName, NacosMcpOperationService nacosMcpOperationService,
+			ApplicationContext applicationContext) {
 		Assert.notNull(serverName, "serviceName cannot be null");
 		Assert.notNull(nacosMcpOperationService, "nacosMcpOperationService cannot be null");
+		Assert.notNull(applicationContext, "applicationContext cannot be null");
 
 		this.serverName = serverName;
 		this.nacosMcpOperationService = nacosMcpOperationService;
+		this.applicationContext = applicationContext;
 
 		try {
 			this.serverEndpoint = this.nacosMcpOperationService.getServerEndpoint(this.serverName);
@@ -89,10 +94,10 @@ public class LoadbalancedMcpSyncClient {
 		catch (Exception e) {
 			throw new RuntimeException(String.format("Failed to get instances for service: %s", serverName));
 		}
-		commonProperties = ApplicationContextHolder.getBean(McpClientCommonProperties.class);
-		mcpSyncClientConfigurer = ApplicationContextHolder.getBean(McpSyncClientConfigurer.class);
-		objectMapper = ApplicationContextHolder.getBean(ObjectMapper.class);
-		webClientBuilderTemplate = ApplicationContextHolder.getBean(WebClient.Builder.class);
+		commonProperties = this.applicationContext.getBean(McpClientCommonProperties.class);
+		mcpSyncClientConfigurer = this.applicationContext.getBean(McpSyncClientConfigurer.class);
+		objectMapper = this.applicationContext.getBean(ObjectMapper.class);
+		webClientBuilderTemplate = this.applicationContext.getBean(WebClient.Builder.class);
 	}
 
 	public void init() {
@@ -374,6 +379,8 @@ public class LoadbalancedMcpSyncClient {
 
 		private NacosMcpOperationService nacosMcpOperationService;
 
+		private ApplicationContext applicationContext;
+
 		public Builder serverName(String serverName) {
 			this.serverName = serverName;
 			return this;
@@ -384,8 +391,14 @@ public class LoadbalancedMcpSyncClient {
 			return this;
 		}
 
+		public Builder applicationContext(ApplicationContext applicationContext) {
+			this.applicationContext = applicationContext;
+			return this;
+		}
+
 		public LoadbalancedMcpSyncClient build() {
-			return new LoadbalancedMcpSyncClient(this.serverName, this.nacosMcpOperationService);
+			return new LoadbalancedMcpSyncClient(this.serverName, this.nacosMcpOperationService,
+					this.applicationContext);
 		}
 
 	}

@@ -29,6 +29,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 
 import java.util.ArrayList;
@@ -54,7 +55,8 @@ public class NacosMcpClientAutoConfiguration {
 			matchIfMissing = true)
 	public List<LoadbalancedMcpSyncClient> loadbalancedMcpSyncClientList(
 			@Qualifier("server2NamedTransport") ObjectProvider<Map<String, List<NamedClientMcpTransport>>> server2NamedTransportProvider,
-			ObjectProvider<NacosMcpOperationService> nacosMcpOperationServiceProvider) {
+			ObjectProvider<NacosMcpOperationService> nacosMcpOperationServiceProvider,
+			ApplicationContext applicationContext) {
 		NacosMcpOperationService nacosMcpOperationService = nacosMcpOperationServiceProvider.getObject();
 
 		List<LoadbalancedMcpSyncClient> loadbalancedMcpSyncClients = new ArrayList<>();
@@ -65,6 +67,7 @@ public class NacosMcpClientAutoConfiguration {
 			LoadbalancedMcpSyncClient loadbalancedMcpSyncClient = LoadbalancedMcpSyncClient.builder()
 				.serverName(serverName)
 				.nacosMcpOperationService(nacosMcpOperationService)
+				.applicationContext(applicationContext)
 				.build();
 			loadbalancedMcpSyncClient.init();
 			loadbalancedMcpSyncClient.subscribe();
@@ -78,7 +81,8 @@ public class NacosMcpClientAutoConfiguration {
 	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "ASYNC")
 	public List<LoadbalancedMcpAsyncClient> loadbalancedMcpAsyncClientList(
 			@Qualifier("server2NamedTransport") ObjectProvider<Map<String, List<NamedClientMcpTransport>>> server2NamedTransportProvider,
-			ObjectProvider<NacosMcpOperationService> nacosMcpOperationServiceProvider) {
+			ObjectProvider<NacosMcpOperationService> nacosMcpOperationServiceProvider,
+			ApplicationContext applicationContext) {
 		NacosMcpOperationService nacosMcpOperationService = nacosMcpOperationServiceProvider.getObject();
 
 		List<LoadbalancedMcpAsyncClient> loadbalancedMcpAsyncClients = new ArrayList<>();
@@ -89,6 +93,7 @@ public class NacosMcpClientAutoConfiguration {
 			LoadbalancedMcpAsyncClient loadbalancedMcpAsyncClient = LoadbalancedMcpAsyncClient.builder()
 				.serverName(serverName)
 				.nacosMcpOperationService(nacosMcpOperationService)
+				.applicationContext(applicationContext)
 				.build();
 			loadbalancedMcpAsyncClient.init();
 			loadbalancedMcpAsyncClient.subscribe();
