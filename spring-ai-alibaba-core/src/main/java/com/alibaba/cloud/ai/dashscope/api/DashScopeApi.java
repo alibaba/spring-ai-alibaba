@@ -457,9 +457,9 @@ public class DashScopeApi {
 		try {
 			UploadLeaseResponse.UploadLeaseParamData uploadParam = uploadLeaseResponse.data.param;
 			OkHttpClient client = new OkHttpClient.Builder().connectTimeout(60, TimeUnit.SECONDS)
-					.writeTimeout(60, TimeUnit.SECONDS)
-					.readTimeout(60, TimeUnit.SECONDS)
-					.build();
+				.writeTimeout(60, TimeUnit.SECONDS)
+				.readTimeout(60, TimeUnit.SECONDS)
+				.build();
 
 			okhttp3.Headers.Builder headersBuilder = new okhttp3.Headers.Builder();
 			String contentType = uploadParam.header.remove("Content-Type");
@@ -478,9 +478,9 @@ public class DashScopeApi {
 			}
 
 			Request request = new Request.Builder().url(uploadParam.url)
-					.headers(headersBuilder.build())
-					.put(requestBody)
-					.build();
+				.headers(headersBuilder.build())
+				.put(requestBody)
+				.build();
 
 			try (Response response = client.newCall(request).execute()) {
 				if (!response.isSuccessful()) {
