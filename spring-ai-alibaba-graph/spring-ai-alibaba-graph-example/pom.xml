@@ -32,6 +32,7 @@
 
     <properties>
         <gson.version>2.10.1</gson.version>
+        <maven.deploy.skip>false</maven.deploy.skip>
     </properties>
 
     <dependencies>
@@ -173,14 +174,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>${maven-deploy-plugin.version}</version>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
             </plugin>
         </plugins>
     </build>
