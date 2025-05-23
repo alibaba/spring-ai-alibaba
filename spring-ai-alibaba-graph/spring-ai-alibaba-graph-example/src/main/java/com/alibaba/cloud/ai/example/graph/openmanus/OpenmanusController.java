@@ -57,7 +57,7 @@ public class OpenmanusController {
 			.defaultSystem(PLANNING_SYSTEM_PROMPT)
 			// .defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
 			.defaultAdvisors(new SimpleLoggerAdvisor())
-			.defaultTools(Builder.getToolCallList())// tools registered will only be used
+			.defaultToolCallbacks(Builder.getToolCallList())// tools registered will only be used
 													// as tool description
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();
@@ -65,7 +65,7 @@ public class OpenmanusController {
 		this.stepClient = ChatClient.builder(chatModel)
 			.defaultSystem(STEP_SYSTEM_PROMPT)
 			// .defaultAdvisors(new MessageChatMemoryAdvisor(new InMemoryChatMemory()))
-			.defaultTools(Builder.getManusAgentToolCalls())// tools registered will only
+			.defaultToolCallbacks(Builder.getManusAgentToolCalls())// tools registered will only
 															// be used as tool description
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
