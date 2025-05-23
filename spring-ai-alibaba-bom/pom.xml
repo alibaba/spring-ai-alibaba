@@ -130,13 +130,13 @@
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-nacos-mcp-client</artifactId>
+                <artifactId>spring-ai-alibaba-starter-nacos2-mcp-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter-nacos-mcp-server</artifactId>
+                <artifactId>spring-ai-alibaba-starter-nacos2-mcp-server</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -167,13 +167,13 @@
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-autoconfigure-nacos-mcp-client</artifactId>
+                <artifactId>spring-ai-alibaba-autoconfigure-nacos2-mcp-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-autoconfigure-nacos-mcp-server</artifactId>
+                <artifactId>spring-ai-alibaba-autoconfigure-nacos2-mcp-server</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
