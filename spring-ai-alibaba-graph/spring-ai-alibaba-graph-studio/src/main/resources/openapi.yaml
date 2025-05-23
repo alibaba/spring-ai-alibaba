@@ -1,1 +1,479 @@
-<!DOCTYPE html><html><head><meta charSet="utf-8"/><link rel="icon" href="/higress.jpg" type="image/x-icon"/><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/><meta name="ice-meta-count" content="0"/><title>Higress Console</title><link rel="stylesheet" type="text/css" href="/css/27f68c76-29826493708a570251bc.css"/><link rel="stylesheet" type="text/css" href="/css/main-584def2217f4c95444bb.css"/><link rel="stylesheet" type="text/css" href="/css/7439-83e6d9f333a35334c296.css"/><link rel="stylesheet" type="text/css" href="/css/2885-e60fed3a26d2c1ff797a.css"/><link rel="stylesheet" type="text/css" href="/css/4097-77865ab66d524b05737c.css"/><link rel="stylesheet" type="text/css" href="/css/p_layout-cc935ca4fe7a70b129d8.css"/></head><body><div id="ice-container"></div><script>window.__ICE_APP_CONTEXT__=Object.assign({"routesData":null,"routesConfig":{"layout":{},"index":{"title":"Higress Console"}},"routePath":"/","matchedIds":["layout","index"],"documentOnly":true}, window.__ICE_APP_CONTEXT__ || {});</script><script src="/js/data-loader.js"></script><script src="/js/framework-fe0892533e9ea96527be.js"></script><script src="/js/29107295-aace3e36347f430bb201.js"></script><script src="/js/8695-3d691717f3700c1031a8.js"></script><script src="/js/3971-82fe39a7471c496b1764.js"></script><script src="/js/5091-107ebe083625e516199d.js"></script><script src="/js/2224-8e38731336c3b0a7ec23.js"></script><script src="/js/8833-29ae9221a1edc478a6f1.js"></script><script src="/js/1296-96e28794be8c638ca421.js"></script><script src="/js/821-4bbfe3284ffc741ff709.js"></script><script src="/js/7867-c5f267d5607b2a34a5a2.js"></script><script src="/js/7599-e8786b1244c2e1c29a2e.js"></script><script src="/js/3573-e0224fcf6e6f9f42f967.js"></script><script src="/js/7144-bf69a9e27a407b76bd5e.js"></script><script src="/js/7439-ff8cd514a15170c92a97.js"></script><script src="/js/4571-69facf7f08e1c34f2af9.js"></script><script src="/js/4854-bb917a1df34a8e510265.js"></script><script src="/js/3486-a3a8c11701f8a6365246.js"></script><script src="/js/4097-20cc6e063c7bdd32f662.js"></script><script src="/js/p_layout-87ef06bf9a0d66f550b7.js"></script><script src="/js/p_index-1782fde98b54e1bd0d4b.js"></script><script src="/js/6118-10643ec7fea83cdb9a00.js"></script><script src="/js/main-b6f498d16735ccded57e.js"></script></body></html>
+openapi: 3.0.1
+info:
+  title: Spring AI Alibaba PlayGround APIs
+  description: Spring AI Alibaba PlayGround API Docs
+  contact:
+    name: Spring AI Alibaba Community
+    url: https://java2ai.com
+  version: v1
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+paths:
+  /api/v1/video-qa:
+    post:
+      tags:
+      - 视频问答 APIs
+      summary: 基于视频内容的问答接口
+      operationId: videoQuestionAnswering
+      parameters:
+      - name: prompt
+        in: query
+        required: false
+        schema:
+          type: string
+          default: 请总结这个视频的主要内容
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - video
+              type: object
+              properties:
+                video:
+                  type: string
+                  format: binary
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+  /api/v1/summarizer:
+    post:
+      tags:
+      - Docs Summarize APIs
+      summary: Docs summary
+      operationId: summary
+      parameters:
+      - name: url
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: chatId
+        in: header
+        required: false
+        schema:
+          type: string
+          default: spring-ai-alibaba-docs-summary
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+  /api/v1/image2text:
+    post:
+      tags:
+      - Image APIs
+      summary: DashScope Image Recognition
+      operationId: image2text
+      parameters:
+      - name: prompt
+        in: query
+        required: false
+        schema:
+          type: string
+          default: 请总结图片内容
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - image
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+  /api/v1/audio2text:
+    post:
+      tags:
+      - Audio APIs
+      summary: DashScope Audio Transcription
+      operationId: audioToText
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - audio
+              type: object
+              properties:
+                audio:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ResultString'
+  /api/v1/tool-call:
+    get:
+      tags:
+      - Tool Calling APIs
+      summary: DashScope ToolCall Chat
+      operationId: chat
+      parameters:
+      - name: prompt
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ResultToolCallResp'
+  /api/v1/text2image:
+    get:
+      tags:
+      - Image APIs
+      summary: DashScope Image Generation
+      operationId: text2Image
+      parameters:
+      - name: prompt
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: style
+        in: query
+        required: false
+        schema:
+          type: string
+          default: 摄影写实
+      - name: resolution
+        in: query
+        required: false
+        schema:
+          type: string
+          default: 1080*1080
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ResultVoid'
+  /api/v1/text2audio:
+    get:
+      tags:
+      - Audio APIs
+      summary: DashScope Speech Synthesis
+      operationId: textToAudio
+      parameters:
+      - name: prompt
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultByte[]"
+  /api/v1/search:
+    get:
+      tags:
+      - Web Search APIs
+      operationId: search
+      parameters:
+      - name: query
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+  /api/v1/rag:
+    get:
+      tags:
+      - RAG APIs
+      summary: DashScope RAG
+      operationId: ragChat
+      parameters:
+      - name: prompt
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: chatId
+        in: header
+        required: false
+        schema:
+          type: string
+          default: spring-ai-alibaba-playground-rag
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+  /api/v1/mcp:
+    get:
+      tags:
+      - MCP APIs
+      summary: DashScope Mcp Chat
+      operationId: chat_1
+      parameters:
+      - name: prompt
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: chatId
+        in: header
+        required: false
+        schema:
+          type: string
+          default: spring-ai-alibaba-playground-mcp
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /api/v1/health:
+    get:
+      tags:
+      - Base APIs
+      operationId: health
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ResultString'
+  /api/v1/deep-thinking/chat:
+    get:
+      tags:
+      - Chat APIs
+      operationId: deepThinkingChat
+      parameters:
+      - name: prompt
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: model
+        in: header
+        required: false
+        schema:
+          type: string
+      - name: chatId
+        in: header
+        required: false
+        schema:
+          type: string
+          default: spring-ai-alibaba-playground-deepthink-chat
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+  /api/v1/dashscope/getModels:
+    get:
+      tags:
+      - Base APIs
+      operationId: getDashScopeModels
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ResultSetMapStringString'
+  /api/v1/chat:
+    get:
+      tags:
+      - Chat APIs
+      summary: DashScope Flux Chat
+      operationId: chat_2
+      parameters:
+      - name: prompt
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: model
+        in: header
+        required: false
+        schema:
+          type: string
+      - name: chatId
+        in: header
+        required: false
+        schema:
+          type: string
+          default: spring-ai-alibaba-playground-chat
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  type: string
+components:
+  schemas:
+    ResultString:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          type: string
+    ResultToolCallResp:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/ToolCallResp'
+    ToolCallResp:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - SUCCESS
+          - FAILURE
+          - UNKNOWN
+          - RUNNING
+        toolName:
+          type: string
+        toolParameters:
+          type: string
+        toolResult:
+          type: string
+        toolStartTime:
+          type: string
+          format: date-time
+        toolEndTime:
+          type: string
+          format: date-time
+        errorMessage:
+          type: string
+        toolInput:
+          type: string
+        toolCostTime:
+          type: integer
+          format: int64
+    ResultVoid:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          type: object
+    ResultByte[]:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          type: string
+          format: byte
+    ResultSetMapStringString:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          uniqueItems: true
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: string
+x-openapi:
+  x-setting:
+    customCode: 200
+    language: zh-CN
+    enableSwaggerModels: true
+    swaggerModelName: Swagger Models
+    enableReloadCacheParameter: false
+    enableAfterScript: true
+    enableDocumentManage: true
+    enableVersion: true
+    enableRequestCache: true
+    enableFilterMultipartApis: false
+    enableFilterMultipartApiMethodType: POST
+    enableHost: false
+    enableHostText: ""
+    enableDynamicParameter: false
+    enableDebug: true
+    enableFooter: true
+    enableFooterCustom: false
+    enableSearch: true
+    enableOpenApi: true
+    enableHomeCustom: false
+    enableGroup: true
+    enableResponseCode: true
+  x-markdownFiles: []
