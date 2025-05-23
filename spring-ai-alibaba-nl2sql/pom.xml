@@ -17,7 +17,6 @@
         <module>chat</module>
         <module>management</module>
         <module>common</module>
-        <module>mcp</module>
     </modules>
 
     <properties>
