@@ -44,7 +44,7 @@ public class ReactAutoconfiguration {
 	@Bean
 	public ReactAgent normalReactAgent(ChatModel chatModel, ToolCallbackResolver resolver) throws GraphStateException {
 		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultTools("getWeatherFunction")
+			.defaultToolNames("getWeatherFunction")
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();

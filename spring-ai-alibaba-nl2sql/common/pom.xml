@@ -11,8 +11,8 @@
     <artifactId>common</artifactId>
 
     <properties>
-        <spring-ai.version>1.0.0-RC1</spring-ai.version>
-        <spring-ai-alibaba.version>1.0.0-RC1.1</spring-ai-alibaba.version>
+        <spring-ai.version>1.0.0</spring-ai.version>
+        <spring-ai-alibaba.version>1.0.0.1</spring-ai-alibaba.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
