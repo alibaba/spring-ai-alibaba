@@ -362,6 +362,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-tool-calling-tavilysearch</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <!-- Spring AI Alibaba Vector Stores -->
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
