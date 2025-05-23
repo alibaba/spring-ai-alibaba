@@ -3,6 +3,8 @@
 
 # [Spring AI Alibaba](https://java2ai.com)
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/alibaba/spring-ai-alibaba)
+
 [中文版本](./README-zh.md) | [日本語](./README-ja.md)
 
 An AI application framework for Java developers built on top of Spring AI that provides seamless integration with
