@@ -8,7 +8,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>chat</artifactId>
+    <artifactId>spring-ai-alibaba-nl2sql-chat</artifactId>
     <properties>
         <spring-ai.version>1.0.0</spring-ai.version>
         <spring-ai-alibaba.version>1.0.0.1</spring-ai-alibaba.version>
@@ -154,7 +154,7 @@
         </dependency>
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>common</artifactId>
+            <artifactId>spring-ai-alibaba-nl2sql-common</artifactId>
             <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
