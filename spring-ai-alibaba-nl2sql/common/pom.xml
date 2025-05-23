@@ -8,7 +8,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>common</artifactId>
+    <artifactId>spring-ai-alibaba-nl2sql-common</artifactId>
 
     <properties>
         <spring-ai.version>1.0.0</spring-ai.version>
