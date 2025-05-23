@@ -205,7 +205,7 @@
             <!-- Spring AI Alibaba MCP Nacos -->
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-mcp-nacos</artifactId>
+                <artifactId>spring-ai-alibaba-mcp-nacos2</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
