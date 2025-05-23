@@ -1,7 +1,8 @@
 /* chat-area.css - 计划模板页面中的聊天区域样式 */
 
 /* 聊天区域容器的外层包裹，包含头部和聊天区域本身 */
-.chat-area-container {
+.chat-area {
+    min-height: 500px;
     background-color: #ffffff;
     border-radius: 8px;
     border: 1px solid #e0e0e0;
@@ -12,56 +13,3 @@
     display: flex;
     flex-direction: column; 
 }
-
-/* 聊天区域标题 */
-.chat-area-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #e8eaed;
-}
-
-.chat-area-header h2 {
-    font-size: 16px;
-    font-weight: 600;
-    color: #202124;
-    margin: 0;
-}
-
-.chat-area-actions {
-    display: flex;
-    gap: 8px;
-}
-
-/* 特定于计划模板上下文的覆盖或附加样式可以保留（如果需要），但一般的聊天消息样式应集中处理。 */
-
-/* 例如：如果计划模板的聊天区域需要不同的高度 */
-.chat-area-container .chat-area { /* 目标是新的 .chat-area 在 .chat-area-container 内部 */
-    min-height: 300px; /* 调整自 simple-chat-area 的 400px */
-    max-height: 500px; /* 调整自 simple-chat-area 的 600px */
-    overflow-y: auto;
-    /* display: flex; 和 flex-direction: column; 通常由 ChatHandler 的 .chat-area 处理，如果它直接添加消息 */
-}
-
-/* 空消息提示 - 如果 ChatHandler 也有一个，这可能是重复的。 */
-/* 如果特定于此页面的空状态，请保留 */
-.chat-area .empty-chat-message { /* 确保它针对新的结构 */
-    text-align: center;
-    color: #757575;
-    padding: 30px 0;
-    font-size: 14px;
-}
-
-/* .simple-chat-area 相关样式已删除，因为类名已更改，结构现在由 chat.css 处理（来自 ChatHandler） */
-/* 对 .dialog-round-container、.message、.user-message、.ai-message 等的样式，
-   假定在 ChatHandler.js 使用的全局 ../css/chat.css 中。
-   如果它们是计划模板聊天的唯一样式，则需要合并或保留在此处，
-   但目标是使用通用的 ChatHandler 样式。 */
-
-/* 状态更新、操作信息样式等已是旧的 .simple-chat-area 结构的一部分。
-   现在预期由 ChatHandler 及其关联的 CSS（../css/chat.css）生成和样式化。
-   如果这些特定的视觉外观仅适用于计划模板，则需要调整
-   以适应 ChatHandler 生成的 DOM 结构，或者需要使 ChatHandler 更加灵活。
-   目前，我们假设这些已包含在全局 chat.css 中，或者不再以这种确切形式需要。 */

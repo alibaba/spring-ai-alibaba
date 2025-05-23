@@ -8,10 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
             await PlanExecutionManager.init();
             console.log('UI 模块初始化完成');
 
-            await ChatInputHandler.init(); 
+            const chatInputHandler = new ChatInputHandler();
 
             // 2. 初始化聊天处理器
-            await ChatHandler.init();
+            const chatHandler = new ChatHandler();
             console.log('聊天处理器初始化完成');
 
             // 3. 初始化右侧边栏
@@ -22,21 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
             initializeSidebars();
             console.log('侧边栏切换功能初始化完成');
 
-            // 5. 绑定发送按钮事件（确保在所有模块初始化后进行）
-            const sendButton = document.querySelector('.send-btn');
-            const inputField = document.querySelector('.input-area input');
-
-            sendButton.addEventListener('click', () => {
-                if (inputField.value.trim()) {
-                    ChatHandler.handleUserMessage(inputField.value.trim());
-                }
-            });
-
-            inputField.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && inputField.value.trim()) {
-                    ChatHandler.handleUserMessage(inputField.value.trim());
-                }
-            });
 
             console.log('应用初始化完成');
         } catch (error) {

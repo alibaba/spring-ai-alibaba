@@ -91,12 +91,82 @@ const PlanExecutionManager = (() => {
             activePlanId = null;
             
             // 更新UI状态，启用发送按钮
-            // updateInputState(true); // 改为通过事件通知 ChatInputHandler
             TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_UPDATE_STATE, { enabled: true }); // CORRECTED
         });
 
         // 新增：监听用户请求发送消息的事件
         TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.USER_MESSAGE_SEND_REQUESTED, handleUserMessageSendRequested);
+
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.PLAN_EXECUTION_REQUESTED, (data) => {
+                console.log('[PlanExecutionManager] Received PLAN_EXECUTION_REQUESTED event:', data);
+                if (data && data.planId) {
+                    activePlanId = data.planId; // Set activePlanId from the event data
+                    // Prepare UI for execution (e.g., disable chat input if not already)
+                    initiatePlanExecutionSequence(data.query || `Executing plan: ${data.planId}`, data.planId);
+                } else {
+                    console.error('[PlanExecutionManager] PLAN_EXECUTION_REQUESTED event missing planId:', data);
+                }
+            });
+    };
+
+    /**
+     * Validates the request and prepares the UI for a new message.
+     * @param {string} query - The user\\'s query.
+     * @returns {boolean} - True if validation passes and UI is prepared, false otherwise.
+     */
+    const _validateAndPrepareUIForNewRequest = (query) => {
+        if (!query) {
+            console.warn("[PlanExecutionManager] _validateAndPrepareUIForNewRequest: Query is empty.");
+            return false;
+        }
+
+        if (activePlanId) {
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.MESSAGE_UPDATE, {
+                content: `当前有任务正在执行，请等待完成后再提交新任务`,
+                type: 'error',
+                planId: activePlanId
+            });
+            return false;
+        }
+
+        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_CLEAR);
+  
+        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_UPDATE_STATE, { enabled: false, placeholder: '处理中...' });
+        return true;
+    };
+
+    /**
+     * Sends the user\\'s message to the API and sets the active plan ID.
+     * @param {string} query - The user\\'s query.
+     * @returns {Promise<object|null>} - The API response containing planId, or null if an error occurs or planId is missing.
+     */
+    const _sendUserMessageAndSetPlanId = async (query) => {
+        const response = await ManusAPI.sendMessage(query);
+        if (response && response.planId) { // Corrected: Added parentheses for the if condition
+            activePlanId = response.planId;
+            return response; // Return the full response as it might be useful
+        }
+        // If response is problematic or planId is missing, an error will be thrown by the caller
+        // or handled if ManusAPI.sendMessage itself throws.
+        // For robustness, explicitly throw if planId is missing after a successful-looking call.
+        console.error("[PlanExecutionManager] _sendUserMessageAndSetPlanId: Failed to get planId from response.", response);
+        throw new Error("未能从API响应中获取有效的 planId");
+    };
+
+    /**
+     * Emits the dialog round start event and begins polling for plan status.
+     * Public method to allow initiation from direct plan execution requests.
+     * @param {string} query - The user's query or a description of the execution.
+     * @param {string} planId - The active plan ID.
+     */
+    const initiatePlanExecutionSequence = (query, planId) => {
+        // 发出对话轮次开始事件 (this remains DIALOG_ROUND_START as it signifies the beginning of a monitored execution flow)
+        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.DIALOG_ROUND_START, {
+            planId: planId,
+            query: query
+        });
+        // 开始轮询
+        startPolling();
     };
 
     /**
@@ -105,49 +175,35 @@ const PlanExecutionManager = (() => {
      */
     const handleUserMessageSendRequested = async (eventData) => {
         const { query } = eventData;
-        if (!query) return;
 
-        // 如果当前有活动的计划正在执行，则不允许提交新任务
-        if (activePlanId) {
-            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.MESSAGE_UPDATE, {
-                content: `当前有任务正在执行，请等待完成后再提交新任务`,
-                type: 'error',
-                planId: activePlanId
-            });
-            return;
+        if (!_validateAndPrepareUIForNewRequest(query)) {
+            return; // Validation failed or UI prep failed
         }
 
-        // 清空输入框 (通过事件通知 ChatInputHandler)
-        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_CLEAR); // CORRECTED
-        // 禁用输入框 (通过事件通知 ChatInputHandler)
-        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_UPDATE_STATE, { enabled: false, placeholder: '处理中...' }); // CORRECTED
-
         try {
-            // 发送到API
-            const response = await ManusAPI.sendMessage(query);
+            // 发送到API并更新任务ID
+            // activePlanId is set within _sendUserMessageAndSetPlanId
+            await _sendUserMessageAndSetPlanId(query); 
             
-            // 更新任务ID并开始轮询
-            activePlanId = response.planId;
-            
-            // 发出对话轮次开始事件
-            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.DIALOG_ROUND_START, {
-                planId: activePlanId, 
-                query: query
-            });
-            
-            // 开始轮询 (轮询内部会在适当时机通过事件恢复输入框状态)
-            startPolling();
+            // 开始轮询等后续操作
+            // Ensure activePlanId is valid before proceeding
+            if (activePlanId) {
+                initiatePlanExecutionSequence(query, activePlanId);
+            } else {
+                // This case should ideally be caught by an error in _sendUserMessageAndSetPlanId
+                console.error("[PlanExecutionManager] handleUserMessageSendRequested: activePlanId is not set after sending message.");
+                throw new Error("未能设置有效的 activePlanId。");
+            }
             
         } catch (error) {
             TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.MESSAGE_UPDATE, {
                 content: `发送失败: ${error.message}`,
                 type: 'error',
-                planId: activePlanId
+                planId: activePlanId // activePlanId might be null if _sendUserMessageAndSetPlanId failed early
             });
             
-            // 发生错误时，确保可以再次提交 (通过事件通知 ChatInputHandler)
-            // updateInputState(true);
-            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_UPDATE_STATE, { enabled: true }); // CORRECTED
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_UPDATE_STATE, { enabled: true });
+            activePlanId = null; // Ensure activePlanId is reset on error
         }
     };
 
@@ -230,7 +286,6 @@ const PlanExecutionManager = (() => {
             const userInputState = await ManusAPI.checkWaitForInput(activePlanId);
             if (userInputState && userInputState.waiting) {
                 console.log('轮询：检测到需要用户输入', userInputState);
-                // ChatHandler.displayUserInputForm(userInputState, details, chatArea); // 旧的直接调用方式
                 TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.USER_INPUT_FORM_DISPLAY_REQUESTED, {
                     userInputState: userInputState,
                     planDetails: details
@@ -292,7 +347,7 @@ const PlanExecutionManager = (() => {
     // 公开UI模块的方法和事件系统
     return {
         init,
-        // handleSendMessage, // 不再直接暴露，通过事件触发
+        initiatePlanExecutionSequence, // Expose the method
         get activePlanId() { return activePlanId; }, // 通过 getter 暴露 activePlanId
       
     };
