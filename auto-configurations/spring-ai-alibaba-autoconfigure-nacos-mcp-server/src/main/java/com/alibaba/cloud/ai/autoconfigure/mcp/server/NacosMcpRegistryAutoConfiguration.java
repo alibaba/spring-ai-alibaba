@@ -15,9 +15,9 @@
  */
 package com.alibaba.cloud.ai.autoconfigure.mcp.server;
 
-import com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties;
-import com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegister;
-import com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegistryProperties;
+import com.alibaba.cloud.ai.mcp.nacos2.NacosMcpProperties;
+import com.alibaba.cloud.ai.mcp.nacos2.registry.NacosMcpRegister;
+import com.alibaba.cloud.ai.mcp.nacos2.registry.NacosMcpRegistryProperties;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
