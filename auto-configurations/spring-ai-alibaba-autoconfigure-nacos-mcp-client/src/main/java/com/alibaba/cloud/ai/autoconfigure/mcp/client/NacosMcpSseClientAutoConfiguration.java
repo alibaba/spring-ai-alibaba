@@ -72,7 +72,6 @@ public class NacosMcpSseClientAutoConfiguration {
 	}
 
 	@Bean(name = "server2NamedTransport")
-	@ConditionalOnBean(NacosMcpRegister.class)
 	public Map<String, List<NamedClientMcpTransport>> server2NamedTransport(
 			NacosMcpSseClientProperties nacosMcpSseClientProperties, NacosMcpOperationService nacosMcpOperationService,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider,

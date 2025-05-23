@@ -120,6 +120,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				}
 				catch (Exception e) {
 					log.error("check Tools compatible false", e);
+					throw e;
 				}
 				if (this.serverCapabilities.tools() != null) {
 					updateTools(serverDetailInfo);
@@ -148,6 +149,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			McpEndpointSpec endpointSpec = new McpEndpointSpec();
 			if (StringUtils.equals(this.type, AiConstants.Mcp.MCP_PROTOCOL_STDIO)) {
 				serverBasicInfo.setProtocol(AiConstants.Mcp.MCP_PROTOCOL_STDIO);
+				serverBasicInfo.setFrontProtocol(AiConstants.Mcp.MCP_PROTOCOL_STDIO);
 			}
 			else {
 				endpointSpec.setType(AiConstants.Mcp.MCP_ENDPOINT_TYPE_REF);
@@ -164,6 +166,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				remoteServerConfigInfo.setExportPath(contextPath + this.mcpServerProperties.getSseEndpoint());
 				serverBasicInfo.setRemoteServerConfig(remoteServerConfigInfo);
 				serverBasicInfo.setProtocol(AiConstants.Mcp.MCP_PROTOCOL_SSE);
+				serverBasicInfo.setFrontProtocol(AiConstants.Mcp.MCP_PROTOCOL_SSE);
 			}
 			this.nacosMcpOperationService.createMcpServer(this.serverInfo.name(), serverBasicInfo, mcpToolSpec,
 					endpointSpec);
@@ -226,6 +229,10 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 		try {
 			boolean changed = false;
 			McpToolSpecification toolSpec = mcpServerDetailInfo.getToolSpec();
+			if (toolSpec == null) {
+				log.info("get nacos mcp server tools is null,skip tools update");
+				return;
+			}
 			String toolsInNacosStr = JacksonUtils.toJson(toolSpec.getTools());
 			List<McpSchema.Tool> toolsInNacos = JacksonUtils.toObj(toolsInNacosStr, new TypeReference<>() {
 			});
@@ -241,7 +248,6 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 				}
 				McpSchema.Tool toolInNacos = toolsInNacosMap.get(name);
 				updateToolDescription(toolRegistration, toolInNacos, toolsRegistrationNeedToUpdate);
-				break;
 			}
 			for (McpServerFeatures.AsyncToolSpecification toolRegistration : toolsRegistrationNeedToUpdate) {
 				for (int i = 0; i < this.tools.size(); i++) {

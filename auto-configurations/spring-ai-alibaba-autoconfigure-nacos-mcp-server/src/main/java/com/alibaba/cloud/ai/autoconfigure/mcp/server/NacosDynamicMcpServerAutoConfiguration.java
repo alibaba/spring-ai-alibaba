@@ -65,7 +65,7 @@ import java.util.concurrent.TimeUnit;
  */
 @EnableConfigurationProperties({ McpDynamicServerProperties.class, NacosMcpProperties.class,
 		NacosMcpDynamicProperties.class, McpServerProperties.class })
-@AutoConfiguration(after = McpServerAutoConfiguration.class)
+@AutoConfiguration(after = { McpServerAutoConfiguration.class, NacosMcpRegistryAutoConfiguration.class })
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 public class NacosDynamicMcpServerAutoConfiguration implements ApplicationContextAware {

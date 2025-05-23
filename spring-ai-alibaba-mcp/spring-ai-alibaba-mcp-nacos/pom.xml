@@ -50,7 +50,16 @@
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-maintainer-client</artifactId>
             <version>${nacos.version}</version>
-            <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.alibaba.nacos</groupId>
+                    <artifactId>nacos-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.alibaba.nacos</groupId>
+                    <artifactId>nacos-common</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

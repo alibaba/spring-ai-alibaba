@@ -27,8 +27,6 @@ public class NacosMcpDynamicProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.nacos.dynamic";
 
-	String serviceNamespace;
-
 	String serviceGroup = "DEFAULT_GROUP";
 
 	List<String> serverNames;
@@ -47,14 +45,6 @@ public class NacosMcpDynamicProperties {
 
 	public void setServiceGroup(String serviceGroup) {
 		this.serviceGroup = serviceGroup;
-	}
-
-	public String getServiceNamespace() {
-		return serviceNamespace;
-	}
-
-	void setServiceNamespace(String serviceNamespace) {
-		this.serviceNamespace = serviceNamespace;
 	}
 
 }
