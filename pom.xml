@@ -142,8 +142,8 @@
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-dashscope</module>
 
         <!-- Spring AI Alibaba MCP -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-client</module>
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-server</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos2-mcp-client</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos2-mcp-server</module>
 
         <!-- Spring AI Alibaba Nacos Prompt Template -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-prompt</module>
@@ -153,8 +153,8 @@
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-prompt</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-client</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-server</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos2-mcp-client</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos2-mcp-server</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>
     </modules>
 
