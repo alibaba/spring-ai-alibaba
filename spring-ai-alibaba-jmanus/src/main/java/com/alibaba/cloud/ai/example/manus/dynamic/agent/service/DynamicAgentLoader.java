@@ -45,6 +45,7 @@ public class DynamicAgentLoader {
 
 	private final UserInputService userInputService;
 
+        继续做 把所有的链路都迁移出来 。
 	public DynamicAgentLoader(DynamicAgentRepository repository, @Lazy LlmService llmService,
 			PlanExecutionRecorder recorder, ManusProperties properties, @Lazy ToolCallingManager toolCallingManager,
 			UserInputService userInputService) {

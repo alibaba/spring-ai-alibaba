@@ -276,33 +276,15 @@
 
 
                 <!-- 添加简单操作请求区域 -->
-                <div class="simple-chat-area">
+                <div class="chat-area-container"> <!-- Renamed from simple-chat-area -->
                     <div class="chat-area-header">
-                        <h2>操作记录</h2>
+                        <h2>执行日志与交互</h2>
                         <div class="chat-area-actions">
-                            <button class="action-btn" id="clearChatBtn">
-                                <span class="icon-placeholder"></span> 清空记录
-                            </button>
-                        </div>
+                          </div>
                     </div>
-                    <div class="dialog-round-container" data-dialog-round-id="demo-round" data-plan-id="demo-plan">
-                        <!-- 示例用户消息 -->
-                        <div class="message user-message">
-                            <p>执行后这里可以看到详细执行情况</p>
-                        </div>
-
-                        <!-- 示例AI回复消息 -->
-                        <div class="message ai-message ai-steps-container">
-                            <div class="ai-header">
-                                <span class="ai-logo">M</span> JTaskPilot AI
-                            </div>
-
-                        </div>
-
-                        <!-- 当没有消息时显示的提示 -->
-                        <div class="empty-chat-message" style="display:none;">
-                            <p>暂无操作记录，请执行计划生成操作记录。</p>
-                        </div>
+                    <div class="chat-area"> <!-- This is the main container for ChatHandler -->
+                        <!-- ChatHandler will populate this area -->
+                         <div class="dialog-round-container"></div> <!-- Initial container if needed by ChatHandler structure, or ChatHandler creates its own -->
                     </div>
                 </div>
         </main>
@@ -345,6 +327,7 @@
     <!-- 引入计划模板页面特有的JS文件 -->
     <script src="js/plan-ui-events.js"></script>
     <script src="js/template-helpers.js"></script>
+    <script src="js/plan-template-main.js"></script> <!-- Ensure plan-template-main.js is loaded -->
     <script src="js/plan-template.js"></script>
     <!-- 引入适配器 -->
     <script src="js/chat-handler-adapter.js"></script>

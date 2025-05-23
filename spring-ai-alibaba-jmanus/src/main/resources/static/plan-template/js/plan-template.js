@@ -25,8 +25,6 @@ let modifyPlanBtn;
 let clearBtn;
 let clearParamBtn;
 let apiUrlElement;
-let chatArea;
-let clearChatBtn;
 
 // 侧边栏折叠/展开相关变量
 let toggleLeftSidebarBtn;
@@ -54,8 +52,6 @@ function init() {
     clearBtn = document.getElementById('clearBtn');
     clearParamBtn = document.getElementById('clearParamBtn');
     apiUrlElement = document.querySelector('.api-url');
-    chatArea = document.querySelector('.simple-chat-area .dialog-round-container');
-    clearChatBtn = document.getElementById('clearChatBtn');
 
     // 获取侧边栏切换按钮和侧边栏元素
     toggleLeftSidebarBtn = document.getElementById('toggleLeftSidebarBtn');
@@ -90,13 +86,7 @@ function init() {
 
     // 为参数输入框添加实时监听，当输入内容变化时更新API URL
     if (planParamsInput) {
-        planParamsInput.addEventListener('input', function () {
-            updateApiUrl();
-        });
-    }
-
-    if (clearChatBtn) {
-        clearChatBtn.addEventListener('click', clearChatArea);
+        planParamsInput.addEventListener('input', updateApiUrl);
     }
 
     // 绑定版本控制按钮事件
@@ -106,13 +96,17 @@ function init() {
 
     // 初始化聊天处理器和右侧边栏
     if (typeof ChatHandler !== 'undefined') {
-        ChatHandler.init();
-        console.log('聊天处理器初始化完成');
+        // Assuming ChatHandler might need access to the chat area, 
+        // it might need to be updated or ChatAreaManager might need to expose chatArea element.
+        // For now, we assume ChatHandler is independent or will be refactored.
     }
-
     if (typeof RightSidebar !== 'undefined') {
         RightSidebar.init();
-        console.log('右侧边栏初始化完成');
+    }
+
+    // Initialize the new ChatAreaManager
+    if (typeof ChatAreaManager !== 'undefined') {
+        ChatAreaManager.init();
     }
 
     // 初始状态
@@ -122,22 +116,6 @@ function init() {
     loadPlanTemplateList();
 
     console.log('计划模板页面初始化完成');
-}
-
-/**
- * 清空聊天区域
- */
-function clearChatArea() {
-    if (chatArea) {
-        // 保留对话容器，但清空内容
-        chatArea.innerHTML = '';
-
-        // 显示空聊天提示
-        const emptyMessage = document.querySelector('.empty-chat-message');
-        if (emptyMessage) {
-            emptyMessage.style.display = 'block';
-        }
-    }
 }
 
 /**
