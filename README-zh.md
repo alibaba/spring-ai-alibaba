@@ -1,5 +1,7 @@
 # Spring AI Alibaba
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/alibaba/spring-ai-alibaba)
+
 [Spring AI Alibaba](https://java2ai.com) 是一款 Java 语言实现的 AI 应用开发框架，旨在简化 Java AI 应用程序开发，让 Java
 开发者像使用 Spring 开发普通应用一样开发 AI 应用。Spring AI Alibaba 基于 Spring AI
 开源项目构建，默认提供阿里云基础模型服务、开源及商业生态组件的集成与最佳实践。
