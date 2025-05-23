@@ -13,7 +13,6 @@
     <packaging>pom</packaging>
     <name>Spring AI Alibaba NL2SQL</name>
 
-
     <modules>
         <module>chat</module>
         <module>management</module>
@@ -22,8 +21,6 @@
     </modules>
 
     <properties>
-        <spring-ai.version>${spring-ai.version}</spring-ai.version>
-        <spring-ai-alibaba.version>${spring-ai-alibaba.version}</spring-ai-alibaba.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
