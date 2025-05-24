@@ -48,7 +48,7 @@ public class MicroSoftTranslateAutoConfiguration {
 				headers.set(HttpHeaders.CONTENT_TYPE, "application/json");
 			})
 			.build();
-		return new MicroSoftTranslateService(webClientTool);
+		return new MicroSoftTranslateService(webClientTool, jsonParseTool);
 	}
 
 }
