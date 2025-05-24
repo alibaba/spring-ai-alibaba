@@ -1532,7 +1532,7 @@ public class DashScopeApi {
 		}
 
 		public Builder apiKey(String simpleApiKey) {
-			Assert.notNull(apiKey, "Simple api key cannot be null");
+			Assert.notNull(simpleApiKey, "Simple api key cannot be null");
 			this.apiKey = new SimpleApiKey(simpleApiKey);
 			return this;
 		}

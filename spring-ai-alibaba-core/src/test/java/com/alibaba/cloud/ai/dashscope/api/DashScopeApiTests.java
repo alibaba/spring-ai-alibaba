@@ -51,6 +51,7 @@ class DashScopeApiTests {
 
 	@Test
 	void testChatModelEnum() {
+		System.out.println("output: " + dashScopeApi.getApiKey());
 		// Test ChatModel enum values
 		assertEquals("qwen-max", ChatModel.QWEN_MAX.getModel(), "ChatModel.QWEN_MAX should have value 'qwen-max'");
 		assertEquals("qwen-max-longcontext", ChatModel.QWEN_MAX_LONGCONTEXT.getModel(),
