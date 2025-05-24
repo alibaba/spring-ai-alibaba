@@ -25,6 +25,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 
 import java.util.*;
 
@@ -39,8 +41,11 @@ public class CoderNode implements NodeAction {
 
 	private final ChatClient coderAgent;
 
-	public CoderNode(ChatClient coderAgent) {
+	private final ToolCallback[] toolCallbacks;
+
+	public CoderNode(ChatClient coderAgent, ToolCallback[] toolCallbacks) {
 		this.coderAgent = coderAgent;
+		this.toolCallbacks = toolCallbacks;
 	}
 
 	@Override
@@ -67,7 +72,11 @@ public class CoderNode implements NodeAction {
 		messages.add(taskMessage);
 
 		// 调用agent
-		String content = coderAgent.prompt().messages(messages).call().content();
+		String content = coderAgent.prompt()
+			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
+			.messages(messages)
+			.call()
+			.content();
 		unexecutedStep.setExecutionRes(content);
 
 		Map<String, Object> updated = new HashMap<>();
