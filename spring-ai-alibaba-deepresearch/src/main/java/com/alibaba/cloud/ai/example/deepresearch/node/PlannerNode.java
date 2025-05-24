@@ -50,6 +50,7 @@ public class PlannerNode implements NodeAction {
 	private static final Logger logger = LoggerFactory.getLogger(PlannerNode.class);
 
 	private final ChatClient chatClient;
+
 	private final ToolCallback[] toolCallbacks;
 
 	private final int MAX_PLAN_ITERATIONS = 3;
@@ -88,12 +89,11 @@ public class PlannerNode implements NodeAction {
 			updated.put("planner_next_node", nextStep);
 			return updated;
 		}
-		Flux<String> StreamResult = chatClient
-				.prompt(MessageFormat.format(PROMPT_FORMAT, converter.getFormat()))
-				.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
-				.messages(messages)
-				.stream()
-				.content();
+		Flux<String> StreamResult = chatClient.prompt(MessageFormat.format(PROMPT_FORMAT, converter.getFormat()))
+			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
+			.messages(messages)
+			.stream()
+			.content();
 
 		String result = StreamResult.reduce((acc, next) -> acc + next).block();
 		logger.info("Planner response: {}", result);

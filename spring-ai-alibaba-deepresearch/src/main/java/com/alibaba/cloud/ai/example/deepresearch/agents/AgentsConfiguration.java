@@ -18,14 +18,19 @@ package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.example.deepresearch.tool.WebSearchTool;
+import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchProperties;
 import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
+import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.Resource;
 
 import java.nio.charset.Charset;
@@ -41,20 +46,43 @@ public class AgentsConfiguration {
 	@Autowired
 	private WebSearchTool webSearchTool;
 
+	/**
+	 * TODO The prompt is beta.
+	 */
+	@Value("classpath:prompts/bginvestigation.md")
+	private Resource bginvestigationPrompt;
+
 	@Value("classpath:prompts/researcher.md")
 	private Resource researcherPrompt;
 
 	@Value("classpath:prompts/coder.md")
 	private Resource coderPrompt;
 
+	// @Bean
+	// public ToolCallbackProvider webSearchToolCallbackProvider() {
+	// return MethodToolCallbackProvider.builder().toolObjects(webSearchTool).build();
+	// }
+
 	@Bean
-	public ToolCallbackProvider webSearchToolCallbackProvider() {
-		return MethodToolCallbackProvider.builder().toolObjects(webSearchTool).build();
+	@ConditionalOnProperty(prefix = TavilySearchProperties.PREFIX, name = "enabled", havingValue = "true")
+	public ToolCallbackProvider tavilySearchServiceCallbackProvider(GenericApplicationContext applicationContext) {
+		SpringBeanToolCallbackResolver springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
+			.applicationContext(applicationContext)
+			.build();
+		ToolCallback tavilySearch = springBeanToolCallbackResolver.resolve("tavilySearch");
+		return ToolCallbackProvider.from(tavilySearch);
 	}
 
 	@Bean
 	public ToolCallbackProvider pythonReplToolCallbackProvider() {
 		return MethodToolCallbackProvider.builder().toolObjects(pythonReplTool).build();
+	}
+
+	@SneakyThrows
+	@Bean
+	public ChatClient backgroundInvestigationAgent(ChatClient.Builder chatClientBuilder) {
+		return chatClientBuilder.defaultSystem(bginvestigationPrompt.getContentAsString(Charset.defaultCharset()))
+			.build();
 	}
 
 	/**

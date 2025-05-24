@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoordinatorDispatche
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.PlannerDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
+import com.alibaba.cloud.ai.example.deepresearch.model.BackgroundInvestigationType;
 import com.alibaba.cloud.ai.example.deepresearch.node.*;
 import com.alibaba.cloud.ai.example.deepresearch.tool.tavily.TavilySearchApi;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
@@ -36,6 +37,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -53,6 +55,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
  * @date 2025/5/17 17:10
  */
 @Configuration
+@EnableConfigurationProperties(DeepResearchProperties.class)
 public class DeepResearchConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
@@ -61,10 +64,16 @@ public class DeepResearchConfiguration {
 	private TavilySearchApi tavilySearchApi;
 
 	@Autowired
+	private ChatClient backgroundInvestigationAgent;
+
+	@Autowired
 	private ChatClient researchAgent;
 
 	@Autowired
 	private ChatClient coderAgent;
+
+	@Autowired
+	private DeepResearchProperties deepResearchProperties;
 
 	@Bean
 	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder,
@@ -92,9 +101,12 @@ public class DeepResearchConfiguration {
 			return state;
 		};
 
+		BackgroundInvestigationNodeAction backgroundInvestigationNodeAction = createBackgroundInvestigationNodeAction(
+				deepResearchProperties.getBackgroundInvestigationType(), toolCallbacks);
+
 		StateGraph stateGraph = new StateGraph("deep research", stateFactory)
 			.addNode("coordinator", node_async(new CoordinatorNode(chatClientBuilder)))
-			.addNode("background_investigator", node_async((new BackgroundInvestigationNode(tavilySearchApi))))
+			.addNode("background_investigator", node_async(backgroundInvestigationNodeAction))
 			.addNode("planner", node_async((new PlannerNode(chatClientBuilder, toolCallbacks))))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
@@ -131,6 +143,20 @@ public class DeepResearchConfiguration {
 		toolCallbackProviders
 			.forEach(toolCallbackProvider -> Collections.addAll(res, toolCallbackProvider.getToolCallbacks()));
 		return res.toArray(new ToolCallback[0]);
+	}
+
+	/**
+	 * Create background investigation node action by type.
+	 * @param backgroundInvestigationType background investigation type
+	 * @param toolCallbacks tool callbacks
+	 * @return background investigation instance
+	 */
+	private BackgroundInvestigationNodeAction createBackgroundInvestigationNodeAction(
+			BackgroundInvestigationType backgroundInvestigationType, ToolCallback[] toolCallbacks) {
+		return switch (backgroundInvestigationType) {
+			case JUST_WEB_SEARCH -> new BackgroundInvestigationNode(tavilySearchApi);
+			case TOOL_CALLS -> new BackgroundInvestigationToolCallsNode(backgroundInvestigationAgent, toolCallbacks);
+		};
 	}
 
 }

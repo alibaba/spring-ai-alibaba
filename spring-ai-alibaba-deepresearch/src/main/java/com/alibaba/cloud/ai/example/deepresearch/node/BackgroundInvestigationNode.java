@@ -16,11 +16,11 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
+import com.alibaba.cloud.ai.example.deepresearch.model.BackgroundInvestigationType;
 import com.alibaba.cloud.ai.example.deepresearch.model.SearchedContent;
 import com.alibaba.cloud.ai.example.deepresearch.model.TavilySearchResponse;
 import com.alibaba.cloud.ai.example.deepresearch.tool.tavily.TavilySearchApi;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.Message;
@@ -35,7 +35,7 @@ import java.util.Map;
  * @date 2025/5/17 18:37
  */
 
-public class BackgroundInvestigationNode implements NodeAction {
+public class BackgroundInvestigationNode implements BackgroundInvestigationNodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(BackgroundInvestigationNode.class);
 
@@ -43,6 +43,11 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	public BackgroundInvestigationNode(TavilySearchApi tavilySearchApi) {
 		this.tavilySearchApi = tavilySearchApi;
+	}
+
+	@Override
+	public BackgroundInvestigationType of() {
+		return BackgroundInvestigationType.JUST_WEB_SEARCH;
 	}
 
 	@Override
