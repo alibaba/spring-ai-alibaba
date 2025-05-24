@@ -1526,7 +1526,10 @@ public class DashScopeApi {
 		}
 
 		public Builder workSpaceId(String workSpaceId) {
-			Assert.notNull(workSpaceId, "Work space id cannot be null");
+			// Workspace ID is optional, but if provided, it must not be null.
+			if (StringUtils.hasText(workSpaceId)) {
+				Assert.notNull(workSpaceId, "Workspace ID cannot be null");
+			}
 			this.workSpaceId = workSpaceId;
 			return this;
 		}

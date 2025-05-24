@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
@@ -97,7 +98,8 @@ public class DashScopeChatAutoConfiguration {
 					.toolCallingManager(toolCallingManager)
 					.defaultOptions(chatProperties.getOptions())
 					.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-					.toolExecutionEligibilityPredicate(dashscopeToolExecutionEligibilityPredicate.getIfAvailable())
+					.toolExecutionEligibilityPredicate(
+							dashscopeToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
 					.build();
 
 			observationConvention.ifAvailable(dashscopeModel::setObservationConvention);
