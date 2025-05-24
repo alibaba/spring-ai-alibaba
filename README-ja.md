@@ -1,5 +1,7 @@
 # Spring AI Alibaba
 
+[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)  [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/alibaba/spring-ai-alibaba)
+
 [Spring AI Alibaba](https://java2ai.com) は、Java 開発者向けの AI アプリケーションフレームワークであり、Spring AI
 をベースに構築されており、Alibaba Cloud QWen LLM サービスおよびクラウドネイティブインフラストラクチャとのシームレスな統合を提供します。
 
