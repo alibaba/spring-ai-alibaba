@@ -27,7 +27,7 @@ import java.util.List;
 
 @CrossOrigin
 @RestController
-@RequestMapping("graph-studio/api/app")
+@RequestMapping("graph-studio/api/dsl")
 public class DSLController implements DSLAPI {
 
 	private final List<DSLAdapter> adapters;

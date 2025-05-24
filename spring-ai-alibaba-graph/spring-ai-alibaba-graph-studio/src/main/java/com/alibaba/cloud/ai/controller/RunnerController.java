@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("graph-studio/api/app")
+@RequestMapping("graph-studio/api/run")
 public class RunnerController implements RunnerAPI {
 
 	private final List<Runner> runners;

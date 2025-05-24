@@ -59,6 +59,18 @@
             <version>${springdoc-openapi.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>io.spring.initializr</groupId>
+            <artifactId>initializr-generator-spring</artifactId>
+            <version>${spring-initializr.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.spring.initializr</groupId>
+            <artifactId>initializr-web</artifactId>
+            <version>${spring-initializr.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>
