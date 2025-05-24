@@ -19,8 +19,7 @@ public class DashScopeAgentProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.dashscope.agent";
 
 	@NestedConfigurationProperty
-	private DashScopeAgentOptions options = DashScopeAgentOptions.builder()
-			.build();
+	private DashScopeAgentOptions options = DashScopeAgentOptions.builder().build();
 
 	public DashScopeAgentOptions getOptions() {
 
