@@ -13,41 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
-import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisOptions;
+import com.alibaba.cloud.ai.dashscope.agent.DashScopeAgentOptions;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
-
 /**
- * @author kevinlin09
+ * @author yuluo
+ * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
 
-@ConfigurationProperties(DashScopeSpeechSynthesisProperties.CONFIG_PREFIX)
-public class DashScopeSpeechSynthesisProperties extends DashScopeParentProperties {
+@ConfigurationProperties(DashScopeAgentProperties.CONFIG_PREFIX)
+public class DashScopeAgentProperties {
 
 	/**
 	 * Spring AI Alibaba configuration prefix.
 	 */
-	public static final String CONFIG_PREFIX = "spring.ai.dashscope.audio.synthesis";
+	public static final String CONFIG_PREFIX = "spring.ai.dashscope.agent";
 
 	@NestedConfigurationProperty
-	private DashScopeSpeechSynthesisOptions options = DashScopeSpeechSynthesisOptions.builder()
-		.withModel("cosyvoice-v1")
-		.withVoice("longhua")
-		.build();
+	private DashScopeAgentOptions options = DashScopeAgentOptions.builder().build();
 
-	public DashScopeSpeechSynthesisProperties() {
-		super.setBaseUrl(DEFAULT_BASE_URL);
-	}
+	public DashScopeAgentOptions getOptions() {
 
-	public DashScopeSpeechSynthesisOptions getOptions() {
 		return this.options;
 	}
 
-	public void setOptions(DashScopeSpeechSynthesisOptions options) {
+	public void setOptions(DashScopeAgentOptions options) {
+
 		this.options = options;
 	}
 

@@ -45,7 +45,7 @@
         <!-- Node -->
         <npm.version>9.5.1</npm.version>
         <node.version>v18.16.0</node.version>
-        <maven.deploy.skip>true</maven.deploy.skip>
+        <maven.deploy.skip>false</maven.deploy.skip>
     </properties>
 
     <dependencies>
