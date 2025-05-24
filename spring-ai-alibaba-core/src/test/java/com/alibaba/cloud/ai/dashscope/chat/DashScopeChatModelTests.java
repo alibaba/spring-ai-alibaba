@@ -428,7 +428,7 @@ class DashScopeChatModelTests {
 		}
 
 		// Initialize real DashScope API and chat model
-		DashScopeApi realApi = new DashScopeApi(apiKey);
+		DashScopeApi realApi = DashScopeApi.builder().apiKey(apiKey).build();
 		DashScopeChatOptions deepseekOptions = DashScopeChatOptions.builder()
 			.withModel("deepseek-r1") // Use deepseek-r1 model
 			.withTemperature(0.7)

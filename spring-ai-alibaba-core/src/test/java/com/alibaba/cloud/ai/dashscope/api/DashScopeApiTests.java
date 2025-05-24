@@ -15,16 +15,16 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.web.client.RestClient;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatModel;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.EmbeddingModel;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.EmbeddingTextType;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import org.springframework.web.client.RestClient;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
 /**
  * Tests for DashScopeApi class functionality
@@ -46,28 +46,7 @@ class DashScopeApiTests {
 		mockRestClient = mock(RestClient.class);
 
 		// Initialize DashScopeApi with test API key
-		dashScopeApi = new DashScopeApi("test-api-key");
-	}
-
-	@Test
-	void testConstructorWithApiKey() {
-		// Test constructor with only API key
-		DashScopeApi api = new DashScopeApi("test-api-key");
-		assertNotNull(api, "DashScopeApi should be created with API key");
-	}
-
-	@Test
-	void testConstructorWithApiKeyAndWorkspaceId() {
-		// Test constructor with API key and workspace ID
-		DashScopeApi api = new DashScopeApi("test-api-key", "test-workspace-id");
-		assertNotNull(api, "DashScopeApi should be created with API key and workspace ID");
-	}
-
-	@Test
-	void testConstructorWithApiKeyWorkspaceIdAndBaseUrl() {
-		// Test constructor with API key, workspace ID, and base URL
-		DashScopeApi api = new DashScopeApi("test-api-key", "test-workspace-id", "https://test-base-url.com");
-		assertNotNull(api, "DashScopeApi should be created with API key, workspace ID, and base URL");
+		dashScopeApi = DashScopeApi.builder().apiKey("test-api-key").build();
 	}
 
 	@Test

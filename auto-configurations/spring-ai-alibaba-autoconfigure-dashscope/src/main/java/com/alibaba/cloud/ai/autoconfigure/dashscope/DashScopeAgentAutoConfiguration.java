@@ -17,8 +17,17 @@
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeAgentApi;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -31,6 +40,21 @@ import static com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeConnectionUt
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
 
+@ConditionalOnClass(DashScopeApi.class)
+@AutoConfiguration(after = {
+		RestClientAutoConfiguration.class,
+		SpringAiRetryAutoConfiguration.class,
+		ToolCallingAutoConfiguration.class})
+@ImportAutoConfiguration(classes = {
+		SpringAiRetryAutoConfiguration.class,
+		RestClientAutoConfiguration.class,
+		ToolCallingAutoConfiguration.class,
+		WebClientAutoConfiguration.class
+})
+@EnableConfigurationProperties({
+		DashScopeConnectionProperties.class,
+		DashScopeAgentProperties.class,
+})
 public class DashScopeAgentAutoConfiguration {
 
 	@Bean
