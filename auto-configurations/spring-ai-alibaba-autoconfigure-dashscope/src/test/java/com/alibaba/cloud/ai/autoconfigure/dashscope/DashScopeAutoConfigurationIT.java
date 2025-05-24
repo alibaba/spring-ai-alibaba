@@ -56,7 +56,7 @@ public class DashScopeAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(DashScopeAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class));
 
 	@Test
 	void chatCall() {

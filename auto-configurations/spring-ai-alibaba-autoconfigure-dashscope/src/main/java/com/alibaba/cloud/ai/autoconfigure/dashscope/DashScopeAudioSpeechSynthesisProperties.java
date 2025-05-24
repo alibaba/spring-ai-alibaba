@@ -13,9 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
+import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisOptions;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -25,23 +29,21 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAUL
  * @author kevinlin09
  */
 
-@ConfigurationProperties(DashScopeSpeechSynthesisProperties.CONFIG_PREFIX)
-public class DashScopeSpeechSynthesisProperties extends DashScopeParentProperties {
+@ConfigurationProperties(DashScopeAudioSpeechSynthesisProperties.CONFIG_PREFIX)
+public class DashScopeAudioSpeechSynthesisProperties extends DashScopeParentProperties {
 
 	/**
 	 * Spring AI Alibaba configuration prefix.
 	 */
 	public static final String CONFIG_PREFIX = "spring.ai.dashscope.audio.synthesis";
 
-	@NestedConfigurationProperty
-	private DashScopeSpeechSynthesisOptions options = DashScopeSpeechSynthesisOptions.builder()
-		.withModel("cosyvoice-v1")
-		.withVoice("longhua")
-		.build();
+	private final String DEFAULT_MODEL = DashScopeSpeechSynthesisModel.DashScopeSpeechModel.SAMBERT_ZHICHU_V1.getModel();
 
-	public DashScopeSpeechSynthesisProperties() {
-		super.setBaseUrl(DEFAULT_BASE_URL);
-	}
+	private static final Float SPEED = 1.0f;
+
+	private static final String DEFAULT_VOICE = "longhua";
+
+	private final DashScopeSpeechSynthesisApi.ResponseFormat DEFAULT_RESPONSE_FORMAT = DashScopeSpeechSynthesisApi.ResponseFormat.MP3;
 
 	public DashScopeSpeechSynthesisOptions getOptions() {
 		return this.options;
@@ -49,6 +51,18 @@ public class DashScopeSpeechSynthesisProperties extends DashScopeParentPropertie
 
 	public void setOptions(DashScopeSpeechSynthesisOptions options) {
 		this.options = options;
+	}
+
+	@NestedConfigurationProperty
+	private DashScopeSpeechSynthesisOptions options = DashScopeSpeechSynthesisOptions.builder()
+			.model(DEFAULT_MODEL)
+			.voice(DEFAULT_VOICE)
+			.speed(SPEED)
+			.responseFormat(DEFAULT_RESPONSE_FORMAT)
+			.build();
+
+	public DashScopeAudioSpeechSynthesisProperties() {
+		super.setBaseUrl(DEFAULT_BASE_URL);
 	}
 
 }
