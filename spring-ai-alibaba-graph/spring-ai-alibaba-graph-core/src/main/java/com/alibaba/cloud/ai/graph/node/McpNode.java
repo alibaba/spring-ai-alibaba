@@ -6,6 +6,7 @@ import org.springframework.util.StringUtils;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
+import io.modelcontextprotocol.spec.McpSchema;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * MCP Node: 通过 spring-ai-mcp-client-webflux 调用 MCP Server
+ * MCP Node: 调用 MCP Server
  */
 public class McpNode implements NodeAction {
 
@@ -54,7 +55,8 @@ public class McpNode implements NodeAction {
     // 调用 MCP 工具
     Object result;
     try {
-      result = client.callTool(finalTool, finalParams);
+      McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(finalTool, finalParams);
+      result = client.callTool(request);
     } catch (Exception e) {
       throw new McpNodeException("MCP 调用失败: " + e.getMessage(), e);
     }
