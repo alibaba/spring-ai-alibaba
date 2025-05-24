@@ -16,20 +16,11 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
-import java.util.Map;
-
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.CoordinatorDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.HumanFeedbackDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.PlannerDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
-import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.CoderNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.CoordinatorNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.HumanFeedbackNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.PlannerNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.ReporterNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.ResearchTeamNode;
-import com.alibaba.cloud.ai.example.deepresearch.node.ResearcherNode;
+import com.alibaba.cloud.ai.example.deepresearch.node.*;
 import com.alibaba.cloud.ai.example.deepresearch.tool.tavily.TavilySearchApi;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -37,13 +28,20 @@ import com.alibaba.cloud.ai.graph.OverAllStateFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -69,7 +67,10 @@ public class DeepResearchConfiguration {
 	private ChatClient coderAgent;
 
 	@Bean
-	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder) throws GraphStateException {
+	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder,
+			ObjectProvider<List<ToolCallbackProvider>> listObjectProvider) throws GraphStateException {
+		// TODO Different Tools can be set for different Nodes.
+		ToolCallback[] toolCallbacks = convert2ToolCallbacks(listObjectProvider.getIfAvailable());
 
 		OverAllStateFactory stateFactory = () -> {
 			OverAllState state = new OverAllState();
@@ -94,12 +95,12 @@ public class DeepResearchConfiguration {
 		StateGraph stateGraph = new StateGraph("deep research", stateFactory)
 			.addNode("coordinator", node_async(new CoordinatorNode(chatClientBuilder)))
 			.addNode("background_investigator", node_async((new BackgroundInvestigationNode(tavilySearchApi))))
-			.addNode("planner", node_async((new PlannerNode(chatClientBuilder))))
+			.addNode("planner", node_async((new PlannerNode(chatClientBuilder, toolCallbacks))))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
-			.addNode("researcher", node_async(new ResearcherNode(researchAgent)))
-			.addNode("coder", node_async(new CoderNode(coderAgent)))
-			.addNode("reporter", node_async((new ReporterNode(chatClientBuilder))))
+			.addNode("researcher", node_async(new ResearcherNode(researchAgent, toolCallbacks)))
+			.addNode("coder", node_async(new CoderNode(coderAgent, toolCallbacks)))
+			.addNode("reporter", node_async((new ReporterNode(chatClientBuilder, toolCallbacks))))
 
 			.addEdge(START, "coordinator")
 			.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
@@ -123,6 +124,13 @@ public class DeepResearchConfiguration {
 		logger.info("\n\n");
 
 		return stateGraph;
+	}
+
+	private ToolCallback[] convert2ToolCallbacks(List<ToolCallbackProvider> toolCallbackProviders) {
+		List<ToolCallback> res = Lists.newArrayList();
+		toolCallbackProviders
+			.forEach(toolCallbackProvider -> Collections.addAll(res, toolCallbackProvider.getToolCallbacks()));
+		return res.toArray(new ToolCallback[0]);
 	}
 
 }

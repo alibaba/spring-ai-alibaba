@@ -22,7 +22,6 @@ import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -30,7 +29,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 
 import java.nio.charset.Charset;
-import java.util.List;
 
 // todo 该类待调整
 
@@ -61,33 +59,25 @@ public class AgentsConfiguration {
 
 	/**
 	 * Create Research Agent ChatClient Bean
-	 * @param chatClientBuilder ChatClientBuilder
-	 * @param listObjectProvider The listObjectProvider comes from McpSyncClient,
-	 * McpAsyncClient and the locally configure ToolCallbackProviders.
+	 * @param chatClientBuilder ChatClientBuilder McpAsyncClient and the locally configure
+	 * ToolCallbackProviders.
 	 * @return ChatClient
 	 */
 	@SneakyThrows
 	@Bean
-	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder,
-			ObjectProvider<List<ToolCallbackProvider>> listObjectProvider) {
-		List<ToolCallbackProvider> toolCallbackProviders = listObjectProvider.getIfAvailable();
-		chatClientBuilder.defaultToolCallbacks(toolCallbackProviders.toArray(new ToolCallbackProvider[0]));
+	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder) {
 		return chatClientBuilder.defaultSystem(researcherPrompt.getContentAsString(Charset.defaultCharset())).build();
 	}
 
 	/**
 	 * Create Coder Agent ChatClient Bean
-	 * @param chatClientBuilder ChatClientBuilder
-	 * @param listObjectProvider The listObjectProvider comes from McpSyncClient,
-	 * McpAsyncClient and the locally configure ToolCallbackProviders.
+	 * @param chatClientBuilder ChatClientBuilder McpAsyncClient and the locally configure
+	 * ToolCallbackProviders.
 	 * @return ChatClient
 	 */
 	@SneakyThrows
 	@Bean
-	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder,
-			ObjectProvider<List<ToolCallbackProvider>> listObjectProvider) {
-		List<ToolCallbackProvider> toolCallbackProviders = listObjectProvider.getIfAvailable();
-		chatClientBuilder.defaultToolCallbacks(toolCallbackProviders.toArray(new ToolCallbackProvider[0]));
+	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder) {
 		return chatClientBuilder.defaultSystem(coderPrompt.getContentAsString(Charset.defaultCharset())).build();
 	}
 

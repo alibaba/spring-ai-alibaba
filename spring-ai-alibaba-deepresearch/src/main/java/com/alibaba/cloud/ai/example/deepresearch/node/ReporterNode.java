@@ -26,6 +26,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 import reactor.core.publisher.Flux;
 
 import java.text.MessageFormat;
@@ -42,12 +44,15 @@ public class ReporterNode implements NodeAction {
 
 	private final ChatClient chatClient;
 
+	private final ToolCallback[] toolCallbacks;
+
 	private static final String RESEARCH_FORMAT = "# Research Requirements\n\n## Task\n\n{0}\n\n## Description\n\n{1}";
 
 	private final String REPORT_FORMAT = "IMPORTANT: Structure your report according to the format in the prompt. Remember to include:\n\n1. Key Points - A bulleted list of the most important findings\n2. Overview - A brief introduction to the topic\n3. Detailed Analysis - Organized into logical sections\n4. Survey Note (optional) - For more comprehensive reports\n5. Key Citations - List all references at the end\n\nFor citations, DO NOT include inline citations in the text. Instead, place all citations in the 'Key Citations' section at the end using the format: `- [Source Title](URL)`. Include an empty line between each citation for better readability.\n\nPRIORITIZE USING MARKDOWN TABLES for data presentation and comparison. Use tables whenever presenting comparative data, statistics, features, or options. Structure tables with clear headers and aligned columns. Example table format:\n\n| Feature | Description | Pros | Cons |\n|---------|-------------|------|------|\n| Feature 1 | Description 1 | Pros 1 | Cons 1 |\n| Feature 2 | Description 2 | Pros 2 | Cons 2 |";
 
-	public ReporterNode(ChatClient.Builder chatClientBuilder) {
+	public ReporterNode(ChatClient.Builder chatClientBuilder, ToolCallback[] toolCallbacks) {
 		this.chatClient = chatClientBuilder.build();
+		this.toolCallbacks = toolCallbacks;
 	}
 
 	@Override
@@ -70,7 +75,11 @@ public class ReporterNode implements NodeAction {
 			messages.add(new UserMessage(observation));
 		}
 		logger.debug("Reporter node is running, messages: {}", messages);
-		Flux<String> streamConent = chatClient.prompt().messages(messages).stream().content();
+		Flux<String> streamConent = chatClient.prompt()
+			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
+			.messages(messages)
+			.stream()
+			.content();
 		String finalContent = streamConent.reduce((acc, next) -> acc + next).block();
 
 		logger.info("final report: {}", finalContent);
