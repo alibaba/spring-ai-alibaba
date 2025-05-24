@@ -21,36 +21,25 @@ public class DashScopeRerankAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public DashScopeRerankModel dashscopeRerankModel(
-			DashScopeConnectionProperties commonProperties,
-			DashScopeRerankProperties rerankProperties,
-			RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder,
-			RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler
-	) {
+	public DashScopeRerankModel dashscopeRerankModel(DashScopeConnectionProperties commonProperties,
+			DashScopeRerankProperties rerankProperties, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler) {
 
-		ResolvedConnectionProperties resolved = resolveConnectionProperties(
-				commonProperties,
-				rerankProperties,
-				"rerank"
-		);
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, rerankProperties,
+				"rerank");
 
 		var dashScopeApi = DashScopeApi.builder()
-				.apiKey(resolved.apiKey())
-				.headers(resolved.headers())
-				.baseUrl(resolved.baseUrl())
-				.webClientBuilder(webClientBuilder)
-				.workSpaceId(resolved.workspaceId())
-				.restClientBuilder(restClientBuilder)
-				.responseErrorHandler(responseErrorHandler)
-				.build();
+			.apiKey(resolved.apiKey())
+			.headers(resolved.headers())
+			.baseUrl(resolved.baseUrl())
+			.webClientBuilder(webClientBuilder)
+			.workSpaceId(resolved.workspaceId())
+			.restClientBuilder(restClientBuilder)
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 
-		return new DashScopeRerankModel(
-				dashScopeApi,
-				rerankProperties.getOptions(),
-				retryTemplate
-		);
+		return new DashScopeRerankModel(dashScopeApi, rerankProperties.getOptions(), retryTemplate);
 	}
 
 }

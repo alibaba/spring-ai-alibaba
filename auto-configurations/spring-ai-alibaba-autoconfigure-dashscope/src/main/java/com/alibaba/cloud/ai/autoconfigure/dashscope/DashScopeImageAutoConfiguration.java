@@ -39,38 +39,20 @@ public class DashScopeImageAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public DashScopeImageModel dashScopeImageModel(
-			DashScopeConnectionProperties commonProperties,
-			DashScopeImageProperties imageProperties,
-			RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder,
-			RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler,
+	public DashScopeImageModel dashScopeImageModel(DashScopeConnectionProperties commonProperties,
+			DashScopeImageProperties imageProperties, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<ImageModelObservationConvention> observationConvention
-	) {
+			ObjectProvider<ImageModelObservationConvention> observationConvention) {
 
-		ResolvedConnectionProperties resolved = resolveConnectionProperties(
-				commonProperties,
-				imageProperties,
-				"image"
-		);
+		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, imageProperties, "image");
 
-		var dashScopeImageApi = new DashScopeImageApi(
-				resolved.baseUrl(),
-				resolved.apiKey(),
-				resolved.workspaceId(),
-				restClientBuilder,
-				webClientBuilder,
-				responseErrorHandler
-		);
+		var dashScopeImageApi = new DashScopeImageApi(resolved.baseUrl(), resolved.apiKey(), resolved.workspaceId(),
+				restClientBuilder, webClientBuilder, responseErrorHandler);
 
-		DashScopeImageModel dashScopeImageModel = new DashScopeImageModel(
-				dashScopeImageApi,
-				imageProperties.getOptions(),
-				retryTemplate,
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP)
-		);
+		DashScopeImageModel dashScopeImageModel = new DashScopeImageModel(dashScopeImageApi,
+				imageProperties.getOptions(), retryTemplate,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(dashScopeImageModel::setObservationConvention);
 

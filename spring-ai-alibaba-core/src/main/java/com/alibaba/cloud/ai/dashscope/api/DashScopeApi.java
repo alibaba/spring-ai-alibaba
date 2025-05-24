@@ -159,7 +159,7 @@ public class DashScopeApi {
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record CommonResponse<T>(@JsonProperty("code") String code, @JsonProperty("message") String message,
-									@JsonProperty("data") T data) {
+			@JsonProperty("data") T data) {
 	}
 
 	/*
@@ -272,7 +272,7 @@ public class DashScopeApi {
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record Embedding(@JsonProperty("text_index") Integer textIndex,
-							@JsonProperty("embedding") float[] embedding) {
+			@JsonProperty("embedding") float[] embedding) {
 	}
 
 	// @formatter:off
@@ -304,8 +304,8 @@ public class DashScopeApi {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record EmbeddingRequest(@JsonProperty("model") String model,
-								   @JsonProperty("input") EmbeddingRequestInput input,
-								   @JsonProperty("parameters") EmbeddingRequestInputParameters parameters) {
+			@JsonProperty("input") EmbeddingRequestInput input,
+			@JsonProperty("parameters") EmbeddingRequestInputParameters parameters) {
 		public EmbeddingRequest(String text) {
 			this(DEFAULT_EMBEDDING_MODEL, new EmbeddingRequestInput(List.of(text)),
 					new EmbeddingRequestInputParameters(DEFAULT_EMBEDDING_TEXT_TYPE));
@@ -341,10 +341,10 @@ public class DashScopeApi {
 		Assert.isTrue(!CollectionUtils.isEmpty(embeddingRequest.input().texts()), "The input texts can not be empty.");
 		Assert.isTrue(embeddingRequest.input().texts().size() <= 25, "The input texts limit 25.");
 		return this.restClient.post()
-				.uri("/api/v1/services/embeddings/text-embedding/text-embedding")
-				.body(embeddingRequest)
-				.retrieve()
-				.toEntity(EmbeddingList.class);
+			.uri("/api/v1/services/embeddings/text-embedding/text-embedding")
+			.body(embeddingRequest)
+			.retrieve()
+			.toEntity(EmbeddingList.class);
 	}
 
 	/*******************************************
@@ -352,8 +352,8 @@ public class DashScopeApi {
 	 **********************************************/
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record UploadRequest(@JsonProperty("category_id") String categoryId,
-								@JsonProperty("file_name") String fileName, @JsonProperty("size_bytes") long fileLength,
-								@JsonProperty("content_md5") String fileMD5) {
+			@JsonProperty("file_name") String fileName, @JsonProperty("size_bytes") long fileLength,
+			@JsonProperty("content_md5") String fileMD5) {
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record AddFileRequest(@JsonProperty("lease_id") String leaseId, @JsonProperty("parser") String parser) {
@@ -366,17 +366,16 @@ public class DashScopeApi {
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record UploadLeaseResponse(@JsonProperty("code") String code, @JsonProperty("message") String message,
-									  @JsonProperty("data") UploadLeaseResponseData data) {
+			@JsonProperty("data") UploadLeaseResponseData data) {
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record UploadLeaseResponseData(@JsonProperty("lease_id") String leaseId,
-											  @JsonProperty("type") String type,
-											  @JsonProperty("param") UploadLeaseParamData param) {
+				@JsonProperty("type") String type, @JsonProperty("param") UploadLeaseParamData param) {
 		}
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record UploadLeaseParamData(@JsonProperty("url") String url, @JsonProperty("method") String method,
-										   @JsonProperty("headers") Map<String, String> header) {
+				@JsonProperty("headers") Map<String, String> header) {
 		}
 	}
 
@@ -386,32 +385,25 @@ public class DashScopeApi {
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record QueryFileResponseData(@JsonProperty("category") String category,
-										@JsonProperty("file_id") String fileId,
-										@JsonProperty("file_name") String fileName,
-										@JsonProperty("file_type") String fileType,
-										@JsonProperty("size_bytes") Long sizeBytes,
-										@JsonProperty("status") String status,
-										@JsonProperty("upload_time") String uploadtime) {
+			@JsonProperty("file_id") String fileId, @JsonProperty("file_name") String fileName,
+			@JsonProperty("file_type") String fileType, @JsonProperty("size_bytes") Long sizeBytes,
+			@JsonProperty("status") String status, @JsonProperty("upload_time") String uploadtime) {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record QueryFileParseResultData(@JsonProperty("file_id") String fileId,
-										   @JsonProperty("file_name") String fileName,
-										   @JsonProperty("lease_id") String leaseId,
-										   @JsonProperty("type") String type,
-										   @JsonProperty("param") DownloadFileParam param) {
+			@JsonProperty("file_name") String fileName, @JsonProperty("lease_id") String leaseId,
+			@JsonProperty("type") String type, @JsonProperty("param") DownloadFileParam param) {
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record DownloadFileParam(@JsonProperty("method") String method, @JsonProperty("url") String url,
-										@JsonProperty("headers") Map<String, String> headers) {
+				@JsonProperty("headers") Map<String, String> headers) {
 		}
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record DocumentSplitRequest(@JsonProperty("text") String text, @JsonProperty("chunk_size") Integer chunkSize,
-									   @JsonProperty("overlap_size") Integer overlapSize,
-									   @JsonProperty("file_type") String fileType,
-									   @JsonProperty("language") String language,
-									   @JsonProperty("separator") String separator) {
+			@JsonProperty("overlap_size") Integer overlapSize, @JsonProperty("file_type") String fileType,
+			@JsonProperty("language") String language, @JsonProperty("separator") String separator) {
 
 	}
 
@@ -425,8 +417,8 @@ public class DashScopeApi {
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record DocumentChunk(@JsonProperty("chunk_id") int chunkId, @JsonProperty("content") String content,
-									@JsonProperty("title") String title, @JsonProperty("hier_title") String hierTitle,
-									@JsonProperty("nid") String nid, @JsonProperty("parent") String parent) {
+				@JsonProperty("title") String title, @JsonProperty("hier_title") String hierTitle,
+				@JsonProperty("nid") String nid, @JsonProperty("parent") String parent) {
 		}
 	}
 
@@ -448,20 +440,20 @@ public class DashScopeApi {
 	public ResponseEntity<CommonResponse<QueryFileResponseData>> queryFileInfo(String categoryId,
 			UploadRequest.QueryFileRequest request) {
 		return this.restClient.post()
-				.uri("/api/v1/datacenter/category/{category}/file/{fileId}/query", categoryId, request.fileId)
-				.body(request)
-				.retrieve()
-				.toEntity(new ParameterizedTypeReference<>() {
-				});
+			.uri("/api/v1/datacenter/category/{category}/file/{fileId}/query", categoryId, request.fileId)
+			.body(request)
+			.retrieve()
+			.toEntity(new ParameterizedTypeReference<>() {
+			});
 	}
 
 	public String getFileParseResult(String categoryId, UploadRequest.QueryFileRequest request) {
 		ResponseEntity<CommonResponse<QueryFileParseResultData>> fileParseResponse = this.restClient.post()
-				.uri("/api/v1/datacenter/category/{categoryId}/file/{fileId}/download_lease", categoryId, request.fileId())
-				.body(request)
-				.retrieve()
-				.toEntity(new ParameterizedTypeReference<>() {
-				});
+			.uri("/api/v1/datacenter/category/{categoryId}/file/{fileId}/download_lease", categoryId, request.fileId())
+			.body(request)
+			.retrieve()
+			.toEntity(new ParameterizedTypeReference<>() {
+			});
 		if (fileParseResponse == null || fileParseResponse.getBody() == null) {
 			throw new DashScopeException("GetDocumentParseResultError");
 		}
@@ -488,11 +480,11 @@ public class DashScopeApi {
 			UploadRequest.AddFileRequest addFileRequest = new UploadRequest.AddFileRequest(leaseId,
 					DEFAULT_PARSER_NAME);
 			ResponseEntity<CommonResponse<AddFileResponseData>> response = this.restClient.post()
-					.uri("/api/v1/datacenter/category/{categoryId}/add_file", request.categoryId)
-					.body(addFileRequest)
-					.retrieve()
-					.toEntity(new ParameterizedTypeReference<>() {
-					});
+				.uri("/api/v1/datacenter/category/{categoryId}/add_file", request.categoryId)
+				.body(addFileRequest)
+				.retrieve()
+				.toEntity(new ParameterizedTypeReference<>() {
+				});
 			CommonResponse<AddFileResponseData> addFileResponse = response.getBody();
 			if (addFileResponse == null || !"SUCCESS".equals(addFileResponse.code.toUpperCase())) {
 				throw new DashScopeException(ErrorCodeEnum.READER_ADD_FILE_ERROR);
@@ -536,10 +528,10 @@ public class DashScopeApi {
 
 	private ResponseEntity<UploadLeaseResponse> uploadLease(UploadRequest request) {
 		return this.restClient.post()
-				.uri("/api/v1/datacenter/category/{categoryId}/upload_lease", request.categoryId)
-				.body(request)
-				.retrieve()
-				.toEntity(UploadLeaseResponse.class);
+			.uri("/api/v1/datacenter/category/{categoryId}/upload_lease", request.categoryId)
+			.body(request)
+			.retrieve()
+			.toEntity(UploadLeaseResponse.class);
 	}
 
 	public ResponseEntity<DocumentSplitResponse> documentSplit(Document document,
@@ -547,26 +539,25 @@ public class DashScopeApi {
 		DocumentSplitRequest request = new DocumentSplitRequest(document.getText(), options.getChunkSize(),
 				options.getOverlapSize(), options.getFileType(), options.getLanguage(), options.getSeparator());
 		return this.restClient.post()
-				.uri("/api/v1/indices/component/configed_transformations/spliter")
-				.body(request)
-				.retrieve()
-				.toEntity(new ParameterizedTypeReference<>() {
-				});
+			.uri("/api/v1/indices/component/configed_transformations/spliter")
+			.body(request)
+			.retrieve()
+			.toEntity(new ParameterizedTypeReference<>() {
+			});
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record UpsertPipelineRequest(@JsonProperty("name") String name,
-										@JsonProperty("pipeline_type") String pipelineType,
-										@JsonProperty("pipeline_description") String pipelineDescription,
-										@JsonProperty("data_type") String dataType,
-										@JsonProperty("config_model") String configModel,
-										@JsonProperty("configured_transformations") List transformations,
-										@JsonProperty("data_sources") List<DataSourcesConfig> dataSources,
-										@JsonProperty("data_sinks") List<DataSinksConfig> dataSinks) {
+			@JsonProperty("pipeline_type") String pipelineType,
+			@JsonProperty("pipeline_description") String pipelineDescription,
+			@JsonProperty("data_type") String dataType, @JsonProperty("config_model") String configModel,
+			@JsonProperty("configured_transformations") List transformations,
+			@JsonProperty("data_sources") List<DataSourcesConfig> dataSources,
+			@JsonProperty("data_sinks") List<DataSinksConfig> dataSinks) {
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record DataSinksConfig(@JsonProperty("sink_type") String sinkType,
-									  @JsonProperty("component") DataSinksComponent component) {
+				@JsonProperty("component") DataSinksComponent component) {
 
 			@JsonInclude(JsonInclude.Include.NON_NULL)
 			public record DataSinksComponent() {
@@ -575,7 +566,7 @@ public class DashScopeApi {
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record DataSourcesConfig(@JsonProperty("source_type") String sourceType,
-										@JsonProperty("component") DataSourcesComponent component) {
+				@JsonProperty("component") DataSourcesComponent component) {
 
 			@JsonInclude(JsonInclude.Include.NON_NULL)
 			public record DataSourcesComponent(@JsonProperty("doc_ids") List<String> docIds) {
@@ -590,10 +581,8 @@ public class DashScopeApi {
 				@JsonProperty("component") ParserComponent component) {
 			@JsonInclude(JsonInclude.Include.NON_NULL)
 			public record ParserComponent(@JsonProperty("chunk_size") Integer chunkSize,
-										  @JsonProperty("overlap_size") Integer overlapSize,
-										  @JsonProperty("input_type") String inputType,
-										  @JsonProperty("separator") String separator,
-										  @JsonProperty("language") String language) {
+					@JsonProperty("overlap_size") Integer overlapSize, @JsonProperty("input_type") String inputType,
+					@JsonProperty("separator") String separator, @JsonProperty("language") String language) {
 
 			}
 		}
@@ -615,14 +604,14 @@ public class DashScopeApi {
 				@JsonProperty("component") RetrieverComponent component) {
 			@JsonInclude(JsonInclude.Include.NON_NULL)
 			public record RetrieverComponent(@JsonProperty("enable_rewrite") boolean enableRewrite,
-											 @JsonProperty("rewrite") List<CommonModelComponent> rewriteComponents,
-											 @JsonProperty("sparse_similarity_top_k") int sparseSimilarityTopK,
-											 @JsonProperty("dense_similarity_top_k") int denseSimilarityTopK,
-											 @JsonProperty("enable_reranking") boolean enableRerank,
-											 @JsonProperty("rerank") List<CommonModelComponent> rerankComponents,
-											 @JsonProperty("rerank_min_score") float rerankMinScore,
-											 @JsonProperty("rerank_top_n") int rerankTopN,
-											 @JsonProperty("search_filters") List<Map<String, Object>> searchFilters) {
+					@JsonProperty("rewrite") List<CommonModelComponent> rewriteComponents,
+					@JsonProperty("sparse_similarity_top_k") int sparseSimilarityTopK,
+					@JsonProperty("dense_similarity_top_k") int denseSimilarityTopK,
+					@JsonProperty("enable_reranking") boolean enableRerank,
+					@JsonProperty("rerank") List<CommonModelComponent> rerankComponents,
+					@JsonProperty("rerank_min_score") float rerankMinScore,
+					@JsonProperty("rerank_top_n") int rerankTopN,
+					@JsonProperty("search_filters") List<Map<String, Object>> searchFilters) {
 
 			}
 
@@ -635,21 +624,19 @@ public class DashScopeApi {
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record UpsertPipelineResponse(@JsonProperty("id") String id,
-										 @JsonProperty("pipline_name") String pipline_name,
-										 @JsonProperty("status") String status,
-										 @JsonProperty("message") String message, @JsonProperty("code") String code) {
+			@JsonProperty("pipline_name") String pipline_name, @JsonProperty("status") String status,
+			@JsonProperty("message") String message, @JsonProperty("code") String code) {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record StartPipelineResponse(@JsonProperty("ingestionId") String ingestionId,
-										@JsonProperty("status") String status, @JsonProperty("message") String message,
-										@JsonProperty("code") String code,
-										@JsonProperty("request_id") String requestId) {
+			@JsonProperty("status") String status, @JsonProperty("message") String message,
+			@JsonProperty("code") String code, @JsonProperty("request_id") String requestId) {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record QueryPipelineResponse(@JsonProperty("status") String status, @JsonProperty("message") String message,
-										@JsonProperty("code") String code, @JsonProperty("id") String pipelineId) {
+			@JsonProperty("code") String code, @JsonProperty("id") String pipelineId) {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -657,7 +644,7 @@ public class DashScopeApi {
 			@JsonProperty("data_sources") List<DelePipelineDocumentDataSource> dataSources) {
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record DelePipelineDocumentDataSource(@JsonProperty("source_type") String sourceType,
-													 @JsonProperty("component") List<DelePipelineDocumentDataSourceComponent> component) {
+				@JsonProperty("component") List<DelePipelineDocumentDataSourceComponent> component) {
 		}
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -667,61 +654,55 @@ public class DashScopeApi {
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record DelePipelineDocumentResponse(@JsonProperty("status") String status,
-											   @JsonProperty("message") String message,
-											   @JsonProperty("code") String code) {
+			@JsonProperty("message") String message, @JsonProperty("code") String code) {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record DocumentRetrieveRequest(@JsonProperty("query") String query,
-										  @JsonProperty("dense_similarity_top_k") int denseSimilarityTopK,
-										  @JsonProperty("sparse_similarity_top_k") int sparseSimilarityTopK,
-										  @JsonProperty("enable_rewrite") boolean enableRewrite,
-										  @JsonProperty("rewrite") List<DocumentRetrieveModelConfig> rewrite,
-										  @JsonProperty("enable_reranking") boolean enableReranking,
-										  @JsonProperty("rerank") List<DocumentRetrieveModelConfig> rerank,
-										  @JsonProperty("rerank_min_score") float rerankMinScore,
-										  @JsonProperty("rerank_top_n") int rerankTopN,
-										  @JsonProperty("search_filters") List<Map<String, Object>> searchFilters) {
+			@JsonProperty("dense_similarity_top_k") int denseSimilarityTopK,
+			@JsonProperty("sparse_similarity_top_k") int sparseSimilarityTopK,
+			@JsonProperty("enable_rewrite") boolean enableRewrite,
+			@JsonProperty("rewrite") List<DocumentRetrieveModelConfig> rewrite,
+			@JsonProperty("enable_reranking") boolean enableReranking,
+			@JsonProperty("rerank") List<DocumentRetrieveModelConfig> rerank,
+			@JsonProperty("rerank_min_score") float rerankMinScore, @JsonProperty("rerank_top_n") int rerankTopN,
+			@JsonProperty("search_filters") List<Map<String, Object>> searchFilters) {
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record DocumentRetrieveModelConfig(@JsonProperty("model_name") String modelName,
-												  @JsonProperty("class_name") String className) {
+				@JsonProperty("class_name") String className) {
 		}
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record DocumentRetrieveResponse(@JsonProperty("status") String status,
-										   @JsonProperty("message") String message, @JsonProperty("code") String code,
-										   @JsonProperty("request_id") String requestId,
-										   @JsonProperty("total") int total,
-										   @JsonProperty("nodes") List<DocumentRetrieveResponseNode> nodes
+			@JsonProperty("message") String message, @JsonProperty("code") String code,
+			@JsonProperty("request_id") String requestId, @JsonProperty("total") int total,
+			@JsonProperty("nodes") List<DocumentRetrieveResponseNode> nodes
 
 	) {
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record DocumentRetrieveResponseNode(@JsonProperty("score") double score,
-												   @JsonProperty("node") DocumentRetrieveResponseNodeData node) {
+				@JsonProperty("node") DocumentRetrieveResponseNodeData node) {
 		}
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record DocumentRetrieveResponseNodeData(@JsonProperty("id_") String id,
-													   @JsonProperty("text") String text,
-													   @JsonProperty("metadata") Map<String, Object> metadata) {
+				@JsonProperty("text") String text, @JsonProperty("metadata") Map<String, Object> metadata) {
 		}
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record DocumentRetrieveResponseNodeMetaData(@JsonProperty("parent") String text,
-														   @JsonProperty("image_url") List<String> images,
-														   @JsonProperty("title") String title,
-														   @JsonProperty("doc_id") String documentId,
-														   @JsonProperty("doc_name") String docName,
-														   @JsonProperty("hier_title") String hierTitle) {
+				@JsonProperty("image_url") List<String> images, @JsonProperty("title") String title,
+				@JsonProperty("doc_id") String documentId, @JsonProperty("doc_name") String docName,
+				@JsonProperty("hier_title") String hierTitle) {
 		}
 	}
 
 	public String getPipelineIdByName(String pipelineName) {
 		ResponseEntity<QueryPipelineResponse> startPipelineResponse = this.restClient.get()
-				.uri("/api/v1/indices/pipeline_simple?pipeline_name={pipelineName}", pipelineName)
-				.retrieve()
-				.toEntity(QueryPipelineResponse.class);
+			.uri("/api/v1/indices/pipeline_simple?pipeline_name={pipelineName}", pipelineName)
+			.retrieve()
+			.toEntity(QueryPipelineResponse.class);
 		if (startPipelineResponse == null || startPipelineResponse.getBody() == null
 				|| startPipelineResponse.getBody().pipelineId() == null) {
 			return null;
@@ -761,9 +742,9 @@ public class DashScopeApi {
 						retrieverOptions.getRerankMinScore(), retrieverOptions.getRerankTopN(),
 						retrieverOptions.getSearchFilters()));
 		List<String> documentIdList = documents.stream()
-				.map(Document::getId)
-				.filter(Objects::nonNull)
-				.collect(Collectors.toList());
+			.map(Document::getId)
+			.filter(Objects::nonNull)
+			.collect(Collectors.toList());
 		UpsertPipelineRequest upsertPipelineRequest = new UpsertPipelineRequest(storeOptions.getIndexName(),
 				"MANAGED_SHARED", null, "unstructured", "recommend",
 				Arrays.asList(embeddingConfig, parserConfig, retrieverConfig),
@@ -773,20 +754,20 @@ public class DashScopeApi {
 
 		);
 		ResponseEntity<UpsertPipelineResponse> upsertPipelineResponse = this.restClient.put()
-				.uri("/api/v1/indices/pipeline")
-				.body(upsertPipelineRequest)
-				.retrieve()
-				.toEntity(UpsertPipelineResponse.class);
+			.uri("/api/v1/indices/pipeline")
+			.body(upsertPipelineRequest)
+			.retrieve()
+			.toEntity(UpsertPipelineResponse.class);
 		if (upsertPipelineResponse.getBody() == null
 				|| !"SUCCESS".equalsIgnoreCase(upsertPipelineResponse.getBody().status)) {
 			throw new DashScopeException(ErrorCodeEnum.CREATE_INDEX_ERROR);
 		}
 		String pipelineId = upsertPipelineResponse.getBody().id;
 		ResponseEntity<StartPipelineResponse> startPipelineResponse = this.restClient.post()
-				.uri("/api/v1/indices/pipeline/{pipeline_id}/managed_ingest", pipelineId)
-				.body(upsertPipelineRequest)
-				.retrieve()
-				.toEntity(StartPipelineResponse.class);
+			.uri("/api/v1/indices/pipeline/{pipeline_id}/managed_ingest", pipelineId)
+			.body(upsertPipelineRequest)
+			.retrieve()
+			.toEntity(StartPipelineResponse.class);
 		if (startPipelineResponse.getBody() == null || !"SUCCESS".equalsIgnoreCase(startPipelineResponse.getBody().code)
 				|| startPipelineResponse.getBody().ingestionId == null) {
 			throw new DashScopeException(ErrorCodeEnum.INDEX_ADD_DOCUMENT_ERROR);
@@ -795,13 +776,13 @@ public class DashScopeApi {
 
 	public boolean deletePipelineDocument(String pipelineId, List<String> idList) {
 		DelePipelineDocumentRequest request = new DelePipelineDocumentRequest(Arrays
-				.asList(new DelePipelineDocumentRequest.DelePipelineDocumentDataSource("DATA_CENTER_FILE",
-						Arrays.asList(new DelePipelineDocumentRequest.DelePipelineDocumentDataSourceComponent(idList)))));
+			.asList(new DelePipelineDocumentRequest.DelePipelineDocumentDataSource("DATA_CENTER_FILE",
+					Arrays.asList(new DelePipelineDocumentRequest.DelePipelineDocumentDataSourceComponent(idList)))));
 		ResponseEntity<DelePipelineDocumentResponse> deleDocumentResponse = this.restClient.post()
-				.uri("/api/v1/indices/pipeline/{pipeline_id}/delete", pipelineId)
-				.body(request)
-				.retrieve()
-				.toEntity(DelePipelineDocumentResponse.class);
+			.uri("/api/v1/indices/pipeline/{pipeline_id}/delete", pipelineId)
+			.body(request)
+			.retrieve()
+			.toEntity(DelePipelineDocumentResponse.class);
 		if (deleDocumentResponse == null || deleDocumentResponse.getBody() == null
 				|| !"SUCCESS".equalsIgnoreCase(deleDocumentResponse.getBody().code)) {
 			return false;
@@ -813,17 +794,17 @@ public class DashScopeApi {
 		DocumentRetrieveRequest request = new DocumentRetrieveRequest(query, searchOption.getDenseSimilarityTopK(),
 				searchOption.getDenseSimilarityTopK(), searchOption.isEnableRewrite(),
 				Arrays
-						.asList(new DocumentRetrieveRequest.DocumentRetrieveModelConfig(
-								searchOption.getRewriteModelName(), "DashScopeTextRewrite")),
+					.asList(new DocumentRetrieveRequest.DocumentRetrieveModelConfig(
+							searchOption.getRewriteModelName(), "DashScopeTextRewrite")),
 				searchOption.isEnableReranking(),
 				Arrays.asList(new DocumentRetrieveRequest.DocumentRetrieveModelConfig(searchOption.getRerankModelName(),
 						null)),
 				searchOption.getRerankMinScore(), searchOption.getRerankTopN(), searchOption.getSearchFilters());
 		ResponseEntity<DocumentRetrieveResponse> deleDocumentResponse = this.restClient.post()
-				.uri("/api/v1/indices/pipeline/{pipeline_id}/retrieve", pipelineId)
-				.body(request)
-				.retrieve()
-				.toEntity(DocumentRetrieveResponse.class);
+			.uri("/api/v1/indices/pipeline/{pipeline_id}/retrieve", pipelineId)
+			.body(request)
+			.retrieve()
+			.toEntity(DocumentRetrieveResponse.class);
 		if (deleDocumentResponse == null || deleDocumentResponse.getBody() == null
 				|| !"SUCCESS".equalsIgnoreCase(deleDocumentResponse.getBody().code)) {
 			throw new DashScopeException(ErrorCodeEnum.RETRIEVER_DOCUMENT_ERROR);
@@ -884,7 +865,7 @@ public class DashScopeApi {
 		 * value {"type": "object", "properties": {}}.
 		 */
 		public record Function(@JsonProperty("description") String description, @JsonProperty("name") String name,
-							   @JsonProperty("parameters") Map<String, Object> parameters) {
+				@JsonProperty("parameters") Map<String, Object> parameters) {
 
 			/**
 			 * Create tool function definition.
@@ -906,9 +887,9 @@ public class DashScopeApi {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record ChatCompletionRequest(@JsonProperty("model") String model,
-										@JsonProperty("input") ChatCompletionRequestInput input,
-										@JsonProperty("parameters") ChatCompletionRequestParameter parameters,
-										@JsonProperty("stream") Boolean stream, @JsonIgnore Boolean multiModel) {
+			@JsonProperty("input") ChatCompletionRequestInput input,
+			@JsonProperty("parameters") ChatCompletionRequestParameter parameters,
+			@JsonProperty("stream") Boolean stream, @JsonIgnore Boolean multiModel) {
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages and
@@ -958,22 +939,17 @@ public class DashScopeApi {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record ChatCompletionRequestParameter(@JsonProperty("result_format") String resultFormat,
-												 @JsonProperty("seed") Integer seed,
-												 @JsonProperty("max_tokens") Integer maxTokens,
-												 @JsonProperty("top_p") Double topP,
-												 @JsonProperty("top_k") Integer topK,
-												 @JsonProperty("repetition_penalty") Double repetitionPenalty,
-												 @JsonProperty("presence_penalty") Double presencePenalty,
-												 @JsonProperty("temperature") Double temperature,
-												 @JsonProperty("stop") List<Object> stop,
-												 @JsonProperty("enable_search") Boolean enableSearch,
-												 @JsonProperty("response_format") DashScopeResponseFormat responseFormat,
-												 @JsonProperty("incremental_output") Boolean incrementalOutput,
-												 @JsonProperty("tools") List<FunctionTool> tools,
-												 @JsonProperty("tool_choice") Object toolChoice,
-												 @JsonProperty("stream") Boolean stream,
-												 @JsonProperty("vl_high_resolution_images") Boolean vlHighResolutionImages,
-												 @JsonProperty("enable_thinking") Boolean enableThinking) {
+			@JsonProperty("seed") Integer seed, @JsonProperty("max_tokens") Integer maxTokens,
+			@JsonProperty("top_p") Double topP, @JsonProperty("top_k") Integer topK,
+			@JsonProperty("repetition_penalty") Double repetitionPenalty,
+			@JsonProperty("presence_penalty") Double presencePenalty, @JsonProperty("temperature") Double temperature,
+			@JsonProperty("stop") List<Object> stop, @JsonProperty("enable_search") Boolean enableSearch,
+			@JsonProperty("response_format") DashScopeResponseFormat responseFormat,
+			@JsonProperty("incremental_output") Boolean incrementalOutput,
+			@JsonProperty("tools") List<FunctionTool> tools, @JsonProperty("tool_choice") Object toolChoice,
+			@JsonProperty("stream") Boolean stream,
+			@JsonProperty("vl_high_resolution_images") Boolean vlHighResolutionImages,
+			@JsonProperty("enable_thinking") Boolean enableThinking) {
 
 		/**
 		 * shortcut constructor for chat request parameter
@@ -1039,10 +1015,9 @@ public class DashScopeApi {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionMessage(@JsonProperty("content") Object rawContent, @JsonProperty("role") Role role,
-										@JsonProperty("name") String name,
-										@JsonProperty("tool_call_id") String toolCallId,
-										@JsonProperty("tool_calls") List<ToolCall> toolCalls,
-										@JsonProperty("reasoning_content") String reasoningContent) {
+			@JsonProperty("name") String name, @JsonProperty("tool_call_id") String toolCallId,
+			@JsonProperty("tool_calls") List<ToolCall> toolCalls,
+			@JsonProperty("reasoning_content") String reasoningContent) {
 
 		/**
 		 * Get message content as String.
@@ -1124,7 +1099,7 @@ public class DashScopeApi {
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record MediaContent(@JsonProperty("type") String type, @JsonProperty("text") String text,
-								   @JsonProperty("image") String image, @JsonProperty("video") List<String> video) {
+				@JsonProperty("image") String image, @JsonProperty("video") List<String> video) {
 			/**
 			 * Shortcut constructor for a text content.
 			 * @param text The text content of the message.
@@ -1145,7 +1120,7 @@ public class DashScopeApi {
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record ToolCall(@JsonProperty("id") String id, @JsonProperty("type") String type,
-							   @JsonProperty("function") ChatCompletionFunction function) {
+				@JsonProperty("function") ChatCompletionFunction function) {
 		}
 
 		/**
@@ -1157,15 +1132,15 @@ public class DashScopeApi {
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record ChatCompletionFunction(@JsonProperty("name") String name,
-											 @JsonProperty("arguments") String arguments) {
+				@JsonProperty("arguments") String arguments) {
 		}
 	}
 
 	public static String getTextContent(List<ChatCompletionMessage.MediaContent> content) {
 		return content.stream()
-				.filter(c -> "text".equals(c.type()))
-				.map(ChatCompletionMessage.MediaContent::text)
-				.reduce("", (a, b) -> a + b);
+			.filter(c -> "text".equals(c.type()))
+			.map(ChatCompletionMessage.MediaContent::text)
+			.reduce("", (a, b) -> a + b);
 	}
 
 	/**
@@ -1222,8 +1197,7 @@ public class DashScopeApi {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record ChatCompletion(@JsonProperty("request_id") String requestId,
-								 @JsonProperty("output") ChatCompletionOutput output,
-								 @JsonProperty("usage") TokenUsage usage) {
+			@JsonProperty("output") ChatCompletionOutput output, @JsonProperty("usage") TokenUsage usage) {
 	}
 
 	/**
@@ -1237,7 +1211,7 @@ public class DashScopeApi {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record ChatCompletionOutput(@JsonProperty("text") String text,
-									   @JsonProperty("choices") List<Choice> choices) {
+			@JsonProperty("choices") List<Choice> choices) {
 
 		/**
 		 * Chat completion choice.
@@ -1247,7 +1221,7 @@ public class DashScopeApi {
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record Choice(@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
-							 @JsonProperty("message") ChatCompletionMessage message) {
+				@JsonProperty("message") ChatCompletionMessage message) {
 
 		}
 	}
@@ -1276,8 +1250,8 @@ public class DashScopeApi {
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record Content(@JsonProperty("token") String token, @JsonProperty("logprob") Float logprob,
-							  @JsonProperty("bytes") List<Integer> probBytes,
-							  @JsonProperty("top_logprobs") List<TopLogProbs> topLogprobs) {
+				@JsonProperty("bytes") List<Integer> probBytes,
+				@JsonProperty("top_logprobs") List<TopLogProbs> topLogprobs) {
 
 			/**
 			 * The most likely tokens and their log probability, at this token position.
@@ -1292,7 +1266,7 @@ public class DashScopeApi {
 			 */
 			@JsonInclude(JsonInclude.Include.NON_NULL)
 			public record TopLogProbs(@JsonProperty("token") String token, @JsonProperty("logprob") Float logprob,
-									  @JsonProperty("bytes") List<Integer> probBytes) {
+					@JsonProperty("bytes") List<Integer> probBytes) {
 			}
 		}
 	}
@@ -1308,8 +1282,7 @@ public class DashScopeApi {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record TokenUsage(@JsonProperty("output_tokens") Integer outputTokens,
-							 @JsonProperty("input_tokens") Integer inputTokens,
-							 @JsonProperty("total_tokens") Integer totalTokens) {
+			@JsonProperty("input_tokens") Integer inputTokens, @JsonProperty("total_tokens") Integer totalTokens) {
 
 	}
 
@@ -1323,8 +1296,7 @@ public class DashScopeApi {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record ChatCompletionChunk(@JsonProperty("request_id") String requestId,
-									  @JsonProperty("output") ChatCompletionOutput output,
-									  @JsonProperty("usage") TokenUsage usage) {
+			@JsonProperty("output") ChatCompletionOutput output, @JsonProperty("usage") TokenUsage usage) {
 	}
 
 	/**
@@ -1334,7 +1306,7 @@ public class DashScopeApi {
 	 * @param documents list of documents for rerank.
 	 */
 	public record RerankRequestInput(@JsonProperty("query") String query,
-									 @JsonProperty("documents") List<String> documents) {
+			@JsonProperty("documents") List<String> documents) {
 	}
 
 	/**
@@ -1346,7 +1318,7 @@ public class DashScopeApi {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record RerankRequestParameter(@JsonProperty("top_n") Integer topN,
-										 @JsonProperty("return_documents") Boolean returnDocuments) {
+			@JsonProperty("return_documents") Boolean returnDocuments) {
 	}
 
 	/**
@@ -1358,7 +1330,7 @@ public class DashScopeApi {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record RerankRequest(@JsonProperty("model") String model, @JsonProperty("input") RerankRequestInput input,
-								@JsonProperty("parameters") RerankRequestParameter parameters) {
+			@JsonProperty("parameters") RerankRequestParameter parameters) {
 	}
 
 	/**
@@ -1369,8 +1341,8 @@ public class DashScopeApi {
 	 * @param document original document
 	 */
 	public record RerankResponseOutputResult(@JsonProperty("index") Integer index,
-											 @JsonProperty("relevance_score") Double relevanceScore,
-											 @JsonProperty("document") Map<String, Object> document) {
+			@JsonProperty("relevance_score") Double relevanceScore,
+			@JsonProperty("document") Map<String, Object> document) {
 	}
 
 	/**
@@ -1390,8 +1362,7 @@ public class DashScopeApi {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record RerankResponse(@JsonProperty("output") RerankResponseOutput output,
-								 @JsonProperty("usage") TokenUsage usage,
-								 @JsonProperty("request_id") String requestId) {
+			@JsonProperty("usage") TokenUsage usage, @JsonProperty("request_id") String requestId) {
 
 	}
 
@@ -1436,7 +1407,8 @@ public class DashScopeApi {
 	 * request.
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
-	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest, MultiValueMap<String, String> additionalHttpHeader) {
+	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest,
+			MultiValueMap<String, String> additionalHttpHeader) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
@@ -1451,33 +1423,33 @@ public class DashScopeApi {
 		}
 
 		return this.webClient.post()
-				.uri(uri)
-				.headers(headers -> headers.addAll(additionalHttpHeader))
-				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
-				.retrieve()
-				.bodyToFlux(String.class)
-				.takeUntil(SSE_DONE_PREDICATE)
-				.filter(SSE_DONE_PREDICATE.negate())
-				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
-				.map(chunk -> {
-					if (chunkMerger.isStreamingToolFunctionCall(chunk)) {
-						isInsideTool.set(true);
-					}
-					return chunk;
-				})
-				.windowUntil(chunk -> {
-					if (isInsideTool.get() && chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
-						isInsideTool.set(false);
-						return true;
-					}
-					return !isInsideTool.get();
-				})
-				.concatMapIterable(window -> {
-					Mono<ChatCompletionChunk> monoChunk = window.reduce(new ChatCompletionChunk(null, null, null),
-							chunkMerger::merge);
-					return List.of(monoChunk);
-				})
-				.flatMap(mono -> mono);
+			.uri(uri)
+			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+			.retrieve()
+			.bodyToFlux(String.class)
+			.takeUntil(SSE_DONE_PREDICATE)
+			.filter(SSE_DONE_PREDICATE.negate())
+			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+			.map(chunk -> {
+				if (chunkMerger.isStreamingToolFunctionCall(chunk)) {
+					isInsideTool.set(true);
+				}
+				return chunk;
+			})
+			.windowUntil(chunk -> {
+				if (isInsideTool.get() && chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
+					isInsideTool.set(false);
+					return true;
+				}
+				return !isInsideTool.get();
+			})
+			.concatMapIterable(window -> {
+				Mono<ChatCompletionChunk> monoChunk = window.reduce(new ChatCompletionChunk(null, null, null),
+						chunkMerger::merge);
+				return List.of(monoChunk);
+			})
+			.flatMap(mono -> mono);
 	}
 
 	/**
@@ -1490,10 +1462,10 @@ public class DashScopeApi {
 		Assert.notNull(rerankRequest, "The request body can not be null.");
 
 		return this.restClient.post()
-				.uri("/api/v1/services/rerank/text-rerank/text-rerank")
-				.body(rerankRequest)
-				.retrieve()
-				.toEntity(RerankResponse.class);
+			.uri("/api/v1/services/rerank/text-rerank/text-rerank")
+			.body(rerankRequest)
+			.retrieve()
+			.toEntity(RerankResponse.class);
 	}
 
 	String getBaseUrl() {
@@ -1593,16 +1565,9 @@ public class DashScopeApi {
 
 			Assert.notNull(apiKey, "API key cannot be null");
 
-			return new DashScopeApi(
-					this.baseUrl,
-					this.apiKey,
-					this.headers,
+			return new DashScopeApi(this.baseUrl, this.apiKey, this.headers,
 					// Add request header.
-					this.workSpaceId,
-					this.restClientBuilder,
-					this.webClientBuilder,
-					this.responseErrorHandler
-			);
+					this.workSpaceId, this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
 		}
 
 	}

@@ -564,6 +564,7 @@ public class DashScopeChatModel implements ChatModel {
 	public Builder mutate() {
 		return new Builder(this);
 	}
+
 	@Override
 	public DashScopeChatModel clone() {
 		return this.mutate().build();
@@ -575,7 +576,7 @@ public class DashScopeChatModel implements ChatModel {
 
 	public static final class Builder {
 
-		private Builder(){
+		private Builder() {
 		}
 
 		public Builder(DashScopeChatModel dashScopeChatModel) {

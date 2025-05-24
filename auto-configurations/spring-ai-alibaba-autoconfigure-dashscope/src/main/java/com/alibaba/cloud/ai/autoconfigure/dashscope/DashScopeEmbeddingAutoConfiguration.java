@@ -41,57 +41,39 @@ public class DashScopeEmbeddingAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Primary
-	public DashScopeEmbeddingModel dashscopeEmbeddingModel(
-			DashScopeConnectionProperties commonProperties,
-			DashScopeEmbeddingProperties embeddingProperties,
-			RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder,
-			RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler,
+	public DashScopeEmbeddingModel dashscopeEmbeddingModel(DashScopeConnectionProperties commonProperties,
+			DashScopeEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<EmbeddingModelObservationConvention> observationConvention
-	) {
+			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
-		var dashScopeApi = dashscopeEmbeddingApi(
-				commonProperties,
-				embeddingProperties,
-				restClientBuilder,
-				webClientBuilder,
-				responseErrorHandler
-		);
+		var dashScopeApi = dashscopeEmbeddingApi(commonProperties, embeddingProperties, restClientBuilder,
+				webClientBuilder, responseErrorHandler);
 
-		var embeddingModel = new DashScopeEmbeddingModel(
-				dashScopeApi,
-				embeddingProperties.getMetadataMode(),
-				embeddingProperties.getOptions(),
-				retryTemplate,
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP)
-		);
+		var embeddingModel = new DashScopeEmbeddingModel(dashScopeApi, embeddingProperties.getMetadataMode(),
+				embeddingProperties.getOptions(), retryTemplate,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
 
 		return embeddingModel;
 	}
 
-	private DashScopeApi dashscopeEmbeddingApi(
-			DashScopeConnectionProperties commonProperties,
-			DashScopeEmbeddingProperties embeddingProperties,
-			RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler
-	) {
+	private DashScopeApi dashscopeEmbeddingApi(DashScopeConnectionProperties commonProperties,
+			DashScopeEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, embeddingProperties,
 				"embedding");
 
 		return DashScopeApi.builder()
-				.apiKey(resolved.apiKey())
-				.headers(resolved.headers())
-				.baseUrl(resolved.baseUrl())
-				.webClientBuilder(webClientBuilder)
-				.workSpaceId(resolved.workspaceId())
-				.restClientBuilder(restClientBuilder)
-				.responseErrorHandler(responseErrorHandler)
-				.build();
+			.apiKey(resolved.apiKey())
+			.headers(resolved.headers())
+			.baseUrl(resolved.baseUrl())
+			.webClientBuilder(webClientBuilder)
+			.workSpaceId(resolved.workspaceId())
+			.restClientBuilder(restClientBuilder)
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 	}
 
 }

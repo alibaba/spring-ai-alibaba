@@ -37,7 +37,8 @@ public class DashScopeAudioSpeechSynthesisProperties extends DashScopeParentProp
 	 */
 	public static final String CONFIG_PREFIX = "spring.ai.dashscope.audio.synthesis";
 
-	private final String DEFAULT_MODEL = DashScopeSpeechSynthesisModel.DashScopeSpeechModel.SAMBERT_ZHICHU_V1.getModel();
+	private final String DEFAULT_MODEL = DashScopeSpeechSynthesisModel.DashScopeSpeechModel.SAMBERT_ZHICHU_V1
+		.getModel();
 
 	private static final Float SPEED = 1.0f;
 
@@ -55,11 +56,11 @@ public class DashScopeAudioSpeechSynthesisProperties extends DashScopeParentProp
 
 	@NestedConfigurationProperty
 	private DashScopeSpeechSynthesisOptions options = DashScopeSpeechSynthesisOptions.builder()
-			.model(DEFAULT_MODEL)
-			.voice(DEFAULT_VOICE)
-			.speed(SPEED)
-			.responseFormat(DEFAULT_RESPONSE_FORMAT)
-			.build();
+		.model(DEFAULT_MODEL)
+		.voice(DEFAULT_VOICE)
+		.speed(SPEED)
+		.responseFormat(DEFAULT_RESPONSE_FORMAT)
+		.build();
 
 	public DashScopeAudioSpeechSynthesisProperties() {
 		super.setBaseUrl(DEFAULT_BASE_URL);

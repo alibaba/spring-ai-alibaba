@@ -76,6 +76,7 @@ public class DashScopeSpeechSynthesisModel implements SpeechSynthesisModel {
 		public String getModel() {
 			return this.model;
 		}
+
 	}
 
 	@Override
@@ -95,9 +96,9 @@ public class DashScopeSpeechSynthesisModel implements SpeechSynthesisModel {
 	@Override
 	public Flux<SpeechSynthesisResponse> stream(SpeechSynthesisPrompt prompt) {
 		return this.retryTemplate.execute(ctx -> this.api.streamOut(createRequest(prompt))
-				.map(SpeechSynthesisOutput::new)
-				.map(SpeechSynthesisResult::new)
-				.map(SpeechSynthesisResponse::new));
+			.map(SpeechSynthesisOutput::new)
+			.map(SpeechSynthesisResult::new)
+			.map(SpeechSynthesisResponse::new));
 	}
 
 	public DashScopeSpeechSynthesisApi.Request createRequest(SpeechSynthesisPrompt prompt) {
@@ -113,25 +114,15 @@ public class DashScopeSpeechSynthesisModel implements SpeechSynthesisModel {
 
 		return new DashScopeSpeechSynthesisApi.Request(
 				new DashScopeSpeechSynthesisApi.Request.RequestHeader("run-task", UUID.randomUUID().toString(), "out"),
-				new DashScopeSpeechSynthesisApi.Request.RequestPayload(
-						options.getModel(),
-						"audio",
-						"tts",
+				new DashScopeSpeechSynthesisApi.Request.RequestPayload(options.getModel(), "audio", "tts",
 						"SpeechSynthesizer",
 						new DashScopeSpeechSynthesisApi.Request.RequestPayload.RequestPayloadInput(
 								prompt.getInstructions().get(0).getText()),
 						new DashScopeSpeechSynthesisApi.Request.RequestPayload.RequestPayloadParameters(
-								options.getVolume(),
-								options.getRequestTextType().getValue(),
-								options.getVoice(),
-								options.getSampleRate(),
-								options.getSpeed(),
-								options.getResponseFormat().getValue(),
-								options.getPitch(),
-								options.getEnablePhonemeTimestamp(),
-								options.getEnableWordTimestamp())
-				)
-		);
+								options.getVolume(), options.getRequestTextType().getValue(), options.getVoice(),
+								options.getSampleRate(), options.getSpeed(), options.getResponseFormat().getValue(),
+								options.getPitch(), options.getEnablePhonemeTimestamp(),
+								options.getEnableWordTimestamp())));
 	}
 
 	private SpeechSynthesisResponse toResponse(DashScopeSpeechSynthesisApi.Response apiResponse) {

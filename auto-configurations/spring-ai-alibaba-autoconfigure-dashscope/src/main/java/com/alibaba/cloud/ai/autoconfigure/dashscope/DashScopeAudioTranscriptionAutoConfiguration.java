@@ -35,26 +35,18 @@ public class DashScopeAudioTranscriptionAutoConfiguration {
 	@ConditionalOnMissingBean
 	public DashScopeAudioTranscriptionModel dashScopeAudioTranscriptionModel(
 			DashScopeConnectionProperties commonProperties,
-			DashScopeAudioTranscriptionProperties audioTranscriptionProperties,
-			RetryTemplate retryTemplate
-	) {
+			DashScopeAudioTranscriptionProperties audioTranscriptionProperties, RetryTemplate retryTemplate) {
 
-		var dashScopeAudioTranscriptionApi = dashScopeAudioTranscriptionApi(
-				commonProperties,
-				audioTranscriptionProperties
-		);
+		var dashScopeAudioTranscriptionApi = dashScopeAudioTranscriptionApi(commonProperties,
+				audioTranscriptionProperties);
 
-		return new DashScopeAudioTranscriptionModel(
-				dashScopeAudioTranscriptionApi,
-				audioTranscriptionProperties.getOptions(),
-				retryTemplate
-		);
+		return new DashScopeAudioTranscriptionModel(dashScopeAudioTranscriptionApi,
+				audioTranscriptionProperties.getOptions(), retryTemplate);
 	}
 
 	private DashScopeAudioTranscriptionApi dashScopeAudioTranscriptionApi(
 			DashScopeConnectionProperties commonProperties,
-			DashScopeAudioTranscriptionProperties audioTranscriptionProperties
-	) {
+			DashScopeAudioTranscriptionProperties audioTranscriptionProperties) {
 
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties,
 				audioTranscriptionProperties, "audio.transcription");
