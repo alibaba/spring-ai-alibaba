@@ -483,21 +483,23 @@ public class DashScopePropertiesTests {
 			});
 
 		// new ApplicationContextRunner()
-		// 	.withPropertyValues("spring.ai.dashscope.api-key=API_KEY", "spring.ai.dashscope.base-url=TEST_BASE_URL")
-		// 	.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class))
-		// 	.run(context -> {
-		// 		assertNotNull(context.getBeansOfType(DashScopeChatProperties.class));
-		// 		assertNotNull(context.getBeansOfType(DashScopeChatModel.class));
-		// 	});
+		// .withPropertyValues("spring.ai.dashscope.api-key=API_KEY",
+		// "spring.ai.dashscope.base-url=TEST_BASE_URL")
+		// .withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class))
+		// .run(context -> {
+		// assertNotNull(context.getBeansOfType(DashScopeChatProperties.class));
+		// assertNotNull(context.getBeansOfType(DashScopeChatModel.class));
+		// });
 		//
 		// new ApplicationContextRunner()
-		// 	.withPropertyValues("spring.ai.dashscope.api-key=API_KEY", "spring.ai.dashscope.base-url=TEST_BASE_URL",
-		// 			"spring.ai.dashscope.chat.enabled=true")
-		// 	.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class))
-		// 	.run(context -> {
-		// 		assertNotNull(context.getBeansOfType(DashScopeChatProperties.class));
-		// 		assertNotNull(context.getBeansOfType(DashScopeChatModel.class));
-		// 	});
+		// .withPropertyValues("spring.ai.dashscope.api-key=API_KEY",
+		// "spring.ai.dashscope.base-url=TEST_BASE_URL",
+		// "spring.ai.dashscope.chat.enabled=true")
+		// .withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class))
+		// .run(context -> {
+		// assertNotNull(context.getBeansOfType(DashScopeChatProperties.class));
+		// assertNotNull(context.getBeansOfType(DashScopeChatModel.class));
+		// });
 
 	}
 
