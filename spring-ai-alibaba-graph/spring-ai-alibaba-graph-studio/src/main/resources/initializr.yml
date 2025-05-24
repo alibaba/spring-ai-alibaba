@@ -1927,7 +1927,7 @@ initializr:
           bom: timefold-solver
           links:
             - rel: reference
-              href:  https://timefold.ai/docs/timefold-solver/latest/quickstart/spring-boot/spring-boot-quickstart#springBootJavaQuickStart
+              href: https://timefold.ai/docs/timefold-solver/latest/quickstart/spring-boot/spring-boot-quickstart#springBootJavaQuickStart
             - rel: sample
               href: https://github.com/TimefoldAI/timefold-quickstarts/tree/stable/java/spring-boot-integration
               description: Timetabling sample. Assign lessons to timeslots and rooms to produce a better schedule for teachers and students
