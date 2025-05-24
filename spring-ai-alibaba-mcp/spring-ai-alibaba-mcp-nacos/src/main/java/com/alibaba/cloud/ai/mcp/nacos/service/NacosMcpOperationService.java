@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.mcp.nacos.service;
 
-import com.alibaba.cloud.ai.mcp.nacos.client.transport.LoadbalancedMcpAsyncClient;
 import com.alibaba.cloud.ai.mcp.nacos.service.model.NacosMcpServerEndpoint;
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.PropertyKeyConst;
@@ -48,7 +47,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class NacosMcpOperationService {
 
-	private static final Logger logger = LoggerFactory.getLogger(LoadbalancedMcpAsyncClient.class);
+	private static final Logger logger = LoggerFactory.getLogger(NacosMcpOperationService.class);
 
 	private final AiMaintainerService aiMaintainerService;
 
