@@ -265,7 +265,8 @@ public class DashScopeMultiModalChatTests {
 	void integrationTestImageWithUrl() throws Exception {
 		// Create real API client
 		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
-		DashScopeApi realApi = new DashScopeApi(apiKey);
+		DashScopeApi realApi = DashScopeApi.builder().apiKey(apiKey).build();
+		;
 
 		// Create real chat model
 		DashScopeChatModel realChatModel = DashScopeChatModel.builder().dashScopeApi(realApi).build();
@@ -302,7 +303,8 @@ public class DashScopeMultiModalChatTests {
 	void integrationTestImageWithBinaryResource() throws IOException {
 		// Create real API client
 		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
-		DashScopeApi realApi = new DashScopeApi(apiKey);
+		DashScopeApi realApi = DashScopeApi.builder().apiKey(apiKey).build();
+		;
 
 		// Create real chat model
 		DashScopeChatModel realChatModel = DashScopeChatModel.builder().dashScopeApi(realApi).build();
@@ -337,7 +339,8 @@ public class DashScopeMultiModalChatTests {
 	void integrationTestVideoWithMultipleFrames() throws IOException {
 		// Create real API client
 		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
-		DashScopeApi realApi = new DashScopeApi(apiKey);
+		DashScopeApi realApi = DashScopeApi.builder().apiKey(apiKey).build();
+		;
 
 		// Create real chat model
 		DashScopeChatModel realChatModel = DashScopeChatModel.builder().dashScopeApi(realApi).build();
@@ -375,7 +378,8 @@ public class DashScopeMultiModalChatTests {
 	void integrationTestStreamImageResponse() throws IOException {
 		// Create real API client
 		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
-		DashScopeApi realApi = new DashScopeApi(apiKey);
+		DashScopeApi realApi = DashScopeApi.builder().apiKey(apiKey).build();
+		;
 
 		// Create real chat model
 		DashScopeChatModel realChatModel = DashScopeChatModel.builder().dashScopeApi(realApi).build();
@@ -420,7 +424,8 @@ public class DashScopeMultiModalChatTests {
 	void integrationTestImageAnalysisWithCustomPrompt() throws IOException {
 		// Create real API client
 		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
-		DashScopeApi realApi = new DashScopeApi(apiKey);
+		DashScopeApi realApi = DashScopeApi.builder().apiKey(apiKey).build();
+		;
 
 		// Create real chat model
 		DashScopeChatModel realChatModel = DashScopeChatModel.builder().dashScopeApi(realApi).build();
