@@ -193,7 +193,8 @@
         <dashscope-sdk-java.version>2.15.1</dashscope-sdk-java.version>
 
         <!-- Nacos -->
-        <nacos-client.version>2.5.1</nacos-client.version>
+        <nacos2.version>2.5.1</nacos2.version>
+        <nacos3.version>3.0.1</nacos3.version>
         <nacos-client-mse-extension.version>1.0.4</nacos-client-mse-extension.version>
         <spring-alibaba-nacos-config.version>2023.0.1.3</spring-alibaba-nacos-config.version>
 
