@@ -15,32 +15,33 @@
  */
 package com.alibaba.cloud.ai.service.generator;
 
-import com.alibaba.cloud.ai.model.App;
-import com.alibaba.cloud.ai.param.ProjectGenerateParam;
 import com.alibaba.cloud.ai.model.workflow.Workflow;
 import com.alibaba.cloud.ai.model.chatbot.ChatBot;
-import com.alibaba.cloud.ai.model.AppMetadata;
+import com.alibaba.cloud.ai.model.AppModeEnum;
+
 import java.nio.file.Path;
 
 /**
  * ProjectGenerator abstracts the project generation of a specific app type, e.g.
  * {@link Workflow}, {@link ChatBot}
+ *
+ * @author robocanic
+ * @since 2025/05/18
  */
 public interface ProjectGenerator {
 
 	/**
 	 * Whether the generator supports the given app mode
-	 * @param appMode see `mode` in {@link AppMetadata}
+	 * @param appModeEnum see {@link AppModeEnum}
 	 * @return true if supported
 	 */
-	Boolean supportAppMode(String appMode);
+	Boolean supportAppMode(AppModeEnum appModeEnum);
 
 	/**
 	 * Generate the project, save into a local directory
-	 * @param app {@link App}
-	 * @param param see params in {@link ProjectGenerateParam}
-	 * @return a local path
+	 * @param projectDescription see {@link GraphProjectDescription}
+	 * @param projectRoot the path root which your file should generate
 	 */
-	Path generate(App app, ProjectGenerateParam param);
+	void generate(GraphProjectDescription projectDescription, Path projectRoot);
 
 }
