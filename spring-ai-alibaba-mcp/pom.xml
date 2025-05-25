@@ -15,6 +15,7 @@
 
     <modules>
         <module>spring-ai-alibaba-mcp-nacos2</module>
+        <module>spring-ai-alibaba-mcp-nacos</module>
     </modules>
 
 </project>
