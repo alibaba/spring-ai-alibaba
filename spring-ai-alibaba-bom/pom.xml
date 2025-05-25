@@ -14,13 +14,13 @@
   ~ limitations under the License.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-bom</artifactId>
-    <version>1.0.0-M8.1-SNAPSHOT</version>
+    <version>1.0.0.1</version>
 
     <packaging>pom</packaging>
 
@@ -112,7 +112,80 @@
             <!-- Spring AI Alibaba Starter -->
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter</artifactId>
+                <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-arms-observation</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-memory</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-nacos2-mcp-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-nacos2-mcp-server</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-nacos-prompt</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-nl2sql</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- Spring AI Alibaba Autoconfiguration  -->
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-autoconfigure-dashscope</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-autoconfigure-arms-observation</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-autoconfigure-memory</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-autoconfigure-nacos2-mcp-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-autoconfigure-nacos2-mcp-server</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-autoconfigure-nacos-prompt</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -120,11 +193,6 @@
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-graph-core</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-graph-studio</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -138,7 +206,7 @@
             <!-- Spring AI Alibaba MCP Nacos -->
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-mcp-nacos</artifactId>
+                <artifactId>spring-ai-alibaba-mcp-nacos2</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -292,6 +360,12 @@
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-starter-tool-calling-yuque</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-tool-calling-tavilysearch</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -636,7 +710,7 @@
                         <configuration>
                             <properties>
                                 <owner>the original author or authors.</owner>
-                                <email />
+                                <email/>
                                 <year>2024</year>
                             </properties>
                             <quiet>true</quiet>
@@ -688,7 +762,8 @@
                                 org.springframework.ai.sample.*,org.springframework.ai.testcontainers.service.connection.*
                             </excludePackageNames>
                             <overview>
-                                ${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
+                                ${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html
+                            </overview>
                             <detectJavaApiLink>false</detectJavaApiLink>
                             <doclint>none</doclint>
                             <!--							<doclint>all,-missing</doclint>-->

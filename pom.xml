@@ -53,9 +53,10 @@
         <module>spring-ai-alibaba-mcp</module>
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-graph</module>
-        <module>spring-ai-alibaba-studio</module>
-        <module>spring-ai-alibaba-starter</module>
-        <module>spring-ai-alibaba-auto-configurations</module>
+        <module>spring-ai-alibaba-nl2sql</module>
+        <!--<module>spring-ai-alibaba-studio</module>-->
+        <module>spring-ai-alibaba-jmanus</module>
+        <module>spring-ai-alibaba-deepresearch</module>
 
         <!-- Spring AI Alibaba Tool Call Plugins -->
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-common</module>
@@ -83,6 +84,7 @@
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-alitranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-youdaotranslate</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-duckduckgo</module>
+        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tavilysearch</module>
 
         <!-- Spring AI Alibaba Document Readers -->
         <module>community/document-readers/spring-ai-alibaba-starter-document-reader-arxiv</module>
@@ -126,16 +128,35 @@
         <module>community/vector-stores/spring-ai-alibaba-starter-oceanbase-store</module>
 
         <!-- Spring AI Alibaba Chat Memory Support -->
-        <module>community/memories/spring-ai-alibaba-redis-memory</module>
         <module>community/memories/spring-ai-alibaba-jdbc-memory</module>
+        <module>community/memories/spring-ai-alibaba-redis-memory</module>
+        <module>community/memories/spring-ai-alibaba-elasticsearch-memory</module>
 
-        <!-- Spring AI Alibaba JManus -->
-        <module>spring-ai-alibaba-jmanus</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
 
         <!-- Spring AI Alibaba ARMS Extension -->
-        <module>spring-ai-alibaba-arms-observation-autoconfigure</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-arms-observation</module>
 
+        <!-- Spring AI Alibaba Autoconfigure -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-dashscope</module>
+
+        <!-- Spring AI Alibaba MCP -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos2-mcp-client</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos2-mcp-server</module>
+
+        <!-- Spring AI Alibaba Nacos Prompt Template -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-prompt</module>
+
+        <!-- Spring AI Alibaba Spring Boot Starters -->
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-memory</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-prompt</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos2-mcp-client</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos2-mcp-server</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>
     </modules>
+
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
         <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
@@ -153,17 +174,17 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.0.0-M8.1-SNAPSHOT</revision>
+        <revision>1.0.0.1</revision>
 
         <!-- Maven project basic config -->
+        <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <java.version>17</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- Spring version -->
-        <spring-ai.version>1.0.0-M8</spring-ai.version>
+        <spring-ai.version>1.0.0</spring-ai.version>
         <spring-boot.version>3.4.5</spring-boot.version>
         <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 
@@ -171,7 +192,8 @@
         <dashscope-sdk-java.version>2.15.1</dashscope-sdk-java.version>
 
         <!-- Nacos -->
-        <nacos-client.version>2.5.1</nacos-client.version>
+        <nacos2.version>2.5.1</nacos2.version>
+        <nacos3.version>3.0.1</nacos3.version>
         <nacos-client-mse-extension.version>1.0.4</nacos-client-mse-extension.version>
         <spring-alibaba-nacos-config.version>2023.0.1.3</spring-alibaba-nacos-config.version>
 
@@ -184,13 +206,19 @@
 
         <okhttp.version>4.12.0</okhttp.version>
 
-        <async-generator.version>3.0.0</async-generator.version>
+        <async-generator.version>3.2.0</async-generator.version>
 
         <commons-codec.version>1.17.0</commons-codec.version>
         <commons-exec.version>1.3</commons-exec.version>
         <commons-collections4.version>4.4</commons-collections4.version>
 
         <opennlp-tools.version>2.3.3</opennlp-tools.version>
+
+        <json-path.version>2.9.0</json-path.version>
+
+        <jedis.version>5.2.0</jedis.version>
+
+        <mysql.version>8.0.32</mysql.version>
 
         <!-- CheckStyle Plugin -->
         <disable.checks>true</disable.checks>
@@ -216,6 +244,7 @@
         <spring-javaformat-maven-plugin.version>0.0.39</spring-javaformat-maven-plugin.version>
         <maven-project-info-reports-plugin.version>3.4.5</maven-project-info-reports-plugin.version>
         <sorter-maven-plugin.version>1.0.1</sorter-maven-plugin.version>
+        <maven.deploy.skip>false</maven.deploy.skip>
 
         <!-- CheckStyle Maven Plugin -->
         <maven-checkstyle-plugin.version>3.5.0</maven-checkstyle-plugin.version>
@@ -479,6 +508,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <version>${maven-deploy-plugin.version}</version>
+                <configuration>
+                    <skip>${maven.deploy.skip}</skip>
+                </configuration>
             </plugin>
         </plugins>
     </build>

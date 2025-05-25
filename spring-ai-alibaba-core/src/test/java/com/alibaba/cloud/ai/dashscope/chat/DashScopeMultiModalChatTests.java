@@ -119,10 +119,10 @@ public class DashScopeMultiModalChatTests {
 
 		// Create media list with URL
 		List<Media> mediaList = List.of(new Media(MimeTypeUtils.IMAGE_PNG,
-				new URI("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg").toURL()));
+				new URI("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg")));
 
 		// Create user message with media
-		UserMessage message = new UserMessage(TEST_PROMPT, mediaList);
+		UserMessage message = UserMessage.builder().text(TEST_PROMPT).media(mediaList).build();
 		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		// Create prompt with options
@@ -154,8 +154,10 @@ public class DashScopeMultiModalChatTests {
 		when(dashScopeApi.chatCompletionEntity(any(ChatCompletionRequest.class))).thenReturn(responseEntity);
 
 		// Create user message with resource media
-		UserMessage message = new UserMessage(TEST_PROMPT,
-				new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")));
+		UserMessage message = UserMessage.builder()
+			.text(TEST_PROMPT)
+			.media(new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")))
+			.build();
 		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		// Create prompt with options
@@ -193,7 +195,7 @@ public class DashScopeMultiModalChatTests {
 		}
 
 		// Create user message with media
-		UserMessage message = new UserMessage(TEST_VIDEO_PROMPT, mediaList);
+		UserMessage message = UserMessage.builder().text(TEST_VIDEO_PROMPT).media(mediaList).build();
 		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.VIDEO);
 
 		// Create prompt with options
@@ -230,8 +232,10 @@ public class DashScopeMultiModalChatTests {
 		when(dashScopeApi.chatCompletionStream(any(ChatCompletionRequest.class))).thenReturn(Flux.just(chunk1, chunk2));
 
 		// Create user message with resource media
-		UserMessage message = new UserMessage(TEST_PROMPT,
-				new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")));
+		UserMessage message = UserMessage.builder()
+			.text(TEST_PROMPT)
+			.media(new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")))
+			.build();
 		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		// Create prompt with options
@@ -261,7 +265,8 @@ public class DashScopeMultiModalChatTests {
 	void integrationTestImageWithUrl() throws Exception {
 		// Create real API client
 		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
-		DashScopeApi realApi = new DashScopeApi(apiKey);
+		DashScopeApi realApi = DashScopeApi.builder().apiKey(apiKey).build();
+		;
 
 		// Create real chat model
 		DashScopeChatModel realChatModel = DashScopeChatModel.builder().dashScopeApi(realApi).build();
@@ -269,10 +274,10 @@ public class DashScopeMultiModalChatTests {
 
 		// Create media list with URL
 		List<Media> mediaList = List.of(new Media(MimeTypeUtils.IMAGE_PNG,
-				new URI("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg").toURL()));
+				new URI("https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg")));
 
 		// Create user message with media
-		UserMessage message = new UserMessage(TEST_PROMPT, mediaList);
+		UserMessage message = UserMessage.builder().text(TEST_PROMPT).media(mediaList).build();
 		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		// Create prompt
@@ -298,14 +303,17 @@ public class DashScopeMultiModalChatTests {
 	void integrationTestImageWithBinaryResource() throws IOException {
 		// Create real API client
 		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
-		DashScopeApi realApi = new DashScopeApi(apiKey);
+		DashScopeApi realApi = DashScopeApi.builder().apiKey(apiKey).build();
+		;
 
 		// Create real chat model
 		DashScopeChatModel realChatModel = DashScopeChatModel.builder().dashScopeApi(realApi).build();
 
 		// Create user message with resource media
-		UserMessage message = new UserMessage(TEST_PROMPT,
-				new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")));
+		UserMessage message = UserMessage.builder()
+			.text(TEST_PROMPT)
+			.media(new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")))
+			.build();
 		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		// Create prompt
@@ -331,7 +339,8 @@ public class DashScopeMultiModalChatTests {
 	void integrationTestVideoWithMultipleFrames() throws IOException {
 		// Create real API client
 		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
-		DashScopeApi realApi = new DashScopeApi(apiKey);
+		DashScopeApi realApi = DashScopeApi.builder().apiKey(apiKey).build();
+		;
 
 		// Create real chat model
 		DashScopeChatModel realChatModel = DashScopeChatModel.builder().dashScopeApi(realApi).build();
@@ -343,7 +352,7 @@ public class DashScopeMultiModalChatTests {
 		}
 
 		// Create user message with media
-		UserMessage message = new UserMessage(TEST_VIDEO_PROMPT, mediaList);
+		UserMessage message = UserMessage.builder().text(TEST_VIDEO_PROMPT).media(mediaList).build();
 		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.VIDEO);
 
 		// Create prompt
@@ -369,14 +378,17 @@ public class DashScopeMultiModalChatTests {
 	void integrationTestStreamImageResponse() throws IOException {
 		// Create real API client
 		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
-		DashScopeApi realApi = new DashScopeApi(apiKey);
+		DashScopeApi realApi = DashScopeApi.builder().apiKey(apiKey).build();
+		;
 
 		// Create real chat model
 		DashScopeChatModel realChatModel = DashScopeChatModel.builder().dashScopeApi(realApi).build();
 
 		// Create user message with resource media
-		UserMessage message = new UserMessage(TEST_PROMPT,
-				new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")));
+		UserMessage message = UserMessage.builder()
+			.text(TEST_PROMPT)
+			.media(new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")))
+			.build();
 		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		// Create prompt
@@ -412,14 +424,17 @@ public class DashScopeMultiModalChatTests {
 	void integrationTestImageAnalysisWithCustomPrompt() throws IOException {
 		// Create real API client
 		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
-		DashScopeApi realApi = new DashScopeApi(apiKey);
+		DashScopeApi realApi = DashScopeApi.builder().apiKey(apiKey).build();
+		;
 
 		// Create real chat model
 		DashScopeChatModel realChatModel = DashScopeChatModel.builder().dashScopeApi(realApi).build();
 
 		// Create user message with resource media and custom prompt
-		UserMessage message = new UserMessage("请详细描述这张图片中的场景，包括人物、动物、环境等细节，并分析图片的情感基调。",
-				new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")));
+		UserMessage message = UserMessage.builder()
+			.text("请详细描述这张图片中的场景，包括人物、动物、环境等细节，并分析图片的情感基调。")
+			.media(new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")))
+			.build();
 		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);
 
 		// Create prompt

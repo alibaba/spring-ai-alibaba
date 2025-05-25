@@ -49,9 +49,7 @@ public class PlanFinalizer {
 
 	/**
 	 * 生成计划执行总结
-	 * @param userRequest 原始用户请求
-	 * @param executionResult 执行结果
-	 * @return 格式化的总结文本
+	 * @param context 执行上下文，包含用户请求和执行的过程信息
 	 */
 	public void generateSummary(ExecutionContext context) {
 		if (context == null || context.getPlan() == null) {
@@ -70,7 +68,7 @@ public class PlanFinalizer {
 			String userRequest = context.getUserRequest();
 
 			SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate("""
-					您是一个能够回应用户请求的AI助手，你需要根据这个分步骤的执行计划的执行结果，来回应用户的请求。
+					您是 jmanus，一个能够回应用户请求的AI助手，你需要根据这个分步骤的执行计划的执行结果，来回应用户的请求。
 
 					分步骤计划的执行详情：
 					{executionDetail}
@@ -93,8 +91,7 @@ public class PlanFinalizer {
 
 			ChatResponse response = llmService.getPlanningChatClient()
 				.prompt(prompt)
-				.advisors(memoryAdvisor -> memoryAdvisor.param("chat_memory_conversation_id", plan.getPlanId())
-					.param("chat_memory_retrieve_size", 100))
+
 				.call()
 				.chatResponse();
 
@@ -107,6 +104,9 @@ public class PlanFinalizer {
 		catch (Exception e) {
 			log.error("Error generating summary with LLM", e);
 			throw new RuntimeException("Failed to generate summary", e);
+		}
+		finally {
+			llmService.clearConversationMemory(plan.getPlanId());
 		}
 	}
 

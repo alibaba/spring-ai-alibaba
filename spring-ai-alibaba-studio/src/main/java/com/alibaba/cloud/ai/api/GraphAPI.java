@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.common.R;
-import com.alibaba.cloud.ai.graph.GraphStateException;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.param.GraphStreamParam;
 import com.alibaba.cloud.ai.service.GraphService;

@@ -21,7 +21,10 @@ import com.alibaba.cloud.ai.dashscope.image.DashScopeImageOptions;
 import com.alibaba.cloud.ai.dashscope.observation.conventions.AiProvider;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
@@ -52,6 +55,8 @@ class DashScopeImageModelObservationTests {
 	}
 
 	@Test
+	@Tag("observation")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".*")
 	void imageModelObservationTest() {
 
 		DashScopeImageOptions options = DashScopeImageOptions.builder()
