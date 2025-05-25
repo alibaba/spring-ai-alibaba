@@ -60,13 +60,13 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-tool-calling-common</artifactId>
-            <version>${revision}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-extra</artifactId>
-            <version>5.8.20</version>
+            <version>5.8.38</version>
         </dependency>
 
         <dependency>
@@ -76,7 +76,4 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <finalName>spring-ai-alibaba-starter-tool-calling-weather</finalName>
-    </build>
 </project>
