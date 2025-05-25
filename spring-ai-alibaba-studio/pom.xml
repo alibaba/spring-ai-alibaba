@@ -45,6 +45,7 @@
         <!-- Node -->
         <npm.version>9.5.1</npm.version>
         <node.version>v18.16.0</node.version>
+        <maven.deploy.skip>false</maven.deploy.skip>
     </properties>
 
     <dependencies>
@@ -52,6 +53,11 @@
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-core</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-advisors-vector-store</artifactId>
         </dependency>
 
         <dependency>

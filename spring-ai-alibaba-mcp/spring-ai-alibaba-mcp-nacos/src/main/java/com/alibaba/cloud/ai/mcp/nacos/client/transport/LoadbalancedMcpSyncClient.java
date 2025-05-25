@@ -16,18 +16,13 @@
 
 package com.alibaba.cloud.ai.mcp.nacos.client.transport;
 
-import com.alibaba.cloud.ai.mcp.nacos.client.utils.ApplicationContextHolder;
-import com.alibaba.cloud.ai.mcp.nacos.registry.model.McpNacosConstant;
-import com.alibaba.cloud.ai.mcp.nacos.registry.model.McpToolsInfo;
+import com.alibaba.cloud.ai.mcp.nacos.client.utils.NacosMcpClientUtils;
+import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
+import com.alibaba.cloud.ai.mcp.nacos.service.model.NacosMcpServerEndpoint;
+import com.alibaba.nacos.api.ai.constant.AiConstants;
+import com.alibaba.nacos.api.ai.model.mcp.McpEndpointInfo;
 import com.alibaba.nacos.api.exception.NacosException;
-import com.alibaba.nacos.api.naming.NamingService;
-import com.alibaba.nacos.api.naming.listener.Event;
-import com.alibaba.nacos.api.naming.listener.EventListener;
-import com.alibaba.nacos.api.naming.listener.NamingEvent;
-import com.alibaba.nacos.api.naming.pojo.Instance;
-import com.alibaba.nacos.client.config.NacosConfigService;
-import com.alibaba.nacos.common.utils.JacksonUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.alibaba.nacos.api.utils.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -38,28 +33,27 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.client.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.autoconfigure.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * @author yingzi
  * @date 2025/4/29:13:00
  */
-public class LoadbalancedMcpSyncClient implements EventListener {
+public class LoadbalancedMcpSyncClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(LoadbalancedMcpAsyncClient.class);
 
-	private final String serviceName;
+	private final String serverName;
 
-	private final NamingService namingService;
-
-	private final NacosConfigService nacosConfigService;
-
-	private final Long TIME_OUT_MS = 3000L;
+	private final NacosMcpOperationService nacosMcpOperationService;
 
 	private final McpClientCommonProperties commonProperties;
 
@@ -69,56 +63,64 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 
 	private final ObjectMapper objectMapper;
 
-	private Map<String, List<String>> md5ToToolsMap;
+	private Map<String, McpSyncClient> keyToClientMap;
 
-	private Map<String, List<McpSyncClient>> md5ToClientMap;
+	private Map<String, Integer> keyToCountMap;
 
-	private Map<String, Integer> client2CountMap;
+	private NacosMcpServerEndpoint serverEndpoint;
 
-	private List<Instance> instances;
+	private final ApplicationContext applicationContext;
 
-	public LoadbalancedMcpSyncClient(String serviceName, NamingService namingService,
-			NacosConfigService nacosConfigService) {
-		Assert.notNull(serviceName, "serviceName cannot be null");
-		Assert.notNull(namingService, "namingService cannot be null");
-		Assert.notNull(nacosConfigService, "nacosConfigService cannot be null");
+	public LoadbalancedMcpSyncClient(String serverName, NacosMcpOperationService nacosMcpOperationService,
+			ApplicationContext applicationContext) {
+		Assert.notNull(serverName, "serviceName cannot be null");
+		Assert.notNull(nacosMcpOperationService, "nacosMcpOperationService cannot be null");
+		Assert.notNull(applicationContext, "applicationContext cannot be null");
 
-		this.serviceName = serviceName;
-		this.nacosConfigService = nacosConfigService;
+		this.serverName = serverName;
+		this.nacosMcpOperationService = nacosMcpOperationService;
+		this.applicationContext = applicationContext;
 
 		try {
-			this.namingService = namingService;
-			this.instances = namingService.selectInstances(this.serviceName + McpNacosConstant.SERVER_NAME_SUFFIX,
-					McpNacosConstant.SERVER_GROUP, true);
+			this.serverEndpoint = this.nacosMcpOperationService.getServerEndpoint(this.serverName);
+			if (this.serverEndpoint == null) {
+				throw new NacosException(NacosException.NOT_FOUND,
+						String.format("Can not find mcp server from nacos: %s", serverName));
+			}
+			if (!StringUtils.equals(serverEndpoint.getProtocol(), AiConstants.Mcp.MCP_PROTOCOL_SSE)) {
+				throw new Exception("mcp server protocol must be sse");
+			}
 		}
-		catch (NacosException e) {
-			throw new RuntimeException(String.format("Failed to get instances for service: %s", serviceName));
+		catch (Exception e) {
+			throw new RuntimeException(String.format("Failed to get instances for service: %s", serverName));
 		}
-		commonProperties = ApplicationContextHolder.getBean(McpClientCommonProperties.class);
-		mcpSyncClientConfigurer = ApplicationContextHolder.getBean(McpSyncClientConfigurer.class);
-		objectMapper = ApplicationContextHolder.getBean(ObjectMapper.class);
-		webClientBuilderTemplate = ApplicationContextHolder.getBean(WebClient.Builder.class);
+		commonProperties = this.applicationContext.getBean(McpClientCommonProperties.class);
+		mcpSyncClientConfigurer = this.applicationContext.getBean(McpSyncClientConfigurer.class);
+		objectMapper = this.applicationContext.getBean(ObjectMapper.class);
+		webClientBuilderTemplate = this.applicationContext.getBean(WebClient.Builder.class);
 	}
 
 	public void init() {
-		md5ToToolsMap = new ConcurrentHashMap<>();
-		md5ToClientMap = new ConcurrentHashMap<>();
+		keyToClientMap = new ConcurrentHashMap<>();
 
-		client2CountMap = new ConcurrentHashMap<>();
+		keyToCountMap = new ConcurrentHashMap<>();
 
-		for (Instance instance : instances) {
-			updateByAddInstace(instance);
+		for (McpEndpointInfo mcpEndpointInfo : serverEndpoint.getMcpEndpointInfoList()) {
+			updateByAddEndpoint(mcpEndpointInfo, serverEndpoint.getExportPath());
 		}
 	}
 
 	public void subscribe() {
-		try {
-			this.namingService.subscribe(this.serviceName + McpNacosConstant.SERVER_NAME_SUFFIX,
-					McpNacosConstant.SERVER_GROUP, this);
-		}
-		catch (NacosException e) {
-			throw new RuntimeException(String.format("Failed to subscribe to service: %s", this.serviceName));
-		}
+		this.nacosMcpOperationService.subscribeNacosMcpServer(this.serverName, mcpServerDetailInfo -> {
+			List<McpEndpointInfo> mcpEndpointInfoList = mcpServerDetailInfo.getBackendEndpoints() == null
+					? new ArrayList<>() : mcpServerDetailInfo.getBackendEndpoints();
+			String exportPath = mcpServerDetailInfo.getRemoteServerConfig().getExportPath();
+			String protocol = mcpServerDetailInfo.getProtocol();
+			String realVersion = mcpServerDetailInfo.getVersionDetail().getVersion();
+			NacosMcpServerEndpoint nacosMcpServerEndpoint = new NacosMcpServerEndpoint(mcpEndpointInfoList, exportPath,
+					protocol, realVersion);
+			updateClientList(nacosMcpServerEndpoint);
+		});
 	}
 
 	public McpSyncClient getMcpSyncClient() {
@@ -126,38 +128,26 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 		if (syncClients.isEmpty()) {
 			throw new IllegalStateException("No McpAsyncClient available");
 		}
-		// 从client2CountMap中挑选value最小的键是哪个
-		String clientInfoName = client2CountMap.entrySet()
-			.stream()
-			.min(Map.Entry.comparingByValue())
-			.map(Map.Entry::getKey)
-			.get();
+		// 从keyToCountMap中挑选value最小的键是哪个
+		String key = keyToCountMap.entrySet().stream().min(Map.Entry.comparingByValue()).map(Map.Entry::getKey).get();
 
-		client2CountMap.put(clientInfoName, client2CountMap.get(clientInfoName) + 1);
+		keyToCountMap.put(key, keyToCountMap.get(key) + 1);
 		// 从clients中找到clientInfoName对应的client
-		return syncClients.stream()
-			.filter(syncClient -> syncClient.getClientInfo().name().equals(clientInfoName))
-			.findFirst()
-			.get();
+		return keyToClientMap.get(key);
 	}
 
 	public List<McpSyncClient> getMcpSyncClientList() {
-		return md5ToClientMap.values().stream().flatMap(List::stream).toList();
+		return keyToClientMap.values().stream().toList();
 	}
 
-	public String getServiceName() {
-		return this.serviceName;
+	public String getServerName() {
+		return serverName;
 	}
 
-	public NamingService getNamingService() {
-		return this.namingService;
+	public NacosMcpServerEndpoint getNacosMcpServerEndpoint() {
+		return this.serverEndpoint;
 	}
 
-	public List<Instance> getInstances() {
-		return this.instances;
-	}
-
-	// ------------------------------------------------------------------------------------------------------------------------------------------------
 	public McpSchema.ServerCapabilities getServerCapabilities() {
 		return getMcpSyncClient().getServerCapabilities();
 	}
@@ -216,27 +206,7 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 	}
 
 	public McpSchema.CallToolResult callTool(McpSchema.CallToolRequest callToolRequest) {
-		String toolName = callToolRequest.name();
-		List<McpSyncClient> syncClients = new ArrayList<>();
-		md5ToToolsMap.forEach((md5, tools) -> {
-			if (tools.contains(toolName)) {
-				syncClients.addAll(md5ToClientMap.get(md5));
-			}
-		});
-		Set<String> clientInfos = syncClients.stream()
-			.map(client -> client.getClientInfo().name())
-			.collect(Collectors.toSet());
-
-		String minClientInfoName = clientInfos.stream()
-			.min(Comparator.comparingInt(clientInfo -> client2CountMap.getOrDefault(clientInfo, 0)))
-			.get();
-		client2CountMap.put(minClientInfoName, client2CountMap.get(minClientInfoName) + 1);
-
-		McpSyncClient mcpSyncClient = syncClients.stream()
-			.filter(syncClient -> syncClient.getClientInfo().name().equals(minClientInfoName))
-			.findFirst()
-			.get();
-		return mcpSyncClient.callTool(callToolRequest);
+		return getMcpSyncClient().callTool(callToolRequest);
 	}
 
 	public McpSchema.ListToolsResult listTools() {
@@ -248,36 +218,7 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 	}
 
 	private McpSchema.ListToolsResult listToolsInternal(String cursor) {
-		return parseConfig(loadConfig(), cursor);
-	}
-
-	private String loadConfig() {
-		String content = null;
-		try {
-			content = nacosConfigService.getConfig(this.serviceName + McpNacosConstant.TOOLS_CONFIG_SUFFIX,
-					McpNacosConstant.TOOLS_GROUP, TIME_OUT_MS);
-		}
-		catch (NacosException e) {
-			throw new RuntimeException(e);
-		}
-		if (content == null || content.isEmpty()) {
-			throw new RuntimeException(String.format("Empty tool config content for dataId: %s, group: %s",
-					this.serviceName + McpNacosConstant.TOOLS_CONFIG_SUFFIX, McpNacosConstant.TOOLS_GROUP));
-		}
-		return content;
-	}
-
-	private McpSchema.ListToolsResult parseConfig(String content, String cursor) {
-		try {
-			McpToolsInfo mcpToolsInfo = objectMapper.readValue(content, McpToolsInfo.class);
-			return new McpSchema.ListToolsResult(mcpToolsInfo.getTools(), cursor);
-		}
-		catch (JsonProcessingException e) {
-			logger.error("Failed to parse config for dataId: {}, group: {}",
-					this.serviceName + McpNacosConstant.TOOLS_CONFIG_SUFFIX, McpNacosConstant.TOOLS_GROUP, e);
-			throw new RuntimeException(String.format("Failed to parse tool list, dataId: %s, group: %s\"",
-					this.serviceName + McpNacosConstant.TOOLS_CONFIG_SUFFIX, McpNacosConstant.TOOLS_GROUP), e);
-		}
+		return getMcpSyncClient().listTools(cursor);
 	}
 
 	public McpSchema.ListResourcesResult listResources(String cursor) {
@@ -336,34 +277,13 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 
 	// ------------------------------------------------------------------------------------------------------------------------------------------------
 
-	@Override
-	public void onEvent(Event event) {
-		if (event instanceof NamingEvent namingEvent) {
-			if (this.serviceName.equals(namingEvent.getServiceName())) {
-				logger.info("Received service instance change event for service: {}", namingEvent.getServiceName());
-				List<Instance> instances = namingEvent.getInstances();
-				logger.info("Updated instances count: {}", instances.size());
-				// 打印每个实例的详细信息
-				instances.forEach(instance -> {
-					logger.info("Instance: {}:{} (Healthy: {}, Enabled: {}, Metadata: {})", instance.getIp(),
-							instance.getPort(), instance.isHealthy(), instance.isEnabled(),
-							JacksonUtils.toJson(instance.getMetadata()));
-				});
-				updateClientList(instances);
-			}
-		}
-	}
-
-	private McpSyncClient clientByInstance(Instance instance) {
+	private McpSyncClient clientByEndpoint(McpEndpointInfo mcpEndpointInfo, String exportPath) {
 		McpSyncClient syncClient;
-
-		String baseUrl = instance.getMetadata().getOrDefault("scheme", "http") + "://" + instance.getIp() + ":"
-				+ instance.getPort();
+		String baseUrl = "http://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort();
 		WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(baseUrl);
-		WebFluxSseClientTransport transport = new WebFluxSseClientTransport(webClientBuilder, objectMapper);
+		WebFluxSseClientTransport transport = new WebFluxSseClientTransport(webClientBuilder, objectMapper, exportPath);
 		NamedClientMcpTransport namedTransport = new NamedClientMcpTransport(
-				serviceName + "-" + instance.getInstanceId(), transport);
-
+				serverName + "-" + NacosMcpClientUtils.getMcpEndpointInfoId(mcpEndpointInfo, exportPath), transport);
 		McpSchema.Implementation clientInfo = new McpSchema.Implementation(
 				this.connectedClientName(commonProperties.getName(), namedTransport.name()),
 				commonProperties.getVersion());
@@ -379,63 +299,69 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 		return syncClient;
 	}
 
-	private void updateByAddInstace(Instance instance) {
-		Map<String, String> metadata = instance.getMetadata();
-		String serverMd5 = metadata.get("server.md5");
-		assert serverMd5 != null;
-		McpSyncClient mcpSyncClient = clientByInstance(instance);
-		md5ToClientMap.computeIfAbsent(serverMd5, k -> new ArrayList<>()).add(mcpSyncClient);
-		client2CountMap.put(mcpSyncClient.getClientInfo().name(), 0);
-
-		if (!md5ToToolsMap.containsKey(serverMd5)) {
-			String tools = metadata.get("tools.names");
-			md5ToToolsMap.put(serverMd5, List.of(tools.split(",")));
-		}
+	private void updateByAddEndpoint(McpEndpointInfo serverEndpoint, String exportPath) {
+		McpSyncClient mcpSyncClient = clientByEndpoint(serverEndpoint, exportPath);
+		String key = NacosMcpClientUtils.getMcpEndpointInfoId(serverEndpoint, exportPath);
+		keyToClientMap.putIfAbsent(key, mcpSyncClient);
+		keyToCountMap.putIfAbsent(key, 0);
 	}
 
-	private void updateClientList(List<Instance> currentInstances) {
-		// 新增的实例
-		List<Instance> addInstaces = currentInstances.stream()
-			.filter(instance -> !instances.contains(instance))
-			.collect(Collectors.toList());
-		for (Instance addInstace : addInstaces) {
-			updateByAddInstace(addInstace);
+	private void updateClientList(NacosMcpServerEndpoint newServerEndpoint) {
+		if (!StringUtils.equals(this.serverEndpoint.getExportPath(), newServerEndpoint.getExportPath())
+				|| !StringUtils.equals(this.serverEndpoint.getVersion(), newServerEndpoint.getVersion())) {
+			updateAll(newServerEndpoint);
 		}
-		// 移除的实例
-		List<Instance> removeInstances = instances.stream()
-			.filter(instance -> !currentInstances.contains(instance))
-			.collect(Collectors.toList());
-		for (Instance removeInstance : removeInstances) {
-			updateByRemoveInstace(removeInstance);
-		}
-		this.instances = currentInstances;
-	}
-
-	private void updateByRemoveInstace(Instance instance) {
-		String clientInfoName = connectedClientName(commonProperties.getName(),
-				this.serviceName + "-" + instance.getInstanceId());
-		String serverMd5 = instance.getMetadata().get("server.md5");
-
-		List<McpSyncClient> clientList = md5ToClientMap.getOrDefault(serverMd5, Collections.emptyList());
-		McpSyncClient syncClient;
-		for (McpSyncClient mcpSyncClient : clientList) {
-			McpSchema.Implementation clientInfo = mcpSyncClient.getClientInfo();
-			String clientName = clientInfo.name();
-			if (clientInfoName.equals(clientName)) {
-				logger.info("Removing McpSyncClient: {}", clientName);
-				syncClient = mcpSyncClient;
-				syncClient.closeGracefully();
-				// 安全地移除
-				md5ToClientMap.get(serverMd5).remove(syncClient);
-				client2CountMap.remove(syncClient.getClientInfo().name());
-
-				if (md5ToClientMap.get(serverMd5).isEmpty()) {
-					md5ToClientMap.remove(serverMd5);
-					md5ToToolsMap.remove(serverMd5);
-				}
-				logger.info("Removed McpSyncClient: {} Success", syncClient.getClientInfo().name());
-				break;
+		else {
+			List<McpEndpointInfo> currentMcpEndpointInfoList = this.serverEndpoint.getMcpEndpointInfoList();
+			List<McpEndpointInfo> newMcpEndpointInfoList = newServerEndpoint.getMcpEndpointInfoList();
+			List<McpEndpointInfo> addEndpointInfoList = newMcpEndpointInfoList.stream()
+				.filter(newEndpoint -> currentMcpEndpointInfoList.stream()
+					.noneMatch(currentEndpoint -> currentEndpoint.getAddress().equals(newEndpoint.getAddress())
+							&& currentEndpoint.getPort() == newEndpoint.getPort()))
+				.toList();
+			List<McpEndpointInfo> removeEndpointInfoList = currentMcpEndpointInfoList.stream()
+				.filter(currentEndpoint -> newMcpEndpointInfoList.stream()
+					.noneMatch(newEndpoint -> newEndpoint.getAddress().equals(currentEndpoint.getAddress())
+							&& newEndpoint.getPort() == currentEndpoint.getPort()))
+				.toList();
+			for (McpEndpointInfo addEndpointInfo : addEndpointInfoList) {
+				updateByAddEndpoint(addEndpointInfo, newServerEndpoint.getExportPath());
 			}
+			for (McpEndpointInfo removeEndpointInfo : removeEndpointInfoList) {
+				updateByRemoveEndpoint(removeEndpointInfo, newServerEndpoint.getExportPath());
+			}
+		}
+		this.serverEndpoint = newServerEndpoint;
+	}
+
+	private void updateAll(NacosMcpServerEndpoint newServerEndpoint) {
+		Map<String, McpSyncClient> newKeyToClientMap = new ConcurrentHashMap<>();
+		Map<String, McpSyncClient> oldKeyToClientMap = this.keyToClientMap;
+		Map<String, Integer> newKeyToCountMap = new ConcurrentHashMap<>();
+		for (McpEndpointInfo mcpEndpointInfo : newServerEndpoint.getMcpEndpointInfoList()) {
+			McpSyncClient syncClient = clientByEndpoint(mcpEndpointInfo, newServerEndpoint.getExportPath());
+			String key = NacosMcpClientUtils.getMcpEndpointInfoId(mcpEndpointInfo, newServerEndpoint.getExportPath());
+			newKeyToClientMap.putIfAbsent(key, syncClient);
+			newKeyToCountMap.putIfAbsent(key, 0);
+		}
+		this.keyToClientMap = newKeyToClientMap;
+		this.keyToCountMap = newKeyToCountMap;
+		for (Map.Entry<String, McpSyncClient> entry : oldKeyToClientMap.entrySet()) {
+			McpSyncClient syncClient = entry.getValue();
+			logger.info("Removing McpSyncClient: {}", syncClient.getClientInfo().name());
+			syncClient.closeGracefully();
+			logger.info("Removed McpSyncClient: {} Success", syncClient.getClientInfo().name());
+		}
+	}
+
+	private void updateByRemoveEndpoint(McpEndpointInfo serverEndpoint, String exportPath) {
+		String key = NacosMcpClientUtils.getMcpEndpointInfoId(serverEndpoint, exportPath);
+		if (keyToClientMap.containsKey(key)) {
+			McpSyncClient syncClient = keyToClientMap.remove(key);
+			logger.info("Removing McpSyncClient: {}", syncClient.getClientInfo().name());
+			syncClient.closeGracefully();
+			keyToCountMap.remove(key);
+			logger.info("Removed McpSyncClient: {} Success", syncClient.getClientInfo().name());
 		}
 	}
 
@@ -449,29 +375,30 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 
 	public static class Builder {
 
-		private String serviceName;
+		private String serverName;
 
-		private NamingService namingService;
+		private NacosMcpOperationService nacosMcpOperationService;
 
-		private NacosConfigService nacosConfigService;
+		private ApplicationContext applicationContext;
 
-		public Builder serviceName(String serviceName) {
-			this.serviceName = serviceName;
+		public Builder serverName(String serverName) {
+			this.serverName = serverName;
 			return this;
 		}
 
-		public Builder namingService(NamingService namingService) {
-			this.namingService = namingService;
+		public Builder nacosMcpOperationService(NacosMcpOperationService nacosMcpOperationService) {
+			this.nacosMcpOperationService = nacosMcpOperationService;
 			return this;
 		}
 
-		public Builder nacosConfigService(NacosConfigService nacosConfigService) {
-			this.nacosConfigService = nacosConfigService;
+		public Builder applicationContext(ApplicationContext applicationContext) {
+			this.applicationContext = applicationContext;
 			return this;
 		}
 
 		public LoadbalancedMcpSyncClient build() {
-			return new LoadbalancedMcpSyncClient(this.serviceName, this.namingService, this.nacosConfigService);
+			return new LoadbalancedMcpSyncClient(this.serverName, this.nacosMcpOperationService,
+					this.applicationContext);
 		}
 
 	}

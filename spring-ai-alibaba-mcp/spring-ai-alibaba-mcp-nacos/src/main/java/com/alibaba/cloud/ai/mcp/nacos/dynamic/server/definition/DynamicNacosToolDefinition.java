@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.mcp.nacos.dynamic.server.definition;
 
+import com.alibaba.nacos.api.ai.model.mcp.McpServerRemoteServiceConfig;
+import com.alibaba.nacos.api.ai.model.mcp.McpToolMeta;
 import com.alibaba.nacos.common.utils.JacksonUtils;
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -30,52 +32,63 @@ public class DynamicNacosToolDefinition implements ToolDefinition {
 
 	private String description;
 
-	private String serviceName;
+	private String version;
 
-	private String requestMethod;
+	private String protocol;
 
-	private String requestPath;
+	private McpServerRemoteServiceConfig remoteServerConfig;
+
+	private Boolean enabled;
 
 	private Object inputSchema;
+
+	private McpToolMeta toolMeta;
 
 	public DynamicNacosToolDefinition() {
 	}
 
-	public DynamicNacosToolDefinition(final String name, final String description, final String serviceName,
-			final String requestMethod, final String requestPath, final String inputSchema) {
+	public DynamicNacosToolDefinition(final String name, final String description, final String inputSchema) {
 		Assert.hasText(name, "name cannot be null or empty");
 		Assert.hasText(description, "description cannot be null or empty");
 		Assert.hasText(inputSchema, "inputSchema cannot be null or empty");
 		this.name = name;
 		this.description = description;
-		this.serviceName = serviceName;
 		this.inputSchema = inputSchema;
-		this.requestMethod = StringUtils.isNoneBlank(requestMethod) ? requestMethod : "GET";
-		this.requestPath = StringUtils.isNoneBlank(requestPath) ? requestPath : name;
+	}
+
+	public DynamicNacosToolDefinition(final String name, final String description, final Object inputSchema,
+			final String version, final String protocol, final McpServerRemoteServiceConfig remoteServerConfig,
+			final McpToolMeta toolMeta, final Boolean enabled) {
+		Assert.hasText(name, "name cannot be null or empty");
+		Assert.hasText(description, "description cannot be null or empty");
+		Assert.notNull(inputSchema, "inputSchema cannot be null or empty");
+		this.name = name;
+		this.description = description;
+		this.inputSchema = inputSchema;
+		this.version = version;
+		this.protocol = protocol;
+		this.remoteServerConfig = remoteServerConfig;
+		this.toolMeta = toolMeta;
+		this.enabled = enabled;
 	}
 
 	public static DynamicNacosToolDefinition.Builder builder() {
 		return new DynamicNacosToolDefinition.Builder();
 	}
 
+	@Override
 	public String name() {
 		return this.name;
 	}
 
+	@Override
 	public String description() {
 		return this.description;
 	}
 
+	@Override
 	public String inputSchema() {
 		return JacksonUtils.toJson(this.inputSchema);
-	}
-
-	public String requestMethod() {
-		return this.requestMethod;
-	}
-
-	public String requestPath() {
-		return this.requestPath;
 	}
 
 	public String getName() {
@@ -94,22 +107,6 @@ public class DynamicNacosToolDefinition implements ToolDefinition {
 		this.description = description;
 	}
 
-	public String getRequestMethod() {
-		return requestMethod;
-	}
-
-	public void setRequestMethod(final String requestMethod) {
-		this.requestMethod = requestMethod;
-	}
-
-	public String getRequestPath() {
-		return requestPath;
-	}
-
-	public void setRequestPath(final String requestPath) {
-		this.requestPath = requestPath;
-	}
-
 	public Object getInputSchema() {
 		return inputSchema;
 	}
@@ -118,12 +115,44 @@ public class DynamicNacosToolDefinition implements ToolDefinition {
 		this.inputSchema = inputSchema;
 	}
 
-	public String getServiceName() {
-		return serviceName;
+	public String getVersion() {
+		return version;
 	}
 
-	public void setServiceName(final String serviceName) {
-		this.serviceName = serviceName;
+	public void setVersion(final String version) {
+		this.version = version;
+	}
+
+	public McpServerRemoteServiceConfig getRemoteServerConfig() {
+		return remoteServerConfig;
+	}
+
+	public void setRemoteServerConfig(final McpServerRemoteServiceConfig remoteServerConfig) {
+		this.remoteServerConfig = remoteServerConfig;
+	}
+
+	public Boolean getEnabled() {
+		return enabled;
+	}
+
+	public void setEnabled(final Boolean enabled) {
+		this.enabled = enabled;
+	}
+
+	public String getProtocol() {
+		return protocol;
+	}
+
+	public void setProtocol(final String protocol) {
+		this.protocol = protocol;
+	}
+
+	public McpToolMeta getToolMeta() {
+		return toolMeta;
+	}
+
+	public void setToolMeta(final McpToolMeta toolMeta) {
+		this.toolMeta = toolMeta;
 	}
 
 	public static final class Builder {
@@ -132,13 +161,17 @@ public class DynamicNacosToolDefinition implements ToolDefinition {
 
 		private String description;
 
-		private String serviceName;
+		private String version;
 
-		private String requestMethod;
+		private String protocol;
 
-		private String requestPath;
+		private McpServerRemoteServiceConfig remoteServerConfig;
 
-		private String inputSchema;
+		private Boolean enabled;
+
+		private Object inputSchema;
+
+		private McpToolMeta toolsMeta;
 
 		private Builder() {
 		}
@@ -153,33 +186,44 @@ public class DynamicNacosToolDefinition implements ToolDefinition {
 			return this;
 		}
 
-		public DynamicNacosToolDefinition.Builder serviceName(final String serviceName) {
-			this.serviceName = serviceName;
+		public DynamicNacosToolDefinition.Builder version(final String version) {
+			this.version = version;
 			return this;
 		}
 
-		public DynamicNacosToolDefinition.Builder requestMethod(final String requestMethod) {
-			this.requestMethod = requestMethod;
+		public DynamicNacosToolDefinition.Builder remoteServerConfig(
+				final McpServerRemoteServiceConfig remoteServerConfig) {
+			this.remoteServerConfig = remoteServerConfig;
 			return this;
 		}
 
-		public DynamicNacosToolDefinition.Builder requestPath(final String requestPath) {
-			this.requestPath = requestPath;
+		public DynamicNacosToolDefinition.Builder enabled(final Boolean enabled) {
+			this.enabled = enabled;
 			return this;
 		}
 
-		public DynamicNacosToolDefinition.Builder inputSchema(final String inputSchema) {
+		public DynamicNacosToolDefinition.Builder protocol(final String protocol) {
+			this.protocol = protocol;
+			return this;
+		}
+
+		public DynamicNacosToolDefinition.Builder inputSchema(final Object inputSchema) {
 			this.inputSchema = inputSchema;
 			return this;
 		}
 
-		public ToolDefinition build() {
+		public DynamicNacosToolDefinition.Builder toolsMeta(final McpToolMeta toolsMeta) {
+			this.toolsMeta = toolsMeta;
+			return this;
+		}
+
+		public DynamicNacosToolDefinition build() {
 			if (!StringUtils.isNoneBlank(this.description)) {
 				this.description = ToolUtils.getToolDescriptionFromName(this.name);
 			}
 
-			return new DynamicNacosToolDefinition(this.name, this.description, this.serviceName, this.requestMethod,
-					this.requestPath, this.inputSchema);
+			return new DynamicNacosToolDefinition(this.name, this.description, this.inputSchema, this.version,
+					this.protocol, this.remoteServerConfig, this.toolsMeta, this.enabled);
 		}
 
 	}

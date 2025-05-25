@@ -35,7 +35,7 @@ public class RegexAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Use regex to find content based on the expression.")
-	public RegexService regexFindAllFunction() {
+	public RegexService regexFindAll() {
 		return new RegexService();
 	}
 
