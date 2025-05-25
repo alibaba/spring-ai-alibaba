@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dashscope.image;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -201,6 +200,15 @@ public class DashScopeImageOptions implements ImageOptions {
 
 	public void setNegativePrompt(String negativePrompt) {
 		this.negativePrompt = negativePrompt;
+	}
+
+	@Override
+	public String toString() {
+
+		return "DashScopeImageOptions{" + "model='" + model + '\'' + ", n=" + n + ", width=" + width + ", height="
+				+ height + ", size='" + size + '\'' + ", style='" + style + '\'' + ", seed=" + seed + ", refImg='"
+				+ refImg + '\'' + ", refStrength=" + refStrength + ", refMode='" + refMode + '\'' + ", negativePrompt='"
+				+ negativePrompt + '\'' + '}';
 	}
 
 	public static class Builder {

@@ -1,6 +1,6 @@
 package com.alibaba.cloud.ai.graph.action;
 
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.OverAllState;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -9,25 +9,23 @@ import java.util.function.Function;
  * Represents an asynchronous edge action that operates on an agent state and returns a
  * new route.
  *
- * @param <S> the type of the agent state
  */
 @FunctionalInterface
-public interface AsyncEdgeAction<S extends AgentState> extends Function<S, CompletableFuture<String>> {
+public interface AsyncEdgeAction extends Function<OverAllState, CompletableFuture<String>> {
 
 	/**
 	 * Applies this action to the given agent state.
 	 * @param t the agent state
 	 * @return a CompletableFuture representing the result of the action
 	 */
-	CompletableFuture<String> apply(S t);
+	CompletableFuture<String> apply(OverAllState t);
 
 	/**
 	 * Creates an asynchronous edge action from a synchronous edge action.
 	 * @param syncAction the synchronous edge action
-	 * @param <S> the type of the agent state
 	 * @return an asynchronous edge action
 	 */
-	static <S extends AgentState> AsyncEdgeAction<S> edge_async(EdgeAction<S> syncAction) {
+	static AsyncEdgeAction edge_async(EdgeAction syncAction) {
 		return t -> {
 			CompletableFuture<String> result = new CompletableFuture<>();
 			try {

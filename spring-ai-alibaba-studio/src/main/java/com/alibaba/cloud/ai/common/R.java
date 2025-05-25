@@ -29,6 +29,8 @@ public class R<T> {
 
 	private long timestamp;
 
+	private String requestId;
+
 	public R() {
 		this.timestamp = System.currentTimeMillis();
 	}

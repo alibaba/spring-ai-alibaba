@@ -1,13 +1,14 @@
 package com.alibaba.cloud.ai.graph.state;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
+import lombok.NonNull;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import lombok.NonNull;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 
-import static java.lang.String.*;
+import static java.lang.String.format;
 
-public final class StateSnapshot<State extends AgentState> extends NodeOutput<State> {
+public final class StateSnapshot extends NodeOutput {
 
 	private final RunnableConfig config;
 
@@ -35,7 +36,7 @@ public final class StateSnapshot<State extends AgentState> extends NodeOutput<St
 		return next();
 	}
 
-	private StateSnapshot(@NonNull String node, @NonNull State state, @NonNull RunnableConfig config) {
+	private StateSnapshot(@NonNull String node, @NonNull OverAllState state, @NonNull RunnableConfig config) {
 		super(node, state);
 		this.config = config;
 	}
@@ -46,14 +47,14 @@ public final class StateSnapshot<State extends AgentState> extends NodeOutput<St
 		return format("StateSnapshot{node=%s, state=%s, config=%s}", node(), state(), config());
 	}
 
-	public static <State extends AgentState> StateSnapshot<State> of(Checkpoint checkpoint, RunnableConfig config,
-			AgentStateFactory<State> factory) {
+	public static  StateSnapshot of(Checkpoint checkpoint, RunnableConfig config,
+			AgentStateFactory<OverAllState> factory) {
 
 		RunnableConfig newConfig = RunnableConfig.builder(config)
 			.checkPointId(checkpoint.getId())
 			.nextNode(checkpoint.getNextNodeId())
 			.build();
-		return new StateSnapshot<>(checkpoint.getNodeId(), factory.apply(checkpoint.getState()), newConfig);
+		return new StateSnapshot(checkpoint.getNodeId(), factory.apply(checkpoint.getState()), newConfig);
 	}
 
 }

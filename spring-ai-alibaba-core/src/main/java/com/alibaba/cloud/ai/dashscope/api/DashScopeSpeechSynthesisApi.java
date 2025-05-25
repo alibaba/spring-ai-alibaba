@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dashscope.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -53,7 +52,6 @@ public class DashScopeSpeechSynthesisApi {
 	}
 
 	// @formatter:off
-	// TODO
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record Request(
 			@JsonProperty("header") RequestHeader header,
@@ -100,7 +98,7 @@ public class DashScopeSpeechSynthesisApi {
 	public Flux<ByteBuffer> streamOut(Request request) {
 		try {
 			String message = (new ObjectMapper()).writeValueAsString(request);
-			return this.webSocketClient.streamOut(message);
+			return this.webSocketClient.streamBinaryOut(message);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
@@ -134,14 +132,14 @@ public class DashScopeSpeechSynthesisApi {
 		@JsonProperty("mp3") MP3("mp3");
 		// @formatter:on
 
-		public final String value;
+		public final String formatType;
 
 		ResponseFormat(String value) {
-			this.value = value;
+			this.formatType = value;
 		}
 
 		public String getValue() {
-			return this.value;
+			return this.formatType;
 		}
 
 	}

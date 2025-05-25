@@ -11,19 +11,14 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-graph-studio</artifactId>
-
+    <name>Spring AI Graph Studio</name>
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jetty.version>12.0.11</jetty.version>
-        <jackson.version>2.17.2</jackson.version>
+        <springdoc-openapi-maven-plugin.version>1.4
+        </springdoc-openapi-maven-plugin.version>
     </properties>
-
-    <dependencyManagement>
-        <dependencies>
-        </dependencies>
-    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -35,130 +30,66 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-graph-core</artifactId>
-            <version>${revision}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-            <version>${jetty.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty.ee10</groupId>
-            <artifactId>jetty-ee10-servlet</artifactId>
-            <version>${jetty.version}</version>
-        </dependency>
-
-<!--        <dependency>-->
-<!--            <groupId>org.slf4j</groupId>-->
-<!--            <artifactId>slf4j-jdk14</artifactId>-->
-<!--        </dependency>-->
-
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
+            <version>${parent.version}</version>        
         </dependency>
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-graph-samples</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.github.victools</groupId>
-            <artifactId>jsonschema-generator</artifactId>
-            <version>4.36.0</version>
-            <scope>test</scope>
+            <artifactId>spring-ai-alibaba-autoconfigure</artifactId>
+            <version>${project.parent.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-jsonSchema</artifactId>
-            <version>2.17.2</version>
-            <scope>test</scope>
         </dependency>
+
         <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-core</artifactId>
-            <version>${revision}</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- springdoc ui -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc-openapi.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-war-plugin</artifactId>
-                <version>3.4.0</version>
-                <configuration>
-                    <webResources>
-                        <resource>
-                            <!-- this is relative to the pom.xml directory -->
-                            <directory>src/main/webapp</directory>
-                        </resource>
-                    </webResources>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>3.3.0</version>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-maven-plugin</artifactId>
+                <version>${springdoc-openapi-maven-plugin.version}</version>
                 <executions>
                     <execution>
-                        <!--
-                        exec:java@test
-                        mvn -p spring-ai-alibaba-graph-studio exec:java@test -Djava.util.logging.config.file=spring-ai-alibaba-graph-studio/logging.properties
-                        -->
-                        <id>test</id>
-                        <goals><goal>java</goal></goals>
-                        <configuration>
-                            <classpathScope>test</classpathScope>
-                            <mainClass>org.bsc.langgraph4j.LangGraphStreamingServerTest</mainClass>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <!--
-                        exec:java@agentexecutor
-                        mvn -pl spring-ai-alibaba-graph-studio exec:java@agentexecutor -Djava.util.logging.config.file=spring-ai-alibaba-graph-studio/logging.properties
-                        -->
-                        <id>agentexecutor</id>
-                        <goals><goal>java</goal></goals>
-                        <configuration>
-                            <classpathScope>test</classpathScope>
-                            <mainClass>org.bsc.langgraph4j.AgentExecutorStreamingServer</mainClass>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <!--
-                        exec:exec@adaptiverag
-                        mvn -pl spring-ai-alibaba-graph-studio exec:java@adaptiverag -Djava.util.logging.config.file=spring-ai-alibaba-graph-studio/logging.properties
-                        -->
-                        <id>adaptiverag</id>
-                        <goals><goal>java</goal></goals>
-                        <configuration>
-                            <classpathScope>test</classpathScope>
-                            <mainClass>org.bsc.langgraph4j.AdaptiveRAGStreamingServer</mainClass>
-                        </configuration>
+                        <id>integration-test</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.alibaba.cloud.ai</groupId>
-                        <artifactId>spring-ai-alibaba-core-jdk8</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                </dependencies>
+                <configuration>
+                    <apiDocsUrl>http://localhost:8080/v3/api-docs.yaml</apiDocsUrl>
+                    <outputFileName>openapi.yaml</outputFileName>
+                    <outputDir>${project.basedir}/src/main/resources</outputDir>
+                </configuration>
             </plugin>
         </plugins>
     </build>

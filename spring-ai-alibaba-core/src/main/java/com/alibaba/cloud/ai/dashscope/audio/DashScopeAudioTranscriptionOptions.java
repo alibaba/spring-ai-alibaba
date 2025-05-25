@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,64 +13,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dashscope.audio;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.audio.transcription.AudioTranscriptionOptions;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+
+import java.util.List;
 
 /**
  * @author xYLiu
  * @author yuluo
- * @since 2023.0.1.0
+ * @author kevinlin09
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class DashScopeAudioTranscriptionOptions implements AudioTranscriptionOptions {
 
-	@JsonProperty("model")
-	private String model;
+	// @formatter:off
+    /**
+     * Audio Transcription models.
+     */
+    @JsonProperty("model")
+    private String model = "paraformer-v2";
 
-	@NestedConfigurationProperty
-	@JsonProperty("file_urls")
-	private List<String> fileUrls = new ArrayList<>();
+    @JsonProperty("vocabulary_id")
+    private String vocabularyId;
 
-	@JsonProperty("phrase_id")
-	private String phraseId = null;
+    @JsonProperty("phrase_id")
+    private String phraseId;
 
-	@NestedConfigurationProperty
-	@JsonProperty("channel_id")
-	private List<Integer> channelId = Collections.singletonList(0);
+	@JsonProperty("sample_rate")
+	private Integer sampleRate;
 
-	@JsonProperty("diarization_enabled")
-	private Boolean diarizationEnabled = false;
+	@JsonProperty("format")
+	private AudioFormat format;
 
-	@JsonProperty("speaker_count")
-	private Integer speakerCount = null;
+    @NestedConfigurationProperty
+    @JsonProperty("channel_id")
+    private List<Integer> channelId = List.of(0);
 
-	@JsonProperty("disfluency_removal_enabled")
-	private Boolean disfluencyRemovalEnabled = false;
+    @JsonProperty("disfluency_removal_enabled")
+    private Boolean disfluencyRemovalEnabled = false;
 
-	@JsonProperty("timestamp_alignment_enabled")
-	private Boolean timestampAlignmentEnabled = false;
+    @JsonProperty("language_hints")
+    private List<String> languageHints = List.of("zh", "en");
 
-	@JsonProperty("special_word_filter")
-	private String specialWordFilter = "";
-
-	@JsonProperty("audio_event_detection_enabled")
-	private Boolean audioEventDetectionEnabled = false;
-
-	public static Builder builder() {
-
-		return new Builder();
-	}
-
+    // @formatter:on
+	@Override
 	public String getModel() {
 		return model;
 	}
@@ -79,16 +67,32 @@ public class DashScopeAudioTranscriptionOptions implements AudioTranscriptionOpt
 		this.model = model;
 	}
 
-	public List<String> getFileUrls() {
-		return fileUrls;
+	public String getVocabularyId() {
+		return vocabularyId;
 	}
 
-	public void setFileUrls(List<String> fileUrls) {
-		this.fileUrls = fileUrls;
+	public void setVocabularyId(String vocabularyId) {
+		this.vocabularyId = vocabularyId;
 	}
 
 	public String getPhraseId() {
 		return phraseId;
+	}
+
+	public Integer getSampleRate() {
+		return sampleRate;
+	}
+
+	public void setSampleRate(Integer sampleRate) {
+		this.sampleRate = sampleRate;
+	}
+
+	public AudioFormat getFormat() {
+		return format;
+	}
+
+	public void setFormat(AudioFormat format) {
+		this.format = format;
 	}
 
 	public void setPhraseId(String phraseId) {
@@ -103,22 +107,6 @@ public class DashScopeAudioTranscriptionOptions implements AudioTranscriptionOpt
 		this.channelId = channelId;
 	}
 
-	public Boolean getDiarizationEnabled() {
-		return diarizationEnabled;
-	}
-
-	public void setDiarizationEnabled(Boolean diarizationEnabled) {
-		this.diarizationEnabled = diarizationEnabled;
-	}
-
-	public Integer getSpeakerCount() {
-		return speakerCount;
-	}
-
-	public void setSpeakerCount(Integer speakerCount) {
-		this.speakerCount = speakerCount;
-	}
-
 	public Boolean getDisfluencyRemovalEnabled() {
 		return disfluencyRemovalEnabled;
 	}
@@ -127,90 +115,89 @@ public class DashScopeAudioTranscriptionOptions implements AudioTranscriptionOpt
 		this.disfluencyRemovalEnabled = disfluencyRemovalEnabled;
 	}
 
-	public Boolean getTimestampAlignmentEnabled() {
-		return timestampAlignmentEnabled;
+	public List<String> getLanguageHints() {
+		return languageHints;
 	}
 
-	public void setTimestampAlignmentEnabled(Boolean timestampAlignmentEnabled) {
-		this.timestampAlignmentEnabled = timestampAlignmentEnabled;
+	public void setLanguageHints(List<String> languageHints) {
+		this.languageHints = languageHints;
 	}
 
-	public String getSpecialWordFilter() {
-		return specialWordFilter;
+	public static Builder builder() {
+		return new Builder();
 	}
 
-	public void setSpecialWordFilter(String specialWordFilter) {
-		this.specialWordFilter = specialWordFilter;
-	}
-
-	public Boolean getAudioEventDetectionEnabled() {
-		return audioEventDetectionEnabled;
-	}
-
-	public void setAudioEventDetectionEnabled(Boolean audioEventDetectionEnabled) {
-		this.audioEventDetectionEnabled = audioEventDetectionEnabled;
-	}
-
-	/**
-	 * Builder class for constructing DashScopeAudioTranscriptionOptions instances.
-	 */
 	public static class Builder {
 
 		private final DashScopeAudioTranscriptionOptions options = new DashScopeAudioTranscriptionOptions();
 
 		public Builder withModel(String model) {
-			options.model = model;
+			options.setModel(model);
 			return this;
 		}
 
-		public Builder withFileUrls(List<String> fileUrls) {
-			options.fileUrls = fileUrls;
+		public Builder withVocabularyId(String vocabularyId) {
+			options.setVocabularyId(vocabularyId);
 			return this;
 		}
 
 		public Builder withPhraseId(String phraseId) {
-			options.phraseId = phraseId;
+			options.setPhraseId(phraseId);
+			return this;
+		}
+
+		public Builder withSampleRate(Integer sampleRate) {
+			options.setSampleRate(sampleRate);
+			return this;
+		}
+
+		public Builder withFormat(AudioFormat format) {
+			options.setFormat(format);
 			return this;
 		}
 
 		public Builder withChannelId(List<Integer> channelId) {
-			options.channelId = channelId;
-			return this;
-		}
-
-		public Builder withDiarizationEnabled(Boolean diarizationEnabled) {
-			options.diarizationEnabled = diarizationEnabled;
-			return this;
-		}
-
-		public Builder withSpeakerCount(Integer speakerCount) {
-			options.speakerCount = speakerCount;
+			options.setChannelId(channelId);
 			return this;
 		}
 
 		public Builder withDisfluencyRemovalEnabled(Boolean disfluencyRemovalEnabled) {
-			options.disfluencyRemovalEnabled = disfluencyRemovalEnabled;
+			options.setDisfluencyRemovalEnabled(disfluencyRemovalEnabled);
 			return this;
 		}
 
-		public Builder withTimestampAlignmentEnabled(Boolean timestampAlignmentEnabled) {
-			options.timestampAlignmentEnabled = timestampAlignmentEnabled;
-			return this;
-		}
-
-		public Builder withSpecialWordFilter(String specialWordFilter) {
-			options.specialWordFilter = specialWordFilter;
-			return this;
-		}
-
-		public Builder withAudioEventDetectionEnabled(Boolean audioEventDetectionEnabled) {
-			options.audioEventDetectionEnabled = audioEventDetectionEnabled;
+		public Builder withLanguageHints(List<String> languageHints) {
+			options.setLanguageHints(languageHints);
 			return this;
 		}
 
 		public DashScopeAudioTranscriptionOptions build() {
-			// Perform any necessary validation here before returning the built object
 			return options;
+		}
+
+	}
+
+	public enum AudioFormat {
+
+		// @formatter:off
+		@JsonProperty("pcm") PCM("pcm"),
+		@JsonProperty("wav") WAV("wav"),
+		@JsonProperty("mp3") MP3("mp3"),
+		@JsonProperty("opus") OPUS("opus"),
+		@JsonProperty("speex") SPEEX("speex"),
+		@JsonProperty("aac") AAC("aac"),
+		@JsonProperty("amr") AMR("amr");
+
+		// @formatter:on
+
+		public final String value;
+
+		AudioFormat(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
 		}
 
 	}

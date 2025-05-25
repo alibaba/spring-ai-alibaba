@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dashscope.api;
 
 import java.util.HashMap;
@@ -44,9 +43,7 @@ public class ApiUtils {
 			headers.setBearerAuth(apiKey);
 			headers.set(HEADER_OPENAPI_SOURCE, SOURCE_FLAG);
 
-			String userAgent = String.format("%s/%s; java/%s; platform/%s; processor/%s", SDK_FLAG, "1.0.0",
-					System.getProperty("java.version"), System.getProperty("os.name"), System.getProperty("os.arch"));
-			headers.set("user-agent", userAgent);
+			headers.set("user-agent", userAgent());
 			if (workspaceId != null) {
 				headers.set(HEADER_WORK_SPACE_ID, workspaceId);
 			}
@@ -55,11 +52,6 @@ public class ApiUtils {
 				headers.set("X-DashScope-SSE", "enable");
 			}
 		};
-	}
-
-	public static String userAgent() {
-		return String.format("dashscope/%s; java/%s; platform/%s; processor/%s", "\"2.15.1\"",
-				System.getProperty("java.version"), System.getProperty("os.name"), System.getProperty("os.arch"));
 	}
 
 	public static Map<String, String> getMapContentHeaders(String apiKey, boolean isSecurityCheck, String workspace,
@@ -79,6 +71,36 @@ public class ApiUtils {
 		return headers;
 	}
 
+	public static Consumer<HttpHeaders> getAudioTranscriptionHeaders(String apiKey, String workspace,
+			Boolean isAsyncTask, Boolean isSecurityCheck, Boolean isSSE) {
+		return (headers) -> {
+			headers.setBearerAuth(apiKey);
+			headers.set("user-agent", userAgent());
+			if (isSecurityCheck) {
+				headers.set("X-DashScope-DataInspection", "enable");
+			}
+
+			if (workspace != null && !workspace.isEmpty()) {
+				headers.set("X-DashScope-WorkSpace", workspace);
+			}
+
+			if (isAsyncTask) {
+				headers.set("X-DashScope-Async", "enable");
+			}
+
+			headers.set("Content-Type", "application/json");
+			if (isSSE) {
+				headers.set("Cache-Control", "no-cache");
+				headers.set("Accept", "text/event-stream");
+				headers.set("X-Accel-Buffering", "no");
+				headers.set("X-DashScope-SSE", "enable");
+			}
+			else {
+				headers.set("Accept", "application/json; charset=utf-8");
+			}
+		};
+	}
+
 	public static Consumer<HttpHeaders> getFileUploadHeaders(Map<String, String> input) {
 		return (headers) -> {
 			String contentType = input.remove("Content-Type");
@@ -87,6 +109,11 @@ public class ApiUtils {
 			}
 			headers.setContentType(MediaType.parseMediaType((contentType)));
 		};
+	}
+
+	private static String userAgent() {
+		return String.format("%s/%s; java/%s; platform/%s; processor/%s", SDK_FLAG, "1.0.0",
+				System.getProperty("java.version"), System.getProperty("os.name"), System.getProperty("os.arch"));
 	}
 
 }

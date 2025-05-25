@@ -16,11 +16,68 @@
 
 import { ChatOptions, ImageOptions } from './options';
 
-
 export type ChatModelData = {
   name: string;
   model: string;
-  modelType: string;
+  modelType: ModelType;
   chatOptions: ChatOptions;
   imageOptions: ImageOptions;
 };
+
+/**
+ * ModelRunActionParam
+ */
+export interface ModelRunActionParam {
+  chatOptions?: null | ChatOptions;
+  imageOptions?: null | ImageOptions;
+  /**
+   * user input
+   */
+  input?: string;
+  /**
+   * action key, bean name
+   */
+  key?: string;
+  /**
+   * system prompt
+   */
+  prompt?: string;
+  /**
+   * use stream response
+   */
+  stream?: boolean;
+  [property: string]: any;
+}
+
+export type ChatModelRunResult = {
+  input: ModelRunActionParam;
+  result: ActionResult;
+  telemetry: TelemetryResult;
+  [property: string]: any;
+};
+
+/**
+ * ActionResult
+ */
+export interface ActionResult {
+  response?: string;
+  /**
+   * stream response
+   */
+  streamResponse?: Array<string>;
+  [property: string]: any;
+}
+
+/**
+* TelemetryResult
+*/
+export interface TelemetryResult {
+  traceId?: string;
+  [property: string]: any;
+}
+
+
+export enum ModelType {
+  CHAT = 'CHAT',
+  IMAGE = 'IMAGE',
+}

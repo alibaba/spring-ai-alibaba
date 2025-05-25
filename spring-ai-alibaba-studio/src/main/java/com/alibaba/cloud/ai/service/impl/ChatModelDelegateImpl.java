@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.service.impl;
 
 import com.alibaba.cloud.ai.common.ModelType;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
@@ -24,29 +25,41 @@ import com.alibaba.cloud.ai.dashscope.image.DashScopeImageModel;
 import com.alibaba.cloud.ai.dashscope.image.DashScopeImageOptions;
 import com.alibaba.cloud.ai.exception.NotFoundException;
 import com.alibaba.cloud.ai.model.ChatModel;
-import com.alibaba.cloud.ai.param.RunActionParam;
+import com.alibaba.cloud.ai.param.ModelRunActionParam;
 import com.alibaba.cloud.ai.service.ChatModelDelegate;
 import com.alibaba.cloud.ai.utils.SpringApplicationUtil;
 import com.alibaba.cloud.ai.vo.ActionResult;
 import com.alibaba.cloud.ai.vo.ChatModelRunResult;
+import com.alibaba.cloud.ai.vo.TelemetryResult;
 import com.alibaba.fastjson.JSON;
+import io.micrometer.tracing.Tracer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.image.ImageMessage;
 import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import org.springframework.util.StringUtils;
 
 @Service
 @Slf4j
 public class ChatModelDelegateImpl implements ChatModelDelegate {
+
+	private final Tracer tracer;
+
+	public ChatModelDelegateImpl(Tracer tracer) {
+		this.tracer = tracer;
+	}
 
 	@Override
 	public List<ChatModel> list() {
@@ -111,7 +124,7 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 		ImageModel imageModel = getImageModel(modelName);
 		if (imageModel != null) {
 			ChatModel model = ChatModel.builder().name(modelName).modelType(ModelType.IMAGE).build();
-			if (imageModel.getClass() == DashScopeImageModel.class) {
+			if (imageModel.getClass().equals(DashScopeImageModel.class)) {
 				DashScopeImageModel dashScopeImageModel = (DashScopeImageModel) imageModel;
 				model.setModel(dashScopeImageModel.getOptions().getModel());
 				model.setImageOptions(dashScopeImageModel.getOptions());
@@ -126,10 +139,11 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 	}
 
 	@Override
-	public ChatModelRunResult run(RunActionParam runActionParam) {
+	public ChatModelRunResult run(ModelRunActionParam runActionParam) {
 		String key = runActionParam.getKey();
 		String input = runActionParam.getInput();
 		DashScopeChatOptions chatOptions = runActionParam.getChatOptions();
+		String prompt = runActionParam.getPrompt();
 
 		org.springframework.ai.chat.model.ChatModel chatModel = getChatModel(key);
 		if (chatModel != null) {
@@ -140,11 +154,19 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 					dashScopeChatModel.setDashScopeChatOptions(chatOptions);
 				}
 			}
-			ChatResponse response = chatModel.call(new Prompt(input));
+			List<Message> messages = new ArrayList<>();
+			if (StringUtils.hasText(prompt)) {
+				Message systemMessage = new SystemMessage(prompt);
+				messages.add(systemMessage);
+			}
+			Message userMessage = new UserMessage(input);
+			messages.add(userMessage);
+			ChatResponse response = chatModel.call(new Prompt(messages));
 			String resp = response.getResult().getOutput().getContent();
 			return ChatModelRunResult.builder()
 				.input(runActionParam)
 				.result(ActionResult.builder().Response(resp).build())
+				.telemetry(TelemetryResult.builder().traceId(tracer.currentSpan().context().traceId()).build())
 				.build();
 		}
 
@@ -153,10 +175,11 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 	}
 
 	@Override
-	public String runImageGenTask(RunActionParam runActionParam) {
+	public String runImageGenTask(ModelRunActionParam runActionParam) {
 		String key = runActionParam.getKey();
 		String input = runActionParam.getInput();
 		DashScopeImageOptions imageOptions = runActionParam.getImageOptions();
+		String prompt = runActionParam.getPrompt();
 
 		ImageModel imageModel = getImageModel(key);
 		if (imageModel != null) {
@@ -184,13 +207,49 @@ public class ChatModelDelegateImpl implements ChatModelDelegate {
 				.withHeight(imageOptions.getHeight())
 				.withStyle(imageOptions.getStyle())
 				.build();
-			ImagePrompt imagePrompt = new ImagePrompt(input, options);
-			ImageResponse imageResponse = imageModel.call(imagePrompt);
+			List<ImageMessage> messages = new ArrayList<>();
+			if (StringUtils.hasText(prompt)) {
+				ImageMessage systemMessage = new ImageMessage(prompt);
+				messages.add(systemMessage);
+			}
+			ImageMessage userMessage = new ImageMessage(input);
+			messages.add(userMessage);
+
+			ImageResponse imageResponse = imageModel.call(new ImagePrompt(messages, options));
 			return imageResponse.getResult().getOutput().getUrl();
 		}
 
 		log.error("can not find by bean name:{}", key);
 		throw new NotFoundException();
+	}
+
+	@Override
+	public ChatModelRunResult runImageGenTaskAndGetUrl(ModelRunActionParam modelRunActionParam) {
+		String imageUrl = runImageGenTask(modelRunActionParam);
+		return ChatModelRunResult.builder()
+			.input(modelRunActionParam)
+			.result(ActionResult.builder().Response(imageUrl).build())
+			.telemetry(TelemetryResult.builder().traceId(tracer.currentSpan().context().traceId()).build())
+			.build();
+	}
+
+	@Override
+	public List<String> listModelNames(ModelType modelType) {
+		List<String> res = new ArrayList<>();
+		if (modelType == ModelType.CHAT) {
+			DashScopeApi.ChatModel[] values = DashScopeApi.ChatModel.values();
+			for (DashScopeApi.ChatModel value : values) {
+				res.add(value.getModel());
+			}
+		}
+		else if (modelType == ModelType.IMAGE) {
+			DashScopeImageApi.ImageModel[] values = DashScopeImageApi.ImageModel.values();
+			for (DashScopeImageApi.ImageModel value : values) {
+				res.add(value.getValue());
+			}
+		}
+
+		return res;
 	}
 
 	private org.springframework.ai.chat.model.ChatModel getChatModel(String modelName) {

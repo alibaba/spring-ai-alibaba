@@ -1,12 +1,12 @@
 package com.alibaba.cloud.ai.graph.serializer.std;
 
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import com.alibaba.cloud.ai.graph.serializer.Serializer;
-
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.util.Optional;
+
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import com.alibaba.cloud.ai.graph.serializer.Serializer;
 
 @Slf4j
 public class ObjectInputWithMapper implements ObjectInput {

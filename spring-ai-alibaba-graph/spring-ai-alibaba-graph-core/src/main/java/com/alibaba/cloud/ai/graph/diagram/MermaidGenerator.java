@@ -1,9 +1,10 @@
 package com.alibaba.cloud.ai.graph.diagram;
 
 import com.alibaba.cloud.ai.graph.DiagramGenerator;
-import com.alibaba.cloud.ai.graph.StateGraph;
 
 import static java.lang.String.format;
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
 
 /**
  * This class represents a MermaidGenerator that extends DiagramGenerator. It generates a
@@ -13,62 +14,109 @@ import static java.lang.String.format;
  */
 public class MermaidGenerator extends DiagramGenerator {
 
+	public static final char SUBGRAPH_PREFIX = '_';
+
 	@Override
-	protected void appendHeader(StringBuilder sb, String title) {
-		sb.append(format("---\ntitle: %s\n---\n", title))
-			.append("flowchart TD\n")
-			.append(String.format("\t%s((start))\n", StateGraph.START))
-			.append(String.format("\t%s((stop))\n", StateGraph.END));
+	protected void appendHeader(Context ctx) {
+		if (ctx.isSubGraph()) {
+			ctx.sb()
+				.append(format("subgraph %s\n", ctx.title()))
+				.append(format("\t%1$c%2$s((start)):::%1$c%2$s\n", SUBGRAPH_PREFIX, START))
+				.append(format("\t%1$c%2$s((stop)):::%1$c%2$s\n", SUBGRAPH_PREFIX, END))
+			// .append(format("\t#%s@{ shape: start, label: \"enter\" }\n", START))
+			// .append(format("\t#%s@{ shape: stop, label: \"exit\" }\n", END))
+			;
+		}
+		else {
+			ctx.sb()
+				.append(format("---\ntitle: %s\n---\n", ctx.title()))
+				.append("flowchart TD\n")
+				.append(format("\t%s((start))\n", START))
+				.append(format("\t%s((stop))\n", END));
+		}
 	}
 
 	@Override
-	protected void appendFooter(StringBuilder sb) {
-		// do nothing
+	protected void appendFooter(Context ctx) {
+		if (ctx.isSubGraph()) {
+			ctx.sb().append("end\n");
+		}
+		else {
+			ctx.sb()
+				.append('\n')
+				.append(format("\tclassDef %c%s fill:black,stroke-width:1px,font-size:xx-small;\n", SUBGRAPH_PREFIX,
+						START))
+				.append(format("\tclassDef %c%s fill:black,stroke-width:1px,font-size:xx-small;\n", SUBGRAPH_PREFIX,
+						END));
+		}
 	}
 
 	@Override
-	protected void declareConditionalStart(StringBuilder sb, String name) {
-		sb.append(format("\t%s{\"check state\"}\n", name));
+	protected void declareConditionalStart(Context ctx, String name) {
+		ctx.sb().append('\t');
+		if (ctx.isSubGraph())
+			ctx.sb().append(SUBGRAPH_PREFIX);
+		ctx.sb().append(format("%s{\"check state\"}\n", name));
 	}
 
 	@Override
-	protected void declareNode(StringBuilder sb, String name) {
-		sb.append(format("\t%s(\"%s\")\n", name, name));
+	protected void declareNode(Context ctx, String name) {
+		ctx.sb().append('\t');
+		if (ctx.isSubGraph())
+			ctx.sb().append(SUBGRAPH_PREFIX);
+		ctx.sb().append(format("%s(\"%s\")\n", name, name));
 	}
 
 	@Override
-	protected void declareConditionalEdge(StringBuilder sb, int ordinal) {
-		sb.append(format("\tcondition%d{\"check state\"}\n", ordinal));
+	protected void declareConditionalEdge(Context ctx, int ordinal) {
+		ctx.sb().append('\t');
+		if (ctx.isSubGraph())
+			ctx.sb().append(SUBGRAPH_PREFIX);
+		ctx.sb().append(format("condition%d{\"check state\"}\n", ordinal));
 	}
 
 	@Override
-	protected StringBuilder commentLine(StringBuilder sb, boolean yesOrNo) {
-		return (yesOrNo) ? sb.append("\t%%") : sb;
+	protected void commentLine(Context ctx, boolean yesOrNo) {
+		if (yesOrNo)
+			ctx.sb().append("\t%%");
 	}
 
 	@Override
-	protected void start(StringBuilder sb, String entryPoint) {
-		call(sb, StateGraph.START, entryPoint);
+	protected void call(Context ctx, String from, String to, CallStyle style) {
+		ctx.sb().append('\t');
+
+		if (ctx.isSubGraph()) {
+			ctx.sb().append(switch (style) {
+				case CONDITIONAL -> format("%1$c%2$s:::%1$c%2$s -.-> %1$c%3$s:::%1$c%3$s\n", SUBGRAPH_PREFIX, from, to);
+				default -> format("%1$c%2$s:::%1$c%2$s --> %1$c%3$s:::%1$c%3$s\n", SUBGRAPH_PREFIX, from, to);
+			});
+		}
+		else {
+			ctx.sb().append(switch (style) {
+				case CONDITIONAL -> format("%1$s:::%1$s -.-> %2$s:::%2$s\n", from, to);
+				default -> format("%1$s:::%1$s --> %2$s:::%2$s\n", from, to);
+			});
+		}
 	}
 
 	@Override
-	protected void finish(StringBuilder sb, String finishPoint) {
-		call(sb, finishPoint, StateGraph.END);
-	}
+	protected void call(Context ctx, String from, String to, String description, CallStyle style) {
+		ctx.sb().append('\t');
+		if (ctx.isSubGraph()) {
+			ctx.sb().append(switch (style) {
+				case CONDITIONAL -> format("%1$s%2$s:::%1$c%2$s -.->|%3$s| %1$s%4$s:::%1$c%4$s\n", SUBGRAPH_PREFIX,
+						from, description, to);
+				default -> format("%1$s%2$s:::%1$c%2$s -->|%3$s| %1$s%4$s:::%1$c%4$s\n", SUBGRAPH_PREFIX, from,
+						description, to);
+			});
+		}
+		else {
+			ctx.sb().append(switch (style) {
+				case CONDITIONAL -> format("%1$s:::%1$s -.->|%2$s| %3$s:::%3$s\n", from, description, to);
+				default -> format("%1$s:::%1$s -->|%2$s| %3$s:::%3$s\n", from, description, to);
+			});
+		}
 
-	@Override
-	protected void finish(StringBuilder sb, String finishPoint, String description) {
-		call(sb, finishPoint, StateGraph.END, description);
-	}
-
-	@Override
-	protected void call(StringBuilder sb, String from, String to) {
-		sb.append(format("\t%1$s:::%1$s --> %2$s:::%2$s\n", from, to));
-	}
-
-	@Override
-	protected void call(StringBuilder sb, String from, String to, String description) {
-		sb.append(format("\t%1$s:::%1$s -->|%2$s| %3$s:::%3$s\n", from, description, to));
 	}
 
 }

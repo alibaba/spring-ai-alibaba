@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,23 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dashscope.rag;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @author nuocheng.lxm
@@ -95,7 +91,7 @@ public class DashScopeCloudStore implements VectorStore {
 			searchOption = new DashScopeDocumentRetrieverOptions();
 		}
 		searchOption.setRerankTopN(request.getTopK());
-		return dashScopeApi.retriever(pipelineId, request.query, searchOption);
+		return dashScopeApi.retriever(pipelineId, request.getQuery(), searchOption);
 	}
 
 }

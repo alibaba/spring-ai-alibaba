@@ -4,7 +4,11 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import static java.util.Collections.unmodifiableList;
 
@@ -14,7 +18,7 @@ import static java.util.Collections.unmodifiableList;
  *
  * @param <T> the type of the value
  */
-@Deprecated
+@Deprecated(forRemoval = true)
 public class AppendableValueRW<T> implements AppendableValue<T>, Externalizable {
 
 	private List<T> values;
@@ -110,6 +114,7 @@ public class AppendableValueRW<T> implements AppendableValue<T>, Externalizable 
 		out.writeObject(values);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
 		values = (List<T>) in.readObject();

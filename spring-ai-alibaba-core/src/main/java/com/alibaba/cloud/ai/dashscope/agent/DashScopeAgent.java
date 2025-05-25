@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dashscope.agent;
 
 import com.alibaba.cloud.ai.agent.Agent;
@@ -134,7 +133,7 @@ public final class DashScopeAgent extends Agent {
 		metadata.put(OUTPUT, output);
 
 		var assistantMessage = new AssistantMessage(text, metadata);
-		var generationMetadata = ChatGenerationMetadata.from(output.finishReason(), text);
+		var generationMetadata = ChatGenerationMetadata.builder().finishReason(output.finishReason()).build();
 		Generation generation = new Generation(assistantMessage, generationMetadata);
 
 		return new ChatResponse(List.of(generation));

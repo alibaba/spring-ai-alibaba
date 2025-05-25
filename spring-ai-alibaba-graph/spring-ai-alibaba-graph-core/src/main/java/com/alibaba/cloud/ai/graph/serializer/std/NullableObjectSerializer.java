@@ -1,9 +1,11 @@
 package com.alibaba.cloud.ai.graph.serializer.std;
 
-import com.alibaba.cloud.ai.graph.serializer.Serializer;
-
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Optional;
+
+import com.alibaba.cloud.ai.graph.serializer.Serializer;
 
 public interface NullableObjectSerializer<T> extends Serializer<T> {
 

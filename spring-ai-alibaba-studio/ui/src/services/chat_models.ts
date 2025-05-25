@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
-import { ChatModelData } from '@/types/chat_model';
+import {
+  ChatModelData,
+  ChatModelRunResult,
+  ModelType,
+  ModelRunActionParam,
+} from '@/types/chat_model';
 import { request } from 'ice';
 
 export default {
-  // 获取ChatModels列表
+  // 获取 ChatModels 列表
   async getChatModels(): Promise<ChatModelData[]> {
     return await request({
       url: 'studio/api/chat-models',
@@ -26,10 +31,35 @@ export default {
     });
   },
 
-  // 根据Model name获取ChatModel
+  // 根据 Model name 获取 ChatModel
   async getChatModelByName(name: string): Promise<ChatModelData> {
     return await request({
       url: `studio/api/chat-models/${name}`,
+      method: 'get',
+    });
+  },
+
+  // 根据 Model name 获取 ChatModel
+  async postChatModel(data: ModelRunActionParam): Promise<ChatModelRunResult> {
+    return await request({
+      url: '/studio/api/chat-models',
+      method: 'post',
+      data,
+    });
+  },
+
+  // 根据 Model name 获取 ChatModel
+  async postImageModel(data: ModelRunActionParam): Promise<ChatModelRunResult> {
+    return await request({
+      url: '/studio/api/chat-models/run/image-gen/url',
+      method: 'post',
+      data,
+    });
+  },
+
+  async getModelNames(modelType: ModelType): Promise<string[]> {
+    return await request({
+      url: `/studio/api/chat-models/model-names?modelType=${modelType}`,
       method: 'get',
     });
   },

@@ -1,6 +1,11 @@
 package com.alibaba.cloud.ai.graph.utils;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
@@ -26,9 +31,14 @@ public final class CollectionsUtils {
 	 * otherwise an empty Optional
 	 */
 	public static <T> Optional<T> lastMinus(List<T> values, int n) {
-		return (values == null || values.isEmpty()) ? Optional.empty() : Optional.of(values.get(values.size() - 1));
+		if (n < 0 || values == null || values.isEmpty()) {
+			return Optional.empty();
+		}
+		var index = values.size() - n - 1;
+		return (index < 0) ? Optional.empty() : Optional.of(values.get(index));
 	}
 
+	@Deprecated
 	public static <T> List<T> listOf(Class<T> clazz) {
 		return Collections.emptyList();
 	}
@@ -38,8 +48,10 @@ public final class CollectionsUtils {
 	 * @param objects the elements to be included in the list
 	 * @param <T> the type of the elements
 	 * @return a list containing the provided elements
+	 * @deprecated use the new Java Convenience Factory Methods for Collections
 	 */
 	@SafeVarargs
+	@Deprecated
 	public static <T> List<T> listOf(T... objects) {
 		if (objects == null) {
 			return Collections.emptyList();
@@ -58,7 +70,9 @@ public final class CollectionsUtils {
 	 * @param <K> the type of the keys
 	 * @param <V> the type of the values
 	 * @return an empty map
+	 * @deprecated use the new Java Convenience Factory Methods for Collections
 	 */
+	@Deprecated
 	public static <K, V> Map<K, V> mapOf() {
 		return emptyMap();
 	}
@@ -70,7 +84,9 @@ public final class CollectionsUtils {
 	 * @param <K> the type of the key
 	 * @param <V> the type of the value
 	 * @return an unmodifiable map containing the provided key-value pair
+	 * @deprecated use the new Java Convenience Factory Methods for Collections
 	 */
+	@Deprecated
 	public static <K, V> Map<K, V> mapOf(K k1, V v1) {
 		return Collections.singletonMap(k1, v1);
 	}
@@ -84,7 +100,9 @@ public final class CollectionsUtils {
 	 * @param <K> the type of the keys
 	 * @param <V> the type of the values
 	 * @return an unmodifiable map containing the provided key-value pairs
+	 * @deprecated use the new Java Convenience Factory Methods for Collections
 	 */
+	@Deprecated
 	public static <K, V> Map<K, V> mapOf(K k1, V v1, K k2, V v2) {
 		Map<K, V> result = new HashMap<K, V>();
 		result.put(k1, v1);
@@ -103,7 +121,9 @@ public final class CollectionsUtils {
 	 * @param <K> the type of the keys
 	 * @param <V> the type of the values
 	 * @return an unmodifiable map containing the provided key-value pairs
+	 * @deprecated use the new Java Convenience Factory Methods for Collections
 	 */
+	@Deprecated
 	public static <K, V> Map<K, V> mapOf(K k1, V v1, K k2, V v2, K k3, V v3) {
 		Map<K, V> result = new HashMap<K, V>();
 		result.put(k1, v1);
@@ -125,7 +145,9 @@ public final class CollectionsUtils {
 	 * @param <K> the type of the keys
 	 * @param <V> the type of the values
 	 * @return an unmodifiable map containing the provided key-value pairs
+	 * @deprecated use the new Java Convenience Factory Methods for Collections
 	 */
+	@Deprecated
 	public static <K, V> Map<K, V> mapOf(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4) {
 		Map<K, V> result = new HashMap<K, V>();
 		result.put(k1, v1);
@@ -150,7 +172,9 @@ public final class CollectionsUtils {
 	 * @param <K> the type of the keys
 	 * @param <V> the type of the values
 	 * @return an unmodifiable map containing the provided key-value pairs
+	 * @deprecated use the new Java Convenience Factory Methods for Collections
 	 */
+	@Deprecated
 	public static <K, V> Map<K, V> mapOf(K k1, V v1, K k2, V v2, K k3, V v3, K k4, V v4, K k5, V v5) {
 		Map<K, V> result = new HashMap<K, V>();
 		result.put(k1, v1);

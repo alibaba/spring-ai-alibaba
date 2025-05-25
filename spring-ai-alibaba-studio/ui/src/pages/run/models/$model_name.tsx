@@ -18,8 +18,9 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'ice';
 import chatModelsService from '@/services/chat_models';
 import { ChatModelData } from '@/types/chat_model';
-import ImageModel from './ImageModel';
-import ChatModel from './ChatModel';
+import ChatModel from './index';
+import { Spin } from 'antd';
+import styles from './index.module.css';
 
 type Params = {
   model_name: string;
@@ -34,25 +35,30 @@ export default function Model() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const chatModeData = await chatModelsService.getChatModelByName(params.model_name);
-        setModelData(chatModeData);
+        const modelData = await chatModelsService.getChatModelByName(
+          params.model_name as string,
+        );
+        setModelData(modelData);
       } catch (error) {
         console.error('Failed to fetch chat models: ', error);
       }
     };
     fetchData();
+
+    return () => {
+      console.log(`${params.model_name} unmount`);
+    };
   }, [params]);
 
-  return (
-    <div>
-      {modelData ? (
-        <>
-          {modelData.modelType === 'CHAT' && <ChatModel modelData={modelData} />}
-          {modelData.modelType === 'IMAGE' && <ImageModel modelData={modelData} />}
-        </>
-      ) : (
-        <p>加载中...</p>
-      )}
+  return modelData ? (
+    <div style={{ padding: 20, height: '100%' }}>
+      <ChatModel modelData={modelData} modelType={modelData.modelType} />
+    </div>
+  ) : (
+    <div className={styles['container']}>
+      <Spin tip="Loading">
+        <div className={styles['message-loading']} />
+      </Spin>
     </div>
   );
 }

@@ -16,6 +16,7 @@
  */
 package com.alibaba.cloud.ai.example.cli.clidebugexample;
 
+import java.util.Objects;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -25,19 +26,23 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
-import java.util.Objects;
+import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY;
+import static org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor.CHAT_MEMORY_RETRIEVE_SIZE_KEY;
 
 @RestController
 @RequestMapping("/ai")
 public class ChatController {
 
+    private final ChatClient weatherChatClient;
+
     private final ChatClient chatClient;
 
     private final ChatModel chatModel;
 
-    public ChatController(ChatClient.Builder builder, ChatModel chatModel) {
-        this.chatClient = builder.build();
+    public ChatController(ChatClient chatClient, ChatModel chatModel, ChatClient weatherChatClient) {
+        this.chatClient = chatClient;
         this.chatModel = chatModel;
+        this.weatherChatClient = weatherChatClient;
     }
 
     @GetMapping("/chat")
@@ -69,4 +74,17 @@ public class ChatController {
         return res.toString();
     }
 
+    @GetMapping("/chatWithMemory")
+    public String chatWithMemory(String input) {
+        return this.chatClient
+            .prompt().user(input)
+            .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, "1")
+                .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
+            .call().content();
+    }
+
+    @GetMapping("/weather-service")
+    public String weatherService(String subject) {
+        return this.weatherChatClient.prompt().user(subject).call().content();
+    }
 }

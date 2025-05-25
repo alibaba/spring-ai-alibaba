@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.advisor;
 
 import org.springframework.ai.chat.client.advisor.api.*;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.document.DocumentRetriever;
-import org.springframework.ai.model.Content;
+import org.springframework.ai.rag.Query;
+import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -133,39 +132,39 @@ public class DocumentRetrievalAdvisor implements CallAroundAdvisor, StreamAround
 
 		var context = new HashMap<>(request.adviseContext());
 
-		List<Document> documents = retriever.retrieve(request.userText());
+		List<Document> documents = retriever.retrieve(new Query(request.userText()));
 
 		context.put(RETRIEVED_DOCUMENTS, documents);
 
 		String documentContext = documents.stream()
-			.map(Content::getContent)
+			.map(Document::getText)
 			.collect(Collectors.joining(System.lineSeparator()));
 
 		Map<String, Object> advisedUserParams = new HashMap<>(request.userParams());
 		advisedUserParams.put("question_answer_context", documentContext);
 
 		return AdvisedRequest.from(request)
-			.withUserText(request.userText() + System.lineSeparator() + this.userTextAdvise)
-			.withUserParams(advisedUserParams)
-			.withAdviseContext(context)
+			.userText(request.userText() + System.lineSeparator() + this.userTextAdvise)
+			.userParams(advisedUserParams)
+			.adviseContext(context)
 			.build();
 	}
 
 	private AdvisedResponse after(AdvisedResponse advisedResponse) {
 		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder();
-		metadataBuilder.withKeyValue(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
+		metadataBuilder.keyValue(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
 
 		ChatResponseMetadata metadata = advisedResponse.response().getMetadata();
 		if (metadata != null) {
-			metadataBuilder.withId(metadata.getId());
-			metadataBuilder.withModel(metadata.getModel());
-			metadataBuilder.withUsage(metadata.getUsage());
-			metadataBuilder.withPromptMetadata(metadata.getPromptMetadata());
-			metadataBuilder.withRateLimit(metadata.getRateLimit());
+			metadataBuilder.id(metadata.getId());
+			metadataBuilder.model(metadata.getModel());
+			metadataBuilder.usage(metadata.getUsage());
+			metadataBuilder.promptMetadata(metadata.getPromptMetadata());
+			metadataBuilder.rateLimit(metadata.getRateLimit());
 
 			Set<Map.Entry<String, Object>> entries = metadata.entrySet();
 			for (Map.Entry<String, Object> entry : entries) {
-				metadataBuilder.withKeyValue(entry.getKey(), entry.getValue());
+				metadataBuilder.keyValue(entry.getKey(), entry.getValue());
 			}
 		}
 

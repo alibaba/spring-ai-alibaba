@@ -1,19 +1,36 @@
 package com.alibaba.cloud.ai.graph;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.NotSerializableException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.util.List;
+import java.util.Map;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import lombok.ToString;
 import com.alibaba.cloud.ai.graph.serializer.Serializer;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.gson.GsonStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.NullableObjectSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.ObjectStreamStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentState;
-import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
-import lombok.ToString;
 import org.junit.jupiter.api.Test;
-
-import java.io.*;
-import java.util.*;
 
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.listOf;
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.mapOf;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SerializeTest {
 
@@ -62,10 +79,10 @@ public class SerializeTest {
 				return new ValueWithNull(readNullableUTF(in).orElse(null));
 			}
 		});
-		AgentState state = stateSerializer.stateOf(CollectionsUtils.mapOf("a", "b", "f", null, "c", 100, "e",
-				new ValueWithNull(null), "list", CollectionsUtils.listOf("aa", null, "cc", 200)
+		AgentState state = stateSerializer.stateOf(
+				mapOf("a", "b", "f", null, "c", 100, "e", new ValueWithNull(null), "list", listOf("aa", null, "cc", 200)
 
-		));
+				));
 
 		byte[] bytes = serializeState(state);
 
@@ -106,10 +123,10 @@ public class SerializeTest {
 	@Test
 	public void partiallySerializeStateTest() throws Exception {
 
-		AgentState state = stateSerializer.stateOf(
-				CollectionsUtils.mapOf("a", "b", "f", new NonSerializableElement("I'M NOT SERIALIZABLE"), "c", "d"));
+		AgentState state = stateSerializer
+			.stateOf(mapOf("a", "b", "f", new NonSerializableElement("I'M NOT SERIALIZABLE"), "c", "d"));
 
-		assertThrows(java.io.NotSerializableException.class, () -> {
+		assertThrows(NotSerializableException.class, () -> {
 			serializeState(state);
 		});
 
@@ -131,8 +148,8 @@ public class SerializeTest {
 			}
 		});
 
-		AgentState state = stateSerializer.stateOf(CollectionsUtils.mapOf("a", "b", "x",
-				new NonSerializableElement("I'M NOT SERIALIZABLE"), "f", "H", "c", "d"));
+		AgentState state = stateSerializer
+			.stateOf(mapOf("a", "b", "x", new NonSerializableElement("I'M NOT SERIALIZABLE"), "f", "H", "c", "d"));
 
 		System.out.println(state);
 
@@ -149,9 +166,62 @@ public class SerializeTest {
 		System.out.println(deserializedData);
 	}
 
-	@Test
-	public void customDeserializeStateTest() throws Exception {
+	static class JacksonSerializer extends JacksonStateSerializer {
 
+		public JacksonSerializer() {
+			super(OverAllState::new);
+		}
+
+		ObjectMapper getObjectMapper() {
+			return objectMapper;
+		}
+
+	}
+
+	@Test
+	public void NodOutputJacksonSerializationTest() throws Exception {
+
+		JacksonSerializer serializer = new JacksonSerializer();
+
+		NodeOutput output = NodeOutput.of("node", null);
+		output.setSubGraph(true);
+		String json = serializer.getObjectMapper().writeValueAsString(output);
+
+		assertEquals("{\"node\":\"node\",\"state\":null,\"subGraph\":true}", json);
+
+		output.setSubGraph(false);
+		json = serializer.getObjectMapper().writeValueAsString(output);
+
+		assertEquals("{\"node\":\"node\",\"state\":null,\"subGraph\":false}", json);
+	}
+
+	static class GsonSerializer extends GsonStateSerializer {
+
+		public GsonSerializer() {
+			super(OverAllState::new, new GsonBuilder().serializeNulls().create());
+		}
+
+		Gson getGson() {
+			return gson;
+		}
+
+	}
+
+	@Test
+	public void NodOutputJGsonSerializationTest() throws Exception {
+
+		GsonSerializer serializer = new GsonSerializer();
+
+		NodeOutput output = NodeOutput.of("node", null);
+		output.setSubGraph(true);
+		String json = serializer.getGson().toJson(output);
+
+		assertEquals("{\"node\":\"node\",\"state\":null,\"subGraph\":true}", json);
+
+		output.setSubGraph(false);
+		json = serializer.getGson().toJson(output);
+
+		assertEquals("{\"node\":\"node\",\"state\":null,\"subGraph\":false}", json);
 	}
 
 }

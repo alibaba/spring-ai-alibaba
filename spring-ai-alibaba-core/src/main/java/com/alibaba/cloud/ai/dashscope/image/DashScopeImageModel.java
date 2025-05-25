@@ -1,20 +1,38 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.dashscope.image;
+
+import java.util.List;
+import java.util.Objects;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeImageApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageGeneration;
 import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
-
-import java.util.List;
 
 /**
  * @author nuocheng.lxm
@@ -26,6 +44,11 @@ public class DashScopeImageModel implements ImageModel {
 	private static final Logger logger = LoggerFactory.getLogger(DashScopeImageModel.class);
 
 	/**
+	 * The default model used for the image completion requests.
+	 */
+	private static final String DEFAULT_MODEL = "wanx-v1";
+
+	/**
 	 * Low-level access to the DashScope Image API.
 	 */
 	private final DashScopeImageApi dashScopeImageApi;
@@ -33,7 +56,7 @@ public class DashScopeImageModel implements ImageModel {
 	/**
 	 * The default options used for the image completion requests.
 	 */
-	private DashScopeImageOptions options;
+	private DashScopeImageOptions defaultOptions;
 
 	/**
 	 * The retry template used to retry the OpenAI Image API calls.
@@ -48,37 +71,42 @@ public class DashScopeImageModel implements ImageModel {
 
 	public DashScopeImageModel(DashScopeImageApi dashScopeImageApi, DashScopeImageOptions options,
 			RetryTemplate retryTemplate) {
+
 		Assert.notNull(dashScopeImageApi, "DashScopeImageApi must not be null");
 		Assert.notNull(options, "options must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
+
 		this.dashScopeImageApi = dashScopeImageApi;
-		this.options = options;
+		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
 	}
 
 	@Override
 	public ImageResponse call(ImagePrompt request) {
+
 		String taskId = submitImageGenTask(request);
 		if (taskId == null) {
 			return new ImageResponse(List.of());
 		}
+
 		int retryCount = 0;
-		while (true && retryCount < MAX_RETRY_COUNT) {
+		while (retryCount < MAX_RETRY_COUNT) {
 			DashScopeImageApi.DashScopeImageAsyncReponse getResultResponse = getImageGenTask(taskId);
 			if (getResultResponse != null) {
 				DashScopeImageApi.DashScopeImageAsyncReponse.DashScopeImageAsyncReponseOutput output = getResultResponse
 					.output();
 				String taskStatus = output.taskStatus();
 				switch (taskStatus) {
-					case "SUCCEEDED":
+					case "SUCCEEDED" -> {
 						return toImageResponse(output);
-					case "FAILED":
-					case "UNKNOWN":
+					}
+					case "FAILED", "UNKNOWN" -> {
 						return new ImageResponse(List.of());
+					}
 				}
 			}
 			try {
-				Thread.sleep(15000l);
+				Thread.sleep(15000L);
 				retryCount++;
 			}
 			catch (InterruptedException e) {
@@ -89,32 +117,40 @@ public class DashScopeImageModel implements ImageModel {
 	}
 
 	public String submitImageGenTask(ImagePrompt request) {
-		String instructions = request.getInstructions().get(0).getText();
-		DashScopeImageApi.DashScopeImageRequest imageRequest = null;
-		if (options != null) {
-			imageRequest = new DashScopeImageApi.DashScopeImageRequest(options.getModel(),
-					new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestInput(instructions,
-							options.getNegativePrompt(), options.getRefImg()),
-					new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestParameter(options.getStyle(),
-							options.getSize(), options.getN(), options.getSeed(), options.getRefStrength(),
-							options.getRefMode()));
-		}
-		if (request.getOptions() != null) {
-			DashScopeImageOptions options = toQianFanImageOptions(request.getOptions());
-			imageRequest = new DashScopeImageApi.DashScopeImageRequest(options.getModel(),
-					new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestInput(instructions,
-							options.getNegativePrompt(), options.getRefImg()),
-					new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestParameter(options.getStyle(),
-							options.getSize(), options.getN(), options.getSeed(), options.getRefStrength(),
-							options.getRefMode()));
-		}
+
+		DashScopeImageOptions imageOptions = toImageOptions(request.getOptions());
+		logger.debug("Image options: {}", imageOptions);
+
+		DashScopeImageApi.DashScopeImageRequest dashScopeImageRequest = constructImageRequest(request, imageOptions);
+
 		ResponseEntity<DashScopeImageApi.DashScopeImageAsyncReponse> submitResponse = dashScopeImageApi
-			.submitImageGenTask(imageRequest);
+			.submitImageGenTask(dashScopeImageRequest);
+
 		if (submitResponse == null || submitResponse.getBody() == null) {
 			logger.warn("Submit imageGen error,request: {}", request);
 			return null;
 		}
+
 		return submitResponse.getBody().output().taskId();
+	}
+
+	/**
+	 * Merge Image options. Notice: Programmatically set options parameters take
+	 * precedence
+	 */
+	private DashScopeImageOptions toImageOptions(ImageOptions runtimeOptions) {
+
+		// set default image model
+		var currentOptions = DashScopeImageOptions.builder().withModel(DEFAULT_MODEL).build();
+
+		if (Objects.nonNull(runtimeOptions)) {
+			currentOptions = ModelOptionsUtils.copyToTarget(runtimeOptions, ImageOptions.class,
+					DashScopeImageOptions.class);
+		}
+
+		currentOptions = ModelOptionsUtils.merge(currentOptions, this.defaultOptions, DashScopeImageOptions.class);
+
+		return currentOptions;
 	}
 
 	public DashScopeImageApi.DashScopeImageAsyncReponse getImageGenTask(String taskId) {
@@ -128,11 +164,11 @@ public class DashScopeImageModel implements ImageModel {
 	}
 
 	public DashScopeImageOptions getOptions() {
-		return this.options;
+		return this.defaultOptions;
 	}
 
 	public void setOptions(DashScopeImageOptions options) {
-		this.options = options;
+		this.defaultOptions = options;
 	}
 
 	private ImageResponse toImageResponse(
@@ -149,44 +185,16 @@ public class DashScopeImageModel implements ImageModel {
 		return new ImageResponse(imageGenerationList);
 	}
 
-	private DashScopeImageOptions toQianFanImageOptions(ImageOptions runtimeImageOptions) {
-		DashScopeImageOptions.Builder dashScopeImageOptionsBuilder = DashScopeImageOptions.builder();
-		if (runtimeImageOptions != null) {
-			if (runtimeImageOptions.getN() != null) {
-				dashScopeImageOptionsBuilder.withN(runtimeImageOptions.getN());
-			}
-			if (runtimeImageOptions.getModel() != null) {
-				dashScopeImageOptionsBuilder.withModel(runtimeImageOptions.getModel());
-			}
-			if (runtimeImageOptions.getWidth() != null) {
-				dashScopeImageOptionsBuilder.withWidth(runtimeImageOptions.getWidth());
-			}
-			if (runtimeImageOptions.getHeight() != null) {
-				dashScopeImageOptionsBuilder.withHeight(runtimeImageOptions.getHeight());
-			}
-			if (runtimeImageOptions instanceof DashScopeImageOptions) {
-				DashScopeImageOptions dashScopeImageOptions = (DashScopeImageOptions) runtimeImageOptions;
-				if (dashScopeImageOptions.getStyle() != null) {
-					dashScopeImageOptionsBuilder.withStyle(dashScopeImageOptions.getStyle());
-				}
-				if (dashScopeImageOptions.getSeed() != null) {
-					dashScopeImageOptionsBuilder.withSeed(dashScopeImageOptions.getSeed());
-				}
-				if (dashScopeImageOptions.getRefImg() != null) {
-					dashScopeImageOptionsBuilder.withRefImg(dashScopeImageOptions.getRefImg());
-				}
-				if (dashScopeImageOptions.getRefMode() != null) {
-					dashScopeImageOptionsBuilder.withRefMode(dashScopeImageOptions.getRefMode());
-				}
-				if (dashScopeImageOptions.getRefStrength() != null) {
-					dashScopeImageOptionsBuilder.withRefStrength(dashScopeImageOptions.getRefStrength());
-				}
-				if (dashScopeImageOptions.getNegativePrompt() != null) {
-					dashScopeImageOptionsBuilder.withNegativePrompt(dashScopeImageOptions.getNegativePrompt());
-				}
-			}
-		}
-		return dashScopeImageOptionsBuilder.build();
+	private DashScopeImageApi.DashScopeImageRequest constructImageRequest(ImagePrompt imagePrompt,
+			DashScopeImageOptions options) {
+
+		return new DashScopeImageApi.DashScopeImageRequest(options.getModel(),
+				new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestInput(
+						imagePrompt.getInstructions().get(0).getText(), options.getNegativePrompt(),
+						options.getRefImg()),
+				new DashScopeImageApi.DashScopeImageRequest.DashScopeImageRequestParameter(options.getStyle(),
+						options.getSize(), options.getN(), options.getSeed(), options.getRefStrength(),
+						options.getRefMode()));
 	}
 
 }

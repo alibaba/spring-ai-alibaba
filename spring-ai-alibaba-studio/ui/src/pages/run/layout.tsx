@@ -19,7 +19,6 @@ import { Layout, Menu } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'ice';
 import styles from './layout.module.css';
 
-import { ChatModelData } from '@/types/chat_model';
 import { SubMenuItem } from '@/types/menu';
 import chatModelsService from '@/services/chat_models';
 import chatClientsService from '@/services/chat_clients';
@@ -38,6 +37,11 @@ export default function PageLayout() {
     {
       key: '/run/models',
       label: 'Chat Model',
+      children: [],
+    },
+    {
+      key: '/run/prompts',
+      label: 'Prompts',
       children: [],
     },
   ]);
@@ -77,7 +81,8 @@ export default function PageLayout() {
     fetchData();
   }, []);
 
-  const [selectedKey, setSelectedKey] = useState(runMenu[0].key);
+  const [selectedKey, setSelectedKey] = useState(
+    `/${location.pathname}` || runMenu[0].key);
 
   const onMenuClick = (e) => {
     navigate(e.key);
@@ -88,6 +93,8 @@ export default function PageLayout() {
     if (location.pathname === '/run') {
       navigate(runMenu[0].key);
       setSelectedKey(runMenu[0].key);
+    } else {
+      setSelectedKey(location.pathname);
     }
   }, [location, runMenu]);
 

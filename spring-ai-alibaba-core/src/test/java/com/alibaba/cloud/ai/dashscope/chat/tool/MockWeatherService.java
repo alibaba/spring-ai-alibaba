@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dashscope.chat.tool;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
@@ -40,6 +39,9 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 		}
 		else if (request.city().contains("上海")) {
 			return new Response(String.format("%s%s多云转阴, 气温31摄氏度。", request.date(), request.city()));
+		}
+		else if (request.city().contains("北京")) {
+			return new Response(String.format("%s%s小雨转中雨, 气温23摄氏度。", request.date(), request.city()));
 		}
 		else {
 			return new Response(String.format("暂时无法查询%s的天气状况。", request.city()));

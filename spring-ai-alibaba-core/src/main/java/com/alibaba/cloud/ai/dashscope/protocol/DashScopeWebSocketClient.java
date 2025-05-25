@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.dashscope.protocol;
 
 import com.alibaba.cloud.ai.dashscope.api.ApiUtils;
@@ -61,17 +60,31 @@ public class DashScopeWebSocketClient extends WebSocketListener {
 
 	FluxSink<ByteBuffer> emitter;
 
+	FluxSink<ByteBuffer> binary_emitter;
+
+	FluxSink<String> text_emitter;
+
 	public DashScopeWebSocketClient(DashScopeWebSocketClientOptions options) {
 		this.options = options;
 		this.isOpen = new AtomicBoolean(false);
 	}
 
-	public Flux<ByteBuffer> streamOut(String text) {
+	public Flux<ByteBuffer> streamBinaryOut(String text) {
 		Flux<ByteBuffer> flux = Flux.<ByteBuffer>create(emitter -> {
-			this.emitter = emitter;
+			this.binary_emitter = emitter;
 		}, FluxSink.OverflowStrategy.BUFFER);
 
 		sendText(text);
+
+		return flux;
+	}
+
+	public Flux<String> streamTextOut(Flux<ByteBuffer> binary) {
+		Flux<String> flux = Flux.<String>create(emitter -> {
+			this.text_emitter = emitter;
+		}, FluxSink.OverflowStrategy.BUFFER);
+
+		binary.subscribe(this::sendBinary);
 
 		return flux;
 	}
@@ -85,6 +98,19 @@ public class DashScopeWebSocketClient extends WebSocketListener {
 
 		if (!success) {
 			logger.error("send text failed");
+		}
+	}
+
+	public void sendBinary(ByteBuffer binary) {
+		// TODO
+		// if (!isOpen.get()) {
+		// establishWebSocketClient();
+		// }
+
+		boolean success = webSocketClient.send(ByteString.of(binary));
+
+		if (!success) {
+			logger.error("send binary failed");
 		}
 	}
 
@@ -144,19 +170,13 @@ public class DashScopeWebSocketClient extends WebSocketListener {
 	public void onClosed(WebSocket webSocket, int code, String reason) {
 		logger.info("receive ws event onClosed: handle={}, code={}, reason={}", webSocket, code, reason);
 		isOpen.set(false);
-		if (this.emitter != null && !this.emitter.isCancelled()) {
-			logger.info("emitter handling: complete on closed");
-			this.emitter.complete();
-		}
+		emittersComplete("closed");
 	}
 
 	@Override
 	public void onClosing(WebSocket webSocket, int code, String reason) {
 		logger.info("receive ws event onClosing: handle={}, code={}, reason={}", webSocket.toString(), code, reason);
-		if (this.emitter != null && !this.emitter.isCancelled()) {
-			logger.info("emitter handling: complete on closing");
-			this.emitter.complete();
-		}
+		emittersComplete("closing");
 	}
 
 	@Override
@@ -165,10 +185,7 @@ public class DashScopeWebSocketClient extends WebSocketListener {
 				getRequestBody(response));
 		logger.error("receive ws event onFailure: handle={}, {}", webSocket, failureMessage);
 		isOpen.set(false);
-		if (this.emitter != null && !this.emitter.isCancelled()) {
-			logger.info("emitter handling: error on failure");
-			this.emitter.error(new Exception(failureMessage, t));
-		}
+		emittersError("failure", new Exception(failureMessage, t));
 	}
 
 	@Override
@@ -185,28 +202,21 @@ public class DashScopeWebSocketClient extends WebSocketListener {
 					logger.info("task started: text={}", text);
 					break;
 				case TASK_FINISHED:
-					logger.error("task finished: text={}", text);
-					if (this.emitter != null && !this.emitter.isCancelled()) {
-						logger.info("emitter handling: complete on finished");
-						this.emitter.complete();
-					}
+					logger.info("task finished: text={}", text);
+					emittersComplete("finished");
 					break;
 				case TASK_FAILED:
 					logger.error("task failed: text={}", text);
-					if (this.emitter != null && !this.emitter.isCancelled()) {
-						logger.info("emitter handling: error on task failed");
-						this.emitter.error(new Exception());
-					}
+					emittersError("task failed", new Exception());
 					break;
 				case RESULT_GENERATED:
+					if (this.text_emitter != null) {
+						text_emitter.next(text);
+					}
 					break;
 				default:
 					logger.error("task error: text={}", text);
-					if (this.emitter != null && !this.emitter.isCancelled()) {
-						logger.info("emitter handling: error on unsupported event: {}",
-								message.header.event.getValue());
-						this.emitter.error(new Exception());
-					}
+					emittersError("unsupported event", new Exception());
 			}
 		}
 		catch (Exception e) {
@@ -217,8 +227,31 @@ public class DashScopeWebSocketClient extends WebSocketListener {
 	@Override
 	public void onMessage(WebSocket webSocket, ByteString bytes) {
 		logger.debug("receive ws event onMessage(bytes): handle={}, size={}", webSocket, bytes.size());
-		if (this.emitter != null) {
-			emitter.next(bytes.asByteBuffer());
+		if (this.binary_emitter != null) {
+			binary_emitter.next(bytes.asByteBuffer());
+		}
+	}
+
+	private void emittersComplete(String event) {
+		if (this.binary_emitter != null && !this.binary_emitter.isCancelled()) {
+			logger.info("binary emitter handling: complete on {}", event);
+			this.binary_emitter.complete();
+		}
+		if (this.text_emitter != null && !this.text_emitter.isCancelled()) {
+			logger.info("text emitter handling: complete on {}", event);
+			this.text_emitter.complete();
+			logger.info("done");
+		}
+	}
+
+	private void emittersError(String event, Throwable t) {
+		if (this.binary_emitter != null && !this.binary_emitter.isCancelled()) {
+			logger.info("binary emitter handling: error on {}", event);
+			this.binary_emitter.error(t);
+		}
+		if (this.text_emitter != null && !this.text_emitter.isCancelled()) {
+			logger.info("text emitter handling: error on {}", event);
+			this.text_emitter.error(t);
 		}
 	}
 

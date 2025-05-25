@@ -1,10 +1,16 @@
 package com.alibaba.cloud.ai.graph.checkpoint;
 
+import java.io.Serializable;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.state.AgentState;
 import com.alibaba.cloud.ai.graph.state.Channel;
-import lombok.*;
-
-import java.util.*;
+import lombok.Data;
+import lombok.ToString;
 
 /**
  * Represents a checkpoint of an agent state.
@@ -16,9 +22,9 @@ import java.util.*;
  *
  * @see AgentState
  */
-@Getter
+@Data
 @ToString
-public class Checkpoint {
+public class Checkpoint implements Serializable {
 
 	private String id = UUID.randomUUID().toString();
 
@@ -51,7 +57,7 @@ public class Checkpoint {
 			return this;
 		}
 
-		public Builder state(AgentState state) {
+		public Builder state(OverAllState state) {
 			result.state = state.data();
 			return this;
 		}
@@ -83,10 +89,10 @@ public class Checkpoint {
 
 	}
 
-	public Checkpoint updateState(Map<String, Object> values, Map<String, Channel<?>> channels) {
+	public Checkpoint updateState(Map<String, Object> values, Map<String, KeyStrategy> channels) {
 
 		Checkpoint result = new Checkpoint(this);
-		result.state = AgentState.updateState(state, values, channels);
+		result.state = OverAllState.updateState(state, values, channels);
 		return result;
 	}
 

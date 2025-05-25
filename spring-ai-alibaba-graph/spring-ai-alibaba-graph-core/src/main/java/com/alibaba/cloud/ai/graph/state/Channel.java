@@ -14,15 +14,35 @@ class BaseChannel<T> implements Channel<T> {
 
 	final Reducer<T> reducer;
 
+	/**
+	 * Constructs a new BaseChannel with the specified {@code reducer} and
+	 * {@code defaultProvider}.
+	 * @param reducer the function to apply in the reduction process; must not be null
+	 * @param defaultProvider the supplier of default value for operations where no input
+	 * is provided; must not be null
+	 * @throws NullPointerException if either the {@code reducer} or
+	 * {@code defaultProvider} is null
+	 */
 	BaseChannel(Reducer<T> reducer, Supplier<T> defaultProvider) {
 		this.defaultProvider = defaultProvider;
 		this.reducer = reducer;
 	}
 
+	/**
+	 * Returns an {@link Optional} containing the default supplier if it is set;
+	 * otherwise, returns an empty {@link Optional}.
+	 * @return an {@link Optional} describing the default supplier or an empty
+	 * {@link Optional} if none is set
+	 */
 	public Optional<Supplier<T>> getDefault() {
 		return ofNullable(defaultProvider);
 	}
 
+	/**
+	 * Retrieves the {@link Reducer} instance wrapped in an {@link Optional}.
+	 * @return An {@link Optional} containing the {@code Reducer} object if it is
+	 * non-null, or an empty {@link Optional} if it is null.
+	 */
 	public Optional<Reducer<T>> getReducer() {
 		return ofNullable(reducer);
 	}
@@ -53,14 +73,36 @@ class BaseChannel<T> implements Channel<T> {
  */
 public interface Channel<T> {
 
+	/**
+	 * Creates a channel with the specified default provider.
+	 * @param <T> the type of items produced by this channel
+	 * @param defaultProvider the supplier of the default item for the channel
+	 * @return a new channel with the specified default provider
+	 */
 	static <T> Channel<T> of(Supplier<T> defaultProvider) {
 		return new BaseChannel<T>(null, defaultProvider);
 	}
 
+	/**
+	 * Creates a channel with the specified {@code Reducer}.
+	 * @param <T> the type of elements in the channel
+	 * @param reducer the function to reduce values as they are added to the channel
+	 * @return a new channel instance
+	 */
 	static <T> Channel<T> of(Reducer<T> reducer) {
 		return new BaseChannel<T>(reducer, null);
 	}
 
+	/**
+	 * Creates a new channel instance with the specified {@code reducer} and
+	 * {@code defaultProvider}.
+	 * @param <T> the type of elements in this channel
+	 * @param reducer the function to reduce elements from multiple suppliers into one
+	 * value
+	 * @param defaultProvider the supplier to provide a default value when no other value
+	 * is available
+	 * @return a new channel instance with the specified parameters
+	 */
 	static <T> Channel<T> of(Reducer<T> reducer, Supplier<T> defaultProvider) {
 		return new BaseChannel<T>(reducer, defaultProvider);
 	}
@@ -84,6 +126,7 @@ public interface Channel<T> {
 	 * @param newValue the new value to be set
 	 * @return the new value of the state property
 	 */
+	@SuppressWarnings("unchecked")
 	default Object update(String key, Object oldValue, Object newValue) {
 		T _new = (T) newValue;
 

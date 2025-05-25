@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.utils;
 
+import java.util.Map;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
@@ -23,8 +24,6 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
-
-import java.util.Map;
 
 @Component
 public class SpringApplicationUtil implements ApplicationContextAware, EnvironmentAware {

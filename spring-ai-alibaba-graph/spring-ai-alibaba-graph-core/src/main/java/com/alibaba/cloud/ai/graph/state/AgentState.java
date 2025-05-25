@@ -1,6 +1,11 @@
 package com.alibaba.cloud.ai.graph.state;
 
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -13,7 +18,7 @@ import static java.util.Optional.ofNullable;
  */
 public class AgentState {
 
-	private final java.util.Map<String, Object> data;
+	private final Map<String, Object> data;
 
 	/**
 	 * Constructs an AgentState with the given initial data.
@@ -27,7 +32,7 @@ public class AgentState {
 	 * Returns an unmodifiable view of the data map.
 	 * @return an unmodifiable map of the data
 	 */
-	public final java.util.Map<String, Object> data() {
+	public final Map<String, Object> data() {
 		return unmodifiableMap(data);
 	}
 
@@ -37,52 +42,9 @@ public class AgentState {
 	 * @param <T> the type of the value
 	 * @return an Optional containing the value if present, otherwise an empty Optional
 	 */
+	@SuppressWarnings("unchecked")
 	public final <T> Optional<T> value(String key) {
 		return ofNullable((T) data().get(key));
-	}
-
-	public final <T> T value(String key, T defaultValue) {
-		return (T) value(key).orElse(defaultValue);
-	}
-
-	public final <T> T value(String key, Supplier<T> defaultProvider) {
-		return (T) value(key).orElseGet(defaultProvider);
-	}
-
-	/**
-	 * Retrieves or creates an AppendableValue associated with the given key.
-	 * @param key the key whose associated AppendableValue is to be returned or created
-	 * @param <T> the type of the value
-	 * @return an AppendableValue associated with the given key
-	 * @deprecated use {@link Channel} instead
-	 */
-	@Deprecated
-	public final <T> AppendableValue<T> appendableValue(String key) {
-		Object value = this.data.get(key);
-
-		if (value instanceof AppendableValue) {
-			return (AppendableValue<T>) value;
-		}
-		if (value instanceof Collection) {
-			return new AppendableValueRW<>((Collection<T>) value);
-		}
-		AppendableValueRW<T> rw = new AppendableValueRW<>();
-		if (value != null) {
-			rw.append(value);
-		}
-		this.data.put(key, rw);
-		return rw;
-	}
-
-	/**
-	 * Merges the current state with a partial state and returns a new state.
-	 * @param partialState the partial state to merge with
-	 * @return a new state resulting from the merge
-	 * @deprecated use {@link #updateState(AgentState, Map, Map)}
-	 */
-	@Deprecated
-	public final Map<String, Object> mergeWith(Map<String, Object> partialState, Map<String, Channel<?>> channels) {
-		return updateState(data(), partialState, channels);
 	}
 
 	/**
@@ -95,19 +57,13 @@ public class AgentState {
 	}
 
 	/**
-	 * Merges the current value with the new value using the appropriate merge function.
-	 * @param currentValue the current value
-	 * @param newValue the new value
-	 * @return the merged value
+	 * Updates the partial state from a schema using channels.
+	 * @param state The current state as a map of key-value pairs.
+	 * @param partialState The partial state to be updated.
+	 * @param channels A map of channel names to their implementations.
+	 * @return An updated version of the partial state after applying the schema and
+	 * channels.
 	 */
-	private static Object mergeFunction(Object currentValue, Object newValue) {
-		if (currentValue instanceof AppendableValueRW<?>) {
-			((AppendableValueRW<?>) currentValue).append(newValue);
-			return currentValue;
-		}
-		return newValue;
-	}
-
 	private static Map<String, Object> updatePartialStateFromSchema(Map<String, Object> state,
 			Map<String, Object> partialState, Map<String, Channel<?>> channels) {
 		if (channels == null || channels.isEmpty()) {
@@ -159,6 +115,88 @@ public class AgentState {
 	public static Map<String, Object> updateState(AgentState state, Map<String, Object> partialState,
 			Map<String, Channel<?>> channels) {
 		return updateState(state.data(), partialState, channels);
+	}
+
+	/**
+	 * Merges the current value with the new value using the appropriate merge function.
+	 * @param currentValue the current value
+	 * @param newValue the new value
+	 * @return the merged value
+	 */
+	@Deprecated
+	private static Object mergeFunction(Object currentValue, Object newValue) {
+		if (currentValue instanceof AppendableValueRW<?>) {
+			((AppendableValueRW<?>) currentValue).append(newValue);
+			return currentValue;
+		}
+		return newValue;
+	}
+
+	/**
+	 * Returns the value associated with the specified key or a default value if the key
+	 * is not present.
+	 * @param key The key whose associated value is to be returned.
+	 * @param defaultValue The value to use if no entry for the specified key is found.
+	 * @param <T> the type of the value
+	 * @return The value to which the specified key is mapped, or {@code defaultValue} if
+	 * this map contains no mapping for the key.
+	 * @deprecated This method is deprecated and may be removed in future versions.
+	 */
+	@Deprecated
+	public final <T> T value(String key, T defaultValue) {
+		return this.<T>value(key).orElse(defaultValue);
+	}
+
+	/**
+	 * Returns the value associated with the given key or a default value if no such key
+	 * exists.
+	 * @param key The key to retrieve the value for.
+	 * @param defaultProvider A provider function that returns the default value if the
+	 * key is not found.
+	 * @param <T> the type of the value
+	 * @return The value associated with the key, or the default value provided by
+	 * {@code defaultProvider}.
+	 */
+	@Deprecated
+	public final <T> T value(String key, Supplier<T> defaultProvider) {
+		return this.<T>value(key).orElseGet(defaultProvider);
+	}
+
+	/**
+	 * Retrieves or creates an AppendableValue associated with the given key.
+	 * @param key the key whose associated AppendableValue is to be returned or created
+	 * @param <T> the type of the value
+	 * @return an AppendableValue associated with the given key
+	 * @deprecated use {@link Channel} instead
+	 */
+	@Deprecated
+	public final <T> AppendableValue<T> appendableValue(String key) {
+		Object value = this.data.get(key);
+
+		if (value instanceof AppendableValue) {
+			return (AppendableValue<T>) value;
+		}
+		if (value instanceof Collection) {
+			return new AppendableValueRW<>((Collection<T>) value);
+		}
+		AppendableValueRW<T> rw = new AppendableValueRW<>();
+		if (value != null) {
+			rw.append(value);
+		}
+		this.data.put(key, rw);
+		return rw;
+	}
+
+	/**
+	 * Merges the current state with a partial state and returns a new state.
+	 * @param partialState the partial state to merge with
+	 * @param channels the channels used to update the partial state if necessary
+	 * @return a new state resulting from the merge
+	 * @deprecated use {@link #updateState(AgentState, Map, Map)}
+	 */
+	@Deprecated
+	public final Map<String, Object> mergeWith(Map<String, Object> partialState, Map<String, Channel<?>> channels) {
+		return updateState(data(), partialState, channels);
 	}
 
 }

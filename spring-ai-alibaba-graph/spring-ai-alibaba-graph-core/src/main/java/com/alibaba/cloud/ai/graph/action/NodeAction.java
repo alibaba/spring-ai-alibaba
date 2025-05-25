@@ -1,12 +1,12 @@
 package com.alibaba.cloud.ai.graph.action;
 
-import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.OverAllState;
 
 import java.util.Map;
 
 @FunctionalInterface
-public interface NodeAction<T extends AgentState> {
+public interface NodeAction {
 
-	Map<String, Object> apply(T t) throws Exception;
+	Map<String, Object> apply(OverAllState t) throws Exception;
 
 }

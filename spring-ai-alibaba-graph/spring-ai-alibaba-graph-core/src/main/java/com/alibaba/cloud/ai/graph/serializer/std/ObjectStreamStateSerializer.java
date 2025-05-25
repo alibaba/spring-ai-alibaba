@@ -1,14 +1,18 @@
 package com.alibaba.cloud.ai.graph.serializer.std;
 
-import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
-import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
-import lombok.extern.slf4j.Slf4j;
-import com.alibaba.cloud.ai.graph.state.AgentState;
-
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
+import com.alibaba.cloud.ai.graph.state.AgentState;
+import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
 @Slf4j
 public class ObjectStreamStateSerializer<State extends AgentState> extends StateSerializer<State> {
@@ -17,14 +21,13 @@ public class ObjectStreamStateSerializer<State extends AgentState> extends State
 
 		@Override
 		public void write(List<Object> object, ObjectOutput out) throws IOException {
-			out.writeInt(object.size());
+			out.writeInt( object.size() );
 
-			for (Object value : object) {
+			for( Object value : object ) {
 				try {
-					writeNullableObject(value, out);
-				}
-				catch (IOException ex) {
-					log.error("Error writing collection value", ex);
+					writeNullableObject( value, out );
+				} catch (IOException ex) {
+					log.error( "Error writing collection value", ex );
 					throw ex;
 				}
 			}
@@ -49,24 +52,22 @@ public class ObjectStreamStateSerializer<State extends AgentState> extends State
 
 			return result;
 		}
-
 	}
 
-	static class MapSerializer implements NullableObjectSerializer<Map<String, Object>> {
+	static class MapSerializer implements NullableObjectSerializer<Map<String,Object>> {
 
 		@Override
-		public void write(Map<String, Object> object, ObjectOutput out) throws IOException {
-			out.writeInt(object.size());
+		public void write(Map<String,Object> object, ObjectOutput out) throws IOException {
+			out.writeInt( object.size() );
 
-			for (Map.Entry<String, Object> e : object.entrySet()) {
+			for( Map.Entry<String,Object> e : object.entrySet() ) {
 				try {
 					out.writeUTF(e.getKey());
 
-					writeNullableObject(e.getValue(), out);
+					writeNullableObject( e.getValue(), out );
 
-				}
-				catch (IOException ex) {
-					log.error("Error writing map key '{}'", e.getKey(), ex);
+				} catch (IOException ex) {
+					log.error( "Error writing map key '{}'", e.getKey(), ex );
 					throw ex;
 				}
 			}
@@ -81,7 +82,7 @@ public class ObjectStreamStateSerializer<State extends AgentState> extends State
 
 			int size = in.readInt();
 
-			for (int i = 0; i < size; i++) {
+			for( int i = 0; i < size; i++ ) {
 				String key = in.readUTF();
 
 				Object value = readNullableObject(in).orElse(null);
@@ -95,13 +96,12 @@ public class ObjectStreamStateSerializer<State extends AgentState> extends State
 	}
 
 	private final SerializerMapper mapper = new SerializerMapper();
-
 	private final MapSerializer mapSerializer = new MapSerializer();
 
-	public ObjectStreamStateSerializer(AgentStateFactory<State> stateFactory) {
+	public ObjectStreamStateSerializer( AgentStateFactory<State> stateFactory ) {
 		super(stateFactory);
-		mapper.register(Collection.class, new ListSerializer());
-		mapper.register(Map.class, new MapSerializer());
+		mapper.register( Collection.class, new ListSerializer() );
+		mapper.register( Map.class, new MapSerializer() );
 	}
 
 	public SerializerMapper mapper() {
@@ -115,7 +115,7 @@ public class ObjectStreamStateSerializer<State extends AgentState> extends State
 
 	@Override
 	public final State read(ObjectInput in) throws IOException, ClassNotFoundException {
-		return stateFactory().apply(mapSerializer.read(mapper.objectInputWithMapper(in)));
+		return stateFactory().apply(mapSerializer.read( mapper.objectInputWithMapper(in) ));
 	}
 
 }

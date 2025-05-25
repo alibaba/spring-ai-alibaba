@@ -1,13 +1,17 @@
 package com.alibaba.cloud.ai.graph.serializer.std;
 
-import lombok.NonNull;
-import com.alibaba.cloud.ai.graph.serializer.Serializer;
-
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
+
+import lombok.NonNull;
+import com.alibaba.cloud.ai.graph.serializer.Serializer;
 
 import static java.lang.String.format;
 
