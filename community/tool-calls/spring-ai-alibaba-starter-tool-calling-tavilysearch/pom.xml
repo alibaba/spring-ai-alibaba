@@ -18,16 +18,12 @@
         <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
-
     <dependencies>
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-tool-calling-common</artifactId>
-            <version>${revision}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -61,9 +57,5 @@
             <artifactId>spring-context</artifactId>
         </dependency>
     </dependencies>
-
-    <build>
-        <finalName>spring-ai-alibaba-starter-tool-calling-baidusearch</finalName>
-    </build>
 
 </project>
