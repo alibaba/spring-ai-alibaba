@@ -65,7 +65,8 @@ class DashScopeChatIT {
 	@Test
 	void testBasicChat() {
 		// Create real API client with API key from environment
-		DashScopeApi realApi = new DashScopeApi(apiKey);
+		DashScopeApi realApi = DashScopeApi.builder().apiKey(apiKey).build();
+		;
 
 		// Create chat model with default options
 		DashScopeChatOptions options = DashScopeChatOptions.builder().withModel(TEST_MODEL).build();
@@ -93,7 +94,8 @@ class DashScopeChatIT {
 	@Test
 	void testStreamChat() {
 		// Create real API client with API key from environment
-		DashScopeApi realApi = new DashScopeApi(apiKey);
+		DashScopeApi realApi = DashScopeApi.builder().apiKey(apiKey).build();
+		;
 
 		// Create chat model with default options
 		DashScopeChatOptions options = DashScopeChatOptions.builder().withModel(TEST_MODEL).build();

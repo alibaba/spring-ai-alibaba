@@ -67,7 +67,7 @@ public class DashScopeSpeechSynthesisOptions implements SpeechSynthesisOptions {
      * synthesis audio speed.
      */
     @JsonProperty("speed")
-    private Double speed = 1.0;
+    private Float speed = 1.0F;
 
     /**
      * synthesis audio pitch.
@@ -135,11 +135,11 @@ public class DashScopeSpeechSynthesisOptions implements SpeechSynthesisOptions {
 		this.volume = volume;
 	}
 
-	public Double getSpeed() {
+	public Float getSpeed() {
 		return speed;
 	}
 
-	public void setSpeed(Double speed) {
+	public void setSpeed(Float speed) {
 		this.speed = speed;
 	}
 
@@ -202,59 +202,59 @@ public class DashScopeSpeechSynthesisOptions implements SpeechSynthesisOptions {
 
 		private final DashScopeSpeechSynthesisOptions options = new DashScopeSpeechSynthesisOptions();
 
-		public DashScopeSpeechSynthesisOptions.Builder withModel(String model) {
+		public DashScopeSpeechSynthesisOptions.Builder model(String model) {
 			options.model = model;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder withText(String text) {
+		public DashScopeSpeechSynthesisOptions.Builder test(String text) {
 			options.text = text;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder withVoice(String voice) {
+		public DashScopeSpeechSynthesisOptions.Builder voice(String voice) {
 			options.voice = voice;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder withRequestText(
+		public DashScopeSpeechSynthesisOptions.Builder requestText(
 				DashScopeSpeechSynthesisApi.RequestTextType requestTextType) {
 			options.requestTextType = requestTextType;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder withSampleRate(Integer sampleRate) {
+		public DashScopeSpeechSynthesisOptions.Builder sampleRate(Integer sampleRate) {
 			options.sampleRate = sampleRate;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder withVolume(Integer volume) {
+		public DashScopeSpeechSynthesisOptions.Builder volume(Integer volume) {
 			options.volume = volume;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder withSpeed(Double speed) {
+		public DashScopeSpeechSynthesisOptions.Builder speed(Float speed) {
 			options.speed = speed;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder withResponseFormat(
+		public DashScopeSpeechSynthesisOptions.Builder responseFormat(
 				DashScopeSpeechSynthesisApi.ResponseFormat format) {
 			options.responseFormat = format;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder withPitch(Double pitch) {
+		public DashScopeSpeechSynthesisOptions.Builder pitch(Double pitch) {
 			options.pitch = pitch;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder withEnableWordTimestamp(Boolean enableWordTimestamp) {
+		public DashScopeSpeechSynthesisOptions.Builder enableWordTimestamp(Boolean enableWordTimestamp) {
 			options.enableWordTimestamp = enableWordTimestamp;
 			return this;
 		}
 
-		public DashScopeSpeechSynthesisOptions.Builder withEnablePhonemeTimestamp(Boolean enablePhonemeTimestamp) {
+		public DashScopeSpeechSynthesisOptions.Builder enablePhonemeTimestamp(Boolean enablePhonemeTimestamp) {
 			options.enablePhonemeTimestamp = enablePhonemeTimestamp;
 			return this;
 		}

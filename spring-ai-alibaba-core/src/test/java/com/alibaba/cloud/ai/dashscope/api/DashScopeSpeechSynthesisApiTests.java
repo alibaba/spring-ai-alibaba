@@ -15,10 +15,12 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for DashScopeSpeechSynthesisApi class functionality
@@ -71,7 +73,7 @@ class DashScopeSpeechSynthesisApiTests {
 				"Hello, world!");
 
 		DashScopeSpeechSynthesisApi.Request.RequestPayload.RequestPayloadParameters parameters = new DashScopeSpeechSynthesisApi.Request.RequestPayload.RequestPayloadParameters(
-				100, "plain", "female", 16000, 1.0, "wav", 1.0, true, true);
+				100, "plain", "female", 16000, 1.0F, "wav", 1.0, true, true);
 
 		DashScopeSpeechSynthesisApi.Request.RequestPayload payload = new DashScopeSpeechSynthesisApi.Request.RequestPayload(
 				"model", "task-group", "task", "function", input, parameters);
@@ -104,7 +106,7 @@ class DashScopeSpeechSynthesisApiTests {
 		assertEquals("plain", request.payload().parameters().textType(), "Text type should match");
 		assertEquals("female", request.payload().parameters().voice(), "Voice should match");
 		assertEquals(16000, request.payload().parameters().sampleRate(), "Sample rate should match");
-		assertEquals(1.0, request.payload().parameters().rate(), "Rate should match");
+		assertEquals(1.0F, request.payload().parameters().rate(), "Rate should match");
 		assertEquals("wav", request.payload().parameters().format(), "Format should match");
 		assertEquals(1.0, request.payload().parameters().pitch(), "Pitch should match");
 		assertTrue(request.payload().parameters().phonemeTimestampEnabled(), "Phoneme timestamp should be enabled");

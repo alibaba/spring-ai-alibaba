@@ -33,7 +33,7 @@ import org.springframework.util.StringUtils;
 @Configuration
 @ConditionalOnClass(BingSearchService.class)
 @EnableConfigurationProperties(BingSearchProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.bingsearch", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = BingSearchProperties.BING_SEARCH_PREFIX, name = "enabled", havingValue = "true")
 public class BingSearchAutoConfiguration {
 
 	@Bean

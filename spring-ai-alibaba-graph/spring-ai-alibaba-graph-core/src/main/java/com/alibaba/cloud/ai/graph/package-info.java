@@ -48,8 +48,8 @@
  * Exception classes:
  * </p>
  * <ul>
- * <li>{@link com.alibaba.cloud.ai.graph.GraphStateException} - Exception thrown when
- * there is an error related to the state of a graph.</li>
+ * <li>{@link com.alibaba.cloud.ai.graph.exception.GraphStateException} - Exception thrown
+ * when there is an error related to the state of a graph.</li>
  * </ul>
  */
 package com.alibaba.cloud.ai.graph;

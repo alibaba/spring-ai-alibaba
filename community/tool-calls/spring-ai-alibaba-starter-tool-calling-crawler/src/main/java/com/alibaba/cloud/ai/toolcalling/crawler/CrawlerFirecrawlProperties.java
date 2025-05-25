@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.toolcalling.crawler;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
@@ -25,13 +26,9 @@ import java.util.Arrays;
  */
 @EnableConfigurationProperties
 @ConfigurationProperties(prefix = CrawlerFirecrawlProperties.FIRECRAWL_PROPERTIES_PREFIX)
-public class CrawlerFirecrawlProperties {
+public class CrawlerFirecrawlProperties extends CommonToolCallProperties {
 
 	public static final String FIRECRAWL_PROPERTIES_PREFIX = CrawlerConstants.CONFIG_PREFIX + "firecrawl";
-
-	private String token;
-
-	private Boolean enabled;
 
 	private String mode = CrawlerConstants.FirecrawlMode.SCRAPE;
 
@@ -50,22 +47,6 @@ public class CrawlerFirecrawlProperties {
 	private String[] includeTags;
 
 	private String[] excludeTags;
-
-	public String getToken() {
-		return token;
-	}
-
-	public void setToken(String token) {
-		this.token = token;
-	}
-
-	public Boolean getEnabled() {
-		return enabled;
-	}
-
-	public void setEnabled(Boolean enabled) {
-		this.enabled = enabled;
-	}
 
 	public String getMode() {
 		return mode;
@@ -142,7 +123,7 @@ public class CrawlerFirecrawlProperties {
 	@Override
 	public String toString() {
 
-		return "CrawlerFirecrawlProperties{" + "token='" + token + '\'' + ", enabled=" + enabled
+		return "CrawlerFirecrawlProperties{" + "token='" + super.getToken() + '\'' + ", enabled=" + super.isEnabled()
 				+ ", removeBase64Images=" + removeBase64Images + ", skipTlsVerification=" + skipTlsVerification
 				+ ", mobile=" + mobile + ", waitFor=" + waitFor + ", formats=" + formats + ", onlyMainContent="
 				+ onlyMainContent + ", includeTags=" + Arrays.toString(includeTags) + ", excludeTags="

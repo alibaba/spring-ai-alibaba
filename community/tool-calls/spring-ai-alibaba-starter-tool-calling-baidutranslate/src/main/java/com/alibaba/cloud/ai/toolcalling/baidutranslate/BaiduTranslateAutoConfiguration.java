@@ -31,8 +31,7 @@ import org.springframework.context.annotation.Description;
 
 @Configuration
 @EnableConfigurationProperties(BaiduTranslateProperties.class)
-@ConditionalOnProperty(prefix = BaiduTranslateProperties.BaiDuTranslatePrefix, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnProperty(prefix = BaiduTranslateProperties.BaiDuTranslatePrefix, name = "enabled", havingValue = "true")
 public class BaiduTranslateAutoConfiguration {
 
 	@Bean

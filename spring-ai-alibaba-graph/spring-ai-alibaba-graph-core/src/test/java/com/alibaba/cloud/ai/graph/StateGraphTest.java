@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
@@ -514,6 +515,26 @@ public class StateGraphTest {
 
 		Map<String, String> expected = Map.of("input", "test1", "prop1", "test");
 		assertIterableEquals(sortMap(expected), sortMap(result.get().data()));
+	}
+
+	@Test
+	void testGetResultFromGenerator() throws Exception {
+		var workflow = new StateGraph(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy()))
+			.addEdge(START, "agent_1")
+			.addNode("agent_1", makeNode("agent_1"))
+			.addEdge("agent_1", END);
+
+		var app = workflow.compile();
+
+		var iterator = app.stream(Map.of());
+		for (var i : iterator) {
+			System.out.println(i);
+		}
+
+		var generator = (AsyncGenerator.HasResultValue) iterator;
+
+		System.out.println(generator.resultValue().orElse(null));
+
 	}
 
 	@Test

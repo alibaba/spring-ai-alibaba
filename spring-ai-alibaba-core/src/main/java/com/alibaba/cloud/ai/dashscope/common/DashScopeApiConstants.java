@@ -27,7 +27,7 @@ public final class DashScopeApiConstants {
 
 	public static final String HEADER_OPENAPI_SOURCE = "X-DashScope-OpenAPISource";
 
-	public static final String HEADER_WORK_SPACE_ID = "X-DashScope-Workspace";
+	public static final String HEADER_WORK_SPACE_ID = "X-DashScope-WorkSpace";
 
 	public static final String SOURCE_FLAG = "CloudSDK";
 

@@ -16,8 +16,7 @@
 
 package com.alibaba.cloud.ai.toolcalling.sensitivefilter;
 
-import org.springframework.stereotype.Service;
-
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
@@ -25,8 +24,7 @@ import java.util.regex.Pattern;
  *
  * @author Makoto
  */
-@Service
-public class SensitiveFilterService {
+public class SensitiveFilterService implements Function<String, String> {
 
 	private final SensitiveFilterProperties properties;
 
@@ -43,7 +41,8 @@ public class SensitiveFilterService {
 		this.properties = properties;
 	}
 
-	public String filter(String text) {
+	@Override
+	public String apply(String text) {
 		if (text == null || text.isEmpty()) {
 			return text;
 		}

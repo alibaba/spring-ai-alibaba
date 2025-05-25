@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.example.graph.reflection;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.GraphStateException;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.agent.ReflectAgent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

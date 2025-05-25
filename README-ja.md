@@ -1,12 +1,16 @@
 # Spring AI Alibaba
 
-[Spring AI Alibaba](https://java2ai.com) は、Java 開発者向けの AI アプリケーションフレームワークであり、Spring AI をベースに構築されており、Alibaba Cloud QWen LLM サービスおよびクラウドネイティブインフラストラクチャとのシームレスな統合を提供します。
+[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)  [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/alibaba/spring-ai-alibaba)
+
+[Spring AI Alibaba](https://java2ai.com) は、Java 開発者向けの AI アプリケーションフレームワークであり、Spring AI
+をベースに構築されており、Alibaba Cloud QWen LLM サービスおよびクラウドネイティブインフラストラクチャとのシームレスな統合を提供します。
 
 [English](./README.md) | [中文版本](./README-zh.md)
 
 ## クイックスタート
 
-Spring AI Alibaba を使用して生成的 AI を Spring Boot アプリケーションに迅速に追加する方法については、[クイックスタート](https://java2ai.com/docs/dev/get-started/) を参照してください。
+Spring AI Alibaba を使用して生成的 AI を Spring Boot
+アプリケーションに迅速に追加する方法については、[クイックスタート](https://java2ai.com/docs/dev/get-started/) を参照してください。
 
 全体として、Spring Boot アプリケーションをインテリジェントエージェントに変えるには、次の 2 つのステップを実行するだけです。
 
@@ -15,16 +19,18 @@ Spring AI Alibaba を使用して生成的 AI を Spring Boot アプリケーシ
 1. プロジェクトに `spring-ai-alibaba-starter` 依存関係を追加します。
 
  ```xml
- <dependency>
-  <groupId>com.alibaba.cloud.ai</groupId>
-  <artifactId>spring-ai-alibaba-starter</artifactId>
-  <version>1.0.0-RC1.1</version>
- </dependency>
+
+<dependency>
+    <groupId>com.alibaba.cloud.ai</groupId>
+    <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+    <version>1.0.0</version>
+</dependency>
  ```
 
- > 注意: spring-ai 関連のパッケージはまだ中央リポジトリに公開されていないため、spring-ai-core などのアーティファクトを正常に解決するために、プロジェクトに次の Maven リポジトリを追加する必要があります。
- >
- > ```xml
+> 注意: spring-ai 関連のパッケージはまだ中央リポジトリに公開されていないため、spring-ai-core
+> などのアーティファクトを正常に解決するために、プロジェクトに次の Maven リポジトリを追加する必要があります。
+>
+> ```xml
  > <repositories>
  >  <repository>
  >   <id>spring-milestones</id>
@@ -51,23 +57,24 @@ Spring AI Alibaba を使用して生成的 AI を Spring Boot アプリケーシ
 2. `ChatClient` を注入します。
 
  ```java
- @RestController
- public class ChatController {
 
-  private final ChatClient chatClient;
+@RestController
+public class ChatController {
 
-  public ChatController(ChatClient.Builder builder) {
-   this.chatClient = builder.build();
-  }
+	private final ChatClient chatClient;
 
-  @GetMapping("/chat")
-  public String chat(String input) {
-   return this.chatClient.prompt()
-     .user(input)
-     .call()
-     .content();
-  }
- }
+	public ChatController(ChatClient.Builder builder) {
+		this.chatClient = builder.build();
+	}
+
+	@GetMapping("/chat")
+	public String chat(String input) {
+		return this.chatClient.prompt()
+				.user(input)
+				.call()
+				.content();
+	}
+}
  ```
 
 ## サンプル
@@ -76,7 +83,8 @@ Spring AI Alibaba を使用して生成的 AI を Spring Boot アプリケーシ
 
 ## コア機能
 
-Spring AI Alibaba は次の機能を提供します。これらの機能の使用方法の詳細については、[ドキュメント](https://java2ai.com/) を参照してください。
+Spring AI Alibaba は次の機能を提供します。これらの機能の使用方法の詳細については、[ドキュメント](https://java2ai.com/)
+を参照してください。
 
 * Alibaba Cloud QWen モデルおよび Dashscope モデルサービスのサポート。
 * 高レベルの AI エージェント抽象化をサポート -- ChatClient。
@@ -91,7 +99,8 @@ Spring AI Alibaba は次の機能を提供します。これらの機能の使�
 
 ## ロードマップ
 
-Spring AI Alibaba は、開発、評価からデプロイおよび可観測性まで、AI ネイティブ Java アプリケーションの構築の複雑さを軽減することを目指しています。そのために、オープンソースフレームワークとその周りのエコシステム統合の両方を提供します。以下は、近い将来にサポートする予定の機能です。
+Spring AI Alibaba は、開発、評価からデプロイおよび可観測性まで、AI ネイティブ Java
+アプリケーションの構築の複雑さを軽減することを目指しています。そのために、オープンソースフレームワークとその周りのエコシステム統合の両方を提供します。以下は、近い将来にサポートする予定の機能です。
 
 * プロンプトテンプレート管理
 * イベント駆動型 AI アプリケーション
@@ -124,6 +133,9 @@ Spring AI Alibaba の開発に参加する方法については、[貢献ガイ�
 
 このプロジェクトのいくつかのアイデアとコードは、以下のプロジェクトからインスピレーションを受けたり、書き直されたりしています。これらのプロジェクトを作成し、オープンソース化してくれた方々に感謝します。
 
-* [Spring AI](https://github.com/spring-projects/spring-ai), Apache License 2.0 の下でライセンスされた、AI アプリケーションを開発するための Spring フレンドリーな API と抽象化。
-* [Langgraph](https://github.com/langchain-ai/langgraph), MIT ライセンスの下でライセンスされた、LLM を使用してステートフルなマルチアクターアプリケーションを構築するためのライブラリ。
-* [Langgraph4J](https://github.com/bsorrentino/langgraph4j), Java 風に移植された [LangGraph](https://github.com/langchain-ai/langgraph) の移植版。
+* [Spring AI](https://github.com/spring-projects/spring-ai), Apache License 2.0 の下でライセンスされた、AI
+  アプリケーションを開発するための Spring フレンドリーな API と抽象化。
+* [Langgraph](https://github.com/langchain-ai/langgraph), MIT ライセンスの下でライセンスされた、LLM
+  を使用してステートフルなマルチアクターアプリケーションを構築するためのライブラリ。
+* [Langgraph4J](https://github.com/bsorrentino/langgraph4j), Java
+  風に移植された [LangGraph](https://github.com/langchain-ai/langgraph) の移植版。

@@ -15,18 +15,23 @@
  */
 package com.alibaba.cloud.ai.dashscope.audio;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
-import com.alibaba.cloud.ai.dashscope.audio.synthesis.*;
+import java.nio.ByteBuffer;
+import java.util.UUID;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
+import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisModel;
+import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisOptions;
+import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisOutput;
+import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisPrompt;
+import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisResponse;
+import com.alibaba.cloud.ai.dashscope.audio.synthesis.SpeechSynthesisResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
-import reactor.core.publisher.Flux;
-
-import java.nio.ByteBuffer;
-import java.util.UUID;
 
 /**
  * @author kevinlin09
@@ -42,7 +47,7 @@ public class DashScopeSpeechSynthesisModel implements SpeechSynthesisModel {
 	private final RetryTemplate retryTemplate;
 
 	public DashScopeSpeechSynthesisModel(DashScopeSpeechSynthesisApi api) {
-		this(api, DashScopeSpeechSynthesisOptions.builder().withModel("sambert-zhichu-v1").build());
+		this(api, DashScopeSpeechSynthesisOptions.builder().model("").build());
 	}
 
 	public DashScopeSpeechSynthesisModel(DashScopeSpeechSynthesisApi api, DashScopeSpeechSynthesisOptions options) {
@@ -54,6 +59,24 @@ public class DashScopeSpeechSynthesisModel implements SpeechSynthesisModel {
 		this.api = api;
 		this.options = options;
 		this.retryTemplate = retryTemplate;
+	}
+
+	public enum DashScopeSpeechModel {
+
+		SAMBERT_ZHICHU_V1("sambert-zhichu-v1"),
+
+		COSYVOICE_V1("cosyvoice-v1");
+
+		private final String model;
+
+		DashScopeSpeechModel(String model) {
+			this.model = model;
+		}
+
+		public String getModel() {
+			return this.model;
+		}
+
 	}
 
 	@Override

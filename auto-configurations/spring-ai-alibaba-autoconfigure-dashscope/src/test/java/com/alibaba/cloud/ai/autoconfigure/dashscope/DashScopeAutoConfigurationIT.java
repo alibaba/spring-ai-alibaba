@@ -15,6 +15,11 @@
  */
 package com.alibaba.cloud.ai.autoconfigure.dashscope;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 import com.alibaba.cloud.ai.dashscope.api.DashScopeSpeechSynthesisApi;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisModel;
 import com.alibaba.cloud.ai.dashscope.audio.DashScopeSpeechSynthesisOptions;
@@ -26,6 +31,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -35,12 +42,6 @@ import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import reactor.core.publisher.Flux;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,7 +57,7 @@ public class DashScopeAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(DashScopeAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(DashScopeChatAutoConfiguration.class));
 
 	@Test
 	void chatCall() {
@@ -93,7 +94,7 @@ public class DashScopeAutoConfigurationIT {
 			byte[] response = speechModel
 				.call(new SpeechSynthesisPrompt("H",
 						DashScopeSpeechSynthesisOptions.builder()
-							.withResponseFormat(DashScopeSpeechSynthesisApi.ResponseFormat.MP3)
+							.responseFormat(DashScopeSpeechSynthesisApi.ResponseFormat.MP3)
 							.build()))
 				.getResult()
 				.getOutput()

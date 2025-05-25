@@ -15,13 +15,14 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+
+import org.junit.jupiter.api.Test;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -88,11 +89,11 @@ class ApiUtilsTests {
 		Map<String, String> headers = ApiUtils.getMapContentHeaders(TEST_API_KEY, true, TEST_WORKSPACE_ID,
 				customHeaders);
 
-		assertThat(headers.get("Authorization")).isEqualTo("bearer " + TEST_API_KEY);
-		assertThat(headers.get("X-DashScope-WorkSpace")).isEqualTo(TEST_WORKSPACE_ID);
+		assertThat(headers.get(HttpHeaders.AUTHORIZATION)).isEqualTo("bearer " + TEST_API_KEY);
+		assertThat(headers.get(HEADER_WORK_SPACE_ID)).isEqualTo(TEST_WORKSPACE_ID);
 		assertThat(headers.get("X-DashScope-DataInspection")).isEqualTo("enable");
 		assertThat(headers.get("Custom-Header")).isEqualTo("custom-value");
-		assertThat(headers.get("user-agent")).contains(SDK_FLAG);
+		assertThat(headers.get(HttpHeaders.USER_AGENT)).contains(SDK_FLAG);
 	}
 
 	@Test

@@ -42,7 +42,7 @@ public class Kuaidi100AutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Query courier tracking information")
-	public Kuaidi100Service queryTrackFunction(Kuaidi100Properties kuaidi100Properties) {
+	public Kuaidi100Service queryTrack(Kuaidi100Properties kuaidi100Properties) {
 		JsonParseTool jsonParseTool = createJsonParseTool();
 		RestClientTool restClientTool = RestClientTool.builder(jsonParseTool, kuaidi100Properties).build();
 		return new Kuaidi100Service(kuaidi100Properties, jsonParseTool, restClientTool);

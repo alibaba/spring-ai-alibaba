@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.internal.edge;
 
-import com.alibaba.cloud.ai.graph.GraphStateException;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
 

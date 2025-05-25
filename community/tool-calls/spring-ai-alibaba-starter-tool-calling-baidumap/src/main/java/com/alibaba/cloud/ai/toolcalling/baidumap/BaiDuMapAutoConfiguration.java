@@ -33,8 +33,7 @@ import org.springframework.context.annotation.Description;
 
 @Configuration
 @EnableConfigurationProperties(BaiDuMapProperties.class)
-@ConditionalOnProperty(prefix = BaiDuMapProperties.BaiDuMapPrefix, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnProperty(prefix = BaiDuMapProperties.BaiDuMapPrefix, name = "enabled", havingValue = "true")
 public class BaiDuMapAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(BaiDuMapAutoConfiguration.class);

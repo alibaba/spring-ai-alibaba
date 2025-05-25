@@ -56,6 +56,8 @@ public class NacosMcpProperties {
 
 	private static final Logger log = LoggerFactory.getLogger(NacosMcpProperties.class);
 
+	String namespace = DEFAULT_NAMESPACE;
+
 	String serverAddr;
 
 	String username;
@@ -130,10 +132,18 @@ public class NacosMcpProperties {
 		this.serverAddr = serverAddr;
 	}
 
+	public String getNamespace() {
+		return namespace;
+	}
+
+	public void setNamespace(String namespace) {
+		this.namespace = namespace;
+	}
+
 	@PostConstruct
 	public void init() throws Exception {
 		if (StringUtils.isEmpty(this.ip)) {
-			this.ip = NetUtils.localIP();
+			this.ip = NetUtils.localIp();
 		}
 	}
 
@@ -144,6 +154,7 @@ public class NacosMcpProperties {
 		properties.put(PropertyKeyConst.PASSWORD, Objects.toString(this.password, ""));
 		properties.put(PropertyKeyConst.ACCESS_KEY, Objects.toString(this.accessKey, ""));
 		properties.put(PropertyKeyConst.SECRET_KEY, Objects.toString(this.secretKey, ""));
+		properties.put(PropertyKeyConst.NAMESPACE, Objects.toString(this.namespace, DEFAULT_NAMESPACE));
 		String endpoint = Objects.toString(this.endpoint, "");
 		if (endpoint.contains(":")) {
 			int index = endpoint.indexOf(":");

@@ -15,24 +15,26 @@
  */
 package com.alibaba.cloud.ai.toolcalling.githubtoolkit;
 
-import com.fasterxml.jackson.annotation.JsonClassDescription;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
-@JsonClassDescription("Get issue operation")
-public class GetIssueService implements Function<Request, Response> {
-
-	private static final String GITHUB_API_URL = "https://api.github.com";
+public class GetIssueService implements Function<GetIssueService.Request, Response> {
 
 	private static final String REPO_ENDPOINT = "/repos/{owner}/{repo}";
 
@@ -40,32 +42,27 @@ public class GetIssueService implements Function<Request, Response> {
 
 	private static final Logger logger = LoggerFactory.getLogger(GetIssueService.class);
 
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	private final WebClientTool webClientTool;
 
-	private final WebClient webClient;
+	private final JsonParseTool jsonParseTool;
 
 	private final GithubToolKitProperties properties;
 
-	public GetIssueService(GithubToolKitProperties properties) {
+	public GetIssueService(GithubToolKitProperties properties, WebClientTool webClientTool,
+			JsonParseTool jsonParseTool) {
 		assert properties.getToken() != null && properties.getToken().length() == 40;
 		this.properties = properties;
-		this.webClient = WebClient.builder()
-			.defaultHeader(HttpHeaders.USER_AGENT, HttpHeaders.USER_AGENT)
-			.defaultHeader(HttpHeaders.ACCEPT, "application/vnd.github.v3+json")
-			.defaultHeader("X-GitHub-Api-Version", GithubToolKitProperties.X_GitHub_Api_Version)
-			.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + properties.getToken())
-			.build();
+		this.webClientTool = webClientTool;
+		this.jsonParseTool = jsonParseTool;
 	}
 
 	@Override
 	public Response apply(Request request) {
 		try {
-			String url = GITHUB_API_URL + REPO_ENDPOINT + ISSUES_ENDPOINT + "/{issueNumber}";
-			Mono<String> responseMono = webClient.get()
-				.uri(url, properties.getOwner(), properties.getRepository(), request.issueNumber())
-				.retrieve()
-				.bodyToMono(String.class);
-			String responseData = responseMono.block();
+			String endpoint = REPO_ENDPOINT + ISSUES_ENDPOINT + "/{issueNumber}";
+			String responseData = webClientTool.get(endpoint, Map.of("owner", properties.getOwner(), "repo",
+					properties.getRepository(), "issueNumber", request.issueNumber()))
+				.block();
 			logger.info("GetIssueOperation response: {}", responseData);
 			return new Response<>(parseIssueDetails(responseData));
 		}
@@ -73,51 +70,71 @@ public class GetIssueService implements Function<Request, Response> {
 			logger.error("Error occurred while parsing response: {}", e.getMessage());
 			throw new RuntimeException(e);
 		}
-
 	}
 
-	public static Issue parseIssueDetails(String json) throws IOException {
-		JsonNode issueNode = objectMapper.readTree(json);
+	public Issue parseIssueDetails(String json) throws JsonProcessingException {
+		long id = Long.parseLong(jsonParseTool.getFieldValueAsString(json, "id"));
+		String title = jsonParseTool.getFieldValueAsString(json, "title").replaceAll("\"", "");
+		String state = jsonParseTool.getFieldValueAsString(json, "state").replaceAll("\"", "");
+		String createdAt = jsonParseTool.getFieldValueAsString(json, "created_at").replaceAll("\"", "");
+		String updatedAt = jsonParseTool.getFieldValueAsString(json, "updated_at").replaceAll("\"", "");
+		int comments = Integer.parseInt(jsonParseTool.getFieldValueAsString(json, "comments"));
+		String htmlUrl = jsonParseTool.getFieldValueAsString(json, "html_url").replaceAll("\"", "");
+		String body = jsonParseTool.getFieldValueAsString(json, "body").replaceAll("\"", "");
+		String closedAt = jsonParseTool.getFieldValueAsString(json, "closed_at").replaceAll("\"", "");
 
-		long id = issueNode.get("id").asLong();
-		String title = issueNode.get("title").asText();
-		String state = issueNode.get("state").asText();
-		String userLogin = issueNode.get("user").get("login").asText();
+		String userLogin = jsonParseTool.getDepthFieldValueAsString(json, "user", "login").replaceAll("\"", "");
+		String closedBy = jsonParseTool.getDepthFieldValueAsString(json, "closed_by", "login").replaceAll("\"", "");
 
-		JsonNode labelsNode = issueNode.get("labels");
 		List<String> labels = new ArrayList<>();
-		if (labelsNode != null && labelsNode.isArray()) {
-			for (JsonNode labelNode : labelsNode) {
-				String name = labelNode.get("name").asText();
-				labels.add(name);
+		try {
+			List<Map<String, Object>> labelObjects = jsonParseTool.getFieldValue(json,
+					new TypeReference<List<Map<String, Object>>>() {
+					}, "labels");
+
+			if (labelObjects != null) {
+				labels = labelObjects.stream()
+					.map(labelMap -> (String) labelMap.get("name"))
+					.filter(Objects::nonNull)
+					.collect(Collectors.toList());
 			}
 		}
-		JsonNode assigneesNode = issueNode.get("assignees");
+		catch (Exception e) {
+			logger.warn("Failed to parse labels from JSON: {}", e.getMessage());
+			labels = new ArrayList<>();
+		}
+
 		List<String> assignees = new ArrayList<>();
-		if (assigneesNode != null && assigneesNode.isArray()) {
-			for (JsonNode assigneeNode : assigneesNode) {
-				String assigneeLogin = assigneeNode.get("login").asText();
-				assignees.add(assigneeLogin);
+		try {
+			List<Map<String, Object>> assigneeObjects = jsonParseTool.getFieldValue(json,
+					new TypeReference<List<Map<String, Object>>>() {
+					}, "assignees");
+
+			if (assigneeObjects != null) {
+				assignees = assigneeObjects.stream()
+					.map(assigneeMap -> (String) assigneeMap.get("login"))
+					.filter(Objects::nonNull)
+					.collect(Collectors.toList());
 			}
 		}
-		String createdAt = issueNode.get("created_at").asText();
-		String updatedAt = issueNode.get("updated_at").asText();
-		String closedAt = issueNode.has("closed_at") && !issueNode.get("closed_at").isNull()
-				? issueNode.get("closed_at").asText() : null;
-		String closedBy = issueNode.has("closed_by") && !issueNode.get("closed_by").isNull()
-				? issueNode.get("closed_by").get("login").asText() : null;
-		int comments = issueNode.get("comments").asInt();
-		String htmlUrl = issueNode.get("html_url").asText();
-		String body = issueNode.has("body") && !issueNode.get("body").isNull() ? issueNode.get("body").asText() : null;
+		catch (Exception e) {
+			logger.warn("Failed to parse assignees from JSON: {}", e.getMessage());
+			assignees = new ArrayList<>();
+		}
+
 		return new Issue(id, title, body, state, userLogin, labels, assignees, createdAt, updatedAt, closedAt, closedBy,
 				comments, htmlUrl);
 	}
 
 	public record Issue(long id, String title, String body, String state, String userLogin, List<String> labels,
 			List<String> assignees, String createdAt, String updatedAt, String closedAt, String closedBy, int comments,
-			String htmlUrl
+			String htmlUrl) {
+	}
 
-	) {
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonClassDescription("GitHub Issue request")
+	public record Request(@JsonProperty(required = true,
+			value = "issueNumber") @JsonPropertyDescription("The number of the issue, which is used to get details about the issue or to leave a comment") Integer issueNumber) {
 	}
 
 }

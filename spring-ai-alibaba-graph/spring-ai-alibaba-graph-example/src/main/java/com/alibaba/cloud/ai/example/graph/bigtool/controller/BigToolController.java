@@ -23,7 +23,7 @@ import com.alibaba.cloud.ai.example.graph.bigtool.agent.ToolAgent;
 import com.alibaba.cloud.ai.example.graph.bigtool.service.VectorStoreService;
 import com.alibaba.cloud.ai.example.graph.bigtool.utils.MethodUtils;
 import com.alibaba.cloud.ai.graph.*;
-import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

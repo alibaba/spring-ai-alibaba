@@ -99,6 +99,18 @@ public class JsonParseTool {
 	}
 
 	/**
+	 * Deserialize the JSON string's 'fieldName' key into an object of type T
+	 * @param json json string
+	 * @param clazz target class
+	 * @param fieldName keyName
+	 */
+	public <T> T getFieldValue(String json, Class<T> clazz, String fieldName) throws JsonProcessingException {
+		JsonNode rootNode = objectMapper.readTree(json);
+		JsonNode fieldNode = rootNode.path(fieldName);
+		return objectMapper.treeToValue(fieldNode, clazz);
+	}
+
+	/**
 	 * Get the string value of 'fieldName' from the JSON.
 	 * @param json json string
 	 * @param fieldName keyName
@@ -174,6 +186,22 @@ public class JsonParseTool {
 		}
 		rootNode.set(fieldName, arrayNode);
 		return objectMapper.writeValueAsString(rootNode);
+	}
+
+	/**
+	 * Get first element from json array string, then return its json string.
+	 * @param arrayJson array json string
+	 * @return element json string
+	 */
+	public String getFirstElementFromJsonArrayString(String arrayJson) throws JsonProcessingException {
+		JsonNode jsonNode = objectMapper.readTree(arrayJson);
+		if (jsonNode.isArray() && !jsonNode.isEmpty()) {
+			JsonNode firstElement = jsonNode.get(0);
+			return objectMapper.writeValueAsString(firstElement);
+		}
+		else {
+			return null;
+		}
 	}
 
 }

@@ -2,13 +2,13 @@
   "groups": [],
   "properties": [
     {
-      "name": "spring.ai.alibaba.mcp.nacos.enabled",
+      "name": "spring.ai.alibaba.mcp.nacos.server-addr",
       "type": "java.lang.String",
-      "description": "If register mcp server information to nacos.",
-      "defaultValue": "false"
+      "description": "Nacos server address.",
+      "defaultValue": ""
     },
     {
-      "name": "spring.ai.alibaba.mcp.nacos.server-addr",
+      "name": "spring.ai.alibaba.mcp.nacos.namespace",
       "type": "java.lang.String",
       "description": "Nacos server address.",
       "defaultValue": ""
@@ -44,13 +44,13 @@
       "defaultValue": ""
     },
     {
-      "name": "spring.ai.alibaba.mcp.nacos.registry.service-register",
-      "type": "java.lang.String",
+      "name": "spring.ai.alibaba.mcp.nacos.registry.enabled",
+      "type": "java.lang.Boolean",
       "description": "if register mcp server service to nacos.",
       "defaultValue": ""
     },
     {
-      "name": "spring.ai.alibaba.mcp.nacos.registry.service-namespace",
+      "name": "spring.ai.alibaba.mcp.nacos.registry.service-name",
       "type": "java.lang.String",
       "description": "Namespace for mcp server service.",
       "defaultValue": ""
@@ -66,13 +66,6 @@
       "type": "java.lang.String",
       "description": "base context path for sse mcp server.",
       "defaultValue": ""
-    },
-
-    {
-      "name": "spring.ai.alibaba.mcp.nacos.dynamic.service-namespace",
-      "type": "java.lang.String",
-      "description": "If dynamic read mcp server info from nacos.",
-      "defaultValue": "false"
     },
     {
       "name": "spring.ai.alibaba.mcp.nacos.dynamic.service-group",

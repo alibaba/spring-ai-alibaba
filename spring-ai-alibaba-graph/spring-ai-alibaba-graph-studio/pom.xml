@@ -11,7 +11,9 @@
     <artifactId>spring-ai-alibaba-graph-studio</artifactId>
     <name>Spring AI Graph Studio</name>
 
-    <properties></properties>
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
 
     <dependencies>
 
