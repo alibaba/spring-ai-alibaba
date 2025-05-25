@@ -36,6 +36,5 @@ public class NacosMcpDynamicProperties {
 	public void setServerNames(List<String> serverNames) {
 		this.serverNames = serverNames;
 	}
-	
 
 }
