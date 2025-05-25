@@ -9,12 +9,13 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-mcp-nacos2</artifactId>
+    <artifactId>spring-ai-alibaba-mcp-nacos</artifactId>
     <version>${revision}</version>
-    <name>Spring AI Alibaba MCP Built on Nacos2</name>
+    <name>Spring AI Alibaba MCP Nacos</name>
     <description>Nacos MCP for Spring AI Alibaba</description>
 
-    <properties></properties>
+    <properties>
+    </properties>
 
     <dependencies>
 
@@ -44,8 +45,22 @@
         <dependency>
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-client</artifactId>
-            <version>${nacos2.version}</version>
-            <optional>true</optional>
+            <version>${nacos3.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-maintainer-client</artifactId>
+            <version>${nacos3.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.alibaba.nacos</groupId>
+                    <artifactId>nacos-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.alibaba.nacos</groupId>
+                    <artifactId>nacos-common</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
