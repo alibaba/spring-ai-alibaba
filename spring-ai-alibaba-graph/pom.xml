@@ -27,6 +27,12 @@
     <artifactId>spring-ai-alibaba-graph</artifactId>
     <packaging>pom</packaging>
     <name>Spring AI Alibaba Graph</name>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
 
     <modules>
         <module>spring-ai-alibaba-graph-core</module>
