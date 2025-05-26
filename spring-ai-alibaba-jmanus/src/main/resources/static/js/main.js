@@ -15,12 +15,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('聊天处理器初始化完成');
 
             // 3. 初始化右侧边栏
-            await RightSidebar.init();
-            console.log('右侧边栏初始化完成');
+            // RightSidebar is now an instance of RightSidebarController, call init on it.
 
-            // 4. 初始化侧边栏切换功能
-            initializeSidebars();
-            console.log('侧边栏切换功能初始化完成');
+            const rightSidebar = new RightSidebarController();
+            await rightSidebar.init();
+            console.log('右侧边栏初始化完成');
 
 
             console.log('应用初始化完成');
@@ -31,17 +30,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initializeApp();
 });
-
-/**
- * 初始化侧边栏切换功能
- */
-function initializeSidebars() {
-    const rightSidebar = document.getElementById('rightSidebar');
-    const mainContent = document.getElementById('mainContent');
-
-    // 右侧边栏切换按钮事件
-    document.getElementById('toggleRightSidebarBtn').addEventListener('click', () => {
-        rightSidebar.classList.toggle('collapsed');
-        mainContent.classList.toggle('right-expanded');
-    });
-}
