@@ -47,7 +47,7 @@ public class McpController {
 	@GetMapping("/weather")
 	public String simpleChat(String latitude, String longitude) throws GraphStateException {
 		return stateGraph.compile().invoke(Map.of("latitude", latitude, "longitude", longitude))
-			.get().value("mcp_result").toString();
+			.get().toString();
 	}
 
 }

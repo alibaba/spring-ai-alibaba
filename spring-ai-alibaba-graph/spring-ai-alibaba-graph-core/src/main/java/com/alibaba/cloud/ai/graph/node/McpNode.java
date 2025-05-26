@@ -30,8 +30,10 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.lang.reflect.Method;
 
 /**
  * MCP Node: 调用 MCP Server
@@ -114,7 +116,20 @@ public class McpNode implements NodeAction {
 		Map<String, Object> updatedState = new HashMap<>();
 //		updatedState.put("mcp_result", result.content());
 		if (StringUtils.hasLength(this.outputKey)) {
-			updatedState.put(this.outputKey, result.content());
+			Object content = result.content();
+			if (content instanceof List<?> list && !list.isEmpty()) {
+				Object first = list.get(0);
+				// 兼容 TextContent 的 text 字段
+				try {
+					Method getText = first.getClass().getMethod("getText");
+					Object text = getText.invoke(first);
+                    updatedState.put(this.outputKey, Objects.requireNonNullElse(text, first).toString());
+				} catch (Exception e) {
+					updatedState.put(this.outputKey, first.toString());
+				}
+			} else {
+				updatedState.put(this.outputKey, content);
+			}
 		}
 		log.info("[McpNode] 状态更新: {}", updatedState);
 		return updatedState;
