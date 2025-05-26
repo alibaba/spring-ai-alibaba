@@ -256,12 +256,12 @@ class RightSidebarController {
                                     <span class="value">${this._escapeHtml(tas.toolName || '')}</span>
                                 </div>
                                 <div class="input">
-                                    <span class="label">输入:</span>
-                                    <pre>${this._escapeHtml(this._formatJson(tas.toolInput))}</pre>
+                                    <span class="label">工具参数:</span>
+                                    <pre>${this._escapeHtml(this._formatJson(tas.toolParameters))}</pre>
                                 </div>
                                 <div class="output">
-                                    <span class="label">输出:</span>
-                                    <pre>${this._escapeHtml(this._formatJson(tas.toolOutput))}</pre>
+                                    <span class="label">执行结果:</span>
+                                    <pre>${this._escapeHtml(this._formatJson(tas.actionResult))}</pre>
                                 </div>
                             </div>
                         </div>
