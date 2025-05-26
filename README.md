@@ -19,13 +19,13 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 
 > Because Spring AI Alibaba is developed based on Spring Boot 3.x, it requires JDK version 17 and above.
 
-1. Add `spring-ai-alibaba-starter` dependency to your project.
+1. Add `spring-ai-alibaba-starter-dashscope` dependency to your project.
 
    ```xml
    <dependency>
         <groupId>com.alibaba.cloud.ai</groupId>
         <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.0.1</version>
    </dependency>
    ```
 
