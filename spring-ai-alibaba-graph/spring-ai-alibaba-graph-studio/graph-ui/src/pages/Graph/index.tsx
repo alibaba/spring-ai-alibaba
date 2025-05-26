@@ -102,7 +102,7 @@ const GraphIndex: React.FC = () => {
       version: '1.0',
       groupId: 'com.demo.ai.flow',
       artifactId: 'Demo',
-      springAIAlibabaVersion: '1.0.0-M3.workflow-SNAPSHOT',
+      springAIAlibabaVersion: '1.0.0.1',
       jdk: 'JDK17',
       createTime: '2024-12-01 12:10:09',
       updateTime: '2024-12-01 12:10:09',
