@@ -1,12 +1,11 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * Copyright 2024-2025 the original author or authors.
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +18,7 @@ package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import org.springframework.util.StringUtils;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,6 +52,8 @@ public class McpNode implements NodeAction {
 
 	private final String outputKey;
 
+	private final List<String> inputParamKeys;
+
 	private final HttpClientSseClientTransport transport;
 
 	private final McpSyncClient client;
@@ -61,6 +64,7 @@ public class McpNode implements NodeAction {
 		this.headers = builder.headers;
 		this.params = builder.params;
 		this.outputKey = builder.outputKey;
+		this.inputParamKeys = builder.inputParamKeys;
 		// 构建 transport 和 client
 		HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(this.url);
 		if (this.headers != null && !this.headers.isEmpty()) {
@@ -76,11 +80,25 @@ public class McpNode implements NodeAction {
 		log.info("[McpNode] 开始执行 apply，原始配置: url={}, tool={}, headers={}, params={}", url, tool, headers, params);
 		// 变量替换
 		String finalTool = replaceVariables(tool, state);
-		Map<String, Object> finalParams = replaceVariablesObj(params, state);
+		Map<String, Object> finalParams = new HashMap<>();
+		// 1. 先从inputParamKeys读取
+		if (inputParamKeys != null) {
+			for (String key : inputParamKeys) {
+				Object value = state.value(key).orElse(null);
+				if (value != null) {
+					finalParams.put(key, value);
+				}
+			}
+		}
+		// 2. 再用params（变量替换后）覆盖
+		Map<String, Object> replacedParams = replaceVariablesObj(params, state);
+		if (replacedParams != null) {
+			finalParams.putAll(replacedParams);
+		}
 		log.info("[McpNode] 变量替换后: url={}, tool={}, headers={}, params={}", url, finalTool, headers, finalParams);
 
 		// 直接使用已初始化的 client
-		Object result;
+		CallToolResult result;
 		try {
 			McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(finalTool, finalParams);
 			log.info("[McpNode] CallToolRequest 构建: {}", request);
@@ -94,9 +112,9 @@ public class McpNode implements NodeAction {
 
 		// 结果处理
 		Map<String, Object> updatedState = new HashMap<>();
-		updatedState.put("mcp_result", result);
+//		updatedState.put("mcp_result", result.content());
 		if (StringUtils.hasLength(this.outputKey)) {
-			updatedState.put(this.outputKey, result);
+			updatedState.put(this.outputKey, result.content());
 		}
 		log.info("[McpNode] 状态更新: {}", updatedState);
 		return updatedState;
@@ -148,6 +166,8 @@ public class McpNode implements NodeAction {
 
 		private String outputKey;
 
+		private List<String> inputParamKeys;
+
 		public Builder url(String url) {
 			this.url = url;
 			return this;
@@ -170,6 +190,11 @@ public class McpNode implements NodeAction {
 
 		public Builder outputKey(String outputKey) {
 			this.outputKey = outputKey;
+			return this;
+		}
+
+		public Builder inputParamKeys(List<String> inputParamKeys) {
+			this.inputParamKeys = inputParamKeys;
 			return this;
 		}
 
