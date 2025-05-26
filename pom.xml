@@ -141,8 +141,12 @@
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-dashscope</module>
 
         <!-- Spring AI Alibaba MCP -->
+        <!-- Nacos2 version -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos2-mcp-client</module>
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos2-mcp-server</module>
+        <!-- Nacos3 version -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-client</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-mcp-server</module>
 
         <!-- Spring AI Alibaba Nacos Prompt Template -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-prompt</module>
@@ -154,6 +158,8 @@
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos2-mcp-client</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos2-mcp-server</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-client</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-mcp-server</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>
     </modules>
 
@@ -192,7 +198,8 @@
         <dashscope-sdk-java.version>2.15.1</dashscope-sdk-java.version>
 
         <!-- Nacos -->
-        <nacos-client.version>2.5.1</nacos-client.version>
+        <nacos2.version>2.5.1</nacos2.version>
+        <nacos3.version>3.0.1</nacos3.version>
         <nacos-client-mse-extension.version>1.0.4</nacos-client-mse-extension.version>
         <spring-alibaba-nacos-config.version>2023.0.1.3</spring-alibaba-nacos-config.version>
 
