@@ -23,7 +23,7 @@ import java.util.List;
 
 /**
  * @author yingzi
- * @date 2025/5/18 15:01
+ * @since 2025/5/18 15:01
  */
 @Data
 public class TavilySearchResponse {
