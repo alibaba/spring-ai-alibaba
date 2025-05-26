@@ -39,7 +39,7 @@ import java.util.Map;
 
 /**
  * @author yingzi
- * @date 2025/4/29:10:05
+ * @since 2025/4/29:10:05
  */
 @AutoConfiguration(after = { Nacos2McpSseClientAutoConfiguration.class, McpClientAutoConfiguration.class })
 @ConditionalOnClass({ McpSchema.class })

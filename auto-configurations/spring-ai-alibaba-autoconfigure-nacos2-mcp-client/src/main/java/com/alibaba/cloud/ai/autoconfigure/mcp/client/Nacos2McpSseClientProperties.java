@@ -23,7 +23,7 @@ import java.util.Map;
 
 /**
  * @author yingzi
- * @date 2025/4/29:08:24
+ * @since 2025/4/29:08:24
  */
 @ConfigurationProperties("spring.ai.alibaba.mcp.client.sse")
 public class Nacos2McpSseClientProperties {

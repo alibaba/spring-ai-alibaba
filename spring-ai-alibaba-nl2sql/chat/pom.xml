@@ -9,6 +9,14 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-nl2sql-chat</artifactId>
+    <name>Chat Service For Spring AI Alibaba</name>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
+
     <properties>
         <spring-ai.version>1.0.0</spring-ai.version>
         <spring-ai-alibaba.version>1.0.0.1</spring-ai-alibaba.version>

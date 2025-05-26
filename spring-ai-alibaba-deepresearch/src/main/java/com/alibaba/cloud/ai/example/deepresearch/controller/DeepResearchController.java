@@ -36,7 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @author yingzi
- * @date 2025/5/17 19:27
+ * @since 2025/5/17 19:27
  */
 @RestController
 @RequestMapping("/deep-research")
