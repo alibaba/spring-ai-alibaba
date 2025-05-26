@@ -9,6 +9,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-nl2sql-management</artifactId>
+    <name>Data Processing Service For Spring AI Alibaba</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
