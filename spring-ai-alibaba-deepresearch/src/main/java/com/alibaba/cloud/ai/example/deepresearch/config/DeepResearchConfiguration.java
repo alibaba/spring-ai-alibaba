@@ -52,7 +52,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * @author yingzi
- * @date 2025/5/17 17:10
+ * @since 2025/5/17 17:10
  */
 @Configuration
 public class DeepResearchConfiguration {

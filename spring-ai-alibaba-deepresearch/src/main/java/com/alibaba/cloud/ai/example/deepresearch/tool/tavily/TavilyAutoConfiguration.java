@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * @author yingzi
- * @date 2025/5/18 15:26
+ * @since 2025/5/18 15:26
  */
 @Configuration
 @EnableConfigurationProperties(TavilySearchProperties.class)
