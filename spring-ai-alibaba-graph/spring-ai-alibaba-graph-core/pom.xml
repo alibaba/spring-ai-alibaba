@@ -190,7 +190,7 @@
             <version>0.10.0</version>
             <scope>compile</scope>
         </dependency>
-    
+
     </dependencies>
 
     <reporting>

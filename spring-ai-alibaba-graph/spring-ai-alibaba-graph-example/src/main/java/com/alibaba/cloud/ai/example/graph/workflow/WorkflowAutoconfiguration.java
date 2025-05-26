@@ -53,46 +53,48 @@ public class WorkflowAutoconfiguration {
 		};
 
 		QuestionClassifierNode feedbackClassifier = QuestionClassifierNode.builder()
-				.chatClient(chatClient)
-				.inputTextKey("input")
-				.categories(List.of("positive feedback", "negative feedback"))
-				.classificationInstructions(
-						List.of("Try to understand the user's feeling when he/she is giving the feedback."))
-				.build();
+			.chatClient(chatClient)
+			.inputTextKey("input")
+			.categories(List.of("positive feedback", "negative feedback"))
+			.classificationInstructions(
+					List.of("Try to understand the user's feeling when he/she is giving the feedback."))
+			.build();
 
 		QuestionClassifierNode specificQuestionClassifier = QuestionClassifierNode.builder()
-				.chatClient(chatClient)
-				.inputTextKey("input")
-				.categories(List.of("after-sale service", "transportation", "product quality", "others"))
-				.classificationInstructions(List
-						.of("What kind of service or help the customer is trying to get from us? Classify the question based on your understanding."))
-				.build();
+			.chatClient(chatClient)
+			.inputTextKey("input")
+			.categories(List.of("after-sale service", "transportation", "product quality", "others"))
+			.classificationInstructions(List
+				.of("What kind of service or help the customer is trying to get from us? Classify the question based on your understanding."))
+			.build();
 
 		// 示例：添加 MCP Node
 		McpNode mcpNode = McpNode.builder()
-				.url("http://localhost:8181/sse") // MCP Server SSE 地址
-				.tool("echoMessage") // MCP 工具名（需根据实际 MCP Server 配置）
-				.param("message", "Hello from MCP!") // 工具参数
-				.outputKey("mcp_result")
-				.build();
+			.url("http://localhost:8181/sse") // MCP Server SSE 地址
+			.tool("getWeatherForecastByLocation") // MCP 工具名（需根据实际 MCP Server 配置）
+			.param("latitude",39.9042) // 工具参数
+			.param("longitude",116.4074) // 工具参数
+				.header("clientId", "111222") // 可选：添加请求头
+			.outputKey("mcp_result")
+			.build();
 
 		StateGraph stateGraph = new StateGraph("Consumer Service Workflow Demo", stateFactory)
-				.addNode("feedback_classifier", node_async(feedbackClassifier))
 				.addNode("mcp_node", node_async(mcpNode))
-				.addNode("specific_question_classifier", node_async(specificQuestionClassifier))
-				.addNode("recorder", node_async(new RecordingNode()))
+				.addNode("feedback_classifier", node_async(feedbackClassifier))
+			.addNode("specific_question_classifier", node_async(specificQuestionClassifier))
+			.addNode("recorder", node_async(new RecordingNode()))
 
-				.addEdge(START, "mcp_node")
-				.addEdge("mcp_node", "feedback_classifier")
-				.addConditionalEdges("feedback_classifier",
-						edge_async(new CustomerServiceController.FeedbackQuestionDispatcher()),
-						Map.of("positive", "recorder", "negative", "specific_question_classifier"))
-				
-				.addConditionalEdges("specific_question_classifier",
-						edge_async(new CustomerServiceController.SpecificQuestionDispatcher()),
-						Map.of("after-sale", "recorder", "transportation", "recorder", "quality", "recorder", "others",
-								"recorder"))
-				.addEdge("recorder", END);
+			.addEdge(START, "mcp_node")
+			.addEdge("mcp_node", "feedback_classifier")
+			.addConditionalEdges("feedback_classifier",
+					edge_async(new CustomerServiceController.FeedbackQuestionDispatcher()),
+					Map.of("positive", "recorder", "negative", "specific_question_classifier"))
+
+			.addConditionalEdges("specific_question_classifier",
+					edge_async(new CustomerServiceController.SpecificQuestionDispatcher()),
+					Map.of("after-sale", "recorder", "transportation", "recorder", "quality", "recorder", "others",
+							"recorder"))
+			.addEdge("recorder", END);
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
 				"workflow graph");
