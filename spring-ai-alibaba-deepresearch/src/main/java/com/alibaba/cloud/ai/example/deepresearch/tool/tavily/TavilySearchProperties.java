@@ -22,7 +22,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author yingzi
- * @date 2025/5/18 15:24
+ * @since 2025/5/18 15:24
  */
 @Setter
 @Getter
