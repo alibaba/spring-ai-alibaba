@@ -39,6 +39,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+
 @Component
 public class WorkflowProjectGenerator implements ProjectGenerator {
 
@@ -62,7 +65,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	private final List<NodeSection> nodeNodeSections;
 
-	public WorkflowProjectGenerator(@Qualifier("customDSLAdapter") DSLAdapter dslAdapter,
+	public WorkflowProjectGenerator(@Qualifier("difyDSLAdapter") DSLAdapter dslAdapter,
 			ObjectProvider<MustacheTemplateRenderer> templateRenderer, List<NodeSection> nodeNodeSections) {
 		this.dslAdapter = dslAdapter;
 		this.templateRenderer = templateRenderer
@@ -119,7 +122,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			// generation" + node.getType()));
 			for (NodeSection nodeSection : nodeNodeSections) {
 				if (nodeSection.support(nodeType)) {
-					stringBuilder.append(nodeSection.render(node.getData()));
+					stringBuilder.append(nodeSection.render(node));
 					break;
 				}
 			}
@@ -128,8 +131,23 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 	}
 
 	private String renderEdgeSections(List<Edge> edges) {
-		// todo
-		return "";
+        StringBuilder sb = new StringBuilder();
+        sb.append("// —— Graph 边 ——\n");
+        for (Edge edge : edges) {
+            // If source is a START or END constant, write START/END, otherwise write "nodeId"
+            String sourceLiteral = START.equals(edge.getSource())
+                    ? "START"
+                    : "\"" + edge.getSource() + "\"";
+            String targetLiteral = END.equals(edge.getTarget())
+                    ? "END"
+                    : "\"" + edge.getTarget() + "\"";
+            sb.append(String.format(
+                    "stateGraph.addEdge(%s, %s);%n",
+                    sourceLiteral, targetLiteral
+            ));
+        }
+        sb.append("\n");
+        return sb.toString();
 	}
 
 	private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, String>> models, Path projectRoot,
