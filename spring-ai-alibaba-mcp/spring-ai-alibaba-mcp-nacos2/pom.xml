@@ -12,15 +12,13 @@
     <artifactId>spring-ai-alibaba-mcp-nacos2</artifactId>
     <version>${revision}</version>
     <name>Spring AI Alibaba MCP Built on Nacos2</name>
-    <description>Nacos3 MCP for Spring AI Alibaba</description>
+    <description>Nacos2 MCP for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
         <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
         <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
-
-    <properties></properties>
 
     <dependencies>
 
