@@ -13,11 +13,14 @@
     <version>${revision}</version>
     <name>Spring AI Alibaba MCP Nacos</name>
     <description>Nacos MCP for Spring AI Alibaba</description>
-
-    <properties></properties>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
 
     <dependencies>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>

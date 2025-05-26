@@ -12,6 +12,12 @@
     <artifactId>spring-ai-alibaba-nl2sql</artifactId>
     <packaging>pom</packaging>
     <name>Spring AI Alibaba NL2SQL</name>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
 
     <modules>
         <module>chat</module>
