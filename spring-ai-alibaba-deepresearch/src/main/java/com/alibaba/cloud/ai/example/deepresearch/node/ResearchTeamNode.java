@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
@@ -43,7 +44,7 @@ public class ResearchTeamNode implements NodeAction {
 		Map<String, Object> updated = new HashMap<>();
 
 		Optional<Plan> currentPlanOpt = state.value("current_plan", Plan.class);
-		if (currentPlanOpt.isEmpty() || !currentPlanOpt.get().getSteps().isEmpty()) {
+		if (currentPlanOpt.isEmpty() || currentPlanOpt.get().getSteps().isEmpty()) {
 			updated.put("research_team_next_node", nextStep);
 			return updated;
 		}
@@ -74,7 +75,7 @@ public class ResearchTeamNode implements NodeAction {
 	}
 
 	public boolean areAllExecutionResultsPresent(Plan plan) {
-		if (plan.getSteps() == null || plan.getSteps().isEmpty()) {
+		if (CollectionUtils.isEmpty(plan.getSteps())) {
 			return false;
 		}
 

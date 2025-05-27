@@ -17,13 +17,14 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.BackgroundInvestigationType;
-import com.alibaba.cloud.ai.example.deepresearch.model.SearchedContent;
-import com.alibaba.cloud.ai.example.deepresearch.model.TavilySearchResponse;
-import com.alibaba.cloud.ai.example.deepresearch.tool.tavily.TavilySearchApi;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,23 +32,26 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author yingzi
- * @since 2025/5/17 18:37
+ * @author Allen Hu
+ * @date 2025/05/24
  */
 
-public class BackgroundInvestigationNode implements BackgroundInvestigationNodeAction {
+public class BackgroundInvestigationToolCallsNode implements BackgroundInvestigationNodeAction {
 
-	private static final Logger logger = LoggerFactory.getLogger(BackgroundInvestigationNode.class);
+	private static final Logger logger = LoggerFactory.getLogger(BackgroundInvestigationToolCallsNode.class);
 
-	private final TavilySearchApi tavilySearchApi;
+	private final ChatClient chatClient;
 
-	public BackgroundInvestigationNode(TavilySearchApi tavilySearchApi) {
-		this.tavilySearchApi = tavilySearchApi;
+	private final ToolCallback[] toolCallbacks;
+
+	public BackgroundInvestigationToolCallsNode(ChatClient chatClient, ToolCallback[] toolCallbacks) {
+		this.chatClient = chatClient;
+		this.toolCallbacks = toolCallbacks;
 	}
 
 	@Override
 	public BackgroundInvestigationType of() {
-		return BackgroundInvestigationType.JUST_WEB_SEARCH;
+		return BackgroundInvestigationType.TOOL_CALLS;
 	}
 
 	@Override
@@ -58,15 +62,16 @@ public class BackgroundInvestigationNode implements BackgroundInvestigationNodeA
 			.orElseGet(ArrayList::new);
 		Message lastMessage = messages.isEmpty() ? null : messages.get(messages.size() - 1);
 		String query = lastMessage.getText();
-		TavilySearchResponse response = tavilySearchApi.search(query);
-		ArrayList<SearchedContent> results = new ArrayList<>();
-		for (TavilySearchResponse.ResultInfo resultInfo : response.getResults()) {
-			results.add(new SearchedContent(resultInfo.getTitle(), resultInfo.getContent()));
-		}
-		logger.info("✅ 搜索结果: {}", results);
+
+		String completion = chatClient.prompt(query)
+			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
+			.call()
+			.content();
+
+		logger.info("✅ 调查结果: {}", completion);
 
 		Map<String, Object> resultMap = new HashMap<>();
-		resultMap.put("background_investigation_results", results);
+		resultMap.put("background_investigation_results", Lists.newArrayList(completion));
 		return resultMap;
 	}
 

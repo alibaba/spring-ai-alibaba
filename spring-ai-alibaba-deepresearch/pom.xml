@@ -59,6 +59,11 @@
             <artifactId>lombok</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-tavilysearch</artifactId>
+        </dependency>
+
     </dependencies>
     <dependencyManagement>
         <dependencies>
