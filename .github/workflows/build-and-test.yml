@@ -33,6 +33,7 @@ permissions:
 
 jobs:
   format:
+    if: (github.repository == 'alibaba/spring-ai-alibaba')
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -40,6 +41,7 @@ jobs:
       - run: make format-check
 
   test:
+    if: (github.repository == 'alibaba/spring-ai-alibaba')
     runs-on: ubuntu-22.04
     needs: [format]
     steps:
@@ -48,6 +50,7 @@ jobs:
       - run: make test
 
   build:
+    if: (github.repository == 'alibaba/spring-ai-alibaba')
     runs-on: ubuntu-22.04
     needs: [format, test]
     steps:
