@@ -104,25 +104,33 @@ public class PlannerNode implements NodeAction {
 			return updated;
 		}
 
-		PromptTemplate promptTemplate = PromptTemplate.builder()
-			.template(converter.getFormat())
-			.renderer(StTemplateRenderer.builder().build())
-			.build();
-		Prompt prompt = promptTemplate.create();
+//		PromptTemplate promptTemplate = PromptTemplate.builder()
+//			.template(converter.getFormat())
+//			.renderer(StTemplateRenderer.builder().build())
+//			.build();
+//		Prompt prompt = promptTemplate.create();
 
-		Flux<String> StreamResult = chatClient.prompt(prompt)
-			.advisors(a -> a.param(CONVERSATION_ID, threadId))
-			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
-			.messages(messages)
-			.stream()
-			.content();
+//		Flux<String> StreamResult = chatClient.prompt(prompt)
+//			.advisors(a -> a.param(CONVERSATION_ID, threadId))
+//			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
+//			.messages(messages)
+//			.stream()
+//			.content();
+//
+//		String result = StreamResult.reduce((acc, next) -> acc + next).block();
+//		logger.info("Planner response: {}", result);
+//		assert result != null;
 
-		String result = StreamResult.reduce((acc, next) -> acc + next).block();
-		logger.info("Planner response: {}", result);
-		assert result != null;
+		ChatClient.CallResponseSpec call = chatClient.prompt()
+				.advisors(a -> a.param(CONVERSATION_ID, threadId))
+				.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
+				.messages(messages)
+				.call();
 		Plan curPlan = null;
+		String result = call.content();
 		try {
-			curPlan = converter.convert(result);
+//			curPlan = converter.convert(result);
+			curPlan = call.entity(Plan.class);
 			logger.info("反序列成功，convert: {}", curPlan);
 			if (curPlan.isHasEnoughContext()) {
 				logger.info("Planner response has enough context.");

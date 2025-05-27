@@ -65,5 +65,7 @@ public record ChatRequest(
 		/**
 		 * MCP 设置
 		 */
-		@JsonProperty(value = "mcp_settings") Map<String, Object> mcpSettings) {
+		@JsonProperty(value = "mcp_settings") Map<String, Object> mcpSettings,
+
+		@JsonProperty(value = "query", defaultValue = "如何制造火箭。") String query) {
 }

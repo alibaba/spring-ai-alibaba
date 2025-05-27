@@ -16,17 +16,14 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
 import com.alibaba.cloud.ai.example.deepresearch.model.ChatRequest;
-import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.bsc.async.AsyncGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,8 +31,18 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * @author yingzi
@@ -72,7 +79,8 @@ public class DeepResearchController {
 			return Flux.fromStream(overAllStateStream).map(overAllState -> {
 				Map<String, Object> result = new HashMap<>();
 				result.put("thread_id", chatRequest.threadId());
-				result.put("data", overAllState.data());
+				result.put("data: ", overAllState.data());
+				result.put("plan_iterations: ", overAllState.value("plan_iterations"));
 				return result;
 			});
 		}
@@ -80,7 +88,7 @@ public class DeepResearchController {
 		objectMap.put("thread_id", chatRequest.threadId());
 		objectMap.put("enable_background_investigation", chatRequest.enableBackgroundInvestigation());
 		objectMap.put("auto_accepted_plan", chatRequest.autoAcceptPlan());
-		objectMap.put("messages", chatRequest.messages());
+		objectMap.put("messages", List.of(new UserMessage(chatRequest.query())));
 		objectMap.put("plan_iterations", 0);
 		objectMap.put("max_step_num", chatRequest.maxStepNum());
 		objectMap.put("current_plan", null);
@@ -94,7 +102,8 @@ public class DeepResearchController {
 		return Flux.fromStream(overAllStateStream).map(overAllState -> {
 			Map<String, Object> result = new HashMap<>();
 			result.put("thread_id", chatRequest.threadId());
-			result.put("data", overAllState.data());
+			result.put("data: ", overAllState.data());
+			result.put("plan_iterations: ", overAllState.value("plan_iterations"));
 			return result;
 		});
 	}
