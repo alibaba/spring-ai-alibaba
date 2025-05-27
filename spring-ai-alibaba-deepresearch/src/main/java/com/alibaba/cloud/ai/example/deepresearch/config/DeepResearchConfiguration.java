@@ -88,11 +88,13 @@ public class DeepResearchConfiguration {
 			state.registerKeyAndStrategy("human_next_node", new ReplaceStrategy());
 			state.registerKeyAndStrategy("research_team_next_node", new ReplaceStrategy());
 
+			state.registerKeyAndStrategy("thread_id", new ReplaceStrategy());
 			state.registerKeyAndStrategy("messages", new ReplaceStrategy());
 			state.registerKeyAndStrategy("output", new ReplaceStrategy());
 			state.registerKeyAndStrategy("background_investigation_results", new ReplaceStrategy());
 			state.registerKeyAndStrategy("enable_background_investigation", new ReplaceStrategy());
 			state.registerKeyAndStrategy("plan_iterations", new ReplaceStrategy());
+			state.registerKeyAndStrategy("max_step_num", new ReplaceStrategy());
 			state.registerKeyAndStrategy("current_plan", new ReplaceStrategy());
 			state.registerKeyAndStrategy("auto_accepted_plan", new ReplaceStrategy());
 			state.registerKeyAndStrategy("feed_back", new ReplaceStrategy());

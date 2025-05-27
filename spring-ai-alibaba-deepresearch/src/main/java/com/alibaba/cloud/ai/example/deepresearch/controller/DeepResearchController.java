@@ -16,23 +16,26 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.example.deepresearch.model.ChatRequest;
+import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import org.bsc.async.AsyncGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 /**
  * @author yingzi
@@ -42,11 +45,58 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/deep-research")
 public class DeepResearchController {
 
+	private static final Logger logger = LoggerFactory.getLogger(DeepResearchController.class);
+
 	private final CompiledGraph compiledGraph;
 
 	@Autowired
 	public DeepResearchController(@Qualifier("deepResearch") StateGraph stateGraph) throws GraphStateException {
 		this.compiledGraph = stateGraph.compile();
+	}
+
+	@PostMapping("/chat/stream")
+	public Flux<Map<String, Object>> chatStream(@RequestBody ChatRequest chatRequest) {
+		RunnableConfig runnableConfig = RunnableConfig.builder()
+			.threadId(String.valueOf(chatRequest.threadId()))
+			.build();
+		Map<String, Object> objectMap = new HashMap<>();
+		// 人类反馈消息
+		if (!chatRequest.autoAcceptPlan() && StringUtils.hasText(chatRequest.interruptFeedback())) {
+			objectMap.put("feed_back", chatRequest.interruptFeedback());
+			StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
+			OverAllState state = stateSnapshot.state();
+			state.withResume();
+			state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
+			AsyncGenerator<NodeOutput> resultFuture = compiledGraph.stream(state, runnableConfig);
+			Stream<OverAllState> overAllStateStream = resultFuture.stream().map(NodeOutput::state);
+			return Flux.fromStream(overAllStateStream).map(overAllState -> {
+				Map<String, Object> result = new HashMap<>();
+				result.put("thread_id", chatRequest.threadId());
+				result.put("data", overAllState.data());
+				return result;
+			});
+		}
+		// 首次提问
+		objectMap.put("thread_id", chatRequest.threadId());
+		objectMap.put("enable_background_investigation", chatRequest.enableBackgroundInvestigation());
+		objectMap.put("auto_accepted_plan", chatRequest.autoAcceptPlan());
+		objectMap.put("messages", chatRequest.messages());
+		objectMap.put("plan_iterations", 0);
+		objectMap.put("max_step_num", chatRequest.maxStepNum());
+		objectMap.put("current_plan", null);
+		objectMap.put("final_report", "");
+		logger.info("init inputs: {}", objectMap);
+
+		objectMap.put("mcp_settings", chatRequest.mcpSettings());
+		Stream<OverAllState> overAllStateStream = compiledGraph.stream(objectMap, runnableConfig)
+			.stream()
+			.map(NodeOutput::state);
+		return Flux.fromStream(overAllStateStream).map(overAllState -> {
+			Map<String, Object> result = new HashMap<>();
+			result.put("thread_id", chatRequest.threadId());
+			result.put("data", overAllState.data());
+			return result;
+		});
 	}
 
 	@GetMapping("/chat")
