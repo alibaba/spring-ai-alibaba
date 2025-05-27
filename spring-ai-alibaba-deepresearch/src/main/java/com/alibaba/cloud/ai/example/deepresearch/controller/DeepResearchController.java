@@ -47,7 +47,6 @@ public class DeepResearchController {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchController.class);
 
-
 	private final CompiledGraph compiledGraph;
 
 	@Autowired
@@ -57,7 +56,9 @@ public class DeepResearchController {
 
 	@PostMapping("/chat/stream")
 	public Flux<Map<String, Object>> chatStream(@RequestBody ChatRequest chatRequest) {
-		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(String.valueOf(chatRequest.threadId())).build();
+		RunnableConfig runnableConfig = RunnableConfig.builder()
+			.threadId(String.valueOf(chatRequest.threadId()))
+			.build();
 		Map<String, Object> objectMap = new HashMap<>();
 		// 人类反馈消息
 		if (!chatRequest.autoAcceptPlan() && StringUtils.hasText(chatRequest.interruptFeedback())) {
@@ -87,14 +88,16 @@ public class DeepResearchController {
 		logger.info("init inputs: {}", objectMap);
 
 		objectMap.put("mcp_settings", chatRequest.mcpSettings());
-		Stream<OverAllState> overAllStateStream = compiledGraph.stream(objectMap, runnableConfig).stream().map(NodeOutput::state);
+		Stream<OverAllState> overAllStateStream = compiledGraph.stream(objectMap, runnableConfig)
+			.stream()
+			.map(NodeOutput::state);
 		return Flux.fromStream(overAllStateStream).map(overAllState -> {
 			Map<String, Object> result = new HashMap<>();
 			result.put("thread_id", chatRequest.threadId());
 			result.put("data", overAllState.data());
 			return result;
-		});	}
-
+		});
+	}
 
 	@GetMapping("/chat")
 	public Map<String, Object> chat(@RequestParam(value = "query", defaultValue = "草莓蛋糕怎么做呀") String query,

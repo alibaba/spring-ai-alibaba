@@ -63,21 +63,18 @@ public class PlannerNode implements NodeAction {
 	private final BeanOutputConverter<Plan> converter;
 
 	private final InMemoryChatMemoryRepository chatMemoryRepository = new InMemoryChatMemoryRepository();
+
 	private final int MAX_MESSAGES = 100;
+
 	private final MessageWindowChatMemory messageWindowChatMemory = MessageWindowChatMemory.builder()
-			.chatMemoryRepository(chatMemoryRepository)
-			.maxMessages(MAX_MESSAGES)
-			.build();
-
-
+		.chatMemoryRepository(chatMemoryRepository)
+		.maxMessages(MAX_MESSAGES)
+		.build();
 
 	public PlannerNode(ChatClient.Builder chatClientBuilder, ToolCallback[] toolCallbacks) {
 		this.chatClient = chatClientBuilder
-				.defaultAdvisors(
-						MessageChatMemoryAdvisor.builder(messageWindowChatMemory)
-								.build()
-				)
-				.build();
+			.defaultAdvisors(MessageChatMemoryAdvisor.builder(messageWindowChatMemory).build())
+			.build();
 		this.toolCallbacks = toolCallbacks;
 		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
 		});
@@ -108,15 +105,13 @@ public class PlannerNode implements NodeAction {
 		}
 
 		PromptTemplate promptTemplate = PromptTemplate.builder()
-				.template(converter.getFormat())
-				.renderer(StTemplateRenderer.builder().build())
-				.build();
+			.template(converter.getFormat())
+			.renderer(StTemplateRenderer.builder().build())
+			.build();
 		Prompt prompt = promptTemplate.create();
 
 		Flux<String> StreamResult = chatClient.prompt(prompt)
-				.advisors(
-						a -> a.param(CONVERSATION_ID, threadId)
-				)
+			.advisors(a -> a.param(CONVERSATION_ID, threadId))
 			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
 			.messages(messages)
 			.stream()
