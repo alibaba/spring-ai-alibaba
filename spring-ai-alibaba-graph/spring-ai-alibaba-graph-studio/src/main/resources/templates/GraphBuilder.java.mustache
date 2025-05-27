@@ -1,0 +1,33 @@
+package {{packageName}};
+
+import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.node.LlmNode;
+import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
+
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
+
+@Component
+public class GraphBuilder {
+
+    @Bean
+    public CompiledGraph buildGraph() throws GraphStateException {
+        OverAllState overAllState = new OverAllState();
+        // build state
+        // overAllState.registerKeyAndStrategy("prompt", (o, o2) -> o2);
+        {{stateSection}}
+
+        StateGraph stateGraph = new StateGraph(overAllState);
+        // add nodes
+        // LlmNode llmNode = new LlmNode();
+        // stateGraph.addNode("llm", AsyncNodeAction.node_async(llmNode));
+        {{nodeSection}}
+
+        // add edges
+        // stateGraph.addEdge(START, "llm");
+        // stateGraph.addEdge("llm", END);
+        {{edgeSection}}
+        return stateGraph.compile();
+    }
+}
