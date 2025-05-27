@@ -5,7 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const initializeApp = async () => {
         try {
             // 1. 初始化 UI 模块（包含基础事件系统）
-            await PlanExecutionManager.init();
+            // PlanExecutionManagerController is a class, we need to create an instance.
+            const planExecutionManager = new PlanExecutionManagerController();
+            planExecutionManager.init(); // init is synchronous
             console.log('UI 模块初始化完成');
 
             const chatInputHandler = new ChatInputHandler();

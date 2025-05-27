@@ -39,7 +39,9 @@ const PlanTemplateManager = (() => {
             console.log('PlanTemplateListUIHandler 初始化完成 from main');
 
             // 1. 初始化 UI 模块（包含基础事件系统）
-            await PlanExecutionManager.init();
+            // PlanExecutionManagerController is a class, we need to create an instance.
+            const planExecutionManager = new PlanExecutionManagerController();
+            planExecutionManager.init();
             console.log('UI 模块初始化完成');
 
         } catch (e) {
