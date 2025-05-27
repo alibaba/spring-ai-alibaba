@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
@@ -74,7 +75,7 @@ public class ResearchTeamNode implements NodeAction {
 	}
 
 	public boolean areAllExecutionResultsPresent(Plan plan) {
-		if (plan.getSteps() == null || plan.getSteps().isEmpty()) {
+		if (CollectionUtils.isEmpty(plan.getSteps())) {
 			return false;
 		}
 
