@@ -16,7 +16,7 @@ public class GraphRunController {
 
     private CompiledGraph graph;
 
-    public GraphRunController(CompiledGraph graph){
+    public GraphRunController(@Qualifier("buildGraph") CompiledGraph graph){
         this.graph = graph;
     }
 

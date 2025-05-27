@@ -12,7 +12,8 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 public class GraphBuilder {
 
     @Bean
-    public CompiledGraph buildGraph() throws GraphStateException {
+    public CompiledGraph buildGraph(ChatModel chatModel) throws GraphStateException {
+        ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(new SimpleLoggerAdvisor()).build();
         OverAllState overAllState = new OverAllState();
         // build state
         // overAllState.registerKeyAndStrategy("prompt", (o, o2) -> o2);
