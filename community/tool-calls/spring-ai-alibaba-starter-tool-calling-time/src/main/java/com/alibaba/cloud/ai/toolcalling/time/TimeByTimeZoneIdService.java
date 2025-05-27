@@ -25,14 +25,14 @@ import java.util.function.Function;
 /**
  * @author chengle
  */
-public class GetCurrentTimeByTimeZoneIdService
-		implements Function<GetCurrentTimeByTimeZoneIdService.Request, GetCurrentTimeByTimeZoneIdService.Response> {
+public class TimeByTimeZoneIdService
+		implements Function<TimeByTimeZoneIdService.Request, TimeByTimeZoneIdService.Response> {
 
 	@Override
-	public GetCurrentTimeByTimeZoneIdService.Response apply(GetCurrentTimeByTimeZoneIdService.Request request) {
+	public TimeByTimeZoneIdService.Response apply(TimeByTimeZoneIdService.Request request) {
 		String timeZoneId = request.timeZoneId;
 		return new Response(String.format("The current time zone is %s and the current time is " + "%s", timeZoneId,
-				ZoneUtils.getTimeByZoneId(timeZoneId)));
+				TimeUtils.getTimeByZoneId(timeZoneId)));
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -41,6 +41,7 @@ public class GetCurrentTimeByTimeZoneIdService
 			+ "zone id, such as Asia/Shanghai") String timeZoneId) {
 	}
 
+	@JsonClassDescription("TimeByTimeZoneIdService response")
 	public record Response(String description) {
 	}
 

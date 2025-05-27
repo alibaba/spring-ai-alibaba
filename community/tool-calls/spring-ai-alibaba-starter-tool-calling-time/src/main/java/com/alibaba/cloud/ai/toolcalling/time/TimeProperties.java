@@ -15,16 +15,17 @@
  */
 package com.alibaba.cloud.ai.toolcalling.time;
 
-import java.util.TimeZone;
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
 
 /**
- * @author chengle
+ * @author fengluo
  */
-public class GetCurrentLocalTimeService {
+@ConfigurationProperties(prefix = TimeProperties.TIME_PREFIX)
+public class TimeProperties extends CommonToolCallProperties {
 
-	public String getCurrentLocalTime() {
-		TimeZone timeZone = TimeZone.getDefault();
-		return String.format("The current local time is %s", ZoneUtils.getTimeByZoneId(timeZone.getID()));
-	}
+	protected static final String TIME_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".time";
 
 }
