@@ -56,7 +56,7 @@ public class DynamicNacosToolsWatcher {
 
 	private final DynamicMcpToolsProvider dynamicMcpToolsProvider;
 
-	private final Map<String, McpServerDetailInfo> serverDetailInfoCache = new ConcurrentHashMap<>();
+	private final Map<String, McpServerDetailInfo> serviceDetailInfoCache = new ConcurrentHashMap<>();
 
 	public DynamicNacosToolsWatcher(final NacosMcpDynamicProperties nacosMcpDynamicProperties,
 			final NacosMcpOperationService nacosMcpOperationService,
@@ -93,12 +93,12 @@ public class DynamicNacosToolsWatcher {
 
 	private void cleanupStaleServices(Set<String> currentServices) {
 		// 获取所有已缓存但不在当前服务列表中的服务
-		Set<String> staleServices = new HashSet<>(serverDetailInfoCache.keySet());
+		Set<String> staleServices = new HashSet<>(serviceDetailInfoCache.keySet());
 		staleServices.removeAll(currentServices);
 
 		// 移除过期服务的所有工具
 		for (String staleService : staleServices) {
-			McpServerDetailInfo staleServerDetail = serverDetailInfoCache.get(staleService);
+			McpServerDetailInfo staleServerDetail = serviceDetailInfoCache.get(staleService);
 			McpToolSpecification mcpToolSpec = staleServerDetail.getToolSpec();
 			if (mcpToolSpec != null) {
 				List<McpTool> toolsToRemove = mcpToolSpec.getTools();
@@ -117,12 +117,12 @@ public class DynamicNacosToolsWatcher {
 					dynamicMcpToolsProvider.removeTool(staleServerDetail.getName() + "_tools_" + tool.getName());
 				}
 			}
-			serverDetailInfoCache.remove(staleService);
+			serviceDetailInfoCache.remove(staleService);
 		}
 	}
 
 	private void handleChange() {
-		List<String> serviceNames = nacosMcpDynamicProperties.getServerNames();
+		List<String> serviceNames = nacosMcpDynamicProperties.getServiceNames();
 		if (CollectionUtils.isEmpty(serviceNames)) {
 			logger.warn("No service names configured, no tools will be watched");
 			return;
@@ -251,16 +251,16 @@ public class DynamicNacosToolsWatcher {
 		try {
 			McpServerDetailInfo mcpServerDetail = nacosMcpOperationService.getServerDetail(mcpName);
 			if (mcpServerDetail == null) {
-				logger.warn("No server detail info found for server: {},do not update", mcpName);
+				logger.warn("No service detail info found for service: {},do not update", mcpName);
 				return;
 			}
-			McpServerDetailInfo oldMcpServerDetail = serverDetailInfoCache.get(mcpName);
-			serverDetailInfoCache.put(mcpName, mcpServerDetail);
+			McpServerDetailInfo oldMcpServerDetail = serviceDetailInfoCache.get(mcpName);
+			serviceDetailInfoCache.put(mcpName, mcpServerDetail);
 			Set<String> needToDeleteTools = new HashSet<>();
 			Set<String> needToUpdateTools = new HashSet<>();
 			compareToolsChange(oldMcpServerDetail, mcpServerDetail, needToDeleteTools, needToUpdateTools);
 
-			logger.info("Nacos mcp server info (name {}): {}", mcpName, mcpServerDetail);
+			logger.info("Nacos mcp service info (name {}): {}", mcpName, mcpServerDetail);
 			McpToolSpecification toolSpec = mcpServerDetail.getToolSpec();
 			McpServerRemoteServiceConfig remoteServerConfig = mcpServerDetail.getRemoteServerConfig();
 			String protocol = mcpServerDetail.getVersionDetail().getVersion();
