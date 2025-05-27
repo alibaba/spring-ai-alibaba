@@ -3,7 +3,7 @@
 
 # [Spring AI Alibaba](https://java2ai.com)
 
-[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)  [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/alibaba/spring-ai-alibaba)
+[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html) [![CI Status](https://github.com/alibaba/spring-ai-alibaba/workflows/%F0%9F%9B%A0%EF%B8%8F%20Build%20and%20Test/badge.svg)](https://github.com/alibaba/spring-ai-alibaba/actions?query=workflow%3A%22%F0%9F%9B%A0%EF%B8%8F+Build+and+Test%22) [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/alibaba/spring-ai-alibaba)
 
 [中文版本](./README-zh.md) | [日本語](./README-ja.md)
 
@@ -19,13 +19,13 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 
 > Because Spring AI Alibaba is developed based on Spring Boot 3.x, it requires JDK version 17 and above.
 
-1. Add `spring-ai-alibaba-starter` dependency to your project.
+1. Add `spring-ai-alibaba-starter-dashscope` dependency to your project.
 
    ```xml
    <dependency>
         <groupId>com.alibaba.cloud.ai</groupId>
         <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.0.1</version>
    </dependency>
    ```
 
