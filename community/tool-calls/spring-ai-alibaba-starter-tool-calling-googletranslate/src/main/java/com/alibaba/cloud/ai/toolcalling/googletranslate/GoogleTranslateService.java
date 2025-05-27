@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.MultiValueMap;
@@ -69,7 +68,7 @@ public class GoogleTranslateService
 					.add("q", jsonPraseTool.objectToJson(request.text))
 					.add("format", "text")
 					.build();
-				String responseData = webClientTool.post(properties.getBaseUrl(), params, "").block();
+				String responseData = webClientTool.post("/", params, "").block();
 				return CommonToolCallUtils.handleResponse(responseData, data -> parseResponseData(data, request.text),
 						log);
 			}
@@ -80,20 +79,14 @@ public class GoogleTranslateService
 	}
 
 	private Response parseResponseData(String responseData, List<String> query) {
-		ObjectMapper mapper = new ObjectMapper();
 		Map<String, String> translationResult = new HashMap<>();
 		try {
-			JsonNode rootNode = mapper.readTree(responseData);
-			JsonNode data = rootNode.path("data");
-			if (data == null || data.isNull()) {
-				translateFailed(rootNode);
-				return null;
-			}
-			JsonNode translations = data.path("translations");
+			String translationStr = jsonPraseTool.getDepthFieldValueAsString(responseData, "data", "translations");
+			List<String> translations = jsonPraseTool.jsonToList(translationStr, String.class);
 			assert translations != null;
 			assert query.size() == translations.size();
 			for (int i = 0; i < translations.size(); i++) {
-				translationResult.put(query.get(i), translations.get(i).asText());
+				translationResult.put(query.get(i), translations.get(i));
 			}
 			return new Response(translationResult);
 		}

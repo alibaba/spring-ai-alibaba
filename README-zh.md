@@ -1,5 +1,10 @@
 # Spring AI Alibaba
 
+[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
+[![CI Status](https://github.com/alibaba/spring-ai-alibaba/workflows/%F0%9F%9B%A0%EF%B8%8F%20Build%20and%20Test/badge.svg)](https://github.com/alibaba/spring-ai-alibaba/actions?query=workflow%3A%22%F0%9F%9B%A0%EF%B8%8F+Build+and+Test%22)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/alibaba/spring-ai-alibaba)
+[![Maven central](https://maven-badges.sml.io/maven-central/com.alibaba.cloud.ai/spring-ai-alibaba/badge.svg)](https://maven-badges.sml.io/maven-central/com.alibaba.cloud.ai/spring-ai-alibaba)
+
 [Spring AI Alibaba](https://java2ai.com) 是一款 Java 语言实现的 AI 应用开发框架，旨在简化 Java AI 应用程序开发，让 Java
 开发者像使用 Spring 开发普通应用一样开发 AI 应用。Spring AI Alibaba 基于 Spring AI
 开源项目构建，默认提供阿里云基础模型服务、开源及商业生态组件的集成与最佳实践。

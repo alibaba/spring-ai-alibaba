@@ -28,7 +28,7 @@ public class TavilySearchProperties extends CommonToolCallProperties {
 
 	public TavilySearchProperties() {
 		super(BASE_URL);
-		this.setPropertiesFromEnv(null, null, null, "TAVILY_SEARCH_TOKEN");
+		this.setPropertiesFromEnv("TAVILY_SEARCH_API_KEY", null, null, null);
 	}
 
 }

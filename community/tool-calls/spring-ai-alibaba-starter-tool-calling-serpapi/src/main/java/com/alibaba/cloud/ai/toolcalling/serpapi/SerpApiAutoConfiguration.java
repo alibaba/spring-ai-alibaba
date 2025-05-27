@@ -42,7 +42,7 @@ public class SerpApiAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Use SerpApi search to query for the latest news.")
-	public SerpApiService serpApi(JsonParseTool jsonParseTool, SerpApiProperties serpApiProperties) {
+	public SerpApiService serpApiSearch(JsonParseTool jsonParseTool, SerpApiProperties serpApiProperties) {
 		Consumer<HttpHeaders> consumer = headers -> {
 			headers.add(HttpHeaders.USER_AGENT, SerpApiProperties.USER_AGENT_VALUE);
 			headers.add(HttpHeaders.CONNECTION, "keep-alive");
