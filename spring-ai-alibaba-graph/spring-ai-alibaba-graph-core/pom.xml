@@ -37,7 +37,6 @@
         <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
 
-
     <properties>
         <openai.version>0.22.92</openai.version>
     </properties>
