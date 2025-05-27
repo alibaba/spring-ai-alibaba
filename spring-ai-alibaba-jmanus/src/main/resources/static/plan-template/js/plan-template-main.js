@@ -20,8 +20,10 @@ const PlanTemplateManager = (() => {
 
 
             // 3. 初始化右侧边栏
-            await RightSidebar.init();
-            console.log('右侧边栏初始化完成');
+            // Assuming RightSidebarController is the class name and is globally available
+            const rightSidebar = new RightSidebarController();
+            rightSidebar.init(); // init is synchronous
+            console.log('右侧边栏初始化完成 (from PlanTemplateManager)');
 
             planTemplateManagerOldInstance = new PlanTemplateManagerOld();
             await planTemplateManagerOldInstance.init(); // planTemplateManagerOldInstance.init is now async
@@ -41,7 +43,7 @@ const PlanTemplateManager = (() => {
             console.log('UI 模块初始化完成');
 
         } catch (e) {
-            console.error('PlanTemplateManager: Error during ChatHandler.init():', e);
+            console.error('PlanTemplateManager: Error during initialization:', e);
         }
 
     };
