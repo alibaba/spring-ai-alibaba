@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
@@ -63,10 +64,10 @@ public class TavilySearchService implements Function<TavilySearchService.Request
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record Request(@JsonProperty("query") String query, @JsonProperty("topic") String topic,
-			@JsonProperty("search_depth") String searchDepth,
+			@JsonProperty("search_depth") @JsonPropertyDescription("Depth of the search, either “basic” or “advanced”. Default is “basic”.") String searchDepth,
 			@JsonProperty("chunks_per_source") Integer chunksPerSource, @JsonProperty("max_results") Integer maxResults,
-			@JsonProperty("time_range") String timeRange, @JsonProperty("days") Integer days,
-			@JsonProperty("include_answer") Boolean includeAnswer,
+			@JsonProperty("time_range") @JsonPropertyDescription("The time range back from the current date to filter results - “day”, “week”, “month”, or “year”. Default is None.") String timeRange,
+			@JsonProperty("days") Integer days, @JsonProperty("include_answer") Boolean includeAnswer,
 			@JsonProperty("include_raw_content") Boolean includeRawContent,
 			@JsonProperty("include_images") Boolean includeImages,
 			@JsonProperty("include_image_descriptions") Boolean includeImageDescriptions,
