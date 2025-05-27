@@ -1,6 +1,0 @@
-{
-  "*.{vue,ts,json}": [
-    // "lint:fix",
-    "prettier-format"
-  ]
-}

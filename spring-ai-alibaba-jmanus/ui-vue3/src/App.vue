@@ -1,116 +1,60 @@
-<!--
-  ~ Licensed to the Apache Software Foundation (ASF) under one or more
-  ~ contributor license agreements.  See the NOTICE file distributed with
-  ~ this work for additional information regarding copyright ownership.
-  ~ The ASF licenses this file to You under the Apache License, Version 2.0
-  ~ (the "License"); you may not use this file except in compliance with
-  ~ the License.  You may obtain a copy of the License at
-  ~
-  ~     http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
--->
-
 <script setup lang="ts">
-import { RouterView, useRouter } from 'vue-router'
-import enUS from 'ant-design-vue/es/locale/en_US'
-import zhCN from 'ant-design-vue/es/locale/zh_CN'
-import { computed, provide, reactive, ref, watch } from 'vue'
-import dayjs from 'dayjs'
-import { QuestionCircleOutlined } from '@ant-design/icons-vue'
-import { notification } from 'ant-design-vue'
-import { PROVIDE_INJECT_KEY } from '@/base/enums/ProvideInject'
-import { PRIMARY_COLOR } from '@/base/constants'
-import { changeLanguage, i18n, localeConfig } from '@/base/i18n'
-import devTool from '@/utils/DevToolUtil'
-
-dayjs.locale('en')
-
-const i18nConfig = reactive(localeConfig)
-watch(i18nConfig, (val) => {
-  dayjs.locale(val.locale)
-})
-
-provide(PROVIDE_INJECT_KEY.LOCALE, i18nConfig)
-
-/**
- * this function is showing some tips about our Q&A
- * TODO
- */
-function globalQuestion() {
-  devTool.todo('show Q&A tips')
-}
-
-const localeGlobal = reactive(i18n.global.locale)
+import { RouterView } from 'vue-router'
 </script>
 
 <template>
-  <a-config-provider
-    :locale="localeGlobal === 'en' ? enUS : zhCN"
-    :theme="{
-      token: {
-        colorPrimary: PRIMARY_COLOR
-      }
-    }"
-  >
+  <div id="app">
     <RouterView />
-
-    <a-float-button type="primary" class="__global_float_button_question" @click="globalQuestion">
-      <template #icon>
-        <QuestionCircleOutlined />
-      </template>
-    </a-float-button>
-  </a-config-provider>
+  </div>
 </template>
 
-<style lang="less">
-.__global_float_button_question {
-  right: 24px;
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-#nprogress .bar {
-  background: #000000 !important;
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell',
+    'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #0a0a0a;
+  color: #ffffff;
 }
 
-//If you want to show multiple cards, I think you maybe need this style to beautify
-._detail {
-  box-shadow: 8px 8px 4px rgba(162, 162, 162, 0.19);
+#app {
+  height: 100vh;
+  overflow: hidden;
 }
 
-//Display a sub-card in a card to display the data
-.description-item-card {
-  :deep(.ant-card-body) {
-    padding: 10px;
-  }
-  width: 80%;
-  margin-left: 20px;
-  border: 1px dashed rgba(162, 162, 162, 0.19);
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-//Display description fields or interactive text in a card
-.description-item-content {
-  &.no-card {
-    padding-left: 20px;
-  }
-  &.with-card:hover {
-    color: v-bind('PRIMARY_COLOR');
-  }
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
 }
 
-//The monitoring tab styles are highly uniform
-.__container_tabDemo3 {
-  .option {
-    padding-left: 16px;
-    .btn {
-      margin-right: 10px;
-    }
-  }
-  :deep(.spin) {
-    margin-top: 30px;
-  }
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Selection styles */
+::selection {
+  background: rgba(102, 126, 234, 0.3);
+}
+
+::-moz-selection {
+  background: rgba(102, 126, 234, 0.3);
 }
 </style>

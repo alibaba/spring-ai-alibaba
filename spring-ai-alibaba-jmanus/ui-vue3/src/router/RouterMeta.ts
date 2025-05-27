@@ -14,14 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import type { RouteMeta } from 'vue-router'
-import type { RouteRecordType } from '@/router/defaultRoutes'
-import type { Component } from 'vue'
+import type { RouteMeta } from "vue-router"
+import type { RouteRecordType } from "@/router/defaultRoutes"
+import type { Component } from "vue"
 
 export interface RouterMeta extends RouteMeta {
   icon?: string
   hidden?: boolean
   skip?: boolean
+  fullscreen?: boolean
   tab_parent?: boolean
   tab?: boolean
   _router_key?: string

@@ -1,269 +1,384 @@
-<!--
-  ~ Licensed to the Apache Software Foundation (ASF) under one or more
-  ~ contributor license agreements.  See the NOTICE file distributed with
-  ~ this work for additional information regarding copyright ownership.
-  ~ The ASF licenses this file to You under the Apache License, Version 2.0
-  ~ (the "License"); you may not use this file except in compliance with
-  ~ the License.  You may obtain a copy of the License at
-  ~
-  ~     http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
--->
 <template>
-  <div class="plan-execution">
-    <h1>{{ $t('menu.conversation') }}</h1>
-    <p class="description">{{ $t('menu.conversation') }}</p>
+  <div class="conversation-page">
+    <!-- Background effects -->
+    <div class="background-effects">
+      <div class="gradient-orb orb-1"></div>
+      <div class="gradient-orb orb-2"></div>
+      <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <h1>JTaskPilot</h1>
+        <span class="tagline">AI 驱动的自动化 Agent</span>
+      </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="main-content">
+      <div class="conversation-container">
+        <!-- Welcome section -->
+        <div class="welcome-section">
+          <h2 class="welcome-title">今天我能帮你构建什么？</h2>
+          <p class="welcome-subtitle">描述您的任务或项目，我将帮助您逐步规划和执行。</p>
+        </div>
+
+        <!-- Input section -->
+        <div class="input-section">
+          <div class="input-container">
+            <textarea
+              v-model="userInput"
+              ref="textareaRef"
+              class="main-input"
+              placeholder="描述您想构建或完成的内容..."
+              @keydown="handleKeydown"
+              @input="adjustTextareaHeight"
+            ></textarea>
+            <button class="send-button" :disabled="!userInput.trim()" @click="handleSend">
+              <Icon icon="carbon:send-alt" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Example prompts -->
+        <div class="examples-section">
+          <div class="examples-grid">
+            <button
+              v-for="example in examples"
+              :key="example.title"
+              class="example-card"
+              @click="selectExample(example)"
+            >
+              <Icon :icon="example.icon" class="example-icon" />
+              <div class="example-content">
+                <h3>{{ example.title }}</h3>
+                <p>{{ example.description }}</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { PRIMARY_COLOR } from '@/base/constants'
-import { onMounted, reactive } from 'vue'
-import { getClusterInfo } from '@/api/service/clusterInfo'
-import { getMetricsMetadata } from '@/api/service/serverInfo'
-import { useRoute } from 'vue-router'
-import { Chart } from '@antv/g2'
+import { ref, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
+import { Icon } from '@iconify/vue'
 
-const routeName = <string>useRoute().name
-let clusterInfo = reactive({
-  info: <{ [key: string]: any }>{},
-  report: <{ [key: string]: { value: any; icon: string } }>{}
-})
+const router = useRouter()
+const userInput = ref('')
+const textareaRef = ref<HTMLTextAreaElement>()
 
-let metricsMetadata = reactive({
-  info: <{ [key: string]: string }>{}
-})
+const examples = [
+  {
+    title: '查询股价',
+    description: '获取今天阿里巴巴的最新股价',
+    icon: 'carbon:chart-line-data',
+    prompt: '查询今天阿里巴巴的股价',
+  },
+  {
+    title: '预订机票',
+    description: '帮我查找并预订从上海到北京的机票',
+    icon: 'carbon:plane-flight',
+    prompt: '帮忙预定一下从上海到北京的机票',
+  },
+  {
+    title: '查询天气',
+    description: '获取北京今天的天气情况',
+    icon: 'carbon:partly-cloudy',
+    prompt: '查询北京今天的天气',
+  },
+  {
+    title: '设置提醒',
+    description: '提醒我明天下午三点开会',
+    icon: 'carbon:alarm',
+    prompt: '提醒我明天下午三点开会',
+  },
+]
 
-onMounted(() => {
-  setTimeout(async () => {
-    let clusterData = (await getClusterInfo({})).data
-    metricsMetadata.info = <{ [key: string]: string }>(await getMetricsMetadata({})).data
-    clusterInfo.info = <{ [key: string]: any }>clusterData
-    clusterInfo.report = {
-      application: {
-        icon: 'cil:applications-settings',
-        value: clusterInfo.info.appCount
-      },
-      services: {
-        icon: 'carbon:microservices-1',
-        value: clusterInfo.info.serviceCount
-      },
-      instances: {
-        icon: 'ri:instance-line',
-        value: clusterInfo.info.insCount
-      }
+const adjustTextareaHeight = () => {
+  nextTick(() => {
+    if (textareaRef.value) {
+      textareaRef.value.style.height = 'auto'
+      textareaRef.value.style.height = Math.min(textareaRef.value.scrollHeight, 200) + 'px'
     }
-
-    // releasesChart
-    const releasesData: any = []
-    const totalReleases = Object.values(clusterInfo.info.releases).reduce(
-      (acc: number, count: number) => acc + count,
-      0
-    )
-
-    if (typeof clusterInfo.info.releases === 'object') {
-      Object.keys(clusterInfo.info.releases).forEach((key) => {
-        const count = clusterInfo.info.releases[key]
-        releasesData.push({
-          item: key,
-          count: count,
-          percent: count / totalReleases
-        })
-      })
-    }
-
-    const releasesChart = new Chart({
-      container: 'releases_container',
-      width: 200,
-      height: 200,
-      autoFit: false
-    })
-
-    releasesChart.coordinate({ type: 'theta', outerRadius: 0.8, innerRadius: 0.5 })
-
-    releasesChart
-      .interval()
-      .data(releasesData)
-      .transform({ type: 'stackY' })
-      .encode('y', 'percent')
-      .encode('color', 'item')
-      .legend('color', { position: 'bottom', layout: { justifyContent: 'center' } })
-      .label({
-        position: 'outside',
-        text: (data) => `${data.item}: ${(data.percent * 100).toFixed(2)}%`
-      })
-      .tooltip((data) => ({
-        name: data.item,
-        value: `${(data.percent * 100).toFixed(2)}%`
-      }))
-
-    releasesChart
-      .text()
-      .style('text', '版本分布')
-      // Relative position
-      .style('x', '50%')
-      .style('y', '50%')
-      .style('fontSize', 10)
-      .style('fill', '#8c8c8c')
-      .style('textAlign', 'center')
-      .style('textBaseline', 'middle') // 垂直对齐
-
-    await releasesChart.render()
-
-    // protocolsChart
-    const protocolsData: any = []
-    const totalProtocols = Object.values(clusterInfo.info.protocols).reduce(
-      (acc: number, count: number) => acc + count,
-      0
-    )
-
-    if (typeof clusterInfo.info.protocols === 'object') {
-      Object.keys(clusterInfo.info.protocols).forEach((key) => {
-        const count = clusterInfo.info.protocols[key]
-        protocolsData.push({
-          item: key,
-          count: count,
-          percent: count / totalProtocols
-        })
-      })
-    }
-
-    const protocolsChart = new Chart({
-      container: 'protocols_container',
-      width: 200,
-      height: 200,
-      autoFit: false
-    })
-
-    protocolsChart.coordinate({ type: 'theta', outerRadius: 0.8, innerRadius: 0.5 })
-
-    protocolsChart
-      .interval()
-      .data(protocolsData)
-      .transform({ type: 'stackY' })
-      .encode('y', 'percent')
-      .encode('color', 'item')
-      .legend('color', { position: 'bottom', layout: { justifyContent: 'center' } })
-      .label({
-        position: 'outside',
-        text: (data) => `${data.item}: ${(data.percent * 100).toFixed(2)}%`
-      })
-      .tooltip((data) => ({
-        name: data.item,
-        value: `${(data.percent * 100).toFixed(2)}%`
-      }))
-
-    protocolsChart
-      .text()
-      .style('text', '协议分布')
-      // Relative position
-      .style('x', '50%')
-      .style('y', '50%')
-      .style('fontSize', 10)
-      .style('fill', '#8c8c8c')
-      .style('textAlign', 'center')
-      .style('textBaseline', 'middle') // 垂直对齐
-
-    await protocolsChart.render()
-
-    // discoveriesChart
-    const discoveriesData: any = []
-    const totalDiscoveries = Object.values(clusterInfo.info.discoveries).reduce(
-      (acc: number, count: number) => acc + count,
-      0
-    )
-
-    if (typeof clusterInfo.info.discoveries === 'object') {
-      Object.keys(clusterInfo.info.discoveries).forEach((key) => {
-        const count = clusterInfo.info.discoveries[key]
-        discoveriesData.push({
-          item: key,
-          count: count,
-          percent: count / totalDiscoveries
-        })
-      })
-    }
-
-    const discoveriesChart = new Chart({
-      container: 'discoveries_container',
-      width: 200,
-      height: 200,
-      autoFit: false
-    })
-
-    discoveriesChart.coordinate({ type: 'theta', outerRadius: 0.8, innerRadius: 0.5 })
-
-    discoveriesChart
-      .interval()
-      .data(discoveriesData)
-      .transform({ type: 'stackY' })
-      .encode('y', 'percent')
-      .encode('color', 'item')
-      .legend('color', { position: 'bottom', layout: { justifyContent: 'center' } })
-      .label({
-        position: 'outside',
-        text: (data) => `${data.item}: ${(data.percent * 100).toFixed(2)}%`
-      })
-      .tooltip((data) => ({
-        name: data.item,
-        value: `${(data.percent * 100).toFixed(2)}%`
-      }))
-
-    discoveriesChart
-      .text()
-      .style('text', '服务发现类型分布')
-      // Relative position
-      .style('x', '50%')
-      .style('y', '50%')
-      .style('fontSize', 10)
-      .style('fill', '#8c8c8c')
-      .style('textAlign', 'center')
-      .style('textBaseline', 'middle') // 垂直对齐
-
-    await discoveriesChart.render()
   })
-})
+}
+
+const handleKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault()
+    handleSend()
+  }
+}
+
+const handleSend = () => {
+  if (!userInput.value.trim()) return
+
+  // Navigate to plan page with the user input
+  const planId = Date.now().toString()
+  router.push({
+    name: 'plan',
+    params: { id: planId },
+    query: { prompt: userInput.value },
+  })
+}
+
+const selectExample = (example: any) => {
+  userInput.value = example.prompt
+  adjustTextareaHeight()
+}
 </script>
+
 <style lang="less" scoped>
-.__container_home_index {
-  max-height: calc(100vh - 60px);
-  overflow: auto;
-  .statistic {
-    width: 16vw;
+.conversation-page {
+  height: 100vh;
+  background: #0a0a0a;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.background-effects {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.3;
+  animation: float 6s ease-in-out infinite;
+
+  &.orb-1 {
+    width: 400px;
+    height: 400px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    top: -200px;
+    right: -200px;
+    animation-delay: 0s;
   }
 
-  .statistic-card {
-    border: 1px solid v-bind("(PRIMARY_COLOR) + '22'");
+  &.orb-2 {
+    width: 300px;
+    height: 300px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    bottom: -150px;
+    left: -150px;
+    animation-delay: 2s;
   }
 
-  .statistic-icon {
-    color: v-bind(PRIMARY_COLOR);
-    margin-bottom: -3px;
+  &.orb-3 {
+    width: 250px;
+    height: 250px;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation-delay: 4s;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-20px) rotate(120deg);
+  }
+  66% {
+    transform: translateY(10px) rotate(240deg);
+  }
+}
+
+.header {
+  position: relative;
+  z-index: 1;
+  padding: 32px 32px 0;
+}
+
+.logo {
+  text-align: center;
+
+  h1 {
+    font-size: 48px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
-  .statistic-icon-big {
-    width: 40px;
-    height: 40px;
-    background: v-bind('PRIMARY_COLOR');
-    line-height: 44px;
-    vertical-align: middle;
-    text-align: center;
-    border-radius: 5px;
-    font-size: 56px;
-    color: white;
+  .tagline {
+    color: #888888;
+    font-size: 16px;
+    font-weight: 400;
   }
-  .card {
-    margin-top: 10px;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 32px 32px;
+  position: relative;
+  z-index: 1;
+}
+
+.conversation-container {
+  width: 100%;
+  max-width: 800px;
+}
+
+.welcome-section {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.welcome-title {
+  font-size: 32px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 16px 0;
+}
+
+.welcome-subtitle {
+  font-size: 18px;
+  color: #888888;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.input-section {
+  margin-bottom: 48px;
+}
+
+.input-container {
+  position: relative;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+
+  &:focus-within {
+    border-color: #667eea;
+    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
+  }
+}
+
+.main-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1.5;
+  resize: none;
+  min-height: 24px;
+  max-height: 200px;
+  padding-right: 60px;
+
+  &::placeholder {
+    color: #666666;
+  }
+}
+
+.send-button {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
   }
 
-  .chart {
-    //height: 250px;
-    //aspect-ratio: 1/1;
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  svg {
+    font-size: 18px;
+  }
+}
+
+.examples-section {
+  .examples-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+  }
+}
+
+.example-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(102, 126, 234, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.example-icon {
+  font-size: 24px;
+  color: #667eea;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.example-content {
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 0 0 8px 0;
+  }
+
+  p {
+    font-size: 14px;
+    color: #888888;
+    margin: 0;
+    line-height: 1.4;
   }
 }
 </style>

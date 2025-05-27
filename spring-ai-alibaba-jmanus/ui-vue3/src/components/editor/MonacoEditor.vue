@@ -19,7 +19,7 @@
     :id="editorId"
     :style="{
       width: typeof width === 'number' ? width + 'px' : width,
-      height: typeof height === 'number' ? height + 'px' : height
+      height: typeof height === 'number' ? height + 'px' : height,
     }"
   ></div>
 </template>
@@ -33,36 +33,36 @@ const emit = defineEmits(['update:modelValue', 'blur', 'change'])
 const props = defineProps({
   modelValue: {
     type: String,
-    default: ''
+    default: '',
   },
   width: {
     type: [String, Number],
-    default: '100%'
+    default: '100%',
   },
   height: {
     type: [String, Number],
-    default: '100%'
+    default: '100%',
   },
   theme: {
     type: String,
-    default: 'vs-light'
+    default: 'vs-light',
   },
   language: {
     type: String,
-    default: 'json'
+    default: 'json',
   },
   editorId: {
     type: String,
-    default: 'editor'
+    default: 'editor',
   },
   editorOptions: {
     type: Object,
-    default: () => ({})
+    default: () => ({}),
   },
   readonly: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 })
 
 const { createEditor, updateVal, getEditor, onFormatDoc } = useMonaco(props.language)
@@ -73,7 +73,7 @@ const updateMonacoVal = (_val?: string) => {
 }
 watch(
   () => props.modelValue,
-  (val) => {
+  val => {
     if (val !== getEditor()?.getValue()) {
       updateMonacoVal(val)
     }
@@ -84,7 +84,7 @@ onMounted(() => {
   const editor = createEditor(document.querySelector(`#${props.editorId}`), {
     theme: props.theme,
     readOnly: props.readonly,
-    ...props.editorOptions
+    ...props.editorOptions,
   })
   updateMonacoVal()
   if (editor) {
@@ -100,6 +100,6 @@ onMounted(() => {
 })
 
 defineExpose({
-  onFormatDoc
+  onFormatDoc,
 })
 </script>

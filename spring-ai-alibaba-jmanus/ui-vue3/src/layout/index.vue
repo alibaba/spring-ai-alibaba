@@ -15,132 +15,134 @@
   ~ limitations under the License.
 -->
 <template>
-  <div class="__container_layout_index">
-    <a-layout style="height: 100vh">
-      <a-layout-sider
-        width="268"
-        v-model:collapsed="collapsed"
-        theme="light"
-        :trigger="null"
-        collapsible
-      >
+  <div class="layout-container">
+    <!-- Fullscreen pages (conversation, plan) -->
+    <div v-if="isFullscreenPage" class="fullscreen-page">
+      <router-view />
+    </div>
+    
+    <!-- Regular layout with sidebar -->
+    <div v-else class="regular-layout">
+      <div class="sidebar">
         <div class="logo">
-          <!-- <img :src="logo" /> -->
-          <template v-if="!collapsed">JTaskPilot</template>
+          <h2>JTaskPilot</h2>
         </div>
-        <layout-menu></layout-menu>
-      </a-layout-sider>
-      <a-layout>
-        <layout_header :collapsed="collapsed"></layout_header>
-        <layout_bread></layout_bread>
-        <a-layout-content class="layout-content">
-          <router-view v-slot="{ Component }">
-            <transition name="slide-fade">
-              <component :is="Component"> </component>
-            </transition>
-          </router-view>
-        </a-layout-content>
-        <a-layout-footer class="layout-footer"
-          >© 2025 The Spring AI Alibaba Community.
-        </a-layout-footer>
-      </a-layout>
-    </a-layout>
+        <nav class="navigation">
+          <router-link 
+            v-for="route in navigationRoutes" 
+            :key="route.name"
+            :to="route.path"
+            class="nav-item"
+            :class="{ active: $route.name === route.name }"
+          >
+            <Icon v-if="route.meta?.icon" :icon="route.meta.icon" class="nav-icon" />
+            {{ route.name }}
+          </router-link>
+        </nav>
+      </div>
+      
+      <div class="main-content">
+        <router-view />
+      </div>
+    </div>
   </div>
 </template>
+
 <script lang="ts" setup>
-import { h, provide, ref } from 'vue'
-import layoutMenu from './menu/layout_menu.vue'
-// import logo from '@/assets/logo.png'
-import Layout_header from '@/layout/header/layout_header.vue'
-import { PROVIDE_INJECT_KEY } from '@/base/enums/ProvideInject'
-import Layout_bread from '@/layout/breadcrumb/layout_bread.vue'
-import {
-  PRIMARY_COLOR
-  // TAB_HEADER_TITLE
-} from '@/base/constants'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { Icon } from '@iconify/vue'
+import { routes } from '@/router/defaultRoutes'
 
-// let __null = PRIMARY_COLOR
-const collapsed = ref<boolean>(false)
-provide(PROVIDE_INJECT_KEY.COLLAPSED, collapsed)
+const route = useRoute()
+
+const isFullscreenPage = computed(() => {
+  return route.meta?.fullscreen === true
+})
+
+const navigationRoutes = computed(() => {
+  const rootRoute = routes.find(r => r.name === 'Root')
+  return rootRoute?.children?.filter(child => !child.meta?.skip && !child.meta?.fullscreen) || []
+})
 </script>
+
 <style lang="less" scoped>
-.__container_layout_index {
-  :deep(.ant-layout-content) {
-    padding: 16px !important;
-  }
-  .logo {
-    height: 40px;
-    width: auto;
-    margin: 10px 15px;
-    padding-left: 10px;
-    padding-right: 10px;
-    border-radius: 8px;
-    background: v-bind('PRIMARY_COLOR');
-    line-height: 40px;
-    vertical-align: middle;
-    font-size: 22px;
-    color: white;
-
-    img {
-      width: 28px;
-      height: 28px;
-      margin-bottom: 5px;
-      margin-right: 5px;
-    }
-  }
-
-  .layout-content {
-    margin: 16px;
-    padding: 16px 16px 24px;
-    //background: #fff;
-    overflow: hidden;
-    height: calc(100vh - 140px);
-  }
-
-  .layout-footer {
-    height: 30px;
-    text-align: center;
-  }
-}
-</style>
-<style>
-.slide-fade-enter-active {
-  animation: slide-fade-in 0.5s;
+.layout-container {
+  height: 100vh;
+  background: #0a0a0a;
+  color: #ffffff;
 }
 
-@keyframes slide-fade-in {
-  0% {
-    transform: translateX(80px);
-    opacity: 0;
-  }
+.fullscreen-page {
+  height: 100vh;
+  width: 100vw;
+}
 
-  50% {
-    transform: translateX(-2px);
-    opacity: 20;
-  }
-  100% {
-    transform: translateX(0);
-    opacity: 100;
+.regular-layout {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 280px;
+  background: linear-gradient(180deg, #111111 0%, #0a0a0a 100%);
+  border-right: 1px solid #1a1a1a;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo {
+  margin-bottom: 32px;
+  
+  h2 {
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }
 
-.fade-enter-active {
-  animation: fade-in 0.6s ease-in-out;
+.navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.fade-leave-active {
-  animation: fade-in 0.6s reverse;
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: #888888;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+  }
+  
+  &.active {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    color: #667eea;
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
+  }
 }
 
-@keyframes fade-in {
-  0% {
-    transform: scale(0.9);
-    opacity: 0;
-  }
+.nav-icon {
+  font-size: 18px;
+}
 
-  100% {
-    transform: scale(1);
-    opacity: 100;
-  }
+.main-content {
+  flex: 1;
+  overflow: hidden;
 }
 </style>

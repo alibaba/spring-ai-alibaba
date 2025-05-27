@@ -103,7 +103,7 @@
         :scroll="{
           scrollToFirstRowOnChange: true,
           y: searchDomain.tableStyle?.scrollY || '',
-          x: searchDomain.tableStyle?.scrollX || ''
+          x: searchDomain.tableStyle?.scrollX || '',
         }"
         :columns="searchDomain?.table.columns.filter((x: any) => !x.__hide)"
         :data-source="searchDomain?.result"
@@ -133,24 +133,21 @@
 import type { ComponentInternalInstance } from 'vue'
 import { computed, getCurrentInstance, inject, reactive } from 'vue'
 
-import { PROVIDE_INJECT_KEY } from '@/base/enums/ProvideInject'
 import type { SearchDomain } from '@/utils/SearchUtil'
 import { Icon } from '@iconify/vue'
 import { PRIMARY_COLOR } from '@/base/constants'
 import { message } from 'ant-design-vue'
 
 const commonTool = reactive({
-  customColumns: false
+  customColumns: false,
 })
 let __ = PRIMARY_COLOR
 
 const {
   appContext: {
-    config: { globalProperties }
-  }
+    config: { globalProperties },
+  },
 } = <ComponentInternalInstance>getCurrentInstance()
-
-const searchDomain: SearchDomain | any = inject(PROVIDE_INJECT_KEY.SEARCH_DOMAIN)
 
 searchDomain.table.columns.forEach((column: any) => {
   if (column.title) {
@@ -171,7 +168,7 @@ const pagination: any = computed(() => {
       ': ' +
       v +
       ' ' +
-      globalProperties.$t('searchDomain.unit')
+      globalProperties.$t('searchDomain.unit'),
   }
 })
 
