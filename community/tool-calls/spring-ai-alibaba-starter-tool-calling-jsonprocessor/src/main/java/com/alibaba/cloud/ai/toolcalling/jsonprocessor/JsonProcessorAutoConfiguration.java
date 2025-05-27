@@ -18,45 +18,49 @@ package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
+
+import static com.alibaba.cloud.ai.toolcalling.jsonprocessor.JsonProcessorProperties.JSON_PROCESSOR_PREFIX;
 
 /**
  * @author 北极星
  */
 @Configuration
-@ConditionalOnClass({ JsonInsertService.class, JsonRemoveService.class, JsonReplaceService.class,
-		JsonParseService.class })
-@ConditionalOnProperty(value = "spring.ai.alibaba.toolcalling.jsonprocessor", name = "enabled", havingValue = "true")
-public class JsonAutoConfiguration {
+@EnableConfigurationProperties(JsonProcessorProperties.class)
+@ConditionalOnClass({ JsonProcessorInsertService.class, JsonProcessorRemoveService.class, JsonProcessorReplaceService.class,
+		JsonProcessorParseService.class })
+@ConditionalOnProperty(value = JSON_PROCESSOR_PREFIX, name = "enabled", havingValue = "true")
+public class JsonProcessorAutoConfiguration {
 
 	@Bean
-	@Description("use Gson to insert a jsonObject property field .")
+	@Description("Use Gson to insert a jsonObject property field .")
 	@ConditionalOnMissingBean
-	public JsonInsertService jsonInsertPropertyFieldFunction() {
-		return new JsonInsertService();
+	public JsonProcessorInsertService jsonInsertPropertyFieldFunction() {
+		return new JsonProcessorInsertService();
 	}
 
 	@Bean
-	@Description("use Gson to parse String JsonObject .")
+	@Description("Use Gson to parse String JsonObject .")
 	@ConditionalOnMissingBean
-	public JsonParseService jsonParsePropertyFunction() {
-		return new JsonParseService();
+	public JsonProcessorParseService jsonParsePropertyFunction() {
+		return new JsonProcessorParseService();
 	}
 
 	@Bean
-	@Description("use Gson to remove JsonObject property field .")
+	@Description("Use Gson to remove JsonObject property field .")
 	@ConditionalOnMissingBean
-	public JsonRemoveService jsonRemovePropertyFieldFunction() {
-		return new JsonRemoveService();
+	public JsonProcessorRemoveService jsonRemovePropertyFieldFunction() {
+		return new JsonProcessorRemoveService();
 	}
 
 	@Bean
-	@Description("use Gson to replace JsonObject Field Value .")
+	@Description("Use Gson to replace JsonObject Field Value .")
 	@ConditionalOnMissingBean
-	public JsonReplaceService jsonReplacePropertyFiledValueFunction() {
-		return new JsonReplaceService();
+	public JsonProcessorReplaceService jsonReplacePropertyFiledValueFunction() {
+		return new JsonProcessorReplaceService();
 	}
 
 }

@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -26,7 +27,7 @@ import java.util.function.Function;
 /**
  * @author 北极星
  */
-public class JsonRemoveService implements Function<JsonRemoveService.JsonRemoveRequest, Object> {
+public class JsonProcessorRemoveService implements Function<JsonProcessorRemoveService.JsonRemoveRequest, Object> {
 
 	@Override
 	public Object apply(JsonRemoveRequest request) throws JsonParseException {
@@ -40,6 +41,7 @@ public class JsonRemoveService implements Function<JsonRemoveService.JsonRemoveR
 		return jsonObject.remove(field);
 	}
 
+	@JsonClassDescription("JsonProcessorRemoveService request")
 	record JsonRemoveRequest(@JsonProperty("content") String content, @JsonProperty("value") String field) {
 	}
 

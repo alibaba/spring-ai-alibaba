@@ -27,25 +27,25 @@ import org.junit.jupiter.api.Test;
 /**
  * JsonInsertService Test Class
  */
-public class JsonInsertServiceTest {
+public class JsonProcessorInsertServiceTest {
 
-	private JsonInsertService jsonInsertService;
+	private JsonProcessorInsertService jsonProcessorInsertService;
 
 	private String jsonContent;
 
 	@BeforeEach
 	void setUp() {
-		jsonInsertService = new JsonInsertService();
+		jsonProcessorInsertService = new JsonProcessorInsertService();
 		jsonContent = "{\"name\":\"John\",\"age\":30}";
 	}
 
 	@Test
 	void testInsertStringValue() {
 		JsonElement newValue = new JsonPrimitive("Beijing");
-		JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(jsonContent, "city",
+		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(jsonContent, "city",
 				newValue);
 
-		JsonObject result = (JsonObject) jsonInsertService.apply(request);
+		JsonObject result = (JsonObject) jsonProcessorInsertService.apply(request);
 
 		Assertions.assertEquals("John", result.get("name").getAsString());
 		Assertions.assertEquals(30, result.get("age").getAsInt());
@@ -55,10 +55,10 @@ public class JsonInsertServiceTest {
 	@Test
 	void testInsertNumberValue() {
 		JsonElement newValue = new JsonPrimitive(true);
-		JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(jsonContent, "isActive",
+		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(jsonContent, "isActive",
 				newValue);
 
-		JsonObject result = (JsonObject) jsonInsertService.apply(request);
+		JsonObject result = (JsonObject) jsonProcessorInsertService.apply(request);
 
 		Assertions.assertEquals("John", result.get("name").getAsString());
 		Assertions.assertEquals(30, result.get("age").getAsInt());
@@ -71,10 +71,10 @@ public class JsonInsertServiceTest {
 		addressObject.addProperty("street", "Chang'an Street");
 		addressObject.addProperty("zipCode", "100000");
 
-		JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(jsonContent, "address",
+		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(jsonContent, "address",
 				addressObject);
 
-		JsonObject result = (JsonObject) jsonInsertService.apply(request);
+		JsonObject result = (JsonObject) jsonProcessorInsertService.apply(request);
 
 		Assertions.assertEquals("John", result.get("name").getAsString());
 		Assertions.assertEquals(30, result.get("age").getAsInt());
@@ -89,10 +89,10 @@ public class JsonInsertServiceTest {
 		hobbiesArray.add("Traveling");
 		hobbiesArray.add("Programming");
 
-		JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(jsonContent, "hobbies",
+		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(jsonContent, "hobbies",
 				hobbiesArray);
 
-		JsonObject result = (JsonObject) jsonInsertService.apply(request);
+		JsonObject result = (JsonObject) jsonProcessorInsertService.apply(request);
 
 		Assertions.assertEquals("John", result.get("name").getAsString());
 		Assertions.assertEquals(30, result.get("age").getAsInt());
@@ -105,31 +105,31 @@ public class JsonInsertServiceTest {
 	@Test
 	void testNullField() {
 		JsonElement newValue = new JsonPrimitive("Beijing");
-		JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(jsonContent, null,
+		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(jsonContent, null,
 				newValue);
 
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
-			jsonInsertService.apply(request);
+			jsonProcessorInsertService.apply(request);
 		});
 	}
 
 	@Test
 	void testNullValue() {
-		JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(jsonContent, "city",
+		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(jsonContent, "city",
 				null);
 
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
-			jsonInsertService.apply(request);
+			jsonProcessorInsertService.apply(request);
 		});
 	}
 
 	@Test
 	void testOverwriteExistingField() {
 		JsonElement newValue = new JsonPrimitive("David");
-		JsonInsertService.JsonInsertRequest request = new JsonInsertService.JsonInsertRequest(jsonContent, "name",
+		JsonProcessorInsertService.JsonInsertRequest request = new JsonProcessorInsertService.JsonInsertRequest(jsonContent, "name",
 				newValue);
 
-		JsonObject result = (JsonObject) jsonInsertService.apply(request);
+		JsonObject result = (JsonObject) jsonProcessorInsertService.apply(request);
 
 		Assertions.assertEquals("David", result.get("name").getAsString());
 		Assertions.assertEquals(30, result.get("age").getAsInt());

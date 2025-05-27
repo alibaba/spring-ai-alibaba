@@ -26,25 +26,25 @@ import org.junit.jupiter.api.Test;
 /**
  * Test class for JsonRemoveService
  */
-public class JsonRemoveServiceTest {
+public class JsonProcessorRemoveServiceTest {
 
-	private JsonRemoveService jsonRemoveService;
+	private JsonProcessorRemoveService jsonProcessorRemoveService;
 
 	private String jsonContent;
 
 	@BeforeEach
 	void setUp() {
-		jsonRemoveService = new JsonRemoveService();
+		jsonProcessorRemoveService = new JsonProcessorRemoveService();
 		jsonContent = "{\"name\":\"John\",\"age\":30,\"city\":\"Beijing\",\"isActive\":true}";
 	}
 
 	@Test
 	void testRemoveStringField() {
 		// Test removing a string type field
-		JsonRemoveService.JsonRemoveRequest request = new JsonRemoveService.JsonRemoveRequest(jsonContent, "name");
+		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(jsonContent, "name");
 
 		// Execute the remove operation and get the return value
-		JsonElement result = (JsonElement) jsonRemoveService.apply(request);
+		JsonElement result = (JsonElement) jsonProcessorRemoveService.apply(request);
 
 		// Verify that the returned value is the removed field value
 		Assertions.assertEquals("John", result.getAsString());
@@ -65,10 +65,10 @@ public class JsonRemoveServiceTest {
 	@Test
 	void testRemoveNumberField() {
 		// Test removing a number type field
-		JsonRemoveService.JsonRemoveRequest request = new JsonRemoveService.JsonRemoveRequest(jsonContent, "age");
+		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(jsonContent, "age");
 
 		// Execute the remove operation and get the return value
-		JsonElement result = (JsonElement) jsonRemoveService.apply(request);
+		JsonElement result = (JsonElement) jsonProcessorRemoveService.apply(request);
 
 		// Verify that the returned value is the removed field value
 		Assertions.assertEquals(30, result.getAsInt());
@@ -77,10 +77,10 @@ public class JsonRemoveServiceTest {
 	@Test
 	void testRemoveBooleanField() {
 		// Test removing a boolean type field
-		JsonRemoveService.JsonRemoveRequest request = new JsonRemoveService.JsonRemoveRequest(jsonContent, "isActive");
+		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(jsonContent, "isActive");
 
 		// Execute the remove operation and get the return value
-		JsonElement result = (JsonElement) jsonRemoveService.apply(request);
+		JsonElement result = (JsonElement) jsonProcessorRemoveService.apply(request);
 
 		// Verify that the returned value is the removed field value
 		Assertions.assertTrue(result.getAsBoolean());
@@ -89,11 +89,11 @@ public class JsonRemoveServiceTest {
 	@Test
 	void testRemoveNonExistentField() {
 		// Test removing a non-existent field
-		JsonRemoveService.JsonRemoveRequest request = new JsonRemoveService.JsonRemoveRequest(jsonContent,
+		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(jsonContent,
 				"nonExistentField");
 
 		// Execute the remove operation and get the return value
-		JsonElement result = (JsonElement) jsonRemoveService.apply(request);
+		JsonElement result = (JsonElement) jsonProcessorRemoveService.apply(request);
 
 		// Verify that the return value is null
 		Assertions.assertNull(result);
@@ -103,21 +103,21 @@ public class JsonRemoveServiceTest {
 	void testNonObjectJsonContent() {
 		// Test non-object type JSON content
 		String arrayJson = "[1, 2, 3]";
-		JsonRemoveService.JsonRemoveRequest request = new JsonRemoveService.JsonRemoveRequest(arrayJson, "0");
+		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(arrayJson, "0");
 
 		// Verify that an exception is thrown
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
-			jsonRemoveService.apply(request);
+			jsonProcessorRemoveService.apply(request);
 		});
 	}
 
 	@Test
 	void testRemoveAndVerifyJsonStructure() {
 		// Test the JSON structure after removing a field
-		JsonRemoveService.JsonRemoveRequest request = new JsonRemoveService.JsonRemoveRequest(jsonContent, "city");
+		JsonProcessorRemoveService.JsonRemoveRequest request = new JsonProcessorRemoveService.JsonRemoveRequest(jsonContent, "city");
 
 		// Execute the remove operation
-		jsonRemoveService.apply(request);
+		jsonProcessorRemoveService.apply(request);
 
 		// Manually build the expected JSON structure
 		JsonObject expectedJson = new JsonObject();

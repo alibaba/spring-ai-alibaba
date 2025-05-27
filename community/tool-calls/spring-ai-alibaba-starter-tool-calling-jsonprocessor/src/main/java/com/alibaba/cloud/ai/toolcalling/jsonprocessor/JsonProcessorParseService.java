@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
@@ -25,7 +26,7 @@ import java.util.function.Function;
 /**
  * @author 北极星
  */
-public class JsonParseService implements Function<JsonParseService.JsonParseRequest, Object> {
+public class JsonProcessorParseService implements Function<JsonProcessorParseService.JsonParseRequest, Object> {
 
 	@Override
 	public Object apply(JsonParseRequest request) throws JsonParseException {
@@ -35,6 +36,7 @@ public class JsonParseService implements Function<JsonParseService.JsonParseRequ
 		return jsonElement.getAsJsonObject().get(field).getAsString();
 	}
 
+	@JsonClassDescription("JsonProcessorParseService request")
 	record JsonParseRequest(@JsonProperty("content") String content, @JsonProperty("value") String field) {
 	}
 
