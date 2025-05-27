@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const chatInputHandler = new ChatInputHandler();
 
             // 2. 初始化聊天处理器
-            const chatHandler = new ChatHandler();
+            const chatHandler = new ChatHandler(planExecutionManager); // Pass planExecutionManager instance
             console.log('聊天处理器初始化完成');
 
             // 3. 初始化右侧边栏

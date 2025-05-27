@@ -15,7 +15,13 @@ const PlanTemplateManager = (() => {
         }
         try {
            
-            const chatHandler = new ChatHandler();
+            // 1. 初始化 UI 模块（包含基础事件系统）
+            // PlanExecutionManagerController is a class, we need to create an instance.
+            const planExecutionManager = new PlanExecutionManagerController();
+            planExecutionManager.init();
+            console.log('UI 模块初始化完成');
+
+            const chatHandler = new ChatHandler(planExecutionManager); // Pass planExecutionManager instance
             console.log('PlanTemplateManager: ChatHandler initialized.');
 
 
@@ -37,12 +43,6 @@ const PlanTemplateManager = (() => {
             planTemplateListUIHandler.init(); // This will call updatePlanTemplateListUI internally
             // planTemplateManagerOldInstance.setPlanTemplateListUIHandler(planTemplateListUIHandler); // No longer needed
             console.log('PlanTemplateListUIHandler 初始化完成 from main');
-
-            // 1. 初始化 UI 模块（包含基础事件系统）
-            // PlanExecutionManagerController is a class, we need to create an instance.
-            const planExecutionManager = new PlanExecutionManagerController();
-            planExecutionManager.init();
-            console.log('UI 模块初始化完成');
 
         } catch (e) {
             console.error('PlanTemplateManager: Error during initialization:', e);

@@ -7,6 +7,10 @@ class PlanExecutionManagerController {
         this.isPolling = false;
     }
 
+    getActivePlanId() {
+        return this.activePlanId;
+    }
+
     /**
      * 初始化UI组件
      */
@@ -253,7 +257,7 @@ class PlanExecutionManagerController {
                 TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_UPDATE_STATE, { enabled: false, placeholder: '等待用户在表单中输入...' });
                 this.isPolling = false; 
                 return;
-            }
+            } 
 
             if (details.agentExecutionSequence) {
                 const currentSize = details.agentExecutionSequence.length;
@@ -280,7 +284,7 @@ class PlanExecutionManagerController {
      * 开始轮询计划执行状态
      */
     startPolling() {
-        if (this.pollTimer) {
+        if (this.pollTimer) { // Added parentheses
             clearInterval(this.pollTimer);
         }
         this.pollTimer = setInterval(this.pollPlanStatus.bind(this), this.POLL_INTERVAL);

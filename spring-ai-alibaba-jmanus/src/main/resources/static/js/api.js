@@ -164,7 +164,7 @@ const ManusAPI = (() => {
      * @param {string} planJson - 计划JSON内容
      * @returns {Promise<Object>} - 保存结果
      */
-    const savePlan = async (planId, planJson) => {
+    const savePlanTemplate = async (planId, planJson) => {
         try {
             const response = await fetch(`${PLAN_TEMPLATE_URL}/save`, {
                 method: 'POST',
@@ -391,7 +391,7 @@ const ManusAPI = (() => {
         getDetails,
         generatePlan,
         executePlan,
-        savePlan,
+        savePlanTemplate,
         getPlanVersions,
         updatePlanTemplate,
         getVersionPlan,

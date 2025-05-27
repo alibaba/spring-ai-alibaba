@@ -273,7 +273,7 @@ class PlanTemplateManagerOld {
             // 调用保存接口，注意区分是保存模板还是执行后的计划（这里是模板）
             // ManusAPI.updatePlanTemplate(this.currentPlanTemplateId, this.planPromptInput.value, jsonContent);
             // 改为调用新的专用保存接口
-            await ManusAPI.savePlanTemplateJson(this.currentPlanTemplateId, jsonContent);
+            await ManusAPI.savePlanTemplate(this.currentPlanTemplateId, jsonContent);
 
             this.saveToVersionHistory(jsonContent); // 保存到本地版本历史
             alert('计划修改已保存成功！');

@@ -7,11 +7,13 @@ class ChatHandler {
     #currentDialogRoundId = null;
     #dialogRoundPlans = new Map(); // 存储对话轮次和planId的映射关系
     #userInputFormContainer = null; // 从 ManusUI 移入
+    #planExecutionManager; // Store the PlanExecutionManager instance
 
     /**
      * 初始化聊天处理器
      */
-    constructor() {
+    constructor(planExecutionManagerInstance) { // Accept PlanExecutionManager instance
+        this.#planExecutionManager = planExecutionManagerInstance; // Store the instance
         this.#chatArea = document.querySelector('.chat-area');
 
         // 订阅业务事件
@@ -278,10 +280,17 @@ class ChatHandler {
      * @param {HTMLElement} currentChatAreaParam - The chat area to append to as a fallback
      */
     #displayUserInputFormInternal(userInputState, planDetails, currentChatAreaParam) {
-        this.#removeUserInputForm(); // 移除已有的表单
+        // 1) If a form is already displayed by this instance, do not create a new one. Scroll to it.
+        if (this.#userInputFormContainer) {
+            console.log('ChatHandler: User input form is already displayed. Skipping new form request.');
+            this.#scrollToElement(this.#userInputFormContainer); // Scroll to the existing form
+            return;
+        }
+
+        // No form currently managed by this instance, proceed to create a new one.
 
         this.#userInputFormContainer = document.createElement('div');
-        this.#userInputFormContainer.className = 'user-input-form-container'; // 样式类名保持不变
+        this.#userInputFormContainer.className = 'user-input-form-container';
 
         let formHTML = `<p class="user-input-message">${userInputState.message || '请输入所需信息:'}</p>`;
         if (userInputState.formDescription) {
@@ -291,12 +300,11 @@ class ChatHandler {
         formHTML += '<form id="userInputForm">';
         if (userInputState.formInputs && userInputState.formInputs.length > 0) {
             userInputState.formInputs.forEach(input => {
-                // 为input的id和name创建一个更安全的版本，例如替换空格和特殊字符
-                const safeId = input.label.replace(/\W+/g, '_');
+                const safeId = input.label.replace(/\\W+/g, '_');
                 formHTML += `
                     <div class="form-group">
                         <label for="form-input-${safeId}">${input.label}:</label>
-                        <input type="text" id="form-input-${safeId}" name="${input.label}" value="${input.value || ''}" required>
+                        <input type="text" id="form-input-${safeId}" name="${input.label}" value="${input.value || ''}">
                     </div>
                 `;
             });
@@ -304,7 +312,7 @@ class ChatHandler {
             formHTML += `
                 <div class="form-group">
                     <label for="form-input-genericInput">输入:</label>
-                    <input type="text" id="form-input-genericInput" name="genericInput" required>
+                    <input type="text" id="form-input-genericInput" name="genericInput">
                 </div>
             `;
         }
@@ -341,7 +349,7 @@ class ChatHandler {
             if (currentChatAreaParam) currentChatAreaParam.appendChild(this.#userInputFormContainer); // Fallback
         }
 
-        this.#scrollToElement(this.#userInputFormContainer); // 滚动到表单
+        this.#scrollToElement(this.#userInputFormContainer); // Scroll to the newly created form
 
         const form = this.#userInputFormContainer.querySelector('#userInputForm');
         form.addEventListener('submit', async (e) => {
@@ -353,11 +361,11 @@ class ChatHandler {
             });
 
             try {
-                // 在提交前禁用表单，防止重复提交
                 form.querySelector('.submit-user-input-btn').disabled = true;
                 form.querySelector('.submit-user-input-btn').textContent = '提交中...';
 
-                await ManusAPI.submitFormInput(PlanExecutionManager.activePlanId, inputs);
+                await ManusAPI.submitFormInput(this.#planExecutionManager.getActivePlanId(), inputs);
+                // 3) Remove user input form when submit button clicked (already implemented)
                 this.#removeUserInputForm();
 
             } catch (error) {
