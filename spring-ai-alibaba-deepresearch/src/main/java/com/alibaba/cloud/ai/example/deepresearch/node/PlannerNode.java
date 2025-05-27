@@ -27,6 +27,8 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.core.ParameterizedTypeReference;
 import reactor.core.publisher.Flux;
 
@@ -40,7 +42,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
 
 /**
  * @author yingzi
- * @date 2025/5/18 16:47
+ * @since 2025/5/18 16:47
  */
 
 public class PlannerNode implements NodeAction {
@@ -48,6 +50,8 @@ public class PlannerNode implements NodeAction {
 	private static final Logger logger = LoggerFactory.getLogger(PlannerNode.class);
 
 	private final ChatClient chatClient;
+
+	private final ToolCallback[] toolCallbacks;
 
 	private final int MAX_PLAN_ITERATIONS = 3;
 
@@ -58,8 +62,9 @@ public class PlannerNode implements NodeAction {
 			outputExample: {0};
 			""";
 
-	public PlannerNode(ChatClient.Builder chatClientBuilder) {
+	public PlannerNode(ChatClient.Builder chatClientBuilder, ToolCallback[] toolCallbacks) {
 		this.chatClient = chatClientBuilder.build();
+		this.toolCallbacks = toolCallbacks;
 		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
 		});
 	}
@@ -85,6 +90,7 @@ public class PlannerNode implements NodeAction {
 			return updated;
 		}
 		Flux<String> StreamResult = chatClient.prompt(MessageFormat.format(PROMPT_FORMAT, converter.getFormat()))
+			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
 			.messages(messages)
 			.stream()
 			.content();

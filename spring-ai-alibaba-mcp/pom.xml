@@ -12,9 +12,16 @@
     <artifactId>spring-ai-alibaba-mcp</artifactId>
     <packaging>pom</packaging>
     <name>Spring AI Alibaba MCP</name>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
 
     <modules>
         <module>spring-ai-alibaba-mcp-nacos2</module>
+        <module>spring-ai-alibaba-mcp-nacos</module>
     </modules>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
 
 </project>

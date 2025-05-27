@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * @author yingzi
- * @date 2025/4/30:10:01
+ * @since 2025/4/30:10:01
  */
 @Component
 public class ApplicationContextHolder implements ApplicationContextAware {

@@ -29,7 +29,7 @@ import java.util.Optional;
 
 /**
  * @author yingzi
- * @date 2025/5/18 16:59
+ * @since 2025/5/18 16:59
  */
 
 public class ResearchTeamNode implements NodeAction {
@@ -43,7 +43,7 @@ public class ResearchTeamNode implements NodeAction {
 		Map<String, Object> updated = new HashMap<>();
 
 		Optional<Plan> currentPlanOpt = state.value("current_plan", Plan.class);
-		if (currentPlanOpt.isEmpty() || !currentPlanOpt.get().getSteps().isEmpty()) {
+		if (currentPlanOpt.isEmpty() || currentPlanOpt.get().getSteps().isEmpty()) {
 			updated.put("research_team_next_node", nextStep);
 			return updated;
 		}

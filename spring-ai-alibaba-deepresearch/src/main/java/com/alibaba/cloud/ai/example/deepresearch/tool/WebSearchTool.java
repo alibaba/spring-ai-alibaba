@@ -23,7 +23,11 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+/**
+ * Recommend use {@link com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService} tool.
+ */
 @Service
+@Deprecated
 public class WebSearchTool {
 
 	@Autowired
