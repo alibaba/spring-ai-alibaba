@@ -26,21 +26,19 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 import org.springframework.http.HttpHeaders;
 
-import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
-
 /**
  * @author Yeaury
  */
 @Configuration
 @EnableConfigurationProperties(GithubToolKitProperties.class)
 @ConditionalOnClass(GithubToolKitProperties.class)
-@ConditionalOnProperty(prefix = TOOL_CALLING_CONFIG_PREFIX + ".githubtoolkit", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = GithubToolKitProperties.GITHUB_TOOLKIT_PREFIX, name = "enabled", havingValue = "true")
 public class GithubToolKitAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("implement the function of get a GitHub issue operation")
-	public GetIssueService getIssueFunction(GithubToolKitProperties properties, JsonParseTool jsonParseTool) {
+	public GetIssueService getIssue(GithubToolKitProperties properties, JsonParseTool jsonParseTool) {
 		WebClientTool githubWebClientTool = githubWebClientTool(properties, jsonParseTool);
 		return new GetIssueService(properties, githubWebClientTool, jsonParseTool);
 	}
@@ -48,8 +46,7 @@ public class GithubToolKitAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("implement the function of create GitHub pull request operation")
-	public CreatePullRequestService createPullRequestFunction(GithubToolKitProperties properties,
-			JsonParseTool jsonParseTool) {
+	public CreatePullRequestService createPullRequest(GithubToolKitProperties properties, JsonParseTool jsonParseTool) {
 		WebClientTool githubWebClientTool = githubWebClientTool(properties, jsonParseTool);
 		return new CreatePullRequestService(properties, githubWebClientTool, jsonParseTool);
 	}
@@ -57,8 +54,7 @@ public class GithubToolKitAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("implement the function of search the list of repositories operation")
-	public SearchRepositoryService SearchRepositoryFunction(GithubToolKitProperties properties,
-			JsonParseTool jsonParseTool) {
+	public SearchRepositoryService SearchRepository(GithubToolKitProperties properties, JsonParseTool jsonParseTool) {
 		WebClientTool githubWebClientTool = githubWebClientTool(properties, jsonParseTool);
 		return new SearchRepositoryService(githubWebClientTool, jsonParseTool);
 	}

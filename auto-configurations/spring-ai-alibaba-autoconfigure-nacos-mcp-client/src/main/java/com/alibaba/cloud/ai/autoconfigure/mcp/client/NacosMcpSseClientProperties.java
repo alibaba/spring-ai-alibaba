@@ -23,12 +23,10 @@ import java.util.Map;
 
 /**
  * @author yingzi
- * @date 2025/4/29:08:24
+ * @since 2025/4/29:08:24
  */
-@ConfigurationProperties("spring.ai.alibaba.mcp.client.sse")
+@ConfigurationProperties("spring.ai.alibaba.mcp.nacos.client.sse")
 public class NacosMcpSseClientProperties {
-
-	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.client.sse";
 
 	private final Map<String, String> connections = new HashMap<>();
 

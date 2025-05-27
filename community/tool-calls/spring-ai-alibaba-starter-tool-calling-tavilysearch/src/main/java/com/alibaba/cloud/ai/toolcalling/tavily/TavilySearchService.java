@@ -53,7 +53,7 @@ public class TavilySearchService implements Function<TavilySearchService.Request
 
 		try {
 			String responseData = webClientTool.post("search", request).block();
-			return jsonParseTool.jsonToObject(responseData, Response.class);
+			return new Response(responseData);
 		}
 		catch (Exception ex) {
 			logger.error("tavily search error: {}", ex.getMessage());
@@ -78,22 +78,7 @@ public class TavilySearchService implements Function<TavilySearchService.Request
 		}
 	}
 
-	public record ResponseImage(@JsonProperty("url") String url,
-			@JsonProperty("description") String description) implements Serializable {
-	}
-
-	public record ResponseResult(@JsonProperty("title") String title, @JsonProperty("url") String url,
-			@JsonProperty("content") String content, @JsonProperty("score") Double score,
-			@JsonProperty("raw_content") String rawContent) implements Serializable {
-	}
-
-	public record ResponseErrorDetail(@JsonProperty("error") String error) implements Serializable {
-	}
-
-	public record Response(@JsonProperty("query") String query, @JsonProperty("answer") String answer,
-			@JsonProperty("images") List<ResponseImage> images, @JsonProperty("results") List<ResponseResult> results,
-			@JsonProperty("response_time") String responseTime,
-			@JsonProperty("detail") ResponseErrorDetail detail) implements Serializable {
+	public record Response(@JsonProperty("result") String result) implements Serializable {
 	}
 
 }
