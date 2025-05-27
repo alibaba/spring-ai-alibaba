@@ -21,14 +21,14 @@ public class GraphRunController {
     }
 
     @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<NodeOutput> stream(Map<String, Object> inputs) throws Exception {
+    public Flux<NodeOutput> stream(@RequestBody Map<String, Object> inputs) throws Exception {
         AsyncGenerator<NodeOutput> nodeOutputs = graph.stream(inputs);
         return Flux.fromStream(nodeOutputs.stream());
     }
 
 
     @PostMapping(value = "/invoke")
-    public OverAllState invoke(Map<String, Object> inputs) throws Exception{
+    public OverAllState invoke(@RequestBody Map<String, Object> inputs) throws Exception{
         return graph.invoke(inputs).orElse(null);
     }
 
