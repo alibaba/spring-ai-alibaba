@@ -223,11 +223,11 @@ public final class OverAllState implements Serializable {
 		}
 
 		return Stream.concat(state.entrySet().stream(), partialState.entrySet().stream())
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, OverAllState::mergeFunction));
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, OverAllState::mergeFunction));
 	}
 
 	public static Map<String, Object> updateState(Map<String, Object> state, Map<String, Object> partialState,
-												  Map<String, KeyStrategy> keyStrategies) {
+			Map<String, KeyStrategy> keyStrategies) {
 		Objects.requireNonNull(state, "state cannot be null");
 		if (partialState == null || partialState.isEmpty()) {
 			return state;
@@ -235,77 +235,63 @@ public final class OverAllState implements Serializable {
 
 		Map<String, Object> updatedPartialState = updatePartialStateFromSchema(state, partialState, keyStrategies);
 
-		return Stream.concat( state.entrySet().stream(), updatedPartialState.entrySet().stream())
-				.collect(toMapRemovingNulls(
-						Map.Entry::getKey,
-						Map.Entry::getValue,
-						( currentValue, newValue ) -> newValue ));
+		return Stream.concat(state.entrySet().stream(), updatedPartialState.entrySet().stream())
+			.collect(toMapRemovingNulls(Map.Entry::getKey, Map.Entry::getValue, (currentValue, newValue) -> newValue));
 	}
-
 
 	/**
 	 * Updates the partial state from a schema using channels.
-	 *
-	 * @param state        The current state as a map of key-value pairs.
+	 * @param state The current state as a map of key-value pairs.
 	 * @param partialState The partial state to be updated.
-	 * @param keyStrategies     A map of channel names to their implementations.
-	 * @return An updated version of the partial state after applying the schema and channels.
+	 * @param keyStrategies A map of channel names to their implementations.
+	 * @return An updated version of the partial state after applying the schema and
+	 * channels.
 	 */
-	private static Map<String,Object> updatePartialStateFromSchema(  Map<String,Object> state, Map<String,Object> partialState, Map<String, KeyStrategy> keyStrategies ) {
-		if( keyStrategies == null || keyStrategies.isEmpty() ) {
+	private static Map<String, Object> updatePartialStateFromSchema(Map<String, Object> state,
+			Map<String, Object> partialState, Map<String, KeyStrategy> keyStrategies) {
+		if (keyStrategies == null || keyStrategies.isEmpty()) {
 			return partialState;
 		}
-		return partialState.entrySet().stream().map( entry -> {
+		return partialState.entrySet().stream().map(entry -> {
 
-					KeyStrategy channel = keyStrategies.get(entry.getKey());
-					if (channel != null) {
-						Object newValue = channel.apply(state.get(entry.getKey()), entry.getValue());
-						return entryOf(entry.getKey(), newValue);
-					}
+			KeyStrategy channel = keyStrategies.get(entry.getKey());
+			if (channel != null) {
+				Object newValue = channel.apply(state.get(entry.getKey()), entry.getValue());
+				return entryOf(entry.getKey(), newValue);
+			}
 
-					return entry;
-				})
-				.collect(toMapAllowingNulls(Map.Entry::getKey, Map.Entry::getValue));
+			return entry;
+		}).collect(toMapAllowingNulls(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
-	private static <T, K, U> Collector<T, ?, Map<K, U>> toMapRemovingNulls(
-			Function<? super T, ? extends K> keyMapper,
-			Function<? super T, ? extends U> valueMapper,
-			BinaryOperator<U> mergeFunction) {
-		return Collector.of(
-				HashMap::new,
-				(map, element) -> {
-					K key = keyMapper.apply(element);
-					U value = valueMapper.apply(element);
-					if( value == null ) {
-						map.remove(key);
-					}
-					else {
-						map.merge(key, value, mergeFunction);
-					}
-				},
-				(map1, map2) -> {
-					map2.forEach((key, value) -> {
-						if (value != null) {
-							map1.merge(key, value, mergeFunction);
-						}
-					});
-					return map1;
-				},
-				Collector.Characteristics.UNORDERED);
+	private static <T, K, U> Collector<T, ?, Map<K, U>> toMapRemovingNulls(Function<? super T, ? extends K> keyMapper,
+			Function<? super T, ? extends U> valueMapper, BinaryOperator<U> mergeFunction) {
+		return Collector.of(HashMap::new, (map, element) -> {
+			K key = keyMapper.apply(element);
+			U value = valueMapper.apply(element);
+			if (value == null) {
+				map.remove(key);
+			}
+			else {
+				map.merge(key, value, mergeFunction);
+			}
+		}, (map1, map2) -> {
+			map2.forEach((key, value) -> {
+				if (value != null) {
+					map1.merge(key, value, mergeFunction);
+				}
+			});
+			return map1;
+		}, Collector.Characteristics.UNORDERED);
 	}
 
-	private static <T, K, U> Collector<T, ?, Map<K, U>> toMapAllowingNulls(
-			Function<? super T, ? extends K> keyMapper,
+	private static <T, K, U> Collector<T, ?, Map<K, U>> toMapAllowingNulls(Function<? super T, ? extends K> keyMapper,
 			Function<? super T, ? extends U> valueMapper) {
-		return Collector.of(
-				HashMap::new,
-				(map, element) -> map.put(keyMapper.apply(element), valueMapper.apply(element)),
-				(map1, map2) -> {
+		return Collector.of(HashMap::new,
+				(map, element) -> map.put(keyMapper.apply(element), valueMapper.apply(element)), (map1, map2) -> {
 					map1.putAll(map2);
 					return map1;
-				},
-				Collector.Characteristics.UNORDERED);
+				}, Collector.Characteristics.UNORDERED);
 	}
 
 	/**
@@ -395,8 +381,8 @@ public final class OverAllState implements Serializable {
 
 	@Override
 	public String toString() {
-		return "OverAllState{" + "data=" + data + ", resume=" + resume
-				+ ", humanFeedback=" + humanFeedback + ", interruptMessage='" + interruptMessage + '\'' + '}';
+		return "OverAllState{" + "data=" + data + ", resume=" + resume + ", humanFeedback=" + humanFeedback
+				+ ", interruptMessage='" + interruptMessage + '\'' + '}';
 	}
 
 }

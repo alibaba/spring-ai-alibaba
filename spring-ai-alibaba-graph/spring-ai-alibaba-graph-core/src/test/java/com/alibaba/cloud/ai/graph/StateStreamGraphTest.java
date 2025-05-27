@@ -46,250 +46,275 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class StateStreamGraphTest {
 
-    private String API_KEY;
-    private static final Logger log = LoggerFactory.getLogger(StateStreamGraphTest.class);
+	private String API_KEY;
 
-    @BeforeEach
-    public void init() throws GraphStateException {
-        API_KEY = "xxx"; // 替换为你的API密钥
-    }
+	private static final Logger log = LoggerFactory.getLogger(StateStreamGraphTest.class);
 
-    private AsyncNodeAction makeNode(String id) {
-        return node_async(state -> {
-            log.info("call node {}", id);
-            return Map.of("messages", id);
-        });
-    }
+	@BeforeEach
+	public void init() throws GraphStateException {
+		API_KEY = "xxx"; // 替换为你的API密钥
+	}
 
-    @Test
-    public void testGetResultFromGenerator() throws Exception {
-        var workflow = new StateGraph(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy()))
-                .addEdge(START, "agent_1")
-                .addNode("agent_1", makeNode("agent_1"))
-                .addEdge("agent_1", END);
+	private AsyncNodeAction makeNode(String id) {
+		return node_async(state -> {
+			log.info("call node {}", id);
+			return Map.of("messages", id);
+		});
+	}
 
-        var app = workflow.compile();
+	@Test
+	public void testGetResultFromGenerator() throws Exception {
+		var workflow = new StateGraph(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy()))
+			.addEdge(START, "agent_1")
+			.addNode("agent_1", makeNode("agent_1"))
+			.addEdge("agent_1", END);
 
-        var iterator = app.stream(Map.of());
-        for (var i : iterator) {
-            System.out.println(i);
-        }
+		var app = workflow.compile();
 
-        var generator = (AsyncGenerator.HasResultValue) iterator;
+		var iterator = app.stream(Map.of());
+		for (var i : iterator) {
+			System.out.println(i);
+		}
 
-        System.out.println(generator.resultValue().orElse(null));
+		var generator = (AsyncGenerator.HasResultValue) iterator;
 
-    }
+		System.out.println(generator.resultValue().orElse(null));
 
-    @Test
-    public void testBasicNodeActionStream() throws Exception {
-        StateGraph stateGraph = new StateGraph(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy()).registerKeyAndStrategy("count", (oldValue, newValue) -> oldValue == null ? newValue : 1)).addNode("collectInput", node_async(s -> {
-            // 处理输入
-            String input = s.value("input", "");
-            return Map.of("messages", "Received: " + input, "count", 1);
-        })).addNode("processData", node_async(s -> {
-            // 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
-            final List<String> data = asList("这是", "一个", "流式", "输出", "测试");
-            AtomicInteger timeOff = new AtomicInteger(1);
-            final AsyncGenerator<NodeOutput> it = AsyncGenerator.collect(data.iterator(), (index, add) -> add.accept(of("processData", index, 500L * timeOff.getAndIncrement(), s)));
-            return Map.of("messages", it);
-        })).addNode("generateResponse", node_async(s -> {
-            // 生成最终响应
-            int count = s.value("count", 0);
-            return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
-        })).addEdge(START, "collectInput").addEdge("collectInput", "processData").addEdge("processData", "generateResponse").addEdge("generateResponse", END);
+	}
 
-        CompiledGraph compiledGraph = stateGraph.compile();
-        // 初始化输入
-        for (var output : compiledGraph.stream(Map.of("input", "hoho~~"))) {
-            if (output instanceof AsyncGenerator<?>) {
-                AsyncGenerator asyncGenerator = (AsyncGenerator) output;
-                System.out.println("Streaming chunk: " + asyncGenerator);
-            } else {
-                System.out.println("Node output: " + output);
-            }
-        }
-    }
+	@Test
+	public void testBasicNodeActionStream() throws Exception {
+		StateGraph stateGraph = new StateGraph(
+				() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy())
+					.registerKeyAndStrategy("count", (oldValue, newValue) -> oldValue == null ? newValue : 1))
+			.addNode("collectInput", node_async(s -> {
+				// 处理输入
+				String input = s.value("input", "");
+				return Map.of("messages", "Received: " + input, "count", 1);
+			}))
+			.addNode("processData", node_async(s -> {
+				// 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
+				final List<String> data = asList("这是", "一个", "流式", "输出", "测试");
+				AtomicInteger timeOff = new AtomicInteger(1);
+				final AsyncGenerator<NodeOutput> it = AsyncGenerator.collect(data.iterator(),
+						(index, add) -> add.accept(of("processData", index, 500L * timeOff.getAndIncrement(), s)));
+				return Map.of("messages", it);
+			}))
+			.addNode("generateResponse", node_async(s -> {
+				// 生成最终响应
+				int count = s.value("count", 0);
+				return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
+			}))
+			.addEdge(START, "collectInput")
+			.addEdge("collectInput", "processData")
+			.addEdge("processData", "generateResponse")
+			.addEdge("generateResponse", END);
 
-    static CompletableFuture<NodeOutput> of(String node, String index, long delayInMills, OverAllState overAllState) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                Thread.sleep(delayInMills);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            return new StreamingOutput(index, node, overAllState);
-        });
-    }
+		CompiledGraph compiledGraph = stateGraph.compile();
+		// 初始化输入
+		for (var output : compiledGraph.stream(Map.of("input", "hoho~~"))) {
+			if (output instanceof AsyncGenerator<?>) {
+				AsyncGenerator asyncGenerator = (AsyncGenerator) output;
+				System.out.println("Streaming chunk: " + asyncGenerator);
+			}
+			else {
+				System.out.println("Node output: " + output);
+			}
+		}
+	}
 
-    @Test
-    public void testNodeActionStreamForAsyncGeneratorQueue() throws Exception {
-        StateGraph stateGraph = new StateGraph(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy()).registerKeyAndStrategy("count", (oldValue, newValue) -> oldValue == null ? newValue : 1)).addNode("collectInput", node_async(s -> {
-                    // 处理输入
-                    String input = s.value("input", "");
-                    return Map.of("messages", "Received: " + input, "count", 1);
-                })).addNode("processData", node_async(s -> {
-                    // 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
-                    BlockingQueue<AsyncGenerator.Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
-                    AsyncGenerator.WithResult<StreamingOutput> it = new AsyncGenerator.WithResult<>(new AsyncGeneratorQueue.Generator<>(queue));
-                    String str = "random";
-                    new Thread(() -> {
-                        for (int i = 0; i < 10; i++) {
-                            try {
-                                Thread.sleep(1000);
-                            } catch (InterruptedException e) {
-                                throw new RuntimeException(e);
-                            }
-                            if (i == 9) {
-                                queue.add(AsyncGenerator.Data.done());
-                            } else {
-                                queue.add(AsyncGenerator.Data.of(new StreamingOutput(str + new Random().nextInt(10), "llmNode", s)));
-                            }
-                        }
-                    }).start();
-                    return Map.of("messages", it);
-                })).addNode("generateResponse", node_async(s -> {
-                    // 生成最终响应
-                    int count = s.value("count", 0);
-                    return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
-                })).addEdge(START, "collectInput")
-                .addEdge("collectInput", "processData")
-                .addEdge("processData", "generateResponse")
-                .addEdge("generateResponse", END);
+	static CompletableFuture<NodeOutput> of(String node, String index, long delayInMills, OverAllState overAllState) {
+		return CompletableFuture.supplyAsync(() -> {
+			try {
+				Thread.sleep(delayInMills);
+			}
+			catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+			return new StreamingOutput(index, node, overAllState);
+		});
+	}
 
-        CompiledGraph compiledGraph = stateGraph.compile();
-        // 初始化输入
-        for (var output : compiledGraph.stream(Map.of("input", "hoho~~"))) {
-            if (output instanceof AsyncGenerator<?>) {
-                AsyncGenerator asyncGenerator = (AsyncGenerator) output;
-                System.out.println("Streaming chunk: " + asyncGenerator);
-            } else {
-                System.out.println("Node output: " + output);
-            }
-        }
-    }
+	@Test
+	public void testNodeActionStreamForAsyncGeneratorQueue() throws Exception {
+		StateGraph stateGraph = new StateGraph(
+				() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy())
+					.registerKeyAndStrategy("count", (oldValue, newValue) -> oldValue == null ? newValue : 1))
+			.addNode("collectInput", node_async(s -> {
+				// 处理输入
+				String input = s.value("input", "");
+				return Map.of("messages", "Received: " + input, "count", 1);
+			}))
+			.addNode("processData", node_async(s -> {
+				// 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
+				BlockingQueue<AsyncGenerator.Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
+				AsyncGenerator.WithResult<StreamingOutput> it = new AsyncGenerator.WithResult<>(
+						new AsyncGeneratorQueue.Generator<>(queue));
+				String str = "random";
+				new Thread(() -> {
+					for (int i = 0; i < 10; i++) {
+						try {
+							Thread.sleep(1000);
+						}
+						catch (InterruptedException e) {
+							throw new RuntimeException(e);
+						}
+						if (i == 9) {
+							queue.add(AsyncGenerator.Data.done());
+						}
+						else {
+							queue.add(AsyncGenerator.Data
+								.of(new StreamingOutput(str + new Random().nextInt(10), "llmNode", s)));
+						}
+					}
+				}).start();
+				return Map.of("messages", it);
+			}))
+			.addNode("generateResponse", node_async(s -> {
+				// 生成最终响应
+				int count = s.value("count", 0);
+				return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
+			}))
+			.addEdge(START, "collectInput")
+			.addEdge("collectInput", "processData")
+			.addEdge("processData", "generateResponse")
+			.addEdge("generateResponse", END);
 
+		CompiledGraph compiledGraph = stateGraph.compile();
+		// 初始化输入
+		for (var output : compiledGraph.stream(Map.of("input", "hoho~~"))) {
+			if (output instanceof AsyncGenerator<?>) {
+				AsyncGenerator asyncGenerator = (AsyncGenerator) output;
+				System.out.println("Streaming chunk: " + asyncGenerator);
+			}
+			else {
+				System.out.println("Node output: " + output);
+			}
+		}
+	}
 
-    @Test
-    public void testToModelNodeActionStream() throws Exception {
-        StateGraph stateGraph = new StateGraph(() -> new OverAllState()
-                .registerKeyAndStrategy("messages", new AppendStrategy())
-                .registerKeyAndStrategy("llm_result", new AppendStrategy()))
-                .addNode("llmNode", node_async(new LLmNodeAction(new OpenAiService(API_KEY, Duration.ofSeconds(30)))))
-                .addNode("toolNode", node_async((t) ->
-                        Map.of("messages", "tool call result")))
-                .addNode("result", node_async((t) ->
-                        Map.of("messages", "result", "llm_result", "end")))
-                .addEdge(START, "llmNode")
-                .addEdge("llmNode", "toolNode")
-                .addEdge("toolNode", "result")
-                .addEdge("result", END);
+	@Test
+	public void testToModelNodeActionStream() throws Exception {
+		StateGraph stateGraph = new StateGraph(
+				() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy())
+					.registerKeyAndStrategy("llm_result", new AppendStrategy()))
+			.addNode("llmNode", node_async(new LLmNodeAction(new OpenAiService(API_KEY, Duration.ofSeconds(30)))))
+			.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
+			.addNode("result", node_async((t) -> Map.of("messages", "result", "llm_result", "end")))
+			.addEdge(START, "llmNode")
+			.addEdge("llmNode", "toolNode")
+			.addEdge("toolNode", "result")
+			.addEdge("result", END);
 
-        CompiledGraph compile = stateGraph.compile();
-        for (var output : compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"))) {
-            if (output instanceof AsyncGenerator<?>) {
-                AsyncGenerator asyncGenerator = (AsyncGenerator) output;
-                System.out.println("Streaming chunk: " + asyncGenerator);
-            } else {
-                System.out.println("Node output: " + output);
-            }
-        }
-    }
+		CompiledGraph compile = stateGraph.compile();
+		for (var output : compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"))) {
+			if (output instanceof AsyncGenerator<?>) {
+				AsyncGenerator asyncGenerator = (AsyncGenerator) output;
+				System.out.println("Streaming chunk: " + asyncGenerator);
+			}
+			else {
+				System.out.println("Node output: " + output);
+			}
+		}
+	}
 
+	@Test
+	public void testToModelNodeActionAndConditionEdgeStream() throws Exception {
+		StateGraph stateGraph = new StateGraph(
+				() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy())
+					.registerKeyAndStrategy("llm_result", new AppendStrategy()))
+			.addNode("llmNode", node_async(new LLmNodeAction(new OpenAiService(API_KEY, Duration.ofSeconds(30)))))
+			.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
+			.addNode("result", node_async((t) -> Map.of("messages", "result", "llm_result", "end")))
+			.addEdge(START, "llmNode")
+			.addConditionalEdges("llmNode", getAsyncEdgeAction(),
+					EdgeMappings.builder().to("toolNode", "toolNode").to("result", "result").toEND().build())
+			.addEdge("toolNode", "result")
+			.addEdge("result", END);
 
-    @Test
-    public void testToModelNodeActionAndConditionEdgeStream() throws Exception {
-        StateGraph stateGraph = new StateGraph(() -> new OverAllState()
-                .registerKeyAndStrategy("messages", new AppendStrategy())
-                .registerKeyAndStrategy("llm_result", new AppendStrategy()))
-                .addNode("llmNode", node_async(new LLmNodeAction(new OpenAiService(API_KEY, Duration.ofSeconds(30)))))
-                .addNode("toolNode", node_async((t) ->
-                        Map.of("messages", "tool call result")))
-                .addNode("result", node_async((t) ->
-                        Map.of("messages", "result", "llm_result", "end")))
-                .addEdge(START, "llmNode")
-                .addConditionalEdges("llmNode"
-                        , getAsyncEdgeAction(),
-                        EdgeMappings.builder()
-                                .to("toolNode", "toolNode")
-                                .to("result", "result")
-                                .toEND()
-                                .build())
-                .addEdge("toolNode", "result")
-                .addEdge("result", END);
+		CompiledGraph compile = stateGraph.compile();
+		for (var output : compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"))) {
+			if (output instanceof AsyncGenerator<?>) {
+				AsyncGenerator asyncGenerator = (AsyncGenerator) output;
+				System.out.println("Streaming chunk: " + asyncGenerator);
+			}
+			else {
+				System.out.println("Node output: " + output);
+			}
+		}
+	}
 
-        CompiledGraph compile = stateGraph.compile();
-        for (var output : compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"))) {
-            if (output instanceof AsyncGenerator<?>) {
-                AsyncGenerator asyncGenerator = (AsyncGenerator) output;
-                System.out.println("Streaming chunk: " + asyncGenerator);
-            } else {
-                System.out.println("Node output: " + output);
-            }
-        }
-    }
+	@NotNull
+	private static AsyncEdgeAction getAsyncEdgeAction() {
+		return t -> {
+			if (t.value("messages").isEmpty())
+				return completedFuture("result");
+			List collectedMessages = (List) t.value("messages").get();
+			// 使用异步方式等待流结束
+			CompletableFuture<String> resultFuture = new CompletableFuture<>();
+			if (!collectedMessages.isEmpty()) {
+				resultFuture.complete("toolNode");
+			}
+			else {
+				resultFuture.complete("result");
+			}
+			return resultFuture;
+		};
+	}
 
-    @NotNull
-    private static AsyncEdgeAction getAsyncEdgeAction() {
-        return t -> {
-            if (t.value("messages").isEmpty()) return completedFuture("result");
-            List collectedMessages = (List) t.value("messages").get();
-            // 使用异步方式等待流结束
-            CompletableFuture<String> resultFuture = new CompletableFuture<>();
-            if (!collectedMessages.isEmpty()) {
-                resultFuture.complete("toolNode");
-            } else {
-                resultFuture.complete("result");
-            }
-            return resultFuture;
-        };
-    }
+	@Test
+	public void testStreamingOutputProcessing() throws GraphStateException {
+		StateGraph stateGraph = new StateGraph(
+				() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy())
+					.registerKeyAndStrategy("count", (oldValue, newValue) -> oldValue == null ? newValue : 1))
+			.addNode("collectInput", node_async(s -> {
+				// 处理输入
+				String input = s.value("input", "");
+				return Map.of("messages", "Received: " + input, "count", 1);
+			}))
+			.addNode("processData", node_async(s -> {
+				// 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
+				final List<String> data = asList("这是", "一个", "流式", "输出", "测试");
+				AtomicInteger timeOff = new AtomicInteger(1);
+				final AsyncGenerator<NodeOutput> it = AsyncGenerator.collect(data.iterator(),
+						(index, add) -> add.accept(of("processData", index, 500L * timeOff.getAndIncrement(), s)));
+				return Map.of("messages", it);
+			}))
+			.addNode("generateResponse", node_async(s -> {
+				// 生成最终响应
+				int count = s.value("count", 0);
+				return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
+			}))
+			.addEdge(START, "collectInput")
+			.addEdge("collectInput", "processData")
+			.addEdge("processData", "generateResponse")
+			.addEdge("generateResponse", END);
 
-    @Test
-    public void testStreamingOutputProcessing() throws GraphStateException {
-        StateGraph stateGraph = new StateGraph(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy()).registerKeyAndStrategy("count", (oldValue, newValue) -> oldValue == null ? newValue : 1)).addNode("collectInput", node_async(s -> {
-            // 处理输入
-            String input = s.value("input", "");
-            return Map.of("messages", "Received: " + input, "count", 1);
-        })).addNode("processData", node_async(s -> {
-            // 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
-            final List<String> data = asList("这是", "一个", "流式", "输出", "测试");
-            AtomicInteger timeOff = new AtomicInteger(1);
-            final AsyncGenerator<NodeOutput> it = AsyncGenerator.collect(data.iterator(), (index, add) -> add.accept(of("processData", index, 500L * timeOff.getAndIncrement(), s)));
-            return Map.of("messages", it);
-        })).addNode("generateResponse", node_async(s -> {
-            // 生成最终响应
-            int count = s.value("count", 0);
-            return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
-        })).addEdge(START, "collectInput").addEdge("collectInput", "processData").addEdge("processData", "generateResponse").addEdge("generateResponse", END);
+		CompiledGraph app = stateGraph.compile();
 
-        CompiledGraph app = stateGraph.compile();
+		// 使用辅助方法处理流式输出
+		AsyncGenerator<NodeOutput> generator = app.stream(Map.of("input", "test"));
+		List states = toStateList(generator);
+		// 验证结果
+		assertFalse(states.isEmpty(), "least one content");
+		assertEquals(5, states.size(), "should be five content");
+	}
 
-        // 使用辅助方法处理流式输出
-        AsyncGenerator<NodeOutput> generator = app.stream(Map.of("input", "test"));
-        List states = toStateList(generator);
-        // 验证结果
-        assertFalse(states.isEmpty(), "least one content");
-        assertEquals(5, states.size(), "should be five content");
-    }
-
-    /**
-     * 处理流式输出的辅助方法
-     */
-    private List<OverAllState> toStateList(AsyncGenerator<NodeOutput> generator) {
-        return generator.stream()
-                .filter(s -> {
-                    if (s instanceof StreamingOutput streamingOutput) {
-                        System.out.println(String.format("stream data %s '%s'", streamingOutput.node(), streamingOutput.chunk()));
-                        return false; // 过滤掉流式输出
-                    }
-                    return true; // 保留普通节点输出
-                })
-                .peek(s -> System.out.println(String.format("NODE: {}", s.node())))
-                .map(NodeOutput::state)
-                .collect(java.util.stream.Collectors.toList());
-    }
-
+	/**
+	 * 处理流式输出的辅助方法
+	 */
+	private List<OverAllState> toStateList(AsyncGenerator<NodeOutput> generator) {
+		return generator.stream().filter(s -> {
+			if (s instanceof StreamingOutput streamingOutput) {
+				System.out
+					.println(String.format("stream data %s '%s'", streamingOutput.node(), streamingOutput.chunk()));
+				return false; // 过滤掉流式输出
+			}
+			return true; // 保留普通节点输出
+		})
+			.peek(s -> System.out.println(String.format("NODE: {}", s.node())))
+			.map(NodeOutput::state)
+			.collect(java.util.stream.Collectors.toList());
+	}
 
 }
-

@@ -38,82 +38,84 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class LLmNodeAction implements NodeAction {
-    private OpenAiService service;
 
-    public LLmNodeAction(OpenAiService service) {
-        this.service = service;
-    }
+	private OpenAiService service;
 
-    @Override
-    public Map<String, Object> apply(OverAllState t) {
-        BlockingQueue<AsyncGenerator.Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
-        AsyncGenerator.WithResult<StreamingOutput> it = new AsyncGenerator.WithResult<>(new AsyncGeneratorQueue.Generator<>(queue));
-        final CountDownLatch streamStarted = new CountDownLatch(1);
+	public LLmNodeAction(OpenAiService service) {
+		this.service = service;
+	}
 
-        Flowable<ChatCompletionChunk> responseStream = service.streamChatCompletion(
-                ChatCompletionRequest.builder()
-                        .model("gpt-4o-mini")
-                        .messages(Collections.singletonList(
-                                new SystemMessage((String) t.value(OverAllState.DEFAULT_INPUT_KEY).get())))
-                        .n(1)
-                        .maxTokens(50)
-                        .build());
+	@Override
+	public Map<String, Object> apply(OverAllState t) {
+		BlockingQueue<AsyncGenerator.Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
+		AsyncGenerator.WithResult<StreamingOutput> it = new AsyncGenerator.WithResult<>(
+				new AsyncGeneratorQueue.Generator<>(queue));
+		final CountDownLatch streamStarted = new CountDownLatch(1);
 
+		Flowable<ChatCompletionChunk> responseStream = service.streamChatCompletion(ChatCompletionRequest.builder()
+			.model("gpt-4o-mini")
+			.messages(Collections
+				.singletonList(new SystemMessage((String) t.value(OverAllState.DEFAULT_INPUT_KEY).get())))
+			.n(1)
+			.maxTokens(50)
+			.build());
 
-        try {
-            responseStream.serialize().subscribe(new DisposableSubscriber<>() {
-                @Override
-                protected void onStart() {
-                    streamStarted.countDown();
-                    request(1);
-                }
+		try {
+			responseStream.serialize().subscribe(new DisposableSubscriber<>() {
+				@Override
+				protected void onStart() {
+					streamStarted.countDown();
+					request(1);
+				}
 
-                @Override
-                public void onNext(ChatCompletionChunk chunk) {
-                    try {
-                        if (chunk == null || CollectionUtils.isEmpty(chunk.getChoices())) {
-                            queue.add(AsyncGenerator.Data.done());
-                            return;
-                        }
+				@Override
+				public void onNext(ChatCompletionChunk chunk) {
+					try {
+						if (chunk == null || CollectionUtils.isEmpty(chunk.getChoices())) {
+							queue.add(AsyncGenerator.Data.done());
+							return;
+						}
 
-                        ChatCompletionChoice choice = chunk.getChoices().get(0);
-                        if (choice.getMessage() == null) {
-                            queue.add(AsyncGenerator.Data.done());
-                            return;
-                        }
+						ChatCompletionChoice choice = chunk.getChoices().get(0);
+						if (choice.getMessage() == null) {
+							queue.add(AsyncGenerator.Data.done());
+							return;
+						}
 
-                        String content = choice.getMessage().getContent();
-                        if (content == null) {
-                            queue.add(AsyncGenerator.Data.done());
-                            return;
-                        }
-                        t.updateState(Map.of("llm_result", content));
-                        queue.add(AsyncGenerator.Data.of(new StreamingOutput(content, "llmNode", t)));
-                        request(1);
-                    } catch (Exception e) {
-                        onError(e);
-                    }
-                }
+						String content = choice.getMessage().getContent();
+						if (content == null) {
+							queue.add(AsyncGenerator.Data.done());
+							return;
+						}
+						t.updateState(Map.of("llm_result", content));
+						queue.add(AsyncGenerator.Data.of(new StreamingOutput(content, "llmNode", t)));
+						request(1);
+					}
+					catch (Exception e) {
+						onError(e);
+					}
+				}
 
-                @Override
-                public void onError(Throwable t) {
-                    System.err.println("Stream error: " + t.getMessage());
-                    queue.add(AsyncGenerator.Data.error(t));
-                    dispose();
-                }
+				@Override
+				public void onError(Throwable t) {
+					System.err.println("Stream error: " + t.getMessage());
+					queue.add(AsyncGenerator.Data.error(t));
+					dispose();
+				}
 
-                @Override
-                public void onComplete() {
-                    System.out.println("Stream completed");
-                    queue.add(AsyncGenerator.Data.done());
-                    dispose();
-                }
-            });
-            streamStarted.await(5, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            queue.add(AsyncGenerator.Data.error(e));
-        }
-        return Map.of("messages", it);
-    }
+				@Override
+				public void onComplete() {
+					System.out.println("Stream completed");
+					queue.add(AsyncGenerator.Data.done());
+					dispose();
+				}
+			});
+			streamStarted.await(5, TimeUnit.SECONDS);
+		}
+		catch (Exception e) {
+			queue.add(AsyncGenerator.Data.error(e));
+		}
+		return Map.of("messages", it);
+	}
+
 }
-

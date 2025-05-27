@@ -517,5 +517,4 @@ public class StateGraphTest {
 		assertIterableEquals(sortMap(expected), sortMap(result.get().data()));
 	}
 
-
 }
