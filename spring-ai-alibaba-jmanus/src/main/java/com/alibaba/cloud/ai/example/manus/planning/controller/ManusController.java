@@ -122,14 +122,13 @@ public class ManusController {
 			return ResponseEntity.notFound().build();
 		}
 
-		// Check for user input wait state
+		// Check for user input wait state and merge it into the plan record
 		UserInputWaitState waitState = userInputService.getWaitState(planId);
 		if (waitState != null && waitState.isWaiting()) {
-			// If waiting for user input, we might want to return a combined response
-			// or a specific response indicating this. For now, let's assume the client
-			// will also poll the /wait-for-input endpoint.
-			// Alternatively, we could augment the planRecord with this info.
-			// For simplicity, keeping them separate for now.
+			// Assuming PlanExecutionRecord has a method like setUserInputWaitState
+			// You will need to add this field and method to your PlanExecutionRecord class
+			planRecord.setUserInputWaitState(waitState); 
+			logger.info("Plan {} is waiting for user input. Merged waitState into details response.", planId);
 		}
 
 		try {
@@ -161,23 +160,6 @@ public class ManusController {
 		catch (Exception e) {
 			return ResponseEntity.internalServerError().body(Map.of("error", "删除记录失败: " + e.getMessage()));
 		}
-	}
-
-	/**
-	 * Checks if the backend is waiting for user input for a given plan.
-	 * @param planId The ID of the plan.
-	 * @return ResponseEntity with UserInputWaitState if waiting, or No Content if not.
-	 */
-	@GetMapping("/wait-for-input/{planId}")
-	public ResponseEntity<UserInputWaitState> checkUserInputWaitState(@PathVariable("planId") String planId) {
-		UserInputWaitState waitState = userInputService.getWaitState(planId);
-		if (waitState != null && waitState.isWaiting()) {
-			// The formDescription is already part of UserInputWaitState, no need to call getFormDescription() on it again for the log.
-			logger.info("Plan {} is waiting for user input. Form description: {}", planId, waitState.getFormDescription());
-			return ResponseEntity.ok(waitState);
-		}
-		// If not waiting, or no such planId known to userInputService, return 204 No Content
-		return ResponseEntity.noContent().build();
 	}
 
 	/**

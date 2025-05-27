@@ -241,7 +241,9 @@ class PlanExecutionManagerController {
 
             TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_UPDATE, { ...details, planId: this.activePlanId });
 
-            const userInputState = await ManusAPI.checkWaitForInput(this.activePlanId);
+            // const userInputState = await ManusAPI.checkWaitForInput(this.activePlanId);
+            // The userInputWaitState is now part of the details object
+            const userInputState = details.userInputWaitState;
             if (userInputState && userInputState.waiting) {
                 console.log('轮询：检测到需要用户输入', userInputState);
                 TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.USER_INPUT_FORM_DISPLAY_REQUESTED, {

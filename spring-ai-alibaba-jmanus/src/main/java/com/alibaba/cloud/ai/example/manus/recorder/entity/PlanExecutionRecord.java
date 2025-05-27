@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.example.manus.recorder.entity;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState; // Added import
 
 /**
  * 规划执行记录类，用于跟踪和记录PlanningFlow执行过程的详细信息。
@@ -70,6 +71,9 @@ public class PlanExecutionRecord  { // Consider removing JsonSerializable if toJ
 
 	// List to maintain the sequence of agent executions
 	private List<AgentExecutionRecord> agentExecutionSequence;
+
+    // Field to store user input wait state
+    private UserInputWaitState userInputWaitState;
 
     /**
      * Default constructor for Jackson and other frameworks.
@@ -198,6 +202,14 @@ public class PlanExecutionRecord  { // Consider removing JsonSerializable if toJ
 	public void setStartTime(LocalDateTime startTime) {
 		this.startTime = startTime;
 	}
+
+    public UserInputWaitState getUserInputWaitState() {
+        return userInputWaitState;
+    }
+
+    public void setUserInputWaitState(UserInputWaitState userInputWaitState) {
+        this.userInputWaitState = userInputWaitState;
+    }
 
 	public LocalDateTime getEndTime() {
 		return endTime;

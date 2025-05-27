@@ -61,7 +61,6 @@ import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 public class DynamicAgent extends ReActAgent {
 
 	private static final Logger log = LoggerFactory.getLogger(DynamicAgent.class);
-    private static final long USER_INPUT_TIMEOUT_MS = 60000; // 60 seconds timeout
 
 	private final String agentName;
 
@@ -384,8 +383,11 @@ public class DynamicAgent extends ReActAgent {
 	private void waitForUserInputOrTimeout(FormInputTool formInputTool) {
         log.info("Waiting for user input for planId: {}...", getPlanId());
         long startTime = System.currentTimeMillis();
+        // Get timeout from ManusProperties and convert to milliseconds
+        long userInputTimeoutMs = getManusProperties().getUserInputTimeout() * 1000L;
+
         while (formInputTool.getInputState() == FormInputTool.InputState.AWAITING_USER_INPUT) {
-            if (System.currentTimeMillis() - startTime > USER_INPUT_TIMEOUT_MS) {
+            if (System.currentTimeMillis() - startTime > userInputTimeoutMs) {
                 log.warn("Timeout waiting for user input for planId: {}", getPlanId());
                 formInputTool.handleInputTimeout(); // This will change its state to INPUT_TIMEOUT
                 break;
