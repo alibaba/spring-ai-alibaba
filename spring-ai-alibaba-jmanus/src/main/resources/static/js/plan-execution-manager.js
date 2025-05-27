@@ -245,31 +245,6 @@ class PlanExecutionManagerController {
 
             TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_UPDATE, { ...details, planId: this.activePlanId });
 
-            // const userInputState = await ManusAPI.checkWaitForInput(this.activePlanId);
-            // The userInputWaitState is now part of the details object
-            const userInputState = details.userInputWaitState;
-            if (userInputState && userInputState.waiting) {
-                console.log('轮询：检测到需要用户输入', userInputState);
-                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.USER_INPUT_FORM_DISPLAY_REQUESTED, {
-                    userInputState: userInputState,
-                    planDetails: details
-                });
-                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CHAT_INPUT_UPDATE_STATE, { enabled: false, placeholder: '等待用户在表单中输入...' });
-                this.isPolling = false; 
-                return;
-            } 
-
-            if (details.agentExecutionSequence) {
-                const currentSize = details.agentExecutionSequence.length;
-                if (currentSize > this.lastSequenceSize) {
-                    const newRecords = details.agentExecutionSequence.slice(this.lastSequenceSize);
-                    newRecords.forEach(record => {
-                        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.AGENT_EXECUTION, { ...record, planId: this.activePlanId }); 
-                    });
-                    this.lastSequenceSize = currentSize;
-                }
-            }
-
             if (details.completed) {
                 this._handlePlanCompletion(details); 
             }

@@ -4,6 +4,7 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState;
 import com.alibaba.cloud.ai.example.manus.tool.FormInputTool;
 import org.springframework.stereotype.Service;
 
+import java.text.Normalizer.Form;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,6 +67,7 @@ public class UserInputService {
             
             formInputTool.setUserFormInputValues(inputItems);
             formInputTool.markUserInputReceived();
+            formInputTool.setInputState(FormInputTool.InputState.INPUT_RECEIVED); // Set state to INPUT_RECEIVED after submission
             return true;
         } else {
             if (formInputTool == null) {

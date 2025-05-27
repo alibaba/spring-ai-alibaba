@@ -50,9 +50,11 @@ public class FormInputTool implements ToolCallBiFunctionDef {
     public static final String name = "form_input";
 
     private static final String description = """
-        提供一个带标签的多输入项表单工具。LLM可通过本工具提交多个输入项（每项有label和内容），并附带填写说明。
-        适用于需要结构化输入的场景。
-        也可以用于模型需要等待用户输入然后再继续的场景，例如 需要等待用户在浏览器登录后才能进行下一步操作这样的场景，在等待用户浏览器登录或做操作的场景，可以让inputs为空。
+        提供一个带标签的多输入项表单工具。
+
+        LLM可通过本工具 让用户 提交0个或多个输入项（每项有label和内容），并附带填写说明。 
+        允许用户提交0个输入项。
+        适用于需要结构化输入的场景也可以用于模型需要等待用户输入然后再继续的场景.
         """;
 
     public static OpenAiApi.FunctionTool getToolDefinition() {

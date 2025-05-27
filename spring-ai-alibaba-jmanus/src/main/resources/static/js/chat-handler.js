@@ -20,9 +20,7 @@ class ChatHandler {
         TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.PLAN_UPDATE, this.#handlePlanUpdate.bind(this));
         TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.PLAN_COMPLETED, this.#handlePlanComplete.bind(this));
         TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.DIALOG_ROUND_START, this.#handleDialogRoundStart.bind(this));
-        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.USER_INPUT_FORM_DISPLAY_REQUESTED, this.#handleDisplayUserInputFormEvent.bind(this));
-        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.USER_INPUT_FORM_REMOVE_REQUESTED, this.#removeUserInputForm.bind(this));
-    }
+       }
 
     /**
      * 开始新的对话轮次
@@ -74,6 +72,13 @@ class ChatHandler {
 
         // 更新步骤显示
         this.#updateStepsDisplay(planDetails, stepsContainer);
+
+        // 如果需要用户输入，则显示表单
+        if (planDetails.userInputWaitState) {
+            this.#displayUserInputFormInternal(planDetails.userInputWaitState, planDetails, this.#chatArea);
+        } else {
+            this.#removeUserInputForm(); // 如果 userInputWaitState 为空，则移除表单
+        }
     }
 
     /**
@@ -144,6 +149,7 @@ class ChatHandler {
      * 更新步骤显示
      */
     #updateStepsDisplay(planDetails, stepsContainer) {
+        if (this.#userInputFormContainer) return; // 如果用户输入表单已显示，则跳过刷新
         if (!planDetails.steps || !planDetails.steps.length) return;
 
         // 初始化存储每个步骤的最后执行动作（现在是方法级变量）
@@ -164,12 +170,19 @@ class ChatHandler {
                             thinkInput: latestThinkAct.thinkInput || '',
                             thinkOutput: latestThinkAct.thinkOutput || ''
                         };
+                    } else if (latestThinkAct) { // 当 latestThinkAct 不为 null
+                        lastStepActions[index] = {
+                            actionDescription: '思考中', // actionDescription 为 "思考中"
+                            toolParameters: "等待决策中", // toolParameters 保持 "无工具" 或根据需要调整
+                            thinkInput: latestThinkAct.thinkInput || '', // thinkInput 使用 latestThinkAct.thinkInput
+                            thinkOutput: latestThinkAct.thinkOutput || '' // thinkOutput 保持不变
+                        };
                     } else {
                         lastStepActions[index] = {
-                            actionDescription: latestThinkAct.thinkOutput || '执行完成',
+                            actionDescription: '执行完成',
                             toolParameters: "无工具",
-                            thinkInput: latestThinkAct.thinkInput || '',
-                            thinkOutput: latestThinkAct.thinkOutput || ''
+                            thinkInput: '',
+                            thinkOutput: ''
                         };
                     }
                 }
@@ -263,15 +276,6 @@ class ChatHandler {
         }
     }
 
-    /**
-     * 处理显示用户输入表单的事件 (新增)
-     * @param {Object} eventData - 事件数据，包含 userInputState, planDetails
-     */
-    #handleDisplayUserInputFormEvent(eventData) {
-        const { userInputState, planDetails } = eventData;
-        // 调用内部的 displayUserInputForm 方法
-        this.#displayUserInputFormInternal(userInputState, planDetails, this.#chatArea);
-    }
 
     /**
      * 显示用户输入表单 (内部实现，原 displayUserInputForm)
@@ -283,7 +287,6 @@ class ChatHandler {
         // 1) If a form is already displayed by this instance, do not create a new one. Scroll to it.
         if (this.#userInputFormContainer) {
             console.log('ChatHandler: User input form is already displayed. Skipping new form request.');
-            this.#scrollToElement(this.#userInputFormContainer); // Scroll to the existing form
             return;
         }
 

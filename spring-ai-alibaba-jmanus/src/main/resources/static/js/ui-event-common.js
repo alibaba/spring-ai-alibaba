@@ -11,15 +11,11 @@ const TaskPilotUIEvent = (() => {
         MESSAGE_COMPLETE: 'ui:message:complete',
         SECTION_ADD: 'ui:section:add',
         DIALOG_ROUND_START: 'ui:dialog:round:start',
-        DIALOG_ROUND_UPDATE: 'ui:dialog:round:update',
         PLAN_UPDATE: 'ui:plan:update',
-        AGENT_EXECUTION: 'ui:agent:execution',
         PLAN_COMPLETED: 'ui:plan:completed',
         USER_MESSAGE_SEND_REQUESTED: 'ui:user:message:send_requested', // 新增事件
         CHAT_INPUT_CLEAR: 'ui:chatinput:clear', // 新增事件：清空聊天输入框
         CHAT_INPUT_UPDATE_STATE: 'ui:chatinput:updatestate', // 新增事件：更新聊天输入框状态
-        USER_INPUT_FORM_DISPLAY_REQUESTED: 'ui:userinputform:display_requested', // 新增事件：请求显示用户输入表单
-        USER_INPUT_FORM_REMOVE_REQUESTED: 'ui:userinputform:remove_requested',  // 新增事件：请求移除用户输入表单
         PLAN_TEMPLATE_SELECTED: 'ui:plan_template:selected', // Event for when a plan template is selected or selection changes
         PLAN_EXECUTION_REQUESTED: 'ui:plan:execution_requested' // Event for when a plan execution is requested directly (e.g., via "Run Plan" button)
     };
