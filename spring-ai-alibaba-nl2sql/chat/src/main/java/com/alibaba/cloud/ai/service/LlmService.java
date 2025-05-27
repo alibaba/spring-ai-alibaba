@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.service;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -27,10 +28,12 @@ public class LlmService {
 		this.chatClient = chatClient;
 	}
 
+	@Cacheable(value = "aiResponses", key = "#prompt")
 	public String call(String prompt) {
 		return chatClient.prompt().user(prompt).call().content();
 	}
 
+	@Cacheable(value = "aiResponses", key = "#system+'\n'+#user")
 	public String callWithSystemPrompt(String system, String user) {
 		return chatClient.prompt().system(system).user(user).call().content();
 	}

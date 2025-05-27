@@ -27,6 +27,8 @@ import java.util.Map;
 @Slf4j
 public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 
+	DataSource dataSource = null;
+
 	/**
 	 * 方言
 	 */
@@ -70,9 +72,11 @@ public abstract class AbstractDBConnectionPool implements DBConnectionPool {
 
 	public Connection getConnection(DbConfig config) {
 		String jdbcUrl = config.getUrl();
-		DataSource dataSource = null;
+
 		try {
-			dataSource = createdDataSource(jdbcUrl, config.getUsername(), config.getPassword());
+			if (dataSource == null) {
+				dataSource = createdDataSource(jdbcUrl, config.getUsername(), config.getPassword());
+			}
 			return dataSource.getConnection();
 		}
 		catch (SQLException e) {

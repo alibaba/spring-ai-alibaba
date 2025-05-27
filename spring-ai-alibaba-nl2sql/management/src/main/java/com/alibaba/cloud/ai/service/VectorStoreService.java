@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.service;
 
-import com.alibaba.cloud.ai.analyticdb.AnalyticDbVectorStoreProperties;
+import com.alibaba.cloud.ai.vectorstore.analyticdb.AnalyticDbVectorStoreProperties;
 import com.alibaba.cloud.ai.dbconnector.bo.DbQueryParameter;
 import com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel;
 import com.alibaba.cloud.ai.request.*;

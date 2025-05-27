@@ -116,7 +116,7 @@ public class PostgreJdbcDdl extends AbstractJdbcDdl {
 				}
 				String tableName = resultArr[i][0];
 				String tableDesc = resultArr[i][1];
-				tableInfoList.add(TableInfoBO.builder().name(tableName).description(tableDesc).build());
+				tableInfoList.add(TableInfoBO.builder().name(tableName).description(tableDesc).schema(schema).build());
 			}
 		}
 		catch (SQLException e) {
@@ -208,13 +208,13 @@ public class PostgreJdbcDdl extends AbstractJdbcDdl {
 				+ "    ON tc.constraint_name = kcu.constraint_name\n" + "    AND tc.table_schema = kcu.table_schema\n"
 				+ "JOIN\n" + "    information_schema.constraint_column_usage AS ccu\n"
 				+ "    ON ccu.constraint_name = tc.constraint_name\n" + "    AND ccu.table_schema = tc.table_schema\n"
-				+ "WHERE\n" + "    tc.constraint_type = 'FOREIGN KEY'\n" + "    AND tc.table_schema='public'\n"
+				+ "WHERE\n" + "    tc.constraint_type = 'FOREIGN KEY'\n" + "    AND tc.table_schema='%s'\n"
 				+ "    AND tc.table_name in (%s)";
 		List<ForeignKeyInfoBO> foreignKeyInfoList = Lists.newArrayList();
 		String tableListStr = String.join(", ", tables.stream().map(x -> "'" + x + "'").collect(Collectors.toList()));
 
 		try {
-			sql = String.format(sql, tableListStr);
+			sql = String.format(sql, schema, tableListStr);
 			String[][] resultArr = SqlExecutor.executeSqlAndReturnArr(connection, null, sql);
 			if (resultArr.length <= 1) {
 				return Lists.newArrayList();
