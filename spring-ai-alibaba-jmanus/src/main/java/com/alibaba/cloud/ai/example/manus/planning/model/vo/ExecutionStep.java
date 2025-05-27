@@ -17,6 +17,9 @@ package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * 单个步骤的执行结果
@@ -27,7 +30,12 @@ public class ExecutionStep {
 
 	private String stepRequirement;
 
+
 	private String result;
+
+	@Getter
+	@Setter
+	private ReactAgent reactAgent;
 
 	private BaseAgent agent;
 

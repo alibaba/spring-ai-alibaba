@@ -1,5 +1,7 @@
 package com.alibaba.cloud.ai.example.manus2.controller;
 
+import com.alibaba.cloud.ai.example.manus.contants.NodeConstants;
+import com.alibaba.cloud.ai.example.manus2.nodes.HumanNode;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -26,12 +28,12 @@ public class GraphManusController {
 
     @GetMapping("/chat")
     public Map<String, Object> chat(@RequestParam(value = "query", defaultValue = "你好") String query,
-                                   @RequestParam(value = "thread_id", required = false) int threadId) {
+                                   @RequestParam(value = "plan_id", required = false) int planId) {
         UserMessage userMessage = new UserMessage(query);
-        Map<String, Object> objectMap = Map.of("messages", List.of(userMessage));
-
-        if (threadId != 0) {
-            RunnableConfig runnableConfig = RunnableConfig.builder().threadId(String.valueOf(threadId)).build();
+        Map<String, Object> objectMap = Map.of("messages", List.of(userMessage),
+                "planId",planId);
+        if (planId != 0) {
+            RunnableConfig runnableConfig = RunnableConfig.builder().threadId(String.valueOf(planId)).build();
             var resultFuture = compiledGraph.invoke(objectMap, runnableConfig);
             return resultFuture.get().data();
         } else {
@@ -40,18 +42,18 @@ public class GraphManusController {
         }
     }
 
-    @GetMapping("/chat/resume")
-    public Map<String, Object> resume(@RequestParam(value = "thread_id", required = true) int threadId,
-                                     @RequestParam(value = "feed_back", required = true) String feedBack) {
-        RunnableConfig runnableConfig = RunnableConfig.builder().threadId(String.valueOf(threadId)).build();
-        Map<String, Object> objectMap = Map.of("feed_back", feedBack);
+    @GetMapping("/chat/feedback")
+    public Map<String, Object> resume(@RequestParam(value = "plan_id", required = true) int planId,
+                                     @RequestParam(value = "feedback", required = true) String feedback) {
+        RunnableConfig runnableConfig = RunnableConfig.builder().threadId(String.valueOf(planId)).build();
+        Map<String, Object> objectMap = Map.of("feedback", feedback);
 
         StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
         OverAllState state = stateSnapshot.state();
         state.withResume();
-        state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "planner"));
+        state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, NodeConstants.HUMAN_ID));
 
-        var resultFuture = compiledGraph.invoke(objectMap, runnableConfig);
+        var resultFuture = compiledGraph.invoke(state, runnableConfig);
         return resultFuture.get().data();
     }
 }

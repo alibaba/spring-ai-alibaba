@@ -18,8 +18,13 @@ package com.alibaba.cloud.ai.example.manus;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
+@ComponentScan(basePackages = {
+		"com.alibaba.cloud.ai.example.manus",
+		"com.alibaba.cloud.ai.example.manus2"
+})
 public class OpenManusSpringBootApplication {
 
 	public static void main(String[] args) {

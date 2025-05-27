@@ -18,10 +18,14 @@ package com.alibaba.cloud.ai.example.graph.react;
 
 import java.util.concurrent.TimeUnit;
 
+import com.alibaba.cloud.ai.example.graph.react.tool.weather.function.WeatherAutoConfiguration;
+import com.alibaba.cloud.ai.example.graph.react.tool.weather.function.WeatherProperties;
+import com.alibaba.cloud.ai.example.graph.react.tool.weather.function.WeatherService;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import jakarta.annotation.Resource;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -41,10 +45,13 @@ import org.springframework.web.client.RestClient;
 @Configuration
 public class ReactAutoconfiguration {
 
+	@Resource
+	private WeatherProperties weatherProperties;
+
 	@Bean
 	public ReactAgent normalReactAgent(ChatModel chatModel, ToolCallbackResolver resolver) throws GraphStateException {
 		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultTools("getWeatherFunction")
+			.defaultTools(new WeatherAutoConfiguration())
 			.defaultAdvisors(new SimpleLoggerAdvisor())
 			.defaultOptions(OpenAiChatOptions.builder().internalToolExecutionEnabled(false).build())
 			.build();
