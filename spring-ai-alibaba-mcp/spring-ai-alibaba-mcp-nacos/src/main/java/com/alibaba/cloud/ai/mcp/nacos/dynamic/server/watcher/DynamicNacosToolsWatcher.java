@@ -263,7 +263,7 @@ public class DynamicNacosToolsWatcher {
 			logger.info("Nacos mcp service info (name {}): {}", mcpName, mcpServerDetail);
 			McpToolSpecification toolSpec = mcpServerDetail.getToolSpec();
 			McpServerRemoteServiceConfig remoteServerConfig = mcpServerDetail.getRemoteServerConfig();
-			String protocol = mcpServerDetail.getVersionDetail().getVersion();
+			String protocol = mcpServerDetail.getProtocol();
 
 			if (!needToUpdateTools.isEmpty()) {
 				List<McpTool> tools = toolSpec.getTools();
