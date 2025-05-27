@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.service.generator.workflow;
 
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.model.AppModeEnum;
 import com.alibaba.cloud.ai.model.Variable;
@@ -38,6 +39,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -98,13 +100,15 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 	}
 
 	private String renderStateSections(List<Variable> overallStateVars) {
-		String registerKeyFormat = "overallState.registerKeyAndStrategy(\"%s\", (o1, o2) -> o2);\n";
-		StringBuilder stringBuilder = new StringBuilder();
-		List<String> vars = overallStateVars.stream().map(Variable::getName).toList();
-		vars.forEach(var -> {
-			stringBuilder.append(String.format(registerKeyFormat, var));
-		});
-		return stringBuilder.toString();
+        if (overallStateVars == null || overallStateVars.isEmpty()) {
+            return "";
+        }
+        return overallStateVars.stream()
+                .map(var -> String.format(
+                        "overAllState.registerKeyAndStrategy(\"%s\", (o1, o2) -> o2);%n",
+                        var.getName()
+                ))
+                .collect(Collectors.joining());
 	}
 
 	private String renderNodeSections(List<Node> nodes) {
@@ -130,25 +134,23 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return stringBuilder.toString();
 	}
 
-	private String renderEdgeSections(List<Edge> edges) {
+    private String renderEdgeSections(List<Edge> edges) {
         StringBuilder sb = new StringBuilder();
-        sb.append("// —— Graph 边 ——\n");
-        for (Edge edge : edges) {
-            // If source is a START or END constant, write START/END, otherwise write "nodeId"
-            String sourceLiteral = START.equals(edge.getSource())
+        for (Edge e : edges) {
+            // 如果 source ID 是 start，就用常量 START
+            String srcCode = "start".equals(e.getSource())
                     ? "START"
-                    : "\"" + edge.getSource() + "\"";
-            String targetLiteral = END.equals(edge.getTarget())
+                    : "\"" + e.getSource() + "\"";
+            // 如果 target ID 是 answer，就用常量 END
+            String tgtCode = "answer".equals(e.getTarget())
                     ? "END"
-                    : "\"" + edge.getTarget() + "\"";
-            sb.append(String.format(
-                    "stateGraph.addEdge(%s, %s);%n",
-                    sourceLiteral, targetLiteral
-            ));
+                    : "\"" + e.getTarget() + "\"";
+
+            sb.append(String.format("stateGraph.addEdge(%s, %s);%n", srcCode, tgtCode));
         }
         sb.append("\n");
         return sb.toString();
-	}
+    }
 
 	private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, String>> models, Path projectRoot,
 			ProjectDescription projectDescription) {
