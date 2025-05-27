@@ -16,16 +16,17 @@ public class AnswerNodeSection implements NodeSection {
 
     @Override
     public String render(Node node) {
-        AnswerNodeData d = (AnswerNodeData) node.getData();
-        String id = node.getId();
-        String answerTmpl = d.getAnswer().replace("\"", "\\\"");
-        return String.format(
-                "// —— Answer 节点 [%s] ——%n" +
-                        "AnswerNode %1$sNode = AnswerNode.builder()%n" +
-                        "    .answerTemplate(\"%s\")%n" +
-                        "    .build();%n" +
-                        "stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%1$sNode));%n%n",
-                id, answerTmpl, id
-        );
+//        AnswerNodeData d = (AnswerNodeData) node.getData();
+//        String id = node.getId();
+//        String answerTmpl = d.getAnswer().replace("\"", "\\\"");
+//        return String.format(
+//                "// —— Answer 节点 [%s] ——%n" +
+//                        "AnswerNode %1$sNode = AnswerNode.builder()%n" +
+//                        "    .answerTemplate(\"%s\")%n" +
+//                        "    .build();%n" +
+//                        "stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%1$sNode));%n%n",
+//                id, answerTmpl, id
+//        );
+        return "";
     }
 }

@@ -29,24 +29,9 @@ public class StartNodeSection implements NodeSection {
         return NodeType.START.equals(nodeType);
     }
 
+    // use static constant of stateGraph
     @Override
     public String render(Node node) {
-        StartNodeData data = (StartNodeData) node.getData();
-        String id = node.getId();
-        StringBuilder vars = new StringBuilder();
-        for (StartNodeData.StartInput in : data.getStartInputs()) {
-            vars.append(String.format(
-                "    .addVariable(\"%s\", \"%s\", \"%s\")%n",
-                in.getVariable(), in.getType(), in.getLabel()
-            ));
-        }
-        return String.format(
-            "// —— Start 节点 [%s] ——%n" +
-            "stateGraph.addNode(\"%s\",%n" +
-            "    StartNodeBuilder.create()%n%s" +
-            "        .build()%n" +
-            ");%n%n",
-            id, id, vars.toString()
-        );
+        return "";
     }
 }

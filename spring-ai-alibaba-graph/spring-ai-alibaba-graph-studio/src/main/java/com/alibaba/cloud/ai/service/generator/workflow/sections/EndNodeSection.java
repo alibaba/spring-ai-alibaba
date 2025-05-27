@@ -16,11 +16,6 @@ public class EndNodeSection implements NodeSection {
 
     @Override
     public String render(Node node) {
-        String id = node.getId();
-        return String.format(
-            "// —— End 节点 [%s] ——%n" +
-            "stateGraph.addNode(\"%s\", EndNode.create());%n%n",
-            id, id
-        );
+        return "";
     }
 }
