@@ -1,7 +1,12 @@
+logging:
+  level:
+    org:
+      springframework: DEBUG
 spring:
   application:
     name: spring-ai-alibaba-graph-studio
-
+  config:
+    import: classpath:initializr.yml
   ai:
     dashscope:
       api-key: ${AI_DASH_SCOPE_API_KEY}

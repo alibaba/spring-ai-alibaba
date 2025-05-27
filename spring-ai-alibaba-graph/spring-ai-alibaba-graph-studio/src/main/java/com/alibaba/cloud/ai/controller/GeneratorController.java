@@ -15,52 +15,35 @@
  */
 package com.alibaba.cloud.ai.controller;
 
-import com.alibaba.cloud.ai.api.GeneratorAPI;
-import com.alibaba.cloud.ai.service.dsl.DSLAdapter;
-import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
-import com.alibaba.cloud.ai.service.generator.CodeGenerator;
-import com.alibaba.cloud.ai.service.generator.ProjectGenerator;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.alibaba.cloud.ai.service.generator.GraphProjectRequest;
+import io.spring.initializr.metadata.InitializrMetadataProvider;
+import io.spring.initializr.web.controller.ProjectGenerationController;
+import io.spring.initializr.web.project.ProjectGenerationInvoker;
+import org.springframework.beans.BeanWrapperImpl;
 
-import java.util.List;
+import java.util.Map;
 
-@RestController
-@RequestMapping("graph-studio/api/generate")
-public class GeneratorController implements GeneratorAPI {
+public class GeneratorController extends ProjectGenerationController<GraphProjectRequest> {
 
-	private final List<ProjectGenerator> projectGenerators;
-
-	private final List<CodeGenerator> codeGenerators;
-
-	private final List<DSLAdapter> dslAdapters;
-
-	public GeneratorController(List<ProjectGenerator> projectGenerators, List<CodeGenerator> codeGenerators,
-			List<DSLAdapter> dslAdapters) {
-		this.projectGenerators = projectGenerators;
-		this.codeGenerators = codeGenerators;
-		this.dslAdapters = dslAdapters;
+	public GeneratorController(InitializrMetadataProvider metadataProvider,
+			ProjectGenerationInvoker<GraphProjectRequest> projectGenerationInvoker) {
+		super(metadataProvider, projectGenerationInvoker);
 	}
 
 	@Override
-	public ProjectGenerator getProjectGenerator(String appMode) {
-		return projectGenerators.stream()
-			.filter(generator -> generator.supportAppMode(appMode))
-			.findFirst()
-			.orElse(null);
-	}
-
-	@Override
-	public CodeGenerator getCodeGenerator(String nodeType) {
-		return codeGenerators.stream()
-			.filter(generator -> generator.supportNodeType(nodeType))
-			.findFirst()
-			.orElse(null);
-	}
-
-	@Override
-	public DSLAdapter getDSLAdapter(DSLDialectType dialectType) {
-		return dslAdapters.stream().filter(adapter -> adapter.supportDialect(dialectType)).findFirst().orElse(null);
+	public GraphProjectRequest projectRequest(Map<String, String> headers) {
+		GraphProjectRequest request = new GraphProjectRequest();
+		BeanWrapperImpl bean = new BeanWrapperImpl(this);
+		getMetadata().defaults().forEach((key, value) -> {
+			if (bean.isWritableProperty(key)) {
+				// We want to be able to infer a package name if none has been
+				// explicitly set
+				if (!key.equals("packageName")) {
+					bean.setPropertyValue(key, value);
+				}
+			}
+		});
+		return request;
 	}
 
 }
