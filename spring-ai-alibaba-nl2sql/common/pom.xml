@@ -8,11 +8,18 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>common</artifactId>
+    <artifactId>spring-ai-alibaba-nl2sql-common</artifactId>
+    <name>Common Package For Spring AI Alibaba</name>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
 
     <properties>
-        <spring-ai.version>1.0.0-RC1</spring-ai.version>
-        <spring-ai-alibaba.version>1.0.0-RC1.1</spring-ai-alibaba.version>
+        <spring-ai.version>1.0.0</spring-ai.version>
+        <spring-ai-alibaba.version>1.0.0.1</spring-ai-alibaba.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

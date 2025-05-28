@@ -30,8 +30,17 @@
     <packaging>jar</packaging>
     <name>Spring AI Alibaba Graph Core</name>
     <description>A library for building stateful, multi-agents applications with LLMs</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
 
-    <properties></properties>
+
+    <properties>
+        <openai.version>0.22.92</openai.version>
+    </properties>
 
     <dependencies>
         <!--
@@ -41,6 +50,13 @@
               <version>0.6.3</version>
             </dependency>
         -->
+
+        <dependency>
+            <groupId>io.github.lambdua</groupId>
+            <artifactId>service</artifactId>
+            <version>${openai.version}</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.ai</groupId>

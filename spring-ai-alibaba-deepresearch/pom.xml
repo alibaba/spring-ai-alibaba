@@ -23,7 +23,7 @@
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 
         <spring-ai.version>1.0.0</spring-ai.version>
-        <spring-ai-alibaba.version>1.0.0-SNAPSHOT</spring-ai-alibaba.version>
+        <spring-ai-alibaba.version>1.0.0.1</spring-ai-alibaba.version>
     </properties>
 
 
@@ -57,6 +57,11 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-tavilysearch</artifactId>
         </dependency>
 
     </dependencies>

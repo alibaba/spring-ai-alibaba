@@ -18,9 +18,7 @@ package com.alibaba.cloud.ai.autoconfigure.mcp.client;
 
 import com.alibaba.cloud.ai.mcp.nacos.client.transport.LoadbalancedMcpAsyncClient;
 import com.alibaba.cloud.ai.mcp.nacos.client.transport.LoadbalancedMcpSyncClient;
-import com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegistryProperties;
-import com.alibaba.nacos.api.naming.NamingService;
-import com.alibaba.nacos.client.config.NacosConfigService;
+import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.springframework.ai.mcp.client.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.autoconfigure.NamedClientMcpTransport;
@@ -31,6 +29,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 
 import java.util.ArrayList;
@@ -39,11 +38,11 @@ import java.util.Map;
 
 /**
  * @author yingzi
- * @date 2025/4/29:10:05
+ * @since 2025/4/29:10:05
  */
 @AutoConfiguration(after = { NacosMcpSseClientAutoConfiguration.class, McpClientAutoConfiguration.class })
 @ConditionalOnClass({ McpSchema.class })
-@EnableConfigurationProperties({ McpClientCommonProperties.class, NacosMcpRegistryProperties.class })
+@EnableConfigurationProperties({ McpClientCommonProperties.class })
 @ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "nacos-enabled" }, havingValue = "true",
 		matchIfMissing = false)
 public class NacosMcpClientAutoConfiguration {
@@ -51,31 +50,24 @@ public class NacosMcpClientAutoConfiguration {
 	public NacosMcpClientAutoConfiguration() {
 	}
 
-	private String connectedClientName(String clientName, String serverConnectionName) {
-		return clientName + " - " + serverConnectionName;
-	}
-
 	@Bean
 	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "SYNC",
 			matchIfMissing = true)
 	public List<LoadbalancedMcpSyncClient> loadbalancedMcpSyncClientList(
 			@Qualifier("server2NamedTransport") ObjectProvider<Map<String, List<NamedClientMcpTransport>>> server2NamedTransportProvider,
-			ObjectProvider<NamingService> namingServiceProvider,
-			ObjectProvider<NacosConfigService> nacosConfigServiceProvider,
-			NacosMcpRegistryProperties nacosMcpRegistryProperties) {
-		NamingService namingService = namingServiceProvider.getObject();
-		NacosConfigService nacosConfigService = nacosConfigServiceProvider.getObject();
+			ObjectProvider<NacosMcpOperationService> nacosMcpOperationServiceProvider,
+			ApplicationContext applicationContext) {
+		NacosMcpOperationService nacosMcpOperationService = nacosMcpOperationServiceProvider.getObject();
 
 		List<LoadbalancedMcpSyncClient> loadbalancedMcpSyncClients = new ArrayList<>();
 		Map<String, List<NamedClientMcpTransport>> server2NamedTransport = server2NamedTransportProvider.getObject();
 		for (Map.Entry<String, List<NamedClientMcpTransport>> entry : server2NamedTransport.entrySet()) {
-			String serviceName = entry.getKey();
+			String serverName = entry.getKey();
 
 			LoadbalancedMcpSyncClient loadbalancedMcpSyncClient = LoadbalancedMcpSyncClient.builder()
-				.serviceName(serviceName)
-				.namingService(namingService)
-				.nacosConfigService(nacosConfigService)
-				.serviceGroup(nacosMcpRegistryProperties.getServiceGroup())
+				.serverName(serverName)
+				.nacosMcpOperationService(nacosMcpOperationService)
+				.applicationContext(applicationContext)
 				.build();
 			loadbalancedMcpSyncClient.init();
 			loadbalancedMcpSyncClient.subscribe();
@@ -89,21 +81,19 @@ public class NacosMcpClientAutoConfiguration {
 	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "ASYNC")
 	public List<LoadbalancedMcpAsyncClient> loadbalancedMcpAsyncClientList(
 			@Qualifier("server2NamedTransport") ObjectProvider<Map<String, List<NamedClientMcpTransport>>> server2NamedTransportProvider,
-			ObjectProvider<NamingService> namingServiceProvider,
-			ObjectProvider<NacosConfigService> nacosConfigServiceProvider,
-			NacosMcpRegistryProperties nacosMcpRegistryProperties) {
-		NamingService namingService = namingServiceProvider.getObject();
-		NacosConfigService nacosConfigService = nacosConfigServiceProvider.getObject();
+			ObjectProvider<NacosMcpOperationService> nacosMcpOperationServiceProvider,
+			ApplicationContext applicationContext) {
+		NacosMcpOperationService nacosMcpOperationService = nacosMcpOperationServiceProvider.getObject();
 
 		List<LoadbalancedMcpAsyncClient> loadbalancedMcpAsyncClients = new ArrayList<>();
 		Map<String, List<NamedClientMcpTransport>> server2NamedTransport = server2NamedTransportProvider.getObject();
 		for (Map.Entry<String, List<NamedClientMcpTransport>> entry : server2NamedTransport.entrySet()) {
-			String serviceName = entry.getKey();
+			String serverName = entry.getKey();
 
 			LoadbalancedMcpAsyncClient loadbalancedMcpAsyncClient = LoadbalancedMcpAsyncClient.builder()
-				.serviceName(serviceName)
-				.namingService(namingService)
-				.nacosConfigService(nacosConfigService)
+				.serverName(serverName)
+				.nacosMcpOperationService(nacosMcpOperationService)
+				.applicationContext(applicationContext)
 				.build();
 			loadbalancedMcpAsyncClient.init();
 			loadbalancedMcpAsyncClient.subscribe();

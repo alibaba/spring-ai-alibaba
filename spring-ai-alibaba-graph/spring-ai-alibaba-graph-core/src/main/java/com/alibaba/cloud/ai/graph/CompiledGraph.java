@@ -292,7 +292,7 @@ public class CompiledGraph {
 	}
 
 	private String nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId) throws Exception {
-		return nextNodeId(route, state, nodeId, null);
+		return nextNodeId(route, state, nodeId, overAllState());
 	}
 
 	private String nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId, OverAllState overAllState)
@@ -649,32 +649,46 @@ public class CompiledGraph {
 				.findFirst()
 				.map(generatorEntry -> {
 					final AsyncGenerator<Output> generator = (AsyncGenerator<Output>) generatorEntry.getValue();
-					return Data.composeWith(generator.map(n -> {
-						n.setSubGraph(true);
-						return n;
+					return Data.composeWith(generator.map(output -> {
+						output.setSubGraph(true);
+						return output;
 					}), data -> {
-
 						if (data != null) {
 							if (data instanceof Map<?, ?>) {
-								// Assume that the whatever used appender channel doesn't
-								// accept duplicates
-								var partialStateWithoutGenerator = partialState.entrySet()
-									.stream()
-									.filter(e -> !Objects.equals(e.getKey(), generatorEntry.getKey()))
-									.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-								currentState = OverAllState.updateState(currentState, partialStateWithoutGenerator,
-										overAllState().keyStrategies());
+								updateState(partialState, generatorEntry, (Map<String, Object>) data);
+							}
+							else if (data instanceof NodeOutput nodeOutput) {
+								OverAllState state = nodeOutput.state();
+								updateState(partialState, generatorEntry, state.data());
 							}
 							else {
-								throw new IllegalArgumentException("Embedded generator must return a Map");
+								throw new IllegalArgumentException(
+										"Embedded generator must return a Map or NodeOutput");
 							}
 						}
-
+						overAllState().updateState(partialState);
 						nextNodeId = nextNodeId(currentNodeId, currentState);
 						resumedFromEmbed = true;
 					});
 				});
+		}
+
+		private void updateState(Map<String, Object> partialState, Map.Entry<String, Object> generatorEntry,
+				Map<String, Object> data) {
+			// Assume that the whatever used appender channel doesn't
+			// accept duplicates
+			// FIX #102
+			// Assume that the whatever used appender channel doesn't accept duplicates
+			// FIX #104: remove generator
+			var partialStateWithoutGenerator = partialState.entrySet()
+				.stream()
+				.filter(e -> !Objects.equals(e.getKey(), generatorEntry.getKey()))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+			var intermediateState = OverAllState.updateState(currentState, partialStateWithoutGenerator,
+					overAllState().keyStrategies());
+			overAllState().updateState(intermediateState);
+			currentState = OverAllState.updateState(intermediateState, data, overAllState().keyStrategies());
 		}
 
 		private CompletableFuture<Data<Output>> evaluateAction(AsyncNodeActionWithConfig action,
@@ -688,8 +702,8 @@ public class CompiledGraph {
 						return embed.get();
 					}
 
-					currentState = overAllState.updateState(partialState);
-					nextNodeId = nextNodeId(currentNodeId, currentState, overAllState);
+					currentState = overAllState().updateState(partialState);
+					nextNodeId = nextNodeId(currentNodeId, currentState, overAllState());
 
 					return Data.of(getNodeOutput());
 				}
@@ -775,7 +789,7 @@ public class CompiledGraph {
 				if (action == null)
 					throw StateGraph.RunnableErrors.missingNode.exception(currentNodeId);
 
-				return evaluateAction(action, overAllState).get();
+				return evaluateAction(action, overAllState()).get();
 			}
 			catch (Exception e) {
 				if (e instanceof ExecutionException executionException
