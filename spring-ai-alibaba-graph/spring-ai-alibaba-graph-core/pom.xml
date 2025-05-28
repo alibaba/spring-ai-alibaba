@@ -37,9 +37,6 @@
         <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
 
-    <properties>
-    </properties>
-
     <dependencies>
         <!--
             <dependency>
