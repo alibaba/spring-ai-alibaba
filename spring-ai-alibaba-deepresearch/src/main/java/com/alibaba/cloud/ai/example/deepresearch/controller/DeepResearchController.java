@@ -74,25 +74,16 @@ public class DeepResearchController {
 	 * Creates a default ChatRequest instance.
 	 */
 	private ChatRequest getDefaultChatRequest() {
-		return new ChatRequest(
-				Collections.emptyList(),
-				"123",
-				1,
-				3,
-				false,
-				null,
-				true,
-				false,
-				Collections.emptyMap(),
-				"草莓蛋糕怎么做呀。"
-		);
+		return new ChatRequest(Collections.emptyList(), "123", 1, 3, false, null, true, false, Collections.emptyMap(),
+				"草莓蛋糕怎么做呀。");
 	}
 
 	/**
 	 * SSE (Server-Sent Events) endpoint for chat streaming.
 	 *
-	 * Accepts a ChatRequest and returns a Flux that streams chat responses
-	 * as ServerSentEvent<String>. Supports both initial questions and human feedback handling.
+	 * Accepts a ChatRequest and returns a Flux that streams chat responses as
+	 * ServerSentEvent<String>. Supports both initial questions and human feedback
+	 * handling.
 	 */
 	@RequestMapping(value = "/chat/stream", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> chatStream(@RequestBody(required = false) ChatRequest chatRequest) {
@@ -100,8 +91,8 @@ public class DeepResearchController {
 			chatRequest = getDefaultChatRequest();
 		}
 		RunnableConfig runnableConfig = RunnableConfig.builder()
-				.threadId(String.valueOf(chatRequest.threadId()))
-				.build();
+			.threadId(String.valueOf(chatRequest.threadId()))
+			.build();
 
 		Map<String, Object> objectMap = new HashMap<>();
 		// Create a unicast sink to emit ServerSentEvents
@@ -120,8 +111,8 @@ public class DeepResearchController {
 		}
 
 		return sink.asFlux()
-				.doOnCancel(() -> logger.info("Client disconnected from stream"))
-				.doOnError(e -> logger.error("Error occurred during streaming", e));
+			.doOnCancel(() -> logger.info("Client disconnected from stream"))
+			.doOnError(e -> logger.error("Error occurred during streaming", e));
 	}
 
 	@GetMapping("/chat")
@@ -170,7 +161,8 @@ public class DeepResearchController {
 		return resultFuture.get().data();
 	}
 
-	private void handleHumanFeedback(ChatRequest chatRequest, Map<String, Object> objectMap, RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) {
+	private void handleHumanFeedback(ChatRequest chatRequest, Map<String, Object> objectMap,
+			RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) {
 		objectMap.put("feed_back", chatRequest.interruptFeedback());
 		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
 		OverAllState state = stateSnapshot.state();
@@ -200,16 +192,18 @@ public class DeepResearchController {
 					System.out.println("data = " + data);
 					Object messages = data.get("messages");
 					sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(messages)).build());
-				} catch (Exception e) {
+				}
+				catch (Exception e) {
 					throw new CompletionException(e);
 				}
 			}).thenAccept(v -> {
 				// 正常完成
 				sink.tryEmitComplete();
-			}).exceptionally( e -> {
+			}).exceptionally(e -> {
 				sink.tryEmitError(e);
 				return null;
 			});
 		});
 	}
+
 }
