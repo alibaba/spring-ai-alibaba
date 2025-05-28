@@ -56,6 +56,7 @@ public class StateGraphStreamTest {
 	private String API_KEY;
 
 	private static final Logger log = LoggerFactory.getLogger(StateGraphStreamTest.class);
+
 	// Test constants
 	private static final String TEST_MODEL = "qwen-turbo";
 
@@ -69,17 +70,14 @@ public class StateGraphStreamTest {
 
 	@BeforeEach
 	public void setUp() {
-		API_KEY =  System.getenv(API_KEY_ENV); // 替换为你的API密钥
+		API_KEY = System.getenv(API_KEY_ENV); // 替换为你的API密钥
 		Assumptions.assumeTrue(API_KEY != null && !API_KEY.trim().isEmpty(),
 				"Skipping tests because " + API_KEY_ENV + " environment variable is not set");
 		// Create real API client with API key from environment
 		realApi = DashScopeApi.builder().apiKey(API_KEY).build();
 		// Create chat model with default options
 		options = DashScopeChatOptions.builder().withModel(TEST_MODEL).build();
-		chatModel = DashScopeChatModel.builder()
-				.dashScopeApi(realApi)
-				.defaultOptions(options)
-				.build();
+		chatModel = DashScopeChatModel.builder().dashScopeApi(realApi).defaultOptions(options).build();
 	}
 
 	private AsyncNodeAction makeNode(String id) {
@@ -217,8 +215,8 @@ public class StateGraphStreamTest {
 					queue.add(AsyncGenerator.Data.done());
 				}
 				else {
-					queue.add(AsyncGenerator.Data
-						.of(new StreamingOutput(str + new Random().nextInt(10), "llmNode", s)));
+					queue
+						.add(AsyncGenerator.Data.of(new StreamingOutput(str + new Random().nextInt(10), "llmNode", s)));
 				}
 			}
 		}).start();
