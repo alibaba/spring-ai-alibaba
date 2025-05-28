@@ -23,7 +23,7 @@
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 
         <spring-ai.version>1.0.0</spring-ai.version>
-        <spring-ai-alibaba.version>1.0.0.1</spring-ai-alibaba.version>
+        <spring-ai-alibaba.version>1.0.0.2</spring-ai-alibaba.version>
     </properties>
 
 
@@ -58,12 +58,18 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
-
+        
         <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-tool-calling-tavilysearch</artifactId>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>33.4.0-jre</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+        </dependency>
+        
     </dependencies>
     <dependencyManagement>
         <dependencies>

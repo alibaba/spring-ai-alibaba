@@ -76,8 +76,7 @@ public class CalculateAgent implements NodeAction {
 				.inputSchema(JsonSchemaGenerator.generateForMethodInput(toolMethod));
 
 			MethodToolCallback build = MethodToolCallback.builder()
-				.toolDefinition(
-						ToolDefinition.builder().name(toolMethod.getName()).description(document.getText()).build())
+				.toolDefinition(toolDefinitionBuilder.build())
 				.toolMethod(toolMethod)
 				.build();
 

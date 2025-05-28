@@ -18,15 +18,21 @@ package com.alibaba.cloud.ai.example.deepresearch.tool.tavily;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.TavilySearchRequest;
 import com.alibaba.cloud.ai.example.deepresearch.model.TavilySearchResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.function.Function;
 
 /**
  * @author yingzi
  * @since 2025/5/18 14:36
  */
 @Service
-public class TavilySearchApi {
+public class TavilySearchApi implements Function<String, TavilySearchResponse> {
+
+	private static final Logger logger = LoggerFactory.getLogger(TavilySearchApi.class);
 
 	private final String URL = "https://api.tavily.com/search";
 
@@ -42,24 +48,31 @@ public class TavilySearchApi {
 		this.properties = properties;
 	}
 
+	@Override
+	public TavilySearchResponse apply(String query) {
+		return this.search(query);
+	}
+
 	public TavilySearchResponse search(String query) {
-		TavilySearchRequest build = TavilySearchRequest.builder()
-			.query(query)
-			.topic(properties.getTopic())
-			.searchDepth(properties.getSearchDepth())
-			.chunksPerSource(properties.getChunksPerSource())
-			.maxResults(properties.getMaxResults())
-			.days(properties.getDays())
-			.includeRawContent(properties.isIncludeRawContent())
-			.includeImages(properties.isIncludeImages())
-			.includeImageDescriptions(properties.isIncludeImageDescriptions())
-			.build();
-		TavilySearchResponse response = webClient.post()
-			.bodyValue(build)
-			.retrieve()
-			.bodyToMono(TavilySearchResponse.class)
-			.block();
-		return response;
+		try {
+			TavilySearchRequest build = TavilySearchRequest.builder()
+				.query(query)
+				.topic(properties.getTopic())
+				.searchDepth(properties.getSearchDepth())
+				.chunksPerSource(properties.getChunksPerSource())
+				.maxResults(properties.getMaxResults())
+				.days(properties.getDays())
+				.includeRawContent(properties.isIncludeRawContent())
+				.includeImages(properties.isIncludeImages())
+				.includeImageDescriptions(properties.isIncludeImageDescriptions())
+				.includeAnswer(properties.isIncludeAnswer())
+				.build();
+			return webClient.post().bodyValue(build).retrieve().bodyToMono(TavilySearchResponse.class).block();
+		}
+		catch (Exception e) {
+			logger.error("Tavily Search error: ", e);
+			return null;
+		}
 	}
 
 }

@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.example.deepresearch.tool.WebSearchTool;
-import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchProperties;
 import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.ToolCallback;
@@ -27,7 +26,6 @@ import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.GenericApplicationContext;
@@ -67,12 +65,11 @@ public class AgentsConfiguration {
 	// }
 
 	@Bean
-	@ConditionalOnProperty(prefix = TavilySearchProperties.PREFIX, name = "enabled", havingValue = "true")
 	public ToolCallbackProvider tavilySearchServiceCallbackProvider(GenericApplicationContext applicationContext) {
 		SpringBeanToolCallbackResolver springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
 			.applicationContext(applicationContext)
 			.build();
-		ToolCallback tavilySearch = springBeanToolCallbackResolver.resolve("tavilySearch");
+		ToolCallback tavilySearch = springBeanToolCallbackResolver.resolve("tavilySearchApi");
 		return ToolCallbackProvider.from(tavilySearch);
 	}
 

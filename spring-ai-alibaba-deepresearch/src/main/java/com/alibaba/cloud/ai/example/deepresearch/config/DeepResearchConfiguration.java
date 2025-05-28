@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.PlannerDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.BackgroundInvestigationType;
 import com.alibaba.cloud.ai.example.deepresearch.node.*;
+import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.example.deepresearch.tool.tavily.TavilySearchApi;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -62,6 +63,9 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private TavilySearchApi tavilySearchApi;
+
+	@Autowired
+	private PythonReplTool pythonReplTool;
 
 	@Autowired
 	private ChatClient backgroundInvestigationAgent;
@@ -116,16 +120,16 @@ public class DeepResearchConfiguration {
 			.addNode("planner", node_async((new PlannerNode(chatClientBuilder, toolCallbacks))))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
-			.addNode("researcher", node_async(new ResearcherNode(researchAgent, toolCallbacks)))
-			.addNode("coder", node_async(new CoderNode(coderAgent, toolCallbacks)))
+			.addNode("researcher", node_async(new ResearcherNode(researchAgent)))
+			.addNode("coder", node_async(new CoderNode(coderAgent, pythonReplTool)))
 			.addNode("reporter", node_async((new ReporterNode(reporterAgent, toolCallbacks))))
 
 			.addEdge(START, "coordinator")
 			.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
-					Map.of("background_investigator", "background_investigator", END, END))
+					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
 			.addEdge("background_investigator", "planner")
 			.addConditionalEdges("planner", edge_async(new PlannerDispatcher()),
-					Map.of("reporter", "reporter", "human_feedback", "human_feedback", END, END))
+					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner", END, END))
 			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
 					Map.of("planner", "planner", "research_team", "research_team", "reporter", "reporter", END, END))
 			.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),

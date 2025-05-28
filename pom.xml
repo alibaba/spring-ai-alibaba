@@ -52,6 +52,7 @@
         <module>spring-ai-alibaba-bom</module>
         <module>spring-ai-alibaba-mcp</module>
         <module>spring-ai-alibaba-core</module>
+        <module>spring-ai-alibaba-prompt</module>
         <module>spring-ai-alibaba-graph</module>
         <module>spring-ai-alibaba-nl2sql</module>
         <module>spring-ai-alibaba-studio</module>
@@ -180,7 +181,7 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.0.0.1</revision>
+        <revision>1.0.0.2</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
@@ -225,6 +226,8 @@
         <jedis.version>5.2.0</jedis.version>
 
         <mysql.version>8.0.32</mysql.version>
+
+        <guava.version>33.4.0-jre</guava.version>
 
         <!-- CheckStyle Plugin -->
         <disable.checks>true</disable.checks>
@@ -291,6 +294,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
         </dependencies>
     </dependencyManagement>
 

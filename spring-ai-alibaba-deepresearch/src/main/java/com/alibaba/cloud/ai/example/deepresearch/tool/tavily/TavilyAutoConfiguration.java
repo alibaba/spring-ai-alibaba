@@ -20,6 +20,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Description;
 
 /**
  * @author yingzi
@@ -31,6 +32,7 @@ public class TavilyAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@Description("Use Tavily Search to search something.")
 	public TavilySearchApi tavilySearchApi(TavilySearchProperties properties) {
 		return new TavilySearchApi(properties);
 	}
