@@ -59,12 +59,11 @@ public class GraphManusController {
         RunnableConfig runnableConfig = RunnableConfig.builder().threadId(String.valueOf(planId)).build();
         Map<String, Object> objectMap = Map.of("feedback", feedback);
 
-        StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
-        OverAllState state = stateSnapshot.state();
+        OverAllState state = compiledGraph.overAllState();
         state.withResume();
         state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, NodeConstants.HUMAN_ID));
 
-        var resultFuture = compiledGraph.invoke(state, runnableConfig);
+        var resultFuture = compiledGraph.invoke(state,runnableConfig);
         return resultFuture.get().data();
     }
 }
