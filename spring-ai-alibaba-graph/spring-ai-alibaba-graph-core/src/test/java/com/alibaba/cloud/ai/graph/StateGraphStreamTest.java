@@ -49,23 +49,51 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+/**
+ * Test class for StateGraph streaming functionality. Verifies the correct behavior of
+ * stream-based state transitions and asynchronous processing in state graphs.
+ */
 public class StateGraphStreamTest {
 
+	/**
+	 * API key for authentication with DashScope services
+	 */
 	private String API_KEY;
 
+	/**
+	 * Logger instance for tracking test execution and debugging information
+	 */
 	private static final Logger log = LoggerFactory.getLogger(StateGraphStreamTest.class);
 
-	// Test constants
+	/**
+	 * Test constant for specifying the Qwen Turbo model in tests
+	 */
 	private static final String TEST_MODEL = "qwen-turbo";
 
+	/**
+	 * Environment variable name containing the DashScope API key
+	 */
 	private static final String API_KEY_ENV = "AI_DASHSCOPE_API_KEY";
 
+	/**
+	 * DashScope API client instance for integration testing
+	 */
 	private DashScopeApi realApi;
 
+	/**
+	 * Chat options configuration used across multiple tests
+	 */
 	private DashScopeChatOptions options;
 
+	/**
+	 * Chat model instance configured with test-specific settings
+	 */
 	private DashScopeChatModel chatModel;
 
+	/**
+	 * Sets up test environment before each test method execution. Initializes API
+	 * credentials and creates configured instances of test dependencies.
+	 */
 	@BeforeEach
 	public void setUp() {
 		API_KEY = System.getenv(API_KEY_ENV); // 替换为你的API密钥
@@ -78,6 +106,11 @@ public class StateGraphStreamTest {
 		chatModel = DashScopeChatModel.builder().dashScopeApi(realApi).defaultOptions(options).build();
 	}
 
+	/**
+	 * Creates a basic test node with logging functionality.
+	 * @param id Unique identifier for the node
+	 * @return AsyncNodeAction that logs its execution and returns a simple message
+	 */
 	private AsyncNodeAction makeNode(String id) {
 		return node_async(state -> {
 			log.info("call node {}", id);
@@ -85,6 +118,10 @@ public class StateGraphStreamTest {
 		});
 	}
 
+	/**
+	 * Tests basic generator result retrieval from the state graph. Verifies that the
+	 * stream processing correctly handles terminal states and results.
+	 */
 	@Test
 	public void testGetResultFromGenerator() throws Exception {
 		var workflow = new StateGraph(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy()))
@@ -105,6 +142,10 @@ public class StateGraphStreamTest {
 
 	}
 
+	/**
+	 * Tests streaming functionality with basic node actions. Validates that the system
+	 * can handle sequential node execution with streaming outputs.
+	 */
 	@Test
 	public void testBasicNodeActionStream() throws Exception {
 		StateGraph stateGraph = new StateGraph(
@@ -146,6 +187,14 @@ public class StateGraphStreamTest {
 		}
 	}
 
+	/**
+	 * Creates a CompletableFuture containing a StreamingOutput with delayed execution.
+	 * @param node Node identifier
+	 * @param index Index value for the output
+	 * @param delayInMills Delay time in milliseconds
+	 * @param overAllState Current state context
+	 * @return CompletableFuture containing the StreamingOutput
+	 */
 	static CompletableFuture<NodeOutput> of(String node, String index, long delayInMills, OverAllState overAllState) {
 		return CompletableFuture.supplyAsync(() -> {
 			try {
@@ -158,6 +207,10 @@ public class StateGraphStreamTest {
 		});
 	}
 
+	/**
+	 * Tests streaming functionality using an AsyncGeneratorQueue implementation. Verifies
+	 * that queue-based streaming works correctly with the state graph architecture.
+	 */
 	@Test
 	public void testNodeActionStreamForAsyncGeneratorQueue() throws Exception {
 		StateGraph stateGraph = new StateGraph(
@@ -195,6 +248,11 @@ public class StateGraphStreamTest {
 		}
 	}
 
+	/**
+	 * Creates a streaming output generator that produces random values at intervals.
+	 * @param s Current state context
+	 * @return AsyncGenerator with streaming output values
+	 */
 	private static AsyncGenerator.WithResult<StreamingOutput> getStreamingOutputWithResult(OverAllState s) {
 		// 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
 		BlockingQueue<AsyncGenerator.Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
@@ -221,6 +279,10 @@ public class StateGraphStreamTest {
 		return it;
 	}
 
+	/**
+	 * Integration test for model node action streaming. Verifies end-to-end streaming
+	 * functionality with actual LLM integration.
+	 */
 	@Test
 	@Tag("integration")
 	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
@@ -248,6 +310,10 @@ public class StateGraphStreamTest {
 		}
 	}
 
+	/**
+	 * Integration test for model node action with conditional edge routing. Verifies that
+	 * streaming works correctly with dynamic path selection based on content.
+	 */
 	@Test
 	@Tag("integration")
 	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
@@ -276,6 +342,10 @@ public class StateGraphStreamTest {
 		}
 	}
 
+	/**
+	 * Creates an asynchronous edge action for conditional routing decisions.
+	 * @return AsyncEdgeAction that determines the next node based on message content
+	 */
 	@NotNull
 	private static AsyncEdgeAction getAsyncEdgeAction() {
 		return t -> {
@@ -294,6 +364,10 @@ public class StateGraphStreamTest {
 		};
 	}
 
+	/**
+	 * Tests comprehensive streaming output processing pipeline. Validates that streaming
+	 * outputs are properly handled and aggregated through the graph.
+	 */
 	@Test
 	public void testStreamingOutputProcessing() throws GraphStateException {
 		StateGraph stateGraph = new StateGraph(
@@ -333,7 +407,10 @@ public class StateGraphStreamTest {
 	}
 
 	/**
-	 * 处理流式输出的辅助方法
+	 * Helper method for processing streaming output. Filters out streaming chunks and
+	 * extracts state information from node outputs.
+	 * @param generator AsyncGenerator producing node outputs
+	 * @return List of OverAllState objects representing processed states
 	 */
 	private List<OverAllState> toStateList(AsyncGenerator<NodeOutput> generator) {
 		return generator.stream().filter(s -> {
