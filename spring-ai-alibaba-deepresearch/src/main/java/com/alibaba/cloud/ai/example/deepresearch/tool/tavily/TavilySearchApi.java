@@ -44,16 +44,16 @@ public class TavilySearchApi {
 
 	public TavilySearchResponse search(String query) {
 		TavilySearchRequest build = TavilySearchRequest.builder()
-			.query(query)
-			.topic(properties.getTopic())
-			.searchDepth(properties.getSearchDepth())
-			.chunksPerSource(properties.getChunksPerSource())
-			.maxResults(properties.getMaxResults())
-			.days(properties.getDays())
-			.includeRawContent(properties.isIncludeRawContent())
-			.includeImages(properties.isIncludeImages())
-			.includeImageDescriptions(properties.isIncludeImageDescriptions())
-			.build();
+				.query(query)
+				.topic(properties.getTopic())
+				.searchDepth(properties.getSearchDepth())
+				.chunksPerSource(properties.getChunksPerSource())
+				.maxResults(properties.getMaxResults())
+				.days(properties.getDays())
+				.includeRawContent(properties.isIncludeRawContent())
+				.includeImages(properties.isIncludeImages())
+				.includeImageDescriptions(properties.isIncludeImageDescriptions())
+				.includeAnswer(properties.isIncludeAnswer()).build();
 		TavilySearchResponse response = webClient.post()
 			.bodyValue(build)
 			.retrieve()

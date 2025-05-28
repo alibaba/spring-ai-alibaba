@@ -48,6 +48,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @author yingzi
@@ -60,6 +62,8 @@ public class DeepResearchController {
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchController.class);
 
 	private final CompiledGraph compiledGraph;
+
+	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
 	@Autowired
 	public DeepResearchController(@Qualifier("deepResearch") StateGraph stateGraph) throws GraphStateException {
@@ -145,18 +149,23 @@ public class DeepResearchController {
 	 * 通用的流式处理逻辑
 	 */
 	private void processStream(AsyncGenerator<NodeOutput> generator, Sinks.Many<ServerSentEvent<String>> sink) {
-		generator.forEachAsync(output -> {
-			try {
-				Map<String, Object> data = output.state().data();
-				System.out.println("data = " + data);
-				Object messages = data.get("messages");
-				sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(messages)).build());
-			} catch (Exception e) {
-				throw new CompletionException(e);
-			}
-		}).thenAccept(v -> sink.tryEmitComplete()).exceptionally(e -> {
-			sink.tryEmitError(e);
-			return null;
+		executor.submit(() -> {
+			generator.forEachAsync(output -> {
+				try {
+					Map<String, Object> data = output.state().data();
+					System.out.println("data = " + data);
+					Object messages = data.get("messages");
+					sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(messages)).build());
+				} catch (Exception e) {
+					throw new CompletionException(e);
+				}
+			}).thenAccept(v -> {
+				// 正常完成
+				sink.tryEmitComplete();
+			}).exceptionally( e -> {
+				sink.tryEmitError(e);
+				return null;
+			});
 		});
 	}
 
