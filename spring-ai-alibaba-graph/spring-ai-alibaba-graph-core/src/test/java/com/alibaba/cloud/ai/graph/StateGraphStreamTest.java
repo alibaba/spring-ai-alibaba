@@ -25,8 +25,6 @@ import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.stream.LLmNodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
-import com.theokanning.openai.completion.chat.UserMessage;
-import com.theokanning.openai.service.OpenAiService;
 import org.bsc.async.AsyncGenerator;
 import org.bsc.async.AsyncGeneratorQueue;
 import org.jetbrains.annotations.NotNull;
