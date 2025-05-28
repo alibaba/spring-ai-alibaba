@@ -66,6 +66,11 @@ public class PlannerNode implements NodeAction {
 
 	private final int MAX_MESSAGES = 100;
 
+	private final String PROMPT_FORMAT = """
+			format: 以纯文本输出 json，请不要包含任何多余的文字——包括 markdown 格式;
+			outputExample: {0};
+			""";
+
 	private final MessageWindowChatMemory messageWindowChatMemory = MessageWindowChatMemory.builder()
 		.chatMemoryRepository(chatMemoryRepository)
 		.maxMessages(MAX_MESSAGES)
@@ -104,33 +109,23 @@ public class PlannerNode implements NodeAction {
 			return updated;
 		}
 
-//		PromptTemplate promptTemplate = PromptTemplate.builder()
-//			.template(converter.getFormat())
-//			.renderer(StTemplateRenderer.builder().build())
-//			.build();
-//		Prompt prompt = promptTemplate.create();
+		String format = MessageFormat.format(PROMPT_FORMAT, converter.getFormat());
 
-//		Flux<String> StreamResult = chatClient.prompt(prompt)
-//			.advisors(a -> a.param(CONVERSATION_ID, threadId))
-//			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
-//			.messages(messages)
-//			.stream()
-//			.content();
-//
-//		String result = StreamResult.reduce((acc, next) -> acc + next).block();
-//		logger.info("Planner response: {}", result);
-//		assert result != null;
 
-		ChatClient.CallResponseSpec call = chatClient.prompt()
-				.advisors(a -> a.param(CONVERSATION_ID, threadId))
-				.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
-				.messages(messages)
-				.call();
+		Flux<String> StreamResult = chatClient.prompt(format)
+			.advisors(a -> a.param(CONVERSATION_ID, threadId))
+			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
+			.messages(messages)
+			.stream()
+			.content();
+
+		String result = StreamResult.reduce((acc, next) -> acc + next).block();
+		logger.info("Planner response: {}", result);
+		assert result != null;
+
 		Plan curPlan = null;
-		String result = call.content();
 		try {
-//			curPlan = converter.convert(result);
-			curPlan = call.entity(Plan.class);
+			curPlan = converter.convert(result);
 			logger.info("反序列成功，convert: {}", curPlan);
 			if (curPlan.isHasEnoughContext()) {
 				logger.info("Planner response has enough context.");

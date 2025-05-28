@@ -24,25 +24,30 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.alibaba.fastjson.JSON;
 import org.bsc.async.AsyncGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
+import java.util.concurrent.CompletionException;
 
 /**
  * @author yingzi
@@ -61,30 +66,67 @@ public class DeepResearchController {
 		this.compiledGraph = stateGraph.compile();
 	}
 
-	@PostMapping("/chat/stream")
-	public Flux<Map<String, Object>> chatStream(@RequestBody ChatRequest chatRequest) {
-		RunnableConfig runnableConfig = RunnableConfig.builder()
-			.threadId(String.valueOf(chatRequest.threadId()))
-			.build();
-		Map<String, Object> objectMap = new HashMap<>();
-		// 人类反馈消息
-		if (!chatRequest.autoAcceptPlan() && StringUtils.hasText(chatRequest.interruptFeedback())) {
-			objectMap.put("feed_back", chatRequest.interruptFeedback());
-			StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
-			OverAllState state = stateSnapshot.state();
-			state.withResume();
-			state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
-			AsyncGenerator<NodeOutput> resultFuture = compiledGraph.stream(state, runnableConfig);
-			Stream<OverAllState> overAllStateStream = resultFuture.stream().map(NodeOutput::state);
-			return Flux.fromStream(overAllStateStream).map(overAllState -> {
-				Map<String, Object> result = new HashMap<>();
-				result.put("thread_id", chatRequest.threadId());
-				result.put("data: ", overAllState.data());
-				result.put("plan_iterations: ", overAllState.value("plan_iterations"));
-				return result;
-			});
+	/**
+	 * Creates a default ChatRequest instance.
+	 */
+	private ChatRequest getDefaultChatRequest() {
+		return new ChatRequest(
+				Collections.emptyList(),
+				"123",
+				1,
+				3,
+				false,
+				null,
+				true,
+				false,
+				Collections.emptyMap(),
+				"草莓蛋糕怎么做呀。"
+		);
+	}
+
+	@RequestMapping(value = "/chat/stream", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	public Flux<ServerSentEvent<String>> chatStream(@RequestBody(required = false) ChatRequest chatRequest) {
+		if (chatRequest == null) {
+			chatRequest = getDefaultChatRequest();
 		}
-		// 首次提问
+		RunnableConfig runnableConfig = RunnableConfig.builder()
+				.threadId(String.valueOf(chatRequest.threadId()))
+				.build();
+
+		Map<String, Object> objectMap = new HashMap<>();
+		// 创建 Sink 用于发送事件
+		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
+		Flux<ServerSentEvent<String>> flux = sink.asFlux();
+
+		// 判断是否需要处理人类反馈
+		if (!chatRequest.autoAcceptPlan() && StringUtils.hasText(chatRequest.interruptFeedback())) {
+			handleHumanFeedback(chatRequest, objectMap, runnableConfig, sink);
+		} else {
+			initializeObjectMap(chatRequest, objectMap);
+			logger.info("init inputs: {}", objectMap);
+			processStream(objectMap, runnableConfig, sink);
+		}
+
+		return flux;
+	}
+
+	/**
+	 * 处理人类反馈消息
+	 */
+	private void handleHumanFeedback(ChatRequest chatRequest, Map<String, Object> objectMap, RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) {
+		objectMap.put("feed_back", chatRequest.interruptFeedback());
+		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
+		OverAllState state = stateSnapshot.state();
+		state.withResume();
+		state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
+		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.stream(state, runnableConfig);
+		processStream(resultFuture, sink);
+	}
+
+	/**
+	 * 初始化首次提问的输入参数
+	 */
+	private void initializeObjectMap(ChatRequest chatRequest, Map<String, Object> objectMap) {
 		objectMap.put("thread_id", chatRequest.threadId());
 		objectMap.put("enable_background_investigation", chatRequest.enableBackgroundInvestigation());
 		objectMap.put("auto_accepted_plan", chatRequest.autoAcceptPlan());
@@ -93,18 +135,33 @@ public class DeepResearchController {
 		objectMap.put("max_step_num", chatRequest.maxStepNum());
 		objectMap.put("current_plan", null);
 		objectMap.put("final_report", "");
-		logger.info("init inputs: {}", objectMap);
-
 		objectMap.put("mcp_settings", chatRequest.mcpSettings());
-		Stream<OverAllState> overAllStateStream = compiledGraph.stream(objectMap, runnableConfig)
-			.stream()
-			.map(NodeOutput::state);
-		return Flux.fromStream(overAllStateStream).map(overAllState -> {
-			Map<String, Object> result = new HashMap<>();
-			result.put("thread_id", chatRequest.threadId());
-			result.put("data: ", overAllState.data());
-			result.put("plan_iterations: ", overAllState.value("plan_iterations"));
-			return result;
+	}
+
+	/**
+	 * 处理流式输出
+	 */
+	private void processStream(Map<String, Object> objectMap, RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) {
+		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.stream(objectMap, runnableConfig);
+		processStream(resultFuture, sink);
+	}
+
+	/**
+	 * 通用的流式处理逻辑
+	 */
+	private void processStream(AsyncGenerator<NodeOutput> generator, Sinks.Many<ServerSentEvent<String>> sink) {
+		generator.forEachAsync(output -> {
+			try {
+				Map<String, Object> data = output.state().data();
+				System.out.println("data = " + data);
+				Object messages = data.get("messages");
+				sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(messages)).build());
+			} catch (Exception e) {
+				throw new CompletionException(e);
+			}
+		}).thenAccept(v -> sink.tryEmitComplete()).exceptionally(e -> {
+			sink.tryEmitError(e);
+			return null;
 		});
 	}
 
