@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -22,12 +25,16 @@ import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.stream.LLmNodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
+import com.theokanning.openai.completion.chat.UserMessage;
 import com.theokanning.openai.service.OpenAiService;
 import org.bsc.async.AsyncGenerator;
 import org.bsc.async.AsyncGeneratorQueue;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,15 +51,35 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class StateStreamGraphTest {
+public class StateGraphStreamTest {
 
 	private String API_KEY;
 
-	private static final Logger log = LoggerFactory.getLogger(StateStreamGraphTest.class);
+	private static final Logger log = LoggerFactory.getLogger(StateGraphStreamTest.class);
+	// Test constants
+	private static final String TEST_MODEL = "qwen-turbo";
+
+	private static final String API_KEY_ENV = "AI_DASHSCOPE_API_KEY";
+
+	private DashScopeApi realApi;
+
+	private DashScopeChatOptions options;
+
+	private DashScopeChatModel chatModel;
 
 	@BeforeEach
-	public void init() throws GraphStateException {
-		API_KEY = "xxx"; // 替换为你的API密钥
+	public void setUp() {
+		API_KEY =  System.getenv(API_KEY_ENV); // 替换为你的API密钥
+		Assumptions.assumeTrue(API_KEY != null && !API_KEY.trim().isEmpty(),
+				"Skipping tests because " + API_KEY_ENV + " environment variable is not set");
+		// Create real API client with API key from environment
+		realApi = DashScopeApi.builder().apiKey(API_KEY).build();
+		// Create chat model with default options
+		options = DashScopeChatOptions.builder().withModel(TEST_MODEL).build();
+		chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(realApi)
+				.defaultOptions(options)
+				.build();
 	}
 
 	private AsyncNodeAction makeNode(String id) {
@@ -146,28 +173,7 @@ public class StateStreamGraphTest {
 				return Map.of("messages", "Received: " + input, "count", 1);
 			}))
 			.addNode("processData", node_async(s -> {
-				// 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
-				BlockingQueue<AsyncGenerator.Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
-				AsyncGenerator.WithResult<StreamingOutput> it = new AsyncGenerator.WithResult<>(
-						new AsyncGeneratorQueue.Generator<>(queue));
-				String str = "random";
-				new Thread(() -> {
-					for (int i = 0; i < 10; i++) {
-						try {
-							Thread.sleep(1000);
-						}
-						catch (InterruptedException e) {
-							throw new RuntimeException(e);
-						}
-						if (i == 9) {
-							queue.add(AsyncGenerator.Data.done());
-						}
-						else {
-							queue.add(AsyncGenerator.Data
-								.of(new StreamingOutput(str + new Random().nextInt(10), "llmNode", s)));
-						}
-					}
-				}).start();
+				AsyncGenerator.WithResult<StreamingOutput> it = getStreamingOutputWithResult(s);
 				return Map.of("messages", it);
 			}))
 			.addNode("generateResponse", node_async(s -> {
@@ -193,12 +199,40 @@ public class StateStreamGraphTest {
 		}
 	}
 
+	private static AsyncGenerator.WithResult<StreamingOutput> getStreamingOutputWithResult(OverAllState s) {
+		// 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
+		BlockingQueue<AsyncGenerator.Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
+		AsyncGenerator.WithResult<StreamingOutput> it = new AsyncGenerator.WithResult<>(
+				new AsyncGeneratorQueue.Generator<>(queue));
+		String str = "random";
+		new Thread(() -> {
+			for (int i = 0; i < 10; i++) {
+				try {
+					Thread.sleep(1000);
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+				if (i == 9) {
+					queue.add(AsyncGenerator.Data.done());
+				}
+				else {
+					queue.add(AsyncGenerator.Data
+						.of(new StreamingOutput(str + new Random().nextInt(10), "llmNode", s)));
+				}
+			}
+		}).start();
+		return it;
+	}
+
 	@Test
+	@Tag("integration")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	public void testToModelNodeActionStream() throws Exception {
 		StateGraph stateGraph = new StateGraph(
 				() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy())
 					.registerKeyAndStrategy("llm_result", new AppendStrategy()))
-			.addNode("llmNode", node_async(new LLmNodeAction(new OpenAiService(API_KEY, Duration.ofSeconds(30)))))
+			.addNode("llmNode", node_async(new LLmNodeAction(chatModel)))
 			.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
 			.addNode("result", node_async((t) -> Map.of("messages", "result", "llm_result", "end")))
 			.addEdge(START, "llmNode")
@@ -219,11 +253,13 @@ public class StateStreamGraphTest {
 	}
 
 	@Test
+	@Tag("integration")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	public void testToModelNodeActionAndConditionEdgeStream() throws Exception {
 		StateGraph stateGraph = new StateGraph(
 				() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy())
 					.registerKeyAndStrategy("llm_result", new AppendStrategy()))
-			.addNode("llmNode", node_async(new LLmNodeAction(new OpenAiService(API_KEY, Duration.ofSeconds(30)))))
+			.addNode("llmNode", node_async(new LLmNodeAction(chatModel)))
 			.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
 			.addNode("result", node_async((t) -> Map.of("messages", "result", "llm_result", "end")))
 			.addEdge(START, "llmNode")
