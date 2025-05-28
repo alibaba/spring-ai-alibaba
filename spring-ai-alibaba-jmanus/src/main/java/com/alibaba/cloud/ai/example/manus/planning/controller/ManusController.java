@@ -129,6 +129,8 @@ public class ManusController {
 			// You will need to add this field and method to your PlanExecutionRecord class
 			planRecord.setUserInputWaitState(waitState); 
 			logger.info("Plan {} is waiting for user input. Merged waitState into details response.", planId);
+		}else{
+			planRecord.setUserInputWaitState(null); // Clear if not waiting
 		}
 
 		try {

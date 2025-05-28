@@ -57,7 +57,7 @@ import com.microsoft.playwright.Page;
  */
 @SpringBootTest(classes = OpenManusSpringBootApplication.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@Disabled("仅用于本地测试，CI 环境跳过") // 添加这一行
+// @Disabled("仅用于本地测试，CI 环境跳过") // 添加这一行
 class BrowserUseToolSpringTest {
 
 	private static final Logger log = LoggerFactory.getLogger(BrowserUseToolSpringTest.class);

@@ -67,7 +67,6 @@ public class UserInputService {
             
             formInputTool.setUserFormInputValues(inputItems);
             formInputTool.markUserInputReceived();
-            formInputTool.setInputState(FormInputTool.InputState.INPUT_RECEIVED); // Set state to INPUT_RECEIVED after submission
             return true;
         } else {
             if (formInputTool == null) {

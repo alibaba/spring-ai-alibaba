@@ -137,8 +137,15 @@ public class ChromeDriverService {
 				return currentDriver;
 			}
 			log.info("Creating new Playwright Browser instance for planId: {}", planId);
-			currentDriver = createNewDriver();
-			drivers.put(planId, currentDriver);
+			currentDriver = createNewDriver(); // createNewDriver will now pass sharedDir
+			if (currentDriver != null) { // Check if driver creation was successful
+				drivers.put(planId, currentDriver);
+			} else {
+				// Handle the case where driver creation failed, e.g., log an error or throw an exception
+				log.error("Failed to create new driver for planId: {}. createNewDriver returned null.", planId);
+				// Optionally throw an exception to indicate failure to the caller
+				// throw new RuntimeException("Failed to create new driver for planId: " + planId);
+			}
 		}
 		finally {
 			driverLock.unlock();
@@ -191,7 +198,8 @@ public class ChromeDriverService {
 
 			Browser browser = playwright.chromium().launch(options);
 			log.info("Created new Playwright Browser instance with anti-detection");
-			return new DriverWrapper(playwright, browser, browser.newPage());
+			// Pass the sharedDir to the DriverWrapper constructor
+			return new DriverWrapper(playwright, browser, browser.newPage(), this.sharedDir);
 		}
 		catch (Exception e) {
 			if (playwright != null) {

@@ -135,7 +135,7 @@ public abstract class BaseAgent {
 		if (isDebugModel) {
 			detailOutput = """
 					1. 使用工具调用时，必须给出解释说明，说明使用这个工具的理由和背后的思考
-					2. 必须在工具调用前提供推理或描述！
+					2. 简述过去的所有步骤已经都做了什么事
 					""";
 		} else {
 			detailOutput = """
