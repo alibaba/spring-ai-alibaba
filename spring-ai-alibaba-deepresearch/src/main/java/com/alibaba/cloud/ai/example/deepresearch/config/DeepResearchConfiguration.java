@@ -73,6 +73,9 @@ public class DeepResearchConfiguration {
 	private ChatClient coderAgent;
 
 	@Autowired
+	private ChatClient reporterAgent;
+
+	@Autowired
 	private DeepResearchProperties deepResearchProperties;
 
 	@Bean
@@ -115,7 +118,7 @@ public class DeepResearchConfiguration {
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("researcher", node_async(new ResearcherNode(researchAgent, toolCallbacks)))
 			.addNode("coder", node_async(new CoderNode(coderAgent, toolCallbacks)))
-			.addNode("reporter", node_async((new ReporterNode(chatClientBuilder, toolCallbacks))))
+			.addNode("reporter", node_async((new ReporterNode(reporterAgent, toolCallbacks))))
 
 			.addEdge(START, "coordinator")
 			.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
