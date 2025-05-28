@@ -20,8 +20,8 @@ import java.util.*;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 
 /**
- * Utility class for managing edge mappings in a graph structure.
- * Provides a fluent API for defining mappings between labels and destination nodes.
+ * Utility class for managing edge mappings in a graph structure. Provides a fluent API
+ * for defining mappings between labels and destination nodes.
  *
  * @author disaster
  * @since 1.0.0.1
@@ -37,7 +37,6 @@ public class EdgeMappings {
 
 		/**
 		 * Adds a mapping from the END constant to itself.
-		 *
 		 * @return this Builder instance for method chaining
 		 */
 		public Builder toEND() {
@@ -47,7 +46,6 @@ public class EdgeMappings {
 
 		/**
 		 * Adds a mapping from a specified label to the END constant.
-		 *
 		 * @param label the label to map
 		 * @return this Builder instance for method chaining
 		 */
@@ -58,7 +56,6 @@ public class EdgeMappings {
 
 		/**
 		 * Adds a self-mapping for the given destination.
-		 *
 		 * @param destination the destination to map to itself
 		 * @return this Builder instance for method chaining
 		 */
@@ -69,9 +66,8 @@ public class EdgeMappings {
 
 		/**
 		 * Adds a mapping from a label to a specific destination.
-		 *
 		 * @param destination the destination node
-		 * @param label         the label pointing to the destination
+		 * @param label the label pointing to the destination
 		 * @return this Builder instance for method chaining
 		 */
 		public Builder to(String destination, String label) {
@@ -81,7 +77,6 @@ public class EdgeMappings {
 
 		/**
 		 * Adds mappings for a list of destinations, each mapped to themselves.
-		 *
 		 * @param destinations list of destination nodes
 		 * @return this Builder instance for method chaining
 		 */
@@ -92,7 +87,6 @@ public class EdgeMappings {
 
 		/**
 		 * Adds mappings for an array of destinations by converting it to a list first.
-		 *
 		 * @param destinations array of destination nodes
 		 * @return this Builder instance for method chaining
 		 */
@@ -102,7 +96,6 @@ public class EdgeMappings {
 
 		/**
 		 * Builds and returns an unmodifiable map of the current mappings.
-		 *
 		 * @return an unmodifiable map representing the edge mappings
 		 */
 		public Map<String, String> build() {
@@ -113,7 +106,6 @@ public class EdgeMappings {
 
 	/**
 	 * Returns a new instance of the Builder class.
-	 *
 	 * @return a new Builder for creating EdgeMappings
 	 */
 	public static Builder builder() {
