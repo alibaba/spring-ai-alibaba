@@ -71,11 +71,25 @@ public class DeepResearchController {
 	}
 
 	/**
-	 * Creates a default ChatRequest instance.
+	 * Creates a default ChatRequest instance or set some default value for an instance.
 	 */
-	private ChatRequest getDefaultChatRequest() {
-		return new ChatRequest(Collections.emptyList(), "123", 1, 3, false, null, true, false, Collections.emptyMap(),
-				"草莓蛋糕怎么做呀。");
+	private ChatRequest getDefaultChatRequest(ChatRequest chatRequest) {
+		if (chatRequest == null) {
+			return new ChatRequest(Collections.emptyList(), "__default__", 1, 3, true, null, true, false,
+					Collections.emptyMap(), "草莓蛋糕怎么做呀。");
+		}
+		else {
+			return new ChatRequest(chatRequest.messages() == null ? Collections.emptyList() : chatRequest.messages(),
+					StringUtils.hasText(chatRequest.threadId()) ? chatRequest.threadId() : "__default__",
+					chatRequest.maxPlanIterations() == null ? 1 : chatRequest.maxPlanIterations(),
+					chatRequest.maxStepNum() == null ? 3 : chatRequest.maxStepNum(),
+					chatRequest.autoAcceptPlan() == null || chatRequest.autoAcceptPlan(),
+					chatRequest.interruptFeedback(),
+					chatRequest.enableBackgroundInvestigation() == null || chatRequest.enableBackgroundInvestigation(),
+					chatRequest.debug() != null && chatRequest.debug(),
+					chatRequest.mcpSettings() == null ? Collections.emptyMap() : chatRequest.mcpSettings(),
+					StringUtils.hasText(chatRequest.query()) ? chatRequest.query() : "草莓蛋糕怎么做呀。");
+		}
 	}
 
 	/**
@@ -87,9 +101,7 @@ public class DeepResearchController {
 	 */
 	@RequestMapping(value = "/chat/stream", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> chatStream(@RequestBody(required = false) ChatRequest chatRequest) {
-		if (chatRequest == null) {
-			chatRequest = getDefaultChatRequest();
-		}
+		chatRequest = getDefaultChatRequest(chatRequest);
 		RunnableConfig runnableConfig = RunnableConfig.builder()
 			.threadId(String.valueOf(chatRequest.threadId()))
 			.build();
