@@ -51,7 +51,7 @@ import java.security.NoSuchAlgorithmException;
  * Auto-configuration for ElasticSearch chat memory repository.
  */
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
-@ConditionalOnClass({ElasticsearchChatMemoryRepository.class, ElasticsearchClient.class })
+@ConditionalOnClass({ ElasticsearchChatMemoryRepository.class, ElasticsearchClient.class })
 @ConditionalOnProperty(prefix = "spring.ai.memory.elasticsearch", name = "enabled", havingValue = "true",
 		matchIfMissing = false)
 @EnableConfigurationProperties(ElasticsearchChatMemoryProperties.class)
@@ -73,39 +73,40 @@ public class ElasticsearchChatMemoryAutoConfiguration {
 		}
 		else {
 			// Fallback to single node configuration
-			httpHosts = new HttpHost[] { new HttpHost(properties.getHost(), properties.getPort(), properties.getScheme()) };
+			httpHosts = new HttpHost[] {
+					new HttpHost(properties.getHost(), properties.getPort(), properties.getScheme()) };
 		}
-		
+
 		var restClientBuilder = RestClient.builder(httpHosts);
-		
+
 		// Add authentication if credentials are provided
 		if (StringUtils.hasText(properties.getUsername()) && StringUtils.hasText(properties.getPassword())) {
 			CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
 			credentialsProvider.setCredentials(AuthScope.ANY,
 					new UsernamePasswordCredentials(properties.getUsername(), properties.getPassword()));
-			
+
 			// Create SSL context if using HTTPS
 			if ("https".equalsIgnoreCase(properties.getScheme())) {
 				SSLContext sslContext = SSLContextBuilder.create()
-						.loadTrustMaterial(null, (chains, authType) -> true)
-						.build();
-				
+					.loadTrustMaterial(null, (chains, authType) -> true)
+					.build();
+
 				restClientBuilder.setHttpClientConfigCallback(
 						httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)
-								.setSSLContext(sslContext)
-								.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE));
+							.setSSLContext(sslContext)
+							.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE));
 			}
 			else {
 				restClientBuilder.setHttpClientConfigCallback(
 						httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
 			}
 		}
-		
+
 		// Create the transport and client
 		ElasticsearchTransport transport = new RestClientTransport(restClientBuilder.build(), new JacksonJsonpMapper());
 		return new ElasticsearchClient(transport);
 	}
-	
+
 	@Bean
 	@Qualifier("elasticsearchChatMemoryRepository")
 	@ConditionalOnMissingBean(name = "elasticsearchChatMemoryRepository")

@@ -48,8 +48,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration test using Testcontainers to automatically manage Elasticsearch
- * test
+ * Integration test using Testcontainers to automatically manage Elasticsearch test
  * environment
  */
 @SpringBootTest(classes = ElasticsearchChatMemoryRepositoryIT.TestConfiguration.class)
@@ -58,14 +57,14 @@ class ElasticsearchChatMemoryRepositoryIT {
 
 	// 使用较为稳定的版本
 	private static final DockerImageName ELASTICSEARCH_IMAGE = DockerImageName
-			.parse("docker.elastic.co/elasticsearch/elasticsearch:7.17.0");
+		.parse("docker.elastic.co/elasticsearch/elasticsearch:7.17.0");
 
 	@Container
 	private static final ElasticsearchContainer elasticsearchContainer = new ElasticsearchContainer(ELASTICSEARCH_IMAGE)
-			.withEnv("discovery.type", "single-node")
-			.withEnv("xpack.security.enabled", "false")
-			.withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m")
-			.withStartupAttempts(3);
+		.withEnv("discovery.type", "single-node")
+		.withEnv("xpack.security.enabled", "false")
+		.withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m")
+		.withStartupAttempts(3);
 
 	/**
 	 * Dynamically configure Elasticsearch properties
