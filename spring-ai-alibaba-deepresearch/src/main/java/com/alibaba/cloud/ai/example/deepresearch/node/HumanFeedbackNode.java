@@ -46,18 +46,19 @@ public class HumanFeedbackNode implements NodeAction {
 
 		boolean autoAcceptedPlan = state.value("auto_accepted_plan", false);
 		if (!autoAcceptedPlan) {
-			//
-			Scanner scanner = new Scanner(System.in);
+			// todo 这里改为接口形式，中断，然后从走resume复原逻辑
 			logger.info("Do you accept the plan? [y/n]：");
-			String feedback = scanner.next();
-			if (StringUtils.hasLength(feedback) && feedback.startsWith("y")) {
+			String feedback = state.value("feed_back", "y");
+			if (StringUtils.hasLength(feedback) && "n".equals(feedback)) {
+				String feedbackConent = state.value("feed_back_content").get().toString();
+
 				nextStep = "planner";
 				updated.put("human_next_node", nextStep);
-				updated.put("feed_back", List.of(new UserMessage(feedback)));
-				logger.info("Human feedback: {}", feedback);
+				updated.put("feed_back_content", List.of(new UserMessage(feedbackConent)));
+				logger.info("Human feedback content: {}", feedbackConent);
 				return updated;
 			}
-			else if (StringUtils.hasLength(feedback) && feedback.startsWith("n")) {
+			else if (StringUtils.hasLength(feedback) && feedback.startsWith("y")) {
 				logger.info("Plan is accepted by user.");
 			}
 			else {
