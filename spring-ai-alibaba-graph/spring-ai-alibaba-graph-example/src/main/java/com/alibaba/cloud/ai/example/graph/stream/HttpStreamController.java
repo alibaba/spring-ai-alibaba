@@ -107,8 +107,9 @@ public class HttpStreamController {
 			return null;
 		});
 
-		Flux<ServerSentEvent<String>> flux = sink.asFlux();
-		return flux;
+		return sink.asFlux()
+				.doOnCancel(() -> System.out.println("Client disconnected from stream"))
+				.doOnError(e -> System.err.println("Error occurred during streaming" + e));
 	}
 
 }
