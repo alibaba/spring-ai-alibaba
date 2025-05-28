@@ -98,6 +98,7 @@ public class DeepResearchConfiguration {
 			state.registerKeyAndStrategy("current_plan", new ReplaceStrategy());
 			state.registerKeyAndStrategy("auto_accepted_plan", new ReplaceStrategy());
 			state.registerKeyAndStrategy("feed_back", new ReplaceStrategy());
+			state.registerKeyAndStrategy("feed_back_content", new ReplaceStrategy());
 			state.registerKeyAndStrategy("observations", new ReplaceStrategy());
 			state.registerKeyAndStrategy("final_report", new ReplaceStrategy());
 			return state;

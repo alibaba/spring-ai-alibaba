@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.ai.chat.messages.Message;
 
 import java.util.List;
 import java.util.Map;
@@ -31,7 +32,7 @@ public record ChatRequest(
 		/**
 		 * 历史消息聊天列表，包含用户和系统
 		 */
-		@JsonProperty(value = "messages") List<ChatMessage> messages,
+		@JsonProperty(value = "messages") List<Message> messages,
 
 		/**
 		 * 线程 ID，用于标识当前对话的唯一性。 默认值为 "__default__"，表示使用默认线程。
