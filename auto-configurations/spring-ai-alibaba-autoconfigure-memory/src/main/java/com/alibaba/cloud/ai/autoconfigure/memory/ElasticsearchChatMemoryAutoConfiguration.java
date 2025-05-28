@@ -32,25 +32,19 @@ import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import javax.net.ssl.SSLContext;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 
 /**
  * Auto-configuration for ElasticSearch chat memory repository.
  */
-@AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
 @ConditionalOnClass({ ElasticsearchChatMemoryRepository.class, ElasticsearchClient.class })
 @ConditionalOnProperty(prefix = "spring.ai.memory.elasticsearch", name = "enabled", havingValue = "true",
 		matchIfMissing = false)
@@ -60,9 +54,11 @@ public class ElasticsearchChatMemoryAutoConfiguration {
 	private static final Logger logger = LoggerFactory.getLogger(ElasticsearchChatMemoryAutoConfiguration.class);
 
 	@Bean
-	@ConditionalOnMissingBean
-	ElasticsearchClient elasticsearchClient(ElasticsearchChatMemoryProperties properties)
-			throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+	@Qualifier("elasticsearchChatMemoryRepository")
+	@ConditionalOnMissingBean(name = "elasticsearchChatMemoryRepository")
+	ElasticsearchChatMemoryRepository elasticsearchChatMemoryRepository(ElasticsearchChatMemoryProperties properties)
+			throws Exception {
+		logger.info("Configuring elasticsearch chat memory repository");
 		// Create HttpHosts for all nodes
 		HttpHost[] httpHosts;
 		if (!CollectionUtils.isEmpty(properties.getNodes())) {
@@ -104,14 +100,7 @@ public class ElasticsearchChatMemoryAutoConfiguration {
 
 		// Create the transport and client
 		ElasticsearchTransport transport = new RestClientTransport(restClientBuilder.build(), new JacksonJsonpMapper());
-		return new ElasticsearchClient(transport);
-	}
-
-	@Bean
-	@Qualifier("elasticsearchChatMemoryRepository")
-	@ConditionalOnMissingBean(name = "elasticsearchChatMemoryRepository")
-	ElasticsearchChatMemoryRepository elasticsearchChatMemoryRepository(ElasticsearchClient elasticsearchClient) {
-		logger.info("Configuring elasticsearch chat memory repository");
+		ElasticsearchClient elasticsearchClient = new ElasticsearchClient(transport);
 		return new ElasticsearchChatMemoryRepository(elasticsearchClient);
 	}
 
