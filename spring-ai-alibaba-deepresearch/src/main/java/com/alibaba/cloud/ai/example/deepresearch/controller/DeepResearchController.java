@@ -88,6 +88,12 @@ public class DeepResearchController {
 		);
 	}
 
+	/**
+	 * SSE (Server-Sent Events) endpoint for chat streaming.
+	 *
+	 * Accepts a ChatRequest and returns a Flux that streams chat responses
+	 * as ServerSentEvent<String>. Supports both initial questions and human feedback handling.
+	 */
 	@RequestMapping(value = "/chat/stream", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> chatStream(@RequestBody(required = false) ChatRequest chatRequest) {
 		if (chatRequest == null) {
@@ -98,15 +104,14 @@ public class DeepResearchController {
 				.build();
 
 		Map<String, Object> objectMap = new HashMap<>();
-		// 创建 Sink 用于发送事件
+		// Create a unicast sink to emit ServerSentEvents
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
-		Flux<ServerSentEvent<String>> flux = sink.asFlux();
 
-		// 人类反馈消息
+		// Handle human feedback if auto-accept is disabled and feedback is provided
 		if (!chatRequest.autoAcceptPlan() && StringUtils.hasText(chatRequest.interruptFeedback())) {
 			handleHumanFeedback(chatRequest, objectMap, runnableConfig, sink);
 		}
-		// 首次提问
+		// First question
 		else {
 			initializeObjectMap(chatRequest, objectMap);
 			logger.info("init inputs: {}", objectMap);
@@ -114,59 +119,9 @@ public class DeepResearchController {
 			processStream(resultFuture, sink);
 		}
 
-		return flux;
-	}
-
-	/**
-	 * 处理人类反馈消息
-	 */
-	private void handleHumanFeedback(ChatRequest chatRequest, Map<String, Object> objectMap, RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) {
-		objectMap.put("feed_back", chatRequest.interruptFeedback());
-		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
-		OverAllState state = stateSnapshot.state();
-		state.withResume();
-		state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
-		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.stream(state, runnableConfig);
-		processStream(resultFuture, sink);
-	}
-
-	/**
-	 * 初始化首次提问的输入参数
-	 */
-	private void initializeObjectMap(ChatRequest chatRequest, Map<String, Object> objectMap) {
-		objectMap.put("thread_id", chatRequest.threadId());
-		objectMap.put("enable_background_investigation", chatRequest.enableBackgroundInvestigation());
-		objectMap.put("auto_accepted_plan", chatRequest.autoAcceptPlan());
-		objectMap.put("messages", List.of(new UserMessage(chatRequest.query())));
-		objectMap.put("plan_iterations", 0);
-		objectMap.put("max_step_num", chatRequest.maxStepNum());
-		objectMap.put("current_plan", null);
-		objectMap.put("final_report", "");
-		objectMap.put("mcp_settings", chatRequest.mcpSettings());
-	}
-
-	/**
-	 * 通用的流式处理逻辑
-	 */
-	private void processStream(AsyncGenerator<NodeOutput> generator, Sinks.Many<ServerSentEvent<String>> sink) {
-		executor.submit(() -> {
-			generator.forEachAsync(output -> {
-				try {
-					Map<String, Object> data = output.state().data();
-					System.out.println("data = " + data);
-					Object messages = data.get("messages");
-					sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(messages)).build());
-				} catch (Exception e) {
-					throw new CompletionException(e);
-				}
-			}).thenAccept(v -> {
-				// 正常完成
-				sink.tryEmitComplete();
-			}).exceptionally( e -> {
-				sink.tryEmitError(e);
-				return null;
-			});
-		});
+		return sink.asFlux()
+				.doOnCancel(() -> logger.info("Client disconnected from stream"))
+				.doOnError(e -> logger.error("Error occurred during streaming", e));
 	}
 
 	@GetMapping("/chat")
@@ -215,4 +170,46 @@ public class DeepResearchController {
 		return resultFuture.get().data();
 	}
 
+	private void handleHumanFeedback(ChatRequest chatRequest, Map<String, Object> objectMap, RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) {
+		objectMap.put("feed_back", chatRequest.interruptFeedback());
+		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
+		OverAllState state = stateSnapshot.state();
+		state.withResume();
+		state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
+		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.stream(state, runnableConfig);
+		processStream(resultFuture, sink);
+	}
+
+	private void initializeObjectMap(ChatRequest chatRequest, Map<String, Object> objectMap) {
+		objectMap.put("thread_id", chatRequest.threadId());
+		objectMap.put("enable_background_investigation", chatRequest.enableBackgroundInvestigation());
+		objectMap.put("auto_accepted_plan", chatRequest.autoAcceptPlan());
+		objectMap.put("messages", List.of(new UserMessage(chatRequest.query())));
+		objectMap.put("plan_iterations", 0);
+		objectMap.put("max_step_num", chatRequest.maxStepNum());
+		objectMap.put("current_plan", null);
+		objectMap.put("final_report", "");
+		objectMap.put("mcp_settings", chatRequest.mcpSettings());
+	}
+
+	private void processStream(AsyncGenerator<NodeOutput> generator, Sinks.Many<ServerSentEvent<String>> sink) {
+		executor.submit(() -> {
+			generator.forEachAsync(output -> {
+				try {
+					Map<String, Object> data = output.state().data();
+					System.out.println("data = " + data);
+					Object messages = data.get("messages");
+					sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(messages)).build());
+				} catch (Exception e) {
+					throw new CompletionException(e);
+				}
+			}).thenAccept(v -> {
+				// 正常完成
+				sink.tryEmitComplete();
+			}).exceptionally( e -> {
+				sink.tryEmitError(e);
+				return null;
+			});
+		});
+	}
 }
