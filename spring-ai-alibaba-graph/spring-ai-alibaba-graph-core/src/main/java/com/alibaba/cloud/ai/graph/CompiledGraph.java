@@ -207,7 +207,7 @@ public class CompiledGraph {
 
 		return saver.list(config)
 			.stream()
-			.map(checkpoint -> StateSnapshot.of(checkpoint, config, stateGraph.getStateFactory()))
+			.map(checkpoint -> StateSnapshot.of(overAllState(), checkpoint, config, stateGraph.getStateFactory()))
 			.collect(toList());
 	}
 
@@ -233,7 +233,8 @@ public class CompiledGraph {
 		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
 			.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
 
-		return saver.get(config).map(checkpoint -> StateSnapshot.of(checkpoint, config, stateGraph.getStateFactory()));
+		return saver.get(config)
+			.map(checkpoint -> StateSnapshot.of(overAllState(), checkpoint, config, stateGraph.getStateFactory()));
 
 	}
 
@@ -638,7 +639,7 @@ public class CompiledGraph {
 		 */
 		@SuppressWarnings("unchecked")
 		protected Output buildStateSnapshot(Checkpoint checkpoint) throws Exception {
-			return (Output) StateSnapshot.of(checkpoint, config, stateGraph.getStateFactory());
+			return (Output) StateSnapshot.of(overAllState(), checkpoint, config, stateGraph.getStateFactory());
 		}
 
 		@SuppressWarnings("unchecked")
