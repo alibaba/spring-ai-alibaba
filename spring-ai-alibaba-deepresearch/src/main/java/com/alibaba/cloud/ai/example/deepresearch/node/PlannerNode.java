@@ -66,11 +66,6 @@ public class PlannerNode implements NodeAction {
 
 	private final int MAX_MESSAGES = 100;
 
-	private final String PROMPT_FORMAT = """
-			format: 以纯文本输出 json，请不要包含任何多余的文字——包括 markdown 格式;
-			outputExample: {0};
-			""";
-
 	private final MessageWindowChatMemory messageWindowChatMemory = MessageWindowChatMemory.builder()
 		.chatMemoryRepository(chatMemoryRepository)
 		.maxMessages(MAX_MESSAGES)
@@ -109,10 +104,7 @@ public class PlannerNode implements NodeAction {
 			return updated;
 		}
 
-		String format = MessageFormat.format(PROMPT_FORMAT, converter.getFormat());
-
-
-		Flux<String> StreamResult = chatClient.prompt(format)
+		Flux<String> StreamResult = chatClient.prompt(converter.getFormat())
 			.advisors(a -> a.param(CONVERSATION_ID, threadId))
 			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
 			.messages(messages)

@@ -98,13 +98,16 @@ public class DeepResearchController {
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
 		Flux<ServerSentEvent<String>> flux = sink.asFlux();
 
-		// 判断是否需要处理人类反馈
+		// 人类反馈消息
 		if (!chatRequest.autoAcceptPlan() && StringUtils.hasText(chatRequest.interruptFeedback())) {
 			handleHumanFeedback(chatRequest, objectMap, runnableConfig, sink);
-		} else {
+		}
+		// 首次提问
+		else {
 			initializeObjectMap(chatRequest, objectMap);
 			logger.info("init inputs: {}", objectMap);
-			processStream(objectMap, runnableConfig, sink);
+			AsyncGenerator<NodeOutput> resultFuture = compiledGraph.stream(objectMap, runnableConfig);
+			processStream(resultFuture, sink);
 		}
 
 		return flux;
@@ -136,14 +139,6 @@ public class DeepResearchController {
 		objectMap.put("current_plan", null);
 		objectMap.put("final_report", "");
 		objectMap.put("mcp_settings", chatRequest.mcpSettings());
-	}
-
-	/**
-	 * 处理流式输出
-	 */
-	private void processStream(Map<String, Object> objectMap, RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) {
-		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.stream(objectMap, runnableConfig);
-		processStream(resultFuture, sink);
 	}
 
 	/**
