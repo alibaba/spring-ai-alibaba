@@ -52,9 +52,15 @@ public class MemorySaver implements BaseCheckpointSaver {
 	}
 
 	protected LinkedList<Checkpoint> getCheckpoints(RunnableConfig config) {
-		return config.threadId()
-			.map(threadId -> _checkpointsByThread.computeIfAbsent(threadId, k -> new LinkedList<>()))
-			.orElse(_defaultCheckpoints);
+		w.lock();
+		try {
+			return config.threadId()
+				.map(threadId -> _checkpointsByThread.computeIfAbsent(threadId, k -> new LinkedList<>()))
+				.orElse(_defaultCheckpoints);
+		}
+		finally {
+			w.unlock();
+		}
 	}
 
 	@Override
