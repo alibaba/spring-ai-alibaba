@@ -8,21 +8,20 @@ import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.example.manus.tool.PlanningTool;
 import com.alibaba.cloud.ai.example.manus2.dispatchers.HumanDispatcher;
-import com.alibaba.cloud.ai.example.manus2.dispatchers.PlannerDispatcher;
 import com.alibaba.cloud.ai.example.manus2.nodes.*;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.OverAllStateFactory;
-import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -45,12 +44,12 @@ public class JmanusConfiguration {
     private LlmService llmService;
 
     @Bean
-    public StateGraph stateGraph(ChatClient.Builder chatClientBuilder) throws Exception {
+    public CompiledGraph compiledGraph(ChatClient.Builder chatClientBuilder) throws Exception {
 
         OverAllStateFactory overAllStateFactory = () -> {
             OverAllState state = new OverAllState();
             state.registerKeyAndStrategy(PLAN_ID,new ReplaceStrategy());
-            state.registerKeyAndStrategy(MESSAGES, new ReplaceStrategy());
+            state.registerKeyAndStrategy(MESSAGES, new AppendStrategy());
             state.registerKeyAndStrategy(CURRENT_PLAN, new ReplaceStrategy());
             state.registerKeyAndStrategy("feedback",new ReplaceStrategy());
             state.registerKeyAndStrategy("coordinator_next_node", new ReplaceStrategy());
@@ -65,7 +64,7 @@ public class JmanusConfiguration {
 //                .addNode(COORDINATOR_ID, node_async(new CoordinatorNode()))
                 .addNode(PLANNER_ID, node_async(initPlannerNode(chatClientBuilder)))
                 .addNode(EXECUTOR_ID, node_async(initExecutorNode(chatClientBuilder)))
-                .addNode(HUMAN_ID, node_async(new HumanNode()))
+                .addNode(HUMAN_ID, node_async(new HumanFeedbackNode()))
                 .addNode(FINALIZER_ID, node_async(new FinalizerNode()))
 
                 .addEdge(StateGraph.START, PLANNER_ID)
@@ -76,7 +75,9 @@ public class JmanusConfiguration {
                 .addEdge(EXECUTOR_ID, FINALIZER_ID)
                 .addEdge(FINALIZER_ID, StateGraph.END);
 
-        return stateGraph;
+        return stateGraph.compile(
+                CompileConfig.builder().saverConfig(SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build()).build()
+        );
     }
 
     private NodeAction initExecutorNode(ChatClient.Builder chatClientBuilder) {

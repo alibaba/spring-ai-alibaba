@@ -1,5 +1,6 @@
 package com.alibaba.cloud.ai.example.manus2.nodes;
 
+import com.alibaba.cloud.ai.example.manus.contants.NodeConstants;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.planning.PlanningFactory;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
@@ -57,7 +58,7 @@ public class PlannerNode extends LlmNode {
     @Override
     public Map<String, Object> apply(OverAllState state) throws Exception {
 
-        String planId = String.valueOf(state.value(PLAN_ID, String.class));
+        String planId = state.value(PLAN_ID, String.class).get();
 
         List<Message> userMessage = getMessages(state);
 
@@ -119,13 +120,9 @@ public class PlannerNode extends LlmNode {
     }
 
     public static List<Message> getMessages(OverAllState state) {
-        Optional<List> messages = state.value("messages", List.class);
+        Optional<List> messages = state.value(NodeConstants.MESSAGES, List.class);
         ArrayList<Message> messages1 = messages.map(obj -> new ArrayList<>((List<Message>) obj))
                 .orElseGet(ArrayList::new);
-        Map<String, Object> feedback = state.humanFeedback().data();
-        if (feedback != null && !feedback.isEmpty()) {
-            messages1.add(new UserMessage(feedback.toString()));
-        }
         return messages1;
     }
 
