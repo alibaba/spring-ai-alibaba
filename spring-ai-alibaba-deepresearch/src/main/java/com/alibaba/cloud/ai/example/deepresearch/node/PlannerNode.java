@@ -122,7 +122,6 @@ public class PlannerNode implements NodeAction {
 		String result = StreamResult.reduce((acc, next) -> acc + next).block();
 		logger.info("Planner response: {}", result);
 		assert result != null;
-
 		Plan curPlan = null;
 		try {
 			curPlan = converter.convert(result);

@@ -188,9 +188,18 @@ public class DeepResearchController {
 
 	@GetMapping("/chat/resume")
 	public Map<String, Object> resume(@RequestParam(value = "thread_id", required = true) int threadId,
-			@RequestParam(value = "feed_back", required = true) String feedBack) {
+			@RequestParam(value = "feed_back", required = true) String feedBack,
+			@RequestParam(value = "feed_back_content", required = false) String feedBackConent) {
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(String.valueOf(threadId)).build();
 		Map<String, Object> objectMap = Map.of("feed_back", feedBack);
+		if ("n".equals(feedBack)) {
+			if (StringUtils.hasLength(feedBackConent)) {
+				objectMap.put("feed_back_conent", feedBackConent);
+			}
+			else {
+				throw new RuntimeException("feed_back_content is required when feed_back is n");
+			}
+		}
 
 		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
 		OverAllState state = stateSnapshot.state();
