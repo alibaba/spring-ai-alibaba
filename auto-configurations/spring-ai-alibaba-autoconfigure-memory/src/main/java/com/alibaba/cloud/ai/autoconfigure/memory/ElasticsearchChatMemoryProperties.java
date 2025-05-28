@@ -13,136 +13,134 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.memory.elasticsearch;
+
+package com.alibaba.cloud.ai.autoconfigure.memory;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Configuration class for Elasticsearch document reader. Contains all necessary settings
- * to connect to and query Elasticsearch.
- *
- * @author brianxiadong
- * @since 0.0.1
+ * Configuration properties for ElasticSearch chat memory.
  */
-public class ElasticsearchConfig {
-
+@ConfigurationProperties(prefix = "spring.ai.memory.elasticsearch")
+public class ElasticsearchChatMemoryProperties {
+	
 	/**
 	 * Elasticsearch host URL
 	 */
 	private String host = "localhost";
-
+	
 	/**
 	 * Elasticsearch port
 	 */
 	private int port = 9200;
-
+	
 	/**
 	 * List of cluster nodes in format: hostname:port
 	 */
 	private List<String> nodes = new ArrayList<>();
-
+	
 	/**
 	 * Index name to query
 	 */
 	private String index;
-
+	
 	/**
 	 * Query field to search in
 	 */
 	private String queryField = "content";
-
+	
 	/**
 	 * Username for authentication (optional)
 	 */
 	private String username;
-
+	
 	/**
 	 * Password for authentication (optional)
 	 */
 	private String password;
-
+	
 	/**
 	 * Maximum number of documents to retrieve
 	 */
 	private int maxResults = 10;
-
+	
 	/**
 	 * Connection scheme (http/https)
 	 */
 	private String scheme = "http";
-
-	// Getters and Setters
+	
 	public String getHost() {
 		return host;
 	}
-
-	public void setHost(String host) {
+	
+	public void setHost(final String host) {
 		this.host = host;
 	}
-
+	
 	public int getPort() {
 		return port;
 	}
-
-	public void setPort(int port) {
+	
+	public void setPort(final int port) {
 		this.port = port;
 	}
-
+	
 	public List<String> getNodes() {
 		return nodes;
 	}
-
-	public void setNodes(List<String> nodes) {
+	
+	public void setNodes(final List<String> nodes) {
 		this.nodes = nodes;
 	}
-
+	
 	public String getIndex() {
 		return index;
 	}
-
-	public void setIndex(String index) {
+	
+	public void setIndex(final String index) {
 		this.index = index;
 	}
-
+	
 	public String getQueryField() {
 		return queryField;
 	}
-
-	public void setQueryField(String queryField) {
+	
+	public void setQueryField(final String queryField) {
 		this.queryField = queryField;
 	}
-
+	
 	public String getUsername() {
 		return username;
 	}
-
-	public void setUsername(String username) {
+	
+	public void setUsername(final String username) {
 		this.username = username;
 	}
-
+	
 	public String getPassword() {
 		return password;
 	}
-
-	public void setPassword(String password) {
+	
+	public void setPassword(final String password) {
 		this.password = password;
 	}
-
+	
 	public int getMaxResults() {
 		return maxResults;
 	}
-
-	public void setMaxResults(int maxResults) {
+	
+	public void setMaxResults(final int maxResults) {
 		this.maxResults = maxResults;
 	}
-
+	
 	public String getScheme() {
 		return scheme;
 	}
-
-	public void setScheme(String scheme) {
+	
+	public void setScheme(final String scheme) {
 		this.scheme = scheme;
 	}
-
 }

@@ -21,19 +21,8 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.ElasticsearchTransport;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
@@ -43,14 +32,8 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
-import javax.net.ssl.SSLContext;
 import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -64,19 +47,18 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 
 	private static final String INDEX_NAME = "chat_memory";
 
-	private final ElasticsearchConfig config;
+//	private final ElasticsearchConfig config;
 
 	private final ElasticsearchClient client;
 
 	private final ObjectMapper objectMapper;
 
-	public ElasticsearchChatMemoryRepository(ElasticsearchConfig config) {
-		this.config = config;
+	public ElasticsearchChatMemoryRepository(ElasticsearchClient client) {
 		this.objectMapper = new ObjectMapper();
 		// Configure Jackson to ignore unknown properties to handle schema changes
 		this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		try {
-			this.client = createClient();
+			this.client = client;
 			createIndexIfNotExists();
 		}
 		catch (Exception e) {
@@ -106,50 +88,50 @@ public class ElasticsearchChatMemoryRepository implements ChatMemoryRepository, 
 		createIndex();
 	}
 
-	private ElasticsearchClient createClient()
-			throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
-		// Create HttpHosts for all nodes
-		HttpHost[] httpHosts;
-		if (!CollectionUtils.isEmpty(config.getNodes())) {
-			httpHosts = config.getNodes().stream().map(node -> {
-				String[] parts = node.split(":");
-				return new HttpHost(parts[0], Integer.parseInt(parts[1]), config.getScheme());
-			}).toArray(HttpHost[]::new);
-		}
-		else {
-			// Fallback to single node configuration
-			httpHosts = new HttpHost[] { new HttpHost(config.getHost(), config.getPort(), config.getScheme()) };
-		}
-
-		var restClientBuilder = RestClient.builder(httpHosts);
-
-		// Add authentication if credentials are provided
-		if (StringUtils.hasText(config.getUsername()) && StringUtils.hasText(config.getPassword())) {
-			CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-			credentialsProvider.setCredentials(AuthScope.ANY,
-					new UsernamePasswordCredentials(config.getUsername(), config.getPassword()));
-
-			// Create SSL context if using HTTPS
-			if ("https".equalsIgnoreCase(config.getScheme())) {
-				SSLContext sslContext = SSLContextBuilder.create()
-					.loadTrustMaterial(null, (chains, authType) -> true)
-					.build();
-
-				restClientBuilder.setHttpClientConfigCallback(
-						httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)
-							.setSSLContext(sslContext)
-							.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE));
-			}
-			else {
-				restClientBuilder.setHttpClientConfigCallback(
-						httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
-			}
-		}
-
-		// Create the transport and client
-		ElasticsearchTransport transport = new RestClientTransport(restClientBuilder.build(), new JacksonJsonpMapper());
-		return new ElasticsearchClient(transport);
-	}
+//	private ElasticsearchClient createClient(ElasticsearchConfig config)
+//			throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+//		// Create HttpHosts for all nodes
+//		HttpHost[] httpHosts;
+//		if (!CollectionUtils.isEmpty(config.getNodes())) {
+//			httpHosts = config.getNodes().stream().map(node -> {
+//				String[] parts = node.split(":");
+//				return new HttpHost(parts[0], Integer.parseInt(parts[1]), config.getScheme());
+//			}).toArray(HttpHost[]::new);
+//		}
+//		else {
+//			// Fallback to single node configuration
+//			httpHosts = new HttpHost[] { new HttpHost(config.getHost(), config.getPort(), config.getScheme()) };
+//		}
+//
+//		var restClientBuilder = RestClient.builder(httpHosts);
+//
+//		// Add authentication if credentials are provided
+//		if (StringUtils.hasText(config.getUsername()) && StringUtils.hasText(config.getPassword())) {
+//			CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+//			credentialsProvider.setCredentials(AuthScope.ANY,
+//					new UsernamePasswordCredentials(config.getUsername(), config.getPassword()));
+//
+//			// Create SSL context if using HTTPS
+//			if ("https".equalsIgnoreCase(config.getScheme())) {
+//				SSLContext sslContext = SSLContextBuilder.create()
+//					.loadTrustMaterial(null, (chains, authType) -> true)
+//					.build();
+//
+//				restClientBuilder.setHttpClientConfigCallback(
+//						httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)
+//							.setSSLContext(sslContext)
+//							.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE));
+//			}
+//			else {
+//				restClientBuilder.setHttpClientConfigCallback(
+//						httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
+//			}
+//		}
+//
+//		// Create the transport and client
+//		ElasticsearchTransport transport = new RestClientTransport(restClientBuilder.build(), new JacksonJsonpMapper());
+//		return new ElasticsearchClient(transport);
+//	}
 
 	@Override
 	public List<String> findConversationIds() {

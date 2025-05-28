@@ -35,6 +35,12 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
+import org.apache.http.HttpHost;
 
 import java.util.List;
 import java.util.UUID;
@@ -42,7 +48,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration test using Testcontainers to automatically manage Elasticsearch test
+ * Integration test using Testcontainers to automatically manage Elasticsearch
+ * test
  * environment
  */
 @SpringBootTest(classes = ElasticsearchChatMemoryRepositoryIT.TestConfiguration.class)
@@ -51,23 +58,23 @@ class ElasticsearchChatMemoryRepositoryIT {
 
 	// 使用较为稳定的版本
 	private static final DockerImageName ELASTICSEARCH_IMAGE = DockerImageName
-		.parse("docker.elastic.co/elasticsearch/elasticsearch:7.17.0");
+			.parse("docker.elastic.co/elasticsearch/elasticsearch:7.17.0");
 
 	@Container
 	private static final ElasticsearchContainer elasticsearchContainer = new ElasticsearchContainer(ELASTICSEARCH_IMAGE)
-		.withEnv("discovery.type", "single-node")
-		.withEnv("xpack.security.enabled", "false")
-		.withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m")
-		.withStartupAttempts(3);
+			.withEnv("discovery.type", "single-node")
+			.withEnv("xpack.security.enabled", "false")
+			.withEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m")
+			.withStartupAttempts(3);
 
 	/**
 	 * Dynamically configure Elasticsearch properties
 	 */
 	@DynamicPropertySource
 	static void registerProperties(DynamicPropertyRegistry registry) {
-		registry.add("elasticsearch.host", elasticsearchContainer::getHost);
-		registry.add("elasticsearch.port", () -> elasticsearchContainer.getMappedPort(9200));
-		registry.add("elasticsearch.scheme", () -> "http");
+		registry.add("spring.ai.memory.elasticsearch.host", elasticsearchContainer::getHost);
+		registry.add("spring.ai.memory.elasticsearch.port", () -> elasticsearchContainer.getMappedPort(9200));
+		registry.add("spring.ai.memory.elasticsearch.scheme", () -> "http");
 	}
 
 	@Autowired
@@ -279,11 +286,12 @@ class ElasticsearchChatMemoryRepositoryIT {
 
 		@Bean
 		ChatMemoryRepository chatMemoryRepository() {
-			ElasticsearchConfig config = new ElasticsearchConfig();
-			config.setHost(elasticsearchContainer.getHost());
-			config.setPort(elasticsearchContainer.getMappedPort(9200));
-			config.setScheme("http");
-			return new ElasticsearchChatMemoryRepository(config);
+			RestClientBuilder restClientBuilder = RestClient.builder(
+					new HttpHost(elasticsearchContainer.getHost(), elasticsearchContainer.getMappedPort(9200), "http"));
+			RestClient restClient = restClientBuilder.build();
+			RestClientTransport transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
+			ElasticsearchClient client = new ElasticsearchClient(transport);
+			return new ElasticsearchChatMemoryRepository(client);
 		}
 
 	}

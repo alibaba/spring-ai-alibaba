@@ -98,7 +98,6 @@
             <optional>true</optional>
         </dependency>
         
-        
         <dependency>
             <groupId>co.elastic.clients</groupId>
             <artifactId>elasticsearch-java</artifactId>
