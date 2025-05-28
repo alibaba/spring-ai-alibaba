@@ -109,10 +109,7 @@ public class PlannerNode implements NodeAction {
 			return updated;
 		}
 
-		String format = MessageFormat.format(PROMPT_FORMAT, converter.getFormat());
-
-
-		Flux<String> StreamResult = chatClient.prompt(format)
+		Flux<String> StreamResult = chatClient.prompt(converter.getFormat())
 			.advisors(a -> a.param(CONVERSATION_ID, threadId))
 			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
 			.messages(messages)
