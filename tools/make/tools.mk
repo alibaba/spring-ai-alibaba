@@ -36,7 +36,8 @@ tools: ## Install ci tools
 	pip install yamllint==1.35.1
 
 	@echo "Installing gitleaks"
-	mkdir -p tools/bin && cd tools/bin
+	mkdir -p tools/bin
+	pwd
 	cd tools/bin
 	pwd
 	git clone https://github.com/gitleaks/gitleaks
