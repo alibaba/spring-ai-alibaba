@@ -19,6 +19,8 @@ package com.alibaba.cloud.ai.graph.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.TextContent;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -116,18 +118,20 @@ public class McpNode implements NodeAction {
 		// 结果处理
 		Map<String, Object> updatedState = new HashMap<>();
 		// updatedState.put("mcp_result", result.content());
+		updatedState.put("messages", result.content());
 		if (StringUtils.hasLength(this.outputKey)) {
 			Object content = result.content();
-			if (content instanceof List<?> list && !list.isEmpty()) {
+			if (content instanceof List<?> list && !CollectionUtils.isEmpty(list)) {
 				Object first = list.get(0);
 				// 兼容 TextContent 的 text 字段
-				try {
-					Method getText = first.getClass().getMethod("getText");
-					Object text = getText.invoke(first);
-					updatedState.put(this.outputKey, Objects.requireNonNullElse(text, first).toString());
+				if (first instanceof TextContent textContent) {
+					updatedState.put(this.outputKey, textContent.text());
 				}
-				catch (Exception e) {
-					updatedState.put(this.outputKey, first.toString());
+				else if (first instanceof Map<?, ?> map && map.containsKey("text")) {
+					updatedState.put(this.outputKey, map.get("text"));
+				}
+				else {
+					updatedState.put(this.outputKey, first);
 				}
 			}
 			else {

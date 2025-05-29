@@ -24,6 +24,8 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.McpNode;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.google.common.collect.Lists;
+import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -33,6 +35,11 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 @Configuration
 public class McpAutoConfiguration {
+	
+	@Bean
+	public ToolCallbackProvider weatherTools(OpenMeteoService openMeteoService) {
+		return MethodToolCallbackProvider.builder().toolObjects(openMeteoService).build();
+	}
 
 	@Bean
 	public StateGraph mcpGraph() throws GraphStateException {
@@ -41,12 +48,13 @@ public class McpAutoConfiguration {
 			OverAllState state = new OverAllState();
 			state.registerKeyAndStrategy("latitude", new ReplaceStrategy());
 			state.registerKeyAndStrategy("longitude", new ReplaceStrategy());
+			state.registerKeyAndStrategy("mcp_result", new ReplaceStrategy());
 			return state;
 		};
 
 		// 示例：添加 MCP Node
 		McpNode mcpNode = McpNode.builder()
-			.url("http://localhost:8181/sse") // MCP Server SSE 地址
+			.url("http://localhost:18080/sse") // MCP Server SSE 地址
 			.tool("getWeatherForecastByLocation") // MCP 工具名（需根据实际 MCP Server 配置）
 			.inputParamKeys(Lists.newArrayList("latitude", "longitude")) // 输入参数键
 			// .param("latitude",39.9042) // 工具参数

@@ -22,6 +22,20 @@ spring:
     name: spring-ai-alibaba-graph-example
 
   ai:
+    mcp:
+      server:
+        name: my-weather-server
+        version: 0.0.1
+        type: ASYNC  # Recommended for reactive applications
+        # 配置 sse 的根路径，默认值为 /sse
+        # 下面的最终路径为 ip:port/sse/mcp
+        sse-endpoint: /sse
+        sse-message-endpoint: /mcp
+        capabilities:
+          tool: true
+          resource: true
+          prompt: true
+          completion: true
     alibaba:
       toolcalling:
         weather:
