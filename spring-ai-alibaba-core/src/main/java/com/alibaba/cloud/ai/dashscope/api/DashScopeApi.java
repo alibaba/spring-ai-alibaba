@@ -15,6 +15,19 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
 import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
 import com.alibaba.cloud.ai.dashscope.common.ErrorCodeEnum;
 import com.alibaba.cloud.ai.dashscope.rag.DashScopeDocumentRetrieverOptions;
@@ -24,32 +37,37 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.NoopApiKey;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.net.URI;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
 import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_PARSER_NAME;
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.HEADER_WORK_SPACE_ID;
 
 /**
  * @author nuocheng.lxm
@@ -59,6 +77,13 @@ import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAUL
 public class DashScopeApi {
 
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
+
+	// Store config fields for mutate/copy
+	private final String baseUrl;
+
+	private final ApiKey apiKey;
+
+	private final MultiValueMap<String, String> headers;
 
 	/**
 	 * Default chat model
@@ -73,44 +98,65 @@ public class DashScopeApi {
 
 	private final WebClient webClient;
 
-	public DashScopeApi(String apiKey) {
-		this(DEFAULT_BASE_URL, apiKey, RestClient.builder(), WebClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+	private final ResponseErrorHandler responseErrorHandler;
+
+	private DashScopeAiStreamFunctionCallingHelper chunkMerger = new DashScopeAiStreamFunctionCallingHelper();
+
+	/**
+	 * Returns a builder pre-populated with the current configuration for mutation.
+	 */
+	public Builder mutate() {
+		return new Builder(this);
 	}
 
-	public DashScopeApi(String apiKey, String workSpaceId) {
-		this(DEFAULT_BASE_URL, apiKey, workSpaceId, RestClient.builder(), WebClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+	public static Builder builder() {
+		return new Builder();
 	}
 
-	public DashScopeApi(String baseUrl, String apiKey, String workSpaceId) {
-		this(baseUrl, apiKey, workSpaceId, RestClient.builder(), WebClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+	// @formatter:off
+	public DashScopeApi(
+			String baseUrl,
+			ApiKey apiKey,
+			MultiValueMap<String, String> header,
+			// Add request header.
+			String workSpaceId,
+			RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder,
+			ResponseErrorHandler responseErrorHandler
+	) {
+
+		this.baseUrl = baseUrl;
+		this.apiKey = apiKey;
+		this.headers = header;
+		this.responseErrorHandler = responseErrorHandler;
+
+		// For DashScope API, the workspace ID is passed in the headers.
+		if (StringUtils.hasText(workSpaceId)) {
+			this.headers.add(HEADER_WORK_SPACE_ID, workSpaceId);
+		}
+
+		// Check API Key in headers.
+		Consumer<HttpHeaders> finalHeaders = h -> {
+			if (!(apiKey instanceof NoopApiKey)) {
+				h.setBearerAuth(apiKey.getValue());
+			}
+
+			h.setContentType(MediaType.APPLICATION_JSON);
+			h.addAll(headers);
+		};
+
+		this.restClient = restClientBuilder.clone()
+				.baseUrl(baseUrl)
+				.defaultHeaders(finalHeaders)
+				.defaultStatusHandler(responseErrorHandler)
+				.build();
+
+		this.webClient = webClientBuilder
+				.baseUrl(baseUrl)
+				.defaultHeaders(finalHeaders)
+				.build();
 	}
-
-	public DashScopeApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(ApiUtils.getJsonContentHeaders(apiKey))
-			.defaultStatusHandler(responseErrorHandler)
-			.build();
-
-		this.webClient = webClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(ApiUtils.getJsonContentHeaders(apiKey))
-			.build();
-	}
-
-	public DashScopeApi(String baseUrl, String apiKey, String workSpaceId, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(ApiUtils.getJsonContentHeaders(apiKey, workSpaceId))
-			.defaultStatusHandler(responseErrorHandler)
-			.build();
-
-		this.webClient = webClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(ApiUtils.getJsonContentHeaders(apiKey, workSpaceId))
-			.build();
-	}
+	// @formatter:on
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record CommonResponse<T>(@JsonProperty("code") String code, @JsonProperty("message") String message,
@@ -230,25 +276,28 @@ public class DashScopeApi {
 			@JsonProperty("embedding") float[] embedding) {
 	}
 
+	// @formatter:off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record EmbeddingList(@JsonProperty("request_id") String requestId, @JsonProperty("code") String code,
-			@JsonProperty("message") String message, @JsonProperty("output") Embeddings output,
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record EmbeddingList(
+			@JsonProperty("request_id") String requestId,
+			@JsonProperty("code") String code,
+			@JsonProperty("message") String message,
+			@JsonProperty("output") Embeddings output,
 			@JsonProperty("usage") EmbeddingUsage usage) {
 	}
+	// @formatter:on
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record Embeddings(@JsonProperty("embeddings") List<Embedding> embeddings) {
-
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record EmbeddingRequestInput(@JsonProperty("texts") List<String> texts) {
-
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record EmbeddingRequestInputParameters(@JsonProperty("text_type") String textType) {
-
 	}
 
 	/**
@@ -300,7 +349,7 @@ public class DashScopeApi {
 	}
 
 	/*******************************************
-	 * 数据中心相关
+	 * Data center.
 	 **********************************************/
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record UploadRequest(@JsonProperty("category_id") String categoryId,
@@ -1303,7 +1352,6 @@ public class DashScopeApi {
 	 * @param results rerank output results
 	 */
 	public record RerankResponseOutput(@JsonProperty("results") List<RerankResponseOutputResult> results) {
-
 	}
 
 	/**
@@ -1346,14 +1394,29 @@ public class DashScopeApi {
 	 */
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
 
+		LinkedMultiValueMap<String, String> header = new LinkedMultiValueMap<>();
+		header.add("X-DashScope-SSE", "enable");
+
+		return chatCompletionStream(chatRequest, header);
+	}
+
+	/**
+	 * Creates a streaming chat response for the given chat conversation.
+	 * @param chatRequest The chat completion request. Must have the stream property set
+	 * to true.
+	 * @param additionalHttpHeader Optional, additional HTTP headers to be added to the
+	 * request.
+	 * @return Returns a {@link Flux} stream from chat completion chunks.
+	 */
+	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest,
+			MultiValueMap<String, String> additionalHttpHeader) {
+
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 		boolean incrementalOutput = chatRequest.parameters() != null
 				&& chatRequest.parameters().incrementalOutput != null && chatRequest.parameters().incrementalOutput;
-		DashScopeAiStreamFunctionCallingHelper chunkMerger = new DashScopeAiStreamFunctionCallingHelper(
-				incrementalOutput);
 
 		String uri = "/api/v1/services/aigc/text-generation/generation";
 		if (chatRequest.multiModel()) {
@@ -1362,7 +1425,7 @@ public class DashScopeApi {
 
 		return this.webClient.post()
 			.uri(uri)
-			.header("X-DashScope-SSE", "enable")
+			.headers(headers -> headers.addAll(additionalHttpHeader))
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
@@ -1404,6 +1467,113 @@ public class DashScopeApi {
 			.body(rerankRequest)
 			.retrieve()
 			.toEntity(RerankResponse.class);
+	}
+
+	String getBaseUrl() {
+		return this.baseUrl;
+	}
+
+	ApiKey getApiKey() {
+		return this.apiKey;
+	}
+
+	MultiValueMap<String, String> getHeaders() {
+		return this.headers;
+	}
+
+	ResponseErrorHandler getResponseErrorHandler() {
+		return this.responseErrorHandler;
+	}
+
+	public static class Builder {
+
+		public Builder() {
+		}
+
+		// Copy constructor for mutate()
+		public Builder(DashScopeApi api) {
+			this.baseUrl = api.getBaseUrl();
+			this.apiKey = api.getApiKey();
+			this.headers = new LinkedMultiValueMap<>(api.getHeaders());
+			this.restClientBuilder = api.restClient != null ? api.restClient.mutate() : RestClient.builder();
+			this.webClientBuilder = api.webClient != null ? api.webClient.mutate() : WebClient.builder();
+			this.responseErrorHandler = api.getResponseErrorHandler();
+		}
+
+		private String baseUrl = DEFAULT_BASE_URL;
+
+		private ApiKey apiKey;
+
+		private String workSpaceId;
+
+		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+
+		// todo: support custom path config.
+		// private String completionsPath = "";
+
+		// private String embeddingsPath = "";
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private WebClient.Builder webClientBuilder = WebClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+
+			Assert.notNull(baseUrl, "Base URL cannot be null");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder workSpaceId(String workSpaceId) {
+			// Workspace ID is optional, but if provided, it must not be null.
+			if (StringUtils.hasText(workSpaceId)) {
+				Assert.notNull(workSpaceId, "Workspace ID cannot be null");
+			}
+			this.workSpaceId = workSpaceId;
+			return this;
+		}
+
+		public Builder apiKey(String simpleApiKey) {
+			Assert.notNull(simpleApiKey, "Simple api key cannot be null");
+			this.apiKey = new SimpleApiKey(simpleApiKey);
+			return this;
+		}
+
+		public Builder headers(MultiValueMap<String, String> headers) {
+			Assert.notNull(headers, "Headers cannot be null");
+			this.headers = headers;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "Rest client builder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
+			Assert.notNull(webClientBuilder, "Web client builder cannot be null");
+			this.webClientBuilder = webClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "Response error handler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public DashScopeApi build() {
+
+			Assert.notNull(apiKey, "API key cannot be null");
+
+			return new DashScopeApi(this.baseUrl, this.apiKey, this.headers,
+					// Add request header.
+					this.workSpaceId, this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
+		}
+
 	}
 
 }

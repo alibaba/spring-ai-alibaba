@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
@@ -55,7 +54,6 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.chat.metadata.UsageUtils;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -72,6 +70,7 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -136,13 +135,6 @@ public class DashScopeChatModel implements ChatModel {
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions defaultOptions,
-			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
-			ObservationRegistry observationRegistry) {
-		this(dashscopeApi, defaultOptions, toolCallingManager, retryTemplate, observationRegistry,
-				new DefaultToolExecutionEligibilityPredicate());
-	}
-
-	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions defaultOptions,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
 			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 
@@ -167,6 +159,11 @@ public class DashScopeChatModel implements ChatModel {
 		Assert.isTrue(!CollectionUtils.isEmpty(prompt.getInstructions()), "Prompt messages must not be empty");
 		Prompt requestPrompt = buildRequestPrompt(prompt);
 		return internalCall(requestPrompt, null);
+	}
+
+	@Override
+	public ChatOptions getDefaultOptions() {
+		return DashScopeChatOptions.fromOptions(this.defaultOptions);
 	}
 
 	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
@@ -319,7 +316,7 @@ public class DashScopeChatModel implements ChatModel {
 
 		DashScopeApi.TokenUsage usage = chatCompletion.usage();
 		Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(usage) : new EmptyUsage();
-		Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
+		Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
 
 		return new ChatResponse(generations, this.from(chatCompletion, accumulatedUsage));
 	}
@@ -554,11 +551,35 @@ public class DashScopeChatModel implements ChatModel {
 		this.observationConvention = observationConvention;
 	}
 
+	/**
+	 * Returns a builder pre-populated with the current configuration for mutation.
+	 */
+	public Builder mutate() {
+		return new Builder(this);
+	}
+
+	@Override
+	public DashScopeChatModel clone() {
+		return this.mutate().build();
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
 
 	public static final class Builder {
+
+		private Builder() {
+		}
+
+		public Builder(DashScopeChatModel dashScopeChatModel) {
+			this.dashScopeApi = dashScopeChatModel.dashscopeApi;
+			this.defaultOptions = dashScopeChatModel.defaultOptions;
+			this.toolCallingManager = dashScopeChatModel.toolCallingManager;
+			this.retryTemplate = dashScopeChatModel.retryTemplate;
+			this.observationRegistry = dashScopeChatModel.observationRegistry;
+			this.toolExecutionEligibilityPredicate = dashScopeChatModel.toolExecutionEligibilityPredicate;
+		}
 
 		private DashScopeApi dashScopeApi;
 
@@ -574,9 +595,6 @@ public class DashScopeChatModel implements ChatModel {
 		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
-
-		private Builder() {
-		}
 
 		public Builder dashScopeApi(DashScopeApi dashScopeApi) {
 			this.dashScopeApi = dashScopeApi;
@@ -610,9 +628,14 @@ public class DashScopeChatModel implements ChatModel {
 		}
 
 		public DashScopeChatModel build() {
-			return new DashScopeChatModel(dashScopeApi, defaultOptions,
-					Objects.requireNonNullElse(toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER), retryTemplate,
-					observationRegistry, toolExecutionEligibilityPredicate);
+
+			if (this.toolCallingManager != null) {
+				return new DashScopeChatModel(this.dashScopeApi, this.defaultOptions, this.toolCallingManager,
+						this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
+			}
+
+			return new DashScopeChatModel(this.dashScopeApi, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
+					this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
 		}
 
 	}

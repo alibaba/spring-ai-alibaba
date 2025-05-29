@@ -49,4 +49,4 @@ spring-ai-alibaba-examples/playground-flight-booking/src/main/bundles/
 
 # checkstyle report files
 **/checkstyle-report.xml
-**/spring-ai-alibaba-jmanus/logs/*
+**/logs/*
