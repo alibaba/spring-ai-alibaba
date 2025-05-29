@@ -70,4 +70,4 @@ newline-fix: ## Fix the newline
 .PHONY: secrets-check
 secrets-check: ## Check the secrets
 	@$(LOG_TARGET)
-	gitleaks --version
+	gitleaks dir -v .
