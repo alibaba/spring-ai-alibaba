@@ -15,6 +15,12 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static java.lang.String.format;
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.stream.Collectors.toList;
+
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
@@ -26,11 +32,6 @@ import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-import org.bsc.async.AsyncGenerator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.CollectionUtils;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,12 +48,10 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static java.lang.String.format;
-import static java.util.concurrent.CompletableFuture.completedFuture;
-import static java.util.stream.Collectors.toList;
+import org.bsc.async.AsyncGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 
 /**
  * The type Compiled graph.
@@ -60,48 +59,26 @@ import static java.util.stream.Collectors.toList;
 public class CompiledGraph {
 
 	private static final Logger log = LoggerFactory.getLogger(CompiledGraph.class);
-
-	/**
-	 * The enum Stream mode.
-	 */
-	public enum StreamMode {
-
-		/**
-		 * Values stream mode.
-		 */
-		VALUES,
-		/**
-		 * Snapshots stream mode.
-		 */
-		SNAPSHOTS
-
-	}
-
 	/**
 	 * The State graph.
 	 */
 	public final StateGraph stateGraph;
-
-	private final OverAllState overAllState;
-
-	/**
-	 * The Nodes.
-	 */
-	final Map<String, AsyncNodeActionWithConfig> nodes = new LinkedHashMap<>();
-
-	/**
-	 * The Edges.
-	 */
-	final Map<String, EdgeValue> edges = new LinkedHashMap<>();
-
-	private final ProcessedNodesEdgesAndConfig processedData;
-
-	private int maxIterations = 25;
-
 	/**
 	 * The Compile config.
 	 */
 	public final CompileConfig compileConfig;
+	/**
+	 * The Nodes.
+	 */
+	final Map<String, AsyncNodeActionWithConfig> nodes = new LinkedHashMap<>();
+	/**
+	 * The Edges.
+	 */
+	final Map<String, EdgeValue> edges = new LinkedHashMap<>();
+	private final OverAllState overAllState;
+	private final ProcessedNodesEdgesAndConfig processedData;
+
+	private int maxIterations = 25;
 
 	/**
 	 * Constructs a CompiledGraph with the given StateGraph.
@@ -535,6 +512,22 @@ public class CompiledGraph {
 	}
 
 	/**
+	 * The enum Stream mode.
+	 */
+	public enum StreamMode {
+
+		/**
+		 * Values stream mode.
+		 */
+		VALUES,
+		/**
+		 * Snapshots stream mode.
+		 */
+		SNAPSHOTS
+
+	}
+
+	/**
 	 * Async Generator for streaming outputs.
 	 *
 	 * @param <Output> the type of the output
@@ -790,7 +783,7 @@ public class CompiledGraph {
 				if (action == null)
 					throw StateGraph.RunnableErrors.missingNode.exception(currentNodeId);
 
-				return evaluateAction(action, overAllState()).get();
+				return evaluateAction(action, this.overAllState).get();
 			}
 			catch (Exception e) {
 				if (e instanceof ExecutionException executionException
