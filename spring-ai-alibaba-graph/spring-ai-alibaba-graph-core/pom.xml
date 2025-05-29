@@ -187,6 +187,12 @@
             <version>4.12.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp</artifactId>
+            <version>0.10.0</version>
+            <scope>compile</scope>
+        </dependency>
 
     </dependencies>
 
