@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -22,12 +25,14 @@ import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.stream.LLmNodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
-import com.theokanning.openai.service.OpenAiService;
 import org.bsc.async.AsyncGenerator;
 import org.bsc.async.AsyncGeneratorQueue;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,17 +49,68 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class StateStreamGraphTest {
+/**
+ * Test class for StateGraph streaming functionality. Verifies the correct behavior of
+ * stream-based state transitions and asynchronous processing in state graphs.
+ */
+public class StateGraphStreamTest {
 
+	/**
+	 * API key for authentication with DashScope services
+	 */
 	private String API_KEY;
 
-	private static final Logger log = LoggerFactory.getLogger(StateStreamGraphTest.class);
+	/**
+	 * Logger instance for tracking test execution and debugging information
+	 */
+	private static final Logger log = LoggerFactory.getLogger(StateGraphStreamTest.class);
 
+	/**
+	 * Test constant for specifying the Qwen Turbo model in tests
+	 */
+	private static final String TEST_MODEL = "qwen-turbo";
+
+	/**
+	 * Environment variable name containing the DashScope API key
+	 */
+	private static final String API_KEY_ENV = "AI_DASHSCOPE_API_KEY";
+
+	/**
+	 * DashScope API client instance for integration testing
+	 */
+	private DashScopeApi realApi;
+
+	/**
+	 * Chat options configuration used across multiple tests
+	 */
+	private DashScopeChatOptions options;
+
+	/**
+	 * Chat model instance configured with test-specific settings
+	 */
+	private DashScopeChatModel chatModel;
+
+	/**
+	 * Sets up test environment before each test method execution. Initializes API
+	 * credentials and creates configured instances of test dependencies.
+	 */
 	@BeforeEach
-	public void init() throws GraphStateException {
-		API_KEY = "xxx"; // 替换为你的API密钥
+	public void setUp() {
+		API_KEY = System.getenv(API_KEY_ENV); // 替换为你的API密钥
+		Assumptions.assumeTrue(API_KEY != null && !API_KEY.trim().isEmpty(),
+				"Skipping tests because " + API_KEY_ENV + " environment variable is not set");
+		// Create real API client with API key from environment
+		realApi = DashScopeApi.builder().apiKey(API_KEY).build();
+		// Create chat model with default options
+		options = DashScopeChatOptions.builder().withModel(TEST_MODEL).build();
+		chatModel = DashScopeChatModel.builder().dashScopeApi(realApi).defaultOptions(options).build();
 	}
 
+	/**
+	 * Creates a basic test node with logging functionality.
+	 * @param id Unique identifier for the node
+	 * @return AsyncNodeAction that logs its execution and returns a simple message
+	 */
 	private AsyncNodeAction makeNode(String id) {
 		return node_async(state -> {
 			log.info("call node {}", id);
@@ -62,6 +118,10 @@ public class StateStreamGraphTest {
 		});
 	}
 
+	/**
+	 * Tests basic generator result retrieval from the state graph. Verifies that the
+	 * stream processing correctly handles terminal states and results.
+	 */
 	@Test
 	public void testGetResultFromGenerator() throws Exception {
 		var workflow = new StateGraph(() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy()))
@@ -82,6 +142,10 @@ public class StateStreamGraphTest {
 
 	}
 
+	/**
+	 * Tests streaming functionality with basic node actions. Validates that the system
+	 * can handle sequential node execution with streaming outputs.
+	 */
 	@Test
 	public void testBasicNodeActionStream() throws Exception {
 		StateGraph stateGraph = new StateGraph(
@@ -123,6 +187,14 @@ public class StateStreamGraphTest {
 		}
 	}
 
+	/**
+	 * Creates a CompletableFuture containing a StreamingOutput with delayed execution.
+	 * @param node Node identifier
+	 * @param index Index value for the output
+	 * @param delayInMills Delay time in milliseconds
+	 * @param overAllState Current state context
+	 * @return CompletableFuture containing the StreamingOutput
+	 */
 	static CompletableFuture<NodeOutput> of(String node, String index, long delayInMills, OverAllState overAllState) {
 		return CompletableFuture.supplyAsync(() -> {
 			try {
@@ -135,6 +207,10 @@ public class StateStreamGraphTest {
 		});
 	}
 
+	/**
+	 * Tests streaming functionality using an AsyncGeneratorQueue implementation. Verifies
+	 * that queue-based streaming works correctly with the state graph architecture.
+	 */
 	@Test
 	public void testNodeActionStreamForAsyncGeneratorQueue() throws Exception {
 		StateGraph stateGraph = new StateGraph(
@@ -146,28 +222,7 @@ public class StateStreamGraphTest {
 				return Map.of("messages", "Received: " + input, "count", 1);
 			}))
 			.addNode("processData", node_async(s -> {
-				// 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
-				BlockingQueue<AsyncGenerator.Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
-				AsyncGenerator.WithResult<StreamingOutput> it = new AsyncGenerator.WithResult<>(
-						new AsyncGeneratorQueue.Generator<>(queue));
-				String str = "random";
-				new Thread(() -> {
-					for (int i = 0; i < 10; i++) {
-						try {
-							Thread.sleep(1000);
-						}
-						catch (InterruptedException e) {
-							throw new RuntimeException(e);
-						}
-						if (i == 9) {
-							queue.add(AsyncGenerator.Data.done());
-						}
-						else {
-							queue.add(AsyncGenerator.Data
-								.of(new StreamingOutput(str + new Random().nextInt(10), "llmNode", s)));
-						}
-					}
-				}).start();
+				AsyncGenerator.WithResult<StreamingOutput> it = getStreamingOutputWithResult(s);
 				return Map.of("messages", it);
 			}))
 			.addNode("generateResponse", node_async(s -> {
@@ -193,12 +248,49 @@ public class StateStreamGraphTest {
 		}
 	}
 
+	/**
+	 * Creates a streaming output generator that produces random values at intervals.
+	 * @param s Current state context
+	 * @return AsyncGenerator with streaming output values
+	 */
+	private static AsyncGenerator.WithResult<StreamingOutput> getStreamingOutputWithResult(OverAllState s) {
+		// 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
+		BlockingQueue<AsyncGenerator.Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
+		AsyncGenerator.WithResult<StreamingOutput> it = new AsyncGenerator.WithResult<>(
+				new AsyncGeneratorQueue.Generator<>(queue));
+		String str = "random";
+		new Thread(() -> {
+			for (int i = 0; i < 10; i++) {
+				try {
+					Thread.sleep(1000);
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+				if (i == 9) {
+					queue.add(AsyncGenerator.Data.done());
+				}
+				else {
+					queue
+						.add(AsyncGenerator.Data.of(new StreamingOutput(str + new Random().nextInt(10), "llmNode", s)));
+				}
+			}
+		}).start();
+		return it;
+	}
+
+	/**
+	 * Integration test for model node action streaming. Verifies end-to-end streaming
+	 * functionality with actual LLM integration.
+	 */
 	@Test
+	@Tag("integration")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	public void testToModelNodeActionStream() throws Exception {
 		StateGraph stateGraph = new StateGraph(
 				() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy())
 					.registerKeyAndStrategy("llm_result", new AppendStrategy()))
-			.addNode("llmNode", node_async(new LLmNodeAction(new OpenAiService(API_KEY, Duration.ofSeconds(30)))))
+			.addNode("llmNode", node_async(new LLmNodeAction(chatModel)))
 			.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
 			.addNode("result", node_async((t) -> Map.of("messages", "result", "llm_result", "end")))
 			.addEdge(START, "llmNode")
@@ -218,12 +310,18 @@ public class StateStreamGraphTest {
 		}
 	}
 
+	/**
+	 * Integration test for model node action with conditional edge routing. Verifies that
+	 * streaming works correctly with dynamic path selection based on content.
+	 */
 	@Test
+	@Tag("integration")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 	public void testToModelNodeActionAndConditionEdgeStream() throws Exception {
 		StateGraph stateGraph = new StateGraph(
 				() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy())
 					.registerKeyAndStrategy("llm_result", new AppendStrategy()))
-			.addNode("llmNode", node_async(new LLmNodeAction(new OpenAiService(API_KEY, Duration.ofSeconds(30)))))
+			.addNode("llmNode", node_async(new LLmNodeAction(chatModel)))
 			.addNode("toolNode", node_async((t) -> Map.of("messages", "tool call result")))
 			.addNode("result", node_async((t) -> Map.of("messages", "result", "llm_result", "end")))
 			.addEdge(START, "llmNode")
@@ -244,6 +342,10 @@ public class StateStreamGraphTest {
 		}
 	}
 
+	/**
+	 * Creates an asynchronous edge action for conditional routing decisions.
+	 * @return AsyncEdgeAction that determines the next node based on message content
+	 */
 	@NotNull
 	private static AsyncEdgeAction getAsyncEdgeAction() {
 		return t -> {
@@ -262,6 +364,10 @@ public class StateStreamGraphTest {
 		};
 	}
 
+	/**
+	 * Tests comprehensive streaming output processing pipeline. Validates that streaming
+	 * outputs are properly handled and aggregated through the graph.
+	 */
 	@Test
 	public void testStreamingOutputProcessing() throws GraphStateException {
 		StateGraph stateGraph = new StateGraph(
@@ -301,7 +407,10 @@ public class StateStreamGraphTest {
 	}
 
 	/**
-	 * 处理流式输出的辅助方法
+	 * Helper method for processing streaming output. Filters out streaming chunks and
+	 * extracts state information from node outputs.
+	 * @param generator AsyncGenerator producing node outputs
+	 * @return List of OverAllState objects representing processed states
 	 */
 	private List<OverAllState> toStateList(AsyncGenerator<NodeOutput> generator) {
 		return generator.stream().filter(s -> {
