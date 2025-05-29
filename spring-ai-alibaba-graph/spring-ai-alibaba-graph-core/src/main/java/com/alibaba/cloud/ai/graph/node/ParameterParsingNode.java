@@ -58,9 +58,9 @@ public class ParameterParsingNode implements NodeAction {
 			""";
 
 	private static final String PARAMETER_PARSING_ASSISTANT_PROMPT_1 = """
-			```json
+			json
 			{"paper_num": "2405.10739"}
-			```
+
 			""";
 
 	private static final String PARAMETER_PARSING_USER_PROMPT_2 = """
@@ -71,7 +71,7 @@ public class ParameterParsingNode implements NodeAction {
 			""";
 
 	private static final String PARAMETER_PARSING_ASSISTANT_PROMPT_2 = """
-			```json
+			json
 			{
 			  "array_of_story_outlines": [
 			    "Chapter 1: Encounters. The sun shines in the forest, and the young man sees the girl for the first time.",
@@ -79,7 +79,7 @@ public class ParameterParsingNode implements NodeAction {
 			    "Chapter 3: Departure. They embark on a journey to find the truth."
 			  ]
 			}
-			```
+
 			""";
 
 	private ChatClient chatClient;

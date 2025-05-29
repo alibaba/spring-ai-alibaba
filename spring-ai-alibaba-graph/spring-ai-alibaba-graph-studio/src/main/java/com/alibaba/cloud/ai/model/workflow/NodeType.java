@@ -42,15 +42,15 @@ public enum NodeType {
 
 	QUESTION_CLASSIFIER("question-classifier", "question-classifier"),
 
-    HTTP("http", "http"),
+	HTTP("http", "http"),
 
-    LIST_OPERATOR("list-operator", "variable-operator"),
+	LIST_OPERATOR("list-operator", "variable-operator"),
 
-    PARAMETER_PARSING("parameter-parsing", "parameter-parsing"),
+	PARAMETER_PARSING("parameter-parsing", "parameter-parsing"),
 
-    TOOL("tool", "tool"),
+	TOOL("tool", "tool"),
 
-    KNOWLEDGE_RETRIEVAL("knowledge-retrieval", "knowledge-retrieval");
+	KNOWLEDGE_RETRIEVAL("knowledge-retrieval", "knowledge-retrieval");
 
 	private String value;
 

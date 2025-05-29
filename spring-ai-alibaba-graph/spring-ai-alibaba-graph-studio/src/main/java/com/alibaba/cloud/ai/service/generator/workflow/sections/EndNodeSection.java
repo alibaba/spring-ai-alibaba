@@ -9,13 +9,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class EndNodeSection implements NodeSection {
 
-    @Override
-    public boolean support(NodeType nodeType) {
-        return NodeType.END.equals(nodeType);
-    }
+	@Override
+	public boolean support(NodeType nodeType) {
+		return NodeType.END.equals(nodeType);
+	}
 
-    @Override
-    public String render(Node node) {
-        return "";
-    }
+	@Override
+	public String render(Node node) {
+		return "";
+	}
+
 }

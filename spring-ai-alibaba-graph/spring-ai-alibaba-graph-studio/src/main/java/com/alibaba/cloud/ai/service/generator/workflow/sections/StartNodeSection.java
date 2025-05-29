@@ -24,14 +24,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class StartNodeSection implements NodeSection {
 
-    @Override
-    public boolean support(NodeType nodeType) {
-        return NodeType.START.equals(nodeType);
-    }
+	@Override
+	public boolean support(NodeType nodeType) {
+		return NodeType.START.equals(nodeType);
+	}
 
-    // use static constant of stateGraph
-    @Override
-    public String render(Node node) {
-        return "";
-    }
+	// use static constant of stateGraph
+	@Override
+	public String render(Node node) {
+		return "";
+	}
+
 }
