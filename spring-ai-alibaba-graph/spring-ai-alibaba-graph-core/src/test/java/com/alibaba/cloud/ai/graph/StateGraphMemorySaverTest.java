@@ -50,7 +50,7 @@ public class StateGraphMemorySaverTest {
 
     NodeAction agent_whether = state -> {
         List<String> messages = (List<String>) state.value("messages").get();
-        String lastMessage = messages.get(0);
+        String lastMessage = messages.get(messages.size()-1);
 
         if( lastMessage.contains( "temperature")) {
             return Map.of("messages", "whether in Naples is sunny");
@@ -74,7 +74,7 @@ public class StateGraphMemorySaverTest {
 
     EdgeAction shouldContinue_whether = state -> {
         List<String> messages = (List<String>) state.value("messages").get();
-         return messages.stream().anyMatch(m -> m.equals("tool_calls")  )?"tools":END;
+         return messages.get(messages.size()-1).equals("tool_calls")?"tools":END;
     };
 
     private OverAllStateFactory overAllStateFactory = () -> OverAllStateBuilder.builder()

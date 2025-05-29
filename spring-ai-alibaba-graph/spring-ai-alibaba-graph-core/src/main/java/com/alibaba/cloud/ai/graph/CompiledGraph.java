@@ -82,7 +82,7 @@ public class CompiledGraph {
 	 */
 	public final StateGraph stateGraph;
 
-	private  OverAllState overAllState;
+	private final OverAllState overAllState;
 
 	/**
 	 * The Nodes.
@@ -384,14 +384,9 @@ public class CompiledGraph {
 	 * Clone state over all state.
 	 * @param data the data
 	 * @return the over all state
-	 * @throws IOException the io exception
-	 * @throws ClassNotFoundException the class not found exception
-	 * @throws InstantiationException the instantiation exception
-	 * @throws IllegalAccessException the illegal access exception
 	 */
-	OverAllState cloneState(Map<String, Object> data)
-			throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
-		return new OverAllState(data);
+	OverAllState cloneState(Map<String, Object> data) {
+		return new OverAllState(new HashMap<>(data));
 	}
 
 	/**
@@ -458,7 +453,6 @@ public class CompiledGraph {
 	 * @return the optional
 	 */
 	public Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) {
-		this.overAllState = overAllState;
 		return stream(overAllState, config)
 				.stream()
 				.reduce((a, b) -> b)
@@ -501,6 +495,7 @@ public class CompiledGraph {
 
 		final AsyncNodeGenerator<NodeOutput> generator = new AsyncNodeGenerator<>(overAllState().input(inputs),
 				config.withStreamMode(StreamMode.SNAPSHOTS));
+
 		return new AsyncGenerator.WithEmbed<>(generator);
 	}
 
@@ -816,7 +811,7 @@ public class CompiledGraph {
 				if (action == null)
 					throw StateGraph.RunnableErrors.missingNode.exception(currentNodeId);
 
-				return evaluateAction(action, cloneState(currentState) ).get();
+				return evaluateAction(action, this.overAllState ).get();
 			}
 			catch( Exception e ) {
 				log.error( e.getMessage(), e );
