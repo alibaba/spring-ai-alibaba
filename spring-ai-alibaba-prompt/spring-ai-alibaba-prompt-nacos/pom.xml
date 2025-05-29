@@ -25,11 +25,10 @@
     </parent>
     <artifactId>spring-ai-alibaba-prompt-nacos</artifactId>
     <packaging>jar</packaging>
+
     <name>Spring AI Alibaba Prompt Nacos</name>
     <description>Spring AI Alibaba Prompt Nacos</description>
-
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
-
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
         <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
