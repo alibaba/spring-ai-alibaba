@@ -37,6 +37,5 @@ tools: ## Install ci tools
 
 	@echo "Installing gitleaks"
 	mkdir -p tools/bin && cd tools/bin && \
-	ls && git clone https://github.com/gitleaks/gitleaks && pwd && cd gitleaks && \
-	make build && \
-	./tools/bin/gitleaks/gitleaks version
+	ls && git clone https://github.com/gitleaks/gitleaks && pwd && ls && cd gitleaks && \
+	make build && ls
