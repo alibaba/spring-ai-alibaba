@@ -91,7 +91,9 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 	public ToolExecuteResult run(String toolInput) {
 		log.info("DocLoaderTool toolInput:{}", toolInput);
 		try {
-			Map<String, Object> toolInputMap = objectMapper.readValue(toolInput, new TypeReference<Map<String, Object>>() {});
+			Map<String, Object> toolInputMap = objectMapper.readValue(toolInput,
+					new TypeReference<Map<String, Object>>() {
+					});
 			String fileType = (String) toolInputMap.get("file_type");
 			String filePath = (String) toolInputMap.get("file_path");
 			this.lastFilePath = filePath;
@@ -108,12 +110,14 @@ public class DocLoaderTool implements ToolCallBiFunctionDef {
 				if (StringUtils.isEmpty(documentContentStr)) {
 					this.lastOperationResult = "No content found";
 					return new ToolExecuteResult("No Related information");
-				} else {
+				}
+				else {
 					this.lastOperationResult = "Success";
 					return new ToolExecuteResult("Related information: " + documentContentStr);
 				}
 			}
-		} catch (Throwable e) {
+		}
+		catch (Throwable e) {
 			this.lastOperationResult = "Error: " + e.getMessage();
 			return new ToolExecuteResult("Error get Related information: " + e.getMessage());
 		}

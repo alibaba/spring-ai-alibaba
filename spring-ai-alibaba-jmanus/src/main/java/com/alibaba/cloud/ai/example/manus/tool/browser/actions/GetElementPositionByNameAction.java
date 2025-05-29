@@ -104,7 +104,8 @@ public class GetElementPositionByNameAction extends BrowserAction {
 		try {
 			String resultJson = new ObjectMapper().writeValueAsString(positionResults);
 			return new ToolExecuteResult(resultJson);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			return new ToolExecuteResult("Error serializing JSON: " + e.getMessage());
 		}
 	}
@@ -190,7 +191,8 @@ public class GetElementPositionByNameAction extends BrowserAction {
 												try { document.body.removeChild(tag); } catch(e){}
 											}, 1200);
 										})();
-									""", box.x, box.y, box.width, box.height, x, y, new ObjectMapper().writeValueAsString(elementText));
+									""", box.x, box.y, box.width, box.height, x, y,
+									new ObjectMapper().writeValueAsString(elementText));
 							frame.evaluate(highlightScript);
 						}
 						catch (Exception e) {

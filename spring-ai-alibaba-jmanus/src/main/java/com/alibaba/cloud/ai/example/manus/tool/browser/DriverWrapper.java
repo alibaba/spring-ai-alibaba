@@ -40,17 +40,23 @@ public class DriverWrapper {
 	private static final Logger log = LoggerFactory.getLogger(DriverWrapper.class);
 
 	private Playwright playwright;
+
 	private Page currentPage;
+
 	private Browser browser;
+
 	private InteractiveElementRegistry interactiveElementRegistry;
 
 	private final Path cookiePath;
+
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	// Mixin class for Playwright Cookie deserialization
 	abstract static class PlaywrightCookieMixin {
+
 		@JsonCreator
-		PlaywrightCookieMixin(@JsonProperty("name") String name, @JsonProperty("value") String value) {}
+		PlaywrightCookieMixin(@JsonProperty("name") String name, @JsonProperty("value") String value) {
+		}
 
 		@JsonProperty("domain")
 		abstract Cookie setDomain(String domain);
@@ -69,6 +75,7 @@ public class DriverWrapper {
 
 		@JsonProperty("sameSite")
 		abstract Cookie setSameSite(SameSiteAttribute sameSite);
+
 	}
 
 	static {
@@ -85,8 +92,10 @@ public class DriverWrapper {
 
 		if (cookieDir == null || cookieDir.trim().isEmpty()) {
 			this.cookiePath = Paths.get("playwright-cookies-default.json");
-			log.warn("Warning: cookieDir was not provided or was empty. Using default cookie path: {}", this.cookiePath.toAbsolutePath());
-		} else {
+			log.warn("Warning: cookieDir was not provided or was empty. Using default cookie path: {}",
+					this.cookiePath.toAbsolutePath());
+		}
+		else {
 			this.cookiePath = Paths.get(cookieDir, "playwright-cookies.json");
 		}
 		loadCookies();
@@ -107,17 +116,22 @@ public class DriverWrapper {
 				log.info("Cookie file is empty, skipping cookie loading: {}", this.cookiePath.toAbsolutePath());
 				return;
 			}
-			List<Cookie> cookies = objectMapper.readValue(jsonData, new TypeReference<List<Cookie>>() {});
+			List<Cookie> cookies = objectMapper.readValue(jsonData, new TypeReference<List<Cookie>>() {
+			});
 			if (cookies != null && !cookies.isEmpty()) {
 				this.currentPage.context().addCookies(cookies);
 				log.info("Cookies loaded successfully from: {}", this.cookiePath.toAbsolutePath());
-			} else {
+			}
+			else {
 				log.info("No cookies found in file or cookies list was empty: {}", this.cookiePath.toAbsolutePath());
 			}
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			log.info("Failed to load cookies from {}: {}", this.cookiePath.toAbsolutePath(), e.getMessage());
-		} catch (Exception e) {
-			log.info("An unexpected error occurred while loading cookies from {}: {}", this.cookiePath.toAbsolutePath(), e.getMessage());
+		}
+		catch (Exception e) {
+			log.info("An unexpected error occurred while loading cookies from {}: {}", this.cookiePath.toAbsolutePath(),
+					e.getMessage());
 		}
 	}
 
@@ -140,10 +154,13 @@ public class DriverWrapper {
 			byte[] jsonData = objectMapper.writeValueAsBytes(cookies);
 			Files.write(this.cookiePath, jsonData);
 			log.info("Cookies saved successfully to: {}", this.cookiePath.toAbsolutePath());
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			log.info("Failed to save cookies to {}: {}", this.cookiePath.toAbsolutePath(), e.getMessage());
-		} catch (Exception e) {
-			log.info("An unexpected error occurred while saving cookies to {}: {}", this.cookiePath.toAbsolutePath(), e.getMessage());
+		}
+		catch (Exception e) {
+			log.info("An unexpected error occurred while saving cookies to {}: {}", this.cookiePath.toAbsolutePath(),
+					e.getMessage());
 		}
 	}
 
@@ -182,19 +199,22 @@ public class DriverWrapper {
 		if (this.currentPage != null) {
 			try {
 				this.currentPage.close();
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				log.info("Error closing current page: {}", e.getMessage());
 			}
 		}
 		if (this.browser != null) {
 			try {
 				this.browser.close();
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				log.info("Error closing browser: {}", e.getMessage());
 			}
 		}
 		// Playwright instance itself is usually managed by the service that created it.
-		// Closing it here might be premature if other DriverWrappers use the same Playwright instance.
+		// Closing it here might be premature if other DriverWrappers use the same
+		// Playwright instance.
 		// if (this.playwright != null) {
 		// try {
 		// this.playwright.close();
@@ -203,4 +223,5 @@ public class DriverWrapper {
 		// }
 		// }
 	}
+
 }

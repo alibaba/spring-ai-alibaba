@@ -174,8 +174,8 @@ public class ManusProperties {
 	}
 
 	@ConfigProperty(group = "manus", subGroup = "agent", key = "userInputTimeout",
-			path = "manus.agent.userInputTimeout", description = "用户输入表单等待超时时间(秒)",
-			defaultValue = "300", inputType = ConfigInputType.NUMBER)
+			path = "manus.agent.userInputTimeout", description = "用户输入表单等待超时时间(秒)", defaultValue = "300",
+			inputType = ConfigInputType.NUMBER)
 	private volatile Integer userInputTimeout;
 
 	public Integer getUserInputTimeout() {
@@ -189,7 +189,7 @@ public class ManusProperties {
 			// Attempt to parse the default value specified in the annotation,
 			// or use a hardcoded default if parsing fails or is complex to retrieve here.
 			// For simplicity, directly using the intended default.
-			userInputTimeout = 300; 
+			userInputTimeout = 300;
 		}
 		return userInputTimeout;
 	}

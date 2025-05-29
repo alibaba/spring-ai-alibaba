@@ -109,17 +109,18 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 
 	public FunctionToolCallback getFunctionToolCallback(TextFileService textFileService) {
 		return FunctionToolCallback.builder(TOOL_NAME, new TextFileOperator(textFileService))
-				.description(TOOL_DESCRIPTION)
-				.inputSchema(PARAMETERS)
-				.inputType(String.class)
-				.build();
+			.description(TOOL_DESCRIPTION)
+			.inputSchema(PARAMETERS)
+			.inputType(String.class)
+			.build();
 	}
 
 	public ToolExecuteResult run(String toolInput) {
 		log.info("TextFileOperator toolInput:{}", toolInput);
 		try {
-			Map<String, Object> toolInputMap = new ObjectMapper().readValue(toolInput, new TypeReference<Map<String, Object>>() {
-			});
+			Map<String, Object> toolInputMap = new ObjectMapper().readValue(toolInput,
+					new TypeReference<Map<String, Object>>() {
+					});
 			String planId = this.planId;
 
 			String action = (String) toolInputMap.get("action");
@@ -148,7 +149,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 					yield new ToolExecuteResult("Unknown action: " + action);
 				}
 			};
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			String planId = this.planId;
 			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
 					"Error: " + e.getMessage());
@@ -174,7 +176,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 					Files.createFile(absolutePath);
 					textFileService.updateFileState(planId, filePath, "Success: New file created");
 					return new ToolExecuteResult("New file created successfully: " + absolutePath);
-				} catch (IOException e) {
+				}
+				catch (IOException e) {
 					textFileService.updateFileState(planId, filePath,
 							"Error: Failed to create file: " + e.getMessage());
 					return new ToolExecuteResult("Failed to create file: " + e.getMessage());
@@ -183,7 +186,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 
 			textFileService.updateFileState(planId, filePath, "Success: File opened");
 			return new ToolExecuteResult("File opened successfully: " + absolutePath);
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			textFileService.updateFileState(planId, filePath, "Error: " + e.getMessage());
 			return new ToolExecuteResult("Error opening file: " + e.getMessage());
 		}
@@ -204,7 +208,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 
 			textFileService.updateFileState(planId, currentFilePath, "Success: Text replaced");
 			return new ToolExecuteResult("Text replaced successfully");
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
 					"Error: " + e.getMessage());
 			return new ToolExecuteResult("Error replacing text: " + e.getMessage());
@@ -224,7 +229,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 
 			textFileService.updateFileState(planId, currentFilePath, "Success: Retrieved current text");
 			return new ToolExecuteResult(content);
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
 					"Error: " + e.getMessage());
 			return new ToolExecuteResult("Error retrieving text: " + e.getMessage());
@@ -252,7 +258,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 			textFileService.updateFileState(planId, "", "Success: File saved and closed");
 			textFileService.closeFileForPlan(planId);
 			return new ToolExecuteResult("File saved and closed successfully: " + absolutePath);
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
 					"Error: " + e.getMessage());
 			return new ToolExecuteResult("Error saving file: " + e.getMessage());
@@ -278,7 +285,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 
 			textFileService.updateFileState(planId, currentFilePath, "Success: Content appended");
 			return new ToolExecuteResult("Content appended successfully");
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
 					"Error: " + e.getMessage());
 			return new ToolExecuteResult("Error appending to file: " + e.getMessage());
@@ -299,7 +307,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 
 			textFileService.updateFileState(planId, currentFilePath, "Success: Counted words");
 			return new ToolExecuteResult(String.format("Total word count (including Markdown symbols): %d", wordCount));
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			textFileService.updateFileState(planId, textFileService.getCurrentFilePath(planId),
 					"Error: " + e.getMessage());
 			return new ToolExecuteResult("Error counting words: " + e.getMessage());

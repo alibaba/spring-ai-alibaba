@@ -111,7 +111,6 @@ public class PlanningFactory {
 		this.mcpService = mcpService;
 	}
 
-
 	public PlanningCoordinator createPlanningCoordinator(String planId) {
 
 		// Add all dynamic agents from the database

@@ -37,7 +37,10 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState; 
  *
  * 4. 执行结果 (Execution Result) - completed: 是否完成 - progress: 执行进度（百分比） - summary: 执行总结
  */
-public class PlanExecutionRecord  { // Consider removing JsonSerializable if toJson is no longer needed
+public class PlanExecutionRecord {
+
+// Consider removing JsonSerializable if toJson is no
+									// longer needed
 
 	// 记录的唯一标识符
 	private Long id;
@@ -72,25 +75,27 @@ public class PlanExecutionRecord  { // Consider removing JsonSerializable if toJ
 	// List to maintain the sequence of agent executions
 	private List<AgentExecutionRecord> agentExecutionSequence;
 
-    // Field to store user input wait state
-    private UserInputWaitState userInputWaitState;
+	// Field to store user input wait state
+	private UserInputWaitState userInputWaitState;
 
-    /**
-     * Default constructor for Jackson and other frameworks.
-     */
-    public PlanExecutionRecord() {
-        this.steps = new ArrayList<>();
-        // It's generally better to initialize time-sensitive fields like startTime
-        // when the actual event occurs, or in the specific constructor that signifies creation.
-        // However, if a default non-null startTime is always expected, this is one way.
-        // this.startTime = LocalDateTime.now(); // Consider if this is appropriate for a default constructor
-        this.completed = false;
-        this.agentExecutionSequence = new ArrayList<>();
-    }
+	/**
+	 * Default constructor for Jackson and other frameworks.
+	 */
+	public PlanExecutionRecord() {
+		this.steps = new ArrayList<>();
+		// It's generally better to initialize time-sensitive fields like startTime
+		// when the actual event occurs, or in the specific constructor that signifies
+		// creation.
+		// However, if a default non-null startTime is always expected, this is one way.
+		// this.startTime = LocalDateTime.now(); // Consider if this is appropriate for a
+		// default constructor
+		this.completed = false;
+		this.agentExecutionSequence = new ArrayList<>();
+	}
 
 	/**
 	 * 构造函数，用于创建一个新的执行记录
-     * @param planId The unique identifier for the plan.
+	 * @param planId The unique identifier for the plan.
 	 */
 	public PlanExecutionRecord(String planId) {
 		this.planId = planId;
@@ -203,13 +208,13 @@ public class PlanExecutionRecord  { // Consider removing JsonSerializable if toJ
 		this.startTime = startTime;
 	}
 
-    public UserInputWaitState getUserInputWaitState() {
-        return userInputWaitState;
-    }
+	public UserInputWaitState getUserInputWaitState() {
+		return userInputWaitState;
+	}
 
-    public void setUserInputWaitState(UserInputWaitState userInputWaitState) {
-        this.userInputWaitState = userInputWaitState;
-    }
+	public void setUserInputWaitState(UserInputWaitState userInputWaitState) {
+		this.userInputWaitState = userInputWaitState;
+	}
 
 	public LocalDateTime getEndTime() {
 		return endTime;
@@ -263,5 +268,4 @@ public class PlanExecutionRecord  { // Consider removing JsonSerializable if toJ
 				completed);
 	}
 
-	
 }

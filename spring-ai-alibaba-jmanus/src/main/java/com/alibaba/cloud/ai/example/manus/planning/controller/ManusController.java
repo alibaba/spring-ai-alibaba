@@ -45,7 +45,7 @@ public class ManusController {
 
 	private static final Logger logger = LoggerFactory.getLogger(ManusController.class);
 
-    private final ObjectMapper objectMapper;
+	private final ObjectMapper objectMapper;
 
 	@Autowired
 	@Lazy
@@ -60,14 +60,14 @@ public class ManusController {
 	@Autowired
 	private UserInputService userInputService;
 
-    @Autowired
-    public ManusController(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-        // Register JavaTimeModule to handle LocalDateTime serialization/deserialization
-        this.objectMapper.registerModule(new JavaTimeModule());
-        // Ensure pretty printing is disabled by default for compact JSON
-        // this.objectMapper.disable(com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT);
-    }
+	@Autowired
+	public ManusController(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+		// Register JavaTimeModule to handle LocalDateTime serialization/deserialization
+		this.objectMapper.registerModule(new JavaTimeModule());
+		// Ensure pretty printing is disabled by default for compact JSON
+		// this.objectMapper.disable(com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT);
+	}
 
 	/**
 	 * 异步执行 Manus 请求
@@ -126,21 +126,25 @@ public class ManusController {
 		UserInputWaitState waitState = userInputService.getWaitState(planId);
 		if (waitState != null && waitState.isWaiting()) {
 			// Assuming PlanExecutionRecord has a method like setUserInputWaitState
-			// You will need to add this field and method to your PlanExecutionRecord class
-			planRecord.setUserInputWaitState(waitState); 
+			// You will need to add this field and method to your PlanExecutionRecord
+			// class
+			planRecord.setUserInputWaitState(waitState);
 			logger.info("Plan {} is waiting for user input. Merged waitState into details response.", planId);
-		}else{
+		}
+		else {
 			planRecord.setUserInputWaitState(null); // Clear if not waiting
 		}
 
 		try {
-            // 使用Jackson ObjectMapper将对象转换为JSON字符串
-            String jsonResponse = objectMapper.writeValueAsString(planRecord);
-            return ResponseEntity.ok(jsonResponse);
-        } catch (JsonProcessingException e) {
-            logger.error("Error serializing PlanExecutionRecord to JSON for planId: {}", planId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing request: " + e.getMessage());
-        }
+			// 使用Jackson ObjectMapper将对象转换为JSON字符串
+			String jsonResponse = objectMapper.writeValueAsString(planRecord);
+			return ResponseEntity.ok(jsonResponse);
+		}
+		catch (JsonProcessingException e) {
+			logger.error("Error serializing PlanExecutionRecord to JSON for planId: {}", planId, e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body("Error processing request: " + e.getMessage());
+		}
 	}
 
 	/**
@@ -171,7 +175,9 @@ public class ManusController {
 	 * @return ResponseEntity indicating success or failure.
 	 */
 	@PostMapping("/submit-input/{planId}")
-	public ResponseEntity<Map<String, Object>> submitUserInput(@PathVariable("planId") String planId, @RequestBody Map<String, String> formData) { // Changed formData to Map<String, String>
+	public ResponseEntity<Map<String, Object>> submitUserInput(@PathVariable("planId") String planId,
+			@RequestBody Map<String, String> formData) { // Changed formData to
+															// Map<String, String>
 		try {
 			logger.info("Received user input for plan {}: {}", planId, formData);
 			boolean success = userInputService.submitUserInputs(planId, formData);
@@ -179,19 +185,27 @@ public class ManusController {
 				return ResponseEntity.ok(Map.of("message", "Input submitted successfully", "planId", planId));
 			}
 			else {
-				// This case might mean the plan was no longer waiting, or input was invalid.
-				// UserInputService should ideally throw specific exceptions for clearer error handling.
-				logger.warn("Failed to submit user input for plan {}, it might not be waiting or input was invalid.", planId);
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Failed to submit input. Plan not waiting or input invalid.", "planId", planId));
+				// This case might mean the plan was no longer waiting, or input was
+				// invalid.
+				// UserInputService should ideally throw specific exceptions for clearer
+				// error handling.
+				logger.warn("Failed to submit user input for plan {}, it might not be waiting or input was invalid.",
+						planId);
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("error", "Failed to submit input. Plan not waiting or input invalid.", "planId",
+							planId));
 			}
 		}
 		catch (IllegalArgumentException e) {
 			logger.error("Error submitting user input for plan {}: {}", planId, e.getMessage());
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage(), "planId", planId));
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.body(Map.of("error", e.getMessage(), "planId", planId));
 		}
 		catch (Exception e) {
 			logger.error("Unexpected error submitting user input for plan {}: {}", planId, e.getMessage(), e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "An unexpected error occurred.", "planId", planId));
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(Map.of("error", "An unexpected error occurred.", "planId", planId));
 		}
 	}
+
 }

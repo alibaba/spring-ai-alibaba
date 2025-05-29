@@ -40,11 +40,13 @@ import jakarta.annotation.PreDestroy;
 public class TextFileService implements ApplicationRunner {
 
 	private static final Logger log = LoggerFactory.getLogger(TextFileService.class);
+
 	/**
 	 * 文件状态类，用于存储文件的当前路径和上次操作结果
 	 */
 	@Autowired
 	private ManusProperties manusProperties;
+
 	/**
 	 * 支持的文本文件扩展名集合
 	 */

@@ -110,11 +110,13 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 
 	public ToolExecuteResult run(String toolInput) {
 		try {
-			Map<String, Object> input = objectMapper.readValue(toolInput, new TypeReference<Map<String, Object>>() {});
+			Map<String, Object> input = objectMapper.readValue(toolInput, new TypeReference<Map<String, Object>>() {
+			});
 			String command = (String) input.get("command");
 			String planId = (String) input.get("plan_id");
 			String title = (String) input.get("title");
-			List<String> steps = objectMapper.convertValue(input.get("steps"), new TypeReference<List<String>>() {});
+			List<String> steps = objectMapper.convertValue(input.get("steps"), new TypeReference<List<String>>() {
+			});
 
 			return switch (command) {
 				case "create" -> createPlan(planId, title, steps);
@@ -127,7 +129,8 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 					throw new IllegalArgumentException("Invalid command: " + command);
 				}
 			};
-		} catch (JsonProcessingException e) {
+		}
+		catch (JsonProcessingException e) {
 			log.info("执行计划工具时发生错误", e);
 			return new ToolExecuteResult("Error executing planning tool: " + e.getMessage());
 		}

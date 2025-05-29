@@ -94,7 +94,9 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 
 		// Add exception handling for JSON deserialization
 		try {
-			Map<String, Object> toolInputMap = new ObjectMapper().readValue(toolInput, new TypeReference<Map<String, Object>>() {});
+			Map<String, Object> toolInputMap = new ObjectMapper().readValue(toolInput,
+					new TypeReference<Map<String, Object>>() {
+					});
 			String query = (String) toolInputMap.get("query");
 			this.lastQuery = query;
 
@@ -122,8 +124,8 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 			}
 			else if (response.containsKey("answer_box")
 					&& ((Map<String, Object>) response.get("answer_box")).containsKey("snippet_highlighted_words")) {
-				toret = ((List<String>) ((Map<String, Object>) response.get("answer_box")).get("snippet_highlighted_words"))
-					.get(0);
+				toret = ((List<String>) ((Map<String, Object>) response.get("answer_box"))
+					.get("snippet_highlighted_words")).get(0);
 			}
 			else if (response.containsKey("sports_results")
 					&& ((Map<String, Object>) response.get("sports_results")).containsKey("game_spotlight")) {
@@ -131,7 +133,8 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 			}
 			else if (response.containsKey("shopping_results")
 					&& ((List<Map<String, Object>>) response.get("shopping_results")).get(0).containsKey("title")) {
-				List<Map<String, Object>> shoppingResults = (List<Map<String, Object>>) response.get("shopping_results");
+				List<Map<String, Object>> shoppingResults = (List<Map<String, Object>>) response
+					.get("shopping_results");
 				List<Map<String, Object>> subList = shoppingResults.subList(0, 3);
 				toret = subList.toString();
 			}
@@ -140,7 +143,8 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 				toret = ((Map<String, Object>) response.get("knowledge_graph")).get("description").toString();
 			}
 			else if ((((List<Map<String, Object>>) response.get("organic_results")).get(0)).containsKey("snippet")) {
-				toret = (((List<Map<String, Object>>) response.get("organic_results")).get(0)).get("snippet").toString();
+				toret = (((List<Map<String, Object>>) response.get("organic_results")).get(0)).get("snippet")
+					.toString();
 			}
 			else if ((((List<Map<String, Object>>) response.get("organic_results")).get(0)).containsKey("link")) {
 				toret = (((List<Map<String, Object>>) response.get("organic_results")).get(0)).get("link").toString();
@@ -161,7 +165,8 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 			log.warn("SerpapiTool result:{}", toret);
 			this.lastSearchResults = toret;
 			return new ToolExecuteResult(toret);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Error deserializing JSON", e);
 			return new ToolExecuteResult("Error deserializing JSON: " + e.getMessage());
 		}

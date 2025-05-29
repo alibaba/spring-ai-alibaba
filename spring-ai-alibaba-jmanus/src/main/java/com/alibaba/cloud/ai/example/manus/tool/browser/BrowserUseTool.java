@@ -218,7 +218,8 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		// Add exception handling for JSON deserialization
 		try {
 			requestVO = objectMapper.readValue(toolInput, BrowserRequestVO.class);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Error deserializing JSON", e);
 			return new ToolExecuteResult("Error deserializing JSON: " + e.getMessage());
 		}

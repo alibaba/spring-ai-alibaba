@@ -44,6 +44,7 @@ public class DynamicAgentLoader {
 	private final ToolCallingManager toolCallingManager;
 
 	private final UserInputService userInputService;
+
 	public DynamicAgentLoader(DynamicAgentRepository repository, @Lazy LlmService llmService,
 			PlanExecutionRecorder recorder, ManusProperties properties, @Lazy ToolCallingManager toolCallingManager,
 			UserInputService userInputService) {
@@ -62,7 +63,8 @@ public class DynamicAgentLoader {
 		}
 
 		return new DynamicAgent(llmService, recorder, properties, entity.getAgentName(), entity.getAgentDescription(),
-				entity.getNextStepPrompt(), entity.getAvailableToolKeys(), toolCallingManager, initialAgentSetting, userInputService);
+				entity.getNextStepPrompt(), entity.getAvailableToolKeys(), toolCallingManager, initialAgentSetting,
+				userInputService);
 	}
 
 	public List<DynamicAgentEntity> getAllAgents() {

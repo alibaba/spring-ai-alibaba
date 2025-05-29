@@ -84,7 +84,8 @@ public class ChromeDriverService {
 				writer.write(objectMapper.writeValueAsString(cookies));
 			}
 			log.info("Cookies saved to {}", cookieFile);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Failed to save cookies", e);
 		}
 	}
@@ -101,12 +102,15 @@ public class ChromeDriverService {
 		}
 		try (java.io.FileReader reader = new java.io.FileReader(cookieFile)) {
 			// Replace FastJSON's JSON.parseArray with Jackson's objectMapper.readValue
-			List<com.microsoft.playwright.options.Cookie> cookies = objectMapper.readValue(reader, new TypeReference<List<com.microsoft.playwright.options.Cookie>>() {});
+			List<com.microsoft.playwright.options.Cookie> cookies = objectMapper.readValue(reader,
+					new TypeReference<List<com.microsoft.playwright.options.Cookie>>() {
+					});
 			for (DriverWrapper driver : drivers.values()) {
 				driver.getCurrentPage().context().addCookies(cookies);
 			}
 			log.info("Cookies loaded from {} to all drivers", cookieFile);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Failed to load cookies for all drivers", e);
 		}
 	}
@@ -140,11 +144,14 @@ public class ChromeDriverService {
 			currentDriver = createNewDriver(); // createNewDriver will now pass sharedDir
 			if (currentDriver != null) { // Check if driver creation was successful
 				drivers.put(planId, currentDriver);
-			} else {
-				// Handle the case where driver creation failed, e.g., log an error or throw an exception
+			}
+			else {
+				// Handle the case where driver creation failed, e.g., log an error or
+				// throw an exception
 				log.error("Failed to create new driver for planId: {}. createNewDriver returned null.", planId);
 				// Optionally throw an exception to indicate failure to the caller
-				// throw new RuntimeException("Failed to create new driver for planId: " + planId);
+				// throw new RuntimeException("Failed to create new driver for planId: " +
+				// planId);
 			}
 		}
 		finally {

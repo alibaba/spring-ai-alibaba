@@ -5,58 +5,64 @@ import java.util.List;
 import java.util.Map;
 
 public class UserInputWaitState implements Serializable {
-      private String planId;
-    private String message;
-    private boolean waiting;
-    private String formDescription; // 新增字段：表单描述
-    private List<Map<String, String>> formInputs; // 新增字段：表单输入项
 
-    public UserInputWaitState() {
-    }
+	private String planId;
 
-    public UserInputWaitState(String planId, String message, boolean waiting) {
-        this.planId = planId;
-        this.message = message;
-        this.waiting = waiting;
-    }
+	private String message;
 
-    public String getPlanId() {
-        return planId;
-    }
+	private boolean waiting;
 
-    public void setPlanId(String planId) {
-        this.planId = planId;
-    }
+	private String formDescription; // 新增字段：表单描述
 
-    public String getMessage() {
-        return message;
-    }
+	private List<Map<String, String>> formInputs; // 新增字段：表单输入项
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
+	public UserInputWaitState() {
+	}
 
-    public boolean isWaiting() {
-        return waiting;
-    }
+	public UserInputWaitState(String planId, String message, boolean waiting) {
+		this.planId = planId;
+		this.message = message;
+		this.waiting = waiting;
+	}
 
-    public void setWaiting(boolean waiting) {
-        this.waiting = waiting;
-    }
+	public String getPlanId() {
+		return planId;
+	}
 
-    public String getFormDescription() {
-        return formDescription;
-    }
+	public void setPlanId(String planId) {
+		this.planId = planId;
+	}
 
-    public void setFormDescription(String formDescription) {
-        this.formDescription = formDescription;
-    }
+	public String getMessage() {
+		return message;
+	}
 
-    public List<Map<String, String>> getFormInputs() {
-        return formInputs;
-    }
+	public void setMessage(String message) {
+		this.message = message;
+	}
 
-    public void setFormInputs(List<Map<String, String>> formInputs) {
-        this.formInputs = formInputs;
-    }
+	public boolean isWaiting() {
+		return waiting;
+	}
+
+	public void setWaiting(boolean waiting) {
+		this.waiting = waiting;
+	}
+
+	public String getFormDescription() {
+		return formDescription;
+	}
+
+	public void setFormDescription(String formDescription) {
+		this.formDescription = formDescription;
+	}
+
+	public List<Map<String, String>> getFormInputs() {
+		return formInputs;
+	}
+
+	public void setFormInputs(List<Map<String, String>> formInputs) {
+		this.formInputs = formInputs;
+	}
+
 }

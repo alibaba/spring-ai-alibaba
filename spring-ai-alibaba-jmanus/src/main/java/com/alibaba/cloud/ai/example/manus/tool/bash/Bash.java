@@ -36,7 +36,9 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 public class Bash implements ToolCallBiFunctionDef {
 
 	private static final Logger log = LoggerFactory.getLogger(Bash.class);
+
 	private ManusProperties manusProperties;
+
 	/**
 	 * bash执行工作目录
 	 */
@@ -99,7 +101,8 @@ public class Bash implements ToolCallBiFunctionDef {
 	public ToolExecuteResult run(String toolInput) throws JsonProcessingException {
 		log.info("Bash toolInput:{}", toolInput);
 		log.info("Current operating system: {}", osName);
-		Map<String, Object> toolInputMap = objectMapper.readValue(toolInput, new TypeReference<Map<String, Object>>() {});
+		Map<String, Object> toolInputMap = objectMapper.readValue(toolInput, new TypeReference<Map<String, Object>>() {
+		});
 		String command = (String) toolInputMap.get("command");
 		this.lastCommand = command;
 
@@ -143,7 +146,8 @@ public class Bash implements ToolCallBiFunctionDef {
 	public ToolExecuteResult apply(String s, ToolContext toolContext) {
 		try {
 			return run(s);
-		} catch (JsonProcessingException e) {
+		}
+		catch (JsonProcessingException e) {
 			log.error("Error processing JSON", e);
 			return new ToolExecuteResult("Error processing JSON: " + e.getMessage());
 		}

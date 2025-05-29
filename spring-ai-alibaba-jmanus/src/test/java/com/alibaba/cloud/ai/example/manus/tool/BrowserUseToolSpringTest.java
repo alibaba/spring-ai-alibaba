@@ -415,7 +415,8 @@ class BrowserUseToolSpringTest {
 			log.info("获取到'验证码登录'元素位置信息: {}", positionResult.getOutput());
 
 			// 解析JSON结果获取坐标
-			List<?> positionsList = objectMapper.readValue(positionResult.getOutput(), new TypeReference<List<?>>() {});
+			List<?> positionsList = objectMapper.readValue(positionResult.getOutput(), new TypeReference<List<?>>() {
+			});
 			Assertions.assertFalse(positionsList.isEmpty(), "未找到'APP登录'元素");
 
 			// 获取第一个匹配元素的位置信息
@@ -529,7 +530,8 @@ class BrowserUseToolSpringTest {
 		try {
 			String toolInput = objectMapper.writeValueAsString(params);
 			return browserUseTool.run(toolInput);
-		} catch (JsonProcessingException e) {
+		}
+		catch (JsonProcessingException e) {
 			log.error("Error serializing parameters to JSON", e);
 			throw new RuntimeException("Failed to serialize parameters", e);
 		}

@@ -38,7 +38,7 @@ import java.util.List;
  * @see ThinkActRecord
  * @see JsonSerializable
  */
-public class AgentExecutionRecord  {
+public class AgentExecutionRecord {
 
 	// 记录的唯一标识符
 	private Long id;
@@ -237,6 +237,7 @@ public class AgentExecutionRecord  {
 				+ ", maxSteps=" + maxSteps + ", isCompleted=" + isCompleted + ", isStuck=" + isStuck + ", stepsCount="
 				+ (thinkActSteps != null ? thinkActSteps.size() : 0) + '}';
 	}
+
 	/**
 	 * 保存记录到持久化存储 空实现，由具体的存储实现来覆盖 同时会递归保存所有ThinkActRecord
 	 * @return 保存后的记录ID

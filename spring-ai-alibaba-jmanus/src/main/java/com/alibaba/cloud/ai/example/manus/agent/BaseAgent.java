@@ -31,15 +31,12 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 /**
- * An abstract base class for implementing AI agents that can execute multi-step
- * tasks.
- * This class provides the core functionality for managing agent state,
- * conversation flow,
+ * An abstract base class for implementing AI agents that can execute multi-step tasks.
+ * This class provides the core functionality for managing agent state, conversation flow,
  * and step-by-step execution of tasks.
  *
  * <p>
- * The agent supports a finite number of execution steps and includes mechanisms
- * for:
+ * The agent supports a finite number of execution steps and includes mechanisms for:
  * <ul>
  * <li>State management (idle, running, finished)</li>
  * <li>Conversation tracking</li>
@@ -54,8 +51,7 @@ import java.util.*;
  * <li>{@link #getName()} - Returns the agent's name</li>
  * <li>{@link #getDescription()} - Returns the agent's description</li>
  * <li>{@link #addThinkPrompt(List)} - Implements the thinking chain logic</li>
- * <li>{@link #getNextStepMessage()} - Provides the next step's prompt
- * template</li>
+ * <li>{@link #getNextStepMessage()} - Provides the next step's prompt template</li>
  * <li>{@link #step()} - Implements the core logic for each execution step</li>
  * </ul>
  *
@@ -93,7 +89,6 @@ public abstract class BaseAgent {
 	 * 实现要求： 1. 返回一个简短但具有描述性的名称 2. 名称应该反映该智能体的主要功能或特性 3. 名称应该是唯一的，便于日志和调试
 	 *
 	 * 示例实现： - ToolCallAgent 返回 "ToolCallAgent" - BrowserAgent 返回 "BrowserAgent"
-	 * 
 	 * @return 智能体的名称
 	 */
 	public abstract String getName();
@@ -105,7 +100,6 @@ public abstract class BaseAgent {
 	 *
 	 * 示例实现： - ToolCallAgent: "负责管理和执行工具调用的智能体，支持多工具组合调用" - ReActAgent:
 	 * "实现思考(Reasoning)和行动(Acting)交替执行的智能体"
-	 * 
 	 * @return 智能体的详细描述文本
 	 */
 	public abstract String getDescription();
@@ -113,12 +107,10 @@ public abstract class BaseAgent {
 	/**
 	 * 添加思考提示到消息列表中，构建智能体的思考链
 	 *
-	 * 实现要求： 1. 根据当前上下文和状态生成合适的系统提示词 2. 提示词应该指导智能体如何思考和决策 3. 可以递归地构建提示链，形成层次化的思考过程
-	 * 4.
+	 * 实现要求： 1. 根据当前上下文和状态生成合适的系统提示词 2. 提示词应该指导智能体如何思考和决策 3. 可以递归地构建提示链，形成层次化的思考过程 4.
 	 * 返回添加的系统提示消息对象
 	 *
 	 * 子类实现参考： 1. ReActAgent: 实现基础的思考-行动循环提示 2. ToolCallAgent: 添加工具选择和执行相关的提示
-	 * 
 	 * @param messages 当前的消息列表，用于构建上下文
 	 * @return 添加的系统提示消息对象
 	 */
@@ -137,7 +129,8 @@ public abstract class BaseAgent {
 					1. 使用工具调用时，必须给出解释说明，说明使用这个工具的理由和背后的思考
 					2. 简述过去的所有步骤已经都做了什么事
 					""";
-		} else {
+		}
+		else {
 			detailOutput = """
 					1. 使用工具调用时，不需要额外的任何解释说明！
 					2. 不要在工具调用前提供推理或描述！
@@ -182,7 +175,6 @@ public abstract class BaseAgent {
 	 * 实现要求： 1. 生成引导智能体执行下一步操作的提示消息 2. 提示内容应该基于当前执行状态和上下文 3. 消息应该清晰指导智能体要执行什么任务
 	 *
 	 * 子类实现参考： 1. ToolCallAgent：返回工具选择和调用相关的提示 2. ReActAgent：返回思考或行动决策相关的提示
-	 * 
 	 * @return 下一步操作的提示消息对象
 	 */
 	protected abstract Message getNextStepWithEnvMessage();
@@ -225,7 +217,8 @@ public abstract class BaseAgent {
 
 				if (isStuck()) {
 					handleStuckState(agentRecord);
-				} else {
+				}
+				else {
 					// 更新全局状态以保持一致性
 					log.info("Agent state: {}", stepResult.getState());
 					state = stepResult.getState();
@@ -248,11 +241,12 @@ public abstract class BaseAgent {
 
 			// Calculate execution time in seconds
 			long executionTimeSeconds = java.time.Duration.between(agentRecord.getStartTime(), agentRecord.getEndTime())
-					.getSeconds();
+				.getSeconds();
 			String status = agentRecord.isCompleted() ? "成功" : (agentRecord.isStuck() ? "执行卡住" : "未完成");
 			agentRecord.setResult(String.format("执行%s [耗时%d秒] [消耗步骤%d] ", status, executionTimeSeconds, currentStep));
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Agent execution failed", e);
 			// 记录异常信息到agentRecord
 			agentRecord.setErrorMessage(e.getMessage());
@@ -261,7 +255,8 @@ public abstract class BaseAgent {
 			agentRecord.setResult(String.format("执行失败 [错误: %s]", e.getMessage()));
 			results.add("Execution failed: " + e.getMessage());
 			throw e; // 重新抛出异常，让上层调用者知道发生了错误
-		} finally {
+		}
+		finally {
 			state = AgentState.COMPLETED; // Reset state after execution
 
 			agentRecord.setStatus(state.toString());
@@ -334,7 +329,6 @@ public abstract class BaseAgent {
 	 * 数据在run()方法执行时通过setData()设置
 	 *
 	 * 不要修改这个方法的实现，如果你需要传递上下文，继承并修改setData方法，这样可以提高getData()的的效率。
-	 * 
 	 * @return 包含智能体上下文数据的Map对象
 	 */
 	protected final Map<String, Object> getInitSettingData() {

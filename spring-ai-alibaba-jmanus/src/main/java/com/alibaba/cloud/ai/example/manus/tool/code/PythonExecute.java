@@ -119,20 +119,22 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 		log.info("PythonExecute toolInput:{}", toolInput);
 		try {
 			// Add exception handling for JSON deserialization
-			Map<String, Object> toolInputMap = new ObjectMapper().readValue(toolInput, new TypeReference<Map<String, Object>>() {});
+			Map<String, Object> toolInputMap = new ObjectMapper().readValue(toolInput,
+					new TypeReference<Map<String, Object>>() {
+					});
 			String code = (String) toolInputMap.get("code");
 			this.lastCode = code;
 			this.lastExecutionLogId = "tmp_" + LogIdGenerator.generateUniqueId();
 
 			try {
-				CodeExecutionResult codeExecutionResult = CodeUtils.executeCode(code, "python", lastExecutionLogId + ".py",
-						arm64, new HashMap<>());
+				CodeExecutionResult codeExecutionResult = CodeUtils.executeCode(code, "python",
+						lastExecutionLogId + ".py", arm64, new HashMap<>());
 				String result = codeExecutionResult.getLogs();
 				this.lastExecutionResult = result;
 
 				// 检查执行结果中是否包含 Python 错误信息
-				if (result.contains("SyntaxError") || result.contains("IndentationError") || result.contains("NameError")
-						|| result.contains("TypeError") || result.contains("ValueError")
+				if (result.contains("SyntaxError") || result.contains("IndentationError")
+						|| result.contains("NameError") || result.contains("TypeError") || result.contains("ValueError")
 						|| result.contains("ImportError")) {
 					this.hasError = true;
 					this.lastError = extractErrorMessage(result);
@@ -150,7 +152,8 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 				this.lastExecutionResult = "Execution failed: " + e.getMessage();
 				return new ToolExecuteResult("Execution failed: " + e.getMessage());
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Error deserializing JSON", e);
 			return new ToolExecuteResult("Error deserializing JSON: " + e.getMessage());
 		}
