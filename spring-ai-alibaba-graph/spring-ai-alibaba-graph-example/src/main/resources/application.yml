@@ -26,7 +26,8 @@ spring:
       toolcalling:
         weather:
           enabled: enable
-          api-key: 89c78da27b4d4fdfaa052020252704
+          api-key: ${WEATHER_API_KEY}
+
     dashscope:
       api-key: sk-b0ac526ee44f4bb7b6c61cbcaea14b15
     openai:
