@@ -37,6 +37,8 @@ tools: ## Install ci tools
 
 	@echo "Installing gitleaks"
 	mkdir -p tools/bin
+	ls
+	ls tools
 	pwd
 	cd tools/bin
 	pwd
