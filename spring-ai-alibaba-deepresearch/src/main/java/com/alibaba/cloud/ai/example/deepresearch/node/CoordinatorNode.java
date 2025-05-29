@@ -76,6 +76,10 @@ public class CoordinatorNode implements NodeAction {
 			if (state.value("enable_background_investigation", false)) {
 				nextStep = "background_investigator";
 			}
+			else {
+				// 直接交给planner
+				nextStep = "planner";
+			}
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 				if (!"handoff_to_planner".equals(toolCall.name())) {
 					continue;
