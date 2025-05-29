@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.example.deepresearch.node;
 import com.alibaba.cloud.ai.example.deepresearch.model.Plan;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import org.apache.commons.compress.utils.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -26,6 +27,9 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 
 import java.util.*;
 
@@ -35,8 +39,11 @@ public class ResearcherNode implements NodeAction {
 
 	private final ChatClient researchAgent;
 
-	public ResearcherNode(ChatClient researchAgent) {
+	private final ToolCallback[] toolCallbacks;
+
+	public ResearcherNode(ChatClient researchAgent, ToolCallback[] toolCallbacks) {
 		this.researchAgent = researchAgent;
+		this.toolCallbacks = toolCallbacks;
 	}
 
 	@Override
@@ -45,7 +52,7 @@ public class ResearcherNode implements NodeAction {
 		Plan currentPlan = state.value("current_plan", Plan.class).get();
 		List<String> observations = state.value("observations", List.class)
 			.map(list -> (List<String>) list)
-			.orElse(Collections.emptyList());
+			.orElse(Lists.newArrayList());
 
 		Plan.Step unexecutedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
@@ -69,7 +76,11 @@ public class ResearcherNode implements NodeAction {
 		messages.add(citationMessage);
 
 		// 调用agent
-		String content = researchAgent.prompt().messages(messages).call().content();
+		String content = researchAgent.prompt()
+			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
+			.messages(messages)
+			.call()
+			.content();
 		unexecutedStep.setExecutionRes(content);
 
 		Map<String, Object> updated = new HashMap<>();

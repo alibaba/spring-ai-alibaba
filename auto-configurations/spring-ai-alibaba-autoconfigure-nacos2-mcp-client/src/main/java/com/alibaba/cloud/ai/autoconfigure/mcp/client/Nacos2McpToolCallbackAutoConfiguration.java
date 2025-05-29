@@ -35,7 +35,7 @@ import java.util.List;
 
 /**
  * @author yingzi
- * @date 2025/5/6:13:41
+ * @since 2025/5/6:13:41
  */
 @AutoConfiguration(after = { Nacos2McpClientAutoConfiguration.class })
 @EnableConfigurationProperties({ McpClientCommonProperties.class })
