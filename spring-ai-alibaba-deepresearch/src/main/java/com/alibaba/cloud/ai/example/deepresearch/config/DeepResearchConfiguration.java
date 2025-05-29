@@ -29,19 +29,17 @@ import com.alibaba.cloud.ai.graph.OverAllStateFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -58,111 +56,112 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 @EnableConfigurationProperties(DeepResearchProperties.class)
 public class DeepResearchConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
+	private static final Logger log = LoggerFactory.getLogger(DeepResearchConfiguration.class);
 
-	@Autowired
-	private TavilySearchApi tavilySearchApi;
+	private final TavilySearchApi tavilySearchApi;
+	private final ChatClient backgroundInvestigationAgent;
+	private final ChatClient researchAgent;
+	private final ChatClient coderAgent;
+	private final ChatClient reporterAgent;
+	private final DeepResearchProperties properties;
 
-	@Autowired
-	private ChatClient backgroundInvestigationAgent;
-
-	@Autowired
-	private ChatClient researchAgent;
-
-	@Autowired
-	private ChatClient coderAgent;
-
-	@Autowired
-	private ChatClient reporterAgent;
-
-	@Autowired
-	private DeepResearchProperties deepResearchProperties;
+	public DeepResearchConfiguration(
+			TavilySearchApi tavilySearchApi,
+			ChatClient backgroundInvestigationAgent,
+			ChatClient researchAgent,
+			ChatClient coderAgent,
+			ChatClient reporterAgent,
+			DeepResearchProperties properties) {
+		this.tavilySearchApi = tavilySearchApi;
+		this.backgroundInvestigationAgent = backgroundInvestigationAgent;
+		this.researchAgent = researchAgent;
+		this.coderAgent = coderAgent;
+		this.reporterAgent = reporterAgent;
+		this.properties = properties;
+	}
 
 	@Bean
 	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder,
-			ObjectProvider<List<ToolCallbackProvider>> listObjectProvider) throws GraphStateException {
-		// TODO Different Tools can be set for different Nodes.
-		ToolCallback[] toolCallbacks = convert2ToolCallbacks(listObjectProvider.getIfAvailable());
+								   ObjectProvider<List<ToolCallbackProvider>> toolProvider) throws GraphStateException {
+
+		ToolCallback[] toolCallbacks = resolveToolCallbacks(toolProvider.getIfAvailable());
 
 		OverAllStateFactory stateFactory = () -> {
 			OverAllState state = new OverAllState();
-			state.registerKeyAndStrategy("coordinator_next_node", new ReplaceStrategy());
-			state.registerKeyAndStrategy("planner_next_node", new ReplaceStrategy());
-			state.registerKeyAndStrategy("human_next_node", new ReplaceStrategy());
-			state.registerKeyAndStrategy("research_team_next_node", new ReplaceStrategy());
-
-			state.registerKeyAndStrategy("thread_id", new ReplaceStrategy());
-			state.registerKeyAndStrategy("messages", new ReplaceStrategy());
-			state.registerKeyAndStrategy("output", new ReplaceStrategy());
-			state.registerKeyAndStrategy("background_investigation_results", new ReplaceStrategy());
-			state.registerKeyAndStrategy("enable_background_investigation", new ReplaceStrategy());
-			state.registerKeyAndStrategy("plan_iterations", new ReplaceStrategy());
-			state.registerKeyAndStrategy("max_step_num", new ReplaceStrategy());
-			state.registerKeyAndStrategy("current_plan", new ReplaceStrategy());
-			state.registerKeyAndStrategy("auto_accepted_plan", new ReplaceStrategy());
-			state.registerKeyAndStrategy("feed_back", new ReplaceStrategy());
-			state.registerKeyAndStrategy("feed_back_content", new ReplaceStrategy());
-			state.registerKeyAndStrategy("observations", new ReplaceStrategy());
-			state.registerKeyAndStrategy("final_report", new ReplaceStrategy());
+			List<String> keys = List.of(
+					"coordinator_next_node", "planner_next_node", "human_next_node", "research_team_next_node",
+					"thread_id", "messages", "output", "background_investigation_results",
+					"enable_background_investigation", "plan_iterations", "max_step_num",
+					"current_plan", "auto_accepted_plan", "feed_back", "feed_back_content",
+					"observations", "final_report"
+			);
+			keys.forEach(key -> state.registerKeyAndStrategy(key, new ReplaceStrategy()));
 			return state;
 		};
 
-		BackgroundInvestigationNodeAction backgroundInvestigationNodeAction = createBackgroundInvestigationNodeAction(
-				deepResearchProperties.getBackgroundInvestigationType(), toolCallbacks);
+		StateGraph graph = new StateGraph("deep research", stateFactory)
+				.addNode("coordinator", node_async(new CoordinatorNode(chatClientBuilder)))
+				.addNode("background_investigator", node_async(createBackgroundInvestigationNodeAction(properties.getBackgroundInvestigationType(), toolCallbacks)))
+				.addNode("planner", node_async(new PlannerNode(chatClientBuilder, toolCallbacks)))
+				.addNode("human_feedback", node_async(new HumanFeedbackNode()))
+				.addNode("research_team", node_async(new ResearchTeamNode()))
+				.addNode("researcher", node_async(new ResearcherNode(researchAgent, toolCallbacks)))
+				.addNode("coder", node_async(new CoderNode(coderAgent, toolCallbacks)))
+				.addNode("reporter", node_async(new ReporterNode(reporterAgent, toolCallbacks)))
 
-		StateGraph stateGraph = new StateGraph("deep research", stateFactory)
-			.addNode("coordinator", node_async(new CoordinatorNode(chatClientBuilder)))
-			.addNode("background_investigator", node_async(backgroundInvestigationNodeAction))
-			.addNode("planner", node_async((new PlannerNode(chatClientBuilder, toolCallbacks))))
-			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
-			.addNode("research_team", node_async(new ResearchTeamNode()))
-			.addNode("researcher", node_async(new ResearcherNode(researchAgent, toolCallbacks)))
-			.addNode("coder", node_async(new CoderNode(coderAgent, toolCallbacks)))
-			.addNode("reporter", node_async((new ReporterNode(reporterAgent, toolCallbacks))))
+				.addEdge(START, "coordinator")
+				.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()), Map.of(
+						"background_investigator", "background_investigator",
+						"planner", "planner",
+						END, END
+				))
+				.addEdge("background_investigator", "planner")
+				.addConditionalEdges("planner", edge_async(new PlannerDispatcher()), Map.of(
+						"reporter", "reporter",
+						"human_feedback", "human_feedback",
+						END, END
+				))
+				.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()), Map.of(
+						"planner", "planner",
+						"research_team", "research_team",
+						"reporter", "reporter",
+						END, END
+				))
+				.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()), Map.of(
+						"planner", "planner",
+						"researcher", "researcher",
+						"coder", "coder"
+				))
+				.addEdge("researcher", "research_team")
+				.addEdge("coder", "research_team")
+				.addEdge("reporter", END);
 
-			.addEdge(START, "coordinator")
-			.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
-					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
-			.addEdge("background_investigator", "planner")
-			.addConditionalEdges("planner", edge_async(new PlannerDispatcher()),
-					Map.of("reporter", "reporter", "human_feedback", "human_feedback", END, END))
-			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
-					Map.of("planner", "planner", "research_team", "research_team", "reporter", "reporter", END, END))
-			.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),
-					Map.of("planner", "planner", "researcher", "researcher", "coder", "coder"))
-			.addEdge("researcher", "research_team")
-			.addEdge("coder", "research_team")
-			.addEdge("reporter", END);
+		logGraph(graph);
 
-		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
-				"workflow graph");
-
-		logger.info("\n\n");
-		logger.info(graphRepresentation.content());
-		logger.info("\n\n");
-
-		return stateGraph;
+		return graph;
 	}
 
-	private ToolCallback[] convert2ToolCallbacks(List<ToolCallbackProvider> toolCallbackProviders) {
-		List<ToolCallback> res = Lists.newArrayList();
-		toolCallbackProviders
-			.forEach(toolCallbackProvider -> Collections.addAll(res, toolCallbackProvider.getToolCallbacks()));
-		return res.toArray(new ToolCallback[0]);
+	private ToolCallback[] resolveToolCallbacks(List<ToolCallbackProvider> providers) {
+		if (providers == null || providers.isEmpty()) {
+			return new ToolCallback[0];
+		}
+		return providers.stream()
+				.flatMap(p -> Arrays.stream(p.getToolCallbacks()))
+				.toArray(ToolCallback[]::new);
 	}
 
-	/**
-	 * Create background investigation node action by type.
-	 * @param backgroundInvestigationType background investigation type
-	 * @param toolCallbacks tool callbacks
-	 * @return background investigation instance
-	 */
 	private BackgroundInvestigationNodeAction createBackgroundInvestigationNodeAction(
-			BackgroundInvestigationType backgroundInvestigationType, ToolCallback[] toolCallbacks) {
-		return switch (backgroundInvestigationType) {
+			BackgroundInvestigationType type, ToolCallback[] toolCallbacks) {
+		return switch (type) {
 			case JUST_WEB_SEARCH -> new BackgroundInvestigationNode(tavilySearchApi);
 			case TOOL_CALLS -> new BackgroundInvestigationToolCallsNode(backgroundInvestigationAgent, toolCallbacks);
 		};
 	}
 
+	private void logGraph(StateGraph graph) {
+		if (log.isDebugEnabled()) {
+			GraphRepresentation representation = graph.getGraph(GraphRepresentation.Type.PLANTUML, "workflow graph");
+			log.debug("\n{}", representation.content());
+		}
+	}
 }
