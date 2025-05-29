@@ -37,10 +37,7 @@
         <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
 
-
-    <properties>
-        <openai.version>0.22.92</openai.version>
-    </properties>
+    <properties></properties>
 
     <dependencies>
         <!--
@@ -50,13 +47,6 @@
               <version>0.6.3</version>
             </dependency>
         -->
-
-        <dependency>
-            <groupId>io.github.lambdua</groupId>
-            <artifactId>service</artifactId>
-            <version>${openai.version}</version>
-            <scope>test</scope>
-        </dependency>
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
