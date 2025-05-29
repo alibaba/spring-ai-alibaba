@@ -73,7 +73,8 @@ public class McpNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		log.info("[McpNode] 开始执行 apply，原始配置: url={}, tool={}, headers={}, inputParamKeys={}", url, tool, headers, inputParamKeys);
+		log.info("[McpNode] 开始执行 apply，原始配置: url={}, tool={}, headers={}, inputParamKeys={}", url, tool, headers,
+				inputParamKeys);
 
 		// 构建 transport 和 client
 		HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(this.url);
