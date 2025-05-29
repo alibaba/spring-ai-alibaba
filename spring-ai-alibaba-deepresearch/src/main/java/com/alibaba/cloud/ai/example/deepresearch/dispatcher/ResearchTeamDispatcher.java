@@ -21,7 +21,7 @@ import com.alibaba.cloud.ai.graph.action.EdgeAction;
 
 /**
  * @author yingzi
- * @date 2025/5/18 16:10
+ * @since 2025/5/18 16:10
  */
 
 public class ResearchTeamDispatcher implements EdgeAction {

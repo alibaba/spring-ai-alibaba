@@ -33,8 +33,7 @@ import static com.alibaba.cloud.ai.dbconnector.ColumnTypeParser.wrapType;
 
 /**
  * @author jiuhe
- * @desc
- * @date 2024/3/15
+ * @since 2024/3/15
  */
 @Slf4j
 @Service

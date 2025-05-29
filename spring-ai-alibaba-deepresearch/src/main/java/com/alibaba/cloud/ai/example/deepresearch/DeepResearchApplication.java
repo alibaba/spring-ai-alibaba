@@ -21,7 +21,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
  * @author yingzi
- * @date 2025/5/20 11:01
+ * @since 2025/5/20 11:01
  */
 @SpringBootApplication
 public class DeepResearchApplication {
