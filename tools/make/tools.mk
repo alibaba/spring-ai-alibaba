@@ -41,6 +41,6 @@ tools: ## Install ci tools
 	git clone https://github.com/gitleaks/gitleaks && \
 	cd gitleaks && \
 	make build && \
-	chmod +x gitleaks
-
-	/home/runner/work/spring-ai-alibaba/spring-ai-alibaba/tools/bin/gitleaks/gitleaks --version
+	chmod +x gitleaks && \
+	cp gitleaks ../../../../../gitleaks
+	./gitleaks --version
