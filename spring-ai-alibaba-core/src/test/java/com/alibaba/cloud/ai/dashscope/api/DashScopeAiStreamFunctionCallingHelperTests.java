@@ -15,16 +15,7 @@
  */
 package com.alibaba.cloud.ai.dashscope.api;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.util.List;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionChunk;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionFinishReason;
@@ -35,6 +26,10 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.Too
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput.Choice;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.TokenUsage;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for DashScopeAiStreamFunctionCallingHelper class functionality
@@ -146,7 +141,8 @@ public class DashScopeAiStreamFunctionCallingHelperTests {
 	void testMergeWithNonIncrementalOutput() {
 		// Test merging in non-incremental output mode
 		ChatCompletionChunk previous = createChunkWithToolCall("request-1", "tool-1", "function-1", "{\"param");
-		ChatCompletionChunk current = createChunkWithToolCall("request-1", "tool-1", "function-1", "\":\"value\"}");
+		ChatCompletionChunk current = createChunkWithToolCall("request-1", "tool-1", "function-1",
+				"{\"param\":\"value\"}");
 
 		// Use helper with non-incremental output
 		ChatCompletionChunk result = helper.merge(previous, current);
@@ -156,16 +152,15 @@ public class DashScopeAiStreamFunctionCallingHelperTests {
 		assertNotNull(result);
 		assertEquals("request-1", result.requestId());
 		assertNotNull(result.output().choices());
-		assertEquals(1, result.output().choices().size());
-		assertNull(result.output().choices().get(0).message());
+		assertEquals(0, result.output().choices().size());
 	}
 
 	@Test
 	void testMergeWithNonIncrementalOutputFinished() {
 		// Test merging of finished tool calls in non-incremental output mode
 		ChatCompletionChunk previous = createChunkWithToolCall("request-1", "tool-1", "function-1", "{\"param");
-		ChatCompletionChunk current = createChunkWithToolCall("request-1", "tool-1", "function-1", "\":\"value\"}",
-				ChatCompletionFinishReason.TOOL_CALLS);
+		ChatCompletionChunk current = createChunkWithToolCall("request-1", "tool-1", "function-1",
+				"{\"param\":\"value\"}", ChatCompletionFinishReason.TOOL_CALLS);
 
 		// Use helper with non-incremental output
 		ChatCompletionChunk result = helper.merge(previous, current);
@@ -182,7 +177,7 @@ public class DashScopeAiStreamFunctionCallingHelperTests {
 		assertEquals(1, toolCalls.size());
 		assertEquals("tool-1", toolCalls.get(0).id());
 		assertEquals("function-1", toolCalls.get(0).function().name());
-		assertEquals("\":\"value\"}", toolCalls.get(0).function().arguments());
+		assertEquals("{\"param\":\"value\"}", toolCalls.get(0).function().arguments());
 	}
 
 	@Test
