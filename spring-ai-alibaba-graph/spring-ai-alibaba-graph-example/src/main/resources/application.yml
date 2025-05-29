@@ -25,7 +25,7 @@ spring:
     alibaba:
       toolcalling:
         weather:
-          enabled: enable
+          enabled: true
           api-key: ${WEATHER_API_KEY}
     dashscope:
       api-key: ${DASH_SCOPE_API_KEY}
