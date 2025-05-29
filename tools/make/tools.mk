@@ -36,6 +36,11 @@ tools: ## Install ci tools
 	pip install yamllint==1.35.1
 
 	@echo "Installing gitleaks"
-	mkdir -p tools/bin && cd tools/bin && \
-	ls && git clone https://github.com/gitleaks/gitleaks && pwd && ls && cd gitleaks && \
-	make build && chmod +X gitleaks && gitleaks --version
+	mkdir -p tools/bin && \
+	cd tools/bin && \
+	git clone https://github.com/gitleaks/gitleaks && \
+	cd gitleaks && \
+	make build && \
+	chmod +x gitleaks
+
+	/home/runner/work/spring-ai-alibaba/spring-ai-alibaba/tools/bin/gitleaks/gitleaks --version
