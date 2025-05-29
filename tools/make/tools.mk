@@ -42,5 +42,5 @@ tools: ## Install ci tools
 	cd gitleaks && \
 	make build && \
 	chmod +x gitleaks && \
-	cp gitleaks ../../../../../gitleaks
+	cp gitleaks /usr/local/bin
 	./gitleaks --version
