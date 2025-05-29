@@ -27,13 +27,11 @@
     <packaging>pom</packaging>
     <name>Spring AI Alibaba Prompt</name>
     <description>Spring AI Alibaba Prompt module</description>
-
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
 
     <modules>
         <module>spring-ai-alibaba-prompt-nacos</module>
     </modules>
-
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
         <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
