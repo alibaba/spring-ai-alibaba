@@ -15,11 +15,30 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import java.util.Map;
-
+/**
+ * Factory interface for creating instances of {@link OverAllState}.
+ *
+ * <p>
+ * {@link OverAllStateFactory} provides a functional interface for generating new
+ * instances of the overall state used in graph-based workflows. This can be useful for
+ * initializing states with specific configurations, such as setting default values or
+ * applying custom strategies.
+ *
+ * <h2>Usage Example</h2> <pre>{@code
+ * OverAllStateFactory factory = () -> new OverAllState();
+ * OverAllState state = factory.create();
+ * }</pre>
+ *
+ * @author disaster
+ * @since 1.0.0.1
+ */
 @FunctionalInterface
 public interface OverAllStateFactory {
 
+	/**
+	 * Creates a new instance of {@link OverAllState}.
+	 * @return a new instance of the overall state
+	 */
 	OverAllState create();
 
 }

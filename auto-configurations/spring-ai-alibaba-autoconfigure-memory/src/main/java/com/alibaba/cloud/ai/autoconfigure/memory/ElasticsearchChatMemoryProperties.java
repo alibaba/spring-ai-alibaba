@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.memory.elasticsearch;
+
+package com.alibaba.cloud.ai.autoconfigure.memory;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Configuration class for Elasticsearch document reader. Contains all necessary settings
- * to connect to and query Elasticsearch.
- *
- * @author brianxiadong
- * @since 0.0.1
+ * Configuration properties for ElasticSearch chat memory.
  */
-public class ElasticsearchConfig {
+@ConfigurationProperties(prefix = "spring.ai.memory.elasticsearch")
+public class ElasticsearchChatMemoryProperties {
 
 	/**
 	 * Elasticsearch host URL
@@ -72,12 +72,11 @@ public class ElasticsearchConfig {
 	 */
 	private String scheme = "http";
 
-	// Getters and Setters
 	public String getHost() {
 		return host;
 	}
 
-	public void setHost(String host) {
+	public void setHost(final String host) {
 		this.host = host;
 	}
 
@@ -85,7 +84,7 @@ public class ElasticsearchConfig {
 		return port;
 	}
 
-	public void setPort(int port) {
+	public void setPort(final int port) {
 		this.port = port;
 	}
 
@@ -93,7 +92,7 @@ public class ElasticsearchConfig {
 		return nodes;
 	}
 
-	public void setNodes(List<String> nodes) {
+	public void setNodes(final List<String> nodes) {
 		this.nodes = nodes;
 	}
 
@@ -101,7 +100,7 @@ public class ElasticsearchConfig {
 		return index;
 	}
 
-	public void setIndex(String index) {
+	public void setIndex(final String index) {
 		this.index = index;
 	}
 
@@ -109,7 +108,7 @@ public class ElasticsearchConfig {
 		return queryField;
 	}
 
-	public void setQueryField(String queryField) {
+	public void setQueryField(final String queryField) {
 		this.queryField = queryField;
 	}
 
@@ -117,7 +116,7 @@ public class ElasticsearchConfig {
 		return username;
 	}
 
-	public void setUsername(String username) {
+	public void setUsername(final String username) {
 		this.username = username;
 	}
 
@@ -125,7 +124,7 @@ public class ElasticsearchConfig {
 		return password;
 	}
 
-	public void setPassword(String password) {
+	public void setPassword(final String password) {
 		this.password = password;
 	}
 
@@ -133,7 +132,7 @@ public class ElasticsearchConfig {
 		return maxResults;
 	}
 
-	public void setMaxResults(int maxResults) {
+	public void setMaxResults(final int maxResults) {
 		this.maxResults = maxResults;
 	}
 
@@ -141,7 +140,7 @@ public class ElasticsearchConfig {
 		return scheme;
 	}
 
-	public void setScheme(String scheme) {
+	public void setScheme(final String scheme) {
 		this.scheme = scheme;
 	}
 

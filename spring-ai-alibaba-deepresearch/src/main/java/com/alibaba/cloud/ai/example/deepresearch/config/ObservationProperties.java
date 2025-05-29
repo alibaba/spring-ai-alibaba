@@ -14,20 +14,27 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.model;
+package com.alibaba.cloud.ai.example.deepresearch.config;
 
-import java.util.List;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * @author yingzi
- * @date 2025/5/27 16:10
+ * @author Allen Hu
+ * @since 0.1.0
  */
+@ConfigurationProperties(prefix = ObservationProperties.PREFIX)
+public class ObservationProperties {
 
-public record ChatMessage(String role, List<ContentItem> conents) {
-	public record ContentItem(
-			/**
-			 * 指明类型是text or image
-			 */
-			String type, String text, String imageUrl) {
+	public static final String PREFIX = DeepResearchProperties.PREFIX + ".observation";
+
+	private boolean enabled;
+
+	public boolean isEnabled() {
+		return enabled;
 	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
+
 }
