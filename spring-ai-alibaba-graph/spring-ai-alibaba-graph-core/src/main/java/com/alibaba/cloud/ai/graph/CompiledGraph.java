@@ -59,23 +59,29 @@ import org.springframework.util.CollectionUtils;
 public class CompiledGraph {
 
 	private static final Logger log = LoggerFactory.getLogger(CompiledGraph.class);
+
 	/**
 	 * The State graph.
 	 */
 	public final StateGraph stateGraph;
+
 	/**
 	 * The Compile config.
 	 */
 	public final CompileConfig compileConfig;
+
 	/**
 	 * The Nodes.
 	 */
 	final Map<String, AsyncNodeActionWithConfig> nodes = new LinkedHashMap<>();
+
 	/**
 	 * The Edges.
 	 */
 	final Map<String, EdgeValue> edges = new LinkedHashMap<>();
+
 	private final OverAllState overAllState;
+
 	private final ProcessedNodesEdgesAndConfig processedData;
 
 	private int maxIterations = 25;
