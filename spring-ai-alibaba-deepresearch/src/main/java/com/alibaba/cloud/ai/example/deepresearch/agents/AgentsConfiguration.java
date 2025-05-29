@@ -18,10 +18,12 @@ package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.example.deepresearch.tool.WebSearchTool;
+import com.alibaba.cloud.ai.example.deepresearch.tool.tavily.TavilySearchApi;
 import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,12 +67,11 @@ public class AgentsConfiguration {
 	// }
 
 	@Bean
-	public ToolCallbackProvider tavilySearchServiceCallbackProvider(GenericApplicationContext applicationContext) {
-		SpringBeanToolCallbackResolver springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
-			.applicationContext(applicationContext)
-			.build();
-		ToolCallback tavilySearch = springBeanToolCallbackResolver.resolve("tavilySearchApi");
-		return ToolCallbackProvider.from(tavilySearch);
+	public ToolCallbackProvider tavilySearchServiceCallbackProvider(TavilySearchApi tavilySearchApi) {
+		return ToolCallbackProvider.from(FunctionToolCallback.builder("tavilySearchApi", tavilySearchApi)
+			.description("Use Tavily Search to search something. The input String is what you want to search.")
+			.inputType(String.class)
+			.build());
 	}
 
 	@Bean
