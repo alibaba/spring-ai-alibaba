@@ -82,7 +82,7 @@ public class CompiledGraph {
 	 */
 	public final StateGraph stateGraph;
 
-	private final OverAllState overAllState;
+	private  OverAllState overAllState;
 
 	/**
 	 * The Nodes.
@@ -114,79 +114,79 @@ public class CompiledGraph {
 		this.overAllState = Objects.nonNull(stateGraph.getOverAllStateFactory())
 				? stateGraph.getOverAllStateFactory().create() : stateGraph.getOverAllState();
 
-		this.processedData = ProcessedNodesEdgesAndConfig.process(stateGraph, compileConfig);
+		this.processedData = ProcessedNodesEdgesAndConfig.process( stateGraph, compileConfig );
 
 		// CHECK INTERRUPTIONS
-		for (String interruption : processedData.interruptsBefore()) {
-			if (!processedData.nodes().anyMatchById(interruption)) {
+		for (String interruption : processedData.interruptsBefore() ) {
+			if (!processedData.nodes().anyMatchById( interruption )) {
 				throw StateGraph.Errors.interruptionNodeNotExist.exception(interruption);
 			}
 		}
-		for (String interruption : processedData.interruptsAfter()) {
-			if (!processedData.nodes().anyMatchById(interruption)) {
+		for (String interruption : processedData.interruptsBefore() ) {
+			if (!processedData.nodes().anyMatchById( interruption )) {
 				throw StateGraph.Errors.interruptionNodeNotExist.exception(interruption);
 			}
 		}
 
 		// RE-CREATE THE EVENTUALLY UPDATED COMPILE CONFIG
 		this.compileConfig = CompileConfig.builder(compileConfig)
-			.interruptsBefore(processedData.interruptsBefore())
-			.interruptsAfter(processedData.interruptsAfter())
-			.build();
+				.interruptsBefore(processedData.interruptsBefore())
+				.interruptsAfter(processedData.interruptsAfter())
+				.build();
 
 		// EVALUATES NODES
-		for (var n : processedData.nodes().elements) {
+		for (var n : processedData.nodes().elements ) {
 			var factory = n.actionFactory();
 			Objects.requireNonNull(factory, format("action factory for node id '%s' is null!", n.id()));
 			nodes.put(n.id(), factory.apply(compileConfig));
 		}
 
 		// EVALUATE EDGES
-		for (var e : processedData.edges().elements) {
+		for( var e : processedData.edges().elements ) {
 			var targets = e.targets();
 			if (targets.size() == 1) {
 				edges.put(e.sourceId(), targets.get(0));
 			}
 			else {
-				Supplier<Stream<EdgeValue>> parallelNodeStream = () -> targets.stream()
-					.filter(target -> nodes.containsKey(target.id()));
+				Supplier<Stream<EdgeValue>> parallelNodeStream = () ->
+						targets.stream().filter( target -> nodes.containsKey(target.id()) );
 
 				var parallelNodeEdges = parallelNodeStream.get()
-					.map(target -> new Edge(target.id()))
-					.filter(ee -> processedData.edges().elements.contains(ee))
-					.map(ee -> processedData.edges().elements.indexOf(ee))
-					.map(index -> processedData.edges().elements.get(index))
-					.toList();
+						.map( target -> new Edge(target.id()))
+						.filter( ee -> processedData.edges().elements.contains( ee ) )
+						.map(  ee -> processedData.edges().elements.indexOf( ee ) )
+						.map( index -> processedData.edges().elements.get(index) )
+						.toList();
 
-				var parallelNodeTargets = parallelNodeEdges.stream()
-					.map(ee -> ee.target().id())
-					.collect(Collectors.toSet());
+				var  parallelNodeTargets = parallelNodeEdges.stream()
+						.map( ee -> ee.target().id() )
+						.collect(Collectors.toSet());
 
-				if (parallelNodeTargets.size() > 1) {
+				if( parallelNodeTargets.size() > 1  ) {
 
 					var conditionalEdges = parallelNodeEdges.stream()
-						.filter(ee -> ee.target().value() != null)
-						.toList();
-					if (!conditionalEdges.isEmpty()) {
-						throw StateGraph.Errors.unsupportedConditionalEdgeOnParallelNode.exception(e.sourceId(),
-								conditionalEdges.stream().map(Edge::sourceId).toList());
+							.filter( ee -> ee.target().value() != null )
+							.toList();
+					if(!conditionalEdges.isEmpty()) {
+						throw StateGraph.Errors.unsupportedConditionalEdgeOnParallelNode.exception(
+								e.sourceId(),
+								conditionalEdges.stream().map(Edge::sourceId).toList() );
 					}
-					throw StateGraph.Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(),
-							parallelNodeTargets);
+					throw StateGraph.Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), parallelNodeTargets );
 				}
 
 				var actions = parallelNodeStream.get()
-					// .map( target -> nodes.remove(target.id()) )
-					.map(target -> nodes.get(target.id()))
-					.toList();
+						//.map( target -> nodes.remove(target.id()) )
+						.map( target -> nodes.get(target.id()) )
+						.toList();
 
-				var parallelNode = new ParallelNode(e.sourceId(), actions, overAllState().keyStrategies());
+				var parallelNode = new ParallelNode( e.sourceId(), actions, overAllState().keyStrategies() );
 
-				nodes.put(parallelNode.id(), parallelNode.actionFactory().apply(compileConfig));
+				nodes.put( parallelNode.id(), parallelNode.actionFactory().apply(compileConfig) );
 
-				edges.put(e.sourceId(), new EdgeValue(parallelNode.id()));
+				edges.put( e.sourceId(), new EdgeValue( parallelNode.id() ) );
 
-				edges.put(parallelNode.id(), new EdgeValue(parallelNodeTargets.iterator().next()));
+				edges.put( parallelNode.id(), new EdgeValue( parallelNodeTargets.iterator().next() ));
 
 			}
 
@@ -445,7 +445,10 @@ public class CompiledGraph {
 	 * Optional
 	 */
 	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config) {
-		return stream(inputs, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
+		return stream(inputs, config)
+				.stream()
+				.reduce((a, b) -> b)
+				.map(NodeOutput::state);
 	}
 
 	/**
@@ -455,7 +458,11 @@ public class CompiledGraph {
 	 * @return the optional
 	 */
 	public Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) {
-		return stream(overAllState, config).stream().reduce((a, b) -> b).map(NodeOutput::state);
+		this.overAllState = overAllState;
+		return stream(overAllState, config)
+				.stream()
+				.reduce((a, b) -> b)
+				.map(NodeOutput::state);
 	}
 
 	/**
@@ -465,7 +472,7 @@ public class CompiledGraph {
 	 * Optional
 	 */
 	public Optional<OverAllState> invoke(Map<String, Object> inputs) {
-		return this.invoke(overAllState.input(inputs), RunnableConfig.builder().build());
+		return this.invoke(overAllState().input(inputs), RunnableConfig.builder().build());
 	}
 
 	/**
@@ -621,6 +628,13 @@ public class CompiledGraph {
 			}
 		}
 
+		private Optional<BaseCheckpointSaver.Tag> releaseThread() throws Exception {
+			if(compileConfig.releaseThread() && compileConfig.checkpointSaver().isPresent() ) {
+				return Optional.of(compileConfig.checkpointSaver().get().release( config ));
+			}
+			return Optional.empty();
+		}
+
 		/**
 		 * Build node output output.
 		 * @param nodeId the node id
@@ -628,7 +642,7 @@ public class CompiledGraph {
 		 */
 		@SuppressWarnings("unchecked")
 		protected Output buildNodeOutput(String nodeId) {
-			return (Output) NodeOutput.of(nodeId, overAllState);
+			return (Output) NodeOutput.of(nodeId, this.overAllState);
 		}
 
 		/**
@@ -639,7 +653,7 @@ public class CompiledGraph {
 		 */
 		@SuppressWarnings("unchecked")
 		protected Output buildStateSnapshot(Checkpoint checkpoint) throws Exception {
-			return (Output) StateSnapshot.of(overAllState(), checkpoint, config, stateGraph.getStateFactory());
+			return (Output) StateSnapshot.of(this.overAllState, checkpoint, config, stateGraph.getStateFactory());
 		}
 
 		@SuppressWarnings("unchecked")
@@ -667,7 +681,7 @@ public class CompiledGraph {
 										"Embedded generator must return a Map or NodeOutput");
 							}
 						}
-						overAllState().updateState(partialState);
+						this.overAllState.updateState(partialState);
 						nextNodeId = nextNodeId(currentNodeId, currentState);
 						resumedFromEmbed = true;
 					});
@@ -687,9 +701,9 @@ public class CompiledGraph {
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 			var intermediateState = OverAllState.updateState(currentState, partialStateWithoutGenerator,
-					overAllState().keyStrategies());
-			overAllState().updateState(intermediateState);
-			currentState = OverAllState.updateState(intermediateState, data, overAllState().keyStrategies());
+					this.overAllState.keyStrategies());
+			this.overAllState.updateState(intermediateState);
+			currentState = OverAllState.updateState(intermediateState, data, this.overAllState.keyStrategies());
 		}
 
 		private CompletableFuture<Data<Output>> evaluateAction(AsyncNodeActionWithConfig action,
@@ -703,8 +717,8 @@ public class CompiledGraph {
 						return embed.get();
 					}
 
-					currentState = overAllState().updateState(partialState);
-					nextNodeId = nextNodeId(currentNodeId, currentState, overAllState());
+					currentState = this.overAllState.updateState(partialState);
+					nextNodeId = nextNodeId(currentNodeId, currentState, this.overAllState);
 
 					return Data.of(getNodeOutput());
 				}
@@ -722,7 +736,7 @@ public class CompiledGraph {
 
 			return action.apply(withState).thenApply(partialState -> {
 				try {
-					currentState = OverAllState.updateState(currentState, partialState, overAllState().keyStrategies());
+					currentState = OverAllState.updateState(currentState, partialState, this.overAllState.keyStrategies());
 					nextNodeId = nextNodeId(currentNodeId, currentState);
 
 					Optional<Checkpoint> cp = addCheckpoint(config, currentNodeId, currentState, nextNodeId);
@@ -745,43 +759,55 @@ public class CompiledGraph {
 
 		@Override
 		public Data<Output> next() {
-			// GUARD: CHECK MAX ITERATION REACHED
-			if (++iteration > maxIterations) {
-				log.warn("Maximum number of iterations ({}) reached!", maxIterations);
-				return Data.done(currentState);
-			}
-
-			// GUARD: CHECK IF IT IS END
-			if (nextNodeId == null && currentNodeId == null)
-				return Data.done(currentState);
-
 			try {
+				// GUARD: CHECK MAX ITERATION REACHED
+				if( ++iteration > maxIterations ) {
+					// log.warn( "Maximum number of iterations ({}) reached!", maxIterations);
+					return Data.error( new IllegalStateException( format("Maximum number of iterations (%d) reached!", maxIterations)) );
+				}
+
+				// GUARD: CHECK IF IT IS END
+				if( nextNodeId == null &&  currentNodeId == null  ) {
+					return releaseThread()
+							.map(Data::<Output>done)
+							.orElseGet( () -> Data.done(currentState) );
+				}
+
 				// IS IT A RESUME FROM EMBED ?
-				if (resumedFromEmbed) {
+				if(resumedFromEmbed) {
 					final CompletableFuture<Output> future = getNodeOutput();
 					resumedFromEmbed = false;
-					return Data.of(future);
+					return Data.of( future );
 				}
 
-				if (START.equals(currentNodeId)) {
-					nextNodeId = getEntryPoint(currentState);
+				if( START.equals(currentNodeId) ) {
+					nextNodeId = getEntryPoint( currentState );
+
+					var cp = addCheckpoint( config, START, currentState, nextNodeId );
+
+					var output =  ( cp.isPresent() && config.streamMode() == StreamMode.SNAPSHOTS) ?
+							buildStateSnapshot(cp.get()) :
+							buildNodeOutput( currentNodeId );
+
 					currentNodeId = nextNodeId;
-					addCheckpoint(config, START, currentState, nextNodeId);
-					return Data.of(buildNodeOutput(START));
+
+					return Data.of( output );
 				}
 
-				if (END.equals(nextNodeId)) {
+				if( END.equals(nextNodeId) ) {
 					nextNodeId = null;
 					currentNodeId = null;
-					return Data.of(buildNodeOutput(END));
+					return Data.of( buildNodeOutput( END ) );
 				}
 
 				// check on previous node
-				if (shouldInterruptAfter(currentNodeId, nextNodeId))
-					return Data.done();
+				if( shouldInterruptAfter( currentNodeId, nextNodeId )) {
+					return Data.done(currentNodeId);
+				}
 
-				if (shouldInterruptBefore(nextNodeId, currentNodeId))
-					return Data.done();
+				if( shouldInterruptBefore( nextNodeId, currentNodeId ) ) {
+					return Data.done(currentNodeId);
+				}
 
 				currentNodeId = nextNodeId;
 
@@ -790,15 +816,10 @@ public class CompiledGraph {
 				if (action == null)
 					throw StateGraph.RunnableErrors.missingNode.exception(currentNodeId);
 
-				return evaluateAction(action, overAllState()).get();
+				return evaluateAction(action, cloneState(currentState) ).get();
 			}
-			catch (Exception e) {
-				if (e instanceof ExecutionException executionException
-						&& executionException.getCause() instanceof GraphInterruptException interruptException) {
-					overAllState.setInterruptMessage(interruptException.getMessage());
-					return Data.done(buildNodeOutput(currentNodeId));
-				}
-				log.error(e.getMessage(), e);
+			catch( Exception e ) {
+				log.error( e.getMessage(), e );
 				return Data.error(e);
 			}
 
@@ -835,16 +856,16 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 
 		var subgraphNodes = stateGraph.nodes.onlySubStateGraphNodes();
 
-		if (subgraphNodes.isEmpty()) {
-			return new ProcessedNodesEdgesAndConfig(stateGraph, config);
+		if( subgraphNodes.isEmpty() ) {
+			return new ProcessedNodesEdgesAndConfig( stateGraph, config );
 		}
 
 		var interruptsBefore = config.interruptsBefore();
 		var interruptsAfter = config.interruptsAfter();
-		var nodes = new StateGraph.Nodes(stateGraph.nodes.exceptSubStateGraphNodes());
-		var edges = new StateGraph.Edges(stateGraph.edges.elements);
+		var nodes = new StateGraph.Nodes( stateGraph.nodes.exceptSubStateGraphNodes() );
+		var edges = new StateGraph.Edges( stateGraph.edges.elements);
 
-		for (var subgraphNode : subgraphNodes) {
+		for( var subgraphNode : subgraphNodes ) {
 
 			var sgWorkflow = subgraphNode.subGraph();
 
@@ -853,37 +874,39 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 			//
 			var sgEdgeStart = sgWorkflow.edges.edgeBySourceId(START).orElseThrow();
 
-			if (sgEdgeStart.isParallel()) {
-				throw new GraphStateException("subgraph not support start with parallel branches yet!");
+			if( sgEdgeStart.isParallel() ) {
+				throw new GraphStateException( "subgraph not support start with parallel branches yet!"  );
 			}
 
 			var sgEdgeStartTarget = sgEdgeStart.target();
 
-			if (sgEdgeStartTarget.id() == null) {
-				throw new GraphStateException(format("the target for node '%s' is null!", subgraphNode.id()));
+			if( sgEdgeStartTarget.id() == null ) {
+				throw new GraphStateException( format("the target for node '%s' is null!", subgraphNode.id())  );
 			}
 
-			var sgEdgeStartRealTargetId = subgraphNode.formatId(sgEdgeStartTarget.id());
+			var sgEdgeStartRealTargetId = subgraphNode.formatId( sgEdgeStartTarget.id()  );
 
 			// Process Interruption (Before) Subgraph(s)
-			interruptsBefore = interruptsBefore.stream()
-				.map(interrupt -> Objects.equals(subgraphNode.id(), interrupt) ? sgEdgeStartRealTargetId : interrupt)
-				.collect(Collectors.toUnmodifiableSet());
+			interruptsBefore = interruptsBefore.stream().map( interrupt ->
+					Objects.equals( subgraphNode.id(), interrupt ) ?
+							sgEdgeStartRealTargetId :
+							interrupt
+			).collect(Collectors.toUnmodifiableSet());
 
-			var edgesWithSubgraphTargetId = stateGraph.edges.edgesByTargetId(subgraphNode.id());
+			var edgesWithSubgraphTargetId =  edges.edgesByTargetId( subgraphNode.id() );
 
-			if (edgesWithSubgraphTargetId.isEmpty()) {
-				throw new GraphStateException(
-						format("the node '%s' is not present as target in graph!", subgraphNode.id()));
+			if( edgesWithSubgraphTargetId.isEmpty() ) {
+				throw new GraphStateException( format("the node '%s' is not present as target in graph!", subgraphNode.id())  );
 			}
 
-			for (var edgeWithSubgraphTargetId : edgesWithSubgraphTargetId) {
+			for( var edgeWithSubgraphTargetId : edgesWithSubgraphTargetId  ) {
 
-				var newEdge = edgeWithSubgraphTargetId.withSourceAndTargetIdsUpdated(subgraphNode, Function.identity(),
-						id -> new EdgeValue((Objects.equals(id, subgraphNode.id())
-								? subgraphNode.formatId(sgEdgeStartTarget.id()) : id)));
+				var newEdge = edgeWithSubgraphTargetId.withSourceAndTargetIdsUpdated( subgraphNode,
+						Function.identity(),
+						id -> new EdgeValue( (Objects.equals( id, subgraphNode.id() ) ?
+								subgraphNode.formatId( sgEdgeStartTarget.id()  ) : id)));
 				edges.elements.remove(edgeWithSubgraphTargetId);
-				edges.elements.add(newEdge);
+				edges.elements.add( newEdge );
 
 			}
 			//
@@ -891,50 +914,60 @@ record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edg
 			//
 			var sgEdgesEnd = sgWorkflow.edges.edgesByTargetId(END);
 
-			var edgeWithSubgraphSourceId = stateGraph.edges.edgeBySourceId(subgraphNode.id()).orElseThrow();
+			var edgeWithSubgraphSourceId = edges.edgeBySourceId( subgraphNode.id() ).orElseThrow();
 
-			if (edgeWithSubgraphSourceId.isParallel()) {
-				throw new GraphStateException("subgraph not support routes to parallel branches yet!");
+			if( edgeWithSubgraphSourceId.isParallel() ) {
+				throw new GraphStateException( "subgraph not support routes to parallel branches yet!" );
 			}
 
 			// Process Interruption (After) Subgraph(s)
-			if (interruptsAfter.contains(subgraphNode.id())) {
+			if( interruptsAfter.contains(subgraphNode.id()) ) {
 
-				var exceptionMessage = (edgeWithSubgraphSourceId.target()
-					.id() == null) ? "'interruption after' on subgraph is not supported yet!" : format(
-							"'interruption after' on subgraph is not supported yet! consider to use 'interruption before' node: '%s'",
-							edgeWithSubgraphSourceId.target().id());
-				throw new GraphStateException(exceptionMessage);
+				var exceptionMessage = ( edgeWithSubgraphSourceId.target().id()==null ) ?
+						"'interruption after' on subgraph is not supported yet!" :
+						format("'interruption after' on subgraph is not supported yet! consider to use 'interruption before' node: '%s'",
+								edgeWithSubgraphSourceId.target().id());
+				throw new GraphStateException( exceptionMessage );
 
 			}
 
 			sgEdgesEnd.stream()
-				.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
-						id -> (Objects.equals(id, END) ? edgeWithSubgraphSourceId.target()
-								: new EdgeValue(subgraphNode.formatId(id)))))
-				.forEach(edges.elements::add);
+					.map( e -> e.withSourceAndTargetIdsUpdated( subgraphNode,
+							subgraphNode::formatId,
+							id  -> (Objects.equals(id,END) ?
+									edgeWithSubgraphSourceId.target() :
+									new EdgeValue(subgraphNode.formatId(id)) ) )
+					)
+					.forEach( edges.elements::add);
 			edges.elements.remove(edgeWithSubgraphSourceId);
+
 
 			//
 			// Process edges
 			//
 			sgWorkflow.edges.elements.stream()
-				.filter(e -> !Objects.equals(e.sourceId(), START))
-				.filter(e -> !e.anyMatchByTargetId(END))
-				.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
-						id -> new EdgeValue(subgraphNode.formatId(id))))
-				.forEach(edges.elements::add);
+					.filter( e -> !Objects.equals( e.sourceId(),START) )
+					.filter( e -> !e.anyMatchByTargetId(END) )
+					.map( e ->
+							e.withSourceAndTargetIdsUpdated( subgraphNode,
+									subgraphNode::formatId,
+									id  -> new EdgeValue( subgraphNode.formatId(id))) )
+					.forEach(edges.elements::add);
 
 			//
 			// Process nodes
 			//
 			sgWorkflow.nodes.elements.stream()
-				.map(n -> n.withIdUpdated(subgraphNode::formatId))
-				.forEach(nodes.elements::add);
+					.map( n -> n.withIdUpdated( subgraphNode::formatId) )
+					.forEach(nodes.elements::add);
 
 		}
 
-		return new ProcessedNodesEdgesAndConfig(nodes, edges, interruptsBefore, interruptsAfter);
+		return  new ProcessedNodesEdgesAndConfig(
+				nodes,
+				edges,
+				interruptsBefore,
+				interruptsAfter );
 
 	}
 

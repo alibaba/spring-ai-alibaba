@@ -387,7 +387,7 @@ public class StateGraphTest {
 			.addEdge("A1", "B")
 			.addEdge("A2", "B")
 			.addEdge("A3", "B")
-			.addEdge("B", "C")
+			.addEdge("B","C")
 			.addEdge(START, "A1")
 			.addEdge(START, "A2")
 			.addEdge(START, "A3")
