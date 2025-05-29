@@ -20,11 +20,11 @@ import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.IntStream;
@@ -34,7 +34,7 @@ import static java.util.Collections.unmodifiableCollection;
 
 public class MemorySaver implements BaseCheckpointSaver {
 
-	private final Map<String, LinkedList<Checkpoint>> _checkpointsByThread = new HashMap<>();
+	private final Map<String, LinkedList<Checkpoint>> _checkpointsByThread = new ConcurrentHashMap<>();
 
 	private final LinkedList<Checkpoint> _defaultCheckpoints = new LinkedList<>();
 
@@ -52,15 +52,9 @@ public class MemorySaver implements BaseCheckpointSaver {
 	}
 
 	protected LinkedList<Checkpoint> getCheckpoints(RunnableConfig config) {
-		w.lock();
-		try {
-			return config.threadId()
-				.map(threadId -> _checkpointsByThread.computeIfAbsent(threadId, k -> new LinkedList<>()))
-				.orElse(_defaultCheckpoints);
-		}
-		finally {
-			w.unlock();
-		}
+		return config.threadId()
+			.map(threadId -> _checkpointsByThread.computeIfAbsent(threadId, k -> new LinkedList<>()))
+			.orElse(_defaultCheckpoints);
 	}
 
 	@Override

@@ -21,8 +21,8 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.alibaba.cloud.ai.example.graph.bigtool.agent.Tool;
 import org.jsoup.Jsoup;
@@ -36,8 +36,8 @@ import org.jsoup.select.Elements;
 public class MethodUtils {
 
 	// Cache for retrieved Javadoc to avoid repeated requests
-	private static final Map<String, String> JAVADOC_CACHE = new HashMap<>();
-	static HashMap<String, String> methodMap;
+	private static final Map<String, String> JAVADOC_CACHE = new ConcurrentHashMap<>();
+	static ConcurrentHashMap<String, String> methodMap;
 
 	static {
 		try {
@@ -149,7 +149,7 @@ public class MethodUtils {
 	 * Fetch Javadoc for Math class methods from Oracle's online documentation
 	 * @return Method Javadoc descriptions
 	 */
-	private static HashMap<String, String> fetchMathMethodJavadoc() throws Exception {
+	private static ConcurrentHashMap<String, String> fetchMathMethodJavadoc() throws Exception {
 
 		// Network request implementation to get documentation (simplified version)
 		try {
@@ -162,7 +162,7 @@ public class MethodUtils {
 			connection.setConnectTimeout(5000);
 			connection.setReadTimeout(5000);
 
-			HashMap<String, String> stringObjectHashMap = new HashMap<>();
+			ConcurrentHashMap<String, String> stringObjectHashMap = new ConcurrentHashMap<>();
 			int status = connection.getResponseCode();
 			if (status == 200) {
 				BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
