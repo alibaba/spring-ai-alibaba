@@ -65,9 +65,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_PARSER_NAME;
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.HEADER_WORK_SPACE_ID;
+import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.*;
 
 /**
  * @author nuocheng.lxm
@@ -99,8 +97,6 @@ public class DashScopeApi {
 	private final WebClient webClient;
 
 	private final ResponseErrorHandler responseErrorHandler;
-
-	private DashScopeAiStreamFunctionCallingHelper chunkMerger = new DashScopeAiStreamFunctionCallingHelper();
 
 	/**
 	 * Returns a builder pre-populated with the current configuration for mutation.
@@ -1417,7 +1413,8 @@ public class DashScopeApi {
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 		boolean incrementalOutput = chatRequest.parameters() != null
 				&& chatRequest.parameters().incrementalOutput != null && chatRequest.parameters().incrementalOutput;
-
+		DashScopeAiStreamFunctionCallingHelper chunkMerger = new DashScopeAiStreamFunctionCallingHelper(
+				incrementalOutput);
 		String uri = "/api/v1/services/aigc/text-generation/generation";
 		if (chatRequest.multiModel()) {
 			uri = "/api/v1/services/aigc/multimodal-generation/generation";
