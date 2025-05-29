@@ -79,7 +79,7 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 
 			logger.info("baidu search: {},result number:{}", request.query, results.size());
 			for (SearchResult d : results) {
-				logger.info("{}\n{}", d.title(), d.abstractText());
+				logger.info("{}\n{}\n{}", d.title(), d.abstractText(), d.sourceUrl());
 			}
 			return new Response(results.subList(0, Math.min(results.size(), limit)));
 		}, logger);
@@ -98,6 +98,7 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 				}
 				String title = "";
 				String abstractText = "";
+				String sourceUrl = div.attr("mu");
 
 				try {
 					if (div.hasClass("xpath-log") || div.hasClass("result-op")) {
@@ -145,7 +146,7 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 					continue;
 				}
 
-				listData.add(new SearchResult(title, abstractText));
+				listData.add(new SearchResult(title, abstractText, sourceUrl));
 			}
 
 			return listData;
@@ -173,7 +174,7 @@ public class BaiduSearchService implements Function<BaiduSearchService.Request, 
 
 	}
 
-	public record SearchResult(String title, String abstractText) {
+	public record SearchResult(String title, String abstractText, String sourceUrl) {
 
 	}
 
