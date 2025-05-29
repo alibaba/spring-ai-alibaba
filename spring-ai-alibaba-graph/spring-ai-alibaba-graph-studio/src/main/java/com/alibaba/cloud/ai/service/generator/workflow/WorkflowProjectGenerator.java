@@ -100,15 +100,12 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 	}
 
 	private String renderStateSections(List<Variable> overallStateVars) {
-        if (overallStateVars == null || overallStateVars.isEmpty()) {
-            return "";
-        }
-        return overallStateVars.stream()
-                .map(var -> String.format(
-                        "overAllState.registerKeyAndStrategy(\"%s\", (o1, o2) -> o2);%n",
-                        var.getName()
-                ))
-                .collect(Collectors.joining());
+		if (overallStateVars == null || overallStateVars.isEmpty()) {
+			return "";
+		}
+		return overallStateVars.stream()
+			.map(var -> String.format("overAllState.registerKeyAndStrategy(\"%s\", (o1, o2) -> o2);%n", var.getName()))
+			.collect(Collectors.joining());
 	}
 
 	private String renderNodeSections(List<Node> nodes) {
@@ -134,23 +131,19 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return stringBuilder.toString();
 	}
 
-    private String renderEdgeSections(List<Edge> edges) {
-        StringBuilder sb = new StringBuilder();
-        for (Edge e : edges) {
-            // 如果 source ID 是 start，就用常量 START
-            String srcCode = "start".equals(e.getSource())
-                    ? "START"
-                    : "\"" + e.getSource() + "\"";
-            // 如果 target ID 是 answer，就用常量 END
-            String tgtCode = "answer".equals(e.getTarget())
-                    ? "END"
-                    : "\"" + e.getTarget() + "\"";
+	private String renderEdgeSections(List<Edge> edges) {
+		StringBuilder sb = new StringBuilder();
+		for (Edge e : edges) {
+			// 如果 source ID 是 start，就用常量 START
+			String srcCode = "start".equals(e.getSource()) ? "START" : "\"" + e.getSource() + "\"";
+			// 如果 target ID 是 answer，就用常量 END
+			String tgtCode = "answer".equals(e.getTarget()) ? "END" : "\"" + e.getTarget() + "\"";
 
-            sb.append(String.format("stateGraph.addEdge(%s, %s);%n", srcCode, tgtCode));
-        }
-        sb.append("\n");
-        return sb.toString();
-    }
+			sb.append(String.format("stateGraph.addEdge(%s, %s);%n", srcCode, tgtCode));
+		}
+		sb.append("\n");
+		return sb.toString();
+	}
 
 	private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, String>> models, Path projectRoot,
 			ProjectDescription projectDescription) {
