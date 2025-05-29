@@ -40,3 +40,5 @@ tools: ## Install ci tools
 	cd tools/bin
 	git clone https://github.com/gitleaks/gitleaks
 	cd gitleaks && make build
+	ls
+	./gitleaks version
