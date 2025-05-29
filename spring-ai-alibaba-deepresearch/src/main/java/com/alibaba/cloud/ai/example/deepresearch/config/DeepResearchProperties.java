@@ -23,8 +23,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Allen Hu
  * @date 2025/5/24
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.deepreserch")
+@ConfigurationProperties(prefix = DeepResearchProperties.PREFIX)
 public class DeepResearchProperties {
+
+	public static final String PREFIX = "spring.ai.alibaba.deepreserch";
 
 	/**
 	 * Set the type of background investigation node. Default is: just_web_search
