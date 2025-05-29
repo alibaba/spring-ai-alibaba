@@ -87,7 +87,6 @@ public class HttpStreamController {
 
 		// 创建 Sink 用于发送事件
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
-		Flux<ServerSentEvent<String>> flux = sink.asFlux();
 
 		// 使用 CompiledGraph 的流式功能
 		AsyncGenerator<NodeOutput> generator = compiledGraph.stream(inputData,
@@ -108,7 +107,9 @@ public class HttpStreamController {
 			return null;
 		});
 
-		return flux;
+		return sink.asFlux()
+			.doOnCancel(() -> System.out.println("Client disconnected from stream"))
+			.doOnError(e -> System.err.println("Error occurred during streaming" + e));
 	}
 
 }

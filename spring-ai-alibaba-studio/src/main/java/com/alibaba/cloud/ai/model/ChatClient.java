@@ -38,7 +38,7 @@ public class ChatClient {
 	private Map<String, Object> defaultSystemParams;
 
 	@Schema(description = "ChatModel of ChatClient")
-	private ChatModel chatModel;
+	private ChatModelConfig chatModel;
 
 	private ChatOptions chatOptions;
 

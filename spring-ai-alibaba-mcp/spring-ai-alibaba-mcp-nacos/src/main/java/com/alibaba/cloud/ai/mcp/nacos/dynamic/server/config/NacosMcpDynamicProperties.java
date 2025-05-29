@@ -27,14 +27,22 @@ public class NacosMcpDynamicProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.nacos.dynamic";
 
-	List<String> serverNames;
+	List<String> serviceNames;
 
 	public List<String> getServerNames() {
-		return serverNames;
+		return serviceNames;
 	}
 
-	public void setServerNames(List<String> serverNames) {
-		this.serverNames = serverNames;
+	public void setServerNames(List<String> serviceNames) {
+		this.serviceNames = serviceNames;
+	}
+
+	public List<String> getServiceNames() {
+		return serviceNames;
+	}
+
+	public void setServiceNames(List<String> serviceNames) {
+		this.serviceNames = serviceNames;
 	}
 
 }

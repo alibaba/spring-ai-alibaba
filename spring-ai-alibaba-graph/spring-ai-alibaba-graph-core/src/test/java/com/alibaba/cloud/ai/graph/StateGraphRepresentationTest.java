@@ -31,14 +31,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StateGraphRepresentationTest {
 
+	// Dummy node action that returns an empty map as result
 	CompletableFuture<Map<String, Object>> dummyNodeAction(OverAllState state) {
 		return CompletableFuture.completedFuture(Map.of());
 	}
 
+	// Dummy condition function that always returns an empty string
 	CompletableFuture<String> dummyCondition(OverAllState state) {
 		return CompletableFuture.completedFuture("");
 	}
 
+	/**
+	 * Test a simple graph structure with three nodes and sequential edges. Verifies the
+	 * PlantUML representation of the graph structure.
+	 */
 	@Test
 	public void testSimpleGraph() throws Exception {
 
@@ -77,10 +83,12 @@ public class StateGraphRepresentationTest {
 				"agent_3" -down-> "agent_2"
 				@enduml
 				""", result.content());
-
-		// System.out.println( result.getContent() );
 	}
 
+	/**
+	 * Test a correction process graph with conditional edges. Verifies both PlantUML and
+	 * Mermaid representations.
+	 */
 	@Test
 	public void testCorrectionProcessGraph() throws Exception {
 
@@ -122,11 +130,12 @@ public class StateGraphRepresentationTest {
 				'"evaluate_result" .down.> "agent_review": "ERROR"
 				@enduml
 				""", result.content());
-
-		// System.out.println( result.getContent() );
-
 	}
 
+	/**
+	 * Test an agent executor graph with conditional routing. Verifies the PlantUML
+	 * representation of the graph.
+	 */
 	@Test
 	public void GenerateAgentExecutorGraph() throws Exception {
 		StateGraph workflow = new StateGraph().addNode("agent", this::dummyNodeAction)
@@ -166,10 +175,12 @@ public class StateGraphRepresentationTest {
 				"action" -down-> "agent"
 				@enduml
 				""", result.content());
-
-		// System.out.println( result.getContent() );
 	}
 
+	/**
+	 * Test a complex graph for image-to-diagram conversion. Verifies both PlantUML and
+	 * Mermaid representations.
+	 */
 	@Test
 	public void GenerateImageToDiagramGraph() throws Exception {
 		StateGraph workflow = new StateGraph().addNode("agent_describer", this::dummyNodeAction)
@@ -251,10 +262,19 @@ public class StateGraphRepresentationTest {
 				""", result.content());
 	}
 
+	/**
+	 * Creates a test node with a simple message output
+	 * @param id Node identifier
+	 * @return AsyncNodeActionWithConfig that returns a map with the node ID as message
+	 */
 	private AsyncNodeActionWithConfig makeNode(String id) {
 		return node_async((t, config) -> Map.of("messages", id));
 	}
 
+	/**
+	 * Test a graph with parallel branches. Verifies both PlantUML and Mermaid
+	 * representations.
+	 */
 	@Test
 	void testWithParallelBranch() throws Exception {
 
@@ -337,6 +357,10 @@ public class StateGraphRepresentationTest {
 				""", result.content());
 	}
 
+	/**
+	 * Test a graph with parallel branches starting from the initial node. Verifies both
+	 * PlantUML and Mermaid representations.
+	 */
 	@Test
 	void testWithParallelBranchOnStart() throws Exception {
 

@@ -53,6 +53,7 @@ public class TavilySearchApi {
 			.includeRawContent(properties.isIncludeRawContent())
 			.includeImages(properties.isIncludeImages())
 			.includeImageDescriptions(properties.isIncludeImageDescriptions())
+			.includeAnswer(properties.isIncludeAnswer())
 			.build();
 		TavilySearchResponse response = webClient.post()
 			.bodyValue(build)

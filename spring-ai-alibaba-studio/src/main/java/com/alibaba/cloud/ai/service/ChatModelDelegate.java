@@ -16,7 +16,7 @@
 package com.alibaba.cloud.ai.service;
 
 import com.alibaba.cloud.ai.common.ModelType;
-import com.alibaba.cloud.ai.model.ChatModel;
+import com.alibaba.cloud.ai.model.ChatModelConfig;
 import com.alibaba.cloud.ai.param.ModelRunActionParam;
 import com.alibaba.cloud.ai.vo.ChatModelRunResult;
 import java.util.ArrayList;
@@ -24,11 +24,11 @@ import java.util.List;
 
 public interface ChatModelDelegate {
 
-	default List<ChatModel> list() {
+	default List<ChatModelConfig> list() {
 		return new ArrayList<>();
 	}
 
-	default ChatModel getByModelName(String modelName) {
+	default ChatModelConfig getByModelName(String modelName) {
 		return null;
 	}
 

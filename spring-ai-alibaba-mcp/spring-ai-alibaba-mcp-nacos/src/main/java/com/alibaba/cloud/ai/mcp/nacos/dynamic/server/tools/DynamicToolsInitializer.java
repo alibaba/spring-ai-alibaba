@@ -50,24 +50,24 @@ public class DynamicToolsInitializer {
 	}
 
 	public List<ToolCallback> initializeTools() {
-		List<String> serverNames = nacosMcpDynamicProperties.getServerNames();
-		if (CollectionUtils.isEmpty(serverNames)) {
+		List<String> serviceNames = nacosMcpDynamicProperties.getServerNames();
+		if (CollectionUtils.isEmpty(serviceNames)) {
 			logger.warn("No service names configured, no tools will be initialized");
 			return new ArrayList<>();
 		}
 		List<ToolCallback> allTools = new ArrayList<>();
-		for (String serverName : serverNames) {
+		for (String serviceName : serviceNames) {
 			try {
-				McpServerDetailInfo mcpServerDetailInfo = nacosMcpOperationService.getServerDetail(serverName);
+				McpServerDetailInfo mcpServerDetailInfo = nacosMcpOperationService.getServerDetail(serviceName);
 				if (mcpServerDetailInfo == null) {
-					logger.warn("No server detail info found for server: {}", serverName);
+					logger.warn("No service detail info found for service: {}", serviceName);
 					continue;
 				}
 				boolean isProtocolSupported = StringUtils.equals(mcpServerDetailInfo.getProtocol(), "http")
 						|| StringUtils.equals(mcpServerDetailInfo.getProtocol(), "https");
 				if (!isProtocolSupported) {
-					logger.warn("Protocol {} is not supported, no tools will be initialized for server: {}",
-							mcpServerDetailInfo.getProtocol(), serverName);
+					logger.warn("Protocol {} is not supported, no tools will be initialized for service: {}",
+							mcpServerDetailInfo.getProtocol(), serviceName);
 					continue;
 				}
 				List<ToolCallback> tools = parseToolsFromMcpServerDetailInfo(mcpServerDetailInfo);
@@ -77,7 +77,7 @@ public class DynamicToolsInitializer {
 
 			}
 			catch (Exception e) {
-				logger.error("Failed to initialize tools for server: {}", serverName, e);
+				logger.error("Failed to initialize tools for service: {}", serviceName, e);
 			}
 		}
 		logger.info("Initial dynamic tools loading completed from nacos - Found {} tools", allTools.size());
@@ -120,7 +120,7 @@ public class DynamicToolsInitializer {
 			return toolCallbacks;
 		}
 		catch (Exception e) {
-			logger.warn("Failed to get or parse nacos mcp server tools info (mcpName {})",
+			logger.warn("Failed to get or parse nacos mcp service tools info (mcpName {})",
 					mcpServerDetailInfo.getName() + mcpServerDetailInfo.getVersionDetail().getVersion(), e);
 		}
 		return null;

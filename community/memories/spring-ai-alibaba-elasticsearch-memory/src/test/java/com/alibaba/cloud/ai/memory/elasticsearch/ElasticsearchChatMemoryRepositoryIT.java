@@ -35,6 +35,12 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
+import org.apache.http.HttpHost;
 
 import java.util.List;
 import java.util.UUID;
@@ -65,9 +71,9 @@ class ElasticsearchChatMemoryRepositoryIT {
 	 */
 	@DynamicPropertySource
 	static void registerProperties(DynamicPropertyRegistry registry) {
-		registry.add("elasticsearch.host", elasticsearchContainer::getHost);
-		registry.add("elasticsearch.port", () -> elasticsearchContainer.getMappedPort(9200));
-		registry.add("elasticsearch.scheme", () -> "http");
+		registry.add("spring.ai.memory.elasticsearch.host", elasticsearchContainer::getHost);
+		registry.add("spring.ai.memory.elasticsearch.port", () -> elasticsearchContainer.getMappedPort(9200));
+		registry.add("spring.ai.memory.elasticsearch.scheme", () -> "http");
 	}
 
 	@Autowired
@@ -279,11 +285,12 @@ class ElasticsearchChatMemoryRepositoryIT {
 
 		@Bean
 		ChatMemoryRepository chatMemoryRepository() {
-			ElasticsearchConfig config = new ElasticsearchConfig();
-			config.setHost(elasticsearchContainer.getHost());
-			config.setPort(elasticsearchContainer.getMappedPort(9200));
-			config.setScheme("http");
-			return new ElasticsearchChatMemoryRepository(config);
+			RestClientBuilder restClientBuilder = RestClient.builder(
+					new HttpHost(elasticsearchContainer.getHost(), elasticsearchContainer.getMappedPort(9200), "http"));
+			RestClient restClient = restClientBuilder.build();
+			RestClientTransport transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
+			ElasticsearchClient client = new ElasticsearchClient(transport);
+			return new ElasticsearchChatMemoryRepository(client);
 		}
 
 	}

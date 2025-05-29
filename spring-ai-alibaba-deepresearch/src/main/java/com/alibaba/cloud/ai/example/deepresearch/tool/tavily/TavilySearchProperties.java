@@ -47,4 +47,6 @@ public class TavilySearchProperties {
 
 	private boolean includeImageDescriptions = false;
 
+	private boolean includeAnswer = false;
+
 }

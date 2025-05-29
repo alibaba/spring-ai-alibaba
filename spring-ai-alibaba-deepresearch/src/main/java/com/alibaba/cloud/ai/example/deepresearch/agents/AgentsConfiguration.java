@@ -58,6 +58,9 @@ public class AgentsConfiguration {
 	@Value("classpath:prompts/coder.md")
 	private Resource coderPrompt;
 
+	@Value("classpath:prompts/reporter.md")
+	private Resource reporterPrompt;
+
 	// @Bean
 	// public ToolCallbackProvider webSearchToolCallbackProvider() {
 	// return MethodToolCallbackProvider.builder().toolObjects(webSearchTool).build();
@@ -107,6 +110,18 @@ public class AgentsConfiguration {
 	@Bean
 	public ChatClient coderAgent(ChatClient.Builder chatClientBuilder) {
 		return chatClientBuilder.defaultSystem(coderPrompt.getContentAsString(Charset.defaultCharset())).build();
+	}
+
+	/**
+	 * Create Reporter Agent ChatClient Bean
+	 * @param chatClientBuilder ChatClientBuilder McpAsyncClient and the locally configure
+	 * ToolCallbackProviders.
+	 * @return ChatClient
+	 */
+	@SneakyThrows
+	@Bean
+	public ChatClient reporterAgent(ChatClient.Builder chatClientBuilder) {
+		return chatClientBuilder.defaultSystem(reporterPrompt.getContentAsString(Charset.defaultCharset())).build();
 	}
 
 }

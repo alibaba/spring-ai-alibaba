@@ -104,13 +104,7 @@ public class PlannerNode implements NodeAction {
 			return updated;
 		}
 
-		PromptTemplate promptTemplate = PromptTemplate.builder()
-			.template(converter.getFormat())
-			.renderer(StTemplateRenderer.builder().build())
-			.build();
-		Prompt prompt = promptTemplate.create();
-
-		Flux<String> StreamResult = chatClient.prompt(prompt)
+		Flux<String> StreamResult = chatClient.prompt(converter.getFormat())
 			.advisors(a -> a.param(CONVERSATION_ID, threadId))
 			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
 			.messages(messages)

@@ -63,14 +63,15 @@ public class DashScopeAiStreamFunctionCallingHelper {
 		String id = (current.requestId() != null ? current.requestId() : previous.requestId());
 		TokenUsage usage = (current.usage() != null ? current.usage() : previous.usage());
 
-		Choice previousChoice0 = previous.output() == null ? null : previous.output().choices().get(0);
-		Choice currentChoice0 = current.output() == null ? null : current.output().choices().get(0);
+		Choice previousChoice0 = previous.output() == null ? null
+				: CollectionUtils.isEmpty(previous.output().choices()) ? null : previous.output().choices().get(0);
+		Choice currentChoice0 = current.output() == null ? null
+				: CollectionUtils.isEmpty(current.output().choices()) ? null : current.output().choices().get(0);
 
 		// compatibility of incremental_output false for streaming function call
 		if (!incrementalOutput && isStreamingToolFunctionCall(current)) {
 			if (!isStreamingToolFunctionCallFinish(current)) {
-				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, List.of(new Choice(null, null))),
-						usage);
+				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, List.of()), usage);
 			}
 			else {
 				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, List.of(currentChoice0)), usage);

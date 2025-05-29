@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.exception.ServiceInternalException;
 import com.alibaba.cloud.ai.model.ChatClient;
+import com.alibaba.cloud.ai.model.ChatModelConfig;
 import com.alibaba.cloud.ai.param.ClientRunActionParam;
 import com.alibaba.cloud.ai.service.ChatClientDelegate;
 import com.alibaba.cloud.ai.utils.SpringApplicationUtil;
@@ -153,7 +154,7 @@ public class ChatClientDelegateImpl implements ChatClientDelegate {
 						ReflectionUtils.makeAccessible(chatModelField);
 						try {
 							ChatModel chatModel = (ChatModel) chatModelField.get(defaultChatClientRequest);
-							com.alibaba.cloud.ai.model.ChatModel model = com.alibaba.cloud.ai.model.ChatModel.builder()
+							ChatModelConfig model = ChatModelConfig.builder()
 								.name("chatModel")
 								.model(chatModel.getDefaultOptions().getModel())
 								.modelType(ModelType.CHAT)
