@@ -22,7 +22,7 @@ import java.security.NoSuchAlgorithmException;
 
 /**
  * @author yingzi
- * @date 2025/5/8:17:52
+ * @since 2025/5/8:17:52
  */
 public class MD5Utils {
 

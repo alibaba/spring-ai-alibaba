@@ -23,10 +23,18 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.template.st.StTemplateRenderer;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.core.ParameterizedTypeReference;
 import reactor.core.publisher.Flux;
 
@@ -37,10 +45,11 @@ import java.util.List;
 import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 /**
  * @author yingzi
- * @date 2025/5/18 16:47
+ * @since 2025/5/18 16:47
  */
 
 public class PlannerNode implements NodeAction {
@@ -49,17 +58,24 @@ public class PlannerNode implements NodeAction {
 
 	private final ChatClient chatClient;
 
-	private final int MAX_PLAN_ITERATIONS = 3;
+	private final ToolCallback[] toolCallbacks;
 
 	private final BeanOutputConverter<Plan> converter;
 
-	private final String PROMPT_FORMAT = """
-			format: 以纯文本输出 json，请不要包含任何多余的文字——包括 markdown 格式;
-			outputExample: {0};
-			""";
+	private final InMemoryChatMemoryRepository chatMemoryRepository = new InMemoryChatMemoryRepository();
 
-	public PlannerNode(ChatClient.Builder chatClientBuilder) {
-		this.chatClient = chatClientBuilder.build();
+	private final int MAX_MESSAGES = 100;
+
+	private final MessageWindowChatMemory messageWindowChatMemory = MessageWindowChatMemory.builder()
+		.chatMemoryRepository(chatMemoryRepository)
+		.maxMessages(MAX_MESSAGES)
+		.build();
+
+	public PlannerNode(ChatClient.Builder chatClientBuilder, ToolCallback[] toolCallbacks) {
+		this.chatClient = chatClientBuilder
+			.defaultAdvisors(MessageChatMemoryAdvisor.builder(messageWindowChatMemory).build())
+			.build();
+		this.toolCallbacks = toolCallbacks;
 		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
 		});
 	}
@@ -69,6 +85,9 @@ public class PlannerNode implements NodeAction {
 		logger.info("Planner node is running.");
 		List<Message> messages = TemplateUtil.applyPromptTemplate("planner", state);
 		Integer planIterations = state.value("plan_iterations", 0);
+		Integer maxStepNum = state.value("max_step_num", 3);
+		String threadId = state.value("thread_id", "__default__");
+
 		Boolean enableBackgroundInvestigation = state.value("enable_background_investigation", false);
 		ArrayList<String> backgroundInvestigationResults = state.value("background_investigation_results",
 				new ArrayList<>());
@@ -80,11 +99,14 @@ public class PlannerNode implements NodeAction {
 		}
 		String nextStep = "reporter";
 		Map<String, Object> updated = new HashMap<>();
-		if (planIterations > MAX_PLAN_ITERATIONS) {
+		if (planIterations > maxStepNum) {
 			updated.put("planner_next_node", nextStep);
 			return updated;
 		}
-		Flux<String> StreamResult = chatClient.prompt(MessageFormat.format(PROMPT_FORMAT, converter.getFormat()))
+
+		Flux<String> StreamResult = chatClient.prompt(converter.getFormat())
+			.advisors(a -> a.param(CONVERSATION_ID, threadId))
+			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
 			.messages(messages)
 			.stream()
 			.content();

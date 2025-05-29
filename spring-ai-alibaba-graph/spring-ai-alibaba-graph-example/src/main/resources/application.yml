@@ -19,13 +19,13 @@ server:
 
 spring:
   application:
-    name: spring-ai-alibaba-helloworld
+    name: spring-ai-alibaba-graph-example
 
   ai:
     alibaba:
       toolcalling:
         weather:
-          enabled: true
+          enabled: enable
           api-key: ${WEATHER_API_KEY}
     dashscope:
       api-key: sk-6b76c9f5936a4a5d8facb6daa5cd3b58

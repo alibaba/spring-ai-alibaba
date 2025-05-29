@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.mcp.nacos2.registry.model;
 
 /**
  * @author yingzi
- * @date 2025/5/13:11:18
+ * @since 2025/5/13:11:18
  */
 public class McpNacosConstant {
 

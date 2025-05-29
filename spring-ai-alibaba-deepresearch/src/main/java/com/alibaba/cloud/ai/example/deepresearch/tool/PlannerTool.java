@@ -20,7 +20,7 @@ import org.springframework.ai.tool.annotation.Tool;
 
 /**
  * @author yingzi
- * @date 2025/5/17 18:10
+ * @since 2025/5/17 18:10
  */
 
 public class PlannerTool {

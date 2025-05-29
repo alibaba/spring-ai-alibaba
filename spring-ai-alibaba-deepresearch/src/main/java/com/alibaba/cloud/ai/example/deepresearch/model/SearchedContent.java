@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.example.deepresearch.model;
 
 /**
  * @author yingzi
- * @date 2025/5/17 18:42
+ * @since 2025/5/17 18:42
  */
 
 public record SearchedContent(String title, String content) {

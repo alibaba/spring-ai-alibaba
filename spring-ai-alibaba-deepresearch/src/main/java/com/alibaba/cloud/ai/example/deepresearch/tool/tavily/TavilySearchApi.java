@@ -23,7 +23,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * @author yingzi
- * @date 2025/5/18 14:36
+ * @since 2025/5/18 14:36
  */
 @Service
 public class TavilySearchApi {
@@ -53,6 +53,7 @@ public class TavilySearchApi {
 			.includeRawContent(properties.isIncludeRawContent())
 			.includeImages(properties.isIncludeImages())
 			.includeImageDescriptions(properties.isIncludeImageDescriptions())
+			.includeAnswer(properties.isIncludeAnswer())
 			.build();
 		TavilySearchResponse response = webClient.post()
 			.bodyValue(build)
