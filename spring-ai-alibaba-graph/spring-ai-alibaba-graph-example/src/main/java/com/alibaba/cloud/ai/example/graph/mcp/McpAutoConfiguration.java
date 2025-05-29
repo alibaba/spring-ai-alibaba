@@ -35,7 +35,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 @Configuration
 public class McpAutoConfiguration {
-	
+
 	@Bean
 	public ToolCallbackProvider weatherTools(OpenMeteoService openMeteoService) {
 		return MethodToolCallbackProvider.builder().toolObjects(openMeteoService).build();
