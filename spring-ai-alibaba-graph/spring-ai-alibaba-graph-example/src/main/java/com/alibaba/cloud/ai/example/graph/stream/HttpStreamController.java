@@ -108,8 +108,8 @@ public class HttpStreamController {
 		});
 
 		return sink.asFlux()
-				.doOnCancel(() -> System.out.println("Client disconnected from stream"))
-				.doOnError(e -> System.err.println("Error occurred during streaming" + e));
+			.doOnCancel(() -> System.out.println("Client disconnected from stream"))
+			.doOnError(e -> System.err.println("Error occurred during streaming" + e));
 	}
 
 }
