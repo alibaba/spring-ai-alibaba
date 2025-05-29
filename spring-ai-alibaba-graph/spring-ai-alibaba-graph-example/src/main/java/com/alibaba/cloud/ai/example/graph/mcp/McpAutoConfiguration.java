@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package com.alibaba.cloud.ai.example.graph.mcp;
 
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
@@ -50,20 +49,19 @@ public class McpAutoConfiguration {
 		McpNode mcpNode = McpNode.builder()
 			.url("http://localhost:8181/sse") // MCP Server SSE 地址
 			.tool("getWeatherForecastByLocation") // MCP 工具名（需根据实际 MCP Server 配置）
-				.inputParamKeys(Lists.newArrayList("latitude", "longitude")) // 输入参数键
-//			.param("latitude",39.9042) // 工具参数
-//			.param("longitude",116.4074) // 工具参数
-				
-				.header("clientId", "111222") // 可选：添加请求头
+			.inputParamKeys(Lists.newArrayList("latitude", "longitude")) // 输入参数键
+			// .param("latitude",39.9042) // 工具参数
+			// .param("longitude",116.4074) // 工具参数
+
+			.header("clientId", "111222") // 可选：添加请求头
 			.outputKey("mcp_result")
 			.build();
-		
-		StateGraph stateGraph = new StateGraph(stateFactory).addNode("mcp_node", node_async(mcpNode))
-				.addEdge(START, "mcp_node")
-				.addEdge("mcp_node", END);
 
-		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
-				"mcp graph");
+		StateGraph stateGraph = new StateGraph(stateFactory).addNode("mcp_node", node_async(mcpNode))
+			.addEdge(START, "mcp_node")
+			.addEdge("mcp_node", END);
+
+		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML, "mcp graph");
 
 		System.out.println("\n\n");
 		System.out.println(graphRepresentation.content());

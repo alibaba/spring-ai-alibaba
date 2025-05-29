@@ -114,7 +114,7 @@ public class McpNode implements NodeAction {
 
 		// 结果处理
 		Map<String, Object> updatedState = new HashMap<>();
-//		updatedState.put("mcp_result", result.content());
+		// updatedState.put("mcp_result", result.content());
 		if (StringUtils.hasLength(this.outputKey)) {
 			Object content = result.content();
 			if (content instanceof List<?> list && !list.isEmpty()) {
@@ -123,11 +123,13 @@ public class McpNode implements NodeAction {
 				try {
 					Method getText = first.getClass().getMethod("getText");
 					Object text = getText.invoke(first);
-                    updatedState.put(this.outputKey, Objects.requireNonNullElse(text, first).toString());
-				} catch (Exception e) {
+					updatedState.put(this.outputKey, Objects.requireNonNullElse(text, first).toString());
+				}
+				catch (Exception e) {
 					updatedState.put(this.outputKey, first.toString());
 				}
-			} else {
+			}
+			else {
 				updatedState.put(this.outputKey, content);
 			}
 		}
