@@ -159,7 +159,7 @@
 import { ref, onMounted, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
-import MonacoEditor from '@/components/editor/MonacoEditor.vue'
+import MonacoEditor from '@/components/editor/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -363,11 +363,11 @@ const sendMessage = () => {
 }
 
 const goBack = () => {
-  router.push('/conversation')
+  router.push('/home')
 }
 
 const newChat = () => {
-  router.push('/conversation')
+  router.push('/home')
 }
 
 const copyCode = () => {

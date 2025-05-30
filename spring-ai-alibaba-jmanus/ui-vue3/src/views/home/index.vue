@@ -1,65 +1,62 @@
 <template>
-  <div class="conversation-page">
-    <!-- Background effects -->
-    <div class="background-effects">
-      <div class="gradient-orb orb-1"></div>
-      <div class="gradient-orb orb-2"></div>
-      <div class="gradient-orb orb-3"></div>
+  <div class="home-page">
+    <Sidebar />
+    <div class="conversation">
+      <!-- Background effects -->
+      <div class="background-effects">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+      </div>
+
+      <!-- Header -->
+      <header class="header">
+        <div class="logo">
+          <h1>JTaskPilot</h1>
+          <span class="tagline">AI 驱动的自动化 Agent</span>
+        </div>
+      </header>
+
+      <!-- Main content -->
+      <main class="main-content">
+        <div class="conversation-container">
+          <!-- Welcome section -->
+          <div class="welcome-section">
+            <h2 class="welcome-title">今天我能帮你构建什么？</h2>
+            <p class="welcome-subtitle">描述您的任务或项目，我将帮助您逐步规划和执行。</p>
+          </div>
+
+          <!-- Input section -->
+          <div class="input-section">
+            <div class="input-container">
+              <textarea
+                v-model="userInput"
+                ref="textareaRef"
+                class="main-input"
+                placeholder="描述您想构建或完成的内容..."
+                @keydown="handleKeydown"
+                @input="adjustTextareaHeight"
+              ></textarea>
+              <button class="send-button" :disabled="!userInput.trim()" @click="handleSend">
+                <Icon icon="carbon:send-alt" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Example prompts -->
+          <div class="examples-section">
+            <div class="examples-grid">
+              <BlurCard
+                v-for="example in examples"
+                :key="example.title"
+                :content="example"
+                @clickCard="selectExample"
+              />
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
-
-    <!-- Header -->
-    <header class="header">
-      <div class="logo">
-        <h1>JTaskPilot</h1>
-        <span class="tagline">AI 驱动的自动化 Agent</span>
-      </div>
-    </header>
-
-    <!-- Main content -->
-    <main class="main-content">
-      <div class="conversation-container">
-        <!-- Welcome section -->
-        <div class="welcome-section">
-          <h2 class="welcome-title">今天我能帮你构建什么？</h2>
-          <p class="welcome-subtitle">描述您的任务或项目，我将帮助您逐步规划和执行。</p>
-        </div>
-
-        <!-- Input section -->
-        <div class="input-section">
-          <div class="input-container">
-            <textarea
-              v-model="userInput"
-              ref="textareaRef"
-              class="main-input"
-              placeholder="描述您想构建或完成的内容..."
-              @keydown="handleKeydown"
-              @input="adjustTextareaHeight"
-            ></textarea>
-            <button class="send-button" :disabled="!userInput.trim()" @click="handleSend">
-              <Icon icon="carbon:send-alt" />
-            </button>
-          </div>
-        </div>
-
-        <!-- Example prompts -->
-        <div class="examples-section">
-          <div class="examples-grid">
-            <button
-              v-for="example in examples"
-              :key="example.title"
-              class="example-card"
-              @click="selectExample(example)"
-            >
-              <Icon :icon="example.icon" class="example-icon" />
-              <div class="example-content">
-                <h3>{{ example.title }}</h3>
-                <p>{{ example.description }}</p>
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
-    </main>
   </div>
 </template>
 
@@ -67,6 +64,8 @@
 import { ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
+import Sidebar from '@/components/sidebar/index.vue'
+import BlurCard from '@/components/blurCard/index.vue'
 
 const router = useRouter()
 const userInput = ref('')
@@ -82,7 +81,7 @@ const examples = [
   {
     title: '预订机票',
     description: '帮我查找并预订从上海到北京的机票',
-    icon: 'carbon:plane-flight',
+    icon: 'carbon:plane',
     prompt: '帮忙预定一下从上海到北京的机票',
   },
   {
@@ -134,7 +133,13 @@ const selectExample = (example: any) => {
 </script>
 
 <style lang="less" scoped>
-.conversation-page {
+.home-page {
+  width: 100%;
+  display: flex;
+  position: relative;
+}
+.conversation {
+  flex: 1;
   height: 100vh;
   background: #0a0a0a;
   position: relative;
@@ -339,46 +344,46 @@ const selectExample = (example: any) => {
   }
 }
 
-.example-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-align: left;
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
+// .example-card {
+//   background: rgba(255, 255, 255, 0.03);
+//   border: 1px solid rgba(255, 255, 255, 0.08);
+//   border-radius: 12px;
+//   padding: 20px;
+//   cursor: pointer;
+//   transition: all 0.3s ease;
+//   text-align: left;
+//   display: flex;
+//   align-items: flex-start;
+//   gap: 16px;
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(102, 126, 234, 0.3);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-  }
-}
+//   &:hover {
+//     background: rgba(255, 255, 255, 0.05);
+//     border-color: rgba(102, 126, 234, 0.3);
+//     transform: translateY(-2px);
+//     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+//   }
+// }
 
-.example-icon {
-  font-size: 24px;
-  color: #667eea;
-  margin-top: 4px;
-  flex-shrink: 0;
-}
+// .example-icon {
+//   font-size: 24px;
+//   color: #667eea;
+//   margin-top: 4px;
+//   flex-shrink: 0;
+// }
 
-.example-content {
-  h3 {
-    font-size: 16px;
-    font-weight: 600;
-    color: #ffffff;
-    margin: 0 0 8px 0;
-  }
+// .example-content {
+//   h3 {
+//     font-size: 16px;
+//     font-weight: 600;
+//     color: #ffffff;
+//     margin: 0 0 8px 0;
+//   }
 
-  p {
-    font-size: 14px;
-    color: #888888;
-    margin: 0;
-    line-height: 1.4;
-  }
-}
+//   p {
+//     font-size: 14px;
+//     color: #888888;
+//     margin: 0;
+//     line-height: 1.4;
+//   }
+// }
 </style>

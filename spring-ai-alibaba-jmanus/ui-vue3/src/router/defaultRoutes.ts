@@ -13,16 +13,16 @@ export const routes: Readonly<RouteRecordType[]> = [
   {
     path: '/',
     name: 'Root',
-    redirect: '/conversation',
+    redirect: '/home',
     component: () => import('../layout/index.vue'),
     meta: {
       skip: true,
     },
     children: [
       {
-        path: '/conversation',
+        path: '/home',
         name: 'conversation',
-        component: () => import('../views/conversation/index.vue'),
+        component: () => import('../views/home/index.vue'),
         meta: {
           icon: 'carbon:chat',
           fullscreen: true,
