@@ -17,17 +17,16 @@
 package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
-import com.alibaba.cloud.ai.example.deepresearch.tool.WebSearchTool;
-import com.alibaba.cloud.ai.example.deepresearch.tool.tavily.TavilySearchApi;
+import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchProperties;
 import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
-import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.GenericApplicationContext;
@@ -42,9 +41,6 @@ public class AgentsConfiguration {
 
 	@Autowired
 	private PythonReplTool pythonReplTool;
-
-	@Autowired
-	private WebSearchTool webSearchTool;
 
 	/**
 	 * TODO The prompt is beta.
@@ -67,11 +63,13 @@ public class AgentsConfiguration {
 	// }
 
 	@Bean
-	public ToolCallbackProvider tavilySearchServiceCallbackProvider(TavilySearchApi tavilySearchApi) {
-		return ToolCallbackProvider.from(FunctionToolCallback.builder("tavilySearchApi", tavilySearchApi)
-			.description("Use Tavily Search to search something. The input String is what you want to search.")
-			.inputType(String.class)
-			.build());
+	@ConditionalOnProperty(prefix = TavilySearchProperties.PREFIX, name = "enabled", havingValue = "true")
+	public ToolCallbackProvider tavilySearchServiceCallbackProvider(GenericApplicationContext applicationContext) {
+		SpringBeanToolCallbackResolver springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
+			.applicationContext(applicationContext)
+			.build();
+		ToolCallback tavilySearch = springBeanToolCallbackResolver.resolve("tavilySearch");
+		return ToolCallbackProvider.from(tavilySearch);
 	}
 
 	@Bean

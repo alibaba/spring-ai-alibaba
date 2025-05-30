@@ -74,7 +74,7 @@ public class ResearcherNode implements NodeAction {
 		// 调用agent
 		String content = researchAgent.prompt()
 			.options(ToolCallingChatOptions.builder().build())
-			.toolNames("tavilySearchApi")
+			.toolNames("tavilySearch")
 			.messages(messages)
 			.call()
 			.content();

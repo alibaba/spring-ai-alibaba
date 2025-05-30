@@ -23,13 +23,13 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatch
 import com.alibaba.cloud.ai.example.deepresearch.model.BackgroundInvestigationType;
 import com.alibaba.cloud.ai.example.deepresearch.node.*;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
-import com.alibaba.cloud.ai.example.deepresearch.tool.tavily.TavilySearchApi;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.OverAllStateFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,9 +62,6 @@ public class DeepResearchConfiguration {
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
 
 	@Autowired
-	private TavilySearchApi tavilySearchApi;
-
-	@Autowired
 	private PythonReplTool pythonReplTool;
 
 	@Autowired
@@ -81,6 +78,9 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private DeepResearchProperties deepResearchProperties;
+
+	@Autowired
+	private TavilySearchService tavilySearchService;
 
 	@Bean
 	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder,
@@ -164,7 +164,7 @@ public class DeepResearchConfiguration {
 	private BackgroundInvestigationNodeAction createBackgroundInvestigationNodeAction(
 			BackgroundInvestigationType backgroundInvestigationType, ToolCallback[] toolCallbacks) {
 		return switch (backgroundInvestigationType) {
-			case JUST_WEB_SEARCH -> new BackgroundInvestigationNode(tavilySearchApi);
+			case JUST_WEB_SEARCH -> new BackgroundInvestigationNode(tavilySearchService);
 			case TOOL_CALLS -> new BackgroundInvestigationToolCallsNode(backgroundInvestigationAgent, toolCallbacks);
 		};
 	}
