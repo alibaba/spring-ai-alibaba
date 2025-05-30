@@ -45,7 +45,7 @@ public class SensitiveFilterService implements Function<String, String> {
 	private static final Pattern EMAIL_PATTERN = Pattern.compile("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}");
 
 	/**
-	 * 自定义模式缓存
+	 * Custom mode caching
 	 */
 	private final Map<String, Pattern> customPatterns;
 
@@ -56,7 +56,7 @@ public class SensitiveFilterService implements Function<String, String> {
 	}
 
 	/**
-	 * 初始化自定义正则表达式模式
+	 * Initialize the custom regular expression pattern
 	 */
 	private void initializeCustomPatterns() {
 		for (SensitiveFilterProperties.CustomPattern customPattern : properties.getCustomPatterns()) {
@@ -81,7 +81,7 @@ public class SensitiveFilterService implements Function<String, String> {
 
 		String result = text;
 
-		// 应用基础脱敏规则
+		// Apply basic de-sensitization rules
 		if (properties.isFilterPhoneNumber()) {
 			result = PHONE_PATTERN.matcher(result).replaceAll(properties.getReplacement());
 		}
@@ -98,7 +98,7 @@ public class SensitiveFilterService implements Function<String, String> {
 			result = EMAIL_PATTERN.matcher(result).replaceAll(properties.getReplacement());
 		}
 
-		// 应用自定义脱敏规则
+		// Apply custom de-sensitization rules
 		for (SensitiveFilterProperties.CustomPattern customPattern : properties.getCustomPatterns()) {
 			if (customPattern.isEnabled()) {
 				Pattern pattern = customPatterns.get(customPattern.getName());
