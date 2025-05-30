@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
-import com.alibaba.cloud.ai.example.deepresearch.tool.WebSearchTool;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchProperties;
 import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
@@ -42,9 +41,6 @@ public class AgentsConfiguration {
 
 	@Autowired
 	private PythonReplTool pythonReplTool;
-
-	@Autowired
-	private WebSearchTool webSearchTool;
 
 	/**
 	 * TODO The prompt is beta.

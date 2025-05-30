@@ -41,6 +41,8 @@ public class StateGraphRepresentationTest {
 		return CompletableFuture.completedFuture("");
 	}
 
+	private OverAllStateFactory overAllStateFactory = () -> new OverAllState();
+
 	/**
 	 * Test a simple graph structure with three nodes and sequential edges. Verifies the
 	 * PlantUML representation of the graph structure.
@@ -48,7 +50,7 @@ public class StateGraphRepresentationTest {
 	@Test
 	public void testSimpleGraph() throws Exception {
 
-		StateGraph workflow = new StateGraph().addNode("agent_3", this::dummyNodeAction)
+		StateGraph workflow = new StateGraph(overAllStateFactory).addNode("agent_3", this::dummyNodeAction)
 			.addNode("agent_1", this::dummyNodeAction)
 			.addNode("agent_2", this::dummyNodeAction)
 			.addEdge(START, "agent_1")
@@ -92,7 +94,7 @@ public class StateGraphRepresentationTest {
 	@Test
 	public void testCorrectionProcessGraph() throws Exception {
 
-		var workflow = new StateGraph().addNode("evaluate_result", this::dummyNodeAction)
+		var workflow = new StateGraph(overAllStateFactory).addNode("evaluate_result", this::dummyNodeAction)
 			.addNode("agent_review", this::dummyNodeAction)
 			.addEdge("agent_review", "evaluate_result")
 			.addConditionalEdges("evaluate_result", this::dummyCondition,
@@ -138,7 +140,7 @@ public class StateGraphRepresentationTest {
 	 */
 	@Test
 	public void GenerateAgentExecutorGraph() throws Exception {
-		StateGraph workflow = new StateGraph().addNode("agent", this::dummyNodeAction)
+		StateGraph workflow = new StateGraph(overAllStateFactory).addNode("agent", this::dummyNodeAction)
 			.addNode("action", this::dummyNodeAction)
 			.addEdge(START, "agent")
 			.addConditionalEdges("agent", this::dummyCondition,
@@ -183,7 +185,7 @@ public class StateGraphRepresentationTest {
 	 */
 	@Test
 	public void GenerateImageToDiagramGraph() throws Exception {
-		StateGraph workflow = new StateGraph().addNode("agent_describer", this::dummyNodeAction)
+		StateGraph workflow = new StateGraph(overAllStateFactory).addNode("agent_describer", this::dummyNodeAction)
 			.addNode("agent_sequence_plantuml", this::dummyNodeAction)
 			.addNode("agent_generic_plantuml", this::dummyNodeAction)
 			.addConditionalEdges("agent_describer", this::dummyCondition,
@@ -278,7 +280,7 @@ public class StateGraphRepresentationTest {
 	@Test
 	void testWithParallelBranch() throws Exception {
 
-		var workflow = new StateGraph().addNode("A", makeNode("A"))
+		var workflow = new StateGraph(overAllStateFactory).addNode("A", makeNode("A"))
 			.addNode("A1", makeNode("A1"))
 			.addNode("A2", makeNode("A2"))
 			.addNode("A3", makeNode("A3"))
