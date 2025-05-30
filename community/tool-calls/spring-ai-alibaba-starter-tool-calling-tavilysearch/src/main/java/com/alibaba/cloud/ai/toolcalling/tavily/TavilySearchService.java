@@ -17,10 +17,8 @@ package com.alibaba.cloud.ai.toolcalling.tavily;
 
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.alibaba.cloud.ai.toolcalling.common.WebClientTool;
-import com.fasterxml.jackson.annotation.JsonClassDescription;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
@@ -50,16 +48,17 @@ public class TavilySearchService implements Function<TavilySearchService.Request
 	@Override
 	public TavilySearchService.Response apply(TavilySearchService.Request request) {
 		if (request == null || !StringUtils.hasText(request.query())) {
-			return new Response("");
+			return Response.errorResponse(request != null ? request.query : "", "query is empty");
 		}
 
 		try {
 			String responseData = webClientTool.post("search", request).block();
-			return new Response(responseData);
+			return jsonParseTool.jsonToObject(responseData, new TypeReference<Response>() {
+			});
 		}
 		catch (Exception ex) {
 			logger.error("tavily search error: {}", ex.getMessage());
-			return new Response(ex.getMessage());
+			return Response.errorResponse(request.query, ex.getMessage());
 		}
 	}
 
@@ -107,7 +106,28 @@ public class TavilySearchService implements Function<TavilySearchService.Request
 		}
 	}
 
-	public record Response(@JsonProperty("result") String result) implements Serializable {
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record Response(@JsonProperty("query") String query, @JsonProperty("answer") String answer,
+			@JsonProperty("images") List<ImageInfo> images, @JsonProperty("results") List<ResultInfo> results,
+			@JsonProperty("response_time") String responseTime) {
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		public record ImageInfo(@JsonProperty("url") String url, @JsonProperty("description") String description) {
+
+		}
+
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		public record ResultInfo(@JsonProperty("title") String title, @JsonProperty("url") String url,
+				@JsonProperty("content") String content, @JsonProperty("score") String score,
+				@JsonProperty("raw_content") String raw_content) {
+		}
+
+		public static Response errorResponse(String query, String errorMsg) {
+			return new Response(query, errorMsg, null, null, null);
+		}
+	}
+
+	public record SearchContent(@JsonProperty("title") String title, @JsonProperty("content") String content) {
+
 	}
 
 }

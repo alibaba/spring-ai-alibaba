@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author yingzi
@@ -58,8 +59,10 @@ public class BackgroundInvestigationNode implements BackgroundInvestigationNodeA
 		String query = lastMessage.getText();
 		TavilySearchService.Response response = tavilySearchService
 			.apply(TavilySearchService.Request.simpleQuery(query));
-		ArrayList<String> results = new ArrayList<>();
-		results.add(response.result());
+		List<TavilySearchService.SearchContent> results = response.results()
+			.stream()
+			.map(info -> new TavilySearchService.SearchContent(info.title(), info.content()))
+			.toList();
 		logger.info("✅ 搜索结果: {}", results);
 
 		Map<String, Object> resultMap = new HashMap<>();
