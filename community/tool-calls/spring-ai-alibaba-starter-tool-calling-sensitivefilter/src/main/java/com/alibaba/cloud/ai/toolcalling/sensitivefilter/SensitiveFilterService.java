@@ -16,6 +16,11 @@
 
 package com.alibaba.cloud.ai.toolcalling.sensitivefilter;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -25,6 +30,8 @@ import java.util.regex.Pattern;
  * @author Makoto
  */
 public class SensitiveFilterService implements Function<String, String> {
+
+	private static final Logger logger = LoggerFactory.getLogger(SensitiveFilterService.class);
 
 	private final SensitiveFilterProperties properties;
 
@@ -37,8 +44,33 @@ public class SensitiveFilterService implements Function<String, String> {
 
 	private static final Pattern EMAIL_PATTERN = Pattern.compile("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}");
 
+	/**
+	 * 自定义模式缓存
+	 */
+	private final Map<String, Pattern> customPatterns;
+
 	public SensitiveFilterService(SensitiveFilterProperties properties) {
 		this.properties = properties;
+		this.customPatterns = new HashMap<>();
+		initializeCustomPatterns();
+	}
+
+	/**
+	 * 初始化自定义正则表达式模式
+	 */
+	private void initializeCustomPatterns() {
+		for (SensitiveFilterProperties.CustomPattern customPattern : properties.getCustomPatterns()) {
+			if (customPattern.isEnabled() && customPattern.getPattern() != null) {
+				try {
+					customPatterns.put(customPattern.getName(), Pattern.compile(customPattern.getPattern()));
+					logger.debug("已注册自定义脱敏模式: {} -> {}", customPattern.getName(), customPattern.getPattern());
+				}
+				catch (Exception e) {
+					logger.error("注册自定义脱敏模式失败: {}, 正则表达式: {}, 错误: {}", 
+						customPattern.getName(), customPattern.getPattern(), e.getMessage());
+				}
+			}
+		}
 	}
 
 	@Override
@@ -49,6 +81,7 @@ public class SensitiveFilterService implements Function<String, String> {
 
 		String result = text;
 
+		// 应用基础脱敏规则
 		if (properties.isFilterPhoneNumber()) {
 			result = PHONE_PATTERN.matcher(result).replaceAll(properties.getReplacement());
 		}
@@ -63,6 +96,18 @@ public class SensitiveFilterService implements Function<String, String> {
 
 		if (properties.isFilterEmail()) {
 			result = EMAIL_PATTERN.matcher(result).replaceAll(properties.getReplacement());
+		}
+
+		// 应用自定义脱敏规则
+		for (SensitiveFilterProperties.CustomPattern customPattern : properties.getCustomPatterns()) {
+			if (customPattern.isEnabled()) {
+				Pattern pattern = customPatterns.get(customPattern.getName());
+				if (pattern != null) {
+					String replacement = customPattern.getReplacement() != null ? 
+						customPattern.getReplacement() : properties.getReplacement();
+					result = pattern.matcher(result).replaceAll(replacement);
+				}
+			}
 		}
 
 		return result;
