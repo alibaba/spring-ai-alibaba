@@ -66,8 +66,8 @@ public class SensitiveFilterService implements Function<String, String> {
 					logger.debug("已注册自定义脱敏模式: {} -> {}", customPattern.getName(), customPattern.getPattern());
 				}
 				catch (Exception e) {
-					logger.error("注册自定义脱敏模式失败: {}, 正则表达式: {}, 错误: {}", 
-						customPattern.getName(), customPattern.getPattern(), e.getMessage());
+					logger.error("注册自定义脱敏模式失败: {}, 正则表达式: {}, 错误: {}", customPattern.getName(),
+							customPattern.getPattern(), e.getMessage());
 				}
 			}
 		}
@@ -103,8 +103,8 @@ public class SensitiveFilterService implements Function<String, String> {
 			if (customPattern.isEnabled()) {
 				Pattern pattern = customPatterns.get(customPattern.getName());
 				if (pattern != null) {
-					String replacement = customPattern.getReplacement() != null ? 
-						customPattern.getReplacement() : properties.getReplacement();
+					String replacement = customPattern.getReplacement() != null ? customPattern.getReplacement()
+							: properties.getReplacement();
 					result = pattern.matcher(result).replaceAll(replacement);
 				}
 			}
