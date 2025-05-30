@@ -103,6 +103,7 @@ public class PlannerNode implements NodeAction {
 		}
 		String nextStep = "reporter";
 		Map<String, Object> updated = new HashMap<>();
+		logger.info("planIterations:{}", planIterations);
 		if (planIterations > maxStepNum) {
 			updated.put("planner_next_node", nextStep);
 			return updated;
