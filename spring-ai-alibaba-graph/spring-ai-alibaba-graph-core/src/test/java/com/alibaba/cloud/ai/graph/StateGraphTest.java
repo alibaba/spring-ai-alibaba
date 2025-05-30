@@ -108,7 +108,8 @@ public class StateGraphTest {
 	 */
 	@Test
 	public void testRunningOneNode() throws Exception {
-		StateGraph workflow = new StateGraph(() -> new OverAllState().registerKeyAndStrategy("prop1", (o, o2) -> o2)).addEdge(START, "agent_1")
+		StateGraph workflow = new StateGraph(() -> new OverAllState().registerKeyAndStrategy("prop1", (o, o2) -> o2))
+			.addEdge(START, "agent_1")
 			.addNode("agent_1", node_async(state -> {
 				log.info("agent_1\n{}", state);
 				return Map.of("prop1", "test");
@@ -275,7 +276,7 @@ public class StateGraphTest {
 	 */
 	private static OverAllStateFactory createOverAllStateFactory() {
 		return () -> new OverAllState().registerKeyAndStrategy("steps", (o, o2) -> o2)
-                .registerKeyAndStrategy("messages", new AppendStrategy());
+			.registerKeyAndStrategy("messages", new AppendStrategy());
 	}
 
 	/**
@@ -315,11 +316,11 @@ public class StateGraphTest {
 			.addEdge("step_3", END)
 			.compile();
 
-		var result =workflowParent.stream(Map.of())
-				.stream()
-				.peek(System.out::println)
-				.map(NodeOutput::state)
-				.reduce((a, b) -> b);
+		var result = workflowParent.stream(Map.of())
+			.stream()
+			.peek(System.out::println)
+			.map(NodeOutput::state)
+			.reduce((a, b) -> b);
 
 		assertTrue(result.isPresent());
 		assertIterableEquals(List.of("step1", "step2", "child:step1", "child:step2", "child:step3", "step3"),
@@ -379,7 +380,7 @@ public class StateGraphTest {
 			.addEdge("A1", "B")
 			.addEdge("A2", "B")
 			.addEdge("A3", "B")
-			.addEdge("B","C")
+			.addEdge("B", "C")
 			.addEdge(START, "A1")
 			.addEdge(START, "A2")
 			.addEdge(START, "A3")

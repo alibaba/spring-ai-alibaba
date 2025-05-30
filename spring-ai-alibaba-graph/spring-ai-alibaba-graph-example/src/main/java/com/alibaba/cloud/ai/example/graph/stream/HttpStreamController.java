@@ -78,7 +78,6 @@ public class HttpStreamController {
 		// 编译工作流
 		CompiledGraph compiledGraph = workflow.compile();
 
-
 		// 从请求中获取输入
 		String threadId = UUID.randomUUID().toString();
 

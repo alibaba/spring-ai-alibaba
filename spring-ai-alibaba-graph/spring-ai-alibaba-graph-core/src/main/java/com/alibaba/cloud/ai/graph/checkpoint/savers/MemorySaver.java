@@ -37,34 +37,37 @@ import static java.util.Optional.ofNullable;
 public class MemorySaver implements BaseCheckpointSaver {
 
 	final Map<String, LinkedList<Checkpoint>> _checkpointsByThread = new HashMap<>();
+
 	private final ReentrantLock _lock = new ReentrantLock();
 
-	public MemorySaver( ) {
+	public MemorySaver() {
 	}
 
-	final LinkedList<Checkpoint> getCheckpoints( RunnableConfig config ) {
+	final LinkedList<Checkpoint> getCheckpoints(RunnableConfig config) {
 		_lock.lock();
 		try {
 			var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
 			return _checkpointsByThread.computeIfAbsent(threadId, k -> new LinkedList<>());
 
-		} finally {
+		}
+		finally {
 			_lock.unlock();
 		}
 	}
 
 	public final Optional<Checkpoint> getLast(LinkedList<Checkpoint> checkpoints, RunnableConfig config) {
-		return (checkpoints.isEmpty() ) ? Optional.empty() : ofNullable(checkpoints.peek());
+		return (checkpoints.isEmpty()) ? Optional.empty() : ofNullable(checkpoints.peek());
 	}
 
 	@Override
-	public Collection<Checkpoint> list( RunnableConfig config ) {
+	public Collection<Checkpoint> list(RunnableConfig config) {
 
 		_lock.lock();
 		try {
 			final LinkedList<Checkpoint> checkpoints = getCheckpoints(config);
 			return unmodifiableCollection(checkpoints); // immutable checkpoints;
-		} finally {
+		}
+		finally {
 			_lock.unlock();
 		}
 	}
@@ -75,15 +78,15 @@ public class MemorySaver implements BaseCheckpointSaver {
 		_lock.lock();
 		try {
 			final LinkedList<Checkpoint> checkpoints = getCheckpoints(config);
-			if( config.checkPointId().isPresent() ) {
+			if (config.checkPointId().isPresent()) {
 				return config.checkPointId()
-						.flatMap( id -> checkpoints.stream()
-								.filter( checkpoint -> checkpoint.getId().equals(id) )
-								.findFirst());
+					.flatMap(
+							id -> checkpoints.stream().filter(checkpoint -> checkpoint.getId().equals(id)).findFirst());
 			}
-			return getLast(checkpoints,config);
+			return getLast(checkpoints, config);
 
-		}   finally {
+		}
+		finally {
 			_lock.unlock();
 		}
 	}
@@ -98,18 +101,17 @@ public class MemorySaver implements BaseCheckpointSaver {
 			if (config.checkPointId().isPresent()) { // Replace Checkpoint
 				String checkPointId = config.checkPointId().get();
 				int index = IntStream.range(0, checkpoints.size())
-						.filter(i -> checkpoints.get(i).getId().equals(checkPointId))
-						.findFirst()
-						.orElseThrow(() -> (new NoSuchElementException(format("Checkpoint with id %s not found!", checkPointId))));
-				checkpoints.set(index, checkpoint );
+					.filter(i -> checkpoints.get(i).getId().equals(checkPointId))
+					.findFirst()
+					.orElseThrow(() -> (new NoSuchElementException(
+							format("Checkpoint with id %s not found!", checkPointId))));
+				checkpoints.set(index, checkpoint);
 				return config;
 			}
 
-			checkpoints.push( checkpoint ); // Add Checkpoint
+			checkpoints.push(checkpoint); // Add Checkpoint
 
-			return RunnableConfig.builder(config)
-					.checkPointId(checkpoint.getId())
-					.build();
+			return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 		}
 		finally {
 			_lock.unlock();
@@ -129,7 +131,7 @@ public class MemorySaver implements BaseCheckpointSaver {
 
 			var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
 
-			return new Tag( threadId, _checkpointsByThread.remove(threadId) );
+			return new Tag(threadId, _checkpointsByThread.remove(threadId));
 
 		}
 		finally {
@@ -140,4 +142,5 @@ public class MemorySaver implements BaseCheckpointSaver {
 	public Map<String, LinkedList<Checkpoint>> get_checkpointsByThread() {
 		return _checkpointsByThread;
 	}
+
 }

@@ -85,8 +85,8 @@ public class ReactAgent {
 	}
 
 	public ReactAgent(String name, ChatClient chatClient, List<ToolCallback> tools, int maxIterations,
-					  OverAllStateFactory overAllStateFactory, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc)
-			throws GraphStateException {
+			OverAllStateFactory overAllStateFactory, CompileConfig compileConfig,
+			Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
 		this.name = name;
 		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey("messages").build();
 		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
@@ -110,8 +110,8 @@ public class ReactAgent {
 	}
 
 	public ReactAgent(String name, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations,
-					  OverAllStateFactory overAllStateFactory, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc)
-			throws GraphStateException {
+			OverAllStateFactory overAllStateFactory, CompileConfig compileConfig,
+			Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
 		this.name = name;
 		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey("messages").build();
 		this.toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
@@ -159,10 +159,10 @@ public class ReactAgent {
 	private StateGraph initGraph() throws GraphStateException {
 		if (overAllStateFactory == null) {
 			this.overAllStateFactory = () -> {
-                OverAllState defaultState = new OverAllState();
-                defaultState.registerKeyAndStrategy("messages", new AppendStrategy());
-                return defaultState;
-            };
+				OverAllState defaultState = new OverAllState();
+				defaultState.registerKeyAndStrategy("messages", new AppendStrategy());
+				return defaultState;
+			};
 		}
 
 		return new StateGraph().addNode("agent", node_async(this.llmNode))
@@ -306,7 +306,8 @@ public class ReactAgent {
 						shouldContinueFunc);
 			}
 			else if (tools != null) {
-				return new ReactAgent(name, chatClient, tools, maxIterations, allStateFactory, compileConfig, shouldContinueFunc);
+				return new ReactAgent(name, chatClient, tools, maxIterations, allStateFactory, compileConfig,
+						shouldContinueFunc);
 			}
 			throw new IllegalArgumentException("Either tools or resolver must be provided");
 		}

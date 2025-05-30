@@ -74,8 +74,7 @@ public class SubGraphTest {
 	 * @throws Exception If an error occurs during execution.
 	 */
 	private List<String> _execute(CompiledGraph workflow, Map<String, Object> input) throws Exception {
-		return workflow
-			.stream(input, RunnableConfig.builder().threadId("SubGraphTest").build())
+		return workflow.stream(input, RunnableConfig.builder().threadId("SubGraphTest").build())
 			.stream()
 			.peek(System.out::println)
 			.map(NodeOutput::node)
@@ -122,11 +121,11 @@ public class SubGraphTest {
 	 */
 	private static OverAllStateFactory createOverAllStateFactory() {
 		return () -> new OverAllState().input(Map.of())
-                .registerKeyAndStrategy("a", (o, o2) -> o2)
-                .registerKeyAndStrategy("b", (o, o2) -> o2)
-                .registerKeyAndStrategy("c", (o, o2) -> o2)
-                .registerKeyAndStrategy("steps", (o, o2) -> o2)
-                .registerKeyAndStrategy("messages", new AppendStrategy());
+			.registerKeyAndStrategy("a", (o, o2) -> o2)
+			.registerKeyAndStrategy("b", (o, o2) -> o2)
+			.registerKeyAndStrategy("c", (o, o2) -> o2)
+			.registerKeyAndStrategy("steps", (o, o2) -> o2)
+			.registerKeyAndStrategy("messages", new AppendStrategy());
 	}
 
 	/**

@@ -81,8 +81,9 @@ public class ReactAgentWithHuman {
 	}
 
 	public ReactAgentWithHuman(String prompt, ChatClient chatClient, List<ToolCallback> tools, int maxIterations,
-							   OverAllStateFactory overAllStateFactory, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc,
-							   Function<OverAllState, Boolean> shouldInterruptFunc) throws GraphStateException {
+			OverAllStateFactory overAllStateFactory, CompileConfig compileConfig,
+			Function<OverAllState, Boolean> shouldContinueFunc, Function<OverAllState, Boolean> shouldInterruptFunc)
+			throws GraphStateException {
 		this.llmNode = LlmNode.builder()
 			.chatClient(chatClient)
 			.userPromptTemplate(prompt)
@@ -108,8 +109,9 @@ public class ReactAgentWithHuman {
 	}
 
 	public ReactAgentWithHuman(String prompt, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations,
-							   OverAllStateFactory overAllStateFactory, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc,
-							   Function<OverAllState, Boolean> shouldInterruptFunc) throws GraphStateException {
+			OverAllStateFactory overAllStateFactory, CompileConfig compileConfig,
+			Function<OverAllState, Boolean> shouldContinueFunc, Function<OverAllState, Boolean> shouldInterruptFunc)
+			throws GraphStateException {
 		this.llmNode = LlmNode.builder()
 			.chatClient(chatClient)
 			.userPromptTemplate(prompt)
@@ -164,10 +166,10 @@ public class ReactAgentWithHuman {
 	private StateGraph initGraph() throws GraphStateException {
 		if (overAllStateFactory == null) {
 			this.overAllStateFactory = () -> {
-                OverAllState defaultState = new OverAllState();
-                defaultState.registerKeyAndStrategy("messages", List::of);
-                return defaultState;
-            };
+				OverAllState defaultState = new OverAllState();
+				defaultState.registerKeyAndStrategy("messages", List::of);
+				return defaultState;
+			};
 		}
 
 		StateGraph graph = new StateGraph().addNode("agent", node_async(this.llmNode))
@@ -319,8 +321,8 @@ public class ReactAgentWithHuman {
 
 		public ReactAgentWithHuman build() throws GraphStateException {
 			if (resolver != null) {
-				return new ReactAgentWithHuman(prompt, chatClient, resolver, maxIterations, allStateFactory, compileConfig,
-						shouldContinueFunc, shouldInterruptFunc);
+				return new ReactAgentWithHuman(prompt, chatClient, resolver, maxIterations, allStateFactory,
+						compileConfig, shouldContinueFunc, shouldInterruptFunc);
 			}
 			else if (tools != null) {
 				return new ReactAgentWithHuman(prompt, chatClient, tools, maxIterations, allStateFactory, compileConfig,

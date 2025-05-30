@@ -26,6 +26,7 @@ import java.util.Optional;
 import static java.util.Optional.ofNullable;
 
 public interface BaseCheckpointSaver {
+
 	String THREAD_ID_DEFAULT = "$default";
 
 	record Tag(String threadId, Collection<Checkpoint> checkpoints) {
@@ -34,7 +35,8 @@ public interface BaseCheckpointSaver {
 			this.checkpoints = ofNullable(checkpoints).map(List::copyOf).orElseGet(List::of);
 		}
 	}
-	default Tag release(RunnableConfig config)throws Exception{
+
+	default Tag release(RunnableConfig config) throws Exception {
 		return null;
 	}
 

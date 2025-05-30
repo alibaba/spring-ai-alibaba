@@ -141,12 +141,11 @@ public class CompileConfig {
 
 		/**
 		 * Sets whether the thread should be released according to the provided flag.
-		 *
 		 * @param releaseThread The flag indicating whether to release the thread.
 		 * @see BaseCheckpointSaver#release(RunnableConfig)
 		 * @return The current {@code Builder} instance for method chaining.
 		 */
-		public Builder releaseThread( boolean releaseThread ) {
+		public Builder releaseThread(boolean releaseThread) {
 			this.config.releaseThread = releaseThread;
 			return this;
 		}

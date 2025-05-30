@@ -275,7 +275,6 @@ public class StateGraph {
 
 	}
 
-
 	/**
 	 * Instantiates a new State graph.
 	 * @param name the name
@@ -318,7 +317,6 @@ public class StateGraph {
 		this.overAllStateFactory = overAllStateFactory;
 		this.stateSerializer = plainTextStateSerializer;
 	}
-
 
 	/**
 	 * Instantiates a new State graph.

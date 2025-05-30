@@ -237,7 +237,8 @@ public final class OverAllState implements Serializable {
 	}
 
 	/**
-	 * Clears all data in the current state, leaving key strategies, resume flag, and human feedback intact.
+	 * Clears all data in the current state, leaving key strategies, resume flag, and
+	 * human feedback intact.
 	 */
 	public void clear() {
 		this.data.clear();
@@ -246,9 +247,8 @@ public final class OverAllState implements Serializable {
 	/**
 	 * Replaces the current state's contents with the provided state.
 	 * <p>
-	 * This method effectively copies all data, key strategies, resume flag, and human feedback from the provided
-	 * state to this state.
-	 *
+	 * This method effectively copies all data, key strategies, resume flag, and human
+	 * feedback from the provided state to this state.
 	 * @param overAllState the state to copy from
 	 */
 	public void cover(OverAllState overAllState) {
@@ -259,8 +259,6 @@ public final class OverAllState implements Serializable {
 		this.resume = overAllState.resume;
 		this.humanFeedback = overAllState.humanFeedback;
 	}
-
-
 
 	/**
 	 * Inputs over all state.
@@ -273,7 +271,7 @@ public final class OverAllState implements Serializable {
 			return this;
 		}
 
-		if (CollectionUtils.isEmpty(input)){
+		if (CollectionUtils.isEmpty(input)) {
 			return this;
 		}
 
@@ -456,7 +454,7 @@ public final class OverAllState implements Serializable {
 	 * Key strategies map.
 	 * @return the map
 	 */
-	public  Map<String, KeyStrategy> keyStrategies() {
+	public Map<String, KeyStrategy> keyStrategies() {
 		return keyStrategies;
 	}
 
