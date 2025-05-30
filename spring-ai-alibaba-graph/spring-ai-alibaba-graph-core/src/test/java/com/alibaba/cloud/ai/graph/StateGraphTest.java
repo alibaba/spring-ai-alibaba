@@ -361,12 +361,7 @@ public class StateGraphTest {
 
 		var app = workflow.compile();
 
-		var result = app.stream()
-			.stream()
-			.peek(nodeOutput -> System.out.println(
-					"node = " + nodeOutput.node() + "     message = " + nodeOutput.state().value("messages").get()))
-			.reduce((a, b) -> b)
-			.map(NodeOutput::state);
+		var result = app.stream(Map.of()).stream().peek(System.out::println).reduce((a, b) -> b).map(NodeOutput::state);
 		assertTrue(result.isPresent());
 		assertIterableEquals(List.of("A", "A1", "A2", "A3", "B", "C"),
 				(List<String>) result.get().value("messages").get());
@@ -388,12 +383,7 @@ public class StateGraphTest {
 
 		app = workflow.compile();
 
-		result = app.stream()
-			.stream()
-			.peek(nodeOutput -> System.out.println(
-					"node = " + nodeOutput.node() + "     message = " + nodeOutput.state().value("messages").get()))
-			.reduce((a, b) -> b)
-			.map(NodeOutput::state);
+		result = app.stream(Map.of()).stream().peek(System.out::println).reduce((a, b) -> b).map(NodeOutput::state);
 
 		assertTrue(result.isPresent());
 		assertIterableEquals(List.of("A1", "A2", "A3", "B", "C"), (List<String>) result.get().value("messages").get());
