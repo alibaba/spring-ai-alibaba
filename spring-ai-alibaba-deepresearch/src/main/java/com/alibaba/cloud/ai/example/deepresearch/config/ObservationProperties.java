@@ -16,29 +16,25 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.config;
 
-import com.alibaba.cloud.ai.example.deepresearch.model.BackgroundInvestigationType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Allen Hu
- * @date 2025/5/24
+ * @since 0.1.0
  */
-@ConfigurationProperties(prefix = DeepResearchProperties.PREFIX)
-public class DeepResearchProperties {
+@ConfigurationProperties(prefix = ObservationProperties.PREFIX)
+public class ObservationProperties {
 
-	public static final String PREFIX = "spring.ai.alibaba.deepreserch";
+	public static final String PREFIX = DeepResearchProperties.PREFIX + ".observation";
 
-	/**
-	 * Set the type of background investigation node. Default is: just_web_search
-	 */
-	private BackgroundInvestigationType backgroundInvestigationType = BackgroundInvestigationType.JUST_WEB_SEARCH;
+	private boolean enabled;
 
-	public BackgroundInvestigationType getBackgroundInvestigationType() {
-		return backgroundInvestigationType;
+	public boolean isEnabled() {
+		return enabled;
 	}
 
-	public void setBackgroundInvestigationType(BackgroundInvestigationType backgroundInvestigationType) {
-		this.backgroundInvestigationType = backgroundInvestigationType;
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 }

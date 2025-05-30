@@ -24,9 +24,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.*;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
@@ -36,7 +36,7 @@ public class MessageDeserializer extends JsonDeserializer<Message> {
 
 	private static final Logger logger = LoggerFactory.getLogger(MessageDeserializer.class);
 
-	private static final Map<String, Function<String, Message>> MESSAGE_FACTORIES = new HashMap<>();
+	private static final Map<String, Function<String, Message>> MESSAGE_FACTORIES = new ConcurrentHashMap<>();
 
 	static {
 		MESSAGE_FACTORIES.put("USER", UserMessage::new);

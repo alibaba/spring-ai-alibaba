@@ -24,7 +24,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class ChatModel {
+public class ChatModelConfig {
 
 	@Schema(description = "ChatModel bean name", examples = { "chatModel", "chatModel1" })
 	private String name;
