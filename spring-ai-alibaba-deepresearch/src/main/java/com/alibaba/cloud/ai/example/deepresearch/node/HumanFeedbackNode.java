@@ -44,7 +44,7 @@ public class HumanFeedbackNode implements NodeAction {
 		String nextStep = "research_team";
 		Map<String, Object> updated = new HashMap<>();
 
-		//auto_accepted、yes、no 迭代次数都+1
+		// auto_accepted、yes、no 迭代次数都+1
 		Integer planIterations = state.value("plan_iterations", 0);
 		planIterations += 1;
 		updated.put("plan_iterations", planIterations);
@@ -57,8 +57,8 @@ public class HumanFeedbackNode implements NodeAction {
 			interrupt(state);
 			Map<String, Object> feedBackData = state.humanFeedback().data();
 
-			//TIP: 暂时没做默认值校验，controller层有一层校验，并且后续该Node还会调整
-			//由于graph的state传递问题，暂时没法从state.value方法获取值，选用map写法
+			// TIP: 暂时没做默认值校验，controller层有一层校验，并且后续该Node还会调整
+			// 由于graph的state传递问题，暂时没法从state.value方法获取值，选用map写法
 			String feedback = feedBackData.get("feed_back").toString();
 
 			if (StringUtils.hasLength(feedback) && "n".equals(feedback)) {
