@@ -1,5 +1,19 @@
 <template>
   <div class="sidebar-wrapper" :class="{ 'sidebar-wrapper-collapsed': isCollapsed }">
+    <div class="sidebar-content">
+      <h2 class="sidebar-content-title">历史记录</h2>
+      <div class="sidebar-content-list">
+        <BlurCard
+          class="sidebar-content-list-item"
+          :class="{ 'sidebar-content-list-item-active': item.id === activeId }"
+          v-for="item in mockHistory"
+          :key="item.id"
+          :content="{ title: item.title, description: item.content, icon: 'carbon:send-alt' }"
+          @click="navigateTo(item.id)"
+        />
+      </div>
+    </div>
+
     <div class="sidebar-switch" @click="toggleSidebar">
       <div class="tb-line-wrapper" :class="{ 'tb-line-wrapper-expanded': !isCollapsed }">
         <div class="tb-line" :class="{ 'tb-line-expanded': !isCollapsed }"></div>
@@ -10,20 +24,39 @@
 </template>
 
 <script setup lang="ts">
+import { ref, reactive } from 'vue'
 import BlurCard from '@/components/blurCard/index.vue'
-import { ref } from 'vue'
+import router from '@/router'
 
 const isCollapsed = ref(false)
+const activeId = ref<number | null>(null)
 
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value
 }
+
+const navigateTo = (id: number) => {
+  activeId.value = id
+  router.push(`/plan/${id}`)
+}
+
+// TODO: 替换为真实接口
+const mockData = Array(10)
+  .fill(0)
+  .map((_, index) => {
+    return {
+      id: index,
+      title: '已完成',
+      content: '查询杭州到成都的机票...',
+    }
+  })
+const mockHistory = reactive(mockData)
 </script>
 
 <style scoped>
 .sidebar-wrapper {
   position: relative;
-  width: 100px;
+  width: 280px;
   height: 100vh;
   background: rgba(255, 255, 255, 0.05);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
@@ -79,6 +112,47 @@ const toggleSidebar = () => {
   }
 }
 .sidebar-wrapper-collapsed {
-  width: 1px !important;
+  width: 1px;
+}
+
+.sidebar-content {
+  height: 100%;
+  width: 100%;
+  padding: 12px 0 12px 12px;
+
+  .sidebar-content-title {
+    font-size: 18px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-fill-color: transparent;
+    margin-bottom: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sidebar-content-list {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow-y: auto;
+
+    .sidebar-content-list-item {
+      width: calc(100% - 12px);
+      margin-top: 12px;
+      min-height: 96px;
+      text-wrap: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sidebar-content-list-item-active {
+      border: 2px solid #667eea;
+    }
+  }
 }
 </style>

@@ -1,5 +1,5 @@
 {
-  "name": "jtaskpilot-ui",
+  "name": "jmanus-ui",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,8 @@
     "type-check": "vue-tsc --build --force",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "format": "prettier --write src/",
-    "serve": "vite preview"
+    "serve": "vite preview",
+    "dev:server": "mvn spring-boot:run"
   },
   "dependencies": {
     "@antv/g2": "^5.1.19",

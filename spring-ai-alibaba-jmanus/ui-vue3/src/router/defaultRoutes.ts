@@ -14,7 +14,6 @@ export const routes: Readonly<RouteRecordType[]> = [
     path: '/',
     name: 'Root',
     redirect: '/home',
-    component: () => import('../layout/index.vue'),
     meta: {
       skip: true,
     },

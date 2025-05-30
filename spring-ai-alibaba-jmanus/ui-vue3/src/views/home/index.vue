@@ -8,12 +8,14 @@
         <div class="gradient-orb orb-2"></div>
         <div class="gradient-orb orb-3"></div>
       </div>
-
       <!-- Header -->
       <header class="header">
-        <div class="logo">
-          <h1>JTaskPilot</h1>
-          <span class="tagline">AI 驱动的自动化 Agent</span>
+        <div class="logo-container">
+          <div class="logo">
+            <img src="/Java-AI.svg" alt="JManus" class="java-logo" />
+            <h1>JManus</h1>
+          </div>
+          <span class="tagline">Java AI 智能体</span>
         </div>
       </header>
 
@@ -149,7 +151,9 @@ const selectExample = (example: any) => {
 }
 
 .background-effects {
-  position: absolute;
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
   top: 0;
   left: 0;
   right: 0;
@@ -213,8 +217,19 @@ const selectExample = (example: any) => {
   padding: 32px 32px 0;
 }
 
-.logo {
+.logo-container {
   text-align: center;
+
+  .logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  img {
+    height: 52px;
+    margin-bottom: 12px;
+  }
 
   h1 {
     font-size: 48px;

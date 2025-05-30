@@ -1,154 +1,157 @@
 <template>
   <div class="plan-page">
-    <!-- Left Panel - Chat -->
-    <div class="left-panel">
-      <div class="chat-header">
-        <button class="back-button" @click="goBack">
-          <Icon icon="carbon:arrow-left" />
-        </button>
-        <h2>Task Planning</h2>
-        <button class="new-chat-button" @click="newChat">
-          <Icon icon="carbon:add" />
-          New
-        </button>
-      </div>
+    <Sidebar />
+    <div class="plan">
+      <!-- Left Panel - Chat -->
+      <div class="left-panel">
+        <div class="chat-header">
+          <button class="back-button" @click="goBack">
+            <Icon icon="carbon:arrow-left" />
+          </button>
+          <h2>Task Planning</h2>
+          <button class="new-chat-button" @click="newChat">
+            <Icon icon="carbon:add" />
+            New
+          </button>
+        </div>
 
-      <div class="chat-container">
-        <div class="messages" ref="messagesRef">
-          <div
-            v-for="message in messages"
-            :key="message.id"
-            class="message"
-            :class="{ user: message.type === 'user', assistant: message.type === 'assistant' }"
-          >
-            <div class="message-content">
-              <div v-if="message.type === 'user'" class="user-message">
-                {{ message.content }}
-              </div>
-              <div v-else class="assistant-message">
-                <div class="thinking" v-if="message.thinking">
-                  <Icon icon="carbon:thinking" class="thinking-icon" />
-                  <span>{{ message.thinking }}</span>
-                </div>
-                <div class="response" v-if="message.content">
+        <div class="chat-container">
+          <div class="messages" ref="messagesRef">
+            <div
+              v-for="message in messages"
+              :key="message.id"
+              class="message"
+              :class="{ user: message.type === 'user', assistant: message.type === 'assistant' }"
+            >
+              <div class="message-content">
+                <div v-if="message.type === 'user'" class="user-message">
                   {{ message.content }}
                 </div>
-                <div class="progress" v-if="message.progress">
-                  <div class="progress-bar">
-                    <div class="progress-fill" :style="{ width: message.progress + '%' }"></div>
+                <div v-else class="assistant-message">
+                  <div class="thinking" v-if="message.thinking">
+                    <Icon icon="carbon:thinking" class="thinking-icon" />
+                    <span>{{ message.thinking }}</span>
                   </div>
-                  <span class="progress-text">{{ message.progressText }}</span>
+                  <div class="response" v-if="message.content">
+                    {{ message.content }}
+                  </div>
+                  <div class="progress" v-if="message.progress">
+                    <div class="progress-bar">
+                      <div class="progress-fill" :style="{ width: message.progress + '%' }"></div>
+                    </div>
+                    <span class="progress-text">{{ message.progressText }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="isLoading" class="message assistant">
+              <div class="message-content">
+                <div class="assistant-message">
+                  <div class="thinking">
+                    <div class="thinking-dots">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                    <span>Analyzing your request...</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div v-if="isLoading" class="message assistant">
-            <div class="message-content">
-              <div class="assistant-message">
-                <div class="thinking">
-                  <div class="thinking-dots">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                  <span>Analyzing your request...</span>
-                </div>
-              </div>
+          <div class="input-area">
+            <div class="input-container">
+              <textarea
+                v-model="currentInput"
+                ref="inputRef"
+                class="chat-input"
+                placeholder="Ask a follow-up question or provide more details..."
+                @keydown="handleKeydown"
+                @input="adjustInputHeight"
+              ></textarea>
+              <button
+                class="send-button"
+                :disabled="!currentInput.trim() || isLoading"
+                @click="sendMessage"
+              >
+                <Icon icon="carbon:send-alt" />
+              </button>
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="input-area">
-          <div class="input-container">
-            <textarea
-              v-model="currentInput"
-              ref="inputRef"
-              class="chat-input"
-              placeholder="Ask a follow-up question or provide more details..."
-              @keydown="handleKeydown"
-              @input="adjustInputHeight"
-            ></textarea>
+      <!-- Right Panel - Preview -->
+      <div class="right-panel">
+        <div class="preview-header">
+          <div class="preview-tabs">
             <button
-              class="send-button"
-              :disabled="!currentInput.trim() || isLoading"
-              @click="sendMessage"
+              v-for="tab in previewTabs"
+              :key="tab.id"
+              class="tab-button"
+              :class="{ active: activeTab === tab.id }"
+              @click="activeTab = tab.id"
             >
-              <Icon icon="carbon:send-alt" />
+              <Icon :icon="tab.icon" />
+              {{ tab.name }}
+            </button>
+          </div>
+          <div class="preview-actions">
+            <button class="action-button" @click="copyCode" v-if="activeTab === 'code'">
+              <Icon icon="carbon:copy" />
+            </button>
+            <button class="action-button" @click="downloadCode" v-if="activeTab === 'code'">
+              <Icon icon="carbon:download" />
             </button>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Right Panel - Preview -->
-    <div class="right-panel">
-      <div class="preview-header">
-        <div class="preview-tabs">
-          <button
-            v-for="tab in previewTabs"
-            :key="tab.id"
-            class="tab-button"
-            :class="{ active: activeTab === tab.id }"
-            @click="activeTab = tab.id"
-          >
-            <Icon :icon="tab.icon" />
-            {{ tab.name }}
-          </button>
-        </div>
-        <div class="preview-actions">
-          <button class="action-button" @click="copyCode" v-if="activeTab === 'code'">
-            <Icon icon="carbon:copy" />
-          </button>
-          <button class="action-button" @click="downloadCode" v-if="activeTab === 'code'">
-            <Icon icon="carbon:download" />
-          </button>
-        </div>
-      </div>
+        <div class="preview-content">
+          <!-- Code Preview -->
+          <div v-if="activeTab === 'code'" class="code-preview">
+            <MonacoEditor
+              v-model="codeContent"
+              :language="codeLanguage"
+              :theme="'vs-dark'"
+              :height="'100%'"
+              :readonly="true"
+              :editor-options="{
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                wordWrap: 'on',
+              }"
+            />
+          </div>
 
-      <div class="preview-content">
-        <!-- Code Preview -->
-        <div v-if="activeTab === 'code'" class="code-preview">
-          <MonacoEditor
-            v-model="codeContent"
-            :language="codeLanguage"
-            :theme="'vs-dark'"
-            :height="'100%'"
-            :readonly="true"
-            :editor-options="{
-              minimap: { enabled: false },
-              scrollBeyondLastLine: false,
-              wordWrap: 'on',
-            }"
-          />
-        </div>
-
-        <!-- Chat Preview -->
-        <div v-else-if="activeTab === 'chat'" class="chat-preview">
-          <div class="chat-bubbles">
-            <div
-              v-for="bubble in chatBubbles"
-              :key="bubble.id"
-              class="chat-bubble"
-              :class="bubble.type"
-            >
-              <div class="bubble-header">
-                <Icon :icon="bubble.icon" />
-                <span>{{ bubble.title }}</span>
-                <span class="timestamp">{{ bubble.timestamp }}</span>
-              </div>
-              <div class="bubble-content">
-                {{ bubble.content }}
+          <!-- Chat Preview -->
+          <div v-else-if="activeTab === 'chat'" class="chat-preview">
+            <div class="chat-bubbles">
+              <div
+                v-for="bubble in chatBubbles"
+                :key="bubble.id"
+                class="chat-bubble"
+                :class="bubble.type"
+              >
+                <div class="bubble-header">
+                  <Icon :icon="bubble.icon" />
+                  <span>{{ bubble.title }}</span>
+                  <span class="timestamp">{{ bubble.timestamp }}</span>
+                </div>
+                <div class="bubble-content">
+                  {{ bubble.content }}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Empty State -->
-        <div v-else class="empty-preview">
-          <Icon icon="carbon:document" class="empty-icon" />
-          <h3>No preview available</h3>
-          <p>Start a conversation to see the generated content here.</p>
+          <!-- Empty State -->
+          <div v-else class="empty-preview">
+            <Icon icon="carbon:document" class="empty-icon" />
+            <h3>No preview available</h3>
+            <p>Start a conversation to see the generated content here.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -160,6 +163,7 @@ import { ref, onMounted, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import MonacoEditor from '@/components/editor/index.vue'
+import Sidebar from '@/components/sidebar/index.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -387,16 +391,24 @@ const downloadCode = () => {
 
 <style lang="less" scoped>
 .plan-page {
+  width: 100%;
+  display: flex;
+  position: relative;
+}
+
+.plan {
   height: 100vh;
   background: #0a0a0a;
   display: flex;
 }
 
 .left-panel {
+  position: relative;
   width: 50%;
   border-right: 1px solid #1a1a1a;
   display: flex;
   flex-direction: column;
+  max-height: 100vh;
 }
 
 .chat-header {
@@ -440,15 +452,16 @@ const downloadCode = () => {
   flex: 1;
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .messages {
-  flex: 1;
-  overflow-y: auto;
   padding: 24px;
+  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  overflow-y: scroll;
 }
 
 .message {
@@ -577,6 +590,7 @@ const downloadCode = () => {
 }
 
 .input-area {
+  min-height: 112px;
   padding: 20px 24px;
   border-top: 1px solid #1a1a1a;
   background: rgba(255, 255, 255, 0.02);

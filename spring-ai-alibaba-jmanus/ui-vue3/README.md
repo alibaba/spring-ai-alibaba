@@ -1,7 +1,7 @@
-# JTaskPilot UI
+# JManus UI
 
 <p align="center">
-  <img src="./public/logo.png" alt="JTaskPilot UI Logo" width="200"/>
+  <img src="./public/logo.png" alt="JManus UI Logo" width="200"/>
 </p>
 
 <p align="center">
