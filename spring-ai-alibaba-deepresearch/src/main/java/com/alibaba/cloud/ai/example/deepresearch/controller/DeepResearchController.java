@@ -170,9 +170,8 @@ public class DeepResearchController {
 		}
 
 		// 暂时注释，看后续graph是否会优化该写法
-		// StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
-		// OverAllState state = stateSnapshot.state();
-		OverAllState state = compiledGraph.overAllState();
+		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
+		OverAllState state = stateSnapshot.state();
 		state.withResume();
 		state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
 
