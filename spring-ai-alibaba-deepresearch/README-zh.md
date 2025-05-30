@@ -2,7 +2,7 @@
 
 ### 配置
 
-需要配置以下环境变量，或者直接修改`application.yaml`:
+需要配置以下环境变量，或者直接修改`application.yml`:
 - DashScope API: `${DASHSCOPE_API_KEY}`
 - TavilySearch API: `${TAVILY_API_KEY}`
 - Python解释器所在的路径：`${PYTHON_HOME}`，例如`/usr/bin/python3`
