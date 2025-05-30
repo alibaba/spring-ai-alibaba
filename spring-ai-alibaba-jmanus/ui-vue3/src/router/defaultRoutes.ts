@@ -36,6 +36,14 @@ export const routes: Readonly<RouteRecordType[]> = [
           fullscreen: true,
         },
       },
+      {
+        path: '/configs',
+        name: 'configs',
+        component: () => import('../views/configs/index.vue'),
+        meta: {
+          icon: 'carbon:settings-adjust',
+        },
+      },
     ],
   },
   {

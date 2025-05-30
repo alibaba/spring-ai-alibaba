@@ -1,7 +1,13 @@
 <template>
   <div class="sidebar-wrapper" :class="{ 'sidebar-wrapper-collapsed': isCollapsed }">
     <div class="sidebar-content">
-      <h2 class="sidebar-content-title">历史记录</h2>
+      <div class="sidebar-content-header">
+        <div class="sidebar-content-title">历史记录</div>
+
+        <div class="config-button" @click="handleConfig">
+          <Icon icon="carbon:settings-adjust" width="20" />
+        </div>
+      </div>
       <div class="sidebar-content-list">
         <BlurCard
           class="sidebar-content-list-item"
@@ -25,10 +31,12 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import { Icon } from '@iconify/vue'
+
 import BlurCard from '@/components/blurCard/index.vue'
 import router from '@/router'
 
-const isCollapsed = ref(false)
+const isCollapsed = ref(true)
 const activeId = ref<number | null>(null)
 
 const toggleSidebar = () => {
@@ -38,6 +46,10 @@ const toggleSidebar = () => {
 const navigateTo = (id: number) => {
   activeId.value = id
   router.push(`/plan/${id}`)
+}
+
+const handleConfig = () => {
+  router.push('/configs')
 }
 
 // TODO: 替换为真实接口
@@ -120,18 +132,47 @@ const mockHistory = reactive(mockData)
   width: 100%;
   padding: 12px 0 12px 12px;
 
-  .sidebar-content-title {
-    font-size: 18px;
-    font-weight: 600;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-fill-color: transparent;
-    margin-bottom: 12px;
+  .sidebar-content-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+
+    .sidebar-content-title {
+      font-size: 20px;
+      font-weight: 600;
+
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-fill-color: transparent;
+      /* margin-bottom: 12px; */
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .config-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      margin-right: 16px;
+      /* border: 1px solid rgba(255, 255, 255, 0.1); */
+      /* border-radius: 6px; */
+      /* background: rgba(255, 255, 255, 0.05); */
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+    }
   }
 
   .sidebar-content-list {

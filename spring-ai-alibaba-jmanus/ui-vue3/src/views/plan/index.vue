@@ -9,10 +9,10 @@
             <Icon icon="carbon:arrow-left" />
           </button>
           <h2>Task Planning</h2>
-          <button class="new-chat-button" @click="newChat">
+          <!-- <button class="new-chat-button" @click="newChat">
             <Icon icon="carbon:add" />
             New
-          </button>
+          </button> -->
         </div>
 
         <div class="chat-container">
@@ -398,6 +398,7 @@ const downloadCode = () => {
 
 .plan {
   height: 100vh;
+  width: 100%;
   background: #0a0a0a;
   display: flex;
 }
@@ -428,8 +429,7 @@ const downloadCode = () => {
   }
 }
 
-.back-button,
-.new-chat-button {
+.back-button {
   padding: 8px 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
@@ -653,6 +653,7 @@ const downloadCode = () => {
 
 .right-panel {
   width: 50%;
+
   display: flex;
   flex-direction: column;
 }
