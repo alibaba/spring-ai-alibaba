@@ -20,7 +20,7 @@
 
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-bom</artifactId>
-    <version>1.0.0.1</version>
+    <version>1.0.0.3-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
