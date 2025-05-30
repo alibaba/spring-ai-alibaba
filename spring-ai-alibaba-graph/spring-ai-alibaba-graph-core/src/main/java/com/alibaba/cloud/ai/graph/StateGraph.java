@@ -37,6 +37,7 @@ import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializer;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -239,7 +240,13 @@ public class StateGraph {
 		 * Instantiates a new Gson serializer.
 		 */
 		public GsonSerializer() {
-			super(OverAllState::new, new GsonBuilder().serializeNulls().create());
+			super(OverAllState::new,
+					new GsonBuilder().enableComplexMapKeySerialization()
+						.setLenient()
+						.registerTypeAdapter(Double.TYPE,
+								(JsonDeserializer<Double>) (json, typeOfT, context) -> json.getAsDouble())
+						.serializeNulls()
+						.create());
 		}
 
 		/**
@@ -262,7 +269,13 @@ public class StateGraph {
 		 * @param stateFactory the state factory
 		 */
 		public GsonSerializer2(AgentStateFactory<OverAllState> stateFactory) {
-			super(stateFactory, new GsonBuilder().serializeNulls().create());
+			super(stateFactory,
+					new GsonBuilder().enableComplexMapKeySerialization()
+						.registerTypeAdapter(Double.TYPE,
+								(JsonDeserializer<Double>) (json, typeOfT, context) -> json.getAsDouble())
+						.setLenient()
+						.serializeNulls()
+						.create());
 		}
 
 		/**
@@ -296,7 +309,7 @@ public class StateGraph {
 	public StateGraph(String name, OverAllStateFactory overAllStateFactory) {
 		this.name = name;
 		this.overAllStateFactory = overAllStateFactory;
-		this.stateSerializer = new GsonSerializer();
+		this.stateSerializer = new JacksonSerializer();
 	}
 
 	/**
@@ -305,7 +318,7 @@ public class StateGraph {
 	 */
 	public StateGraph(OverAllStateFactory overAllStateFactory) {
 		this.overAllStateFactory = overAllStateFactory;
-		this.stateSerializer = new GsonSerializer();
+		this.stateSerializer = new JacksonSerializer();
 	}
 
 	/**

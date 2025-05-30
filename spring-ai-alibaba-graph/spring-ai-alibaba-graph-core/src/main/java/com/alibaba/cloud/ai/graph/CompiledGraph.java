@@ -593,7 +593,7 @@ public class CompiledGraph {
 				}
 				// patch for backward support of AppendableValue
 				this.currentState = getInitialState(inputs, config);
-				this.overAllState = overAllState;
+				this.overAllState = overAllState.input(currentState);
 				this.nextNodeId = null;
 				this.currentNodeId = StateGraph.START;
 				this.config = config;

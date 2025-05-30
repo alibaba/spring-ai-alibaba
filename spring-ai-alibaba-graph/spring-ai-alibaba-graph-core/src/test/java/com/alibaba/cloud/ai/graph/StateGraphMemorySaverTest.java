@@ -182,7 +182,6 @@ public class StateGraphMemorySaverTest {
 		var workflow = new StateGraph(overAllStateFactory).addEdge(START, "agent_1")
 			.addNode("agent_1", node_async(agent_1))
 			.addConditionalEdges("agent_1", edge_async(shouldContinue), Map.of("next", "agent_1", "exit", END));
-		;
 
 		var saver = new VersionedMemorySaver();
 
@@ -235,8 +234,7 @@ public class StateGraphMemorySaverTest {
 		}
 
 		// RE-SUBMIT THREAD 1
-		OverAllState overAllState = state.get();
-		state = app.invoke(overAllState, runnableConfig);
+		state = app.invoke(Map.of(), runnableConfig);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps + 1, state.get().value("steps").get());
