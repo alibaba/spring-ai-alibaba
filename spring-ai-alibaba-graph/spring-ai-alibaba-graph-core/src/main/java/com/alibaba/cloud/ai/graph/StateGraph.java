@@ -202,29 +202,9 @@ public class StateGraph {
 	 */
 	final Edges edges = new Edges();
 
-	private OverAllState overAllState;
-
 	private OverAllStateFactory overAllStateFactory;
 
 	private String name;
-
-	/**
-	 * Gets over all state.
-	 * @return the over all state
-	 */
-	public OverAllState getOverAllState() {
-		return overAllState;
-	}
-
-	/**
-	 * Sets over all state.
-	 * @param overAllState the over all state
-	 * @return the over all state
-	 */
-	public StateGraph setOverAllState(OverAllState overAllState) {
-		this.overAllState = overAllState;
-		return this;
-	}
 
 	private final PlainTextStateSerializer stateSerializer;
 
@@ -295,16 +275,6 @@ public class StateGraph {
 
 	}
 
-	/**
-	 * Instantiates a new State graph.
-	 * @param overAllState the over all state
-	 * @param plainTextStateSerializer the plain text state serializer
-	 */
-	@Deprecated
-	public StateGraph(OverAllState overAllState, PlainTextStateSerializer plainTextStateSerializer) {
-		this.overAllState = overAllState;
-		this.stateSerializer = plainTextStateSerializer;
-	}
 
 	/**
 	 * Instantiates a new State graph.
@@ -349,27 +319,6 @@ public class StateGraph {
 		this.stateSerializer = plainTextStateSerializer;
 	}
 
-	/**
-	 * Instantiates a new State graph.
-	 * @param name the name
-	 * @param overAllState the over all state
-	 */
-	@Deprecated
-	public StateGraph(String name, OverAllState overAllState) {
-		this.name = name;
-		this.overAllState = overAllState;
-		this.stateSerializer = new GsonSerializer();
-	}
-
-	/**
-	 * Instantiates a new State graph.
-	 * @param overAllState the over all state
-	 */
-	@Deprecated
-	public StateGraph(OverAllState overAllState) {
-		this.overAllState = overAllState;
-		this.stateSerializer = new GsonSerializer();
-	}
 
 	/**
 	 * Instantiates a new State graph.
@@ -390,7 +339,7 @@ public class StateGraph {
 	 * Gets state serializer.
 	 * @return the state serializer
 	 */
-	public StateSerializer getStateSerializer() {
+	public StateSerializer<OverAllState> getStateSerializer() {
 		return stateSerializer;
 	}
 
@@ -500,17 +449,6 @@ public class StateGraph {
 		}
 
 		subGraph.validateGraph();
-		OverAllState subGraphOverAllState = subGraph.getOverAllState();
-		OverAllState superOverAllState = getOverAllState();
-		if (subGraphOverAllState != null) {
-			Map<String, KeyStrategy> strategies = subGraphOverAllState.keyStrategies();
-			for (Map.Entry<String, KeyStrategy> strategyEntry : strategies.entrySet()) {
-				if (!superOverAllState.containStrategy(strategyEntry.getKey())) {
-					superOverAllState.registerKeyAndStrategy(strategyEntry.getKey(), strategyEntry.getValue());
-				}
-			}
-		}
-		subGraph.setOverAllState(getOverAllState());
 
 		var node = new SubStateGraphNode(id, subGraph);
 

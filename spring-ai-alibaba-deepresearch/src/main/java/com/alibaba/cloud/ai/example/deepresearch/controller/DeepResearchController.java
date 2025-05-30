@@ -180,7 +180,7 @@ public class DeepResearchController {
 		OverAllState state = stateSnapshot.state();
 		state.withResume();
 		state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
-		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.stream(state, runnableConfig);
+		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.streamFromInitialNode(state, runnableConfig);
 		processStream(resultFuture, sink);
 	}
 

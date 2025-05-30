@@ -268,8 +268,14 @@ public final class OverAllState implements Serializable {
 	 * @return the over all state
 	 */
 	public OverAllState input(Map<String, Object> input) {
-		if (CollectionUtils.isEmpty(input))
+		if (input == null) {
+			withResume();
 			return this;
+		}
+
+		if (CollectionUtils.isEmpty(input)){
+			return this;
+		}
 
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
 		input.keySet().stream().filter(key -> keyStrategies.containsKey(key)).forEach(key -> {
@@ -450,8 +456,8 @@ public final class OverAllState implements Serializable {
 	 * Key strategies map.
 	 * @return the map
 	 */
-	public final Map<String, KeyStrategy> keyStrategies() {
-		return unmodifiableMap(keyStrategies);
+	public  Map<String, KeyStrategy> keyStrategies() {
+		return keyStrategies;
 	}
 
 	/**

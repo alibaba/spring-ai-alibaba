@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.VersionedMemorySaver;
+import com.alibaba.cloud.ai.graph.serializer.AgentState;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -74,7 +75,7 @@ public class StateGraphMemorySaverTest {
 
     EdgeAction shouldContinue_whether = state -> {
         List<String> messages = (List<String>) state.value("messages").get();
-         return messages.get(messages.size()-1).equals("tool_calls")?"tools":END;
+        return messages.get(messages.size() - 1).equals("tool_calls") ? "tools" : END;
     };
 
     private OverAllStateFactory overAllStateFactory = () -> OverAllStateBuilder.builder()
@@ -241,7 +242,7 @@ public class StateGraphMemorySaverTest {
                 .threadId("thread_2")
                 .build();
 
-        state = app.invoke(overAllStateFactory.create().input(inputs), runnableConfig);
+        state = app.invoke(inputs, runnableConfig);
 
         assertTrue( state.isPresent() );
         assertEquals( expectedSteps, state.get().value("steps").get() );
@@ -255,7 +256,8 @@ public class StateGraphMemorySaverTest {
         }
 
         // RE-SUBMIT THREAD 1
-        state = app.invoke( emptyMap(), runnableConfig );
+        OverAllState overAllState = state.get();
+        state = app.invoke( overAllState, runnableConfig );
 
         assertTrue( state.isPresent() );
         assertEquals( expectedSteps + 1, state.get().value("steps").get() );
@@ -323,30 +325,169 @@ public class StateGraphMemorySaverTest {
             log.info( "SNAPSHOT HISTORY:\n{}\n", s );
         }
 
-        results = app.stream( Map.of(), runnableConfig ).stream().collect( Collectors.toList() );
+        results = app.stream( null, runnableConfig ).stream().collect( Collectors.toList() );
 
         assertNotNull( results );
         assertFalse( results.isEmpty() );
         assertEquals( 1, results.size() );
         assertTrue( results.get(0).state().value("messages").isPresent() );
-        assertEquals( "whether in Naples is sunny", results.get(0).state().value("messages").get() );
+        List<String> messages = (List<String>) results.get(0).state().value("messages").get();
+        assertEquals( "whether in Naples is sunny", messages.get(messages.size()-1) );
 
         Optional<StateSnapshot> firstSnapshot = stateHistory.stream().reduce( (first, second) -> second); // take the last
         assertTrue( firstSnapshot.isPresent() );
         assertTrue( firstSnapshot.get().state().value("messages").isPresent() );
-        assertEquals( "whether in Naples?", firstSnapshot.get().state().value("messages").get() );
+        assertEquals( "whether in Naples?", ((List<String>)firstSnapshot.get().state().value("messages").get()).get(0) );
 
         var toReplay = firstSnapshot.get().config();
 
         toReplay = app.updateState( toReplay, Map.of( "messages", "i'm bartolo") );
-        results = app.stream( Map.of(), toReplay ).stream().collect( Collectors.toList() );
+        results = app.stream( null, toReplay ).stream().collect( Collectors.toList() );
 
         assertNotNull( results );
         assertFalse( results.isEmpty() );
         assertEquals( 2, results.size() );
         assertEquals( END, results.get(1).node() );
         assertTrue( results.get(1).state().value("messages").isPresent() );
-        assertEquals( "Hi bartolo, nice to meet you too! How can I assist you today?", results.get(0).state().value("messages").get() );
+        messages = (List<String>) results.get(0).state().value("messages").get();
+        assertEquals( "Hi bartolo, nice to meet you too! How can I assist you today?", messages.get(messages.size()-1) );
+
+    }
+
+    @Test
+    public void testPauseAndUpdatePastGraphState() throws Exception {
+
+        var workflow = new StateGraph(overAllStateFactory)
+                .addNode("agent", node_async(agent_whether) )
+                .addNode("tools", node_async(tool_whether) )
+                .addEdge(START, "agent")
+                .addConditionalEdges("agent",
+                        edge_async(shouldContinue_whether),
+                        Map.of("tools", "tools", END, END))
+                .addEdge("tools", "agent");
+
+        var saver = new MemorySaver();
+
+        var compileConfig = CompileConfig.builder()
+                .saverConfig(SaverConfig.builder()
+                        .register( SaverConstant.MEMORY, saver)
+                        .type( SaverConstant.MEMORY)
+                        .build())
+                .interruptBefore("tools")
+                .build();
+
+        var app = workflow.compile( compileConfig );
+
+        var runnableConfig = RunnableConfig.builder()
+                .threadId("thread_1")
+                .build();
+
+        log.info( "FIRST CALL WITH INTERRUPT BEFORE 'tools'");
+        Map<String,Object> inputs = Map.of( "messages", "whether in Naples?")  ;
+        var results = app.stream( inputs, runnableConfig ).stream()
+                .peek( n -> log.info( "{}", n ) )
+                .collect(Collectors.toList());
+        assertNotNull( results );
+        assertEquals( 2, results.size() );
+        assertEquals( START, results.get(0).node() );
+        assertEquals( "agent", results.get(1).node() );
+        List<String> messages = (List<String>) results.get(0).state().value("messages").get();
+        assertTrue( !messages.isEmpty() );
+
+        var state = app.getState(runnableConfig);
+
+        assertNotNull( state );
+        assertEquals( "tools", state.next() );
+
+        log.info( "RESUME CALL");
+        results = app.stream( null, state.config() ).stream()
+                .peek(n -> log.info( "{}", n ) )
+                .collect(Collectors.toList());
+
+        assertNotNull( results );
+        assertEquals( 3, results.size() );
+        assertEquals( "tools", results.get(0).node() );
+        assertEquals( "agent", results.get(1).node() );
+        assertEquals( END, results.get(2).node() );
+        messages = (List<String>) results.get(0).state().value("messages").get();
+        assertTrue( !messages.isEmpty() );
+        assertEquals( "whether in Naples is sunny", messages.get(messages.size()-1));
+
+    }
+
+    @Test
+    public void testMemoryWithVersionsSaver() throws Exception {
+
+        var threadId = "thread_1";
+
+        var saver = new VersionedMemorySaver();
+
+        // Check for error
+        var configWithVersion = RunnableConfig.builder()
+                .threadId(threadId)
+                .build();
+
+        // Create a new version of thread_1
+        var configWithoutVersion = RunnableConfig.builder()
+                .threadId(threadId)
+                .build();
+
+        var checkpoint = Checkpoint.builder()
+                .state(Map.of())
+                .nodeId(START)
+                .nextNodeId(END)
+                .build();
+
+        var newConfig = saver.put(configWithoutVersion, checkpoint);
+
+        var list = saver.list(newConfig);
+
+        assertEquals(1, list.size());
+
+        var tag = saver.release(newConfig);
+
+        assertEquals(1, tag.checkpoints().size());
+
+        var versions = saver.versionsByThreadId( threadId );
+
+        assertEquals(1, versions.size());
+
+        // Check if checkpoints collection  is immutable
+        assertThrowsExactly(UnsupportedOperationException.class, () -> tag.checkpoints().remove(checkpoint));
+
+        var configWithVersion1 = RunnableConfig.builder()
+                .threadId(threadId)
+                .build();
+
+        assertEquals(1, tag.checkpoints().size());
+
+        versions = saver.versionsByThreadId(configWithVersion);
+
+        assertEquals(1, versions.size());
+        assertEquals( checkpoint.getId(), list.stream().findFirst().map(Checkpoint::getId).orElseThrow() );
+
+        var checkpoint_1 = Checkpoint.builder()
+                .state(Map.of())
+                .nodeId("test")
+                .nextNodeId(END)
+                .build();
+        var checkpoint_2 = Checkpoint.builder()
+                .state(Map.of())
+                .nodeId("test_1")
+                .nextNodeId(END)
+                .build();
+
+        configWithVersion1 = saver.put( configWithVersion1, checkpoint_1 );
+
+        configWithVersion1 = saver.put( configWithVersion1.withCheckPointId(null), checkpoint_2 );
+
+        versions = saver.versionsByThreadId( threadId );
+
+        assertEquals(1, versions.size());
+
+        var tag2 = saver.release(configWithVersion1);
+
+        assertEquals(2, tag2.checkpoints().size());
 
     }
 
