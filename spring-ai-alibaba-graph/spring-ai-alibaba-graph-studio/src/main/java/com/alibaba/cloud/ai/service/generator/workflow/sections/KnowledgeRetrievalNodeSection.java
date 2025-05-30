@@ -2,32 +2,79 @@ package com.alibaba.cloud.ai.service.generator.workflow.sections;
 
 import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.model.workflow.nodedata.KnowledgeRetrievalNodeData;
 import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
 
 @Component
 public class KnowledgeRetrievalNodeSection implements NodeSection {
 
-	@Override
-	public boolean support(NodeType t) {
-		return NodeType.KNOWLEDGE_RETRIEVAL.equals(t);
-	}
+    @Override
+    public boolean support(NodeType nodeType) {
+        return NodeType.RETRIEVER.equals(nodeType);
+    }
 
-	// todo: add KnowledgeRetrievalNodeData
-	@Override
-	public String render(Node node) {
-		// KnowledgeRetrievalNodeData d = (KnowledgeRetrievalNodeData) node.getData();
-		// String id = node.getId();
-		// return String.format(
-		// "// —— 知识检索节点 [%s] ——%n" +
-		// "KnowledgeRetrievalNode %1$sNode = KnowledgeRetrievalNode.builder()%n" +
-		// " .vectorName(\"%s\")%n" +
-		// " .topK(%d)%n" +
-		// " .build();%n" +
-		// "stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%1$sNode));%n%n",
-		// id, d.getVectorName(), d.getTopK(), id
-		// );
-		return "";
-	}
+    @Override
+    public String render(Node node) {
+        KnowledgeRetrievalNodeData d = (KnowledgeRetrievalNodeData) node.getData();
+        String id = node.getId();
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(String.format("// —— KnowledgeRetrievalNode [%s] ——%n", id));
+        sb.append(String.format("KnowledgeRetrievalNode %sNode = KnowledgeRetrievalNode.builder()%n", id));
+
+        if (d.getUserPromptKey() != null) {
+            sb.append(String.format("    .userPromptKey(\"%s\")%n", escape(d.getUserPromptKey())));
+        }
+        if (d.getUserPrompt() != null) {
+            sb.append(String.format("    .userPrompt(\"%s\")%n", escape(d.getUserPrompt())));
+        }
+        if (d.getTopKKey() != null) {
+            sb.append(String.format("    .topKKey(\"%s\")%n", escape(d.getTopKKey())));
+        }
+        if (d.getTopK() != null) {
+            sb.append(String.format("    .topK(%d)%n", d.getTopK()));
+        }
+        if (d.getSimilarityThresholdKey() != null) {
+            sb.append(String.format("    .similarityThresholdKey(\"%s\")%n", escape(d.getSimilarityThresholdKey())));
+        }
+        if (d.getSimilarityThreshold() != null) {
+            sb.append(String.format("    .similarityThreshold(%s)%n", d.getSimilarityThreshold()));
+        }
+        if (d.getFilterExpressionKey() != null) {
+            sb.append(String.format("    .filterExpressionKey(\"%s\")%n", escape(d.getFilterExpressionKey())));
+        }
+        if (d.getFilterExpression() != null) {
+            sb.append(String.format("    .filterExpression(%s)%n", d.getFilterExpression().toString()));
+        }
+        if (d.getEnableRankerKey() != null) {
+            sb.append(String.format("    .enableRankerKey(\"%s\")%n", escape(d.getEnableRankerKey())));
+        }
+        if (d.getEnableRanker() != null) {
+            sb.append(String.format("    .enableRanker(%b)%n", d.getEnableRanker()));
+        }
+        if (d.getRerankModelKey() != null) {
+            sb.append(String.format("    .rerankModelKey(\"%s\")%n", escape(d.getRerankModelKey())));
+        }
+        if (d.getRerankModel() != null) {
+            sb.append(String.format("    .rerankModel(%s)%n", d.getRerankModel()));
+        }
+        if (d.getRerankOptionsKey() != null) {
+            sb.append(String.format("    .rerankOptionsKey(\"%s\")%n", escape(d.getRerankOptionsKey())));
+        }
+        if (d.getRerankOptions() != null) {
+            sb.append(String.format("    .rerankOptions(%s)%n", d.getRerankOptions()));
+        }
+        if (d.getVectorStoreKey() != null) {
+            sb.append(String.format("    .vectorStoreKey(\"%s\")%n", escape(d.getVectorStoreKey())));
+        }
+        sb.append("    .vectorStore(vectorStore)\n");
+
+        sb.append("    .build();\n");
+        sb.append(String.format(
+                "stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n",
+                id, id));
+        return sb.toString();
+    }
 
 }

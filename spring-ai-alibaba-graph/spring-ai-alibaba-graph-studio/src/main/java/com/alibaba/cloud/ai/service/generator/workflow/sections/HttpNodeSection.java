@@ -1,7 +1,9 @@
 package com.alibaba.cloud.ai.service.generator.workflow.sections;
 
+import com.alibaba.cloud.ai.graph.node.HttpNode;
 import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.model.workflow.nodedata.HttpNodeData;
 import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
 

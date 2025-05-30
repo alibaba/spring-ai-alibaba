@@ -14,20 +14,20 @@ public class AnswerNodeSection implements NodeSection {
 		return NodeType.ANSWER.equals(nodeType);
 	}
 
-	@Override
-	public String render(Node node) {
-		// AnswerNodeData d = (AnswerNodeData) node.getData();
-		// String id = node.getId();
-		// String answerTmpl = d.getAnswer().replace("\"", "\\\"");
-		// return String.format(
-		// "// —— Answer 节点 [%s] ——%n" +
-		// "AnswerNode %1$sNode = AnswerNode.builder()%n" +
-		// " .answerTemplate(\"%s\")%n" +
-		// " .build();%n" +
-		// "stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%1$sNode));%n%n",
-		// id, answerTmpl, id
-		// );
-		return "";
-	}
+    @Override
+    public String render(Node node) {
+        AnswerNodeData d = (AnswerNodeData) node.getData();
+        String id = node.getId();
+        // The template may contain double quotation marks and should be escaped
+        String escapedTemplate = escape(d.getAnswer());
+        return String.format(
+                "// —— AnswerNode [%s] ——%n" +
+                        "AnswerNode %1$sNode = AnswerNode.builder()%n" +
+                        "    .answer(\"%s\")%n" +
+                        "    .build();%n" +
+                        "stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%1$sNode));%n%n",
+                id, escapedTemplate, id
+        );
+    }
 
 }

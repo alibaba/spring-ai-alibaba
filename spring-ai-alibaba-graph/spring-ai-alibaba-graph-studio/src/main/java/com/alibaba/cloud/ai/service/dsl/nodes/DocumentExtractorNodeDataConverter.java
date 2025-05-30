@@ -64,8 +64,13 @@ public class DocumentExtractorNodeDataConverter extends AbstractNodeDataConverte
 					.map(variables -> Collections
 						.singletonList(new VariableSelector(variables.get(0), variables.get(1))))
 					.orElse(Collections.emptyList());
+                List<String> fileList = Optional.ofNullable((List<String>) data.get("file_list"))
+                        .orElse(Collections.emptyList());
 
-				return new DocumentExtractorNodeData(inputs, List.of(DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA));
+                String outputKey = Optional.ofNullable((String) data.get("output_key"))
+                        .orElse(DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA.getName());
+
+				return new DocumentExtractorNodeData(inputs, List.of(DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA), fileList, outputKey);
 			}
 
 			@Override
@@ -80,7 +85,17 @@ public class DocumentExtractorNodeDataConverter extends AbstractNodeDataConverte
 						.orElse(Collections.emptyList()))
 					.ifPresent(variables -> data.put("variable_selector", variables));
 
-				return data;
+                List<String> fileList = nodeData.getFileList();
+                if (fileList != null && !fileList.isEmpty()) {
+                    data.put("file_list", fileList);
+                }
+
+                String outputKey = nodeData.getOutputKey();
+                if (!DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA.getName().equals(outputKey)) {
+                    data.put("output_key", outputKey);
+                }
+
+                return data;
 			}
 		}), CUSTOM(AbstractNodeDataConverter.defaultCustomDialectConverter(DocumentExtractorNodeData.class));
 
