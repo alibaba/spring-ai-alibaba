@@ -75,7 +75,7 @@ public class McpNode implements NodeAction {
 				"[McpNode] Start executing apply, original configuration: url={}, tool={}, headers={}, inputParamKeys={}",
 				url, tool, headers, inputParamKeys);
 
-		// 构建 transport 和 client
+		// Build transport and client
 		HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(this.url);
 		if (this.headers != null && !this.headers.isEmpty()) {
 			transportBuilder.customizeRequest(req -> this.headers.forEach(req::header));
@@ -83,10 +83,10 @@ public class McpNode implements NodeAction {
 		this.transport = transportBuilder.build();
 		this.client = McpClient.sync(this.transport).build();
 		this.client.initialize();
-		// 变量替换
+		// Variable replacement
 		String finalTool = replaceVariables(tool, state);
 		Map<String, Object> finalParams = new HashMap<>();
-		// 1. 先从inputParamKeys读取
+		// 1. First read from inputParamKeys
 		if (inputParamKeys != null) {
 			for (String key : inputParamKeys) {
 				Object value = state.value(key).orElse(null);
@@ -95,7 +95,7 @@ public class McpNode implements NodeAction {
 				}
 			}
 		}
-		// 2. 再用params（变量替换后）覆盖
+		// 2. Then use params (after variable replacement) to overwrite
 		Map<String, Object> replacedParams = replaceVariablesObj(params, state);
 		if (replacedParams != null) {
 			finalParams.putAll(replacedParams);
@@ -103,20 +103,19 @@ public class McpNode implements NodeAction {
 		log.info("[McpNode] after replace params: url={}, tool={}, headers={}, params={}", url, finalTool, headers,
 				finalParams);
 
-		// 直接使用已初始化的 client
+		// Directly use the already initialized client
 		CallToolResult result;
 		try {
 			McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(finalTool, finalParams);
 			log.info("[McpNode] CallToolRequest: {}", request);
 			result = client.callTool(request);
 			log.info("[McpNode] tool call result: {}", result);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("[McpNode] MCP call fail:", e);
 			throw new McpNodeException("MCP call fail: " + e.getMessage(), e);
 		}
 
-		// 结果处理
+		// Result handling
 		Map<String, Object> updatedState = new HashMap<>();
 		// updatedState.put("mcp_result", result.content());
 		updatedState.put("messages", result.content());
@@ -124,18 +123,15 @@ public class McpNode implements NodeAction {
 			Object content = result.content();
 			if (content instanceof List<?> list && !CollectionUtils.isEmpty(list)) {
 				Object first = list.get(0);
-				// 兼容 TextContent 的 text 字段
+				// Compatible with the text field of TextContent
 				if (first instanceof TextContent textContent) {
 					updatedState.put(this.outputKey, textContent.text());
-				}
-				else if (first instanceof Map<?, ?> map && map.containsKey("text")) {
+				} else if (first instanceof Map<?, ?> map && map.containsKey("text")) {
 					updatedState.put(this.outputKey, map.get("text"));
-				}
-				else {
+				} else {
 					updatedState.put(this.outputKey, first);
 				}
-			}
-			else {
+			} else {
 				updatedState.put(this.outputKey, content);
 			}
 		}
@@ -165,8 +161,7 @@ public class McpNode implements NodeAction {
 		map.forEach((k, v) -> {
 			if (v instanceof String) {
 				result.put(k, replaceVariables((String) v, state));
-			}
-			else {
+			} else {
 				result.put(k, v);
 			}
 		});
