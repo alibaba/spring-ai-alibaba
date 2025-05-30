@@ -82,6 +82,7 @@ class BrowserUseToolSpringTest {
 	void setUp() {
 
 		manusProperties.setBrowserHeadless(false);
+		manusProperties.setBrowserDebug(true);
 		chromeDriverService.setManusProperties(manusProperties);
 		browserUseTool = new BrowserUseTool(chromeDriverService);
 		DummyBaseAgent agent = new DummyBaseAgent(llmService, planExecutionRecorder, manusProperties);
@@ -145,6 +146,7 @@ class BrowserUseToolSpringTest {
 			ToolExecuteResult navigateResult = executeAction("navigate", "https://www.baidu.com");
 			Assertions.assertEquals("Navigated to https://www.baidu.com", navigateResult.getOutput(), "导航到百度失败");
 			Page page = browserUseTool.getDriver().getCurrentPage();
+			
 			// 步骤2: 获取并验证可交互元素
 			log.info("步骤2: 获取可交互元素并分析");
 			Map<String, Object> state = browserUseTool.getCurrentState(page);
@@ -215,6 +217,132 @@ class BrowserUseToolSpringTest {
 
 		}
 		catch (Exception e) {
+			log.error("测试过程中发生错误", e);
+			Assertions.fail("测试执行失败: " + e.getMessage());
+		}
+	}
+
+	@Test
+	@Order(2)
+	@DisplayName("测试通过元素名定位并点击百度搜索按钮")
+	void testGetElementPositionAndMoveToClick() {
+		try {
+			// 步骤1: 导航到百度
+			log.info("步骤1: 导航到百度");
+			ToolExecuteResult navigateResult = executeAction("navigate", "https://www.baidu.com");
+			Assertions.assertEquals("Navigated to https://www.baidu.com", navigateResult.getOutput(), "导航到百度失败");
+			Page page = browserUseTool.getDriver().getCurrentPage();
+			
+			// 步骤2: 获取并验证可交互元素
+			log.info("步骤2: 获取可交互元素并分析");
+			Map<String, Object> state = browserUseTool.getCurrentState(page);
+			String elements = (String) state.get("interactive_elements");
+			Assertions.assertNotNull(elements, "获取可交互元素失败");
+			log.info("获取到的可交互元素: {}", elements);
+
+			// 步骤3: 找到搜索框
+			log.info("步骤3: 定位搜索框");
+			int searchInputIndex = -1;
+			String[] elementLines = elements.split("\n");
+			for (int i = 0; i < elementLines.length; i++) {
+				if (elementLines[i].contains("name=\"wd\"") || elementLines[i].contains("id=\"kw\"")) { // 百度搜索框的特征
+					searchInputIndex = i;
+					break;
+				}
+			}
+			Assertions.assertNotEquals(-1, searchInputIndex, "未找到搜索框");
+			log.info("找到搜索框索引: {}", searchInputIndex);
+
+			// 步骤4: 在搜索框中输入文本
+			log.info("步骤4: 在搜索框中输入'Hello World'");
+			ToolExecuteResult inputResult = executeAction("input_text", null, searchInputIndex, "Hello World");
+			Assertions.assertTrue(inputResult.getOutput().contains("Hello World"), "在搜索框输入文本失败");
+
+			// 步骤5: 使用GetElementPositionByNameAction查找搜索按钮
+			log.info("步骤5: 使用GetElementPositionByNameAction查找'百度一下'按钮");
+			BrowserRequestVO positionRequest = new BrowserRequestVO();
+			positionRequest.setElementName("百度一下");
+			GetElementPositionByNameAction positionAction = new GetElementPositionByNameAction(browserUseTool);
+			ToolExecuteResult positionResult = positionAction.execute(positionRequest);
+			log.info("获取到'百度一下'按钮位置信息: {}", positionResult.getOutput());
+
+			// 解析JSON结果获取坐标
+			List<?> positionsList = objectMapper.readValue(positionResult.getOutput(), new TypeReference<List<?>>() {});
+			Assertions.assertFalse(positionsList.isEmpty(), "未找到'百度一下'按钮");
+			Map<?, ?> elementPosition = (Map<?, ?>) positionsList.get(0);
+			Number xNumber = (Number) elementPosition.get("x");
+			Number yNumber = (Number) elementPosition.get("y");
+			Integer x = xNumber.intValue();
+			Integer y = yNumber.intValue();
+			log.info("'百度一下'按钮坐标: x={}, y={}", x, y);
+
+			// 步骤6: 使用MoveToAndClickAction点击搜索按钮
+			log.info("步骤6: 使用MoveToAndClickAction点击'百度一下'按钮");
+			BrowserRequestVO clickRequest = new BrowserRequestVO();
+			clickRequest.setPositionX(x);
+			clickRequest.setPositionY(y);
+			MoveToAndClickAction clickAction = new MoveToAndClickAction(browserUseTool);
+			ToolExecuteResult clickResult = clickAction.execute(clickRequest);
+			log.info("点击结果: {}", clickResult.getOutput());
+			Assertions.assertTrue(clickResult.getOutput().contains("Clicked"), "点击'百度一下'按钮失败");
+
+			// 步骤7: 等待并验证搜索结果
+			log.info("步骤7: 等待页面加载并获取搜索结果");
+			Thread.sleep(2000); // 等待页面加载
+			ToolExecuteResult textResult = executeAction("get_text", null);
+			String searchResults = textResult.getOutput();
+			Assertions.assertTrue(searchResults.contains("Hello World"), "搜索结果中未找到 'Hello World'");
+
+			// 步骤8: 使用GetElementPositionByNameAction查找并点击百度百科链接
+			log.info("步骤8: 使用GetElementPositionByNameAction查找'百度百科'链接");
+			BrowserRequestVO baikePositionRequest = new BrowserRequestVO();
+			baikePositionRequest.setElementName("百度百科");
+			GetElementPositionByNameAction baikePositionAction = new GetElementPositionByNameAction(browserUseTool);
+			ToolExecuteResult baikePositionResult = baikePositionAction.execute(baikePositionRequest);
+			log.info("获取到'百度百科'链接位置信息: {}", baikePositionResult.getOutput());
+
+			// 解析JSON结果获取百度百科链接坐标
+			List<?> baikePositionsList = objectMapper.readValue(baikePositionResult.getOutput(), new TypeReference<List<?>>() {});
+			
+			if (!baikePositionsList.isEmpty()) {
+				// 查找包含"hello world"相关内容的百度百科链接
+				Map<?, ?> targetPosition = null;
+				for (Object positionObj : baikePositionsList) {
+					Map<?, ?> position = (Map<?, ?>) positionObj;
+					String elementText = (String) position.get("elementText");
+					if (elementText != null && elementText.toLowerCase().contains("hello world(程序代码调试常用文本) - 百度百科") ) {
+						targetPosition = position;
+						break;
+					}
+				}
+				
+				if (targetPosition != null) {
+					Number baikeX = (Number) targetPosition.get("x");
+					Number baikeY = (Number) targetPosition.get("y");
+					Integer baikeXPos = baikeX.intValue();
+					Integer baikeYPos = baikeY.intValue();
+					log.info("'百度百科'链接坐标: x={}, y={}", baikeXPos, baikeYPos);
+
+					// 使用MoveToAndClickAction点击百度百科链接
+					log.info("使用MoveToAndClickAction点击'百度百科'链接");
+					BrowserRequestVO baikeClickRequest = new BrowserRequestVO();
+					baikeClickRequest.setPositionX(baikeXPos);
+					baikeClickRequest.setPositionY(baikeYPos);
+					MoveToAndClickAction baikeClickAction = new MoveToAndClickAction(browserUseTool);
+					ToolExecuteResult baikeClickResult = baikeClickAction.execute(baikeClickRequest);
+					log.info("百度百科链接点击结果: {}", baikeClickResult.getOutput());
+					Assertions.assertTrue(baikeClickResult.getOutput().contains("Clicked"), "点击'百度百科'链接失败");
+					log.info("成功点击百度百科链接");
+				} else {
+					log.warn("未找到包含'hello world'的百度百科链接");
+				}
+			} else {
+				log.warn("未找到'百度百科'链接");
+			}
+
+			log.info("测试成功完成！");
+
+		} catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
@@ -496,6 +624,7 @@ class BrowserUseToolSpringTest {
 				}
 			}
 
+			Assertions.assertTrue(phoneVerified, "手机号输入验证失败");
 			log.info("CSDN登录测试完成");
 		}
 		catch (Exception e) {

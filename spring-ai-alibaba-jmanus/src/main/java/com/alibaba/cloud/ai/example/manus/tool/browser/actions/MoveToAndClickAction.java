@@ -75,9 +75,9 @@ public class MoveToAndClickAction extends BrowserAction {
 					}
 
 					// 监听点击事件
-					page.evaluate(
-							"(id) => { const dot = document.getElementById(id); if (dot) { dot.addEventListener('click', () => console.log('Debug: Dot was clicked!')); } }",
-							markerId);
+					// page.evaluate(
+					// 		"(id) => { const dot = document.getElementById(id); if (dot) { dot.addEventListener('click', () => console.log('Debug: Dot was clicked!')); } }",
+					// 		markerId);
 
 					// 获取鼠标移动后的对应元素并打印
 					String elementInfo = (String) page.evaluate(
@@ -91,16 +91,6 @@ public class MoveToAndClickAction extends BrowserAction {
 				page.mouse().click(x, y);
 				log.info("Clicked at position ({}, {})", x, y);
 
-				if (isDebug) {
-					// 4. 移除大红点（仅debug模式）
-					result = page.evaluate("(id) => { const dot = document.getElementById(id); if (dot) dot.remove(); }",
-							markerId);
-					if (result != null) {
-						log.info("Debug: Removed red dot at position ({}, {}) , result <{}>", x, y, result);
-					} else {
-						log.warn("Debug: Failed to remove red dot at position ({}, {}) , result <{}>", x, y, result);
-					}
-				}
 			} catch (Exception e) {
 				log.error("Failed to move to and click at position ({}, {}): {}", x, y, e.getMessage(), e);
 				// Let the common method handle the result string for errors.
