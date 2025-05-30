@@ -18,27 +18,25 @@ package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
-import io.modelcontextprotocol.spec.McpSchema.TextContent;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.lang.reflect.Method;
 
 /**
- * MCP Node: 调用 MCP Server
+ * MCP Node: Node for calling MCP Server
  */
 public class McpNode implements NodeAction {
 
@@ -73,8 +71,9 @@ public class McpNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		log.info("[McpNode] 开始执行 apply，原始配置: url={}, tool={}, headers={}, inputParamKeys={}", url, tool, headers,
-				inputParamKeys);
+		log.info(
+				"[McpNode] Start executing apply, original configuration: url={}, tool={}, headers={}, inputParamKeys={}",
+				url, tool, headers, inputParamKeys);
 
 		// 构建 transport 和 client
 		HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(this.url);
@@ -101,19 +100,20 @@ public class McpNode implements NodeAction {
 		if (replacedParams != null) {
 			finalParams.putAll(replacedParams);
 		}
-		log.info("[McpNode] 变量替换后: url={}, tool={}, headers={}, params={}", url, finalTool, headers, finalParams);
+		log.info("[McpNode] after replace params: url={}, tool={}, headers={}, params={}", url, finalTool, headers,
+				finalParams);
 
 		// 直接使用已初始化的 client
 		CallToolResult result;
 		try {
 			McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(finalTool, finalParams);
-			log.info("[McpNode] CallToolRequest 构建: {}", request);
+			log.info("[McpNode] CallToolRequest: {}", request);
 			result = client.callTool(request);
-			log.info("[McpNode] 工具调用成功，结果: {}", result);
+			log.info("[McpNode] tool call result: {}", result);
 		}
 		catch (Exception e) {
-			log.error("[McpNode] MCP 调用异常: {}", e.getMessage(), e);
-			throw new McpNodeException("MCP 调用失败: " + e.getMessage(), e);
+			log.error("[McpNode] MCP call fail:", e);
+			throw new McpNodeException("MCP call fail: " + e.getMessage(), e);
 		}
 
 		// 结果处理
@@ -139,7 +139,7 @@ public class McpNode implements NodeAction {
 				updatedState.put(this.outputKey, content);
 			}
 		}
-		log.info("[McpNode] 状态更新: {}", updatedState);
+		log.info("[McpNode] update state: {}", updatedState);
 		return updatedState;
 	}
 
@@ -151,7 +151,7 @@ public class McpNode implements NodeAction {
 		while (matcher.find()) {
 			String key = matcher.group(1);
 			Object value = state.value(key).orElse("");
-			log.info("[McpNode] 替换变量: {} -> {}", key, value);
+			log.info("[McpNode] replace param: {} -> {}", key, value);
 			matcher.appendReplacement(result, value.toString());
 		}
 		matcher.appendTail(result);
