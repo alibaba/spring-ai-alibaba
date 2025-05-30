@@ -29,6 +29,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 
 import java.util.*;
 
@@ -38,8 +39,11 @@ public class ResearcherNode implements NodeAction {
 
 	private final ChatClient researchAgent;
 
-	public ResearcherNode(ChatClient researchAgent) {
+	private final ToolCallback[] toolCallbacks;
+
+	public ResearcherNode(ChatClient researchAgent, ToolCallback[] toolCallbacks) {
 		this.researchAgent = researchAgent;
+		this.toolCallbacks = toolCallbacks;
 	}
 
 	@Override
@@ -73,8 +77,7 @@ public class ResearcherNode implements NodeAction {
 		logger.debug("Researcher Node messages: {}", messages);
 		// 调用agent
 		String content = researchAgent.prompt()
-			.options(ToolCallingChatOptions.builder().build())
-			.toolNames("tavilySearch")
+			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
 			.messages(messages)
 			.call()
 			.content();

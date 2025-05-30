@@ -84,6 +84,7 @@ public class PlannerNode implements NodeAction {
 		List<Message> messages = TemplateUtil.applyPromptTemplate("planner", state);
 		// 添加HunmanFeedBack的Message
 		if (StringUtils.hasText(state.data().getOrDefault("feed_back_content", "").toString())) {
+			// TODO 第二次进入Planner节点时模型无法生成Plan的Json对象问题
 			messages.add(new SystemMessage(messages.get(0).getText()));
 			messages.add(new UserMessage(state.data().getOrDefault("feed_back_content", "").toString()));
 		}

@@ -120,7 +120,7 @@ public class DeepResearchConfiguration {
 			.addNode("planner", node_async((new PlannerNode(chatClientBuilder, toolCallbacks))))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
-			.addNode("researcher", node_async(new ResearcherNode(researchAgent)))
+			.addNode("researcher", node_async(new ResearcherNode(researchAgent, toolCallbacks)))
 			.addNode("coder", node_async(new CoderNode(coderAgent, pythonReplTool)))
 			.addNode("reporter", node_async((new ReporterNode(reporterAgent, toolCallbacks))))
 
