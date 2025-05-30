@@ -46,12 +46,12 @@ public class SensitiveFilterProperties extends CommonToolCallProperties {
 	private boolean filterEmail = true;
 
 	/**
-	 * 自定义脱敏模式列表
+	 * List of custom desensitization modes
 	 */
 	private List<CustomPattern> customPatterns = new ArrayList<>();
 
 	/**
-	 * 自定义脱敏模式配置
+	 * Custom desensitization mode configuration
 	 */
 	public static class CustomPattern {
 
