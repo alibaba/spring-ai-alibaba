@@ -156,7 +156,7 @@ public class DeepResearchController {
 		Map<String, Object> objectMap = Map.of("feed_back", feedBack);
 		if ("n".equals(feedBack)) {
 			if (StringUtils.hasLength(feedBackConent)) {
-				objectMap.put("feed_back_conent", feedBackConent);
+				objectMap.put("feed_back_content", feedBackConent);
 			}
 			else {
 				throw new RuntimeException("feed_back_content is required when feed_back is n");

@@ -27,7 +27,6 @@ import org.springframework.util.StringUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 
 /**
  * @author yingzi
@@ -50,12 +49,12 @@ public class HumanFeedbackNode implements NodeAction {
 			logger.info("Do you accept the plan? [y/n]：");
 			String feedback = state.value("feed_back", "y");
 			if (StringUtils.hasLength(feedback) && "n".equals(feedback)) {
-				String feedbackConent = state.value("feed_back_content").get().toString();
+				String feedbackContent = state.value("feed_back_content").orElse("").toString();
 
 				nextStep = "planner";
 				updated.put("human_next_node", nextStep);
-				updated.put("feed_back_content", List.of(new UserMessage(feedbackConent)));
-				logger.info("Human feedback content: {}", feedbackConent);
+				updated.put("feed_back_content", List.of(new UserMessage(feedbackContent)));
+				logger.info("Human feedback content: {}", feedbackContent);
 				return updated;
 			}
 			else if (StringUtils.hasLength(feedback) && feedback.startsWith("y")) {

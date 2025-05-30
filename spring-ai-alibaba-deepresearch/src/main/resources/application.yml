@@ -12,12 +12,6 @@ spring:
       chat:
         options:
           model: qwen-max
-    tavily:
-      api-key: ${TAVILY_API_KEY}
-      max-results: 3
-      include-raw-content: true
-      include-images: true
-      include-image-descriptions: true
     mcp:
       client:
         sse:
@@ -31,7 +25,8 @@ spring:
         tavilysearch:
           enabled: true
           api-key: ${TAVILY_API_KEY}
-#      deepreserch:
+      deepreserch:
+        python-home: ${PYTHON_HOME}
 #        background-investigation-type: tool_calls
 
 logging:
