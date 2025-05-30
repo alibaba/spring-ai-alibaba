@@ -94,7 +94,7 @@ public class TavilySearchService implements Function<TavilySearchService.Request
 			@JsonProperty(value = "include_images",
 					defaultValue = "false") @JsonPropertyDescription("Also perform an image search and include the results in the response.") Boolean includeImages,
 			@JsonProperty(value = "include_image_descriptions",
-					defaultValue = "fasle") @JsonPropertyDescription("When include_images is true, also add a descriptive text for each image.") Boolean includeImageDescriptions,
+					defaultValue = "false") @JsonPropertyDescription("When include_images is true, also add a descriptive text for each image.") Boolean includeImageDescriptions,
 			@JsonProperty(value = "include_domains",
 					defaultValue = "[]") @JsonPropertyDescription("A list of domains to specifically include in the search results.") List<String> includeDomains,
 			@JsonProperty(value = "exclude_domains",
