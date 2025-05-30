@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.PlannerDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.BackgroundInvestigationType;
 import com.alibaba.cloud.ai.example.deepresearch.node.*;
+import com.alibaba.cloud.ai.example.deepresearch.service.EnhancedDataPrivacyService;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -56,7 +57,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
  * @since 2025/5/17 17:10
  */
 @Configuration
-@EnableConfigurationProperties(DeepResearchProperties.class)
+@EnableConfigurationProperties({DeepResearchProperties.class, DataPrivacyProperties.class})
 public class DeepResearchConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
@@ -81,6 +82,12 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private TavilySearchService tavilySearchService;
+
+	@Autowired(required = false)
+	private EnhancedDataPrivacyService dataPrivacyService;
+
+	@Autowired
+	private DataPrivacyProperties dataPrivacyProperties;
 
 	@Bean
 	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder,
@@ -122,20 +129,22 @@ public class DeepResearchConfiguration {
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("researcher", node_async(new ResearcherNode(researchAgent, toolCallbacks)))
 			.addNode("coder", node_async(new CoderNode(coderAgent, pythonReplTool)))
-			.addNode("reporter", node_async((new ReporterNode(reporterAgent, toolCallbacks))))
+			.addNode("data_privacy", node_async(createDataPrivacyNode()))
+			.addNode("reporter", node_async(createReporterNode(toolCallbacks)))
 
 			.addEdge(START, "coordinator")
 			.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
 					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
 			.addEdge("background_investigator", "planner")
 			.addConditionalEdges("planner", edge_async(new PlannerDispatcher()),
-					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner", END, END))
+					Map.of("reporter", "data_privacy", "human_feedback", "human_feedback", "planner", "planner", END, END))
 			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
-					Map.of("planner", "planner", "research_team", "research_team", "reporter", "reporter", END, END))
+					Map.of("planner", "planner", "research_team", "research_team", "reporter", "data_privacy", END, END))
 			.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),
 					Map.of("planner", "planner", "researcher", "researcher", "coder", "coder"))
 			.addEdge("researcher", "research_team")
 			.addEdge("coder", "research_team")
+			.addEdge("data_privacy", "reporter")
 			.addEdge("reporter", END);
 
 		GraphRepresentation graphRepresentation = stateGraph.getGraph(GraphRepresentation.Type.PLANTUML,
@@ -167,6 +176,34 @@ public class DeepResearchConfiguration {
 			case JUST_WEB_SEARCH -> new BackgroundInvestigationNode(tavilySearchService);
 			case TOOL_CALLS -> new BackgroundInvestigationToolCallsNode(backgroundInvestigationAgent, toolCallbacks);
 		};
+	}
+
+	/**
+	 * 创建数据脱敏节点
+	 */
+	private DataPrivacyNode createDataPrivacyNode() {
+		if (dataPrivacyService != null && dataPrivacyProperties != null) {
+			return new DataPrivacyNode(dataPrivacyService, dataPrivacyProperties);
+		}
+		// 如果数据脱敏服务不可用，返回一个空操作的节点
+		return new DataPrivacyNode(null, new DataPrivacyProperties()) {
+			@Override
+			public Map<String, Object> apply(OverAllState state) throws Exception {
+				logger.debug("数据脱敏服务不可用，跳过脱敏处理");
+				return Map.of();
+			}
+		};
+	}
+
+	/**
+	 * 创建报告节点（支持数据脱敏）
+	 */
+	private ReporterNode createReporterNode(ToolCallback[] toolCallbacks) {
+		if (dataPrivacyService != null && dataPrivacyProperties != null) {
+			return new ReporterNode(reporterAgent, toolCallbacks, dataPrivacyService, dataPrivacyProperties);
+		}
+		// 如果数据脱敏服务不可用，使用原有构造函数
+		return new ReporterNode(reporterAgent, toolCallbacks);
 	}
 
 }

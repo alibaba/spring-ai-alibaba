@@ -25,8 +25,37 @@ spring:
         tavilysearch:
           enabled: true
           api-key: ${TAVILY_API_KEY}
+        sensitivefilter:
+          enabled: true
+          replacement: "[已脱敏]"
+          filter-phone-number: true
+          filter-id-card: true
+          filter-bank-card: true
+          filter-email: true
+          custom-patterns:
+            - name: "social-security"
+              pattern: "\\d{3}-\\d{2}-\\d{4}"
+              replacement: "***-**-****"
+              enabled: true
+            - name: "credit-card"
+              pattern: "\\d{4}[-\\s]?\\d{4}[-\\s]?\\d{4}[-\\s]?\\d{4}"
+              replacement: "****-****-****-****"
+              enabled: true
+            - name: "ip-address"
+              pattern: "\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b"
+              replacement: "***.***.***.***"
+              enabled: true
+            - name: "api-key"
+              pattern: "(?i)(api[_-]?key|token|secret)[\"'\\s]*[:=][\"'\\s]*[a-zA-Z0-9+/]{16,}"
+              replacement: "***API_KEY***"
+              enabled: true
       deepreserch:
         python-home: ${PYTHON_HOME}
+        # 数据隐私保护配置
+        data-privacy:
+          enabled: true
+          auto-filter-output: true
+          filter-intermediate-results: true
 #        background-investigation-type: tool_calls
 
 logging:
