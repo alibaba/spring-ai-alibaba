@@ -1,0 +1,16 @@
+<!--
+ * Copyright 2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0,0,256,256" width="48px" height="48px" fill-rule="nonzero"><g fill="none" fill-rule="nonzero" stroke="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dashoffset="0" font-family="none" font-weight="none" font-size="none" text-anchor="none" style="mix-blend-mode: normal"><g transform="scale(5.33333,5.33333)"><path d="M23.65,24.898c-0.998,-1.609 -1.722,-2.943 -2.725,-5.455c-1.696,-4.243 10.315,-8.077 5.445,-15.444c2.111,5.089 -7.577,8.235 -8.477,12.473c-0.823,3.898 5.752,8.426 5.757,8.426z" fill="#c778f0"></path><path d="M23.878,17.27c-0.192,2.516 2.229,3.857 2.299,5.695c0.056,1.496 -1.447,2.743 -1.447,2.743c0,0 2.728,-0.536 3.579,-2.818c0.945,-2.534 -1.834,-4.269 -1.548,-6.298c0.267,-1.938 6.031,-5.543 6.031,-5.543c0,0 -8.481,0.562 -8.914,6.221z" fill="#c778f0"></path><g fill="#667eea"><path d="M32.084,25.055c1.754,-0.394 3.233,0.723 3.233,2.01c0,2.901 -4.021,5.643 -4.021,5.643c0,0 6.225,-0.742 6.225,-5.505c0,-3.15 -3.057,-3.937 -5.437,-2.148zM29.129,27.395c0,0 1.941,-1.383 2.458,-1.902c-4.763,1.011 -15.638,1.147 -15.638,0.269c0,-0.809 3.507,-1.638 3.507,-1.638c0,0 -7.773,-0.112 -7.773,2.181c0,2.39 10.175,2.561 17.446,1.09z"></path><path d="M27.935,29.571c-4.509,1.499 -12.814,1.02 -10.354,-0.993c-1.198,0 -2.974,0.963 -2.974,1.889c0,1.857 8.982,3.291 15.63,0.572z"></path><path d="M18.686,32.739c-1.636,0 -2.695,1.054 -2.695,1.822c0,2.391 9.76,2.632 13.627,0.205l-2.458,-1.632c-2.889,1.27 -10.146,1.445 -8.474,-0.395z"></path><path d="M36.281,36.632c0,-0.936 -1.055,-1.377 -1.433,-1.588c2.228,5.373 -22.317,4.956 -22.317,1.784c0,-0.721 1.807,-1.427 3.477,-1.093l-1.42,-0.839c-3.328,-0.522 -5.588,0.941 -5.588,2.121c0,5.503 27.281,5.238 27.281,-0.385z"></path><path d="M39,38.604c-4.146,4.095 -14.659,5.587 -25.231,3.057c10.572,4.503 25.181,1.967 25.231,-3.057z"></path></g></g></g></svg>
