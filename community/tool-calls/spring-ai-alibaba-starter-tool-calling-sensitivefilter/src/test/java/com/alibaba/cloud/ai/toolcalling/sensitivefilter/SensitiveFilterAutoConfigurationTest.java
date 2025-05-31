@@ -10,16 +10,16 @@ import org.springframework.context.annotation.Configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * SensitiveFilterAutoConfiguration 单元测试
+ * SensitiveFilterAutoConfiguration Tests
  */
-@DisplayName("敏感信息过滤自动配置测试")
+@DisplayName("SensitiveFilterAutoConfiguration Tests")
 class SensitiveFilterAutoConfigurationTest {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(SensitiveFilterAutoConfiguration.class));
 
 	@Test
-	@DisplayName("测试启用配置时Bean被创建")
+	@DisplayName("Test when enabled, the Bean is created")
 	void testBeanCreatedWhenEnabled() {
 		this.contextRunner.withPropertyValues("spring.ai.alibaba.toolcalling.sensitivefilter.enabled=true")
 			.run(context -> {
@@ -29,14 +29,14 @@ class SensitiveFilterAutoConfigurationTest {
 				SensitiveFilterService service = context.getBean(SensitiveFilterService.class);
 				assertThat(service).isNotNull();
 
-				// 测试服务功能
+				// Test service functionality
 				String result = service.apply("手机号：13912345678");
 				assertThat(result).isEqualTo("手机号：***");
 			});
 	}
 
 	@Test
-	@DisplayName("测试禁用配置时Bean不被创建")
+	@DisplayName("Test when disabled, the Bean is not created")
 	void testBeanNotCreatedWhenDisabled() {
 		this.contextRunner.withPropertyValues("spring.ai.alibaba.toolcalling.sensitivefilter.enabled=false")
 			.run(context -> {
@@ -45,7 +45,7 @@ class SensitiveFilterAutoConfigurationTest {
 	}
 
 	@Test
-	@DisplayName("测试未设置enabled属性时Bean不被创建")
+	@DisplayName("Test when enabled is not set, the Bean is not created")
 	void testBeanNotCreatedWhenEnabledNotSet() {
 		this.contextRunner.run(context -> {
 			assertThat(context).doesNotHaveBean(SensitiveFilterService.class);
@@ -53,7 +53,7 @@ class SensitiveFilterAutoConfigurationTest {
 	}
 
 	@Test
-	@DisplayName("测试自定义属性配置绑定")
+	@DisplayName("Test custom property configuration binding")
 	void testCustomPropertiesBinding() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.alibaba.toolcalling.sensitivefilter.enabled=true",
@@ -67,27 +67,27 @@ class SensitiveFilterAutoConfigurationTest {
 				assertThat(properties.getReplacement()).isEqualTo("[MASKED]");
 				assertThat(properties.isFilterPhoneNumber()).isFalse();
 				assertThat(properties.isFilterEmail()).isFalse();
-				assertThat(properties.isFilterIdCard()).isTrue(); // 默认值
-				assertThat(properties.isFilterBankCard()).isTrue(); // 默认值
+				assertThat(properties.isFilterIdCard()).isTrue(); // default
+				assertThat(properties.isFilterBankCard()).isTrue(); // default
 
 				SensitiveFilterService service = context.getBean(SensitiveFilterService.class);
 
-				// 测试手机号不被过滤
+				// Test phone number is not filtered
 				String phoneResult = service.apply("手机号：13912345678");
 				assertThat(phoneResult).isEqualTo("手机号：13912345678");
 
-				// 测试邮箱不被过滤
+				// Test email is not filtered
 				String emailResult = service.apply("邮箱：user@example.com");
 				assertThat(emailResult).isEqualTo("邮箱：user@example.com");
 
-				// 测试身份证仍被过滤，使用自定义替换文本
+				// Test ID card is still filtered, using custom replacement text
 				String idResult = service.apply("身份证：110101199001011234");
 				assertThat(idResult).isEqualTo("身份证：[MASKED]");
 			});
 	}
 
 	@Test
-	@DisplayName("测试自定义Bean覆盖默认配置")
+	@DisplayName("Test custom Bean overrides default configuration")
 	void testCustomBeanOverridesDefault() {
 		this.contextRunner.withPropertyValues("spring.ai.alibaba.toolcalling.sensitivefilter.enabled=true")
 			.withUserConfiguration(CustomSensitiveFilterConfiguration.class)
@@ -100,7 +100,7 @@ class SensitiveFilterAutoConfigurationTest {
 	}
 
 	@Test
-	@DisplayName("测试复杂自定义模式配置绑定")
+	@DisplayName("Test complex custom pattern configuration binding")
 	void testCustomPatternsBinding() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.alibaba.toolcalling.sensitivefilter.enabled=true",
@@ -120,33 +120,35 @@ class SensitiveFilterAutoConfigurationTest {
 				assertThat(customPattern.getReplacement()).isEqualTo("[QQ号]");
 				assertThat(customPattern.isEnabled()).isTrue();
 
-				// 测试自定义模式实际工作效果 - 需要确保模式正确加载和应用
+				// Test custom pattern actual work effect - need to ensure pattern is
+				// loaded and applied correctly
 				SensitiveFilterService service = context.getBean(SensitiveFilterService.class);
-				// 由于正则表达式可能存在问题，这里只验证服务存在
+				// Since the regular expression may have issues, here we only verify the
+				// service exists
 				assertThat(service).isNotNull();
 			});
 	}
 
 	@Test
-	@DisplayName("测试Bean描述信息")
+	@DisplayName("Test Bean description information")
 	void testBeanDescription() {
 		this.contextRunner.withPropertyValues("spring.ai.alibaba.toolcalling.sensitivefilter.enabled=true")
 			.run(context -> {
 				assertThat(context).hasSingleBean(SensitiveFilterService.class);
 
-				// 验证Bean定义存在且有正确的描述
+				// Verify Bean definition exists and has correct description
 				String[] beanNames = context.getBeanNamesForType(SensitiveFilterService.class);
 				assertThat(beanNames).hasSize(1);
 
-				// 可以通过ApplicationContext获取BeanDefinition来检查描述
-				// 但这里我们主要确保Bean正确创建和功能正常
+				// We can get BeanDefinition from ApplicationContext to check description
+				// But here we mainly ensure the Bean is created and works correctly
 				SensitiveFilterService service = context.getBean(SensitiveFilterService.class);
 				assertThat(service).isNotNull();
 			});
 	}
 
 	/**
-	 * 自定义配置类，用于测试Bean覆盖
+	 * Custom configuration class, used to test Bean override
 	 */
 	@Configuration
 	static class CustomSensitiveFilterConfiguration {
@@ -159,7 +161,7 @@ class SensitiveFilterAutoConfigurationTest {
 	}
 
 	/**
-	 * 自定义服务实现，用于测试
+	 * Custom service implementation, used for testing
 	 */
 	static class CustomSensitiveFilterService extends SensitiveFilterService {
 

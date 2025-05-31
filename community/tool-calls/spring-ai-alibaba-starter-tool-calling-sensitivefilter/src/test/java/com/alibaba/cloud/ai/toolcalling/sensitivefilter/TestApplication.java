@@ -4,7 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
- * 测试应用类
+ * Test application class
  */
 @SpringBootApplication
 public class TestApplication {

@@ -10,9 +10,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * SensitiveFilterProperties 单元测试
+ * SensitiveFilterProperties unit tests
  */
-@DisplayName("敏感信息过滤配置属性测试")
+@DisplayName("Sensitive information filtering configuration properties test")
 class SensitiveFilterPropertiesTest {
 
 	private SensitiveFilterProperties properties;
@@ -23,7 +23,7 @@ class SensitiveFilterPropertiesTest {
 	}
 
 	@Test
-	@DisplayName("测试默认配置值")
+	@DisplayName("Test default configuration values")
 	void testDefaultValues() {
 		assertThat(properties.getReplacement()).isEqualTo("***");
 		assertThat(properties.isFilterPhoneNumber()).isTrue();
@@ -34,14 +34,14 @@ class SensitiveFilterPropertiesTest {
 	}
 
 	@Test
-	@DisplayName("测试替换文本设置")
+	@DisplayName("Test replacement text setting")
 	void testReplacementSetting() {
 		properties.setReplacement("[HIDDEN]");
 		assertThat(properties.getReplacement()).isEqualTo("[HIDDEN]");
 	}
 
 	@Test
-	@DisplayName("测试手机号过滤开关")
+	@DisplayName("Test phone number filter toggle")
 	void testPhoneNumberFilterToggle() {
 		properties.setFilterPhoneNumber(false);
 		assertThat(properties.isFilterPhoneNumber()).isFalse();
@@ -51,7 +51,7 @@ class SensitiveFilterPropertiesTest {
 	}
 
 	@Test
-	@DisplayName("测试身份证号过滤开关")
+	@DisplayName("Test ID card number filter toggle")
 	void testIdCardFilterToggle() {
 		properties.setFilterIdCard(false);
 		assertThat(properties.isFilterIdCard()).isFalse();
@@ -61,7 +61,7 @@ class SensitiveFilterPropertiesTest {
 	}
 
 	@Test
-	@DisplayName("测试银行卡号过滤开关")
+	@DisplayName("Test bank card number filter toggle")
 	void testBankCardFilterToggle() {
 		properties.setFilterBankCard(false);
 		assertThat(properties.isFilterBankCard()).isFalse();
@@ -71,7 +71,7 @@ class SensitiveFilterPropertiesTest {
 	}
 
 	@Test
-	@DisplayName("测试邮箱过滤开关")
+	@DisplayName("Test email filter toggle")
 	void testEmailFilterToggle() {
 		properties.setFilterEmail(false);
 		assertThat(properties.isFilterEmail()).isFalse();
@@ -81,7 +81,7 @@ class SensitiveFilterPropertiesTest {
 	}
 
 	@Test
-	@DisplayName("测试自定义模式列表设置")
+	@DisplayName("Test custom pattern list setting")
 	void testCustomPatternsList() {
 		List<SensitiveFilterProperties.CustomPattern> customPatterns = new ArrayList<>();
 
@@ -96,7 +96,7 @@ class SensitiveFilterPropertiesTest {
 	}
 
 	@Test
-	@DisplayName("测试自定义模式 - 基本属性")
+	@DisplayName("Test custom pattern - basic properties")
 	void testCustomPatternBasicProperties() {
 		SensitiveFilterProperties.CustomPattern pattern = new SensitiveFilterProperties.CustomPattern();
 
@@ -111,11 +111,11 @@ class SensitiveFilterPropertiesTest {
 	}
 
 	@Test
-	@DisplayName("测试自定义模式 - 启用状态")
+	@DisplayName("Test custom pattern - enabled state")
 	void testCustomPatternEnabledState() {
 		SensitiveFilterProperties.CustomPattern pattern = new SensitiveFilterProperties.CustomPattern();
 
-		// 默认启用
+		// default enabled
 		assertThat(pattern.isEnabled()).isTrue();
 
 		pattern.setEnabled(false);
@@ -126,26 +126,26 @@ class SensitiveFilterPropertiesTest {
 	}
 
 	@Test
-	@DisplayName("测试配置前缀常量")
+	@DisplayName("Test configuration prefix constant")
 	void testConfigurationPrefix() {
-		// 通过反射或者直接访问静态常量来验证前缀
+		// Verify prefix constant through reflection or direct access
 		assertThat(SensitiveFilterProperties.SENSITIVE_FILTER_PREFIX).contains("toolcalling")
 			.contains("sensitivefilter");
 	}
 
 	@Test
-	@DisplayName("测试复杂自定义模式配置")
+	@DisplayName("Test complex custom pattern configuration")
 	void testComplexCustomPatternConfiguration() {
 		List<SensitiveFilterProperties.CustomPattern> customPatterns = new ArrayList<>();
 
-		// QQ号模式
+		// QQ number pattern
 		SensitiveFilterProperties.CustomPattern qqPattern = new SensitiveFilterProperties.CustomPattern();
 		qqPattern.setName("qq");
 		qqPattern.setPattern("QQ[：:]?\\d{5,11}");
 		qqPattern.setReplacement("[QQ]");
 		qqPattern.setEnabled(true);
 
-		// 微信号模式
+		// Wechat number pattern
 		SensitiveFilterProperties.CustomPattern wechatPattern = new SensitiveFilterProperties.CustomPattern();
 		wechatPattern.setName("wechat");
 		wechatPattern.setPattern("微信[：:]?[a-zA-Z][a-zA-Z0-9_-]{5,19}");
@@ -171,7 +171,7 @@ class SensitiveFilterPropertiesTest {
 	}
 
 	@Test
-	@DisplayName("测试null值处理")
+	@DisplayName("Test null value handling")
 	void testNullValueHandling() {
 		properties.setReplacement(null);
 		assertThat(properties.getReplacement()).isNull();

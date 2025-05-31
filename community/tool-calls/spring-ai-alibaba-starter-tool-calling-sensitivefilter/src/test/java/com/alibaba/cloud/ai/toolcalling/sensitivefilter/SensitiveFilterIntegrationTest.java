@@ -19,11 +19,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * SensitiveFilter 集成测试
+ * SensitiveFilter Integration Tests
  */
 @SpringJUnitConfig
 @SpringBootTest(classes = { TestApplication.class, SensitiveFilterIntegrationTest.TestConfig.class })
-@DisplayName("敏感信息过滤集成测试")
+@DisplayName("SensitiveFilter Integration Tests")
 class SensitiveFilterIntegrationTest {
 
 	@Autowired
@@ -33,12 +33,12 @@ class SensitiveFilterIntegrationTest {
 	private SensitiveFilterProperties sensitiveFilterProperties;
 
 	@Test
-	@DisplayName("测试Spring Boot上下文集成")
+	@DisplayName("Test Spring Boot context integration")
 	void testSpringBootContextIntegration() {
 		assertThat(sensitiveFilterService).isNotNull();
 		assertThat(sensitiveFilterProperties).isNotNull();
 
-		// 验证配置属性
+		// Verify configuration properties
 		assertThat(sensitiveFilterProperties.getReplacement()).isEqualTo("[已脱敏]");
 		assertThat(sensitiveFilterProperties.isFilterPhoneNumber()).isTrue();
 		assertThat(sensitiveFilterProperties.getCustomPatterns()).hasSize(1);
@@ -49,7 +49,7 @@ class SensitiveFilterIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("测试完整的过滤工作流程")
+	@DisplayName("Test complete filtering workflow")
 	void testCompleteFilteringWorkflow() {
 		String complexText = """
 				用户信息：
@@ -64,22 +64,22 @@ class SensitiveFilterIntegrationTest {
 
 		String result = sensitiveFilterService.apply(complexText);
 
-		// 验证所有敏感信息都被正确过滤
-		assertThat(result).contains("[已脱敏]"); // 手机号、邮箱、身份证、银行卡
-		assertThat(result).contains("[QQ号]"); // 自定义QQ号过滤
+		// Verify all sensitive information is correctly filtered
+		assertThat(result).contains("[已脱敏]"); // phone number, email, ID card, bank card
+		assertThat(result).contains("[QQ号]"); // custom QQ number filtering
 		assertThat(result).doesNotContain("13912345678");
 		assertThat(result).doesNotContain("zhangsan@example.com");
 		assertThat(result).doesNotContain("110101199001011234");
 		assertThat(result).doesNotContain("4123456789012345");
 		assertThat(result).doesNotContain("QQ：987654321");
 
-		// 验证非敏感信息保持原样
+		// Verify non-sensitive information remains unchanged
 		assertThat(result).contains("姓名：张三");
 		assertThat(result).contains("备注：这是一个包含多种敏感信息的测试文本");
 	}
 
 	@Test
-	@DisplayName("测试性能 - 大量文本处理")
+	@DisplayName("Test performance - large text processing")
 	void testPerformanceWithLargeText() {
 		StringBuilder largeTextBuilder = new StringBuilder();
 		for (int i = 0; i < 1000; i++) {
@@ -102,18 +102,18 @@ class SensitiveFilterIntegrationTest {
 		String result = sensitiveFilterService.apply(largeText);
 		long endTime = System.currentTimeMillis();
 
-		// 验证处理时间合理（应该在几秒内完成）
+		// Verify processing time is reasonable (should be completed in a few seconds)
 		long processingTime = endTime - startTime;
-		assertThat(processingTime).isLessThan(5000); // 5秒内完成
+		assertThat(processingTime).isLessThan(5000); // completed in 5 seconds
 
-		// 验证过滤效果
+		// Verify filtering effect
 		assertThat(result).doesNotContain("13912345");
 		assertThat(result).doesNotContain("@example.com");
 		assertThat(result).contains("[已脱敏]");
 	}
 
 	@Test
-	@DisplayName("测试并发处理")
+	@DisplayName("Test concurrent processing")
 	void testConcurrentProcessing() throws InterruptedException {
 		int threadCount = 10;
 		int operationsPerThread = 500;
@@ -157,9 +157,9 @@ class SensitiveFilterIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("测试复杂文本场景")
+	@DisplayName("Test complex text scenarios")
 	void testComplexTextScenarios() {
-		// 测试包含特殊字符和格式的文本
+		// Test text containing special characters and formats
 		String complexText = """
 				### 客户信息表 ###
 
@@ -183,7 +183,7 @@ class SensitiveFilterIntegrationTest {
 
 		String result = sensitiveFilterService.apply(complexText);
 
-		// 验证敏感信息被正确过滤
+		// Verify sensitive information is correctly filtered
 		assertThat(result).doesNotContain("13912345678");
 		assertThat(result).doesNotContain("li.si@company.com.cn");
 		assertThat(result).doesNotContain("110101199001011234");
@@ -191,11 +191,11 @@ class SensitiveFilterIntegrationTest {
 		assertThat(result).doesNotContain("5123456789012346");
 		assertThat(result).doesNotContain("QQ：123456789");
 
-		// 验证过滤后包含脱敏标识
+		// Verify filtered text contains de-identification identifier
 		assertThat(result).contains("[已脱敏]");
 		assertThat(result).contains("[QQ号]");
 
-		// 验证结构化文本格式保持
+		// Verify structured text format remains
 		assertThat(result).contains("### 客户信息表 ###");
 		assertThat(result).contains("**基本信息：**");
 		assertThat(result).contains("- 客户姓名：李四");
@@ -203,9 +203,9 @@ class SensitiveFilterIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("测试Function接口在Spring环境中的使用")
+	@DisplayName("Test Function interface usage in Spring environment")
 	void testFunctionInterfaceInSpringContext() {
-		// 将服务作为Function接口使用
+		// Use service as Function interface
 		java.util.function.Function<String, String> filterFunction = sensitiveFilterService;
 
 		String text = "客服热线：13912345678，投诉邮箱：complaint@company.com";
@@ -226,7 +226,7 @@ class SensitiveFilterIntegrationTest {
 			properties.setFilterBankCard(true);
 			properties.setFilterEmail(true);
 
-			// 配置自定义QQ号模式
+			// Configure custom QQ number pattern
 			SensitiveFilterProperties.CustomPattern qqPattern = new SensitiveFilterProperties.CustomPattern();
 			qqPattern.setName("qq");
 			qqPattern.setPattern("QQ[：:]?\\d{5,11}");
