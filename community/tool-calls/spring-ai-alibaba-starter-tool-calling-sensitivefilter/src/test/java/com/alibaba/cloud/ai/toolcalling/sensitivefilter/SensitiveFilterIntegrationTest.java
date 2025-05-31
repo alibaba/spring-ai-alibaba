@@ -99,17 +99,17 @@ class SensitiveFilterIntegrationTest {
 		StringBuilder largeTextBuilder = new StringBuilder();
 		for (int i = 0; i < 1000; i++) {
 			largeTextBuilder.append("用户")
-				.append(i)
-				.append("：")
-				.append("手机13912345")
-				.append(String.format("%03d", i))
-				.append("，")
-				.append("邮箱user")
-				.append(i)
-				.append("@example.com，")
-				.append("身份证1101011990010112")
-				.append(String.format("%02d", i % 100))
-				.append("。");
+					.append(i)
+					.append("：")
+					.append("手机13912345")
+					.append(String.format("%03d", i))
+					.append("，")
+					.append("邮箱user")
+					.append(i)
+					.append("@example.com，")
+					.append("身份证1101011990010112")
+					.append(String.format("%02d", i % 100))
+					.append("。");
 		}
 		String largeText = largeTextBuilder.toString();
 
@@ -148,16 +148,13 @@ class SensitiveFilterIntegrationTest {
 
 						if (result.contains("[已脱敏]") && !result.contains("13912345") && !result.contains("@test.com")) {
 							successCount.incrementAndGet();
-						}
-						else {
+						} else {
 							errorCount.incrementAndGet();
 						}
 					}
-				}
-				catch (Exception e) {
+				} catch (Exception e) {
 					errorCount.incrementAndGet();
-				}
-				finally {
+				} finally {
 					latch.countDown();
 				}
 			});
