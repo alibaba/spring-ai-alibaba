@@ -26,25 +26,25 @@ import org.junit.jupiter.api.Test;
 /**
  * JsonReplaceService Test Class
  */
-public class JsonReplaceServiceTest {
+public class JsonProcessorReplaceServiceTest {
 
-	private JsonReplaceService jsonReplaceService;
+	private JsonProcessorReplaceService jsonProcessorReplaceService;
 
 	private String jsonContent;
 
 	@BeforeEach
 	void setUp() {
-		jsonReplaceService = new JsonReplaceService();
+		jsonProcessorReplaceService = new JsonProcessorReplaceService();
 		jsonContent = "{\"name\":\"John\",\"age\":30,\"city\":\"Beijing\"}";
 	}
 
 	@Test
 	void testReplaceStringValue() {
 		JsonElement newValue = new JsonPrimitive("David");
-		JsonReplaceService.JsonReplaceRequest request = new JsonReplaceService.JsonReplaceRequest(jsonContent, "name",
+		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent, "name",
 				newValue);
 
-		JsonObject result = (JsonObject) jsonReplaceService.apply(request);
+		JsonObject result = (JsonObject) jsonProcessorReplaceService.apply(request);
 
 		Assertions.assertEquals("David", result.get("name").getAsString());
 		Assertions.assertEquals(30, result.get("age").getAsInt());
@@ -54,10 +54,10 @@ public class JsonReplaceServiceTest {
 	@Test
 	void testReplaceNumberValue() {
 		JsonElement newValue = new JsonPrimitive(40);
-		JsonReplaceService.JsonReplaceRequest request = new JsonReplaceService.JsonReplaceRequest(jsonContent, "age",
+		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent, "age",
 				newValue);
 
-		JsonObject result = (JsonObject) jsonReplaceService.apply(request);
+		JsonObject result = (JsonObject) jsonProcessorReplaceService.apply(request);
 
 		Assertions.assertEquals("John", result.get("name").getAsString());
 		Assertions.assertEquals(40, result.get("age").getAsInt());
@@ -67,10 +67,10 @@ public class JsonReplaceServiceTest {
 	@Test
 	void testAddNewField() {
 		JsonElement newValue = new JsonPrimitive(true);
-		JsonReplaceService.JsonReplaceRequest request = new JsonReplaceService.JsonReplaceRequest(jsonContent,
+		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent,
 				"isActive", newValue);
 
-		JsonObject result = (JsonObject) jsonReplaceService.apply(request);
+		JsonObject result = (JsonObject) jsonProcessorReplaceService.apply(request);
 
 		Assertions.assertEquals("John", result.get("name").getAsString());
 		Assertions.assertEquals(30, result.get("age").getAsInt());
@@ -84,10 +84,10 @@ public class JsonReplaceServiceTest {
 		addressObject.addProperty("street", "Chang'an Street");
 		addressObject.addProperty("zipCode", "100000");
 
-		JsonReplaceService.JsonReplaceRequest request = new JsonReplaceService.JsonReplaceRequest(jsonContent,
+		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent,
 				"address", addressObject);
 
-		JsonObject result = (JsonObject) jsonReplaceService.apply(request);
+		JsonObject result = (JsonObject) jsonProcessorReplaceService.apply(request);
 
 		Assertions.assertEquals("John", result.get("name").getAsString());
 		Assertions.assertEquals("Chang'an Street", result.get("address").getAsJsonObject().get("street").getAsString());
@@ -96,21 +96,21 @@ public class JsonReplaceServiceTest {
 	@Test
 	void testNullField() {
 		JsonElement newValue = new JsonPrimitive("David");
-		JsonReplaceService.JsonReplaceRequest request = new JsonReplaceService.JsonReplaceRequest(jsonContent, null,
+		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent, null,
 				newValue);
 
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
-			jsonReplaceService.apply(request);
+			jsonProcessorReplaceService.apply(request);
 		});
 	}
 
 	@Test
 	void testNullValue() {
-		JsonReplaceService.JsonReplaceRequest request = new JsonReplaceService.JsonReplaceRequest(jsonContent, "name",
+		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent, "name",
 				null);
 
 		Assertions.assertThrows(IllegalArgumentException.class, () -> {
-			jsonReplaceService.apply(request);
+			jsonProcessorReplaceService.apply(request);
 		});
 	}
 
