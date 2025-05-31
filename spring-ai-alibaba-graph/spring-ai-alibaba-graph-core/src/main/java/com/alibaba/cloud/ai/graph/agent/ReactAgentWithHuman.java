@@ -15,10 +15,10 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Function;
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
+import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -28,7 +28,10 @@ import com.alibaba.cloud.ai.graph.exception.GraphInterruptException;
 import com.alibaba.cloud.ai.graph.node.HumanNode;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
-
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -37,20 +40,15 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.util.StringUtils;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
-
 public class ReactAgentWithHuman {
 
-	private LlmNode llmNode;
+	private final LlmNode llmNode;
 
-	private ToolNode toolNode;
+	private final ToolNode toolNode;
+
+	private final StateGraph graph;
 
 	private HumanNode humanNode;
-
-	private StateGraph graph;
 
 	private CompiledGraph compiledGraph;
 
@@ -91,7 +89,7 @@ public class ReactAgentWithHuman {
 			.build();
 		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		if (shouldInterruptFunc != null) {
-			this.humanNode = new HumanNode("conditioned", shouldInterruptFunc);
+			this.humanNode = new HumanNode("conditioned", shouldInterruptFunc, "interrupt");
 		}
 		else {
 			this.humanNode = new HumanNode();
@@ -119,7 +117,7 @@ public class ReactAgentWithHuman {
 			.build();
 		this.toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
 		if (shouldInterruptFunc != null) {
-			this.humanNode = new HumanNode("conditioned", shouldInterruptFunc);
+			this.humanNode = new HumanNode("conditioned", shouldInterruptFunc, "interrupt");
 		}
 		else {
 			this.humanNode = new HumanNode();
@@ -129,6 +127,10 @@ public class ReactAgentWithHuman {
 		this.compileConfig = compileConfig;
 		this.shouldContinueFunc = shouldContinueFunc;
 		this.graph = initGraph();
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	public StateGraph getStateGraph() {
@@ -250,10 +252,6 @@ public class ReactAgentWithHuman {
 		this.shouldContinueFunc = shouldContinueFunc;
 	}
 
-	public static Builder builder() {
-		return new Builder();
-	}
-
 	public static class Builder {
 
 		private ChatClient chatClient;
@@ -335,13 +333,13 @@ public class ReactAgentWithHuman {
 
 	public static class SubGraphNodeAdapter implements NodeActionWithConfig {
 
+		private final String inputKeyFromParent;
+
+		private final String outputKeyToParent;
+
+		private final CompiledGraph childGraph;
+
 		public String uuid = UUID.randomUUID().toString();
-
-		private String inputKeyFromParent;
-
-		private String outputKeyToParent;
-
-		private CompiledGraph childGraph;
 
 		SubGraphNodeAdapter(String inputKeyFromParent, String outputKeyToParent, CompiledGraph childGraph) {
 			this.inputKeyFromParent = inputKeyFromParent;
