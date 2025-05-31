@@ -197,7 +197,7 @@ public class GptRepoDocumentReader implements DocumentReader {
 
 				// Check file extension
 				if (extensions != null && !extensions.isEmpty()) {
-					String ext = com.google.common.io.Files.getFileExtension(file.toString());
+					String ext = getFileExtension(file.toString());
 					if (!extensions.contains(ext)) {
 						return FileVisitResult.CONTINUE;
 					}
@@ -223,6 +223,12 @@ public class GptRepoDocumentReader implements DocumentReader {
 		}
 
 		return results;
+	}
+
+	private String getFileExtension(String fullName) {
+		String fileName = (new File(fullName)).getName();
+		int dotIndex = fileName.lastIndexOf(46);
+		return dotIndex == -1 ? "" : fileName.substring(dotIndex + 1);
 	}
 
 	/**

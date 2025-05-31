@@ -227,7 +227,7 @@
 
         <mysql.version>8.0.32</mysql.version>
 
-        <guava.version>33.4.0-jre</guava.version>
+        <mcp.version>0.10.0</mcp.version>
 
         <!-- CheckStyle Plugin -->
         <disable.checks>true</disable.checks>
