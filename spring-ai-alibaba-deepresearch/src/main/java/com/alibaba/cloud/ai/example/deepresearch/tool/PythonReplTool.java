@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.example.deepresearch.tool;
 import lombok.SneakyThrows;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -30,6 +31,9 @@ import java.util.logging.Logger;
 public class PythonReplTool {
 
 	private static final Logger logger = Logger.getLogger(PythonReplTool.class.getName());
+
+	@Value("${spring.ai.alibaba.deepreserch.python-home}")
+	private String pythonHome;
 
 	@SneakyThrows
 	@Tool(description = "Execute Python code and return the result.")
@@ -44,7 +48,7 @@ public class PythonReplTool {
 			java.nio.file.Files.write(tempScript, code.getBytes());
 
 			// 调用 Python 执行
-			ProcessBuilder pb = new ProcessBuilder("python", tempScript.toString());
+			ProcessBuilder pb = new ProcessBuilder(pythonHome, tempScript.toString());
 			Process process = pb.start();
 
 			// 读取标准输出
