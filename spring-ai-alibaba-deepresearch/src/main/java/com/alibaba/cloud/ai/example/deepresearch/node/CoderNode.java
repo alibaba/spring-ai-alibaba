@@ -17,6 +17,8 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
+import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import org.slf4j.Logger;
@@ -26,7 +28,6 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.tool.ToolCallback;
 
 import java.util.*;
 
@@ -41,15 +42,17 @@ public class CoderNode implements NodeAction {
 
 	private final ChatClient coderAgent;
 
-	private final ToolCallback[] toolCallbacks;
+	private final PythonReplTool pythonReplTool;
 
-	public CoderNode(ChatClient coderAgent, ToolCallback[] toolCallbacks) {
+	public CoderNode(ChatClient coderAgent, PythonReplTool pythonReplTool) {
 		this.coderAgent = coderAgent;
-		this.toolCallbacks = toolCallbacks;
+		this.pythonReplTool = pythonReplTool;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
+		logger.info("Coder Node is running.");
+		List<Message> messages = TemplateUtil.applyPromptTemplate("coder", state);
 		Plan currentPlan = state.value("current_plan", Plan.class).get();
 		List<String> observations = state.value("observations", List.class)
 			.map(list -> (List<String>) list)
@@ -57,13 +60,11 @@ public class CoderNode implements NodeAction {
 
 		Plan.Step unexecutedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
-			if (step.getExecutionRes() == null) {
+			if (step.getStepType().equals(Plan.StepType.PROCESSING) && step.getExecutionRes() == null) {
 				unexecutedStep = step;
 				break;
 			}
 		}
-
-		List<Message> messages = new ArrayList<>();
 
 		// 添加任务消息
 		Message taskMessage = new UserMessage(
@@ -71,17 +72,24 @@ public class CoderNode implements NodeAction {
 						unexecutedStep.getTitle(), unexecutedStep.getDescription(), state.value("locale", "en-US")));
 		messages.add(taskMessage);
 
+		logger.debug("Coder Node message: {}", messages);
 		// 调用agent
 		String content = coderAgent.prompt()
-			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
+			.options(ToolCallingChatOptions.builder().build())
 			.messages(messages)
+			.tools(pythonReplTool)
 			.call()
 			.content();
 		unexecutedStep.setExecutionRes(content);
 
+		logger.info("Coder Node result: {}", content);
+		if (content == null) {
+			content = "";
+		}
 		Map<String, Object> updated = new HashMap<>();
-		updated.put("messages", new AssistantMessage(content));
-		updated.put("observations", observations.add(content));
+		updated.put("messages", List.of(new AssistantMessage(content)));
+		observations.add(content);
+		updated.put("observations", observations);
 
 		return updated;
 	}
