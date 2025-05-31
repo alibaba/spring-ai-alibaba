@@ -81,9 +81,11 @@ public class SensitiveFilterService implements Function<String, String> {
 
 		String result = text;
 
-		// Apply basic de-sensitization rules in order of specificity (most specific
-		// first)
-		// 1. Id number - the longest and most specific, priority processing
+		// 应用基础脱敏规则
+		if (properties.isFilterPhoneNumber()) {
+			result = PHONE_PATTERN.matcher(result).replaceAll(properties.getReplacement());
+		}
+
 		if (properties.isFilterIdCard()) {
 			result = ID_CARD_PATTERN.matcher(result).replaceAll(properties.getReplacement());
 		}
