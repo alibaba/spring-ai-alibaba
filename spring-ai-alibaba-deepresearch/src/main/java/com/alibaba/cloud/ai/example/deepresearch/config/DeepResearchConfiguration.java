@@ -22,13 +22,14 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.PlannerDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.BackgroundInvestigationType;
 import com.alibaba.cloud.ai.example.deepresearch.node.*;
-import com.alibaba.cloud.ai.example.deepresearch.tool.tavily.TavilySearchApi;
+import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.OverAllStateFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +62,7 @@ public class DeepResearchConfiguration {
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
 
 	@Autowired
-	private TavilySearchApi tavilySearchApi;
+	private PythonReplTool pythonReplTool;
 
 	@Autowired
 	private ChatClient backgroundInvestigationAgent;
@@ -77,6 +78,9 @@ public class DeepResearchConfiguration {
 
 	@Autowired
 	private DeepResearchProperties deepResearchProperties;
+
+	@Autowired
+	private TavilySearchService tavilySearchService;
 
 	@Bean
 	public StateGraph deepResearch(ChatClient.Builder chatClientBuilder,
@@ -117,7 +121,7 @@ public class DeepResearchConfiguration {
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
 			.addNode("researcher", node_async(new ResearcherNode(researchAgent, toolCallbacks)))
-			.addNode("coder", node_async(new CoderNode(coderAgent, toolCallbacks)))
+			.addNode("coder", node_async(new CoderNode(coderAgent, pythonReplTool)))
 			.addNode("reporter", node_async((new ReporterNode(reporterAgent, toolCallbacks))))
 
 			.addEdge(START, "coordinator")
@@ -125,7 +129,7 @@ public class DeepResearchConfiguration {
 					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
 			.addEdge("background_investigator", "planner")
 			.addConditionalEdges("planner", edge_async(new PlannerDispatcher()),
-					Map.of("reporter", "reporter", "human_feedback", "human_feedback", END, END))
+					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner", END, END))
 			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
 					Map.of("planner", "planner", "research_team", "research_team", "reporter", "reporter", END, END))
 			.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),
@@ -160,7 +164,7 @@ public class DeepResearchConfiguration {
 	private BackgroundInvestigationNodeAction createBackgroundInvestigationNodeAction(
 			BackgroundInvestigationType backgroundInvestigationType, ToolCallback[] toolCallbacks) {
 		return switch (backgroundInvestigationType) {
-			case JUST_WEB_SEARCH -> new BackgroundInvestigationNode(tavilySearchApi);
+			case JUST_WEB_SEARCH -> new BackgroundInvestigationNode(tavilySearchService);
 			case TOOL_CALLS -> new BackgroundInvestigationToolCallsNode(backgroundInvestigationAgent, toolCallbacks);
 		};
 	}
