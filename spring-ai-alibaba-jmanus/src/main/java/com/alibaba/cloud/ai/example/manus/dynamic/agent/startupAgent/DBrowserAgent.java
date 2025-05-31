@@ -43,7 +43,7 @@ import com.alibaba.cloud.ai.example.manus.dynamic.agent.annotation.DynamicAgentD
 		- 遇到困难时尝试替代方法
 		- 处理弹窗和cookie提示
 		- 处理验证码或寻找替代方案
-		- 等待页面加载
+		- 当需要等待页面加载或者看到登录页面的情况，使用wait动作,最多等待60秒
 
 		4. 任务完成：
 		- 如果完成则使用terminate工具

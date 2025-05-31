@@ -79,6 +79,12 @@ public class BrowserRequestVO {
 	@JSONField(name = "position_y")
 	private Integer positionY;
 
+	/**
+	 * 等待的秒数，用于wait操作
+	 */
+	@JSONField(name = "wait_seconds")
+	private Integer waitSeconds;
+
 	public String getAction() {
 		return action;
 	}
@@ -157,6 +163,14 @@ public class BrowserRequestVO {
 
 	public void setPositionY(Integer positionY) {
 		this.positionY = positionY;
+	}
+
+	public Integer getWaitSeconds() {
+		return waitSeconds;
+	}
+
+	public void setWaitSeconds(Integer waitSeconds) {
+		this.waitSeconds = waitSeconds;
 	}
 
 }
