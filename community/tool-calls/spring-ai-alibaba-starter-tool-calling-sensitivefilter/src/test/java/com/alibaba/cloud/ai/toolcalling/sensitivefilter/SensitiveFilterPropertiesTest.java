@@ -27,6 +27,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * SensitiveFilterProperties unit tests
+ *
+ * @author Makoto
  */
 @DisplayName("Sensitive information filtering configuration properties test")
 class SensitiveFilterPropertiesTest {
@@ -146,7 +148,7 @@ class SensitiveFilterPropertiesTest {
 	void testConfigurationPrefix() {
 		// Verify prefix constant through reflection or direct access
 		assertThat(SensitiveFilterProperties.SENSITIVE_FILTER_PREFIX).contains("toolcalling")
-				.contains("sensitivefilter");
+			.contains("sensitivefilter");
 	}
 
 	@Test

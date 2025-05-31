@@ -27,6 +27,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * SensitiveFilterService unit tests
+ *
+ * @author Makoto
  */
 @DisplayName("Sensitive information filtering service tests")
 class SensitiveFilterServiceTest {
