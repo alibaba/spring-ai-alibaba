@@ -45,7 +45,7 @@ public class Nacos2McpToolCallbackAutoConfiguration {
 	public Nacos2McpToolCallbackAutoConfiguration() {
 	}
 
-	@Bean(name = "loadbalancedSyncMcpToolCallbacks")
+	@Bean(name = "loadbalancedMcpSyncToolCallbacks")
 	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "SYNC",
 			matchIfMissing = true)
 	public ToolCallbackProvider loadbalancedMcpToolCallbacks(
