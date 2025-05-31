@@ -104,6 +104,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			});
 
 			Properties configProperties = nacosMcpProperties.getNacosProperties();
+			configProperties.put(PropertyKeyConst.NAMESPACE, nacosMcpRegistryProperties.getServiceNamespace());
 			this.configService = new NacosConfigService(configProperties);
 			if (this.serverCapabilities.tools() != null) {
 				String toolsInNacosContent = this.configService.getConfig(
