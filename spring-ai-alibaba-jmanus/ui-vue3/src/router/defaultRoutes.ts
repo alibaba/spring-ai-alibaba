@@ -1,4 +1,3 @@
-import type { RouterMeta } from '@/router/RouterMeta'
 import type { RouteRecordRaw } from 'vue-router'
 import * as _ from 'lodash'
 
@@ -6,7 +5,9 @@ export declare type RouteRecordType = RouteRecordRaw & {
   key?: string
   name: string
   children?: RouteRecordType[]
-  meta?: RouterMeta
+  meta?: {
+    icon?: string
+  }
 }
 
 export const routes: Readonly<RouteRecordType[]> = [

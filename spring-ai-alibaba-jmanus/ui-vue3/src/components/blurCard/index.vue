@@ -10,6 +10,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import type { CSSProperties } from 'vue'
 
 const props = defineProps<{
   content?: {
