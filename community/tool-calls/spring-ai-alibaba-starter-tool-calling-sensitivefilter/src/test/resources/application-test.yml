@@ -11,7 +11,7 @@ spring:
           filter-email: true
           custom-patterns:
             - name: "qq"
-              pattern: "QQ[：:]?\\d{5,11}"
+              pattern: "QQ[:：]?\\d{5,11}"
               replacement: "[QQ号]"
               enabled: true
 
@@ -19,5 +19,4 @@ spring:
 logging:
   level:
     com.alibaba.cloud.ai.toolcalling.sensitivefilter: DEBUG
-    root: INFO 
-    
+    root: INFO
