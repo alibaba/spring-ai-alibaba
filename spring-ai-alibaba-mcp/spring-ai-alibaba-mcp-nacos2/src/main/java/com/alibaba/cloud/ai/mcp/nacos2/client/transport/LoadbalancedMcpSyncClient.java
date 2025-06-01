@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.mcp.nacos2.client.transport;
 
-import com.alibaba.cloud.ai.mcp.nacos2.client.utils.ApplicationContextHolder;
 import com.alibaba.cloud.ai.mcp.nacos2.registry.model.McpNacosConstant;
 import com.alibaba.cloud.ai.mcp.nacos2.registry.model.McpToolsInfo;
 import com.alibaba.nacos.api.exception.NacosException;
@@ -38,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.client.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.autoconfigure.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -69,6 +69,8 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 
 	private final ObjectMapper objectMapper;
 
+	private final ApplicationContext applicationContext;
+
 	private Map<String, List<String>> md5ToToolsMap;
 
 	private Map<String, List<McpSyncClient>> md5ToClientMap;
@@ -78,7 +80,7 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 	private List<Instance> instances;
 
 	public LoadbalancedMcpSyncClient(String serviceName, String serviceGroup, NamingService namingService,
-			NacosConfigService nacosConfigService) {
+			NacosConfigService nacosConfigService, ApplicationContext applicationContext) {
 		Assert.notNull(serviceName, "serviceName cannot be null");
 		Assert.notNull(serviceGroup, "serviceGroup cannot be null");
 		Assert.notNull(namingService, "namingService cannot be null");
@@ -86,6 +88,7 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 
 		this.serviceName = serviceName;
 		this.nacosConfigService = nacosConfigService;
+		this.applicationContext = applicationContext;
 
 		try {
 			this.namingService = namingService;
@@ -95,10 +98,10 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 		catch (NacosException e) {
 			throw new RuntimeException(String.format("Failed to get instances for service: %s", serviceName));
 		}
-		commonProperties = ApplicationContextHolder.getBean(McpClientCommonProperties.class);
-		mcpSyncClientConfigurer = ApplicationContextHolder.getBean(McpSyncClientConfigurer.class);
-		objectMapper = ApplicationContextHolder.getBean(ObjectMapper.class);
-		webClientBuilderTemplate = ApplicationContextHolder.getBean(WebClient.Builder.class);
+		commonProperties = this.applicationContext.getBean(McpClientCommonProperties.class);
+		mcpSyncClientConfigurer = this.applicationContext.getBean(McpSyncClientConfigurer.class);
+		objectMapper = this.applicationContext.getBean(ObjectMapper.class);
+		webClientBuilderTemplate = this.applicationContext.getBean(WebClient.Builder.class);
 	}
 
 	public void init() {
@@ -160,19 +163,19 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 
 	// ------------------------------------------------------------------------------------------------------------------------------------------------
 	public McpSchema.ServerCapabilities getServerCapabilities() {
-		return getMcpSyncClient().getServerCapabilities();
+		return getMcpSyncClientList().get(0).getServerCapabilities();
 	}
 
 	public McpSchema.Implementation getServerInfo() {
-		return getMcpSyncClient().getServerInfo();
+		return getMcpSyncClientList().get(0).getServerInfo();
 	}
 
 	public McpSchema.ClientCapabilities getClientCapabilities() {
-		return getMcpSyncClient().getClientCapabilities();
+		return getMcpSyncClientList().get(0).getClientCapabilities();
 	}
 
 	public McpSchema.Implementation getClientInfo() {
-		return getMcpSyncClient().getClientInfo();
+		return getMcpSyncClientList().get(0).getClientInfo();
 	}
 
 	public void close() {
@@ -458,6 +461,8 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 
 		private NacosConfigService nacosConfigService;
 
+		private ApplicationContext applicationContext;
+
 		public Builder serviceName(String serviceName) {
 			this.serviceName = serviceName;
 			return this;
@@ -478,9 +483,14 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 			return this;
 		}
 
+		public Builder applicationContext(ApplicationContext applicationContext) {
+			this.applicationContext = applicationContext;
+			return this;
+		}
+
 		public LoadbalancedMcpSyncClient build() {
 			return new LoadbalancedMcpSyncClient(this.serviceName, this.serviceGroup, this.namingService,
-					this.nacosConfigService);
+					this.nacosConfigService, this.applicationContext);
 		}
 
 	}
