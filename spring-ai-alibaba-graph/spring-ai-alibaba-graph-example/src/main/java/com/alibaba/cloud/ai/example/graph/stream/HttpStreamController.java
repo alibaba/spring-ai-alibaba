@@ -78,10 +78,6 @@ public class HttpStreamController {
 		// 编译工作流
 		CompiledGraph compiledGraph = workflow.compile();
 
-		// 初始化输入
-		OverAllState overAllState = compiledGraph.overAllState();
-		overAllState.input(inputData);
-
 		// 从请求中获取输入
 		String threadId = UUID.randomUUID().toString();
 

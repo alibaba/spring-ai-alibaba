@@ -31,6 +31,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 
 import java.util.ArrayList;
@@ -51,10 +52,6 @@ public class Nacos2McpClientAutoConfiguration {
 	public Nacos2McpClientAutoConfiguration() {
 	}
 
-	private String connectedClientName(String clientName, String serverConnectionName) {
-		return clientName + " - " + serverConnectionName;
-	}
-
 	@Bean
 	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "SYNC",
 			matchIfMissing = true)
@@ -62,7 +59,7 @@ public class Nacos2McpClientAutoConfiguration {
 			@Qualifier("server2NamedTransport") ObjectProvider<Map<String, List<NamedClientMcpTransport>>> server2NamedTransportProvider,
 			ObjectProvider<NamingService> namingServiceProvider,
 			ObjectProvider<NacosConfigService> nacosConfigServiceProvider,
-			NacosMcpRegistryProperties nacosMcpRegistryProperties) {
+			NacosMcpRegistryProperties nacosMcpRegistryProperties, ApplicationContext applicationContext) {
 		NamingService namingService = namingServiceProvider.getObject();
 		NacosConfigService nacosConfigService = nacosConfigServiceProvider.getObject();
 
@@ -73,9 +70,10 @@ public class Nacos2McpClientAutoConfiguration {
 
 			LoadbalancedMcpSyncClient loadbalancedMcpSyncClient = LoadbalancedMcpSyncClient.builder()
 				.serviceName(serviceName)
+				.serviceGroup(nacosMcpRegistryProperties.getServiceGroup())
 				.namingService(namingService)
 				.nacosConfigService(nacosConfigService)
-				.serviceGroup(nacosMcpRegistryProperties.getServiceGroup())
+				.applicationContext(applicationContext)
 				.build();
 			loadbalancedMcpSyncClient.init();
 			loadbalancedMcpSyncClient.subscribe();
@@ -91,7 +89,7 @@ public class Nacos2McpClientAutoConfiguration {
 			@Qualifier("server2NamedTransport") ObjectProvider<Map<String, List<NamedClientMcpTransport>>> server2NamedTransportProvider,
 			ObjectProvider<NamingService> namingServiceProvider,
 			ObjectProvider<NacosConfigService> nacosConfigServiceProvider,
-			NacosMcpRegistryProperties nacosMcpRegistryProperties) {
+			NacosMcpRegistryProperties nacosMcpRegistryProperties, ApplicationContext applicationContext) {
 		NamingService namingService = namingServiceProvider.getObject();
 		NacosConfigService nacosConfigService = nacosConfigServiceProvider.getObject();
 
@@ -102,8 +100,10 @@ public class Nacos2McpClientAutoConfiguration {
 
 			LoadbalancedMcpAsyncClient loadbalancedMcpAsyncClient = LoadbalancedMcpAsyncClient.builder()
 				.serviceName(serviceName)
+				.serviceGroup(nacosMcpRegistryProperties.getServiceGroup())
 				.namingService(namingService)
 				.nacosConfigService(nacosConfigService)
+				.applicationContext(applicationContext)
 				.build();
 			loadbalancedMcpAsyncClient.init();
 			loadbalancedMcpAsyncClient.subscribe();
