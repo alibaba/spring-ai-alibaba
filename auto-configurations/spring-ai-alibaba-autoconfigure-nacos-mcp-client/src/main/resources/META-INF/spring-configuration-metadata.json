@@ -2,13 +2,13 @@
   "groups": [],
   "properties": [
     {
-      "name": "spring.ai.alibaba.mcp.nacos.enabled",
+      "name": "spring.ai.alibaba.mcp.nacos.server-addr",
       "type": "java.lang.String",
-      "description": "If register mcp server information to nacos.",
-      "defaultValue": "false"
+      "description": "Nacos server address.",
+      "defaultValue": ""
     },
     {
-      "name": "spring.ai.alibaba.mcp.nacos.server-addr",
+      "name": "spring.ai.alibaba.mcp.nacos.namespace",
       "type": "java.lang.String",
       "description": "Nacos server address.",
       "defaultValue": ""

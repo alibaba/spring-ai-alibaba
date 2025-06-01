@@ -16,11 +16,9 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.model.SearchedContent;
-import com.alibaba.cloud.ai.example.deepresearch.model.TavilySearchResponse;
-import com.alibaba.cloud.ai.example.deepresearch.tool.tavily.TavilySearchApi;
+import com.alibaba.cloud.ai.example.deepresearch.model.BackgroundInvestigationType;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.Message;
@@ -29,20 +27,26 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author yingzi
- * @date 2025/5/17 18:37
+ * @since 2025/5/17 18:37
  */
 
-public class BackgroundInvestigationNode implements NodeAction {
+public class BackgroundInvestigationNode implements BackgroundInvestigationNodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(BackgroundInvestigationNode.class);
 
-	private final TavilySearchApi tavilySearchApi;
+	private final TavilySearchService tavilySearchService;
 
-	public BackgroundInvestigationNode(TavilySearchApi tavilySearchApi) {
-		this.tavilySearchApi = tavilySearchApi;
+	public BackgroundInvestigationNode(TavilySearchService tavilySearchService) {
+		this.tavilySearchService = tavilySearchService;
+	}
+
+	@Override
+	public BackgroundInvestigationType of() {
+		return BackgroundInvestigationType.JUST_WEB_SEARCH;
 	}
 
 	@Override
@@ -53,11 +57,12 @@ public class BackgroundInvestigationNode implements NodeAction {
 			.orElseGet(ArrayList::new);
 		Message lastMessage = messages.isEmpty() ? null : messages.get(messages.size() - 1);
 		String query = lastMessage.getText();
-		TavilySearchResponse response = tavilySearchApi.search(query);
-		ArrayList<SearchedContent> results = new ArrayList<>();
-		for (TavilySearchResponse.ResultInfo resultInfo : response.getResults()) {
-			results.add(new SearchedContent(resultInfo.getTitle(), resultInfo.getContent()));
-		}
+		TavilySearchService.Response response = tavilySearchService
+			.apply(TavilySearchService.Request.simpleQuery(query));
+		List<TavilySearchService.SearchContent> results = response.results()
+			.stream()
+			.map(info -> new TavilySearchService.SearchContent(info.title(), info.content()))
+			.toList();
 		logger.info("✅ 搜索结果: {}", results);
 
 		Map<String, Object> resultMap = new HashMap<>();

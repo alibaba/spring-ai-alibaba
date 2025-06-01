@@ -36,7 +36,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
 
 /**
  * @author yingzi
- * @date 2025/5/18 16:38
+ * @since 2025/5/18 16:38
  */
 
 public class CoordinatorNode implements NodeAction {
@@ -70,12 +70,17 @@ public class CoordinatorNode implements NodeAction {
 		assert response != null;
 		AssistantMessage assistantMessage = response.getResult().getOutput();
 
+		// 判断下一步
+		if (state.value("enable_background_investigation", false)) {
+			nextStep = "background_investigator";
+		}
+		else {
+			// 直接交给planner
+			nextStep = "planner";
+		}
 		// 判断是否触发工具调用
 		if (assistantMessage.getToolCalls() != null && !assistantMessage.getToolCalls().isEmpty()) {
 			logger.info("✅ 工具已调用: " + assistantMessage.getToolCalls());
-			if (state.value("enable_background_investigation", false)) {
-				nextStep = "background_investigator";
-			}
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 				if (!"handoff_to_planner".equals(toolCall.name())) {
 					continue;

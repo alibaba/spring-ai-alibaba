@@ -15,11 +15,18 @@
  */
 package com.alibaba.cloud.ai.service.impl;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import com.alibaba.cloud.ai.common.ModelType;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.exception.ServiceInternalException;
 import com.alibaba.cloud.ai.model.ChatClient;
+import com.alibaba.cloud.ai.model.ChatModelConfig;
 import com.alibaba.cloud.ai.param.ClientRunActionParam;
 import com.alibaba.cloud.ai.service.ChatClientDelegate;
 import com.alibaba.cloud.ai.utils.SpringApplicationUtil;
@@ -27,14 +34,8 @@ import com.alibaba.cloud.ai.vo.ActionResult;
 import com.alibaba.cloud.ai.vo.ChatClientRunResult;
 import com.alibaba.cloud.ai.vo.TelemetryResult;
 import io.micrometer.tracing.Tracer;
-
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.ai.chat.client.DefaultChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
@@ -43,13 +44,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
+import static org.springframework.ai.chat.client.advisor.vectorstore.VectorStoreChatMemoryAdvisor.TOP_K;
 import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 @Service
 @Slf4j
 public class ChatClientDelegateImpl implements ChatClientDelegate {
 
-	private static final int CHAT_MEMORY_RETRIEVE_SIZE = 100;
+	private static final int DEFAULT_TOP_K = 100;
 
 	private final Tracer tracer;
 
@@ -101,8 +103,7 @@ public class ChatClientDelegateImpl implements ChatClientDelegate {
 			chatID = UUID.randomUUID().toString();
 		}
 		String finalChatID = chatID;
-		clientRequestSpec.advisors(spec -> spec.param(CONVERSATION_ID, finalChatID)
-			.param("chat_memory_response_size", CHAT_MEMORY_RETRIEVE_SIZE));
+		clientRequestSpec.advisors(spec -> spec.param(CONVERSATION_ID, finalChatID).param(TOP_K, DEFAULT_TOP_K));
 
 		String resp = clientRequestSpec.user(input).call().content();
 		return ChatClientRunResult.builder()
@@ -153,7 +154,7 @@ public class ChatClientDelegateImpl implements ChatClientDelegate {
 						ReflectionUtils.makeAccessible(chatModelField);
 						try {
 							ChatModel chatModel = (ChatModel) chatModelField.get(defaultChatClientRequest);
-							com.alibaba.cloud.ai.model.ChatModel model = com.alibaba.cloud.ai.model.ChatModel.builder()
+							ChatModelConfig model = ChatModelConfig.builder()
 								.name("chatModel")
 								.model(chatModel.getDefaultOptions().getModel())
 								.modelType(ModelType.CHAT)

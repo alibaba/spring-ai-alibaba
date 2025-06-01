@@ -21,6 +21,8 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeCondition;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
@@ -35,6 +37,7 @@ import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializer;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -200,29 +203,9 @@ public class StateGraph {
 	 */
 	final Edges edges = new Edges();
 
-	private OverAllState overAllState;
-
 	private OverAllStateFactory overAllStateFactory;
 
 	private String name;
-
-	/**
-	 * Gets over all state.
-	 * @return the over all state
-	 */
-	public OverAllState getOverAllState() {
-		return overAllState;
-	}
-
-	/**
-	 * Sets over all state.
-	 * @param overAllState the over all state
-	 * @return the over all state
-	 */
-	public StateGraph setOverAllState(OverAllState overAllState) {
-		this.overAllState = overAllState;
-		return this;
-	}
 
 	private final PlainTextStateSerializer stateSerializer;
 
@@ -257,7 +240,13 @@ public class StateGraph {
 		 * Instantiates a new Gson serializer.
 		 */
 		public GsonSerializer() {
-			super(OverAllState::new, new GsonBuilder().serializeNulls().create());
+			super(OverAllState::new,
+					new GsonBuilder().enableComplexMapKeySerialization()
+						.setLenient()
+						.registerTypeAdapter(Double.TYPE,
+								(JsonDeserializer<Double>) (json, typeOfT, context) -> json.getAsDouble())
+						.serializeNulls()
+						.create());
 		}
 
 		/**
@@ -280,7 +269,13 @@ public class StateGraph {
 		 * @param stateFactory the state factory
 		 */
 		public GsonSerializer2(AgentStateFactory<OverAllState> stateFactory) {
-			super(stateFactory, new GsonBuilder().serializeNulls().create());
+			super(stateFactory,
+					new GsonBuilder().enableComplexMapKeySerialization()
+						.registerTypeAdapter(Double.TYPE,
+								(JsonDeserializer<Double>) (json, typeOfT, context) -> json.getAsDouble())
+						.setLenient()
+						.serializeNulls()
+						.create());
 		}
 
 		/**
@@ -291,17 +286,6 @@ public class StateGraph {
 			return gson;
 		}
 
-	}
-
-	/**
-	 * Instantiates a new State graph.
-	 * @param overAllState the over all state
-	 * @param plainTextStateSerializer the plain text state serializer
-	 */
-	@Deprecated
-	public StateGraph(OverAllState overAllState, PlainTextStateSerializer plainTextStateSerializer) {
-		this.overAllState = overAllState;
-		this.stateSerializer = plainTextStateSerializer;
 	}
 
 	/**
@@ -325,7 +309,7 @@ public class StateGraph {
 	public StateGraph(String name, OverAllStateFactory overAllStateFactory) {
 		this.name = name;
 		this.overAllStateFactory = overAllStateFactory;
-		this.stateSerializer = new GsonSerializer();
+		this.stateSerializer = new JacksonSerializer();
 	}
 
 	/**
@@ -334,7 +318,7 @@ public class StateGraph {
 	 */
 	public StateGraph(OverAllStateFactory overAllStateFactory) {
 		this.overAllStateFactory = overAllStateFactory;
-		this.stateSerializer = new GsonSerializer();
+		this.stateSerializer = new JacksonSerializer();
 	}
 
 	/**
@@ -345,28 +329,6 @@ public class StateGraph {
 	public StateGraph(OverAllStateFactory overAllStateFactory, PlainTextStateSerializer plainTextStateSerializer) {
 		this.overAllStateFactory = overAllStateFactory;
 		this.stateSerializer = plainTextStateSerializer;
-	}
-
-	/**
-	 * Instantiates a new State graph.
-	 * @param name the name
-	 * @param overAllState the over all state
-	 */
-	@Deprecated
-	public StateGraph(String name, OverAllState overAllState) {
-		this.name = name;
-		this.overAllState = overAllState;
-		this.stateSerializer = new GsonSerializer();
-	}
-
-	/**
-	 * Instantiates a new State graph.
-	 * @param overAllState the over all state
-	 */
-	@Deprecated
-	public StateGraph(OverAllState overAllState) {
-		this.overAllState = overAllState;
-		this.stateSerializer = new GsonSerializer();
 	}
 
 	/**
@@ -388,7 +350,7 @@ public class StateGraph {
 	 * Gets state serializer.
 	 * @return the state serializer
 	 */
-	public StateSerializer getStateSerializer() {
+	public StateSerializer<OverAllState> getStateSerializer() {
 		return stateSerializer;
 	}
 
@@ -498,17 +460,6 @@ public class StateGraph {
 		}
 
 		subGraph.validateGraph();
-		OverAllState subGraphOverAllState = subGraph.getOverAllState();
-		OverAllState superOverAllState = getOverAllState();
-		if (subGraphOverAllState != null) {
-			Map<String, KeyStrategy> strategies = subGraphOverAllState.keyStrategies();
-			for (Map.Entry<String, KeyStrategy> strategyEntry : strategies.entrySet()) {
-				if (!superOverAllState.containStrategy(strategyEntry.getKey())) {
-					superOverAllState.registerKeyAndStrategy(strategyEntry.getKey(), strategyEntry.getValue());
-				}
-			}
-		}
-		subGraph.setOverAllState(getOverAllState());
 
 		var node = new SubStateGraphNode(id, subGraph);
 

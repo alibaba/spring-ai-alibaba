@@ -36,10 +36,10 @@ public class TavilySearchAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Provides a TavilySearchService bean for performing searches using the Tavily search engine.")
-	public TavilySearchService tavilySearchFunction(TavilySearchProperties properties, JsonParseTool jsonParseTool) {
+	public TavilySearchService tavilySearch(TavilySearchProperties properties, JsonParseTool jsonParseTool) {
 		WebClientTool webClientTool = WebClientTool.builder(jsonParseTool, properties)
 			.httpHeadersConsumer(httpHeaders -> {
-				httpHeaders.add(HttpHeaders.AUTHORIZATION, "Bearer " + properties.getToken());
+				httpHeaders.add(HttpHeaders.AUTHORIZATION, "Bearer " + properties.getApiKey());
 				httpHeaders.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
 			})
 			.build();
