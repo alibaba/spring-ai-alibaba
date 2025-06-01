@@ -19,68 +19,34 @@ package com.alibaba.cloud.ai.example.deepresearch.tool;
 import lombok.SneakyThrows;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.logging.Logger;
 
+/**
+ * Run Python Code in Docker
+ *
+ * @author vlsmb
+ */
 @Service
 public class PythonReplTool {
 
 	private static final Logger logger = Logger.getLogger(PythonReplTool.class.getName());
 
-	@Value("${spring.ai.alibaba.deepreserch.python-home}")
-	private String pythonHome;
-
 	@SneakyThrows
 	@Tool(description = "Execute Python code and return the result.")
-	public String executePythonCode(@ToolParam(description = "python code") String code) {
+	public String executePythonCode(@ToolParam(description = "python code") String code,
+			@ToolParam(description = "requirements.txt", required = false) String requirements) {
 		if (code == null || code.trim().isEmpty()) {
 			return "Error: Code must be a non-empty string.";
 		}
 
 		try {
-			// 写入临时文件
-			java.nio.file.Path tempScript = java.nio.file.Files.createTempFile("script", ".py");
-			java.nio.file.Files.write(tempScript, code.getBytes());
-
-			// 调用 Python 执行
-			ProcessBuilder pb = new ProcessBuilder(pythonHome, tempScript.toString());
-			Process process = pb.start();
-
-			// 读取标准输出
-			BufferedReader stdOutput = new BufferedReader(new InputStreamReader(process.getInputStream()));
-			BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-
-			StringBuilder output = new StringBuilder();
-			String line;
-
-			while ((line = stdOutput.readLine()) != null) {
-				output.append(line).append("\n");
-			}
-
-			StringBuilder error = new StringBuilder();
-			while ((line = stdError.readLine()) != null) {
-				error.append(line).append("\n");
-			}
-
-			int exitCode = process.waitFor();
-
-			if (exitCode == 0) {
-				logger.info("Python code executed successfully.");
-				return "Successfully executed:\n```\n" + code + "\n```\nStdout:\n" + output.toString();
-			}
-			else {
-				logger.warning("Python code execution failed.");
-				return "Error executing code:\n```\n" + code + "\n```\nError:\n" + error.toString();
-			}
+			return "";
 		}
-		catch (IOException | InterruptedException e) {
+		catch (Exception e) {
 			logger.severe("Exception during execution: " + e.getMessage());
-			return "Exception occurred while executing code:\n```\n" + code + "\n```\nError:\n" + e.toString();
+			return "Exception occurred while executing code:\n```\n" + code + "\n```\nError:\n" + e.getMessage();
 		}
 	}
 
