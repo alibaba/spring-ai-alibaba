@@ -75,6 +75,7 @@ public class CodeExecutionConfig {
 	public String getContainerName() {
 		return containerName;
 	}
+
 	public CodeExecutionConfig setCodeExecutionConfig(String containerName) {
 		this.containerName = containerName;
 		return this;
@@ -88,7 +89,5 @@ public class CodeExecutionConfig {
 		this.dockerHost = dockerHost;
 		return this;
 	}
-
-
 
 }
