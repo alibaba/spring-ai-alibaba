@@ -123,6 +123,8 @@ public class DynamicAgent extends ReActAgent {
 		while (attempt < maxRetries) {
 			attempt++;
 			List<Message> messages = new ArrayList<>();
+
+			// todo 如何做到前置添加思考信息
 			addThinkPrompt(messages);
 
 			ChatOptions chatOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();

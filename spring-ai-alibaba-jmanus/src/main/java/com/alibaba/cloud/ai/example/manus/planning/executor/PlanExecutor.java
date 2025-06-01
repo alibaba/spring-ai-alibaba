@@ -152,7 +152,7 @@ public class PlanExecutor {
 		return null;
 	}
 
-	private String getStepFromStepReq(String stepRequirement) {
+	public String getStepFromStepReq(String stepRequirement) {
 		Matcher matcher = pattern.matcher(stepRequirement);
 		if (matcher.find()) {
 			// 对匹配到的内容进行trim和转小写处理

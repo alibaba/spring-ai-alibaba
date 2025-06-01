@@ -84,7 +84,7 @@ public class JmanusConfiguration {
         // Add all dynamic agents from the database
         List<DynamicAgentEntity> allAgents = dynamicAgentLoader.getAllAgents();
 
-        return new ExecutorNode(allAgents,planExecutionRecorder,agentService,chatClientBuilder);
+        return new ExecutorNode(allAgents,planExecutionRecorder,agentService,chatClientBuilder,planningFactory.toolCallbackMap(null));
     }
 
     private NodeAction initPlannerNode(ChatClient.Builder chatClientBuilder) throws IOException {

@@ -56,7 +56,7 @@ public class TerminateTool implements ToolCallBiFunctionDef {
 			- Any actionable recommendations
 
 			The summary should be thorough enough to provide complete context for subsequent steps or other agents.
-
+			Please do not return placeholder messages like "Task completed" — instead, include the full summary
 			""";
 
 	public static OpenAiApi.FunctionTool getToolDefinition() {

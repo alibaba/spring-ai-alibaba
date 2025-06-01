@@ -21,7 +21,10 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
@@ -30,6 +33,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 public class LlmNode implements NodeAction {
 
@@ -38,6 +42,8 @@ public class LlmNode implements NodeAction {
 	private String systemPrompt;
 
 	private String userPrompt;
+
+	private ChatOptions chatOptions;
 
 	private Map<String, Object> params = new HashMap<>();
 
@@ -59,6 +65,10 @@ public class LlmNode implements NodeAction {
 
 	private ChatClient chatClient;
 
+	private Function<OverAllState, Void> beforeHook;
+
+	private Function<OverAllState, Void> afterHook;
+
 	public LlmNode() {
 	}
 
@@ -75,6 +85,11 @@ public class LlmNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
+		// 执行前hook
+		if (beforeHook != null) {
+			beforeHook.apply(state);
+		}
+
 		initNodeWithState(state);
 
 		// add streaming support later
@@ -85,6 +100,12 @@ public class LlmNode implements NodeAction {
 		if (StringUtils.hasLength(this.outputKey)) {
 			updatedState.put(this.outputKey, response.getResult().getOutput());
 		}
+
+		// 执行后hook
+		if (afterHook != null) {
+			afterHook.apply(state);
+		}
+
 		return updatedState;
 	}
 
@@ -167,6 +188,7 @@ public class LlmNode implements NodeAction {
 		else {
 			if (StringUtils.hasLength(systemPrompt)) {
 				return chatClient.prompt()
+						.options(chatOptions)
 					.system(systemPrompt)
 					.messages(messages)
 					.advisors(advisors)
@@ -176,6 +198,7 @@ public class LlmNode implements NodeAction {
 			}
 			else if (StringUtils.hasLength(userPrompt)) {
 				return chatClient.prompt()
+						.options(chatOptions)
 					.user(userPrompt)
 					.messages(messages)
 					.advisors(advisors)
@@ -185,6 +208,7 @@ public class LlmNode implements NodeAction {
 			}
 			else {
 				return chatClient.prompt()
+						.options(chatOptions)
 					.messages(messages)
 					.advisors(advisors)
 					.toolCallbacks(toolCallbacks)
@@ -223,6 +247,12 @@ public class LlmNode implements NodeAction {
 		private List<Advisor> advisors;
 
 		private List<ToolCallback> toolCallbacks;
+
+		private ChatOptions chatOptions;
+
+		private Function<OverAllState, Void> beforeHook;
+
+		private Function<OverAllState, Void> afterHook;
 
 		public Builder userPromptTemplate(String userPromptTemplate) {
 			this.userPromptTemplate = userPromptTemplate;
@@ -284,6 +314,21 @@ public class LlmNode implements NodeAction {
 			return this;
 		}
 
+		public Builder chatOptions(ChatOptions chatOptions) {
+			this.chatOptions = chatOptions;
+			return this;
+		}
+
+		public Builder beforeHook(Function<OverAllState, Void> beforeHook) {
+			this.beforeHook = beforeHook;
+			return this;
+		}
+
+		public Builder afterHook(Function<OverAllState, Void> afterHook) {
+			this.afterHook = afterHook;
+			return this;
+		}
+
 		public LlmNode build() {
 			LlmNode llmNode = new LlmNode();
 			llmNode.systemPrompt = this.systemPromptTemplate;
@@ -306,6 +351,9 @@ public class LlmNode implements NodeAction {
 				llmNode.toolCallbacks = this.toolCallbacks;
 			}
 			llmNode.chatClient = this.chatClient;
+			llmNode.chatOptions = this.chatOptions;
+			llmNode.beforeHook = this.beforeHook;
+			llmNode.afterHook = this.afterHook;
 			return llmNode;
 		}
 

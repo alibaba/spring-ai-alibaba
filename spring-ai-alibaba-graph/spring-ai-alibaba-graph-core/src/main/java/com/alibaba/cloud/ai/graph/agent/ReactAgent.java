@@ -34,6 +34,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
@@ -66,6 +68,20 @@ public class ReactAgent {
 
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
+	public ReactAgent(String name, LlmNode llmNode, ToolNode toolNode,
+			int maxIterations,
+			CompileConfig compileConfig, OverAllState state, 
+			Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
+		this.name = name;
+		this.llmNode = llmNode;
+		this.toolNode = toolNode;
+		this.max_iterations = maxIterations;
+		this.compileConfig = compileConfig;
+		this.state = state;
+		this.shouldContinueFunc = shouldContinueFunc;
+		this.graph = initGraph();
+	}
+
 	public ReactAgent(LlmNode llmNode, ToolNode toolNode, int maxIterations, OverAllState state,
 			CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc)
 			throws GraphStateException {
@@ -81,7 +97,7 @@ public class ReactAgent {
 	public ReactAgent(String name, ChatClient chatClient, List<ToolCallback> tools, int maxIterations)
 			throws GraphStateException {
 		this.name = name;
-		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey("messages").build();
+		this.llmNode = LlmNode.builder().chatClient(chatClient).toolCallbacks(tools).messagesKey("messages").build();
 		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		this.max_iterations = maxIterations;
 		this.graph = initGraph();
@@ -91,7 +107,8 @@ public class ReactAgent {
 			OverAllState state, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc)
 			throws GraphStateException {
 		this.name = name;
-		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey("messages").build();
+		this.llmNode = LlmNode.builder().chatClient(chatClient).toolCallbacks(tools).chatOptions(ToolCallingChatOptions.builder()
+				.internalToolExecutionEnabled(false).build()).messagesKey("messages").build();
 		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		this.max_iterations = maxIterations;
 		this.state = state;
@@ -116,7 +133,8 @@ public class ReactAgent {
 			OverAllState state, CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc)
 			throws GraphStateException {
 		this.name = name;
-		this.llmNode = LlmNode.builder().chatClient(chatClient).messagesKey("messages").build();
+		this.llmNode = LlmNode.builder().chatClient(chatClient).chatOptions(ToolCallingChatOptions.builder()
+				.internalToolExecutionEnabled(false).build()).messagesKey("messages").build();
 		this.toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
 		this.max_iterations = maxIterations;
 		this.state = state;
@@ -251,6 +269,8 @@ public class ReactAgent {
 
 		private List<ToolCallback> tools;
 
+		private LlmNode llmNode;
+
 		private ToolCallbackResolver resolver;
 
 		private int maxIterations = 10;
@@ -268,6 +288,11 @@ public class ReactAgent {
 
 		public Builder chatClient(ChatClient chatClient) {
 			this.chatClient = chatClient;
+			return this;
+		}
+
+		public Builder llmNode(LlmNode llmNode){
+			this.llmNode = llmNode;
 			return this;
 		}
 
@@ -303,8 +328,7 @@ public class ReactAgent {
 
 		public ReactAgent build() throws GraphStateException {
 			if (resolver != null) {
-				return new ReactAgent(name, chatClient, resolver, maxIterations, state, compileConfig,
-						shouldContinueFunc);
+				return new ReactAgent(name, chatClient, resolver, maxIterations, state, compileConfig, shouldContinueFunc);
 			}
 			else if (tools != null) {
 				return new ReactAgent(name, chatClient, tools, maxIterations, state, compileConfig, shouldContinueFunc);
