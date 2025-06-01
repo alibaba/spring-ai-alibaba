@@ -55,9 +55,9 @@
           - "spring-ai-alibaba-spring-boot-starter/**/*"
 
 "area/studio":
-    - changed-files:
-        - any-glob-to-any-file:
-            - "spring-ai-alibaba-studio/**/*"
+  - changed-files:
+      - any-glob-to-any-file:
+          - "spring-ai-alibaba-studio/**/*"
 
 "area/deepresearch":
   - changed-files:
