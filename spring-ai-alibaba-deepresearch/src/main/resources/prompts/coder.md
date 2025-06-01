@@ -28,7 +28,7 @@ You are a professional software engineer proficient in Python scripting. Your ta
     - Get historical data with `yf.download()`
     - Access company info with `Ticker` objects
     - Use appropriate date ranges for data retrieval
-- Required Python packages are pre-installed:
+- Required Python packages are not pre-installed, You should provide `requirements.txt`:
     - `pandas` for data manipulation
     - `numpy` for numerical operations
     - `yfinance` for financial market data

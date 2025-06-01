@@ -16,11 +16,25 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.tool;
 
+import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.lang.ref.Cleaner;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -33,6 +47,12 @@ public class PythonReplTool {
 
 	private static final Logger logger = Logger.getLogger(PythonReplTool.class.getName());
 
+	private final PythonCoderProperties coderProperties;
+
+	public PythonReplTool(PythonCoderProperties coderProperties) {
+		this.coderProperties = coderProperties;
+	}
+
 	@SneakyThrows
 	@Tool(description = "Execute Python code and return the result.")
 	public String executePythonCode(@ToolParam(description = "python code") String code,
@@ -40,11 +60,101 @@ public class PythonReplTool {
 		if (code == null || code.trim().isEmpty()) {
 			return "Error: Code must be a non-empty string.";
 		}
-
-		try {
-			return "";
+		if (!StringUtils.hasText(coderProperties.getContainNamePrefix())
+				|| !StringUtils.hasText(coderProperties.getCpuCore())
+				|| !StringUtils.hasText(coderProperties.getLimitMemory())
+				|| !StringUtils.hasText(coderProperties.getCodeTimeout())) {
+			return "Error: Some Properties must be a non-empty string.";
 		}
-		catch (Exception e) {
+		try {
+			// Create temp dir and files
+			Path tempDir = Files.createTempDirectory(coderProperties.getContainNamePrefix());
+			Cleaner.create().register(tempDir, () -> {
+				try {
+					if (!Files.exists(tempDir))
+						return;
+					Files.walkFileTree(tempDir, new SimpleFileVisitor<>() {
+						@NotNull
+						@Override
+						public FileVisitResult visitFile(@NotNull Path file, @NotNull BasicFileAttributes attrs)
+								throws IOException {
+							Files.delete(file);
+							return super.visitFile(file, attrs);
+						}
+
+						@NotNull
+						@Override
+						public FileVisitResult postVisitDirectory(@NotNull Path dir, @Nullable IOException exc)
+								throws IOException {
+							if (exc != null)
+								throw exc;
+							Files.delete(dir);
+							return super.postVisitDirectory(dir, exc);
+						}
+					});
+				}
+				catch (IOException e) {
+					logger.warning("Error when deleting temp directory: {}" + tempDir.toAbsolutePath());
+				}
+			});
+			Path requirementsPath = tempDir.resolve("requirements.txt");
+			Path scriptPath = tempDir.resolve("script.py");
+			Files.createFile(requirementsPath);
+			Files.createFile(scriptPath);
+			Files.write(requirementsPath, StringUtils.hasText(requirements) ? requirements.getBytes() : "".getBytes());
+			Files.write(scriptPath, code.getBytes());
+
+			// Build a docker to run
+			String containName = tempDir.getFileName().toString();
+			String tempDirPath = tempDir.toAbsolutePath().toString();
+			/*
+			 * Command Sample: docker run --rm --name py-runner --memory="100M" \
+			 * --cpus="0.5" --network none --read-only --cap-drop=ALL -v \
+			 * "./script.py:/app/script.py:ro" -v \
+			 * "./requirements.txt:/app/requirements.txt:ro" -v "./tmp:/tmp" -w /app \
+			 * python:3-slim sh -c "pip3 install --no-cache-dir -r requirements.txt > \
+			 * /dev/null && timeout -s SIGKILL 60s python3 script.py"
+			 */
+			List<String> commands = List.of("docker", "run", "--rm", "--name", containName,
+					String.format("--memory=%s", coderProperties.getLimitMemory()),
+					String.format("--cpus=%s", coderProperties.getCpuCore()), "--network",
+					coderProperties.isEnableNetwork() ? "bridge" : "none", "--read-only", "--cap-drop=ALL", "-v",
+					String.format("%s/script.py:/app/script.py:ro", tempDirPath), "-v",
+					String.format("%s/requirements.txt:/app/requirements.txt:ro", tempDirPath), "-v",
+					String.format("%s/tmp:/tmp", tempDirPath), "-w", "/app", "python:3-slim", "sh", "-c",
+					String.format(
+							"pip3 install --no-cache-dir -r requirements.txt > /dev/null && timeout -s SIGKILL %s python3 script.py",
+							coderProperties.getCodeTimeout()));
+			ProcessBuilder pb = new ProcessBuilder(commands);
+			Process process = pb.start();
+
+			// get stdout and stderr
+			BufferedReader stdOutput = new BufferedReader(new InputStreamReader(process.getInputStream()));
+			BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+			int exitCode = process.waitFor();
+			StringBuilder output = new StringBuilder();
+			String line;
+			while ((line = stdOutput.readLine()) != null) {
+				output.append(line).append("\n");
+			}
+			StringBuilder error = new StringBuilder();
+			while ((line = stdError.readLine()) != null) {
+				error.append(line).append("\n");
+			}
+			if (exitCode == 0) {
+				logger.info("Python code executed successfully.");
+				return "Successfully executed:\n```\n" + code + "\n```\nStdout:\n" + output;
+			}
+			else {
+				logger.warning("Python code execution failed.");
+				if (exitCode == 124) {
+					error.append("WARNING: Python code Timeout! Time Limit: ");
+					error.append(coderProperties.getCodeTimeout());
+				}
+				return "Error executing code:\n```\n" + code + "\n```\nError:\n" + error;
+			}
+		}
+		catch (IOException | InterruptedException e) {
 			logger.severe("Exception during execution: " + e.getMessage());
 			return "Exception occurred while executing code:\n```\n" + code + "\n```\nError:\n" + e.getMessage();
 		}

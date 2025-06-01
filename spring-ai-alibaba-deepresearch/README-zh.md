@@ -5,7 +5,8 @@
 需要配置以下环境变量，或者直接修改`application.yml`:
 - DashScope API: `${DASHSCOPE_API_KEY}`
 - TavilySearch API: `${TAVILY_API_KEY}`
-- Python解释器所在的路径：`${PYTHON_HOME}`，例如`/usr/bin/python3`
+
+此外需要安装`docker`，本项目需要使用`python:3-slim`镜像创建临时容器。
 
 ### 工具
 - tavily API文档：https://docs.tavily.com/documentation/api-reference/endpoint/search
