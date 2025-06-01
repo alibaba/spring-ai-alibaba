@@ -93,4 +93,3 @@
   - changed-files:
       - any-glob-to-any-file:
           - "community/memories/**/*"
-
