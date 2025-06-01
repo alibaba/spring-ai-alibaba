@@ -1,5 +1,12 @@
 本项目利用spring-ai-alibaba-graph实现深度研究
 
+### 配置
+
+需要配置以下环境变量，或者直接修改`application.yml`:
+- DashScope API: `${DASHSCOPE_API_KEY}`
+- TavilySearch API: `${TAVILY_API_KEY}`
+- Python解释器所在的路径：`${PYTHON_HOME}`，例如`/usr/bin/python3`
+
 ### 工具
 - tavily API文档：https://docs.tavily.com/documentation/api-reference/endpoint/search
 - 高德地图MCP：https://lbs.amap.com/api/mcp-server/gettingstarted#t1

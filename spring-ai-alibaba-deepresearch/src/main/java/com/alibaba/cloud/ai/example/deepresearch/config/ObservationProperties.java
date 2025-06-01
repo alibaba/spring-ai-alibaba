@@ -14,37 +14,27 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch.tool.tavily;
+package com.alibaba.cloud.ai.example.deepresearch.config;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * @author yingzi
- * @since 2025/5/18 15:24
+ * @author Allen Hu
+ * @since 0.1.0
  */
-@Setter
-@Getter
-@ConfigurationProperties(prefix = "spring.ai.tavily")
-public class TavilySearchProperties {
+@ConfigurationProperties(prefix = ObservationProperties.PREFIX)
+public class ObservationProperties {
 
-	private String apiKey;
+	public static final String PREFIX = DeepResearchProperties.PREFIX + ".observation";
 
-	private String topic = "general";
+	private boolean enabled;
 
-	private String searchDepth = "basic";
+	public boolean isEnabled() {
+		return enabled;
+	}
 
-	private int maxResults = 5;
-
-	private int chunksPerSource = 3;
-
-	private int days = 7;
-
-	private boolean includeRawContent = false;
-
-	private boolean includeImages = false;
-
-	private boolean includeImageDescriptions = false;
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
 
 }

@@ -17,8 +17,10 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import org.apache.commons.compress.utils.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -26,7 +28,6 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 
@@ -47,21 +48,20 @@ public class ResearcherNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-
+		logger.info("Researcher Node is running.");
+		List<Message> messages = TemplateUtil.applyPromptTemplate("researcher", state);
 		Plan currentPlan = state.value("current_plan", Plan.class).get();
 		List<String> observations = state.value("observations", List.class)
 			.map(list -> (List<String>) list)
-			.orElse(Collections.emptyList());
+			.orElse(Lists.newArrayList());
 
 		Plan.Step unexecutedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
-			if (step.getExecutionRes() == null) {
+			if (step.getStepType().equals(Plan.StepType.RESEARCH) && step.getExecutionRes() == null) {
 				unexecutedStep = step;
 				break;
 			}
 		}
-
-		List<Message> messages = new ArrayList<>();
 
 		// 添加任务消息
 		Message taskMessage = new UserMessage(
@@ -74,6 +74,7 @@ public class ResearcherNode implements NodeAction {
 				"IMPORTANT: DO NOT include inline citations in the text. Instead, track all sources and include a References section at the end using link reference format. Include an empty line between each citation for better readability. Use this format for each reference:\n- [Source Title](URL)\n\n- [Another Source](URL)");
 		messages.add(citationMessage);
 
+		logger.debug("Researcher Node messages: {}", messages);
 		// 调用agent
 		String content = researchAgent.prompt()
 			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
@@ -82,9 +83,14 @@ public class ResearcherNode implements NodeAction {
 			.content();
 		unexecutedStep.setExecutionRes(content);
 
+		logger.info("Researcher Node response: {}", content);
+		if (content == null) {
+			content = "";
+		}
 		Map<String, Object> updated = new HashMap<>();
-		updated.put("messages", new AssistantMessage(content));
-		updated.put("observations", observations.add(content));
+		updated.put("messages", List.of(new AssistantMessage(content)));
+		observations.add(content);
+		updated.put("observations", observations);
 
 		return updated;
 	}
