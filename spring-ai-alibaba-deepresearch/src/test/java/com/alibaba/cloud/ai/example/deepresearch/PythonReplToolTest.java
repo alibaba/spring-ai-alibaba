@@ -5,8 +5,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.io.IOException;
+import org.springframework.test.context.ActiveProfiles;
+import static org.assertj.core.api.Assertions.*;
 
 /**
  * Run Python Code in Docker Test
@@ -15,6 +15,7 @@ import java.io.IOException;
  */
 @SpringBootTest
 @DisplayName("Run Python Code in Docker Test")
+@ActiveProfiles("test")
 public class PythonReplToolTest {
 
 	@Autowired
@@ -40,19 +41,64 @@ public class PythonReplToolTest {
 			print(inverse_matrix)
 			""";
 
+	private static final String TIMEOUT_CODE = """
+			while True:
+				continue
+			""";
+
+	private static final String ERROR_CODE = """
+			void main() {}
+			""";
+
+	private static final String NETWORK_CHECK = """
+			import socket
+			import urllib.request
+
+			ans1 = "C" + "o" + "nnected"
+			ans2 = "F" + "a" + "iled"
+			if __name__ == "__main__":
+			    try:
+			        socket.gethostbyname("www.aliyun.com")
+			        print("DNS " + ans1)
+			    except:
+			        print("DNS " + ans2)
+			    try:
+			        with urllib.request.urlopen("http://www.aliyun.com", timeout=3) as response:
+			            print("HTTP " + ans1)
+			    except Exception as e:
+			        print(f"HTTP {ans2}: {str(e)}")
+			""";
+
 	@Test
 	public void testNormalCode() {
-		System.out.println(pythonReplTool.executePythonCode(NORMAL_CODE, null));
+		assertThat(pythonReplTool.executePythonCode(NORMAL_CODE, null)).contains("3628800");
 	}
 
 	@Test
 	public void testCodeWithoutDependency() {
-		System.out.println(pythonReplTool.executePythonCode(CODE_WITH_DEPENDENCY, null));
+		assertThat(pythonReplTool.executePythonCode(CODE_WITH_DEPENDENCY, null)).contains("ModuleNotFoundError");
 	}
 
 	@Test
 	public void testCodeWithDependency() {
-		System.out.println(pythonReplTool.executePythonCode(CODE_WITH_DEPENDENCY, "numpy==1.26.4"));
+		assertThat(pythonReplTool.executePythonCode(CODE_WITH_DEPENDENCY, "numpy==2.2.6"))
+			.doesNotContain("ModuleNotFoundError");
+	}
+
+	@Test
+	public void testTimeoutCode() {
+		assertThat(pythonReplTool.executePythonCode(TIMEOUT_CODE, null)).contains("Error");
+	}
+
+	@Test
+	public void testErrorCode() {
+		assertThat(pythonReplTool.executePythonCode(ERROR_CODE, null)).contains("SyntaxError");
+	}
+
+	@Test
+	public void testNetworkCheck() {
+		assertThat(pythonReplTool.executePythonCode(NETWORK_CHECK, null)).contains("Failed")
+			.doesNotContain("Connected");
 	}
 
 }

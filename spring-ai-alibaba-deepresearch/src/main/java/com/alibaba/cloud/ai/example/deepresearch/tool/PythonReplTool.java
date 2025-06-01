@@ -63,8 +63,9 @@ public class PythonReplTool {
 		if (!StringUtils.hasText(coderProperties.getContainNamePrefix())
 				|| !StringUtils.hasText(coderProperties.getCpuCore())
 				|| !StringUtils.hasText(coderProperties.getLimitMemory())
-				|| !StringUtils.hasText(coderProperties.getCodeTimeout())) {
-			return "Error: Some Properties must be a non-empty string.";
+				|| !StringUtils.hasText(coderProperties.getCodeTimeout())
+				|| !StringUtils.hasText(coderProperties.getImageName())) {
+			return "Error: Some Config is not set. You should reporter it to developer.";
 		}
 		try {
 			// Create temp dir and files
@@ -107,13 +108,39 @@ public class PythonReplTool {
 			// Build a docker to run
 			String containName = tempDir.getFileName().toString();
 			String tempDirPath = tempDir.toAbsolutePath().toString();
+
+			if (!coderProperties.isEnableNetwork() && StringUtils.hasText(requirements)) {
+				// If Python code is restricted from network access but requires
+				// third-party dependencies, we need to provision a docker for pip to
+				// install the dependencies.
+				List<String> pipCommands = List.of("docker", "run", "--rm", "--name", containName, "-v",
+						String.format("%s/requirements.txt:/app/requirements.txt:ro", tempDirPath), "-v",
+						String.format("%s/tmp:/tmp", tempDirPath), "-v",
+						String.format("%s/dependency:/app/site-packages", tempDirPath), "-w", "/app",
+						coderProperties.getImageName(), "sh", "-c",
+						"pip3 install --target=/app/site-packages --no-cache-dir -r requirements.txt > /dev/null");
+				ProcessBuilder pipPb = new ProcessBuilder(pipCommands);
+				Process pipProcess = pipPb.start();
+				BufferedReader pipError = new BufferedReader(new InputStreamReader(pipProcess.getErrorStream()));
+				if (pipProcess.waitFor() != 0) {
+					StringBuilder error = new StringBuilder();
+					String line;
+					while ((line = pipError.readLine()) != null) {
+						error.append(line).append("\n");
+					}
+					return "Error installing requirements:\n```\n" + code + "\n```\nError:\n" + error;
+				}
+			}
+
 			/*
 			 * Command Sample: docker run --rm --name py-runner --memory="100M" \
 			 * --cpus="0.5" --network none --read-only --cap-drop=ALL -v \
 			 * "./script.py:/app/script.py:ro" -v \
-			 * "./requirements.txt:/app/requirements.txt:ro" -v "./tmp:/tmp" -w /app \
-			 * python:3-slim sh -c "pip3 install --no-cache-dir -r requirements.txt > \
-			 * /dev/null && timeout -s SIGKILL 60s python3 script.py"
+			 * "./requirements.txt:/app/requirements.txt:ro" -v "./tmp:/tmp" -v \
+			 * "./dependency:/app/site-packages" -w /app python:3-slim sh -c "pip3 \
+			 * install --target=/app/site-packages --no-cache-dir -r requirements.txt > \
+			 * /dev/null && export PYTHONPATH="/app/site-packages:$PYTHONPATH" && \
+			 * timeout -s SIGKILL 60s python3 script.py"
 			 */
 			List<String> commands = List.of("docker", "run", "--rm", "--name", containName,
 					String.format("--memory=%s", coderProperties.getLimitMemory()),
@@ -121,9 +148,13 @@ public class PythonReplTool {
 					coderProperties.isEnableNetwork() ? "bridge" : "none", "--read-only", "--cap-drop=ALL", "-v",
 					String.format("%s/script.py:/app/script.py:ro", tempDirPath), "-v",
 					String.format("%s/requirements.txt:/app/requirements.txt:ro", tempDirPath), "-v",
-					String.format("%s/tmp:/tmp", tempDirPath), "-w", "/app", "python:3-slim", "sh", "-c",
-					String.format(
-							"pip3 install --no-cache-dir -r requirements.txt > /dev/null && timeout -s SIGKILL %s python3 script.py",
+					String.format("%s/tmp:/tmp", tempDirPath), "-v",
+					String.format("%s/dependency:/app/site-packages", tempDirPath), "-w", "/app",
+					coderProperties.getImageName(), "sh", "-c",
+					String.format(((coderProperties.isEnableNetwork() && StringUtils.hasText(requirements))
+							? "pip3 install --target=/app/site-packages --no-cache-dir -r requirements.txt > /dev/null && "
+							: "")
+							+ "export PYTHONPATH=\"/app/site-packages:$PYTHONPATH\" && timeout -s SIGKILL %s python3 script.py",
 							coderProperties.getCodeTimeout()));
 			ProcessBuilder pb = new ProcessBuilder(commands);
 			Process process = pb.start();
@@ -147,10 +178,6 @@ public class PythonReplTool {
 			}
 			else {
 				logger.warning("Python code execution failed.");
-				if (exitCode == 124) {
-					error.append("WARNING: Python code Timeout! Time Limit: ");
-					error.append(coderProperties.getCodeTimeout());
-				}
 				return "Error executing code:\n```\n" + code + "\n```\nError:\n" + error;
 			}
 		}

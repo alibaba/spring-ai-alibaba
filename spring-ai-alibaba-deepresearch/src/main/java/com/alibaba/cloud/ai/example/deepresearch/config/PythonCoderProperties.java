@@ -7,8 +7,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *
  * @author vlsmb
  */
-@ConfigurationProperties(prefix = DeepResearchProperties.PREFIX + ".python-coder")
+@ConfigurationProperties(prefix = PythonCoderProperties.PYTHON_CODER_PREFIX)
 public class PythonCoderProperties {
+
+	public static final String PYTHON_CODER_PREFIX = DeepResearchProperties.PREFIX + ".python-coder";
 
 	/**
 	 * Naming prefix when temporarily enabling Docker containers
@@ -34,6 +36,12 @@ public class PythonCoderProperties {
 	 * Timeout of python code
 	 */
 	String codeTimeout = "60s";
+
+	/**
+	 * The image of container. You can customize the image as long as it includes python3
+	 * and pip3
+	 */
+	String imageName = "python:3-slim";
 
 	public String getContainNamePrefix() {
 		return containNamePrefix;
@@ -73,6 +81,14 @@ public class PythonCoderProperties {
 
 	public void setCodeTimeout(String codeTimeout) {
 		this.codeTimeout = codeTimeout;
+	}
+
+	public String getImageName() {
+		return imageName;
+	}
+
+	public void setImageName(String imageName) {
+		this.imageName = imageName;
 	}
 
 }

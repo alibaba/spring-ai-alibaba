@@ -6,7 +6,7 @@
 - DashScope API: `${DASHSCOPE_API_KEY}`
 - TavilySearch API: `${TAVILY_API_KEY}`
 
-此外需要安装`docker`，本项目需要使用`python:3-slim`镜像创建临时容器。
+此外需要安装`docker`，本项目需要使用`python:3-slim`镜像创建临时容器。也可以自己定制包含一些常用的第三方库的镜像，第三方库需要安装在镜像的`/app/site-packages`文件夹里。
 
 ### 工具
 - tavily API文档：https://docs.tavily.com/documentation/api-reference/endpoint/search

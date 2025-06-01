@@ -1,0 +1,6 @@
+spring:
+  ai:
+    alibaba:
+      deepreserch:
+        python-coder:
+          code-timeout: "1s"
