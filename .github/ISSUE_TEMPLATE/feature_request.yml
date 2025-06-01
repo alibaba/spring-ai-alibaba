@@ -54,4 +54,4 @@ body:
       required: false
   - type: markdown
     attributes:
-      value: "Please read the [Contribution Guideline](https://java2ai.com/docs/developer/contributor-guide/new-contributor-guide_dev) before submitting the PR".
+      value: "Please read the [Contribution Guideline](https://java2ai.com/docs/developer/contributor-guide/new-contributor-guide_dev) before submitting the PR"
