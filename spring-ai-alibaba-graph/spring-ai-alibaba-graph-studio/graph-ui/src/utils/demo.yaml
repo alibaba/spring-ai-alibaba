@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 metadata:
   id: 09b80596-2028-43ce-81b8-fcdbcc8cb200
   name: test-workflow
@@ -151,7 +150,6 @@ spec:
               valueType: String
               description: null
               extraProperties: null
-
           model:
             mode: chat
             name: qwen-plus-latest
