@@ -34,7 +34,7 @@ yaml-lint: ## Check the yaml lint
 	yamllint -c ./tools/linter/yamllint/.yamllint .
 
 .PHONY: yaml-lint-fix
-yaml-fix:
+yaml-lint-fix:
 	@$(LOG_TARGET)
 	yamlfmt -version
 	yamlfmt .

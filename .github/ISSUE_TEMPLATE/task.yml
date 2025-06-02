@@ -13,12 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 name: 🚀 Task
 description: Used to create tasks for the community.
 title: "[Task] <title>"
 labels: ["discussion"]
-
 body:
   - type: textarea
     attributes:
