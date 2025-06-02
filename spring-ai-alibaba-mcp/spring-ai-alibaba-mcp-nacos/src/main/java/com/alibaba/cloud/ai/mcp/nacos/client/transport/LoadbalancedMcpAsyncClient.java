@@ -163,23 +163,19 @@ public class LoadbalancedMcpAsyncClient {
 	// ------------------------------------------------------------------------------------------------------------------------------------------------
 
 	public McpSchema.ServerCapabilities getServerCapabilities() {
-		return getMcpAsyncClient().getServerCapabilities();
+		return getMcpAsyncClientList().get(0).getServerCapabilities();
 	}
 
 	public McpSchema.Implementation getServerInfo() {
-		return getMcpAsyncClient().getServerInfo();
-	}
-
-	public boolean isInitialized() {
-		return getMcpAsyncClient().isInitialized();
+		return getMcpAsyncClientList().get(0).getServerInfo();
 	}
 
 	public McpSchema.ClientCapabilities getClientCapabilities() {
-		return getMcpAsyncClient().getClientCapabilities();
+		return getMcpAsyncClientList().get(0).getClientCapabilities();
 	}
 
 	public McpSchema.Implementation getClientInfo() {
-		return getMcpAsyncClient().getClientInfo();
+		return getMcpAsyncClientList().get(0).getClientInfo();
 	}
 
 	public void close() {
