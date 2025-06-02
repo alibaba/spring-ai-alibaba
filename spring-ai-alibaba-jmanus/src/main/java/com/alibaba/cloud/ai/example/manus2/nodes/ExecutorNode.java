@@ -273,7 +273,8 @@ public class ExecutorNode implements NodeAction {
                     Message message = addThinkPrompt(state, agentEntity.getAvailableToolKeys(), initSettings);
 
                     state.updateState(Map.of("messages", List.of(message)));
-                    return null;
+
+                    return Map.of();
                 })
                 .toolCallbacks(toolCallbacks)
                 .build();

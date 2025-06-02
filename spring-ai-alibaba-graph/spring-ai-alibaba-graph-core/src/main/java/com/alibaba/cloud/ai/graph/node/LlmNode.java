@@ -250,9 +250,9 @@ public class LlmNode implements NodeAction {
 
 		private ChatOptions chatOptions;
 
-		private Function<OverAllState, Void> beforeHook;
+		private Function<OverAllState, Map<String,Object>> beforeHook;
 
-		private Function<OverAllState, Void> afterHook;
+		private Function<OverAllState, Map<String,Object>> afterHook;
 
 		public Builder userPromptTemplate(String userPromptTemplate) {
 			this.userPromptTemplate = userPromptTemplate;
@@ -319,12 +319,12 @@ public class LlmNode implements NodeAction {
 			return this;
 		}
 
-		public Builder beforeHook(Function<OverAllState, Void> beforeHook) {
+		public Builder beforeHook(Function<OverAllState, Map<String,Object>> beforeHook) {
 			this.beforeHook = beforeHook;
 			return this;
 		}
 
-		public Builder afterHook(Function<OverAllState, Void> afterHook) {
+		public Builder afterHook(Function<OverAllState, Map<String,Object>> afterHook) {
 			this.afterHook = afterHook;
 			return this;
 		}
