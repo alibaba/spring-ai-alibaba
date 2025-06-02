@@ -1,0 +1,23 @@
+name: Greetings
+
+on: [pull_request]
+
+jobs:
+  greeting:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-message: |
+            # Message with markdown.
+            This is the message that will be displayed on users' first issue.
+          pr-message: |
+            🎉 Congratulations, @${{ github.actor }}, on your inaugural contribution to the Spring AI Alibaba repository! Your efforts are sincerely appreciated.
+
+            To maintain the integrity and legibility of our codebase, we kindly request that you verify your code adheres to the established project formatting standards prior to merging. Typically, comprehensive guidelines regarding code style and recommended formatting utilities can be found within the CONTRIBUTING.md file located in the repository.
+
+            Should you encounter any queries or require clarification, please do not hesitate to raise them. We extend our gratitude once more for your valuable contribution!
