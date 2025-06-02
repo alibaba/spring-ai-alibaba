@@ -49,12 +49,6 @@
             <version>${project.parent.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
-
         <!-- test dependencies -->
         <dependency>
             <groupId>org.springframework.ai</groupId>

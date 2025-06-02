@@ -13,12 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 name: 🐛 Bug Report
 description: Problems and issues with code of Spring AI Alibaba 🤔.
 title: "[BUG] <title>"
 labels: ["bug"]
-
 body:
   - type: checkboxes
     attributes:
