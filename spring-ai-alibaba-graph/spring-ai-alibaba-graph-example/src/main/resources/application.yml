@@ -22,10 +22,24 @@ spring:
     name: spring-ai-alibaba-graph-example
 
   ai:
+    mcp:
+      server:
+        name: my-weather-server
+        version: 0.0.1
+        type: ASYNC # Recommended for reactive applications
+        # Configure the root path for sse, default is /sse
+        # The final path below will be ip:port/sse/mcp
+        sse-endpoint: /sse
+        sse-message-endpoint: /mcp
+        capabilities:
+          tool: true
+          resource: true
+          prompt: true
+          completion: true
     alibaba:
       toolcalling:
         weather:
-          enabled: enable
+          enabled: true
           api-key: ${WEATHER_API_KEY}
 
     dashscope:
