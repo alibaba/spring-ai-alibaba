@@ -13,16 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 name: 🤔 Lint PR
-
 on:
   pull_request_target:
     types:
       - opened
       - edited
       - reopened
-
 jobs:
   main:
     name: Validate PR title
@@ -41,15 +38,16 @@ jobs:
             docs
             chore
             perf
+            infra
             revert
             release
           scopes: |
             core
-            vectorStores
-            documentReaders
-            documentParsers
+            vector-stores
+            document-readers
+            document-parsers
             memories
-            toolCalls
+            tool-calls
             graph
             jManus
             mcp
@@ -67,5 +65,3 @@ jobs:
             doesn't start with an uppercase character.
           validateSingleCommit: true
           validateSingleCommitMatchesPrTitle: true
-
-            

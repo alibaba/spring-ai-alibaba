@@ -1,5 +1,5 @@
 server:
-  port: 8080  # 服务器端口配置
+  port: 8080 # 服务器端口配置
 spring:
   main:
     banner-mode: off
@@ -12,8 +12,8 @@ spring:
       api-key:
     mcp:
       server:
-        name: xiyan-server    # MCP服务器名称
-        version: 0.0.1           # 服务器版本号
+        name: xiyan-server # MCP服务器名称
+        version: 0.0.1 # 服务器版本号
     vectorstore:
       analytic:
         collectName:
