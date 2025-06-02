@@ -33,10 +33,6 @@ public class ExecutionStep {
 
 	private String result;
 
-	@Getter
-	@Setter
-	private ReactAgent reactAgent;
-
 	private BaseAgent agent;
 
 	public Integer getStepIndex() {

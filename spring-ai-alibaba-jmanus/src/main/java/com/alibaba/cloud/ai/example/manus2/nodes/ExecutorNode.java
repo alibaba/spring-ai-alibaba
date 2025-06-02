@@ -15,6 +15,7 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
@@ -92,8 +93,8 @@ public class ExecutorNode implements NodeAction {
     }
 
     public Map<String, Object> getEnvData(OverAllState state) {
-      Object envData = state.data().get("envData");
-      return envData instanceof Map ? (Map<String, Object>) envData : new HashMap<>();
+        Object envData = state.data().get("envData");
+        return envData instanceof Map ? (Map<String, Object>) envData : new HashMap<>();
     }
 
 
@@ -110,7 +111,7 @@ public class ExecutorNode implements NodeAction {
             toolEnvDataMap.put(toolKey, envData);
         }
 
-        setEnvData(state,toolEnvDataMap);
+        setEnvData(state, toolEnvDataMap);
     }
 
     public void setEnvData(OverAllState state, Map<String, Object> toolEnvDataMap) {
@@ -166,61 +167,31 @@ public class ExecutorNode implements NodeAction {
 
     private void executeStep(ExecutionPlan plan, ExecutionStep step, int stepIndex) throws Exception {
 
+        //1. 创建 ReActAgent
         Map<String, Object> initSettings = new HashMap<>();
         initSettings.put(PLAN_STATUS_KEY, getPlanExecutionStateStringFormat(plan, stepIndex));
         initSettings.put(CURRENT_STEP_INDEX_KEY, String.valueOf(step.getStepIndex()));
         initSettings.put(STEP_TEXT_KEY, step.getStepRequirement());
         initSettings.put(EXTRA_PARAMS_KEY, plan.getExecutionParams());
 
-
-        // 创建 ReActAgent
-        toolCallBackContextMap = planningFactory.toolCallbackMap(plan.getPlanId());
-        List<ToolCallback> toolCallbacks = initTools(plan, step, agents, toolCallBackContextMap);
-
-        // 创建 LlmNode
-        LlmNode llmNode = LlmNode.builder()
-                .chatOptions(ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build())
-                .messagesKey("messages")
-                .chatClient(chatClient.build())
-                .beforeHook(state -> {
-
-                    // 在每次think时收集环境信息
-                    DynamicAgentEntity agentEntity = getAgent(step.getStepRequirement());
-
-                    collectAndSetEnvDataForTools(state,agentEntity.getAvailableToolKeys());
-
-                    Message message = addThinkPrompt(state,agentEntity.getAvailableToolKeys(), initSettings);
-
-                    state.updateState(Map.of("messages", List.of(message)));
-                    return null;
-                })
-                .toolCallbacks(toolCallbacks)
-                .build();
-
-
-        // 创建 ReactAgent
-        ReactAgent agent = new ReactAgent(
-                step.getStepRequirement(),
-                llmNode,
-                ToolNode.builder()
-                        .toolCallbacks(toolCallbacks)
-                        .build(), 100,
-                CompileConfig.builder()
-                        .saverConfig(SaverConfig.builder().build())
-                        .build(), () -> {
-            OverAllState defaultState = new OverAllState();
-            defaultState.registerKeyAndStrategy("messages", new AppendStrategy());
-            defaultState.registerKeyAndStrategy("envData", new ReplaceStrategy());
-            return defaultState;
-        }, null
+        ReactAgent agent = createReactAgent(
+                plan, step, initSettings
         );
         CompiledGraph compiledGraph = agent.getAndCompileGraph();
 
-        // 更新步骤状态和结果
-        step.setReactAgent(agent);
-
         // 2. 组装消息
         OverAllState overAllState = compiledGraph.stateGraph.getOverAllStateFactory().create();
+        initMessages(overAllState, initSettings, step);
+
+        // 3. 调用graph.invoke
+        Map<String, Object> result = compiledGraph.invoke(overAllState, RunnableConfig.builder().build()).get().data();
+
+        List<Message> messages = JSON.parseArray(JSON.toJSONString(result.get("messages")), Message.class);
+        Message lastMessage = messages.get(messages.size() - 1);
+        step.setResult(JSON.toJSONString(lastMessage));
+    }
+
+    private void initMessages(OverAllState overAllState, Map<String, Object> initSettings, ExecutionStep step) {
         String osName = System.getProperty("os.name");
         String osVersion = System.getProperty("os.version");
         String osArch = System.getProperty("os.arch");
@@ -256,7 +227,7 @@ public class ExecutorNode implements NodeAction {
         // 获取当前步骤对应的agent和工具
         DynamicAgentEntity agentEntity = getAgent(step.getStepRequirement());
         // 获取环境信息消息
-        Message envMessage = getNextStepWithEnvMessage(overAllState,agentEntity, initSettings);
+        Message envMessage = getNextStepWithEnvMessage(overAllState, agentEntity, initSettings);
 
         overAllState.updateState(Map.of(
                 "messages", List.of(
@@ -264,13 +235,49 @@ public class ExecutorNode implements NodeAction {
                         envMessage
                 )
         ));
+    }
 
-        // 3. 调用graph.invoke
-        Map<String, Object> result = compiledGraph.invoke(overAllState, RunnableConfig.builder().build()).get().data();
+    private ReactAgent createReactAgent(ExecutionPlan plan, ExecutionStep step, Map<String, Object> initSettings) throws GraphStateException {
 
-        List<Message> messages = JSON.parseArray(JSON.toJSONString(result.get("messages")), Message.class);
-        Message lastMessage = messages.get(messages.size() - 1);
-        step.setResult(JSON.toJSONString(lastMessage));
+        // 创建 ReActAgent
+        toolCallBackContextMap = planningFactory.toolCallbackMap(plan.getPlanId());
+        List<ToolCallback> toolCallbacks = initTools(plan, step, agents, toolCallBackContextMap);
+
+        // 创建 LlmNode
+        LlmNode llmNode = LlmNode.builder()
+                .chatOptions(ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build())
+                .messagesKey("messages")
+                .chatClient(chatClient.build())
+                .beforeHook(state -> {
+
+                    // 在每次think时收集环境信息
+                    DynamicAgentEntity agentEntity = getAgent(step.getStepRequirement());
+
+                    collectAndSetEnvDataForTools(state, agentEntity.getAvailableToolKeys());
+
+                    Message message = addThinkPrompt(state, agentEntity.getAvailableToolKeys(), initSettings);
+
+                    state.updateState(Map.of("messages", List.of(message)));
+                    return null;
+                })
+                .toolCallbacks(toolCallbacks)
+                .build();
+
+        return new ReactAgent(
+                step.getStepRequirement(),
+                llmNode,
+                ToolNode.builder()
+                        .toolCallbacks(toolCallbacks)
+                        .build(), 100,
+                CompileConfig.builder()
+                        .saverConfig(SaverConfig.builder().build())
+                        .build(), () -> {
+            OverAllState defaultState = new OverAllState();
+            defaultState.registerKeyAndStrategy("messages", new AppendStrategy());
+            defaultState.registerKeyAndStrategy("envData", new ReplaceStrategy());
+            return defaultState;
+        }, null
+        );
     }
 
     private String getPlanExecutionStateStringFormat(ExecutionPlan plan, int i) {
@@ -332,7 +339,7 @@ public class ExecutorNode implements NodeAction {
         return "DEFAULT_AGENT"; // Default agent if no match found
     }
 
-    Message addThinkPrompt(OverAllState state,List<String> availableToolKeys, Map<String, Object> initSettings) {
+    Message addThinkPrompt(OverAllState state, List<String> availableToolKeys, Map<String, Object> initSettings) {
         String envPrompt = """
                 
                 当前步骤的环境信息是:
@@ -341,18 +348,18 @@ public class ExecutorNode implements NodeAction {
                 """;
 
         SystemPromptTemplate promptTemplate = new SystemPromptTemplate(envPrompt);
-        Message systemMessage = promptTemplate.createMessage(getMergedData(state,availableToolKeys, initSettings));
+        Message systemMessage = promptTemplate.createMessage(getMergedData(state, availableToolKeys, initSettings));
         return systemMessage;
     }
 
     private Map<String, Object> getMergedData(OverAllState state, List<String> availableToolKeys, Map<String, Object> initSettings) {
         Map<String, Object> data = new HashMap<>();
         data.putAll(initSettings);
-        data.put(PlanExecutor.EXECUTION_ENV_STRING_KEY, convertEnvDataToString(state,availableToolKeys));
+        data.put(PlanExecutor.EXECUTION_ENV_STRING_KEY, convertEnvDataToString(state, availableToolKeys));
         return data;
     }
 
-    public String convertEnvDataToString(OverAllState state,List<String> availableToolKeys) {
+    public String convertEnvDataToString(OverAllState state, List<String> availableToolKeys) {
         StringBuilder envDataStringBuilder = new StringBuilder();
 
         for (String toolKey : availableToolKeys) {

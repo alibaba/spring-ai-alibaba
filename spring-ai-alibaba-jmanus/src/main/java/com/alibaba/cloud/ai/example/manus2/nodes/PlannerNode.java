@@ -53,8 +53,6 @@ public class PlannerNode extends LlmNode {
         this.planningTool = planningTool;
     }
 
-    //todo: 感觉plannerNode不适合用LLMNODE，不能提前初始化好prompt，需要在apply的时候再初始化
-
     @Override
     public Map<String, Object> apply(OverAllState state) throws Exception {
 
@@ -126,8 +124,6 @@ public class PlannerNode extends LlmNode {
         return messages1;
     }
 
-    //fixme ## 可用代理信息 这里进行了调整，举例高德地图没有完全任agentInfo的描述，
-    // 我建立了高德agent可以搜天气，但是plan还是走浏览器搜天气
     private Prompt generatePlanPrompt(OverAllState state, String agentsInfo, List<Message> userMessage) {
         String plannerContent = PromptUtil.loadPrompt("planner_zh");
         String renderedPrompt = plannerContent

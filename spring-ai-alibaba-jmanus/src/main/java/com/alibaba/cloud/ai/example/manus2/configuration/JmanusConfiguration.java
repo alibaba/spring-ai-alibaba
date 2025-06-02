@@ -61,7 +61,6 @@ public class JmanusConfiguration {
         };
 
         StateGraph stateGraph = new StateGraph("Jmanus", overAllStateFactory)
-//                .addNode(COORDINATOR_ID, node_async(new CoordinatorNode()))
                 .addNode(PLANNER_ID, node_async(initPlannerNode(chatClientBuilder)))
                 .addNode(EXECUTOR_ID, node_async(initExecutorNode(chatClientBuilder)))
                 .addNode(HUMAN_ID, node_async(new HumanFeedbackNode()))
@@ -88,7 +87,6 @@ public class JmanusConfiguration {
     }
 
     private NodeAction initPlannerNode(ChatClient.Builder chatClientBuilder) throws IOException {
-
 
         // Add all dynamic agents from the database
         List<DynamicAgentEntity> allAgents = dynamicAgentLoader.getAllAgents();

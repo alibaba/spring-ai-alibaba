@@ -59,15 +59,5 @@ public class GraphManusController {
         }
         throw new RuntimeException();
 
-//
-//        RunnableConfig runnableConfig = RunnableConfig.builder()
-//                .threadId(planId)
-//                .build();
-//        StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
-//        OverAllState state = stateSnapshot.state();
-//        state.withResume();
-//        state.withHumanFeedback(new OverAllState.HumanFeedback(Map.of("feedback", feedback), NodeConstants.HUMAN_ID));
-//        Optional<OverAllState> invoke = compiledGraph.invoke(state, runnableConfig);
-//        return invoke.get().data();
     }
 }
