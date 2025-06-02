@@ -14,8 +14,21 @@
 # limitations under the License.
 #
 
-blank_issues_enabled: false
-contact_links:
-  - name: Community Support
-    url: https://github.com/alibaba/spring-ai-alibaba/discussions
-    about: Please ask and answer questions here.
+name: 🤔 Question
+description: Usage question that isn't answered in docs or discussion
+title: "[Question] <title>"
+labels: ["question"]
+
+body:
+  - type: textarea
+    attributes:
+      label: Question
+      placeholder: >
+        your question here;
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        Please pay attention on issues you submitted, because we maybe need more details.
+        If no response anymore and we cannot reproduce it on current information, we will **close it**.
