@@ -26,7 +26,6 @@ spring:
           enabled: true
           api-key: ${TAVILY_API_KEY}
       deepreserch:
-        python-home: ${PYTHON_HOME}
 #        background-investigation-type: tool_calls
 
 logging:
