@@ -20,9 +20,9 @@ import java.util.Map;
 import java.util.function.Function;
 
 import com.alibaba.cloud.ai.graph.*;
-import com.alibaba.cloud.ai.graph.GraphStateException;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
@@ -185,7 +185,7 @@ public class ReactAgent {
 			};
 		}
 
-		return new StateGraph().addNode("agent", node_async(this.llmNode))
+		return new StateGraph(this.overAllStateFactory).addNode("agent", node_async(this.llmNode))
 			.addNode("tool", node_async(this.toolNode))
 			.addEdge(START, "agent")
 			.addConditionalEdges("agent", edge_async(this::think), Map.of("continue", "tool", "end", END))

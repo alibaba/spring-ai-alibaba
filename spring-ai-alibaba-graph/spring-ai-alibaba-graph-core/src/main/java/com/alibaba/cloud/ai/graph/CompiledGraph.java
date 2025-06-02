@@ -822,6 +822,11 @@ public class CompiledGraph {
 				return evaluateAction(action, this.overAllState).get();
 			}
 			catch (Exception e) {
+				if (e instanceof ExecutionException executionException
+						&& executionException.getCause() instanceof GraphInterruptException interruptException) {
+					overAllState.setInterruptMessage(interruptException.getMessage());
+					return Data.done(buildNodeOutput(currentNodeId));
+				}
 				log.error(e.getMessage(), e);
 				return Data.error(e);
 			}
