@@ -165,7 +165,7 @@ public class ReactAgent {
 			};
 		}
 
-		return new StateGraph().addNode("agent", node_async(this.llmNode))
+		return new StateGraph(this.overAllStateFactory).addNode("agent", node_async(this.llmNode))
 			.addNode("tool", node_async(this.toolNode))
 			.addEdge(START, "agent")
 			.addConditionalEdges("agent", edge_async(this::think), Map.of("continue", "tool", "end", END))
