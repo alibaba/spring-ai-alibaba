@@ -44,7 +44,7 @@ public class LoadbalancedAsyncMcpToolCallback implements ToolCallback {
 
 	public ToolDefinition getToolDefinition() {
 		return ToolDefinition.builder()
-			.name(McpToolUtils.prefixedToolName(this.mcpClient.getClientInfo().name(), this.tool.name()))
+			.name(McpToolUtils.prefixedToolName(this.mcpClient.getServiceName(), this.tool.name()))
 			.description(this.tool.description())
 			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
 			.build();
