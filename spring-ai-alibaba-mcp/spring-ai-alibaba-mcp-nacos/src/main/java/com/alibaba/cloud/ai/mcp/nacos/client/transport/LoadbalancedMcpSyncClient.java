@@ -149,19 +149,19 @@ public class LoadbalancedMcpSyncClient {
 	}
 
 	public McpSchema.ServerCapabilities getServerCapabilities() {
-		return getMcpSyncClient().getServerCapabilities();
+		return getMcpSyncClientList().get(0).getServerCapabilities();
 	}
 
 	public McpSchema.Implementation getServerInfo() {
-		return getMcpSyncClient().getServerInfo();
+		return getMcpSyncClientList().get(0).getServerInfo();
 	}
 
 	public McpSchema.ClientCapabilities getClientCapabilities() {
-		return getMcpSyncClient().getClientCapabilities();
+		return getMcpSyncClientList().get(0).getClientCapabilities();
 	}
 
 	public McpSchema.Implementation getClientInfo() {
-		return getMcpSyncClient().getClientInfo();
+		return getMcpSyncClientList().get(0).getClientInfo();
 	}
 
 	public void close() {
