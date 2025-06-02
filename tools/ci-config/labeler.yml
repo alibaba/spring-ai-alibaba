@@ -28,7 +28,7 @@
           - "CONTRIBUTING-zh.md"
           - "GOVERNANCE.md"
 
-"area/doc":
+"area/docs":
   - changed-files:
       - any-glob-to-any-file:
           - "**/README.md"
