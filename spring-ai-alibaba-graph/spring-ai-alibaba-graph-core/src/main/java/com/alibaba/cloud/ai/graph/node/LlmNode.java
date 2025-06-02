@@ -65,9 +65,9 @@ public class LlmNode implements NodeAction {
 
 	private ChatClient chatClient;
 
-	private Function<OverAllState, Void> beforeHook;
+	private Function<OverAllState, Map<String,Object>> beforeHook;
 
-	private Function<OverAllState, Void> afterHook;
+	private Function<OverAllState, Map<String,Object>> afterHook;
 
 	public LlmNode() {
 	}
