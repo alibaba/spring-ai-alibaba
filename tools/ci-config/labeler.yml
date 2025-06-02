@@ -28,7 +28,7 @@
           - "CONTRIBUTING-zh.md"
           - "GOVERNANCE.md"
 
-"area/doc":
+"area/docs":
   - changed-files:
       - any-glob-to-any-file:
           - "**/README.md"
@@ -58,6 +58,11 @@
   - changed-files:
       - any-glob-to-any-file:
           - "spring-ai-alibaba-studio/**/*"
+
+"area/mcp":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "spring-ai-alibaba-mcp/**/*"
 
 "area/deepresearch":
   - changed-files:
