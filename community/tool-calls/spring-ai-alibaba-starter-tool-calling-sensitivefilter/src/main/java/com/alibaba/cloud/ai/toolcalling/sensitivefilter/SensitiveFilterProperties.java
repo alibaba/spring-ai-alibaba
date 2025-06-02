@@ -18,6 +18,10 @@ package com.alibaba.cloud.ai.toolcalling.sensitivefilter;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
 import static com.alibaba.cloud.ai.toolcalling.sensitivefilter.SensitiveFilterProperties.SENSITIVE_FILTER_PREFIX;
 
@@ -40,6 +44,58 @@ public class SensitiveFilterProperties extends CommonToolCallProperties {
 	private boolean filterBankCard = true;
 
 	private boolean filterEmail = true;
+
+	/**
+	 * List of custom desensitization modes
+	 */
+	private List<CustomPattern> customPatterns = new ArrayList<>();
+
+	/**
+	 * Custom desensitization mode configuration
+	 */
+	public static class CustomPattern {
+
+		private String name;
+
+		private String pattern;
+
+		private String replacement;
+
+		private boolean enabled = true;
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public String getPattern() {
+			return pattern;
+		}
+
+		public void setPattern(String pattern) {
+			this.pattern = pattern;
+		}
+
+		public String getReplacement() {
+			return replacement;
+		}
+
+		public void setReplacement(String replacement) {
+			this.replacement = replacement;
+		}
+
+		public boolean isEnabled() {
+			return enabled;
+		}
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
+
+	}
 
 	public String getReplacement() {
 		return replacement;
@@ -79,6 +135,14 @@ public class SensitiveFilterProperties extends CommonToolCallProperties {
 
 	public void setFilterEmail(boolean filterEmail) {
 		this.filterEmail = filterEmail;
+	}
+
+	public List<CustomPattern> getCustomPatterns() {
+		return customPatterns;
+	}
+
+	public void setCustomPatterns(List<CustomPattern> customPatterns) {
+		this.customPatterns = customPatterns;
 	}
 
 }
