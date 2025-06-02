@@ -5,6 +5,7 @@
 ## 数据结构概览
 
 PlanExecutionRecord 包含四个主要部分：
+
 1. 基本信息（Basic Info）
 2. 计划结构（Plan Structure）
 3. 执行过程数据（Execution Data）
@@ -13,6 +14,7 @@ PlanExecutionRecord 包含四个主要部分：
 ## 字段说明
 
 ### 基本信息
+
 - `id`: 记录的唯一标识符（Long类型）
 - `planId`: 计划的唯一标识符（String类型）
 - `title`: 计划标题
@@ -21,14 +23,17 @@ PlanExecutionRecord 包含四个主要部分：
 - `endTime`: 执行结束时间（ISO-8601格式）
 
 ### 执行状态
+
 - `currentStepIndex`: 当前执行到的步骤索引（从0开始）
 - `completed`: 是否完成（boolean类型）
 - `summary`: 执行总结或当前状态描述
 
 ### 步骤信息
+
 - `steps`: 计划步骤列表，每个步骤包含智能体标识
   
 ### 智能体执行记录
+
 - `agentExecutionSequence`: 智能体执行记录列表
   - `id`: 执行记录ID
   - `conversationId`: 对话ID
