@@ -50,6 +50,7 @@
 将本模块作为依赖引入到你的 Spring Boot 项目中：
 
 #### Maven 示例：
+
 ```xml
 <dependency>
     <groupId>com.alibaba.cloud.ai</groupId>
@@ -59,6 +60,7 @@
 ```
 
 #### Gradle 示例：
+
 ```groovy
 implementation 'com.alibaba.cloud.ai:nl2sql-service:1.0-SNAPSHOT'
 ```
@@ -70,6 +72,7 @@ implementation 'com.alibaba.cloud.ai:nl2sql-service:1.0-SNAPSHOT'
 确保主项目中已正确配置以下内容：
 
 ### 数据库连接配置 (`application.yml`)
+
 ```yaml
 spring:
   ai:
@@ -104,9 +107,11 @@ chatbi:
 ```
 
 ### 大模型服务配置（LLM）
+
 请确保 `LlmService` 实现类已注入容器，并支持调用大模型 API。
 
 ### 向量服务配置
+
 确保 `VectorStoreService` 及其依赖项（如 `AnalyticDbVectorStoreProperties`）已正确配置并可用。
 
 ---
