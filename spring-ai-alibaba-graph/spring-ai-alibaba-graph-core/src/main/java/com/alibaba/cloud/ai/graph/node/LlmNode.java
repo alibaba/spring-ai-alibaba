@@ -65,10 +65,6 @@ public class LlmNode implements NodeAction {
 
 	private ChatClient chatClient;
 
-	private Function<OverAllState, Map<String,Object>> beforeHook;
-
-	private Function<OverAllState, Map<String,Object>> afterHook;
-
 	public LlmNode() {
 	}
 
@@ -85,27 +81,14 @@ public class LlmNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		// 执行前hook
-		if (beforeHook != null) {
-			beforeHook.apply(state);
-		}
-
 		initNodeWithState(state);
-
-		// add streaming support later
 		ChatResponse response = call();
-
+		
 		Map<String, Object> updatedState = new HashMap<>();
 		updatedState.put("messages", response.getResult().getOutput());
 		if (StringUtils.hasLength(this.outputKey)) {
 			updatedState.put(this.outputKey, response.getResult().getOutput());
 		}
-
-		// 执行后hook
-		if (afterHook != null) {
-			afterHook.apply(state);
-		}
-
 		return updatedState;
 	}
 
@@ -250,10 +233,6 @@ public class LlmNode implements NodeAction {
 
 		private ChatOptions chatOptions;
 
-		private Function<OverAllState, Map<String,Object>> beforeHook;
-
-		private Function<OverAllState, Map<String,Object>> afterHook;
-
 		public Builder userPromptTemplate(String userPromptTemplate) {
 			this.userPromptTemplate = userPromptTemplate;
 			return this;
@@ -319,16 +298,6 @@ public class LlmNode implements NodeAction {
 			return this;
 		}
 
-		public Builder beforeHook(Function<OverAllState, Map<String,Object>> beforeHook) {
-			this.beforeHook = beforeHook;
-			return this;
-		}
-
-		public Builder afterHook(Function<OverAllState, Map<String,Object>> afterHook) {
-			this.afterHook = afterHook;
-			return this;
-		}
-
 		public LlmNode build() {
 			LlmNode llmNode = new LlmNode();
 			llmNode.systemPrompt = this.systemPromptTemplate;
@@ -352,8 +321,6 @@ public class LlmNode implements NodeAction {
 			}
 			llmNode.chatClient = this.chatClient;
 			llmNode.chatOptions = this.chatOptions;
-			llmNode.beforeHook = this.beforeHook;
-			llmNode.afterHook = this.afterHook;
 			return llmNode;
 		}
 

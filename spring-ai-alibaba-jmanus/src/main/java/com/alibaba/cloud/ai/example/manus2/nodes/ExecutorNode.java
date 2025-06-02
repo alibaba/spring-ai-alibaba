@@ -263,19 +263,6 @@ public class ExecutorNode implements NodeAction {
                 .chatOptions(ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build())
                 .messagesKey("messages")
                 .chatClient(chatClient.build())
-                .beforeHook(state -> {
-
-                    // 在每次think时收集环境信息
-                    DynamicAgentEntity agentEntity = getAgent(step.getStepRequirement());
-
-                    collectAndSetEnvDataForTools(state, agentEntity.getAvailableToolKeys());
-
-                    Message message = addThinkPrompt(state, agentEntity.getAvailableToolKeys(), initSettings);
-
-                    state.updateState(Map.of("messages", List.of(message)));
-
-                    return Map.of();
-                })
                 .toolCallbacks(toolCallbacks)
                 .build();
 
@@ -292,7 +279,20 @@ public class ExecutorNode implements NodeAction {
             defaultState.registerKeyAndStrategy("messages", new AppendStrategy());
             defaultState.registerKeyAndStrategy("envData", new ReplaceStrategy());
             return defaultState;
-        }, null
+        }, null,
+                (NodeAction) state -> {
+                    // 在每次think时收集环境信息
+                    DynamicAgentEntity agentEntity = getAgent(step.getStepRequirement());
+
+                    collectAndSetEnvDataForTools(state, agentEntity.getAvailableToolKeys());
+
+                    Message message = addThinkPrompt(state, agentEntity.getAvailableToolKeys(), initSettings);
+
+                    state.updateState(Map.of("messages", List.of(message)));
+
+                    return Map.of();
+                },
+                null
         );
     }
 

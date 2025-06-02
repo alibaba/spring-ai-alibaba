@@ -65,11 +65,17 @@ public class ReactAgent {
 
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
+	private NodeAction preLlmHook;
+
+	private NodeAction postLlmHook;
+
 
     public ReactAgent(String name, LlmNode llmNode, ToolNode toolNode,
                       int maxIterations,
                       CompileConfig compileConfig, OverAllStateFactory overAllStateFactory,
-                      Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
+                      Function<OverAllState, Boolean> shouldContinueFunc,
+                      NodeAction preLlmHook,
+                      NodeAction postLlmHook) throws GraphStateException {
         this.name = name;
         this.llmNode = llmNode;
         this.toolNode = toolNode;
@@ -77,6 +83,8 @@ public class ReactAgent {
         this.compileConfig = compileConfig;
         this.overAllStateFactory = overAllStateFactory;
         this.shouldContinueFunc = shouldContinueFunc;
+        this.preLlmHook = preLlmHook;
+        this.postLlmHook = postLlmHook;
         this.graph = initGraph();
     }
 
@@ -185,11 +193,41 @@ public class ReactAgent {
 			};
 		}
 
-		return new StateGraph(this.overAllStateFactory).addNode("agent", node_async(this.llmNode))
-			.addNode("tool", node_async(this.toolNode))
-			.addEdge(START, "agent")
-			.addConditionalEdges("agent", edge_async(this::think), Map.of("continue", "tool", "end", END))
-			.addEdge("tool", "agent");
+		StateGraph graph = new StateGraph(this.overAllStateFactory);
+		
+		// Add main execution nodes
+		graph.addNode("agent", node_async(this.llmNode))
+			.addNode("tool", node_async(this.toolNode));
+
+		// Add hook nodes if provided
+		if (preLlmHook != null) {
+			graph.addNode("pre_llm_hook", node_async(preLlmHook));
+		}
+		
+		if (postLlmHook != null) {
+			graph.addNode("post_llm_hook", node_async(postLlmHook));
+		}
+
+		// Connect nodes
+		if (preLlmHook != null) {
+			graph.addEdge(START, "pre_llm_hook")
+				 .addEdge("pre_llm_hook", "agent");
+		} else {
+			graph.addEdge(START, "agent");
+		}
+
+		if (postLlmHook != null) {
+			graph.addConditionalEdges("agent", edge_async(this::think), 
+				Map.of("continue", "tool", "end", "post_llm_hook"))
+				.addEdge("post_llm_hook", END);
+		} else {
+			graph.addConditionalEdges("agent", edge_async(this::think), 
+				Map.of("continue", "tool", "end", END));
+		}
+
+		graph.addEdge("tool", "agent");
+
+		return graph;
 	}
 
 	private String think(OverAllState state) {
@@ -282,6 +320,10 @@ public class ReactAgent {
 
 		private Function<OverAllState, Boolean> shouldContinueFunc;
 
+		private NodeAction preLlmHook;
+
+		private NodeAction postLlmHook;
+
 		public Builder name(String name) {
 			this.name = name;
 			return this;
@@ -327,16 +369,51 @@ public class ReactAgent {
 			return this;
 		}
 
+		public Builder preLlmHook(NodeAction preLlmHook) {
+			this.preLlmHook = preLlmHook;
+			return this;
+		}
+
+		public Builder postLlmHook(NodeAction postLlmHook) {
+			this.postLlmHook = postLlmHook;
+			return this;
+		}
+
 		public ReactAgent build() throws GraphStateException {
-			if (resolver != null) {
-				return new ReactAgent(name, chatClient, resolver, maxIterations, allStateFactory, compileConfig,
-						shouldContinueFunc);
+			if (llmNode != null) {
+				return new ReactAgent(name, llmNode, 
+					ToolNode.builder().toolCallbacks(tools).build(),
+					maxIterations, compileConfig, allStateFactory,
+					shouldContinueFunc, preLlmHook, postLlmHook);
+			}
+			else if (resolver != null) {
+				LlmNode node = LlmNode.builder()
+					.chatClient(chatClient)
+					.chatOptions(ToolCallingChatOptions.builder()
+						.internalToolExecutionEnabled(false)
+						.build())
+					.messagesKey("messages")
+					.build();
+				return new ReactAgent(name, node,
+					ToolNode.builder().toolCallbackResolver(resolver).build(),
+					maxIterations, compileConfig, allStateFactory,
+					shouldContinueFunc, preLlmHook, postLlmHook);
 			}
 			else if (tools != null) {
-				return new ReactAgent(name, chatClient, tools, maxIterations, allStateFactory, compileConfig,
-						shouldContinueFunc);
+				LlmNode node = LlmNode.builder()
+					.chatClient(chatClient)
+					.chatOptions(ToolCallingChatOptions.builder()
+						.internalToolExecutionEnabled(false)
+						.build())
+					.messagesKey("messages")
+					.toolCallbacks(tools)
+					.build();
+				return new ReactAgent(name, node,
+					ToolNode.builder().toolCallbacks(tools).build(),
+					maxIterations, compileConfig, allStateFactory,
+					shouldContinueFunc, preLlmHook, postLlmHook);
 			}
-			throw new IllegalArgumentException("Either tools or resolver must be provided");
+			throw new IllegalArgumentException("Either llmNode, tools, or resolver must be provided");
 		}
 
 	}

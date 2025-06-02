@@ -69,10 +69,7 @@ public class GraphManusController {
 
         Optional<OverAllState> resumed = compiledGraph.resume(humanFeedback, runnableConfig);
 
-        if (resumed.isPresent()) {
-            return resumed.get().data();
-        }
-        throw new RuntimeException();
+        return resumed.get().data();
 
     }
 }
