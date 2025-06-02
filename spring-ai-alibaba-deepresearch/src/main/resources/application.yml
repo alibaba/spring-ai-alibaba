@@ -1,10 +1,8 @@
 server:
   port: 8080
-
 spring:
   application:
     name: spring-ai-alibaba-deepresearch
-
   ai:
     openai:
       api-key: ${DASHSCOPE_API_KEY}

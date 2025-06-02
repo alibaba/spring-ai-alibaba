@@ -13,14 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 server:
   port: 18080
-
 spring:
   application:
     name: spring-ai-alibaba-graph-example
-
   ai:
     mcp:
       server:
@@ -41,7 +38,6 @@ spring:
         weather:
           enabled: true
           api-key: ${WEATHER_API_KEY}
-
     dashscope:
       api-key: ${AI_DASHSCOPE_API_KEY}
     openai:
