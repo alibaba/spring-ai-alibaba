@@ -33,6 +33,12 @@ yaml-lint: ## Check the yaml lint
 	yamllint --version
 	yamllint -c ./tools/linter/yamllint/.yamllint .
 
+.PHONY: yaml-lint-fix
+yaml-lint-fix:
+	@$(LOG_TARGET)
+	yamlfmt -version
+	yamlfmt .
+
 .PHONY: licenses-fix
 licenses-fix: ## Fix the licenses
 	@$(LOG_TARGET)

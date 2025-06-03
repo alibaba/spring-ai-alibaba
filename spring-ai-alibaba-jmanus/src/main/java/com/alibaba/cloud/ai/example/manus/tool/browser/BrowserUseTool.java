@@ -19,7 +19,7 @@ import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.browser.actions.*;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +39,9 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 	private final ChromeDriverService chromeDriverService;
 
 	private String planId;
+
+	// Initialize ObjectMapper instance
+	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	public BrowserUseTool(ChromeDriverService chromeDriverService) {
 		this.chromeDriverService = chromeDriverService;
@@ -205,7 +208,15 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 		log.info("BrowserUseTool toolInput:" + toolInput);
 
 		// 直接将JSON字符串解析为BrowserRequestVO对象
-		BrowserRequestVO requestVO = JSON.parseObject(toolInput, BrowserRequestVO.class);
+		BrowserRequestVO requestVO;
+		// Add exception handling for JSON deserialization
+		try {
+			requestVO = objectMapper.readValue(toolInput, BrowserRequestVO.class);
+		}
+		catch (Exception e) {
+			log.error("Error deserializing JSON", e);
+			return new ToolExecuteResult("Error deserializing JSON: " + e.getMessage());
+		}
 
 		// 从RequestVO中获取参数
 		String action = requestVO.getAction();

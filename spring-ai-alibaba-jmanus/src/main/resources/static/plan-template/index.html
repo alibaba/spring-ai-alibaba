@@ -239,7 +239,7 @@
                         </div>
                     </div>
                     <div class="plan-param-section">
-                            <div>附加额外参数</div>
+                        <div>附加额外参数</div>
                         <div class="input-field">
                             <textarea id="plan-params"
                                 placeholder="可选：请输入计划执行需要的参数 ，会作为额外参数给到模型 ， 格式自定义只要能跟模型的执行prompt对应即可。 例如 变量1： xxx  ，那么执行计划里面有 变量1 ，模型就会自己替换"></textarea>
@@ -275,35 +275,8 @@
 
 
 
-                <!-- 添加简单操作请求区域 -->
-                <div class="simple-chat-area">
-                    <div class="chat-area-header">
-                        <h2>操作记录</h2>
-                        <div class="chat-area-actions">
-                            <button class="action-btn" id="clearChatBtn">
-                                <span class="icon-placeholder"></span> 清空记录
-                            </button>
-                        </div>
-                    </div>
-                    <div class="dialog-round-container" data-dialog-round-id="demo-round" data-plan-id="demo-plan">
-                        <!-- 示例用户消息 -->
-                        <div class="message user-message">
-                            <p>执行后这里可以看到详细执行情况</p>
-                        </div>
-
-                        <!-- 示例AI回复消息 -->
-                        <div class="message ai-message ai-steps-container">
-                            <div class="ai-header">
-                                <span class="ai-logo">M</span> JTaskPilot AI
-                            </div>
-
-                        </div>
-
-                        <!-- 当没有消息时显示的提示 -->
-                        <div class="empty-chat-message" style="display:none;">
-                            <p>暂无操作记录，请执行计划生成操作记录。</p>
-                        </div>
-                    </div>
+                <div class="chat-area">
+                    <!-- 聊天消息将在此处动态生成 -->
                 </div>
         </main>
 
@@ -339,16 +312,21 @@
 
     <!-- 引入模块化JavaScript文件 -->
     <script src="../js/api.js"></script>
+    <script src="../js/ui-event-common.js"></script>
     <!-- 引入右侧边栏和聊天处理器 -->
     <script src="../js/right-sidebar.js"></script>
     <script src="../js/chat-handler.js"></script>
+
+    <script src="../js/plan-execution-manager.js"></script>
+
     <!-- 引入计划模板页面特有的JS文件 -->
-    <script src="js/plan-ui-events.js"></script>
+    <script src="js/plan-template-list-ui-handler.js"></script>
     <script src="js/template-helpers.js"></script>
+    <script src="js/run-plan-button.js"></script>
     <script src="js/plan-template.js"></script>
-    <!-- 引入适配器 -->
-    <script src="js/chat-handler-adapter.js"></script>
-    <script src="js/right-sidebar-adapter.js"></script>
+
+    <script src="js/plan-template-main.js"></script> <!-- Ensure plan-template-main.js is loaded -->
+
 </body>
 
 </html>

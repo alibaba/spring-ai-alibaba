@@ -18,8 +18,9 @@ package com.alibaba.cloud.ai.example.manus.tool;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionStep;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.ai.openai.api.OpenAiApi.FunctionTool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -94,7 +95,9 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 		return new FunctionTool(new FunctionTool.Function(description, name, PARAMETERS));
 	}
 
-	public FunctionToolCallback getFunctionToolCallback() {
+	// Parameterized FunctionToolCallback with appropriate types.
+
+	public FunctionToolCallback<String, ToolExecuteResult> getFunctionToolCallback() {
 		return FunctionToolCallback.builder(name, this)
 			.description(description)
 			.inputSchema(PARAMETERS)
@@ -103,16 +106,17 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 			.build();
 	}
 
+	private static final ObjectMapper objectMapper = new ObjectMapper();
+
 	public ToolExecuteResult run(String toolInput) {
 		try {
-			Map<String, Object> input = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
+			Map<String, Object> input = objectMapper.readValue(toolInput, new TypeReference<Map<String, Object>>() {
 			});
 			String command = (String) input.get("command");
 			String planId = (String) input.get("plan_id");
 			String title = (String) input.get("title");
-			List<String> steps = JSON.parseObject(JSON.toJSONString(input.get("steps")),
-					new TypeReference<List<String>>() {
-					});
+			List<String> steps = objectMapper.convertValue(input.get("steps"), new TypeReference<List<String>>() {
+			});
 
 			return switch (command) {
 				case "create" -> createPlan(planId, title, steps);
@@ -126,7 +130,7 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 				}
 			};
 		}
-		catch (Exception e) {
+		catch (JsonProcessingException e) {
 			log.info("执行计划工具时发生错误", e);
 			return new ToolExecuteResult("Error executing planning tool: " + e.getMessage());
 		}
