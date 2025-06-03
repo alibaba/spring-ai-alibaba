@@ -15,8 +15,8 @@
  */
 package com.alibaba.cloud.ai.example.manus.tool.code;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 
 import org.slf4j.Logger;
@@ -117,37 +117,45 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 
 	public ToolExecuteResult run(String toolInput) {
 		log.info("PythonExecute toolInput:{}", toolInput);
-		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
-		});
-		String code = (String) toolInputMap.get("code");
-		this.lastCode = code;
-		this.lastExecutionLogId = "tmp_" + LogIdGenerator.generateUniqueId();
-
 		try {
-			CodeExecutionResult codeExecutionResult = CodeUtils.executeCode(code, "python", lastExecutionLogId + ".py",
-					arm64, new HashMap<>());
-			String result = codeExecutionResult.getLogs();
-			this.lastExecutionResult = result;
+			// Add exception handling for JSON deserialization
+			Map<String, Object> toolInputMap = new ObjectMapper().readValue(toolInput,
+					new TypeReference<Map<String, Object>>() {
+					});
+			String code = (String) toolInputMap.get("code");
+			this.lastCode = code;
+			this.lastExecutionLogId = "tmp_" + LogIdGenerator.generateUniqueId();
 
-			// 检查执行结果中是否包含 Python 错误信息
-			if (result.contains("SyntaxError") || result.contains("IndentationError") || result.contains("NameError")
-					|| result.contains("TypeError") || result.contains("ValueError")
-					|| result.contains("ImportError")) {
+			try {
+				CodeExecutionResult codeExecutionResult = CodeUtils.executeCode(code, "python",
+						lastExecutionLogId + ".py", arm64, new HashMap<>());
+				String result = codeExecutionResult.getLogs();
+				this.lastExecutionResult = result;
+
+				// 检查执行结果中是否包含 Python 错误信息
+				if (result.contains("SyntaxError") || result.contains("IndentationError")
+						|| result.contains("NameError") || result.contains("TypeError") || result.contains("ValueError")
+						|| result.contains("ImportError")) {
+					this.hasError = true;
+					this.lastError = extractErrorMessage(result);
+				}
+				else {
+					this.hasError = false;
+					this.lastError = "";
+				}
+
+				return new ToolExecuteResult(result);
+			}
+			catch (Exception e) {
 				this.hasError = true;
-				this.lastError = extractErrorMessage(result);
+				this.lastError = e.getMessage();
+				this.lastExecutionResult = "Execution failed: " + e.getMessage();
+				return new ToolExecuteResult("Execution failed: " + e.getMessage());
 			}
-			else {
-				this.hasError = false;
-				this.lastError = "";
-			}
-
-			return new ToolExecuteResult(result);
 		}
 		catch (Exception e) {
-			this.hasError = true;
-			this.lastError = e.getMessage();
-			this.lastExecutionResult = "Execution failed: " + e.getMessage();
-			return new ToolExecuteResult("Execution failed: " + e.getMessage());
+			log.error("Error deserializing JSON", e);
+			return new ToolExecuteResult("Error deserializing JSON: " + e.getMessage());
 		}
 	}
 
@@ -197,16 +205,15 @@ public class PythonExecute implements ToolCallBiFunctionDef {
 		return run(s);
 	}
 
-	private String planId;
-
-	@Override
-	public void setPlanId(String planId) {
-		this.planId = planId;
-	}
-
 	@Override
 	public void cleanup(String planId) {
 		// do nothing
+	}
+
+	// Implement the setPlanId method to satisfy the interface
+	@Override
+	public void setPlanId(String planId) {
+		// No operation needed as planId is no longer used
 	}
 
 	@Override

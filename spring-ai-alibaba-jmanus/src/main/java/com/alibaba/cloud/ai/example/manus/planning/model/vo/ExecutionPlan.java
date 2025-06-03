@@ -157,17 +157,21 @@ public class ExecutionPlan {
 				case NOT_STARTED -> "[not_started]";
 				default -> "[ ]";
 			};
-			state.append("步骤 ")
+
+			state.append(i + 1)
+				.append(".  **步骤 ")
 				.append(i)
-				.append(": ")
+				.append(":**\n")
+				.append("    *   **状态:** ")
 				.append(symbol)
-				.append(" ")
-				.append(step.getStepRequirement())
 				.append("\n")
+				.append("    *   **操作:** ")
+				.append(step.getStepRequirement())
 				.append("\n");
+
 			String result = step.getResult();
 			if (result != null && !result.isEmpty()) {
-				state.append("该步骤的执行结果: ").append("\n").append(result).append("\n");
+				state.append("    *   **结果:** ").append(result).append("\n\n");
 			}
 
 		}

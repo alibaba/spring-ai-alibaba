@@ -19,10 +19,13 @@ import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.file.*;
 import java.util.Map;
+
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
+import com.alibaba.cloud.ai.example.manus.tool.code.CodeUtils;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +43,10 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 
 	private String planId;
 
-	public TextFileOperator(String workingDirectoryPath, TextFileService textFileService) {
-		this.workingDirectoryPath = workingDirectoryPath;
+	public TextFileOperator(TextFileService textFileService) {
 		this.textFileService = textFileService;
+		ManusProperties manusProperties = textFileService.getManusProperties();
+		workingDirectoryPath = CodeUtils.getWorkingDirectory(manusProperties.getBaseDir());
 	}
 
 	private final String PARAMETERS = """
@@ -103,8 +107,8 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 		return functionTool;
 	}
 
-	public FunctionToolCallback getFunctionToolCallback(String workingDirectoryPath, TextFileService textFileService) {
-		return FunctionToolCallback.builder(TOOL_NAME, new TextFileOperator(workingDirectoryPath, textFileService))
+	public FunctionToolCallback getFunctionToolCallback(TextFileService textFileService) {
+		return FunctionToolCallback.builder(TOOL_NAME, new TextFileOperator(textFileService))
 			.description(TOOL_DESCRIPTION)
 			.inputSchema(PARAMETERS)
 			.inputType(String.class)
@@ -114,8 +118,9 @@ public class TextFileOperator implements ToolCallBiFunctionDef {
 	public ToolExecuteResult run(String toolInput) {
 		log.info("TextFileOperator toolInput:{}", toolInput);
 		try {
-			Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
-			});
+			Map<String, Object> toolInputMap = new ObjectMapper().readValue(toolInput,
+					new TypeReference<Map<String, Object>>() {
+					});
 			String planId = this.planId;
 
 			String action = (String) toolInputMap.get("action");
