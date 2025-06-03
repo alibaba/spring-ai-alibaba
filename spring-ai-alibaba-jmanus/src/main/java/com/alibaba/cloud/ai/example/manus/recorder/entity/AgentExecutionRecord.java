@@ -38,7 +38,7 @@ import java.util.List;
  * @see ThinkActRecord
  * @see JsonSerializable
  */
-public class AgentExecutionRecord implements JsonSerializable {
+public class AgentExecutionRecord {
 
 	// 记录的唯一标识符
 	private Long id;
@@ -236,53 +236,6 @@ public class AgentExecutionRecord implements JsonSerializable {
 				+ ", agentName='" + agentName + '\'' + ", status='" + status + '\'' + ", currentStep=" + currentStep
 				+ ", maxSteps=" + maxSteps + ", isCompleted=" + isCompleted + ", isStuck=" + isStuck + ", stepsCount="
 				+ (thinkActSteps != null ? thinkActSteps.size() : 0) + '}';
-	}
-
-	@Override
-	public String toJson() {
-		StringBuilder json = new StringBuilder();
-		json.append("{");
-
-		appendField(json, "id", id, true);
-		appendField(json, "conversationId", conversationId, true);
-		appendField(json, "agentName", agentName, true);
-		appendField(json, "agentDescription", agentDescription, true);
-
-		if (startTime != null) {
-			appendField(json, "startTime", startTime.toString(), true);
-		}
-		if (endTime != null) {
-			appendField(json, "endTime", endTime.toString(), true);
-		}
-
-		appendField(json, "maxSteps", maxSteps, false);
-		appendField(json, "currentStep", currentStep, false);
-		appendField(json, "status", status, true);
-		appendField(json, "isCompleted", isCompleted, false);
-		appendField(json, "isStuck", isStuck, false);
-		appendField(json, "agentRequest", agentRequest, true);
-		appendField(json, "result", result, true);
-		appendField(json, "errorMessage", errorMessage, true);
-
-		// Add thinkActSteps as a JSON array
-		if (thinkActSteps != null && !thinkActSteps.isEmpty()) {
-			json.append("\"thinkActSteps\":[");
-			for (int i = 0; i < thinkActSteps.size(); i++) {
-				json.append(thinkActSteps.get(i).toJson());
-				if (i < thinkActSteps.size() - 1) {
-					json.append(",");
-				}
-			}
-			json.append("],");
-		}
-
-		// Remove trailing comma if present
-		if (json.charAt(json.length() - 1) == ',') {
-			json.deleteCharAt(json.length() - 1);
-		}
-
-		json.append("}");
-		return json.toString();
 	}
 
 	/**
