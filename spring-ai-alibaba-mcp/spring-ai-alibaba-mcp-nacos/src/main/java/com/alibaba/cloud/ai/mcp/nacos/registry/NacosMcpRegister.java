@@ -356,7 +356,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 
 	private String getRegisterServiceName() {
 		return StringUtils.isBlank(this.nacosMcpRegistryProperties.getServiceName())
-                ? this.serverInfo.name() + "::" + this.serverInfo.version()
+				? this.serverInfo.name() + "::" + this.serverInfo.version()
 				: this.nacosMcpRegistryProperties.getServiceName();
 	}
 
