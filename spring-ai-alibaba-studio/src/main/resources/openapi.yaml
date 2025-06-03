@@ -7,28 +7,28 @@ info:
     url: https://java2ai.com
   version: v1
 servers:
-- url: http://localhost:8080
-  description: Generated server url
+  - url: http://localhost:8080
+    description: Generated server url
 paths:
   /api/v1/video-qa:
     post:
       tags:
-      - 视频问答 APIs
+        - 视频问答 APIs
       summary: 基于视频内容的问答接口
       operationId: videoQuestionAnswering
       parameters:
-      - name: prompt
-        in: query
-        required: false
-        schema:
-          type: string
-          default: 请总结这个视频的主要内容
+        - name: prompt
+          in: query
+          required: false
+          schema:
+            type: string
+            default: 请总结这个视频的主要内容
       requestBody:
         content:
           application/json:
             schema:
               required:
-              - video
+                - video
               type: object
               properties:
                 video:
@@ -47,21 +47,21 @@ paths:
   /api/v1/summarizer:
     post:
       tags:
-      - Docs Summarize APIs
+        - Docs Summarize APIs
       summary: Docs summary
       operationId: summary
       parameters:
-      - name: url
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: chatId
-        in: header
-        required: false
-        schema:
-          type: string
-          default: spring-ai-alibaba-docs-summary
+        - name: url
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: chatId
+          in: header
+          required: false
+          schema:
+            type: string
+            default: spring-ai-alibaba-docs-summary
       requestBody:
         content:
           application/json:
@@ -83,22 +83,22 @@ paths:
   /api/v1/image2text:
     post:
       tags:
-      - Image APIs
+        - Image APIs
       summary: DashScope Image Recognition
       operationId: image2text
       parameters:
-      - name: prompt
-        in: query
-        required: false
-        schema:
-          type: string
-          default: 请总结图片内容
+        - name: prompt
+          in: query
+          required: false
+          schema:
+            type: string
+            default: 请总结图片内容
       requestBody:
         content:
           application/json:
             schema:
               required:
-              - image
+                - image
               type: object
               properties:
                 image:
@@ -116,7 +116,7 @@ paths:
   /api/v1/audio2text:
     post:
       tags:
-      - Audio APIs
+        - Audio APIs
       summary: DashScope Audio Transcription
       operationId: audioToText
       requestBody:
@@ -124,7 +124,7 @@ paths:
           application/json:
             schema:
               required:
-              - audio
+                - audio
               type: object
               properties:
                 audio:
@@ -140,15 +140,15 @@ paths:
   /api/v1/tool-call:
     get:
       tags:
-      - Tool Calling APIs
+        - Tool Calling APIs
       summary: DashScope ToolCall Chat
       operationId: chat
       parameters:
-      - name: prompt
-        in: query
-        required: true
-        schema:
-          type: string
+        - name: prompt
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -159,27 +159,27 @@ paths:
   /api/v1/text2image:
     get:
       tags:
-      - Image APIs
+        - Image APIs
       summary: DashScope Image Generation
       operationId: text2Image
       parameters:
-      - name: prompt
-        in: query
-        required: true
-        schema:
-          type: string
-      - name: style
-        in: query
-        required: false
-        schema:
-          type: string
-          default: 摄影写实
-      - name: resolution
-        in: query
-        required: false
-        schema:
-          type: string
-          default: 1080*1080
+        - name: prompt
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: style
+          in: query
+          required: false
+          schema:
+            type: string
+            default: 摄影写实
+        - name: resolution
+          in: query
+          required: false
+          schema:
+            type: string
+            default: 1080*1080
       responses:
         "200":
           description: OK
@@ -190,15 +190,15 @@ paths:
   /api/v1/text2audio:
     get:
       tags:
-      - Audio APIs
+        - Audio APIs
       summary: DashScope Speech Synthesis
       operationId: textToAudio
       parameters:
-      - name: prompt
-        in: query
-        required: true
-        schema:
-          type: string
+        - name: prompt
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -209,14 +209,14 @@ paths:
   /api/v1/search:
     get:
       tags:
-      - Web Search APIs
+        - Web Search APIs
       operationId: search
       parameters:
-      - name: query
-        in: query
-        required: true
-        schema:
-          type: string
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -229,21 +229,21 @@ paths:
   /api/v1/rag:
     get:
       tags:
-      - RAG APIs
+        - RAG APIs
       summary: DashScope RAG
       operationId: ragChat
       parameters:
-      - name: prompt
-        in: query
-        required: true
-        schema:
-          type: string
-      - name: chatId
-        in: header
-        required: false
-        schema:
-          type: string
-          default: spring-ai-alibaba-playground-rag
+        - name: prompt
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: chatId
+          in: header
+          required: false
+          schema:
+            type: string
+            default: spring-ai-alibaba-playground-rag
       responses:
         "200":
           description: OK
@@ -256,21 +256,21 @@ paths:
   /api/v1/mcp:
     get:
       tags:
-      - MCP APIs
+        - MCP APIs
       summary: DashScope Mcp Chat
       operationId: chat_1
       parameters:
-      - name: prompt
-        in: query
-        required: true
-        schema:
-          type: string
-      - name: chatId
-        in: header
-        required: false
-        schema:
-          type: string
-          default: spring-ai-alibaba-playground-mcp
+        - name: prompt
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: chatId
+          in: header
+          required: false
+          schema:
+            type: string
+            default: spring-ai-alibaba-playground-mcp
       responses:
         "200":
           description: OK
@@ -281,7 +281,7 @@ paths:
   /api/v1/health:
     get:
       tags:
-      - Base APIs
+        - Base APIs
       operationId: health
       responses:
         "200":
@@ -293,25 +293,25 @@ paths:
   /api/v1/deep-thinking/chat:
     get:
       tags:
-      - Chat APIs
+        - Chat APIs
       operationId: deepThinkingChat
       parameters:
-      - name: prompt
-        in: query
-        required: true
-        schema:
-          type: string
-      - name: model
-        in: header
-        required: false
-        schema:
-          type: string
-      - name: chatId
-        in: header
-        required: false
-        schema:
-          type: string
-          default: spring-ai-alibaba-playground-deepthink-chat
+        - name: prompt
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: model
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: chatId
+          in: header
+          required: false
+          schema:
+            type: string
+            default: spring-ai-alibaba-playground-deepthink-chat
       responses:
         "200":
           description: OK
@@ -324,7 +324,7 @@ paths:
   /api/v1/dashscope/getModels:
     get:
       tags:
-      - Base APIs
+        - Base APIs
       operationId: getDashScopeModels
       responses:
         "200":
@@ -336,26 +336,26 @@ paths:
   /api/v1/chat:
     get:
       tags:
-      - Chat APIs
+        - Chat APIs
       summary: DashScope Flux Chat
       operationId: chat_2
       parameters:
-      - name: prompt
-        in: query
-        required: true
-        schema:
-          type: string
-      - name: model
-        in: header
-        required: false
-        schema:
-          type: string
-      - name: chatId
-        in: header
-        required: false
-        schema:
-          type: string
-          default: spring-ai-alibaba-playground-chat
+        - name: prompt
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: model
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: chatId
+          in: header
+          required: false
+          schema:
+            type: string
+            default: spring-ai-alibaba-playground-chat
       responses:
         "200":
           description: OK
@@ -393,10 +393,10 @@ components:
         status:
           type: string
           enum:
-          - SUCCESS
-          - FAILURE
-          - UNKNOWN
-          - RUNNING
+            - SUCCESS
+            - FAILURE
+            - UNKNOWN
+            - RUNNING
         toolName:
           type: string
         toolParameters:

@@ -17,17 +17,18 @@ Spring AI Alibaba Java Manus 提供以下关键功能：
 4. **支持 PLAN-ACT 模式**：实现强大的 PLAN-ACT 模式，支持复杂的推理和执行工作流。
 ![Image](https://github.com/user-attachments/assets/d00fc59d-3f10-4163-a548-784eb21f77d6)
 
-
 ## 运行方法
 
 ### 先决条件
 
 1. 确保安装了 JDK 17 或更新版本。
 2. 使用 npm 全局安装 npx：
+
    ```shell
    npm install -g npx
    ```
-3. 设置 [dashscope api key](https://help.aliyun.com/zh/model-studio/getting-started/first-api-call-to-qwen)。
+
+3. 设置 [dashscope api key](https://help.aliyun.com/zh/model-studio/getting-started/first-api-call-to-qwen)。  dashscope是阿里云百炼的api . 
 
  ```shell
  export AI_DASHSCOPE_API_KEY=xxxx
@@ -60,3 +61,8 @@ mvn spring-boot:run
 ## 架构
 
 ![架构图](https://github.com/user-attachments/assets/4ad14a72-667b-456e-85c1-b05eef8fd414)
+
+
+## 之前的版本
+如果你想要之前的稳定版本，可以在这里找到：
+[之前的稳定版](https://github.com/rainerWJY/Java-Open-Manus/releases)

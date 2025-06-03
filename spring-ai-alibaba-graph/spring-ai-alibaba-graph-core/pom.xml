@@ -98,6 +98,26 @@
         </dependency>
 
         <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java</artifactId>
+            <version>3.3.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-core</artifactId>
+            <version>3.3.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-transport-httpclient5</artifactId>
+            <version>3.3.3</version>
+        </dependency>
+
+
+
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
             <version>${commons-collections4.version}</version>
@@ -163,6 +183,12 @@
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
             <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp</artifactId>
+            <version>${mcp.version}</version>
         </dependency>
 
         <dependency>

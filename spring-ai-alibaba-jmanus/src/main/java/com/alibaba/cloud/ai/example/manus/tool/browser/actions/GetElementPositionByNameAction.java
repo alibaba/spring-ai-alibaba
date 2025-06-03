@@ -20,14 +20,16 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Frame;
 
 import com.alibaba.cloud.ai.example.manus.tool.browser.BrowserUseTool;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
-import com.alibaba.fastjson.JSON;
 
 public class GetElementPositionByNameAction extends BrowserAction {
+
+	private final static org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GetElementPositionByNameAction.class);
 
 	public GetElementPositionByNameAction(BrowserUseTool browserUseTool) {
 		super(browserUseTool);
@@ -38,9 +40,9 @@ public class GetElementPositionByNameAction extends BrowserAction {
 	 */
 	public static class ElementPosition {
 
-		private int x; // It holds the absolute x coordinate
+		private double x; // It holds the absolute x coordinate
 
-		private int y; // It holds the absolute y coordinate
+		private double y; // It holds the absolute y coordinate
 
 		private String elementText; // Element text content
 
@@ -49,26 +51,26 @@ public class GetElementPositionByNameAction extends BrowserAction {
 		}
 
 		// 构造函数，只包含必要字段
-		public ElementPosition(int x, int y, String elementText) {
+		public ElementPosition(double x, double y, String elementText) {
 			this.x = x;
 			this.y = y;
 			this.elementText = elementText;
 		}
 
 		// Getters and Setters
-		public int getX() {
+		public double getX() {
 			return x;
 		}
 
-		public void setX(int x) {
+		public void setX(double x) {
 			this.x = x;
 		}
 
-		public int getY() {
+		public double getY() {
 			return y;
 		}
 
-		public void setY(int y) {
+		public void setY(double y) {
 			this.y = y;
 		}
 
@@ -100,12 +102,19 @@ public class GetElementPositionByNameAction extends BrowserAction {
 		for (Frame frame : page.frames()) {
 			findAndProcessElementsByLocatorForFrame(frame, elementName, positionResults, uniqueSet, isDebug);
 		}
-		String resultJson = JSON.toJSONString(positionResults);
-		return new ToolExecuteResult(resultJson);
+		// Add exception handling for JSON serialization
+		try {
+			String resultJson = new ObjectMapper().writeValueAsString(positionResults);
+			return new ToolExecuteResult(resultJson);
+		}
+		catch (Exception e) {
+			return new ToolExecuteResult("Error serializing JSON: " + e.getMessage());
+		}
 	}
 
 	private void findAndProcessElementsByLocatorForFrame(Frame frame, String elementName, List<ElementPosition> results,
 			Set<String> uniqueSet, boolean isDebug) {
+
 		// 只查找可见且文本包含elementName的元素，不包含style标签
 		com.microsoft.playwright.Locator locator = frame.getByText(elementName);
 		int count = locator.count();
@@ -127,70 +136,32 @@ public class GetElementPositionByNameAction extends BrowserAction {
 					continue;
 				}
 				if (box != null) {
-					int x = (int) (box.x + box.width / 2);
-					int y = (int) (box.y + box.height / 2);
+					// int x = (int) (box.x + box.width / 2);
+					// int y = (int) (box.y + box.height / 2);
+					double x = (double) box.x + (double) box.width / 2;
+					double y = (double) box.y + (double) box.height / 2;
+					if (isDebug) {
+						// 给元素加红色边框，并在右上角显示 elementText（红底白字）
+						try {
+							String elementTextFinal = text.trim();
+							elementTextFinal = " (" + x + "," + y + ")" + elementTextFinal;
+							Object result = nthLocator.evaluate(
+									"(el, text) => {\n  el.style.border = '2px solid red';\n  // 创建或更新右上角标签\n  let tag = el.querySelector('[data-element-text-tag]');\n  if (!tag) {\n    tag = document.createElement('div');\n    tag.setAttribute('data-element-text-tag', '1');\n    tag.style.position = 'absolute';\n    tag.style.top = '0';\n    tag.style.right = '0';\n    tag.style.background = 'red';\n    tag.style.color = 'white';\n    tag.style.fontSize = '12px';\n    tag.style.padding = '2px 6px';\n    tag.style.borderBottomLeftRadius = '6px';\n    tag.style.zIndex = '9999';\n    tag.style.pointerEvents = 'none';\n    tag.style.fontWeight = 'bold';\n    tag.style.maxWidth = '120px';\n    tag.style.overflow = 'hidden';\n    tag.style.textOverflow = 'ellipsis';\n    tag.style.whiteSpace = 'nowrap';\n    el.style.position = el.style.position || 'relative';\n    el.appendChild(tag);\n  }\n  tag.textContent = text;\n}",
+									elementTextFinal);
+
+							log.info("Debug: Added red border and text tag for element. result: {}, x: {}, y: {}",
+									result, x, y);
+						}
+						catch (Exception e) {
+							// ignore style set error
+						}
+					}
 					String elementText = text.trim();
 					String uniqueKey = x + "," + y + "," + elementText;
 					if (!uniqueSet.contains(uniqueKey)) {
 						ElementPosition position = new ElementPosition(x, y, elementText);
 						results.add(position);
 						uniqueSet.add(uniqueKey);
-						// 高亮该元素（带边框和中心点+文本）
-						try {
-							String highlightScript = String.format("""
-										(function() {
-											var box = {left: %f, top: %f, width: %f, height: %f};
-											var x = %d, y = %d, label = %s;
-											var highlight = document.createElement('div');
-											highlight.style.position = 'fixed';
-											highlight.style.left = box.left + 'px';
-											highlight.style.top = box.top + 'px';
-											highlight.style.width = box.width + 'px';
-											highlight.style.height = box.height + 'px';
-											highlight.style.border = '3px solid #ff0000';
-											highlight.style.background = 'rgba(255,0,0,0.08)';
-											highlight.style.zIndex = 999999;
-											highlight.style.pointerEvents = 'none';
-											highlight.style.boxSizing = 'border-box';
-											// 中心点
-											var center = document.createElement('div');
-											center.style.position = 'fixed';
-											center.style.left = (x - 8) + 'px';
-											center.style.top = (y - 8) + 'px';
-											center.style.width = '16px';
-											center.style.height = '16px';
-											center.style.borderRadius = '50%';
-											center.style.background = '#ff0000';
-											center.style.zIndex = 1000000;
-											center.style.pointerEvents = 'none';
-											// 文本标签
-											var tag = document.createElement('div');
-											tag.style.position = 'fixed';
-											tag.style.left = (x + 10) + 'px';
-											tag.style.top = (y - 18) + 'px';
-											tag.style.color = '#fff';
-											tag.style.background = 'rgba(255,0,0,0.85)';
-											tag.style.padding = '2px 8px';
-											tag.style.fontSize = '14px';
-											tag.style.borderRadius = '6px';
-											tag.style.zIndex = 1000001;
-											tag.style.pointerEvents = 'none';
-											tag.innerText = label;
-											document.body.appendChild(highlight);
-											document.body.appendChild(center);
-											document.body.appendChild(tag);
-											setTimeout(function() {
-												try { document.body.removeChild(highlight); } catch(e){}
-												try { document.body.removeChild(center); } catch(e){}
-												try { document.body.removeChild(tag); } catch(e){}
-											}, 1200);
-										})();
-									""", box.x, box.y, box.width, box.height, x, y, JSON.toJSONString(elementText));
-							frame.evaluate(highlightScript);
-						}
-						catch (Exception e) {
-							// 忽略高亮异常
-						}
 					}
 				}
 			}

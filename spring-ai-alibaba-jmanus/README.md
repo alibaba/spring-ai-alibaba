@@ -4,7 +4,6 @@
 
 The Spring AI implementation of <a href="https://github.com/mannaandpoem/OpenManus/" target="_blank">OpenManus</a>
 
-
 # features 
 
 Spring AI Alibaba Java Manus provides the following key features:
@@ -24,9 +23,11 @@ Spring AI Alibaba Java Manus provides the following key features:
 
 1. Make sure you have JDK 17 or later installed.
 2. Install npx globally using npm:
+
    ```shell
    npm install -g npx
    ```
+
 3. Set <a href="https://help.aliyun.com/zh/model-studio/getting-started/first-api-call-to-qwen" target="_blank">dashscope api key</a>.
 
  ```shell
@@ -40,7 +41,6 @@ Spring AI Alibaba Java Manus provides the following key features:
  ```
 
 5. [Optional] Set <a href="https://lbsyun.baidu.com/apiconsole/key" target="_blank">Baidu Map key</a>. Modify the "ak" in the mcp-servers-config.json file.
-
 
  ```shell
  "BAIDU_MAP_API_KEY": "your_baidu_AK"
@@ -61,3 +61,7 @@ mvn spring-boot:run
 ## Architecture
 
 ![aaa](https://github.com/user-attachments/assets/4ad14a72-667b-456e-85c1-b05eef8fd414)
+
+## Previous Versions
+If you want a previous stable version, you can find it here:  
+[Previous Stable Versions](https://github.com/rainerWJY/Java-Open-Manus/releases)
