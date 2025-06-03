@@ -101,7 +101,7 @@ initializr:
         groupId: com.google.cloud
         artifactId: spring-cloud-gcp-dependencies
         versionProperty: spring-cloud-gcp.version
-        additionalBoms: [ spring-cloud ]
+        additionalBoms: [spring-cloud]
         mappings:
           - compatibilityRange: "[3.3.0,3.4.0-M1)"
             version: 5.11.1
@@ -111,7 +111,7 @@ initializr:
         groupId: io.pivotal.spring.cloud
         artifactId: spring-cloud-services-dependencies
         versionProperty: spring-cloud-services.version
-        additionalBoms: [ spring-cloud ]
+        additionalBoms: [spring-cloud]
         mappings:
           - compatibilityRange: "[3.3.0,3.5.0-M1)"
             version: 4.2.0

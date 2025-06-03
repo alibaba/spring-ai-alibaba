@@ -1,6 +1,5 @@
 server:
   port: 18080
-
 spring:
   application:
     name: spring-ai-alibaba-openmanus
