@@ -34,7 +34,9 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.TimeoutError;
 
 public abstract class BrowserAction {
+
 	private final static Logger log = LoggerFactory.getLogger(BrowserAction.class);
+
 	public abstract ToolExecuteResult execute(BrowserRequestVO request) throws Exception;
 
 	private final BrowserUseTool browserUseTool;
@@ -168,6 +170,5 @@ public abstract class BrowserAction {
 			return "with error: " + e.getMessage();
 		}
 	}
-
 
 }

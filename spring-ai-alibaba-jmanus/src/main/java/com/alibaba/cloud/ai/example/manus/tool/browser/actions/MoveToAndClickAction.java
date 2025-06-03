@@ -45,53 +45,62 @@ public class MoveToAndClickAction extends BrowserAction {
 		String clickResultMessage = clickAndSwitchToNewTabIfOpened(page, () -> {
 			try {
 				// 1. 滚动到目标位置（让目标点尽量在视窗中央）
-				
+
 				Object result = page.evaluate(
 						"(args) => window.scrollTo({left: args[0], top: args[1], behavior: 'instant'})",
 						new Object[] { x, y });
 				if (result != null) {
 					log.info("Scroll to position ({}, {}) ,result <{}>", x, y, result);
-				} else {
+				}
+				else {
 					log.warn("Failed to scroll to position ({}, {})", x, y);
 				}
 				String markerId = "__move_click_marker__";
 				if (isDebug) {
 					// 2. 注入大红点（仅debug模式）
-					 result = page.evaluate("(args) => {\n" + "  const [x, y, id] = args;\n"
-							+ "  let dot = document.getElementById(id);\n" + "  if (!dot) {\n"
-							+ "    dot = document.createElement('div');\n" + "    dot.id = id;\n"
-							+ "    dot.style.position = 'absolute';\n" + "    dot.style.left = (x) + 'px';\n"
-							+ "    dot.style.top = (y) + 'px';\n" + "    dot.style.width = '24px';\n"
-							+ "    dot.style.height = '24px';\n" + "    dot.style.background = 'red';\n"
-							+ "    dot.style.borderRadius = '50%';\n" + "    dot.style.zIndex = 99999;\n"
-							+ "    dot.style.boxShadow = '0 0 8px 4px #f00';\n"
-							+ "    dot.style.pointerEvents = 'none';\n"
-							+ "    document.body.appendChild(dot);\n" + "  }\n" + "}", new Object[] { x, y, markerId });
+					result = page.evaluate(
+							"(args) => {\n" + "  const [x, y, id] = args;\n"
+									+ "  let dot = document.getElementById(id);\n" + "  if (!dot) {\n"
+									+ "    dot = document.createElement('div');\n" + "    dot.id = id;\n"
+									+ "    dot.style.position = 'absolute';\n" + "    dot.style.left = (x) + 'px';\n"
+									+ "    dot.style.top = (y) + 'px';\n" + "    dot.style.width = '24px';\n"
+									+ "    dot.style.height = '24px';\n" + "    dot.style.background = 'red';\n"
+									+ "    dot.style.borderRadius = '50%';\n" + "    dot.style.zIndex = 99999;\n"
+									+ "    dot.style.boxShadow = '0 0 8px 4px #f00';\n"
+									+ "    dot.style.pointerEvents = 'none';\n"
+									+ "    document.body.appendChild(dot);\n" + "  }\n" + "}",
+							new Object[] { x, y, markerId });
 					if (result != null) {
 						log.info("Debug: Created red dot at position ({}, {}) , result <{}>", x, y, result);
-					} else {
+					}
+					else {
 						log.warn("Debug: Failed to create red dot at position ({}, {}) , result <{}>", x, y, result);
 					}
 
 					// 监听点击事件
 					// page.evaluate(
-					// 		"(id) => { const dot = document.getElementById(id); if (dot) { dot.addEventListener('click', () => console.log('Debug: Dot was clicked!')); } }",
-					// 		markerId);
+					// "(id) => { const dot = document.getElementById(id); if (dot) {
+					// dot.addEventListener('click', () => console.log('Debug: Dot was
+					// clicked!')); } }",
+					// markerId);
 
 					// 获取鼠标移动后的对应元素并打印
 					// String elementInfo = (String) page.evaluate(
-					// 		"(args) => { const el = document.elementFromPoint(args[0], args[1]); return el ? el.outerHTML : 'No element'; }",
-					// 		new Object[] { x, y });
+					// "(args) => { const el = document.elementFromPoint(args[0],
+					// args[1]); return el ? el.outerHTML : 'No element'; }",
+					// new Object[] { x, y });
 					log.info("Element at position ({}, {}): {}", x, y);
 				}
 
 				page.mouse().click(x, y);
 				log.info("Clicked at position ({}, {})", x, y);
 
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				log.error("Failed to move to and click at position ({}, {}): {}", x, y, e.getMessage(), e);
 				// Let the common method handle the result string for errors.
-				// The clickAndSwitchToNewTabIfOpened method expects a Runnable that might throw.
+				// The clickAndSwitchToNewTabIfOpened method expects a Runnable that might
+				// throw.
 				if (e instanceof RuntimeException) {
 					throw (RuntimeException) e;
 				}

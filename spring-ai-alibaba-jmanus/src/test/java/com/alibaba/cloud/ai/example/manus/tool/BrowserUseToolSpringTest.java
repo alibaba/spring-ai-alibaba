@@ -146,7 +146,7 @@ class BrowserUseToolSpringTest {
 			ToolExecuteResult navigateResult = executeAction("navigate", "https://www.baidu.com");
 			Assertions.assertEquals("Navigated to https://www.baidu.com", navigateResult.getOutput(), "导航到百度失败");
 			Page page = browserUseTool.getDriver().getCurrentPage();
-			
+
 			// 步骤2: 获取并验证可交互元素
 			log.info("步骤2: 获取可交互元素并分析");
 			Map<String, Object> state = browserUseTool.getCurrentState(page);
@@ -232,7 +232,7 @@ class BrowserUseToolSpringTest {
 			ToolExecuteResult navigateResult = executeAction("navigate", "https://www.baidu.com");
 			Assertions.assertEquals("Navigated to https://www.baidu.com", navigateResult.getOutput(), "导航到百度失败");
 			Page page = browserUseTool.getDriver().getCurrentPage();
-			
+
 			// 步骤2: 获取并验证可交互元素
 			log.info("步骤2: 获取可交互元素并分析");
 			Map<String, Object> state = browserUseTool.getCurrentState(page);
@@ -267,7 +267,8 @@ class BrowserUseToolSpringTest {
 			log.info("获取到'百度一下'按钮位置信息: {}", positionResult.getOutput());
 
 			// 解析JSON结果获取坐标
-			List<?> positionsList = objectMapper.readValue(positionResult.getOutput(), new TypeReference<List<?>>() {});
+			List<?> positionsList = objectMapper.readValue(positionResult.getOutput(), new TypeReference<List<?>>() {
+			});
 			Assertions.assertFalse(positionsList.isEmpty(), "未找到'百度一下'按钮");
 			Map<?, ?> elementPosition = (Map<?, ?>) positionsList.get(0);
 			Double xNumber = (Double) elementPosition.get("x");
@@ -302,20 +303,22 @@ class BrowserUseToolSpringTest {
 			log.info("获取到'百度百科'链接位置信息: {}", baikePositionResult.getOutput());
 
 			// 解析JSON结果获取百度百科链接坐标
-			List<?> baikePositionsList = objectMapper.readValue(baikePositionResult.getOutput(), new TypeReference<List<?>>() {});
-			
+			List<?> baikePositionsList = objectMapper.readValue(baikePositionResult.getOutput(),
+					new TypeReference<List<?>>() {
+					});
+
 			if (!baikePositionsList.isEmpty()) {
 				// 查找包含"hello world"相关内容的百度百科链接
 				Map<?, ?> targetPosition = null;
 				for (Object positionObj : baikePositionsList) {
 					Map<?, ?> position = (Map<?, ?>) positionObj;
 					String elementText = (String) position.get("elementText");
-					if (elementText != null && elementText.toLowerCase().contains("hello world(程序代码调试常用文本) - 百度百科") ) {
+					if (elementText != null && elementText.toLowerCase().contains("hello world(程序代码调试常用文本) - 百度百科")) {
 						targetPosition = position;
 						break;
 					}
 				}
-				
+
 				if (targetPosition != null) {
 					Double baikeX = (Double) targetPosition.get("x");
 					Double baikeY = (Double) targetPosition.get("y");
@@ -331,16 +334,19 @@ class BrowserUseToolSpringTest {
 					log.info("百度百科链接点击结果: {}", baikeClickResult.getOutput());
 					Assertions.assertTrue(baikeClickResult.getOutput().contains("Clicked"), "点击'百度百科'链接失败");
 					log.info("成功点击百度百科链接");
-				} else {
+				}
+				else {
 					log.warn("未找到包含'hello world'的百度百科链接");
 				}
-			} else {
+			}
+			else {
 				log.warn("未找到'百度百科'链接");
 			}
 
 			log.info("测试成功完成！");
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("测试过程中发生错误", e);
 			Assertions.fail("测试执行失败: " + e.getMessage());
 		}
