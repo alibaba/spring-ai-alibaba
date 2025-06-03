@@ -42,33 +42,33 @@ Node.js is a JavaScript runtime that includes npm (Node Package Manager).
   Visit [Node.js official website](https://nodejs.org/) and download the LTS version installer for your operating system.
 - **Linux**: 
   Use your package manager. For Ubuntu/Debian:
-  \`\`\`bash
+  ```bash
   sudo apt update
   sudo apt install nodejs npm
-  \`\`\`
+  ```
 
 Verify installation:
-\`\`\`bash
+```bash
 node -v
 npm -v
-\`\`\`
+```
 
 #### 2. Install pnpm (Recommended)
 
 pnpm is a fast, disk space efficient package manager.
 
-\`\`\`bash
+```bash
 npm install -g pnpm
-\`\`\`
+```
 
 Verify installation:
-\`\`\`bash
+```bash
 pnpm -v
-\`\`\`
+```
 
 ### Installation
 
-\`\`\`bash
+```bash
 # Clone the repository (if not already cloned)
 # git clone https://github.com/spring-ai-alibaba/spring-ai-alibaba.git
 
@@ -80,17 +80,17 @@ pnpm install
 
 # Start development server
 pnpm run dev
-\`\`\`
+```
 
 ### Build
 
-\`\`\`bash
+```bash
 # Build for production
 pnpm run build
 
 # Preview production build
 pnpm run preview
-\`\`\`
+```
 
 ## 🛠️ Development
 
@@ -107,7 +107,7 @@ pnpm run preview
 
 ### Project Structure
 
-\`\`\`
+```
 src/
 ├── components/          # Reusable components
 │   └── editor/         # Monaco Editor component
@@ -122,7 +122,7 @@ src/
 │   ├── http/         # HTTP client
 │   └── constants.ts  # Constants
 └── utils/            # Utility functions
-\`\`\`
+```
 
 ### Technology Stack
 
@@ -157,12 +157,12 @@ src/
 
 The UI can be configured through environment variables:
 
-\`\`\`env
+```env
 # API Configuration
 VITE_API_BASE_URL=http://localhost:8080
 
 # Other configurations...
-\`\`\`
+```
 
 ## 📖 Documentation
 
