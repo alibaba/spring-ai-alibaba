@@ -28,7 +28,7 @@ Spring AI Alibaba Java Manus 提供以下关键功能：
    npm install -g npx
    ```
 
-3. 设置 [dashscope api key](https://help.aliyun.com/zh/model-studio/getting-started/first-api-call-to-qwen)。
+3. 设置 [dashscope api key](https://help.aliyun.com/zh/model-studio/getting-started/first-api-call-to-qwen)。  dashscope是阿里云百炼的api . 
 
  ```shell
  export AI_DASHSCOPE_API_KEY=xxxx
@@ -61,3 +61,8 @@ mvn spring-boot:run
 ## 架构
 
 ![架构图](https://github.com/user-attachments/assets/4ad14a72-667b-456e-85c1-b05eef8fd414)
+
+
+## 之前的版本
+如果你想要之前的稳定版本，可以在这里找到：
+[之前的稳定版](https://github.com/rainerWJY/Java-Open-Manus/releases)
