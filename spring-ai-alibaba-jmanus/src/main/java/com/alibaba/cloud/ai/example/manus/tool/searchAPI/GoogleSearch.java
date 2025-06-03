@@ -19,8 +19,8 @@ import com.alibaba.cloud.ai.example.manus.tool.ToolCallBiFunctionDef;
 import com.alibaba.cloud.ai.example.manus.tool.code.ToolExecuteResult;
 import com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi.SerpApiProperties;
 import com.alibaba.cloud.ai.example.manus.tool.searchAPI.serpapi.SerpApiService;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,74 +92,84 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 	public ToolExecuteResult run(String toolInput) {
 		log.info("GoogleSearch toolInput:{}", toolInput);
 
-		Map<String, Object> toolInputMap = JSON.parseObject(toolInput, new TypeReference<Map<String, Object>>() {
-		});
-		String query = (String) toolInputMap.get("query");
-		this.lastQuery = query;
+		// Add exception handling for JSON deserialization
+		try {
+			Map<String, Object> toolInputMap = new ObjectMapper().readValue(toolInput,
+					new TypeReference<Map<String, Object>>() {
+					});
+			String query = (String) toolInputMap.get("query");
+			this.lastQuery = query;
 
-		Integer numResults = 2;
-		if (toolInputMap.get("num_results") != null) {
-			numResults = (Integer) toolInputMap.get("num_results");
-		}
-		this.lastNumResults = numResults;
-
-		SerpApiService.Request request = new SerpApiService.Request(query);
-		Map<String, Object> response = service.apply(request);
-
-		if (response.containsKey("answer_box") && response.get("answer_box") instanceof List) {
-			response.put("answer_box", ((List) response.get("answer_box")).get(0));
-		}
-
-		String toret = "";
-		if (response.containsKey("answer_box")
-				&& ((Map<String, Object>) response.get("answer_box")).containsKey("answer")) {
-			toret = ((Map<String, Object>) response.get("answer_box")).get("answer").toString();
-		}
-		else if (response.containsKey("answer_box")
-				&& ((Map<String, Object>) response.get("answer_box")).containsKey("snippet")) {
-			toret = ((Map<String, Object>) response.get("answer_box")).get("snippet").toString();
-		}
-		else if (response.containsKey("answer_box")
-				&& ((Map<String, Object>) response.get("answer_box")).containsKey("snippet_highlighted_words")) {
-			toret = ((List<String>) ((Map<String, Object>) response.get("answer_box")).get("snippet_highlighted_words"))
-				.get(0);
-		}
-		else if (response.containsKey("sports_results")
-				&& ((Map<String, Object>) response.get("sports_results")).containsKey("game_spotlight")) {
-			toret = ((Map<String, Object>) response.get("sports_results")).get("game_spotlight").toString();
-		}
-		else if (response.containsKey("shopping_results")
-				&& ((List<Map<String, Object>>) response.get("shopping_results")).get(0).containsKey("title")) {
-			List<Map<String, Object>> shoppingResults = (List<Map<String, Object>>) response.get("shopping_results");
-			List<Map<String, Object>> subList = shoppingResults.subList(0, 3);
-			toret = subList.toString();
-		}
-		else if (response.containsKey("knowledge_graph")
-				&& ((Map<String, Object>) response.get("knowledge_graph")).containsKey("description")) {
-			toret = ((Map<String, Object>) response.get("knowledge_graph")).get("description").toString();
-		}
-		else if ((((List<Map<String, Object>>) response.get("organic_results")).get(0)).containsKey("snippet")) {
-			toret = (((List<Map<String, Object>>) response.get("organic_results")).get(0)).get("snippet").toString();
-		}
-		else if ((((List<Map<String, Object>>) response.get("organic_results")).get(0)).containsKey("link")) {
-			toret = (((List<Map<String, Object>>) response.get("organic_results")).get(0)).get("link").toString();
-		}
-		else if (response.containsKey("images_results")
-				&& ((Map<String, Object>) ((List<Map<String, Object>>) response.get("images_results")).get(0))
-					.containsKey("thumbnail")) {
-			List<String> thumbnails = new ArrayList<>();
-			List<Map<String, Object>> imageResults = (List<Map<String, Object>>) response.get("images_results");
-			for (Map<String, Object> item : imageResults.subList(0, 10)) {
-				thumbnails.add(item.get("thumbnail").toString());
+			Integer numResults = 2;
+			if (toolInputMap.get("num_results") != null) {
+				numResults = (Integer) toolInputMap.get("num_results");
 			}
-			toret = thumbnails.toString();
+			this.lastNumResults = numResults;
+
+			SerpApiService.Request request = new SerpApiService.Request(query);
+			Map<String, Object> response = service.apply(request);
+
+			if (response.containsKey("answer_box") && response.get("answer_box") instanceof List) {
+				response.put("answer_box", ((List<Map<String, Object>>) response.get("answer_box")).get(0));
+			}
+
+			String toret = "";
+			if (response.containsKey("answer_box")
+					&& ((Map<String, Object>) response.get("answer_box")).containsKey("answer")) {
+				toret = ((Map<String, Object>) response.get("answer_box")).get("answer").toString();
+			}
+			else if (response.containsKey("answer_box")
+					&& ((Map<String, Object>) response.get("answer_box")).containsKey("snippet")) {
+				toret = ((Map<String, Object>) response.get("answer_box")).get("snippet").toString();
+			}
+			else if (response.containsKey("answer_box")
+					&& ((Map<String, Object>) response.get("answer_box")).containsKey("snippet_highlighted_words")) {
+				toret = ((List<String>) ((Map<String, Object>) response.get("answer_box"))
+					.get("snippet_highlighted_words")).get(0);
+			}
+			else if (response.containsKey("sports_results")
+					&& ((Map<String, Object>) response.get("sports_results")).containsKey("game_spotlight")) {
+				toret = ((Map<String, Object>) response.get("sports_results")).get("game_spotlight").toString();
+			}
+			else if (response.containsKey("shopping_results")
+					&& ((List<Map<String, Object>>) response.get("shopping_results")).get(0).containsKey("title")) {
+				List<Map<String, Object>> shoppingResults = (List<Map<String, Object>>) response
+					.get("shopping_results");
+				List<Map<String, Object>> subList = shoppingResults.subList(0, 3);
+				toret = subList.toString();
+			}
+			else if (response.containsKey("knowledge_graph")
+					&& ((Map<String, Object>) response.get("knowledge_graph")).containsKey("description")) {
+				toret = ((Map<String, Object>) response.get("knowledge_graph")).get("description").toString();
+			}
+			else if ((((List<Map<String, Object>>) response.get("organic_results")).get(0)).containsKey("snippet")) {
+				toret = (((List<Map<String, Object>>) response.get("organic_results")).get(0)).get("snippet")
+					.toString();
+			}
+			else if ((((List<Map<String, Object>>) response.get("organic_results")).get(0)).containsKey("link")) {
+				toret = (((List<Map<String, Object>>) response.get("organic_results")).get(0)).get("link").toString();
+			}
+			else if (response.containsKey("images_results")
+					&& ((Map<String, Object>) ((List<Map<String, Object>>) response.get("images_results")).get(0))
+						.containsKey("thumbnail")) {
+				List<String> thumbnails = new ArrayList<>();
+				List<Map<String, Object>> imageResults = (List<Map<String, Object>>) response.get("images_results");
+				for (Map<String, Object> item : imageResults.subList(0, 10)) {
+					thumbnails.add(item.get("thumbnail").toString());
+				}
+				toret = thumbnails.toString();
+			}
+			else {
+				toret = "No good search result found";
+			}
+			log.warn("SerpapiTool result:{}", toret);
+			this.lastSearchResults = toret;
+			return new ToolExecuteResult(toret);
 		}
-		else {
-			toret = "No good search result found";
+		catch (Exception e) {
+			log.error("Error deserializing JSON", e);
+			return new ToolExecuteResult("Error deserializing JSON: " + e.getMessage());
 		}
-		log.warn("SerpapiTool result:{}", toret);
-		this.lastSearchResults = toret;
-		return new ToolExecuteResult(toret);
 	}
 
 	@Override
@@ -192,13 +202,6 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 		return run(s);
 	}
 
-	private String planId;
-
-	@Override
-	public void setPlanId(String planId) {
-		this.planId = planId;
-	}
-
 	@Override
 	public String getCurrentToolStateString() {
 		return String.format("""
@@ -220,6 +223,12 @@ public class GoogleSearch implements ToolCallBiFunctionDef {
 	@Override
 	public String getServiceGroup() {
 		return "default-service-group";
+	}
+
+	// Implement the setPlanId method to satisfy the interface
+	@Override
+	public void setPlanId(String planId) {
+		// No operation needed as planId is no longer used
 	}
 
 }
