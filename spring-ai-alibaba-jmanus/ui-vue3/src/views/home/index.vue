@@ -27,8 +27,8 @@
       <header class="header">
         <div class="logo-container">
           <div class="logo">
-            <img src="/Java-AI.svg" alt="JManus" class="java-logo" />
-            <h1>JManus</h1>
+            <img src="/Java-AI.svg" alt="JTaskPoilot" class="java-logo" />
+            <h1>JTaskPoilot</h1>
           </div>
           <span class="tagline">Java AI 智能体</span>
         </div>
