@@ -1,10 +1,8 @@
 server:
   port: 8080
-
 spring:
   application:
     name: spring-ai-alibaba-deepresearch
-
   ai:
     openai:
       api-key: ${DASHSCOPE_API_KEY}
@@ -26,7 +24,6 @@ spring:
           enabled: true
           api-key: ${TAVILY_API_KEY}
       deepreserch:
-        python-home: ${PYTHON_HOME}
 #        background-investigation-type: tool_calls
 
 logging:

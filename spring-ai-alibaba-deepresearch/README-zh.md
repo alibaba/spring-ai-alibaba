@@ -3,11 +3,14 @@
 ### 配置
 
 需要配置以下环境变量，或者直接修改`application.yml`:
+
 - DashScope API: `${DASHSCOPE_API_KEY}`
 - TavilySearch API: `${TAVILY_API_KEY}`
-- Python解释器所在的路径：`${PYTHON_HOME}`，例如`/usr/bin/python3`
+
+此外需要安装`docker`，本项目需要使用`python:3-slim`镜像创建临时容器。也可以自己定制包含一些常用的第三方库的镜像，第三方库需要安装在镜像的`/app/site-packages`文件夹里。
 
 ### 工具
+
 - tavily API文档：https://docs.tavily.com/documentation/api-reference/endpoint/search
 - 高德地图MCP：https://lbs.amap.com/api/mcp-server/gettingstarted#t1
 
@@ -49,9 +52,9 @@ mcp-servers-windows.json
 }
 ```
 
-
-
 ### 主要参与贡献
+
 GitHub: 
+
 - yingzi： 整体架构设计，流程实现
 - zhouyou0527：ResearcherNode、CoderNode实现
