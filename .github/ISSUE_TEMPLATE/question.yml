@@ -13,18 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 name: 🤔 Question
 description: Usage question that isn't answered in docs or discussion
 title: "[Question] <title>"
 labels: ["question"]
-
 body:
   - type: textarea
     attributes:
       label: Question
       placeholder: >
         your question here;
+
     validations:
       required: true
   - type: markdown

@@ -47,6 +47,7 @@
 将本模块作为依赖引入到你的 Spring Boot 项目中：
 
 #### Maven 示例：
+
 ```xml
 <dependency>
     <groupId>com.alibaba.cloud.ai</groupId>
@@ -56,6 +57,7 @@
 ```
 
 #### Gradle 示例：
+
 ```groovy
 implementation 'com.alibaba.cloud.ai:common:1.0-SNAPSHOT'
 ```

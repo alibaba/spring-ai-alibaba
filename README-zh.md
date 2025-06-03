@@ -69,19 +69,19 @@
 @RestController
 public class ChatController {
 
-	private final ChatClient chatClient;
+ private final ChatClient chatClient;
 
-	public ChatController(ChatClient.Builder builder) {
-		this.chatClient = builder.build();
-	}
+ public ChatController(ChatClient.Builder builder) {
+  this.chatClient = builder.build();
+ }
 
-	@GetMapping("/chat")
-	public String chat(String input) {
-		return this.chatClient.prompt()
-				.user(input)
-				.call()
-				.content();
-	}
+ @GetMapping("/chat")
+ public String chat(String input) {
+  return this.chatClient.prompt()
+    .user(input)
+    .call()
+    .content();
+ }
 }
  ```
 

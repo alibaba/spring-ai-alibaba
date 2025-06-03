@@ -1,6 +1,7 @@
 ## 如何运行
 
 ### 前置条件
+
 1. 配置模型 API-KEY：
 
 ```shell
@@ -16,9 +17,11 @@ export SERP_API_KEY=xxx
 > 尽在您想体验 OpenManus 示例时，才需要配置这个选项。
 
 ### 启动应用
+
 然后，就可以在 IDE 中直接运行 `GraphApplication` 类启动示例应用。
 
 或者，您可以运行以下 maven 命令启用示例应用（注意要在根目录先 install 源码）：
+
 ```shell
 mvn clean install
 cd spring-ai-alibaba-graph/spring-ai-alibaba-graph-example
@@ -32,11 +35,13 @@ mvn spring-boot:run
 ![](./imgs/workflow-customer-service.png)
 
 示例实现了一个客户评价处理系统，系统接收用户评论，根据评论内容，自动进行问题分类，总共有两级问题分类：
+
 1. 第一级分类节点，将评论分为 positive 和 negative 两种。如果是 positive 评论则进行系统记录后结束流程；如果是 negative 评论则进行第二级分类。
 2. 第二级分类节点，根据 negative 评论的具体内容识别用户的具体问题，如 "after-sale service"、"product quality"、"transportation" 等，根据具体问题分流到具体的问题处理节点。
 3. 最后问题处理节点进行处理并记录后，流程结束。
 
 浏览器访问如下示例链接，查看运行效果：
+
 * http://localhost:18080/customer/chat?query=我收到的产品有快递破损，需要退换货？
 * http://localhost:18080/customer/chat?query=我的产品不能正常工作了，要怎么去做维修？
 * http://localhost:18080/customer/chat?query=商品收到了，非常好，下次还会买。
@@ -50,6 +55,7 @@ mvn spring-boot:run
 在本示例中，我们仅为 Agent 绑定了一个天气查询服务，React Agent 的结束条件也很简单（采用默认行为，模型判断无 tool_call 则结束）。
 
 浏览器访问如下示例链接，查看运行效果：
+
 * http://localhost:18080/react/chat?query=分别帮我查询杭州、上海和南京的天气
 
 ## Multi-agent OpenManus 示例
@@ -59,11 +65,13 @@ mvn spring-boot:run
 ![](./imgs/multi-agent-openmanus.png)
 
 在 OpenManus 示例中，我们实现了一个 multi-agent 系统。其中，有三个核心 agent 互相协作完成用户任务：
+
 1. Planning Agent，负责任务规划
 2. Supervisor Agent，负责监督 Executor Agent 完成规划的任务
 3. Executor Agent，负责执行每一步任务
 
 浏览器访问如下示例链接，查看运行效果：
+
 * http://localhost:18080/manus/chat?query=帮我查询阿里巴巴近一周的股票信息
 
 ## BigTool 示例
@@ -82,6 +90,7 @@ mvn spring-boot:run
 ## Relection 示例
 
 浏览器访问如下示例链接，查看运行效果：
+
 * http://localhost:18080/reflection/chat?query=写一篇论文，题目是东北经济落后分析
 
 > Tip: 演示代码中通过迭代次数来实现停止运行，也可以在`reflection`的图中控制结束时机。具体逻辑可以参考`ReflectionAgent`类。
@@ -89,14 +98,14 @@ mvn spring-boot:run
 ### 实现流程详解
 
 1. **初始化阶段**:
-    - 创建两个核心节点：生成论文的`AssistantGraphNode`和评判论文的`JudgeGraphNode`
-    - 使用`ReflectAgent`将这两个节点连接起来，设置最大迭代次数为2（Example使用）
-    - 编译状态图，准备执行
+    * 创建两个核心节点：生成论文的`AssistantGraphNode`和评判论文的`JudgeGraphNode`
+    * 使用`ReflectAgent`将这两个节点连接起来，设置最大迭代次数为2（Example使用）
+    * 编译状态图，准备执行
 
 2. **执行流程**:
-    - 用户发送查询(例如"写一篇关于环保的论文")
-    - 查询被转换为`UserMessage`并传入反思图
-    - 执行流程如下:
+    * 用户发送查询(例如"写一篇关于环保的论文")
+    * 查询被转换为`UserMessage`并传入反思图
+    * 执行流程如下:
         1. 从START节点开始，进入GRAPH节点(AssistantGraphNode)
         2. GRAPH节点生成初始论文
         3. `graphCount`方法检查迭代次数，决定是继续到反思节点还是结束
@@ -106,8 +115,8 @@ mvn spring-boot:run
         7. 重复上述步骤，直到达到最大迭代次数或最后一条消息是助手消息
 
 3. **返回结果**:
-    - 控制器提取最终改进后的论文
-    - 返回给用户
+    * 控制器提取最终改进后的论文
+    * 返回给用户
 
 **Example:**
 
@@ -202,6 +211,5 @@ ASSISTANT
 ```
 
 ## 更多示例
+
 更多示例请关注官网文档更新。
-
-

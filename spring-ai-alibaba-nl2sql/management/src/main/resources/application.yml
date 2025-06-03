@@ -6,8 +6,8 @@ spring:
       api-key:
     mcp:
       server:
-        name: xiyan-server    # MCP服务器名称
-        version: 0.0.1           # 服务器版本号
+        name: xiyan-server # MCP服务器名称
+        version: 0.0.1 # 服务器版本号
     vectorstore:
       analytic:
         collectName:
