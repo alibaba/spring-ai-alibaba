@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.example.manus2.util;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import lombok.SneakyThrows;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.core.io.ClassPathResource;
@@ -36,17 +35,14 @@ import java.util.List;
 public class PromptUtil {
 
 
-	@SneakyThrows
     public static String loadPrompt(String promptName) {
 		// 读取 resources/prompts 下的 md 文件
 		ClassPathResource resource = new ClassPathResource("prompts/" + promptName + ".md");
-		return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
-	}
-
-	public static List<Message> getMessages(OverAllState state) {
-		return state.value("messages", List.class)
-			.map(obj -> new ArrayList<>((List<Message>) obj))
-			.orElseGet(ArrayList::new);
-	}
+        try {
+            return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 }

@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Base Implementation of {@link PlainTextStateSerializer} using Jackson library. Need to
@@ -54,13 +55,18 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 	@Override
 	public void write(OverAllState object, ObjectOutput out) throws IOException {
 		String json = objectMapper.writeValueAsString(object);
-		out.writeUTF(json);
+		byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
+		out.writeInt(bytes.length);
+		out.write(bytes);
 	}
 
 	@Override
 	public OverAllState read(ObjectInput in) throws IOException, ClassNotFoundException {
-		String json = in.readUTF();
-		return objectMapper.readValue(json, getStateType());
+		int length = in.readInt();
+		byte[] bytes = new byte[length];
+		in.readFully(bytes);
+		String json = new String(bytes, StandardCharsets.UTF_8);
+		return objectMapper.readValue(json, OverAllState.class);
 	}
 
 }

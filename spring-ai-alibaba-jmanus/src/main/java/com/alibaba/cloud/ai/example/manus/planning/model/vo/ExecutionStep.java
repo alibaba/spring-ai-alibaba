@@ -17,9 +17,9 @@ package com.alibaba.cloud.ai.example.manus.planning.model.vo;
 
 import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.agent.BaseAgent;
-import com.alibaba.cloud.ai.graph.agent.ReactAgent;
-import lombok.Getter;
-import lombok.Setter;
+
+import java.util.Optional;
+
 
 /**
  * 单个步骤的执行结果
@@ -30,6 +30,7 @@ public class ExecutionStep {
 
 	private String stepRequirement;
 
+	private AgentState status;
 
 	private String result;
 
@@ -52,7 +53,7 @@ public class ExecutionStep {
 	}
 
 	public AgentState getStatus() {
-		return agent == null ? AgentState.NOT_STARTED : agent.getState();
+		return agent == null ? Optional.ofNullable(status).orElse(AgentState.NOT_STARTED) : agent.getState();
 	}
 
 	public void setAgent(BaseAgent agent) {
@@ -67,13 +68,18 @@ public class ExecutionStep {
 		this.stepRequirement = stepRequirement;
 	}
 
+
+	public void setStatus(AgentState status) {
+		this.status = status;
+	}
+
 	public String getStepInStr() {
 		String agentState = null;
 		if (agent != null) {
 			agentState = agent.getState().toString();
 		}
 		else {
-			agentState = AgentState.NOT_STARTED.toString();
+			agentState = Optional.ofNullable(status).map(AgentState::toString).orElse(AgentState.NOT_STARTED.toString());
 		}
 		StringBuilder sb = new StringBuilder();
 		sb.append(stepIndex);

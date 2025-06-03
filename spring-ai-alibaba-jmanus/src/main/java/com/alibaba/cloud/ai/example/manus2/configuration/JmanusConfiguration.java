@@ -79,7 +79,7 @@ public class JmanusConfiguration {
                 .addNode(PLANNER_ID, node_async(initPlannerNode(chatClientBuilder)))
                 .addNode(EXECUTOR_ID, node_async(initExecutorNode(chatClientBuilder)))
                 .addNode(HUMAN_ID, node_async(new HumanFeedbackNode()))
-                .addNode(FINALIZER_ID, node_async(new FinalizerNode()))
+                .addNode(FINALIZER_ID, node_async(new FinalizerNode(chatClientBuilder)))
 
                 .addEdge(StateGraph.START, PLANNER_ID)
                 .addEdge(PLANNER_ID, HUMAN_ID)

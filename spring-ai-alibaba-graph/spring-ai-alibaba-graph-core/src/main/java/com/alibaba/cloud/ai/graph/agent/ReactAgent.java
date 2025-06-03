@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
+import com.alibaba.cloud.ai.graph.node.ThinkNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 
@@ -45,11 +46,11 @@ public class ReactAgent {
 
 	private String name;
 
-	private final LlmNode llmNode;
+	private ThinkNode thinkNode;
 
-	private final ToolNode toolNode;
+	private ToolNode toolNode;
 
-	private final StateGraph graph;
+	private StateGraph graph;
 
 	private CompiledGraph compiledGraph;
 
@@ -65,35 +66,15 @@ public class ReactAgent {
 
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
-	private NodeAction preLlmHook;
+	public ReactAgent() {
+	}
 
-	private NodeAction postLlmHook;
-
-
-    public ReactAgent(String name, LlmNode llmNode, ToolNode toolNode,
-                      int maxIterations,
-                      CompileConfig compileConfig, OverAllStateFactory overAllStateFactory,
-                      Function<OverAllState, Boolean> shouldContinueFunc,
-                      NodeAction preLlmHook,
-                      NodeAction postLlmHook) throws GraphStateException {
-        this.name = name;
-        this.llmNode = llmNode;
-        this.toolNode = toolNode;
-        this.max_iterations = maxIterations;
-        this.compileConfig = compileConfig;
-        this.overAllStateFactory = overAllStateFactory;
-        this.shouldContinueFunc = shouldContinueFunc;
-        this.preLlmHook = preLlmHook;
-        this.postLlmHook = postLlmHook;
-        this.graph = initGraph();
-    }
-
-
-    public ReactAgent(LlmNode llmNode, ToolNode toolNode, int maxIterations, OverAllStateFactory overAllStateFactory,
+	public ReactAgent(String name, ThinkNode thinkNode, List<ToolCallback> tools, int maxIterations, OverAllStateFactory overAllStateFactory,
 			CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc)
 			throws GraphStateException {
-		this.llmNode = llmNode;
-		this.toolNode = toolNode;
+		this.name = name;
+		this.thinkNode = thinkNode;
+		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		this.max_iterations = maxIterations;
 		this.overAllStateFactory = overAllStateFactory;
 		this.compileConfig = compileConfig;
@@ -104,7 +85,7 @@ public class ReactAgent {
 	public ReactAgent(String name, ChatClient chatClient, List<ToolCallback> tools, int maxIterations)
 			throws GraphStateException {
 		this.name = name;
-		this.llmNode = LlmNode.builder().chatClient(chatClient).toolCallbacks(tools).messagesKey("messages").build();
+		this.thinkNode = ThinkNode.builder().chatClient(chatClient).toolCallbacks(tools).messagesKey("messages").build();
 		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		this.max_iterations = maxIterations;
 		this.graph = initGraph();
@@ -114,8 +95,7 @@ public class ReactAgent {
 			OverAllStateFactory overAllStateFactory, CompileConfig compileConfig,
 			Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
 		this.name = name;
-		this.llmNode = LlmNode.builder().chatClient(chatClient).toolCallbacks(tools).chatOptions(ToolCallingChatOptions.builder()
-				.internalToolExecutionEnabled(false).build()).messagesKey("messages").build();
+		this.thinkNode = ThinkNode.builder().chatClient(chatClient).toolCallbacks(tools).messagesKey("messages").build();
 		this.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 		this.max_iterations = maxIterations;
 		this.overAllStateFactory = overAllStateFactory;
@@ -126,7 +106,7 @@ public class ReactAgent {
 	public ReactAgent(String name, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations)
 			throws GraphStateException {
 		this.name = name;
-		this.llmNode = LlmNode.builder()
+		this.thinkNode = ThinkNode.builder()
 			.chatClient(chatClient)
 			// .userPromptTemplate(prompt)
 			.messagesKey("messages")
@@ -140,8 +120,7 @@ public class ReactAgent {
 			OverAllStateFactory overAllStateFactory, CompileConfig compileConfig,
 			Function<OverAllState, Boolean> shouldContinueFunc) throws GraphStateException {
 		this.name = name;
-		this.llmNode = LlmNode.builder().chatClient(chatClient).chatOptions(ToolCallingChatOptions.builder()
-				.internalToolExecutionEnabled(false).build()).messagesKey("messages").build();
+		this.thinkNode = ThinkNode.builder().chatClient(chatClient).messagesKey("messages").build();
 		this.toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
 		this.max_iterations = maxIterations;
 		this.overAllStateFactory = overAllStateFactory;
@@ -193,41 +172,13 @@ public class ReactAgent {
 			};
 		}
 
-		StateGraph graph = new StateGraph(this.overAllStateFactory);
-		
-		// Add main execution nodes
-		graph.addNode("agent", node_async(this.llmNode))
-			.addNode("tool", node_async(this.toolNode));
-
-		// Add hook nodes if provided
-		if (preLlmHook != null) {
-			graph.addNode("pre_llm_hook", node_async(preLlmHook));
-		}
-		
-		if (postLlmHook != null) {
-			graph.addNode("post_llm_hook", node_async(postLlmHook));
-		}
-
-		// Connect nodes
-		if (preLlmHook != null) {
-			graph.addEdge(START, "pre_llm_hook")
-				 .addEdge("pre_llm_hook", "agent");
-		} else {
-			graph.addEdge(START, "agent");
-		}
-
-		if (postLlmHook != null) {
-			graph.addConditionalEdges("agent", edge_async(this::think), 
-				Map.of("continue", "tool", "end", "post_llm_hook"))
-				.addEdge("post_llm_hook", END);
-		} else {
-			graph.addConditionalEdges("agent", edge_async(this::think), 
-				Map.of("continue", "tool", "end", END));
-		}
-
-		graph.addEdge("tool", "agent");
-
-		return graph;
+		return new StateGraph(this.overAllStateFactory)
+			.addNode("agent", node_async(this.thinkNode))
+			.addNode("tool", node_async(this.toolNode))
+			.addEdge(START, "agent")
+			.addConditionalEdges("agent", edge_async(this::think), 
+				Map.of("continue", "tool", "end", END))
+			.addEdge("tool", "agent");
 	}
 
 	private String think(OverAllState state) {
@@ -296,6 +247,10 @@ public class ReactAgent {
 		this.shouldContinueFunc = shouldContinueFunc;
 	}
 
+	void setName(String name) {
+		this.name = name;
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -308,9 +263,11 @@ public class ReactAgent {
 
 		private List<ToolCallback> tools;
 
-		private LlmNode llmNode;
-
 		private ToolCallbackResolver resolver;
+
+		private NodeAction preLlmHook;
+
+		private NodeAction postLlmHook;
 
 		private int maxIterations = 10;
 
@@ -320,10 +277,6 @@ public class ReactAgent {
 
 		private Function<OverAllState, Boolean> shouldContinueFunc;
 
-		private NodeAction preLlmHook;
-
-		private NodeAction postLlmHook;
-
 		public Builder name(String name) {
 			this.name = name;
 			return this;
@@ -331,11 +284,6 @@ public class ReactAgent {
 
 		public Builder chatClient(ChatClient chatClient) {
 			this.chatClient = chatClient;
-			return this;
-		}
-
-		public Builder llmNode(LlmNode llmNode){
-			this.llmNode = llmNode;
 			return this;
 		}
 
@@ -380,40 +328,27 @@ public class ReactAgent {
 		}
 
 		public ReactAgent build() throws GraphStateException {
-			if (llmNode != null) {
-				return new ReactAgent(name, llmNode, 
-					ToolNode.builder().toolCallbacks(tools).build(),
-					maxIterations, compileConfig, allStateFactory,
-					shouldContinueFunc, preLlmHook, postLlmHook);
-			}
-			else if (resolver != null) {
-				LlmNode node = LlmNode.builder()
-					.chatClient(chatClient)
-					.chatOptions(ToolCallingChatOptions.builder()
-						.internalToolExecutionEnabled(false)
-						.build())
-					.messagesKey("messages")
-					.build();
-				return new ReactAgent(name, node,
-					ToolNode.builder().toolCallbackResolver(resolver).build(),
-					maxIterations, compileConfig, allStateFactory,
-					shouldContinueFunc, preLlmHook, postLlmHook);
+			ReactAgent agent = new ReactAgent();
+			agent.setName(name);
+			agent.setMax_iterations(maxIterations);
+			agent.setCompileConfig(compileConfig);
+			agent.setOverAllStateFactory(allStateFactory);
+			agent.setShouldContinueFunc(shouldContinueFunc);
+
+			if (resolver != null) {
+				agent.thinkNode = ThinkNode.builder().chatClient(chatClient)
+						.preLlmHook(preLlmHook).postLlmHook(postLlmHook).messagesKey("messages").build();
+				agent.toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
 			}
 			else if (tools != null) {
-				LlmNode node = LlmNode.builder()
-					.chatClient(chatClient)
-					.chatOptions(ToolCallingChatOptions.builder()
-						.internalToolExecutionEnabled(false)
-						.build())
-					.messagesKey("messages")
-					.toolCallbacks(tools)
-					.build();
-				return new ReactAgent(name, node,
-					ToolNode.builder().toolCallbacks(tools).build(),
-					maxIterations, compileConfig, allStateFactory,
-					shouldContinueFunc, preLlmHook, postLlmHook);
+				agent.thinkNode = ThinkNode.builder().chatClient(chatClient)
+						.preLlmHook(preLlmHook).postLlmHook(postLlmHook).toolCallbacks(tools)
+						.messagesKey("messages").build();
+				agent.toolNode = ToolNode.builder().toolCallbacks(tools).build();
 			}
-			throw new IllegalArgumentException("Either llmNode, tools, or resolver must be provided");
+
+			agent.graph = agent.initGraph();
+			return agent;
 		}
 
 	}

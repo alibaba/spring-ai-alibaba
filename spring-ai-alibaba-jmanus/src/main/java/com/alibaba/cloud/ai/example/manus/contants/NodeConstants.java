@@ -15,6 +15,7 @@ public class NodeConstants {
     public static final String PLANNER_ID = "Planner";
     public static final String MESSAGES = "messages";
     public static final String CURRENT_PLAN = "current_plan";
+    public static final String SUMMARY = "summary";
 
     public static class PlannerNodeConstants {
 

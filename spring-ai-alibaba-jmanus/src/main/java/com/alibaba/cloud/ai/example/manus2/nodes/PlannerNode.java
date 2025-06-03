@@ -76,7 +76,6 @@ public class PlannerNode extends LlmNode {
         List<Message> userMessage = getMessages(state);
 
         String agentsInfo = buildAgentsInfo(allAgents, toolCallBackContextMap);
-        ExecutionPlan currentPlan = null;
 
         // 1.生成计划提示
         Prompt planPrompt = generatePlanPrompt(state, agentsInfo, userMessage);
@@ -167,12 +166,7 @@ public class PlannerNode extends LlmNode {
                 .collect(Collectors.joining("\n"));
     }
 
-    @AllArgsConstructor
-    @Data
-    public class ToolSpec {
-        private String toolName;
-        private String toolDescription;
-    }
+
 
     @Data
     public static class PlanStructure {

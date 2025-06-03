@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.example.manus2.nodes;
 
+import com.alibaba.cloud.ai.example.manus.agent.AgentState;
 import com.alibaba.cloud.ai.example.manus.contants.NodeConstants;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.entity.DynamicAgentEntity;
 import com.alibaba.cloud.ai.example.manus.dynamic.agent.service.AgentService;
@@ -32,6 +33,7 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
+import com.alibaba.cloud.ai.graph.node.ThinkNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -72,6 +74,30 @@ public class ExecutorNode implements NodeAction {
     private final AgentService agentService;
 
     private ChatClient.Builder chatClient;
+
+
+
+
+    @Override
+    public Map<String, Object> apply(OverAllState state) throws Exception {
+        // 获取当前计划
+        ExecutionPlan plan = ExecutionPlan.fromJson(JSON.toJSONString(state.value(NodeConstants.CURRENT_PLAN)), null);
+        if (plan == null) {
+            throw new IllegalStateException("No execution plan found in state");
+        }
+
+        List<ExecutionStep> steps = plan.getSteps();
+
+        // 为每个步骤执行
+        for (int i = 0; i < steps.size(); i++) {
+            ExecutionStep step = steps.get(i);
+            executeStep(plan, step, i);
+//            state.updateState(Map.of(NodeConstants.CURRENT_PLAN,plan));
+        }
+
+        return Map.of(NodeConstants.CURRENT_PLAN,plan);
+    }
+
 
 
     protected String collectEnvData(String toolCallName) {
@@ -161,25 +187,6 @@ public class ExecutorNode implements NodeAction {
         this.planningFactory = planningFactory;
     }
 
-    @Override
-    public Map<String, Object> apply(OverAllState state) throws Exception {
-        // 获取当前计划
-        ExecutionPlan plan = ExecutionPlan.fromJson(JSON.toJSONString(state.value(NodeConstants.CURRENT_PLAN)), null);
-        if (plan == null) {
-            throw new IllegalStateException("No execution plan found in state");
-        }
-
-        List<ExecutionStep> steps = plan.getSteps();
-
-        // 为每个步骤执行
-        for (int i = 0; i < steps.size(); i++) {
-            ExecutionStep step = steps.get(i);
-            executeStep(plan, step, i);
-        }
-
-        return Map.of();
-    }
-
     private void executeStep(ExecutionPlan plan, ExecutionStep step, int stepIndex) throws Exception {
 
         //1. 创建 ReActAgent
@@ -190,7 +197,7 @@ public class ExecutorNode implements NodeAction {
         initSettings.put(EXTRA_PARAMS_KEY, plan.getExecutionParams());
 
         ReactAgent agent = createReactAgent(
-                plan, step, initSettings
+                plan, step ,initSettings
         );
         CompiledGraph compiledGraph = agent.getAndCompileGraph();
 
@@ -203,7 +210,8 @@ public class ExecutorNode implements NodeAction {
 
         List<Message> messages = JSON.parseArray(JSON.toJSONString(result.get("messages")), Message.class);
         Message lastMessage = messages.get(messages.size() - 1);
-        step.setResult(JSON.toJSONString(lastMessage));
+        step.setStatus(AgentState.COMPLETED);
+        step.setResult(lastMessage.getText());
     }
 
     private void initMessages(OverAllState overAllState, Map<String, Object> initSettings, ExecutionStep step) {
@@ -252,35 +260,22 @@ public class ExecutorNode implements NodeAction {
         ));
     }
 
-    private ReactAgent createReactAgent(ExecutionPlan plan, ExecutionStep step, Map<String, Object> initSettings) throws GraphStateException {
+    private ReactAgent createReactAgent(ExecutionPlan plan, ExecutionStep step, Map<String,Object> initSettings) throws GraphStateException {
 
         // 创建 ReActAgent
         toolCallBackContextMap = planningFactory.toolCallbackMap(plan.getPlanId());
         List<ToolCallback> toolCallbacks = initTools(plan, step, agents, toolCallBackContextMap);
 
-        // 创建 LlmNode
-        LlmNode llmNode = LlmNode.builder()
-                .chatOptions(ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build())
-                .messagesKey("messages")
+        return ReactAgent.builder()
                 .chatClient(chatClient.build())
-                .toolCallbacks(toolCallbacks)
-                .build();
-
-        return new ReactAgent(
-                step.getStepRequirement(),
-                llmNode,
-                ToolNode.builder()
-                        .toolCallbacks(toolCallbacks)
-                        .build(), 100,
-                CompileConfig.builder()
-                        .saverConfig(SaverConfig.builder().build())
-                        .build(), () -> {
-            OverAllState defaultState = new OverAllState();
-            defaultState.registerKeyAndStrategy("messages", new AppendStrategy());
-            defaultState.registerKeyAndStrategy("envData", new ReplaceStrategy());
-            return defaultState;
-        }, null,
-                (NodeAction) state -> {
+                .tools(toolCallbacks)
+                .state(() -> {
+                    OverAllState defaultState = new OverAllState();
+                    defaultState.registerKeyAndStrategy("messages", new AppendStrategy());
+                    defaultState.registerKeyAndStrategy("envData", new ReplaceStrategy());
+                    return defaultState;
+                })
+                .preLlmHook( (NodeAction) state -> {
                     // 在每次think时收集环境信息
                     DynamicAgentEntity agentEntity = getAgent(step.getStepRequirement());
 
@@ -291,9 +286,9 @@ public class ExecutorNode implements NodeAction {
                     state.updateState(Map.of("messages", List.of(message)));
 
                     return Map.of();
-                },
-                null
-        );
+                })
+                .maxIterations(10)
+                .build();
     }
 
     private String getPlanExecutionStateStringFormat(ExecutionPlan plan, int i) {
