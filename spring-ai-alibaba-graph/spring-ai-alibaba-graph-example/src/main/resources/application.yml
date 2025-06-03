@@ -26,12 +26,12 @@ spring:
       toolcalling:
         weather:
           enabled: enable
-          api-key: ${WEATHER_API_KEY}
+          api-key: 89c78da27b4d4fdfaa052020252704
     dashscope:
-      api-key: ${DASH_SCOPE_API_KEY}
+      api-key: sk-b0ac526ee44f4bb7b6c61cbcaea14b15
     openai:
       base-url: https://dashscope.aliyuncs.com/compatible-mode
-      api-key: ${AI_DASHSCOPE_API_KEY}
+      api-key: sk-b0ac526ee44f4bb7b6c61cbcaea14b15
       chat:
         options:
           model: qwen-max-latest
