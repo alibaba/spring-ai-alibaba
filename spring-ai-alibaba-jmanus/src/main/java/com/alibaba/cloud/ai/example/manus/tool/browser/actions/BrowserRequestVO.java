@@ -71,13 +71,13 @@ public class BrowserRequestVO {
 	 * X坐标，用于move_to_and_click操作
 	 */
 	@JsonProperty("position_x")
-	private Integer positionX;
+	private Double positionX;
 
 	/**
 	 * Y坐标，用于move_to_and_click操作
 	 */
 	@JsonProperty("position_y")
-	private Integer positionY;
+	private Double positionY;
 
 	public String getAction() {
 		return action;
@@ -143,19 +143,19 @@ public class BrowserRequestVO {
 		this.elementName = elementName;
 	}
 
-	public Integer getPositionX() {
+	public Double getPositionX() {
 		return positionX;
 	}
 
-	public void setPositionX(Integer positionX) {
+	public void setPositionX(Double positionX) {
 		this.positionX = positionX;
 	}
 
-	public Integer getPositionY() {
+	public Double getPositionY() {
 		return positionY;
 	}
 
-	public void setPositionY(Integer positionY) {
+	public void setPositionY(Double positionY) {
 		this.positionY = positionY;
 	}
 

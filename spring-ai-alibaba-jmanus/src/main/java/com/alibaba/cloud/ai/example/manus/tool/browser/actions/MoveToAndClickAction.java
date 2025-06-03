@@ -32,8 +32,8 @@ public class MoveToAndClickAction extends BrowserAction {
 
 	@Override
 	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
-		Integer x = request.getPositionX();
-		Integer y = request.getPositionY();
+		Double x = request.getPositionX();
+		Double y = request.getPositionY();
 
 		if (x == null || y == null) {
 			return new ToolExecuteResult("X and Y coordinates are required for 'move_to_and_click' action");
@@ -45,15 +45,14 @@ public class MoveToAndClickAction extends BrowserAction {
 		String clickResultMessage = clickAndSwitchToNewTabIfOpened(page, () -> {
 			try {
 				// 1. 滚动到目标位置（让目标点尽量在视窗中央）
-				int scrollX = Math.max(0, x - page.viewportSize().width / 2);
-				int scrollY = Math.max(0, y - page.viewportSize().height / 2);
+				
 				Object result = page.evaluate(
 						"(args) => window.scrollTo({left: args[0], top: args[1], behavior: 'instant'})",
-						new Object[] { Integer.valueOf(scrollX), Integer.valueOf(scrollY) });
+						new Object[] { x, y });
 				if (result != null) {
-					log.info("Scroll to position ({}, {}) ,result <{}>", scrollX, scrollY, result);
+					log.info("Scroll to position ({}, {}) ,result <{}>", x, y, result);
 				} else {
-					log.warn("Failed to scroll to position ({}, {})", scrollX, scrollY);
+					log.warn("Failed to scroll to position ({}, {})", x, y);
 				}
 				String markerId = "__move_click_marker__";
 				if (isDebug) {
@@ -61,8 +60,8 @@ public class MoveToAndClickAction extends BrowserAction {
 					 result = page.evaluate("(args) => {\n" + "  const [x, y, id] = args;\n"
 							+ "  let dot = document.getElementById(id);\n" + "  if (!dot) {\n"
 							+ "    dot = document.createElement('div');\n" + "    dot.id = id;\n"
-							+ "    dot.style.position = 'absolute';\n" + "    dot.style.left = (x - 12) + 'px';\n"
-							+ "    dot.style.top = (y - 12) + 'px';\n" + "    dot.style.width = '24px';\n"
+							+ "    dot.style.position = 'absolute';\n" + "    dot.style.left = (x) + 'px';\n"
+							+ "    dot.style.top = (y) + 'px';\n" + "    dot.style.width = '24px';\n"
 							+ "    dot.style.height = '24px';\n" + "    dot.style.background = 'red';\n"
 							+ "    dot.style.borderRadius = '50%';\n" + "    dot.style.zIndex = 99999;\n"
 							+ "    dot.style.boxShadow = '0 0 8px 4px #f00';\n"
@@ -80,14 +79,12 @@ public class MoveToAndClickAction extends BrowserAction {
 					// 		markerId);
 
 					// 获取鼠标移动后的对应元素并打印
-					String elementInfo = (String) page.evaluate(
-							"(args) => { const el = document.elementFromPoint(args[0], args[1]); return el ? el.outerHTML : 'No element'; }",
-							new Object[] { x, y });
-					log.info("Element at position ({}, {}): {}", x, y, elementInfo);
+					// String elementInfo = (String) page.evaluate(
+					// 		"(args) => { const el = document.elementFromPoint(args[0], args[1]); return el ? el.outerHTML : 'No element'; }",
+					// 		new Object[] { x, y });
+					log.info("Element at position ({}, {}): {}", x, y);
 				}
 
-				// 3. 鼠标移动并点击
-				page.mouse().move(x, y);
 				page.mouse().click(x, y);
 				log.info("Clicked at position ({}, {})", x, y);
 

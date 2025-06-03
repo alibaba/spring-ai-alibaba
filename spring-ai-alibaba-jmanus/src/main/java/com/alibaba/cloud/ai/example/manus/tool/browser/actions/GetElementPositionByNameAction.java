@@ -39,9 +39,9 @@ public class GetElementPositionByNameAction extends BrowserAction {
 	 */
 	public static class ElementPosition {
 
-		private int x; // It holds the absolute x coordinate
+		private double x; // It holds the absolute x coordinate
 
-		private int y; // It holds the absolute y coordinate
+		private double y; // It holds the absolute y coordinate
 
 		private String elementText; // Element text content
 
@@ -50,26 +50,26 @@ public class GetElementPositionByNameAction extends BrowserAction {
 		}
 
 		// 构造函数，只包含必要字段
-		public ElementPosition(int x, int y, String elementText) {
+		public ElementPosition(double x, double y, String elementText) {
 			this.x = x;
 			this.y = y;
 			this.elementText = elementText;
 		}
 
 		// Getters and Setters
-		public int getX() {
+		public double getX() {
 			return x;
 		}
 
-		public void setX(int x) {
+		public void setX(double x) {
 			this.x = x;
 		}
 
-		public int getY() {
+		public double getY() {
 			return y;
 		}
 
-		public void setY(int y) {
+		public void setY(double y) {
 			this.y = y;
 		}
 
@@ -132,22 +132,26 @@ public class GetElementPositionByNameAction extends BrowserAction {
 					continue;
 				}
 				if (box != null) {
-					if (isDebug) {
-						// 给元素加红色边框，并在右上角显示 elementText（红底白字）
-						try {
-							String elementTextFinal = text.trim();
-							Object result = nthLocator.evaluate(
+						// int x = (int) (box.x + box.width / 2);
+						// int y = (int) (box.y + box.height / 2);
+						double x = (double) box.x + (double) box.width / 2;
+						double y = (double) box.y + (double) box.height / 2;
+						if (isDebug) {
+							// 给元素加红色边框，并在右上角显示 elementText（红底白字）
+							try {
+								String elementTextFinal = text.trim();
+								elementTextFinal = " (" + x + "," + y + ")" + elementTextFinal;
+								Object result = nthLocator.evaluate(
 									"(el, text) => {\n  el.style.border = '2px solid red';\n  // 创建或更新右上角标签\n  let tag = el.querySelector('[data-element-text-tag]');\n  if (!tag) {\n    tag = document.createElement('div');\n    tag.setAttribute('data-element-text-tag', '1');\n    tag.style.position = 'absolute';\n    tag.style.top = '0';\n    tag.style.right = '0';\n    tag.style.background = 'red';\n    tag.style.color = 'white';\n    tag.style.fontSize = '12px';\n    tag.style.padding = '2px 6px';\n    tag.style.borderBottomLeftRadius = '6px';\n    tag.style.zIndex = '9999';\n    tag.style.pointerEvents = 'none';\n    tag.style.fontWeight = 'bold';\n    tag.style.maxWidth = '120px';\n    tag.style.overflow = 'hidden';\n    tag.style.textOverflow = 'ellipsis';\n    tag.style.whiteSpace = 'nowrap';\n    el.style.position = el.style.position || 'relative';\n    el.appendChild(tag);\n  }\n  tag.textContent = text;\n}",
 									elementTextFinal);
-							log.info("Debug: Added red border and text tag for element .  result : {}", result);
-						} catch (Exception e) {
-							// ignore style set error
+								
+								log.info("Debug: Added red border and text tag for element. result: {}, x: {}, y: {}", result, x, y);
+							} catch (Exception e) {
+								// ignore style set error
+							}
 						}
-					}
-					int x = (int) (box.x + box.width / 2);
-					int y = (int) (box.y + box.height / 2);
-					String elementText = text.trim();
-					String uniqueKey = x + "," + y + "," + elementText;
+						String elementText = text.trim();
+						String uniqueKey = x + "," + y + "," + elementText;
 					if (!uniqueSet.contains(uniqueKey)) {
 						ElementPosition position = new ElementPosition(x, y, elementText);
 						results.add(position);
