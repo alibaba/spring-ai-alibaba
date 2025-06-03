@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           sparse-checkout: |
-            .github/workflows/auto-label.json5
+            tools/scripts/_issue.json_label
           sparse-checkout-cone-mode: false
       - uses: Renato66/auto-label@v3
         with:
