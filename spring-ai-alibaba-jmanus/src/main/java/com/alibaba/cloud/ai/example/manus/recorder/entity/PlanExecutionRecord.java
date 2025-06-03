@@ -39,9 +39,6 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState; 
  */
 public class PlanExecutionRecord {
 
-	// Consider removing JsonSerializable if toJson is no
-	// longer needed
-
 	// 记录的唯一标识符
 	private Long id;
 
