@@ -1,0 +1,16 @@
+name: Labeling new issue
+on:
+  issues:
+    types: ['opened','reopened']
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/workflows/auto-label.json5
+          sparse-checkout-cone-mode: false
+      - uses: Renato66/auto-label@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}

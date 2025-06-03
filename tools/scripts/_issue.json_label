@@ -1,0 +1,9 @@
+{
+  labelsSynonyms: {
+    bug: ['error', 'need fix', 'not working','does not working','doesn't work'],
+    enhancement: ['upgrade','enhance'],
+    question: ['help', 'how can i','help-wanted','assistance']
+  },
+  defaultLabels: ['action triaged','needs priority'],
+  ignoreComments: true
+}
