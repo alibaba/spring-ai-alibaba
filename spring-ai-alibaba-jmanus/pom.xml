@@ -7,7 +7,7 @@
     <groupId>com.alibaba.cloud.ai</groupId>
     <name>Spring AI Alibaba JManus</name>
     <artifactId>spring-ai-alibaba-jmanus</artifactId>
-    <version>0.1.1</version>
+    <version>0.8.0</version>
 
     <!-- The required dependencies are maintained separately by the JManus module -->
     <properties>
@@ -90,18 +90,7 @@
         <!--            <version>${spring-ai-alibaba}</version>-->
         <!--        </dependency>-->
 
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.83</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.alibaba.fastjson2</groupId>
-            <artifactId>fastjson2</artifactId>
-            <version>2.0.56</version>
-        </dependency>
-
+ 
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>

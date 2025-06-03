@@ -16,20 +16,25 @@
 
 package com.alibaba.cloud.ai.graph.node.code.entity;
 
+/**
+ * @author HeYQ
+ */
 public class CodeExecutionConfig {
 
-	private String workDir = "extensions";
+	private String workDir = "workspace";
 
 	/**
 	 * the docker image to use for code execution.
 	 */
 	private String docker;
 
+	private String containerName = "spring-ai-alibaba-container";
+
+	private String dockerHost = "unix:///var/run/docker.sock";
+
 	private int timeout = 600;
 
 	private int lastMessagesNumber = 1;
-
-	private int codeMaxDepth = 5;
 
 	public String getWorkDir() {
 		return workDir;
@@ -67,12 +72,21 @@ public class CodeExecutionConfig {
 		return this;
 	}
 
-	public int getCodeMaxDepth() {
-		return codeMaxDepth;
+	public String getContainerName() {
+		return containerName;
 	}
 
-	public CodeExecutionConfig setCodeMaxDepth(int codeMaxDepth) {
-		this.codeMaxDepth = codeMaxDepth;
+	public CodeExecutionConfig setCodeExecutionConfig(String containerName) {
+		this.containerName = containerName;
+		return this;
+	}
+
+	public String getDockerHost() {
+		return dockerHost;
+	}
+
+	public CodeExecutionConfig setDockerHost(String dockerHost) {
+		this.dockerHost = dockerHost;
 		return this;
 	}
 

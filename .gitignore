@@ -42,6 +42,7 @@ spring-ai-alibaba-examples/playground-flight-booking/src/main/bundles/
 **/spring-ai-alibaba-jmanus/extensions/*
 **/venv/*
 **/spring-ai-alibaba-jmanus/h2-data/*
+**/playwright/*
 
 # windows os
 /extensions/

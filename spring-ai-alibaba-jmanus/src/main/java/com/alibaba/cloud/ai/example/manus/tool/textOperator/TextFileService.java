@@ -25,10 +25,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
+
+import com.alibaba.cloud.ai.example.manus.config.ManusProperties;
 
 import jakarta.annotation.PreDestroy;
 
@@ -37,6 +40,12 @@ import jakarta.annotation.PreDestroy;
 public class TextFileService implements ApplicationRunner {
 
 	private static final Logger log = LoggerFactory.getLogger(TextFileService.class);
+
+	/**
+	 * 文件状态类，用于存储文件的当前路径和上次操作结果
+	 */
+	@Autowired
+	private ManusProperties manusProperties;
 
 	/**
 	 * 支持的文本文件扩展名集合
@@ -111,6 +120,10 @@ public class TextFileService implements ApplicationRunner {
 
 	public String getCurrentFilePath(String planId) {
 		return getFileState(planId).getCurrentFilePath();
+	}
+
+	public ManusProperties getManusProperties() {
+		return manusProperties;
 	}
 
 	public String getLastOperationResult(String planId) {

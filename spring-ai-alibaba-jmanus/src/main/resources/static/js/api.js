@@ -2,6 +2,7 @@
  * API 模块 - 处理与后端的所有通信
  */
 const ManusAPI = (() => {
+
     // API 基础URL
     const BASE_URL = '/api/executor';
     const PLAN_TEMPLATE_URL = '/api/plan-template';
@@ -135,10 +136,24 @@ const ManusAPI = (() => {
                 throw new Error(`获取详细信息失败: ${response.status}`);
             }
 
-            return await response.json();
+            // 先获取原始文本进行检查
+            const rawText = await response.text();
+            console.log(`原始响应文本 (planId: ${planId}):`, rawText); // 打印原始文本
+
+            // 尝试解析原始文本
+            try {
+                return JSON.parse(rawText);
+            } catch (jsonParseError) {
+                console.error(`JSON 解析原始文本失败 (planId: ${planId}):`, jsonParseError);
+                console.error("原始文本中可能存在问题的部分，请检查是否有未转义的控制字符。");
+                // 为了让调用方知道这里出错了，并且错误与之前类似，我们重新抛出这个解析错误
+                // 或者根据需要返回一个特定的错误对象或null
+                throw jsonParseError; // 或者 return null; 
+            }
+
         } catch (error) {
             // 记录错误但不抛出异常
-            console.log('获取详细信息失败:', error.message);
+            console.log(`获取详细信息失败 (planId: ${planId}):`, error.message);
             return null;
         }
     };
@@ -149,7 +164,7 @@ const ManusAPI = (() => {
      * @param {string} planJson - 计划JSON内容
      * @returns {Promise<Object>} - 保存结果
      */
-    const savePlan = async (planId, planJson) => {
+    const savePlanTemplate = async (planId, planJson) => {
         try {
             const response = await fetch(`${PLAN_TEMPLATE_URL}/save`, {
                 method: 'POST',
@@ -327,6 +342,47 @@ const ManusAPI = (() => {
         }
     };
 
+    /**
+     * 提交用户表单输入
+     * @param {string} planId - 计划ID
+     * @param {Object} formData - 用户输入的表单数据
+     * @returns {Promise<Object>} - 提交结果
+     */
+    const submitFormInput = async (planId, formData) => {
+        try {
+            const response = await fetch(`${BASE_URL}/submit-input/${planId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (!response.ok) {
+                // 尝试解析错误响应体
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch (e) {
+                    errorData = { message: `提交表单输入失败: ${response.status}` };
+                }
+                console.error('提交表单输入失败:', errorData);
+                throw new Error(errorData.message || `提交表单输入失败: ${response.status}`);
+            }
+            // 即使是200 OK，也可能没有响应体，或者响应体表示成功但无特定数据
+            // 检查是否有内容可解析
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                 return await response.json(); // { success: true } or similar
+            }
+            return { success: true }; // 默认成功处理
+
+        } catch (error) {
+            console.error('提交表单输入失败:', error);
+            throw error; // 将错误重新抛出，以便调用者可以处理
+        }
+    };
+
     // 返回公开的方法
     return {
         BASE_URL,
@@ -335,11 +391,12 @@ const ManusAPI = (() => {
         getDetails,
         generatePlan,
         executePlan,
-        savePlan,
+        savePlanTemplate,
         getPlanVersions,
         updatePlanTemplate,
         getVersionPlan,
         getAllPlanTemplates,
-        deletePlanTemplate
+        deletePlanTemplate,
+        submitFormInput
     };
 })();

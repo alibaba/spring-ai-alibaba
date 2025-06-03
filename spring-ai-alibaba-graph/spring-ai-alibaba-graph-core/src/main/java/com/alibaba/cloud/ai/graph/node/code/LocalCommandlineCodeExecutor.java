@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.node.code;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeBlock;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig;
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionResult;
+import com.alibaba.cloud.ai.graph.utils.CodeUtils;
 import com.alibaba.cloud.ai.graph.utils.FileUtils;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.exec.CommandLine;
@@ -76,7 +77,7 @@ public class LocalCommandlineCodeExecutor implements CodeExecutor {
 		}
 		String workDir = config.getWorkDir();
 		String codeHash = DigestUtils.md5Hex(code);
-		String fileExt = getFileExtForLanguage(language);
+		String fileExt = CodeUtils.getFileExtForLanguage(language);
 		String filename = String.format("tmp_code_%s.%s", codeHash, fileExt);
 
 		// write the code string to a file specified by the filename.
@@ -91,7 +92,7 @@ public class LocalCommandlineCodeExecutor implements CodeExecutor {
 	private CodeExecutionResult executeCodeLocally(String language, String workDir, String filename, int timeout)
 			throws Exception {
 		// set up the command based on language
-		String executable = getExecutableForLanguage(language);
+		String executable = CodeUtils.getExecutableForLanguage(language);
 		CommandLine commandLine = new CommandLine(executable);
 		commandLine.addArgument(filename);
 
@@ -127,24 +128,6 @@ public class LocalCommandlineCodeExecutor implements CodeExecutor {
 			// returns a special result if the process was killed by the watchdog
 			throw new Exception("Error executing code.", e);
 		}
-	}
-
-	private String getExecutableForLanguage(String language) throws Exception {
-		return switch (language) {
-			case "python3", "python" -> language;
-			case "shell", "bash", "sh", "powershell" -> "sh";
-			case "nodejs" -> "node";
-			default -> throw new Exception("Language not recognized in code execution:" + language);
-		};
-	}
-
-	private String getFileExtForLanguage(String language) throws Exception {
-		return switch (language) {
-			case "python3", "python" -> "py";
-			case "shell", "bash", "sh", "powershell" -> "sh";
-			case "nodejs" -> "js";
-			default -> throw new Exception("Language not recognized in code execution:" + language);
-		};
 	}
 
 }
