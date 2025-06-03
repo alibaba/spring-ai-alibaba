@@ -82,7 +82,12 @@ public class PlanningTool implements Function<String, ToolExecuteResult> {
 			            "type": "string"
 			        }
 			    },
-			    "required": ["command"]
+			    "required": [
+			    	"command",
+			    	"plan_id",
+			    	"title",
+			    	"steps"
+			    ]
 			}
 			""";
 
