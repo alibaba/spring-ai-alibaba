@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.example.deepresearch.node;
 import com.alibaba.cloud.ai.example.deepresearch.model.Plan;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import org.apache.commons.compress.utils.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -51,7 +52,7 @@ public class ResearcherNode implements NodeAction {
 		Plan currentPlan = state.value("current_plan", Plan.class).get();
 		List<String> observations = state.value("observations", List.class)
 			.map(list -> (List<String>) list)
-			.orElse(Collections.emptyList());
+			.orElse(Lists.newArrayList());
 
 		Plan.Step unexecutedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
