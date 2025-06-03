@@ -156,4 +156,46 @@ public class ManusProperties {
 		this.resetAgents = resetAgents;
 	}
 
+	@ConfigProperty(group = "manus", subGroup = "general", key = "baseDir", path = "manus.baseDir",
+			description = "manus根目录", defaultValue = "", inputType = ConfigInputType.TEXT)
+	private volatile String baseDir = "";
+
+	public String getBaseDir() {
+		String configPath = "manus.baseDir";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			baseDir = value;
+		}
+		return baseDir;
+	}
+
+	public void setBaseDir(String baseDir) {
+		this.baseDir = baseDir;
+	}
+
+	@ConfigProperty(group = "manus", subGroup = "agent", key = "userInputTimeout",
+			path = "manus.agent.userInputTimeout", description = "用户输入表单等待超时时间(秒)", defaultValue = "300",
+			inputType = ConfigInputType.NUMBER)
+	private volatile Integer userInputTimeout;
+
+	public Integer getUserInputTimeout() {
+		String configPath = "manus.agent.userInputTimeout";
+		String value = configService.getConfigValue(configPath);
+		if (value != null) {
+			userInputTimeout = Integer.valueOf(value);
+		}
+		// Ensure a default value if not configured and not set
+		if (userInputTimeout == null) {
+			// Attempt to parse the default value specified in the annotation,
+			// or use a hardcoded default if parsing fails or is complex to retrieve here.
+			// For simplicity, directly using the intended default.
+			userInputTimeout = 300;
+		}
+		return userInputTimeout;
+	}
+
+	public void setUserInputTimeout(Integer userInputTimeout) {
+		this.userInputTimeout = userInputTimeout;
+	}
+
 }

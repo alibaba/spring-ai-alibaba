@@ -39,6 +39,18 @@
     color: #333;
 }
 
+/* 输入框禁用时的样式 */
+.input-area input[type="text"].disabled {
+    background-color: #f0f0f0;
+    cursor: not-allowed;
+}
+
+/* 发送按钮禁用时的样式 */
+.input-area button.disabled {
+    color: #aaa;
+    cursor: not-allowed;
+}
+
 /* 附件按钮 */
 .attach-btn {
     /* 如需要添加特定样式 */
