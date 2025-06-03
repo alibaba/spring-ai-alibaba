@@ -44,6 +44,4 @@ public interface AgentService {
 	 */
 	BaseAgent createDynamicBaseAgent(String name, String planId, Map<String, Object> initialAgentSetting);
 
-	ReactAgent createReActAgent(String name, String planId, Map<String, Object> initialAgentSetting);
-
 }

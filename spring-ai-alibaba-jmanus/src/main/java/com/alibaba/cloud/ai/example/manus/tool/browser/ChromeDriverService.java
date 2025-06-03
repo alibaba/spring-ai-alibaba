@@ -55,7 +55,6 @@ public class ChromeDriverService {
 	}
 
 	public DriverWrapper getDriver(String planId) {
-		planId = "12312312322222";
 		if (planId == null) {
 			throw new IllegalArgumentException("planId cannot be null");
 		}

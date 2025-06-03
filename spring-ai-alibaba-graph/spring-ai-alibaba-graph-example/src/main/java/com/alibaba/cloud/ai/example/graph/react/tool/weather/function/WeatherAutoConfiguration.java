@@ -16,8 +16,6 @@
 
 package com.alibaba.cloud.ai.example.graph.react.tool.weather.function;
 
-import jakarta.annotation.Resource;
-import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -26,16 +24,15 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
 @Configuration
-//@ConditionalOnClass(WeatherService.class)
-//@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.weather", name = "enabled", havingValue = "true")
+@ConditionalOnClass(WeatherService.class)
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.weather", name = "enabled", havingValue = "true")
 public class WeatherAutoConfiguration {
 
-	@Resource
-	private WeatherProperties weatherProperties;
-
-	@Tool(name = "getWeatherFunction",description = "Use api.weather to get weather information.")
-	public WeatherService getWeatherServiceFunction() {
-		return new WeatherService(weatherProperties);
+	@Bean(name = "getWeatherFunction")
+	@ConditionalOnMissingBean
+	@Description("Use api.weather to get weather information.")
+	public WeatherService getWeatherServiceFunction(WeatherProperties properties) {
+		return new WeatherService(properties);
 	}
 
 }
