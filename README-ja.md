@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![CI Status](https://github.com/alibaba/spring-ai-alibaba/workflows/%F0%9F%9B%A0%EF%B8%8F%20Build%20and%20Test/badge.svg)](https://github.com/alibaba/spring-ai-alibaba/actions?query=workflow%3A%22%F0%9F%9B%A0%EF%B8%8F+Build+and+Test%22)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/alibaba/spring-ai-alibaba)
-[![Maven central](https://maven-badges.sml.io/maven-central/com.alibaba.cloud.ai/spring-ai-alibaba/badge.svg)](https://maven-badges.sml.io/maven-central/com.alibaba.cloud.ai/spring-ai-alibaba)
+[![Maven central](https://maven-badges.herokuapp.com/maven-central/com.alibaba.cloud.ai/spring-ai-alibaba/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.alibaba.cloud.ai/spring-ai-alibaba)
 <img alt="gitleaks badge" src="https://img.shields.io/badge/protected%20by-gitleaks-blue">
 
 [Spring AI Alibaba](https://java2ai.com) は、Java 開発者向けの AI アプリケーションフレームワークであり、Spring AI
@@ -65,19 +65,19 @@ Spring AI Alibaba を使用して生成的 AI を Spring Boot
 @RestController
 public class ChatController {
 
-	private final ChatClient chatClient;
+ private final ChatClient chatClient;
 
-	public ChatController(ChatClient.Builder builder) {
-		this.chatClient = builder.build();
-	}
+ public ChatController(ChatClient.Builder builder) {
+  this.chatClient = builder.build();
+ }
 
-	@GetMapping("/chat")
-	public String chat(String input) {
-		return this.chatClient.prompt()
-				.user(input)
-				.call()
-				.content();
-	}
+ @GetMapping("/chat")
+ public String chat(String input) {
+  return this.chatClient.prompt()
+    .user(input)
+    .call()
+    .content();
+ }
 }
  ```
 

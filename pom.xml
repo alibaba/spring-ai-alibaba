@@ -129,9 +129,9 @@
         <module>community/vector-stores/spring-ai-alibaba-starter-oceanbase-store</module>
 
         <!-- Spring AI Alibaba Chat Memory Support -->
-        <module>community/memories/spring-ai-alibaba-jdbc-memory</module>
-        <module>community/memories/spring-ai-alibaba-redis-memory</module>
-        <module>community/memories/spring-ai-alibaba-elasticsearch-memory</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-redis</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-jdbc</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-elasticsearch</module>
 
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
 
@@ -227,7 +227,7 @@
 
         <mysql.version>8.0.32</mysql.version>
 
-        <guava.version>33.4.0-jre</guava.version>
+        <mcp.version>0.10.0</mcp.version>
 
         <!-- CheckStyle Plugin -->
         <disable.checks>true</disable.checks>

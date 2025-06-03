@@ -13,5 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-blank_issues_enabled: true
+blank_issues_enabled: false
+contact_links:
+  - name: Community Support
+    url: https://github.com/alibaba/spring-ai-alibaba/discussions
+    about: Please ask and answer questions here.
