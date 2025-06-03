@@ -30,8 +30,12 @@
     <packaging>jar</packaging>
     <name>Spring AI Alibaba Graph Core</name>
     <description>A library for building stateful, multi-agents applications with LLMs</description>
-
-    <properties></properties>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
 
     <dependencies>
         <!--
@@ -159,6 +163,12 @@
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-sync</artifactId>
             <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp</artifactId>
+            <version>${mcp.version}</version>
         </dependency>
 
         <dependency>

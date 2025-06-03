@@ -61,7 +61,9 @@ public class KnowledgeRetrievalNodeTest {
 
 	String apiKey = System.getenv().getOrDefault("AI_DASHSCOPE_API_KEY", "test-api-key");
 
-	DashScopeApi dashScopeApi = new DashScopeApi(apiKey);
+	DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(apiKey).build();
+
+	;
 
 	EmbeddingModel embeddingModel = new DashScopeEmbeddingModel(dashScopeApi, MetadataMode.EMBED,
 			DashScopeEmbeddingOptions.builder().withModel("text-embedding-v2").build());

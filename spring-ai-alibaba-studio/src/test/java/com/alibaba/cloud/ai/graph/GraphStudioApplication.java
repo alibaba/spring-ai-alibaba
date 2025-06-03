@@ -19,7 +19,7 @@
 // import com.alibaba.cloud.ai.graph.action.EdgeAction;
 // import com.alibaba.cloud.ai.graph.prebuilt.MessagesState;
 // import com.alibaba.cloud.ai.graph.prebuilt.MessagesStateGraph;
-// import com.alibaba.cloud.ai.graph.state.AgentState;
+// import com.alibaba.cloud.ai.graph.serializer.AgentState;
 // import org.checkerframework.checker.units.qual.C;
 //
 // import org.springframework.boot.SpringApplication;

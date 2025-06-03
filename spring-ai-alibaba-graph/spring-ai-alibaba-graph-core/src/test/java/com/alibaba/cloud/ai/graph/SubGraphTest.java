@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverConstant;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,6 +46,9 @@ public class SubGraphTest {
 
 	private static final Logger log = LoggerFactory.getLogger(SubGraphTest.class);
 
+	/**
+	 * Initialize logging configuration before all tests.
+	 */
 	@BeforeAll
 	public static void initLogging() throws IOException {
 		try (var is = SubGraphTest.class.getResourceAsStream("/logging.properties")) {
@@ -52,19 +56,36 @@ public class SubGraphTest {
 		}
 	}
 
+	/**
+	 * Create an AsyncNodeAction that returns a map with the given ID as value for
+	 * "messages".
+	 * @param id The identifier for the node action.
+	 * @return An AsyncNodeAction producing a map with the message ID.
+	 */
 	private AsyncNodeAction _makeNode(String id) {
 		return node_async(state -> Map.of("messages", id));
 	}
 
+	/**
+	 * Execute the workflow and extract the names of processed nodes.
+	 * @param workflow Compiled graph to execute.
+	 * @param input Initial input data for execution.
+	 * @return A list containing the names of executed nodes in order.
+	 * @throws Exception If an error occurs during execution.
+	 */
 	private List<String> _execute(CompiledGraph workflow, Map<String, Object> input) throws Exception {
-		return workflow
-			.stream(workflow.stateGraph.getOverAllState(), RunnableConfig.builder().threadId("SubGraphTest").build())
+		return workflow.stream(input, RunnableConfig.builder().threadId("SubGraphTest").build())
 			.stream()
 			.peek(System.out::println)
 			.map(NodeOutput::node)
 			.toList();
 	}
 
+	/**
+	 * Remove an element from the list based on the provided RemoveIdentifier.
+	 * @param result The list from which elements will be removed.
+	 * @param removeIdentifier An identifier defining how to find the element to remove.
+	 */
 	private static void removeFromList(List<Object> result, AppenderChannel.RemoveIdentifier<Object> removeIdentifier) {
 		for (int i = 0; i < result.size(); i++) {
 			if (removeIdentifier.compareTo(result.get(i), i) == 0) {
@@ -74,6 +95,12 @@ public class SubGraphTest {
 		}
 	}
 
+	/**
+	 * Evaluate removal operations on a list based on the values provided.
+	 * @param oldValues Previous list values.
+	 * @param newValues New values potentially including removal identifiers.
+	 * @return An object encapsulating the results of removal evaluation.
+	 */
 	private static AppenderChannel.RemoveData<Object> evaluateRemoval(List<Object> oldValues, List<?> newValues) {
 
 		final var result = new AppenderChannel.RemoveData<>(oldValues, newValues);
@@ -88,8 +115,12 @@ public class SubGraphTest {
 
 	}
 
-	private static OverAllState getOverAllState() {
-		return new OverAllState().input(Map.of())
+	/**
+	 * Get an initialized OverAllState instance with predefined key strategies.
+	 * @return Initialized OverAllState object.
+	 */
+	private static OverAllStateFactory createOverAllStateFactory() {
+		return () -> new OverAllState().input(Map.of())
 			.registerKeyAndStrategy("a", (o, o2) -> o2)
 			.registerKeyAndStrategy("b", (o, o2) -> o2)
 			.registerKeyAndStrategy("c", (o, o2) -> o2)
@@ -97,6 +128,9 @@ public class SubGraphTest {
 			.registerKeyAndStrategy("messages", new AppendStrategy());
 	}
 
+	/**
+	 * Test basic subgraph merging functionality without conditional edges.
+	 */
 	@Test
 	public void testMergeSubgraph01() throws Exception {
 
@@ -106,7 +140,7 @@ public class SubGraphTest {
 			.addEdge("B1", "B2")
 			.addEdge("B2", END);
 
-		var workflowParent = new StateGraph(getOverAllState()).addNode("A", _makeNode("A"))
+		var workflowParent = new StateGraph(createOverAllStateFactory()).addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addEdge(START, "A")
@@ -123,6 +157,9 @@ public class SubGraphTest {
 
 	}
 
+	/**
+	 * Test subgraph merging with conditional edge handling.
+	 */
 	@Test
 	public void testMergeSubgraph02() throws Exception {
 
@@ -132,15 +169,13 @@ public class SubGraphTest {
 			.addEdge("B1", "B2")
 			.addEdge("B2", END);
 
-		var workflowParent = new StateGraph(getOverAllState()).addNode("A", _makeNode("A"))
+		var workflowParent = new StateGraph(createOverAllStateFactory()).addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
 			.addEdge("A", "B")
 			.addEdge("B", "C")
-			.addEdge("C", END)
-		// .compile(compileConfig)
-		;
+			.addEdge("C", END);
 
 		var processed = ProcessedNodesEdgesAndConfig.process(workflowParent, CompileConfig.builder().build());
 		processed.nodes().elements.forEach(System.out::println);
@@ -158,6 +193,9 @@ public class SubGraphTest {
 
 	}
 
+	/**
+	 * Test subgraph merging with nested conditional edges.
+	 */
 	@Test
 	public void testMergeSubgraph03() throws Exception {
 
@@ -169,15 +207,13 @@ public class SubGraphTest {
 			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))
 			.addEdge("C", END);
 
-		var workflowParent = new StateGraph(getOverAllState()).addNode("A", _makeNode("A"))
+		var workflowParent = new StateGraph(createOverAllStateFactory()).addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
 			.addEdge("A", "B")
 			.addEdge("B", "C")
-			.addEdge("C", END)
-		// .compile(compileConfig)
-		;
+			.addEdge("C", END);
 
 		var processed = ProcessedNodesEdgesAndConfig.process(workflowParent, CompileConfig.builder().build());
 		processed.nodes().elements.forEach(System.out::println);
@@ -196,27 +232,26 @@ public class SubGraphTest {
 
 	}
 
+	/**
+	 * Test subgraph merging with interruption handling at different points.
+	 */
 	@Test
 	public void testMergeSubgraph03WithInterruption() throws Exception {
-		OverAllState overAllState = getOverAllState();
 		var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
 			.addNode("B2", _makeNode("B2"))
-			// .addNode("B2", _makeNormalNode("B2"))
 			.addNode("C", _makeNode("subgraph(C)"))
 			.addEdge(START, "B1")
 			.addEdge("B1", "B2")
 			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))
 			.addEdge("C", END);
 
-		var workflowParent = new StateGraph(overAllState).addNode("A", _makeNode("A"))
+		var workflowParent = new StateGraph(createOverAllStateFactory()).addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
 			.addEdge("A", "B")
 			.addEdge("B", "C")
-			.addEdge("C", END)
-		// .compile(compileConfig)
-		;
+			.addEdge("C", END);
 
 		var B_B1 = SubGraphNode.formatId("B", "B1");
 		var B_B2 = SubGraphNode.formatId("B", "B2");
@@ -234,47 +269,35 @@ public class SubGraphTest {
 		assertIterableEquals(List.of(START, "A", B_B1), _execute(interruptAfterB1, Map.of()));
 
 		// RESUME AFTER B1
-		overAllState.withResume();
-		assertIterableEquals(List.of(B_B2, B_C, "C", END), _execute(interruptAfterB1, Map.of()));
+		assertIterableEquals(List.of(B_B2, B_C, "C", END), _execute(interruptAfterB1, null));
 
 		// INTERRUPT AFTER B2
-		OverAllState overAllState1 = getOverAllState();
-		workflowParent.setOverAllState(overAllState1);
 		var interruptAfterB2 = workflowParent
 			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B2).build());
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2), _execute(interruptAfterB2, Map.of()));
 
 		// RESUME AFTER B2
-		overAllState1.withResume();
 		assertIterableEquals(List.of(B_C, "C", END), _execute(interruptAfterB2, null));
 
 		// INTERRUPT BEFORE C
-		OverAllState overAllState2 = getOverAllState();
-		workflowParent.setOverAllState(overAllState2);
 		var interruptBeforeC = workflowParent
 			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("C").build());
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C), _execute(interruptBeforeC, Map.of()));
 
 		// RESUME AFTER B2
-		overAllState2.withResume();
 		assertIterableEquals(List.of("C", END), _execute(interruptBeforeC, null));
 
 		// INTERRUPT BEFORE SUBGRAPH B
-		OverAllState overAllState3 = getOverAllState();
-		workflowParent.setOverAllState(overAllState3);
 		var interruptBeforeSubgraphB = workflowParent
 			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("B").build());
 		assertIterableEquals(List.of(START, "A"), _execute(interruptBeforeSubgraphB, Map.of()));
 
 		// RESUME AFTER SUBGRAPH B
-		overAllState3.withResume();
 		assertIterableEquals(List.of(B_B1, B_B2, B_C, "C", END), _execute(interruptBeforeSubgraphB, null));
 
 		// INTERRUPT AFTER SUBGRAPH B
-		OverAllState overAllState4 = getOverAllState();
-		workflowParent.setOverAllState(overAllState4);
 		var exception = assertThrows(GraphStateException.class,
 				() -> workflowParent.compile(CompileConfig.builder().saverConfig(saver).interruptAfter("B").build()));
 
@@ -284,9 +307,11 @@ public class SubGraphTest {
 
 	}
 
+	/**
+	 * Test more complex subgraph merging with multiple conditional branches.
+	 */
 	@Test
 	public void testMergeSubgraph04() throws Exception {
-		OverAllState overAllState = getOverAllState();
 		var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
 			.addNode("B2", _makeNode("B2"))
 			.addNode("C", _makeNode("subgraph(C)"))
@@ -295,15 +320,12 @@ public class SubGraphTest {
 			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))
 			.addEdge("C", END);
 
-		var workflowParent = new StateGraph(overAllState).addNode("A", _makeNode("A"))
+		var workflowParent = new StateGraph(createOverAllStateFactory()).addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
 			.addEdge("A", "B")
-			.addConditionalEdges("B", edge_async(state -> "c"), Map.of("c", "C", "a", "A"/*
-																							 * END,
-																							 * END
-																							 */))
+			.addConditionalEdges("B", edge_async(state -> "c"), Map.of("c", "C", "a", "A"))
 			.addEdge("C", END);
 
 		var processed = ProcessedNodesEdgesAndConfig.process(workflowParent, CompileConfig.builder().build());
@@ -323,9 +345,11 @@ public class SubGraphTest {
 
 	}
 
+	/**
+	 * Test complex subgraph merging with multiple interruptions at various points.
+	 */
 	@Test
 	public void testMergeSubgraph04WithInterruption() throws Exception {
-		OverAllState overAllState = getOverAllState();
 		var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
 			.addNode("B2", _makeNode("B2"))
 			.addNode("C", _makeNode("subgraph(C)"))
@@ -334,16 +358,13 @@ public class SubGraphTest {
 			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))
 			.addEdge("C", END);
 
-		var workflowParent = new StateGraph(overAllState).addNode("A", _makeNode("A"))
+		var workflowParent = new StateGraph(createOverAllStateFactory()).addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addNode("C1", _makeNode("C1"))
 			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
 			.addEdge("A", "B")
-			.addConditionalEdges("B", edge_async(state -> "c"), Map.of("c", "C1", "a", "A" /*
-																							 * END,
-																							 * END
-																							 */))
+			.addConditionalEdges("B", edge_async(state -> "c"), Map.of("c", "C1", "a", "A"))
 			.addEdge("C1", "C")
 			.addEdge("C", END);
 
@@ -358,56 +379,40 @@ public class SubGraphTest {
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, "C1", "C", END), _execute(withSaver, Map.of()));
 
 		// INTERRUPT AFTER B1
-		OverAllState overAllState0 = getOverAllState();
-		workflowParent.setOverAllState(overAllState0);
 		var interruptAfterB1 = workflowParent
 			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B1).build());
 		assertIterableEquals(List.of(START, "A", B_B1), _execute(interruptAfterB1, Map.of()));
 
 		// RESUME AFTER B1
-		overAllState0.withResume();
 		assertIterableEquals(List.of(B_B2, B_C, "C1", "C", END), _execute(interruptAfterB1, null));
 
 		// INTERRUPT AFTER B2
-		OverAllState overAllState1 = getOverAllState();
-		workflowParent.setOverAllState(overAllState1);
 		var interruptAfterB2 = workflowParent
 			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B2).build());
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2), _execute(interruptAfterB2, Map.of()));
 
 		// RESUME AFTER B2
-		overAllState1.withResume();
 		assertIterableEquals(List.of(B_C, "C1", "C", END), _execute(interruptAfterB2, null));
 
 		// INTERRUPT BEFORE C
-		OverAllState overAllState2 = getOverAllState();
-		workflowParent.setOverAllState(overAllState2);
 		var interruptBeforeC = workflowParent
 			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("C").build());
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, "C1"), _execute(interruptBeforeC, Map.of()));
 
 		// RESUME BEFORE C
-		overAllState2.withResume();
 		assertIterableEquals(List.of("C", END), _execute(interruptBeforeC, null));
 
 		// INTERRUPT BEFORE SUBGRAPH B
-		OverAllState overAllState3 = getOverAllState();
-		workflowParent.setOverAllState(overAllState3);
 		var interruptBeforeB = workflowParent
 			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("B").build());
 		assertIterableEquals(List.of(START, "A"), _execute(interruptBeforeB, Map.of()));
 
 		// RESUME BEFORE SUBGRAPH B
-		overAllState3.withResume();
 		assertIterableEquals(List.of(B_B1, B_B2, B_C, "C1", "C", END), _execute(interruptBeforeB, null));
 
-		//
 		// INTERRUPT AFTER SUBGRAPH B
-		//
-		OverAllState overAllState4 = getOverAllState();
-		workflowParent.setOverAllState(overAllState4);
 		var exception = assertThrows(GraphStateException.class,
 				() -> workflowParent.compile(CompileConfig.builder().saverConfig(saver).interruptAfter("B").build()));
 
@@ -415,24 +420,24 @@ public class SubGraphTest {
 
 	}
 
+	/**
+	 * Test checkpointing behavior with subgraphs involved.
+	 */
 	@Test
 	public void testCheckpointWithSubgraph() throws Exception {
 
 		SaverConfig saver = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
 
 		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
-		OverAllState overAllState = getOverAllState();
 		var workflowChild = new StateGraph().addNode("step_1", _makeNode("child:step1"))
 			.addNode("step_2", _makeNode("child:step2"))
 			.addNode("step_3", _makeNode("child:step3"))
 			.addEdge(START, "step_1")
 			.addEdge("step_1", "step_2")
 			.addEdge("step_2", "step_3")
-			.addEdge("step_3", END)
-		// .compile(compileConfig)
-		;
+			.addEdge("step_3", END);
 
-		var workflowParent = new StateGraph(overAllState).addNode("step_1", _makeNode("step1"))
+		var workflowParent = new StateGraph(createOverAllStateFactory()).addNode("step_1", _makeNode("step1"))
 			.addNode("step_2", _makeNode("step2"))
 			.addNode("step_3", _makeNode("step3"))
 			.addNode("subgraph", workflowChild)
@@ -455,29 +460,28 @@ public class SubGraphTest {
 
 	}
 
+	/**
+	 * Test alternative methods for creating and integrating subgraphs.
+	 */
 	@Test
 	public void testOtherCreateSubgraph2() throws Exception {
 		SaverConfig saver = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
 
 		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
-		OverAllState overAllState = getOverAllState();
-		var workflowChild = new StateGraph().addNode("step_1", _makeNode("child:step1"))
+		var workflowChild = new StateGraph(createOverAllStateFactory()).addNode("step_1", _makeNode("child:step1"))
 			.addNode("step_2", _makeNode("child:step2"))
 			.addNode("step_3", _makeNode("child:step3"))
 			.addEdge(START, "step_1")
 			.addEdge("step_1", "step_2")
 			.addEdge("step_2", "step_3")
-			.addEdge("step_3", END)
-		// .compile(compileConfig)
-		;
+			.addEdge("step_3", END);
 
-		var workflowParent = new StateGraph(overAllState).addNode("step_1", _makeNode("step1"))
+		var workflowParent = new StateGraph(createOverAllStateFactory()).addNode("step_1", _makeNode("step1"))
 			.addNode("step_2", _makeNode("step2"))
 			.addNode("step_3", _makeNode("step3"))
 			.addNode("subgraph", AsyncNodeActionWithConfig.node_async((t, config) -> {
 				// Reference the parent class Overallstate or create a new one
-				workflowChild.setOverAllState(t);
-				return workflowChild.compile().invoke(Map.of()).orElseThrow().data();
+				return workflowChild.compile().invoke(Map.copyOf(t.data())).orElseThrow().data();
 			}))
 			.addEdge(START, "step_1")
 			.addEdge("step_1", "step_2")

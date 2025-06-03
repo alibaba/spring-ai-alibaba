@@ -18,6 +18,7 @@
 
 6. Properties配置属性类应并继承来自`spring-ai-alibaba-starter-tool-calling-common`模块的`CommonToolCallProperties`，并且需要写上`@ConfigurationProperties(prefix = ${name}Properties.${NAME}_PREFIX)`。
 即使这个配置类不需要额外的属性字段，也需要定义一个`CommonToolCallProperties`的子类。在Properties类中定义一个属性前缀常量，构造方法中初始化该服务的基础URL，以及部分重要属性用户没有给出时可以根据哪个环境变量读取。之后该类可以定义自己独有的属性。一个Properties类的实例如下：
+
 ```java
 @ConfigurationProperties(prefix = BaiDuTranslatePrefix)
 public class BaiduTranslateProperties extends CommonToolCallProperties {
@@ -30,6 +31,7 @@ public class BaiduTranslateProperties extends CommonToolCallProperties {
    }
 }
 ```
+
 7. 在Function Impl中，JSON的序列化与反序列化统一使用`spring-ai-alibaba-starter-tool-calling-common`模块的`JsonParseTool`对象，common模块自动注入了一个默认的Bean，如果有特殊需求也可以自定义`objectMapper`，在`AutoConfiguration`中覆盖原有的`JsonParseTool`的Bean。
 HTTP请求统一使用common模块的`RestClientTool`或者`WebClientTool`的对象，该类有`builder`方法，必要`CommonToolCallProperties`和`JsonParseTool`对象，根据需要也可以自定义其他对象。
 8. Auto Configuration 类中，应该声明一个Function Impl的Bean，供用户使用，例如：
@@ -38,17 +40,18 @@ HTTP请求统一使用common模块的`RestClientTool`或者`WebClientTool`的对
 @Configuration
 @EnableConfigurationProperties(BaiduTranslateProperties.class)
 @ConditionalOnProperty(prefix = BaiduTranslateProperties.BaiDuTranslatePrefix, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+  matchIfMissing = true)
 public class BaiduTranslateAutoConfiguration {
-	@Bean
-	@ConditionalOnMissingBean
-	@Description("Baidu translation function for general text translation")
-	public BaiduTranslateService baiduTranslate(BaiduTranslateProperties properties, JsonParseTool jsonParseTool) {
+ @Bean
+ @ConditionalOnMissingBean
+ @Description("Baidu translation function for general text translation")
+ public BaiduTranslateService baiduTranslate(BaiduTranslateProperties properties, JsonParseTool jsonParseTool) {
 
-		return new BaiduTranslateService(properties, RestClientTool.builder(jsonParseTool, properties).build(),
-				jsonParseTool);
-	}
+  return new BaiduTranslateService(properties, RestClientTool.builder(jsonParseTool, properties).build(),
+    jsonParseTool);
+ }
 }
 ```
+
 9. 对于多个模块可能共用的方法，应该写到common模块的`CommonToolCallUtils`类中。对于多个模块可能共用的常量，应该写到common模块的`CommonToolCallConstants`中。
 10. 可以参考`baidumap`、`baidutranslate`、`baidusearch`这些已经应用上述规则的代码。

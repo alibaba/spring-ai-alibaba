@@ -16,33 +16,36 @@
 
 package com.alibaba.cloud.ai.autoconfigure.mcp.client;
 
-import com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegistryProperties;
 import com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties;
+import com.alibaba.cloud.ai.mcp.nacos.client.utils.NacosMcpClientUtils;
+import com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegistryProperties;
+import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
+import com.alibaba.cloud.ai.mcp.nacos.service.model.NacosMcpServerEndpoint;
+import com.alibaba.nacos.api.ai.constant.AiConstants;
+import com.alibaba.nacos.api.ai.model.mcp.McpEndpointInfo;
 import com.alibaba.nacos.api.exception.NacosException;
-import com.alibaba.nacos.api.naming.NamingFactory;
-import com.alibaba.nacos.api.naming.NamingService;
-import com.alibaba.nacos.api.naming.pojo.Instance;
-import com.alibaba.nacos.client.config.NacosConfigService;
+import com.alibaba.nacos.api.utils.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.client.autoconfigure.NamedClientMcpTransport;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
  * @author yingzi
- * @date 2025/4/29:08:47
+ * @since 2025/4/29:08:47
  */
 @AutoConfiguration
 @EnableConfigurationProperties({ NacosMcpSseClientProperties.class, NacosMcpProperties.class,
@@ -55,21 +58,11 @@ public class NacosMcpSseClientAutoConfiguration {
 	}
 
 	@Bean
-	public NamingService nacosNamingService(NacosMcpProperties nacosMcpProperties) {
+	@ConditionalOnMissingBean(NacosMcpOperationService.class)
+	public NacosMcpOperationService nacosMcpOperationService(NacosMcpProperties nacosMcpProperties) {
 		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
 		try {
-			return NamingFactory.createNamingService(nacosProperties);
-		}
-		catch (NacosException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@Bean
-	public NacosConfigService nacosConfigService(NacosMcpProperties nacosMcpProperties) {
-		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
-		try {
-			return new NacosConfigService(nacosProperties);
+			return new NacosMcpOperationService(nacosProperties);
 		}
 		catch (NacosException e) {
 			throw new RuntimeException(e);
@@ -78,7 +71,7 @@ public class NacosMcpSseClientAutoConfiguration {
 
 	@Bean(name = "server2NamedTransport")
 	public Map<String, List<NamedClientMcpTransport>> server2NamedTransport(
-			NacosMcpSseClientProperties nacosMcpSseClientProperties, NamingService namingService,
+			NacosMcpSseClientProperties nacosMcpSseClientProperties, NacosMcpOperationService nacosMcpOperationService,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
 			ObjectProvider<ObjectMapper> objectMapperProvider) {
 		Map<String, List<NamedClientMcpTransport>> server2NamedTransport = new HashMap<>();
@@ -87,24 +80,30 @@ public class NacosMcpSseClientAutoConfiguration {
 		ObjectMapper objectMapper = (ObjectMapper) objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
 		Map<String, String> connections = nacosMcpSseClientProperties.getConnections();
-		connections.forEach((serviceKey, serviceName) -> {
+		connections.forEach((serverKey, serverName) -> {
 			try {
-				List<Instance> instances = namingService.selectInstances(serviceName, true);
-				List<NamedClientMcpTransport> namedTransports = new ArrayList<>();
-				for (Instance instance : instances) {
-					String url = instance.getMetadata().getOrDefault("scheme", "http") + "://" + instance.getIp() + ":"
-							+ instance.getPort();
-
-					WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(url);
-					WebFluxSseClientTransport transport = new WebFluxSseClientTransport(webClientBuilder, objectMapper);
-					namedTransports
-						.add(new NamedClientMcpTransport(serviceName + "-" + instance.getInstanceId(), transport));
+				NacosMcpServerEndpoint serverEndpoint = nacosMcpOperationService.getServerEndpoint(serverName);
+				if (serverEndpoint == null) {
+					throw new NacosException(NacosException.NOT_FOUND,
+							"can not find mcp server from nacos: " + serverName);
 				}
-
-				server2NamedTransport.put(serviceName, namedTransports);
+				if (!StringUtils.equals(serverEndpoint.getProtocol(), AiConstants.Mcp.MCP_PROTOCOL_SSE)) {
+					throw new Exception("mcp server protocol must be sse");
+				}
+				List<NamedClientMcpTransport> namedTransports = new ArrayList<>();
+				for (McpEndpointInfo endpointInfo : serverEndpoint.getMcpEndpointInfoList()) {
+					String url = "http://" + endpointInfo.getAddress() + ":" + endpointInfo.getPort();
+					WebClient.Builder webClientBuilder = webClientBuilderTemplate.clone().baseUrl(url);
+					WebFluxSseClientTransport transport = new WebFluxSseClientTransport(webClientBuilder, objectMapper,
+							serverEndpoint.getExportPath());
+					namedTransports.add(new NamedClientMcpTransport(serverName + "-"
+							+ NacosMcpClientUtils.getMcpEndpointInfoId(endpointInfo, serverEndpoint.getExportPath()),
+							transport));
+				}
+				server2NamedTransport.put(serverName, namedTransports);
 			}
-			catch (NacosException e) {
-				logger.error("nacos naming service: {} error", serviceName, e);
+			catch (Exception e) {
+				logger.error("get mcp server from nacos: {} error", serverName, e);
 			}
 		});
 		return server2NamedTransport;

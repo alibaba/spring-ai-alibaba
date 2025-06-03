@@ -16,17 +16,24 @@
 
 package com.alibaba.cloud.ai.toolcalling.sensitivefilter;
 
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
+import static com.alibaba.cloud.ai.toolcalling.sensitivefilter.SensitiveFilterProperties.SENSITIVE_FILTER_PREFIX;
 
 /**
  * Configuration properties for sensitive information filter
  *
  * @author Makoto
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.sensitivefilter")
-public class SensitiveFilterProperties {
+@ConfigurationProperties(prefix = SensitiveFilterProperties.SENSITIVE_FILTER_PREFIX)
+public class SensitiveFilterProperties extends CommonToolCallProperties {
 
-	private boolean enabled = true;
+	protected static final String SENSITIVE_FILTER_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".sensitivefilter";
 
 	private String replacement = "***";
 
@@ -38,12 +45,56 @@ public class SensitiveFilterProperties {
 
 	private boolean filterEmail = true;
 
-	public boolean isEnabled() {
-		return enabled;
-	}
+	/**
+	 * List of custom desensitization modes
+	 */
+	private List<CustomPattern> customPatterns = new ArrayList<>();
 
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
+	/**
+	 * Custom desensitization mode configuration
+	 */
+	public static class CustomPattern {
+
+		private String name;
+
+		private String pattern;
+
+		private String replacement;
+
+		private boolean enabled = true;
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public String getPattern() {
+			return pattern;
+		}
+
+		public void setPattern(String pattern) {
+			this.pattern = pattern;
+		}
+
+		public String getReplacement() {
+			return replacement;
+		}
+
+		public void setReplacement(String replacement) {
+			this.replacement = replacement;
+		}
+
+		public boolean isEnabled() {
+			return enabled;
+		}
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
+
 	}
 
 	public String getReplacement() {
@@ -84,6 +135,14 @@ public class SensitiveFilterProperties {
 
 	public void setFilterEmail(boolean filterEmail) {
 		this.filterEmail = filterEmail;
+	}
+
+	public List<CustomPattern> getCustomPatterns() {
+		return customPatterns;
+	}
+
+	public void setCustomPatterns(List<CustomPattern> customPatterns) {
+		this.customPatterns = customPatterns;
 	}
 
 }

@@ -1,32 +1,42 @@
-> The community driven Spring AI Alibaba  OpenManus Java implementtation can be found at [spring-ai-alibaba-jmanus](./spring-ai-alibaba-jmanus) module.
+> The community driven Spring AI Alibaba OpenManus Java implementtation can be found
+> at [spring-ai-alibaba-jmanus](./spring-ai-alibaba-jmanus) module.
 
 # [Spring AI Alibaba](https://java2ai.com)
 
+[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
+[![CI Status](https://github.com/alibaba/spring-ai-alibaba/workflows/%F0%9F%9B%A0%EF%B8%8F%20Build%20and%20Test/badge.svg)](https://github.com/alibaba/spring-ai-alibaba/actions?query=workflow%3A%22%F0%9F%9B%A0%EF%B8%8F+Build+and+Test%22)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/alibaba/spring-ai-alibaba)
+[![Maven central](https://maven-badges.herokuapp.com/maven-central/com.alibaba.cloud.ai/spring-ai-alibaba/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.alibaba.cloud.ai/spring-ai-alibaba)
+<img alt="gitleaks badge" src="https://img.shields.io/badge/protected%20by-gitleaks-blue">
+
 [中文版本](./README-zh.md) | [日本語](./README-ja.md)
 
-An AI application framework for Java developers built on top of Spring AI that provides seamless integration with Alibaba Cloud QWen LLM services and cloud-native infrastructures.
+An AI application framework for Java developers built on top of Spring AI that provides seamless integration with
+Alibaba Cloud QWen LLM services and cloud-native infrastructures.
 
 ## Get Started
 
-Please refer to [quick start](https://java2ai.com/docs/dev/get-started/) for how to quickly add generative AI to your Spring Boot applications.
+Please refer to [quick start](https://java2ai.com/docs/dev/get-started/) for how to quickly add generative AI to your
+Spring Boot applications.
 
 Overall, it takes only two steps to turn your Spring Boot application into an intelligent agent:
 
 > Because Spring AI Alibaba is developed based on Spring Boot 3.x, it requires JDK version 17 and above.
 
-1. Add `spring-ai-alibaba-starter` dependency to your project.
+1. Add `spring-ai-alibaba-starter-dashscope` dependency to your project.
 
    ```xml
    <dependency>
         <groupId>com.alibaba.cloud.ai</groupId>
-        <artifactId>spring-ai-alibaba-starter</artifactId>
-        <version>1.0.0-RC1.1</version>
+        <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+        <version>1.0.0.1</version>
    </dependency>
    ```
 
- > NOTICE: Since spring-ai related packages haven't been published to the central repo yet, it's needed to add the following maven repository to your project in order to successfully resolve artifacts like  spring-ai-core.
- >
- > ```xml
+> NOTICE: Since spring-ai related packages haven't been published to the central repo yet, it's needed to add the
+> following maven repository to your project in order to successfully resolve artifacts like spring-ai-core.
+>
+> ```xml
  > <repositories>
  >      <repository>
  >           <id>spring-milestones</id>
@@ -39,7 +49,8 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
  > </repositories>
  > ```
 >
-> Addendum: If the mirrorOf tag in your local Maven settings. xml is configured with the wildcard *, please modify it according to the following example.
+> Addendum: If the mirrorOf tag in your local Maven settings. xml is configured with the wildcard *, please modify it
+> according to the following example.
 >
 > ```xml
 > <mirror>
@@ -78,7 +89,8 @@ Overall, it takes only two steps to turn your Spring Boot application into an in
 
 ## Core Features
 
-Spring AI Alibaba provides the following features, read the [documentation](https://java2ai.com/) on our website for more details of how to use these features.
+Spring AI Alibaba provides the following features, read the [documentation](https://java2ai.com/) on our website for
+more details of how to use these features.
 
 * Support for Alibaba Cloud QWen Model and Dashscope Model service.
 * Support high-level AI agent abstraction -- ChatClient.
@@ -93,7 +105,9 @@ Spring AI Alibaba provides the following features, read the [documentation](http
 
 ## Roadmap
 
-Spring AI Alibaba aims to reduce the complexity of building AI native Java applications, from development, evaluation to deployment and observability. In order to achieve that, we provide both open-source framework and ecosystem integrations around it, below are the features that we plan to support in the near future:
+Spring AI Alibaba aims to reduce the complexity of building AI native Java applications, from development, evaluation to
+deployment and observability. In order to achieve that, we provide both open-source framework and ecosystem integrations
+around it, below are the features that we plan to support in the near future:
 
 * Prompt Template Management
 * Event Driven AI Application
@@ -107,7 +121,8 @@ Spring AI Alibaba aims to reduce the complexity of building AI native Java appli
 
 ## Contribution Guide
 
-Please refer to the [Contribution Guide](./CONTRIBUTING.md) to learn how to participate in the development of Spring AI Alibaba.
+Please refer to the [Contribution Guide](./CONTRIBUTING.md) to learn how to participate in the development of Spring AI
+Alibaba.
 
 ## References
 
@@ -124,9 +139,14 @@ Please refer to the [Contribution Guide](./CONTRIBUTING.md) to learn how to part
 
 ## Credit
 
-Some of this project's ideas and codes are inspired by or rewrote from the following projects. Great thanks to those who have created and open-sourced these projects.
+Some of this project's ideas and codes are inspired by or rewrote from the following projects. Great thanks to those who
+have created and open-sourced these projects.
 
-* [Spring AI](https://github.com/spring-projects/spring-ai), a Spring-friendly API and abstractions for developing AI applications licensed under the Apache License 2.0.
-* [Langgraph](https://github.com/langchain-ai/langgraph), a library for building stateful, multi-actor applications with LLMs, used to create agent and multi-agent workflows licensed under the MIT license.
-* [Langgraph4J](https://github.com/bsorrentino/langgraph4j), a porting of original [LangGraph](https://github.com/langchain-ai/langgraph) from the [LangChain AI project](https://github.com/langchain-ai) in Java fashion.
+* [Spring AI](https://github.com/spring-projects/spring-ai), a Spring-friendly API and abstractions for developing AI
+  applications licensed under the Apache License 2.0.
+* [Langgraph](https://github.com/langchain-ai/langgraph), a library for building stateful, multi-actor applications with
+  LLMs, used to create agent and multi-agent workflows licensed under the MIT license.
+* [Langgraph4J](https://github.com/bsorrentino/langgraph4j), a porting of
+  original [LangGraph](https://github.com/langchain-ai/langgraph) from
+  the [LangChain AI project](https://github.com/langchain-ai) in Java fashion.
 * [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/w9lsky/spring-ai-alibaba)

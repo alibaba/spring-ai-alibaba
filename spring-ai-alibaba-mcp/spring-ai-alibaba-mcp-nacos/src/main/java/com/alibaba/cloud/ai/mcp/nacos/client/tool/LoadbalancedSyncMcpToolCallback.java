@@ -28,7 +28,7 @@ import java.util.Map;
 
 /**
  * @author yingzi
- * @date 2025/5/6:14:15
+ * @since 2025/5/6:14:15
  */
 public class LoadbalancedSyncMcpToolCallback implements ToolCallback {
 
@@ -44,7 +44,7 @@ public class LoadbalancedSyncMcpToolCallback implements ToolCallback {
 	@Override
 	public ToolDefinition getToolDefinition() {
 		return ToolDefinition.builder()
-			.name(McpToolUtils.prefixedToolName(this.mcpClient.getClientInfo().name(), this.tool.name()))
+			.name(McpToolUtils.prefixedToolName(this.mcpClient.getServerName(), this.tool.name()))
 			.description(this.tool.description())
 			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
 			.build();
