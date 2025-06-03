@@ -54,15 +54,13 @@ public class DockerCodeExecutor implements CodeExecutor {
 		StringBuilder allLogs = new StringBuilder();
 		CodeExecutionResult result;
 
-		try {
-			// Create Docker client
-			DockerClient dockerClient = DockerClientBuilder.getInstance().build();
+		// Create Docker client
+		try (DockerClient dockerClient = DockerClientBuilder.getInstance().build()) {
 
-			for (int i = 0; i < codeBlockList.size(); i++) {
-				CodeBlock codeBlock = codeBlockList.get(i);
+			for (CodeBlock codeBlock : codeBlockList) {
 				String language = codeBlock.language();
 				String code = codeBlock.code();
-				logger.info("\n>>>>>>>> EXECUTING CODE BLOCK {} (inferred language is {})...", i + 1, language);
+				logger.info("\n>>>>>>>> EXECUTING CODE BLOCK (inferred language is {})...", language);
 
 				// Generate unique filename for each code block
 				String codeHash = DigestUtils.md5Hex(code);
@@ -79,7 +77,7 @@ public class DockerCodeExecutor implements CodeExecutor {
 				Bind volumeBind = new Bind(hostWorkDir, containerVolume);
 
 				CreateContainerCmd createContainerCmd = dockerClient.createContainerCmd(codeExecutionConfig.getDocker())
-					.withName(codeExecutionConfig.getContainerName() + "_" + i)
+					.withName(codeExecutionConfig.getContainerName() + "_" + codeBlockList.indexOf(codeBlock))
 					.withCmd(CodeUtils.getExecutableForLanguage(language), filename)
 					.withWorkingDir("/workspace")
 					.withHostConfig(newHostConfig().withBinds(volumeBind));
