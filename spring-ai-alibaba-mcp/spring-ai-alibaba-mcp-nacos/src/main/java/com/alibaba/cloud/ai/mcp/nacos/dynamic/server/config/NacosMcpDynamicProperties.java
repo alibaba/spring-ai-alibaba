@@ -29,14 +29,6 @@ public class NacosMcpDynamicProperties {
 
 	List<String> serviceNames;
 
-	public List<String> getServerNames() {
-		return serviceNames;
-	}
-
-	public void setServerNames(List<String> serviceNames) {
-		this.serviceNames = serviceNames;
-	}
-
 	public List<String> getServiceNames() {
 		return serviceNames;
 	}

@@ -17,6 +17,12 @@
       "type": "com.alibaba.cloud.ai.mcp.nacos.dynamic.server.config.NacosMcpDynamicProperties",
       "sourceType": "com.alibaba.cloud.ai.mcp.nacos.dynamic.server.config.NacosMcpDynamicProperties",
       "description": "Configuration properties for Nacos MCP dynamic service discovery."
+    },
+    {
+      "name": "spring.ai.nacos.prompt.template",
+      "type": "com.alibaba.cloud.ai.autoconfigure.prompt.NacosPromptTmplProperties",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.prompt.NacosPromptTmplProperties",
+      "description": "Configuration properties for Nacos prompt template integration."
     }
   ],
   "properties": [
@@ -150,6 +156,13 @@
       "description": "Maximum lifetime in seconds for connections.",
       "sourceType": "com.alibaba.cloud.ai.mcp.nacos.dynamic.server.properties.McpDynamicServerProperties",
       "defaultValue": 120
+    },
+    {
+      "name": "spring.ai.nacos.prompt.template.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable Nacos prompt template support.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.prompt.NacosPromptTmplProperties",
+      "defaultValue": false
     }
   ],
   "hints": []
