@@ -17,10 +17,10 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.GraphInitKeyErrorException;
-import com.alibaba.cloud.ai.graph.exception.GraphInterruptException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
@@ -230,44 +230,51 @@ public class CompiledGraph {
 	}
 
 	/**
-	 * Update the state of the graph with the given values. If asNode is given, it will be
-	 * used to determine the next node to run. If not given, the next node will be
-	 * determined by the state graph.
+	 * Update the state of the graph with the given values.
+	 * If asNode is given, it will be used to determine the next node to run.
+	 * If not given, the next node will be determined by the state graph.
+	 *
 	 * @param config the RunnableConfig containg the graph state
 	 * @param values the values to be updated
 	 * @param asNode the node id to be used for the next node. can be null
 	 * @return the updated RunnableConfig
 	 * @throws Exception when something goes wrong
 	 */
-	public RunnableConfig updateState(RunnableConfig config, Map<String, Object> values, String asNode)
-			throws Exception {
-		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
-			.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
+	public RunnableConfig updateState( RunnableConfig config, Map<String,Object> values, String asNode ) throws Exception {
+		BaseCheckpointSaver saver = compileConfig.checkpointSaver().orElseThrow( () -> (new IllegalStateException("Missing CheckpointSaver!")) );
 
 		// merge values with checkpoint values
 		Checkpoint branchCheckpoint = saver.get(config)
-			.map(Checkpoint::new)
-			.map(cp -> cp.updateState(values, keyStrategyMap))
-			.orElseThrow(() -> (new IllegalStateException("Missing Checkpoint!")));
+				.map(Checkpoint::new)
+				.map( cp -> cp.updateState(values, keyStrategyMap) )
+				.orElseThrow( () -> (new IllegalStateException("Missing Checkpoint!")) );
 
 		String nextNodeId = null;
-		if (asNode != null) {
-			nextNodeId = nextNodeId(asNode, branchCheckpoint.getState());
+		if( asNode != null ) {
+			var nextNodeCommand = nextNodeId( asNode, branchCheckpoint.getState(), config );
+
+			nextNodeId = nextNodeCommand.gotoNode();
+			branchCheckpoint =  branchCheckpoint.updateState( nextNodeCommand.update(), keyStrategyMap );
+
 		}
 		// update checkpoint in saver
-		RunnableConfig newConfig = saver.put(config, branchCheckpoint);
+		RunnableConfig newConfig = saver.put( config, branchCheckpoint );
 
-		return RunnableConfig.builder(newConfig).checkPointId(branchCheckpoint.getId()).nextNode(nextNodeId).build();
+		return RunnableConfig.builder(newConfig)
+				.checkPointId( branchCheckpoint.getId() )
+				.nextNode( nextNodeId )
+				.build();
 	}
 
 	/***
 	 * Update the state of the graph with the given values.
+	 *
 	 * @param config the RunnableConfig containg the graph state
 	 * @param values the values to be updated
 	 * @return the updated RunnableConfig
 	 * @throws Exception when something goes wrong
 	 */
-	public RunnableConfig updateState(RunnableConfig config, Map<String, Object> values) throws Exception {
+	public RunnableConfig updateState( RunnableConfig config, Map<String,Object> values ) throws Exception {
 		return updateState(config, values, null);
 	}
 
@@ -283,41 +290,49 @@ public class CompiledGraph {
 		this.maxIterations = maxIterations;
 	}
 
-	private String nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId) throws Exception {
+	private Command nextNodeId(EdgeValue route , Map<String,Object> state, String nodeId, RunnableConfig config ) throws Exception {
 
-		if (route == null) {
+		if( route == null ) {
 			throw StateGraph.RunnableErrors.missingEdge.exception(nodeId);
 		}
-		if (route.id() != null) {
-			return route.id();
+		if( route.id() != null ) {
+			return new Command(route.id(), state);
 		}
-		if (route.value() != null) {
-			com.alibaba.cloud.ai.graph.action.AsyncEdgeAction condition = route.value().action();
-			String newRoute = condition.apply(new OverAllState(state)).get();
+		if( route.value() != null ) {
+			OverAllState derefState = stateGraph.getStateFactory().apply(state);
+
+			var command = route.value().action().apply(derefState,config).get();
+
+			var newRoute = command.gotoNode();
+
 			String result = route.value().mappings().get(newRoute);
-			if (result == null) {
+			if( result == null ) {
 				throw StateGraph.RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
 			}
-			return result;
+
+			var currentState = OverAllState.updateState(state, command.update(), keyStrategyMap);
+
+			return new Command(result, currentState);
 		}
-		throw StateGraph.RunnableErrors.executionError
-			.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
+		throw StateGraph.RunnableErrors.executionError.exception( format("invalid edge value for nodeId: [%s] !", nodeId) );
 	}
 
 	/**
 	 * Determines the next node ID based on the current node ID and state.
+	 *
 	 * @param nodeId the current node ID
 	 * @param state the current state
-	 * @return the next node ID
+	 * @return the next node command
 	 * @throws Exception if there is an error determining the next node ID
 	 */
-	private String nextNodeId(String nodeId, Map<String, Object> state) throws Exception {
-		return nextNodeId(edges.get(nodeId), state, nodeId);
+	private Command nextNodeId(String nodeId, Map<String,Object> state, RunnableConfig config) throws Exception {
+		return nextNodeId(edges.get(nodeId), state, nodeId, config  );
+
 	}
 
-	private String getEntryPoint(Map<String, Object> state) throws Exception {
+	private Command getEntryPoint( Map<String,Object> state, RunnableConfig config ) throws Exception {
 		var entryPoint = this.edges.get(START);
-		return nextNodeId(entryPoint, state, "entryPoint");
+		return nextNodeId(entryPoint, state, "entryPoint", config);
 	}
 
 	private boolean shouldInterruptBefore(String nodeId, String previousNodeId) {
@@ -644,62 +659,54 @@ public class CompiledGraph {
 				.filter(e -> e.getValue() instanceof AsyncGenerator)
 				.findFirst()
 				.map(generatorEntry -> {
-					final AsyncGenerator<Output> generator = (AsyncGenerator<Output>) generatorEntry.getValue();
-					return Data.composeWith(generator.map(output -> {
-						output.setSubGraph(true);
-						return output;
-					}), data -> {
+					final var generator = (AsyncGenerator<Output>) generatorEntry.getValue();
+					return Data.composeWith( generator.map( n -> { n.setSubGraph(true); return n; } ), data -> {
+
 						if (data != null) {
-							if (data instanceof Map<?, ?>) {
-								updateState(partialState, generatorEntry, (Map<String, Object>) data);
-							}
-							else if (data instanceof NodeOutput nodeOutput) {
-								OverAllState state = nodeOutput.state();
-								updateState(partialState, generatorEntry, state.data());
+
+							if (data instanceof Map<?,?>) {
+								var partialStateWithoutGenerator = partialState.entrySet().stream()
+										.filter( e -> !Objects.equals(e.getKey(),generatorEntry.getKey()))
+										.collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue));
+
+								var intermediateState = OverAllState.updateState( currentState, partialStateWithoutGenerator, keyStrategyMap );
+
+								currentState = OverAllState.updateState( intermediateState, (Map<String,Object>)data, keyStrategyMap );
+								overAllState.updateState(intermediateState);
 							}
 							else {
-								throw new IllegalArgumentException(
-										"Embedded generator must return a Map or NodeOutput");
+								throw new IllegalArgumentException("Embedded generator must return a Map");
 							}
 						}
-						this.overAllState.updateState(partialState);
-						nextNodeId = nextNodeId(currentNodeId, this.overAllState);
+
+						var nextNodeCommand = nextNodeId(currentNodeId, overAllState, currentState, config);
+
+						nextNodeId = nextNodeCommand.gotoNode();
+						currentState = nextNodeCommand.update();
+
 						resumedFromEmbed = true;
 					});
-				});
+				})
+					;
 		}
 
-		private void updateState(Map<String, Object> partialState, Map.Entry<String, Object> generatorEntry,
-				Map<String, Object> data) {
-			// Assume that the whatever used appender channel doesn't
-			// accept duplicates
-			// FIX #102
-			// Assume that the whatever used appender channel doesn't accept duplicates
-			// FIX #104: remove generator
-			var partialStateWithoutGenerator = partialState.entrySet()
-				.stream()
-				.filter(e -> !Objects.equals(e.getKey(), generatorEntry.getKey()))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-			var intermediateState = OverAllState.updateState(currentState, partialStateWithoutGenerator,
-					this.overAllState.keyStrategies());
-			this.overAllState.updateState(intermediateState);
-			currentState = OverAllState.updateState(intermediateState, data, this.overAllState.keyStrategies());
-		}
 
 		private CompletableFuture<Data<Output>> evaluateAction(AsyncNodeActionWithConfig action,
 				OverAllState withState) {
 
-			return action.apply(withState, config).thenApply(partialState -> {
+			return action.apply(withState, config).thenApply(updateState -> {
 				try {
 
-					Optional<Data<Output>> embed = getEmbedGenerator(partialState);
+					Optional<Data<Output>> embed = getEmbedGenerator(updateState);
 					if (embed.isPresent()) {
 						return embed.get();
 					}
 
-					currentState = this.overAllState.updateState(partialState);
-					nextNodeId = nextNodeId(currentNodeId, this.overAllState);
+					currentState = OverAllState.updateState(currentState, updateState, keyStrategyMap);
+					overAllState.updateState(updateState);
+					var nextNodeCommand = nextNodeId(currentNodeId,overAllState, currentState, config) ;
+					nextNodeId = nextNodeCommand.gotoNode();
+					currentState = nextNodeCommand.update();
 
 					return Data.of(getNodeOutput());
 				}
@@ -710,26 +717,30 @@ public class CompiledGraph {
 			});
 		}
 
-		private String nextNodeId(String nodeId, OverAllState overAllState) throws Exception {
+		private Command nextNodeId(String nodeId, OverAllState overAllState,Map<String,Object> state,RunnableConfig config) throws Exception {
 			EdgeValue route = edges.get(nodeId);
 
-			if (route == null) {
+			if( route == null ) {
 				throw StateGraph.RunnableErrors.missingEdge.exception(nodeId);
 			}
-			if (route.id() != null) {
-				return route.id();
+			if( route.id() != null ) {
+				return new Command(route.id(), state);
 			}
-			if (route.value() != null) {
-				com.alibaba.cloud.ai.graph.action.AsyncEdgeAction condition = route.value().action();
-				String newRoute = condition.apply(overAllState).get();
+			if( route.value() != null ) {
+				var command = route.value().action().apply(overAllState,config).get();
+
+				var newRoute = command.gotoNode();
+
 				String result = route.value().mappings().get(newRoute);
-				if (result == null) {
+				if( result == null ) {
 					throw StateGraph.RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
 				}
-				return result;
+
+				var currentState = OverAllState.updateState(state, command.update(), keyStrategyMap);
+
+				return new Command(result, currentState);
 			}
-			throw StateGraph.RunnableErrors.executionError
-				.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
+			throw StateGraph.RunnableErrors.executionError.exception( format("invalid edge value for nodeId: [%s] !", nodeId) );
 		}
 
 		/**
@@ -739,13 +750,18 @@ public class CompiledGraph {
 
 			return action.apply(withState).thenApply(partialState -> {
 				try {
-					currentState = OverAllState.updateState(currentState, partialState,
-							this.overAllState.keyStrategies());
-					nextNodeId = nextNodeId(currentNodeId, this.overAllState);
+					currentState = OverAllState.updateState(currentState, partialState, keyStrategyMap);
 
-					Optional<Checkpoint> cp = addCheckpoint(config, currentNodeId, currentState, nextNodeId);
-					return (cp.isPresent() && config.streamMode() == StreamMode.SNAPSHOTS)
-							? buildStateSnapshot(cp.get()) : buildNodeOutput(currentNodeId);
+					var nextNodeCommand = nextNodeId(currentNodeId,overAllState, currentState, config) ;
+					nextNodeId = nextNodeCommand.gotoNode();
+					currentState = nextNodeCommand.update();
+
+
+					Optional<Checkpoint>  cp = addCheckpoint(config, currentNodeId, currentState, nextNodeId);
+					return ( cp.isPresent() && config.streamMode() == StreamMode.SNAPSHOTS) ?
+							buildStateSnapshot(cp.get()) :
+							buildNodeOutput( currentNodeId )
+							;
 
 				}
 				catch (Exception e) {
@@ -765,56 +781,59 @@ public class CompiledGraph {
 		public Data<Output> next() {
 			try {
 				// GUARD: CHECK MAX ITERATION REACHED
-				if (++iteration > maxIterations) {
-					// log.warn( "Maximum number of iterations ({}) reached!",
-					// maxIterations);
-					return Data.error(new IllegalStateException(
-							format("Maximum number of iterations (%d) reached!", maxIterations)));
+				if( ++iteration > maxIterations ) {
+					// log.warn( "Maximum number of iterations ({}) reached!", maxIterations);
+					return Data.error( new IllegalStateException( format("Maximum number of iterations (%d) reached!", maxIterations)) );
 				}
 
 				// GUARD: CHECK IF IT IS END
-				if (nextNodeId == null && currentNodeId == null) {
-					return releaseThread().map(Data::<Output>done).orElseGet(() -> Data.done(currentState));
+				if( nextNodeId == null &&  currentNodeId == null  ) {
+					return releaseThread()
+							.map(Data::<Output>done)
+							.orElseGet( () -> Data.done(currentState) );
 				}
 
 				// IS IT A RESUME FROM EMBED ?
-				if (resumedFromEmbed) {
+				if(resumedFromEmbed) {
 					final CompletableFuture<Output> future = getNodeOutput();
 					resumedFromEmbed = false;
-					return Data.of(future);
+					return Data.of( future );
 				}
 
-				if (START.equals(currentNodeId)) {
-					nextNodeId = getEntryPoint(currentState);
+				if( START.equals(currentNodeId) ) {
+					var nextNodeCommand = getEntryPoint(currentState, config) ;
+					nextNodeId = nextNodeCommand.gotoNode();
+					currentState = nextNodeCommand.update();
 
-					var cp = addCheckpoint(config, START, currentState, nextNodeId);
+					var cp = addCheckpoint( config, START, currentState, nextNodeId );
 
-					var output = (cp.isPresent() && config.streamMode() == StreamMode.SNAPSHOTS)
-							? buildStateSnapshot(cp.get()) : buildNodeOutput(currentNodeId);
+					var output =  ( cp.isPresent() && config.streamMode() == StreamMode.SNAPSHOTS) ?
+							buildStateSnapshot(cp.get()) :
+							buildNodeOutput( currentNodeId );
 
 					currentNodeId = nextNodeId;
 
-					return Data.of(output);
+					return Data.of( output );
 				}
 
-				if (END.equals(nextNodeId)) {
+				if( END.equals(nextNodeId) ) {
 					nextNodeId = null;
 					currentNodeId = null;
-					return Data.of(buildNodeOutput(END));
+					return Data.of( buildNodeOutput( END ) );
 				}
 
 				// check on previous node
-				if (shouldInterruptAfter(currentNodeId, nextNodeId)) {
+				if( shouldInterruptAfter( currentNodeId, nextNodeId )) {
 					return Data.done(currentNodeId);
 				}
 
-				if (shouldInterruptBefore(nextNodeId, currentNodeId)) {
+				if( shouldInterruptBefore( nextNodeId, currentNodeId ) ) {
 					return Data.done(currentNodeId);
 				}
 
 				currentNodeId = nextNodeId;
 
-				AsyncNodeActionWithConfig action = nodes.get(currentNodeId);
+				var action = nodes.get(currentNodeId);
 
 				if (action == null)
 					throw StateGraph.RunnableErrors.missingNode.exception(currentNodeId);
