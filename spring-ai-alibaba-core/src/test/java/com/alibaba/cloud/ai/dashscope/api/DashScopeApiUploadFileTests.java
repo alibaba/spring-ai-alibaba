@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,137 +47,116 @@ import static org.mockito.Mockito.*;
  */
 class DashScopeApiUploadFileTests {
 
-    private DashScopeApi dashScopeApi;
+	private DashScopeApi dashScopeApi;
 
-    private File mockFile;
+	private File mockFile;
 
-    private DashScopeApi.UploadLeaseResponse mockUploadLeaseResponse;
+	private DashScopeApi.UploadLeaseResponse mockUploadLeaseResponse;
 
-    private DashScopeApi.UploadLeaseResponse.UploadLeaseParamData mockParamData;
+	private DashScopeApi.UploadLeaseResponse.UploadLeaseParamData mockParamData;
 
+	private Call mockCall;
 
-    private OkHttpClient mockOkHttpClient;
+	private Response mockResponse;
 
-    private Call mockCall;
+	private static final String TEST_FILE_NAME = "test.xlsx";
 
-    private Response mockResponse;
+	private static final String TEST_URL = "https://test-url.com";
 
+	@TempDir
+	Path tempDir;
 
-    private static final String TEST_FILE_NAME = "test.xlsx";
-    private static final String TEST_URL = "https://test-url.com";
+	@BeforeEach
+	void setUp() throws IOException {
+		File excelFile = tempDir.resolve(TEST_FILE_NAME).toFile();
+		try (FileOutputStream fos = new FileOutputStream(excelFile)) {
+			fos.write("你好".getBytes(StandardCharsets.UTF_8));
+		}
+		mockFile = excelFile;
 
+		Map<String, String> headers = new HashMap<>();
+		headers.put("X-bailian-extra", "MTAwNTQyNjQ5NTE2OTE3OA==");
 
-    @TempDir
-    Path tempDir;
+		mockParamData = new DashScopeApi.UploadLeaseResponse.UploadLeaseParamData(TEST_URL, "PUT", headers);
 
-    @BeforeEach
-    void setUp() throws IOException {
-        // 创建一个临时Excel文件用于测试
-        File excelFile = tempDir.resolve(TEST_FILE_NAME).toFile();
-        try (FileOutputStream fos = new FileOutputStream(excelFile)) {
-            // 写入一些假数据，模拟Excel文件
-            fos.write(new byte[]{0x50, 0x4B, 0x03, 0x04}); // Excel文件的魔数
-        }
-        mockFile = excelFile;
+		DashScopeApi.UploadLeaseResponse.UploadLeaseResponseData responseData = new DashScopeApi.UploadLeaseResponse.UploadLeaseResponseData(
+				"test-lease-id", "test-type", mockParamData);
 
-        // 初始化UploadLeaseResponse相关对象
-        Map<String, String> headers = new HashMap<>();
-        headers.put("X-bailian-extra", "MTAwNTQyNjQ5NTE2OTE3OA==");
+		mockUploadLeaseResponse = new DashScopeApi.UploadLeaseResponse("SUCCESS", "success", responseData);
 
-        mockParamData = new DashScopeApi.UploadLeaseResponse.UploadLeaseParamData(
-                TEST_URL, "PUT", headers);
+		dashScopeApi = DashScopeApi.builder().apiKey("test-api-key").build();
 
-        DashScopeApi.UploadLeaseResponse.UploadLeaseResponseData responseData =
-                new DashScopeApi.UploadLeaseResponse.UploadLeaseResponseData(
-                        "test-lease-id", "test-type", mockParamData);
+		mockCall = mock(Call.class);
+		mockResponse = mock(Response.class);
+	}
 
-        mockUploadLeaseResponse = new DashScopeApi.UploadLeaseResponse(
-                "SUCCESS", "success", responseData);
+	/**
+	 * 测试uploadFile方法的正常执行流程 验证方法能够正确处理带有Content-Type的情况
+	 */
+	@Test
+	void testUploadFileWithContentType() throws Exception {
+		try (MockedConstruction<OkHttpClient> mockedConstruction = mockConstruction(OkHttpClient.class,
+				(mockOkHttpClient, context) -> {
+					when(mockOkHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
+				})) {
+			when(mockCall.execute()).thenReturn(mockResponse);
+			when(mockResponse.isSuccessful()).thenReturn(true);
 
-        dashScopeApi = DashScopeApi.builder().apiKey("test-api-key").build();
+			ArgumentCaptor<Request> requestCaptor = ArgumentCaptor.forClass(Request.class);
 
-        // 初始化Mock对象
-        mockOkHttpClient = mock(OkHttpClient.class);
-        mockCall = mock(Call.class);
-        mockResponse = mock(Response.class);
-    }
+			Method uploadFileMethod = DashScopeApi.class.getDeclaredMethod("uploadFile", File.class,
+					DashScopeApi.UploadLeaseResponse.class);
+			uploadFileMethod.setAccessible(true);
 
-    /**
-     * 测试uploadFile方法的正常执行流程 验证方法能够正确处理带有Content-Type的情况
-     */
-    @Test
-    void testUploadFileWithContentType() throws Exception {
-        try (MockedConstruction<OkHttpClient> mockedConstruction =
-                     mockConstruction(OkHttpClient.class, (mockOkHttpClient, context) -> {
-                         when(mockOkHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
-                     })) {
-            // 设置OkHttpClient的行为
-            when(mockCall.execute()).thenReturn(mockResponse);
-            when(mockResponse.isSuccessful()).thenReturn(true);
+			mockParamData.header().put("Content-Type", "application/pdf");
+			uploadFileMethod.invoke(dashScopeApi, mockFile, mockUploadLeaseResponse);
 
-            // 创建一个ArgumentCaptor来捕获Request对象
-            ArgumentCaptor<Request> requestCaptor = ArgumentCaptor.forClass(Request.class);
+			OkHttpClient constructedClient = mockedConstruction.constructed().get(0);
 
-            // 通过反射访问私有方法
-            Method uploadFileMethod = DashScopeApi.class.getDeclaredMethod("uploadFile", File.class, DashScopeApi.UploadLeaseResponse.class);
-            uploadFileMethod.setAccessible(true);
+			verify(constructedClient).newCall(requestCaptor.capture());
+			Request capturedRequest = requestCaptor.getValue();
 
-            mockParamData.header().put("Content-Type", "application/pdf");
-            // 执行方法
-            uploadFileMethod.invoke(dashScopeApi, mockFile, mockUploadLeaseResponse);
+			assertEquals("PUT", capturedRequest.method());
+			assertNotNull(Objects.requireNonNull(capturedRequest.body()).contentType());
+			assertEquals("MTAwNTQyNjQ5NTE2OTE3OA==", capturedRequest.header("X-bailian-extra"));
 
-            // 获取构造的 OkHttpClient 实例
-            OkHttpClient constructedClient = mockedConstruction.constructed().get(0);
+			verify(mockCall).execute();
+		}
+	}
 
-            verify(constructedClient).newCall(requestCaptor.capture());
-            Request capturedRequest = requestCaptor.getValue();
+	/**
+	 * 测试uploadFile方法的正常执行流程 验证方法能够正确处理没有Content-Type的情况
+	 */
+	@Test
+	void testUploadFileWithoutContentType() throws Exception {
+		mockParamData.header().put("Content-Type", "");
 
-            assertEquals("PUT", capturedRequest.method());
-            assertNotNull(Objects.requireNonNull(capturedRequest.body()).contentType());
-            assertEquals("MTAwNTQyNjQ5NTE2OTE3OA==", capturedRequest.header("X-bailian-extra"));
+		try (MockedConstruction<OkHttpClient> mockedConstruction = mockConstruction(OkHttpClient.class,
+				(mockOkHttpClient, context) -> {
+					when(mockOkHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
+				})) {
+			when(mockCall.execute()).thenReturn(mockResponse);
+			when(mockResponse.isSuccessful()).thenReturn(true);
 
-            verify(mockCall).execute();
-        }
-    }
+			ArgumentCaptor<Request> requestCaptor = ArgumentCaptor.forClass(Request.class);
 
-    /**
-     * 测试uploadFile方法的正常执行流程 验证方法能够正确处理没有Content-Type的情况
-     */
-    @Test
-    void testUploadFileWithoutContentType() throws Exception {
-        // 假设 mockParamData 是某个配置对象
-        mockParamData.header().put("Content-Type", "");
+			Method uploadFileMethod = DashScopeApi.class.getDeclaredMethod("uploadFile", File.class,
+					DashScopeApi.UploadLeaseResponse.class);
+			uploadFileMethod.setAccessible(true);
 
-        try (MockedConstruction<OkHttpClient> mockedConstruction =
-                     mockConstruction(OkHttpClient.class, (mockOkHttpClient, context) -> {
-                         when(mockOkHttpClient.newCall(any(Request.class))).thenReturn(mockCall);
-                     })) {
-            // 设置OkHttpClient的行为
-            when(mockCall.execute()).thenReturn(mockResponse);
-            when(mockResponse.isSuccessful()).thenReturn(true);
+			uploadFileMethod.invoke(dashScopeApi, mockFile, mockUploadLeaseResponse);
 
-            // 创建一个ArgumentCaptor来捕获Request对象
-            ArgumentCaptor<Request> requestCaptor = ArgumentCaptor.forClass(Request.class);
+			OkHttpClient constructedClient = mockedConstruction.constructed().get(0);
 
-            // 通过反射访问私有方法
-            Method uploadFileMethod = DashScopeApi.class.getDeclaredMethod("uploadFile", File.class, DashScopeApi.UploadLeaseResponse.class);
-            uploadFileMethod.setAccessible(true);
+			verify(constructedClient).newCall(requestCaptor.capture());
+			Request capturedRequest = requestCaptor.getValue();
 
-            // 执行方法
-            uploadFileMethod.invoke(dashScopeApi, mockFile, mockUploadLeaseResponse);
+			assertEquals("PUT", capturedRequest.method());
+			assertEquals("", capturedRequest.header("Content-Type"));
+			assertEquals("MTAwNTQyNjQ5NTE2OTE3OA==", capturedRequest.header("X-bailian-extra"));
 
-            // 获取构造的 OkHttpClient 实例
-            OkHttpClient constructedClient = mockedConstruction.constructed().get(0);
-
-            verify(constructedClient).newCall(requestCaptor.capture());
-            Request capturedRequest = requestCaptor.getValue();
-
-            assertEquals("PUT", capturedRequest.method());
-            assertEquals("", capturedRequest.header("Content-Type"));
-            assertEquals("MTAwNTQyNjQ5NTE2OTE3OA==", capturedRequest.header("X-bailian-extra"));
-
-            verify(mockCall).execute();
-        }
-    }
+			verify(mockCall).execute();
+		}
+	}
 
 }
