@@ -71,9 +71,10 @@ public class LoadbalancedMcpSyncClient {
 
 	private final ApplicationContext applicationContext;
 
-	public LoadbalancedMcpSyncClient(String serverName, NacosMcpOperationService nacosMcpOperationService,
+	public LoadbalancedMcpSyncClient(String serverName, String version, NacosMcpOperationService nacosMcpOperationService,
 			ApplicationContext applicationContext) {
 		Assert.notNull(serverName, "serviceName cannot be null");
+		Assert.notNull(version, "version cannot be null");
 		Assert.notNull(nacosMcpOperationService, "nacosMcpOperationService cannot be null");
 		Assert.notNull(applicationContext, "applicationContext cannot be null");
 
@@ -82,7 +83,7 @@ public class LoadbalancedMcpSyncClient {
 		this.applicationContext = applicationContext;
 
 		try {
-			this.serverEndpoint = this.nacosMcpOperationService.getServerEndpoint(this.serverName);
+			this.serverEndpoint = this.nacosMcpOperationService.getServerEndpoint(this.serverName, version);
 			if (this.serverEndpoint == null) {
 				throw new NacosException(NacosException.NOT_FOUND,
 						String.format("Can not find mcp server from nacos: %s", serverName));
@@ -377,12 +378,19 @@ public class LoadbalancedMcpSyncClient {
 
 		private String serverName;
 
+		private String version;
+
 		private NacosMcpOperationService nacosMcpOperationService;
 
 		private ApplicationContext applicationContext;
 
 		public Builder serverName(String serverName) {
 			this.serverName = serverName;
+			return this;
+		}
+
+		public Builder version(String version) {
+			this.version = version;
 			return this;
 		}
 
@@ -397,7 +405,7 @@ public class LoadbalancedMcpSyncClient {
 		}
 
 		public LoadbalancedMcpSyncClient build() {
-			return new LoadbalancedMcpSyncClient(this.serverName, this.nacosMcpOperationService,
+			return new LoadbalancedMcpSyncClient(this.serverName, this.version, this.nacosMcpOperationService,
 					this.applicationContext);
 		}
 
