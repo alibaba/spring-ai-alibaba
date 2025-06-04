@@ -34,7 +34,7 @@ import java.time.LocalDateTime;
  * @see AgentExecutionRecord
  * @see JsonSerializable
  */
-public class ThinkActRecord implements JsonSerializable {
+public class ThinkActRecord {
 
 	// 记录的唯一标识符
 	private Long id;
@@ -277,45 +277,6 @@ public class ThinkActRecord implements JsonSerializable {
 	public String toString() {
 		return "ThinkActRecord{" + "id='" + id + '\'' + ", parentExecutionId='" + parentExecutionId + '\''
 				+ ", actionNeeded=" + actionNeeded + ", status='" + status + '\'' + '}';
-	}
-
-	@Override
-	public String toJson() {
-		StringBuilder json = new StringBuilder();
-		json.append("{");
-
-		appendField(json, "id", id, true);
-		appendField(json, "parentExecutionId", parentExecutionId, true);
-
-		if (thinkStartTime != null) {
-			appendField(json, "thinkStartTime", thinkStartTime.toString(), true);
-		}
-		if (thinkEndTime != null) {
-			appendField(json, "thinkEndTime", thinkEndTime.toString(), true);
-		}
-		if (actStartTime != null) {
-			appendField(json, "actStartTime", actStartTime.toString(), true);
-		}
-		if (actEndTime != null) {
-			appendField(json, "actEndTime", actEndTime.toString(), true);
-		}
-		appendField(json, "thinkInput", thinkInput, true);
-		appendField(json, "thinkOutput", thinkOutput, true);
-		appendField(json, "actionNeeded", actionNeeded, false);
-		appendField(json, "actionDescription", actionDescription, true);
-		appendField(json, "actionResult", actionResult, true);
-		appendField(json, "status", status, true);
-		appendField(json, "errorMessage", errorMessage, true);
-		appendField(json, "toolName", toolName, true);
-		appendField(json, "toolParameters", toolParameters, true);
-
-		// Remove trailing comma if present
-		if (json.charAt(json.length() - 1) == ',') {
-			json.deleteCharAt(json.length() - 1);
-		}
-
-		json.append("}");
-		return json.toString();
 	}
 
 }

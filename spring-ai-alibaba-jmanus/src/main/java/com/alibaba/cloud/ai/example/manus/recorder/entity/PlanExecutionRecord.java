@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.example.manus.recorder.entity;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import com.alibaba.cloud.ai.example.manus.planning.model.vo.UserInputWaitState; // Added import
 
 /**
  * 规划执行记录类，用于跟踪和记录PlanningFlow执行过程的详细信息。
@@ -36,7 +37,7 @@ import java.util.List;
  *
  * 4. 执行结果 (Execution Result) - completed: 是否完成 - progress: 执行进度（百分比） - summary: 执行总结
  */
-public class PlanExecutionRecord implements JsonSerializable {
+public class PlanExecutionRecord {
 
 	// 记录的唯一标识符
 	private Long id;
@@ -71,8 +72,27 @@ public class PlanExecutionRecord implements JsonSerializable {
 	// List to maintain the sequence of agent executions
 	private List<AgentExecutionRecord> agentExecutionSequence;
 
+	// Field to store user input wait state
+	private UserInputWaitState userInputWaitState;
+
 	/**
-	 * 默认构造函数
+	 * Default constructor for Jackson and other frameworks.
+	 */
+	public PlanExecutionRecord() {
+		this.steps = new ArrayList<>();
+		// It's generally better to initialize time-sensitive fields like startTime
+		// when the actual event occurs, or in the specific constructor that signifies
+		// creation.
+		// However, if a default non-null startTime is always expected, this is one way.
+		// this.startTime = LocalDateTime.now(); // Consider if this is appropriate for a
+		// default constructor
+		this.completed = false;
+		this.agentExecutionSequence = new ArrayList<>();
+	}
+
+	/**
+	 * 构造函数，用于创建一个新的执行记录
+	 * @param planId The unique identifier for the plan.
 	 */
 	public PlanExecutionRecord(String planId) {
 		this.planId = planId;
@@ -185,6 +205,14 @@ public class PlanExecutionRecord implements JsonSerializable {
 		this.startTime = startTime;
 	}
 
+	public UserInputWaitState getUserInputWaitState() {
+		return userInputWaitState;
+	}
+
+	public void setUserInputWaitState(UserInputWaitState userInputWaitState) {
+		this.userInputWaitState = userInputWaitState;
+	}
+
 	public LocalDateTime getEndTime() {
 		return endTime;
 	}
@@ -235,67 +263,6 @@ public class PlanExecutionRecord implements JsonSerializable {
 				"PlanExecutionRecord{id=%d, planId='%s', title='%s', steps=%d, currentStep=%d/%d, completed=%b}", id,
 				planId, title, steps.size(), currentStepIndex != null ? currentStepIndex + 1 : 0, steps.size(),
 				completed);
-	}
-
-	/**
-	 * 将记录转换为JSON格式的字符串 包含所有关键字段，包括： - 基本信息（id, planId, title等） - 时间信息（startTime, endTime）
-	 * - 执行状态（currentStepIndex, completed等） - 步骤信息（steps） -
-	 * 智能体执行记录（agentExecutionSequence）
-	 * @return JSON格式的字符串
-	 */
-	@Override
-	public String toJson() {
-		StringBuilder json = new StringBuilder();
-		json.append("{");
-
-		// 基本信息
-		appendField(json, "id", id, true);
-		appendField(json, "planId", planId, true);
-		appendField(json, "title", title, true);
-		appendField(json, "userRequest", userRequest, true);
-
-		// 时间信息
-		if (startTime != null) {
-			appendField(json, "startTime", startTime.toString(), true);
-		}
-		if (endTime != null) {
-			appendField(json, "endTime", endTime.toString(), true);
-		}
-
-		// 执行状态
-		appendField(json, "currentStepIndex", currentStepIndex, false);
-		appendField(json, "completed", completed, false);
-		appendField(json, "summary", summary, true);
-
-		// 步骤信息
-		if (steps != null && !steps.isEmpty()) {
-			json.append("\"steps\":[");
-			for (int i = 0; i < steps.size(); i++) {
-				if (i > 0)
-					json.append(",");
-				json.append("\"").append(escapeJson(steps.get(i))).append("\"");
-			}
-			json.append("],");
-		}
-
-		// 智能体执行记录
-		if (agentExecutionSequence != null && !agentExecutionSequence.isEmpty()) {
-			json.append("\"agentExecutionSequence\":[");
-			for (int i = 0; i < agentExecutionSequence.size(); i++) {
-				if (i > 0)
-					json.append(",");
-				json.append(agentExecutionSequence.get(i).toJson());
-			}
-			json.append("],");
-		}
-
-		// 移除末尾多余的逗号
-		if (json.charAt(json.length() - 1) == ',') {
-			json.setLength(json.length() - 1);
-		}
-
-		json.append("}");
-		return json.toString();
 	}
 
 }
