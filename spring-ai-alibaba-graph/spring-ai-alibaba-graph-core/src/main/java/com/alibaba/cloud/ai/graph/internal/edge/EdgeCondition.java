@@ -33,9 +33,7 @@ public record EdgeCondition(AsyncCommandAction action, Map<String, String> mappi
 
 	@Override
 	public String toString() {
-		return format( "EdgeCondition[ %s, mapping=%s",
-				action!=null ? "action" : "null",
-				mappings);
+		return format("EdgeCondition[ %s, mapping=%s", action != null ? "action" : "null", mappings);
 	}
 
 }
