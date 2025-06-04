@@ -45,7 +45,7 @@ import java.util.List;
 @AutoConfiguration(after = { Nacos2McpAutoConfiguration.class, McpClientAutoConfiguration.class })
 @ConditionalOnClass({ McpSchema.class })
 @EnableConfigurationProperties({ McpClientCommonProperties.class, Nacos2McpSseClientProperties.class })
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.mcp.nacos.client", name = { "nacos-enabled" }, havingValue = "true",
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.mcp.nacos.client", name = { "enabled" }, havingValue = "true",
 		matchIfMissing = false)
 public class Nacos2McpClientAutoConfiguration {
 
