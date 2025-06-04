@@ -121,7 +121,7 @@ public class HttpNode implements NodeAction {
 			Map<String, Object> updatedState = new HashMap<>();
 			updatedState.put("messages", httpResponse);
 			if (StringUtils.hasLength(this.outputKey)) {
-				updatedState.put(this.outputKey, httpResponse);
+				updatedState.put(this.outputKey, String.valueOf(httpResponse.get("body")));
 			}
 			return updatedState;
 		}
@@ -472,6 +472,34 @@ public class HttpNode implements NodeAction {
 			this.type = type;
 		}
 
+        public AuthType getType() {
+            return type;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public String getToken() {
+            return token;
+        }
+
+        public String getTypeName() {
+            return this.type.name().toLowerCase();
+        }
+
+        public boolean isBasic() {
+            return this.type == AuthType.BASIC;
+        }
+
+        public boolean isBearer() {
+            return this.type == AuthType.BEARER;
+        }
+
 	}
 
 	public static class RetryConfig {
@@ -487,6 +515,18 @@ public class HttpNode implements NodeAction {
 			this.maxRetryInterval = maxRetryInterval > 0 ? maxRetryInterval : DEFAULT_MAX_RETRY_INTERVAL;
 			this.enable = enable;
 		}
+
+        public int getMaxRetries() {
+            return maxRetries;
+        }
+
+        public long getMaxRetryInterval() {
+            return maxRetryInterval;
+        }
+
+        public boolean isEnable() {
+            return enable;
+        }
 
 	}
 

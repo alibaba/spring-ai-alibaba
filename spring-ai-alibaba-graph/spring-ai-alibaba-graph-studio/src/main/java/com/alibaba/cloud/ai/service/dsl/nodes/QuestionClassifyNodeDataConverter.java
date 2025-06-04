@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,6 +39,7 @@ import java.util.stream.Stream;
  * @author HeYQ
  * @since 2024-12-12 23:54
  */
+@Component
 public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter<QuestionClassifierNodeData> {
 
 	@Override
