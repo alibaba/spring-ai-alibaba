@@ -23,6 +23,6 @@ import java.util.Map;
 @FunctionalInterface
 public interface NodeActionWithConfig {
 
-	Map<String, Object> apply(OverAllState t, RunnableConfig config) throws Exception;
+	Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception;
 
 }
