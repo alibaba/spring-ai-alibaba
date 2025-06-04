@@ -36,7 +36,7 @@ public class GetTextAction extends BrowserAction {
 			try {
 				String text = frame.innerText("body");
 				if (text != null && !text.isEmpty()) {
-					allText.append(text).append("\n");
+					allText.append(text).append("\\n");
 				}
 			}
 			catch (Exception e) {
