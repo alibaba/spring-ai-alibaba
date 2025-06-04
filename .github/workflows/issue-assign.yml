@@ -24,5 +24,5 @@ jobs:
       - uses: Naturalclar/issue-action@v2.0.2
         with:
           title-or-body: "both"
-          parameters: [{"keywords": ["bug", "error"], "labels": ["kind/bug"], "assignees": ["yuluo-yx", "PolarishT","robocanic","brianxiadong","disaster1-tesk","sincerity-being"]}, {"keywords": ["help", "guidance"], "labels": ["help-wanted"], "assignees": ["yuluo-yx", "PolarishT","robocanic","	brianxiadong","disaster1-tesk","sincerity-being"]}]
+          parameters: [{"keywords": ["bug", "error"], "labels": ["kind/bug"], "assignees": ["yuluo-yx", "PolarishT", "robocanic", "brianxiadong", "disaster1-tesk", "sincerity-being"]}, {"keywords": ["help", "guidance"], "labels": ["help-wanted"], "assignees": ["yuluo-yx", "PolarishT", "robocanic", "\tbrianxiadong", "disaster1-tesk", "sincerity-being"]}]
           github-token: "${{ secrets.GITHUB_TOKEN }}"
