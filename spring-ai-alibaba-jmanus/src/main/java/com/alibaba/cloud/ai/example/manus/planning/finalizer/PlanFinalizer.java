@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -30,6 +31,8 @@ import com.alibaba.cloud.ai.example.manus.llm.LlmService;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
+
+import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 /**
  * 负责生成计划执行总结的类
@@ -91,7 +94,7 @@ public class PlanFinalizer {
 
 			ChatResponse response = llmService.getPlanningChatClient()
 				.prompt(prompt)
-
+				.advisors(a -> a.param(CONVERSATION_ID, context.getConversationId()))
 				.call()
 				.chatResponse();
 
@@ -104,9 +107,6 @@ public class PlanFinalizer {
 		catch (Exception e) {
 			log.error("Error generating summary with LLM", e);
 			throw new RuntimeException("Failed to generate summary", e);
-		}
-		finally {
-			llmService.clearConversationMemory(plan.getPlanId());
 		}
 	}
 
