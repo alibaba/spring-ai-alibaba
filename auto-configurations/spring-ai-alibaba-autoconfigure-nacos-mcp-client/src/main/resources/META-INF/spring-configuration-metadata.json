@@ -1,48 +1,108 @@
 {
-  "groups": [],
+  "groups": [
+    {
+      "name": "spring.ai.mcp.client",
+      "type": "org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties",
+      "sourceType": "org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties",
+      "description": "Configuration properties for MCP client."
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos",
+      "type": "com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties",
+      "description": "Configuration properties for Nacos MCP integration."
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.client.sse",
+      "type": "com.alibaba.cloud.ai.autoconfigure.mcp.client.NacosMcpSseClientProperties",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.mcp.client.NacosMcpSseClientProperties",
+      "description": "Configuration properties for Nacos MCP SSE client."
+    }
+  ],
   "properties": [
+    {
+      "name": "spring.ai.mcp.client.nacos-enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable Nacos MCP client integration.",
+      "sourceType": "org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "spring.ai.mcp.client.type",
+      "type": "java.lang.String",
+      "description": "Type of MCP client, either SYNC (synchronous) or ASYNC (asynchronous).",
+      "sourceType": "org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties",
+      "defaultValue": "SYNC"
+    },
+    {
+      "name": "spring.ai.alibaba.mcp.nacos.client.sse.connections",
+      "type": "java.util.Map<java.lang.String,java.lang.String>",
+      "description": "Mapping of server keys to server names for Nacos MCP SSE connections.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.mcp.client.NacosMcpSseClientProperties"
+    },
     {
       "name": "spring.ai.alibaba.mcp.nacos.server-addr",
       "type": "java.lang.String",
-      "description": "Nacos server address.",
-      "defaultValue": ""
+      "description": "Nacos server address in the format of 'host:port'.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties",
+      "defaultValue": "localhost:8848"
     },
     {
       "name": "spring.ai.alibaba.mcp.nacos.namespace",
       "type": "java.lang.String",
-      "description": "Nacos server address.",
+      "description": "Nacos namespace ID. Empty string means using Nacos default namespace.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties",
       "defaultValue": ""
     },
     {
       "name": "spring.ai.alibaba.mcp.nacos.username",
       "type": "java.lang.String",
-      "description": "Nacos username to authenticate.",
+      "description": "Nacos username for authentication when Nacos auth is enabled.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties",
       "defaultValue": ""
     },
     {
       "name": "spring.ai.alibaba.mcp.nacos.password",
       "type": "java.lang.String",
-      "description": "Nacos password to authenticate.",
+      "description": "Nacos password for authentication when Nacos auth is enabled.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties",
       "defaultValue": ""
     },
     {
       "name": "spring.ai.alibaba.mcp.nacos.access-key",
       "type": "java.lang.String",
-      "description": "Nacos access key to authenticate.",
+      "description": "Nacos access key for ACM authentication.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties",
       "defaultValue": ""
     },
     {
       "name": "spring.ai.alibaba.mcp.nacos.secret-key",
       "type": "java.lang.String",
-      "description": "Nacos secret key to authenticate.",
+      "description": "Nacos secret key for ACM authentication.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties",
       "defaultValue": ""
     },
     {
       "name": "spring.ai.alibaba.mcp.nacos.endpoint",
       "type": "java.lang.String",
-      "description": "Nacos server endpoint.",
+      "description": "Endpoint for Nacos ACM service discovery. Only needed when using Alibaba Cloud ACM.",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties",
       "defaultValue": ""
     }
   ],
-  "hints": []
+  "hints": [
+    {
+      "name": "spring.ai.mcp.client.type",
+      "values": [
+        {
+          "value": "SYNC",
+          "description": "Use synchronous MCP client implementation."
+        },
+        {
+          "value": "ASYNC",
+          "description": "Use asynchronous MCP client implementation."
+        }
+      ]
+    }
+  ]
 }
