@@ -16,6 +16,10 @@
 
 package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +37,10 @@ public class JsonProcessorParseServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		jsonProcessorParseService = new JsonProcessorParseService();
+		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
+				.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+		JsonParseTool jsonParseTool = new JsonParseTool(objectMapper);
+		jsonProcessorParseService = new JsonProcessorParseService(jsonParseTool);
 		jsonContent = "{\"name\":\"John\",\"age\":\"30\",\"city\":\"Beijing\",\"isActive\":\"true\"}";
 		complexJsonContent = "{\"person\":{\"name\":\"John\",\"contact\":{\"email\":\"john@example.com\",\"phone\":\"12345678\"}},\"items\":[\"item1\",\"item2\"]}";
 	}

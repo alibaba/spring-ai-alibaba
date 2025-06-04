@@ -15,12 +15,10 @@
  */
 package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import org.springframework.util.Assert;
 
 import java.util.function.Function;
 
@@ -29,20 +27,18 @@ import java.util.function.Function;
  */
 public class JsonProcessorReplaceService implements Function<JsonProcessorReplaceService.JsonReplaceRequest, Object> {
 
+	private final JsonParseTool jsonParseTool;
+
+	public JsonProcessorReplaceService(JsonParseTool jsonParseTool) {
+		this.jsonParseTool = jsonParseTool;
+	}
+
 	@Override
 	public Object apply(JsonReplaceRequest request) {
 		String content = request.content;
 		String field = request.field;
 		JsonElement value = request.value;
-		JsonElement jsonElement = JsonParser.parseString(content);
-		if (!jsonElement.isJsonObject()) {
-			throw new IllegalArgumentException("Content is not a valid JSON object .");
-		}
-		JsonObject jsonObject = jsonElement.getAsJsonObject();
-		Assert.notNull(field, "replace json field can not be null");
-		Assert.notNull(value, "replace json fieldValue can not be null");
-		jsonObject.add(field, value);
-		return jsonObject;
+		return jsonParseTool.replaceField(content, field, value);
 	}
 
 	@JsonClassDescription("JsonProcessorReplaceService request")

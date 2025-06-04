@@ -16,6 +16,10 @@
 
 package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -34,7 +38,10 @@ public class JsonProcessorRemoveServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		jsonProcessorRemoveService = new JsonProcessorRemoveService();
+		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
+				.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+		JsonParseTool jsonParseTool = new JsonParseTool(objectMapper);
+		jsonProcessorRemoveService = new JsonProcessorRemoveService(jsonParseTool);
 		jsonContent = "{\"name\":\"John\",\"age\":30,\"city\":\"Beijing\",\"isActive\":true}";
 	}
 

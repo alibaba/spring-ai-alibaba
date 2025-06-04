@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -38,29 +39,29 @@ public class JsonProcessorAutoConfiguration {
 	@Bean
 	@Description("Use Gson to insert a jsonObject property field .")
 	@ConditionalOnMissingBean
-	public JsonProcessorInsertService jsonInsertPropertyFieldFunction() {
-		return new JsonProcessorInsertService();
+	public JsonProcessorInsertService jsonInsertPropertyFieldFunction(JsonParseTool jsonParseTool) {
+		return new JsonProcessorInsertService(jsonParseTool);
 	}
 
 	@Bean
 	@Description("Use Gson to parse String JsonObject .")
 	@ConditionalOnMissingBean
-	public JsonProcessorParseService jsonParsePropertyFunction() {
-		return new JsonProcessorParseService();
+	public JsonProcessorParseService jsonParsePropertyFunction(JsonParseTool jsonParseTool) {
+		return new JsonProcessorParseService(jsonParseTool);
 	}
 
 	@Bean
 	@Description("Use Gson to remove JsonObject property field .")
 	@ConditionalOnMissingBean
-	public JsonProcessorRemoveService jsonRemovePropertyFieldFunction() {
-		return new JsonProcessorRemoveService();
+	public JsonProcessorRemoveService jsonRemovePropertyFieldFunction(JsonParseTool jsonParseTool) {
+		return new JsonProcessorRemoveService(jsonParseTool);
 	}
 
 	@Bean
 	@Description("Use Gson to replace JsonObject Field Value .")
 	@ConditionalOnMissingBean
-	public JsonProcessorReplaceService jsonReplacePropertyFiledValueFunction() {
-		return new JsonProcessorReplaceService();
+	public JsonProcessorReplaceService jsonReplacePropertyFiledValueFunction(JsonParseTool jsonParseTool) {
+		return new JsonProcessorReplaceService(jsonParseTool);
 	}
 
 }
