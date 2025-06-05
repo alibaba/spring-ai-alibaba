@@ -127,37 +127,33 @@ class PlanTemplateListUIHandler {
                         prompt: parsedPlan.prompt || '', 
                         params: parsedPlan.params || '' 
                     };
-                    this.planTemplateManager.planPromptInput.value = this.planTemplateManager.currentPlanData.prompt;
-                    if (this.planTemplateManager.planParamsInput) {
-                        this.planTemplateManager.planParamsInput.value = this.planTemplateManager.currentPlanData.params;
+                    if (this.planTemplateManager.planPromptGenerator) {
+                        this.planTemplateManager.planPromptGenerator.setPrompt(this.planTemplateManager.currentPlanData.prompt);
+                        this.planTemplateManager.planPromptGenerator.setParams(this.planTemplateManager.currentPlanData.params);
                     }
                 } catch (parseError) { 
                     console.warn('解析计划JSON时出错:', parseError);
                     this.planTemplateManager.currentPlanData = { json: latestPlanJson }; 
-                    this.planTemplateManager.planPromptInput.value = '';
-                    if (this.planTemplateManager.planParamsInput) {
-                        this.planTemplateManager.planParamsInput.value = '';
+                    if (this.planTemplateManager.planPromptGenerator) {
+                        this.planTemplateManager.planPromptGenerator.clearAll();
                     }
                 }
             } else {
                 this.planTemplateManager.jsonEditor.value = '';
-                this.planTemplateManager.planPromptInput.value = '';
-                if (this.planTemplateManager.planParamsInput) {
-                    this.planTemplateManager.planParamsInput.value = '';
+                if (this.planTemplateManager.planPromptGenerator) {
+                    this.planTemplateManager.planPromptGenerator.clearAll();
                 }
                 this.planTemplateManager.currentPlanData = null;
             }
 
             this.updatePlanTemplateListUI(); // Update the list UI (e.g., to show selection)
-            this.planTemplateManager.updateApiUrl();
             this.planTemplateManager.updateUIState();
         } catch (error) {
             console.error('加载计划模板详情失败:', error);
             alert('加载计划模板详情失败: ' + error.message);
             this.planTemplateManager.jsonEditor.value = '';
-            this.planTemplateManager.planPromptInput.value = '';
-            if (this.planTemplateManager.planParamsInput) {
-                this.planTemplateManager.planParamsInput.value = '';
+            if (this.planTemplateManager.planPromptGenerator) {
+                this.planTemplateManager.planPromptGenerator.clearAll();
             }
             this.planTemplateManager.currentPlanData = null;
             this.planTemplateManager.updateUIState(); // Ensure UI state is consistent on error

@@ -1,6 +1,8 @@
 const PlanTemplateManager = (() => {
     let planTemplateManagerOldInstance = null; // Keep instance here
     let planTemplateListUIHandler = null; // Keep instance here
+    let planPromptGenerator = null; // Add instance here
+    let planTemplateHandler = null; // Add handler instance
 
     /**
      * Initializes PlanTemplateManager and sets up ChatHandler.
@@ -24,15 +26,27 @@ const PlanTemplateManager = (() => {
             const chatHandler = new ChatHandler(planExecutionManager); // Pass planExecutionManager instance
             console.log('PlanTemplateManager: ChatHandler initialized.');
 
-
             // 3. 初始化右侧边栏
             // Assuming RightSidebarController is the class name and is globally available
             const rightSidebar = new RightSidebarController();
             rightSidebar.init(); // init is synchronous
             console.log('右侧边栏初始化完成 (from PlanTemplateManager)');
 
+            // 初始化主模板管理器
             planTemplateManagerOldInstance = new PlanTemplateManagerOld();
             await planTemplateManagerOldInstance.init(); // planTemplateManagerOldInstance.init is now async
+
+            // 初始化计划提示生成器
+            planPromptGenerator = new PlanPromptGenerator();
+            planPromptGenerator.init(planTemplateManagerOldInstance);
+            planTemplateManagerOldInstance.setPlanPromptGenerator(planPromptGenerator);
+            console.log('PlanPromptGenerator 初始化完成');
+
+            // 初始化处理器
+            planTemplateHandler = new PlanTemplateHandler();
+            planTemplateHandler.init(planTemplateManagerOldInstance, planPromptGenerator);
+            planTemplateManagerOldInstance.setPlanTemplateHandler(planTemplateHandler);
+            console.log('PlanTemplateHandler 初始化完成');
 
             const runPlanButtonHandler = new RunPlanButtonHandler();
             // Assuming runPlanButtonHandler.init is not async, if it is, add await
@@ -55,7 +69,9 @@ const PlanTemplateManager = (() => {
     return {
         init,
         getPlanTemplateManagerOldInstance: () => planTemplateManagerOldInstance,
-        getPlanTemplateListUIHandler: () => planTemplateListUIHandler
+        getPlanTemplateListUIHandler: () => planTemplateListUIHandler,
+        getPlanPromptGenerator: () => planPromptGenerator,
+        getPlanTemplateHandler: () => planTemplateHandler
     };
 })();
 

@@ -9,23 +9,11 @@ class PlanTemplateManagerOld {
         this.currentPlanTemplateId = null; // 存储计划模板ID
         this.currentPlanId = null; // 存储计划执行ID
         this.currentPlanData = null;
-        this.isGenerating = false;
         this.isExecuting = false;
         this.planTemplateList = []; // 存储计划模板列表
 
-        // 版本控制相关变量
-        this.planVersions = []; // 存储所有版本的计划JSON
-        this.currentVersionIndex = -1; // 当前版本索引
-
-        // DOM 元素引用
-        this.planPromptInput = null;
-        this.planParamsInput = null;
-        this.generatePlanBtn = null;
-        this.jsonEditor = null;
-        this.modifyPlanBtn = null;
+        // DOM 元素引用 (只保留清空按钮)
         this.clearBtn = null;
-        this.clearParamBtn = null;
-        this.apiUrlElement = null;
 
         // 侧边栏折叠/展开相关变量
         this.toggleLeftSidebarBtn = null;
@@ -33,13 +21,15 @@ class PlanTemplateManagerOld {
         this.leftSidebar = null;
         this.rightSidebar = null;
 
-        // UI Handler for the plan template list - REMOVED
-        // this.planTemplateListUIHandler = null; 
+        // 计划提示生成器实例
+        this.planPromptGenerator = null;
+        // JSON处理器实例
+        this.planTemplateHandler = null;
     }
 
     // Getter methods
-    getIsGenerating() {
-        return this.isGenerating;
+    getIsExecuting() {
+        return this.isExecuting;
     }
 
     getMainIsExecuting() { // Assuming this maps to isExecuting
@@ -47,42 +37,62 @@ class PlanTemplateManagerOld {
     }
 
     getCurrentPlanTemplateId() {
-        return this.currentPlanTemplateId;
+        return this.planPromptGenerator ? this.planPromptGenerator.getCurrentPlanTemplateId() : this.currentPlanTemplateId;
     }
 
     getPlanParams() {
-        if (this.planParamsInput) {
-            return this.planParamsInput.value.trim();
-        }
-        return null;
+        return this.planPromptGenerator ? this.planPromptGenerator.getPlanParams() : null;
+    }
+
+    getJsonEditor() {
+        return this.planTemplateHandler ? this.planTemplateHandler.getJsonEditor() : null;
     }
 
     setMainIsExecuting(value) { // Setter for isExecuting, used by RunPlanButtonHandler
         this.isExecuting = value;
         this.updateUIState(); // Update UI when execution state changes
+        if (this.planPromptGenerator) {
+            this.planPromptGenerator.updateUIState();
+        }
+        if (this.planTemplateHandler) {
+            this.planTemplateHandler.updateUIState();
+        }
+    }
+
+    setCurrentPlanTemplateId(id) {
+        this.currentPlanTemplateId = id;
+        if (this.planPromptGenerator) {
+            this.planPromptGenerator.setCurrentPlanTemplateId(id);
+        }
+    }
+
+    setCurrentPlanData(data) {
+        this.currentPlanData = data;
+        if (this.planPromptGenerator) {
+            this.planPromptGenerator.setCurrentPlanData(data);
+        }
+    }
+
+    setPlanPromptGenerator(generator) {
+        this.planPromptGenerator = generator;
+    }
+
+    setPlanTemplateHandler(handler) {
+        this.planTemplateHandler = handler;
     }
 
     /**
      * 初始化函数，设置事件监听器
      */
     async init() { // Made async
-        // 获取DOM元素
-        this.planPromptInput = document.getElementById('plan-prompt');
-        this.planParamsInput = document.getElementById('plan-params');
-        this.generatePlanBtn = document.getElementById('generatePlanBtn');
-        this.jsonEditor = document.getElementById('plan-json-editor');
-        this.modifyPlanBtn = document.getElementById('modifyPlanBtn');
+        // 获取DOM元素 (只保留清空按钮)
         this.clearBtn = document.getElementById('clearBtn');
-        this.clearParamBtn = document.getElementById('clearParamBtn');
-        this.apiUrlElement = document.querySelector('.api-url');
 
         // 获取侧边栏切换按钮和侧边栏元素
         this.toggleLeftSidebarBtn = document.getElementById('toggleLeftSidebarBtn');
         this.toggleRightSidebarBtn = document.getElementById('toggleRightSidebarBtn');
         this.leftSidebar = document.getElementById('leftSidebar');
         this.rightSidebar = document.getElementById('rightSidebar');
-
-       
 
         // 绑定侧边栏切换按钮事件
         if (this.toggleLeftSidebarBtn && this.leftSidebar) {
@@ -92,27 +102,9 @@ class PlanTemplateManagerOld {
         if (this.toggleRightSidebarBtn && this.rightSidebar) {
             this.toggleRightSidebarBtn.addEventListener('click', this.handleToggleRightSidebar.bind(this));
         }
-        // 绑定按钮事件
-        this.generatePlanBtn.addEventListener('click', this.handleGeneratePlan.bind(this));
-        this.modifyPlanBtn.addEventListener('click', this.handleModifyPlan.bind(this));
+        
+        // 绑定按钮事件 (只保留清空按钮)
         this.clearBtn.addEventListener('click', this.handleClearInput.bind(this));
-
-        if (this.clearParamBtn) {
-            this.clearParamBtn.addEventListener('click', () => {
-                if (this.planParamsInput) {
-                    this.planParamsInput.value = '';
-                    this.updateApiUrl();
-                }
-            });
-        }
-
-        if (this.planParamsInput) {
-            this.planParamsInput.addEventListener('input', this.updateApiUrl.bind(this));
-        }
-
-        document.getElementById('rollbackJsonBtn').addEventListener('click', this.handleRollbackJson.bind(this));
-        document.getElementById('restoreJsonBtn').addEventListener('click', this.handleRestoreJson.bind(this));
-        document.getElementById('compareJsonBtn').addEventListener('click', this.handleCompareJson.bind(this));
 
         if (typeof PlanTemplatePollingManager !== 'undefined') { 
             PlanTemplatePollingManager.init({
@@ -131,80 +123,15 @@ class PlanTemplateManagerOld {
         this.updateUIState();
         await this.loadPlanTemplateList(); // Await loading list
         console.log('PlanTemplateManagerOld 初始化完成');
-    }
-
-    /**
+    }    /**
      * 加载计划模板列表并更新左侧边栏
      */
     async loadPlanTemplateList() {
         try {
             const response = await ManusAPI.getAllPlanTemplates();
             this.planTemplateList = response.templates || [];
-            // REMOVED: Call to this.planTemplateListUIHandler.updatePlanTemplateListUI();
-            // if (this.planTemplateListUIHandler) {
-            //     this.planTemplateListUIHandler.updatePlanTemplateListUI();
-            // }
         } catch (error) {
             console.error('加载计划模板列表失败:', error);
-        }
-    }
-
-    /**
-     * 生成计划
-     */
-    async handleGeneratePlan() {
-        const query = this.planPromptInput.value.trim();
-        if (!query) {
-            alert('请输入计划需求描述');
-            return;
-        }
-        if (this.isGenerating) return;
-
-        this.isGenerating = true;
-        this.updateUIState();
-
-        try {
-            let existingJson = null;
-            if (this.jsonEditor.value.trim()) {
-                try {
-                    existingJson = JSON.parse(this.jsonEditor.value.trim());
-                } catch (e) {
-                    alert('当前JSON格式无效，无法作为生成基础。将忽略当前JSON。');
-                    existingJson = null;
-                }
-            }
-
-            let response;
-            if (this.currentPlanTemplateId) { //  && (this.currentPlanData || existingJson) // 简化判断，只要有ID就尝试更新
-                console.log('正在更新现有计划模板:', this.currentPlanTemplateId);
-                response = await ManusAPI.updatePlanTemplate(this.currentPlanTemplateId, query, this.jsonEditor.value.trim() || null); // 传递原始JSON字符串
-            } else {
-                console.log('正在创建新计划模板');
-                response = await ManusAPI.generatePlan(query, this.jsonEditor.value.trim() || null); // 传递原始JSON字符串
-            }
-            
-            this.currentPlanData = response.plan; // API返回的应该是完整的plan template对象
-
-            if (this.currentPlanData && this.currentPlanData.json) {
-                this.jsonEditor.value = this.currentPlanData.json; // 显示JSON
-                this.saveToVersionHistory(this.currentPlanData.json);
-                this.currentPlanTemplateId = this.currentPlanData.id; // 更新ID
-                this.planPromptInput.value = this.currentPlanData.prompt || query; // 更新Prompt
-            } else {
-                alert('计划生成或更新未能返回有效的JSON数据。');
-            }
-            
-            await this.loadPlanTemplateList(); // 重新加载列表以反映更新或新建
-            this.updatePlanTemplateListUI(); // 确保选中项正确
-            this.updateApiUrl();
-
-
-        } catch (error) {
-            console.error('生成计划失败:', error);
-            alert('生成计划失败: ' + error.message);
-        } finally {
-            this.isGenerating = false;
-            this.updateUIState();
         }
     }
 
@@ -215,104 +142,33 @@ class PlanTemplateManagerOld {
     handlePlanData(planData) {
         this.currentPlanData = planData; // 保存的是执行详情，不是模板
         // this.jsonEditor.value = JSON.stringify(planData, null, 2); // 执行详情不应该直接填充模板编辑器
-        this.updateApiUrl(); // API URL可能基于执行ID
+        if (this.planPromptGenerator) {
+            this.planPromptGenerator.updateApiUrl(); // 通过计划提示生成器更新API URL
+        }
         this.updateUIState(); // 更新按钮状态等
         // PlanUIEvents.EventSystem.emit(PlanUIEvents.UI_EVENTS.PLAN_UPDATE, planData); // 如果有全局事件系统
     }
 
     /**
-     * 更新API URL，添加用户提供的参数
-     */
-    updateApiUrl() {
-        if (!this.apiUrlElement) return;
-
-        let url = `${ManusAPI.BASE_URL}/execute/${this.currentPlanTemplateId || '{planTemplateId}'}`;
-        if (this.planParamsInput && this.planParamsInput.value.trim()) {
-            try {
-                const params = JSON.parse(this.planParamsInput.value.trim());
-                const queryString = new URLSearchParams(params).toString();
-                if (queryString) {
-                    url += `?${queryString}`;
-                }
-            } catch (e) {
-                // 如果参数不是有效的JSON，则不附加到URL，或者可以显示错误
-                console.warn("URL参数不是有效的JSON字符串，已忽略。");
-            }
-        }
-        this.apiUrlElement.textContent = url;
-    }
-
-
-    /**
-     * 修改计划（保存当前编辑器中的JSON到服务器）
-     */
-    async handleModifyPlan() {
-        if (!this.currentPlanTemplateId) {
-            alert('没有选中的计划模板，无法修改。请先选择或生成一个计划。');
-            return;
-        }
-
-        const jsonContent = this.jsonEditor.value.trim();
-        if (!jsonContent) {
-            alert('JSON内容不能为空。');
-            return;
-        }
-
-        try {
-            // 尝试解析JSON以验证格式
-            JSON.parse(jsonContent);
-        } catch (e) {
-            alert('JSON格式无效，请修正后再保存。\\n错误: ' + e.message);
-            return;
-        }
-        
-        this.isGenerating = true; // 复用isGenerating状态和UI反馈
-        this.updateUIState();
-
-        try {
-            // 调用保存接口，注意区分是保存模板还是执行后的计划（这里是模板）
-            // ManusAPI.updatePlanTemplate(this.currentPlanTemplateId, this.planPromptInput.value, jsonContent);
-            // 改为调用新的专用保存接口
-            await ManusAPI.savePlanTemplate(this.currentPlanTemplateId, jsonContent);
-
-            this.saveToVersionHistory(jsonContent); // 保存到本地版本历史
-            alert('计划修改已保存成功！');
-            // 可选择重新加载数据
-            // const updatedTemplate = await ManusAPI.getPlanTemplateDetails(this.currentPlanTemplateId);
-            // this.currentPlanData = updatedTemplate;
-            // this.planPromptInput.value = updatedTemplate.prompt || '';
-            // this.planParamsInput.value = updatedTemplate.params || '';
-        } catch (error) {
-            console.error('保存计划修改失败:', error);
-            alert('保存计划修改失败: ' + error.message);
-        } finally {
-            this.isGenerating = false;
-            this.updateUIState();
-        }
-    }
-
-
-    /**
      * 清空输入和状态
      */
     handleClearInput() {
-        this.planPromptInput.value = '';
-        this.jsonEditor.value = '';
-        if (this.planParamsInput) {
-            this.planParamsInput.value = '';
+        // 清空JSON处理器的数据
+        if (this.planTemplateHandler) {
+            this.planTemplateHandler.clearJsonData();
         }
+        
+        // 清空计划提示生成器的数据
+        if (this.planPromptGenerator) {
+            this.planPromptGenerator.clearPromptData();
+        }
+        
+        // 清空自身的状态
         this.currentPlanTemplateId = null;
         this.currentPlanId = null;
         this.currentPlanData = null;
-        this.isGenerating = false;
         this.isExecuting = false;
-        this.planVersions = [];
-        this.currentVersionIndex = -1;
-        // REMOVED: Call to this.planTemplateListUIHandler.updatePlanTemplateListUI();
-        // if (this.planTemplateListUIHandler) {
-        //     this.planTemplateListUIHandler.updatePlanTemplateListUI();
-        // }
-        this.updateApiUrl();
+        
         this.updateUIState();
         console.log('输入已清空');
     }
@@ -321,84 +177,10 @@ class PlanTemplateManagerOld {
      * 更新UI状态（按钮禁用/启用等）
      */
     updateUIState() {
-        this.generatePlanBtn.disabled = this.isGenerating || this.isExecuting;
-        this.modifyPlanBtn.disabled = this.isGenerating || this.isExecuting || !this.currentPlanTemplateId;
-        // runPlanBtn is managed by RunPlanButtonHandler, but its state depends on these:
-        // isExecuting, isGenerating, currentPlanTemplateId
-
-        if (this.isGenerating) {
-            this.generatePlanBtn.textContent = '生成中...';
-        } else {
-            this.generatePlanBtn.textContent = this.currentPlanTemplateId ? '更新计划' : '生成计划';
-        }
-        
         // Update RunPlanButton via its own exposed method if available and needed
         if (typeof RunPlanButtonHandler !== 'undefined' && RunPlanButtonHandler.updateButtonState) {
             RunPlanButtonHandler.updateButtonState();
         }
-
-        // 版本控制按钮状态
-        const rollbackBtn = document.getElementById('rollbackJsonBtn');
-        const restoreBtn = document.getElementById('restoreJsonBtn');
-        if (rollbackBtn) rollbackBtn.disabled = this.planVersions.length <= 1 || this.currentVersionIndex <= 0;
-        if (restoreBtn) restoreBtn.disabled = this.planVersions.length <= 1 || this.currentVersionIndex >= this.planVersions.length - 1;
-
-        // API URL (already handled by updateApiUrl)
-        // this.updateApiUrl();
-    }
-
-    /**
-     * 保存当前JSON到版本历史
-     * @param {string} jsonText - JSON文本内容
-     */
-    saveToVersionHistory(jsonText) {
-        if (this.currentVersionIndex < this.planVersions.length - 1) {
-            this.planVersions = this.planVersions.slice(0, this.currentVersionIndex + 1);
-        }
-        this.planVersions.push(jsonText);
-        this.currentVersionIndex = this.planVersions.length - 1;
-        this.updateUIState(); // 更新版本控制按钮状态
-    }
-
-    /**
-     * 处理回滚JSON按钮点击
-     */
-    handleRollbackJson() {
-        if (this.currentVersionIndex > 0) {
-            this.currentVersionIndex--;
-            this.jsonEditor.value = this.planVersions[this.currentVersionIndex];
-            this.updateUIState();
-        }
-    }
-
-    /**
-     * 处理恢复JSON按钮点击
-     */
-    handleRestoreJson() {
-        if (this.currentVersionIndex < this.planVersions.length - 1) {
-            this.currentVersionIndex++;
-            this.jsonEditor.value = this.planVersions[this.currentVersionIndex];
-            this.updateUIState();
-        }
-    }
-
-    /**
-     * 处理对比JSON按钮点击
-     */
-    handleCompareJson() {
-        if (this.planVersions.length < 2) {
-            alert('至少需要两个版本才能进行比较。');
-            return;
-        }
-        // 简单实现：比较当前版本和上一个版本
-        const currentJson = this.planVersions[this.currentVersionIndex];
-        const previousJson = this.planVersions[this.currentVersionIndex -1 < 0 ? 0 : this.currentVersionIndex -1]; //防止-1
-
-        // 此处可以使用更复杂的差异比较库，例如 diff2html 或 jsdiff
-        // 为了简单起见，这里只在控制台打印
-        console.log("当前版本:", currentJson);
-        console.log("上一个版本:", previousJson);
-        alert('版本比较结果已打印到控制台。请使用更专业的工具查看详细差异。');
     }
 
 
