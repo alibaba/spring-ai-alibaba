@@ -80,11 +80,11 @@ Core features:
 + PlantUML and Mermaid format export
 
 ## Enterprise-ready AI Ecosystem Integration
-To bring agent from demo to production, developers and organizations face lots of challenges, from evaluation, tracing, MCP integration, prompt management, to token rate-limit, etc. Spring AI Alibaba, as a enterprise solution generated from serving enterprise agent product development, provides profound solutions by integrating with Nacos MCP Registry, Higress AI gateway, Alibaba Cloud ARMS, Alibaba Cloud Vector Store, Alibaba Cloud Bailian, etc.
+To bring agent from demo to production, developers and organizations face lots of challenges, from evaluation, tracing, MCP integration, prompt management, to token rate-limit, etc. Spring AI Alibaba, as am enterprise solution incubated from serving enterprise agent development, provides profound solutions by integrating with Nacos MCP Registry, Higress AI gateway, Alibaba Cloud ARMS, Alibaba Cloud Vector Stores, Alibaba Cloud Bailian platform, etc.
 
 ![ai-native-ecosystem](./docs/imgs/spring-ai-alibaba-ecosystem.png)
 
-1. **Distributed MCP discovery and proxy.** Support distributed MCP Server discovery and load balancing based on Nacos MCP Registry, HTTP or Dubbo service to MCP with zero-code change through Spring AI Alibaba MCP Gateway and Higress.
+1. **Distributed MCP discovery and proxy.** Support distributed MCP Server discovery and load balancing based on Nacos MCP Registry. Zero code change to transform HTTP and Dubbo services into MCP servers with  Spring AI Alibaba MCP Gateway and Higress.
 2. **Higress LLM model proxy.** Higress as a LLM proxy, `spring-ai-starter-model-openai` adapter can leverage the unified Higress OpenAI model proxy API.
 3. **Better and easy data integration.**
 	a. Bailian RAG integration. Leverage Bailian platform's excellent performance on data filtering, chunking, and vectoring, while using Spring AI Alibaba to do RAG retrieval.
