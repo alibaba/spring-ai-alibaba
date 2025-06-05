@@ -35,13 +35,6 @@ const TaskPilotUIEvent = (() => {
         JSON_CONTENT_CLEAR: 'ui:json:content_clear', // 清空JSON内容
         VERSION_HISTORY_SET: 'ui:version_history:set', // 设置版本历史
         
-        // 计划生成相关事件
-        PLAN_GENERATE_REQUESTED: 'ui:plan:generate_requested', // 请求生成计划
-        PLAN_GENERATED: 'ui:plan:generated', // 计划生成完成
-        
-        // 按钮状态更新事件
-        BUTTON_STATE_UPDATE_REQUESTED: 'ui:button:state_update_requested', // 请求更新按钮状态
-        
     };
 
     // 事件发布订阅系统

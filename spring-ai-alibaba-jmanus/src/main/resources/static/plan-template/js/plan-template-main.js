@@ -51,9 +51,9 @@ class PlanTemplateManager {
             this.planTemplateHandler.init();
             console.log('PlanTemplateHandler 初始化完成');
 
-            const runPlanButtonHandler = new RunPlanButtonHandler();
-            runPlanButtonHandler.init();
-            console.log('RunPlanButtonHandler 初始化完成');
+            const planTemplateExecutionController = new PlanTemplateExecutionController();
+            planTemplateExecutionController.init();
+            console.log('PlanTemplateExecutionController 初始化完成');
 
             this.planTemplateListUIHandler = new PlanTemplateListUIHandler();
             this.planTemplateListUIHandler.init();

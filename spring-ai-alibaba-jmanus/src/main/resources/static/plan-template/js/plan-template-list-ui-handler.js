@@ -42,10 +42,12 @@ class PlanTemplateListUIHandler {
             this.updatePlanTemplateListUI();
         });
 
-        // 监听计划生成完成事件，自动刷新列表
-        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.PLAN_GENERATED, async () => {
-            console.log('[PlanTemplateListUIHandler] 检测到计划生成完成，刷新列表...');
-            await this.loadPlanTemplateList();
+        // 监听生成状态变化事件，当生成成功时自动刷新列表
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.GENERATION_STATE_CHANGED, async (data) => {
+            if (!data.isGenerating && data.success) {
+                console.log('[PlanTemplateListUIHandler] 检测到计划生成完成，刷新列表...');
+                await this.loadPlanTemplateList();
+            }
         });
 
        

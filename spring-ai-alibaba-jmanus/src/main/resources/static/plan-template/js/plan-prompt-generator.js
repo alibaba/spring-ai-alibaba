@@ -4,6 +4,7 @@
  */
 class PlanPromptGenerator {
     constructor() {
+
         // 当前计划状态
         this.currentPlanTemplateId = null;
         this.currentPlanData = null;
@@ -12,7 +13,6 @@ class PlanPromptGenerator {
         // DOM 元素引用 - 只包含计划提示生成相关的元素
         this.planPromptInput = null;
         this.generatePlanBtn = null;
-        this.planParamsInput = null;
         this.clearParamBtn = null;
         this.clearBtn = null; // 清空所有数据按钮
         this.apiUrlElement = null;
@@ -28,7 +28,6 @@ class PlanPromptGenerator {
         // 获取DOM元素
         this.planPromptInput = document.getElementById('plan-prompt');
         this.generatePlanBtn = document.getElementById('generatePlanBtn');
-        this.planParamsInput = document.getElementById('plan-params');
         this.clearParamBtn = document.getElementById('clearParamBtn');
         this.clearBtn = document.getElementById('clearBtn');
         this.apiUrlElement = document.querySelector('.api-url');
@@ -39,7 +38,6 @@ class PlanPromptGenerator {
 
         // 初始化UI状态
         this.updateUIState();
-        this.updateApiUrl();
 
         console.log('PlanPromptGenerator 初始化完成');
     }
@@ -56,13 +54,12 @@ class PlanPromptGenerator {
 
         // 监听当前计划模板变化
         TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.CURRENT_PLAN_TEMPLATE_CHANGED, (data) => {
-            this.currentPlanTemplateId = data.templateId || data.planTemplateId; // 兼容处理
+            this.currentPlanTemplateId = data.templateId ; // 兼容处理
             this.currentPlanData = data.planData;
             if (data.planData && this.planPromptInput) {
                 this.planPromptInput.value = data.planData.prompt || '';
             }
             this.updateUIState();
-            this.updateApiUrl();
         });
 
        
@@ -80,27 +77,13 @@ class PlanPromptGenerator {
         // 清除参数按钮事件
         if (this.clearParamBtn) {
             this.clearParamBtn.addEventListener('click', () => {
-                if (this.planParamsInput) {
-                    this.planParamsInput.value = '';
-                    this.updateApiUrl();
-                }
+                console.log('清除参数按钮点击事件已移除');
             });
         }
 
         // 清空所有数据按钮事件
         if (this.clearBtn) {
             this.clearBtn.addEventListener('click', this.handleClearInput.bind(this));
-        }
-
-        // 参数输入变化事件
-        if (this.planParamsInput) {
-            this.planParamsInput.addEventListener('input', () => {
-                this.updateApiUrl();
-                // 发布参数变化事件
-                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_PARAMS_CHANGED, {
-                    params: this.planParamsInput.value.trim()
-                });
-            });
         }
     }
 
@@ -114,6 +97,10 @@ class PlanPromptGenerator {
             return;
         }
         if (this.isGenerating) return;
+
+        // 读取 jsonContent 从 plan-json-editor 字段，如果不为空则添加到参数中
+        const planJsonEditor = document.getElementById('plan-json-editor');
+        const jsonContent = planJsonEditor && planJsonEditor.value.trim() ? planJsonEditor.value.trim() : null;
 
         this.isGenerating = true;
         this.updateUIState();
@@ -174,12 +161,6 @@ class PlanPromptGenerator {
                     templateId: this.currentPlanTemplateId,
                     planData: this.currentPlanData
                 });
-
-                // 发布计划生成完成事件
-                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_GENERATED, {
-                    templateId: this.currentPlanTemplateId,
-                    planData: this.currentPlanData
-                });
                 
                 // 检查是否是重复内容并显示相应提示
                 if (response.duplicate) {
@@ -195,8 +176,6 @@ class PlanPromptGenerator {
                 console.warn('API响应数据结构异常:', response);
                 alert('计划生成或更新未能返回有效的JSON数据。');
             }
-            
-            this.updateApiUrl();
 
         } catch (error) {
             console.error('生成计划失败:', error);
@@ -205,34 +184,16 @@ class PlanPromptGenerator {
             this.isGenerating = false;
             this.updateUIState();
             
-            // 发布生成状态变化事件
+            // 发布生成状态变化事件，包含是否成功的信息
             TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.GENERATION_STATE_CHANGED, {
-                isGenerating: false
+                isGenerating: false,
+                success: this.currentPlanTemplateId !== null,
+                templateId: this.currentPlanTemplateId,
+                planData: this.currentPlanData
             });
         }
     }
 
-
-    /**
-     * 更新API URL，添加用户提供的参数
-     */
-    updateApiUrl() {
-        if (!this.apiUrlElement) return;
-
-        let url = `${ManusAPI.BASE_URL}/execute/${this.currentPlanTemplateId || '{planTemplateId}'}`;
-        if (this.planParamsInput && this.planParamsInput.value.trim()) {
-            try {
-                const params = JSON.parse(this.planParamsInput.value.trim());
-                const queryString = new URLSearchParams(params).toString();
-                if (queryString) {
-                    url += `?${queryString}`;
-                }
-            } catch (e) {
-                console.warn("URL参数不是有效的JSON字符串，已忽略。");
-            }
-        }
-        this.apiUrlElement.textContent = url;
-    }
 
     /**
      * 更新UI状态（按钮禁用/启用等）
@@ -256,13 +217,9 @@ class PlanPromptGenerator {
         if (this.planPromptInput) {
             this.planPromptInput.value = '';
         }
-        if (this.planParamsInput) {
-            this.planParamsInput.value = '';
-        }
         this.currentPlanTemplateId = null;
         this.currentPlanData = null;
         this.isGenerating = false;
-        this.updateApiUrl();
         this.updateUIState();
         console.log('计划提示数据已清空');
     }
@@ -291,9 +248,6 @@ class PlanPromptGenerator {
     }
 
     getPlanParams() {
-        if (this.planParamsInput) {
-            return this.planParamsInput.value.trim();
-        }
         return null;
     }
 
@@ -308,7 +262,6 @@ class PlanPromptGenerator {
     setCurrentPlanTemplateId(id) {
         this.currentPlanTemplateId = id;
         this.updateUIState();
-        this.updateApiUrl();
     }
 
     setCurrentPlanData(data) {
@@ -319,9 +272,6 @@ class PlanPromptGenerator {
     }
 
     setPlanParams(params) {
-        if (this.planParamsInput) {
-            this.planParamsInput.value = params || '';
-            this.updateApiUrl();
-        }
+        console.warn('setPlanParams 方法已移除');
     }
 }
