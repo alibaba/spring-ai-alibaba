@@ -41,13 +41,13 @@ public class ParameterParsingNodeSection implements NodeSection {
         StringBuilder sb = new StringBuilder();
 
         sb.append(String.format("        // —— ParameterParsingNode [%s] ——%n", id));
-        sb.append(String.format("ParameterParsingNode %sNode = ParameterParsingNode.builder()%n", id));
+        sb.append(String.format("        ParameterParsingNode %sNode = ParameterParsingNode.builder()%n", id));
 
         if (d.getInputTextKey() != null) {
-            sb.append(String.format("    .inputTextKey(\"%s\")%n", escape(d.getInputTextKey())));
+            sb.append(String.format("            .inputTextKey(\"%s\")%n", escape(d.getInputTextKey())));
         }
 
-        sb.append("    .chatClient(chatClient)\n");
+        sb.append("            .chatClient(chatClient)\n");
 
         List<Map<String, String>> params = d.getParameters();
         if (params != null && !params.isEmpty()) {
@@ -59,14 +59,14 @@ public class ParameterParsingNodeSection implements NodeSection {
                         return String.format("Map.of(%s)", entries);
                     })
                     .collect(Collectors.joining(", "));
-            sb.append(String.format("    .parameters(List.of(%s))%n", joined));
+            sb.append(String.format("            .parameters(List.of(%s))%n", joined));
         }
 
         if (d.getOutputKey() != null) {
-            sb.append(String.format("    .outputKey(\"%s\")%n", escape(d.getOutputKey())));
+            sb.append(String.format("            .outputKey(\"%s\")%n", escape(d.getOutputKey())));
         }
 
-        sb.append("    .build();\n");
+        sb.append("            .build();\n");
         sb.append(String.format(
                 "stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n",
                 id, id));

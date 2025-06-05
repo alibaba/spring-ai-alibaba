@@ -42,14 +42,14 @@ public class QuestionClassifierNodeSection implements NodeSection {
 
         StringBuilder sb = new StringBuilder();
         sb.append(String.format("        // —— QuestionClassifierNode [%s] ——%n", id));
-        sb.append(String.format("QuestionClassifierNode %sNode = QuestionClassifierNode.builder()%n", id));
+        sb.append(String.format("        QuestionClassifierNode %sNode = QuestionClassifierNode.builder()%n", id));
 
-        sb.append("    .chatClient(chatClient)\n");
+        sb.append("            .chatClient(chatClient)\n");
 
         List<VariableSelector> inputs = data.getInputs();
         if (inputs != null && !inputs.isEmpty()) {
             String key = inputs.get(0).getName();
-            sb.append(String.format("    .inputTextKey(\"%s\")%n", escape(key)));
+            sb.append(String.format("            .inputTextKey(\"%s\")%n", escape(key)));
         }
 
         List<String> categoryIds = data.getClasses().stream()
@@ -60,15 +60,15 @@ public class QuestionClassifierNodeSection implements NodeSection {
                     .map(this::escape)
                     .map(s -> "\"" + s + "\"")
                     .collect(Collectors.joining(", "));
-            sb.append(String.format("    .categories(List.of(%s))%n", joined));
+            sb.append(String.format("            .categories(List.of(%s))%n", joined));
         }
 
         String instr = data.getInstruction();
         if (instr != null && !instr.isBlank()) {
-            sb.append(String.format("    .classificationInstructions(List.of(\"%s\"))%n", escape(instr)));
+            sb.append(String.format("            .classificationInstructions(List.of(\"%s\"))%n", escape(instr)));
         }
 
-        sb.append("    .build();\n");
+        sb.append("            .build();\n");
         sb.append(String.format(
                 "stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n",
                 id, id));
