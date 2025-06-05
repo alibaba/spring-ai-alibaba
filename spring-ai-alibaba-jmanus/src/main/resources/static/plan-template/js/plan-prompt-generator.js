@@ -65,14 +65,7 @@ class PlanPromptGenerator {
             this.updateApiUrl();
         });
 
-        // 监听状态请求
-        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.STATE_REQUEST, (data) => {
-            if (data.type === 'planParams') {
-                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, {
-                    planParams: this.getPlanParams()
-                });
-            }
-        });
+       
     }
 
     /**
@@ -131,18 +124,6 @@ class PlanPromptGenerator {
         });
 
         try {
-            // 通过事件获取当前JSON内容
-            let existingJson = null;
-            const jsonContent = await this.requestJsonContent();
-            
-            if (jsonContent && jsonContent.trim()) {
-                try {
-                    existingJson = JSON.parse(jsonContent.trim());
-                } catch (e) {
-                    alert('当前JSON格式无效，无法作为生成基础。将忽略当前JSON。');
-                    existingJson = null;
-                }
-            }
 
             let response;
             if (this.currentPlanTemplateId) {
@@ -231,29 +212,6 @@ class PlanPromptGenerator {
         }
     }
 
-    /**
-     * 通过事件请求JSON内容
-     * @returns {Promise<string>} JSON内容
-     */
-    async requestJsonContent() {
-        return new Promise((resolve) => {
-            const handleResponse = (data) => {
-                TaskPilotUIEvent.EventSystem.off(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, handleResponse);
-                resolve(data.jsonContent || '');
-            };
-            
-            TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, handleResponse);
-            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_REQUEST, {
-                type: 'jsonContent'
-            });
-            
-            // 超时处理
-            setTimeout(() => {
-                TaskPilotUIEvent.EventSystem.off(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, handleResponse);
-                resolve('');
-            }, 100);
-        });
-    }
 
     /**
      * 更新API URL，添加用户提供的参数

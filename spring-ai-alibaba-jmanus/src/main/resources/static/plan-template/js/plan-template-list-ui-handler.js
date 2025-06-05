@@ -35,17 +35,6 @@ class PlanTemplateListUIHandler {
     }
 
     setupEventListeners() {
-        // 监听状态响应事件（保持向后兼容）
-        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, (data) => {
-            if (data.planTemplateList) {
-                this.planTemplateList = data.planTemplateList;
-                this.updatePlanTemplateListUI();
-            }
-            if (data.currentPlanTemplateId !== undefined) {
-                this.currentPlanTemplateId = data.currentPlanTemplateId;
-                this.updatePlanTemplateListUI();
-            }
-        });
 
         // 监听当前计划模板变化事件
         TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.CURRENT_PLAN_TEMPLATE_CHANGED, (data) => {
@@ -59,15 +48,7 @@ class PlanTemplateListUIHandler {
             await this.loadPlanTemplateList();
         });
 
-        // 监听状态请求事件，提供计划模板列表数据
-        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.STATE_REQUEST, (data) => {
-            if (data.requestedFields && data.requestedFields.includes('planTemplateList')) {
-                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, {
-                    planTemplateList: this.planTemplateList,
-                    currentPlanTemplateId: this.currentPlanTemplateId
-                });
-            }
-        });
+       
     }
 
     handleNewTaskButtonClick() {
@@ -262,10 +243,6 @@ class PlanTemplateListUIHandler {
             // 更新UI
             this.updatePlanTemplateListUI();
             
-            // 发布计划模板列表更新事件，供其他模块使用
-            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, {
-                planTemplateList: this.planTemplateList
-            });
             
         } catch (error) {
             console.error('[PlanTemplateListUIHandler] 加载计划模板列表失败:', error);

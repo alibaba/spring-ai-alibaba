@@ -65,14 +65,6 @@ class RunPlanButtonHandler {
             this.currentPlanParams = data.params;
         });
 
-        // 监听状态请求
-        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.STATE_REQUEST, (data) => {
-            if (data.type === 'planParams') {
-                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, {
-                    planParams: this.currentPlanParams
-                });
-            }
-        });
 
         console.log('[RunPlanButtonHandler] Subscribed to UI events.');
     }
@@ -109,7 +101,7 @@ class RunPlanButtonHandler {
 
         try {
             let response;
-            const planParamsValue = await this.requestPlanParams();
+            const planParamsValue = null;
 
             if (planParamsValue) {
                 response = await ManusAPI.executePlan(planTemplateId, planParamsValue);
@@ -145,30 +137,7 @@ class RunPlanButtonHandler {
             this.updateButtonStateInternal();
         }
     }
-
-    /**
-     * 通过事件请求计划参数
-     * @returns {Promise<string>} 计划参数
-     */
-    async requestPlanParams() {
-        return new Promise((resolve) => {
-            const handleResponse = (data) => {
-                TaskPilotUIEvent.EventSystem.off(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, handleResponse);
-                resolve(data.planParams || null);
-            };
-            
-            TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, handleResponse);
-            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_REQUEST, {
-                type: 'planParams'
-            });
-            
-            // 超时处理
-            setTimeout(() => {
-                TaskPilotUIEvent.EventSystem.off(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, handleResponse);
-                resolve(this.currentPlanParams || null);
-            }, 100);
-        });
-    }
+    
 
     updateButtonStateInternal() {
         if (this.runPlanBtn) {

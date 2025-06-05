@@ -75,14 +75,7 @@ class PlanTemplateHandler {
             console.log('[PlanTemplateHandler] 版本历史已设置，共', data.versions.length, '个版本');
         });
 
-        // 监听状态请求
-        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.STATE_REQUEST, (data) => {
-            if (data.type === 'jsonContent') {
-                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, {
-                    jsonContent: this.getContent()
-                });
-            }
-        });
+       
 
     }
 

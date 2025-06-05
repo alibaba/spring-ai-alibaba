@@ -101,7 +101,7 @@ class PlanTemplateManagerOld {
         // 如果需要计划执行状态管理，请使用 PlanExecutionManagerController
 
         this.updateUIState();
-        await this.loadPlanTemplateList(); // Await loading list
+        // await this.loadPlanTemplateList(); // Await loading list
         console.log('PlanTemplateManagerOld 初始化完成');
     }
 
@@ -109,36 +109,11 @@ class PlanTemplateManagerOld {
      * 绑定UI事件监听器
      */
     bindUIEvents() {
-        // 监听状态请求
-        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.STATE_REQUEST, (data) => {
-            if (data.type === 'planParams') {
-                const params = this.planPromptGenerator ? this.planPromptGenerator.getPlanParams() : null;
-                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, {
-                    planParams: params
-                });
-            } else if (data.requestedFields) {
-                // 处理字段请求
-                const response = {};
-                if (data.requestedFields.includes('planTemplateList')) {
-                    response.planTemplateList = this.planTemplateList;
-                }
-                if (data.requestedFields.includes('currentPlanTemplateId')) {
-                    response.currentPlanTemplateId = this.getCurrentPlanTemplateId();
-                }
-                if (data.requestedFields.includes('planParams')) {
-                    response.planParams = this.planPromptGenerator ? this.planPromptGenerator.getPlanParams() : null;
-                }
-                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, response);
-            }
-        });
-
+ 
         // 监听计划生成完成事件
         TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.PLAN_GENERATED, async () => {
             await this.loadPlanTemplateList();
             // 通知状态变化
-            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, {
-                planTemplateList: this.planTemplateList
-            });
         });
 
         // 监听计划模板选择事件
@@ -166,10 +141,6 @@ class PlanTemplateManagerOld {
             const response = await ManusAPI.getAllPlanTemplates();
             this.planTemplateList = response.templates || [];
             
-            // 发布状态更新事件
-            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, {
-                planTemplateList: this.planTemplateList
-            });
         } catch (error) {
             console.error('加载计划模板列表失败:', error);
         }
