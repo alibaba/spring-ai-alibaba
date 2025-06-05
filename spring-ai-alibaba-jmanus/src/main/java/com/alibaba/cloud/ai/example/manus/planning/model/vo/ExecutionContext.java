@@ -32,6 +32,10 @@ public class ExecutionContext {
 
 	private Map<String, String> toolsContext = new HashMap<>();
 
+
+	/** 全局会话ID */
+	private String conversationId;
+
 	/**
 	 * 工具上下文，存储工具执行的上下文信息
 	 */
@@ -55,6 +59,16 @@ public class ExecutionContext {
 
 	/** 是否使用记忆， 场景是 如果只构建计划，那么不应该用记忆，否则记忆无法删除 */
 	private boolean useMemory = false;
+
+	/**获取会话ID*/
+	public String getConversationId() {
+		return conversationId;
+	}
+
+	/**设置会话ID*/
+	public void setConversationId(String conversationId) {
+		this.conversationId = conversationId;
+	}
 
 	/**
 	 * 获取计划ID
