@@ -42,7 +42,6 @@ public class DashScopeImageModelObservationConvention extends DefaultImageModelO
 		return keyValues;
 	}
 
-
 	@Override
 	public String getName() {
 		return "dashscope.image.model.operation";
