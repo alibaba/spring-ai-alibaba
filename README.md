@@ -25,7 +25,7 @@ Spring AI Alibaba provides the following core capabilities to help developers qu
 
 ## Get Started
 
-Quickly get started with Spring AI Alibaba by adding 'spring-ai-alibaba-starter *' dependency to your java project.
+To quickly get started with Spring AI Alibaba, add 'spring-ai-alibaba-starter-dashscope' dependency to your java project.
 
 ```xml
 <dependencyManagement>

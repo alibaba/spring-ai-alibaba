@@ -22,7 +22,7 @@ Spring AI Alibaba 提供以下核心能力，帮助开发者快速构建自己�
 
 ## 快速开始
 
-在项目中加入 `spring-ai-alibaba-starter-*` 依赖，快速开始智能体应用开发
+在项目中加入 `spring-ai-alibaba-starter-dashscope` 依赖，快速开始智能体应用开发
 
 ```xml
 <dependencyManagement>
@@ -63,7 +63,7 @@ Spring AI Alibaba 官方社区开发了一个**包含完整 `前端UI+后端实�
 您可以在[本地部署 Playground 示例](https://github.com/springaialibaba/spring-ai-alibaba-examples/tree/main/spring-ai-alibaba-playground)并通过浏览器访问体验，或者拷贝源码并按照自己的业务需求调整，以便能更快速搭建一套自己的 AI 应用。
 
 
-更多示例如果想通过源码示例学习更多 Spring AI Alibaba 框架用法，请参考我们的官方示例仓库：
+学习更多 Spring AI Alibaba 框架用法，请参考我们官方源码示例：
 
 [https://github.com/springaialibaba/spring-ai-alibaba-examples](https://github.com/springaialibaba/spring-ai-alibaba-examples)
 
@@ -89,8 +89,8 @@ Spring AI Alibaba Graph 核心能力：
 1. **企业级 MCP 部署与代理方案**。支持基于 Nacos MCP Registry 的分布式部署与负载均衡调用，通过 Spring AI Alibaba MCP Gateway、Higress 代理可实现零改造将 HTTP/Dubbo 服务发布为 MCP。
 2. **AI 网关集成提升模型调用稳定性与灵活性。** 使用 Higress 作为大模型代理，`spring-ai-starter-model-openai` 可通过 OpenAI 标准接口接入 Higress 代理服务。
 3. **降低企业数据整合成本，提升 AI 数据应用效果。**
-  a. **百炼 RAG 知识库。** 私有数据上传百炼平台清洗、切片、向量化管理，通过 Spring AI Alibaba 开发智能体应用并实现 RAG 检索。
-  b. **百炼析言 ChatBI，从自然语言到 SQL 自动生成。** Spring AI Alibaba Nl2sql 基于百炼析言 ChatBI 技术，可根据自然语言描述生成数据查询 SQL。
+ - **百炼 RAG 知识库。** 私有数据上传百炼平台清洗、切片、向量化管理，通过 Spring AI Alibaba 开发智能体应用并实现 RAG 检索。
+ -  **百炼析言 ChatBI，从自然语言到 SQL 自动生成。** Spring AI Alibaba Nl2sql 基于百炼析言 ChatBI 技术，可根据自然语言描述生成数据查询 SQL。
 4. **可观测与效果评估，加速智能体从 Demo 走向生产落地。** SDK 默认埋点，支持 OpenTelemetry 格式的 tracing 上报，支持接入 Langfuse、阿里云 ARMS 等平台。
 
 ## 通用智能体平台
