@@ -12,10 +12,13 @@
 
 ## 核心特性
 
-
 ![Spring AI Alibaba Architecture](./docs/imgs/spring-ai-alibaba-architecture.png)
 
+Spring AI Alibaba 提供以下核心能力，帮助开发者快速构建自己的 Agent、Workflow 或 Multi-agent 应用：
 
+1. **Graph 多智能体框架。** 基于 Spring AI Alibaba Graph 开发者可快速构建工作流、多智能体应用，无需关心流程编排、上下文记忆管理等底层实现。支持 Dify DSL 自动生成 Graph 代码，支持 Graph 可视化调试。
+2. **通过 AI 生态集成，解决企业智能体落地过程中关心的痛点问题。** Spring AI Alibaba 支持与百炼平台深度集成，提供模型接入、RAG知识库解决方案；支持 ARMS、Langfuse 等 AI 可观测产品无缝接入；支持企业级的 MCP 集成，包括 Nacos MCP Registry 分布式注册与发现、自动 Router 路由等。
+3. **探索具备自主规划能力的通用智能体产品与平台。** 社区发布了基于 Spring AI Alibaba 框架实现的 JManus 智能体，除了对标 Manus 等通用智能体的产品能力外。社区在积极探索自主规划在智能体开发方向的应用，为开发者提供从低代码、高代码到零代码构建智能体的更灵活选择，加速智能体在企业垂直业务方向的快速落地。
 
 ## 快速开始
 
