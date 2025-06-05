@@ -74,10 +74,10 @@ public class LoadbalancedMcpAsyncClient {
 
 	private NacosMcpServerEndpoint serverEndpoint;
 
-	public LoadbalancedMcpAsyncClient(String serverName, String verison,
+	public LoadbalancedMcpAsyncClient(String serverName, String version,
 			NacosMcpOperationService nacosMcpOperationService, ApplicationContext applicationContext) {
 		Assert.notNull(serverName, "serviceName cannot be null");
-		Assert.notNull(verison, "verison cannot be null");
+		Assert.notNull(version, "version cannot be null");
 		Assert.notNull(nacosMcpOperationService, "nacosMcpOperationService cannot be null");
 		Assert.notNull(applicationContext, "applicationContext cannot be null");
 
@@ -86,7 +86,7 @@ public class LoadbalancedMcpAsyncClient {
 		this.applicationContext = applicationContext;
 
 		try {
-			this.serverEndpoint = this.nacosMcpOperationService.getServerEndpoint(this.serverName, verison);
+			this.serverEndpoint = this.nacosMcpOperationService.getServerEndpoint(this.serverName, version);
 			if (this.serverEndpoint == null) {
 				throw new NacosException(NacosException.NOT_FOUND,
 						String.format("Can not find mcp server from nacos: %s", serverName));
