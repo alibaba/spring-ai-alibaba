@@ -348,7 +348,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 		if (!StringUtils.equals(serviceRef.getGroupName(), this.nacosMcpRegistryProperties.getServiceGroup())) {
 			return false;
 		}
-		if (!StringUtils.equals(serviceRef.getNamespaceId(), this.nacosMcpProperties.getNamespace())) {
+		if (!StringUtils.equals(serviceRef.getNamespaceId(), this.nacosMcpRegistryProperties.getServiceNamespace())) {
 			return false;
 		}
 		return true;

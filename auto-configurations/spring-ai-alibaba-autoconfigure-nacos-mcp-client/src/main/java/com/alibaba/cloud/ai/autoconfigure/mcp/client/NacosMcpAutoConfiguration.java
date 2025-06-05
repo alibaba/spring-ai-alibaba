@@ -35,29 +35,31 @@ import java.util.Properties;
  * @date 2025/6/4 19:16
  */
 @AutoConfiguration
-@EnableConfigurationProperties({ NacosMcpSseClientProperties.class, NacosMcpProperties.class})
+@EnableConfigurationProperties({ NacosMcpSseClientProperties.class, NacosMcpProperties.class })
 public class NacosMcpAutoConfiguration {
 
-    private static final Logger logger = LoggerFactory.getLogger(NacosMcpAutoConfiguration.class);
+	private static final Logger logger = LoggerFactory.getLogger(NacosMcpAutoConfiguration.class);
 
-    public NacosMcpAutoConfiguration() {
-    }
+	public NacosMcpAutoConfiguration() {
+	}
 
-    @Bean(name = "namespace2NacosMcpOperationService")
-    public Map<String, NacosMcpOperationService> namespace2NacosMcpOperationService(NacosMcpSseClientProperties nacosMcpSseClientProperties, NacosMcpProperties nacosMcpProperties) {
-        Map<String, NacosMcpOperationService> namespace2NacosMcpOperationService = new HashMap<>();
-        nacosMcpSseClientProperties.getConnections().forEach((serverKey, nacosSseParameters) -> {
-            Properties nacosProperties = nacosMcpProperties.getNacosProperties();
-            nacosProperties.put(PropertyKeyConst.NAMESPACE, nacosSseParameters.serviceNamespace());
-            try {
-                NacosMcpOperationService nacosMcpOperationService = new NacosMcpOperationService(nacosProperties);
-                namespace2NacosMcpOperationService.put(nacosSseParameters.serviceNamespace(), nacosMcpOperationService);
-            } catch (NacosException e) {
-                logger.warn("nacos naming service: {} error", nacosSseParameters.serviceName(), e);
-            }
+	@Bean(name = "namespace2NacosMcpOperationService")
+	public Map<String, NacosMcpOperationService> namespace2NacosMcpOperationService(
+			NacosMcpSseClientProperties nacosMcpSseClientProperties, NacosMcpProperties nacosMcpProperties) {
+		Map<String, NacosMcpOperationService> namespace2NacosMcpOperationService = new HashMap<>();
+		nacosMcpSseClientProperties.getConnections().forEach((serverKey, nacosSseParameters) -> {
+			Properties nacosProperties = nacosMcpProperties.getNacosProperties();
+			nacosProperties.put(PropertyKeyConst.NAMESPACE, nacosSseParameters.serviceNamespace());
+			try {
+				NacosMcpOperationService nacosMcpOperationService = new NacosMcpOperationService(nacosProperties);
+				namespace2NacosMcpOperationService.put(nacosSseParameters.serviceNamespace(), nacosMcpOperationService);
+			}
+			catch (NacosException e) {
+				logger.warn("nacos naming service: {} error", nacosSseParameters.serviceName(), e);
+			}
 
-        });
-        return namespace2NacosMcpOperationService;
-    }
+		});
+		return namespace2NacosMcpOperationService;
+	}
 
 }

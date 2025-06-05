@@ -30,7 +30,6 @@ public class NacosMcpSseClientProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.nacos.client.sse";
 
-
 	private final Map<String, NacosSseParameters> connections = new HashMap<>();
 
 	public Map<String, NacosSseParameters> getConnections() {

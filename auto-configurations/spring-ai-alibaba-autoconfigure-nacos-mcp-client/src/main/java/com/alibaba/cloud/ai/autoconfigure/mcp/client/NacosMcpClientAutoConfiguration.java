@@ -43,7 +43,8 @@ import java.util.Map;
  */
 @AutoConfiguration(after = { NacosMcpAutoConfiguration.class, McpClientAutoConfiguration.class })
 @ConditionalOnClass({ McpSchema.class })
-@EnableConfigurationProperties({ McpClientCommonProperties.class, NacosMcpProperties.class, NacosMcpSseClientProperties.class })
+@EnableConfigurationProperties({ McpClientCommonProperties.class, NacosMcpProperties.class,
+		NacosMcpSseClientProperties.class })
 @ConditionalOnProperty(prefix = "spring.ai.alibaba.mcp.nacos.client", name = { "enabled" }, havingValue = "true",
 		matchIfMissing = false)
 public class NacosMcpClientAutoConfiguration {
@@ -56,18 +57,20 @@ public class NacosMcpClientAutoConfiguration {
 			matchIfMissing = true)
 	public List<LoadbalancedMcpSyncClient> loadbalancedMcpSyncClientList(
 			@Qualifier("namespace2NacosMcpOperationService") ObjectProvider<Map<String, NacosMcpOperationService>> namespace2NacosMcpOperationServiceProvicer,
-			NacosMcpSseClientProperties nacosMcpSseClientProperties,
-			ApplicationContext applicationContext) {
-		Map<String, NacosMcpOperationService> namespace2NacosMcpOperationService = namespace2NacosMcpOperationServiceProvicer.getObject();
+			NacosMcpSseClientProperties nacosMcpSseClientProperties, ApplicationContext applicationContext) {
+		Map<String, NacosMcpOperationService> namespace2NacosMcpOperationService = namespace2NacosMcpOperationServiceProvicer
+			.getObject();
 
 		List<LoadbalancedMcpSyncClient> loadbalancedMcpSyncClients = new ArrayList<>();
-		for (NacosMcpSseClientProperties.NacosSseParameters nacosSseParameters: nacosMcpSseClientProperties.getConnections().values()) {
+		for (NacosMcpSseClientProperties.NacosSseParameters nacosSseParameters : nacosMcpSseClientProperties
+			.getConnections()
+			.values()) {
 			LoadbalancedMcpSyncClient loadbalancedMcpSyncClient = LoadbalancedMcpSyncClient.builder()
-					.serverName(nacosSseParameters.serviceName())
-					.version(nacosSseParameters.version())
-					.nacosMcpOperationService(namespace2NacosMcpOperationService.get(nacosSseParameters.serviceNamespace()))
-					.applicationContext(applicationContext)
-					.build();
+				.serverName(nacosSseParameters.serviceName())
+				.version(nacosSseParameters.version())
+				.nacosMcpOperationService(namespace2NacosMcpOperationService.get(nacosSseParameters.serviceNamespace()))
+				.applicationContext(applicationContext)
+				.build();
 			loadbalancedMcpSyncClient.init();
 			loadbalancedMcpSyncClient.subscribe();
 
@@ -79,19 +82,20 @@ public class NacosMcpClientAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "ASYNC")
 	public List<LoadbalancedMcpAsyncClient> loadbalancedMcpAsyncClientList(
-			@Qualifier("server2NamedTransport") ObjectProvider<Map<String, List<NamedClientMcpTransport>>> server2NamedTransportProvider,
-			ObjectProvider<NacosMcpOperationService> nacosMcpOperationServiceProvider,
-			ApplicationContext applicationContext) {
-		NacosMcpOperationService nacosMcpOperationService = nacosMcpOperationServiceProvider.getObject();
+			@Qualifier("namespace2NacosMcpOperationService") ObjectProvider<Map<String, NacosMcpOperationService>> namespace2NacosMcpOperationServiceProvicer,
+			NacosMcpSseClientProperties nacosMcpSseClientProperties, ApplicationContext applicationContext) {
+		Map<String, NacosMcpOperationService> namespace2NacosMcpOperationService = namespace2NacosMcpOperationServiceProvicer
+			.getObject();
 
 		List<LoadbalancedMcpAsyncClient> loadbalancedMcpAsyncClients = new ArrayList<>();
-		Map<String, List<NamedClientMcpTransport>> server2NamedTransport = server2NamedTransportProvider.getObject();
-		for (Map.Entry<String, List<NamedClientMcpTransport>> entry : server2NamedTransport.entrySet()) {
-			String serverName = entry.getKey();
+		for (NacosMcpSseClientProperties.NacosSseParameters nacosSseParameters : nacosMcpSseClientProperties
+			.getConnections()
+			.values()) {
 
 			LoadbalancedMcpAsyncClient loadbalancedMcpAsyncClient = LoadbalancedMcpAsyncClient.builder()
-				.serverName(serverName)
-				.nacosMcpOperationService(nacosMcpOperationService)
+				.serverName(nacosSseParameters.serviceName())
+				.version(nacosSseParameters.version())
+				.nacosMcpOperationService(namespace2NacosMcpOperationService.get(nacosSseParameters.serviceNamespace()))
 				.applicationContext(applicationContext)
 				.build();
 			loadbalancedMcpAsyncClient.init();
