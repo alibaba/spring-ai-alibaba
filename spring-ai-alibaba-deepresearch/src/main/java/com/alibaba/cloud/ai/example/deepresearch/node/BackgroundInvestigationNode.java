@@ -59,16 +59,13 @@ public class BackgroundInvestigationNode implements BackgroundInvestigationNodeA
 		String query = lastMessage.getText();
 		TavilySearchService.Response response = tavilySearchService
 			.apply(TavilySearchService.Request.simpleQuery(query));
-		List<Map<String, String>> results = response.results()
-			.stream()
-			.map(info -> {
-				Map<String, String> result = new HashMap<>();
-				result.put("title", info.title());
-				result.put("content", info.content());
-				logger.info("处理搜索结果: {}", result);
-				return result;
-			})
-			.collect(Collectors.toList());
+		List<Map<String, String>> results = response.results().stream().map(info -> {
+			Map<String, String> result = new HashMap<>();
+			result.put("title", info.title());
+			result.put("content", info.content());
+			logger.info("处理搜索结果: {}", result);
+			return result;
+		}).collect(Collectors.toList());
 		logger.info("✅ 搜索结果: {}", results);
 
 		Map<String, Object> resultMap = new HashMap<>();
