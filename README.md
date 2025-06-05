@@ -82,14 +82,14 @@ Core features:
 ## Enterprise-ready AI Ecosystem Integration
 To bring agent from demo to production, developers and organizations face lots of challenges, from evaluation, tracing, MCP integration, prompt management, to token rate-limit, etc. Spring AI Alibaba, as a enterprise solution generated from serving enterprise agent product development, provides profound solutions by integrating with Nacos MCP Registry, Higress AI gateway, Alibaba Cloud ARMS, Alibaba Cloud Vector Store, Alibaba Cloud Bailian, etc.
 
-![ai-native-architecture](./docs/imgs/spring-ai-alibaba-arch.png)
+![ai-native-ecosystem](./docs/imgs/spring-ai-alibaba-ecosystem.png)
 
-1. Distributed MCP discovery and proxy. Support distributed MCP Server discovery and load balancing based on Nacos MCP Registry, HTTP or Dubbo service to MCP with zero-code change through Spring AI Alibaba MCP Gateway and Higress.
-2. Higress LLM model proxy. Higress as a LLM proxy, `spring-ai-starter-model-openai` adapter can leverage the unified Higress OpenAI model proxy API.
-3. Better and easy data integration.
+1. **Distributed MCP discovery and proxy.** Support distributed MCP Server discovery and load balancing based on Nacos MCP Registry, HTTP or Dubbo service to MCP with zero-code change through Spring AI Alibaba MCP Gateway and Higress.
+2. **Higress LLM model proxy.** Higress as a LLM proxy, `spring-ai-starter-model-openai` adapter can leverage the unified Higress OpenAI model proxy API.
+3. **Better and easy data integration.**
 	a. Bailian RAG integration. Leverage Bailian platform's excellent performance on data filtering, chunking, and vectoring, while using Spring AI Alibaba to do RAG retrieval.
 	b. Bailian ChatBI integration. Spring AI Alibaba Nl2SQL, built on Bailian ChatBI, completely open-source, can generate SQL based on natural language query.
-4. Observation and evaluation platforms. Thanks to the sdk-native instrumentation of Spring AI, observation and evaluation can be achieved by reporting to OpenTelemetry compatible platforms such as Langfuse and Alibaba Cloud ARMS.
+4. **Observation and evaluation platforms.** Thanks to the sdk-native instrumentation of Spring AI, observation and evaluation can be achieved by reporting to OpenTelemetry compatible platforms such as Langfuse and Alibaba Cloud ARMS.
 
 ## Agent Products and Platforms
 ### JManus
@@ -102,7 +102,7 @@ JManus is not just a Spring AI Alibaba version Manus replica, it's also designed
 ### DeepResearch
 Spring AI Alibaba DeepResearch is a deep research agent developed based on the Spring AI Alibaba Graph, which includes a complete front-end web UI (under development) and back-end implementation. DeepResearch can help users complete various deep research reports with the help of large models and a series of carefully designed tools such as Web Search, Crawling, Python script engine, etc.
 
-![deepresearch](./docs/imgs/deepsearch.png)
+![deepresearch](./docs/imgs/deepresearch.png)
 
 ## Contribution Guide
 

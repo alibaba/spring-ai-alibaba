@@ -84,14 +84,14 @@ Spring AI Alibaba Graph 核心能力：
 ## 企业级 AI 生态集成
 在 Agent 生产落地过程中，用户需要解决智能体效果评估、MCP 工具集成、Prompt 管理、Token 上下文、可视化 Tracing等各种问题，Spring AI Alibaba 通过与 Nacos3、Higress AI 网关、阿里云 ARMS、阿里云向量检索数据库、百炼智能体平台等深度集成，提供全面的智能体企业级生产解决方案，加速智能体从 Demo 走向生产落地。
 
-![ai-native-architecture](./docs/imgs/spring-ai-alibaba-arch.png)
+![ai-native-architecture](./docs/imgs/spring-ai-alibaba-ecosystem.png)
 
 1. **企业级 MCP 部署与代理方案**。支持基于 Nacos MCP Registry 的分布式部署与负载均衡调用，通过 Spring AI Alibaba MCP Gateway、Higress 代理可实现零改造将 HTTP/Dubbo 服务发布为 MCP。
-2. **AI 网关集成提升模型调用稳定性与灵活性。**使用 Higress 作为大模型代理，`spring-ai-starter-model-openai` 可通过 OpenAI 标准接口接入 Higress 代理服务。
+2. **AI 网关集成提升模型调用稳定性与灵活性。** 使用 Higress 作为大模型代理，`spring-ai-starter-model-openai` 可通过 OpenAI 标准接口接入 Higress 代理服务。
 3. **降低企业数据整合成本，提升 AI 数据应用效果。**
-  **a. 百炼 RAG 知识库。**私有数据上传百炼平台清洗、切片、向量化管理，通过 Spring AI Alibaba 开发智能体应用并实现 RAG 检索。
-  **b. 百炼析言 ChatBI，从自然语言到 SQL 自动生成。**Spring AI Alibaba Nl2sql 基于百炼析言 ChatBI 技术，可根据自然语言描述生成数据查询 SQL。
-4. **可观测与效果评估，加速智能体从 Demo 走向生产落地。**SDK 默认埋点，支持 OpenTelemetry 格式的 tracing 上报，支持接入 Langfuse、阿里云 ARMS 等平台。
+  a. **百炼 RAG 知识库。** 私有数据上传百炼平台清洗、切片、向量化管理，通过 Spring AI Alibaba 开发智能体应用并实现 RAG 检索。
+  b. **百炼析言 ChatBI，从自然语言到 SQL 自动生成。** Spring AI Alibaba Nl2sql 基于百炼析言 ChatBI 技术，可根据自然语言描述生成数据查询 SQL。
+4. **可观测与效果评估，加速智能体从 Demo 走向生产落地。** SDK 默认埋点，支持 OpenTelemetry 格式的 tracing 上报，支持接入 Langfuse、阿里云 ARMS 等平台。
 
 ## 通用智能体平台
 
@@ -105,7 +105,7 @@ Manus 的横空出世，让通用智能体自动规划、执行规划的能力�
 ### DeepResearch 智能体
 Spring AI Alibaba DeepResearch 是一款基于 Spring AI Alibaba Graph 开发的 Deep Research 智能体, 包含完整的前端 Web UI（开发中） 和后端实现，DeepResearch 支持一系列精心设计的工具如 Web Search（网络查询）、Crawling（爬虫）、Python 脚本引擎等，可以借助大模型与工具能力，帮助用户完成各类深度调研报告。
 
-![deepresearch](./docs/imgs/deepsearch.png)
+![deepresearch](./docs/imgs/deepresearch.png)
 
 ## 贡献指南
 
