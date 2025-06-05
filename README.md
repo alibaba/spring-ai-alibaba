@@ -41,13 +41,13 @@ To quickly get started with Spring AI Alibaba, add 'spring-ai-alibaba-starter-da
 
 <dependencies>
   <dependency>
-	<groupId>com.alibaba.cloud.ai</groupId>
-	<artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+    <groupId>com.alibaba.cloud.ai</groupId>
+    <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
   </dependency>
 </dependencies>
 ```
 
-Please check [Quick Start](https://java2ai.com/docs/1.0.0/get-started/) on our official website to learn more details. More `starter`s include `spring-ai-alibaba-graph-core`, `spring-ai-alibaba-starter-nl2sql`,`spring-ai-alibaba-starter-nacos-mcp-client`, etc, please refer to the official website documentation.
+Please check [Quick Start](https://java2ai.com/docs/1.0.0/get-started/) on our official website to learn more details. More starters include `spring-ai-alibaba-graph-core`, `spring-ai-alibaba-starter-nl2sql`,`spring-ai-alibaba-starter-nacos-mcp-client`, etc, please refer to the official website documentation.
 
 
 > NOTE!

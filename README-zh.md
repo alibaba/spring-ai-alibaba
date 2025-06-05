@@ -43,7 +43,6 @@ Spring AI Alibaba 提供以下核心能力，帮助开发者快速构建自己�
     <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
   </dependency>
 </dependencies>
-
 ```
 
 请查看官网 [快速开始](https://java2ai.com/docs/1.0.0/get-started/) 了解详细示例讲解。更多 starter 包括 spring-ai-alibaba-graph-core、spring-ai-alibaba-starter-nl2sql、spring-ai-alibaba-starter-nacos-mcp-client 等用法，请参考官方网文档资料。
