@@ -38,11 +38,19 @@ spring:
         weather:
           enabled: true
           api-key: ${WEATHER_API_KEY}
+        baidu:
+          search:
+            api-key: ${BAIDU_SEARCH_API_KEY}
+            secret-key: ${BAIDU_SEARCH_SECRET_KEY}
+            max-results: ${BAIDU_SEARCH_MAX_RESULTS}
+        tavilysearch:
+          access-key-id: ${TAVILYSEARCH_ACCESS_KEY_ID}
+          token: ${TAVILYSEARCH_TOKEN}
     dashscope:
-      api-key: ${AI_DASHSCOPE_API_KEY}
+      api-key:
     openai:
       base-url: https://dashscope.aliyuncs.com/compatible-mode
-      api-key: ${AI_DASHSCOPE_API_KEY}
+      api-key:
       chat:
         options:
           model: qwen-max-latest

@@ -35,7 +35,6 @@ public class CompileConfig {
 
 	private SaverConfig saverConfig;
 
-	private PlainTextStateSerializer plainTextStateSerializer;
 
 	// private BaseCheckpointSaver checkpointSaver; // replaced with SaverConfig
 	private Set<String> interruptsBefore = Set.of();
@@ -160,15 +159,6 @@ public class CompileConfig {
 			return this;
 		}
 
-		/**
-		 * Plain text state serializer builder.
-		 * @param plainTextStateSerializer the plain text state serializer
-		 * @return The current {@code Builder} instance for method chaining.
-		 */
-		public Builder plainTextStateSerializer(PlainTextStateSerializer plainTextStateSerializer) {
-			this.config.plainTextStateSerializer = plainTextStateSerializer;
-			return this;
-		}
 
 		/**
 		 * Sets the actions to be performed before an interruption.

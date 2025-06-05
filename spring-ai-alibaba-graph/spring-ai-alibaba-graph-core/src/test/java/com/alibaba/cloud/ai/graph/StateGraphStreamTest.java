@@ -40,6 +40,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -299,15 +300,17 @@ public class StateGraphStreamTest {
 			.addEdge("result", END);
 
 		CompiledGraph compile = stateGraph.compile();
-		for (var output : compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"))) {
-			if (output instanceof AsyncGenerator<?>) {
-				AsyncGenerator asyncGenerator = (AsyncGenerator) output;
-				System.out.println("Streaming chunk: " + asyncGenerator);
-			}
-			else {
-				System.out.println("Node output: " + output);
-			}
-		}
+		AsyncGenerator<NodeOutput> stream = compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"));
+		stream.forEachAsync(nodeOutput -> System.out.println("Node output: " + nodeOutput));
+//		for (var output : compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"))) {
+//			if (output instanceof AsyncGenerator<?>) {
+//				AsyncGenerator asyncGenerator = (AsyncGenerator) output;
+//				System.out.println("Streaming chunk: " + asyncGenerator);
+//			}
+//			else {
+//				System.out.println("Node output: " + output);
+//			}
+//		}
 	}
 
 	/**
