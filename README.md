@@ -28,24 +28,24 @@ Spring AI Alibaba provides the following core capabilities to help developers qu
 Quickly get started with Spring AI Alibaba by adding 'spring-ai-alibaba-starter *' dependency to your java project.
 
 ```xml
-	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<groupId>com.alibaba.cloud.ai</groupId>
-				<artifactId>spring-ai-alibaba-bom</artifactId>
-				<version>1.0.0.2</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
-
+<dependencyManagement>
 	<dependencies>
-	  <dependency>
-		<groupId>com.alibaba.cloud.ai</groupId>
-		<artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
-	  </dependency>
+		<dependency>
+			<groupId>com.alibaba.cloud.ai</groupId>
+			<artifactId>spring-ai-alibaba-bom</artifactId>
+			<version>1.0.0.2</version>
+			<type>pom</type>
+			<scope>import</scope>
+		</dependency>
 	</dependencies>
+</dependencyManagement>
+
+<dependencies>
+  <dependency>
+	<groupId>com.alibaba.cloud.ai</groupId>
+	<artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+  </dependency>
+</dependencies>
 ```
 
 Please check [Quick Start](https://java2ai.com/docs/1.0.0/get-started/) on our official website to learn more details. More `starter`s include `spring-ai-alibaba-graph-core`, `spring-ai-alibaba-starter-nl2sql`,`spring-ai-alibaba-starter-nacos-mcp-client`, etc, please refer to the official website documentation.
