@@ -13,10 +13,10 @@
       "description": "Configuration properties for Nacos2 MCP server registration."
     },
     {
-      "name": "spring.ai.alibaba.mcp.nacos.dynamic",
-      "type": "com.alibaba.cloud.ai.mcp.nacos2.dynamic.server.config.NacosMcpDynamicProperties",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.dynamic.server.config.NacosMcpDynamicProperties",
-      "description": "Configuration properties for Nacos2 MCP dynamic server."
+      "name": "spring.ai.alibaba.mcp.nacos.gateway",
+      "type": "com.alibaba.cloud.ai.mcp.nacos2.gateway.properties.NacosMcpGatewayProperties",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.gateway.properties.NacosMcpGatewayProperties",
+      "description": "Configuration properties for Nacos2 MCP gateway server."
     }
   ],
   "properties": [
@@ -97,23 +97,23 @@
       "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.registry.NacosMcpRegistryProperties"
     },
     {
-      "name": "spring.ai.alibaba.mcp.nacos.dynamic.service-namespace",
+      "name": "spring.ai.alibaba.mcp.nacos.gateway.service-namespace",
       "type": "java.lang.String",
       "description": "Namespace for dynamically reading MCP server info from Nacos.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.dynamic.server.config.NacosMcpDynamicProperties"
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.gateway.properties.NacosMcpGatewayProperties"
     },
     {
-      "name": "spring.ai.alibaba.mcp.nacos.dynamic.service-group",
+      "name": "spring.ai.alibaba.mcp.nacos.gateway.service-group",
       "type": "java.lang.String",
       "description": "Group for dynamically reading MCP server info from Nacos.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.dynamic.server.config.NacosMcpDynamicProperties",
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.gateway.properties.NacosMcpGatewayProperties",
       "defaultValue": "DEFAULT_GROUP"
     },
     {
-      "name": "spring.ai.alibaba.mcp.nacos.dynamic.service-names",
+      "name": "spring.ai.alibaba.mcp.nacos.gateway.service-names",
       "type": "java.util.List<java.lang.String>",
       "description": "Service names for dynamically reading MCP server info from Nacos.",
-      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.dynamic.server.config.NacosMcpDynamicProperties"
+      "sourceType": "com.alibaba.cloud.ai.mcp.nacos2.gateway.properties.NacosMcpGatewayProperties"
     }
   ],
   "hints": []
