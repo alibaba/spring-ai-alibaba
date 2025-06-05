@@ -20,6 +20,10 @@ import com.alibaba.cloud.ai.example.deepresearch.model.Plan;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import org.bsc.async.AsyncGenerator;
+import org.bsc.async.AsyncGeneratorQueue;
+import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -35,12 +39,15 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
+import reactor.core.CoreSubscriber;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
@@ -69,6 +76,9 @@ public class PlannerNode implements NodeAction {
 		.maxMessages(MAX_MESSAGES)
 		.build();
 
+	private volatile boolean subscribed = false;
+	private final CountDownLatch streamCompleted = new CountDownLatch(1);
+
 	public PlannerNode(ChatClient.Builder chatClientBuilder, ToolCallback[] toolCallbacks) {
 		this.chatClient = chatClientBuilder
 			.defaultAdvisors(MessageChatMemoryAdvisor.builder(messageWindowChatMemory).build())
@@ -81,6 +91,10 @@ public class PlannerNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("Planner node is running.");
+		BlockingQueue<AsyncGenerator.Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
+		AsyncGenerator.WithResult<StreamingOutput> it = new AsyncGenerator.WithResult<>(
+				new AsyncGeneratorQueue.Generator<>(queue));
+		final CountDownLatch streamStarted = new CountDownLatch(1);
 		List<Message> messages = TemplateUtil.applyPromptTemplate("planner", state);
 		// 添加HunmanFeedBack的Message
 		if (StringUtils.hasText(state.data().getOrDefault("feed_back_content", "").toString())) {
@@ -109,14 +123,57 @@ public class PlannerNode implements NodeAction {
 			return updated;
 		}
 
-		Flux<String> StreamResult = chatClient.prompt(converter.getFormat())
+		StringBuilder fullContent = new StringBuilder();
+		chatClient.prompt(converter.getFormat())
 			.advisors(a -> a.param(CONVERSATION_ID, threadId))
 			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
 			.messages(messages)
 			.stream()
-			.content();
+			.content()
+			.subscribe(
+					new CoreSubscriber<>() {
+						@Override
+						public void onSubscribe(Subscription subscription) {
+							if (!subscribed) {
+								subscribed = true;
+								subscription.request(Long.MAX_VALUE);
+								streamStarted.countDown();
+							}
+						}
 
-		String result = StreamResult.reduce((acc, next) -> acc + next).block();
+						@Override
+						public void onNext(String content) {
+							try {
+								if (content != null) {
+									fullContent.append(content);
+									state.updateState(Map.of("llm_result", content));
+									queue.add(AsyncGenerator.Data.of(new StreamingOutput(content, "llmNode", state)));
+								}
+							}
+							catch (Exception e) {
+								onError(e);
+							}
+						}
+
+						@Override
+						public void onError(Throwable throwable) {
+							System.err.println("Stream error: " + throwable.getMessage());
+							queue.add(AsyncGenerator.Data.error(throwable));
+							streamCompleted.countDown();
+						}
+
+						@Override
+						public void onComplete() {
+							System.out.println("Stream completed");
+							queue.add(AsyncGenerator.Data.done());
+							streamCompleted.countDown();
+						}
+					}
+			);
+		
+		// Wait for stream to complete
+		streamCompleted.await();
+		String result = fullContent.toString();
 		logger.info("Planner response: {}", result);
 		assert result != null;
 		Plan curPlan = null;
@@ -151,7 +208,7 @@ public class PlannerNode implements NodeAction {
 		updated.put("current_plan", curPlan);
 		updated.put("messages", List.of(new AssistantMessage(result)));
 		updated.put("planner_next_node", nextStep);
-
+		updated.put("plannerNode_messages", it);
 		return updated;
 	}
 

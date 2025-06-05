@@ -101,30 +101,104 @@ public class DeepResearchController {
 	 */
 	@RequestMapping(value = "/chat/stream", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> chatStream(@RequestBody(required = false) ChatRequest chatRequest) {
-		chatRequest = getDefaultChatRequest(chatRequest);
-		RunnableConfig runnableConfig = RunnableConfig.builder()
-			.threadId(String.valueOf(chatRequest.threadId()))
-			.build();
+		try {
+			chatRequest = getDefaultChatRequest(chatRequest);
+			String threadId = chatRequest.threadId();
+			RunnableConfig runnableConfig = RunnableConfig.builder()
+				.threadId(String.valueOf(threadId))
+				.build();
 
+			// Create sink with error handling
+			Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
+			
+			// Process the request based on type
+			processRequest(chatRequest, runnableConfig, sink);
+
+			// Return flux with proper error handling and cleanup
+			return sink.asFlux()
+				.doOnSubscribe(s -> logger.info("Client connected to stream for thread: {}", threadId))
+				.doOnCancel(() -> {
+					logger.info("Client disconnected from stream for thread: {}", threadId);
+					cleanupResources(threadId);
+				})
+				.doOnError(e -> {
+					logger.error("Error occurred during streaming for thread: {}", threadId, e);
+					cleanupResources(threadId);
+				})
+				.doOnComplete(() -> {
+					logger.info("Stream completed for thread: {}", threadId);
+					cleanupResources(threadId);
+				});
+		}
+		catch (Exception e) {
+			logger.error("Failed to initialize chat stream", e);
+			return Flux.error(e);
+		}
+	}
+
+	private void processRequest(ChatRequest chatRequest, RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) {
 		Map<String, Object> objectMap = new HashMap<>();
-		// Create a unicast sink to emit ServerSentEvents
-		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
-
-		// Handle human feedback if auto-accept is disabled and feedback is provided
-		if (!chatRequest.autoAcceptPlan() && StringUtils.hasText(chatRequest.interruptFeedback())) {
-			handleHumanFeedback(chatRequest, objectMap, runnableConfig, sink);
+		
+		try {
+			if (!chatRequest.autoAcceptPlan() && StringUtils.hasText(chatRequest.interruptFeedback())) {
+				handleHumanFeedback(chatRequest, objectMap, runnableConfig, sink);
+			}
+			else {
+				processInitialRequest(chatRequest, objectMap, runnableConfig, sink);
+			}
 		}
-		// First question
-		else {
-			initializeObjectMap(chatRequest, objectMap);
-			logger.info("init inputs: {}", objectMap);
-			AsyncGenerator<NodeOutput> resultFuture = compiledGraph.stream(objectMap, runnableConfig);
-			processStream(resultFuture, sink);
+		catch (Exception e) {
+			logger.error("Error processing request for thread: {}", chatRequest.threadId(), e);
+			sink.tryEmitError(e);
 		}
+	}
 
-		return sink.asFlux()
-			.doOnCancel(() -> logger.info("Client disconnected from stream"))
-			.doOnError(e -> logger.error("Error occurred during streaming", e));
+	private void processInitialRequest(ChatRequest chatRequest, Map<String, Object> objectMap, 
+			RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) {
+		initializeObjectMap(chatRequest, objectMap);
+		logger.info("Processing initial request for thread: {}, inputs: {}", chatRequest.threadId(), objectMap);
+		
+		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.stream(objectMap, runnableConfig);
+		processStreamOutput(resultFuture, sink);
+	}
+
+	private void processStreamOutput(AsyncGenerator<NodeOutput> resultFuture, Sinks.Many<ServerSentEvent<String>> sink) {
+		try {
+			for (NodeOutput output : resultFuture) {
+				if (output == null) {
+					continue;
+				}
+
+				Map<String, Object> data = output.state().data();
+				if (data == null) {
+					continue;
+				}
+
+				String jsonData = JSON.toJSONString(data);
+				ServerSentEvent<String> event = ServerSentEvent.builder(jsonData).build();
+
+				if (output instanceof AsyncGenerator<?>) {
+					logger.debug("Processing streaming chunk for generator: {}", output);
+				}
+				else {
+					logger.debug("Processing node output: {}", output);
+				}
+
+				if (!sink.tryEmitNext(event).isSuccess()) {
+					logger.warn("Failed to emit event to sink");
+				}
+			}
+		}
+		catch (Exception e) {
+			logger.error("Error processing stream output", e);
+			sink.tryEmitError(e);
+		}
+	}
+
+	private void cleanupResources(String threadId) {
+		// Add any necessary cleanup logic here
+		// For example, clearing thread-specific resources, closing connections, etc.
+		logger.debug("Cleaning up resources for thread: {}", threadId);
 	}
 
 	@GetMapping("/chat")
