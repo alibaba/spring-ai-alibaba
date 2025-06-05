@@ -14,7 +14,7 @@
 
 ![Spring AI Alibaba Architecture](./docs/imgs/spring-ai-alibaba-architecture.png)
 
-Spring AI Alibaba provides the following core capabilities to help developers quickly build their own Chatbot, Workflow, or Multi-agent applications:
+Spring AI Alibaba provides the following core capabilities to help developers quickly build Chatbot, Workflow, or Multi-agent applications:
 
 1. **Graph based multi-agent framework**, with Spring AI Alibaba Graph, developers can quickly build workflows and multi-agent applications in ease. Graph code can be generated from Dify DSL and debugged in a visual way.
 2. **Enterprise-ready AI ecosystem integration, bring agents from demo to production.** Spring AI Alibaba supports integration with the Aliyun Bailian platform, providing LLM model service and RAG knowledge  solutions; Support seamless integration of AI observation products such as ARMS and Langfuse; Support enterprise level MCP integration, including Nacos MCP Registry for MCP discovery and routing, etc.
