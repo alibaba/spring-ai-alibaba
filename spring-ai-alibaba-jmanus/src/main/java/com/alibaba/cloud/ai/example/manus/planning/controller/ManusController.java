@@ -29,6 +29,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
@@ -80,8 +81,15 @@ public class ManusController {
 		if (query == null || query.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "查询内容不能为空"));
 		}
+		String  conversationId = request.get("conversationId");
+		logger.info("conversationId is {}: ", conversationId);
+		if(conversationId == null || conversationId.trim().isEmpty()){
+			conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
+		}
 		ExecutionContext context = new ExecutionContext();
 		context.setUserRequest(query);
+		//全局会话ID
+		context.setConversationId(conversationId);
 		// 使用 PlanIdDispatcher 生成唯一的计划ID
 		String planId = planIdDispatcher.generatePlanId();
 		context.setPlanId(planId);

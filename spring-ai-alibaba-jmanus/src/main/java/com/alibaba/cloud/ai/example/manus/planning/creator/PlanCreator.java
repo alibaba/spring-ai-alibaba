@@ -32,6 +32,8 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 
 import java.util.List;
 
+import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
+
 /**
  * 负责创建执行计划的类
  */
@@ -61,7 +63,6 @@ public class PlanCreator {
 	 * @return 计划创建结果
 	 */
 	public void createPlan(ExecutionContext context) {
-		boolean useMemory = context.isUseMemory();
 		String planId = context.getPlanId();
 		if (planId == null || planId.isEmpty()) {
 			throw new IllegalArgumentException("Plan ID cannot be null or empty");
@@ -79,10 +80,9 @@ public class PlanCreator {
 
 			ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient()
 				.prompt(prompt)
-				.toolCallbacks(List.of(planningTool.getFunctionToolCallback()));
-			if (useMemory) {
-				requestSpec.advisors(MessageChatMemoryAdvisor.builder(llmService.getConversationMemory()).build());
-			}
+				.toolCallbacks(List.of(planningTool.getFunctionToolCallback()))
+				.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getConversationId()));
+
 			ChatClient.CallResponseSpec response = requestSpec.call();
 			String outputText = response.chatResponse().getResult().getOutput().getText();
 			// 检查计划是否创建成功

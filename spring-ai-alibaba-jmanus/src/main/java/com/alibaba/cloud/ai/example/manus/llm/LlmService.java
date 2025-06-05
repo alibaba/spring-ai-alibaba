@@ -348,6 +348,7 @@ public class LlmService {
 		// 执行和总结规划，用相同的memory
 		this.planningChatClient = ChatClient.builder(chatModel)
 			.defaultAdvisors(new SimpleLoggerAdvisor())
+			.defaultAdvisors(MessageChatMemoryAdvisor.builder(conversationMemory).build())
 			.defaultOptions(OpenAiChatOptions.builder().temperature(0.1).build())
 			.build();
 
