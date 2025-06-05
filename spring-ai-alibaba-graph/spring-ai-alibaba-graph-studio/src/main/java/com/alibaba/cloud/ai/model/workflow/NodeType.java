@@ -50,7 +50,9 @@ public enum NodeType {
 
 	TOOL("tool", "tool"),
 
-	KNOWLEDGE_RETRIEVAL("knowledge-retrieval", "knowledge-retrieval");
+	KNOWLEDGE_RETRIEVAL("knowledge-retrieval", "knowledge-retrieval"),
+
+    MCP("mcp", "unsupported");
 
 	private String value;
 

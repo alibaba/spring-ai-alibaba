@@ -437,6 +437,13 @@ public class HttpNode implements NodeAction {
 			this.data = data;
 		}
 
+        public boolean hasContent() {
+            return this.type != null
+                    && this.type != BodyType.NONE
+                    && this.data != null
+                    && !this.data.isEmpty();
+        }
+
 	}
 
 	public static class AuthConfig {

@@ -54,8 +54,6 @@ public class KnowledgeRetrievalNodeData extends NodeData {
         super(inputs, outputs);
     }
 
-    // Getters and Setters for all properties
-
     public String getUserPromptKey() {
         return userPromptKey;
     }

@@ -2,31 +2,60 @@ package com.alibaba.cloud.ai.service.generator.workflow.sections;
 
 import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.model.workflow.nodedata.ParameterParsingNodeData;
 import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class ParameterParsingNodeSection implements NodeSection {
 
-	@Override
-	public boolean support(NodeType t) {
-		return NodeType.PARAMETER_PARSING.equals(t);
-	}
+    @Override
+    public boolean support(NodeType nodeType) {
+        return NodeType.PARAMETER_PARSING.equals(nodeType);
+    }
 
-	// todo: add ParameterParsingNodeData
-	@Override
-	public String render(Node node) {
-		// ParameterParsingNodeData d = (ParameterParsingNodeData) node.getData();
-		// String id = node.getId();
-		// return String.format(
-		// "// —— ParameterParsingNode [%s] ——%n" +
-		// "ParameterParsingNode %1$sNode = ParameterParsingNode.builder()%n" +
-		// " .schema(\"%s\")%n" +
-		// " .build();%n" +
-		// "stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%1$sNode));%n%n",
-		// id, d.getSchema(), id
-		// );
-		return "";
-	}
+    @Override
+    public String render(Node node) {
+        ParameterParsingNodeData d = (ParameterParsingNodeData) node.getData();
+        String id = node.getId();
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(String.format("// —— ParameterParsingNode [%s] ——%n", id));
+        sb.append(String.format("ParameterParsingNode %sNode = ParameterParsingNode.builder()%n", id));
+
+        if (d.getInputTextKey() != null) {
+            sb.append(String.format("    .inputTextKey(\"%s\")%n", escape(d.getInputTextKey())));
+        }
+
+        sb.append("    .chatClient(chatClient)\n");
+
+        List<Map<String, String>> params = d.getParameters();
+        if (params != null && !params.isEmpty()) {
+            String joined = params.stream()
+                    .map(m -> {
+                        String entries = m.entrySet().stream()
+                                .map(e -> String.format("\"%s\", \"%s\"", escape(e.getKey()), escape(e.getValue())))
+                                .collect(Collectors.joining(", "));
+                        return String.format("Map.of(%s)", entries);
+                    })
+                    .collect(Collectors.joining(", "));
+            sb.append(String.format("    .parameters(List.of(%s))%n", joined));
+        }
+
+        if (d.getOutputKey() != null) {
+            sb.append(String.format("    .outputKey(\"%s\")%n", escape(d.getOutputKey())));
+        }
+
+        sb.append("    .build();\n");
+        sb.append(String.format(
+                "stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n",
+                id, id));
+
+        return sb.toString();
+    }
 
 }

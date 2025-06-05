@@ -12,32 +12,32 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Http 节点的数据模型，包含 Builder 的全部可配置项。
+ * The data model of the HTTP node, which contains all the configurable items of the Builder.。
  */
 public class HttpNodeData extends NodeData {
 
-    /** HTTP 方法，默认 GET */
+    /** HTTP method, default GET */
     private HttpMethod method = HttpMethod.GET;
 
-    /** 请求 URL */
+    /** Request URL */
     private String url;
 
-    /** 请求头 */
+    /** Request header */
     private Map<String, String> headers = Collections.emptyMap();
 
-    /** 查询参数 */
+    /** queryParams */
     private Map<String, String> queryParams = Collections.emptyMap();
 
-    /** 请求体配置 */
+    /** body */
     private HttpRequestNodeBody body = new HttpRequestNodeBody();
 
-    /** 鉴权配置 */
+    /** authConfig */
     private AuthConfig authConfig;
 
-    /** 重试配置 */
+    /** retryConfig */
     private RetryConfig retryConfig = new RetryConfig(3, 1000, true);
 
-    /** 响应写入的状态变量 Key */
+    /** outputKey */
     private String outputKey;
 
     public HttpNodeData(List<VariableSelector> inputs,
@@ -63,7 +63,6 @@ public class HttpNodeData extends NodeData {
         this.outputKey = outputKey;
     }
 
-    /** 向下兼容的简化构造，未指定时使用默认值。 */
     public HttpNodeData(List<VariableSelector> inputs,
                         List<com.alibaba.cloud.ai.model.Variable> outputs) {
         this(inputs, outputs, HttpMethod.GET, null,
@@ -72,7 +71,6 @@ public class HttpNodeData extends NodeData {
              new RetryConfig(3, 1000, true), null);
     }
 
-    // === getters & setters ===
 
     public HttpMethod getMethod() {
         return method;

@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * 将 Dify DSL 中的 HTTP 节点配置与 HttpNodeData 对象相互转换。
+ * Convert the HTTP node configuration in the Dify DSL to and from the HttpNodeData object.
  */
 @Component
 public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeData> {
@@ -43,7 +43,7 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
             @SuppressWarnings("unchecked")
             @Override
             public HttpNodeData parse(Map<String, Object> data) {
-                // 1. variable_selector -> inputs
+                // variable_selector -> inputs
                 List<VariableSelector> inputs = Optional
                         .ofNullable((List<String>) data.get("variable_selector"))
                         .filter(list -> list.size() == 2)
@@ -51,26 +51,24 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
                                 new VariableSelector(list.get(0), list.get(1))))
                         .orElse(Collections.emptyList());
 
-                // outputs 由 Section 处理状态注册，此处为空列表
                 List<com.alibaba.cloud.ai.model.Variable> outputs = List.of();
 
-                // 2. method & url
                 HttpMethod method = data.containsKey("method")
                         ? HttpMethod.valueOf(((String) data.get("method")).toUpperCase())
                         : HttpMethod.GET;
                 String url = (String) data.get("url");
 
-                // 3. headers & query_params
+                // headers & query_params
                 Map<String, String> headers = (Map<String, String>) (Map<?, ?>) data
                         .getOrDefault("headers", Collections.emptyMap());
                 Map<String, String> queryParams = (Map<String, String>) (Map<?, ?>) data
                         .getOrDefault("query_params", Collections.emptyMap());
 
-                // 4. body
+                // body
                 Object rawBody = data.get("body");
                 HttpRequestNodeBody body = HttpRequestNodeBody.from(rawBody);
 
-                // 5. auth
+                // auth
                 AuthConfig auth = null;
                 if (data.containsKey("auth")) {
                     Map<String, Object> am = (Map<String, Object>) data.get("auth");
@@ -84,7 +82,7 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
                     }
                 }
 
-                // 6. retry_config
+                // retry_config
                 Map<String, Object> rcMap = (Map<String, Object>) data.get("retry_config");
                 int maxRetries = rcMap != null && rcMap.get("max_retries") != null
                         ? ((Number) rcMap.get("max_retries")).intValue()
@@ -97,7 +95,7 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
                         : true;
                 RetryConfig retryConfig = new RetryConfig(maxRetries, maxRetryInterval, enable);
 
-                // 7. output_key
+                // output_key
                 String outputKey = (String) data.get("output_key");
 
                 return new HttpNodeData(
@@ -167,9 +165,6 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
                 return m;
             }
         }),
-        /**
-         * CUSTOM 用于处理非 DIFY 方言的自定义字段序列化/反序列化
-         */
         CUSTOM(defaultCustomDialectConverter(HttpNodeData.class));
 
         private final DialectConverter<HttpNodeData> converter;

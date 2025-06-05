@@ -23,11 +23,9 @@ public class DocumentExtractorNodeSection implements NodeSection {
         String id = node.getId();
 
         StringBuilder sb = new StringBuilder();
-        // 注释 + 声明
         sb.append(String.format("// —— DocumentExtractorNode [%s] ——%n", id));
         sb.append(String.format("DocumentExtractorNode %sNode = DocumentExtractorNode.builder()%n", id));
 
-        // 1. 渲染 fileList（如果有）
         List<String> fileList = data.getFileList();
         if (fileList != null && !fileList.isEmpty()) {
             String joined = fileList.stream()
@@ -36,7 +34,6 @@ public class DocumentExtractorNodeSection implements NodeSection {
             sb.append(String.format("    .fileList(List.of(%s))%n", joined));
         }
 
-        // 2. 渲染 paramsKey（如果有）
         List<com.alibaba.cloud.ai.model.VariableSelector> inputs = data.getInputs();
         if (inputs != null && !inputs.isEmpty()) {
             // 取第一个 VariableSelector 的 name 作为 paramsKey
@@ -44,11 +41,9 @@ public class DocumentExtractorNodeSection implements NodeSection {
             sb.append(String.format("    .paramsKey(\"%s\")%n", escape(key)));
         }
 
-        // 3. 渲染 outputKey（总有值）
         String outputKey = data.getOutputKey();
         sb.append(String.format("    .outputKey(\"%s\")%n", escape(outputKey)));
 
-        // 完成 build 并加入 stateGraph
         sb.append("    .build();\n");
         sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id, id));
 

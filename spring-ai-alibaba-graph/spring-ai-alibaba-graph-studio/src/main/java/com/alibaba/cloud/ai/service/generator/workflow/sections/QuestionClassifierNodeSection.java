@@ -28,17 +28,14 @@ public class QuestionClassifierNodeSection implements NodeSection {
         sb.append(String.format("// —— QuestionClassifierNode [%s] ——%n", id));
         sb.append(String.format("QuestionClassifierNode %sNode = QuestionClassifierNode.builder()%n", id));
 
-        // 1. chatClient
         sb.append("    .chatClient(chatClient)\n");
 
-        // 2. inputTextKey（如果有）
         List<VariableSelector> inputs = data.getInputs();
         if (inputs != null && !inputs.isEmpty()) {
             String key = inputs.get(0).getName();
             sb.append(String.format("    .inputTextKey(\"%s\")%n", escape(key)));
         }
 
-        // 3. categories —— 从 NodeData.getClasses() 中取每个 ClassConfig 的 id
         List<String> categoryIds = data.getClasses().stream()
                 .map(QuestionClassifierNodeData.ClassConfig::getId)
                 .collect(Collectors.toList());
@@ -50,13 +47,11 @@ public class QuestionClassifierNodeSection implements NodeSection {
             sb.append(String.format("    .categories(List.of(%s))%n", joined));
         }
 
-        // 4. classificationInstructions —— 包装 instruction 字符串为 List
         String instr = data.getInstruction();
         if (instr != null && !instr.isBlank()) {
             sb.append(String.format("    .classificationInstructions(List.of(\"%s\"))%n", escape(instr)));
         }
 
-        // 5. build 并加入 stateGraph
         sb.append("    .build();\n");
         sb.append(String.format(
                 "stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n",
