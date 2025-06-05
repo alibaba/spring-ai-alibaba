@@ -1,14 +1,14 @@
 class PlanTemplateListUIHandler {
-    constructor(planTemplateManager) {
-       this.planTemplateManager = planTemplateManager; // Will hold the PlanTemplateManagerOld instance
+    constructor() { 
         this.taskListEl = null;
         this.newTaskBtn = null;
-        this.planTemplateManager.setPlanTemplateListUIHandler(this);
+        this.planTemplateList = [];
+        this.currentPlanTemplateId = null;
+        
+        this.setupEventListeners();
     }
 
-    init() { // Removed planTemplateManager from params, as it's set in constructor
-        // this.planTemplateManager = planTemplateManager; // No longer needed here
-
+    init() {
         this.taskListEl = document.querySelector('.task-list');
         this.newTaskBtn = document.querySelector('.new-task-btn');
 
@@ -24,27 +24,50 @@ class PlanTemplateListUIHandler {
 
         if (this.newTaskBtn) {
             this.newTaskBtn.addEventListener('click', () => {
-                this.planTemplateManager.handleClearInput();
-                this.updatePlanTemplateListUI(); // Explicitly update list after clearing
+                this.handleNewTaskButtonClick();
             });
             console.log('[PlanTemplateListUIHandler] init: 新建任务按钮事件监听器已附加。');
         }
-
-        this.updatePlanTemplateListUI(); // Initial population of the list
+        
+        // 直接加载计划模板列表，而不是请求状态
+        this.loadPlanTemplateList();
         console.log('PlanTemplateListUIHandler 初始化完成');
     }
 
+    setupEventListeners() {
+
+        // 监听当前计划模板变化事件
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.CURRENT_PLAN_TEMPLATE_CHANGED, (data) => {
+            this.currentPlanTemplateId = data.templateId;
+            this.updatePlanTemplateListUI();
+        });
+
+        // 监听生成状态变化事件，当生成成功时自动刷新列表
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.GENERATION_STATE_CHANGED, async (data) => {
+            if (!data.isGenerating && data.success) {
+                console.log('[PlanTemplateListUIHandler] 检测到计划生成完成，刷新列表...');
+                await this.loadPlanTemplateList();
+            }
+        });
+
+       
+    }
+
+    handleNewTaskButtonClick() {
+        // 发送清空输入事件
+        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.JSON_CONTENT_CLEAR);
+        // 发送当前计划模板变化事件（清空选择）
+        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CURRENT_PLAN_TEMPLATE_CHANGED, { templateId: null });
+    }
+
     updatePlanTemplateListUI() {
-        if (!this.taskListEl || !this.planTemplateManager) {
-            console.error('[PlanTemplateListUIHandler] updatePlanTemplateListUI: 依赖项未初始化 (taskListEl or planTemplateManager)');
+        if (!this.taskListEl) {
+            console.error('[PlanTemplateListUIHandler] updatePlanTemplateListUI: taskListEl 未初始化');
             return;
         }
         this.taskListEl.innerHTML = ''; // Clear existing list items
 
-        const planTemplateList = this.planTemplateManager.planTemplateList;
-        const currentPlanTemplateId = this.planTemplateManager.currentPlanTemplateId;
-
-        if (planTemplateList.length === 0) {
+        if (this.planTemplateList.length === 0) {
             const emptyItem = document.createElement('li');
             emptyItem.className = 'task-item empty';
             emptyItem.textContent = '没有可用的计划模板';
@@ -53,7 +76,7 @@ class PlanTemplateListUIHandler {
         }
 
         // Sort templates by updateTime or createTime descending
-        const sortedTemplates = [...planTemplateList].sort((a, b) => {
+        const sortedTemplates = [...this.planTemplateList].sort((a, b) => {
             const timeA = new Date(a.updateTime || a.createTime);
             const timeB = new Date(b.updateTime || b.createTime);
             return timeB - timeA;
@@ -62,18 +85,18 @@ class PlanTemplateListUIHandler {
         sortedTemplates.forEach(template => {
             const listItem = document.createElement('li');
             listItem.className = 'task-item';
-            if (template.id === currentPlanTemplateId) {
+            if (template.id === this.currentPlanTemplateId) {
                 listItem.classList.add('selected');
             }
 
             const updateTime = new Date(template.updateTime || template.createTime);
-            const relativeTime = this.planTemplateManager.constructor.getRelativeTimeString(updateTime);
+            const relativeTime = this.getRelativeTimeString(updateTime);
 
             listItem.innerHTML = `
                 <div class="task-icon">[📄]</div>
                 <div class="task-details">
                     <div class="task-title">${template.title || '未命名计划'}</div>
-                    <div class="task-preview">${this.planTemplateManager.constructor.truncateText(template.description || '无描述', 40)}</div>
+                    <div class="task-preview">${this.truncateText(template.description || '无描述', 40)}</div>
                 </div>
                 <div class="task-time">${relativeTime}</div>
                 <div class="task-actions">
@@ -84,20 +107,20 @@ class PlanTemplateListUIHandler {
             const taskDetailsEl = listItem.querySelector('.task-details');
             if (taskDetailsEl) {
                 taskDetailsEl.addEventListener('click', () => {
-                    this.handlePlanTemplateClick(template); // Call local method
+                    this.handlePlanTemplateClick(template);
                 });
             }
 
             const deleteTaskBtn = listItem.querySelector('.delete-task-btn');
             if (deleteTaskBtn) {
                 deleteTaskBtn.addEventListener('click', (event) => {
-                    event.stopPropagation();
-                    this.handleDeletePlanTemplate(template); // Call local method
+                    event.stopPropagation(); 
+                    this.handleDeletePlanTemplate(template);
                 });
             }
             this.taskListEl.appendChild(listItem);
         });
-
+        
         if (this.newTaskBtn) {
             this.newTaskBtn.innerHTML = '<span class="icon-add"></span> 新建计划 <span class="shortcut">⌘ K</span>';
         }
@@ -105,64 +128,66 @@ class PlanTemplateListUIHandler {
     }
 
     async handlePlanTemplateClick(template) {
-        this.planTemplateManager.currentPlanTemplateId = template.id;
-        this.planTemplateManager.currentPlanId = null;
-        this.planTemplateManager.isExecuting = false;
+        // 发送计划模板选择事件
         TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_TEMPLATE_SELECTED, { templateId: template.id });
         console.log(`[PlanTemplateListUIHandler] Emitted PLAN_TEMPLATE_SELECTED event with templateId: ${template.id}`);
-
+        
         try {
             const versionsResponse = await ManusAPI.getPlanVersions(template.id);
             const planVersionsList = versionsResponse.versions || [];
 
             if (planVersionsList.length > 0) {
-                const latestPlanJson = planVersionsList[planVersionsList.length - 1];
-
-                this.planTemplateManager.jsonEditor.value = latestPlanJson;
-                this.planTemplateManager.saveToVersionHistory(latestPlanJson);
+                const latestPlanJson = planVersionsList[planVersionsList.length - 1]; 
+                
+                // 首先设置版本历史
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.VERSION_HISTORY_SET, { 
+                    versions: planVersionsList 
+                });
+                
+                // 然后设置JSON内容（这会自动保存到版本历史的最后一个位置）
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.JSON_CONTENT_SET, { 
+                    content: latestPlanJson 
+                });
 
                 try {
                     const parsedPlan = JSON.parse(latestPlanJson);
-                    this.planTemplateManager.currentPlanData = {
-                        json: latestPlanJson,
+                    
+                    // 通过事件发送计划参数变化
+                    TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_PARAMS_CHANGED, {
                         prompt: parsedPlan.prompt || '',
                         params: parsedPlan.params || ''
-                    };
-                    this.planTemplateManager.planPromptInput.value = this.planTemplateManager.currentPlanData.prompt;
-                    if (this.planTemplateManager.planParamsInput) {
-                        this.planTemplateManager.planParamsInput.value = this.planTemplateManager.currentPlanData.params;
-                    }
-                } catch (parseError) {
+                    });
+                } catch (parseError) { 
                     console.warn('解析计划JSON时出错:', parseError);
-                    this.planTemplateManager.currentPlanData = { json: latestPlanJson };
-                    this.planTemplateManager.planPromptInput.value = '';
-                    if (this.planTemplateManager.planParamsInput) {
-                        this.planTemplateManager.planParamsInput.value = '';
-                    }
+                    // 发送空的计划参数
+                    TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_PARAMS_CHANGED, {
+                        prompt: '',
+                        params: ''
+                    });
                 }
             } else {
-                this.planTemplateManager.jsonEditor.value = '';
-                this.planTemplateManager.planPromptInput.value = '';
-                if (this.planTemplateManager.planParamsInput) {
-                    this.planTemplateManager.planParamsInput.value = '';
-                }
-                this.planTemplateManager.currentPlanData = null;
+                // 清空JSON内容和参数
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.JSON_CONTENT_CLEAR);
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_PARAMS_CHANGED, {
+                    prompt: '',
+                    params: ''
+                });
             }
 
-            this.updatePlanTemplateListUI(); // Update the list UI (e.g., to show selection)
-            this.planTemplateManager.updateApiUrl();
-            this.planTemplateManager.updateUIState();
+            // 更新本地状态
+            this.currentPlanTemplateId = template.id;
+            this.updatePlanTemplateListUI();
         } catch (error) {
             console.error('加载计划模板详情失败:', error);
             alert('加载计划模板详情失败: ' + error.message);
-            this.planTemplateManager.jsonEditor.value = '';
-            this.planTemplateManager.planPromptInput.value = '';
-            if (this.planTemplateManager.planParamsInput) {
-                this.planTemplateManager.planParamsInput.value = '';
-            }
-            this.planTemplateManager.currentPlanData = null;
-            this.planTemplateManager.updateUIState(); // Ensure UI state is consistent on error
-            this.updatePlanTemplateListUI(); // Also refresh list on error
+            
+            // 清空相关内容
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.JSON_CONTENT_CLEAR);
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_PARAMS_CHANGED, {
+                prompt: '',
+                params: ''
+            });
+            this.updatePlanTemplateListUI();
         }
     }
 
@@ -175,23 +200,85 @@ class PlanTemplateListUIHandler {
         if (confirm(`确定要删除计划模板 "${template.title || '未命名计划'}" 吗？此操作不可恢复。`)) {
             try {
                 await ManusAPI.deletePlanTemplate(template.id);
-                // Update the list in PlanTemplateManagerOld
-                this.planTemplateManager.planTemplateList = this.planTemplateManager.planTemplateList.filter(t => t.id !== template.id);
-
-                if (this.planTemplateManager.currentPlanTemplateId === template.id) {
-                    // If the deleted template was the current one, clear inputs and reset state
-                    this.planTemplateManager.handleClearInput();
+                
+                if (this.currentPlanTemplateId === template.id) {
+                    // 如果删除的是当前选中的模板，清空选择和相关内容
+                    this.currentPlanTemplateId = null;
+                    TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CURRENT_PLAN_TEMPLATE_CHANGED, { templateId: null });
+                    TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.JSON_CONTENT_CLEAR);
+                    TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_PARAMS_CHANGED, {
+                        prompt: '',
+                        params: ''
+                    });
                 }
-                // Always refresh the list UI from here
-                this.updatePlanTemplateListUI();
+                
+                // 重新加载列表而不是手动更新
+                await this.loadPlanTemplateList();
                 alert('计划模板已删除。');
 
             } catch (error) {
                 console.error('删除计划模板失败:', error);
                 alert('删除计划模板失败: ' + error.message);
-                // Optionally, refresh list even on error to ensure consistency if backend state changed partially
-                this.updatePlanTemplateListUI();
+                // 即使出错也刷新列表以确保一致性
+                await this.loadPlanTemplateList();
             }
         }
+    }
+
+    /**
+     * 直接从API加载计划模板列表
+     */
+    async loadPlanTemplateList() {
+        try {
+            console.log('[PlanTemplateListUIHandler] 开始加载计划模板列表...');
+            const response = await ManusAPI.getAllPlanTemplates();
+            
+            // 处理 API 返回的数据结构: { count: number, templates: Array }
+            if (response && response.templates && Array.isArray(response.templates)) {
+                this.planTemplateList = response.templates;
+                console.log(`[PlanTemplateListUIHandler] 成功加载 ${response.templates.length} 个计划模板`);
+            } else {
+                this.planTemplateList = [];
+                console.warn('[PlanTemplateListUIHandler] API 返回的数据格式异常，使用空列表', response);
+            }
+            
+            // 更新UI
+            this.updatePlanTemplateListUI();
+            
+            
+        } catch (error) {
+            console.error('[PlanTemplateListUIHandler] 加载计划模板列表失败:', error);
+            this.planTemplateList = [];
+            this.updatePlanTemplateListUI();
+            
+            // 显示错误提示
+            if (this.taskListEl) {
+                const errorItem = document.createElement('li');
+                errorItem.className = 'task-item error';
+                errorItem.textContent = '加载计划模板列表失败: ' + error.message;
+                this.taskListEl.appendChild(errorItem);
+            }
+        }
+    }
+
+    // 工具函数
+    getRelativeTimeString(date) {
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMinutes = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMinutes < 1) return '刚刚';
+        if (diffMinutes < 60) return `${diffMinutes}分钟前`;
+        if (diffHours < 24) return `${diffHours}小时前`;
+        if (diffDays < 30) return `${diffDays}天前`;
+        
+        return date.toLocaleDateString('zh-CN');
+    }
+
+    truncateText(text, maxLength) {
+        if (!text || text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
     }
 }
