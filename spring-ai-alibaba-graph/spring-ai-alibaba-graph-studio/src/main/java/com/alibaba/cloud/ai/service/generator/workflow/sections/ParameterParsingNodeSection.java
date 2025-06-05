@@ -29,49 +29,46 @@ import java.util.stream.Collectors;
 @Component
 public class ParameterParsingNodeSection implements NodeSection {
 
-    @Override
-    public boolean support(NodeType nodeType) {
-        return NodeType.PARAMETER_PARSING.equals(nodeType);
-    }
+	@Override
+	public boolean support(NodeType nodeType) {
+		return NodeType.PARAMETER_PARSING.equals(nodeType);
+	}
 
-    @Override
-    public String render(Node node) {
-        ParameterParsingNodeData d = (ParameterParsingNodeData) node.getData();
-        String id = node.getId();
-        StringBuilder sb = new StringBuilder();
+	@Override
+	public String render(Node node) {
+		ParameterParsingNodeData d = (ParameterParsingNodeData) node.getData();
+		String id = node.getId();
+		StringBuilder sb = new StringBuilder();
 
-        sb.append(String.format("        // —— ParameterParsingNode [%s] ——%n", id));
-        sb.append(String.format("        ParameterParsingNode %sNode = ParameterParsingNode.builder()%n", id));
+		sb.append(String.format("        // —— ParameterParsingNode [%s] ——%n", id));
+		sb.append(String.format("        ParameterParsingNode %sNode = ParameterParsingNode.builder()%n", id));
 
-        if (d.getInputTextKey() != null) {
-            sb.append(String.format("            .inputTextKey(\"%s\")%n", escape(d.getInputTextKey())));
-        }
+		if (d.getInputTextKey() != null) {
+			sb.append(String.format("            .inputTextKey(\"%s\")%n", escape(d.getInputTextKey())));
+		}
 
-        sb.append("            .chatClient(chatClient)\n");
+		sb.append("            .chatClient(chatClient)\n");
 
-        List<Map<String, String>> params = d.getParameters();
-        if (params != null && !params.isEmpty()) {
-            String joined = params.stream()
-                    .map(m -> {
-                        String entries = m.entrySet().stream()
-                                .map(e -> String.format("\"%s\", \"%s\"", escape(e.getKey()), escape(e.getValue())))
-                                .collect(Collectors.joining(", "));
-                        return String.format("Map.of(%s)", entries);
-                    })
-                    .collect(Collectors.joining(", "));
-            sb.append(String.format("            .parameters(List.of(%s))%n", joined));
-        }
+		List<Map<String, String>> params = d.getParameters();
+		if (params != null && !params.isEmpty()) {
+			String joined = params.stream().map(m -> {
+				String entries = m.entrySet()
+					.stream()
+					.map(e -> String.format("\"%s\", \"%s\"", escape(e.getKey()), escape(e.getValue())))
+					.collect(Collectors.joining(", "));
+				return String.format("Map.of(%s)", entries);
+			}).collect(Collectors.joining(", "));
+			sb.append(String.format("            .parameters(List.of(%s))%n", joined));
+		}
 
-        if (d.getOutputKey() != null) {
-            sb.append(String.format("            .outputKey(\"%s\")%n", escape(d.getOutputKey())));
-        }
+		if (d.getOutputKey() != null) {
+			sb.append(String.format("            .outputKey(\"%s\")%n", escape(d.getOutputKey())));
+		}
 
-        sb.append("            .build();\n");
-        sb.append(String.format(
-                "stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n",
-                id, id));
+		sb.append("            .build();\n");
+		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id, id));
 
-        return sb.toString();
-    }
+		return sb.toString();
+	}
 
 }

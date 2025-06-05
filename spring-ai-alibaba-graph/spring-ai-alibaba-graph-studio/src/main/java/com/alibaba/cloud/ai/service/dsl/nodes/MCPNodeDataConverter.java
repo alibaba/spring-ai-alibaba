@@ -36,109 +36,112 @@ import java.util.stream.Stream;
 @Component
 public class MCPNodeDataConverter extends AbstractNodeDataConverter<MCPNodeData> {
 
-    @Override
-    public Boolean supportNodeType(NodeType nodeType) {
-        return NodeType.MCP.equals(nodeType);
-    }
+	@Override
+	public Boolean supportNodeType(NodeType nodeType) {
+		return NodeType.MCP.equals(nodeType);
+	}
 
-    @Override
-    protected List<DialectConverter<MCPNodeData>> getDialectConverters() {
-        return Stream.of(Converter.DIFY, Converter.CUSTOM)
-                     .map(Converter::dialectConverter)
-                     .collect(Collectors.toList());
-    }
+	@Override
+	protected List<DialectConverter<MCPNodeData>> getDialectConverters() {
+		return Stream.of(Converter.DIFY, Converter.CUSTOM)
+			.map(Converter::dialectConverter)
+			.collect(Collectors.toList());
+	}
 
-    private enum Converter {
-        DIFY(new DialectConverter<>() {
-            @SuppressWarnings("unchecked")
-            @Override
-            public MCPNodeData parse(Map<String, Object> data) {
-                MCPNodeData nd = new MCPNodeData();
+	private enum Converter {
 
-                // url
-                nd.setUrl((String) data.get("url"));
+		DIFY(new DialectConverter<>() {
+			@SuppressWarnings("unchecked")
+			@Override
+			public MCPNodeData parse(Map<String, Object> data) {
+				MCPNodeData nd = new MCPNodeData();
 
-                // tool
-                nd.setTool((String) data.get("tool"));
+				// url
+				nd.setUrl((String) data.get("url"));
 
-                // headers (Map<String, String>)
-                Map<String, String> hmap = (Map<String, String>) data.get("headers");
-                if (hmap != null) {
-                    nd.setHeaders(new LinkedHashMap<>(hmap));
-                }
+				// tool
+				nd.setTool((String) data.get("tool"));
 
-                // params (Map<String, Object>)
-                Map<String, Object> pmap = (Map<String, Object>) data.get("params");
-                if (pmap != null) {
-                    nd.setParams(new LinkedHashMap<>(pmap));
-                }
+				// headers (Map<String, String>)
+				Map<String, String> hmap = (Map<String, String>) data.get("headers");
+				if (hmap != null) {
+					nd.setHeaders(new LinkedHashMap<>(hmap));
+				}
 
-                // output_key
-                nd.setOutputKey((String) data.get("output_key"));
+				// params (Map<String, Object>)
+				Map<String, Object> pmap = (Map<String, Object>) data.get("params");
+				if (pmap != null) {
+					nd.setParams(new LinkedHashMap<>(pmap));
+				}
 
-                // input_param_keys (List<String>)
-                List<String> ipk = (List<String>) data.get("input_param_keys");
-                if (ipk != null) {
-                    nd.setInputParamKeys(ipk);
-                } else {
-                    nd.setInputParamKeys(Collections.emptyList());
-                }
+				// output_key
+				nd.setOutputKey((String) data.get("output_key"));
 
-                return nd;
-            }
+				// input_param_keys (List<String>)
+				List<String> ipk = (List<String>) data.get("input_param_keys");
+				if (ipk != null) {
+					nd.setInputParamKeys(ipk);
+				}
+				else {
+					nd.setInputParamKeys(Collections.emptyList());
+				}
 
-            @Override
-            public Map<String, Object> dump(MCPNodeData nd) {
-                Map<String, Object> m = new LinkedHashMap<>();
+				return nd;
+			}
 
-                // url
-                if (nd.getUrl() != null) {
-                    m.put("url", nd.getUrl());
-                }
+			@Override
+			public Map<String, Object> dump(MCPNodeData nd) {
+				Map<String, Object> m = new LinkedHashMap<>();
 
-                // tool
-                if (nd.getTool() != null) {
-                    m.put("tool", nd.getTool());
-                }
+				// url
+				if (nd.getUrl() != null) {
+					m.put("url", nd.getUrl());
+				}
 
-                // headers
-                if (nd.getHeaders() != null && !nd.getHeaders().isEmpty()) {
-                    m.put("headers", nd.getHeaders());
-                }
+				// tool
+				if (nd.getTool() != null) {
+					m.put("tool", nd.getTool());
+				}
 
-                // params
-                if (nd.getParams() != null && !nd.getParams().isEmpty()) {
-                    m.put("params", nd.getParams());
-                }
+				// headers
+				if (nd.getHeaders() != null && !nd.getHeaders().isEmpty()) {
+					m.put("headers", nd.getHeaders());
+				}
 
-                // output_key
-                if (nd.getOutputKey() != null) {
-                    m.put("output_key", nd.getOutputKey());
-                }
+				// params
+				if (nd.getParams() != null && !nd.getParams().isEmpty()) {
+					m.put("params", nd.getParams());
+				}
 
-                // input_param_keys
-                if (nd.getInputParamKeys() != null && !nd.getInputParamKeys().isEmpty()) {
-                    m.put("input_param_keys", nd.getInputParamKeys());
-                }
+				// output_key
+				if (nd.getOutputKey() != null) {
+					m.put("output_key", nd.getOutputKey());
+				}
 
-                return m;
-            }
+				// input_param_keys
+				if (nd.getInputParamKeys() != null && !nd.getInputParamKeys().isEmpty()) {
+					m.put("input_param_keys", nd.getInputParamKeys());
+				}
 
-            @Override
-            public Boolean supportDialect(DSLDialectType dialect) {
-                return DSLDialectType.DIFY.equals(dialect);
-            }
-        }),
-        CUSTOM(defaultCustomDialectConverter(MCPNodeData.class));
+				return m;
+			}
 
-        private final DialectConverter<MCPNodeData> converter;
+			@Override
+			public Boolean supportDialect(DSLDialectType dialect) {
+				return DSLDialectType.DIFY.equals(dialect);
+			}
+		}), CUSTOM(defaultCustomDialectConverter(MCPNodeData.class));
 
-        Converter(DialectConverter<MCPNodeData> converter) {
-            this.converter = converter;
-        }
+		private final DialectConverter<MCPNodeData> converter;
 
-        public DialectConverter<MCPNodeData> dialectConverter() {
-            return converter;
-        }
-    }
+		Converter(DialectConverter<MCPNodeData> converter) {
+			this.converter = converter;
+		}
+
+		public DialectConverter<MCPNodeData> dialectConverter() {
+			return converter;
+		}
+
+	}
+
 }

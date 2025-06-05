@@ -28,127 +28,116 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The data model of the HTTP node, which contains all the configurable items of the Builder.。
+ * The data model of the HTTP node, which contains all the configurable items of the
+ * Builder.。
  */
 public class HttpNodeData extends NodeData {
 
-    /** HTTP method, default GET */
-    private HttpMethod method = HttpMethod.GET;
+	/** HTTP method, default GET */
+	private HttpMethod method = HttpMethod.GET;
 
-    /** Request URL */
-    private String url;
+	/** Request URL */
+	private String url;
 
-    /** Request header */
-    private Map<String, String> headers = Collections.emptyMap();
+	/** Request header */
+	private Map<String, String> headers = Collections.emptyMap();
 
-    /** queryParams */
-    private Map<String, String> queryParams = Collections.emptyMap();
+	/** queryParams */
+	private Map<String, String> queryParams = Collections.emptyMap();
 
-    /** body */
-    private HttpRequestNodeBody body = new HttpRequestNodeBody();
+	/** body */
+	private HttpRequestNodeBody body = new HttpRequestNodeBody();
 
-    /** authConfig */
-    private AuthConfig authConfig;
+	/** authConfig */
+	private AuthConfig authConfig;
 
-    /** retryConfig */
-    private RetryConfig retryConfig = new RetryConfig(3, 1000, true);
+	/** retryConfig */
+	private RetryConfig retryConfig = new RetryConfig(3, 1000, true);
 
-    /** outputKey */
-    private String outputKey;
+	/** outputKey */
+	private String outputKey;
 
-    public HttpNodeData(List<VariableSelector> inputs,
-                        List<com.alibaba.cloud.ai.model.Variable> outputs,
-                        HttpMethod method,
-                        String url,
-                        Map<String, String> headers,
-                        Map<String, String> queryParams,
-                        HttpRequestNodeBody body,
-                        AuthConfig authConfig,
-                        RetryConfig retryConfig,
-                        String outputKey) {
-        super(inputs, outputs);
-        this.method = method;
-        this.url = url;
-        this.headers = headers != null ? headers : Collections.emptyMap();
-        this.queryParams = queryParams != null ? queryParams : Collections.emptyMap();
-        this.body = body != null ? body : new HttpRequestNodeBody();
-        this.authConfig = authConfig;
-        this.retryConfig = retryConfig != null
-            ? retryConfig
-            : new RetryConfig(3, 1000, true);
-        this.outputKey = outputKey;
-    }
+	public HttpNodeData(List<VariableSelector> inputs, List<com.alibaba.cloud.ai.model.Variable> outputs,
+			HttpMethod method, String url, Map<String, String> headers, Map<String, String> queryParams,
+			HttpRequestNodeBody body, AuthConfig authConfig, RetryConfig retryConfig, String outputKey) {
+		super(inputs, outputs);
+		this.method = method;
+		this.url = url;
+		this.headers = headers != null ? headers : Collections.emptyMap();
+		this.queryParams = queryParams != null ? queryParams : Collections.emptyMap();
+		this.body = body != null ? body : new HttpRequestNodeBody();
+		this.authConfig = authConfig;
+		this.retryConfig = retryConfig != null ? retryConfig : new RetryConfig(3, 1000, true);
+		this.outputKey = outputKey;
+	}
 
-    public HttpNodeData(List<VariableSelector> inputs,
-                        List<com.alibaba.cloud.ai.model.Variable> outputs) {
-        this(inputs, outputs, HttpMethod.GET, null,
-             Collections.emptyMap(), Collections.emptyMap(),
-             new HttpRequestNodeBody(), null,
-             new RetryConfig(3, 1000, true), null);
-    }
+	public HttpNodeData(List<VariableSelector> inputs, List<com.alibaba.cloud.ai.model.Variable> outputs) {
+		this(inputs, outputs, HttpMethod.GET, null, Collections.emptyMap(), Collections.emptyMap(),
+				new HttpRequestNodeBody(), null, new RetryConfig(3, 1000, true), null);
+	}
 
+	public HttpMethod getMethod() {
+		return method;
+	}
 
-    public HttpMethod getMethod() {
-        return method;
-    }
+	public void setMethod(HttpMethod method) {
+		this.method = method;
+	}
 
-    public void setMethod(HttpMethod method) {
-        this.method = method;
-    }
+	public String getUrl() {
+		return url;
+	}
 
-    public String getUrl() {
-        return url;
-    }
+	public void setUrl(String url) {
+		this.url = url;
+	}
 
-    public void setUrl(String url) {
-        this.url = url;
-    }
+	public Map<String, String> getHeaders() {
+		return headers;
+	}
 
-    public Map<String, String> getHeaders() {
-        return headers;
-    }
+	public void setHeaders(Map<String, String> headers) {
+		this.headers = headers;
+	}
 
-    public void setHeaders(Map<String, String> headers) {
-        this.headers = headers;
-    }
+	public Map<String, String> getQueryParams() {
+		return queryParams;
+	}
 
-    public Map<String, String> getQueryParams() {
-        return queryParams;
-    }
+	public void setQueryParams(Map<String, String> queryParams) {
+		this.queryParams = queryParams;
+	}
 
-    public void setQueryParams(Map<String, String> queryParams) {
-        this.queryParams = queryParams;
-    }
+	public HttpRequestNodeBody getBody() {
+		return body;
+	}
 
-    public HttpRequestNodeBody getBody() {
-        return body;
-    }
+	public void setBody(HttpRequestNodeBody body) {
+		this.body = body;
+	}
 
-    public void setBody(HttpRequestNodeBody body) {
-        this.body = body;
-    }
+	public AuthConfig getAuthConfig() {
+		return authConfig;
+	}
 
-    public AuthConfig getAuthConfig() {
-        return authConfig;
-    }
+	public void setAuthConfig(AuthConfig authConfig) {
+		this.authConfig = authConfig;
+	}
 
-    public void setAuthConfig(AuthConfig authConfig) {
-        this.authConfig = authConfig;
-    }
+	public RetryConfig getRetryConfig() {
+		return retryConfig;
+	}
 
-    public RetryConfig getRetryConfig() {
-        return retryConfig;
-    }
+	public void setRetryConfig(RetryConfig retryConfig) {
+		this.retryConfig = retryConfig;
+	}
 
-    public void setRetryConfig(RetryConfig retryConfig) {
-        this.retryConfig = retryConfig;
-    }
+	public String getOutputKey() {
+		return outputKey;
+	}
 
-    public String getOutputKey() {
-        return outputKey;
-    }
+	public void setOutputKey(String outputKey) {
+		this.outputKey = outputKey;
+	}
 
-    public void setOutputKey(String outputKey) {
-        this.outputKey = outputKey;
-    }
 }

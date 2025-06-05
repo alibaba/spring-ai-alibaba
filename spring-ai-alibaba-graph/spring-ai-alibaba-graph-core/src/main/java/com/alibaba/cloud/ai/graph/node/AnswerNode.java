@@ -30,49 +30,52 @@ import java.util.regex.Pattern;
  */
 public class AnswerNode implements NodeAction {
 
-    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{\\{\\s*(.+?)\\s*\\}\\}");
+	private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{\\{\\s*(.+?)\\s*\\}\\}");
 
-    private final String answerTemplate;
+	private final String answerTemplate;
 
-    private AnswerNode(String answerTemplate) {
-        this.answerTemplate = answerTemplate;
-    }
+	private AnswerNode(String answerTemplate) {
+		this.answerTemplate = answerTemplate;
+	}
 
-    @Override
-    public Map<String, Object> apply(OverAllState state) {
-        // Replace {{key}} in the answerTemplate with the value of state.get(key).
-        StringBuffer sb = new StringBuffer();
-        Matcher matcher = PLACEHOLDER_PATTERN.matcher(answerTemplate);
-        while (matcher.find()) {
-            String key = matcher.group(1);
-            Object val = state.value(key).orElse("");
-            String replacement = val != null ? val.toString() : "";
-            replacement = replacement.replace("\\", "\\\\").replace("$", "\\$");
-            matcher.appendReplacement(sb, replacement);
-        }
-        matcher.appendTail(sb);
-        String resolved = sb.toString();
+	@Override
+	public Map<String, Object> apply(OverAllState state) {
+		// Replace {{key}} in the answerTemplate with the value of state.get(key).
+		StringBuffer sb = new StringBuffer();
+		Matcher matcher = PLACEHOLDER_PATTERN.matcher(answerTemplate);
+		while (matcher.find()) {
+			String key = matcher.group(1);
+			Object val = state.value(key).orElse("");
+			String replacement = val != null ? val.toString() : "";
+			replacement = replacement.replace("\\", "\\\\").replace("$", "\\$");
+			matcher.appendReplacement(sb, replacement);
+		}
+		matcher.appendTail(sb);
+		String resolved = sb.toString();
 
-        // Write the final result back to the state with the key name fixed to "answer"
-        Map<String, Object> result = new HashMap<>();
-        result.put("answer", resolved);
-        return result;
-    }
+		// Write the final result back to the state with the key name fixed to "answer"
+		Map<String, Object> result = new HashMap<>();
+		result.put("answer", resolved);
+		return result;
+	}
 
-    public static Builder builder() {
-        return new Builder();
-    }
+	public static Builder builder() {
+		return new Builder();
+	}
 
-    public static class Builder {
-        private String answerTemplate;
+	public static class Builder {
 
-        public Builder answer(String answerTemplate) {
-            this.answerTemplate = answerTemplate;
-            return this;
-        }
+		private String answerTemplate;
 
-        public AnswerNode build() {
-            return new AnswerNode(answerTemplate);
-        }
-    }
+		public Builder answer(String answerTemplate) {
+			this.answerTemplate = answerTemplate;
+			return this;
+		}
+
+		public AnswerNode build() {
+			return new AnswerNode(answerTemplate);
+		}
+
+	}
+
 }

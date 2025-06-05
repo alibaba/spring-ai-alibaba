@@ -29,48 +29,55 @@ import java.util.List;
  */
 public class HumanNodeData extends NodeData {
 
-    public static final List<Variable> DEFAULT_OUTPUT_SCHEMA = Collections.emptyList();
+	public static final List<Variable> DEFAULT_OUTPUT_SCHEMA = Collections.emptyList();
 
-    /** interruptStrategy，"always" or "conditioned" */
-    private String interruptStrategy;
+	/** interruptStrategy，"always" or "conditioned" */
+	private String interruptStrategy;
 
-    /** When interruptStrategy is "conditioned", check the boolean value for this status key */
-    private String interruptConditionKey;
+	/**
+	 * When interruptStrategy is "conditioned", check the boolean value for this status
+	 * key
+	 */
+	private String interruptConditionKey;
 
-    /**  When human feedback is received, only those keys in the feedback data are updated to OverAllState */
-    private List<String> stateUpdateKeys;
+	/**
+	 * When human feedback is received, only those keys in the feedback data are updated
+	 * to OverAllState
+	 */
+	private List<String> stateUpdateKeys;
 
-    public HumanNodeData() {
-        super(Collections.emptyList(), DEFAULT_OUTPUT_SCHEMA);
-        this.interruptStrategy = "always";
-    }
+	public HumanNodeData() {
+		super(Collections.emptyList(), DEFAULT_OUTPUT_SCHEMA);
+		this.interruptStrategy = "always";
+	}
 
-    public HumanNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
-        super(inputs, outputs);
-        this.interruptStrategy = "always";
-    }
+	public HumanNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
+		super(inputs, outputs);
+		this.interruptStrategy = "always";
+	}
 
-    public String getInterruptStrategy() {
-        return interruptStrategy;
-    }
+	public String getInterruptStrategy() {
+		return interruptStrategy;
+	}
 
-    public void setInterruptStrategy(String interruptStrategy) {
-        this.interruptStrategy = interruptStrategy;
-    }
+	public void setInterruptStrategy(String interruptStrategy) {
+		this.interruptStrategy = interruptStrategy;
+	}
 
-    public String getInterruptConditionKey() {
-        return interruptConditionKey;
-    }
+	public String getInterruptConditionKey() {
+		return interruptConditionKey;
+	}
 
-    public void setInterruptConditionKey(String interruptConditionKey) {
-        this.interruptConditionKey = interruptConditionKey;
-    }
+	public void setInterruptConditionKey(String interruptConditionKey) {
+		this.interruptConditionKey = interruptConditionKey;
+	}
 
-    public List<String> getStateUpdateKeys() {
-        return stateUpdateKeys;
-    }
+	public List<String> getStateUpdateKeys() {
+		return stateUpdateKeys;
+	}
 
-    public void setStateUpdateKeys(List<String> stateUpdateKeys) {
-        this.stateUpdateKeys = stateUpdateKeys;
-    }
+	public void setStateUpdateKeys(List<String> stateUpdateKeys) {
+		this.stateUpdateKeys = stateUpdateKeys;
+	}
+
 }

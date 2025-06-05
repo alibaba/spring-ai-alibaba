@@ -31,52 +31,55 @@ import java.util.stream.Stream;
 @Component
 public class AnswerNodeDataConverter extends AbstractNodeDataConverter<AnswerNodeData> {
 
-    @Override
-    public Boolean supportNodeType(NodeType nodeType) {
-        return NodeType.ANSWER.equals(nodeType);
-    }
+	@Override
+	public Boolean supportNodeType(NodeType nodeType) {
+		return NodeType.ANSWER.equals(nodeType);
+	}
 
-    @Override
-    protected List<DialectConverter<AnswerNodeData>> getDialectConverters() {
-        return Stream.of(Converter.DIFY, Converter.CUSTOM)
-                .map(Converter::dialectConverter)
-                .collect(Collectors.toList());
-    }
+	@Override
+	protected List<DialectConverter<AnswerNodeData>> getDialectConverters() {
+		return Stream.of(Converter.DIFY, Converter.CUSTOM)
+			.map(Converter::dialectConverter)
+			.collect(Collectors.toList());
+	}
 
-    private enum Converter {
-        DIFY(new DialectConverter<>() {
-            @Override
-            public AnswerNodeData parse(Map<String, Object> data) {
-                AnswerNodeData nd = new AnswerNodeData();
-                nd.setAnswer((String) data.get("answer"));
-                return nd;
-            }
+	private enum Converter {
 
-            @Override
-            public Map<String, Object> dump(AnswerNodeData nd) {
-                Map<String, Object> m = new LinkedHashMap<>();
-                if (nd.getAnswer() != null) {
-                    m.put("answer", nd.getAnswer());
-                }
-                return m;
-            }
+		DIFY(new DialectConverter<>() {
+			@Override
+			public AnswerNodeData parse(Map<String, Object> data) {
+				AnswerNodeData nd = new AnswerNodeData();
+				nd.setAnswer((String) data.get("answer"));
+				return nd;
+			}
 
-            @Override
-            public Boolean supportDialect(DSLDialectType dialect) {
-                return DSLDialectType.DIFY.equals(dialect);
-            }
-        }),
+			@Override
+			public Map<String, Object> dump(AnswerNodeData nd) {
+				Map<String, Object> m = new LinkedHashMap<>();
+				if (nd.getAnswer() != null) {
+					m.put("answer", nd.getAnswer());
+				}
+				return m;
+			}
 
-        CUSTOM(defaultCustomDialectConverter(AnswerNodeData.class));
+			@Override
+			public Boolean supportDialect(DSLDialectType dialect) {
+				return DSLDialectType.DIFY.equals(dialect);
+			}
+		}),
 
-        private final DialectConverter<AnswerNodeData> converter;
+		CUSTOM(defaultCustomDialectConverter(AnswerNodeData.class));
 
-        Converter(DialectConverter<AnswerNodeData> converter) {
-            this.converter = converter;
-        }
+		private final DialectConverter<AnswerNodeData> converter;
 
-        public DialectConverter<AnswerNodeData> dialectConverter() {
-            return converter;
-        }
-    }
+		Converter(DialectConverter<AnswerNodeData> converter) {
+			this.converter = converter;
+		}
+
+		public DialectConverter<AnswerNodeData> dialectConverter() {
+			return converter;
+		}
+
+	}
+
 }

@@ -35,84 +35,88 @@ import java.util.stream.Stream;
 @Component
 public class ToolNodeDataConverter extends AbstractNodeDataConverter<ToolNodeData> {
 
-    @Override
-    public Boolean supportNodeType(NodeType nodeType) {
-        return NodeType.TOOL.equals(nodeType);
-    }
+	@Override
+	public Boolean supportNodeType(NodeType nodeType) {
+		return NodeType.TOOL.equals(nodeType);
+	}
 
-    @Override
-    protected List<DialectConverter<ToolNodeData>> getDialectConverters() {
-        return Stream.of(Converter.DIFY, Converter.CUSTOM)
-                .map(Converter::dialectConverter)
-                .collect(Collectors.toList());
-    }
+	@Override
+	protected List<DialectConverter<ToolNodeData>> getDialectConverters() {
+		return Stream.of(Converter.DIFY, Converter.CUSTOM)
+			.map(Converter::dialectConverter)
+			.collect(Collectors.toList());
+	}
 
-    private enum Converter {
-        DIFY(new DialectConverter<>() {
-            @SuppressWarnings("unchecked")
-            @Override
-            public ToolNodeData parse(Map<String, Object> data) {
-                ToolNodeData nd = new ToolNodeData();
+	private enum Converter {
 
-                // llm_response_key
-                nd.setLlmResponseKey((String) data.get("llm_response_key"));
+		DIFY(new DialectConverter<>() {
+			@SuppressWarnings("unchecked")
+			@Override
+			public ToolNodeData parse(Map<String, Object> data) {
+				ToolNodeData nd = new ToolNodeData();
 
-                // output_key
-                nd.setOutputKey((String) data.get("output_key"));
+				// llm_response_key
+				nd.setLlmResponseKey((String) data.get("llm_response_key"));
 
-                // tool_names
-                List<String> names = (List<String>) data.get("tool_names");
-                if (names != null) {
-                    nd.setToolNames(names);
-                } else {
-                    nd.setToolNames(Collections.emptyList());
-                }
+				// output_key
+				nd.setOutputKey((String) data.get("output_key"));
 
-                // tool_callbacks
-                List<String> callbacks = (List<String>) data.get("tool_callbacks");
-                if (callbacks != null) {
-                    nd.setToolCallbacks(callbacks);
-                } else {
-                    nd.setToolCallbacks(Collections.emptyList());
-                }
+				// tool_names
+				List<String> names = (List<String>) data.get("tool_names");
+				if (names != null) {
+					nd.setToolNames(names);
+				}
+				else {
+					nd.setToolNames(Collections.emptyList());
+				}
 
-                return nd;
-            }
+				// tool_callbacks
+				List<String> callbacks = (List<String>) data.get("tool_callbacks");
+				if (callbacks != null) {
+					nd.setToolCallbacks(callbacks);
+				}
+				else {
+					nd.setToolCallbacks(Collections.emptyList());
+				}
 
-            @Override
-            public Map<String, Object> dump(ToolNodeData nd) {
-                Map<String, Object> m = new LinkedHashMap<>();
+				return nd;
+			}
 
-                if (nd.getLlmResponseKey() != null) {
-                    m.put("llm_response_key", nd.getLlmResponseKey());
-                }
-                if (nd.getOutputKey() != null) {
-                    m.put("output_key", nd.getOutputKey());
-                }
-                if (nd.getToolNames() != null && !nd.getToolNames().isEmpty()) {
-                    m.put("tool_names", nd.getToolNames());
-                }
-                if (nd.getToolCallbacks() != null && !nd.getToolCallbacks().isEmpty()) {
-                    m.put("tool_callbacks", nd.getToolCallbacks());
-                }
-                return m;
-            }
+			@Override
+			public Map<String, Object> dump(ToolNodeData nd) {
+				Map<String, Object> m = new LinkedHashMap<>();
 
-            @Override
-            public Boolean supportDialect(DSLDialectType dialect) {
-                return DSLDialectType.DIFY.equals(dialect);
-            }
-        }),
-        CUSTOM(defaultCustomDialectConverter(ToolNodeData.class));
+				if (nd.getLlmResponseKey() != null) {
+					m.put("llm_response_key", nd.getLlmResponseKey());
+				}
+				if (nd.getOutputKey() != null) {
+					m.put("output_key", nd.getOutputKey());
+				}
+				if (nd.getToolNames() != null && !nd.getToolNames().isEmpty()) {
+					m.put("tool_names", nd.getToolNames());
+				}
+				if (nd.getToolCallbacks() != null && !nd.getToolCallbacks().isEmpty()) {
+					m.put("tool_callbacks", nd.getToolCallbacks());
+				}
+				return m;
+			}
 
-        private final DialectConverter<ToolNodeData> converter;
+			@Override
+			public Boolean supportDialect(DSLDialectType dialect) {
+				return DSLDialectType.DIFY.equals(dialect);
+			}
+		}), CUSTOM(defaultCustomDialectConverter(ToolNodeData.class));
 
-        Converter(DialectConverter<ToolNodeData> converter) {
-            this.converter = converter;
-        }
+		private final DialectConverter<ToolNodeData> converter;
 
-        public DialectConverter<ToolNodeData> dialectConverter() {
-            return converter;
-        }
-    }
+		Converter(DialectConverter<ToolNodeData> converter) {
+			this.converter = converter;
+		}
+
+		public DialectConverter<ToolNodeData> dialectConverter() {
+			return converter;
+		}
+
+	}
+
 }

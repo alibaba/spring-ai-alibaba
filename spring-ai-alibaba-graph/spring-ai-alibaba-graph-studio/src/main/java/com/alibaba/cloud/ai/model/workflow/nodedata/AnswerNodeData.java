@@ -30,21 +30,21 @@ public class AnswerNodeData extends NodeData {
 	// a string template
 	private String answer;
 
-    public AnswerNodeData() {
-        super(Collections.emptyList(), Collections.emptyList());
-    }
+	public AnswerNodeData() {
+		super(Collections.emptyList(), Collections.emptyList());
+	}
 
-    public AnswerNodeData(List<VariableSelector> inputs, List<com.alibaba.cloud.ai.model.Variable> outputs) {
-        super(inputs, outputs);
-    }
+	public AnswerNodeData(List<VariableSelector> inputs, List<com.alibaba.cloud.ai.model.Variable> outputs) {
+		super(inputs, outputs);
+	}
 
-    public String getAnswer() {
-        return answer;
-    }
+	public String getAnswer() {
+		return answer;
+	}
 
-    public AnswerNodeData setAnswer(String answer) {
-        this.answer = answer;
-        return this;
-    }
+	public AnswerNodeData setAnswer(String answer) {
+		this.answer = answer;
+		return this;
+	}
 
 }

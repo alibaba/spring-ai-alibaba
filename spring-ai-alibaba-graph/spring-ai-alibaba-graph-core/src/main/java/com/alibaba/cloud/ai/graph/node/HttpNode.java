@@ -437,12 +437,9 @@ public class HttpNode implements NodeAction {
 			this.data = data;
 		}
 
-        public boolean hasContent() {
-            return this.type != null
-                    && this.type != BodyType.NONE
-                    && this.data != null
-                    && !this.data.isEmpty();
-        }
+		public boolean hasContent() {
+			return this.type != null && this.type != BodyType.NONE && this.data != null && !this.data.isEmpty();
+		}
 
 	}
 
@@ -479,33 +476,33 @@ public class HttpNode implements NodeAction {
 			this.type = type;
 		}
 
-        public AuthType getType() {
-            return type;
-        }
+		public AuthType getType() {
+			return type;
+		}
 
-        public String getUsername() {
-            return username;
-        }
+		public String getUsername() {
+			return username;
+		}
 
-        public String getPassword() {
-            return password;
-        }
+		public String getPassword() {
+			return password;
+		}
 
-        public String getToken() {
-            return token;
-        }
+		public String getToken() {
+			return token;
+		}
 
-        public String getTypeName() {
-            return this.type.name().toLowerCase();
-        }
+		public String getTypeName() {
+			return this.type.name().toLowerCase();
+		}
 
-        public boolean isBasic() {
-            return this.type == AuthType.BASIC;
-        }
+		public boolean isBasic() {
+			return this.type == AuthType.BASIC;
+		}
 
-        public boolean isBearer() {
-            return this.type == AuthType.BEARER;
-        }
+		public boolean isBearer() {
+			return this.type == AuthType.BEARER;
+		}
 
 	}
 
@@ -523,17 +520,17 @@ public class HttpNode implements NodeAction {
 			this.enable = enable;
 		}
 
-        public int getMaxRetries() {
-            return maxRetries;
-        }
+		public int getMaxRetries() {
+			return maxRetries;
+		}
 
-        public long getMaxRetryInterval() {
-            return maxRetryInterval;
-        }
+		public long getMaxRetryInterval() {
+			return maxRetryInterval;
+		}
 
-        public boolean isEnable() {
-            return enable;
-        }
+		public boolean isEnable() {
+			return enable;
+		}
 
 	}
 

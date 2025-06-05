@@ -52,7 +52,7 @@ public enum NodeType {
 
 	KNOWLEDGE_RETRIEVAL("knowledge-retrieval", "knowledge-retrieval"),
 
-    MCP("mcp", "unsupported");
+	MCP("mcp", "unsupported");
 
 	private String value;
 

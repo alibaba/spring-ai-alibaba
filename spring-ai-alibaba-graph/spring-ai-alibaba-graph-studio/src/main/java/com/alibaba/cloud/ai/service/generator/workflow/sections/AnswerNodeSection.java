@@ -25,35 +25,33 @@ import org.springframework.stereotype.Component;
 @Component
 public class AnswerNodeSection implements NodeSection {
 
-    @Override
-    public boolean support(NodeType nodeType) {
-        return NodeType.ANSWER.equals(nodeType);
-    }
+	@Override
+	public boolean support(NodeType nodeType) {
+		return NodeType.ANSWER.equals(nodeType);
+	}
 
-    @Override
-    public String render(Node node) {
-        AnswerNodeData d = (AnswerNodeData) node.getData();
-        String id = node.getId();
-        StringBuilder sb = new StringBuilder();
+	@Override
+	public String render(Node node) {
+		AnswerNodeData d = (AnswerNodeData) node.getData();
+		String id = node.getId();
+		StringBuilder sb = new StringBuilder();
 
-        // 8 个空格缩进
-        sb.append("        // —— AnswerNode [").append(id).append("] ——\n");
-        sb.append("        AnswerNode ").append(id).append("Node = AnswerNode.builder()\n");
+		// 8 个空格缩进
+		sb.append("        // —— AnswerNode [").append(id).append("] ——\n");
+		sb.append("        AnswerNode ").append(id).append("Node = AnswerNode.builder()\n");
 
-        if (d.getAnswer() != null) {
-            sb.append("                .answer(\"")
-                    .append(escape(d.getAnswer()))
-                    .append("\")\n");
-        }
+		if (d.getAnswer() != null) {
+			sb.append("                .answer(\"").append(escape(d.getAnswer())).append("\")\n");
+		}
 
-        sb.append("                .build();\n");
-        sb.append("        stateGraph.addNode(\"")
-                .append(id)
-                .append("\", AsyncNodeAction.node_async(")
-                .append(id)
-                .append("Node));\n\n");
+		sb.append("                .build();\n");
+		sb.append("        stateGraph.addNode(\"")
+			.append(id)
+			.append("\", AsyncNodeAction.node_async(")
+			.append(id)
+			.append("Node));\n\n");
 
-        return sb.toString();
-    }
+		return sb.toString();
+	}
 
 }

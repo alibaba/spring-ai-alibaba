@@ -104,7 +104,8 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			return "";
 		}
 		return overallStateVars.stream()
-			.map(var -> String.format("overAllState.registerKeyAndStrategy(\"%s\", (o1, o2) -> o2);%n", var.getName()))
+			.map(var -> String.format("            overAllState.registerKeyAndStrategy(\"%s\", (o1, o2) -> o2);%n",
+					var.getName()))
 			.collect(Collectors.joining());
 	}
 
@@ -131,22 +132,17 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return stringBuilder.toString();
 	}
 
-    private String renderEdgeSections(List<Edge> edges) {
-        StringBuilder sb = new StringBuilder();
-        for (Edge e : edges) {
-            String srcCode = "start".equals(e.getSource())
-                    ? "START"
-                    : "\"" + e.getSource() + "\"";
-            String tgtCode = "end".equals(e.getTarget())
-                    ? "END"
-                    : "\"" + e.getTarget() + "\"";
+	private String renderEdgeSections(List<Edge> edges) {
+		StringBuilder sb = new StringBuilder();
+		for (Edge e : edges) {
+			String srcCode = "start".equals(e.getSource()) ? "START" : "\"" + e.getSource() + "\"";
+			String tgtCode = "end".equals(e.getTarget()) ? "END" : "\"" + e.getTarget() + "\"";
 
-            sb.append("        stateGraph.addEdge(")
-                    .append(srcCode).append(", ").append(tgtCode).append(");\n");
-        }
-        sb.append("\n");
-        return sb.toString();
-    }
+			sb.append("        stateGraph.addEdge(").append(srcCode).append(", ").append(tgtCode).append(");\n");
+		}
+		sb.append("\n");
+		return sb.toString();
+	}
 
 	private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, String>> models, Path projectRoot,
 			ProjectDescription projectDescription) {

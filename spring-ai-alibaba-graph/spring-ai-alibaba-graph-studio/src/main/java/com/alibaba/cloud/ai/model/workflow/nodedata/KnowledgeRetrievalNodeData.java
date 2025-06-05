@@ -34,167 +34,175 @@ import java.util.List;
  */
 public class KnowledgeRetrievalNodeData extends NodeData {
 
-    public static final List<Variable> DEFAULT_OUTPUT_SCHEMA =
-        List.of(new Variable("retrieved_documents", VariableType.ARRAY_OBJECT.value()));
+	public static final List<Variable> DEFAULT_OUTPUT_SCHEMA = List
+		.of(new Variable("retrieved_documents", VariableType.ARRAY_OBJECT.value()));
 
-    private String userPromptKey;
-    private String userPrompt;
+	private String userPromptKey;
 
-    private String topKKey;
-    private Integer topK;
+	private String userPrompt;
 
-    private String similarityThresholdKey;
-    private Double similarityThreshold;
+	private String topKKey;
 
-    private String filterExpressionKey;
-    private Filter.Expression filterExpression;
+	private Integer topK;
 
-    private String enableRankerKey;
-    private Boolean enableRanker;
+	private String similarityThresholdKey;
 
-    private String rerankModelKey;
-    private RerankModel rerankModel;
+	private Double similarityThreshold;
 
-    private String rerankOptionsKey;
-    private DashScopeRerankOptions rerankOptions;
+	private String filterExpressionKey;
 
-    private String vectorStoreKey;
-    private VectorStore vectorStore;
+	private Filter.Expression filterExpression;
 
-    public KnowledgeRetrievalNodeData() {
-        super(Collections.emptyList(), DEFAULT_OUTPUT_SCHEMA);
-    }
+	private String enableRankerKey;
 
-    public KnowledgeRetrievalNodeData(List<VariableSelector> inputs,
-                                      List<Variable> outputs) {
-        super(inputs, outputs);
-    }
+	private Boolean enableRanker;
 
-    public String getUserPromptKey() {
-        return userPromptKey;
-    }
+	private String rerankModelKey;
 
-    public void setUserPromptKey(String userPromptKey) {
-        this.userPromptKey = userPromptKey;
-    }
+	private RerankModel rerankModel;
 
-    public String getUserPrompt() {
-        return userPrompt;
-    }
+	private String rerankOptionsKey;
 
-    public void setUserPrompt(String userPrompt) {
-        this.userPrompt = userPrompt;
-    }
+	private DashScopeRerankOptions rerankOptions;
 
-    public String getTopKKey() {
-        return topKKey;
-    }
+	private String vectorStoreKey;
 
-    public void setTopKKey(String topKKey) {
-        this.topKKey = topKKey;
-    }
+	private VectorStore vectorStore;
 
-    public Integer getTopK() {
-        return topK;
-    }
+	public KnowledgeRetrievalNodeData() {
+		super(Collections.emptyList(), DEFAULT_OUTPUT_SCHEMA);
+	}
 
-    public void setTopK(Integer topK) {
-        this.topK = topK;
-    }
+	public KnowledgeRetrievalNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
+		super(inputs, outputs);
+	}
 
-    public String getSimilarityThresholdKey() {
-        return similarityThresholdKey;
-    }
+	public String getUserPromptKey() {
+		return userPromptKey;
+	}
 
-    public void setSimilarityThresholdKey(String similarityThresholdKey) {
-        this.similarityThresholdKey = similarityThresholdKey;
-    }
+	public void setUserPromptKey(String userPromptKey) {
+		this.userPromptKey = userPromptKey;
+	}
 
-    public Double getSimilarityThreshold() {
-        return similarityThreshold;
-    }
+	public String getUserPrompt() {
+		return userPrompt;
+	}
 
-    public void setSimilarityThreshold(Double similarityThreshold) {
-        this.similarityThreshold = similarityThreshold;
-    }
+	public void setUserPrompt(String userPrompt) {
+		this.userPrompt = userPrompt;
+	}
 
-    public String getFilterExpressionKey() {
-        return filterExpressionKey;
-    }
+	public String getTopKKey() {
+		return topKKey;
+	}
 
-    public void setFilterExpressionKey(String filterExpressionKey) {
-        this.filterExpressionKey = filterExpressionKey;
-    }
+	public void setTopKKey(String topKKey) {
+		this.topKKey = topKKey;
+	}
 
-    public Filter.Expression getFilterExpression() {
-        return filterExpression;
-    }
+	public Integer getTopK() {
+		return topK;
+	}
 
-    public void setFilterExpression(Filter.Expression filterExpression) {
-        this.filterExpression = filterExpression;
-    }
+	public void setTopK(Integer topK) {
+		this.topK = topK;
+	}
 
-    public String getEnableRankerKey() {
-        return enableRankerKey;
-    }
+	public String getSimilarityThresholdKey() {
+		return similarityThresholdKey;
+	}
 
-    public void setEnableRankerKey(String enableRankerKey) {
-        this.enableRankerKey = enableRankerKey;
-    }
+	public void setSimilarityThresholdKey(String similarityThresholdKey) {
+		this.similarityThresholdKey = similarityThresholdKey;
+	}
 
-    public Boolean getEnableRanker() {
-        return enableRanker;
-    }
+	public Double getSimilarityThreshold() {
+		return similarityThreshold;
+	}
 
-    public void setEnableRanker(Boolean enableRanker) {
-        this.enableRanker = enableRanker;
-    }
+	public void setSimilarityThreshold(Double similarityThreshold) {
+		this.similarityThreshold = similarityThreshold;
+	}
 
-    public String getRerankModelKey() {
-        return rerankModelKey;
-    }
+	public String getFilterExpressionKey() {
+		return filterExpressionKey;
+	}
 
-    public void setRerankModelKey(String rerankModelKey) {
-        this.rerankModelKey = rerankModelKey;
-    }
+	public void setFilterExpressionKey(String filterExpressionKey) {
+		this.filterExpressionKey = filterExpressionKey;
+	}
 
-    public RerankModel getRerankModel() {
-        return rerankModel;
-    }
+	public Filter.Expression getFilterExpression() {
+		return filterExpression;
+	}
 
-    public void setRerankModel(RerankModel rerankModel) {
-        this.rerankModel = rerankModel;
-    }
+	public void setFilterExpression(Filter.Expression filterExpression) {
+		this.filterExpression = filterExpression;
+	}
 
-    public String getRerankOptionsKey() {
-        return rerankOptionsKey;
-    }
+	public String getEnableRankerKey() {
+		return enableRankerKey;
+	}
 
-    public void setRerankOptionsKey(String rerankOptionsKey) {
-        this.rerankOptionsKey = rerankOptionsKey;
-    }
+	public void setEnableRankerKey(String enableRankerKey) {
+		this.enableRankerKey = enableRankerKey;
+	}
 
-    public DashScopeRerankOptions getRerankOptions() {
-        return rerankOptions;
-    }
+	public Boolean getEnableRanker() {
+		return enableRanker;
+	}
 
-    public void setRerankOptions(DashScopeRerankOptions rerankOptions) {
-        this.rerankOptions = rerankOptions;
-    }
+	public void setEnableRanker(Boolean enableRanker) {
+		this.enableRanker = enableRanker;
+	}
 
-    public String getVectorStoreKey() {
-        return vectorStoreKey;
-    }
+	public String getRerankModelKey() {
+		return rerankModelKey;
+	}
 
-    public void setVectorStoreKey(String vectorStoreKey) {
-        this.vectorStoreKey = vectorStoreKey;
-    }
+	public void setRerankModelKey(String rerankModelKey) {
+		this.rerankModelKey = rerankModelKey;
+	}
 
-    public VectorStore getVectorStore() {
-        return vectorStore;
-    }
+	public RerankModel getRerankModel() {
+		return rerankModel;
+	}
 
-    public void setVectorStore(VectorStore vectorStore) {
-        this.vectorStore = vectorStore;
-    }
+	public void setRerankModel(RerankModel rerankModel) {
+		this.rerankModel = rerankModel;
+	}
+
+	public String getRerankOptionsKey() {
+		return rerankOptionsKey;
+	}
+
+	public void setRerankOptionsKey(String rerankOptionsKey) {
+		this.rerankOptionsKey = rerankOptionsKey;
+	}
+
+	public DashScopeRerankOptions getRerankOptions() {
+		return rerankOptions;
+	}
+
+	public void setRerankOptions(DashScopeRerankOptions rerankOptions) {
+		this.rerankOptions = rerankOptions;
+	}
+
+	public String getVectorStoreKey() {
+		return vectorStoreKey;
+	}
+
+	public void setVectorStoreKey(String vectorStoreKey) {
+		this.vectorStoreKey = vectorStoreKey;
+	}
+
+	public VectorStore getVectorStore() {
+		return vectorStore;
+	}
+
+	public void setVectorStore(VectorStore vectorStore) {
+		this.vectorStore = vectorStore;
+	}
+
 }

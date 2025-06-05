@@ -62,15 +62,13 @@ public class HumanNode implements NodeAction {
 				}
 				else {
 					// check and only update keys defined in state.
-                    data = state.humanFeedback().data();
-                    Map<String, Object> filtered  = data.entrySet().stream()
-                            .filter(e -> state.value(e.getKey()).isPresent())
-                            .collect(Collectors.toMap(
-                                    Map.Entry::getKey,
-                                    Map.Entry::getValue
-                            ));
-                    data = state.updateState(filtered);
-                }
+					data = state.humanFeedback().data();
+					Map<String, Object> filtered = data.entrySet()
+						.stream()
+						.filter(e -> state.value(e.getKey()).isPresent())
+						.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+					data = state.updateState(filtered);
+				}
 			}
 
 			state.withoutResume();
@@ -89,30 +87,37 @@ public class HumanNode implements NodeAction {
 		return state.humanFeedback().nextNodeId();
 	}
 
-    public static class Builder {
-        private String interruptStrategy = "always";
-        private Function<OverAllState, Boolean> interruptCondition = state -> true;
-        private Function<OverAllState, Map<String, Object>> stateUpdateFunc = null;
+	public static Builder builder() {
+		return new Builder();
+	}
 
-        public Builder interruptStrategy(String interruptStrategy) {
-            this.interruptStrategy = interruptStrategy;
-            return this;
-        }
+	public static class Builder {
 
-        public Builder interruptCondition(Function<OverAllState, Boolean> interruptCondition) {
-            this.interruptCondition = interruptCondition;
-            return this;
-        }
+		private String interruptStrategy = "always";
 
-        public Builder stateUpdateFunc(Function<OverAllState, Map<String, Object>> stateUpdateFunc) {
-            this.stateUpdateFunc = stateUpdateFunc;
-            return this;
-        }
+		private Function<OverAllState, Boolean> interruptCondition = state -> true;
 
+		private Function<OverAllState, Map<String, Object>> stateUpdateFunc = null;
 
-        public HumanNode build() {
-            return new HumanNode(interruptStrategy, interruptCondition, stateUpdateFunc);
-        }
-    }
+		public Builder interruptStrategy(String interruptStrategy) {
+			this.interruptStrategy = interruptStrategy;
+			return this;
+		}
+
+		public Builder interruptCondition(Function<OverAllState, Boolean> interruptCondition) {
+			this.interruptCondition = interruptCondition;
+			return this;
+		}
+
+		public Builder stateUpdateFunc(Function<OverAllState, Map<String, Object>> stateUpdateFunc) {
+			this.stateUpdateFunc = stateUpdateFunc;
+			return this;
+		}
+
+		public HumanNode build() {
+			return new HumanNode(interruptStrategy, interruptCondition, stateUpdateFunc);
+		}
+
+	}
 
 }

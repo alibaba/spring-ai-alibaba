@@ -92,13 +92,14 @@ public class ParameterParsingNode implements NodeAction {
 
 	private SystemPromptTemplate systemPromptTemplate;
 
-    private final String outputKey;
+	private final String outputKey;
 
-	public ParameterParsingNode(ChatClient chatClient, String inputTextKey, List<Map<String, String>> parameters, String outputKey) {
+	public ParameterParsingNode(ChatClient chatClient, String inputTextKey, List<Map<String, String>> parameters,
+			String outputKey) {
 		this.chatClient = chatClient;
 		this.inputTextKey = inputTextKey;
 		this.parameters = parameters;
-        this.outputKey = outputKey;
+		this.outputKey = outputKey;
 		this.systemPromptTemplate = new SystemPromptTemplate(PARAMETER_PARSING_PROMPT_TEMPLATE);
 	}
 
@@ -169,7 +170,7 @@ public class ParameterParsingNode implements NodeAction {
 
 		private List<Map<String, String>> parameters;
 
-        private String outputKey;
+		private String outputKey;
 
 		public Builder inputTextKey(String input) {
 			this.inputTextKey = input;
@@ -186,10 +187,10 @@ public class ParameterParsingNode implements NodeAction {
 			return this;
 		}
 
-        public Builder outputKey(String outputKey) {
-            this.outputKey = outputKey;
-            return this;
-        }
+		public Builder outputKey(String outputKey) {
+			this.outputKey = outputKey;
+			return this;
+		}
 
 		public ParameterParsingNode build() {
 			return new ParameterParsingNode(chatClient, inputTextKey, parameters, outputKey);
