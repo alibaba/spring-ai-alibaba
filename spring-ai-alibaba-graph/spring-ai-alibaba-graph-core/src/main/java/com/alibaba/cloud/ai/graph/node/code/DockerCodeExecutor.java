@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.commons.codec.digest.DigestUtils;
 import com.alibaba.cloud.ai.graph.utils.FileUtils;
 
+import java.io.File;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -78,9 +79,18 @@ public class DockerCodeExecutor implements CodeExecutor {
 
 				CreateContainerCmd createContainerCmd = dockerClient.createContainerCmd(codeExecutionConfig.getDocker())
 					.withName(codeExecutionConfig.getContainerName() + "_" + codeBlockList.indexOf(codeBlock))
-					.withCmd(CodeUtils.getExecutableForLanguage(language), filename)
 					.withWorkingDir("/workspace")
 					.withHostConfig(newHostConfig().withBinds(volumeBind));
+
+				if ("java".equals(language)) {
+					createContainerCmd.withCmd(CodeUtils.getExecutableForLanguage(language), "-cp", "/workspace"
+							+ File.pathSeparator + "." + File.pathSeparator + codeExecutionConfig.getClassPath(),
+							filename);
+				}
+				else {
+					createContainerCmd.withCmd(CodeUtils.getExecutableForLanguage(language), filename);
+				}
+
 				CreateContainerResponse container = createContainerCmd.exec();
 
 				try {

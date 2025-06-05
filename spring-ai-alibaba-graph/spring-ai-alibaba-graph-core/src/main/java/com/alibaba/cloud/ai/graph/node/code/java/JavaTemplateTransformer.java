@@ -18,62 +18,32 @@ package com.alibaba.cloud.ai.graph.node.code.java;
 import com.alibaba.cloud.ai.graph.node.code.TemplateTransformer;
 
 /**
- * Java code template transformer
- * Used to convert user code into executable Java programs
- * 
+ * Java code template transformer Used to convert user code into executable Java programs
+ *
  * @author HeYQ
  * @since 2024-06-01
  */
 public class JavaTemplateTransformer extends TemplateTransformer {
 
-    @Override
-    public String getRunnerScript() {
-        return String.join("\n",
-            "import java.util.*;",
-            "import java.io.*;",
-            "import com.fasterxml.jackson.databind.ObjectMapper;", 
-            "import java.util.Base64;",
-            "",
-            "public class Main {",
-            "    public static void main(String[] args) throws Exception {",
-            "        // Parse input parameters",
-            "        String inputsBase64 = \"" + INPUTS_PLACEHOLDER + "\";",
-            "        String inputsJson = new String(Base64.getDecoder().decode(inputsBase64));",
-            "        ObjectMapper mapper = new ObjectMapper();",
-            "        List<Object> inputs = mapper.readValue(inputsJson, List.class);",
-            "",
-            "        // Execute user code", 
-            "        Object result = main(inputs.toArray());",
-            "",
-            "        // Output results",
-            "        String outputJson = mapper.writeValueAsString(result);",
-            "        System.out.println(\"<<RESULT>>\" + outputJson + \"<<RESULT>>\");",
-            "    }",
-            "",
-            "    " + CODE_PLACEHOLDER,
-            "}"
-        );
-    }
+	@Override
+	public String getRunnerScript() {
+		return String.join("\n", "import java.util.*;", "import java.io.*;", "import com.alibaba.fastjson.*;", "",
+				"class Main {", "    public static void main(String[] args) throws Exception {",
+				"        // Parse input parameters", "        String inputsBase64 = \"" + INPUTS_PLACEHOLDER + "\";",
+				"        String inputsJson = new String(Base64.getDecoder().decode(inputsBase64));",
+				"        JSONArray inputsArray = JSON.parseArray(inputsJson);",
+				"        List<Object> inputs = new ArrayList<>();", "        for (Object element : inputsArray) {",
+				"            if (element instanceof String || element instanceof Number) {",
+				"                inputs.add(element);", "            } else if (element instanceof JSONObject) {",
+				"                inputs.add(element);", "            }", "        }", "",
+				"        // Execute user code", "        Object result = main(inputs.toArray());", "",
+				"        // Output results", "        String output;", "        if (result instanceof Map) {",
+				"            output = JSON.toJSONString(result, true);", "        } else {",
+				"            Map<String,Object> wrapper = new HashMap<>();",
+				"            wrapper.put(\"result\", result);",
+				"            output = JSON.toJSONString(wrapper, true);", "        }",
+				"        System.out.println(\"<<RESULT>>\" + output + \"<<RESULT>>\");", "    }", "",
+				"    " + CODE_PLACEHOLDER, "}");
+	}
 
-    public String getPreloadScript() {
-        return String.join("\n",
-            "import java.util.*;",
-            "import java.io.*;", 
-            "import com.fasterxml.jackson.databind.ObjectMapper;",
-            "import java.util.Base64;",
-            "",
-            "// Preloaded dependencies and utility classes",
-            "class Utils {",
-            "    public static String toJson(Object obj) throws Exception {",
-            "        ObjectMapper mapper = new ObjectMapper();",
-            "        return mapper.writeValueAsString(obj);", 
-            "    }",
-            "",
-            "    public static <T> T fromJson(String json, Class<T> clazz) throws Exception {",
-            "        ObjectMapper mapper = new ObjectMapper();",
-            "        return mapper.readValue(json, clazz);",
-            "    }",
-            "}"
-        );
-    }
 }

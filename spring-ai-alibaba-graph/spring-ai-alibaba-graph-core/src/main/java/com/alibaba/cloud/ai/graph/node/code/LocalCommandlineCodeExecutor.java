@@ -83,50 +83,58 @@ public class LocalCommandlineCodeExecutor implements CodeExecutor {
 		// write the code string to a file specified by the filename.
 		FileUtils.writeCodeToFile(workDir, filename, code);
 
-		CodeExecutionResult executionResult = executeCodeLocally(language, workDir, filename, config.getTimeout());
+		CodeExecutionResult executionResult = executeCodeLocally(language, workDir, filename, config);
 
 		FileUtils.deleteFile(workDir, filename);
 		return executionResult;
 	}
 
-	private CodeExecutionResult executeCodeLocally(String language, String workDir, String filename, int timeout)
-			throws Exception {
-		// set up the command based on language
+	private CodeExecutionResult executeCodeLocally(String language, String workDir, String filename,
+			CodeExecutionConfig config) throws Exception {
+		// Set up command line based on language
 		String executable = CodeUtils.getExecutableForLanguage(language);
 		CommandLine commandLine = new CommandLine(executable);
-		commandLine.addArgument(filename);
 
-		// set up the execution environment
+		if ("java".equals(language)) {
+			commandLine.addArgument("-cp")
+				.addArgument(workDir + File.pathSeparator + config.getClassPath())
+				.addArgument(filename);
+		}
+		else {
+			commandLine.addArgument(filename);
+		}
+
+		// Configure executor
 		DefaultExecutor executor = new DefaultExecutor();
 		executor.setWorkingDirectory(new File(workDir));
 		executor.setExitValue(0);
 
-		// set up the streams for the output of the subprocess
+		// Set up stream handling
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		ByteArrayOutputStream errorStream = new ByteArrayOutputStream();
-		PumpStreamHandler streamHandler = new PumpStreamHandler(outputStream, errorStream);
-		executor.setStreamHandler(streamHandler);
+		executor.setStreamHandler(new PumpStreamHandler(outputStream, errorStream));
 
-		// set up a watchdog to terminate the process if it exceeds the timeout
-		ExecuteWatchdog watchdog = new ExecuteWatchdog(TimeUnit.SECONDS.toMillis(timeout));
-		executor.setWatchdog(watchdog);
+		// Set timeout
+		executor.setWatchdog(new ExecuteWatchdog(TimeUnit.SECONDS.toMillis(config.getTimeout())));
 
 		try {
-			// execute the command
 			executor.execute(commandLine);
-			// process completed before the watchdog terminated it
-			String output = outputStream.toString();
-			return new CodeExecutionResult(0, output.trim());
+			return new CodeExecutionResult(0, outputStream.toString().trim());
 		}
 		catch (ExecuteException e) {
-			// process finished with an exit value (possibly non-zero)
-			String errorOutput = errorStream.toString().replace(Path.of(workDir).toAbsolutePath() + File.separator, "");
-
-			return new CodeExecutionResult(e.getExitValue(), errorOutput.trim());
+			String errorOutput = errorStream.toString()
+				.replace(Path.of(workDir).toAbsolutePath() + File.separator, "")
+				.trim();
+			return new CodeExecutionResult(e.getExitValue(), errorOutput);
 		}
 		catch (IOException e) {
-			// returns a special result if the process was killed by the watchdog
-			throw new Exception("Error executing code.", e);
+			throw new Exception("Failed to execute code", e);
+		}
+		finally {
+			// Cleanup Java class files
+			if ("java".equals(language)) {
+				FileUtils.deleteFile(workDir, filename.replace(".java", ".class"));
+			}
 		}
 	}
 
