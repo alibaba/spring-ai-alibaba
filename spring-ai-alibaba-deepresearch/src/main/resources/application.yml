@@ -5,11 +5,15 @@ spring:
     name: spring-ai-alibaba-deepresearch
   ai:
     openai:
-      api-key: ${DASHSCOPE_API_KEY}
+      api-key: ${AI_DASHSCOPE_API_KEY}
       base-url: https://dashscope.aliyuncs.com/compatible-mode
       chat:
         options:
           model: qwen-max
+      client:
+        connection-timeout: 60000    # 60秒连接超时
+        read-timeout: 300000       # 5分钟读取超时
+        write-timeout: 60000
     mcp:
       client:
         sse:
@@ -29,3 +33,5 @@ spring:
 logging:
   level:
     com.alibaba.cloud.ai.example.deepresearch: debug
+
+
