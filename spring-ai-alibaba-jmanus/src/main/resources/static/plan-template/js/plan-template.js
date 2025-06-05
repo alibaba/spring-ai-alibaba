@@ -6,20 +6,12 @@
 class PlanTemplateManagerOld {
     constructor() {
         // 全局变量，保存当前计划状态
-        this.currentPlanTemplateId = null; // 存储计划模板ID
-        this.currentPlanId = null; // 存储计划执行ID
         this.currentPlanData = null;
         this.isExecuting = false;
         this.planTemplateList = []; // 存储计划模板列表
 
-        // DOM 元素引用 (只保留清空按钮)
-        this.clearBtn = null;
-
-        // 侧边栏折叠/展开相关变量
-        this.toggleLeftSidebarBtn = null;
-        this.toggleRightSidebarBtn = null;
-        this.leftSidebar = null;
-        this.rightSidebar = null;
+        // DOM 元素引用
+        // 注意：计划相关的输入元素现在由各自的专门处理器管理
 
         // 计划提示生成器实例
         this.planPromptGenerator = null;
@@ -37,7 +29,7 @@ class PlanTemplateManagerOld {
     }
 
     getCurrentPlanTemplateId() {
-        return this.planPromptGenerator ? this.planPromptGenerator.getCurrentPlanTemplateId() : this.currentPlanTemplateId;
+        return this.planPromptGenerator ? this.planPromptGenerator.getCurrentPlanTemplateId() : null;
     }
 
     getPlanParams() {
@@ -66,7 +58,6 @@ class PlanTemplateManagerOld {
     }
 
     setCurrentPlanTemplateId(id) {
-        this.currentPlanTemplateId = id;
         if (this.planPromptGenerator) {
             this.planPromptGenerator.setCurrentPlanTemplateId(id);
         }
@@ -86,7 +77,7 @@ class PlanTemplateManagerOld {
         
         // 发布当前计划模板变化事件
         TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CURRENT_PLAN_TEMPLATE_CHANGED, {
-            templateId: this.currentPlanTemplateId,
+            templateId: this.getCurrentPlanTemplateId(),
             planData: data
         });
     }
@@ -103,47 +94,11 @@ class PlanTemplateManagerOld {
      * 初始化函数，设置事件监听器
      */
     async init() { // Made async
-        // 获取DOM元素 (只保留清空按钮)
-        this.clearBtn = document.getElementById('clearBtn');
-
-        // 获取侧边栏切换按钮和侧边栏元素
-        this.toggleLeftSidebarBtn = document.getElementById('toggleLeftSidebarBtn');
-        this.toggleRightSidebarBtn = document.getElementById('toggleRightSidebarBtn');
-        this.leftSidebar = document.getElementById('leftSidebar');
-        this.rightSidebar = document.getElementById('rightSidebar');
-
-        // 绑定侧边栏切换按钮事件
-        if (this.toggleLeftSidebarBtn && this.leftSidebar) {
-            this.toggleLeftSidebarBtn.addEventListener('click', this.handleToggleLeftSidebar.bind(this));
-        }
-
-        if (this.toggleRightSidebarBtn && this.rightSidebar) {
-            this.toggleRightSidebarBtn.addEventListener('click', this.handleToggleRightSidebar.bind(this));
-        }
-        
-        // 绑定按钮事件 (只保留清空按钮)
-        this.clearBtn.addEventListener('click', this.handleClearInput.bind(this));
-
         // 绑定UI事件监听器
         this.bindUIEvents();
 
-        if (typeof PlanTemplatePollingManager !== 'undefined') { 
-            PlanTemplatePollingManager.init({
-                getPlanId: () => this.currentPlanId,
-                setPlanId: (id) => { this.currentPlanId = id; },
-                getIsExecuting: () => this.isExecuting,
-                setIsExecuting: (value) => {
-                    this.isExecuting = value;
-                    this.updateUIState();
-                    // 发布执行状态变化事件
-                    TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.EXECUTION_STATE_CHANGED, {
-                        isExecuting: value
-                    });
-                },
-                handlePlanData: this.handlePlanData.bind(this),
-                updateUI: this.updateUIState.bind(this)
-            });
-        }
+
+        // 如果需要计划执行状态管理，请使用 PlanExecutionManagerController
 
         this.updateUIState();
         await this.loadPlanTemplateList(); // Await loading list
@@ -168,7 +123,7 @@ class PlanTemplateManagerOld {
                     response.planTemplateList = this.planTemplateList;
                 }
                 if (data.requestedFields.includes('currentPlanTemplateId')) {
-                    response.currentPlanTemplateId = this.currentPlanTemplateId;
+                    response.currentPlanTemplateId = this.getCurrentPlanTemplateId();
                 }
                 if (data.requestedFields.includes('planParams')) {
                     response.planParams = this.planPromptGenerator ? this.planPromptGenerator.getPlanParams() : null;
@@ -188,22 +143,21 @@ class PlanTemplateManagerOld {
 
         // 监听计划模板选择事件
         TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.PLAN_TEMPLATE_SELECTED, (data) => {
-            this.currentPlanTemplateId = data.templateId;
-            this.currentPlanId = null;
+            this.setCurrentPlanTemplateId(data.templateId);
             this.isExecuting = false;
             // 发布状态变化事件
             TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CURRENT_PLAN_TEMPLATE_CHANGED, { 
-                templateId: this.currentPlanTemplateId 
+                templateId: data.templateId 
             });
         });
 
         // 监听当前计划模板变化事件
         TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.CURRENT_PLAN_TEMPLATE_CHANGED, (data) => {
-            this.currentPlanTemplateId = data.templateId;
-            this.currentPlanId = null;
+            this.setCurrentPlanTemplateId(data.templateId);
             this.isExecuting = false;
             this.updateUIState();
         });
+
     }    /**
      * 加载计划模板列表并更新左侧边栏
      */
@@ -236,30 +190,6 @@ class PlanTemplateManagerOld {
     }
 
     /**
-     * 清空输入和状态
-     */
-    handleClearInput() {
-        // 清空JSON处理器的数据
-        if (this.planTemplateHandler) {
-            this.planTemplateHandler.clearJsonData();
-        }
-        
-        // 清空计划提示生成器的数据
-        if (this.planPromptGenerator) {
-            this.planPromptGenerator.clearPromptData();
-        }
-        
-        // 清空自身的状态
-        this.currentPlanTemplateId = null;
-        this.currentPlanId = null;
-        this.currentPlanData = null;
-        this.isExecuting = false;
-        
-        this.updateUIState();
-        console.log('输入已清空');
-    }
-
-    /**
      * 更新UI状态（按钮禁用/启用等）
      */
     updateUIState() {
@@ -270,24 +200,6 @@ class PlanTemplateManagerOld {
     }
 
 
-    /**
-     * 处理左侧边栏折叠/展开
-     */
-    handleToggleLeftSidebar() {
-        this.leftSidebar.classList.toggle('collapsed');
-        // 可以根据需要调整主内容区域的边距或宽度
-        document.querySelector('.main-content').classList.toggle('left-collapsed');
-    }
-
-    /**
-     * 处理右侧边栏折叠/展开
-     */
-    handleToggleRightSidebar() {
-        this.rightSidebar.classList.toggle('collapsed');
-        // 可以根据需要调整主内容区域的边距或宽度
-        document.querySelector('.main-content').classList.toggle('right-collapsed');
-    }
-    
     // --- Static Helper Methods ---
     /**
      * 将日期对象转换为相对时间字符串

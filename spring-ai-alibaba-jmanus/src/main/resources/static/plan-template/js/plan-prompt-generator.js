@@ -14,6 +14,7 @@ class PlanPromptGenerator {
         this.generatePlanBtn = null;
         this.planParamsInput = null;
         this.clearParamBtn = null;
+        this.clearBtn = null; // 清空所有数据按钮
         this.apiUrlElement = null;
 
         // 缓存的状态数据，用于减少事件查询
@@ -29,6 +30,7 @@ class PlanPromptGenerator {
         this.generatePlanBtn = document.getElementById('generatePlanBtn');
         this.planParamsInput = document.getElementById('plan-params');
         this.clearParamBtn = document.getElementById('clearParamBtn');
+        this.clearBtn = document.getElementById('clearBtn');
         this.apiUrlElement = document.querySelector('.api-url');
 
         // 绑定事件监听器
@@ -90,6 +92,11 @@ class PlanPromptGenerator {
                     this.updateApiUrl();
                 }
             });
+        }
+
+        // 清空所有数据按钮事件
+        if (this.clearBtn) {
+            this.clearBtn.addEventListener('click', this.handleClearInput.bind(this));
         }
 
         // 参数输入变化事件
@@ -300,6 +307,16 @@ class PlanPromptGenerator {
         this.updateApiUrl();
         this.updateUIState();
         console.log('计划提示数据已清空');
+    }
+
+    /**
+     * 处理清空所有输入的操作
+     */
+    handleClearInput() {
+        // 清空自身的提示数据
+        this.clearPromptData();
+        
+        console.log('所有输入已清空');
     }
 
     // Getter methods

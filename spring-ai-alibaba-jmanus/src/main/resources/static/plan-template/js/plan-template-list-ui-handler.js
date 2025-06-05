@@ -29,13 +29,13 @@ class PlanTemplateListUIHandler {
             console.log('[PlanTemplateListUIHandler] init: 新建任务按钮事件监听器已附加。');
         }
         
-        // Request initial state
-        this.requestStateUpdate();
+        // 直接加载计划模板列表，而不是请求状态
+        this.loadPlanTemplateList();
         console.log('PlanTemplateListUIHandler 初始化完成');
     }
 
     setupEventListeners() {
-        // 监听状态响应事件
+        // 监听状态响应事件（保持向后兼容）
         TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, (data) => {
             if (data.planTemplateList) {
                 this.planTemplateList = data.planTemplateList;
@@ -52,11 +52,21 @@ class PlanTemplateListUIHandler {
             this.currentPlanTemplateId = data.templateId;
             this.updatePlanTemplateListUI();
         });
-    }
 
-    requestStateUpdate() {
-        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_REQUEST, {
-            requestedFields: ['planTemplateList', 'currentPlanTemplateId']
+        // 监听计划生成完成事件，自动刷新列表
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.PLAN_GENERATED, async () => {
+            console.log('[PlanTemplateListUIHandler] 检测到计划生成完成，刷新列表...');
+            await this.loadPlanTemplateList();
+        });
+
+        // 监听状态请求事件，提供计划模板列表数据
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.STATE_REQUEST, (data) => {
+            if (data.requestedFields && data.requestedFields.includes('planTemplateList')) {
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, {
+                    planTemplateList: this.planTemplateList,
+                    currentPlanTemplateId: this.currentPlanTemplateId
+                });
+            }
         });
     }
 
@@ -208,9 +218,6 @@ class PlanTemplateListUIHandler {
             try {
                 await ManusAPI.deletePlanTemplate(template.id);
                 
-                // 更新本地列表
-                this.planTemplateList = this.planTemplateList.filter(t => t.id !== template.id);
-                
                 if (this.currentPlanTemplateId === template.id) {
                     // 如果删除的是当前选中的模板，清空选择和相关内容
                     this.currentPlanTemplateId = null;
@@ -222,15 +229,55 @@ class PlanTemplateListUIHandler {
                     });
                 }
                 
-                // 刷新列表UI
-                this.updatePlanTemplateListUI(); 
+                // 重新加载列表而不是手动更新
+                await this.loadPlanTemplateList();
                 alert('计划模板已删除。');
 
             } catch (error) {
                 console.error('删除计划模板失败:', error);
                 alert('删除计划模板失败: ' + error.message);
                 // 即使出错也刷新列表以确保一致性
-                this.updatePlanTemplateListUI();
+                await this.loadPlanTemplateList();
+            }
+        }
+    }
+
+    /**
+     * 直接从API加载计划模板列表
+     */
+    async loadPlanTemplateList() {
+        try {
+            console.log('[PlanTemplateListUIHandler] 开始加载计划模板列表...');
+            const response = await ManusAPI.getAllPlanTemplates();
+            
+            // 处理 API 返回的数据结构: { count: number, templates: Array }
+            if (response && response.templates && Array.isArray(response.templates)) {
+                this.planTemplateList = response.templates;
+                console.log(`[PlanTemplateListUIHandler] 成功加载 ${response.templates.length} 个计划模板`);
+            } else {
+                this.planTemplateList = [];
+                console.warn('[PlanTemplateListUIHandler] API 返回的数据格式异常，使用空列表', response);
+            }
+            
+            // 更新UI
+            this.updatePlanTemplateListUI();
+            
+            // 发布计划模板列表更新事件，供其他模块使用
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, {
+                planTemplateList: this.planTemplateList
+            });
+            
+        } catch (error) {
+            console.error('[PlanTemplateListUIHandler] 加载计划模板列表失败:', error);
+            this.planTemplateList = [];
+            this.updatePlanTemplateListUI();
+            
+            // 显示错误提示
+            if (this.taskListEl) {
+                const errorItem = document.createElement('li');
+                errorItem.className = 'task-item error';
+                errorItem.textContent = '加载计划模板列表失败: ' + error.message;
+                this.taskListEl.appendChild(errorItem);
             }
         }
     }

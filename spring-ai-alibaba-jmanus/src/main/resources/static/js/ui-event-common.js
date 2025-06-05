@@ -37,7 +37,8 @@ const TaskPilotUIEvent = (() => {
         PLAN_GENERATED: 'ui:plan:generated', // 计划生成完成
         
         // 按钮状态更新事件
-        BUTTON_STATE_UPDATE_REQUESTED: 'ui:button:state_update_requested' // 请求更新按钮状态
+        BUTTON_STATE_UPDATE_REQUESTED: 'ui:button:state_update_requested', // 请求更新按钮状态
+        
     };
 
     // 事件发布订阅系统
