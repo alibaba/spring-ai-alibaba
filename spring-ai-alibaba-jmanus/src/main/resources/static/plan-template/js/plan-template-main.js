@@ -38,24 +38,23 @@ const PlanTemplateManager = (() => {
 
             // 初始化计划提示生成器
             planPromptGenerator = new PlanPromptGenerator();
-            planPromptGenerator.init(planTemplateManagerOldInstance);
+            planPromptGenerator.init();
             planTemplateManagerOldInstance.setPlanPromptGenerator(planPromptGenerator);
             console.log('PlanPromptGenerator 初始化完成');
 
             // 初始化处理器
             planTemplateHandler = new PlanTemplateHandler();
-            planTemplateHandler.init(planTemplateManagerOldInstance, planPromptGenerator);
+            planTemplateHandler.init();
             planTemplateManagerOldInstance.setPlanTemplateHandler(planTemplateHandler);
             console.log('PlanTemplateHandler 初始化完成');
 
             const runPlanButtonHandler = new RunPlanButtonHandler();
             // Assuming runPlanButtonHandler.init is not async, if it is, add await
-            runPlanButtonHandler.init(planTemplateManagerOldInstance);
+            runPlanButtonHandler.init();
             console.log('RunPlanButtonHandler 初始化完成');
 
-            planTemplateListUIHandler = new PlanTemplateListUIHandler(planTemplateManagerOldInstance);
+            planTemplateListUIHandler = new PlanTemplateListUIHandler();
             planTemplateListUIHandler.init(); // This will call updatePlanTemplateListUI internally
-            // planTemplateManagerOldInstance.setPlanTemplateListUIHandler(planTemplateListUIHandler); // No longer needed
             console.log('PlanTemplateListUIHandler 初始化完成 from main');
 
         } catch (e) {

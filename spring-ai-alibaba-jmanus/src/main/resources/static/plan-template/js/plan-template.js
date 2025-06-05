@@ -51,6 +51,12 @@ class PlanTemplateManagerOld {
     setMainIsExecuting(value) { // Setter for isExecuting, used by RunPlanButtonHandler
         this.isExecuting = value;
         this.updateUIState(); // Update UI when execution state changes
+        
+        // 发布执行状态变化事件
+        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.EXECUTION_STATE_CHANGED, {
+            isExecuting: value
+        });
+        
         if (this.planPromptGenerator) {
             this.planPromptGenerator.updateUIState();
         }
@@ -64,13 +70,25 @@ class PlanTemplateManagerOld {
         if (this.planPromptGenerator) {
             this.planPromptGenerator.setCurrentPlanTemplateId(id);
         }
+        
+        // 发布当前计划模板变化事件
+        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CURRENT_PLAN_TEMPLATE_CHANGED, {
+            templateId: id,
+            planData: this.currentPlanData
+        });
     }
 
-    setCurrentPlanData(data) {
+    setCurrentPlanData(data) { 
         this.currentPlanData = data;
         if (this.planPromptGenerator) {
             this.planPromptGenerator.setCurrentPlanData(data);
         }
+        
+        // 发布当前计划模板变化事件
+        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CURRENT_PLAN_TEMPLATE_CHANGED, {
+            templateId: this.currentPlanTemplateId,
+            planData: data
+        });
     }
 
     setPlanPromptGenerator(generator) {
@@ -106,6 +124,9 @@ class PlanTemplateManagerOld {
         // 绑定按钮事件 (只保留清空按钮)
         this.clearBtn.addEventListener('click', this.handleClearInput.bind(this));
 
+        // 绑定UI事件监听器
+        this.bindUIEvents();
+
         if (typeof PlanTemplatePollingManager !== 'undefined') { 
             PlanTemplatePollingManager.init({
                 getPlanId: () => this.currentPlanId,
@@ -114,6 +135,10 @@ class PlanTemplateManagerOld {
                 setIsExecuting: (value) => {
                     this.isExecuting = value;
                     this.updateUIState();
+                    // 发布执行状态变化事件
+                    TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.EXECUTION_STATE_CHANGED, {
+                        isExecuting: value
+                    });
                 },
                 handlePlanData: this.handlePlanData.bind(this),
                 updateUI: this.updateUIState.bind(this)
@@ -123,6 +148,62 @@ class PlanTemplateManagerOld {
         this.updateUIState();
         await this.loadPlanTemplateList(); // Await loading list
         console.log('PlanTemplateManagerOld 初始化完成');
+    }
+
+    /**
+     * 绑定UI事件监听器
+     */
+    bindUIEvents() {
+        // 监听状态请求
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.STATE_REQUEST, (data) => {
+            if (data.type === 'planParams') {
+                const params = this.planPromptGenerator ? this.planPromptGenerator.getPlanParams() : null;
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, {
+                    planParams: params
+                });
+            } else if (data.requestedFields) {
+                // 处理字段请求
+                const response = {};
+                if (data.requestedFields.includes('planTemplateList')) {
+                    response.planTemplateList = this.planTemplateList;
+                }
+                if (data.requestedFields.includes('currentPlanTemplateId')) {
+                    response.currentPlanTemplateId = this.currentPlanTemplateId;
+                }
+                if (data.requestedFields.includes('planParams')) {
+                    response.planParams = this.planPromptGenerator ? this.planPromptGenerator.getPlanParams() : null;
+                }
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, response);
+            }
+        });
+
+        // 监听计划生成完成事件
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.PLAN_GENERATED, async () => {
+            await this.loadPlanTemplateList();
+            // 通知状态变化
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, {
+                planTemplateList: this.planTemplateList
+            });
+        });
+
+        // 监听计划模板选择事件
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.PLAN_TEMPLATE_SELECTED, (data) => {
+            this.currentPlanTemplateId = data.templateId;
+            this.currentPlanId = null;
+            this.isExecuting = false;
+            // 发布状态变化事件
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CURRENT_PLAN_TEMPLATE_CHANGED, { 
+                templateId: this.currentPlanTemplateId 
+            });
+        });
+
+        // 监听当前计划模板变化事件
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.CURRENT_PLAN_TEMPLATE_CHANGED, (data) => {
+            this.currentPlanTemplateId = data.templateId;
+            this.currentPlanId = null;
+            this.isExecuting = false;
+            this.updateUIState();
+        });
     }    /**
      * 加载计划模板列表并更新左侧边栏
      */
@@ -130,6 +211,11 @@ class PlanTemplateManagerOld {
         try {
             const response = await ManusAPI.getAllPlanTemplates();
             this.planTemplateList = response.templates || [];
+            
+            // 发布状态更新事件
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, {
+                planTemplateList: this.planTemplateList
+            });
         } catch (error) {
             console.error('加载计划模板列表失败:', error);
         }

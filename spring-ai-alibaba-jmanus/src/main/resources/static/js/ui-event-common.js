@@ -17,7 +17,27 @@ const TaskPilotUIEvent = (() => {
         CHAT_INPUT_CLEAR: 'ui:chatinput:clear', // 新增事件：清空聊天输入框
         CHAT_INPUT_UPDATE_STATE: 'ui:chatinput:updatestate', // 新增事件：更新聊天输入框状态
         PLAN_TEMPLATE_SELECTED: 'ui:plan_template:selected', // Event for when a plan template is selected or selection changes
-        PLAN_EXECUTION_REQUESTED: 'ui:plan:execution_requested' // Event for when a plan execution is requested directly (e.g., via "Run Plan" button)
+        PLAN_EXECUTION_REQUESTED: 'ui:plan:execution_requested', // Event for when a plan execution is requested directly (e.g., via "Run Plan" button)
+        
+        // 解耦事件 - 状态查询和通知
+        STATE_REQUEST: 'ui:state:request', // 请求获取状态
+        STATE_RESPONSE: 'ui:state:response', // 状态响应
+        GENERATION_STATE_CHANGED: 'ui:generation:state_changed', // 生成状态变化
+        EXECUTION_STATE_CHANGED: 'ui:execution:state_changed', // 执行状态变化
+        CURRENT_PLAN_TEMPLATE_CHANGED: 'ui:current_plan_template:changed', // 当前计划模板变化
+        PLAN_PARAMS_CHANGED: 'ui:plan_params:changed', // 计划参数变化
+        
+        // JSON编辑器相关事件
+        JSON_CONTENT_SET: 'ui:json:content_set', // 设置JSON内容
+        JSON_CONTENT_CLEAR: 'ui:json:content_clear', // 清空JSON内容
+        VERSION_HISTORY_SET: 'ui:version_history:set', // 设置版本历史
+        
+        // 计划生成相关事件
+        PLAN_GENERATE_REQUESTED: 'ui:plan:generate_requested', // 请求生成计划
+        PLAN_GENERATED: 'ui:plan:generated', // 计划生成完成
+        
+        // 按钮状态更新事件
+        BUTTON_STATE_UPDATE_REQUESTED: 'ui:button:state_update_requested' // 请求更新按钮状态
     };
 
     // 事件发布订阅系统

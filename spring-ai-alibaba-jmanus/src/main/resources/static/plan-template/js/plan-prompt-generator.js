@@ -16,17 +16,14 @@ class PlanPromptGenerator {
         this.clearParamBtn = null;
         this.apiUrlElement = null;
 
-        // 外部依赖的实例引用
-        this.planTemplateManager = null;
+        // 缓存的状态数据，用于减少事件查询
+        this.cachedExecutionState = false;
     }
 
     /**
      * 初始化计划提示生成器
-     * @param {Object} planTemplateManager - PlanTemplateManagerOld 实例的引用
      */
-    init(planTemplateManager) {
-        this.planTemplateManager = planTemplateManager;
-
+    init() {
         // 获取DOM元素
         this.planPromptInput = document.getElementById('plan-prompt');
         this.generatePlanBtn = document.getElementById('generatePlanBtn');
@@ -36,12 +33,44 @@ class PlanPromptGenerator {
 
         // 绑定事件监听器
         this.bindEventListeners();
+        this.bindUIEvents();
 
         // 初始化UI状态
         this.updateUIState();
         this.updateApiUrl();
 
         console.log('PlanPromptGenerator 初始化完成');
+    }
+
+    /**
+     * 绑定UI事件监听器
+     */
+    bindUIEvents() {
+        // 监听执行状态变化
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.EXECUTION_STATE_CHANGED, (data) => {
+            this.cachedExecutionState = data.isExecuting;
+            this.updateUIState();
+        });
+
+        // 监听当前计划模板变化
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.CURRENT_PLAN_TEMPLATE_CHANGED, (data) => {
+            this.currentPlanTemplateId = data.templateId || data.planTemplateId; // 兼容处理
+            this.currentPlanData = data.planData;
+            if (data.planData && this.planPromptInput) {
+                this.planPromptInput.value = data.planData.prompt || '';
+            }
+            this.updateUIState();
+            this.updateApiUrl();
+        });
+
+        // 监听状态请求
+        TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.STATE_REQUEST, (data) => {
+            if (data.type === 'planParams') {
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, {
+                    planParams: this.getPlanParams()
+                });
+            }
+        });
     }
 
     /**
@@ -65,7 +94,13 @@ class PlanPromptGenerator {
 
         // 参数输入变化事件
         if (this.planParamsInput) {
-            this.planParamsInput.addEventListener('input', this.updateApiUrl.bind(this));
+            this.planParamsInput.addEventListener('input', () => {
+                this.updateApiUrl();
+                // 发布参数变化事件
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_PARAMS_CHANGED, {
+                    params: this.planParamsInput.value.trim()
+                });
+            });
         }
     }
 
@@ -82,14 +117,20 @@ class PlanPromptGenerator {
 
         this.isGenerating = true;
         this.updateUIState();
+        
+        // 发布生成状态变化事件
+        TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.GENERATION_STATE_CHANGED, {
+            isGenerating: true
+        });
 
         try {
+            // 通过事件获取当前JSON内容
             let existingJson = null;
-            const jsonEditor = this.planTemplateManager.getJsonEditor();
+            const jsonContent = await this.requestJsonContent();
             
-            if (jsonEditor && jsonEditor.value.trim()) {
+            if (jsonContent && jsonContent.trim()) {
                 try {
-                    existingJson = JSON.parse(jsonEditor.value.trim());
+                    existingJson = JSON.parse(jsonContent.trim());
                 } catch (e) {
                     alert('当前JSON格式无效，无法作为生成基础。将忽略当前JSON。');
                     existingJson = null;
@@ -102,37 +143,68 @@ class PlanPromptGenerator {
                 response = await ManusAPI.updatePlanTemplate(
                     this.currentPlanTemplateId, 
                     query, 
-                    jsonEditor ? jsonEditor.value.trim() || null : null
+                    jsonContent || null
                 );
             } else {
                 console.log('正在创建新计划模板');
                 response = await ManusAPI.generatePlan(
                     query, 
-                    jsonEditor ? jsonEditor.value.trim() || null : null
+                    jsonContent || null
                 );
             }
             
-            this.currentPlanData = response.plan;
+            // 处理API返回的数据结构
+            console.log('API响应数据:', response);
+            
+            // 根据实际API响应结构提取数据
+            const planJson = response.planJson || (response.plan && response.plan.json) || null;
+            const planTemplateId = response.planTemplateId || (response.plan && response.plan.id) || null;
+            const planData = response.plan || null;
 
-            if (this.currentPlanData && this.currentPlanData.json) {
-                // 通过JSON处理器更新JSON编辑器内容
-                if (this.planTemplateManager.planTemplateHandler) {
-                    this.planTemplateManager.planTemplateHandler.setJsonContent(this.currentPlanData.json);
-                }
+            if (planJson) {
+                // 保存当前计划数据
+                this.currentPlanData = {
+                    json: planJson,
+                    id: planTemplateId,
+                    prompt: query,
+                    plan: planData
+                };
+                
+                // 通过事件设置JSON内容
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.JSON_CONTENT_SET, {
+                    content: planJson
+                });
                 
                 // 更新当前模板ID
-                this.currentPlanTemplateId = this.currentPlanData.id;
+                this.currentPlanTemplateId = planTemplateId;
                 
                 // 更新Prompt输入框
-                this.planPromptInput.value = this.currentPlanData.prompt || query;
+                this.planPromptInput.value = query;
                 
-                // 通知主管理器更新状态
-                if (this.planTemplateManager) {
-                    this.planTemplateManager.setCurrentPlanTemplateId(this.currentPlanTemplateId);
-                    this.planTemplateManager.setCurrentPlanData(this.currentPlanData);
-                    await this.planTemplateManager.loadPlanTemplateList();
+                // 发布计划模板变化事件
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.CURRENT_PLAN_TEMPLATE_CHANGED, {
+                    templateId: this.currentPlanTemplateId,
+                    planData: this.currentPlanData
+                });
+
+                // 发布计划生成完成事件
+                TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_GENERATED, {
+                    templateId: this.currentPlanTemplateId,
+                    planData: this.currentPlanData
+                });
+                
+                // 检查是否是重复内容并显示相应提示
+                if (response.duplicate) {
+                    console.log('生成的计划内容与现有版本相同');
+                    // 可以在这里添加一个不那么突兀的提示，比如toast通知
+                    // 暂时使用console.log记录，不中断用户体验
+                } else if (response.saved) {
+                    console.log('新版本已保存:', response.saveMessage);
                 }
+                
+                console.log('计划生成成功，模板ID:', this.currentPlanTemplateId);
             } else {
+                console.warn('API响应数据结构异常:', response);
                 alert('计划生成或更新未能返回有效的JSON数据。');
             }
             
@@ -144,7 +216,36 @@ class PlanPromptGenerator {
         } finally {
             this.isGenerating = false;
             this.updateUIState();
+            
+            // 发布生成状态变化事件
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.GENERATION_STATE_CHANGED, {
+                isGenerating: false
+            });
         }
+    }
+
+    /**
+     * 通过事件请求JSON内容
+     * @returns {Promise<string>} JSON内容
+     */
+    async requestJsonContent() {
+        return new Promise((resolve) => {
+            const handleResponse = (data) => {
+                TaskPilotUIEvent.EventSystem.off(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, handleResponse);
+                resolve(data.jsonContent || '');
+            };
+            
+            TaskPilotUIEvent.EventSystem.on(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, handleResponse);
+            TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.STATE_REQUEST, {
+                type: 'jsonContent'
+            });
+            
+            // 超时处理
+            setTimeout(() => {
+                TaskPilotUIEvent.EventSystem.off(TaskPilotUIEvent.UI_EVENTS.STATE_RESPONSE, handleResponse);
+                resolve('');
+            }, 100);
+        });
     }
 
     /**
@@ -173,8 +274,7 @@ class PlanPromptGenerator {
      */
     updateUIState() {
         if (this.generatePlanBtn) {
-            const isExecuting = this.planTemplateManager ? this.planTemplateManager.getMainIsExecuting() : false;
-            this.generatePlanBtn.disabled = this.isGenerating || isExecuting;
+            this.generatePlanBtn.disabled = this.isGenerating || this.cachedExecutionState;
             
             if (this.isGenerating) {
                 this.generatePlanBtn.textContent = '生成中...';
