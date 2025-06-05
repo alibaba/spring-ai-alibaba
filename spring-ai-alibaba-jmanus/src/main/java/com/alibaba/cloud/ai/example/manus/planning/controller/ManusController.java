@@ -78,6 +78,7 @@ public class ManusController {
 	@PostMapping("/execute")
 	public ResponseEntity<Map<String, Object>> executeQuery(@RequestBody Map<String, String> request) {
 		String query = request.get("query");
+		logger.info("Executing query: " + query);
 		if (query == null || query.trim().isEmpty()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "查询内容不能为空"));
 		}
