@@ -104,13 +104,11 @@ public class DeepResearchController {
 		try {
 			chatRequest = getDefaultChatRequest(chatRequest);
 			String threadId = chatRequest.threadId();
-			RunnableConfig runnableConfig = RunnableConfig.builder()
-				.threadId(String.valueOf(threadId))
-				.build();
+			RunnableConfig runnableConfig = RunnableConfig.builder().threadId(String.valueOf(threadId)).build();
 
 			// Create sink with error handling
 			Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
-			
+
 			// Process the request based on type
 			processRequest(chatRequest, runnableConfig, sink);
 
@@ -136,9 +134,10 @@ public class DeepResearchController {
 		}
 	}
 
-	private void processRequest(ChatRequest chatRequest, RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) {
+	private void processRequest(ChatRequest chatRequest, RunnableConfig runnableConfig,
+			Sinks.Many<ServerSentEvent<String>> sink) {
 		Map<String, Object> objectMap = new HashMap<>();
-		
+
 		try {
 			if (!chatRequest.autoAcceptPlan() && StringUtils.hasText(chatRequest.interruptFeedback())) {
 				handleHumanFeedback(chatRequest, objectMap, runnableConfig, sink);
@@ -153,16 +152,17 @@ public class DeepResearchController {
 		}
 	}
 
-	private void processInitialRequest(ChatRequest chatRequest, Map<String, Object> objectMap, 
+	private void processInitialRequest(ChatRequest chatRequest, Map<String, Object> objectMap,
 			RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) {
 		initializeObjectMap(chatRequest, objectMap);
 		logger.info("Processing initial request for thread: {}, inputs: {}", chatRequest.threadId(), objectMap);
-		
+
 		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.stream(objectMap, runnableConfig);
 		processStreamOutput(resultFuture, sink);
 	}
 
-	private void processStreamOutput(AsyncGenerator<NodeOutput> resultFuture, Sinks.Many<ServerSentEvent<String>> sink) {
+	private void processStreamOutput(AsyncGenerator<NodeOutput> resultFuture,
+			Sinks.Many<ServerSentEvent<String>> sink) {
 		try {
 			for (NodeOutput output : resultFuture) {
 				if (output == null) {

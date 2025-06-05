@@ -77,6 +77,7 @@ public class PlannerNode implements NodeAction {
 		.build();
 
 	private volatile boolean subscribed = false;
+
 	private final CountDownLatch streamCompleted = new CountDownLatch(1);
 
 	public PlannerNode(ChatClient.Builder chatClientBuilder, ToolCallback[] toolCallbacks) {
@@ -130,47 +131,45 @@ public class PlannerNode implements NodeAction {
 			.messages(messages)
 			.stream()
 			.content()
-			.subscribe(
-					new CoreSubscriber<>() {
-						@Override
-						public void onSubscribe(Subscription subscription) {
-							if (!subscribed) {
-								subscribed = true;
-								subscription.request(Long.MAX_VALUE);
-								streamStarted.countDown();
-							}
-						}
+			.subscribe(new CoreSubscriber<>() {
+				@Override
+				public void onSubscribe(Subscription subscription) {
+					if (!subscribed) {
+						subscribed = true;
+						subscription.request(Long.MAX_VALUE);
+						streamStarted.countDown();
+					}
+				}
 
-						@Override
-						public void onNext(String content) {
-							try {
-								if (content != null) {
-									fullContent.append(content);
-									state.updateState(Map.of("llm_result", content));
-									queue.add(AsyncGenerator.Data.of(new StreamingOutput(content, "llmNode", state)));
-								}
-							}
-							catch (Exception e) {
-								onError(e);
-							}
-						}
-
-						@Override
-						public void onError(Throwable throwable) {
-							System.err.println("Stream error: " + throwable.getMessage());
-							queue.add(AsyncGenerator.Data.error(throwable));
-							streamCompleted.countDown();
-						}
-
-						@Override
-						public void onComplete() {
-							System.out.println("Stream completed");
-							queue.add(AsyncGenerator.Data.done());
-							streamCompleted.countDown();
+				@Override
+				public void onNext(String content) {
+					try {
+						if (content != null) {
+							fullContent.append(content);
+							state.updateState(Map.of("llm_result", content));
+							queue.add(AsyncGenerator.Data.of(new StreamingOutput(content, "llmNode", state)));
 						}
 					}
-			);
-		
+					catch (Exception e) {
+						onError(e);
+					}
+				}
+
+				@Override
+				public void onError(Throwable throwable) {
+					System.err.println("Stream error: " + throwable.getMessage());
+					queue.add(AsyncGenerator.Data.error(throwable));
+					streamCompleted.countDown();
+				}
+
+				@Override
+				public void onComplete() {
+					System.out.println("Stream completed");
+					queue.add(AsyncGenerator.Data.done());
+					streamCompleted.countDown();
+				}
+			});
+
 		// Wait for stream to complete
 		streamCompleted.await();
 		String result = fullContent.toString();
