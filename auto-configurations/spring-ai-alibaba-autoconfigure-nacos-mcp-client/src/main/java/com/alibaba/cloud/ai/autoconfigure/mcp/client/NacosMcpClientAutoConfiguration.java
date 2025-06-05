@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.autoconfigure.mcp.client;
 import com.alibaba.cloud.ai.mcp.nacos.client.transport.LoadbalancedMcpAsyncClient;
 import com.alibaba.cloud.ai.mcp.nacos.client.transport.LoadbalancedMcpSyncClient;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
+import com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.springframework.ai.mcp.client.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.autoconfigure.NamedClientMcpTransport;
@@ -42,7 +43,7 @@ import java.util.Map;
  */
 @AutoConfiguration(after = { NacosMcpSseClientAutoConfiguration.class, McpClientAutoConfiguration.class })
 @ConditionalOnClass({ McpSchema.class })
-@EnableConfigurationProperties({ McpClientCommonProperties.class })
+@EnableConfigurationProperties({ McpClientCommonProperties.class, NacosMcpProperties.class })
 @ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "nacos-enabled" }, havingValue = "true",
 		matchIfMissing = false)
 public class NacosMcpClientAutoConfiguration {
