@@ -16,20 +16,27 @@
 package com.alibaba.cloud.ai.graph.action;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiFunction;
 
-/**
- * Represents an edge action that operates on an agent state and returns a result.
- *
- */
-@FunctionalInterface
-public interface EdgeAction {
+public interface AsyncCommandAction extends BiFunction<OverAllState, RunnableConfig, CompletableFuture<Command>> {
 
-	/**
-	 * Applies this action to the given agent state.
-	 * @param state the agent state
-	 * @return a result of the action
-	 * @throws Exception if an error occurs during the action
-	 */
-	String apply(OverAllState state) throws Exception;
+	static AsyncCommandAction node_async(CommandAction syncAction) {
+		return (state, config) -> {
+			var result = new CompletableFuture<Command>();
+			try {
+				result.complete(syncAction.apply(state, config));
+			}
+			catch (Exception e) {
+				result.completeExceptionally(e);
+			}
+			return result;
+		};
+	}
+
+	static AsyncCommandAction of(AsyncEdgeAction action) {
+		return (state, config) -> action.apply(state).thenApply(Command::new);
+	}
 
 }

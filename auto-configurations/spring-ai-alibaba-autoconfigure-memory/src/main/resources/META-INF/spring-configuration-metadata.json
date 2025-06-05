@@ -1,0 +1,193 @@
+{
+  "properties": [
+    {
+      "name": "spring.ai.memory.elasticsearch.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable ElasticSearch chat memory repository.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.ElasticsearchChatMemoryProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "spring.ai.memory.elasticsearch.host",
+      "type": "java.lang.String",
+      "description": "Elasticsearch host URL.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.ElasticsearchChatMemoryProperties",
+      "defaultValue": "localhost"
+    },
+    {
+      "name": "spring.ai.memory.elasticsearch.port",
+      "type": "java.lang.Integer",
+      "description": "Elasticsearch port.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.ElasticsearchChatMemoryProperties",
+      "defaultValue": 9200
+    },
+    {
+      "name": "spring.ai.memory.elasticsearch.nodes",
+      "type": "java.util.List<java.lang.String>",
+      "description": "List of cluster nodes in format: hostname:port.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.ElasticsearchChatMemoryProperties"
+    },
+    {
+      "name": "spring.ai.memory.elasticsearch.index",
+      "type": "java.lang.String",
+      "description": "Index name to query.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.ElasticsearchChatMemoryProperties"
+    },
+    {
+      "name": "spring.ai.memory.elasticsearch.query-field",
+      "type": "java.lang.String",
+      "description": "Query field to search in.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.ElasticsearchChatMemoryProperties",
+      "defaultValue": "content"
+    },
+    {
+      "name": "spring.ai.memory.elasticsearch.username",
+      "type": "java.lang.String",
+      "description": "Username for authentication.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.ElasticsearchChatMemoryProperties"
+    },
+    {
+      "name": "spring.ai.memory.elasticsearch.password",
+      "type": "java.lang.String",
+      "description": "Password for authentication.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.ElasticsearchChatMemoryProperties"
+    },
+    {
+      "name": "spring.ai.memory.elasticsearch.max-results",
+      "type": "java.lang.Integer",
+      "description": "Maximum number of documents to retrieve.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.ElasticsearchChatMemoryProperties",
+      "defaultValue": 10
+    },
+    {
+      "name": "spring.ai.memory.elasticsearch.scheme",
+      "type": "java.lang.String",
+      "description": "Connection scheme (http/https).",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.ElasticsearchChatMemoryProperties",
+      "defaultValue": "http"
+    },
+    {
+      "name": "spring.ai.memory.mysql.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable MySQL chat memory repository.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.MysqlChatMemoryProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "spring.ai.chat.memory.repository.jdbc.mysql.initialize-schema",
+      "type": "java.lang.Boolean",
+      "description": "Whether to initialize the database schema for the MySQL chat memory repository.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.MysqlChatMemoryProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "spring.ai.chat.memory.repository.jdbc.mysql.jdbc-url",
+      "type": "java.lang.String",
+      "description": "JDBC URL of the MySQL database.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.MysqlChatMemoryProperties"
+    },
+    {
+      "name": "spring.ai.chat.memory.repository.jdbc.mysql.username",
+      "type": "java.lang.String",
+      "description": "Database username for MySQL connection.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.MysqlChatMemoryProperties"
+    },
+    {
+      "name": "spring.ai.chat.memory.repository.jdbc.mysql.password",
+      "type": "java.lang.String",
+      "description": "Database password for MySQL connection.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.MysqlChatMemoryProperties"
+    },
+    {
+      "name": "spring.ai.chat.memory.repository.jdbc.mysql.driver-class-name",
+      "type": "java.lang.String",
+      "description": "Fully qualified name of the JDBC driver class for MySQL.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.MysqlChatMemoryProperties",
+      "defaultValue": "com.mysql.cj.jdbc.Driver"
+    },
+    {
+      "name": "spring.ai.memory.oracle.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable Oracle chat memory repository.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.OracleChatMemoryProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "spring.ai.chat.memory.repository.jdbc.oracle.initialize-schema",
+      "type": "java.lang.Boolean",
+      "description": "Whether to initialize the database schema for the Oracle chat memory repository.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.OracleChatMemoryProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "spring.ai.memory.postgres.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable PostgreSQL chat memory repository.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.PostgresChatMemoryProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "spring.ai.chat.memory.repository.jdbc.postgres.initialize-schema",
+      "type": "java.lang.Boolean",
+      "description": "Whether to initialize the database schema for the PostgreSQL chat memory repository.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.PostgresChatMemoryProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "spring.ai.memory.redis.host",
+      "type": "java.lang.String",
+      "description": "Redis server host.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.RedisChatMemoryProperties",
+      "defaultValue": "127.0.0.1"
+    },
+    {
+      "name": "spring.ai.memory.redis.port",
+      "type": "java.lang.Integer",
+      "description": "Redis server port.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.RedisChatMemoryProperties",
+      "defaultValue": 6379
+    },
+    {
+      "name": "spring.ai.memory.redis.password",
+      "type": "java.lang.String",
+      "description": "Redis server password.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.RedisChatMemoryProperties"
+    },
+    {
+      "name": "spring.ai.memory.redis.timeout",
+      "type": "java.lang.Integer",
+      "description": "Connection timeout in milliseconds.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.RedisChatMemoryProperties",
+      "defaultValue": 2000
+    },
+    {
+      "name": "spring.ai.memory.sqlite.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable SQLite chat memory repository.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.SQLiteChatMemoryProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "spring.ai.chat.memory.repository.jdbc.sqlite.initialize-schema",
+      "type": "java.lang.Boolean",
+      "description": "Whether to initialize the database schema for the SQLite chat memory repository.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.SQLiteChatMemoryProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "spring.ai.memory.sqlserver.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable SQL Server chat memory repository.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.SqlServerChatMemoryProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "spring.ai.chat.memory.repository.jdbc.sqlserver.initialize-schema",
+      "type": "java.lang.Boolean",
+      "description": "Whether to initialize the database schema for the SQL Server chat memory repository.",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.memory.SqlServerChatMemoryProperties",
+      "defaultValue": true
+    }
+  ],
+  "hints": []
+}
