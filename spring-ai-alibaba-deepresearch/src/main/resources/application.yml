@@ -11,8 +11,8 @@ spring:
         options:
           model: qwen-max
       client:
-        connection-timeout: 60000    # 60秒连接超时
-        read-timeout: 300000       # 5分钟读取超时
+        connection-timeout: 60000
+        read-timeout: 300000
         write-timeout: 60000
     mcp:
       client:
