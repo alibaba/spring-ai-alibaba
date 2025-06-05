@@ -75,7 +75,7 @@ class DashScopeApiUploadFileTests {
 		mockFile = excelFile;
 
 		Map<String, String> headers = new HashMap<>();
-		headers.put("X-bailian-extra", "MTAwNTQyNjQ5NTE2OTE3OA==");
+		headers.put("X-bailian-extra", "test-extra-key");
 
 		mockParamData = new DashScopeApi.UploadLeaseResponse.UploadLeaseParamData(TEST_URL, "PUT", headers);
 
@@ -118,7 +118,7 @@ class DashScopeApiUploadFileTests {
 
 			assertEquals("PUT", capturedRequest.method());
 			assertNotNull(Objects.requireNonNull(capturedRequest.body()).contentType());
-			assertEquals("MTAwNTQyNjQ5NTE2OTE3OA==", capturedRequest.header("X-bailian-extra"));
+			assertEquals("test-extra-key", capturedRequest.header("X-bailian-extra"));
 
 			verify(mockCall).execute();
 		}
@@ -153,7 +153,7 @@ class DashScopeApiUploadFileTests {
 
 			assertEquals("PUT", capturedRequest.method());
 			assertEquals("", capturedRequest.header("Content-Type"));
-			assertEquals("MTAwNTQyNjQ5NTE2OTE3OA==", capturedRequest.header("X-bailian-extra"));
+			assertEquals("test-extra-key", capturedRequest.header("X-bailian-extra"));
 
 			verify(mockCall).execute();
 		}
