@@ -1,6 +1,3 @@
-> The community driven Spring AI Alibaba OpenManus Java implementtation can be found
-> at [spring-ai-alibaba-jmanus](./spring-ai-alibaba-jmanus) module.
-
 # [Spring AI Alibaba](https://java2ai.com)
 
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
