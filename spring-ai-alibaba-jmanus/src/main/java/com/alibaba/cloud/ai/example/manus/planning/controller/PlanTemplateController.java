@@ -275,7 +275,8 @@ public class PlanTemplateController {
 			PlanTemplateService.VersionSaveResult result = planTemplateService.saveToVersionHistory(planId, planJson);
 			if (result.isSaved()) {
 				logger.info("已保存计划 {} 的新版本 {}", planId, result.getVersionIndex());
-			} else {
+			}
+			else {
 				logger.info("计划 {} 内容相同，未保存新版本", planId);
 			}
 			return result;

@@ -84,34 +84,34 @@ public class McpService {
 
 	private Map<String, McpServiceEntity> loadMcpServices(List<McpConfigEntity> mcpConfigEntities) throws IOException {
 		Map<String, McpServiceEntity> toolCallbackMap = new ConcurrentHashMap<>();
-		
+
 		if (mcpConfigEntities == null || mcpConfigEntities.isEmpty()) {
 			logger.info("No MCP server configurations found");
 			return toolCallbackMap;
 		}
-		
+
 		logger.info("Loading {} MCP server configurations", mcpConfigEntities.size());
-		
+
 		for (McpConfigEntity mcpConfigEntity : mcpConfigEntities) {
 			String serverName = mcpConfigEntity.getMcpServerName();
-			
+
 			try {
 				// 验证基础配置
 				if (mcpConfigEntity.getConnectionType() == null) {
 					logger.error("Connection type is required for server: {}", serverName);
 					throw new IOException("Connection type is required for server: " + serverName);
 				}
-				
+
 				if (serverName == null || serverName.trim().isEmpty()) {
 					logger.error("Server name is required");
 					throw new IOException("Server name is required");
 				}
-				
+
 				McpConfigType type = mcpConfigEntity.getConnectionType();
 				logger.debug("Processing MCP server: {} with type: {}", serverName, type);
-				
+
 				McpServiceEntity mcpServiceEntity = null;
-				
+
 				switch (type) {
 					case SSE -> {
 						mcpServiceEntity = createSseConnection(mcpConfigEntity, serverName);
@@ -120,41 +120,47 @@ public class McpService {
 						mcpServiceEntity = createStudioConnection(mcpConfigEntity, serverName);
 					}
 					case STREAMING -> {
-						logger.warn("STREAMING connection type is not fully implemented yet for server: {}", serverName);
-						throw new UnsupportedOperationException("STREAMING connection type is not supported yet for server: " + serverName);
+						logger.warn("STREAMING connection type is not fully implemented yet for server: {}",
+								serverName);
+						throw new UnsupportedOperationException(
+								"STREAMING connection type is not supported yet for server: " + serverName);
 					}
 					default -> {
 						logger.error("Unsupported connection type: {} for server: {}", type, serverName);
 						throw new IOException("Unsupported connection type: " + type + " for server: " + serverName);
 					}
 				}
-				
+
 				if (mcpServiceEntity != null) {
 					toolCallbackMap.put(serverName, mcpServiceEntity);
 					logger.info("Successfully loaded MCP server: {} with type: {}", serverName, type);
-				} else {
+				}
+				else {
 					logger.warn("Failed to create MCP service entity for server: {}", serverName);
 				}
-				
-			} catch (Exception e) {
-				logger.error("Failed to load MCP server configuration for: {}, error: {}", serverName, e.getMessage(), e);
+
+			}
+			catch (Exception e) {
+				logger.error("Failed to load MCP server configuration for: {}, error: {}", serverName, e.getMessage(),
+						e);
 				// 根据需求决定是否继续处理其他服务器还是抛出异常
 				// 这里选择继续处理其他服务器，但记录错误
 				// 如果需要严格模式，可以取消注释下面的行
 				// throw new IOException("Failed to load MCP server: " + serverName, e);
 			}
 		}
-		
+
 		logger.info("Successfully loaded {} out of {} MCP servers", toolCallbackMap.size(), mcpConfigEntities.size());
 		return toolCallbackMap;
 	}
-	
-	private McpServiceEntity createSseConnection(McpConfigEntity mcpConfigEntity, String serverName) throws IOException {
+
+	private McpServiceEntity createSseConnection(McpConfigEntity mcpConfigEntity, String serverName)
+			throws IOException {
 		McpClientTransport transport = null;
-		
+
 		try (JsonParser jsonParser = new ObjectMapper().createParser(mcpConfigEntity.getConnectionConfig())) {
 			McpServerConfig mcpServerConfig = jsonParser.readValueAs(McpServerConfig.class);
-			
+
 			// 验证URL配置
 			if (mcpServerConfig.getUrl() == null || mcpServerConfig.getUrl().trim().isEmpty()) {
 				throw new IOException("Invalid or missing MCP server URL for server: " + serverName);
@@ -163,36 +169,38 @@ public class McpService {
 			String url = mcpServerConfig.getUrl().trim();
 			String baseUrl;
 			String sseEndpoint;
-			
+
 			try {
 				java.net.URL parsedUrl = new java.net.URL(url);
-				baseUrl = parsedUrl.getProtocol() + "://" + parsedUrl.getHost() + 
-					(parsedUrl.getPort() == -1 ? "" : ":" + parsedUrl.getPort());
-				
+				baseUrl = parsedUrl.getProtocol() + "://" + parsedUrl.getHost()
+						+ (parsedUrl.getPort() == -1 ? "" : ":" + parsedUrl.getPort());
+
 				// 检查URL路径是否以/sse结尾，如果不是则抛出错误
 				String path = parsedUrl.getPath();
 				if (path == null || !path.endsWith("/sse")) {
 					throw new IllegalArgumentException("URL路径必须以/sse结尾，当前路径: " + path + " for server: " + serverName);
 				}
-				
+
 				// 去掉尾部的sse，作为sseEndpoint传入
 				sseEndpoint = path;
-				
+
 				// 移除开头的斜杠，因为WebClient的baseUrl已经包含了域名
 				if (sseEndpoint.startsWith("/")) {
 					sseEndpoint = sseEndpoint.substring(1);
 				}
-				
+
 				// 如果去掉sse后为空，使用默认路径
 				if (sseEndpoint.isEmpty()) {
 					sseEndpoint = null;
 				}
-			} catch (java.net.MalformedURLException e) {
+			}
+			catch (java.net.MalformedURLException e) {
 				logger.error("Invalid URL format: {} for server: {}", url, serverName, e);
 				throw new IllegalArgumentException("Invalid URL format: " + url + " for server: " + serverName, e);
 			}
 
-			logger.info("Connecting to base URL: {}, SSE endpoint: {} for server: {}", baseUrl, sseEndpoint, serverName);
+			logger.info("Connecting to base URL: {}, SSE endpoint: {} for server: {}", baseUrl, sseEndpoint,
+					serverName);
 
 			// 创建WebClient并添加必要的请求头
 			WebClient.Builder webClientBuilder = WebClient.builder()
@@ -200,22 +208,25 @@ public class McpService {
 				.defaultHeader("Accept", "text/event-stream")
 				.defaultHeader("Content-Type", "application/json")
 				.defaultHeader("User-Agent", "MCP-Client/1.0.0");
-			if(sseEndpoint != null && !sseEndpoint.isEmpty()) {
+			if (sseEndpoint != null && !sseEndpoint.isEmpty()) {
 				transport = new WebFluxSseClientTransport(webClientBuilder, new ObjectMapper(), sseEndpoint);
-			}else{
+			}
+			else {
 				transport = new WebFluxSseClientTransport(webClientBuilder, new ObjectMapper());
 			}
 			return configureMcpTransport(serverName, transport);
-			
-		} catch (Exception e) {
+
+		}
+		catch (Exception e) {
 			logger.error("Failed to create SSE transport for server: {}", serverName, e);
 			throw new IOException("Failed to create SSE transport for server: " + serverName, e);
 		}
 	}
-	
-	private McpServiceEntity createStudioConnection(McpConfigEntity mcpConfigEntity, String serverName) throws IOException {
+
+	private McpServiceEntity createStudioConnection(McpConfigEntity mcpConfigEntity, String serverName)
+			throws IOException {
 		McpClientTransport transport = null;
-		
+
 		try (JsonParser jsonParser = new ObjectMapper().createParser(mcpConfigEntity.getConnectionConfig())) {
 			McpServerConfig mcpServerConfig = jsonParser.readValueAs(McpServerConfig.class);
 
@@ -224,7 +235,7 @@ public class McpService {
 			if (command == null || command.trim().isEmpty()) {
 				throw new IOException("Missing required 'command' field in server configuration for " + serverName);
 			}
-			
+
 			command = command.trim();
 			List<String> args = mcpServerConfig.getArgs();
 			Map<String, String> env = mcpServerConfig.getEnv();
@@ -254,10 +265,12 @@ public class McpService {
 			McpServiceEntity mcpServiceEntity = configureMcpTransport(serverName, transport);
 			logger.info("STUDIO MCP Client configured successfully for server: {}", serverName);
 			return mcpServiceEntity;
-			
-		} catch (Exception e) {
+
+		}
+		catch (Exception e) {
 			logger.error("Error creating STUDIO transport for server: {}", serverName, e);
-			throw new IOException("Failed to create StdioClientTransport for server: " + serverName + ": " + e.getMessage(), e);
+			throw new IOException(
+					"Failed to create StdioClientTransport for server: " + serverName + ": " + e.getMessage(), e);
 		}
 	}
 
@@ -267,14 +280,15 @@ public class McpService {
 			McpAsyncClient mcpAsyncClient = McpClient.async(transport)
 				.clientInfo(new McpSchema.Implementation(mcpServerName, "1.0.0"))
 				.build();
-			
+
 			// 重试机制：最多重试3次
 			int maxRetries = 3;
 			Exception lastException = null;
-			
+
 			for (int attempt = 1; attempt <= maxRetries; attempt++) {
 				try {
-					logger.debug("Attempting to initialize MCP transport for: {} (attempt {}/{})", mcpServerName, attempt, maxRetries);
+					logger.debug("Attempting to initialize MCP transport for: {} (attempt {}/{})", mcpServerName,
+							attempt, maxRetries);
 					mcpAsyncClient.initialize().block(Duration.ofMinutes(2));
 					logger.info("MCP transport configured successfully for: {} (attempt {})", mcpServerName, attempt);
 
@@ -283,14 +297,15 @@ public class McpService {
 				}
 				catch (Exception e) {
 					lastException = e;
-					logger.warn("Failed to initialize MCP transport for {} on attempt {}/{}: {}", 
-						mcpServerName, attempt, maxRetries, e.getMessage());
-					
+					logger.warn("Failed to initialize MCP transport for {} on attempt {}/{}: {}", mcpServerName,
+							attempt, maxRetries, e.getMessage());
+
 					if (attempt < maxRetries) {
 						try {
 							// 重试前等待一段时间，避免立即重试
 							Thread.sleep(1000 * attempt); // 递增等待时间：1s, 2s, 3s
-						} catch (InterruptedException ie) {
+						}
+						catch (InterruptedException ie) {
 							Thread.currentThread().interrupt();
 							logger.warn("Retry wait interrupted for server: {}", mcpServerName);
 							break;
@@ -298,8 +313,9 @@ public class McpService {
 					}
 				}
 			}
-			
-			logger.error("Failed to initialize MCP transport for {} after {} attempts", mcpServerName, maxRetries, lastException);
+
+			logger.error("Failed to initialize MCP transport for {} after {} attempts", mcpServerName, maxRetries,
+					lastException);
 			return null;
 		}
 		return null;

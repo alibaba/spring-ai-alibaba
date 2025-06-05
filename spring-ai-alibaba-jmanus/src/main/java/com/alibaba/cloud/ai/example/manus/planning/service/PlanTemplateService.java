@@ -97,9 +97,13 @@ public class PlanTemplateService {
 	 * 版本保存结果类
 	 */
 	public static class VersionSaveResult {
+
 		private final boolean saved;
+
 		private final boolean duplicate;
+
 		private final String message;
+
 		private final int versionIndex;
 
 		public VersionSaveResult(boolean saved, boolean duplicate, String message, int versionIndex) {
@@ -109,10 +113,22 @@ public class PlanTemplateService {
 			this.versionIndex = versionIndex;
 		}
 
-		public boolean isSaved() { return saved; }
-		public boolean isDuplicate() { return duplicate; }
-		public String getMessage() { return message; }
-		public int getVersionIndex() { return versionIndex; }
+		public boolean isSaved() {
+			return saved;
+		}
+
+		public boolean isDuplicate() {
+			return duplicate;
+		}
+
+		public String getMessage() {
+			return message;
+		}
+
+		public int getVersionIndex() {
+			return versionIndex;
+		}
+
 	}
 
 	/**
@@ -127,10 +143,10 @@ public class PlanTemplateService {
 		if (isContentSameAsLatestVersion(planTemplateId, planJson)) {
 			logger.info("计划 {} 的内容与最新版本相同，跳过版本保存", planTemplateId);
 			Integer maxVersionIndex = versionRepository.findMaxVersionIndexByPlanTemplateId(planTemplateId);
-			return new VersionSaveResult(false, true, "内容与最新版本相同，未创建新版本", 
-				maxVersionIndex != null ? maxVersionIndex : -1);
+			return new VersionSaveResult(false, true, "内容与最新版本相同，未创建新版本",
+					maxVersionIndex != null ? maxVersionIndex : -1);
 		}
-		
+
 		// 获取最大版本号
 		Integer maxVersionIndex = versionRepository.findMaxVersionIndexByPlanTemplateId(planTemplateId);
 		int newVersionIndex = (maxVersionIndex == null) ? 0 : maxVersionIndex + 1;
@@ -214,8 +230,7 @@ public class PlanTemplateService {
 	}
 
 	/**
-	 * 智能比较两个JSON字符串是否在语义上相同
-	 * 会忽略格式差异（空格、换行等），只比较实际内容
+	 * 智能比较两个JSON字符串是否在语义上相同 会忽略格式差异（空格、换行等），只比较实际内容
 	 * @param json1 第一个JSON字符串
 	 * @param json2 第二个JSON字符串
 	 * @return 如果语义相同返回true，否则返回false
@@ -227,18 +242,19 @@ public class PlanTemplateService {
 		if (json1 == null || json2 == null) {
 			return false;
 		}
-		
+
 		// 首先尝试简单的字符串比较
 		if (json1.equals(json2)) {
 			return true;
 		}
-		
+
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			JsonNode node1 = mapper.readTree(json1);
 			JsonNode node2 = mapper.readTree(json2);
 			return node1.equals(node2);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.warn("比较JSON内容时解析失败，回退到字符串比较", e);
 			// 如果JSON解析失败，回退到字符串比较
 			return json1.equals(json2);
