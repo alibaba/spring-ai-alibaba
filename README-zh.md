@@ -26,15 +26,15 @@ Spring AI Alibaba 提供以下核心能力，帮助开发者快速构建自己�
 
 ```xml
 <dependencyManagement>
-	<dependencies>
-		<dependency>
-			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>spring-ai-alibaba-bom</artifactId>
-			<version>1.0.0.2</version>
-			<type>pom</type>
-			<scope>import</scope>
-		</dependency>
-	</dependencies>
+  <dependencies>
+    <dependency>
+      <groupId>com.alibaba.cloud.ai</groupId>
+      <artifactId>spring-ai-alibaba-bom</artifactId>
+      <version>1.0.0.2</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
 </dependencyManagement>
 
 <dependencies>

@@ -12,11 +12,13 @@
 
 ## Core Features
 
+![Spring AI Alibaba Architecture](./docs/imgs/spring-ai-alibaba-architecture.png)
+
 Spring AI Alibaba provides the following core capabilities to help developers quickly build their own Chatbot, Workflow, or Multi-agent applications:
 
-1. **Multi-agent framework based on Graph**, with Spring AI Alibaba Graph, developers can quickly build workflows and multi-agent applications in ease. Graph code can be generated from Dify DSL and debugged in a visual way.
+1. **Graph based multi-agent framework**, with Spring AI Alibaba Graph, developers can quickly build workflows and multi-agent applications in ease. Graph code can be generated from Dify DSL and debugged in a visual way.
 2. **Enterprise-ready AI ecosystem integration, bring agents from demo to production.** Spring AI Alibaba supports integration with the Aliyun Bailian platform, providing LLM model service and RAG knowledge  solutions; Support seamless integration of AI observation products such as ARMS and Langfuse; Support enterprise level MCP integration, including Nacos MCP Registry for MCP discovery and routing, etc.
-3. **Plan-Act Agent products and platforms.**
+3. **Plan-Act agent products and platforms.**
 * JManus, Spring AI Alibaba based Manus implementation, supports delicacy plan adjustment, plan reuse.
 * DeepResearch, Spring AI Alibaba based research and report agent with powerful tools like search engines, web crawlers, Python and MCP services.
 
@@ -26,15 +28,15 @@ To quickly get started with Spring AI Alibaba, add 'spring-ai-alibaba-starter-da
 
 ```xml
 <dependencyManagement>
-	<dependencies>
-		<dependency>
-			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>spring-ai-alibaba-bom</artifactId>
-			<version>1.0.0.2</version>
-			<type>pom</type>
-			<scope>import</scope>
-		</dependency>
-	</dependencies>
+  <dependencies>
+    <dependency>
+      <groupId>com.alibaba.cloud.ai</groupId>
+      <artifactId>spring-ai-alibaba-bom</artifactId>
+      <version>1.0.0.2</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
 </dependencyManagement>
 
 <dependencies>
