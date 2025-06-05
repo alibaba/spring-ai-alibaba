@@ -54,11 +54,11 @@ mcp-servers-windows.json
 
 ### 完整系统流程图
 
-![image-20250605212205834](https://typora-oss-picgo.oss-cn-beijing.aliyuncs.com/202506052122988.png)
+![image-20250605212205834](../docs/imgs/202506052122988.png)
 
 ### 整体架构图：
 
-![image-20250605212328282](https://typora-oss-picgo.oss-cn-beijing.aliyuncs.com/202506052123329.png)
+![image-20250605212328282](docs/imgs/202506052123329.png)
 
 
 
