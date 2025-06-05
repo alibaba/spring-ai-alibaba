@@ -197,8 +197,8 @@ public class DashScopeChatOptions implements ToolCallingChatOptions {
     return maxTokens;
   }
 
-  public Integer setMaxTokens() {
-    return this.maxTokens;
+  public void setMaxTokens(Integer maxTokens) {
+    this.maxTokens = maxTokens;
   }
 
   @Override
