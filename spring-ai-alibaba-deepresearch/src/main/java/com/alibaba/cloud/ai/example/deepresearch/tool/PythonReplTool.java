@@ -17,6 +17,12 @@
 package com.alibaba.cloud.ai.example.deepresearch.tool;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.async.ResultCallbackTemplate;
+import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.command.InspectContainerResponse;
+import com.github.dockerjava.api.model.*;
+import com.github.dockerjava.core.DockerClientBuilder;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,17 +31,19 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.lang.ref.Cleaner;
+import java.nio.charset.Charset;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+
+import static com.github.dockerjava.api.model.HostConfig.newHostConfig;
 
 /**
  * Run Python Code in Docker
@@ -61,13 +69,13 @@ public class PythonReplTool {
 			return "Error: Code must be a non-empty string.";
 		}
 		if (!StringUtils.hasText(coderProperties.getContainNamePrefix())
-				|| !StringUtils.hasText(coderProperties.getCpuCore())
-				|| !StringUtils.hasText(coderProperties.getLimitMemory())
+				|| (coderProperties.getCpuCore() == null || coderProperties.getCpuCore() <= 0)
+				|| (coderProperties.getLimitMemory() == null || coderProperties.getLimitMemory() <= 0)
 				|| !StringUtils.hasText(coderProperties.getCodeTimeout())
 				|| !StringUtils.hasText(coderProperties.getImageName())) {
 			return "Error: Some Config is not set. You should reporter it to developer.";
 		}
-		try {
+		try (DockerClient dockerClient = DockerClientBuilder.getInstance().build()) {
 			// Create temp dir and files
 			Path tempDir = Files.createTempDirectory(coderProperties.getContainNamePrefix());
 			Cleaner.create().register(tempDir, () -> {
@@ -98,93 +106,144 @@ public class PythonReplTool {
 					logger.warning("Error when deleting temp directory: {}" + tempDir.toAbsolutePath());
 				}
 			});
-			Path requirementsPath = tempDir.resolve("requirements.txt");
-			Path scriptPath = tempDir.resolve("script.py");
-			Files.createFile(requirementsPath);
-			Files.createFile(scriptPath);
-			Files.write(requirementsPath, StringUtils.hasText(requirements) ? requirements.getBytes() : "".getBytes());
-			Files.write(scriptPath, code.getBytes());
+			Files.createFile(tempDir.resolve("requirements.txt"));
+			Files.createFile(tempDir.resolve("script.py"));
+			Files.createDirectory(tempDir.resolve("dependency"));
+			Files.createDirectory(tempDir.resolve("tmp"));
+			Files.write(tempDir.resolve("requirements.txt"),
+					StringUtils.hasText(requirements) ? requirements.getBytes() : "".getBytes());
+			Files.write(tempDir.resolve("script.py"), code.getBytes());
 
 			// Build a docker to run
 			String containName = tempDir.getFileName().toString();
-			String tempDirPath = tempDir.toAbsolutePath().toString();
 
 			if (!coderProperties.isEnableNetwork() && StringUtils.hasText(requirements)) {
 				// If Python code is restricted from network access but requires
 				// third-party dependencies, we need to provision a docker for pip to
 				// install the dependencies.
-				List<String> pipCommands = List.of("docker", "run", "--rm", "--name", containName, "-v",
-						String.format("%s/requirements.txt:/app/requirements.txt:ro", tempDirPath), "-v",
-						String.format("%s/tmp:/tmp", tempDirPath), "-v",
-						String.format("%s/dependency:/app/site-packages", tempDirPath), "-w", "/app",
-						coderProperties.getImageName(), "sh", "-c",
-						"pip3 install --target=/app/site-packages --no-cache-dir -r requirements.txt > /dev/null");
-				ProcessBuilder pipPb = new ProcessBuilder(pipCommands);
-				Process pipProcess = pipPb.start();
-				BufferedReader pipError = new BufferedReader(new InputStreamReader(pipProcess.getErrorStream()));
-				if (pipProcess.waitFor() != 0) {
-					StringBuilder error = new StringBuilder();
-					String line;
-					while ((line = pipError.readLine()) != null) {
-						error.append(line).append("\n");
-					}
-					return "Error installing requirements:\n```\n" + code + "\n```\nError:\n" + error;
+				HostConfig hostConfig = getHostConfig(tempDir);
+
+				CreateContainerResponse container = dockerClient.createContainerCmd(coderProperties.getImageName())
+					.withName(containName)
+					.withWorkingDir("/app")
+					.withHostConfig(hostConfig)
+					.withCmd("sh", "-c",
+							"pip3 install --target=/app/site-packages --no-cache-dir -r requirements.txt > /dev/null")
+					.exec();
+				try {
+					this.execDockerContainer(dockerClient, container);
+				}
+				catch (Exception e) {
+					return "Error installing requirements: " + e.getMessage();
 				}
 			}
 
-			/*
-			 * Command Sample: docker run --rm --name py-runner --memory="100M" \
-			 * --cpus="0.5" --network none --read-only --cap-drop=ALL -v \
-			 * "./script.py:/app/script.py:ro" -v \
-			 * "./requirements.txt:/app/requirements.txt:ro" -v "./tmp:/tmp" -v \
-			 * "./dependency:/app/site-packages" -w /app python:3-slim sh -c "pip3 \
-			 * install --target=/app/site-packages --no-cache-dir -r requirements.txt > \
-			 * /dev/null && export PYTHONPATH="/app/site-packages:$PYTHONPATH" && \
-			 * timeout -s SIGKILL 60s python3 script.py"
-			 */
-			List<String> commands = List.of("docker", "run", "--rm", "--name", containName,
-					String.format("--memory=%s", coderProperties.getLimitMemory()),
-					String.format("--cpus=%s", coderProperties.getCpuCore()), "--network",
-					coderProperties.isEnableNetwork() ? "bridge" : "none", "--read-only", "--cap-drop=ALL", "-v",
-					String.format("%s/script.py:/app/script.py:ro", tempDirPath), "-v",
-					String.format("%s/requirements.txt:/app/requirements.txt:ro", tempDirPath), "-v",
-					String.format("%s/tmp:/tmp", tempDirPath), "-v",
-					String.format("%s/dependency:/app/site-packages", tempDirPath), "-w", "/app",
-					coderProperties.getImageName(), "sh", "-c",
-					String.format(((coderProperties.isEnableNetwork() && StringUtils.hasText(requirements))
+			// run python code in docker
+			HostConfig hostConfig = getHostConfig(tempDir)
+				.withNetworkMode(coderProperties.isEnableNetwork() ? "bridge" : "none");
+
+			CreateContainerResponse container = dockerClient.createContainerCmd(coderProperties.getImageName())
+				.withName(containName)
+				.withWorkingDir("/app")
+				.withHostConfig(hostConfig)
+				.withCmd("sh", "-c", String.format(((coderProperties.isEnableNetwork() && StringUtils
+					.hasText(requirements))
 							? "pip3 install --target=/app/site-packages --no-cache-dir -r requirements.txt > /dev/null && "
 							: "")
-							+ "export PYTHONPATH=\"/app/site-packages:$PYTHONPATH\" && timeout -s SIGKILL %s python3 script.py",
-							coderProperties.getCodeTimeout()));
-			ProcessBuilder pb = new ProcessBuilder(commands);
-			Process process = pb.start();
-
-			// get stdout and stderr
-			BufferedReader stdOutput = new BufferedReader(new InputStreamReader(process.getInputStream()));
-			BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-			int exitCode = process.waitFor();
-			StringBuilder output = new StringBuilder();
-			String line;
-			while ((line = stdOutput.readLine()) != null) {
-				output.append(line).append("\n");
-			}
-			StringBuilder error = new StringBuilder();
-			while ((line = stdError.readLine()) != null) {
-				error.append(line).append("\n");
-			}
-			if (exitCode == 0) {
+						+ "export PYTHONPATH=\"/app/site-packages:$PYTHONPATH\" && timeout -s SIGKILL %s python3 script.py",
+						coderProperties.getCodeTimeout()))
+				.exec();
+			try {
+				String output = this.execDockerContainer(dockerClient, container);
 				logger.info("Python code executed successfully.");
 				return "Successfully executed:\n```\n" + code + "\n```\nStdout:\n" + output;
 			}
-			else {
+			catch (Exception e) {
 				logger.warning("Python code execution failed.");
-				return "Error executing code:\n```\n" + code + "\n```\nError:\n" + error;
+				return "Error executing code:\n```\n" + code + "\n```\nError:\n" + e.getMessage();
 			}
 		}
-		catch (IOException | InterruptedException e) {
-			logger.severe("Exception during execution: " + e.getMessage());
+		catch (Exception e) {
+			logger.warning("Exception during execution: " + e.getMessage());
 			return "Exception occurred while executing code:\n```\n" + code + "\n```\nError:\n" + e.getMessage();
 		}
+	}
+
+	private HostConfig getHostConfig(Path tempDir) throws IOException {
+		return newHostConfig().withMemory(coderProperties.getLimitMemory() * 1024L * 1024L)
+			.withCpuCount(coderProperties.getCpuCore())
+			.withReadonlyRootfs(true)
+			.withCapDrop(Capability.ALL)
+			.withAutoRemove(false)
+			.withBinds(
+					new Bind(tempDir.resolve("script.py").toAbsolutePath().toString(), new Volume("/app/script.py"),
+							AccessMode.ro),
+					new Bind(tempDir.resolve("requirements.txt").toAbsolutePath().toString(),
+							new Volume("/app/requirements.txt"), AccessMode.ro),
+					new Bind(tempDir.resolve("tmp").toAbsolutePath().toString(), new Volume("/tmp")),
+					new Bind(tempDir.resolve("dependency").toAbsolutePath().toString(),
+							new Volume("/app/site-packages")));
+	}
+
+	public abstract static class ContainerStdoutCallBack
+			extends ResultCallbackTemplate<ContainerStdoutCallBack, Frame> {
+
+	}
+
+	/**
+	 * Run a Docker container and return its stdout, throwing a RuntimeException if errors
+	 * occur.
+	 */
+	private String execDockerContainer(DockerClient dockerClient, CreateContainerResponse container)
+			throws RuntimeException {
+		// catch stdout and stderr
+		ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+		ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+		ContainerStdoutCallBack callback = new ContainerStdoutCallBack() {
+			@Override
+			public void onNext(Frame frame) {
+				try {
+					if (frame.getStreamType() == StreamType.STDOUT) {
+						stdout.write(frame.getPayload());
+					}
+					else if (frame.getStreamType() == StreamType.STDERR) {
+						stderr.write(frame.getPayload());
+					}
+				}
+				catch (Exception e) {
+					logger.warning("Exception during execution Stdout CallBack: " + e.getMessage());
+				}
+			}
+		};
+
+		// start docker
+		try {
+			dockerClient.logContainerCmd(container.getId())
+				.withStdOut(true)
+				.withStdErr(true)
+				.withFollowStream(true)
+				.withTimestamps(false)
+				.exec(callback);
+			dockerClient.startContainerCmd(container.getId()).exec();
+			dockerClient.waitContainerCmd(container.getId())
+				.start()
+				.awaitCompletion(coderProperties.getDockerTimeout(), TimeUnit.SECONDS);
+			callback.awaitCompletion(coderProperties.getDockerTimeout(), TimeUnit.SECONDS);
+			InspectContainerResponse inspectResponse = dockerClient.inspectContainerCmd(container.getId()).exec();
+			int exitCode = Objects.requireNonNull(inspectResponse.getState().getExitCodeLong()).intValue();
+			if (exitCode != 0) {
+				throw new RuntimeException(
+						"Docker exit code " + exitCode + ". stderr: " + stderr.toString(Charset.defaultCharset()));
+			}
+		}
+		catch (Exception e) {
+			logger.severe("Error when creating container in docker: {}" + e.getMessage());
+			throw new RuntimeException(e);
+		}
+		finally {
+			dockerClient.removeContainerCmd(container.getId()).withForce(true).exec();
+		}
+		return stdout.toString(Charset.defaultCharset());
 	}
 
 }

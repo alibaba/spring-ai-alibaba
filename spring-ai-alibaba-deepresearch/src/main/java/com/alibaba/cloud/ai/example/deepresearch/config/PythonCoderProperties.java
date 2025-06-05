@@ -34,14 +34,14 @@ public class PythonCoderProperties {
 	String containNamePrefix = "python-coder";
 
 	/**
-	 * Memory size limit
+	 * Memory size limit (MB)
 	 */
-	String limitMemory = "500M";
+	Long limitMemory = 500L;
 
 	/**
 	 * Container CPU core limit
 	 */
-	String cpuCore = "1";
+	Long cpuCore = 1L;
 
 	/**
 	 * Enable/disable container network access
@@ -52,6 +52,11 @@ public class PythonCoderProperties {
 	 * Timeout of python code
 	 */
 	String codeTimeout = "60s";
+
+	/**
+	 * Timeout of Docker (s)
+	 */
+	Long dockerTimeout = 3000L;
 
 	/**
 	 * The image of container. You can customize the image as long as it includes python3
@@ -67,19 +72,19 @@ public class PythonCoderProperties {
 		this.containNamePrefix = containNamePrefix;
 	}
 
-	public String getLimitMemory() {
+	public Long getLimitMemory() {
 		return limitMemory;
 	}
 
-	public void setLimitMemory(String limitMemory) {
+	public void setLimitMemory(Long limitMemory) {
 		this.limitMemory = limitMemory;
 	}
 
-	public String getCpuCore() {
+	public Long getCpuCore() {
 		return cpuCore;
 	}
 
-	public void setCpuCore(String cpuCore) {
+	public void setCpuCore(Long cpuCore) {
 		this.cpuCore = cpuCore;
 	}
 
@@ -97,6 +102,14 @@ public class PythonCoderProperties {
 
 	public void setCodeTimeout(String codeTimeout) {
 		this.codeTimeout = codeTimeout;
+	}
+
+	public Long getDockerTimeout() {
+		return dockerTimeout;
+	}
+
+	public void setDockerTimeout(Long dockerTimeout) {
+		this.dockerTimeout = dockerTimeout;
 	}
 
 	public String getImageName() {
