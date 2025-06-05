@@ -34,7 +34,7 @@ class PlanTemplateManagerOld {
         this.rightSidebar = null;
 
         // UI Handler for the plan template list - REMOVED
-        // this.planTemplateListUIHandler = null; 
+        this.planTemplateListUIHandler = null;
     }
 
     // Getter methods
@@ -82,7 +82,7 @@ class PlanTemplateManagerOld {
         this.leftSidebar = document.getElementById('leftSidebar');
         this.rightSidebar = document.getElementById('rightSidebar');
 
-       
+
 
         // 绑定侧边栏切换按钮事件
         if (this.toggleLeftSidebarBtn && this.leftSidebar) {
@@ -114,7 +114,7 @@ class PlanTemplateManagerOld {
         document.getElementById('restoreJsonBtn').addEventListener('click', this.handleRestoreJson.bind(this));
         document.getElementById('compareJsonBtn').addEventListener('click', this.handleCompareJson.bind(this));
 
-        if (typeof PlanTemplatePollingManager !== 'undefined') { 
+        if (typeof PlanTemplatePollingManager !== 'undefined') {
             PlanTemplatePollingManager.init({
                 getPlanId: () => this.currentPlanId,
                 setPlanId: (id) => { this.currentPlanId = id; },
@@ -182,20 +182,23 @@ class PlanTemplateManagerOld {
                 console.log('正在创建新计划模板');
                 response = await ManusAPI.generatePlan(query, this.jsonEditor.value.trim() || null); // 传递原始JSON字符串
             }
-            
+
             this.currentPlanData = response.plan; // API返回的应该是完整的plan template对象
 
-            if (this.currentPlanData && this.currentPlanData.json) {
-                this.jsonEditor.value = this.currentPlanData.json; // 显示JSON
-                this.saveToVersionHistory(this.currentPlanData.json);
-                this.currentPlanTemplateId = this.currentPlanData.id; // 更新ID
-                this.planPromptInput.value = this.currentPlanData.prompt || query; // 更新Prompt
+            if (this.currentPlanData && response.planJson) {
+                this.jsonEditor.value = response.planJson; // 显示JSON
+                this.saveToVersionHistory(response.planJson);
+                this.currentPlanTemplateId = this.currentPlanData.planId; // 更新ID
+                this.planPromptInput.value = ''; // 更新Prompt
             } else {
                 alert('计划生成或更新未能返回有效的JSON数据。');
             }
-            
+
+            this.isGenerating = false;
             await this.loadPlanTemplateList(); // 重新加载列表以反映更新或新建
-            this.updatePlanTemplateListUI(); // 确保选中项正确
+            let templateSelect = {}
+            templateSelect.id = this.currentPlanTemplateId;
+            await this.planTemplateListUIHandler.handlePlanTemplateClick(templateSelect); // 确保选中项正确
             this.updateApiUrl();
 
 
@@ -206,6 +209,10 @@ class PlanTemplateManagerOld {
             this.isGenerating = false;
             this.updateUIState();
         }
+    }
+
+    setPlanTemplateListUIHandler(handler) {
+        this.planTemplateListUIHandler = handler;
     }
 
     /**
@@ -265,7 +272,7 @@ class PlanTemplateManagerOld {
             alert('JSON格式无效，请修正后再保存。\\n错误: ' + e.message);
             return;
         }
-        
+
         this.isGenerating = true; // 复用isGenerating状态和UI反馈
         this.updateUIState();
 
@@ -331,7 +338,7 @@ class PlanTemplateManagerOld {
         } else {
             this.generatePlanBtn.textContent = this.currentPlanTemplateId ? '更新计划' : '生成计划';
         }
-        
+
         // Update RunPlanButton via its own exposed method if available and needed
         if (typeof RunPlanButtonHandler !== 'undefined' && RunPlanButtonHandler.updateButtonState) {
             RunPlanButtonHandler.updateButtonState();
@@ -419,7 +426,7 @@ class PlanTemplateManagerOld {
         // 可以根据需要调整主内容区域的边距或宽度
         document.querySelector('.main-content').classList.toggle('right-collapsed');
     }
-    
+
     // --- Static Helper Methods ---
     /**
      * 将日期对象转换为相对时间字符串
