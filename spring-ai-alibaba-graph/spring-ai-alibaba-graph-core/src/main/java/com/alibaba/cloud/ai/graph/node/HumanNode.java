@@ -89,4 +89,30 @@ public class HumanNode implements NodeAction {
 		return state.humanFeedback().nextNodeId();
 	}
 
+    public static class Builder {
+        private String interruptStrategy = "always";
+        private Function<OverAllState, Boolean> interruptCondition = state -> true;
+        private Function<OverAllState, Map<String, Object>> stateUpdateFunc = null;
+
+        public Builder interruptStrategy(String interruptStrategy) {
+            this.interruptStrategy = interruptStrategy;
+            return this;
+        }
+
+        public Builder interruptCondition(Function<OverAllState, Boolean> interruptCondition) {
+            this.interruptCondition = interruptCondition;
+            return this;
+        }
+
+        public Builder stateUpdateFunc(Function<OverAllState, Map<String, Object>> stateUpdateFunc) {
+            this.stateUpdateFunc = stateUpdateFunc;
+            return this;
+        }
+
+
+        public HumanNode build() {
+            return new HumanNode(interruptStrategy, interruptCondition, stateUpdateFunc);
+        }
+    }
+
 }

@@ -131,19 +131,22 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return stringBuilder.toString();
 	}
 
-	private String renderEdgeSections(List<Edge> edges) {
-		StringBuilder sb = new StringBuilder();
-		for (Edge e : edges) {
-			// 如果 source ID 是 start，就用常量 START
-			String srcCode = "start".equals(e.getSource()) ? "START" : "\"" + e.getSource() + "\"";
-			// 如果 target ID 是 answer，就用常量 END
-			String tgtCode = "answer".equals(e.getTarget()) ? "END" : "\"" + e.getTarget() + "\"";
+    private String renderEdgeSections(List<Edge> edges) {
+        StringBuilder sb = new StringBuilder();
+        for (Edge e : edges) {
+            String srcCode = "start".equals(e.getSource())
+                    ? "START"
+                    : "\"" + e.getSource() + "\"";
+            String tgtCode = "end".equals(e.getTarget())
+                    ? "END"
+                    : "\"" + e.getTarget() + "\"";
 
-			sb.append(String.format("stateGraph.addEdge(%s, %s);%n", srcCode, tgtCode));
-		}
-		sb.append("\n");
-		return sb.toString();
-	}
+            sb.append("        stateGraph.addEdge(")
+                    .append(srcCode).append(", ").append(tgtCode).append(");\n");
+        }
+        sb.append("\n");
+        return sb.toString();
+    }
 
 	private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, String>> models, Path projectRoot,
 			ProjectDescription projectDescription) {
