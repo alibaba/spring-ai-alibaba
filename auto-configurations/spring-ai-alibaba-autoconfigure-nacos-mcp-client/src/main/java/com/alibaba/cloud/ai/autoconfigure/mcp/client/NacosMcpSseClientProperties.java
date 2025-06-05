@@ -36,7 +36,7 @@ public class NacosMcpSseClientProperties {
 		return connections;
 	}
 
-	public static record NacosSseParameters(String serviceNamespace, String serviceName, String version) {
+	public static record NacosSseParameters(String serviceName, String version) {
 	}
 
 }

@@ -66,11 +66,11 @@ public class LoadbalancedMcpSyncClient {
 
 	private final ApplicationContext applicationContext;
 
+	private final AtomicInteger index = new AtomicInteger(0);
+
 	private Map<String, McpSyncClient> keyToClientMap;
 
 	private NacosMcpServerEndpoint serverEndpoint;
-
-	private final AtomicInteger index = new AtomicInteger(0);
 
 	public LoadbalancedMcpSyncClient(String serverName, String version,
 			NacosMcpOperationService nacosMcpOperationService, ApplicationContext applicationContext) {

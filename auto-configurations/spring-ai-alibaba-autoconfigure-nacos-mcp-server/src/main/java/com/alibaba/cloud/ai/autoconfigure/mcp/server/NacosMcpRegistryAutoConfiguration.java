@@ -50,10 +50,8 @@ public class NacosMcpRegistryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(NacosMcpOperationService.class)
-	public NacosMcpOperationService nacosMcpOperationService(NacosMcpProperties nacosMcpProperties,
-			NacosMcpRegistryProperties nacosMcpRegistryProperties) {
+	public NacosMcpOperationService nacosMcpOperationService(NacosMcpProperties nacosMcpProperties) {
 		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
-		nacosProperties.put(PropertyKeyConst.NAMESPACE, nacosMcpRegistryProperties.getServiceNamespace());
 		try {
 			return new NacosMcpOperationService(nacosProperties);
 		}
