@@ -32,7 +32,6 @@ import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionContext;
 import com.alibaba.cloud.ai.example.manus.planning.model.vo.ExecutionPlan;
 import com.alibaba.cloud.ai.example.manus.recorder.PlanExecutionRecorder;
 
-import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 /**
  * 负责生成计划执行总结的类
@@ -94,7 +93,7 @@ public class PlanFinalizer {
 
 			ChatResponse response = llmService.getPlanningChatClient()
 				.prompt(prompt)
-				.advisors(a -> a.param(CONVERSATION_ID, context.getConversationId()))
+				.advisors(a -> a.param(ChatMemory.DEFAULT_CONVERSATION_ID, context.getConversationId()))
 				.call()
 				.chatResponse();
 

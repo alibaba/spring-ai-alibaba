@@ -27,12 +27,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
 import java.util.List;
-
-import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 /**
  * 负责创建执行计划的类
@@ -81,7 +80,7 @@ public class PlanCreator {
 			ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient()
 				.prompt(prompt)
 				.toolCallbacks(List.of(planningTool.getFunctionToolCallback()))
-				.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getConversationId()));
+				.advisors(memoryAdvisor -> memoryAdvisor.param(ChatMemory.DEFAULT_CONVERSATION_ID, context.getConversationId()));
 
 			ChatClient.CallResponseSpec response = requestSpec.call();
 			String outputText = response.chatResponse().getResult().getOutput().getText();
