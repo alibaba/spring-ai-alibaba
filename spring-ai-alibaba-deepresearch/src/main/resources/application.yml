@@ -33,5 +33,3 @@ spring:
 logging:
   level:
     com.alibaba.cloud.ai.example.deepresearch: debug
-
-
