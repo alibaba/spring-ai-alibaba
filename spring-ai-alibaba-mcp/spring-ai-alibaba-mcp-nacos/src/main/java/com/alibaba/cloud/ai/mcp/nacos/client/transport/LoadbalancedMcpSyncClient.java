@@ -72,7 +72,6 @@ public class LoadbalancedMcpSyncClient {
 
 	private final AtomicInteger index = new AtomicInteger(0);
 
-
 	public LoadbalancedMcpSyncClient(String serverName, String version,
 			NacosMcpOperationService nacosMcpOperationService, ApplicationContext applicationContext) {
 		Assert.notNull(serverName, "serviceName cannot be null");
