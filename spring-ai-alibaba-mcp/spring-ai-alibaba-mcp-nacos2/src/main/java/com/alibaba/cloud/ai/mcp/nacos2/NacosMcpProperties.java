@@ -56,7 +56,7 @@ public class NacosMcpProperties {
 
 	private static final Logger log = LoggerFactory.getLogger(NacosMcpProperties.class);
 
-	String serviceNamespace;
+	String namespace;
 
 	String serverAddr;
 
@@ -76,12 +76,12 @@ public class NacosMcpProperties {
 	@JsonIgnore
 	private Environment environment;
 
-	public String getServiceNamespace() {
-		return serviceNamespace;
+	public String getNamespace() {
+		return namespace;
 	}
 
-	void setServiceNamespace(String serviceNamespace) {
-		this.serviceNamespace = serviceNamespace;
+	void setNamespace(String namespace) {
+		this.namespace = namespace;
 	}
 
 	public String getUsername() {
@@ -149,7 +149,7 @@ public class NacosMcpProperties {
 
 	public Properties getNacosProperties() {
 		Properties properties = new Properties();
-		properties.put(PropertyKeyConst.NAMESPACE, Objects.toString(this.serviceNamespace, ""));
+		properties.put(PropertyKeyConst.NAMESPACE, Objects.toString(this.namespace, ""));
 		properties.put(PropertyKeyConst.SERVER_ADDR, Objects.toString(this.serverAddr, ""));
 		properties.put(PropertyKeyConst.USERNAME, Objects.toString(this.username, ""));
 		properties.put(PropertyKeyConst.PASSWORD, Objects.toString(this.password, ""));

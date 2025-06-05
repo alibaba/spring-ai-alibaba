@@ -161,7 +161,7 @@ public class NacosMcpRegister implements ApplicationListener<WebServerInitialize
 			}
 			else {
 				ServiceRefInfo serviceRefInfo = new ServiceRefInfo();
-				serviceRefInfo.setNamespaceId(nacosMcpProperties.getServiceNamespace());
+				serviceRefInfo.setNamespaceId(nacosMcpProperties.getNamespace());
 				serviceRefInfo.setServiceName(this.serverInfo.name() + McpNacosConstant.SERVER_NAME_SUFFIX);
 				serviceRefInfo.setGroupName(nacosMcpRegistryProperties.getServiceGroup());
 				RemoteServerConfigInfo remoteServerConfigInfo = new RemoteServerConfigInfo();
