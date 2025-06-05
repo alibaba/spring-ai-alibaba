@@ -1,8 +1,9 @@
 class PlanTemplateListUIHandler {
-    constructor(planTemplateManager) { 
+    constructor(planTemplateManager) {
        this.planTemplateManager = planTemplateManager; // Will hold the PlanTemplateManagerOld instance
         this.taskListEl = null;
         this.newTaskBtn = null;
+        this.planTemplateManager.setPlanTemplateListUIHandler(this);
     }
 
     init() { // Removed planTemplateManager from params, as it's set in constructor
@@ -28,7 +29,7 @@ class PlanTemplateListUIHandler {
             });
             console.log('[PlanTemplateListUIHandler] init: 新建任务按钮事件监听器已附加。');
         }
-        
+
         this.updatePlanTemplateListUI(); // Initial population of the list
         console.log('PlanTemplateListUIHandler 初始化完成');
     }
@@ -90,13 +91,13 @@ class PlanTemplateListUIHandler {
             const deleteTaskBtn = listItem.querySelector('.delete-task-btn');
             if (deleteTaskBtn) {
                 deleteTaskBtn.addEventListener('click', (event) => {
-                    event.stopPropagation(); 
+                    event.stopPropagation();
                     this.handleDeletePlanTemplate(template); // Call local method
                 });
             }
             this.taskListEl.appendChild(listItem);
         });
-        
+
         if (this.newTaskBtn) {
             this.newTaskBtn.innerHTML = '<span class="icon-add"></span> 新建计划 <span class="shortcut">⌘ K</span>';
         }
@@ -105,35 +106,35 @@ class PlanTemplateListUIHandler {
 
     async handlePlanTemplateClick(template) {
         this.planTemplateManager.currentPlanTemplateId = template.id;
-        this.planTemplateManager.currentPlanId = null; 
-        this.planTemplateManager.isExecuting = false; 
+        this.planTemplateManager.currentPlanId = null;
+        this.planTemplateManager.isExecuting = false;
         TaskPilotUIEvent.EventSystem.emit(TaskPilotUIEvent.UI_EVENTS.PLAN_TEMPLATE_SELECTED, { templateId: template.id });
         console.log(`[PlanTemplateListUIHandler] Emitted PLAN_TEMPLATE_SELECTED event with templateId: ${template.id}`);
-        
+
         try {
             const versionsResponse = await ManusAPI.getPlanVersions(template.id);
             const planVersionsList = versionsResponse.versions || [];
 
             if (planVersionsList.length > 0) {
-                const latestPlanJson = planVersionsList[planVersionsList.length - 1]; 
-                
+                const latestPlanJson = planVersionsList[planVersionsList.length - 1];
+
                 this.planTemplateManager.jsonEditor.value = latestPlanJson;
                 this.planTemplateManager.saveToVersionHistory(latestPlanJson);
 
                 try {
                     const parsedPlan = JSON.parse(latestPlanJson);
-                    this.planTemplateManager.currentPlanData = { 
+                    this.planTemplateManager.currentPlanData = {
                         json: latestPlanJson,
-                        prompt: parsedPlan.prompt || '', 
-                        params: parsedPlan.params || '' 
+                        prompt: parsedPlan.prompt || '',
+                        params: parsedPlan.params || ''
                     };
                     this.planTemplateManager.planPromptInput.value = this.planTemplateManager.currentPlanData.prompt;
                     if (this.planTemplateManager.planParamsInput) {
                         this.planTemplateManager.planParamsInput.value = this.planTemplateManager.currentPlanData.params;
                     }
-                } catch (parseError) { 
+                } catch (parseError) {
                     console.warn('解析计划JSON时出错:', parseError);
-                    this.planTemplateManager.currentPlanData = { json: latestPlanJson }; 
+                    this.planTemplateManager.currentPlanData = { json: latestPlanJson };
                     this.planTemplateManager.planPromptInput.value = '';
                     if (this.planTemplateManager.planParamsInput) {
                         this.planTemplateManager.planParamsInput.value = '';
@@ -176,13 +177,13 @@ class PlanTemplateListUIHandler {
                 await ManusAPI.deletePlanTemplate(template.id);
                 // Update the list in PlanTemplateManagerOld
                 this.planTemplateManager.planTemplateList = this.planTemplateManager.planTemplateList.filter(t => t.id !== template.id);
-                
+
                 if (this.planTemplateManager.currentPlanTemplateId === template.id) {
                     // If the deleted template was the current one, clear inputs and reset state
-                    this.planTemplateManager.handleClearInput(); 
+                    this.planTemplateManager.handleClearInput();
                 }
                 // Always refresh the list UI from here
-                this.updatePlanTemplateListUI(); 
+                this.updatePlanTemplateListUI();
                 alert('计划模板已删除。');
 
             } catch (error) {
