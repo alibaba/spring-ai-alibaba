@@ -8,7 +8,7 @@
 
 [Spring AI Alibaba](https://java2ai.com) 是一款以 Spring AI 为基础，深度集成百炼平台，支持 ChatBot、工作流、多智能体应用开发模式的 AI 框架。
 
-[English](./README.md) | [日本語](./README-ja.md)
+[English](./README.md)
 
 ## 核心特性
 
