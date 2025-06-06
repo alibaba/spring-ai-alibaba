@@ -58,13 +58,19 @@ mcp-servers-windows.json
 
 ### 整体架构图：
 
-![image-20250605212328282](docs/imgs/202506052123329.png)
+![image-20250605212328282](../docs/imgs/202506052123329.png)
 
 
 
-### 主要参与贡献
+### Contributors
 
-GitHub: 
-
-- yingzi： 整体架构设计，流程实现
-- zhouyou0527：ResearcherNode、CoderNode实现
+GitHub:
+- [yingzi](https://github.com/GTyingzi)
+- [zhouyou](https://github.com/zhouyou9505)
+- [NOBODY](https://github.com/SCMRCORE)
+- [xiaohai-78](https://github.com/xiaohai-78)
+- [VLSMB](https://github.com/VLSMB)
+- [disaster1-tesk](https://github.com/disaster1-tesk)
+- [Allen Hu](https://github.com/big-mouth-cn)
+- [Makoto](https://github.com/zxuexingzhijie)
+- [sixiyida](https://github.com/sixiyida)
