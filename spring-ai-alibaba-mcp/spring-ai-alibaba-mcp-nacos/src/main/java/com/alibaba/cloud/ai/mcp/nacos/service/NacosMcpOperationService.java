@@ -32,6 +32,7 @@ import com.alibaba.nacos.maintainer.client.ai.AiMaintainerFactory;
 import com.alibaba.nacos.maintainer.client.ai.AiMaintainerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -96,6 +97,21 @@ public class NacosMcpOperationService {
 			throw new IllegalArgumentException("mcpNameAndVersion must not be null");
 		}
 		McpServerDetailInfo mcpServerDetailInfo = this.getServerDetail(mcpNameAndVersion);
+		if (mcpServerDetailInfo == null) {
+			return null;
+		}
+		List<McpEndpointInfo> mcpEndpointInfoList = mcpServerDetailInfo.getBackendEndpoints() == null
+				? new ArrayList<>() : mcpServerDetailInfo.getBackendEndpoints();
+		String exportPath = mcpServerDetailInfo.getRemoteServerConfig().getExportPath();
+		String protocol = mcpServerDetailInfo.getProtocol();
+		String realVersion = mcpServerDetailInfo.getVersionDetail().getVersion();
+		return new NacosMcpServerEndpoint(mcpEndpointInfoList, exportPath, protocol, realVersion);
+	}
+
+	public NacosMcpServerEndpoint getServerEndpoint(String mcpName, String version) throws NacosException {
+		Assert.notNull(mcpName, "serviceName cannot be null");
+		Assert.notNull(version, "version cannot be null");
+		McpServerDetailInfo mcpServerDetailInfo = this.getServerDetail(mcpName, version);
 		if (mcpServerDetailInfo == null) {
 			return null;
 		}
