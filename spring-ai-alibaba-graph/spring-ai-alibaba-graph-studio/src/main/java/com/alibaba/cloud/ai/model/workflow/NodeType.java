@@ -42,7 +42,7 @@ public enum NodeType {
 
 	QUESTION_CLASSIFIER("question-classifier", "question-classifier"),
 
-	HTTP("http", "http"),
+	HTTP("http", "http-request"),
 
 	LIST_OPERATOR("list-operator", "variable-operator"),
 

@@ -74,10 +74,24 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 				String url = (String) data.get("url");
 
 				// headers & query_params
-				Map<String, String> headers = (Map<String, String>) (Map<?, ?>) data.getOrDefault("headers",
-						Collections.emptyMap());
-				Map<String, String> queryParams = (Map<String, String>) (Map<?, ?>) data.getOrDefault("query_params",
-						Collections.emptyMap());
+                Object headersObj = data.get("headers");
+                Map<String, String> headers;
+                if (headersObj instanceof Map) {
+                    headers = (Map<String, String>) headersObj;
+                } else if (headersObj instanceof String && headersObj.equals("")) {
+                    headers = Collections.emptyMap();
+                } else {
+                    headers = Collections.emptyMap();
+                }
+                Object paramsObj = data.get("query_params");
+                Map<String, String> queryParams;
+                if (paramsObj instanceof Map) {
+                    queryParams = (Map<String, String>) paramsObj;
+                } else if (paramsObj instanceof String && paramsObj.equals("")) {
+                    queryParams = Collections.emptyMap();
+                } else {
+                    queryParams = Collections.emptyMap();
+                }
 
 				// body
 				Object rawBody = data.get("body");
