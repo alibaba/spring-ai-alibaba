@@ -18,11 +18,15 @@ package com.alibaba.cloud.ai.example.deepresearch.tool;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
 import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.async.ResultCallbackTemplate;
+import com.github.dockerjava.api.async.ResultCallback;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.command.InspectContainerResponse;
+import com.github.dockerjava.api.command.LogContainerCmd;
 import com.github.dockerjava.api.model.*;
-import com.github.dockerjava.core.DockerClientBuilder;
+import com.github.dockerjava.core.DefaultDockerClientConfig;
+import com.github.dockerjava.core.DockerClientConfig;
+import com.github.dockerjava.core.DockerClientImpl;
+import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -39,6 +43,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -69,13 +74,20 @@ public class PythonReplTool {
 			return "Error: Code must be a non-empty string.";
 		}
 		if (!StringUtils.hasText(coderProperties.getContainNamePrefix())
+				|| !StringUtils.hasText(coderProperties.getDockerHost())
 				|| (coderProperties.getCpuCore() == null || coderProperties.getCpuCore() <= 0)
 				|| (coderProperties.getLimitMemory() == null || coderProperties.getLimitMemory() <= 0)
 				|| !StringUtils.hasText(coderProperties.getCodeTimeout())
 				|| !StringUtils.hasText(coderProperties.getImageName())) {
 			return "Error: Some Config is not set. You should reporter it to developer.";
 		}
-		try (DockerClient dockerClient = DockerClientBuilder.getInstance().build()) {
+		DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
+			.withDockerHost(coderProperties.getDockerHost())
+			.withDockerTlsVerify(false)
+			.build();
+
+		try (DockerClient dockerClient = DockerClientImpl.getInstance(config,
+				new ApacheDockerHttpClient.Builder().dockerHost(config.getDockerHost()).build())) {
 			// Create temp dir and files
 			Path tempDir = Files.createTempDirectory(coderProperties.getContainNamePrefix());
 			Cleaner.create().register(tempDir, () -> {
@@ -108,8 +120,6 @@ public class PythonReplTool {
 			});
 			Files.createFile(tempDir.resolve("requirements.txt"));
 			Files.createFile(tempDir.resolve("script.py"));
-			Files.createDirectory(tempDir.resolve("dependency"));
-			Files.createDirectory(tempDir.resolve("tmp"));
 			Files.write(tempDir.resolve("requirements.txt"),
 					StringUtils.hasText(requirements) ? requirements.getBytes() : "".getBytes());
 			Files.write(tempDir.resolve("script.py"), code.getBytes());
@@ -117,29 +127,39 @@ public class PythonReplTool {
 			// Build a docker to run
 			String containName = tempDir.getFileName().toString();
 
+			// create a volume to save third-party dependencies
+			String volumeName = containName.concat("-volume");
+			dockerClient.createVolumeCmd().withName(volumeName).withDriver("local").exec();
+
 			if (!coderProperties.isEnableNetwork() && StringUtils.hasText(requirements)) {
 				// If Python code is restricted from network access but requires
 				// third-party dependencies, we need to provision a docker for pip to
 				// install the dependencies.
-				HostConfig hostConfig = getHostConfig(tempDir);
+				HostConfig hostConfig = createHostConfig(tempDir, volumeName);
 
 				CreateContainerResponse container = dockerClient.createContainerCmd(coderProperties.getImageName())
 					.withName(containName)
 					.withWorkingDir("/app")
 					.withHostConfig(hostConfig)
 					.withCmd("sh", "-c",
-							"pip3 install --target=/app/site-packages --no-cache-dir -r requirements.txt > /dev/null")
+							"pip3 install --target=/app/dependency --no-cache-dir -r requirements.txt > /dev/null")
 					.exec();
 				try {
 					this.execDockerContainer(dockerClient, container);
 				}
 				catch (Exception e) {
+					try {
+						// remove volume before return
+						dockerClient.removeVolumeCmd(volumeName).exec();
+					}
+					catch (Exception ignore) {
+					}
 					return "Error installing requirements: " + e.getMessage();
 				}
 			}
 
 			// run python code in docker
-			HostConfig hostConfig = getHostConfig(tempDir)
+			HostConfig hostConfig = createHostConfig(tempDir, volumeName)
 				.withNetworkMode(coderProperties.isEnableNetwork() ? "bridge" : "none");
 
 			CreateContainerResponse container = dockerClient.createContainerCmd(coderProperties.getImageName())
@@ -148,9 +168,9 @@ public class PythonReplTool {
 				.withHostConfig(hostConfig)
 				.withCmd("sh", "-c", String.format(((coderProperties.isEnableNetwork() && StringUtils
 					.hasText(requirements))
-							? "pip3 install --target=/app/site-packages --no-cache-dir -r requirements.txt > /dev/null && "
+							? "pip3 install --target=/app/dependency --no-cache-dir -r requirements.txt > /dev/null && "
 							: "")
-						+ "export PYTHONPATH=\"/app/site-packages:$PYTHONPATH\" && timeout -s SIGKILL %s python3 script.py",
+						+ "export PYTHONPATH=\"/app/dependency:$PYTHONPATH\" && timeout -s SIGKILL %s python3 script.py",
 						coderProperties.getCodeTimeout()))
 				.exec();
 			try {
@@ -162,17 +182,27 @@ public class PythonReplTool {
 				logger.warning("Python code execution failed.");
 				return "Error executing code:\n```\n" + code + "\n```\nError:\n" + e.getMessage();
 			}
+			finally {
+				try {
+					// remove volume before return
+					dockerClient.removeVolumeCmd(volumeName).exec();
+				}
+				catch (Exception ignore) {
+				}
+			}
 		}
 		catch (Exception e) {
 			logger.warning("Exception during execution: " + e.getMessage());
-			return "Exception occurred while executing code:\n```\n" + code + "\n```\nError:\n" + e.getMessage();
+			return "Error executing code:\n```\n" + code + "\n```\nError:\n" + e.getMessage();
 		}
 	}
 
-	private HostConfig getHostConfig(Path tempDir) throws IOException {
+	/**
+	 * Create container's HostConfig
+	 */
+	private HostConfig createHostConfig(Path tempDir, String volumeName) {
 		return newHostConfig().withMemory(coderProperties.getLimitMemory() * 1024L * 1024L)
 			.withCpuCount(coderProperties.getCpuCore())
-			.withReadonlyRootfs(true)
 			.withCapDrop(Capability.ALL)
 			.withAutoRemove(false)
 			.withBinds(
@@ -180,18 +210,12 @@ public class PythonReplTool {
 							AccessMode.ro),
 					new Bind(tempDir.resolve("requirements.txt").toAbsolutePath().toString(),
 							new Volume("/app/requirements.txt"), AccessMode.ro),
-					new Bind(tempDir.resolve("tmp").toAbsolutePath().toString(), new Volume("/tmp")),
-					new Bind(tempDir.resolve("dependency").toAbsolutePath().toString(),
-							new Volume("/app/site-packages")));
-	}
-
-	public abstract static class ContainerStdoutCallBack
-			extends ResultCallbackTemplate<ContainerStdoutCallBack, Frame> {
-
+					new Bind(volumeName, new Volume("/app/dependency")))
+			.withTmpFs(Map.of("/tmp", ""));
 	}
 
 	/**
-	 * Run a Docker container and return its stdout, throwing a RuntimeException if errors
+	 * Run a Docker container and return its stdout. Throw a RuntimeException if errors
 	 * occur.
 	 */
 	private String execDockerContainer(DockerClient dockerClient, CreateContainerResponse container)
@@ -199,36 +223,37 @@ public class PythonReplTool {
 		// catch stdout and stderr
 		ByteArrayOutputStream stdout = new ByteArrayOutputStream();
 		ByteArrayOutputStream stderr = new ByteArrayOutputStream();
-		ContainerStdoutCallBack callback = new ContainerStdoutCallBack() {
-			@Override
-			public void onNext(Frame frame) {
-				try {
-					if (frame.getStreamType() == StreamType.STDOUT) {
-						stdout.write(frame.getPayload());
-					}
-					else if (frame.getStreamType() == StreamType.STDERR) {
-						stderr.write(frame.getPayload());
-					}
-				}
-				catch (Exception e) {
-					logger.warning("Exception during execution Stdout CallBack: " + e.getMessage());
-				}
-			}
-		};
 
-		// start docker
 		try {
-			dockerClient.logContainerCmd(container.getId())
+			// start docker
+			dockerClient.startContainerCmd(container.getId()).exec();
+			LogContainerCmd logContainerCmd = dockerClient.logContainerCmd(container.getId())
 				.withStdOut(true)
 				.withStdErr(true)
 				.withFollowStream(true)
-				.withTimestamps(false)
-				.exec(callback);
-			dockerClient.startContainerCmd(container.getId()).exec();
+				.withTailAll();
 			dockerClient.waitContainerCmd(container.getId())
 				.start()
 				.awaitCompletion(coderProperties.getDockerTimeout(), TimeUnit.SECONDS);
-			callback.awaitCompletion(coderProperties.getDockerTimeout(), TimeUnit.SECONDS);
+
+			// get stdout and stderr
+			logContainerCmd.exec(new ResultCallback.Adapter<Frame>() {
+				@Override
+				public void onNext(Frame frame) {
+					try {
+						if (frame.getStreamType() == StreamType.STDOUT) {
+							stdout.write(frame.getPayload());
+						}
+						else if (frame.getStreamType() == StreamType.STDERR) {
+							stderr.write(frame.getPayload());
+						}
+					}
+					catch (Exception ignore) {
+					}
+				}
+			}).awaitCompletion();
+
+			// get exit code
 			InspectContainerResponse inspectResponse = dockerClient.inspectContainerCmd(container.getId()).exec();
 			int exitCode = Objects.requireNonNull(inspectResponse.getState().getExitCodeLong()).intValue();
 			if (exitCode != 0) {
@@ -241,7 +266,12 @@ public class PythonReplTool {
 			throw new RuntimeException(e);
 		}
 		finally {
-			dockerClient.removeContainerCmd(container.getId()).withForce(true).exec();
+			try {
+				// remove container
+				dockerClient.removeContainerCmd(container.getId()).withForce(true).exec();
+			}
+			catch (Exception ignore) {
+			}
 		}
 		return stdout.toString(Charset.defaultCharset());
 	}

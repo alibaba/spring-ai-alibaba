@@ -29,6 +29,11 @@ public class PythonCoderProperties {
 	public static final String PYTHON_CODER_PREFIX = DeepResearchProperties.PREFIX + ".python-coder";
 
 	/**
+	 * Docker Host Addr
+	 */
+	String dockerHost = "unix:///var/run/docker.sock";
+
+	/**
 	 * Naming prefix when temporarily enabling Docker containers
 	 */
 	String containNamePrefix = "python-coder";
@@ -63,6 +68,14 @@ public class PythonCoderProperties {
 	 * and pip3
 	 */
 	String imageName = "python:3-slim";
+
+	public String getDockerHost() {
+		return dockerHost;
+	}
+
+	public void setDockerHost(String dockerHost) {
+		this.dockerHost = dockerHost;
+	}
 
 	public String getContainNamePrefix() {
 		return containNamePrefix;
