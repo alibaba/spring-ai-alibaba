@@ -30,8 +30,6 @@ public class NacosMcpRegistryProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.nacos.registry";
 
-	String serviceNamespace;
-
 	String serviceGroup = "DEFAULT_GROUP";
 
 	String sseExportContextPath;
@@ -74,14 +72,6 @@ public class NacosMcpRegistryProperties {
 
 	public void setServiceGroup(String serviceGroup) {
 		this.serviceGroup = serviceGroup;
-	}
-
-	public String getServiceNamespace() {
-		return serviceNamespace;
-	}
-
-	void setServiceNamespace(String serviceNamespace) {
-		this.serviceNamespace = serviceNamespace;
 	}
 
 	@PostConstruct

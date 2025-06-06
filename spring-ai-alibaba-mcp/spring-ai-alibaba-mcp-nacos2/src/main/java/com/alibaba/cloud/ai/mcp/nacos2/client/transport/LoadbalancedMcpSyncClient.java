@@ -43,6 +43,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -71,11 +72,11 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 
 	private final ApplicationContext applicationContext;
 
+	private final AtomicInteger index = new AtomicInteger(0);
+
 	private Map<String, List<String>> md5ToToolsMap;
 
 	private Map<String, List<McpSyncClient>> md5ToClientMap;
-
-	private Map<String, Integer> client2CountMap;
 
 	private List<Instance> instances;
 
@@ -108,8 +109,6 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 		md5ToToolsMap = new ConcurrentHashMap<>();
 		md5ToClientMap = new ConcurrentHashMap<>();
 
-		client2CountMap = new ConcurrentHashMap<>();
-
 		for (Instance instance : instances) {
 			updateByAddInstace(instance);
 		}
@@ -130,19 +129,9 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 		if (syncClients.isEmpty()) {
 			throw new IllegalStateException("No McpAsyncClient available");
 		}
-		// 从client2CountMap中挑选value最小的键是哪个
-		String clientInfoName = client2CountMap.entrySet()
-			.stream()
-			.min(Map.Entry.comparingByValue())
-			.map(Map.Entry::getKey)
-			.get();
+		int currentIndex = index.getAndUpdate(index -> (index + 1) % syncClients.size());
 
-		client2CountMap.put(clientInfoName, client2CountMap.get(clientInfoName) + 1);
-		// 从clients中找到clientInfoName对应的client
-		return syncClients.stream()
-			.filter(syncClient -> syncClient.getClientInfo().name().equals(clientInfoName))
-			.findFirst()
-			.get();
+		return syncClients.get(currentIndex);
 	}
 
 	public List<McpSyncClient> getMcpSyncClientList() {
@@ -227,20 +216,9 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 				syncClients.addAll(md5ToClientMap.get(md5));
 			}
 		});
-		Set<String> clientInfos = syncClients.stream()
-			.map(client -> client.getClientInfo().name())
-			.collect(Collectors.toSet());
+		int currentIndex = index.getAndUpdate(index -> (index + 1) % syncClients.size());
 
-		String minClientInfoName = clientInfos.stream()
-			.min(Comparator.comparingInt(clientInfo -> client2CountMap.getOrDefault(clientInfo, 0)))
-			.get();
-		client2CountMap.put(minClientInfoName, client2CountMap.get(minClientInfoName) + 1);
-
-		McpSyncClient mcpSyncClient = syncClients.stream()
-			.filter(syncClient -> syncClient.getClientInfo().name().equals(minClientInfoName))
-			.findFirst()
-			.get();
-		return mcpSyncClient.callTool(callToolRequest);
+		return syncClients.get(currentIndex).callTool(callToolRequest);
 	}
 
 	public McpSchema.ListToolsResult listTools() {
@@ -389,7 +367,6 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 		assert serverMd5 != null;
 		McpSyncClient mcpSyncClient = clientByInstance(instance);
 		md5ToClientMap.computeIfAbsent(serverMd5, k -> new ArrayList<>()).add(mcpSyncClient);
-		client2CountMap.put(mcpSyncClient.getClientInfo().name(), 0);
 
 		if (!md5ToToolsMap.containsKey(serverMd5)) {
 			String tools = metadata.get("tools.names");
@@ -431,7 +408,6 @@ public class LoadbalancedMcpSyncClient implements EventListener {
 				syncClient.closeGracefully();
 				// 安全地移除
 				md5ToClientMap.get(serverMd5).remove(syncClient);
-				client2CountMap.remove(syncClient.getClientInfo().name());
 
 				if (md5ToClientMap.get(serverMd5).isEmpty()) {
 					md5ToClientMap.remove(serverMd5);

@@ -114,13 +114,16 @@ public class PlanTemplateController {
 			String planJson = context.getPlan().toJson();
 
 			// 保存到版本历史
-			saveToVersionHistory(planTemplateId, planJson);
+			PlanTemplateService.VersionSaveResult saveResult = saveToVersionHistory(planTemplateId, planJson);
 
 			// 返回计划数据
 			Map<String, Object> response = new HashMap<>();
 			response.put("planTemplateId", planTemplateId);
 			response.put("status", "completed");
 			response.put("planJson", planJson);
+			response.put("saved", saveResult.isSaved());
+			response.put("duplicate", saveResult.isDuplicate());
+			response.put("saveMessage", saveResult.getMessage());
 
 			return ResponseEntity.ok(response);
 		}
@@ -253,8 +256,9 @@ public class PlanTemplateController {
 	 * 保存版本历史
 	 * @param planId 计划ID
 	 * @param planJson 计划JSON数据
+	 * @return 保存结果
 	 */
-	private void saveToVersionHistory(String planId, String planJson) {
+	private PlanTemplateService.VersionSaveResult saveToVersionHistory(String planId, String planJson) {
 		// 从JSON中提取标题
 		String title = planTemplateService.extractTitleFromPlan(planJson);
 
@@ -263,13 +267,20 @@ public class PlanTemplateController {
 		if (template == null) {
 			// 如果不存在，则创建新计划
 			planTemplateService.savePlanTemplate(planId, title, "用户请求生成计划: " + planId, planJson);
+			logger.info("已创建新计划 {} 及其第一个版本", planId);
+			return new PlanTemplateService.VersionSaveResult(true, false, "新计划已创建", 0);
 		}
 		else {
 			// 如果存在，则保存新版本
-			planTemplateService.saveVersionToHistory(planId, planJson);
+			PlanTemplateService.VersionSaveResult result = planTemplateService.saveToVersionHistory(planId, planJson);
+			if (result.isSaved()) {
+				logger.info("已保存计划 {} 的新版本 {}", planId, result.getVersionIndex());
+			}
+			else {
+				logger.info("计划 {} 内容相同，未保存新版本", planId);
+			}
+			return result;
 		}
-
-		logger.info("已保存计划 {} 的新版本", planId);
 	}
 
 	/**
@@ -292,15 +303,23 @@ public class PlanTemplateController {
 
 		try {
 			// 保存到版本历史
-			saveToVersionHistory(planId, planJson);
+			PlanTemplateService.VersionSaveResult saveResult = saveToVersionHistory(planId, planJson);
 
 			// 计算版本数量
 			List<String> versions = planTemplateService.getPlanVersions(planId);
 			int versionCount = versions.size();
 
-			// 返回成功响应
-			return ResponseEntity
-				.ok(Map.of("status", "success", "message", "计划已保存", "planId", planId, "versionCount", versionCount));
+			// 构建响应
+			Map<String, Object> response = new HashMap<>();
+			response.put("status", "success");
+			response.put("planId", planId);
+			response.put("versionCount", versionCount);
+			response.put("saved", saveResult.isSaved());
+			response.put("duplicate", saveResult.isDuplicate());
+			response.put("message", saveResult.getMessage());
+			response.put("versionIndex", saveResult.getVersionIndex());
+
+			return ResponseEntity.ok(response);
 		}
 		catch (Exception e) {
 			logger.error("保存计划失败", e);
@@ -474,13 +493,16 @@ public class PlanTemplateController {
 			String planJson = context.getPlan().toJson();
 
 			// 保存到版本历史
-			saveToVersionHistory(planId, planJson);
+			PlanTemplateService.VersionSaveResult saveResult = saveToVersionHistory(planId, planJson);
 
 			// 返回计划数据
 			Map<String, Object> response = new HashMap<>();
 			response.put("planTemplateId", planId);
 			response.put("status", "completed");
 			response.put("planJson", planJson);
+			response.put("saved", saveResult.isSaved());
+			response.put("duplicate", saveResult.isDuplicate());
+			response.put("saveMessage", saveResult.getMessage());
 
 			return ResponseEntity.ok(response);
 		}

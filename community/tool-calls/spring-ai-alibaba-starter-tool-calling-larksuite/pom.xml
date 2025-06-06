@@ -69,7 +69,4 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <finalName>spring-ai-alibaba-starter-tool-calling-larksuite</finalName>
-    </build>
 </project>

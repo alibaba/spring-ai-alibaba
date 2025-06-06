@@ -22,6 +22,6 @@ import java.util.Map;
 @FunctionalInterface
 public interface NodeAction {
 
-	Map<String, Object> apply(OverAllState t) throws Exception;
+	Map<String, Object> apply(OverAllState state) throws Exception;
 
 }

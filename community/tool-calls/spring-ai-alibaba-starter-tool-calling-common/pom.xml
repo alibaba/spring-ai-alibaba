@@ -85,8 +85,4 @@
 
     </dependencies>
 
-    <build>
-        <finalName>spring-ai-alibaba-starter-tool-calling-common</finalName>
-    </build>
-
 </project>

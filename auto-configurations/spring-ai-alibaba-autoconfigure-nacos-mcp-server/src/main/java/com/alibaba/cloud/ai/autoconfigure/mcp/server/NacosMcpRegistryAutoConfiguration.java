@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties;
 import com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegister;
 import com.alibaba.cloud.ai.mcp.nacos.registry.NacosMcpRegistryProperties;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
+import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.ai.constant.AiConstants;
 import com.alibaba.nacos.api.exception.NacosException;
 import io.modelcontextprotocol.server.McpAsyncServer;

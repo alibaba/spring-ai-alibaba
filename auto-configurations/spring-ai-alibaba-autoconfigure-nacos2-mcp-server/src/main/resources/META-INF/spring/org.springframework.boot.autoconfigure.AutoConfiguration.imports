@@ -14,6 +14,6 @@
 # limitations under the License.
 #
 com.alibaba.cloud.ai.autoconfigure.mcp.server.Nacos2McpRegistryAutoConfiguration
-com.alibaba.cloud.ai.autoconfigure.mcp.server.Nacos2DynamicMcpServerAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.mcp.server.Nacos2McpGatewayServerAutoConfiguration
 
 

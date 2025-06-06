@@ -34,7 +34,7 @@ public class PlantUMLGenerator extends DiagramGenerator {
 		}
 		else {
 			ctx.sb()
-				.append(format("@startuml %s\n", ctx.titleToSnakeCase()))
+				.append(format("@startuml %s\n", ctx.titleToSnakeCase().orElse("unnamed")))
 				.append("skinparam usecaseFontSize 14\n")
 				.append("skinparam usecaseStereotypeFontSize 12\n")
 				.append("skinparam hexagonFontSize 14\n")

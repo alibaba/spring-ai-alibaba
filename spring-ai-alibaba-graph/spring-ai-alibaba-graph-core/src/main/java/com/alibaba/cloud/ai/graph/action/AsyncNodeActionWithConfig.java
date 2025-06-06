@@ -27,16 +27,16 @@ public interface AsyncNodeActionWithConfig
 
 	/**
 	 * Applies this action to the given agent state.
-	 * @param t the agent state
+	 * @param state the agent state
 	 * @return a CompletableFuture representing the result of the action
 	 */
-	CompletableFuture<Map<String, Object>> apply(OverAllState t, RunnableConfig config);
+	CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config);
 
 	static AsyncNodeActionWithConfig node_async(NodeActionWithConfig syncAction) {
-		return (t, config) -> {
+		return (state, config) -> {
 			CompletableFuture<Map<String, Object>> result = new CompletableFuture<>();
 			try {
-				result.complete(syncAction.apply(t, config));
+				result.complete(syncAction.apply(state, config));
 			}
 			catch (Exception e) {
 				result.completeExceptionally(e);

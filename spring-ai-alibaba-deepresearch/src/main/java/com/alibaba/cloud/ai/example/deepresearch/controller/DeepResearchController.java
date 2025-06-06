@@ -207,9 +207,7 @@ public class DeepResearchController {
 			generator.forEachAsync(output -> {
 				try {
 					Map<String, Object> data = output.state().data();
-					System.out.println("data = " + data);
-					Object messages = data.get("messages");
-					sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(messages)).build());
+					sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(data)).build());
 				}
 				catch (Exception e) {
 					throw new CompletionException(e);

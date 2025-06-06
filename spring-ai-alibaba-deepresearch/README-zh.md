@@ -4,7 +4,7 @@
 
 需要配置以下环境变量，或者直接修改`application.yml`:
 
-- DashScope API: `${DASHSCOPE_API_KEY}`
+- DashScope API: `${AI_DASHSCOPE_API_KEY}`
 - TavilySearch API: `${TAVILY_API_KEY}`
 
 此外需要安装`docker`，本项目需要使用`python:3-slim`镜像创建临时容器。也可以自己定制包含一些常用的第三方库的镜像，第三方库需要安装在镜像的`/app/site-packages`文件夹里。
@@ -51,6 +51,16 @@ mcp-servers-windows.json
   }
 }
 ```
+
+### 完整系统流程图
+
+![image-20250605212205834](../docs/imgs/202506052122988.png)
+
+### 整体架构图：
+
+![image-20250605212328282](docs/imgs/202506052123329.png)
+
+
 
 ### 主要参与贡献
 

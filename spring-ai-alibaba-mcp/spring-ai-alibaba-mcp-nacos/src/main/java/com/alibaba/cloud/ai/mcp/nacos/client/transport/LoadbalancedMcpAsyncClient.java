@@ -43,6 +43,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -65,17 +66,18 @@ public class LoadbalancedMcpAsyncClient {
 
 	private final ObjectMapper objectMapper;
 
-	private Map<String, McpAsyncClient> keyToClientMap;
+	private final ApplicationContext applicationContext;
 
-	private Map<String, Integer> keyToCountMap;
+	private final AtomicInteger index = new AtomicInteger(0);
+
+	private Map<String, McpAsyncClient> keyToClientMap;
 
 	private NacosMcpServerEndpoint serverEndpoint;
 
-	private final ApplicationContext applicationContext;
-
-	public LoadbalancedMcpAsyncClient(String serverName, NacosMcpOperationService nacosMcpOperationService,
-			ApplicationContext applicationContext) {
+	public LoadbalancedMcpAsyncClient(String serverName, String version,
+			NacosMcpOperationService nacosMcpOperationService, ApplicationContext applicationContext) {
 		Assert.notNull(serverName, "serviceName cannot be null");
+		Assert.notNull(version, "version cannot be null");
 		Assert.notNull(nacosMcpOperationService, "nacosMcpOperationService cannot be null");
 		Assert.notNull(applicationContext, "applicationContext cannot be null");
 
@@ -84,7 +86,7 @@ public class LoadbalancedMcpAsyncClient {
 		this.applicationContext = applicationContext;
 
 		try {
-			this.serverEndpoint = this.nacosMcpOperationService.getServerEndpoint(this.serverName);
+			this.serverEndpoint = this.nacosMcpOperationService.getServerEndpoint(this.serverName, version);
 			if (this.serverEndpoint == null) {
 				throw new NacosException(NacosException.NOT_FOUND,
 						String.format("Can not find mcp server from nacos: %s", serverName));
@@ -104,8 +106,6 @@ public class LoadbalancedMcpAsyncClient {
 
 	public void init() {
 		keyToClientMap = new ConcurrentHashMap<>();
-
-		keyToCountMap = new ConcurrentHashMap<>();
 
 		for (McpEndpointInfo mcpEndpointInfo : serverEndpoint.getMcpEndpointInfoList()) {
 			updateByAddEndpoint(mcpEndpointInfo, serverEndpoint.getExportPath());
@@ -133,19 +133,9 @@ public class LoadbalancedMcpAsyncClient {
 		if (asynClients.isEmpty()) {
 			throw new IllegalStateException("No McpAsyncClient available");
 		}
-		// 从client2CountMap中挑选value最小的键是哪个
-		String clientInfoName = keyToCountMap.entrySet()
-			.stream()
-			.min(Map.Entry.comparingByValue())
-			.map(Map.Entry::getKey)
-			.get();
 
-		keyToCountMap.put(clientInfoName, keyToCountMap.get(clientInfoName) + 1);
-		// 从clients中找到clientInfoName对应的client
-		return asynClients.stream()
-			.filter(aysnClient -> aysnClient.getClientInfo().name().equals(clientInfoName))
-			.findFirst()
-			.get();
+		int currentIndex = index.getAndUpdate(index -> (index + 1) % asynClients.size());
+		return asynClients.get(currentIndex);
 	}
 
 	public List<McpAsyncClient> getMcpAsyncClientList() {
@@ -335,7 +325,6 @@ public class LoadbalancedMcpAsyncClient {
 			newKeyToCountMap.putIfAbsent(key, 0);
 		}
 		this.keyToClientMap = newKeyToClientMap;
-		this.keyToCountMap = newKeyToCountMap;
 		for (Map.Entry<String, McpAsyncClient> entry : oldKeyToClientMap.entrySet()) {
 			McpAsyncClient asyncClient = entry.getValue();
 			logger.info("Removing McpAsyncClient: {}", asyncClient.getClientInfo().name());
@@ -371,7 +360,6 @@ public class LoadbalancedMcpAsyncClient {
 		McpAsyncClient mcpAsyncClient = clientByEndpoint(serverEndpoint, exportPath);
 		String key = NacosMcpClientUtils.getMcpEndpointInfoId(serverEndpoint, exportPath);
 		keyToClientMap.putIfAbsent(key, mcpAsyncClient);
-		keyToCountMap.putIfAbsent(key, 0);
 	}
 
 	private void updateByRemoveEndpoint(McpEndpointInfo serverEndpoint, String exportPath) {
@@ -380,7 +368,6 @@ public class LoadbalancedMcpAsyncClient {
 			McpAsyncClient asyncClient = keyToClientMap.remove(key);
 			logger.info("Removing McpAsyncClient: {}", asyncClient.getClientInfo().name());
 			asyncClient.closeGracefully().block();
-			keyToCountMap.remove(key);
 			logger.info("Removed McpAsyncClient: {} Success", asyncClient.getClientInfo().name());
 		}
 	}
@@ -397,12 +384,19 @@ public class LoadbalancedMcpAsyncClient {
 
 		private String serverName;
 
+		private String version;
+
 		private NacosMcpOperationService nacosMcpOperationService;
 
 		private ApplicationContext applicationContext;
 
 		public Builder serverName(String serverName) {
 			this.serverName = serverName;
+			return this;
+		}
+
+		public Builder version(String version) {
+			this.version = version;
 			return this;
 		}
 
@@ -417,7 +411,7 @@ public class LoadbalancedMcpAsyncClient {
 		}
 
 		public LoadbalancedMcpAsyncClient build() {
-			return new LoadbalancedMcpAsyncClient(this.serverName, this.nacosMcpOperationService,
+			return new LoadbalancedMcpAsyncClient(this.serverName, this.version, this.nacosMcpOperationService,
 					this.applicationContext);
 		}
 

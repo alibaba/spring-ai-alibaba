@@ -210,9 +210,6 @@
                             <button class="action-btn" id="restoreJsonBtn" title="恢复到下一个版本">
                                 <span class="icon-run"></span> 恢复
                             </button>
-                            <button class="action-btn" id="compareJsonBtn" title="对比不同版本">
-                                <span class="icon-pages"></span> 对比
-                            </button>
                         </div>
                     </div>
                     <div class="plan-json-preview">
@@ -232,11 +229,6 @@
 
                     <div class="section-header">
                         <h2>Step3: 计划执行控制</h2>
-                        <div class="section-actions">
-                            <button class="action-btn" id="refreshApiLinkBtn" title="刷新API链接">
-                                <span class="icon-placeholder"></span> 刷新
-                            </button>
-                        </div>
                     </div>
                     <div class="plan-param-section">
                         <div>附加额外参数</div>
@@ -320,10 +312,11 @@
     <script src="../js/plan-execution-manager.js"></script>
 
     <!-- 引入计划模板页面特有的JS文件 -->
+    <script src="js/plan-prompt-generator.js"></script>
+    <script src="js/plan-template-handler.js"></script>
     <script src="js/plan-template-list-ui-handler.js"></script>
     <script src="js/template-helpers.js"></script>
-    <script src="js/run-plan-button.js"></script>
-    <script src="js/plan-template.js"></script>
+    <script src="js/plan-template-execution-controller.js"></script>
 
     <script src="js/plan-template-main.js"></script> <!-- Ensure plan-template-main.js is loaded -->
 

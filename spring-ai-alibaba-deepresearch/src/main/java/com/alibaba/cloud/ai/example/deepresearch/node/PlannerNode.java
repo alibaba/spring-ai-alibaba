@@ -93,7 +93,7 @@ public class PlannerNode implements NodeAction {
 		String threadId = state.value("thread_id", "__default__");
 
 		Boolean enableBackgroundInvestigation = state.value("enable_background_investigation", false);
-		ArrayList<String> backgroundInvestigationResults = state.value("background_investigation_results",
+		List<String> backgroundInvestigationResults = state.value("background_investigation_results",
 				new ArrayList<>());
 
 		if (planIterations == 0 && enableBackgroundInvestigation && !backgroundInvestigationResults.isEmpty()) {

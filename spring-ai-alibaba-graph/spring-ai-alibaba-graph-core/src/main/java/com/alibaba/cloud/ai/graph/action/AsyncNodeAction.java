@@ -31,10 +31,10 @@ public interface AsyncNodeAction extends Function<OverAllState, CompletableFutur
 
 	/**
 	 * Applies this action to the given agent state.
-	 * @param t the agent state
+	 * @param state the agent state
 	 * @return a CompletableFuture representing the result of the action
 	 */
-	CompletableFuture<Map<String, Object>> apply(OverAllState t);
+	CompletableFuture<Map<String, Object>> apply(OverAllState state);
 
 	/**
 	 * Creates an asynchronous node action from a synchronous node action.
@@ -42,10 +42,10 @@ public interface AsyncNodeAction extends Function<OverAllState, CompletableFutur
 	 * @return an asynchronous node action
 	 */
 	static AsyncNodeAction node_async(NodeAction syncAction) {
-		return t -> {
+		return state -> {
 			CompletableFuture<Map<String, Object>> result = new CompletableFuture<>();
 			try {
-				result.complete(syncAction.apply(t));
+				result.complete(syncAction.apply(state));
 			}
 			catch (Exception e) {
 				result.completeExceptionally(e);
