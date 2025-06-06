@@ -61,8 +61,9 @@ Spring AI Alibaba 官方社区开发了一个**包含完整 `前端UI+后端实�
 整体运行后的界面效果如下所示：
 
 <p align="center">
-    <img src="./docs/imgs/playground.png" alt="PlayGround" style="max-width: 949px; height: 567px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);" /> 
+    <img src="./docs/imgs/playground.png" alt="PlayGround" style="max-width: 949px; height: 537px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);" /> 
 </p>
+
 
 
 您可以在[本地部署 Playground 示例](https://github.com/springaialibaba/spring-ai-alibaba-examples/tree/main/spring-ai-alibaba-playground)并通过浏览器访问体验，或者拷贝源码并按照自己的业务需求调整，以便能够快速基于 Spring AI Alibaba 搭建一套自己的 AI 应用。
@@ -90,8 +91,9 @@ Spring AI Alibaba Graph 核心能力：
 在 Agent 生产落地过程中，用户需要解决智能体效果评估、MCP 工具集成、Prompt 管理、Token 上下文、可视化 Tracing 等各种问题。Spring AI Alibaba 通过与 Nacos3、Higress AI 网关、阿里云 ARMS、阿里云向量检索数据库、百炼智能体平台等深度集成，提供全面的 AI 智能体企业级生产解决方案，加速智能体从 Demo 走向生产落地。
 
 <p align="center">   
-    <img src="https://img.alicdn.com/imgextra/i2/O1CN01sON0wZ21yKROGt2SJ_!!6000000007053-2-tps-5440-2928.png" alt="spring-ai-alibaba-architecture" style="max-width: 900px; height: 450px"/> 
+    <img src="https://img.alicdn.com/imgextra/i2/O1CN01sON0wZ21yKROGt2SJ_!!6000000007053-2-tps-5440-2928.png" alt="spring-ai-alibaba-architecture" style="max-width: 700px; height: 400px"/> 
 </p>
+
 
 
 1. **企业级 MCP 部署与代理方案**：支持基于 Nacos MCP Registry 的分布式部署与负载均衡调用，通过 Spring AI Alibaba MCP Gateway、Higress 代理可实现零改造将 HTTP/Dubbo 服务发布为 MCP；
@@ -112,8 +114,9 @@ Manus 的横空出世，让通用智能体自动规划、执行规划的能力�
 随着对于通用智能体等方向的深度探索，开发者们逐渐开始认识到：基于当前以及未来相当长时间内的模型能力，完全依赖通用智能体的自动规划模式很难解决一些确定性极强的企业场景问题。企业级业务场景的典型特点是确定性，我们需要定制化的工具、子 agent，需要稳定而又确定性强的规划与流程。为此，我们调整了 JManus 通用智能体的终端产品定位。我们期望 JManus 能够成为一个智能体开发平台，让用户能以最直观、低成本的方式构建属于自己的垂直领域的智能体实现。
 
 <p align="center">
-    <img src="./docs/imgs/jmanus.png" alt="jmanus" style="max-width: 949px; height: 567px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);" /> 
+    <img src="./docs/imgs/jmanus.png" alt="jmanus" style="max-width: 749px; height: 467px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);" /> 
 </p>
+
 
 
 
