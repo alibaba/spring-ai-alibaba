@@ -50,7 +50,7 @@ public class DynamicToolsInitializer {
 	}
 
 	public List<ToolCallback> initializeTools() {
-		List<String> serviceNames = nacosMcpDynamicProperties.getServerNames();
+		List<String> serviceNames = nacosMcpDynamicProperties.getServiceNames();
 		if (CollectionUtils.isEmpty(serviceNames)) {
 			logger.warn("No service names configured, no tools will be initialized");
 			return new ArrayList<>();
