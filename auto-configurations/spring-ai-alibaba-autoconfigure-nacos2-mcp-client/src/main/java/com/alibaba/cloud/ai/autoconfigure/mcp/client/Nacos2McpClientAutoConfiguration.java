@@ -24,7 +24,6 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.springframework.ai.mcp.client.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -32,10 +31,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 
-import java.util.Map;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -56,19 +52,11 @@ public class Nacos2McpClientAutoConfiguration {
 	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "SYNC",
 			matchIfMissing = true)
 	public List<LoadbalancedMcpSyncClient> loadbalancedMcpSyncClientList(
-			@Qualifier("namespace2NamingService") ObjectProvider<Map<String, NamingService>> namespace2NamingServiceProvider,
-			@Qualifier("namespace2NacosConfigService") ObjectProvider<Map<String, NacosConfigService>> namespace2NacosConfigServiceProvider,
+			ObjectProvider<NamingService> namingServiceProvider,
+			ObjectProvider<NacosConfigService> nacosConfigServiceProvider,
 			Nacos2McpSseClientProperties nacos2McpSseClientProperties, ApplicationContext applicationContext) {
-		Map<String, NamingService> namespace2NamingService = namespace2NamingServiceProvider.getObject();
-		Map<String, NacosConfigService> namespace2NacosConfig = namespace2NacosConfigServiceProvider.getObject();
-		Collection<Nacos2McpSseClientProperties.NacosSseParameters> values = nacos2McpSseClientProperties
-			.getConnections()
-			.values();
-		Map<String, Nacos2McpSseClientProperties.NacosSseParameters> parametersMap = new HashMap<>();
-		for (Nacos2McpSseClientProperties.NacosSseParameters parameters : values) {
-			String serviceNamespace = parameters.serviceNamespace();
-			parametersMap.put(serviceNamespace, parameters);
-		}
+		NamingService namingService = namingServiceProvider.getObject();
+		NacosConfigService nacosConfigService = nacosConfigServiceProvider.getObject();
 
 		List<LoadbalancedMcpSyncClient> loadbalancedMcpSyncClients = new ArrayList<>();
 		for (Nacos2McpSseClientProperties.NacosSseParameters nacosSseParameters : nacos2McpSseClientProperties
@@ -77,8 +65,8 @@ public class Nacos2McpClientAutoConfiguration {
 			LoadbalancedMcpSyncClient loadbalancedMcpSyncClient = LoadbalancedMcpSyncClient.builder()
 				.serviceName(nacosSseParameters.serviceName())
 				.serviceGroup(nacosSseParameters.serviceGroup())
-				.namingService(namespace2NamingService.get(nacosSseParameters.serviceNamespace()))
-				.nacosConfigService(namespace2NacosConfig.get(nacosSseParameters.serviceNamespace()))
+				.namingService(namingService)
+				.nacosConfigService(nacosConfigService)
 				.applicationContext(applicationContext)
 				.build();
 			loadbalancedMcpSyncClient.init();
@@ -92,19 +80,11 @@ public class Nacos2McpClientAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = "spring.ai.mcp.client", name = { "type" }, havingValue = "ASYNC")
 	public List<LoadbalancedMcpAsyncClient> loadbalancedMcpAsyncClientList(
-			@Qualifier("namespace2NamingService") ObjectProvider<Map<String, NamingService>> namespace2NamingServiceProvider,
-			@Qualifier("namespace2NacosConfigService") ObjectProvider<Map<String, NacosConfigService>> namespace2NacosConfigServiceProvider,
+			ObjectProvider<NamingService> namingServiceProvider,
+			ObjectProvider<NacosConfigService> nacosConfigServiceProvider,
 			Nacos2McpSseClientProperties nacos2McpSseClientProperties, ApplicationContext applicationContext) {
-		Map<String, NamingService> namespace2NamingService = namespace2NamingServiceProvider.getObject();
-		Map<String, NacosConfigService> namespace2NacosConfig = namespace2NacosConfigServiceProvider.getObject();
-		Collection<Nacos2McpSseClientProperties.NacosSseParameters> values = nacos2McpSseClientProperties
-			.getConnections()
-			.values();
-		Map<String, Nacos2McpSseClientProperties.NacosSseParameters> parametersMap = new HashMap<>();
-		for (Nacos2McpSseClientProperties.NacosSseParameters parameters : values) {
-			String serviceNamespace = parameters.serviceNamespace();
-			parametersMap.put(serviceNamespace, parameters);
-		}
+		NamingService namingService = namingServiceProvider.getObject();
+		NacosConfigService nacosConfigService = nacosConfigServiceProvider.getObject();
 
 		List<LoadbalancedMcpAsyncClient> loadbalancedMcpAsyncClients = new ArrayList<>();
 		for (Nacos2McpSseClientProperties.NacosSseParameters nacosSseParameters : nacos2McpSseClientProperties
@@ -113,8 +93,8 @@ public class Nacos2McpClientAutoConfiguration {
 			LoadbalancedMcpAsyncClient loadbalancedMcpAsyncClient = LoadbalancedMcpAsyncClient.builder()
 				.serviceName(nacosSseParameters.serviceName())
 				.serviceGroup(nacosSseParameters.serviceGroup())
-				.namingService(namespace2NamingService.get(nacosSseParameters.serviceNamespace()))
-				.nacosConfigService(namespace2NacosConfig.get(nacosSseParameters.serviceNamespace()))
+				.namingService(namingService)
+				.nacosConfigService(nacosConfigService)
 				.applicationContext(applicationContext)
 				.build();
 			loadbalancedMcpAsyncClient.init();
