@@ -100,7 +100,7 @@ public class MysqlJdbcDdl extends AbstractJdbcDdl {
 	@Override
 	public List<TableInfoBO> fetchTables(Connection connection, String schema, List<String> tables) {
 		String sql = "SELECT TABLE_NAME, TABLE_COMMENT \n" + "FROM INFORMATION_SCHEMA.TABLES \n"
-				+ "WHERE TABLE_SCHEMA = '%s' \n" + "AND TABLE_NAME in(%s) \n" + "limit 200;";
+				+ "WHERE TABLE_SCHEMA = '%s' \n" + "AND TABLE_NAME in(%s) \n" + "";
 		List<TableInfoBO> tableInfoList = Lists.newArrayList();
 		String tableListStr = String.join(", ", tables.stream().map(x -> "'" + x + "'").collect(Collectors.toList()));
 		try {
@@ -116,7 +116,7 @@ public class MysqlJdbcDdl extends AbstractJdbcDdl {
 				}
 				String tableName = resultArr[i][0];
 				String tableDesc = resultArr[i][1];
-				tableInfoList.add(TableInfoBO.builder().name(tableName).description(tableDesc).build());
+				tableInfoList.add(TableInfoBO.builder().name(tableName).description(tableDesc).schema(schema).build());
 			}
 		}
 		catch (SQLException e) {

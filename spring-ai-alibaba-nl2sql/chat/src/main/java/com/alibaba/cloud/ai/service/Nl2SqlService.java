@@ -100,7 +100,9 @@ public class Nl2SqlService {
 		expressionList.addAll(dateTimeList);
 
 		List<String> prompts = PromptHelper.buildMixSqlGeneratorPrompt(query, dbConfig, schemaDTO, evidenceList);
-		return MarkdownParser.extractRawText(aiService.callWithSystemPrompt(prompts.get(0), prompts.get(1))).trim();
+		var aiResp = aiService.callWithSystemPrompt(prompts.get(0), prompts.get(1));
+
+		return MarkdownParser.extractRawText(aiResp).trim();
 	}
 
 	public SchemaDTO fineSelect(SchemaDTO schemaDTO, String query, List<String> evidenceList) {

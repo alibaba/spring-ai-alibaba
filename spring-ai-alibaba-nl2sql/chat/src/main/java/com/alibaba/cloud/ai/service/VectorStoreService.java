@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.service;
 
-import com.alibaba.cloud.ai.analyticdb.AnalyticDbVectorStoreProperties;
+import com.alibaba.cloud.ai.vectorstore.analyticdb.AnalyticDbVectorStoreProperties;
 import com.alibaba.cloud.ai.request.SearchRequest;
 import com.aliyun.gpdb20160503.Client;
 import com.aliyun.gpdb20160503.models.*;
