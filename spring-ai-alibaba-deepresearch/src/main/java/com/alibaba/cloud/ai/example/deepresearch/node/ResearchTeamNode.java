@@ -52,6 +52,7 @@ public class ResearchTeamNode implements NodeAction {
 		Plan curPlan = currentPlanOpt.get();
 		// 判断steps里的每个step是否都执行完毕
 		if (areAllExecutionResultsPresent(curPlan)) {
+			logger.info("ResearchTeam node is done.");
 			updated.put("research_team_next_node", nextStep);
 			return updated;
 		}

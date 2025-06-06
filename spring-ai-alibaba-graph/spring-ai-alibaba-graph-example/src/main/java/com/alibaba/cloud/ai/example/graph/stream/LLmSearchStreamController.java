@@ -66,8 +66,6 @@ public class LLmSearchStreamController {
 
 	@PostConstruct
 	public void init() throws GraphStateException {
-		// 定义工作流
-		// 创建状态和策略
 		workflow = new StateGraph(
 				() -> new OverAllState().registerKeyAndStrategy("parallel_result", new AppendStrategy())
 					.registerKeyAndStrategy("messages", new AppendStrategy()))
@@ -85,21 +83,18 @@ public class LLmSearchStreamController {
 	@PostMapping("/search/chat")
 	public void searchChat(HttpServletRequest request, HttpServletResponse response,
 			@RequestBody Map<String, Object> inputData) throws Exception {
-		// 准备异步上下文
+
 		AsyncContext asyncContext = request.startAsync();
 		response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE + ";charset=UTF-8");
 		response.setCharacterEncoding("UTF-8");
 
-		// 禁用缓存
 		response.setHeader("Cache-Control", "no-cache");
 		response.setHeader("Connection", "keep-alive");
 
-		// 获取生成器
 		CompiledGraph compiledGraph = workflow.compile();
 		AsyncGenerator<NodeOutput> generator = compiledGraph.stream(inputData,
 				RunnableConfig.builder().threadId(UUID.randomUUID().toString()).build());
 
-		// 使用线程池处理流式输出
 		CompletableFuture.runAsync(() -> {
 			try (PrintWriter writer = response.getWriter()) {
 				generator.forEachAsync(output -> {

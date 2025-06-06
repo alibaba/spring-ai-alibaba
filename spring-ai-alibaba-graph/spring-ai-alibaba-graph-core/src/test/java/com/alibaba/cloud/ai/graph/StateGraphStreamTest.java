@@ -153,12 +153,12 @@ public class StateGraphStreamTest {
 				() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy())
 					.registerKeyAndStrategy("count", (oldValue, newValue) -> oldValue == null ? newValue : 1))
 			.addNode("collectInput", node_async(s -> {
-				// 处理输入
+
 				String input = s.value("input", "");
 				return Map.of("messages", "Received: " + input, "count", 1);
 			}))
 			.addNode("processData", node_async(s -> {
-				// 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
+
 				final List<String> data = asList("这是", "一个", "流式", "输出", "测试");
 				AtomicInteger timeOff = new AtomicInteger(1);
 				final AsyncGenerator<NodeOutput> it = AsyncGenerator.collect(data.iterator(),
@@ -166,7 +166,7 @@ public class StateGraphStreamTest {
 				return Map.of("messages", it);
 			}))
 			.addNode("generateResponse", node_async(s -> {
-				// 生成最终响应
+
 				int count = s.value("count", 0);
 				return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
 			}))
@@ -218,7 +218,7 @@ public class StateGraphStreamTest {
 				() -> new OverAllState().registerKeyAndStrategy("messages", new AppendStrategy())
 					.registerKeyAndStrategy("count", (oldValue, newValue) -> oldValue == null ? newValue : 1))
 			.addNode("collectInput", node_async(s -> {
-				// 处理输入
+
 				String input = s.value("input", "");
 				return Map.of("messages", "Received: " + input, "count", 1);
 			}))
@@ -227,7 +227,7 @@ public class StateGraphStreamTest {
 				return Map.of("messages", it);
 			}))
 			.addNode("generateResponse", node_async(s -> {
-				// 生成最终响应
+
 				int count = s.value("count", 0);
 				return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
 			}))
@@ -255,7 +255,7 @@ public class StateGraphStreamTest {
 	 * @return AsyncGenerator with streaming output values
 	 */
 	private static AsyncGenerator.WithResult<StreamingOutput> getStreamingOutputWithResult(OverAllState s) {
-		// 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
+
 		BlockingQueue<AsyncGenerator.Data<StreamingOutput>> queue = new ArrayBlockingQueue<>(2000);
 		AsyncGenerator.WithResult<StreamingOutput> it = new AsyncGenerator.WithResult<>(
 				new AsyncGeneratorQueue.Generator<>(queue));
@@ -302,16 +302,6 @@ public class StateGraphStreamTest {
 		CompiledGraph compile = stateGraph.compile();
 		AsyncGenerator<NodeOutput> stream = compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"));
 		stream.forEachAsync(nodeOutput -> System.out.println("Node output: " + nodeOutput));
-		// for (var output : compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY,
-		// "给我写一个10字的小文章"))) {
-		// if (output instanceof AsyncGenerator<?>) {
-		// AsyncGenerator asyncGenerator = (AsyncGenerator) output;
-		// System.out.println("Streaming chunk: " + asyncGenerator);
-		// }
-		// else {
-		// System.out.println("Node output: " + output);
-		// }
-		// }
 	}
 
 	/**
@@ -402,10 +392,9 @@ public class StateGraphStreamTest {
 
 		CompiledGraph app = stateGraph.compile();
 
-		// 使用辅助方法处理流式输出
 		AsyncGenerator<NodeOutput> generator = app.stream(Map.of("input", "test"));
 		List states = toStateList(generator);
-		// 验证结果
+
 		assertFalse(states.isEmpty(), "least one content");
 		assertEquals(5, states.size(), "should be five content");
 	}
@@ -421,9 +410,9 @@ public class StateGraphStreamTest {
 			if (s instanceof StreamingOutput streamingOutput) {
 				System.out
 					.println(String.format("stream data %s '%s'", streamingOutput.node(), streamingOutput.chunk()));
-				return false; // 过滤掉流式输出
+				return false;
 			}
-			return true; // 保留普通节点输出
+			return true;
 		})
 			.peek(s -> System.out.println(String.format("NODE: {}", s.node())))
 			.map(NodeOutput::state)
