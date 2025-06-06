@@ -36,7 +36,7 @@ public class Nacos2McpSseClientProperties {
 		return connections;
 	}
 
-	public static record NacosSseParameters(String serviceNamespace, String serviceGroup, String serviceName) {
+	public static record NacosSseParameters(String serviceGroup, String serviceName) {
 	}
 
 }
