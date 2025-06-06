@@ -90,34 +90,6 @@ public class PythonReplTool {
 				new ApacheDockerHttpClient.Builder().dockerHost(config.getDockerHost()).build())) {
 			// Create temp dir and files
 			Path tempDir = Files.createTempDirectory(coderProperties.getContainNamePrefix());
-			Cleaner.create().register(tempDir, () -> {
-				try {
-					if (!Files.exists(tempDir))
-						return;
-					Files.walkFileTree(tempDir, new SimpleFileVisitor<>() {
-						@NotNull
-						@Override
-						public FileVisitResult visitFile(@NotNull Path file, @NotNull BasicFileAttributes attrs)
-								throws IOException {
-							Files.delete(file);
-							return super.visitFile(file, attrs);
-						}
-
-						@NotNull
-						@Override
-						public FileVisitResult postVisitDirectory(@NotNull Path dir, @Nullable IOException exc)
-								throws IOException {
-							if (exc != null)
-								throw exc;
-							Files.delete(dir);
-							return super.postVisitDirectory(dir, exc);
-						}
-					});
-				}
-				catch (IOException e) {
-					logger.warning("Error when deleting temp directory: {}" + tempDir.toAbsolutePath());
-				}
-			});
 			Files.createFile(tempDir.resolve("requirements.txt"));
 			Files.createFile(tempDir.resolve("script.py"));
 			Files.write(tempDir.resolve("requirements.txt"),
@@ -148,12 +120,7 @@ public class PythonReplTool {
 					this.execDockerContainer(dockerClient, container);
 				}
 				catch (Exception e) {
-					try {
-						// remove volume before return
-						dockerClient.removeVolumeCmd(volumeName).exec();
-					}
-					catch (Exception ignore) {
-					}
+					this.clearTempResource(tempDir, dockerClient, volumeName);
 					return "Error installing requirements: " + e.getMessage();
 				}
 			}
@@ -183,17 +150,49 @@ public class PythonReplTool {
 				return "Error executing code:\n```\n" + code + "\n```\nError:\n" + e.getMessage();
 			}
 			finally {
-				try {
-					// remove volume before return
-					dockerClient.removeVolumeCmd(volumeName).exec();
-				}
-				catch (Exception ignore) {
-				}
+				this.clearTempResource(tempDir, dockerClient, volumeName);
 			}
 		}
 		catch (Exception e) {
 			logger.warning("Exception during execution: " + e.getMessage());
 			return "Error executing code:\n```\n" + code + "\n```\nError:\n" + e.getMessage();
+		}
+	}
+
+	/**
+	 * clean some temp resource before return
+	 */
+	private void clearTempResource(Path tempDir, DockerClient dockerClient, String volumeName) {
+		try {
+			Files.walkFileTree(tempDir, new SimpleFileVisitor<>() {
+				@NotNull
+				@Override
+				public FileVisitResult visitFile(@NotNull Path file, @NotNull BasicFileAttributes attrs)
+						throws IOException {
+					Files.delete(file);
+					return super.visitFile(file, attrs);
+				}
+
+				@NotNull
+				@Override
+				public FileVisitResult postVisitDirectory(@NotNull Path dir, @Nullable IOException exc)
+						throws IOException {
+					if (exc != null)
+						throw exc;
+					Files.delete(dir);
+					return super.postVisitDirectory(dir, exc);
+				}
+			});
+			logger.info("Temp directory has been deleted.");
+		}
+		catch (Exception e) {
+			logger.warning("Exception in clean temp directory: " + e.getMessage());
+		}
+		try {
+			// remove volume before return
+			dockerClient.removeVolumeCmd(volumeName).exec();
+		}
+		catch (Exception ignore) {
 		}
 	}
 
