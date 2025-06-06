@@ -16,11 +16,9 @@
 
 package com.alibaba.cloud.ai.autoconfigure.mcp.client;
 
-import com.alibaba.cloud.ai.mcp.nacos2.NacosMcpProperties;
+import com.alibaba.cloud.ai.mcp.nacos.NacosMcpProperties;
+import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.nacos.api.exception.NacosException;
-import com.alibaba.nacos.api.naming.NamingFactory;
-import com.alibaba.nacos.api.naming.NamingService;
-import com.alibaba.nacos.client.config.NacosConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -31,33 +29,22 @@ import java.util.Properties;
 
 /**
  * @author yingzi
- * @date 2025/6/4 16:11
+ * @date 2025/6/4 19:16
  */
 @AutoConfiguration
-@EnableConfigurationProperties({ Nacos2McpSseClientProperties.class, NacosMcpProperties.class })
-public class Nacos2McpAutoConfiguration {
+@EnableConfigurationProperties({ NacosMcpProperties.class })
+public class NacosMcpAutoConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(Nacos2McpAutoConfiguration.class);
+	private static final Logger logger = LoggerFactory.getLogger(NacosMcpAutoConfiguration.class);
 
-	public Nacos2McpAutoConfiguration() {
+	public NacosMcpAutoConfiguration() {
 	}
 
 	@Bean
-	public NamingService namespace2NamingService(NacosMcpProperties nacosMcpProperties) {
+	public NacosMcpOperationService nacosMcpOperationService(NacosMcpProperties nacosMcpProperties) {
 		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
 		try {
-			return NamingFactory.createNamingService(nacosProperties);
-		}
-		catch (NacosException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@Bean
-	public NacosConfigService namespace2NacosConfigService(NacosMcpProperties nacosMcpProperties) {
-		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
-		try {
-			return new NacosConfigService(nacosProperties);
+			return new NacosMcpOperationService(nacosProperties);
 		}
 		catch (NacosException e) {
 			throw new RuntimeException(e);
