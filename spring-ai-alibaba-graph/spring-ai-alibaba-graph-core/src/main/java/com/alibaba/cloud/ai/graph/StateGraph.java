@@ -582,9 +582,7 @@ public class StateGraph {
 	 */
 	public CompiledGraph compile() throws GraphStateException {
 		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
-		return compile(CompileConfig.builder()
-			.saverConfig(saverConfig)
-			.build());
+		return compile(CompileConfig.builder().saverConfig(saverConfig).build());
 	}
 
 	/**

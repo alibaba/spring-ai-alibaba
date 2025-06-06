@@ -29,27 +29,29 @@ import java.util.Optional;
 @Component
 public class TavilySearchNode implements NodeAction {
 
-    @Autowired(required=false)
-    private TavilySearchService tavilySearchService;
+	@Autowired(required = false)
+	private TavilySearchService tavilySearchService;
 
-    @Override
-    public Map<String, Object> apply(OverAllState state) throws Exception {
-        Optional<String> value = state.value(OverAllState.DEFAULT_INPUT_KEY, String.class);
-        StringBuilder sb = new StringBuilder();
-        if (value.isPresent()){
-            String input = value.get();
-            TavilySearchService.Request request = new TavilySearchService.Request(input, null, null, null, 1, null, null, null, null, null, null, null, null);
-            TavilySearchService.Response apply = tavilySearchService.apply(request);
-            if (apply != null){
-                List<TavilySearchService.Response.ResultInfo> results = apply.results();
-                if (results != null && !results.isEmpty()){
-                    for (TavilySearchService.Response.ResultInfo result : results){
-                        sb.append(result.title()).append("\n").append(result.content()).append("\n");
-                    }
-                }
+	@Override
+	public Map<String, Object> apply(OverAllState state) throws Exception {
+		Optional<String> value = state.value(OverAllState.DEFAULT_INPUT_KEY, String.class);
+		StringBuilder sb = new StringBuilder();
+		if (value.isPresent()) {
+			String input = value.get();
+			TavilySearchService.Request request = new TavilySearchService.Request(input, null, null, null, 1, null,
+					null, null, null, null, null, null, null);
+			TavilySearchService.Response apply = tavilySearchService.apply(request);
+			if (apply != null) {
+				List<TavilySearchService.Response.ResultInfo> results = apply.results();
+				if (results != null && !results.isEmpty()) {
+					for (TavilySearchService.Response.ResultInfo result : results) {
+						sb.append(result.title()).append("\n").append(result.content()).append("\n");
+					}
+				}
 
-            }
-        }
-        return Map.of("parallel_result", sb.toString());
-    }
+			}
+		}
+		return Map.of("parallel_result", sb.toString());
+	}
+
 }

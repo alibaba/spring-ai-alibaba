@@ -504,7 +504,7 @@ public final class OverAllState implements Serializable {
 	/**
 	 * The type Human feedback.
 	 */
-	public static class HumanFeedback implements Serializable{
+	public static class HumanFeedback implements Serializable {
 
 		private Map<String, Object> data;
 

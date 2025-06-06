@@ -28,27 +28,28 @@ import java.util.Optional;
 @Component
 public class BaiduSearchNode implements NodeAction {
 
-    @Autowired(required=false)
-    private BaiduSearchService baiduSearchService;
+	@Autowired(required = false)
+	private BaiduSearchService baiduSearchService;
 
-    @Override
-    public Map<String, Object> apply(OverAllState state) throws Exception {
-        Optional<String> value = state.value(OverAllState.DEFAULT_INPUT_KEY, String.class);
-        StringBuilder sb = new StringBuilder();
-        if (value.isPresent()){
-            String input = value.get();
-            BaiduSearchService.Request request = new BaiduSearchService.Request(input,1);
-            BaiduSearchService.Response apply = baiduSearchService.apply(request);
-            if (apply != null){
-                List<BaiduSearchService.SearchResult> results = apply.results();
-                if (results != null && !results.isEmpty()){
-                    for (BaiduSearchService.SearchResult result : results){
-                        sb.append(result.title()).append("\n").append(result.abstractText()).append("\n");
-                    }
-                }
+	@Override
+	public Map<String, Object> apply(OverAllState state) throws Exception {
+		Optional<String> value = state.value(OverAllState.DEFAULT_INPUT_KEY, String.class);
+		StringBuilder sb = new StringBuilder();
+		if (value.isPresent()) {
+			String input = value.get();
+			BaiduSearchService.Request request = new BaiduSearchService.Request(input, 1);
+			BaiduSearchService.Response apply = baiduSearchService.apply(request);
+			if (apply != null) {
+				List<BaiduSearchService.SearchResult> results = apply.results();
+				if (results != null && !results.isEmpty()) {
+					for (BaiduSearchService.SearchResult result : results) {
+						sb.append(result.title()).append("\n").append(result.abstractText()).append("\n");
+					}
+				}
 
-            }
-        }
-        return Map.of("parallel_result", sb.toString());
-    }
+			}
+		}
+		return Map.of("parallel_result", sb.toString());
+	}
+
 }

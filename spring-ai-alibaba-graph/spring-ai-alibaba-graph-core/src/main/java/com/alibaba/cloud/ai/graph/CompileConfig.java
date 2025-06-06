@@ -35,7 +35,6 @@ public class CompileConfig {
 
 	private SaverConfig saverConfig;
 
-
 	// private BaseCheckpointSaver checkpointSaver; // replaced with SaverConfig
 	private Set<String> interruptsBefore = Set.of();
 
@@ -158,7 +157,6 @@ public class CompileConfig {
 			this.config.saverConfig = saverConfig;
 			return this;
 		}
-
 
 		/**
 		 * Sets the actions to be performed before an interruption.

@@ -35,117 +35,109 @@ import java.util.function.Function;
 import static java.util.Optional.ofNullable;
 
 /**
- * A generator interface for streaming chat responses in a reactive manner.
- * It provides a fluent API to configure and build a streaming generator that processes
- * chat responses and produces output based on the streamed data.
+ * A generator interface for streaming chat responses in a reactive manner. It provides a
+ * fluent API to configure and build a streaming generator that processes chat responses
+ * and produces output based on the streamed data.
  */
 public interface StreamingChatGenerator {
 
-    /**
-     * Builder class for creating instances of {@link AsyncGenerator} that process chat responses.
-     * This builder allows setting mapping logic, starting node, and initial state before building.
-     */
-    class Builder {
-        private Function<ChatResponse, Map<String, Object>> mapResult;
-        private String startingNode;
-        private OverAllState startingState;
+	/**
+	 * Builder class for creating instances of {@link AsyncGenerator} that process chat
+	 * responses. This builder allows setting mapping logic, starting node, and initial
+	 * state before building.
+	 */
+	class Builder {
 
-        /**
-         * Sets the mapping function that converts a ChatResponse into a Map result.
-         *
-         * @param mapResult a function to transform the final chat response into a result map
-         * @return the builder instance for method chaining
-         */
-        public Builder mapResult(Function<ChatResponse, Map<String, Object>> mapResult) {
-            this.mapResult = mapResult;
-            return this;
-        }
+		private Function<ChatResponse, Map<String, Object>> mapResult;
 
-        /**
-         * Sets the starting node for the streaming process.
-         *
-         * @param node the identifier of the starting node in the flow
-         * @return the builder instance for method chaining
-         */
-        public Builder startingNode(String node) {
-            this.startingNode = node;
-            return this;
-        }
+		private String startingNode;
 
-        /**
-         * Sets the initial state for the streaming process.
-         *
-         * @param state the overall state to start with
-         * @return the builder instance for method chaining
-         */
-        public Builder startingState(OverAllState state) {
-            this.startingState = state;
-            return this;
-        }
+		private OverAllState startingState;
 
-        /**
-         * Builds and returns an instance of AsyncGenerator that processes chat responses.
-         * The generator merges partial responses and maps them to final output.
-         *
-         * @param flux a Flux stream of ChatResponse objects
-         * @return an AsyncGenerator that produces NodeOutput instances
-         */
-        public AsyncGenerator<? extends NodeOutput> build(Flux<ChatResponse> flux) {
-            Objects.requireNonNull(flux, "flux cannot be null");
-            Objects.requireNonNull(mapResult, "mapResult cannot be null");
+		/**
+		 * Sets the mapping function that converts a ChatResponse into a Map result.
+		 * @param mapResult a function to transform the final chat response into a result
+		 * map
+		 * @return the builder instance for method chaining
+		 */
+		public Builder mapResult(Function<ChatResponse, Map<String, Object>> mapResult) {
+			this.mapResult = mapResult;
+			return this;
+		}
 
-            var result = new AtomicReference<ChatResponse>(null);
+		/**
+		 * Sets the starting node for the streaming process.
+		 * @param node the identifier of the starting node in the flow
+		 * @return the builder instance for method chaining
+		 */
+		public Builder startingNode(String node) {
+			this.startingNode = node;
+			return this;
+		}
 
-            Consumer<ChatResponse> mergeMessage = (response) -> {
-                result.updateAndGet(lastResponse -> {
+		/**
+		 * Sets the initial state for the streaming process.
+		 * @param state the overall state to start with
+		 * @return the builder instance for method chaining
+		 */
+		public Builder startingState(OverAllState state) {
+			this.startingState = state;
+			return this;
+		}
 
-                    if (lastResponse == null) {
-                        return response;
-                    }
+		/**
+		 * Builds and returns an instance of AsyncGenerator that processes chat responses.
+		 * The generator merges partial responses and maps them to final output.
+		 * @param flux a Flux stream of ChatResponse objects
+		 * @return an AsyncGenerator that produces NodeOutput instances
+		 */
+		public AsyncGenerator<? extends NodeOutput> build(Flux<ChatResponse> flux) {
+			Objects.requireNonNull(flux, "flux cannot be null");
+			Objects.requireNonNull(mapResult, "mapResult cannot be null");
 
-                    var currentMessage = response.getResult().getOutput();
+			var result = new AtomicReference<ChatResponse>(null);
 
-                    if (currentMessage.hasToolCalls()) {
-                        return response;
-                    }
+			Consumer<ChatResponse> mergeMessage = (response) -> {
+				result.updateAndGet(lastResponse -> {
 
-                    var lastMessage = lastResponse.getResult().getOutput();
+					if (lastResponse == null) {
+						return response;
+					}
 
-                    var newMessage = new AssistantMessage(
-                            ofNullable(currentMessage.getText())
-                                    .map(text -> lastMessage.getText().concat(text))
-                                    .orElse(lastMessage.getText()),
-                            currentMessage.getMetadata(),
-                            currentMessage.getToolCalls(),
-                            currentMessage.getMedia()
-                    );
+					var currentMessage = response.getResult().getOutput();
 
-                    var newGeneration = new Generation(newMessage, response.getResult().getMetadata());
-                    return new ChatResponse(List.of(newGeneration), response.getMetadata());
+					if (currentMessage.hasToolCalls()) {
+						return response;
+					}
 
-                });
-            };
+					var lastMessage = lastResponse.getResult().getOutput();
 
-            var processedFlux = flux
-                    .doOnNext(next -> mergeMessage.accept(next))
-                    .map(next ->
-                            new StreamingOutput(next.getResult().getOutput().getText(),
-                                    startingNode,
-                                    startingState)
-                    );
+					var newMessage = new AssistantMessage(
+							ofNullable(currentMessage.getText()).map(text -> lastMessage.getText().concat(text))
+								.orElse(lastMessage.getText()),
+							currentMessage.getMetadata(), currentMessage.getToolCalls(), currentMessage.getMedia());
 
-            return FlowGenerator.fromPublisher(
-                    FlowAdapters.toFlowPublisher(processedFlux),
-                    () -> mapResult.apply(result.get()));
-        }
-    }
+					var newGeneration = new Generation(newMessage, response.getResult().getMetadata());
+					return new ChatResponse(List.of(newGeneration), response.getMetadata());
 
-    /**
-     * Returns a new instance of the StreamingChatGenerator builder.
-     *
-     * @return a new builder instance
-     */
-    static Builder builder() {
-        return new Builder();
-    }
+				});
+			};
+
+			var processedFlux = flux.doOnNext(next -> mergeMessage.accept(next))
+				.map(next -> new StreamingOutput(next.getResult().getOutput().getText(), startingNode, startingState));
+
+			return FlowGenerator.fromPublisher(FlowAdapters.toFlowPublisher(processedFlux),
+					() -> mapResult.apply(result.get()));
+		}
+
+	}
+
+	/**
+	 * Returns a new instance of the StreamingChatGenerator builder.
+	 * @return a new builder instance
+	 */
+	static Builder builder() {
+		return new Builder();
+	}
+
 }

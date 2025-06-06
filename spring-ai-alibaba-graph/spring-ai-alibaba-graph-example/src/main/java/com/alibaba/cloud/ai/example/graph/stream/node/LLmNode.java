@@ -49,21 +49,20 @@ public class LLmNode implements NodeAction {
 	@Autowired
 	private ChatClient.Builder builder;
 
-	 static String promptTemplate = """
-        You are a professional AI assistant. Please generate responses based on the given content and questions.
-        
-        Content context:
-        %s
-        
-        Questions to answer (respond in the question's original language, keep answers concise):
-        %s
-        
-        Please carefully review the content and adhere to these requirements:
-        1. Ensure responses match the question's language
-        2. Break down complex questions into bullet points
-        3. Avoid speculative or unverified information
-        4. Prioritize accuracy over completeness""";
+	static String promptTemplate = """
+			You are a professional AI assistant. Please generate responses based on the given content and questions.
 
+			Content context:
+			%s
+
+			Questions to answer (respond in the question's original language, keep answers concise):
+			%s
+
+			Please carefully review the content and adhere to these requirements:
+			1. Ensure responses match the question's language
+			2. Break down complex questions into bullet points
+			3. Avoid speculative or unverified information
+			4. Prioritize accuracy over completeness""";
 
 	@Override
 	public Map<String, Object> apply(OverAllState t) {
@@ -78,21 +77,17 @@ public class LLmNode implements NodeAction {
 			}
 		}
 
-		UserMessage message = new UserMessage(promptTemplate.formatted(formattedContent,question));
+		UserMessage message = new UserMessage(promptTemplate.formatted(formattedContent, question));
 		ChatClient chatClient = builder.build();
 
-		var flux = chatClient.prompt()
-				.messages(message)
-				.stream()
-				.chatResponse();
+		var flux = chatClient.prompt().messages(message).stream().chatResponse();
 
-		var generator  = StreamingChatGenerator.builder()
-				.startingNode("llmNode")
-				.startingState( t )
-				.mapResult(
-						response ->
-						Map.of( "messages", Objects.requireNonNull(response.getResult().getOutput().getText())))
-				.build(flux);
+		var generator = StreamingChatGenerator.builder()
+			.startingNode("llmNode")
+			.startingState(t)
+			.mapResult(
+					response -> Map.of("messages", Objects.requireNonNull(response.getResult().getOutput().getText())))
+			.build(flux);
 
 		return Map.of("messages", generator);
 	}
