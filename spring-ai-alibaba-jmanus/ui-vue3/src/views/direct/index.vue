@@ -29,10 +29,16 @@ const isLoading = ref(false)nse");
           <h2>Direct Chat</h2>
         </div>
 
-        <ChatContainer 
+        <PlanExecutionComponent 
+          ref="planExecutionRef"
           :initial-prompt="prompt" 
           mode="direct"
-          @[EVENTS.USER_MESSAGE_SEND_REQUESTED]="handleMessageSent"
+          placeholder="向 JTaskPilot 发送消息"
+          @plan-update="handlePlanUpdate"
+          @plan-completed="handlePlanCompleted"
+          @dialog-round-start="handleDialogRoundStart"
+          @step-selected="handleStepSelected"
+          @message-sent="handleMessageSent"
         />
       </div>
 
@@ -48,22 +54,42 @@ import { useRoute, useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import Sidebar from '@/components/sidebar/index.vue'
 import RightPanel from '@/components/right-panel/index.vue'
-import ChatContainer from '@/components/chat/index.vue'
-import { EVENTS } from '@/constants/events'
+import PlanExecutionComponent from '@/components/plan-execution/index.vue'
 
 const route = useRoute()
 const router = useRouter()
 
 const prompt = ref<string>('')
+const planExecutionRef = ref()
 
 onMounted(() => {
   // Initialize with prompt from conversation page
   prompt.value = (route.query.prompt as string) || ''
 })
 
+const handlePlanUpdate = (planData: any) => {
+  console.log('[DirectView] Plan updated:', planData)
+  // 处理计划更新事件
+}
+
+const handlePlanCompleted = (result: any) => {
+  console.log('[DirectView] Plan completed:', result)
+  // 处理计划完成事件
+}
+
+const handleStepSelected = (planId: string, stepIndex: number) => {
+  console.log('[DirectView] Step selected:', planId, stepIndex)
+  // 处理步骤选择事件
+}
+
+const handleDialogRoundStart = (planId: string, query: string) => {
+  console.log('[DirectView] Dialog round started:', planId, query)
+  // 处理对话轮次开始事件
+}
+
 const handleMessageSent = (message: string) => {
-  console.log('Message sent:', message)
-  // 可以在这里处理消息发送的逻辑
+  console.log('[DirectView] Message sent:', message)
+  // 处理消息发送事件
 }
 
 const goBack = () => {

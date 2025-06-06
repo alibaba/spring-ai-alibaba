@@ -11,6 +11,7 @@ export const EVENTS = {
   USER_MESSAGE_SEND_REQUESTED: 'ui:user:message:send_requested',
   CHAT_INPUT_CLEAR: 'ui:chatinput:clear',
   CHAT_INPUT_UPDATE_STATE: 'ui:chatinput:updatestate',
+  CHAT_INPUT_FOCUS: 'ui:chatinput:focus',
   PLAN_TEMPLATE_SELECTED: 'ui:plan_template:selected',
   PLAN_EXECUTION_REQUESTED: 'ui:plan:execution_requested',
   GENERATION_STATE_CHANGED: 'ui:generation:state_changed',

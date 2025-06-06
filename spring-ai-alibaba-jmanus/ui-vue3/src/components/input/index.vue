@@ -57,6 +57,10 @@ interface Props {
 
 interface Emits {
   (e: 'send', message: string): void
+  (e: 'clear'): void
+  (e: 'focus'): void
+  (e: 'update-state', enabled: boolean, placeholder?: string): void
+  (e: 'message-sent', message: string): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -94,27 +98,14 @@ const handleSend = () => {
 
   const query = currentInput.value.trim()
   
-  // 发布用户请求发送消息的事件（类似 chat-input.js 的逻辑）
-  // 这里我们仍然使用组件的 emit，但可以扩展为全局事件
+  // 使用 Vue 的 emit 发送消息
   emit('send', query)
   
   // 清空输入
   clearInput()
-}
-
-/**
- * 处理消息发送完成后的逻辑
- * @param {string} message - 发送的消息
- */
-const handleMessageSent = (message: string) => {
-  // 触发全局事件，通知其他组件消息已发送
-  const event = new CustomEvent(EVENTS.USER_MESSAGE_SEND_REQUESTED, {
-    detail: { message }
-  })
-  window.dispatchEvent(event)
   
-  // 可以在这里添加其他后处理逻辑，比如分析、日志等
-  console.log('Message sent:', message)
+  // 发送消息已发送事件
+  emit('message-sent', query)
 }
 
 /**
@@ -123,6 +114,7 @@ const handleMessageSent = (message: string) => {
 const clearInput = () => {
   currentInput.value = ''
   adjustInputHeight()
+  emit('clear')
 }
 
 /**
@@ -134,7 +126,15 @@ const updateState = (enabled: boolean, placeholder?: string) => {
   if (placeholder) {
     currentPlaceholder.value = enabled ? placeholder : '等待任务完成...'
   }
-  // disabled 属性通过 props 控制，这里主要处理 placeholder
+  emit('update-state', enabled, placeholder)
+}
+
+/**
+ * 聚焦输入框
+ */
+const focus = () => {
+  inputRef.value?.focus()
+  emit('focus')
 }
 
 /**
@@ -145,22 +145,20 @@ const getQuery = () => {
   return currentInput.value.trim()
 }
 
-// 暴露方法给父组件使用（如果需要）
+// 暴露方法给父组件使用
 defineExpose({
   clearInput,
   updateState,
   getQuery,
-  handleMessageSent,
   focus: () => inputRef.value?.focus()
 })
 
 onMounted(() => {
-  // 如果需要监听全局事件，可以在这里添加
-  // 目前使用组件间通信方式
+  // 组件挂载后的初始化逻辑
 })
 
 onUnmounted(() => {
-  // 清理事件监听
+  // 组件卸载前的清理逻辑
 })
 </script>
 

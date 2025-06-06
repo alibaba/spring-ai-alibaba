@@ -106,20 +106,12 @@
         </div>
       </div>
     </div>
-
-    <InputArea 
-      ref="inputAreaRef"
-      :disabled="isLoading"
-      :placeholder="isLoading ? '等待任务完成...' : '向 JTaskPilot 发送消息'"
-      @send="handleSendMessage"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
-import InputArea from '@/components/input/index.vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import { CommonApiService } from '@/api/common-api-service'
 import { DirectApiService } from '@/api/direct-api-service'
@@ -153,10 +145,15 @@ interface Props {
 }
 
 interface Emits {
-  (e: typeof EVENTS.PLAN_UPDATE, planData: any): void
-  (e: typeof EVENTS.EXECUTION_STATE_CHANGED, executionData: any): void
-  (e: typeof EVENTS.PLAN_COMPLETED, result: any): void
-  (e: typeof EVENTS.USER_MESSAGE_SEND_REQUESTED, message: string): void
+  (e: 'plan-update', planData: any): void
+  (e: 'execution-state-changed', executionData: any): void
+  (e: 'plan-completed', result: any): void
+  (e: 'user-message-send-requested', message: string): void
+  (e: 'input-clear'): void
+  (e: 'input-update-state', enabled: boolean, placeholder?: string): void
+  (e: 'input-focus'): void
+  (e: 'step-selected', planId: string, stepIndex: number): void
+  (e: 'dialog-round-start', planId: string, query: string): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -168,7 +165,6 @@ const emit = defineEmits<Emits>()
 const planExecution = usePlanExecution()
 
 const messagesRef = ref<HTMLElement>()
-const inputAreaRef = ref<InstanceType<typeof InputArea>>()
 const isLoading = ref(false)
 const messages = ref<Message[]>([])
 const currentPlanId = ref<string>()
@@ -211,9 +207,6 @@ const handlePlanMode = async (query: string) => {
       currentPlanId.value = planResponse.planId
       assistantMessage.planId = planResponse.planId
       assistantMessage.thinking = undefined
-      
-      // 开始监听计划更新事件
-      startListeningPlanUpdates(planResponse.planId)
       
       // 重要：使用 plan execution manager 来处理执行
       // 这会触发轮询和所有相关的事件处理逻辑
@@ -293,7 +286,7 @@ const startExecutionPolling = (planId: string, executionId: string) => {
             steps: details.steps
           })
           
-          emit(EVENTS.PLAN_COMPLETED, details)
+          emit('plan-completed', details)
         }
       }
     } catch (error: any) {
@@ -352,18 +345,13 @@ const handleSendMessage = (message: string) => {
   // 首先添加用户消息到UI
   addMessage('user', message)
   
-  // 调用input组件的handleMessageSent方法
-  inputAreaRef.value?.handleMessageSent(message)
+  // 通过 emit 通知父组件清空输入
+  emit('input-clear')
 
   // 根据模式处理消息
   if (props.mode === 'plan') {
     // 在计划模式下，触发用户消息发送请求事件
-    // 这将被 plan-execution-manager 捕获并处理
-    const event = new CustomEvent(EVENTS.USER_MESSAGE_SEND_REQUESTED, {
-      detail: { query: message }
-    })
-    window.dispatchEvent(event)
-    emit(EVENTS.USER_MESSAGE_SEND_REQUESTED, message)
+    emit('user-message-send-requested', message)
   } else {
     // 直接模式仍然直接处理
     handleDirectMode(message)
@@ -374,82 +362,11 @@ const handleSendMessage = (message: string) => {
 const handleStepClick = (message: Message, stepIndex: number) => {
   if (!message.planId) return
   
-  // 触发自定义事件，通知右侧面板显示步骤详情
-  const event = new CustomEvent('ui:step:selected', {
-    detail: {
-      planId: message.planId,
-      stepIndex: stepIndex
-    }
-  })
-  window.dispatchEvent(event)
+  // 通过 emit 通知父组件显示步骤详情
+  emit('step-selected', message.planId, stepIndex)
 }
 
-// 输入控制方法（类似 chat-input.js 的功能）
-const clearInput = () => {
-  inputAreaRef.value?.clearInput()
-}
-
-const updateInputState = (enabled: boolean, placeholder?: string) => {
-  inputAreaRef.value?.updateState(enabled, placeholder)
-}
-
-const focusInput = () => {
-  inputAreaRef.value?.focus()
-}
-
-const startListeningPlanUpdates = (planId: string) => {
-  // 监听计划更新事件
-  const handlePlanUpdateEvent = (event: any) => {
-    const planDetails = event.detail
-    if (planDetails && planDetails.planId === planId) {
-      handlePlanUpdate(planDetails)
-    }
-  }
-  
-  window.addEventListener(EVENTS.PLAN_UPDATE, handlePlanUpdateEvent)
-  
-  // 存储事件监听器以便清理
-  const cleanup = () => {
-    window.removeEventListener(EVENTS.PLAN_UPDATE, handlePlanUpdateEvent)
-  }
-  
-  // 在组件卸载时清理
-  onUnmounted(cleanup)
-}
-
-// 处理计划更新（基于 chat-handler.js 的逻辑）
-const handlePlanUpdate = (planDetails: any) => {
-  if (!planDetails.steps || !planDetails.steps.length) return
-  
-  // 找到对应的消息并更新
-  const messageIndex = messages.value.findIndex(m => m.planId === planDetails.planId)
-  if (messageIndex === -1) return
-  
-  const message = messages.value[messageIndex]
-  
-  // 更新消息的步骤信息
-  message.steps = planDetails.steps
-  message.currentStepIndex = planDetails.currentStepIndex
-  
-  // 更新进度信息
-  const progress = calculateProgress(planDetails)
-  message.progress = progress.percentage
-  message.progressText = progress.text
-  
-  // 处理执行序列和步骤动作
-  if (planDetails.agentExecutionSequence?.length > 0) {
-    updateStepActions(message, planDetails)
-  }
-  
-  // 处理用户输入等待状态
-  if (planDetails.userInputWaitState) {
-    // TODO: 实现用户输入表单显示逻辑
-    console.log('需要用户输入:', planDetails.userInputWaitState)
-  }
-  
-  // 发送事件通知其他组件
-  emit(EVENTS.PLAN_UPDATE, planDetails)
-}
+// 旧的handlePlanUpdate函数已移除，保留计算进度和更新步骤动作的函数
 
 // 计算执行进度（基于 chat-handler.js 逻辑）
 const calculateProgress = (planDetails: any) => {
@@ -524,95 +441,87 @@ const updateStepActions = (message: Message, planDetails: any) => {
   message.stepActions = lastStepActions
 }
 
-// 全局事件监听器管理
-let globalEventListeners: { event: string; handler: (event: any) => void }[] = []
-
-// 设置全局事件监听器（基于 chat-handler.js 和 plan-execution-manager.js）
-const setupGlobalEventListeners = () => {
-  // 监听对话轮次开始事件
-  const handleDialogRoundStart = (event: any) => {
-    const { planId, query } = event.detail || {}
-    if (planId && query) {
-      // 添加用户消息（如果还没有的话）
-      const hasUserMessage = messages.value.some(m => m.type === 'user' && m.content === query)
-      if (!hasUserMessage) {
-        addMessage('user', query)
-      }
-      
-      // 添加助手消息准备显示步骤
-      const assistantMessage = addMessage('assistant', '任务已提交，正在处理中...', {
-        planId: planId,
-        steps: [],
-        currentStepIndex: 0,
-        progress: 5,
-        progressText: '准备执行...'
-      })
+// 处理对话轮次开始
+const handleDialogRoundStart = (planId: string, query: string) => {
+  if (planId && query) {
+    // 添加用户消息（如果还没有的话）
+    const hasUserMessage = messages.value.some(m => m.type === 'user' && m.content === query)
+    if (!hasUserMessage) {
+      addMessage('user', query)
     }
+    
+    // 添加助手消息准备显示步骤
+    const assistantMessage = addMessage('assistant', '任务已提交，正在处理中...', {
+      planId: planId,
+      steps: [],
+      currentStepIndex: 0,
+      progress: 5,
+      progressText: '准备执行...'
+    })
   }
-
-  // 监听计划更新事件（来自 plan-execution-manager）
-  const handlePlanUpdateFromManager = (event: any) => {
-    const planDetails = event.detail
-    if (planDetails && planDetails.planId) {
-      handlePlanUpdate(planDetails)
-    }
-  }
-
-  // 监听计划完成事件
-  const handlePlanCompletedFromManager = (event: any) => {
-    const details = event.detail
-    if (details && details.planId) {
-      // 找到对应的消息并更新为完成状态
-      const messageIndex = messages.value.findIndex(m => m.planId === details.planId)
-      if (messageIndex !== -1) {
-        const message = messages.value[messageIndex]
-        message.progress = 100
-        message.progressText = '执行完成！'
-        message.content = details.summary || '计划执行完成'
-        
-        emit(EVENTS.PLAN_COMPLETED, details)
-      }
-    }
-  }
-
-  // 注册事件监听器
-  const eventListeners = [
-    { event: EVENTS.DIALOG_ROUND_START, handler: handleDialogRoundStart },
-    { event: EVENTS.PLAN_UPDATE, handler: handlePlanUpdateFromManager },
-    { event: EVENTS.PLAN_COMPLETED, handler: handlePlanCompletedFromManager }
-  ]
-
-  eventListeners.forEach(({ event, handler }) => {
-    window.addEventListener(event, handler)
-    globalEventListeners.push({ event, handler })
-  })
-
-  console.log('[Chat] Global event listeners setup complete')
 }
 
-// 清理全局事件监听器
-const cleanupGlobalEventListeners = () => {
-  globalEventListeners.forEach(({ event, handler }) => {
-    window.removeEventListener(event, handler)
-  })
-  globalEventListeners = []
-  console.log('[Chat] Global event listeners cleaned up')
-}
-
-onMounted(() => {
-  // 设置全局事件监听器
-  setupGlobalEventListeners()
+// 处理计划更新
+const handlePlanUpdate = (planDetails: any) => {
+  if (!planDetails.steps || !planDetails.steps.length) return
   
-  // Initialize with initial prompt if provided
-  if (props.initialPrompt) {
-    addMessage('user', props.initialPrompt)
-    if (props.mode === 'plan') {
-      handlePlanMode(props.initialPrompt)
-    } else {
-      handleDirectMode(props.initialPrompt)
+  // 找到对应的消息并更新
+  const messageIndex = messages.value.findIndex(m => m.planId === planDetails.planId)
+  if (messageIndex === -1) return
+  
+  const message = messages.value[messageIndex]
+  
+  // 更新消息的步骤信息
+  message.steps = planDetails.steps
+  message.currentStepIndex = planDetails.currentStepIndex
+  
+  // 更新进度信息
+  const progress = calculateProgress(planDetails)
+  message.progress = progress.percentage
+  message.progressText = progress.text
+  
+  // 处理执行序列和步骤动作
+  if (planDetails.agentExecutionSequence?.length > 0) {
+    updateStepActions(message, planDetails)
+  }
+  
+  // 处理用户输入等待状态
+  if (planDetails.userInputWaitState) {
+    // TODO: 实现用户输入表单显示逻辑
+    console.log('需要用户输入:', planDetails.userInputWaitState)
+  }
+  
+  // 通知父组件
+  emit('plan-update', planDetails)
+}
+
+// 处理计划完成事件
+const handlePlanCompleted = (details: any) => {
+  if (details && details.planId) {
+    // 找到对应的消息并更新为完成状态
+    const messageIndex = messages.value.findIndex(m => m.planId === details.planId)
+    if (messageIndex !== -1) {
+      const message = messages.value[messageIndex]
+      message.progress = 100
+      message.progressText = '执行完成！'
+      message.content = details.summary || '计划执行完成'
+      
+      emit('plan-completed', details)
     }
   }
-})
+}
+
+// onMounted(() => {
+//   // Initialize with initial prompt if provided
+//   if (props.initialPrompt) {
+//     addMessage('user', props.initialPrompt)
+//     if (props.mode === 'plan') {
+//       handlePlanMode(props.initialPrompt)
+//     } else {
+//       handleDirectMode(props.initialPrompt)
+//     }
+//   }
+// })
 
 onUnmounted(() => {
   // 清理轮询
@@ -622,9 +531,11 @@ onUnmounted(() => {
   
   // 清理计划执行管理器资源
   planExecution.cleanup()
-  
-  // 清理全局事件监听器
-  cleanupGlobalEventListeners()
+})
+
+// 暴露方法给父组件使用
+defineExpose({
+  handleSendMessage
 })
 </script>
 

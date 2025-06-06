@@ -20,6 +20,16 @@ import { DirectApiService } from '@/api/direct-api-service'
 import { CommonApiService } from '@/api/common-api-service'
 import { EVENTS } from '@/constants/events'
 
+// 定义事件回调接口
+interface EventCallbacks {
+  onPlanUpdate?: (data: any) => void
+  onPlanCompleted?: (data: any) => void
+  onDialogRoundStart?: (data: any) => void
+  onMessageUpdate?: (data: any) => void
+  onChatInputUpdateState?: (data: any) => void
+  onChatInputClear?: () => void
+}
+
 interface ExecutionState {
   activePlanId: string | null
   lastSequenceSize: number
@@ -48,8 +58,12 @@ export class PlanExecutionManager {
     pollTimer: null
   })
 
+  // 事件回调
+  private callbacks: EventCallbacks = {}
+
   private constructor() {
-    this.initializeEventListeners()
+    // 移除 window 事件监听器初始化
+    console.log('[PlanExecutionManager] Initialized with callback-based event system')
   }
 
   /**
@@ -77,16 +91,52 @@ export class PlanExecutionManager {
   }
 
   /**
-   * 初始化事件监听器
+   * 设置事件回调
    */
-  private initializeEventListeners(): void {
-    // 监听用户请求发送消息的事件
-    window.addEventListener(EVENTS.USER_MESSAGE_SEND_REQUESTED, this.handleUserMessageSendRequested.bind(this))
+  public setEventCallbacks(callbacks: EventCallbacks): void {
+    this.callbacks = { ...this.callbacks, ...callbacks }
+    console.log('[PlanExecutionManager] Event callbacks set:', Object.keys(callbacks))
+  }
 
-    // 监听计划执行请求事件
-    window.addEventListener(EVENTS.PLAN_EXECUTION_REQUESTED, this.handlePlanExecutionRequested.bind(this))
+  /**
+   * 处理用户消息发送请求
+   */
+  public async handleUserMessageSendRequested(query: string): Promise<void> {
+    if (!this.validateAndPrepareUIForNewRequest(query)) {
+      return
+    }
 
-    console.log('[PlanExecutionManager] Event listeners initialized')
+    try {
+      const response = await this.sendUserMessageAndSetPlanId(query)
+      
+      if (this.state.activePlanId) {
+        this.initiatePlanExecutionSequence(query, this.state.activePlanId)
+      } else {
+        throw new Error('未能获取有效的计划ID')
+      }
+    } catch (error: any) {
+      this.emitMessageUpdate({
+        content: `发送失败: ${error.message}`,
+        type: 'error',
+        planId: this.state.activePlanId
+      })
+      this.emitChatInputUpdateState({ enabled: true })
+      this.state.activePlanId = null
+    }
+  }
+
+  /**
+   * 处理计划执行请求
+   */
+  public handlePlanExecutionRequested(planId: string, query?: string): void {
+    console.log('[PlanExecutionManager] Received plan execution request:', { planId, query })
+    
+    if (planId) {
+      this.state.activePlanId = planId
+      this.initiatePlanExecutionSequence(query || '执行计划', planId)
+    } else {
+      console.error('[PlanExecutionManager] Invalid plan execution request: missing planId')
+    }
   }
 
   /**
@@ -144,50 +194,6 @@ export class PlanExecutionManager {
       query: query
     })
     this.startPolling()
-  }
-
-  /**
-   * 处理用户请求发送消息的事件
-   */
-  private async handleUserMessageSendRequested(event: any): Promise<void> {
-    const { query } = event.detail || {}
-
-    if (!this.validateAndPrepareUIForNewRequest(query)) {
-      return
-    }
-
-    try {
-      const response = await this.sendUserMessageAndSetPlanId(query)
-      
-      if (this.state.activePlanId) {
-        this.initiatePlanExecutionSequence(query, this.state.activePlanId)
-      } else {
-        throw new Error('未能获取有效的计划ID')
-      }
-    } catch (error: any) {
-      this.emitMessageUpdate({
-        content: `发送失败: ${error.message}`,
-        type: 'error',
-        planId: this.state.activePlanId
-      })
-      this.emitChatInputUpdateState({ enabled: true })
-      this.state.activePlanId = null
-    }
-  }
-
-  /**
-   * 处理计划执行请求事件
-   */
-  private handlePlanExecutionRequested(event: any): void {
-    const data = event.detail
-    console.log('[PlanExecutionManager] Received PLAN_EXECUTION_REQUESTED event:', data)
-    
-    if (data && data.planId) {
-      this.state.activePlanId = data.planId
-      this.initiatePlanExecutionSequence(data.query || '执行计划', data.planId)
-    } else {
-      console.error('[PlanExecutionManager] Invalid plan execution request data:', data)
-    }
   }
 
   /**
@@ -311,35 +317,41 @@ export class PlanExecutionManager {
     this.state.isPolling = false
   }
 
-  // Event emission helpers
+  // Event emission helpers - 使用回调函数替代 window 事件
   private emitMessageUpdate(data: any): void {
-    const event = new CustomEvent(EVENTS.MESSAGE_UPDATE, { detail: data })
-    window.dispatchEvent(event)
+    if (this.callbacks.onMessageUpdate) {
+      this.callbacks.onMessageUpdate(data)
+    }
   }
 
   private emitChatInputClear(): void {
-    const event = new CustomEvent(EVENTS.CHAT_INPUT_CLEAR)
-    window.dispatchEvent(event)
+    if (this.callbacks.onChatInputClear) {
+      this.callbacks.onChatInputClear()
+    }
   }
 
   private emitChatInputUpdateState(data: any): void {
-    const event = new CustomEvent(EVENTS.CHAT_INPUT_UPDATE_STATE, { detail: data })
-    window.dispatchEvent(event)
+    if (this.callbacks.onChatInputUpdateState) {
+      this.callbacks.onChatInputUpdateState(data)
+    }
   }
 
   private emitDialogRoundStart(data: any): void {
-    const event = new CustomEvent(EVENTS.DIALOG_ROUND_START, { detail: data })
-    window.dispatchEvent(event)
+    if (this.callbacks.onDialogRoundStart) {
+      this.callbacks.onDialogRoundStart(data)
+    }
   }
 
   private emitPlanUpdate(data: any): void {
-    const event = new CustomEvent(EVENTS.PLAN_UPDATE, { detail: data })
-    window.dispatchEvent(event)
+    if (this.callbacks.onPlanUpdate) {
+      this.callbacks.onPlanUpdate(data)
+    }
   }
 
   private emitPlanCompleted(data: any): void {
-    const event = new CustomEvent(EVENTS.PLAN_COMPLETED, { detail: data })
-    window.dispatchEvent(event)
+    if (this.callbacks.onPlanCompleted) {
+      this.callbacks.onPlanCompleted(data)
+    }
   }
 }
 
