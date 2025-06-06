@@ -18,9 +18,11 @@ package com.alibaba.cloud.ai.graph;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeCondition;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static java.lang.String.format;
+import static java.util.Optional.ofNullable;
 
 /**
  * Abstract class for diagram generation. This class provides a framework for generating
@@ -77,8 +79,9 @@ public abstract class DiagramGenerator {
 		 * non-alphanumeric characters with underscores.
 		 * @return the snake_case formatted string
 		 */
-		public String titleToSnakeCase() {
-			return title.replaceAll("[^a-zA-Z0-9]", "_");
+		public Optional<String> titleToSnakeCase() {
+			return ofNullable(title).map(v -> v.replaceAll("[^a-zA-Z0-9]", "_"));
+
 		}
 
 		/**
@@ -197,7 +200,7 @@ public abstract class DiagramGenerator {
 			if (n instanceof SubGraphNode subGraphNode) {
 
 				@SuppressWarnings("unchecked")
-				var subGraph = (StateGraph) subGraphNode.subGraph();
+				var subGraph = subGraphNode.subGraph();
 				Context subgraphCtx = generate(subGraph.nodes, subGraph.edges,
 						Context.builder()
 							.title(n.id())
@@ -281,10 +284,22 @@ public abstract class DiagramGenerator {
 		call(ctx, k, conditionName, CallStyle.CONDITIONAL);
 
 		condition.mappings().forEach((cond, to) -> {
+			var skipCond = Objects.equals(cond, to);
+
 			commentLine(ctx, !ctx.printConditionalEdge());
-			call(ctx, conditionName, to, cond, CallStyle.CONDITIONAL);
+			if (skipCond) {
+				call(ctx, conditionName, to, CallStyle.CONDITIONAL);
+			}
+			else {
+				call(ctx, conditionName, to, cond, CallStyle.CONDITIONAL);
+			}
 			commentLine(ctx, ctx.printConditionalEdge());
-			call(ctx, k, to, cond, CallStyle.CONDITIONAL);
+			if (skipCond) {
+				call(ctx, k, to, CallStyle.CONDITIONAL);
+			}
+			else {
+				call(ctx, k, to, cond, CallStyle.CONDITIONAL);
+			}
 		});
 	}
 
