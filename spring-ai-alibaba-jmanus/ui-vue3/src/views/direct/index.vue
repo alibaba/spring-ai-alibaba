@@ -43,7 +43,7 @@ const isLoading = ref(false)nse");
       </div>
 
       <!-- Right Panel - Preview -->
-      <RightPanel />
+      <RightPanel ref="rightPanelRef" />
     </div>
   </div>
 </template>
@@ -61,6 +61,7 @@ const router = useRouter()
 
 const prompt = ref<string>('')
 const planExecutionRef = ref()
+const rightPanelRef = ref()
 
 onMounted(() => {
   // Initialize with prompt from conversation page
@@ -69,7 +70,14 @@ onMounted(() => {
 
 const handlePlanUpdate = (planData: any) => {
   console.log('[DirectView] Plan updated:', planData)
-  // 处理计划更新事件
+  // 将计划更新传递给右侧面板
+  try {
+    if (rightPanelRef.value && typeof rightPanelRef.value.handlePlanUpdate === 'function') {
+      rightPanelRef.value.handlePlanUpdate(planData)
+    }
+  } catch (error) {
+    console.error('[DirectView] Error calling rightPanelRef.handlePlanUpdate:', error)
+  }
 }
 
 const handlePlanCompleted = (result: any) => {
@@ -79,7 +87,14 @@ const handlePlanCompleted = (result: any) => {
 
 const handleStepSelected = (planId: string, stepIndex: number) => {
   console.log('[DirectView] Step selected:', planId, stepIndex)
-  // 处理步骤选择事件
+  // 将步骤选择事件传递给右侧面板
+  try {
+    if (rightPanelRef.value && typeof rightPanelRef.value.showStepDetails === 'function') {
+      rightPanelRef.value.showStepDetails(planId, stepIndex)
+    }
+  } catch (error) {
+    console.error('[DirectView] Error calling rightPanelRef.showStepDetails:', error)
+  }
 }
 
 const handleDialogRoundStart = (planId: string, query: string) => {
@@ -118,6 +133,7 @@ const goBack = () => {
   display: flex;
   flex-direction: column;
   max-height: 100vh;
+  overflow: hidden; /* 防止面板本身溢出 */
 }
 
 .chat-header {
@@ -127,6 +143,7 @@ const goBack = () => {
   align-items: center;
   gap: 16px;
   background: rgba(255, 255, 255, 0.02);
+  flex-shrink: 0; /* 确保头部不会被压缩 */
 
   h2 {
     flex: 1;

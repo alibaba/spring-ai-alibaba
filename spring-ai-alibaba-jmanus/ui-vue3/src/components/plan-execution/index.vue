@@ -105,7 +105,10 @@ const handlePlanManagerUpdate = (planData: any) => {
   
   // 将计划更新传递给 chat container
   if (chatRef.value && typeof chatRef.value.handlePlanUpdate === 'function') {
+    console.log('[PlanExecutionComponent] Calling chatRef.handlePlanUpdate with:', planData)
     chatRef.value.handlePlanUpdate(planData)
+  } else {
+    console.warn('[PlanExecutionComponent] chatRef.value.handlePlanUpdate is not available:', chatRef.value)
   }
   
   // 更新加载状态

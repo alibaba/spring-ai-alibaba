@@ -168,6 +168,13 @@ onUnmounted(() => {
   padding: 20px 24px;
   border-top: 1px solid #1a1a1a;
   background: rgba(255, 255, 255, 0.02);
+  /* 确保输入区域始终在底部 */
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  /* 添加轻微的阴影以区分消息区域 */
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(20px);
 }
 
 .input-container {

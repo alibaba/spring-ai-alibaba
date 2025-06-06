@@ -104,29 +104,56 @@
 
           <div class="think-act-steps" v-if="selectedStep.agentExecution?.thinkActSteps?.length > 0">
             <h4>思考与行动步骤</h4>
-            <div 
-              v-for="(thinkActStep, index) in selectedStep.agentExecution.thinkActSteps"
-              :key="index"
-              class="think-act-step"
-            >
-              <div class="step-header">
-                <Icon icon="carbon:thinking" v-if="thinkActStep.type === 'think'" />
-                <Icon icon="carbon:play" v-else />
-                <span class="step-type">{{ thinkActStep.type === 'think' ? '思考' : '行动' }}</span>
-              </div>
-              <div class="step-content">
-                <div v-if="thinkActStep.content" class="content-text">
-                  {{ thinkActStep.content }}
+            <div class="steps-container">
+              <div 
+                v-for="(tas, index) in selectedStep.agentExecution.thinkActSteps"
+                :key="index"
+                class="think-act-step"
+              >
+                <div class="step-header">
+                  <span class="step-number">#{{ index + 1 }}</span>
+                  <span class="step-status" :class="tas.status">{{ tas.status || '执行中' }}</span>
                 </div>
-                <div v-if="thinkActStep.toolCall" class="tool-call">
-                  <strong>工具调用:</strong> {{ thinkActStep.toolCall }}
+                
+                <!-- 思考部分 - 严格按照 right-sidebar.js 的逻辑 -->
+                <div class="think-section">
+                  <h5><Icon icon="carbon:thinking" /> 思考</h5>
+                  <div class="think-content">
+                    <div class="input">
+                      <span class="label">输入:</span>
+                      <pre>{{ formatJson(tas.thinkInput) }}</pre>
+                    </div>
+                    <div class="output">
+                      <span class="label">输出:</span>
+                      <pre>{{ formatJson(tas.thinkOutput) }}</pre>
+                    </div>
+                  </div>
                 </div>
-                <div v-if="thinkActStep.observation" class="observation">
-                  <strong>观察结果:</strong> 
-                  <pre>{{ formatJson(thinkActStep.observation) }}</pre>
+                
+                <!-- 行动部分 - 严格按照 right-sidebar.js 的逻辑 -->
+                <div v-if="tas.actionNeeded" class="action-section">
+                  <h5><Icon icon="carbon:play" /> 行动</h5>
+                  <div class="action-content">
+                    <div class="tool-info">
+                      <span class="label">工具:</span>
+                      <span class="value">{{ tas.toolName || '' }}</span>
+                    </div>
+                    <div class="input">
+                      <span class="label">工具参数:</span>
+                      <pre>{{ formatJson(tas.toolParameters) }}</pre>
+                    </div>
+                    <div class="output">
+                      <span class="label">执行结果:</span>
+                      <pre>{{ formatJson(tas.actionResult) }}</pre>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
+          
+          <div v-else-if="selectedStep.agentExecution && !selectedStep.agentExecution.thinkActSteps?.length" class="no-steps-message">
+            <p>暂无详细步骤信息</p>
           </div>
 
           <div class="execution-status">
@@ -162,14 +189,13 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import MonacoEditor from '@/components/editor/index.vue'
-import { EVENTS } from '@/constants/events'
 
-const activeTab = ref('chat')
+const activeTab = ref('details')
 
 const previewTabs = [
+  { id: 'details', name: '步骤执行详情', icon: 'carbon:events' },
   { id: 'chat', name: 'Chat', icon: 'carbon:chat' },
   { id: 'code', name: 'Code', icon: 'carbon:code' },
-  { id: 'details', name: '步骤执行详情', icon: 'carbon:events' },
 ]
 
 // 计划数据映射 (类似 right-sidebar.js 的 planDataMap)
@@ -177,12 +203,8 @@ const planDataMap = ref<Map<string, any>>(new Map())
 const currentDisplayedPlanId = ref<string>()
 const selectedStep = ref<any>()
 
-// 事件监听器存储
-const eventListeners = ref<(() => void)[]>([])
-
-// 处理计划更新事件
-const handlePlanUpdate = (event: CustomEvent) => {
-  const planData = event.detail
+// 处理计划更新事件 - 改为直接方法调用
+const handlePlanUpdate = (planData: any) => {
   if (!planData?.planId) return
   
   planDataMap.value.set(planData.planId, planData)
@@ -193,11 +215,7 @@ const handlePlanUpdate = (event: CustomEvent) => {
   }
 }
 
-// 处理步骤选择事件 
-const handleStepSelection = (event: CustomEvent) => {
-  const { planId, stepIndex } = event.detail
-  showStepDetails(planId, stepIndex)
-}
+// 删除原来的 handleStepSelection 方法，直接使用 showStepDetails
 
 // 更新显示的计划进度
 const updateDisplayedPlanProgress = (planData: any) => {
@@ -209,12 +227,13 @@ const updateDisplayedPlanProgress = (planData: any) => {
   }
 }
 
-// 显示步骤详情
+// 显示步骤详情 - 参照 right-sidebar.js 的逻辑
 const showStepDetails = (planId: string, stepIndex: number) => {
   const planData = planDataMap.value.get(planId)
   
   if (!planData || !planData.steps || stepIndex >= planData.steps.length) {
     selectedStep.value = null
+    console.log('[RightPanel] Invalid step data:', { planId, stepIndex, hasSteps: !!planData?.steps })
     return
   }
   
@@ -222,20 +241,27 @@ const showStepDetails = (planId: string, stepIndex: number) => {
   const step = planData.steps[stepIndex]
   const agentExecution = planData.agentExecutionSequence && planData.agentExecutionSequence[stepIndex]
   
+  // 构造步骤详情对象，类似 right-sidebar.js 的逻辑
   selectedStep.value = {
     index: stepIndex,
-    title: step.title || step.description || step,
-    description: step.description || step,
+    title: typeof step === 'string' ? step : (step.title || step.description || step.name || `步骤 ${stepIndex + 1}`),
+    description: typeof step === 'string' ? step : (step.description || step),
     agentExecution: agentExecution,
     completed: agentExecution?.isCompleted || false,
     current: planData.currentStepIndex === stepIndex,
   }
   
-  // 自动切换到详情标签页
-  activeTab.value = 'details'
+  console.log('[RightPanel] Step details updated:', {
+    planId,
+    stepIndex,
+    stepTitle: selectedStep.value.title,
+    hasAgentExecution: !!agentExecution,
+    hasThinkActSteps: !!agentExecution?.thinkActSteps?.length,
+    thinkActStepsData: agentExecution?.thinkActSteps // 添加详细的数据结构日志
+  })
 }
 
-// 格式化JSON显示
+// 格式化JSON显示 - 按照 right-sidebar.js 的逻辑
 const formatJson = (jsonData: any): string => {
   if (jsonData === null || typeof jsonData === 'undefined' || jsonData === '') {
     return 'N/A'
@@ -244,6 +270,7 @@ const formatJson = (jsonData: any): string => {
     const jsonObj = typeof jsonData === 'object' ? jsonData : JSON.parse(jsonData)
     return JSON.stringify(jsonObj, null, 2)
   } catch (e) {
+    // 如果解析失败，直接返回字符串形式（类似 right-sidebar.js 的 _escapeHtml）
     return String(jsonData)
   }
 }
@@ -255,26 +282,14 @@ const getStepStatusText = (step: any): string => {
   return '等待执行'
 }
 
-// 生命周期 - 挂载时添加事件监听
+// 生命周期 - 挂载时的初始化（移除全局事件监听）
 onMounted(() => {
-  // 监听计划更新事件
-  const planUpdateListener = (event: Event) => handlePlanUpdate(event as CustomEvent)
-  window.addEventListener(EVENTS.PLAN_UPDATE, planUpdateListener)
-  eventListeners.value.push(() => window.removeEventListener(EVENTS.PLAN_UPDATE, planUpdateListener))
-  
-  // 监听步骤选择事件 (自定义事件，用于步骤点击)
-  const stepSelectionListener = (event: Event) => handleStepSelection(event as CustomEvent)
-  window.addEventListener('ui:step:selected', stepSelectionListener)
-  eventListeners.value.push(() => window.removeEventListener('ui:step:selected', stepSelectionListener))
-  
-  console.log('右侧面板组件已挂载，事件监听器已添加')
+  console.log('右侧面板组件已挂载')
 })
 
-// 生命周期 - 卸载时移除事件监听
+// 生命周期 - 卸载时的清理（移除全局事件监听相关）
 onUnmounted(() => {
-  eventListeners.value.forEach(removeListener => removeListener())
-  eventListeners.value = []
-  console.log('右侧面板组件已卸载，事件监听器已移除')
+  console.log('右侧面板组件已卸载')
 })
 
 const codeContent = ref(`// Generated Spring Boot REST API
@@ -369,6 +384,13 @@ const downloadCode = () => {
   a.click()
   URL.revokeObjectURL(url)
 }
+
+// 暴露给父组件的方法
+defineExpose({
+  handlePlanUpdate,
+  showStepDetails,
+  updateDisplayedPlanProgress
+})
 </script>
 
 <style lang="less" scoped>
@@ -578,53 +600,118 @@ const downloadCode = () => {
   }
 }
 
+.steps-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .think-act-step {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 16px;
-  margin-bottom: 12px;
   
   .step-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
+    justify-content: space-between;
+    margin-bottom: 16px;
     
-    .step-type {
+    .step-number {
+      font-weight: 600;
+      color: #667eea;
+      font-size: 14px;
+    }
+    
+    .step-status {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      
+      &.completed {
+        background: rgba(39, 174, 96, 0.2);
+        color: #27ae60;
+      }
+      
+      &.running {
+        background: rgba(52, 152, 219, 0.2);
+        color: #3498db;
+      }
+      
+      &.pending {
+        background: rgba(243, 156, 18, 0.2);
+        color: #f39c12;
+      }
+    }
+  }
+  
+  .think-section, .action-section {
+    margin-bottom: 16px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    h5 {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 0 12px 0;
+      font-size: 14px;
       font-weight: 600;
       color: #ffffff;
     }
   }
   
-  .step-content {
-    .content-text {
-      color: #cccccc;
+  .think-content, .action-content {
+    .input, .output, .tool-info {
       margin-bottom: 12px;
-      line-height: 1.5;
-    }
-    
-    .tool-call, .observation {
-      margin-bottom: 8px;
       
-      strong {
-        color: #ffffff;
+      &:last-child {
+        margin-bottom: 0;
+      }
+      
+      .label {
         display: block;
+        font-weight: 600;
+        color: #888888;
         margin-bottom: 4px;
+        font-size: 12px;
+      }
+      
+      .value {
+        color: #cccccc;
+        font-size: 14px;
       }
       
       pre {
         background: rgba(0, 0, 0, 0.3);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 4px;
-        padding: 8px;
+        padding: 12px;
         color: #cccccc;
         font-size: 12px;
         overflow-x: auto;
         white-space: pre-wrap;
         margin: 0;
+        line-height: 1.4;
+        max-height: 200px;
+        overflow-y: auto;
       }
     }
+  }
+}
+
+.no-steps-message {
+  text-align: center;
+  color: #666666;
+  font-style: italic;
+  margin-top: 16px;
+  
+  p {
+    margin: 0;
   }
 }
 

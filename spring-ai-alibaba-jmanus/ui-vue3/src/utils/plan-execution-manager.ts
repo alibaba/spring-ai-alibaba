@@ -169,12 +169,16 @@ export class PlanExecutionManager {
    */
   private async sendUserMessageAndSetPlanId(query: string): Promise<any> {
     try {
-      // 使用计划模式API生成计划
-      const response = await PlanActApiService.generatePlan(query)
+      // 使用直接执行模式API发送消息
+      const response = await DirectApiService.sendMessage(query)
       
       if (response && response.planId) {
         this.state.activePlanId = response.planId
         return response
+      } else if (response && response.planTemplateId) {
+        // 如果响应中有planTemplateId而不是planId
+        this.state.activePlanId = response.planTemplateId
+        return { ...response, planId: response.planTemplateId }
       }
       
       console.error('[PlanExecutionManager] Failed to get planId from response:', response)
@@ -251,7 +255,10 @@ export class PlanExecutionManager {
       }
 
       if (!details.steps || details.steps.length === 0) {
-        console.warn('[PlanExecutionManager] No steps found in plan details')
+        console.log('[PlanExecutionManager] Simple response without steps detected, handling as completed')
+        // For simple responses, emit completion directly
+        this.emitPlanUpdate({ ...details, planId: this.state.activePlanId, completed: true })
+        this.handlePlanCompletion(details)
         return
       }
 
