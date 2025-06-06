@@ -60,7 +60,7 @@ const toggleSidebar = () => {
 
 const navigateTo = (id: number) => {
   activeId.value = id
-  router.push(`/plan/${id}`)
+  router.push(`/direct/${id}`)
 }
 
 const handleConfig = () => {
@@ -162,7 +162,6 @@ const mockHistory = reactive(mockData)
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      text-fill-color: transparent;
       /* margin-bottom: 12px; */
       overflow: hidden;
       text-overflow: ellipsis;

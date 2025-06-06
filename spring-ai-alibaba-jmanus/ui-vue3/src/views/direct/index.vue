@@ -17,23 +17,23 @@ const isLoading = ref(false)nse");
  * limitations under the License.
 -->
 <template>
-  <div class="plan-page">
+  <div class="direct-page">
     <Sidebar />
-    <div class="plan">
+    <div class="direct-chat">
       <!-- Left Panel - Chat -->
       <div class="left-panel">
         <div class="chat-header">
           <button class="back-button" @click="goBack">
             <Icon icon="carbon:arrow-left" />
           </button>
-          <h2>Task Planning</h2>
-          <!-- <button class="new-chat-button" @click="newChat">
-            <Icon icon="carbon:add" />
-            New
-          </button> -->
+          <h2>Direct Chat</h2>
         </div>
 
-        <ChatContainer :initial-prompt="prompt" />
+        <ChatContainer 
+          :initial-prompt="prompt" 
+          mode="direct"
+          @[EVENTS.USER_MESSAGE_SEND_REQUESTED]="handleMessageSent"
+        />
       </div>
 
       <!-- Right Panel - Preview -->
@@ -49,6 +49,7 @@ import { Icon } from '@iconify/vue'
 import Sidebar from '@/components/sidebar/index.vue'
 import RightPanel from '@/components/right-panel/index.vue'
 import ChatContainer from '@/components/chat/index.vue'
+import { EVENTS } from '@/constants/events'
 
 const route = useRoute()
 const router = useRouter()
@@ -60,23 +61,24 @@ onMounted(() => {
   prompt.value = (route.query.prompt as string) || ''
 })
 
-const goBack = () => {
-  router.push('/home')
+const handleMessageSent = (message: string) => {
+  console.log('Message sent:', message)
+  // 可以在这里处理消息发送的逻辑
 }
 
-const newChat = () => {
+const goBack = () => {
   router.push('/home')
 }
 </script>
 
 <style lang="less" scoped>
-.plan-page {
+.direct-page {
   width: 100%;
   display: flex;
   position: relative;
 }
 
-.plan {
+.direct-chat {
   height: 100vh;
   width: 100%;
   background: #0a0a0a;

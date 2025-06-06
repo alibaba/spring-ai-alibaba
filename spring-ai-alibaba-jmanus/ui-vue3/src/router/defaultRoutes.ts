@@ -45,11 +45,11 @@ export const routes: Readonly<RouteRecordType[]> = [
         },
       },
       {
-        path: '/plan/:id?',
-        name: 'plan',
-        component: () => import('../views/plan/index.vue'),
+        path: '/direct/:id?',
+        name: 'direct',
+        component: () => import('../views/direct/index.vue'),
         meta: {
-          icon: 'carbon:plan',
+          icon: 'carbon:chat',
           fullscreen: true,
         },
       },

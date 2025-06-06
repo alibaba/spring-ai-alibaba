@@ -134,11 +134,11 @@ const handleKeydown = (event: KeyboardEvent) => {
 const handleSend = () => {
   if (!userInput.value.trim()) return
 
-  // Navigate to plan page with the user input
-  const planId = Date.now().toString()
+  // Navigate to direct chat page with the user input
+  const chatId = Date.now().toString()
   router.push({
-    name: 'plan',
-    params: { id: planId },
+    name: 'direct',
+    params: { id: chatId },
     query: { prompt: userInput.value },
   })
 }

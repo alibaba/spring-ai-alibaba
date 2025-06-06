@@ -76,6 +76,78 @@
         </div>
       </div>
 
+      <!-- Step Execution Details -->
+      <div v-else-if="activeTab === 'details'" class="step-details">
+        <div v-if="selectedStep" class="step-info">
+          <h3>{{ selectedStep.title || selectedStep.description || `步骤 ${selectedStep.index + 1}` }}</h3>
+          
+          <div class="agent-info" v-if="selectedStep.agentExecution">
+            <div class="info-item">
+              <span class="label">执行智能体:</span>
+              <span class="value">{{ selectedStep.agentExecution.agentName }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">描述:</span>
+              <span class="value">{{ selectedStep.agentExecution.agentDescription || '' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">请求:</span>
+              <span class="value">{{ selectedStep.agentExecution.agentRequest || '' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">执行结果:</span>
+              <span class="value" :class="{ success: selectedStep.agentExecution.isCompleted }">
+                {{ selectedStep.agentExecution.result || '执行中...' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="think-act-steps" v-if="selectedStep.agentExecution?.thinkActSteps?.length > 0">
+            <h4>思考与行动步骤</h4>
+            <div 
+              v-for="(thinkActStep, index) in selectedStep.agentExecution.thinkActSteps"
+              :key="index"
+              class="think-act-step"
+            >
+              <div class="step-header">
+                <Icon icon="carbon:thinking" v-if="thinkActStep.type === 'think'" />
+                <Icon icon="carbon:play" v-else />
+                <span class="step-type">{{ thinkActStep.type === 'think' ? '思考' : '行动' }}</span>
+              </div>
+              <div class="step-content">
+                <div v-if="thinkActStep.content" class="content-text">
+                  {{ thinkActStep.content }}
+                </div>
+                <div v-if="thinkActStep.toolCall" class="tool-call">
+                  <strong>工具调用:</strong> {{ thinkActStep.toolCall }}
+                </div>
+                <div v-if="thinkActStep.observation" class="observation">
+                  <strong>观察结果:</strong> 
+                  <pre>{{ formatJson(thinkActStep.observation) }}</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="execution-status">
+            <div class="status-item">
+              <Icon icon="carbon:checkmark-filled" v-if="selectedStep.completed" class="status-icon success" />
+              <Icon icon="carbon:in-progress" v-else-if="selectedStep.current" class="status-icon progress" />
+              <Icon icon="carbon:time" v-else class="status-icon pending" />
+              <span class="status-text">
+                {{ getStepStatusText(selectedStep) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="no-selection">
+          <Icon icon="carbon:events" class="empty-icon" />
+          <h3>未选择执行步骤</h3>
+          <p>请在左侧聊天区域点击任意执行步骤查看详情</p>
+        </div>
+      </div>
+
       <!-- Empty State -->
       <div v-else class="empty-preview">
         <Icon icon="carbon:document" class="empty-icon" />
@@ -87,16 +159,123 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import MonacoEditor from '@/components/editor/index.vue'
+import { EVENTS } from '@/constants/events'
 
 const activeTab = ref('chat')
 
 const previewTabs = [
   { id: 'chat', name: 'Chat', icon: 'carbon:chat' },
   { id: 'code', name: 'Code', icon: 'carbon:code' },
+  { id: 'details', name: '步骤执行详情', icon: 'carbon:events' },
 ]
+
+// 计划数据映射 (类似 right-sidebar.js 的 planDataMap)
+const planDataMap = ref<Map<string, any>>(new Map())
+const currentDisplayedPlanId = ref<string>()
+const selectedStep = ref<any>()
+
+// 事件监听器存储
+const eventListeners = ref<(() => void)[]>([])
+
+// 处理计划更新事件
+const handlePlanUpdate = (event: CustomEvent) => {
+  const planData = event.detail
+  if (!planData?.planId) return
+  
+  planDataMap.value.set(planData.planId, planData)
+  
+  // 如果是当前显示的计划，更新显示
+  if (planData.planId === currentDisplayedPlanId.value) {
+    updateDisplayedPlanProgress(planData)
+  }
+}
+
+// 处理步骤选择事件 
+const handleStepSelection = (event: CustomEvent) => {
+  const { planId, stepIndex } = event.detail
+  showStepDetails(planId, stepIndex)
+}
+
+// 更新显示的计划进度
+const updateDisplayedPlanProgress = (planData: any) => {
+  // 这里可以更新UI状态，比如进度条等
+  if (planData.steps && planData.steps.length > 0) {
+    const totalSteps = planData.steps.length
+    const currentStep = (planData.currentStepIndex || 0) + 1
+    console.log(`进度: ${currentStep} / ${totalSteps}`)
+  }
+}
+
+// 显示步骤详情
+const showStepDetails = (planId: string, stepIndex: number) => {
+  const planData = planDataMap.value.get(planId)
+  
+  if (!planData || !planData.steps || stepIndex >= planData.steps.length) {
+    selectedStep.value = null
+    return
+  }
+  
+  currentDisplayedPlanId.value = planId
+  const step = planData.steps[stepIndex]
+  const agentExecution = planData.agentExecutionSequence && planData.agentExecutionSequence[stepIndex]
+  
+  selectedStep.value = {
+    index: stepIndex,
+    title: step.title || step.description || step,
+    description: step.description || step,
+    agentExecution: agentExecution,
+    completed: agentExecution?.isCompleted || false,
+    current: planData.currentStepIndex === stepIndex,
+  }
+  
+  // 自动切换到详情标签页
+  activeTab.value = 'details'
+}
+
+// 格式化JSON显示
+const formatJson = (jsonData: any): string => {
+  if (jsonData === null || typeof jsonData === 'undefined' || jsonData === '') {
+    return 'N/A'
+  }
+  try {
+    const jsonObj = typeof jsonData === 'object' ? jsonData : JSON.parse(jsonData)
+    return JSON.stringify(jsonObj, null, 2)
+  } catch (e) {
+    return String(jsonData)
+  }
+}
+
+// 获取步骤状态文本
+const getStepStatusText = (step: any): string => {
+  if (step.completed) return '已完成'
+  if (step.current) return '执行中'
+  return '等待执行'
+}
+
+// 生命周期 - 挂载时添加事件监听
+onMounted(() => {
+  // 监听计划更新事件
+  const planUpdateListener = (event: Event) => handlePlanUpdate(event as CustomEvent)
+  window.addEventListener(EVENTS.PLAN_UPDATE, planUpdateListener)
+  eventListeners.value.push(() => window.removeEventListener(EVENTS.PLAN_UPDATE, planUpdateListener))
+  
+  // 监听步骤选择事件 (自定义事件，用于步骤点击)
+  const stepSelectionListener = (event: Event) => handleStepSelection(event as CustomEvent)
+  window.addEventListener('ui:step:selected', stepSelectionListener)
+  eventListeners.value.push(() => window.removeEventListener('ui:step:selected', stepSelectionListener))
+  
+  console.log('右侧面板组件已挂载，事件监听器已添加')
+})
+
+// 生命周期 - 卸载时移除事件监听
+onUnmounted(() => {
+  eventListeners.value.forEach(removeListener => removeListener())
+  eventListeners.value = []
+  console.log('右侧面板组件已卸载，事件监听器已移除')
+})
 
 const codeContent = ref(`// Generated Spring Boot REST API
 @RestController
@@ -344,6 +523,170 @@ const downloadCode = () => {
     margin: 0;
     font-size: 14px;
     text-align: center;
+  }
+}
+
+/* 步骤详情样式 */
+.step-details {
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.step-info {
+  h3 {
+    color: #ffffff;
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    font-weight: 600;
+  }
+}
+
+.agent-info {
+  margin-bottom: 16px;
+  
+  .info-item {
+    display: flex;
+    margin-bottom: 8px;
+    
+    .label {
+      font-weight: 600;
+      color: #888888;
+      min-width: 80px;
+      margin-right: 12px;
+    }
+    
+    .value {
+      color: #cccccc;
+      flex: 1;
+      
+      &.success {
+        color: #27ae60;
+      }
+    }
+  }
+}
+
+.think-act-steps {
+  margin-top: 24px;
+  
+  h4 {
+    color: #ffffff;
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+}
+
+.think-act-step {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    
+    .step-type {
+      font-weight: 600;
+      color: #ffffff;
+    }
+  }
+  
+  .step-content {
+    .content-text {
+      color: #cccccc;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    
+    .tool-call, .observation {
+      margin-bottom: 8px;
+      
+      strong {
+        color: #ffffff;
+        display: block;
+        margin-bottom: 4px;
+      }
+      
+      pre {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        padding: 8px;
+        color: #cccccc;
+        font-size: 12px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        margin: 0;
+      }
+    }
+  }
+}
+
+.execution-status {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    
+    .status-icon {
+      font-size: 16px;
+      
+      &.success {
+        color: #27ae60;
+      }
+      
+      &.progress {
+        color: #3498db;
+      }
+      
+      &.pending {
+        color: #f39c12;
+      }
+    }
+    
+    .status-text {
+      color: #cccccc;
+      font-weight: 500;
+    }
+  }
+}
+
+.no-selection {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #666666;
+  
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #444444;
+  }
+  
+  h3 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    color: #888888;
+  }
+  
+  p {
+    margin: 0;
+    font-size: 14px;
+    text-align: center;
+    max-width: 300px;
+    line-height: 1.5;
   }
 }
 </style>

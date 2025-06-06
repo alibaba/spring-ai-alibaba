@@ -16,28 +16,39 @@
 <template>
   <div class="input-area">
     <div class="input-container">
+      <button class="attach-btn" title="附加文件">
+        <Icon icon="carbon:attachment" />
+      </button>
       <textarea
         v-model="currentInput"
         ref="inputRef"
         class="chat-input"
-        :placeholder="placeholder"
+        :placeholder="currentPlaceholder"
+        :disabled="disabled"
         @keydown="handleKeydown"
         @input="adjustInputHeight"
       ></textarea>
+      <button class="plan-mode-btn" title="进入计划模式">
+        <Icon icon="carbon:document" />
+        计划模式
+      </button>
       <button
         class="send-button"
         :disabled="!currentInput.trim() || disabled"
         @click="handleSend"
+        title="发送"
       >
         <Icon icon="carbon:send-alt" />
+        发送
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
+import { EVENTS } from '@/constants/events'
 
 interface Props {
   placeholder?: string
@@ -49,7 +60,7 @@ interface Emits {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: 'Ask a follow-up question or provide more details...',
+  placeholder: '向 JTaskPilot 发送消息',
   disabled: false,
 })
 
@@ -57,6 +68,10 @@ const emit = defineEmits<Emits>()
 
 const inputRef = ref<HTMLTextAreaElement>()
 const currentInput = ref('')
+const currentPlaceholder = ref(props.placeholder)
+
+// 监听全局事件来清空输入和更新状态
+const eventBus = ref<any>()
 
 const adjustInputHeight = () => {
   nextTick(() => {
@@ -77,12 +92,76 @@ const handleKeydown = (event: KeyboardEvent) => {
 const handleSend = () => {
   if (!currentInput.value.trim() || props.disabled) return
 
-  const message = currentInput.value
+  const query = currentInput.value.trim()
+  
+  // 发布用户请求发送消息的事件（类似 chat-input.js 的逻辑）
+  // 这里我们仍然使用组件的 emit，但可以扩展为全局事件
+  emit('send', query)
+  
+  // 清空输入
+  clearInput()
+}
+
+/**
+ * 处理消息发送完成后的逻辑
+ * @param {string} message - 发送的消息
+ */
+const handleMessageSent = (message: string) => {
+  // 触发全局事件，通知其他组件消息已发送
+  const event = new CustomEvent(EVENTS.USER_MESSAGE_SEND_REQUESTED, {
+    detail: { message }
+  })
+  window.dispatchEvent(event)
+  
+  // 可以在这里添加其他后处理逻辑，比如分析、日志等
+  console.log('Message sent:', message)
+}
+
+/**
+ * 清空输入框
+ */
+const clearInput = () => {
   currentInput.value = ''
   adjustInputHeight()
-  
-  emit('send', message)
 }
+
+/**
+ * 更新输入区域的状态（启用/禁用）
+ * @param {boolean} enabled - 是否启用输入
+ * @param {string} [placeholder] - 启用时的占位文本
+ */
+const updateState = (enabled: boolean, placeholder?: string) => {
+  if (placeholder) {
+    currentPlaceholder.value = enabled ? placeholder : '等待任务完成...'
+  }
+  // disabled 属性通过 props 控制，这里主要处理 placeholder
+}
+
+/**
+ * 获取当前输入框的值
+ * @returns {string} 当前输入框的文本值 (已去除首尾空格)
+ */
+const getQuery = () => {
+  return currentInput.value.trim()
+}
+
+// 暴露方法给父组件使用（如果需要）
+defineExpose({
+  clearInput,
+  updateState,
+  getQuery,
+  handleMessageSent,
+  focus: () => inputRef.value?.focus()
+})
+
+onMounted(() => {
+  // 如果需要监听全局事件，可以在这里添加
+  // 目前使用组件间通信方式
+})
+
+onUnmounted(() => {
+  // 清理事件监听
+})
 </script>
 
 <style lang="less" scoped>
@@ -94,19 +173,41 @@ const handleSend = () => {
 }
 
 .input-container {
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  padding: 12px 50px 12px 16px;
+  padding: 12px 16px;
 
   &:focus-within {
     border-color: #667eea;
   }
 }
 
+.attach-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+  }
+}
+
 .chat-input {
-  width: 100%;
+  flex: 1;
   background: transparent;
   border: none;
   outline: none;
@@ -120,22 +221,50 @@ const handleSend = () => {
   &::placeholder {
     color: #666666;
   }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    
+    &::placeholder {
+      color: #444444;
+    }
+  }
+}
+
+.plan-mode-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #667eea;
+    transform: translateY(-1px);
+  }
 }
 
 .send-button {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  width: 32px;
-  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
   border: none;
   border-radius: 6px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #ffffff;
+  font-size: 12px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   transition: all 0.2s ease;
 
   &:hover:not(:disabled) {
