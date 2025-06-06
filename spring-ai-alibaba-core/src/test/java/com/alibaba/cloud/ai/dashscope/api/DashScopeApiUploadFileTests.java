@@ -91,7 +91,7 @@ class DashScopeApiUploadFileTests {
 	}
 
 	/**
-	 * 测试uploadFile方法的正常执行流程 验证方法能够正确处理带有Content-Type的情况
+	 * Test the normal execution flow of the uploadFile method Verify that the method handles the case with Content-Type correctly
 	 */
 	@Test
 	void testUploadFileWithContentType() throws Exception {
@@ -125,7 +125,7 @@ class DashScopeApiUploadFileTests {
 	}
 
 	/**
-	 * 测试uploadFile方法的正常执行流程 验证方法能够正确处理没有Content-Type的情况
+	 * Test the normal execution flow of the uploadFile method Verify that the method handles the absence of a Content-Type correctly
 	 */
 	@Test
 	void testUploadFileWithoutContentType() throws Exception {
