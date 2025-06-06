@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.autoconfigure.mcp.client;
 
 import com.alibaba.cloud.ai.mcp.nacos2.NacosMcpProperties;
-import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingFactory;
 import com.alibaba.nacos.api.naming.NamingService;
@@ -28,8 +27,6 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -45,44 +42,26 @@ public class Nacos2McpAutoConfiguration {
 	public Nacos2McpAutoConfiguration() {
 	}
 
-	@Bean(name = "namespace2NamingService")
-	public Map<String, NamingService> namespace2NamingService(NacosMcpProperties nacosMcpProperties,
-			Nacos2McpSseClientProperties nacos2McpSseClientProperties) {
+	@Bean
+	public NamingService namespace2NamingService(NacosMcpProperties nacosMcpProperties) {
 		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
-		Map<String, NamingService> namespace2NamingService = new HashMap<>();
-		for (Nacos2McpSseClientProperties.NacosSseParameters nacosSseParameters : nacos2McpSseClientProperties
-			.getConnections()
-			.values()) {
-			nacosProperties.put(PropertyKeyConst.NAMESPACE, nacosSseParameters.serviceNamespace());
-			try {
-				NamingService namingService = NamingFactory.createNamingService(nacosProperties);
-				namespace2NamingService.put(nacosSseParameters.serviceNamespace(), namingService);
-			}
-			catch (NacosException e) {
-				logger.warn("nacos naming service: {} error", nacosSseParameters.serviceName(), e);
-			}
+		try {
+			return NamingFactory.createNamingService(nacosProperties);
 		}
-		return namespace2NamingService;
+		catch (NacosException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
-	@Bean(name = "namespace2NacosConfigService")
-	public Map<String, NacosConfigService> namespace2NacosConfigService(NacosMcpProperties nacosMcpProperties,
-			Nacos2McpSseClientProperties nacos2McpSseClientProperties) {
+	@Bean
+	public NacosConfigService namespace2NacosConfigService(NacosMcpProperties nacosMcpProperties) {
 		Properties nacosProperties = nacosMcpProperties.getNacosProperties();
-		Map<String, NacosConfigService> namespace2NacosConfigService = new HashMap<>();
-		for (Nacos2McpSseClientProperties.NacosSseParameters nacosSseParameters : nacos2McpSseClientProperties
-			.getConnections()
-			.values()) {
-			nacosProperties.put(PropertyKeyConst.NAMESPACE, nacosSseParameters.serviceNamespace());
-			try {
-				NacosConfigService nacosConfigService = new NacosConfigService(nacosProperties);
-				namespace2NacosConfigService.put(nacosSseParameters.serviceNamespace(), nacosConfigService);
-			}
-			catch (NacosException e) {
-				logger.warn("nacos naming service: {} error", nacosSseParameters.serviceName(), e);
-			}
+		try {
+			return new NacosConfigService(nacosProperties);
 		}
-		return namespace2NacosConfigService;
+		catch (NacosException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 }
