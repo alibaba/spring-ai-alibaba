@@ -14,7 +14,7 @@
 
 <p align="center">
     <img src="./docs/imgs/spring-ai-alibaba-architecture.png" alt="PlayGround" style="max-width: 740px; height: 508px" /> 
-</p>p>
+</p>
 
 
 Spring AI Alibaba 提供以下核心能力，帮助开发者快速构建自己的 Agent、Workflow 或 Multi-agent 应用：
@@ -50,7 +50,7 @@ Spring AI Alibaba 提供以下核心能力，帮助开发者快速构建自己�
 
 请查看官网 [快速开始](https://java2ai.com/docs/1.0.0/get-started/) 了解详细示例讲解。更多 starter 包括 spring-ai-alibaba-graph-core、spring-ai-alibaba-starter-nl2sql、spring-ai-alibaba-starter-nacos-mcp-client 等用法，请参考官方网文档资料。
 
-> 注意！
+> 注意：
 > 1. 运行项目需要 JDK 17 及以上版本。
 > 2. 如果出现 spring-ai 相关依赖下载问题，请参考官网文档配置 spring-milestones Maven 仓库。
 
@@ -61,7 +61,7 @@ Spring AI Alibaba 官方社区开发了一个**包含完整 `前端UI+后端实�
 整体运行后的界面效果如下所示：
 
 <p align="center">
-	<img src="./docs/imgs/playground.png" alt="PlayGround" style="max-width: 1017px; height: 607px" /> 
+	<img src="./docs/imgs/playground.png" alt="PlayGround" style="max-width: 949px; height: 567px" /> 
 </p>    
 
 
