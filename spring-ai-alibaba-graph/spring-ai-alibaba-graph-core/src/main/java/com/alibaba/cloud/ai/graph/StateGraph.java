@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
@@ -509,11 +510,10 @@ public class StateGraph {
 	 * @param sourceId the identifier of the source node
 	 * @param condition the condition to determine the target node
 	 * @param mappings the mappings of conditions to target nodes
-	 * @return the state graph
 	 * @throws GraphStateException if the edge identifier is invalid, the mappings are
 	 * empty, or the edge already exists
 	 */
-	public StateGraph addConditionalEdges(String sourceId, AsyncEdgeAction condition, Map<String, String> mappings)
+	public StateGraph addConditionalEdges(String sourceId, AsyncCommandAction condition, Map<String, String> mappings)
 			throws GraphStateException {
 		if (Objects.equals(sourceId, END)) {
 			throw Errors.invalidEdgeIdentifier.exception(END);
@@ -531,6 +531,19 @@ public class StateGraph {
 			edges.elements.add(newEdge);
 		}
 		return this;
+	}
+
+	/**
+	 * Adds conditional edges to the graph.
+	 * @param sourceId the identifier of the source node
+	 * @param condition the condition to determine the target node
+	 * @param mappings the mappings of conditions to target nodes
+	 * @throws GraphStateException if the edge identifier is invalid, the mappings are
+	 * empty, or the edge already exists
+	 */
+	public StateGraph addConditionalEdges(String sourceId, AsyncEdgeAction condition, Map<String, String> mappings)
+			throws GraphStateException {
+		return addConditionalEdges(sourceId, AsyncCommandAction.of(condition), mappings);
 	}
 
 	/**
@@ -569,10 +582,7 @@ public class StateGraph {
 	 */
 	public CompiledGraph compile() throws GraphStateException {
 		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
-		return compile(CompileConfig.builder()
-			.plainTextStateSerializer(new JacksonSerializer())
-			.saverConfig(saverConfig)
-			.build());
+		return compile(CompileConfig.builder().saverConfig(saverConfig).build());
 	}
 
 	/**

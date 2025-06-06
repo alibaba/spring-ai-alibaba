@@ -25,15 +25,18 @@ import java.util.Map;
  * @author yingzi
  * @since 2025/4/29:08:24
  */
-@ConfigurationProperties("spring.ai.alibaba.mcp.client.sse")
+@ConfigurationProperties(Nacos2McpSseClientProperties.CONFIG_PREFIX)
 public class Nacos2McpSseClientProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.client.sse";
+	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.nacos.client.sse";
 
-	private final Map<String, String> connections = new HashMap<>();
+	private final Map<String, NacosSseParameters> connections = new HashMap<>();
 
-	public Map<String, String> getConnections() {
+	public Map<String, NacosSseParameters> getConnections() {
 		return connections;
+	}
+
+	public static record NacosSseParameters(String serviceGroup, String serviceName) {
 	}
 
 }
