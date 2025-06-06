@@ -26,10 +26,10 @@ public interface EdgeAction {
 
 	/**
 	 * Applies this action to the given agent state.
-	 * @param t the agent state
+	 * @param state the agent state
 	 * @return a result of the action
 	 * @throws Exception if an error occurs during the action
 	 */
-	String apply(OverAllState t) throws Exception;
+	String apply(OverAllState state) throws Exception;
 
 }

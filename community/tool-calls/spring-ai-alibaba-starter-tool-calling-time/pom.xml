@@ -57,7 +57,4 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <finalName>spring-ai-alibaba-starter-tool-calling-time</finalName>
-    </build>
 </project>
