@@ -13,21 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.toolcalling.time;
 
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
-class GetCurrentLocalTimeServiceTest {
+/**
+ * @author chengle
+ */
 
-	@Test
-	void testGetCurrentLocalTime() {
-		GetCurrentLocalTimeService service = new GetCurrentLocalTimeService();
-		String result = service.getCurrentLocalTime();
-		assertNotNull(result);
-		assertTrue(result.contains("The current local time is"));
-		assertTrue(result.matches(".*\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} .+"));
+public class TimeUtils {
+
+	public static String getTimeByZoneId(String zoneId) {
+
+		// Get the time zone using ZoneId
+		ZoneId zid = ZoneId.of(zoneId);
+
+		// Get the current time in this time zone
+		ZonedDateTime zonedDateTime = ZonedDateTime.now(zid);
+
+		// Defining a formatter
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
+
+		// Format ZonedDateTime as a string
+		String formattedDateTime = zonedDateTime.format(formatter);
+
+		return formattedDateTime;
 	}
 
 }

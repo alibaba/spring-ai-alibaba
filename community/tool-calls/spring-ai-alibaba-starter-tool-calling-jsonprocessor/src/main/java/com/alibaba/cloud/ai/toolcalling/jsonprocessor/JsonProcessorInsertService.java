@@ -15,36 +15,34 @@
  */
 package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 
+import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import org.springframework.util.Assert;
 
 import java.util.function.Function;
 
 /**
  * @author 北极星
  */
-public class JsonReplaceService implements Function<JsonReplaceService.JsonReplaceRequest, Object> {
+public class JsonProcessorInsertService implements Function<JsonProcessorInsertService.JsonInsertRequest, Object> {
+
+	private final JsonParseTool jsonParseTool;
+
+	public JsonProcessorInsertService(JsonParseTool jsonParseTool) {
+		this.jsonParseTool = jsonParseTool;
+	}
 
 	@Override
-	public Object apply(JsonReplaceRequest request) {
+	public Object apply(JsonInsertRequest request) {
 		String content = request.content;
 		String field = request.field;
 		JsonElement value = request.value;
-		JsonElement jsonElement = JsonParser.parseString(content);
-		if (!jsonElement.isJsonObject()) {
-			throw new IllegalArgumentException("Content is not a valid JSON object .");
-		}
-		JsonObject jsonObject = jsonElement.getAsJsonObject();
-		Assert.notNull(field, "replace json field can not be null");
-		Assert.notNull(value, "replace json fieldValue can not be null");
-		jsonObject.add(field, value);
-		return jsonObject;
+		return jsonParseTool.insertField(content, field, value);
 	}
 
-	record JsonReplaceRequest(@JsonProperty("content") String content, @JsonProperty("field") String field,
+	@JsonClassDescription("JsonProcessorInsertService request")
+	record JsonInsertRequest(@JsonProperty("content") String content, @JsonProperty("field") String field,
 			@JsonProperty("value") JsonElement value) {
 	}
 
