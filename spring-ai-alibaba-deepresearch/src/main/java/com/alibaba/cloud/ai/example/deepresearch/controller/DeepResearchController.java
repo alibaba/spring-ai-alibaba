@@ -29,23 +29,16 @@ import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import org.bsc.async.AsyncGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -99,17 +92,13 @@ public class DeepResearchController {
 			.doOnError(e -> logger.error("Error occurred during streaming", e));
 	}
 
-	@GetMapping("/chat")
-	public Map<String, Object> chat(@RequestParam(value = "query", defaultValue = "草莓蛋糕怎么做呀") String query,
-			@RequestParam(value = "enable_background_investigation",
-					defaultValue = "true") boolean enableBackgroundInvestigation,
-			@RequestParam(value = "auto_accepted_plan", defaultValue = "true") boolean autoAcceptedPlan,
-			@RequestParam(value = "thread_id", required = false, defaultValue = "__default__") String threadId) {
-		UserMessage userMessage = new UserMessage(query);
-		Map<String, Object> objectMap = Map.of("enable_background_investigation", enableBackgroundInvestigation,
-				"auto_accepted_plan", autoAcceptedPlan, "messages", List.of(userMessage));
+	@PostMapping("/chat")
+	public Map<String, Object> chat(@RequestBody(required = false) ChatRequest chatRequest) {
+		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest);
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(chatRequest.threadId()).build();
+		Map<String, Object> objectMap = new HashMap<>();
+		ChatRequestProcess.initializeObjectMap(chatRequest, objectMap);
 
-		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(threadId).build();
 		var resultFuture = compiledGraph.invoke(objectMap, runnableConfig);
 		return resultFuture.get().data();
 	}
