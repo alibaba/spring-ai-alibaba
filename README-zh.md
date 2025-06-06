@@ -12,9 +12,9 @@
 
 ## 核心特性
 
-<div style="display: flex; justify-content: center; align-items: center;">    
+<p align="center">
     <img src="./docs/imgs/spring-ai-alibaba-architecture.png" alt="PlayGround" style="max-width: 740px; height: 508px" /> 
-</div>
+</p>p>
 
 
 Spring AI Alibaba 提供以下核心能力，帮助开发者快速构建自己的 Agent、Workflow 或 Multi-agent 应用：
@@ -60,9 +60,9 @@ Spring AI Alibaba 官方社区开发了一个**包含完整 `前端UI+后端实�
 
 整体运行后的界面效果如下所示：
 
-<div style="display: flex; justify-content: center; align-items: center;">    
-    <img src="./docs/imgs/playground.png" alt="PlayGround" style="max-width: 1017px; height: 607px" /> 
-</div>
+<p align="center">
+	<img src="./docs/imgs/playground.png" alt="PlayGround" style="max-width: 1017px; height: 607px" /> 
+</p>    
 
 
 您可以在[本地部署 Playground 示例](https://github.com/springaialibaba/spring-ai-alibaba-examples/tree/main/spring-ai-alibaba-playground)并通过浏览器访问体验，或者拷贝源码并按照自己的业务需求调整，以便能够快速基于 Spring AI Alibaba 搭建一套自己的 AI 应用。
@@ -89,9 +89,10 @@ Spring AI Alibaba Graph 核心能力：
 ## 企业级 AI 生态集成
 在 Agent 生产落地过程中，用户需要解决智能体效果评估、MCP 工具集成、Prompt 管理、Token 上下文、可视化 Tracing 等各种问题。Spring AI Alibaba 通过与 Nacos3、Higress AI 网关、阿里云 ARMS、阿里云向量检索数据库、百炼智能体平台等深度集成，提供全面的 AI 智能体企业级生产解决方案，加速智能体从 Demo 走向生产落地。
 
-<div style="display: flex; justify-content: center; align-items: center;">     
+<p align="center">   
     <img src="https://img.alicdn.com/imgextra/i2/O1CN01sON0wZ21yKROGt2SJ_!!6000000007053-2-tps-5440-2928.png" alt="spring-ai-alibaba-architecture" style="max-width: 900px; height: 450px"/> 
-</div>
+</p>
+
 
 1. **企业级 MCP 部署与代理方案**：支持基于 Nacos MCP Registry 的分布式部署与负载均衡调用，通过 Spring AI Alibaba MCP Gateway、Higress 代理可实现零改造将 HTTP/Dubbo 服务发布为 MCP；
 
@@ -115,7 +116,9 @@ Manus 的横空出世，让通用智能体自动规划、执行规划的能力�
 ### DeepResearch 智能体
 Spring AI Alibaba DeepResearch 是一款基于 Spring AI Alibaba Graph 开发的 Deep Research 智能体, 包括完整的前端 Web UI（开发中） 和后端实现，DeepResearch 支持一系列精心设计的工具，如 Web Search（网络查询）、Crawling（爬虫）、Python 脚本引擎等。借助大模型与工具能力，帮助用户完成各类深度调研报告。
 
-<div style="display: flex; justify-content: center; align-items: center;">     <img src="./docs/imgs/deepresearch.png" alt="Deep Research" style="max-width: 770px; height: 850px"> </div>
+<p align="center">
+    <img src="./docs/imgs/deepresearch.png" alt="Deep Research" style="max-width: 770px; height: 850px">
+</p>
 
 ## 贡献指南
 
@@ -126,7 +129,9 @@ Spring AI Alibaba 社区正在快速发展中，我们欢迎任何对 AI 感兴�
 * 钉钉群：请通过群号 `124010006813` 搜索入群
 * 微信交流群：请扫描以下二维码进群
 
-  <div style="display: flex; justify-content: center; align-items: center;">     <img src="./docs/imgs/wechat-account.png" alt="Deep Research" style="max-width: 400px; height: 400px"> </div>
+  <p align="center">
+      <img src="./docs/imgs/wechat-account.png" alt="Deep Research" style="max-width: 400px; height: 400px">
+  </p>
 
 ## 致谢
 
