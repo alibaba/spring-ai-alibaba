@@ -155,6 +155,10 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		for (Map<String, Object> nodeMap : nodeMaps) {
 			Map<String, Object> nodeDataMap = (Map<String, Object>) nodeMap.get("data");
 			String difyNodeType = (String) nodeDataMap.get("type");
+            if (difyNodeType == null || difyNodeType.isBlank()) {
+                // This node is just a "note", skip it, and the corresponding node will not be generated
+                continue;
+            }
 			// determine the type of dify node is supported yet
 			NodeType nodeType = NodeType.fromDifyValue(difyNodeType)
 				.orElseThrow(() -> new NotImplementedException("unsupported node type " + difyNodeType));

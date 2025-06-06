@@ -43,6 +43,8 @@ public class VariableAggregatorNodeData extends NodeData {
 		return outputType;
 	}
 
+    public String getOutputKey() {return outputType;}
+
 	public VariableAggregatorNodeData setOutputType(String outputType) {
 		this.outputType = outputType;
 		return this;

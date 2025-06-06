@@ -1,18 +1,3 @@
-/*
- * Copyright 2024-2025 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.model.workflow.NodeType;
@@ -24,89 +9,127 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
+import java.util.*;
 
 @Component
 public class VariableAggregatorNodeDataConverter extends AbstractNodeDataConverter<VariableAggregatorNodeData> {
 
-	@Override
-	public Boolean supportNodeType(NodeType nodeType) {
-		return NodeType.AGGREGATOR.equals(nodeType);
-	}
+    @Override
+    public Boolean supportNodeType(NodeType nodeType) {
+        return NodeType.AGGREGATOR.equals(nodeType);
+    }
 
-	@Override
-	protected List<DialectConverter<VariableAggregatorNodeData>> getDialectConverters() {
-		return Stream.of(AggregatorNodeDialectConverter.values())
-			.map(AggregatorNodeDialectConverter::dialectConverter)
-			.toList();
-	}
+    @Override
+    protected List<DialectConverter<VariableAggregatorNodeData>> getDialectConverters() {
+        return Arrays.stream(AggregatorNodeDialectConverter.values())
+                .map(AggregatorNodeDialectConverter::dialectConverter)
+                .toList();
+    }
 
-	private enum AggregatorNodeDialectConverter {
+    private enum AggregatorNodeDialectConverter {
 
-		DIFY(new DialectConverter<>() {
-			@Override
-			public Boolean supportDialect(DSLDialectType dialectType) {
-				return DSLDialectType.DIFY.equals(dialectType);
-			}
+        DIFY(new DialectConverter<>() {
+            @Override
+            public Boolean supportDialect(DSLDialectType dialectType) {
+                return DSLDialectType.DIFY.equals(dialectType);
+            }
 
-			@Override
-			public VariableAggregatorNodeData parse(Map<String, Object> data) {
-				Map<String, Object> advanced_settings = (Map<String, Object>) data.get("advanced_settings");
-				VariableAggregatorNodeData.AdvancedSettings advancedSettings = new VariableAggregatorNodeData.AdvancedSettings();
-				advancedSettings.setGroupEnabled((Boolean) advanced_settings.get("group_enabled"));
-				ObjectMapper objectMapper = new ObjectMapper();
-				try {
-					String groups = objectMapper.writeValueAsString(advanced_settings.get("groups"));
-					advancedSettings.setGroups(objectMapper.readValue(groups, new TypeReference<>() {
-					}));
-				}
-				catch (JsonProcessingException e) {
-					throw new RuntimeException("Failed to parse JSON", e);
-				}
-				return new VariableAggregatorNodeData(null, null, (List<List<String>>) data.get("variables"),
-						(String) data.get("output_type"), advancedSettings);
-			}
+            @SuppressWarnings("unchecked")
+            @Override
+            public VariableAggregatorNodeData parse(Map<String, Object> data) {
+                VariableAggregatorNodeData.AdvancedSettings advancedSettings;
+                Object advRaw = data.get("advanced_settings");
+                if (advRaw instanceof Map<?, ?>) {
+                    Map<String, Object> advanced_map = (Map<String, Object>) advRaw;
+                    advancedSettings = new VariableAggregatorNodeData.AdvancedSettings();
 
-			@Override
-			public Map<String, Object> dump(VariableAggregatorNodeData nodeData) {
-				Map<String, Object> result = new HashMap<>();
-				HashMap<Object, Object> advancedSettings = new HashMap<>();
-				VariableAggregatorNodeData.AdvancedSettings advancedSettings1 = nodeData.getAdvancedSettings();
-				advancedSettings.put("group_enabled", advancedSettings1.isGroupEnabled());
-				List<VariableAggregatorNodeData.Groups> groups1 = advancedSettings1.getGroups();
-				List<Map<String, Object>> groups = new ArrayList<>();
-				for (VariableAggregatorNodeData.Groups group : groups1) {
-					Map<String, Object> groupMap = new HashMap<>();
-					groupMap.put("output_type", group.getOutputType());
-					groupMap.put("variables", group.getVariables());
-					groupMap.put("group_name", group.getGroupName());
-					groupMap.put("groupId", group.getGroupId());
-					groups.add(groupMap);
-				}
-				advancedSettings.put("groups", groups);
-				result.put("variables", nodeData.getVariables());
-				result.put("output_type", nodeData.getOutputType());
-				result.put("advanced_settings", advancedSettings);
-				return result;
-			}
-		}),
+                    Object ge = advanced_map.get("group_enabled");
+                    advancedSettings.setGroupEnabled(ge instanceof Boolean ? (Boolean) ge : false);
 
-		CUSTOM(AbstractNodeDataConverter.defaultCustomDialectConverter(VariableAggregatorNodeData.class));
+                    Object groupsRaw = advanced_map.get("groups");
+                    if (groupsRaw instanceof List<?>) {
+                        try {
+                            ObjectMapper objectMapper = new ObjectMapper();
+                            String json = objectMapper.writeValueAsString(groupsRaw);
+                            List<VariableAggregatorNodeData.Groups> groupsList =
+                                    objectMapper.readValue(json, new TypeReference<List<VariableAggregatorNodeData.Groups>>() {});
+                            advancedSettings.setGroups(groupsList);
+                        } catch (JsonProcessingException e) {
+                            throw new RuntimeException("Failed to parse 'advanced_settings.groups' JSON", e);
+                        }
+                    } else {
+                        advancedSettings.setGroups(Collections.emptyList());
+                    }
+                } else {
+                    advancedSettings = new VariableAggregatorNodeData.AdvancedSettings();
+                    advancedSettings.setGroupEnabled(false);
+                    advancedSettings.setGroups(Collections.emptyList());
+                }
 
-		private final DialectConverter<VariableAggregatorNodeData> dialectConverter;
+                List<List<String>> variables = Collections.emptyList();
+                Object varRaw = data.get("variables");
+                if (varRaw instanceof List<?>) {
+                    //noinspection unchecked
+                    variables = (List<List<String>>) varRaw;
+                }
 
-		public DialectConverter<VariableAggregatorNodeData> dialectConverter() {
-			return dialectConverter;
-		}
+                String outputType = data.containsKey("output_type")
+                        ? (String) data.get("output_type")
+                        : null;
 
-		AggregatorNodeDialectConverter(DialectConverter<VariableAggregatorNodeData> dialectConverter) {
-			this.dialectConverter = dialectConverter;
-		}
+                return new VariableAggregatorNodeData(
+                        null,
+                        null,
+                        variables,
+                        outputType,
+                        advancedSettings
+                );
+            }
 
-	}
+            @Override
+            public Map<String, Object> dump(VariableAggregatorNodeData nodeData) {
+                Map<String, Object> result = new HashMap<>();
 
+                result.put("variables", nodeData.getVariables());
+
+                if (nodeData.getOutputType() != null) {
+                    result.put("output_type", nodeData.getOutputType());
+                }
+
+                VariableAggregatorNodeData.AdvancedSettings adv = nodeData.getAdvancedSettings();
+                if (adv != null) {
+                    Map<String, Object> advMap = new LinkedHashMap<>();
+                    advMap.put("group_enabled", adv.isGroupEnabled());
+
+                    List<VariableAggregatorNodeData.Groups> groupsList = adv.getGroups();
+                    List<Map<String, Object>> groupsOut = new ArrayList<>();
+                    if (groupsList != null) {
+                        for (VariableAggregatorNodeData.Groups g : groupsList) {
+                            Map<String, Object> gm = new LinkedHashMap<>();
+                            gm.put("group_name", g.getGroupName());
+                            gm.put("groupId", g.getGroupId());
+                            gm.put("output_type", g.getOutputType());
+                            gm.put("variables", g.getVariables());
+                            groupsOut.add(gm);
+                        }
+                    }
+                    advMap.put("groups", groupsOut);
+
+                    result.put("advanced_settings", advMap);
+                }
+
+                return result;
+            }
+        }),
+
+        CUSTOM(defaultCustomDialectConverter(VariableAggregatorNodeData.class));
+
+        private final DialectConverter<VariableAggregatorNodeData> converter;
+        AggregatorNodeDialectConverter(DialectConverter<VariableAggregatorNodeData> converter) {
+            this.converter = converter;
+        }
+        public DialectConverter<VariableAggregatorNodeData> dialectConverter() {
+            return this.converter;
+        }
+    }
 }
