@@ -16,45 +16,147 @@
 package com.alibaba.cloud.ai.example.graph.stream;
 
 
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import com.alibaba.cloud.ai.example.graph.stream.node.BaiduSearchNode;
+import com.alibaba.cloud.ai.example.graph.stream.node.LLmNode;
+import com.alibaba.cloud.ai.example.graph.stream.node.TavilySearchNode;
+import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import com.alibaba.fastjson.JSON;
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.bsc.async.AsyncGenerator;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.PrintWriter;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 @RestController
 @RequestMapping("/llm-stream")
 public class LLmSearchStreamController {
 
-    /**
-     * 接收前端上传的文件，并按行进行拆分
-     *
-     * @param file 上传的文件
-     * @return 拆分后的文件内容行列表
-     */
-    @PostMapping("/split")
-    public List<String> splitFile(@RequestParam("file") MultipartFile file) {
-        List<String> lines = new ArrayList<>();
 
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(file.getInputStream()))) {
+    private StateGraph workflow;
 
-            String line;
-            while ((line = reader.readLine()) != null) {
-                lines.add(line);
+    @Autowired
+    private LLmNode lLmNode;
+
+    @Autowired
+    private BaiduSearchNode baiduSearchNode;
+
+    @Autowired
+    private TavilySearchNode tavilySearchNode;
+
+    @PostConstruct
+    public void init() throws GraphStateException {
+        // 定义工作流
+        // 创建状态和策略
+        workflow = new StateGraph(() -> new OverAllState()
+                .registerKeyAndStrategy("parallel_result",new AppendStrategy())
+                .registerKeyAndStrategy("messages", new AppendStrategy()))
+                .addNode("baiduSearchNode", node_async(baiduSearchNode))
+                .addNode("tavilySearchNode", node_async(tavilySearchNode))
+                .addNode("llmNode", node_async(lLmNode))
+                .addEdge(START, "baiduSearchNode")
+                .addEdge(START, "tavilySearchNode")
+                .addEdge("baiduSearchNode", "llmNode")
+                .addEdge("tavilySearchNode", "llmNode")
+                .addEdge("llmNode", END);
+
+    }
+
+
+    @PostMapping("/search/chat")
+    public void searchChat(HttpServletRequest request, HttpServletResponse response, @RequestBody Map<String, Object> inputData) throws Exception {
+        // 准备异步上下文
+        AsyncContext asyncContext = request.startAsync();
+        response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE + ";charset=UTF-8");
+        response.setCharacterEncoding("UTF-8");
+
+        // 禁用缓存
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Connection", "keep-alive");
+
+        // 获取生成器
+        CompiledGraph compiledGraph = workflow.compile();
+        AsyncGenerator<NodeOutput> generator = compiledGraph.stream(inputData, RunnableConfig.builder().threadId(UUID.randomUUID().toString()).build());
+
+        // 使用线程池处理流式输出
+        CompletableFuture.runAsync(() -> {
+            try (PrintWriter writer = response.getWriter()) {
+                generator.forEachAsync(output -> {
+                    try {
+                        if (output instanceof StreamingOutput) {
+                            writer.write("data: " + ((StreamingOutput) output).chunk() + "\n\n");
+                        } else {
+                            Optional<List> value = output.state().value("messages", List.class);
+                            value.ifPresent(v -> writer.write("data: " + v.get(0) + "\n\n"));
+                        }
+                        writer.flush();
+                    } catch (Exception e) {
+                        asyncContext.complete();
+                    }
+                }).thenRun(() -> {
+                    writer.write("event: done\ndata: \n\n");
+                    writer.flush();
+                    asyncContext.complete();
+                });
+            } catch (Exception e) {
+                asyncContext.complete();
             }
+        });
+    }
 
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException("文件读取失败");
-        }
+    @PostMapping(value = "/search/chat/v2", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<String>> stream(HttpServletRequest request, @RequestBody Map<String, Object> inputData) throws Exception {
+        CompiledGraph compiledGraph = workflow.compile();
+        String threadId = UUID.randomUUID().toString();
 
-        return lines;
+        Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
+
+        AsyncGenerator<NodeOutput> generator = compiledGraph.stream(inputData, RunnableConfig.builder().threadId(threadId).build());
+
+        CompletableFuture.runAsync(() -> {
+            generator.forEachAsync(output -> {
+                        try {
+                            System.out.println("output = " + output);
+                            if (output instanceof StreamingOutput){
+                                StreamingOutput streamingOutput = (StreamingOutput) output;
+                                sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(streamingOutput.chunk())).build());
+                            }else {
+                                sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(output.state().value("messages"))).build());
+                            }
+                        } catch (Exception e) {
+                            throw new CompletionException(e);
+                        }
+                    }).thenRun(() -> sink.tryEmitComplete())
+                    .exceptionally(ex -> {
+                        sink.tryEmitError(ex);
+                        return null;
+                    });
+        });
+
+        return sink.asFlux()
+                .doOnCancel(() -> System.out.println("Client disconnected from stream"))
+                .doOnError(e -> System.err.println("Error occurred during streaming: " + e));
     }
 }

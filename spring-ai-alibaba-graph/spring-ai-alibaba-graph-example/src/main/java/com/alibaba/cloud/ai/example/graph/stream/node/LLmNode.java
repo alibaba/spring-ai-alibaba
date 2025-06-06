@@ -29,10 +29,13 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.CoreSubscriber;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -40,18 +43,43 @@ import java.util.concurrent.CountDownLatch;
 @Component
 public class LLmNode implements NodeAction {
 
+	@Autowired
 	private ChatModel chatModel;
 
-	private ChatClient chatClient;
+	@Autowired
+	private ChatClient.Builder builder;
 
-	public LLmNode(ChatModel chatModel,ChatClient chatClient) {
-		this.chatModel = chatModel;
-	}
+	 static String promptTemplate = """
+        You are a professional AI assistant. Please generate responses based on the given content and questions.
+        
+        Content context:
+        %s
+        
+        Questions to answer (respond in the question's original language, keep answers concise):
+        %s
+        
+        Please carefully review the content and adhere to these requirements:
+        1. Ensure responses match the question's language
+        2. Break down complex questions into bullet points
+        3. Avoid speculative or unverified information
+        4. Prioritize accuracy over completeness""";
+
 
 	@Override
 	public Map<String, Object> apply(OverAllState t) {
 		// Create prompt with user message
-		UserMessage message = new UserMessage((String) t.value(OverAllState.DEFAULT_INPUT_KEY).get());
+		List<String> parallelResult = t.value("parallel_result", List.class).get();
+		String question = t.value("input", String.class).get();
+
+		StringBuilder formattedContent = new StringBuilder();
+		if (CollectionUtils.isNotEmpty(parallelResult)) {
+			for (int i = 0; i < parallelResult.size(); i++) {
+				formattedContent.append((i + 1) + ". " + parallelResult.get(i) + "\n");
+			}
+		}
+
+		UserMessage message = new UserMessage(promptTemplate.formatted(formattedContent,question));
+		ChatClient chatClient = builder.build();
 
 		var flux = chatClient.prompt()
 				.messages(message)
@@ -61,7 +89,9 @@ public class LLmNode implements NodeAction {
 		var generator  = StreamingChatGenerator.builder()
 				.startingNode("llmNode")
 				.startingState( t )
-				.mapResult( response -> Map.of( "messages", response.getResult().getOutput()))
+				.mapResult(
+						response ->
+						Map.of( "messages", Objects.requireNonNull(response.getResult().getOutput().getText())))
 				.build(flux);
 
 		return Map.of("messages", generator);

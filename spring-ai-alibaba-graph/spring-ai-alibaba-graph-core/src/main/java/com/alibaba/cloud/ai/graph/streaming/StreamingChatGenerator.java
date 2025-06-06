@@ -1,3 +1,18 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.alibaba.cloud.ai.graph.streaming;
 
 import com.alibaba.cloud.ai.graph.NodeOutput;
@@ -19,18 +34,27 @@ import java.util.function.Function;
 
 import static java.util.Optional.ofNullable;
 
+/**
+ * A generator interface for streaming chat responses in a reactive manner.
+ * It provides a fluent API to configure and build a streaming generator that processes
+ * chat responses and produces output based on the streamed data.
+ */
 public interface StreamingChatGenerator {
 
+    /**
+     * Builder class for creating instances of {@link AsyncGenerator} that process chat responses.
+     * This builder allows setting mapping logic, starting node, and initial state before building.
+     */
     class Builder {
         private Function<ChatResponse, Map<String, Object>> mapResult;
         private String startingNode;
         private OverAllState startingState;
 
         /**
-         * Sets the mapping function for the builder.
+         * Sets the mapping function that converts a ChatResponse into a Map result.
          *
-         * @param mapResult a function to map the response to a result
-         * @return the builder instance
+         * @param mapResult a function to transform the final chat response into a result map
+         * @return the builder instance for method chaining
          */
         public Builder mapResult(Function<ChatResponse, Map<String, Object>> mapResult) {
             this.mapResult = mapResult;
@@ -38,10 +62,10 @@ public interface StreamingChatGenerator {
         }
 
         /**
-         * Sets the starting node for the builder.
+         * Sets the starting node for the streaming process.
          *
-         * @param node the starting node
-         * @return the builder instance
+         * @param node the identifier of the starting node in the flow
+         * @return the builder instance for method chaining
          */
         public Builder startingNode(String node) {
             this.startingNode = node;
@@ -49,10 +73,10 @@ public interface StreamingChatGenerator {
         }
 
         /**
-         * Sets the starting state for the builder.
+         * Sets the initial state for the streaming process.
          *
-         * @param state the initial state
-         * @return the builder instance
+         * @param state the overall state to start with
+         * @return the builder instance for method chaining
          */
         public Builder startingState(OverAllState state) {
             this.startingState = state;
@@ -60,9 +84,11 @@ public interface StreamingChatGenerator {
         }
 
         /**
-         * Builds and returns an instance of LLMStreamingGenerator.
+         * Builds and returns an instance of AsyncGenerator that processes chat responses.
+         * The generator merges partial responses and maps them to final output.
          *
-         * @return a new instance of LLMStreamingGenerator
+         * @param flux a Flux stream of ChatResponse objects
+         * @return an AsyncGenerator that produces NodeOutput instances
          */
         public AsyncGenerator<? extends NodeOutput> build(Flux<ChatResponse> flux) {
             Objects.requireNonNull(flux, "flux cannot be null");
@@ -114,6 +140,11 @@ public interface StreamingChatGenerator {
         }
     }
 
+    /**
+     * Returns a new instance of the StreamingChatGenerator builder.
+     *
+     * @return a new builder instance
+     */
     static Builder builder() {
         return new Builder();
     }
