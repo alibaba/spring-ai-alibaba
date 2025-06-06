@@ -62,8 +62,9 @@ Please check Quick Start on our official website to learn more details. More sta
 The community has developed a [Playground](https://github.com/springaialibaba/spring-ai-alibaba-examples) agent that includes a complete front-end UI and back-end implementation. The Playground back-end is developed using Spring AI Alibaba and gives users a quick overview of all core framework capabilities such as chatbot, multi-round conversations, image generation, multi-modality, tool calling, MCP, and RAG.
 
 <p align="center">
-    <img src="./docs/imgs/playground.png" alt="PlayGround" style="max-width: 949px; height: 567px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);" /> 
+    <img src="./docs/imgs/playground.png" alt="PlayGround" style="max-width: 949px; height: 537px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);" /> 
 </p>
+
 
 
 You can deploy [Playground](https://github.com/springaialibaba/spring-ai-alibaba-examples) locally and experience playground with browser. To quickly build your own AI application, the source code and adjust it according to your business needs, .
@@ -88,8 +89,9 @@ Core features:
 To bring agent from demo to production, developers and organizations face lots of challenges, from evaluation, tracing, MCP integration, prompt management, to token rate-limit, etc. Spring AI Alibaba, as am enterprise solution incubated from serving enterprise agent development, provides profound solutions by integrating with Nacos MCP Registry, Higress AI gateway, Alibaba Cloud ARMS, Alibaba Cloud Vector Stores, Alibaba Cloud Bailian platform, etc.
 
 <p align="center">   
-    <img src="https://img.alicdn.com/imgextra/i2/O1CN01sON0wZ21yKROGt2SJ_!!6000000007053-2-tps-5440-2928.png" alt="spring-ai-alibaba-architecture" style="max-width: 900px; height: 450px"/> 
+    <img src="https://img.alicdn.com/imgextra/i2/O1CN01sON0wZ21yKROGt2SJ_!!6000000007053-2-tps-5440-2928.png" alt="spring-ai-alibaba-architecture" style="max-width: 700px; height: 400px"/> 
 </p>
+
 
 
 1. **Distributed MCP discovery and proxy:** Support distributed MCP Server discovery and load balancing based on Nacos MCP Registry. Zero code change to transform HTTP and Dubbo services into MCP servers with  Spring AI Alibaba MCP Gateway and Higress;
@@ -106,8 +108,9 @@ The emergence of Manus has given people unlimited space with the ability of gene
 JManus is not just a Spring AI Alibaba version Manus replica, it's also designed as a platform that can help developers to build their own fine-tuned agents targeting specific business scenarios. The typical characteristic of enterprise level agent is determinism, that means we need customized tools and sub agents, as well as stable and deterministic planning and processes. Therefore, we hope that JManus can become an intelligent agent development platform, allowing users to build their own domain specific intelligent agent implementations in the most intuitive and low-cost way.
 
 <p align="center">
-    <img src="./docs/imgs/jmanus.png" alt="jmanus" style="max-width: 949px; height: 567px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);" /> 
+    <img src="./docs/imgs/jmanus.png" alt="jmanus" style="max-width: 749px; height: 467px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);" /> 
 </p>
+
 
 ### DeepResearch
 Spring AI Alibaba DeepResearch is a deep research agent developed based on the Spring AI Alibaba Graph, which includes a complete front-end web UI (under development) and back-end implementation. DeepResearch can help users complete various deep research reports with the help of large models and a series of carefully designed tools such as Web Search, Crawling, Python script engine, etc.
