@@ -152,7 +152,20 @@ public class DeepResearchController {
 	public Map<String, Object> resume(@RequestParam(value = "thread_id", required = true) int threadId,
 			@RequestParam(value = "feed_back", required = true) String feedBack,
 			@RequestParam(value = "feed_back_content", required = false) String feedBackContent) {
+
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(String.valueOf(threadId)).build();
+		Map<String, Object> objectMap = getStringObjectMap(feedBack, feedBackContent);
+
+		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
+		OverAllState state = stateSnapshot.state();
+		state.withResume();
+		state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
+
+		var resultFuture = compiledGraph.invoke(state, runnableConfig);
+		return resultFuture.get().data();
+	}
+
+	private Map<String, Object> getStringObjectMap(String feedBack, String feedBackContent) {
 		Map<String, Object> objectMap;
 		if ("n".equals(feedBack)) {
 			if (StringUtils.hasLength(feedBackContent)) {
@@ -168,15 +181,7 @@ public class DeepResearchController {
 		else {
 			throw new RuntimeException("feed_back should be y or n");
 		}
-
-		// 暂时注释，看后续graph是否会优化该写法
-		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
-		OverAllState state = stateSnapshot.state();
-		state.withResume();
-		state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
-
-		var resultFuture = compiledGraph.invoke(objectMap, runnableConfig);
-		return resultFuture.get().data();
+		return objectMap;
 	}
 
 	private void handleHumanFeedback(ChatRequest chatRequest, Map<String, Object> objectMap,
