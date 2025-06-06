@@ -22,15 +22,15 @@ import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.bsc.async.AsyncGenerator;
+import org.junit.jupiter.api.NamedExecutable;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -432,7 +432,7 @@ public class StateGraphTest {
 
 		exception = assertThrows(GraphStateException.class,
 				() -> noConditionalEdge.addConditionalEdges("A", edge_async(state -> "next"), Map.of("next", "A2")));
-		assertEquals("conditional edge from 'A' already exist!", exception.getMessage());
+		assertEquals("conditional edge from 'A' already exists!", exception.getMessage());
 
 		var noConditionalEdgeOnBranch = new StateGraph(createOverAllStateFactory()).addNode("A", makeNode("A"))
 			.addNode("A1", makeNode("A1"))
@@ -452,7 +452,7 @@ public class StateGraphTest {
 
 		exception = assertThrows(GraphStateException.class, noConditionalEdgeOnBranch::compile);
 		assertEquals(
-				"parallel node doesn't support conditional branch, but on [A] a conditional branch on [A3] have been found!",
+				"parallel node does not support conditional branch, but on [A] a conditional branch on [A3] has been found!",
 				exception.getMessage());
 
 		var noDuplicateTarget = new StateGraph(createOverAllStateFactory()).addNode("A", makeNode("A"))
@@ -537,6 +537,144 @@ public class StateGraphTest {
 
 		Map<String, String> expected = Map.of("input", "test1", "prop1", "test");
 		assertIterableEquals(sortMap(expected), sortMap(result.get().data()));
+	}
+
+	/**
+	 * Test creating a state graph with custom key strategies using a lambda function.
+	 * This test verifies that the graph correctly handles state updates using
+	 * ReplaceStrategy for specific keys.
+	 */
+	@Test
+	public void testKeyStrategyFactoryCreateStateGraph() throws GraphStateException {
+		StateGraph workflow = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("prop1", new ReplaceStrategy());
+			keyStrategyHashMap.put("input", new ReplaceStrategy());
+			return keyStrategyHashMap;
+		}).addEdge(START, "agent_1").addNode("agent_1", node_async(state -> {
+			log.info("agent_1\n{}", state);
+			return Map.of("prop1", "test");
+		})).addEdge("agent_1", END);
+
+		CompiledGraph app = workflow.compile();
+
+		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+		System.out.println("result = " + result);
+		assertTrue(result.isPresent());
+
+		Map<String, String> expected = Map.of("input", "test1", "prop1", "test");
+		assertIterableEquals(sortMap(expected), sortMap(result.get().data()));
+	}
+
+	@Test
+	public void testLifecycleListenerGraphWithLIFO() throws GraphStateException {
+		StateGraph workflow = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("prop1", new ReplaceStrategy());
+			keyStrategyHashMap.put("input", new ReplaceStrategy());
+			return keyStrategyHashMap;
+		}).addEdge(START, "agent_1").addNode("agent_1", node_async(state -> {
+			log.info("agent_1\n{}", state);
+			return Map.of("prop1", "test");
+		})).addEdge("agent_1", END);
+
+		CompiledGraph app = workflow
+			.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
+				@Override
+				public void onComplete(String nodeId, Map<String, Object> state) {
+					log.info("listener1 ,node = {},state = {}", nodeId, state);
+				}
+
+				@Override
+				public void onStart(String nodeId, Map<String, Object> state) {
+					log.info("listener1 ,node = {},state = {}", nodeId, state);
+				}
+			}).withLifecycleListener(new GraphLifecycleListener() {
+				@Override
+				public void onStart(String nodeId, Map<String, Object> state) {
+					log.info("listener2 ,node = {},state = {}", nodeId, state);
+				}
+
+				@Override
+				public void onComplete(String nodeId, Map<String, Object> state) {
+					log.info("listener2 ,node = {},state = {}", nodeId, state);
+				}
+			}).build());
+
+		app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+	}
+
+	/**
+	 * Test graph execution lifecycle listeners for start and complete events. This test
+	 * ensures that onStart and onComplete callbacks are properly triggered during graph
+	 * execution.
+	 */
+	@Test
+	public void testLifecycleListenerGraphWithCompleteAndStart() throws GraphStateException {
+		StateGraph workflow = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("prop1", new ReplaceStrategy());
+			keyStrategyHashMap.put("input", new ReplaceStrategy());
+			return keyStrategyHashMap;
+		}).addEdge(START, "agent_1").addNode("agent_1", node_async(state -> {
+			log.info("agent_1\n{}", state);
+			return Map.of("prop1", "test");
+		})).addEdge("agent_1", END);
+
+		CompiledGraph app = workflow
+			.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
+				@Override
+				public void onComplete(String nodeId, Map<String, Object> state) {
+					log.info("node = {},state = {}", nodeId, state);
+				}
+
+				@Override
+				public void onStart(String nodeId, Map<String, Object> state) {
+					log.info("node = {},state = {}", nodeId, state);
+				}
+			}).build());
+
+		app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+	}
+
+	/**
+	 * Test graph execution error handling through lifecycle listener. This test ensures
+	 * that onError callback is properly triggered when an exception occurs during node
+	 * execution.
+	 */
+	@Test
+	public void testLifecycleListenerGraphWithError() throws GraphStateException {
+		StateGraph workflow = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("prop1", new ReplaceStrategy());
+			keyStrategyHashMap.put("input", new ReplaceStrategy());
+			return keyStrategyHashMap;
+		}).addEdge(START, "agent_1").addNode("agent_1", node_async(state -> {
+			log.info("agent_1\n{}", state);
+			int a = 1 / 0; // Force division by zero error
+			return Map.of("prop1", "test");
+		})).addEdge("agent_1", END);
+
+		CompiledGraph app = workflow
+			.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
+				@Override
+				public void onComplete(String nodeId, Map<String, Object> state) {
+					log.info("node = {},state = {}", nodeId, state);
+				}
+
+				@Override
+				public void onStart(String nodeId, Map<String, Object> state) {
+					log.info("node = {},state = {}", nodeId, state);
+				}
+
+				@Override
+				public void onError(String nodeId, Map<String, Object> state, Throwable ex) {
+					log.error("node = {},state = {}", nodeId, state, ex);
+				}
+			}).build());
+
+		assertThrows(CompletionException.class,
+				(NamedExecutable) () -> app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1")));
 	}
 
 }

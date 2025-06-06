@@ -82,10 +82,8 @@ public class PlannerNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("Planner node is running.");
 		List<Message> messages = TemplateUtil.applyPromptTemplate("planner", state);
-		// 添加HunmanFeedBack的Message
+		// add human feedback content
 		if (StringUtils.hasText(state.data().getOrDefault("feed_back_content", "").toString())) {
-			// TODO 第二次进入Planner节点时模型无法生成Plan的Json对象问题
-			messages.add(new SystemMessage(messages.get(0).getText()));
 			messages.add(new UserMessage(state.data().getOrDefault("feed_back_content", "").toString()));
 		}
 		Integer planIterations = state.value("plan_iterations", 0);
@@ -93,7 +91,7 @@ public class PlannerNode implements NodeAction {
 		String threadId = state.value("thread_id", "__default__");
 
 		Boolean enableBackgroundInvestigation = state.value("enable_background_investigation", false);
-		ArrayList<String> backgroundInvestigationResults = state.value("background_investigation_results",
+		List<String> backgroundInvestigationResults = state.value("background_investigation_results",
 				new ArrayList<>());
 
 		if (planIterations == 0 && enableBackgroundInvestigation && !backgroundInvestigationResults.isEmpty()) {
@@ -105,6 +103,7 @@ public class PlannerNode implements NodeAction {
 		Map<String, Object> updated = new HashMap<>();
 		logger.info("planIterations:{}", planIterations);
 		if (planIterations > maxStepNum) {
+			logger.info("planIterations reaches the upper limit");
 			updated.put("planner_next_node", nextStep);
 			return updated;
 		}
@@ -126,7 +125,7 @@ public class PlannerNode implements NodeAction {
 			if (curPlan.isHasEnoughContext()) {
 				logger.info("Planner response has enough context.");
 				updated.put("current_plan", curPlan);
-				updated.put("messages", new AssistantMessage(result));
+				updated.put("messages", List.of(new AssistantMessage(result)));
 				updated.put("planner_next_node", nextStep);
 				return updated;
 			}
