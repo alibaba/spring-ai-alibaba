@@ -47,7 +47,7 @@ To quickly get started with Spring AI Alibaba, add 'spring-ai-alibaba-starter-da
 </dependencies>
 ```
 
-Please check [Quick Start](https://java2ai.com/docs/1.0.0/get-started/) on our official website to learn more details. More starters include `spring-ai-alibaba-graph-core`, `spring-ai-alibaba-starter-nl2sql`,`spring-ai-alibaba-starter-nacos-mcp-client`, etc, please refer to the official website documentation.
+Please check [Quick Start](https://java2ai.com/docs/1.0.0-M6.1/get-started/) on our official website to learn more details. More starters include `spring-ai-alibaba-graph-core`, `spring-ai-alibaba-starter-nl2sql`,`spring-ai-alibaba-starter-nacos-mcp-client`, etc., please refer to the official website documentation.
 
 
 > NOTE!
@@ -60,12 +60,12 @@ The community has developed a [Playground](https://github.com/springaialibaba/sp
 
 ![playground](./docs/imgs/playground.png)
 
-You can deploy [Playground](https://github.com/springaialibaba/spring-ai-alibaba-examples) locally and experience playground with browser. To quickly build your own AI application, the source code and adjust it according to your business needs, .
-
+You can [deploy the Playground example locally](https://github.com/springaialibaba/spring-ai-alibaba-examples) and access the experience through your browser, or copy the source code and tweak it to your own business needs to build your own set of AI apps more quickly.
 For more examples, please refer to our official example repository: [https://github.com/springaialibaba/spring-ai-alibaba-examples](https://github.com/springaialibaba/spring-ai-alibaba-examples)
 
 ## Spring AI Alibaba Graph Multi-gent Framework
-Spring AI Alibaba Graph enables developers to implement workflow and multi-agent application orchestration. Its core design is mainly from Langgraph, and we have added a rich set of prebuilt Nodes and simplified the Graph State definition, allowing developers to better integrate with low-code platforms and write popular multi-agent pattern applications.
+
+Spring AI Alibaba Graph enables developers to implement workflow and multi-agent application orchestration. Its core design is mainly from LangGraph, and we have added a rich set of prebuilt Nodes and simplified the Graph State definition, allowing developers to better integrate with low-code platforms and write popular multi-agent pattern applications.
 
 Core features:
 
@@ -79,6 +79,7 @@ Core features:
 + PlantUML and Mermaid format export
 
 ## Enterprise-ready AI Ecosystem Integration
+
 To bring agent from demo to production, developers and organizations face lots of challenges, from evaluation, tracing, MCP integration, prompt management, to token rate-limit, etc. Spring AI Alibaba, as am enterprise solution incubated from serving enterprise agent development, provides profound solutions by integrating with Nacos MCP Registry, Higress AI gateway, Alibaba Cloud ARMS, Alibaba Cloud Vector Stores, Alibaba Cloud Bailian platform, etc.
 
 ![ai-native-ecosystem](./docs/imgs/spring-ai-alibaba-ecosystem.png)
@@ -91,7 +92,9 @@ To bring agent from demo to production, developers and organizations face lots o
 4. **Observation and evaluation platforms.** Thanks to the sdk-native instrumentation of Spring AI, observation and evaluation can be achieved by reporting to OpenTelemetry compatible platforms such as Langfuse and Alibaba Cloud ARMS.
 
 ## Agent Products and Platforms
+
 ### JManus
+
 The emergence of Manus has given people unlimited space with the ability of general intelligent agents to automatically plan-act on various tasks. It is expected to be very good at solving open-ended issues and can have a wide range of applications in daily life, work, and other scenarios.
 
 JManus is not just a Spring AI Alibaba version Manus replica, it's also designed as a platform that can help developers to build their own fine-tuned agents targeting specific business scenarios. The typical characteristic of enterprise level agent is determinism, that means we need customized tools and sub agents, as well as stable and deterministic planning and processes. Therefore, we hope that JManus can become an intelligent agent development platform, allowing users to build their own domain specific intelligent agent implementations in the most intuitive and low-cost way.
@@ -99,6 +102,7 @@ JManus is not just a Spring AI Alibaba version Manus replica, it's also designed
 ![jmanus](./docs/imgs/jmanus.png)
 
 ### DeepResearch
+
 Spring AI Alibaba DeepResearch is a deep research agent developed based on the Spring AI Alibaba Graph, which includes a complete front-end web UI (under development) and back-end implementation. DeepResearch can help users complete various deep research reports with the help of large models and a series of carefully designed tools such as Web Search, Crawling, Python script engine, etc.
 
 ![deepresearch](./docs/imgs/deepresearch.png)
@@ -111,7 +115,7 @@ Alibaba.
 ## Contact Us
 
 * Dingtalk Group (钉钉群), search `124010006813` and join.
-* Wechat Group (微信公众号), scan the QR code below and follow us.
+* WeChat Group (微信公众号), scan the QR code below and follow us.
 
 <img src="./docs/imgs/wechat-account.png" style="width:260px;"/>
 
