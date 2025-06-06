@@ -13,8 +13,9 @@
 ## 核心特性
 
 <div style="display: flex; justify-content: center; align-items: center;">    
-    <img src="./docs/imgs/spring-ai-alibaba-architecture.png" alt="PlayGround" style="max-width: 940px; height: 608px" /> 
+    <img src="./docs/imgs/spring-ai-alibaba-architecture.png" alt="PlayGround" style="max-width: 740px; height: 508px" /> 
 </div>
+
 
 Spring AI Alibaba 提供以下核心能力，帮助开发者快速构建自己的 Agent、Workflow 或 Multi-agent 应用：
 
@@ -60,8 +61,9 @@ Spring AI Alibaba 官方社区开发了一个**包含完整 `前端UI+后端实�
 整体运行后的界面效果如下所示：
 
 <div style="display: flex; justify-content: center; align-items: center;">    
-    <img src="./docs/imgs/img.png" alt="PlayGround" style="max-width: 1017px; height: 607px" /> 
+    <img src="./docs/imgs/playground.png" alt="PlayGround" style="max-width: 1017px; height: 607px" /> 
 </div>
+
 
 您可以在[本地部署 Playground 示例](https://github.com/springaialibaba/spring-ai-alibaba-examples/tree/main/spring-ai-alibaba-playground)并通过浏览器访问体验，或者拷贝源码并按照自己的业务需求调整，以便能够快速基于 Spring AI Alibaba 搭建一套自己的 AI 应用。
 
