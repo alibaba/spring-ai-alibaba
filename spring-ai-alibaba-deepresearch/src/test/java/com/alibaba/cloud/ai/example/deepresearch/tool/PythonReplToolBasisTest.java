@@ -36,7 +36,7 @@ public class PythonReplToolBasisTest {
 	@Autowired
 	private PythonReplTool pythonReplTool;
 
-	public static final String NORMAL_CODE = """
+	static final String NORMAL_CODE = """
 			def func(x: int):
 			    if x <= 0:
 			        return 1;
@@ -46,7 +46,7 @@ public class PythonReplToolBasisTest {
 			    print(func(10))
 			""";
 
-	public static final String CODE_WITH_DEPENDENCY = """
+	static final String CODE_WITH_DEPENDENCY = """
 			import numpy as np
 
 			matrix = np.array([[1, 2], [3, 4]])
@@ -56,16 +56,16 @@ public class PythonReplToolBasisTest {
 			print(inverse_matrix)
 			""";
 
-	public static final String TIMEOUT_CODE = """
+	static final String TIMEOUT_CODE = """
 			while True:
 				continue
 			""";
 
-	public static final String ERROR_CODE = """
+	static final String ERROR_CODE = """
 			void main() {}
 			""";
 
-	public static final String NETWORK_CHECK = """
+	static final String NETWORK_CHECK = """
 			import socket
 			import urllib.request
 
