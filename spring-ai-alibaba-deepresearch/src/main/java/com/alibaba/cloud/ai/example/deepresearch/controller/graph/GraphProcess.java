@@ -23,42 +23,43 @@ import java.util.concurrent.Executors;
 
 public class GraphProcess {
 
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-    private CompiledGraph compiledGraph;
+	private CompiledGraph compiledGraph;
 
-    public GraphProcess(CompiledGraph compiledGraph) {
-        this.compiledGraph = compiledGraph;
-    }
+	public GraphProcess(CompiledGraph compiledGraph) {
+		this.compiledGraph = compiledGraph;
+	}
 
-    public void handleHumanFeedback(ChatRequest chatRequest, Map<String, Object> objectMap,
-                                     RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) {
-        objectMap.put("feed_back", chatRequest.interruptFeedback());
-        StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
-        OverAllState state = stateSnapshot.state();
-        state.withResume();
-        state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
-        AsyncGenerator<NodeOutput> resultFuture = compiledGraph.streamFromInitialNode(state, runnableConfig);
-        processStream(resultFuture, sink);
-    }
+	public void handleHumanFeedback(ChatRequest chatRequest, Map<String, Object> objectMap,
+			RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) {
+		objectMap.put("feed_back", chatRequest.interruptFeedback());
+		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
+		OverAllState state = stateSnapshot.state();
+		state.withResume();
+		state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
+		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.streamFromInitialNode(state, runnableConfig);
+		processStream(resultFuture, sink);
+	}
 
-    public void processStream(AsyncGenerator<NodeOutput> generator, Sinks.Many<ServerSentEvent<String>> sink) {
-        executor.submit(() -> {
-            generator.forEachAsync(output -> {
-                try {
-                    Map<String, Object> data = output.state().data();
-                    sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(data)).build());
-                }
-                catch (Exception e) {
-                    throw new CompletionException(e);
-                }
-            }).thenAccept(v -> {
-                // 正常完成
-                sink.tryEmitComplete();
-            }).exceptionally(e -> {
-                sink.tryEmitError(e);
-                return null;
-            });
-        });
-    }
+	public void processStream(AsyncGenerator<NodeOutput> generator, Sinks.Many<ServerSentEvent<String>> sink) {
+		executor.submit(() -> {
+			generator.forEachAsync(output -> {
+				try {
+					Map<String, Object> data = output.state().data();
+					sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(data)).build());
+				}
+				catch (Exception e) {
+					throw new CompletionException(e);
+				}
+			}).thenAccept(v -> {
+				// 正常完成
+				sink.tryEmitComplete();
+			}).exceptionally(e -> {
+				sink.tryEmitError(e);
+				return null;
+			});
+		});
+	}
+
 }

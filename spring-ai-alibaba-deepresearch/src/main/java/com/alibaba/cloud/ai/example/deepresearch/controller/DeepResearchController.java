@@ -48,7 +48,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 /**
  * @author yingzi
  * @since 2025/5/17 19:27
@@ -66,7 +65,6 @@ public class DeepResearchController {
 		this.compiledGraph = stateGraph.compile();
 	}
 
-
 	/**
 	 * SSE (Server-Sent Events) endpoint for chat streaming.
 	 *
@@ -77,9 +75,7 @@ public class DeepResearchController {
 	@RequestMapping(value = "/chat/stream", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> chatStream(@RequestBody(required = false) ChatRequest chatRequest) {
 		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest);
-		RunnableConfig runnableConfig = RunnableConfig.builder()
-			.threadId(chatRequest.threadId())
-			.build();
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(chatRequest.threadId()).build();
 
 		Map<String, Object> objectMap = new HashMap<>();
 		// Create a unicast sink to emit ServerSentEvents
@@ -119,7 +115,8 @@ public class DeepResearchController {
 	}
 
 	@GetMapping("/chat/resume")
-	public Map<String, Object> resume(@RequestParam(value = "thread_id", required = false, defaultValue = "__default__") String threadId,
+	public Map<String, Object> resume(
+			@RequestParam(value = "thread_id", required = false, defaultValue = "__default__") String threadId,
 			@RequestParam(value = "feed_back", required = true) String feedBack,
 			@RequestParam(value = "feed_back_content", required = false) String feedBackContent) {
 
