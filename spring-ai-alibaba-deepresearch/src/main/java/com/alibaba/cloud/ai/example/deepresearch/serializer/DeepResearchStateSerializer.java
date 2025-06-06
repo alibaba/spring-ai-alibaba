@@ -74,4 +74,3 @@ public class DeepResearchStateSerializer extends PlainTextStateSerializer {
 	}
 
 }
-
