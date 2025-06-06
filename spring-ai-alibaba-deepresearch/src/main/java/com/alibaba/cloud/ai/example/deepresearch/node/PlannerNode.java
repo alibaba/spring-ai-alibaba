@@ -125,7 +125,7 @@ public class PlannerNode implements NodeAction {
 			if (curPlan.isHasEnoughContext()) {
 				logger.info("Planner response has enough context.");
 				updated.put("current_plan", curPlan);
-				updated.put("messages", new AssistantMessage(result));
+				updated.put("messages", List.of(new AssistantMessage(result)));
 				updated.put("planner_next_node", nextStep);
 				return updated;
 			}
