@@ -22,12 +22,9 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.exception.GraphInterruptException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.util.StringUtils;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author yingzi
@@ -52,26 +49,25 @@ public class HumanFeedbackNode implements NodeAction {
 		boolean autoAcceptedPlan = state.value("auto_accepted_plan", false);
 
 		if (!autoAcceptedPlan) {
-			// todo 这里改为接口形式，中断，然后从走resume复原逻辑
+			// todo 这里改为接口形式
 			logger.info("Do you accept the plan? [y/n]：");
 			interrupt(state);
-			Map<String, Object> feedBackData = state.humanFeedback().data();
 
-			// TIP: 暂时没做默认值校验，controller层有一层校验，并且后续该Node还会调整
-			// 由于graph的state传递问题，暂时没法从state.value方法获取值，选用map写法
-			String feedback = feedBackData.get("feed_back").toString();
+			Map<String, Object> feedBackData = state.humanFeedback().data();
+			String feedback = feedBackData.getOrDefault("feed_back", "n").toString();
 
 			if (StringUtils.hasLength(feedback) && "n".equals(feedback)) {
-				String feedbackContent = feedBackData.get("feed_back_content").toString();
-
 				nextStep = "planner";
 				updated.put("human_next_node", nextStep);
-				updated.put("feed_back_content", List.of(new UserMessage(feedbackContent)));
+
+				String feedbackContent = feedBackData.getOrDefault("feed_back_content", "").toString();
+				updated.put("feed_back_content", feedbackContent);
+
 				logger.info("Human feedback content: {}", feedbackContent);
 				state.withoutResume();
 				return updated;
 			}
-			else if (StringUtils.hasLength(feedback) && feedback.startsWith("y")) {
+			else if (StringUtils.hasLength(feedback) && "y".equals(feedback)) {
 				logger.info("Plan is accepted by user.");
 			}
 			else {
