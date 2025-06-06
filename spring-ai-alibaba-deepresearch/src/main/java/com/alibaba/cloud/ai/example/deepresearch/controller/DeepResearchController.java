@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller;
 
+import com.alibaba.cloud.ai.example.deepresearch.controller.graph.GraphProcess;
+import com.alibaba.cloud.ai.example.deepresearch.controller.request.ChatRequestProcess;
 import com.alibaba.cloud.ai.example.deepresearch.model.ChatRequest;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
@@ -24,32 +26,20 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-import com.alibaba.fastjson.JSON;
 import org.bsc.async.AsyncGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * @author yingzi
@@ -63,33 +53,9 @@ public class DeepResearchController {
 
 	private final CompiledGraph compiledGraph;
 
-	private final ExecutorService executor = Executors.newSingleThreadExecutor();
-
 	@Autowired
 	public DeepResearchController(@Qualifier("deepResearch") StateGraph stateGraph) throws GraphStateException {
 		this.compiledGraph = stateGraph.compile();
-	}
-
-	/**
-	 * Creates a default ChatRequest instance or set some default value for an instance.
-	 */
-	private ChatRequest getDefaultChatRequest(ChatRequest chatRequest) {
-		if (chatRequest == null) {
-			return new ChatRequest(Collections.emptyList(), "__default__", 1, 3, true, null, true, false,
-					Collections.emptyMap(), "草莓蛋糕怎么做呀。");
-		}
-		else {
-			return new ChatRequest(chatRequest.messages() == null ? Collections.emptyList() : chatRequest.messages(),
-					StringUtils.hasText(chatRequest.threadId()) ? chatRequest.threadId() : "__default__",
-					chatRequest.maxPlanIterations() == null ? 1 : chatRequest.maxPlanIterations(),
-					chatRequest.maxStepNum() == null ? 3 : chatRequest.maxStepNum(),
-					chatRequest.autoAcceptPlan() == null || chatRequest.autoAcceptPlan(),
-					chatRequest.interruptFeedback(),
-					chatRequest.enableBackgroundInvestigation() == null || chatRequest.enableBackgroundInvestigation(),
-					chatRequest.debug() != null && chatRequest.debug(),
-					chatRequest.mcpSettings() == null ? Collections.emptyMap() : chatRequest.mcpSettings(),
-					StringUtils.hasText(chatRequest.query()) ? chatRequest.query() : "草莓蛋糕怎么做呀。");
-		}
 	}
 
 	/**
@@ -101,25 +67,24 @@ public class DeepResearchController {
 	 */
 	@RequestMapping(value = "/chat/stream", method = RequestMethod.POST, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> chatStream(@RequestBody(required = false) ChatRequest chatRequest) {
-		chatRequest = getDefaultChatRequest(chatRequest);
-		RunnableConfig runnableConfig = RunnableConfig.builder()
-			.threadId(String.valueOf(chatRequest.threadId()))
-			.build();
+		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest);
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(chatRequest.threadId()).build();
 
 		Map<String, Object> objectMap = new HashMap<>();
 		// Create a unicast sink to emit ServerSentEvents
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
 
+		GraphProcess graphProcess = new GraphProcess(this.compiledGraph);
 		// Handle human feedback if auto-accept is disabled and feedback is provided
 		if (!chatRequest.autoAcceptPlan() && StringUtils.hasText(chatRequest.interruptFeedback())) {
-			handleHumanFeedback(chatRequest, objectMap, runnableConfig, sink);
+			graphProcess.handleHumanFeedback(chatRequest, objectMap, runnableConfig, sink);
 		}
 		// First question
 		else {
-			initializeObjectMap(chatRequest, objectMap);
+			ChatRequestProcess.initializeObjectMap(chatRequest, objectMap);
 			logger.info("init inputs: {}", objectMap);
 			AsyncGenerator<NodeOutput> resultFuture = compiledGraph.stream(objectMap, runnableConfig);
-			processStream(resultFuture, sink);
+			graphProcess.processStream(resultFuture, sink);
 		}
 
 		return sink.asFlux()
@@ -127,34 +92,25 @@ public class DeepResearchController {
 			.doOnError(e -> logger.error("Error occurred during streaming", e));
 	}
 
-	@GetMapping("/chat")
-	public Map<String, Object> chat(@RequestParam(value = "query", defaultValue = "草莓蛋糕怎么做呀") String query,
-			@RequestParam(value = "enable_background_investigation",
-					defaultValue = "true") boolean enableBackgroundInvestigation,
-			@RequestParam(value = "auto_accepted_plan", defaultValue = "true") boolean autoAcceptedPlan,
-			@RequestParam(value = "thread_id", required = false, defaultValue = "0") Integer threadId) {
-		UserMessage userMessage = new UserMessage(query);
-		Map<String, Object> objectMap = Map.of("enable_background_investigation", enableBackgroundInvestigation,
-				"auto_accepted_plan", autoAcceptedPlan, "messages", List.of(userMessage));
+	@PostMapping("/chat")
+	public Map<String, Object> chat(@RequestBody(required = false) ChatRequest chatRequest) {
+		chatRequest = ChatRequestProcess.getDefaultChatRequest(chatRequest);
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(chatRequest.threadId()).build();
+		Map<String, Object> objectMap = new HashMap<>();
+		ChatRequestProcess.initializeObjectMap(chatRequest, objectMap);
 
-		if (threadId != 0) {
-			RunnableConfig runnableConfig = RunnableConfig.builder().threadId(String.valueOf(threadId)).build();
-			var resultFuture = compiledGraph.invoke(objectMap, runnableConfig);
-			return resultFuture.get().data();
-		}
-		else {
-			var resultFuture = compiledGraph.invoke(objectMap);
-			return resultFuture.get().data();
-		}
+		var resultFuture = compiledGraph.invoke(objectMap, runnableConfig);
+		return resultFuture.get().data();
 	}
 
 	@GetMapping("/chat/resume")
-	public Map<String, Object> resume(@RequestParam(value = "thread_id", required = true) int threadId,
+	public Map<String, Object> resume(
+			@RequestParam(value = "thread_id", required = false, defaultValue = "__default__") String threadId,
 			@RequestParam(value = "feed_back", required = true) String feedBack,
 			@RequestParam(value = "feed_back_content", required = false) String feedBackContent) {
 
-		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(String.valueOf(threadId)).build();
-		Map<String, Object> objectMap = getStringObjectMap(feedBack, feedBackContent);
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(threadId).build();
+		Map<String, Object> objectMap = ChatRequestProcess.getStringObjectMap(feedBack, feedBackContent);
 
 		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
 		OverAllState state = stateSnapshot.state();
@@ -163,68 +119,6 @@ public class DeepResearchController {
 
 		var resultFuture = compiledGraph.invoke(state, runnableConfig);
 		return resultFuture.get().data();
-	}
-
-	private Map<String, Object> getStringObjectMap(String feedBack, String feedBackContent) {
-		Map<String, Object> objectMap;
-		if ("n".equals(feedBack)) {
-			if (StringUtils.hasLength(feedBackContent)) {
-				objectMap = Map.of("feed_back", feedBack, "feed_back_content", feedBackContent);
-			}
-			else {
-				throw new RuntimeException("feed_back_content is required when feed_back is n");
-			}
-		}
-		else if ("y".equals(feedBack)) {
-			objectMap = Map.of("feed_back", feedBack);
-		}
-		else {
-			throw new RuntimeException("feed_back should be y or n");
-		}
-		return objectMap;
-	}
-
-	private void handleHumanFeedback(ChatRequest chatRequest, Map<String, Object> objectMap,
-			RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) {
-		objectMap.put("feed_back", chatRequest.interruptFeedback());
-		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
-		OverAllState state = stateSnapshot.state();
-		state.withResume();
-		state.withHumanFeedback(new OverAllState.HumanFeedback(objectMap, "research_team"));
-		AsyncGenerator<NodeOutput> resultFuture = compiledGraph.streamFromInitialNode(state, runnableConfig);
-		processStream(resultFuture, sink);
-	}
-
-	private void initializeObjectMap(ChatRequest chatRequest, Map<String, Object> objectMap) {
-		objectMap.put("thread_id", chatRequest.threadId());
-		objectMap.put("enable_background_investigation", chatRequest.enableBackgroundInvestigation());
-		objectMap.put("auto_accepted_plan", chatRequest.autoAcceptPlan());
-		objectMap.put("messages", List.of(new UserMessage(chatRequest.query())));
-		objectMap.put("plan_iterations", 0);
-		objectMap.put("max_step_num", chatRequest.maxStepNum());
-		objectMap.put("current_plan", null);
-		objectMap.put("final_report", "");
-		objectMap.put("mcp_settings", chatRequest.mcpSettings());
-	}
-
-	private void processStream(AsyncGenerator<NodeOutput> generator, Sinks.Many<ServerSentEvent<String>> sink) {
-		executor.submit(() -> {
-			generator.forEachAsync(output -> {
-				try {
-					Map<String, Object> data = output.state().data();
-					sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(data)).build());
-				}
-				catch (Exception e) {
-					throw new CompletionException(e);
-				}
-			}).thenAccept(v -> {
-				// 正常完成
-				sink.tryEmitComplete();
-			}).exceptionally(e -> {
-				sink.tryEmitError(e);
-				return null;
-			});
-		});
 	}
 
 }
