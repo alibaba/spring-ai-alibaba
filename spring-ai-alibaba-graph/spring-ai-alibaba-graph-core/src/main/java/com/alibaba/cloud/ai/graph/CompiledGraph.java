@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import org.apache.commons.lang3.StringUtils;
 import org.bsc.async.AsyncGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -668,6 +669,10 @@ public class CompiledGraph {
 						if (data != null) {
 
 							if (data instanceof Map<?, ?>) {
+								// FIX #102
+								// Assume that the whatever used appender channel doesn't
+								// accept duplicates
+								// FIX #104: remove generator
 								var partialStateWithoutGenerator = partialState.entrySet()
 									.stream()
 									.filter(e -> !Objects.equals(e.getKey(), generatorEntry.getKey()))
@@ -678,7 +683,9 @@ public class CompiledGraph {
 
 								currentState = OverAllState.updateState(intermediateState, (Map<String, Object>) data,
 										keyStrategyMap);
-								overAllState.updateState(intermediateState);
+
+								overAllState.updateStateBySchema(intermediateState, (Map<String, Object>) data,
+										keyStrategyMap);
 							}
 							else {
 								throw new IllegalArgumentException("Embedded generator must return a Map");
@@ -707,7 +714,7 @@ public class CompiledGraph {
 					}
 
 					this.currentState = OverAllState.updateState(currentState, updateState, keyStrategyMap);
-					overAllState.updateState(updateState);
+					this.overAllState.updateStateBySchema(currentState, updateState, keyStrategyMap);
 					var nextNodeCommand = nextNodeId(currentNodeId, overAllState, currentState, config);
 					nextNodeId = nextNodeCommand.gotoNode();
 					this.currentState = nextNodeCommand.update();
