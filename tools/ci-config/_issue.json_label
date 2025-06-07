@@ -20,6 +20,6 @@
     enhancement: ['upgrade','enhance'],
     question: ['help', 'how can i','help-wanted','assistance']
   },
-  defaultLabels: ['action triaged','needs priority'],
+  defaultLabels: ['status:waiting-for-triage','needs priority'],
   ignoreComments: true
 }
