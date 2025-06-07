@@ -42,6 +42,7 @@ jobs:
             revert
             release
             test
+            style
           scopes: |
             core
             vector-stores

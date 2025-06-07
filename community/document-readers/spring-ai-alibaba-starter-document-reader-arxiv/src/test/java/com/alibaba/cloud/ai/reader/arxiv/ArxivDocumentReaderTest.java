@@ -37,8 +37,8 @@ public class ArxivDocumentReaderTest {
 	private static final int MAX_SIZE = 2;
 
 	/**
-	 * Check if the tests are running in Local.
-	 * In GitHub CI environment, this test not running.
+	 * Check if the tests are running in Local. In GitHub CI environment, this test not
+	 * running.
 	 */
 	static boolean GithubCI() {
 		return "true".equals(System.getenv("ENABLE_TEST_CI"));
