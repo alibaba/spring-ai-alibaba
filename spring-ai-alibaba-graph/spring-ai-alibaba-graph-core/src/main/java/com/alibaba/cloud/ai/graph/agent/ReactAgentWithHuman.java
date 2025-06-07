@@ -70,8 +70,8 @@ public class ReactAgentWithHuman {
 
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
-	public ReactAgentWithHuman(String name, String prompt, ChatClient chatClient, List<ToolCallback> tools, int maxIterations)
-			throws GraphStateException {
+	public ReactAgentWithHuman(String name, String prompt, ChatClient chatClient, List<ToolCallback> tools,
+			int maxIterations) throws GraphStateException {
 		this.name = name;
 		this.llmNode = LlmNode.builder()
 			.chatClient(chatClient)
@@ -83,8 +83,8 @@ public class ReactAgentWithHuman {
 		this.graph = initGraph();
 	}
 
-	public ReactAgentWithHuman(String name, String prompt, ChatClient chatClient, List<ToolCallback> tools, int maxIterations,
-			OverAllStateFactory overAllStateFactory, CompileConfig compileConfig,
+	public ReactAgentWithHuman(String name, String prompt, ChatClient chatClient, List<ToolCallback> tools,
+			int maxIterations, OverAllStateFactory overAllStateFactory, CompileConfig compileConfig,
 			Function<OverAllState, Boolean> shouldContinueFunc, Function<OverAllState, Boolean> shouldInterruptFunc)
 			throws GraphStateException {
 		this.name = name;
@@ -107,13 +107,13 @@ public class ReactAgentWithHuman {
 		this.graph = initGraph();
 	}
 
-	public ReactAgentWithHuman(String name, String prompt, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations)
-			throws GraphStateException {
+	public ReactAgentWithHuman(String name, String prompt, ChatClient chatClient, ToolCallbackResolver resolver,
+			int maxIterations) throws GraphStateException {
 		this(name, prompt, chatClient, resolver, maxIterations, null, null, null, null);
 	}
 
-	public ReactAgentWithHuman(String name, String prompt, ChatClient chatClient, ToolCallbackResolver resolver, int maxIterations,
-			OverAllStateFactory overAllStateFactory, CompileConfig compileConfig,
+	public ReactAgentWithHuman(String name, String prompt, ChatClient chatClient, ToolCallbackResolver resolver,
+			int maxIterations, OverAllStateFactory overAllStateFactory, CompileConfig compileConfig,
 			Function<OverAllState, Boolean> shouldContinueFunc, Function<OverAllState, Boolean> shouldInterruptFunc)
 			throws GraphStateException {
 		this.name = name;
@@ -268,6 +268,7 @@ public class ReactAgentWithHuman {
 	}
 
 	public static class Builder {
+
 		private String name;
 
 		private ChatClient chatClient;
@@ -344,8 +345,8 @@ public class ReactAgentWithHuman {
 						compileConfig, shouldContinueFunc, shouldInterruptFunc);
 			}
 			else if (tools != null) {
-				return new ReactAgentWithHuman(name, prompt, chatClient, tools, maxIterations, allStateFactory, compileConfig,
-						shouldContinueFunc, shouldInterruptFunc);
+				return new ReactAgentWithHuman(name, prompt, chatClient, tools, maxIterations, allStateFactory,
+						compileConfig, shouldContinueFunc, shouldInterruptFunc);
 			}
 			throw new IllegalArgumentException("Either tools or resolver must be provided");
 		}
