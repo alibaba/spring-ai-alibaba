@@ -36,8 +36,8 @@ public class ValuesAppendRespBody {
 
 	@JsonCreator
 	public ValuesAppendRespBody(@JsonProperty("revision") int revision,
-								@JsonProperty("spreadsheetToken") String spreadsheetToken, @JsonProperty("tableRange") String tableRange,
-								@JsonProperty("updates") ValuesAppendRespBodyUpdates updates) {
+			@JsonProperty("spreadsheetToken") String spreadsheetToken, @JsonProperty("tableRange") String tableRange,
+			@JsonProperty("updates") ValuesAppendRespBodyUpdates updates) {
 		this.revision = revision;
 		this.spreadsheetToken = spreadsheetToken;
 		this.tableRange = tableRange;

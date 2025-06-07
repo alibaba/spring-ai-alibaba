@@ -23,71 +23,71 @@ import com.lark.oapi.core.response.BaseResponse;
 
 public class ValuesAppendResp extends BaseResponse<ValuesAppendRespBody> {
 
-    private String requestId;
+	private String requestId;
 
-    public ValuesAppendResp() {
-        super();
-    }
+	public ValuesAppendResp() {
+		super();
+	}
 
-    public String getSpreadsheetToken() {
-        ValuesAppendRespBody data = getData();
-        if (data == null) {
-            throw new IllegalStateException("Data is null");
-        }
-        return data.getSpreadsheetToken();
-    }
+	public String getSpreadsheetToken() {
+		ValuesAppendRespBody data = getData();
+		if (data == null) {
+			throw new IllegalStateException("Data is null");
+		}
+		return data.getSpreadsheetToken();
+	}
 
-    public ValuesAppendRespBodyUpdates getUpdates() {
-        ValuesAppendRespBody data = getData();
-        if (data == null || data.getUpdates() == null) {
-            throw new IllegalStateException("Updates data is null");
-        }
-        return data.getUpdates();
-    }
+	public ValuesAppendRespBodyUpdates getUpdates() {
+		ValuesAppendRespBody data = getData();
+		if (data == null || data.getUpdates() == null) {
+			throw new IllegalStateException("Updates data is null");
+		}
+		return data.getUpdates();
+	}
 
-    @Override
-    public String getRequestId() {
-        return requestId;
-    }
+	@Override
+	public String getRequestId() {
+		return requestId;
+	}
 
-    public void setRequestId(String requestId) {
-        this.requestId = requestId;
-    }
+	public void setRequestId(String requestId) {
+		this.requestId = requestId;
+	}
 
-    @Override
-    public String toString() {
-        return "ValuesAppendResp{" + "code=" + getCode() + ", msg='" + getMsg() + '\'' + ", spreadsheetToken='"
-                + getSpreadsheetToken() + '\'' + ", updates=" + getUpdates() + '}';
-    }
+	@Override
+	public String toString() {
+		return "ValuesAppendResp{" + "code=" + getCode() + ", msg='" + getMsg() + '\'' + ", spreadsheetToken='"
+				+ getSpreadsheetToken() + '\'' + ", updates=" + getUpdates() + '}';
+	}
 
-    public static class Builder {
+	public static class Builder {
 
-        private final ValuesAppendResp instance = new ValuesAppendResp();
+		private final ValuesAppendResp instance = new ValuesAppendResp();
 
-        public Builder code(int code) {
-            instance.setCode(code);
-            return this;
-        }
+		public Builder code(int code) {
+			instance.setCode(code);
+			return this;
+		}
 
-        public Builder msg(String msg) {
-            instance.setMsg(msg);
-            return this;
-        }
+		public Builder msg(String msg) {
+			instance.setMsg(msg);
+			return this;
+		}
 
-        public Builder requestId(String requestId) {
-            instance.setRequestId(requestId);
-            return this;
-        }
+		public Builder requestId(String requestId) {
+			instance.setRequestId(requestId);
+			return this;
+		}
 
-        public Builder data(ValuesAppendRespBody data) {
-            instance.setData(data);
-            return this;
-        }
+		public Builder data(ValuesAppendRespBody data) {
+			instance.setData(data);
+			return this;
+		}
 
-        public ValuesAppendResp build() {
-            return instance;
-        }
+		public ValuesAppendResp build() {
+			return instance;
+		}
 
-    }
+	}
 
 }

@@ -40,9 +40,9 @@ public class ValuesAppendRespBodyUpdates {
 
 	@JsonCreator
 	public ValuesAppendRespBodyUpdates(@JsonProperty("revision") int revision,
-									   @JsonProperty("spreadsheetToken") String spreadsheetToken, @JsonProperty("updatedCells") int updatedCells,
-									   @JsonProperty("updatedColumns") int updatedColumns, @JsonProperty("updatedRange") String updatedRange,
-									   @JsonProperty("updatedRows") int updatedRows) {
+			@JsonProperty("spreadsheetToken") String spreadsheetToken, @JsonProperty("updatedCells") int updatedCells,
+			@JsonProperty("updatedColumns") int updatedColumns, @JsonProperty("updatedRange") String updatedRange,
+			@JsonProperty("updatedRows") int updatedRows) {
 		this.revision = revision;
 		this.spreadsheetToken = spreadsheetToken;
 		this.updatedCells = updatedCells;
