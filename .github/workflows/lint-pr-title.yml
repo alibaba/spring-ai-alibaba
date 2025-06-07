@@ -34,7 +34,7 @@ jobs:
           types: |
             fix
             feat
-            reactor
+            refactor
             docs
             chore
             perf
@@ -46,14 +46,16 @@ jobs:
             vector-stores
             document-readers
             document-parsers
+            deepresearch
+            docs
             memories
             tool-calls
             graph
-            jManus
+            jmanus
             mcp
             prompt
             studio
-            autoConf
+            autoconf
             ci
           requireScope: true
           disallowScopes: |
