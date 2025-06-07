@@ -56,7 +56,7 @@ Spring AI Alibaba 作为 Spring AI 的实现之一，在代码规范方面直接
 ### 提交最新代码
 
 在编码完成之后，需要基于pr规范`[lint-pr-title.yml](.github/workflows/lint-pr-title.yml)`对提交信息进行format&check，确保提交信息符合规范。
-Commit 规范: git commit -m "类型(模块): 空格 符合规范的提交信息",例如 `feat(infra): contribute-zh更新` 
+Commit 规范: git commit -m "类型(模块): 空格 符合规范的提交信息",例如 `feat(docs): contribute-zh更新` 
 
 ### Merge 最新代码
 

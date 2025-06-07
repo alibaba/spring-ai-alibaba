@@ -73,7 +73,7 @@ Commit format example:
 git commit -m "type(module): descriptive message"
 ```
 
-For instance: `feat(infra): update contribute-zh`
+For instance: `feat(docs): update contribute-zh`
 
 ### Merge Latest Code Again
 
