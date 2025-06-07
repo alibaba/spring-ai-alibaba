@@ -91,7 +91,8 @@ class DashScopeApiUploadFileTests {
 	}
 
 	/**
-	 * Test the normal execution flow of the uploadFile method Verify that the method handles the case with Content-Type correctly
+	 * Test the normal execution flow of the uploadFile method Verify that the method
+	 * handles the case with Content-Type correctly
 	 */
 	@Test
 	void testUploadFileWithContentType() throws Exception {
@@ -125,7 +126,8 @@ class DashScopeApiUploadFileTests {
 	}
 
 	/**
-	 * Test the normal execution flow of the uploadFile method Verify that the method handles the absence of a Content-Type correctly
+	 * Test the normal execution flow of the uploadFile method Verify that the method
+	 * handles the absence of a Content-Type correctly
 	 */
 	@Test
 	void testUploadFileWithoutContentType() throws Exception {
@@ -160,4 +162,3 @@ class DashScopeApiUploadFileTests {
 	}
 
 }
-
