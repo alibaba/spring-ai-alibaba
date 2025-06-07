@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.example.graph.stream;
 
 import com.alibaba.cloud.ai.example.graph.stream.node.BaiduSearchNode;
 import com.alibaba.cloud.ai.example.graph.stream.node.LLmNode;
+import com.alibaba.cloud.ai.example.graph.stream.node.ResultNode;
 import com.alibaba.cloud.ai.example.graph.stream.node.TavilySearchNode;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -64,6 +65,9 @@ public class LLmSearchStreamController {
 	@Autowired
 	private TavilySearchNode tavilySearchNode;
 
+	@Autowired
+	private ResultNode resultNode;
+
 	@PostConstruct
 	public void init() throws GraphStateException {
 		workflow = new StateGraph(
@@ -71,12 +75,14 @@ public class LLmSearchStreamController {
 					.registerKeyAndStrategy("messages", new AppendStrategy()))
 			.addNode("baiduSearchNode", node_async(baiduSearchNode))
 			.addNode("tavilySearchNode", node_async(tavilySearchNode))
+			.addNode("resultNode", node_async(resultNode))
 			.addNode("llmNode", node_async(lLmNode))
 			.addEdge(START, "baiduSearchNode")
 			.addEdge(START, "tavilySearchNode")
 			.addEdge("baiduSearchNode", "llmNode")
 			.addEdge("tavilySearchNode", "llmNode")
-			.addEdge("llmNode", END);
+			.addEdge("llmNode", "resultNode")
+			.addEdge("resultNode", END);
 
 	}
 
@@ -98,6 +104,7 @@ public class LLmSearchStreamController {
 		CompletableFuture.runAsync(() -> {
 			try (PrintWriter writer = response.getWriter()) {
 				generator.forEachAsync(output -> {
+					System.out.println("output = " + output);
 					try {
 						if (output instanceof StreamingOutput) {
 							writer.write("data: " + ((StreamingOutput) output).chunk() + "\n\n");
