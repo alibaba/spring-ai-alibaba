@@ -36,6 +36,7 @@ public class LLMNodeSection implements NodeSection {
 
 	@Override
 	public String render(Node node) {
+		// todo initializr 格式化
 		LLMNodeData d = (LLMNodeData) node.getData();
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();

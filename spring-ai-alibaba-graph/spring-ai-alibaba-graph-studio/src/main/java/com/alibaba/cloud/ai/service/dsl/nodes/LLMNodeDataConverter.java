@@ -48,6 +48,7 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 	private enum Converter {
 
 		DIFY(new DialectConverter<>() {
+			// todo: workflow virables
 			@SuppressWarnings("unchecked")
 			@Override
 			public LLMNodeData parse(Map<String, Object> data) {
