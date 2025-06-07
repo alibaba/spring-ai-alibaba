@@ -15,69 +15,138 @@
  */
 package com.alibaba.cloud.ai.toolcalling.larksuite.param.resp;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.Objects;
+
 /**
- * @author NewGK
+ * @author huaiziqing
  */
+
 public class ValuesAppendRespBodyUpdates {
 
-	private int revision;
+	private final int revision;
 
-	private String spreadsheetToken;
+	private final String spreadsheetToken;
 
-	private int updatedCells;
+	private final int updatedCells;
 
-	private int updatedColumns;
+	private final int updatedColumns;
 
-	private String updatedRange;
+	private final String updatedRange;
 
-	private int updatedRows;
+	private final int updatedRows;
+
+	@JsonCreator
+	public ValuesAppendRespBodyUpdates(@JsonProperty("revision") int revision,
+									   @JsonProperty("spreadsheetToken") String spreadsheetToken, @JsonProperty("updatedCells") int updatedCells,
+									   @JsonProperty("updatedColumns") int updatedColumns, @JsonProperty("updatedRange") String updatedRange,
+									   @JsonProperty("updatedRows") int updatedRows) {
+		this.revision = revision;
+		this.spreadsheetToken = spreadsheetToken;
+		this.updatedCells = updatedCells;
+		this.updatedColumns = updatedColumns;
+		this.updatedRange = updatedRange;
+		this.updatedRows = updatedRows;
+	}
 
 	public int getRevision() {
 		return revision;
-	}
-
-	public void setRevision(int revision) {
-		this.revision = revision;
 	}
 
 	public String getSpreadsheetToken() {
 		return spreadsheetToken;
 	}
 
-	public void setSpreadsheetToken(String spreadsheetToken) {
-		this.spreadsheetToken = spreadsheetToken;
-	}
-
 	public int getUpdatedCells() {
 		return updatedCells;
-	}
-
-	public void setUpdatedCells(int updatedCells) {
-		this.updatedCells = updatedCells;
 	}
 
 	public int getUpdatedColumns() {
 		return updatedColumns;
 	}
 
-	public void setUpdatedColumns(int updatedColumns) {
-		this.updatedColumns = updatedColumns;
-	}
-
 	public String getUpdatedRange() {
 		return updatedRange;
-	}
-
-	public void setUpdatedRange(String updatedRange) {
-		this.updatedRange = updatedRange;
 	}
 
 	public int getUpdatedRows() {
 		return updatedRows;
 	}
 
-	public void setUpdatedRows(int updatedRows) {
-		this.updatedRows = updatedRows;
+	@Override
+	public String toString() {
+		return "ValuesAppendRespBodyUpdates{" + "revision=" + revision + ", spreadsheetToken='" + spreadsheetToken
+				+ '\'' + ", updatedCells=" + updatedCells + ", updatedColumns=" + updatedColumns + ", updatedRange='"
+				+ updatedRange + '\'' + ", updatedRows=" + updatedRows + '}';
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (!(o instanceof ValuesAppendRespBodyUpdates that))
+			return false;
+		return revision == that.revision && updatedCells == that.updatedCells && updatedColumns == that.updatedColumns
+				&& updatedRows == that.updatedRows && spreadsheetToken.equals(that.spreadsheetToken)
+				&& updatedRange.equals(that.updatedRange);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(revision, spreadsheetToken, updatedCells, updatedColumns, updatedRange, updatedRows);
+	}
+
+	public static class Builder {
+
+		private int revision;
+
+		private String spreadsheetToken;
+
+		private int updatedCells;
+
+		private int updatedColumns;
+
+		private String updatedRange;
+
+		private int updatedRows;
+
+		public Builder revision(int revision) {
+			this.revision = revision;
+			return this;
+		}
+
+		public Builder spreadsheetToken(String spreadsheetToken) {
+			this.spreadsheetToken = spreadsheetToken;
+			return this;
+		}
+
+		public Builder updatedCells(int updatedCells) {
+			this.updatedCells = updatedCells;
+			return this;
+		}
+
+		public Builder updatedColumns(int updatedColumns) {
+			this.updatedColumns = updatedColumns;
+			return this;
+		}
+
+		public Builder updatedRange(String updatedRange) {
+			this.updatedRange = updatedRange;
+			return this;
+		}
+
+		public Builder updatedRows(int updatedRows) {
+			this.updatedRows = updatedRows;
+			return this;
+		}
+
+		public ValuesAppendRespBodyUpdates build() {
+			return new ValuesAppendRespBodyUpdates(this.revision, this.spreadsheetToken, this.updatedCells,
+					this.updatedColumns, this.updatedRange, this.updatedRows);
+		}
+
 	}
 
 }

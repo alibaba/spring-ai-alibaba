@@ -15,55 +15,106 @@
  */
 package com.alibaba.cloud.ai.toolcalling.larksuite.param.resp;
 
-import com.google.gson.annotations.SerializedName;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.Objects;
 
 /**
- * @author NewGK
+ * @author huaiziqing
  */
+
 public class ValuesAppendRespBody {
 
-	@SerializedName("revision")
-	private int revision;
+	private final int revision;
 
-	@SerializedName("spreadsheetToken")
-	private String spreadsheetToken;
+	private final String spreadsheetToken;
 
-	@SerializedName("tableRange")
-	private String tableRange;
+	private final String tableRange;
 
-	@SerializedName("updates")
-	private ValuesAppendRespBodyUpdates updates;
+	private final ValuesAppendRespBodyUpdates updates;
+
+	@JsonCreator
+	public ValuesAppendRespBody(@JsonProperty("revision") int revision,
+								@JsonProperty("spreadsheetToken") String spreadsheetToken, @JsonProperty("tableRange") String tableRange,
+								@JsonProperty("updates") ValuesAppendRespBodyUpdates updates) {
+		this.revision = revision;
+		this.spreadsheetToken = spreadsheetToken;
+		this.tableRange = tableRange;
+		this.updates = updates;
+	}
 
 	public int getRevision() {
 		return revision;
-	}
-
-	public void setRevision(int revision) {
-		this.revision = revision;
 	}
 
 	public String getSpreadsheetToken() {
 		return spreadsheetToken;
 	}
 
-	public void setSpreadsheetToken(String spreadsheetToken) {
-		this.spreadsheetToken = spreadsheetToken;
-	}
-
 	public String getTableRange() {
 		return tableRange;
-	}
-
-	public void setTableRange(String tableRange) {
-		this.tableRange = tableRange;
 	}
 
 	public ValuesAppendRespBodyUpdates getUpdates() {
 		return updates;
 	}
 
-	public void setUpdates(ValuesAppendRespBodyUpdates updates) {
-		this.updates = updates;
+	@Override
+	public String toString() {
+		return "ValuesAppendRespBody{" + "revision=" + revision + ", spreadsheetToken='" + spreadsheetToken + '\''
+				+ ", tableRange='" + tableRange + '\'' + ", updates=" + updates + '}';
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (!(o instanceof ValuesAppendRespBody that))
+			return false;
+		return revision == that.revision && spreadsheetToken.equals(that.spreadsheetToken)
+				&& tableRange.equals(that.tableRange) && updates.equals(that.updates);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(revision, spreadsheetToken, tableRange, updates);
+	}
+
+	public static class Builder {
+
+		private int revision;
+
+		private String spreadsheetToken;
+
+		private String tableRange;
+
+		private ValuesAppendRespBodyUpdates updates;
+
+		public Builder revision(int revision) {
+			this.revision = revision;
+			return this;
+		}
+
+		public Builder spreadsheetToken(String spreadsheetToken) {
+			this.spreadsheetToken = spreadsheetToken;
+			return this;
+		}
+
+		public Builder tableRange(String tableRange) {
+			this.tableRange = tableRange;
+			return this;
+		}
+
+		public Builder updates(ValuesAppendRespBodyUpdates updates) {
+			this.updates = updates;
+			return this;
+		}
+
+		public ValuesAppendRespBody build() {
+			return new ValuesAppendRespBody(this.revision, this.spreadsheetToken, this.tableRange, this.updates);
+		}
+
 	}
 
 }
