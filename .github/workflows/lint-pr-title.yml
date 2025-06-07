@@ -34,7 +34,7 @@ jobs:
           types: |
             fix
             feat
-            reactor
+            refactor
             docs
             chore
             perf
