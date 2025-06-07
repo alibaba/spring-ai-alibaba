@@ -41,6 +41,7 @@ jobs:
             infra
             revert
             release
+            test
           scopes: |
             core
             vector-stores
