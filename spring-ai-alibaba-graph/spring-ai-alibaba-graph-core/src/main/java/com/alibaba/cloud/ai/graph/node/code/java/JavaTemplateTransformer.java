@@ -44,6 +44,7 @@ public class JavaTemplateTransformer extends TemplateTransformer {
 				"            output = JSON.toJSONString(wrapper, true);", "        }",
 				"        System.out.println(\"<<RESULT>>\" + output + \"<<RESULT>>\");", "    }", "",
 				"    " + CODE_PLACEHOLDER, "}");
+
 	}
 
 }
