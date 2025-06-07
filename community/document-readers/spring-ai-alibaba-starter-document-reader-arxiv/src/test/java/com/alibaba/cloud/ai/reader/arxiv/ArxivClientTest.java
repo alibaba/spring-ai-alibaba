@@ -17,15 +17,12 @@ package com.alibaba.cloud.ai.reader.arxiv;
 
 import com.alibaba.cloud.ai.reader.arxiv.client.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,7 +32,17 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author brianxiadong
  */
+
+@DisabledIf("GithubCI")
 public class ArxivClientTest {
+
+	/**
+	 * Check if the tests are running in Local. In GitHub CI environment, this test not
+	 * running.
+	 */
+	static boolean GithubCI() {
+		return "true".equals(System.getenv("ENABLE_TEST_CI"));
+	}
 
 	@Test
 	public void testBasicSearch() throws IOException {
