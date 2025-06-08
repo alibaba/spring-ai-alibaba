@@ -92,7 +92,6 @@ public class ChatController {
 }
 ```
 
-
 ## 数据库表结构
 
 该模块会自动创建以下表结构：

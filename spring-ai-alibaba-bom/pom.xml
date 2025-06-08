@@ -419,6 +419,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-memory-elasticsearch</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <!-- Spring AI Alibaba Document Parsers -->
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>

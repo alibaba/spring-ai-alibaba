@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 "area/infra":
   - changed-files:
       - any-glob-to-any-file:
@@ -27,25 +26,21 @@
           - "CONTRIBUTING.md"
           - "CONTRIBUTING-zh.md"
           - "GOVERNANCE.md"
-
-"area/doc":
+"area/docs":
   - changed-files:
       - any-glob-to-any-file:
           - "**/README.md"
           - "**/README-zh.md"
           - "**/README-ja.md"
           - "SECURITY.md"
-
 "area/jmanus":
   - changed-files:
       - any-glob-to-any-file:
           - "spring-ai-alibaba-jmanus/**/*"
-
 "area/graph":
   - changed-files:
       - any-glob-to-any-file:
           - "spring-ai-alibaba-graph/**/*"
-
 "area/core":
   - changed-files:
       - any-glob-to-any-file:
@@ -53,42 +48,38 @@
           - "spring-ai-alibaba-bom/**/*"
           - "auto-configurations/**/*"
           - "spring-ai-alibaba-spring-boot-starter/**/*"
-
 "area/studio":
   - changed-files:
       - any-glob-to-any-file:
           - "spring-ai-alibaba-studio/**/*"
-
+"area/mcp":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "spring-ai-alibaba-mcp/**/*"
 "area/deepresearch":
   - changed-files:
       - any-glob-to-any-file:
           - "spring-ai-alibaba-deepresearch/**/*"
-
 "area/nl2sql":
   - changed-files:
       - any-glob-to-any-file:
           - "spring-ai-alibaba-nl2sql/**/*"
-
 "area/community":
   - changed-files:
       - any-glob-to-any-file:
           - "community/**/*"
-
 "area/tools":
   - changed-files:
       - any-glob-to-any-file:
           - "community/tool-calls/**/*"
-
 "area/document-reader":
   - changed-files:
       - any-glob-to-any-file:
           - "community/document-readers/**/*"
-
 "area/document-parser":
   - changed-files:
       - any-glob-to-any-file:
           - "community/document-parser/**/*"
-
 "area/memory":
   - changed-files:
       - any-glob-to-any-file:

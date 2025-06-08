@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.PlannerDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.BackgroundInvestigationType;
 import com.alibaba.cloud.ai.example.deepresearch.node.*;
+import com.alibaba.cloud.ai.example.deepresearch.serializer.DeepResearchStateSerializer;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -56,7 +57,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
  * @since 2025/5/17 17:10
  */
 @Configuration
-@EnableConfigurationProperties(DeepResearchProperties.class)
+@EnableConfigurationProperties({ DeepResearchProperties.class, PythonCoderProperties.class })
 public class DeepResearchConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepResearchConfiguration.class);
@@ -114,7 +115,8 @@ public class DeepResearchConfiguration {
 		BackgroundInvestigationNodeAction backgroundInvestigationNodeAction = createBackgroundInvestigationNodeAction(
 				deepResearchProperties.getBackgroundInvestigationType(), toolCallbacks);
 
-		StateGraph stateGraph = new StateGraph("deep research", stateFactory)
+		StateGraph stateGraph = new StateGraph("deep research", stateFactory,
+				new DeepResearchStateSerializer(OverAllState::new))
 			.addNode("coordinator", node_async(new CoordinatorNode(chatClientBuilder)))
 			.addNode("background_investigator", node_async(backgroundInvestigationNodeAction))
 			.addNode("planner", node_async((new PlannerNode(chatClientBuilder, toolCallbacks))))
