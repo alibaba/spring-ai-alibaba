@@ -70,11 +70,7 @@ public class ReporterNode implements NodeAction {
 			messages.add(new UserMessage(observation));
 		}
 		logger.debug("Reporter node is running, messages: {}", messages);
-		// Flux<String> streamConent = chatClient.prompt()
-		// .messages(messages)
-		// .stream()
-		// .content();
-		// String finalContent = streamConent.reduce((acc, next) -> acc + next).block();
+		// todo 以下待调整
 		String finalContent = chatClient.prompt()
 			.messages(messages.stream()
 				.filter(message -> message.getMetadata() == null || !message.getMetadata().containsKey("tool_call_id"))
