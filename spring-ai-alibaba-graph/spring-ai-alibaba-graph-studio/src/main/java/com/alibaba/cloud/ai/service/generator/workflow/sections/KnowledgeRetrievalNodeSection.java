@@ -31,13 +31,13 @@ public class KnowledgeRetrievalNodeSection implements NodeSection {
 	}
 
 	@Override
-	public String render(Node node) {
+	public String render(Node node, String varName) {
 		KnowledgeRetrievalNodeData d = (KnowledgeRetrievalNodeData) node.getData();
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(String.format("        // —— KnowledgeRetrievalNode [%s] ——%n", id));
-		sb.append(String.format("        KnowledgeRetrievalNode %sNode = KnowledgeRetrievalNode.builder()%n", id));
+		sb.append(String.format("        KnowledgeRetrievalNode %s = KnowledgeRetrievalNode.builder()%n", varName));
 
 		if (d.getUserPromptKey() != null) {
 			sb.append(String.format("                .userPromptKey(\"%s\")%n", escape(d.getUserPromptKey())));
@@ -89,7 +89,7 @@ public class KnowledgeRetrievalNodeSection implements NodeSection {
 		sb.append("                .vectorStore(vectorStore)\n");
 
 		sb.append("                .build();\n");
-		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id, id));
+		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 		return sb.toString();
 	}
 

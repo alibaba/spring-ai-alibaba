@@ -36,13 +36,13 @@ public class QuestionClassifierNodeSection implements NodeSection {
 	}
 
 	@Override
-	public String render(Node node) {
+	public String render(Node node, String varName) {
 		QuestionClassifierNodeData data = (QuestionClassifierNodeData) node.getData();
 		String id = node.getId();
 
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.format("        // —— QuestionClassifierNode [%s] ——%n", id));
-		sb.append(String.format("        QuestionClassifierNode %sNode = QuestionClassifierNode.builder()%n", id));
+		sb.append(String.format("        QuestionClassifierNode %s = QuestionClassifierNode.builder()%n", varName));
 
 		sb.append("            .chatClient(chatClient)\n");
 
@@ -54,8 +54,8 @@ public class QuestionClassifierNodeSection implements NodeSection {
 
 		List<String> categoryIds = data.getClasses()
 			.stream()
-			.map(QuestionClassifierNodeData.ClassConfig::getId)
-			.collect(Collectors.toList());
+			.map(QuestionClassifierNodeData.ClassConfig::getText)
+			.toList();
 		if (!categoryIds.isEmpty()) {
 			String joined = categoryIds.stream()
 				.map(this::escape)
@@ -70,7 +70,7 @@ public class QuestionClassifierNodeSection implements NodeSection {
 		}
 
 		sb.append("            .build();\n");
-		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id, id));
+		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 
 		return sb.toString();
 	}

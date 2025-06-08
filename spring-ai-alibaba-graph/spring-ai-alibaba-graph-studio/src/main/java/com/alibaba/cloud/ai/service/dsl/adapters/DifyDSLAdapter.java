@@ -18,8 +18,13 @@ package com.alibaba.cloud.ai.service.dsl.adapters;
 import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.model.AppMetadata;
 import com.alibaba.cloud.ai.model.Variable;
+import com.alibaba.cloud.ai.model.VariableType;
 import com.alibaba.cloud.ai.model.chatbot.ChatBot;
 import com.alibaba.cloud.ai.model.workflow.*;
+import com.alibaba.cloud.ai.model.workflow.nodedata.DocumentExtractorNodeData;
+import com.alibaba.cloud.ai.model.workflow.nodedata.HttpNodeData;
+import com.alibaba.cloud.ai.model.workflow.nodedata.LLMNodeData;
+import com.alibaba.cloud.ai.model.workflow.nodedata.VariableAggregatorNodeData;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.service.dsl.Serializer;
 import com.alibaba.cloud.ai.service.dsl.NodeDataConverter;
@@ -34,6 +39,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * DifyDSLAdapter converts Dify DSL to {@link App} and vice versa.
@@ -106,26 +112,62 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 	public Workflow mapToWorkflow(Map<String, Object> data) {
 		Map<String, Object> workflowData = (Map<String, Object>) data.get("workflow");
 		Workflow workflow = new Workflow();
+
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		// map key is snake_case style
 		objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+
+		List<Variable> convVars = new ArrayList<>();
 		if (workflowData.containsKey("conversation_variables")) {
-			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData
-				.get("conversation_variables");
-			List<Variable> workflowVars = variables.stream()
-				.map(variable -> objectMapper.convertValue(variable, Variable.class))
-				.collect(Collectors.toList());
-			workflow.setWorkflowVars(workflowVars);
+			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData.get("conversation_variables");
+			convVars = variables.stream()
+					.map(variable -> objectMapper.convertValue(variable, Variable.class))
+					.toList();
 		}
+
 		if (workflowData.containsKey("environment_variables")) {
 			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData.get("environment_variables");
 			List<Variable> envVars = variables.stream()
-				.map(variable -> objectMapper.convertValue(variable, Variable.class))
-				.collect(Collectors.toList());
+					.map(variable -> objectMapper.convertValue(variable, Variable.class))
+					.collect(Collectors.toList());
 			workflow.setEnvVars(envVars);
 		}
-		workflow.setGraph(constructGraph((Map<String, Object>) workflowData.get("graph")));
+
+		Graph graph = constructGraph((Map<String, Object>) workflowData.get("graph"));
+		workflow.setGraph(graph);
+
+		List<Variable> extraVars = graph.getNodes().stream()
+				.map(Node::getData)
+				.flatMap(nd -> {
+					if (nd instanceof DocumentExtractorNodeData) {
+						return Stream.of(DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA);
+					}
+					if (nd instanceof HttpNodeData http) {
+						return Optional.ofNullable(http.getOutputKey())
+								.map(k -> new Variable(k, VariableType.STRING.value()))
+								.stream();
+					}
+					if (nd instanceof LLMNodeData llm) {
+						return Optional.ofNullable(llm.getOutputKey())
+								.map(k -> new Variable(k, VariableType.STRING.value()))
+								.stream();
+					}
+					if (nd instanceof VariableAggregatorNodeData agg) {
+						return Optional.ofNullable(agg.getOutputKey())
+								.map(k -> new Variable(k, agg.getOutputType()))
+								.stream();
+					}
+					return Stream.empty();
+					// todo： other node may create overallstate variables
+				})
+				.collect(Collectors.toList());
+
+		List<Variable> allVars = Stream.concat(convVars.stream(), extraVars.stream())
+				.distinct()
+				.collect(Collectors.toList());
+
+		workflow.setWorkflowVars(allVars);
+
 		return workflow;
 	}
 

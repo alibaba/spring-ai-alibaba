@@ -35,14 +35,13 @@ public class LLMNodeSection implements NodeSection {
 	}
 
 	@Override
-	public String render(Node node) {
-		// todo initializr 格式化
+	public String render(Node node, String varName) {
 		LLMNodeData d = (LLMNodeData) node.getData();
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(String.format("        // —— LlmNode [%s] ——%n", id));
-		sb.append(String.format("        LlmNode %sNode = LlmNode.builder()%n", id));
+		sb.append(String.format("        LlmNode %s = LlmNode.builder()%n", varName));
 
 		if (d.getSystemPromptTemplate() != null) {
 			sb.append(String.format("                .systemPromptTemplate(\"%s\")%n",
@@ -118,7 +117,7 @@ public class LLMNodeSection implements NodeSection {
 		}
 
 		sb.append("                .build();\n");
-		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id, id));
+		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 
 		return sb.toString();
 	}

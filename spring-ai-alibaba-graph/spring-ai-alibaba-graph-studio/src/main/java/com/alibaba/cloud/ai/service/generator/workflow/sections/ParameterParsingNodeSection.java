@@ -35,13 +35,13 @@ public class ParameterParsingNodeSection implements NodeSection {
 	}
 
 	@Override
-	public String render(Node node) {
+	public String render(Node node, String varName) {
 		ParameterParsingNodeData d = (ParameterParsingNodeData) node.getData();
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(String.format("        // —— ParameterParsingNode [%s] ——%n", id));
-		sb.append(String.format("        ParameterParsingNode %sNode = ParameterParsingNode.builder()%n", id));
+		sb.append(String.format("        ParameterParsingNode %s = ParameterParsingNode.builder()%n", varName));
 
 		if (d.getInputTextKey() != null) {
 			sb.append(String.format("            .inputTextKey(\"%s\")%n", escape(d.getInputTextKey())));
@@ -66,7 +66,7 @@ public class ParameterParsingNodeSection implements NodeSection {
 		}
 
 		sb.append("            .build();\n");
-		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id, id));
+		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 
 		return sb.toString();
 	}

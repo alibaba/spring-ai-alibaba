@@ -31,14 +31,14 @@ public class AnswerNodeSection implements NodeSection {
 	}
 
 	@Override
-	public String render(Node node) {
+	public String render(Node node, String varName) {
 		AnswerNodeData d = (AnswerNodeData) node.getData();
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
 		// 8 个空格缩进
 		sb.append("        // —— AnswerNode [").append(id).append("] ——\n");
-		sb.append("        AnswerNode ").append(id).append("Node = AnswerNode.builder()\n");
+		sb.append("        AnswerNode ").append(varName).append(" = AnswerNode.builder()\n");
 
 		if (d.getAnswer() != null) {
 			sb.append("                .answer(\"").append(escape(d.getAnswer())).append("\")\n");
@@ -48,8 +48,8 @@ public class AnswerNodeSection implements NodeSection {
 		sb.append("        stateGraph.addNode(\"")
 			.append(id)
 			.append("\", AsyncNodeAction.node_async(")
-			.append(id)
-			.append("Node));\n\n");
+			.append(varName)
+			.append("));\n\n");
 
 		return sb.toString();
 	}

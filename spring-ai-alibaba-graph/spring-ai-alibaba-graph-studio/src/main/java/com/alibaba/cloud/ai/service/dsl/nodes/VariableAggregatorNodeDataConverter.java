@@ -1,5 +1,23 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
+import com.alibaba.cloud.ai.model.Variable;
+import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.VariableAggregatorNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
@@ -37,87 +55,77 @@ public class VariableAggregatorNodeDataConverter extends AbstractNodeDataConvert
             @SuppressWarnings("unchecked")
             @Override
             public VariableAggregatorNodeData parse(Map<String, Object> data) {
-                VariableAggregatorNodeData.AdvancedSettings advancedSettings;
+                VariableAggregatorNodeData.AdvancedSettings adv;
                 Object advRaw = data.get("advanced_settings");
                 if (advRaw instanceof Map<?, ?>) {
-                    Map<String, Object> advanced_map = (Map<String, Object>) advRaw;
-                    advancedSettings = new VariableAggregatorNodeData.AdvancedSettings();
-
-                    Object ge = advanced_map.get("group_enabled");
-                    advancedSettings.setGroupEnabled(ge instanceof Boolean ? (Boolean) ge : false);
-
-                    Object groupsRaw = advanced_map.get("groups");
+                    Map<String, Object> map = (Map<String, Object>) advRaw;
+                    adv = new VariableAggregatorNodeData.AdvancedSettings();
+                    adv.setGroupEnabled(Boolean.TRUE.equals(map.get("group_enabled")));
+                    Object groupsRaw = map.get("groups");
                     if (groupsRaw instanceof List<?>) {
                         try {
-                            ObjectMapper objectMapper = new ObjectMapper();
-                            String json = objectMapper.writeValueAsString(groupsRaw);
-                            List<VariableAggregatorNodeData.Groups> groupsList =
-                                    objectMapper.readValue(json, new TypeReference<List<VariableAggregatorNodeData.Groups>>() {});
-                            advancedSettings.setGroups(groupsList);
+                            ObjectMapper om = new ObjectMapper();
+                            String json = om.writeValueAsString(groupsRaw);
+                            var list = om.readValue(json, new TypeReference<List<VariableAggregatorNodeData.Groups>>() {});
+                            adv.setGroups(list);
                         } catch (JsonProcessingException e) {
                             throw new RuntimeException("Failed to parse 'advanced_settings.groups' JSON", e);
                         }
                     } else {
-                        advancedSettings.setGroups(Collections.emptyList());
+                        adv.setGroups(Collections.emptyList());
                     }
                 } else {
-                    advancedSettings = new VariableAggregatorNodeData.AdvancedSettings();
-                    advancedSettings.setGroupEnabled(false);
-                    advancedSettings.setGroups(Collections.emptyList());
+                    adv = new VariableAggregatorNodeData.AdvancedSettings()
+                            .setGroupEnabled(false)
+                            .setGroups(Collections.emptyList());
                 }
 
-                List<List<String>> variables = Collections.emptyList();
+                List<List<String>> vars = Collections.emptyList();
                 Object varRaw = data.get("variables");
                 if (varRaw instanceof List<?>) {
-                    //noinspection unchecked
-                    variables = (List<List<String>>) varRaw;
+                    vars = (List<List<String>>) varRaw;
                 }
 
-                String outputType = data.containsKey("output_type")
-                        ? (String) data.get("output_type")
-                        : null;
-
-                return new VariableAggregatorNodeData(
-                        null,
-                        null,
-                        variables,
-                        outputType,
-                        advancedSettings
-                );
+                String outputType = (String) data.get("output_type");
+                List<VariableSelector> inputs = Collections.emptyList();
+                List<Variable> outputs = new ArrayList<>();
+                VariableAggregatorNodeData variableAggregatorNodeData =
+                        new VariableAggregatorNodeData(inputs,
+                                outputs,
+                                vars,
+                                outputType,
+                                adv);
+                if (data.containsKey("output_key")) {
+                    variableAggregatorNodeData.setOutputKey((String) data.get("output_key"));
+                }
+                outputs.add(new Variable(variableAggregatorNodeData.getOutputKey(),
+                        variableAggregatorNodeData.getOutputType()));
+                return variableAggregatorNodeData;
             }
 
             @Override
-            public Map<String, Object> dump(VariableAggregatorNodeData nodeData) {
-                Map<String, Object> result = new HashMap<>();
-
-                result.put("variables", nodeData.getVariables());
-
-                if (nodeData.getOutputType() != null) {
-                    result.put("output_type", nodeData.getOutputType());
+            public Map<String, Object> dump(VariableAggregatorNodeData nd) {
+                Map<String, Object> result = new LinkedHashMap<>();
+                result.put("variables", nd.getVariables());
+                if (nd.getOutputType() != null) {
+                    result.put("output_type", nd.getOutputType());
                 }
-
-                VariableAggregatorNodeData.AdvancedSettings adv = nodeData.getAdvancedSettings();
+                var adv = nd.getAdvancedSettings();
                 if (adv != null) {
-                    Map<String, Object> advMap = new LinkedHashMap<>();
-                    advMap.put("group_enabled", adv.isGroupEnabled());
-
-                    List<VariableAggregatorNodeData.Groups> groupsList = adv.getGroups();
-                    List<Map<String, Object>> groupsOut = new ArrayList<>();
-                    if (groupsList != null) {
-                        for (VariableAggregatorNodeData.Groups g : groupsList) {
-                            Map<String, Object> gm = new LinkedHashMap<>();
-                            gm.put("group_name", g.getGroupName());
-                            gm.put("groupId", g.getGroupId());
-                            gm.put("output_type", g.getOutputType());
-                            gm.put("variables", g.getVariables());
-                            groupsOut.add(gm);
-                        }
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("group_enabled", adv.isGroupEnabled());
+                    List<Map<String, Object>> gos = new ArrayList<>();
+                    for (var g : adv.getGroups()) {
+                        Map<String, Object> gm = new LinkedHashMap<>();
+                        gm.put("group_name", g.getGroupName());
+                        gm.put("groupId", g.getGroupId());
+                        gm.put("output_type", g.getOutputType());
+                        gm.put("variables", g.getVariables());
+                        gos.add(gm);
                     }
-                    advMap.put("groups", groupsOut);
-
-                    result.put("advanced_settings", advMap);
+                    m.put("groups", gos);
+                    result.put("advanced_settings", m);
                 }
-
                 return result;
             }
         }),
@@ -125,9 +133,11 @@ public class VariableAggregatorNodeDataConverter extends AbstractNodeDataConvert
         CUSTOM(defaultCustomDialectConverter(VariableAggregatorNodeData.class));
 
         private final DialectConverter<VariableAggregatorNodeData> converter;
+
         AggregatorNodeDialectConverter(DialectConverter<VariableAggregatorNodeData> converter) {
             this.converter = converter;
         }
+
         public DialectConverter<VariableAggregatorNodeData> dialectConverter() {
             return this.converter;
         }

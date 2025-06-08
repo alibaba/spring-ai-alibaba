@@ -41,9 +41,7 @@ public class VariableAggregatorNode implements NodeAction {
             Object value = state.value(key).orElse(null);
             aggregated.put(key, value);
         }
-        Map<String, Object> updated = new HashMap<>();
-        updated.put(outputKey, aggregated);
-        return updated;
+        return Map.of(outputKey, aggregated);
     }
 
     public static Builder builder() {

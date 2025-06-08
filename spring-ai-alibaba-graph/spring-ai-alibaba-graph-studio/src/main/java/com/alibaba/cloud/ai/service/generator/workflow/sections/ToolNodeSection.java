@@ -33,13 +33,13 @@ public class ToolNodeSection implements NodeSection {
 	}
 
 	@Override
-	public String render(Node node) {
+	public String render(Node node, String varName) {
 		ToolNodeData d = (ToolNodeData) node.getData();
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(String.format("        // —— ToolNode [%s] ——%n", id));
-		sb.append(String.format("        ToolNode %sNode = ToolNode.builder()%n", id));
+		sb.append(String.format("        ToolNode %s = ToolNode.builder()%n", varName));
 
 		if (d.getLlmResponseKey() != null) {
 			sb.append(String.format("            .llmResponseKey(\"%s\")%n", escape(d.getLlmResponseKey())));
@@ -70,7 +70,7 @@ public class ToolNodeSection implements NodeSection {
 		sb.append("            .toolCallbackResolver(toolCallbackResolver)\n");
 
 		sb.append("            .build();\n");
-		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id, id));
+		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 
 		return sb.toString();
 	}

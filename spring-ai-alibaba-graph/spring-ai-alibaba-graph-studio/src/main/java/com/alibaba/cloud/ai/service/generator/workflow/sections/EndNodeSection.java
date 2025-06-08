@@ -31,7 +31,7 @@ public class EndNodeSection implements NodeSection {
 	}
 
 	@Override
-	public String render(Node node) {
+	public String render(Node node, String varName) {
 		return "";
 	}
 

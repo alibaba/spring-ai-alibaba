@@ -34,13 +34,13 @@ public class DocumentExtractorNodeSection implements NodeSection {
 	}
 
 	@Override
-	public String render(Node node) {
+	public String render(Node node, String varName) {
 		DocumentExtractorNodeData data = (DocumentExtractorNodeData) node.getData();
 		String id = node.getId();
 
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.format("        // —— DocumentExtractorNode [%s] ——%n", id));
-		sb.append(String.format("        DocumentExtractorNode %sNode = DocumentExtractorNode.builder()%n", id));
+		sb.append(String.format("        DocumentExtractorNode %s = DocumentExtractorNode.builder()%n", varName));
 
 		List<String> fileList = data.getFileList();
 		if (fileList != null && !fileList.isEmpty()) {
@@ -59,7 +59,7 @@ public class DocumentExtractorNodeSection implements NodeSection {
 		sb.append(String.format("                .outputKey(\"%s\")%n", escape(outputKey)));
 
 		sb.append("                .build();\n");
-		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id, id));
+		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 
 		return sb.toString();
 	}

@@ -34,7 +34,7 @@ public class HumanNodeSection implements NodeSection {
 	}
 
 	@Override
-	public String render(Node node) {
+	public String render(Node node, String varName) {
 		HumanNodeData d = (HumanNodeData) node.getData();
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
@@ -65,8 +65,8 @@ public class HumanNodeSection implements NodeSection {
 		}
 
 		sb.append("HumanNode ")
-			.append(id)
-			.append("Node = new HumanNode(")
+			.append(varName)
+			.append(" = new HumanNode(")
 			.append("\"")
 			.append(d.getInterruptStrategy())
 			.append("\", ")
@@ -75,7 +75,7 @@ public class HumanNodeSection implements NodeSection {
 			.append(updateLambda)
 			.append(");\n");
 
-		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id, id));
+		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id, varName));
 
 		return sb.toString();
 	}

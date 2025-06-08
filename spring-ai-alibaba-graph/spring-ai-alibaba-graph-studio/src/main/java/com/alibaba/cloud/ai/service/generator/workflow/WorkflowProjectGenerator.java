@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.model.workflow.*;
 import com.alibaba.cloud.ai.service.dsl.DSLAdapter;
 import com.alibaba.cloud.ai.service.generator.GraphProjectDescription;
 import com.alibaba.cloud.ai.service.generator.ProjectGenerator;
+import com.google.common.base.CaseFormat;
 import io.spring.initializr.generator.io.template.MustacheTemplateRenderer;
 import io.spring.initializr.generator.io.template.TemplateRenderer;
 import io.spring.initializr.generator.project.ProjectDescription;
@@ -36,6 +37,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -80,22 +83,67 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 	@Override
 	public void generate(GraphProjectDescription projectDescription, Path projectRoot) {
-		// import dsl
 		App app = dslAdapter.importDSL(projectDescription.getDsl());
 		Workflow workflow = (Workflow) app.getSpec();
-		// render sections
-		List<Variable> overallStateVars = workflow.getWorkflowVars();
-		String stateSectionStr = renderStateSections(overallStateVars);
-		String nodeSectionStr = renderNodeSections(workflow.getGraph().getNodes());
-		String edSectionStr = renderEdgeSections(workflow.getGraph().getEdges());
-		Map<String, String> graphBuilderModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName(),
-				GRAPH_BUILDER_STATE_SECTION, stateSectionStr, GRAPH_BUILDER_NODE_SECTION, nodeSectionStr,
-				GRAPH_BUILDER_EDGE_SECTION, edSectionStr);
+
+		List<Node> nodes = workflow.getGraph().getNodes();
+		Map<String, String> varNames = assignVariableNames(nodes);
+
+		String stateSectionStr = renderStateSections(workflow.getWorkflowVars());
+		String nodeSectionStr = renderNodeSections(nodes, varNames);
+		String edgeSectionStr = renderEdgeSections(workflow.getGraph().getEdges());
+
+		Map<String, String> graphBuilderModel = Map.of(
+				PACKAGE_NAME, projectDescription.getPackageName(),
+				GRAPH_BUILDER_STATE_SECTION, stateSectionStr,
+				GRAPH_BUILDER_NODE_SECTION, nodeSectionStr,
+				GRAPH_BUILDER_EDGE_SECTION, edgeSectionStr
+		);
 		Map<String, String> graphRunControllerModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName());
-		// render and write templates
-		renderAndWriteTemplates(List.of(GRAPH_BUILDER_TEMPLATE_NAME, GRAPH_RUN_TEMPLATE_NAME),
-				List.of(graphBuilderModel, graphRunControllerModel), projectRoot, projectDescription);
+		renderAndWriteTemplates(
+				List.of(GRAPH_BUILDER_TEMPLATE_NAME, GRAPH_RUN_TEMPLATE_NAME),
+				List.of(graphBuilderModel, graphRunControllerModel),
+				projectRoot, projectDescription
+		);
 	}
+
+	private Map<String, String> generateVarNames(List<Node> nodes) {
+		Map<String, Integer> counters = new HashMap<>();
+		Map<String, String> result = new LinkedHashMap<>();
+		for (Node node : nodes) {
+			NodeType type = NodeType.fromValue(node.getType()).orElseThrow();
+			String base = toLowerCamel(type.name().replace('-', ' '));
+			int idx = counters.merge(base, 1, Integer::sum);
+			String varName = base + idx + "Node";
+			result.put(node.getId(), varName);
+		}
+		return result;
+	}
+
+	private String toLowerCamel(String text) {
+		String[] parts = text.split("\\s+");
+		StringBuilder sb = new StringBuilder(parts[0].toLowerCase());
+		for (int i = 1; i < parts.length; i++) {
+			sb.append(Character.toUpperCase(parts[i].charAt(0)))
+					.append(parts[i].substring(1).toLowerCase());
+		}
+		return sb.toString();
+	}
+
+	private Map<String, String> assignVariableNames(List<Node> nodes) {
+		Map<NodeType, Integer> counter = new HashMap<>();
+		Map<String, String> varNames = new HashMap<>();
+		for (Node node : nodes) {
+			NodeType type = NodeType.fromValue(node.getType()).orElseThrow();
+			int idx = counter.merge(type, 1, Integer::sum);
+			// generate similar questionClassifier1, http1, llm1, aggregator1, ...
+			String base = CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, type.name());
+			String varName = base + idx;
+			varNames.put(node.getId(), varName);
+		}
+		return varNames;
+	}
+
 
 	private String renderStateSections(List<Variable> overallStateVars) {
 		if (overallStateVars == null || overallStateVars.isEmpty()) {
@@ -107,36 +155,30 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			.collect(Collectors.joining());
 	}
 
-	private String renderNodeSections(List<Node> nodes) {
-		StringBuilder stringBuilder = new StringBuilder();
-		nodes.forEach(node -> {
-			// 1. temporary solution
-			NodeType nodeType = NodeType.fromValue(node.getType()).orElse(null);
-			log.warn("Unsupported node type for generation: {}", node.getType());
-			if (Objects.isNull(nodeType)) {
-				return;
-			}
-			// 2. The right way to handle the exception:
-			// NodeType nodeType = NodeType.fromValue(node.getType())
-			// .orElseThrow(()-> new NotImplementedException("Unsupported node type for
-			// generation" + node.getType()));
-			for (NodeSection nodeSection : nodeNodeSections) {
-				if (nodeSection.support(nodeType)) {
-					stringBuilder.append(nodeSection.render(node));
+	private String renderNodeSections(List<Node> nodes, Map<String, String> varNames) {
+		StringBuilder sb = new StringBuilder();
+		for (Node node : nodes) {
+			String varName = varNames.get(node.getId());
+			NodeType nodeType = NodeType.fromValue(node.getType()).orElseThrow();
+			for (NodeSection section : nodeNodeSections) {
+				if (section.support(nodeType)) {
+					sb.append(section.render(node, varName));
 					break;
 				}
 			}
-		});
-		return stringBuilder.toString();
+		}
+		return sb.toString();
 	}
 
 	private String renderEdgeSections(List<Edge> edges) {
 		StringBuilder sb = new StringBuilder();
 		for (Edge e : edges) {
-			String srcCode = "start".equals(e.getSource()) ? "START" : "\"" + e.getSource() + "\"";
-			String tgtCode = "end".equals(e.getTarget()) ? "END" : "\"" + e.getTarget() + "\"";
-
-			sb.append("        stateGraph.addEdge(").append(srcCode).append(", ").append(tgtCode).append(");\n");
+			String srcCode = StateGraph.START.equals(e.getSource())
+					? "START" : "\"" + e.getSource() + "\"";
+			String tgtCode = StateGraph.END.equals(e.getTarget())
+					? "END"   : "\"" + e.getTarget() + "\"";
+			sb.append("        stateGraph.addEdge(")
+					.append(srcCode).append(", ").append(tgtCode).append(");\n");
 		}
 		sb.append("\n");
 		return sb.toString();

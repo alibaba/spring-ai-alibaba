@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.model.workflow.nodedata;
 
 import com.alibaba.cloud.ai.model.Variable;
@@ -25,10 +26,22 @@ import java.util.List;
 public class VariableAggregatorNodeData extends NodeData {
 
 	private List<List<String>> variables;
-
 	private String outputType;
-
 	private AdvancedSettings advancedSettings;
+	private String outputKey = "output";
+
+	public VariableAggregatorNodeData() {
+	}
+
+	public VariableAggregatorNodeData(List<VariableSelector> inputs, List<Variable> outputs,
+									  List<List<String>> variables, String outputType,
+									  AdvancedSettings advancedSettings) {
+		super(inputs, outputs);
+		this.variables = variables;
+		this.outputType = outputType;
+		this.advancedSettings = advancedSettings;
+		outputs.add(new Variable(this.outputKey, this.outputType));
+	}
 
 	public List<List<String>> getVariables() {
 		return variables;
@@ -42,8 +55,6 @@ public class VariableAggregatorNodeData extends NodeData {
 	public String getOutputType() {
 		return outputType;
 	}
-
-    public String getOutputKey() {return outputType;}
 
 	public VariableAggregatorNodeData setOutputType(String outputType) {
 		this.outputType = outputType;
@@ -59,71 +70,58 @@ public class VariableAggregatorNodeData extends NodeData {
 		return this;
 	}
 
-	public VariableAggregatorNodeData() {
+	public String getOutputKey() {
+		return outputKey;
 	}
 
-	public VariableAggregatorNodeData(List<VariableSelector> inputs, List<Variable> outputs,
-			List<List<String>> variables, String outputType, AdvancedSettings advancedSettings) {
-		super(inputs, outputs);
-		this.variables = variables;
-		this.outputType = outputType;
-		this.advancedSettings = advancedSettings;
+	public VariableAggregatorNodeData setOutputKey(String outputKey) {
+		this.outputKey = outputKey;
+		return this;
 	}
 
 	public static class Groups {
-
 		@JsonProperty("output_type")
 		private String outputType;
-
 		private List<List<String>> variables;
-
 		@JsonProperty("group_name")
 		private String groupName;
-
 		private String groupId;
 
 		public String getOutputType() {
 			return outputType;
 		}
 
-		public Groups setOutputType(String outputType) {
+		public void setOutputType(String outputType) {
 			this.outputType = outputType;
-			return this;
 		}
 
 		public List<List<String>> getVariables() {
 			return variables;
 		}
 
-		public Groups setVariables(List<List<String>> variables) {
+		public void setVariables(List<List<String>> variables) {
 			this.variables = variables;
-			return this;
 		}
 
 		public String getGroupName() {
 			return groupName;
 		}
 
-		public Groups setGroupName(String groupName) {
+		public void setGroupName(String groupName) {
 			this.groupName = groupName;
-			return this;
 		}
 
 		public String getGroupId() {
 			return groupId;
 		}
 
-		public Groups setGroupId(String groupId) {
+		public void setGroupId(String groupId) {
 			this.groupId = groupId;
-			return this;
 		}
-
 	}
 
 	public static class AdvancedSettings {
-
 		private boolean groupEnabled;
-
 		private List<Groups> groups;
 
 		public boolean isGroupEnabled() {
@@ -143,7 +141,7 @@ public class VariableAggregatorNodeData extends NodeData {
 			this.groups = groups;
 			return this;
 		}
-
 	}
 
 }
+

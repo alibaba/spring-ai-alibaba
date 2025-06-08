@@ -34,13 +34,13 @@ public class ListOperatorNodeSection implements NodeSection {
 	}
 
 	@Override
-	public String render(Node node) {
+	public String render(Node node, String varName) {
 		ListOperatorNodeData d = (ListOperatorNodeData) node.getData();
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(String.format("        // —— ListOperatorNode [%s] ——%n", id));
-		sb.append(String.format("        ListOperatorNode %sNode = ListOperatorNode.builder()%n", id));
+		sb.append(String.format("        ListOperatorNode %s = ListOperatorNode.builder()%n", varName));
 
 		if (d.getInputTextKey() != null) {
 			sb.append(String.format("            .inputTextKey(\"%s\")%n", escape(d.getInputTextKey())));
@@ -77,7 +77,7 @@ public class ListOperatorNodeSection implements NodeSection {
 		}
 
 		sb.append("            .build();\n");
-		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id, id));
+		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 
 		return sb.toString();
 	}

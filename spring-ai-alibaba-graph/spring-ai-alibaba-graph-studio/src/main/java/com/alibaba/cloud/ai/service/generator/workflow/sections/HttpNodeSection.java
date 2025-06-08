@@ -35,13 +35,13 @@ public class HttpNodeSection implements NodeSection {
 	}
 
 	@Override
-	public String render(Node node) {
+	public String render(Node node, String varName) {
 		HttpNodeData d = (HttpNodeData) node.getData();
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(String.format("        // —— HttpNode [%s] ——%n", id));
-		sb.append(String.format("        HttpNode %sNode = HttpNode.builder()%n", id));
+		sb.append(String.format("        HttpNode %s = HttpNode.builder()%n", varName));
 		if (d.getMethod() != null && d.getMethod() != HttpMethod.GET) {
 			sb.append(String.format("                .method(HttpMethod.%s)%n", d.getMethod().name()));
 		}
@@ -87,7 +87,7 @@ public class HttpNodeSection implements NodeSection {
 		}
 
 		sb.append("                .build();\n");
-		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id, id));
+		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 
 		return sb.toString();
 	}

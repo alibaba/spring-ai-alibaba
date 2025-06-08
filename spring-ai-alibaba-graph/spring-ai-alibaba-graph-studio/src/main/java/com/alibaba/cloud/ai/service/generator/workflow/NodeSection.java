@@ -28,7 +28,7 @@ public interface NodeSection {
 
 	boolean support(NodeType nodeType);
 
-	String render(Node node);
+	String render(Node node, String varName);
 
 	default String escape(String input) {
 		if (input == null) {

@@ -31,7 +31,7 @@ public class StartNodeSection implements NodeSection {
 
 	// use static constant of stateGraph
 	@Override
-	public String render(Node node) {
+	public String render(Node node, String varName) {
 		return "";
 	}
 

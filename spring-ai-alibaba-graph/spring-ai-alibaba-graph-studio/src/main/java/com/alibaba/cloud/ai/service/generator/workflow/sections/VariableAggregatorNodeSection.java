@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.service.generator.workflow.sections;
 
-import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.VariableAggregatorNodeData;
@@ -31,53 +30,29 @@ public class VariableAggregatorNodeSection implements NodeSection {
 
     @Override
     public boolean support(NodeType nodeType) {
-        return NodeType.VARIABLE_AGGREGATOR.equals(nodeType);
+        return NodeType.AGGREGATOR.equals(nodeType);
     }
 
     @Override
-    public String render(Node node) {
-        VariableAggregatorNodeData d = (VariableAggregatorNodeData) node.getData();
+    public String render(Node node, String varName) {
+        var data = (VariableAggregatorNodeData) node.getData();
+        List<String> inputKeys = data.getVariables().stream()
+                .map(pair -> pair.get(1))
+                .toList();
+        String outputKey = "output";
+
         String id = node.getId();
-
-        List<String> keys = d.getInputs().stream()
-            .map(VariableSelector::getName)
-            .collect(Collectors.toList());
-
-        String inputKeysCode;
-        if (keys.isEmpty()) {
-            inputKeysCode = "List.of()";
-        } else {
-            String joined = keys.stream()
-                                .map(k -> "\"" + escapeJavaString(k) + "\"")
-                                .collect(Collectors.joining(", "));
-            inputKeysCode = "List.of(" + joined + ")";
-        }
-
-        String outputKeyEscaped = escapeJavaString(d.getOutputKey());
-
+        String keysLit = inputKeys.stream()
+                .map(k -> "\"" + k + "\"")
+                .collect(Collectors.joining(", "));
         return String.format(
-            "// —— VariableAggregatorNode [%s] ——%n" +
-            "VariableAggregatorNode %1$sNode = VariableAggregatorNode.builder()%n" +
-            "    .inputKeys(%s)%n" +
-            "    .outputKey(\"%s\")%n" +
-            "    .build();%n" +
-            "stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%1$sNode));%n%n",
-            id,
-            inputKeysCode,
-            outputKeyEscaped,
-            id
+                "        // —— VariableAggregatorNode [%s] ——%n" +
+                        "        VariableAggregatorNode %s = VariableAggregatorNode.builder()%n" +
+                        "                .inputKeys(List.of(%s))%n" +
+                        "                .outputKey(\"%s\")%n" +
+                        "                .build();%n" +
+                        "        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n",
+                id, varName, keysLit, outputKey, id, varName
         );
-    }
-
-    private String escapeJavaString(String input) {
-        if (input == null) {
-            return "";
-        }
-        return input
-            .replace("\\", "\\\\")
-            .replace("\"", "\\\"")
-            .replace("\n", "\\n")
-            .replace("\r", "\\r")
-            .replace("\t", "\\t");
     }
 }
