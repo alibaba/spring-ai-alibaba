@@ -28,11 +28,8 @@ import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.tool.ToolCallback;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
@@ -56,8 +53,6 @@ public class PlannerNode implements NodeAction {
 
 	private final ChatClient chatClient;
 
-	private final ToolCallback[] toolCallbacks;
-
 	private final BeanOutputConverter<Plan> converter;
 
 	private final InMemoryChatMemoryRepository chatMemoryRepository = new InMemoryChatMemoryRepository();
@@ -69,11 +64,10 @@ public class PlannerNode implements NodeAction {
 		.maxMessages(MAX_MESSAGES)
 		.build();
 
-	public PlannerNode(ChatClient.Builder chatClientBuilder, ToolCallback[] toolCallbacks) {
+	public PlannerNode(ChatClient.Builder chatClientBuilder) {
 		this.chatClient = chatClientBuilder
 			.defaultAdvisors(MessageChatMemoryAdvisor.builder(messageWindowChatMemory).build())
 			.build();
-		this.toolCallbacks = toolCallbacks;
 		this.converter = new BeanOutputConverter<>(new ParameterizedTypeReference<Plan>() {
 		});
 	}
@@ -90,12 +84,13 @@ public class PlannerNode implements NodeAction {
 		Integer maxStepNum = state.value("max_step_num", 3);
 		String threadId = state.value("thread_id", "__default__");
 
-		Boolean enableBackgroundInvestigation = state.value("enable_background_investigation", false);
-		List<String> backgroundInvestigationResults = state.value("background_investigation_results",
-				new ArrayList<>());
-
+		Boolean enableBackgroundInvestigation = state.value("enable_background_investigation", true);
+		List<String> backgroundInvestigationResults = new ArrayList<>();
+		if (enableBackgroundInvestigation) {
+			backgroundInvestigationResults = state.value("background_investigation_results", new ArrayList<>());
+		}
 		if (planIterations == 0 && enableBackgroundInvestigation && !backgroundInvestigationResults.isEmpty()) {
-			messages.add(SystemMessage.builder()
+			messages.add(UserMessage.builder()
 				.text("background investigation results of user query:\n" + backgroundInvestigationResults + "\n")
 				.build());
 		}
@@ -110,7 +105,6 @@ public class PlannerNode implements NodeAction {
 
 		Flux<String> StreamResult = chatClient.prompt(converter.getFormat())
 			.advisors(a -> a.param(CONVERSATION_ID, threadId))
-			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
 			.messages(messages)
 			.stream()
 			.content();
@@ -125,7 +119,7 @@ public class PlannerNode implements NodeAction {
 			if (curPlan.isHasEnoughContext()) {
 				logger.info("Planner response has enough context.");
 				updated.put("current_plan", curPlan);
-				updated.put("messages", List.of(new AssistantMessage(result)));
+				updated.put("messages", List.of(new UserMessage(result)));
 				updated.put("planner_next_node", nextStep);
 				return updated;
 			}
@@ -150,7 +144,7 @@ public class PlannerNode implements NodeAction {
 		updated.put("current_plan", curPlan);
 		updated.put("messages", List.of(new AssistantMessage(result)));
 		updated.put("planner_next_node", nextStep);
-
+		logger.info("Planner Node -> Human Node");
 		return updated;
 	}
 

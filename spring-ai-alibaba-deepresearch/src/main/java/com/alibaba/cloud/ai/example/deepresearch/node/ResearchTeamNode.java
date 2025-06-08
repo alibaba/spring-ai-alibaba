@@ -50,25 +50,22 @@ public class ResearchTeamNode implements NodeAction {
 		}
 
 		Plan curPlan = currentPlanOpt.get();
-		// 判断steps里的每个step是否都执行完毕
+		// 判断steps里的每个step都有执行结果
 		if (areAllExecutionResultsPresent(curPlan)) {
-			logger.info("ResearchTeam node is done.");
 			updated.put("research_team_next_node", nextStep);
 			return updated;
 		}
 
 		for (Plan.Step step : curPlan.getSteps()) {
-			if (!StringUtils.hasLength(step.getExecutionRes())) {
-				if (step.getStepType() == Plan.StepType.RESEARCH) {
-					nextStep = "researcher";
-					updated.put("research_team_next_node", nextStep);
-					return updated;
-				}
-				else if (step.getStepType() == Plan.StepType.PROCESSING) {
-					nextStep = "coder";
-					updated.put("research_team_next_node", nextStep);
-					return updated;
-				}
+			if (step.getStepType() == Plan.StepType.RESEARCH) {
+				nextStep = "researcher";
+				updated.put("research_team_next_node", nextStep);
+				return updated;
+			}
+			else if (step.getStepType() == Plan.StepType.PROCESSING) {
+				nextStep = "coder";
+				updated.put("research_team_next_node", nextStep);
+				return updated;
 			}
 		}
 		updated.put("research_team_next_node", nextStep);

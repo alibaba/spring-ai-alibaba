@@ -50,6 +50,7 @@ public class CoordinatorNode implements NodeAction {
 			.defaultOptions(ToolCallingChatOptions.builder()
 				.internalToolExecutionEnabled(false) // 禁用内部工具执行
 				.build())
+			// 当前CoordinatorNode节点只绑定一个计划工具
 			.defaultTools(new PlannerTool())
 			.build();
 	}
@@ -69,24 +70,15 @@ public class CoordinatorNode implements NodeAction {
 		// 获取 assistant 消息内容
 		assert response != null;
 		AssistantMessage assistantMessage = response.getResult().getOutput();
-
-		// 判断下一步
-		if (state.value("enable_background_investigation", false)) {
-			nextStep = "background_investigator";
-		}
-		else {
-			// 直接交给planner
-			nextStep = "planner";
-		}
 		// 判断是否触发工具调用
 		if (assistantMessage.getToolCalls() != null && !assistantMessage.getToolCalls().isEmpty()) {
 			logger.info("✅ 工具已调用: " + assistantMessage.getToolCalls());
-			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-				if (!"handoff_to_planner".equals(toolCall.name())) {
-					continue;
-				}
+			if (state.value("enable_background_investigation", true)) {
+				nextStep = "background_investigator";
 			}
-
+			else {
+				nextStep = "planner";
+			}
 		}
 		else {
 			logger.warn("❌ 未触发工具调用");

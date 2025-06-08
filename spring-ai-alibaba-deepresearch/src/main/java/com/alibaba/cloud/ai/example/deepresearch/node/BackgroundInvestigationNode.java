@@ -16,8 +16,8 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
-import com.alibaba.cloud.ai.example.deepresearch.model.BackgroundInvestigationType;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  * @since 2025/5/17 18:37
  */
 
-public class BackgroundInvestigationNode implements BackgroundInvestigationNodeAction {
+public class BackgroundInvestigationNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(BackgroundInvestigationNode.class);
 
@@ -42,11 +42,6 @@ public class BackgroundInvestigationNode implements BackgroundInvestigationNodeA
 
 	public BackgroundInvestigationNode(TavilySearchService tavilySearchService) {
 		this.tavilySearchService = tavilySearchService;
-	}
-
-	@Override
-	public BackgroundInvestigationType of() {
-		return BackgroundInvestigationType.JUST_WEB_SEARCH;
 	}
 
 	@Override

@@ -29,10 +29,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author yingzi
@@ -45,17 +42,13 @@ public class CoderNode implements NodeAction {
 
 	private final ChatClient coderAgent;
 
-	private final PythonReplTool pythonReplTool;
-
-	public CoderNode(ChatClient coderAgent, PythonReplTool pythonReplTool) {
+	public CoderNode(ChatClient coderAgent) {
 		this.coderAgent = coderAgent;
-		this.pythonReplTool = pythonReplTool;
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("Coder Node is running.");
-		List<Message> messages = TemplateUtil.applyPromptTemplate("coder", state);
 		Plan currentPlan = state.value("current_plan", Plan.class).get();
 		List<String> observations = state.value("observations", List.class)
 			.map(list -> (List<String>) list)
@@ -69,6 +62,7 @@ public class CoderNode implements NodeAction {
 			}
 		}
 
+		List<Message> messages = new ArrayList<>();
 		// 添加任务消息
 		Message taskMessage = new UserMessage(
 				String.format("#Task\n\n##title\n\n%s\n\n##description\n\n%s\n\n##locale\n\n%s",
@@ -77,21 +71,21 @@ public class CoderNode implements NodeAction {
 
 		logger.debug("Coder Node message: {}", messages);
 		// 调用agent
-		String content = coderAgent.prompt()
+		String result = coderAgent.prompt()
 			.options(ToolCallingChatOptions.builder().build())
 			.messages(messages)
-			.tools(pythonReplTool)
 			.call()
 			.content();
-		unexecutedStep.setExecutionRes(content);
+		unexecutedStep.setExecutionRes(result);
 
-		logger.info("Coder Node result: {}", content);
-		if (content == null) {
-			content = "";
+		logger.info("Coder Node result: {}", result);
+		if (result == null) {
+			result = "";
 		}
 		Map<String, Object> updated = new HashMap<>();
-		updated.put("messages", List.of(new AssistantMessage(content)));
-		observations.add(content);
+		messages.add(0, new UserMessage(result));
+		updated.put("messages", List.of(new UserMessage(result)));
+		observations.add(result);
 		updated.put("observations", observations);
 
 		return updated;

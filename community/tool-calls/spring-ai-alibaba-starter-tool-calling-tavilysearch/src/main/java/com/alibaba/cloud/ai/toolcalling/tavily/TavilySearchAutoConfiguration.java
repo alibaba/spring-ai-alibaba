@@ -33,7 +33,7 @@ import org.springframework.http.MediaType;
 @ConditionalOnProperty(prefix = TavilySearchProperties.PREFIX, name = "enabled", havingValue = "true")
 public class TavilySearchAutoConfiguration {
 
-	@Bean
+	@Bean(name = "tavilySearch")
 	@ConditionalOnMissingBean
 	@Description("Provides a TavilySearchService bean for performing searches using the Tavily search engine.")
 	public TavilySearchService tavilySearch(TavilySearchProperties properties, JsonParseTool jsonParseTool) {
