@@ -109,6 +109,7 @@ public class DeepResearchConfiguration {
 			state.registerKeyAndStrategy("feed_back_content", new ReplaceStrategy());
 			state.registerKeyAndStrategy("observations", new ReplaceStrategy());
 			state.registerKeyAndStrategy("final_report", new ReplaceStrategy());
+			state.registerKeyAndStrategy("llm_node_generator", new ReplaceStrategy());
 			return state;
 		};
 
@@ -119,6 +120,7 @@ public class DeepResearchConfiguration {
 				new DeepResearchStateSerializer(OverAllState::new))
 			.addNode("coordinator", node_async(new CoordinatorNode(chatClientBuilder)))
 			.addNode("background_investigator", node_async(backgroundInvestigationNodeAction))
+			.addNode("llm_stream", node_async((new LlmStreamNode(chatClientBuilder, toolCallbacks))))
 			.addNode("planner", node_async((new PlannerNode(chatClientBuilder, toolCallbacks))))
 			.addNode("human_feedback", node_async(new HumanFeedbackNode()))
 			.addNode("research_team", node_async(new ResearchTeamNode()))
@@ -128,8 +130,9 @@ public class DeepResearchConfiguration {
 
 			.addEdge(START, "coordinator")
 			.addConditionalEdges("coordinator", edge_async(new CoordinatorDispatcher()),
-					Map.of("background_investigator", "background_investigator", "planner", "planner", END, END))
-			.addEdge("background_investigator", "planner")
+					Map.of("background_investigator", "background_investigator", "llm_stream", "llm_stream", END, END))
+			.addEdge("background_investigator", "llm_stream")
+			.addEdge("llm_stream", "planner")
 			.addConditionalEdges("planner", edge_async(new PlannerDispatcher()),
 					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner", END, END))
 			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
