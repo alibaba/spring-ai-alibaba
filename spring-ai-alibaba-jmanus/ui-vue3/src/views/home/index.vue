@@ -15,8 +15,13 @@
 -->
 <template>
   <div class="home-page">
-    <Sidebar />
-    <div class="conversation">
+    <Sidebar 
+      @planTemplateConfigRequested="handlePlanTemplateConfigRequested"
+      @newTaskRequested="handleNewTaskRequested"
+    />
+    
+    <!-- Main Home View -->
+    <div v-if="currentView === 'home'" class="conversation">
       <!-- Background effects -->
       <div class="background-effects">
         <div class="gradient-orb orb-1"></div>
@@ -74,6 +79,21 @@
         </div>
       </main>
     </div>
+
+    <!-- Plan Template Configuration View -->
+    <div v-else-if="currentView === 'config'" class="config-view">
+      <div class="config-header-bar">
+        <button class="back-button" @click="handleBackToHome">
+          <Icon icon="carbon:arrow-left" width="20" />
+          <span>返回主页</span>
+        </button>
+        <div class="config-title">计划模板配置</div>
+      </div>
+      <PlanTemplateConfig 
+        :template="selectedTemplate"
+        @configClosed="handleConfigClosed"
+      />
+    </div>
   </div>
 </template>
 
@@ -83,10 +103,16 @@ import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import Sidebar from '@/components/sidebar/index.vue'
 import BlurCard from '@/components/blurCard/index.vue'
+import PlanTemplateConfig from '@/components/plan-template-config/index.vue'
+import type { PlanTemplate } from '@/types/plan-template'
 
 const router = useRouter()
 const userInput = ref('')
 const textareaRef = ref<HTMLTextAreaElement>()
+
+// Tab switching state
+const currentView = ref<'home' | 'config'>('home')
+const selectedTemplate = ref<PlanTemplate | null>(null)
 
 const examples = [
   {
@@ -114,6 +140,31 @@ const examples = [
     prompt: '提醒我明天下午三点开会',
   },
 ]
+
+// Event handlers for tab switching
+const handlePlanTemplateConfigRequested = (payload: { templateId: string; template: PlanTemplate }) => {
+  selectedTemplate.value = payload.template
+  currentView.value = 'config'
+  console.log('[HomePage] 切换到配置视图:', payload.templateId)
+}
+
+const handleNewTaskRequested = () => {
+  selectedTemplate.value = null
+  currentView.value = 'home'
+  console.log('[HomePage] 切换到主页视图')
+}
+
+const handleBackToHome = () => {
+  currentView.value = 'home'
+  selectedTemplate.value = null
+  console.log('[HomePage] 返回主页')
+}
+
+const handleConfigClosed = () => {
+  currentView.value = 'home'
+  selectedTemplate.value = null
+  console.log('[HomePage] 配置页面关闭，返回主页')
+}
 
 const adjustTextareaHeight = () => {
   nextTick(() => {
@@ -416,4 +467,53 @@ const selectExample = (example: any) => {
 //     line-height: 1.4;
 //   }
 // }
+
+/* Config View Styles */
+.config-view {
+  flex: 1;
+  height: 100vh;
+  background: #0a0a0a;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.config-header-bar {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 16px;
+
+  .back-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+  }
+
+  .config-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #ffffff;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
 </style>

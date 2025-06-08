@@ -28,4 +28,6 @@ export interface PlanTemplateEvents {
   planParamsChanged: [payload: { prompt: string; params: string }]
   jsonContentSet: [payload: { content: string }]
   jsonContentClear: []
+  planTemplateConfigRequested: [payload: { templateId: string; template: PlanTemplate }]
+  configTabClosed: []
 }
