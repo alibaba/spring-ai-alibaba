@@ -84,38 +84,8 @@ public class PlannerNode implements NodeAction {
 		Map<String, Object> updated = new HashMap<>();
 		String nextStep = "reporter";
 
-//		List<Message> messages = TemplateUtil.applyPromptTemplate("planner", state);
-//		// add human feedback content
-//		if (StringUtils.hasText(state.data().getOrDefault("feed_back_content", "").toString())) {
-//			messages.add(new UserMessage(state.data().getOrDefault("feed_back_content", "").toString()));
-//		}
 		Integer planIterations = state.value("plan_iterations", 0);
 		Integer maxStepNum = state.value("max_step_num", 3);
-//		String threadId = state.value("thread_id", "__default__");
-//
-//		Boolean enableBackgroundInvestigation = state.value("enable_background_investigation", false);
-//		List<String> backgroundInvestigationResults = state.value("background_investigation_results",
-//				new ArrayList<>());
-//
-//		if (planIterations == 0 && enableBackgroundInvestigation && !backgroundInvestigationResults.isEmpty()) {
-//			messages.add(SystemMessage.builder()
-//				.text("background investigation results of user query:\n" + backgroundInvestigationResults + "\n")
-//				.build());
-//		}
-//		logger.info("planIterations:{}", planIterations);
-//		if (planIterations > maxStepNum) {
-//			logger.info("planIterations reaches the upper limit");
-//			updated.put("planner_next_node", nextStep);
-//			return updated;
-//		}
-//
-//		Flux<String> StreamResult = chatClient.prompt(converter.getFormat())
-//			.advisors(a -> a.param(CONVERSATION_ID, threadId))
-//			.options(ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks).build())
-//			.messages(messages)
-//			.stream()
-//			.content();
-//		String result = StreamResult.reduce((acc, next) -> acc + next).block();
 
 		String result = state.value("llm_node_generator", "");
 		logger.info("Planner response: {}", result);

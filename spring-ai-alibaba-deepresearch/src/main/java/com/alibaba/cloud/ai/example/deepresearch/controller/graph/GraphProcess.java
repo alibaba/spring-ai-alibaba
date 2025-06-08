@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.fastjson.JSON;
 import org.bsc.async.AsyncGenerator;
 import org.springframework.http.codec.ServerSentEvent;
@@ -62,8 +63,16 @@ public class GraphProcess {
 		executor.submit(() -> {
 			generator.forEachAsync(output -> {
 				try {
-					Map<String, Object> data = output.state().data();
-					sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(data)).build());
+					System.out.println("output = " + output);
+					if (output instanceof StreamingOutput) {
+						String nodeName = output.node();
+						StreamingOutput streamingOutput = (StreamingOutput) output;
+						sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(Map.of(nodeName, streamingOutput.chunk()))).build());
+					}
+					else {
+						Map<String, Object> data = output.state().data();
+						sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(data)).build());
+					}
 				}
 				catch (Exception e) {
 					throw new CompletionException(e);

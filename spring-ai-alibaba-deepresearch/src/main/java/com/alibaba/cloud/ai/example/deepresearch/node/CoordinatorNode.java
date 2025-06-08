@@ -75,8 +75,8 @@ public class CoordinatorNode implements NodeAction {
 			nextStep = "background_investigator";
 		}
 		else {
-			// 直接交给planner
-			nextStep = "planner";
+			// 直接交给llm_stream
+			nextStep = "llm_stream";
 		}
 		// 判断是否触发工具调用
 		if (assistantMessage.getToolCalls() != null && !assistantMessage.getToolCalls().isEmpty()) {

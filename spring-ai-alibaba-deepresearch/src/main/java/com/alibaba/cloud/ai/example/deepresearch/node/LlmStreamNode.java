@@ -105,7 +105,7 @@ public class LlmStreamNode implements NodeAction{
                 .chatResponse();
 
         var generator = StreamingChatGenerator.builder()
-                .startingNode("llmNode")
+                .startingNode("llm_stream")
                 .startingState(state)
                 .mapResult(
                         response -> Map.of("llm_node_generator", Objects.requireNonNull(response.getResult().getOutput().getText())))

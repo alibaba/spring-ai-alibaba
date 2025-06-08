@@ -40,7 +40,7 @@ public class ResearchTeamNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("ResearchTeam node is running.");
-		String nextStep = "planner";
+		String nextStep = "llm_stream";
 		Map<String, Object> updated = new HashMap<>();
 
 		Optional<Plan> currentPlanOpt = state.value("current_plan", Plan.class);

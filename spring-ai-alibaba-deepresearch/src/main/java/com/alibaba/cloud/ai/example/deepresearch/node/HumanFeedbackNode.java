@@ -57,7 +57,7 @@ public class HumanFeedbackNode implements NodeAction {
 			String feedback = feedBackData.getOrDefault("feed_back", "n").toString();
 
 			if (StringUtils.hasLength(feedback) && "n".equals(feedback)) {
-				nextStep = "planner";
+				nextStep = "llm_stream";
 				updated.put("human_next_node", nextStep);
 
 				String feedbackContent = feedBackData.getOrDefault("feed_back_content", "").toString();
