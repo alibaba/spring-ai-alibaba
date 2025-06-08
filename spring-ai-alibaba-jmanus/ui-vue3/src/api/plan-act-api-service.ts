@@ -27,15 +27,31 @@ export class PlanActApiService {
 
   // 执行已生成的计划
   public static async executePlan(planTemplateId: string, rawParam?: string): Promise<any> {
+    console.log('[PlanActApiService] executePlan called with:', { planTemplateId, rawParam })
+    
     const requestBody: Record<string, any> = { planTemplateId }
     if (rawParam) requestBody.rawParam = rawParam
+    
+    console.log('[PlanActApiService] Making request to:', `${this.PLAN_TEMPLATE_URL}/executePlanByTemplateId`)
+    console.log('[PlanActApiService] Request body:', requestBody)
+    
     const response = await fetch(`${this.PLAN_TEMPLATE_URL}/executePlanByTemplateId`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     })
-    if (!response.ok) throw new Error(`执行计划失败: ${response.status}`)
-    return await response.json()
+    
+    console.log('[PlanActApiService] Response status:', response.status, response.ok)
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[PlanActApiService] Request failed:', errorText)
+      throw new Error(`执行计划失败: ${response.status}`)
+    }
+    
+    const result = await response.json()
+    console.log('[PlanActApiService] executePlan response:', result)
+    return result
   }
 
   // 保存计划到服务器

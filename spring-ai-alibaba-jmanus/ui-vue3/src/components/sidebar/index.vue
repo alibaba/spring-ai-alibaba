@@ -582,8 +582,19 @@ const handleUpdatePlan = async () => {
 }
 
 const handleExecutePlan = async () => {
-  if (!selectedTemplate.value) return
+  console.log('[Sidebar] handleExecutePlan called, isExecuting:', isExecuting.value, 'selectedTemplate:', selectedTemplate.value?.id)
   
+  if (!selectedTemplate.value) {
+    console.log('[Sidebar] No selected template, returning')
+    return
+  }
+  
+  if (isExecuting.value) {
+    console.log('[Sidebar] Already executing, ignoring request')
+    return
+  }
+  
+  console.log('[Sidebar] Starting plan execution')
   isExecuting.value = true
   
   try {
@@ -614,12 +625,14 @@ const handleExecutePlan = async () => {
     console.log('[Sidebar] 触发计划执行请求:', { title, planData, planTemplateId: selectedTemplate.value.id })
     
     // 发送计划执行事件给聊天组件
+    console.log('[Sidebar] Emitting planExecutionRequested event')
     emit('planExecutionRequested', { 
       title, 
       planData, 
       params: executionParams.value.trim() || undefined 
     })
     
+    console.log('[Sidebar] Event emitted, closing sidebar')
     // 关闭sidebar
     isCollapsed.value = true
     

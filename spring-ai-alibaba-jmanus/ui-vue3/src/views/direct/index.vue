@@ -1,7 +1,18 @@
 <!-- /*
  * Copyright 2025 the original author or authors.
  *
- * Licensed under the Apache License, Version 2.0 (the const messagesRef = ref<HTMLElement>()
+ * Licensed under the Apache License, Version 2.0 (the const messagesRef = const handlePlanExecutionRequested = async (payload: { title: string; planData: any; params?: string }) => {
+  console.log('[Direct] handlePlanExecutionRequested called with payload:', payload)
+  console.log('[Direct] Current isExecutingPlan state:', isExecutingPlan.value)
+  
+  // 防止重复执行
+  if (isExecutingPlan.value) {
+    console.log('[Direct] Plan execution already in progress, ignoring request')
+    return
+  }
+  
+  console.log('[Direct] Starting plan execution process')
+  isExecutingPlan.value = trueement>()
 const inputRef = ref<HTMLTextAreaElement>()
 const currentInput = ref('')
 const isLoading = ref(false)nse");
@@ -153,34 +164,44 @@ const handlePlanExecutionRequested = async (payload: { title: string; planData: 
       throw new Error('没有找到计划模板ID')
     }
     
-    console.log('[DirectView] Executing plan with templateId:', planTemplateId, 'params:', payload.params)
+    console.log('[Direct] Executing plan with templateId:', planTemplateId, 'params:', payload.params)
     
     // 调用真实的 API 执行计划
+    console.log('[Direct] About to call PlanActApiService.executePlan')
     let response
     if (payload.params && payload.params.trim()) {
+      console.log('[Direct] Calling executePlan with params:', payload.params.trim())
       response = await PlanActApiService.executePlan(planTemplateId, payload.params.trim())
     } else {
+      console.log('[Direct] Calling executePlan without params')
       response = await PlanActApiService.executePlan(planTemplateId)
     }
     
-    console.log('[DirectView] Plan execution response:', response)
+    console.log('[Direct] Plan execution API response:', response)
     
     // 使用返回的 planId，让聊天组件处理正常的消息流程
     if (response.planId) {
+      console.log('[Direct] Got planId from response:', response.planId, 'sending message to chat')
       // 发送用户消息到聊天
       if (planExecutionRef.value && typeof planExecutionRef.value.sendMessage === 'function') {
+        console.log('[Direct] Calling planExecutionRef.sendMessage with:', payload.title)
         await planExecutionRef.value.sendMessage(payload.title)
+      } else {
+        console.error('[Direct] planExecutionRef.value.sendMessage is not available')
       }
     } else {
+      console.error('[Direct] No planId in response:', response)
       throw new Error('执行计划失败：未返回有效的计划ID')
     }
     
   } catch (error: any) {
-    console.error('[DirectView] Plan execution failed:', error)
+    console.error('[Direct] Plan execution failed:', error)
+    console.error('[Direct] Error details:', { message: error.message, stack: error.stack })
     
     // 获取chat组件的引用来显示错误
     const chatRef = planExecutionRef.value?.getChatRef()
     if (chatRef) {
+      console.log('[Direct] Adding error messages to chat')
       // 先添加用户消息
       chatRef.addMessage('user', payload.title)
       // 再添加错误消息
@@ -188,9 +209,11 @@ const handlePlanExecutionRequested = async (payload: { title: string; planData: 
         thinking: undefined
       })
     } else {
+      console.error('[Direct] Chat ref not available, showing alert')
       alert(`执行计划失败: ${error.message || '未知错误'}`)
     }
   } finally {
+    console.log('[Direct] Plan execution finished, resetting isExecutingPlan flag')
     isExecutingPlan.value = false
   }
 }

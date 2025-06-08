@@ -196,10 +196,12 @@ const handlePlanManagerInputClear = () => {
  * 处理用户消息发送请求
  */
 const handleUserMessageSendRequested = async (query: string): Promise<void> => {
-  console.log('[PlanExecutionComponent] User message send requested:', query)
+  console.log('[PlanExecutionComponent] handleUserMessageSendRequested called with query:', query)
+  console.log('[PlanExecutionComponent] Current isLoading state:', isLoading.value)
   
   // 委托给 plan execution manager
   await planExecutionManager.handleUserMessageSendRequested(query)
+  console.log('[PlanExecutionComponent] planExecutionManager.handleUserMessageSendRequested completed')
 }
 
 /**
