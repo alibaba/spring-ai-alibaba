@@ -18,10 +18,6 @@
     <div class="sidebar-content">
       <div class="sidebar-content-header">
         <div class="sidebar-content-title">计划模板</div>
-
-        <div class="config-button" @click="handleConfig">
-          <Icon icon="carbon:settings-adjust" width="20" />
-        </div>
       </div>
       
       <!-- Tab Switcher -->
@@ -241,13 +237,6 @@
         </div>
       </div>
     </div>
-
-    <div class="sidebar-switch" @click="toggleSidebar">
-      <div class="tb-line-wrapper" :class="{ 'tb-line-wrapper-expanded': !isCollapsed }">
-        <div class="tb-line" :class="{ 'tb-line-expanded': !isCollapsed }"></div>
-        <div class="bt-line" :class="{ 'bt-line-expanded': !isCollapsed }"></div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -255,7 +244,6 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 
-import router from '@/router'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import type { PlanTemplate, PlanTemplateEvents } from '@/types/plan-template'
 
@@ -263,7 +251,7 @@ import type { PlanTemplate, PlanTemplateEvents } from '@/types/plan-template'
 const emit = defineEmits<PlanTemplateEvents>()
 
 // Reactive state - List Tab
-const isCollapsed = ref(true)
+const isCollapsed = ref(true) // 默认隐藏侧边栏
 const currentPlanTemplateId = ref<string | null>(null)
 const planTemplateList = ref<PlanTemplate[]>([])
 const isLoading = ref(false)
@@ -311,10 +299,6 @@ const computedApiUrl = computed(() => {
 // Methods
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value
-}
-
-const handleConfig = () => {
-  router.push('/configs')
 }
 
 const handleNewTaskButtonClick = () => {
@@ -648,6 +632,7 @@ onMounted(() => {
 // 暴露方法供父组件调用
 defineExpose({
   loadPlanTemplateList,
+  toggleSidebar,
   currentPlanTemplateId: currentPlanTemplateId
 })
 </script>
@@ -655,63 +640,22 @@ defineExpose({
 <style scoped>
 .sidebar-wrapper {
   position: relative;
-  width: 280px;
+  width: 500px;
   height: 100vh;
   background: rgba(255, 255, 255, 0.05);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
-  transition: width 0.3s ease-in-out;
-  cursor: pointer;
-
-  .sidebar-switch {
-    position: absolute;
-    top: 50%;
-    right: -40px;
-    transform: translateY(-50%);
-    height: 80px;
-    z-index: 10;
-
-    .tb-line-wrapper {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      transition: all 0.3s ease-in-out;
-
-      .tb-line,
-      .bt-line {
-        background-color: #667eea;
-        width: 22px;
-        height: 6px;
-        border-radius: 10px;
-        transform: rotate(-45deg);
-        transition: all 0.3s ease-in-out;
-      }
-      .tb-line {
-        background-color: #6646a2;
-        transition: all 0.5s ease-in-out;
-        transform: rotate(45deg);
-      }
-
-      .tb-line-expanded,
-      .bt-line-expanded {
-        width: 36px;
-      }
-
-      .tb-line-expanded {
-        transform: rotate(45deg) translateY(9px);
-      }
-
-      .bt-line-expanded {
-        transform: rotate(-45deg) translateY(-9px);
-      }
-    }
-
-    .tb-line-wrapper-expanded {
-      transform: rotate(180deg);
-    }
-  }
+  transition: all 0.3s ease-in-out;
+  overflow: hidden;
 }
 .sidebar-wrapper-collapsed {
-  width: 1px;
+  width: 0;
+  border-right: none;
+  
+  .sidebar-content {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-100%);
+  }
 }
 
 .sidebar-content {
@@ -720,6 +664,7 @@ defineExpose({
   padding: 12px 0 12px 12px;
   display: flex;
   flex-direction: column;
+  transition: all 0.3s ease-in-out;
 
   .sidebar-content-header {
     display: flex;
@@ -739,22 +684,6 @@ defineExpose({
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-    }
-
-    .config-button {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      margin-right: 16px;
-      cursor: pointer;
-      border-radius: 4px;
-      transition: background-color 0.2s ease;
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.1);
-      }
     }
   }
 

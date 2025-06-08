@@ -35,6 +35,7 @@
       @focus="handleInputFocus"
       @update-state="handleInputUpdateState"
       @message-sent="handleInputMessageSent"
+      @plan-mode-clicked="handlePlanModeClicked"
     />
   </div>
 </template>
@@ -65,6 +66,7 @@ interface Emits {
   (e: 'dialog-round-start', planId: string, query: string): void
   (e: 'step-selected', planId: string, stepIndex: number): void
   (e: 'message-sent', message: string): void
+  (e: 'plan-mode-clicked'): void
 }
 
 const emit = defineEmits<Emits>()
@@ -232,6 +234,11 @@ const handleInputUpdateState = (enabled: boolean, placeholder?: string) => {
 const handleInputMessageSent = (message: string) => {
   console.log('[PlanExecutionComponent] Input message sent:', message)
   handleUserMessageSendRequested(message)
+}
+
+const handlePlanModeClicked = () => {
+  console.log('[PlanExecutionComponent] Plan mode button clicked')
+  emit('plan-mode-clicked')
 }
 
 // Chat Container 事件处理

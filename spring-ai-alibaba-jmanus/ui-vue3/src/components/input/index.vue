@@ -28,7 +28,7 @@
         @keydown="handleKeydown"
         @input="adjustInputHeight"
       ></textarea>
-      <button class="plan-mode-btn" title="进入计划模式">
+      <button class="plan-mode-btn" title="进入计划模式" @click="handlePlanModeClick">
         <Icon icon="carbon:document" />
         计划模式
       </button>
@@ -61,6 +61,7 @@ interface Emits {
   (e: 'focus'): void
   (e: 'update-state', enabled: boolean, placeholder?: string): void
   (e: 'message-sent', message: string): void
+  (e: 'plan-mode-clicked'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -106,6 +107,11 @@ const handleSend = () => {
   
   // 发送消息已发送事件
   emit('message-sent', query)
+}
+
+const handlePlanModeClick = () => {
+  // 触发计划模式切换事件
+  emit('plan-mode-clicked')
 }
 
 /**

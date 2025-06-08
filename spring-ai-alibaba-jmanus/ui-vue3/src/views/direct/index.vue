@@ -18,7 +18,7 @@ const isLoading = ref(false)nse");
 -->
 <template>
   <div class="direct-page">
-    <Sidebar />
+    <Sidebar ref="sidebarRef" />
     <div class="direct-chat">
       <!-- Left Panel - Chat -->
       <div class="left-panel">
@@ -27,6 +27,9 @@ const isLoading = ref(false)nse");
             <Icon icon="carbon:arrow-left" />
           </button>
           <h2>Direct Chat</h2>
+          <button class="config-button" @click="handleConfig" title="配置">
+            <Icon icon="carbon:settings-adjust" width="20" />
+          </button>
         </div>
 
         <PlanExecutionComponent 
@@ -39,6 +42,7 @@ const isLoading = ref(false)nse");
           @dialog-round-start="handleDialogRoundStart"
           @step-selected="handleStepSelected"
           @message-sent="handleMessageSent"
+          @plan-mode-clicked="handlePlanModeClicked"
         />
       </div>
 
@@ -62,6 +66,7 @@ const router = useRouter()
 const prompt = ref<string>('')
 const planExecutionRef = ref()
 const rightPanelRef = ref()
+const sidebarRef = ref()
 
 onMounted(() => {
   // Initialize with prompt from conversation page
@@ -109,6 +114,19 @@ const handleMessageSent = (message: string) => {
 
 const goBack = () => {
   router.push('/home')
+}
+
+const handlePlanModeClicked = () => {
+  console.log('[DirectView] Plan mode button clicked, toggling sidebar')
+  if (sidebarRef.value && typeof sidebarRef.value.toggleSidebar === 'function') {
+    sidebarRef.value.toggleSidebar()
+  } else {
+    console.warn('[DirectView] Sidebar ref not available or toggleSidebar method not found')
+  }
+}
+
+const handleConfig = () => {
+  router.push('/configs')
 }
 </script>
 
@@ -166,6 +184,25 @@ const goBack = () => {
   align-items: center;
   gap: 6px;
   font-size: 14px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.config-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
 
   &:hover {
     background: rgba(255, 255, 255, 0.1);
