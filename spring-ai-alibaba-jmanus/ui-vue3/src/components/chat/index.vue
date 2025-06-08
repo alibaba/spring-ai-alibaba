@@ -763,7 +763,7 @@ const updateStepActions = (message: Message, planDetails: any) => {
 
 // 处理对话轮次开始
 const handleDialogRoundStart = (planId: string, query: string) => {
-  console.log('[ChatComponent] Starting dialog round with planId:', planId)
+  console.log('[ChatComponent] Starting dialog round with planId:', planId, 'query:', query)
   
   if (planId && query) {
     // 添加用户消息（如果还没有的话）
@@ -771,9 +771,12 @@ const handleDialogRoundStart = (planId: string, query: string) => {
     
     if (hasUserMessage === -1) {
       addMessage('user', query)
+      console.log('[ChatComponent] Added user message:', query)
+    } else {
+      console.log('[ChatComponent] User message already exists:', query)
     }
     
-    // 检查是否已经有针对此计划的助手消息
+    // 检查是否已经有针对此计划的助手消息，使用与 handlePlanUpdate 相同的查找逻辑
     const existingAssistantMsg = messages.value.findIndex(m => m.planId === planId && m.type === 'assistant')
     
     // 如果没有现有消息，添加助手消息准备显示步骤
@@ -789,7 +792,7 @@ const handleDialogRoundStart = (planId: string, query: string) => {
       
       console.log('[ChatComponent] Created new assistant message for planId:', planId)
     } else {
-      console.log('[ChatComponent] Using existing assistant message for planId:', planId)
+      console.log('[ChatComponent] Found existing assistant message for planId:', planId)
     }
     
     // 滚动到底部确保用户能看到最新进展
@@ -809,17 +812,35 @@ const handlePlanUpdate = (planDetails: any) => {
   }
   
   // 找到对应的消息
-  const messageIndex = messages.value.findIndex(m => m.planId === planDetails.planId)
+  const messageIndex = messages.value.findIndex(m => m.planId === planDetails.planId && m.type === 'assistant')
   let message
   
   if (messageIndex !== -1) {
     message = messages.value[messageIndex]
+    console.log('[ChatComponent] Found existing assistant message for planId:', planDetails.planId)
   } else {
-    // 如果找不到对应消息，创建一个新的
-    message = addMessage('assistant', '', { 
-      planId: planDetails.planId,
-      thinking: '正在处理您的请求...'
-    })
+    console.warn('[ChatComponent] No existing assistant message found for planId:', planDetails.planId)
+    console.log('[ChatComponent] Current messages:', messages.value.map(m => ({ type: m.type, planId: m.planId, content: m.content?.substring(0, 50) })))
+    
+    // 如果找不到对应消息，应该已经由 handleDialogRoundStart 创建了，这里不再创建新消息
+    // 而是尝试找到最近的助手消息来更新
+    let lastAssistantIndex = -1
+    for (let i = messages.value.length - 1; i >= 0; i--) {
+      if (messages.value[i].type === 'assistant') {
+        lastAssistantIndex = i
+        break
+      }
+    }
+    
+    if (lastAssistantIndex !== -1) {
+      message = messages.value[lastAssistantIndex]
+      // 更新 planId 以确保后续更新能找到它
+      message.planId = planDetails.planId
+      console.log('[ChatComponent] Using last assistant message and updating planId to:', planDetails.planId)
+    } else {
+      console.error('[ChatComponent] No assistant message found at all, this should not happen')
+      return
+    }
   }
   
   // 处理简单响应（没有步骤的情况）
