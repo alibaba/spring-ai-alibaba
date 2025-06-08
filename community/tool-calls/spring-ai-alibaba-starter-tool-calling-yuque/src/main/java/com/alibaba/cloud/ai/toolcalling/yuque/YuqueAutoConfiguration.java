@@ -30,7 +30,8 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author 北极星
  */
 @Configuration
-@ConditionalOnProperty(prefix = YuqueProperties.YUQUE_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = YuqueProperties.YUQUE_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 @ConditionalOnClass
 @EnableConfigurationProperties(YuqueProperties.class)
 public class YuqueAutoConfiguration {

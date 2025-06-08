@@ -31,7 +31,7 @@ import static com.alibaba.cloud.ai.toolcalling.googletranslate.GoogleTranslatePr
  */
 @Configuration
 @EnableConfigurationProperties(GoogleTranslateProperties.class)
-@ConditionalOnProperty(prefix = GOOGLE_TRANSLATE_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = GOOGLE_TRANSLATE_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
 public class GoogleTranslateAutoConfiguration {
 
 	@Bean

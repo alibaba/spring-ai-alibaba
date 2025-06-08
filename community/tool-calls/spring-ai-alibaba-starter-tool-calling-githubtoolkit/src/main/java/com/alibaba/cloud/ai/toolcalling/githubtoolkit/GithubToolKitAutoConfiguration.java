@@ -32,7 +32,8 @@ import org.springframework.http.HttpHeaders;
 @Configuration
 @EnableConfigurationProperties(GithubToolKitProperties.class)
 @ConditionalOnClass(GithubToolKitProperties.class)
-@ConditionalOnProperty(prefix = GithubToolKitProperties.GITHUB_TOOLKIT_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = GithubToolKitProperties.GITHUB_TOOLKIT_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class GithubToolKitAutoConfiguration {
 
 	@Bean

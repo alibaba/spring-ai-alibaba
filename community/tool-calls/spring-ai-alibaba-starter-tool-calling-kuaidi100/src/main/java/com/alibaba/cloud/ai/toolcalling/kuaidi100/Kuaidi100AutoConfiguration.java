@@ -35,7 +35,8 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @ConditionalOnClass(Kuaidi100AutoConfiguration.class)
-@ConditionalOnProperty(prefix = Kuaidi100Properties.PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = Kuaidi100Properties.PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 @EnableConfigurationProperties(Kuaidi100Properties.class)
 public class Kuaidi100AutoConfiguration {
 

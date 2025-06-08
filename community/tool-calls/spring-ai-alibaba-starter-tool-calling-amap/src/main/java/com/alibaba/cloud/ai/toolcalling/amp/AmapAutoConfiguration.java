@@ -29,7 +29,8 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @EnableConfigurationProperties(AmapProperties.class)
-@ConditionalOnProperty(prefix = AmapProperties.AMAP_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = AmapProperties.AMAP_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class AmapAutoConfiguration {
 
 	@Bean

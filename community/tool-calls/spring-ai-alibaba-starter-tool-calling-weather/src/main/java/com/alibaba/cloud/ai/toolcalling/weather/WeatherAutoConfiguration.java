@@ -33,7 +33,7 @@ import static com.alibaba.cloud.ai.toolcalling.weather.WeatherProperties.WEATHER
 @Configuration
 @ConditionalOnClass(WeatherService.class)
 @EnableConfigurationProperties(WeatherProperties.class)
-@ConditionalOnProperty(prefix = WEATHER_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = WEATHER_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
 public class WeatherAutoConfiguration {
 
 	@Bean

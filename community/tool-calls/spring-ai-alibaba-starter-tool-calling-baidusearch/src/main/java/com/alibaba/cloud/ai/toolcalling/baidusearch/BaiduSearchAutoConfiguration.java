@@ -37,7 +37,7 @@ import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.DE
  **/
 @Configuration
 @EnableConfigurationProperties(BaiduSearchProperties.class)
-@ConditionalOnProperty(prefix = BAIDU_SEARCH_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = BAIDU_SEARCH_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
 public class BaiduSearchAutoConfiguration {
 
 	@Bean

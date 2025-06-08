@@ -30,7 +30,8 @@ import org.springframework.http.MediaType;
 @Configuration
 @EnableConfigurationProperties(TavilySearchProperties.class)
 @ConditionalOnClass(TavilySearchService.class)
-@ConditionalOnProperty(prefix = TavilySearchProperties.PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = TavilySearchProperties.PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class TavilySearchAutoConfiguration {
 
 	@Bean

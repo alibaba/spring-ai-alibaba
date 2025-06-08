@@ -31,7 +31,8 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @ConditionalOnClass(YoudaoTranslateService.class)
 @EnableConfigurationProperties(YoudaoTranslateProperties.class)
-@ConditionalOnProperty(prefix = YoudaoTranslateProperties.PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = YoudaoTranslateProperties.PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class YoudaoTranslateAutoConfiguration {
 
 	@Bean

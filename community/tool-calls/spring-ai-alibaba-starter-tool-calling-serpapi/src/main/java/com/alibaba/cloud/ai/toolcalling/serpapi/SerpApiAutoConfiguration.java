@@ -36,7 +36,8 @@ import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.DE
  */
 @Configuration
 @EnableConfigurationProperties(SerpApiProperties.class)
-@ConditionalOnProperty(prefix = SerpApiProperties.SERP_API_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = SerpApiProperties.SERP_API_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class SerpApiAutoConfiguration {
 
 	@Bean

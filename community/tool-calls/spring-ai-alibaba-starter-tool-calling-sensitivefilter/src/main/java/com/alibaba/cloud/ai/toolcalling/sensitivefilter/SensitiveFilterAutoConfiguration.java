@@ -30,7 +30,7 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @ConditionalOnClass(SensitiveFilterService.class)
 @ConditionalOnProperty(prefix = SensitiveFilterProperties.SENSITIVE_FILTER_PREFIX, name = "enabled",
-		havingValue = "true")
+		havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(SensitiveFilterProperties.class)
 public class SensitiveFilterAutoConfiguration {
 

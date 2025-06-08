@@ -27,7 +27,8 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @EnableConfigurationProperties(DingTalkProperties.class)
-@ConditionalOnProperty(prefix = DingTalkProperties.DING_TALK_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = DingTalkProperties.DING_TALK_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class DingTalkAutoConfiguration {
 
 	@Bean

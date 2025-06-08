@@ -37,7 +37,8 @@ import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.DE
 
 @Configuration
 @EnableConfigurationProperties(DuckDuckGoProperties.class)
-@ConditionalOnProperty(prefix = DuckDuckGoProperties.DUCKDUCKGO_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = DuckDuckGoProperties.DUCKDUCKGO_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class DuckDuckGoAutoConfiguration {
 
 	@Bean
