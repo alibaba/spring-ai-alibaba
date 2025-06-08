@@ -67,7 +67,9 @@ public class GraphProcess {
 					if (output instanceof StreamingOutput) {
 						String nodeName = output.node();
 						StreamingOutput streamingOutput = (StreamingOutput) output;
-						sink.tryEmitNext(ServerSentEvent.builder(JSON.toJSONString(Map.of(nodeName, streamingOutput.chunk()))).build());
+						sink.tryEmitNext(
+								ServerSentEvent.builder(JSON.toJSONString(Map.of(nodeName, streamingOutput.chunk())))
+									.build());
 					}
 					else {
 						Map<String, Object> data = output.state().data();
