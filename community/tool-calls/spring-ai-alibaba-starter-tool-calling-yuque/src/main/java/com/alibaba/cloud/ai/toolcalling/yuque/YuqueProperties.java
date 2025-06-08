@@ -30,6 +30,7 @@ public class YuqueProperties extends CommonToolCallProperties {
 
 	public YuqueProperties() {
 		super("https://www.yuque.com/api/v2/repo");
+		this.setPropertiesFromEnv(null, null, null, "YUQUE_TOKEN");
 	}
 
 }
