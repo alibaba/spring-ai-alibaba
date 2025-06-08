@@ -48,7 +48,7 @@ Spring AI Alibaba 提供以下核心能力，帮助开发者快速构建自己�
 </dependencies>
 ```
 
-请查看官网 [快速开始](https://java2ai.com/docs/1.0.0/get-started/) 了解详细示例讲解。更多 starter 包括 spring-ai-alibaba-graph-core、spring-ai-alibaba-starter-nl2sql、spring-ai-alibaba-starter-nacos-mcp-client 等用法，请参考官方网文档资料。
+请查看官网 [快速开始](https://java2ai.com/docs/1.0.0-M6.1/get-started/) 了解详细示例讲解。更多 starter 包括 spring-ai-alibaba-graph-core、spring-ai-alibaba-starter-nl2sql、spring-ai-alibaba-starter-nacos-mcp-client 等用法，请参考官方文档资料。
 
 > 注意：
 > 1. 运行项目需要 JDK 17 及以上版本。
@@ -64,10 +64,7 @@ Spring AI Alibaba 官方社区开发了一个**包含完整 `前端UI+后端实�
     <img src="./docs/imgs/playground.png" alt="PlayGround" style="max-width: 949px; height: 537px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);" /> 
 </p>
 
-
-
 您可以在[本地部署 Playground 示例](https://github.com/springaialibaba/spring-ai-alibaba-examples/tree/main/spring-ai-alibaba-playground)并通过浏览器访问体验，或者拷贝源码并按照自己的业务需求调整，以便能够快速基于 Spring AI Alibaba 搭建一套自己的 AI 应用。
-
 
 学习更多 Spring AI Alibaba 框架用法，请参考 Spring AI Alibaba 社区的官方示例源码仓库：
 
@@ -288,6 +285,7 @@ flowchart TD
 [https://github.com/springaialibaba/spring-ai-alibaba-examples](https://github.com/springaialibaba/spring-ai-alibaba-examples)
 
 ## Spring AI Alibaba Graph 多智能体框架
+
 Spring AI Alibaba Graph 使开发者能够实现工作流和多智能体应用编排。其核心设计理念参考自 Langgraph，Spring AI Alibaba 社区在此基础上增加了大量预置 Node、简化了 State 定义过程，让开发者能够更好的与低代码平台集成、编写主流多智能体应用。
 
 Spring AI Alibaba Graph 核心能力：
@@ -302,13 +300,12 @@ Spring AI Alibaba Graph 核心能力：
 + PlantUML、Mermaid 可视化导出。
 
 ## 企业级 AI 生态集成
+
 在 Agent 生产落地过程中，用户需要解决智能体效果评估、MCP 工具集成、Prompt 管理、Token 上下文、可视化 Tracing 等各种问题。Spring AI Alibaba 通过与 Nacos3、Higress AI 网关、阿里云 ARMS、阿里云向量检索数据库、百炼智能体平台等深度集成，提供全面的 AI 智能体企业级生产解决方案，加速智能体从 Demo 走向生产落地。
 
 <p align="center">   
     <img src="https://img.alicdn.com/imgextra/i2/O1CN01sON0wZ21yKROGt2SJ_!!6000000007053-2-tps-5440-2928.png" alt="spring-ai-alibaba-architecture" style="max-width: 700px; height: 400px"/> 
 </p>
-
-
 
 1. **企业级 MCP 部署与代理方案**：支持基于 Nacos MCP Registry 的分布式部署与负载均衡调用，通过 Spring AI Alibaba MCP Gateway、Higress 代理可实现零改造将 HTTP/Dubbo 服务发布为 MCP；
 
@@ -323,6 +320,7 @@ Spring AI Alibaba Graph 核心能力：
 ## 通用智能体平台
 
 ### JManus 智能体平台
+
 Manus 的横空出世，让通用智能体自动规划、执行规划的能力给了人们无限想象空间，它非常擅长解决开放性问题，在日常生活、工作等场景都能有广泛的应用。在我们最开始发布 JManus 之时，给它的定位是一款完全以 Java 语言为核心、彻底开源的 Manus 复刻实现，基于 Spring AI Alibaba 实现的通用 AI Agent 产品，包含一个设计良好的前端 UI 交互界面。
 
 随着对于通用智能体等方向的深度探索，开发者们逐渐开始认识到：基于当前以及未来相当长时间内的模型能力，完全依赖通用智能体的自动规划模式很难解决一些确定性极强的企业场景问题。企业级业务场景的典型特点是确定性，我们需要定制化的工具、子 agent，需要稳定而又确定性强的规划与流程。为此，我们调整了 JManus 通用智能体的终端产品定位。我们期望 JManus 能够成为一个智能体开发平台，让用户能以最直观、低成本的方式构建属于自己的垂直领域的智能体实现。
@@ -335,6 +333,7 @@ Manus 的横空出世，让通用智能体自动规划、执行规划的能力�
 
 
 ### DeepResearch 智能体
+
 Spring AI Alibaba DeepResearch 是一款基于 Spring AI Alibaba Graph 开发的 Deep Research 智能体, 包括完整的前端 Web UI（开发中） 和后端实现，DeepResearch 支持一系列精心设计的工具，如 Web Search（网络查询）、Crawling（爬虫）、Python 脚本引擎等。借助大模型与工具能力，帮助用户完成各类深度调研报告。
 
 <p align="center">
