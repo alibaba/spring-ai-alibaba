@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.example.deepresearch;
+package com.alibaba.cloud.ai.example.deepresearch.tool;
 
-import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,19 +24,19 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.assertj.core.api.Assertions.*;
 
 /**
- * Run Python Code in Docker Test
+ * Run Python Code in Docker Test Without Network
  *
  * @author vlsmb
  */
 @SpringBootTest
-@DisplayName("Run Python Code in Docker Test")
-@ActiveProfiles("test")
-public class PythonReplToolTest {
+@DisplayName("Run Python Code in Docker Test Without Network")
+@ActiveProfiles("python_basis")
+public class PythonReplToolBasisTest {
 
 	@Autowired
 	private PythonReplTool pythonReplTool;
 
-	private static final String NORMAL_CODE = """
+	static final String NORMAL_CODE = """
 			def func(x: int):
 			    if x <= 0:
 			        return 1;
@@ -47,7 +46,7 @@ public class PythonReplToolTest {
 			    print(func(10))
 			""";
 
-	private static final String CODE_WITH_DEPENDENCY = """
+	static final String CODE_WITH_DEPENDENCY = """
 			import numpy as np
 
 			matrix = np.array([[1, 2], [3, 4]])
@@ -57,16 +56,16 @@ public class PythonReplToolTest {
 			print(inverse_matrix)
 			""";
 
-	private static final String TIMEOUT_CODE = """
+	static final String TIMEOUT_CODE = """
 			while True:
 				continue
 			""";
 
-	private static final String ERROR_CODE = """
+	static final String ERROR_CODE = """
 			void main() {}
 			""";
 
-	private static final String NETWORK_CHECK = """
+	static final String NETWORK_CHECK = """
 			import socket
 			import urllib.request
 
@@ -86,35 +85,51 @@ public class PythonReplToolTest {
 			""";
 
 	@Test
+	@DisplayName("Run Normal Code")
 	public void testNormalCode() {
-		assertThat(pythonReplTool.executePythonCode(NORMAL_CODE, null)).contains("3628800");
+		String response = pythonReplTool.executePythonCode(NORMAL_CODE, null);
+		System.out.println(response);
+		assertThat(response).contains("Successfully executed").contains("3628800");
 	}
 
 	@Test
+	@DisplayName("Run Code with Third-parties but Not Installed")
 	public void testCodeWithoutDependency() {
-		assertThat(pythonReplTool.executePythonCode(CODE_WITH_DEPENDENCY, null)).contains("ModuleNotFoundError");
+		String response = pythonReplTool.executePythonCode(CODE_WITH_DEPENDENCY, null);
+		System.out.println(response);
+		assertThat(response).contains("Error executing code").contains("ModuleNotFoundError");
 	}
 
 	@Test
+	@DisplayName("Run Code with Third-parties Installed")
 	public void testCodeWithDependency() {
-		assertThat(pythonReplTool.executePythonCode(CODE_WITH_DEPENDENCY, "numpy==2.2.6"))
-			.doesNotContain("ModuleNotFoundError");
+		String response = pythonReplTool.executePythonCode(CODE_WITH_DEPENDENCY, "numpy==2.2.6");
+		System.out.println(response);
+		assertThat(response).contains("Successfully executed").doesNotContain("ModuleNotFoundError");
 	}
 
 	@Test
+	@DisplayName("Run Code with Endless Loop")
 	public void testTimeoutCode() {
-		assertThat(pythonReplTool.executePythonCode(TIMEOUT_CODE, null)).contains("Error");
+		String response = pythonReplTool.executePythonCode(TIMEOUT_CODE, null);
+		System.out.println(response);
+		assertThat(response).contains("Error executing code");
 	}
 
 	@Test
+	@DisplayName("Run Code with Syntax Error")
 	public void testErrorCode() {
-		assertThat(pythonReplTool.executePythonCode(ERROR_CODE, null)).contains("SyntaxError");
+		String response = pythonReplTool.executePythonCode(ERROR_CODE, null);
+		System.out.println(response);
+		assertThat(response).contains("SyntaxError");
 	}
 
 	@Test
+	@DisplayName("Check Network is Disabled")
 	public void testNetworkCheck() {
-		assertThat(pythonReplTool.executePythonCode(NETWORK_CHECK, null)).contains("Failed")
-			.doesNotContain("Connected");
+		String response = pythonReplTool.executePythonCode(NETWORK_CHECK, null);
+		System.out.println(response);
+		assertThat(response).contains("Failed").doesNotContain("Connected");
 	}
 
 }

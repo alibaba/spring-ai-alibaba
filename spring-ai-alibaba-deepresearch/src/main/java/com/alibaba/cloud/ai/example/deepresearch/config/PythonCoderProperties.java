@@ -29,19 +29,24 @@ public class PythonCoderProperties {
 	public static final String PYTHON_CODER_PREFIX = DeepResearchProperties.PREFIX + ".python-coder";
 
 	/**
+	 * Docker Host Addr
+	 */
+	String dockerHost = "unix:///var/run/docker.sock";
+
+	/**
 	 * Naming prefix when temporarily enabling Docker containers
 	 */
 	String containNamePrefix = "python-coder";
 
 	/**
-	 * Memory size limit
+	 * Memory size limit (MB)
 	 */
-	String limitMemory = "500M";
+	Long limitMemory = 500L;
 
 	/**
 	 * Container CPU core limit
 	 */
-	String cpuCore = "1";
+	Long cpuCore = 1L;
 
 	/**
 	 * Enable/disable container network access
@@ -54,10 +59,23 @@ public class PythonCoderProperties {
 	String codeTimeout = "60s";
 
 	/**
+	 * Timeout of Docker (s)
+	 */
+	Long dockerTimeout = 3000L;
+
+	/**
 	 * The image of container. You can customize the image as long as it includes python3
 	 * and pip3
 	 */
 	String imageName = "python:3-slim";
+
+	public String getDockerHost() {
+		return dockerHost;
+	}
+
+	public void setDockerHost(String dockerHost) {
+		this.dockerHost = dockerHost;
+	}
 
 	public String getContainNamePrefix() {
 		return containNamePrefix;
@@ -67,19 +85,19 @@ public class PythonCoderProperties {
 		this.containNamePrefix = containNamePrefix;
 	}
 
-	public String getLimitMemory() {
+	public Long getLimitMemory() {
 		return limitMemory;
 	}
 
-	public void setLimitMemory(String limitMemory) {
+	public void setLimitMemory(Long limitMemory) {
 		this.limitMemory = limitMemory;
 	}
 
-	public String getCpuCore() {
+	public Long getCpuCore() {
 		return cpuCore;
 	}
 
-	public void setCpuCore(String cpuCore) {
+	public void setCpuCore(Long cpuCore) {
 		this.cpuCore = cpuCore;
 	}
 
@@ -97,6 +115,14 @@ public class PythonCoderProperties {
 
 	public void setCodeTimeout(String codeTimeout) {
 		this.codeTimeout = codeTimeout;
+	}
+
+	public Long getDockerTimeout() {
+		return dockerTimeout;
+	}
+
+	public void setDockerTimeout(Long dockerTimeout) {
+		this.dockerTimeout = dockerTimeout;
 	}
 
 	public String getImageName() {
