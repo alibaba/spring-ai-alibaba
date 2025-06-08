@@ -318,13 +318,35 @@ const handleConfig = () => {
 }
 
 const handleNewTaskButtonClick = () => {
-  // 清空当前选择
-  currentPlanTemplateId.value = null
+  // 1) 创建一个空的模板数据
+  const emptyTemplate: PlanTemplate = {
+    id: `new-${Date.now()}`, // 临时ID，用于标识这是新创建的模板
+    title: '新建计划',
+    description: '请使用计划生成器创建新的计划模板',
+    createTime: new Date().toISOString(),
+    updateTime: new Date().toISOString()
+  }
+  
+  // 设置选中的模板为空模板
+  selectedTemplate.value = emptyTemplate
+  currentPlanTemplateId.value = null // 清空当前选择的ID，因为这是新建的
+  
+  // 重置配置标签页的所有状态
+  jsonContent.value = ''
+  generatorPrompt.value = ''
+  executionParams.value = ''
+  planVersions.value = []
+  currentVersionIndex.value = -1
+  
+  // 2) 切换到配置标签页
+  currentTab.value = 'config'
   
   // 发送事件
   emit('jsonContentClear')
   emit('planParamsChanged', { prompt: '', params: '' })
   emit('newTaskRequested')
+  
+  console.log('[PlanTemplateSidebar] 创建新的空白计划模板，切换到配置标签页')
 }
 
 const loadPlanTemplateList = async () => {
@@ -501,6 +523,34 @@ const handleGeneratePlan = async () => {
     const response = await PlanActApiService.generatePlan(generatorPrompt.value)
     jsonContent.value = response.planJson || ''
     
+    // 如果是新建的模板（ID以'new-'开头），使用API返回的planTemplateId更新模板信息
+    if (selectedTemplate.value && selectedTemplate.value.id.startsWith('new-')) {
+      // 解析返回的planJson来获取title等信息
+      let title = '新建计划模板'
+      try {
+        const planData = JSON.parse(response.planJson || '{}')
+        title = planData.title || title
+      } catch (e) {
+        console.warn('无法解析计划JSON获取标题')
+      }
+      
+      // 更新选中的模板信息
+      selectedTemplate.value = {
+        id: response.planTemplateId, // 使用API返回的planTemplateId
+        title: title,
+        description: '通过生成器创建的计划模板',
+        createTime: new Date().toISOString(),
+        updateTime: new Date().toISOString(),
+        planJson: response.planJson
+      }
+      
+      // 更新当前计划模板ID
+      currentPlanTemplateId.value = response.planTemplateId
+      
+      // 重新加载模板列表以显示新创建的模板
+      await loadPlanTemplateList()
+    }
+    
     // 保存到版本历史
     if (currentVersionIndex.value < planVersions.value.length - 1) {
       planVersions.value = planVersions.value.slice(0, currentVersionIndex.value + 1)
@@ -508,7 +558,7 @@ const handleGeneratePlan = async () => {
     planVersions.value.push(jsonContent.value)
     currentVersionIndex.value = planVersions.value.length - 1
     
-    alert('计划生成成功！')
+    alert(`计划生成成功！模板ID: ${selectedTemplate.value?.id || '未知'}`)
   } catch (error: any) {
     console.error('生成计划失败:', error)
     alert('生成计划失败: ' + error.message)
