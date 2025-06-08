@@ -13,25 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.toolcalling.baidumap;
+package com.alibaba.cloud.ai.toolcalling.amp;
 
-import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
 
 /**
- * @author Carbon
  * @author vlsmb
  */
-@ConfigurationProperties(prefix = BaiduMapConstants.CONFIG_PREFIX)
-public class BaiDuMapProperties extends CommonToolCallProperties {
+public final class AmapConstants {
 
-	/**
-	 * Official Document URL：
-	 * <a href="https://lbs.baidu.com/faq/api?title=webapi/ROS2/prepare">...</a>
-	 */
-	public BaiDuMapProperties() {
-		super("https://api.map.baidu.com/");
-		this.setPropertiesFromEnv(BaiduMapConstants.API_KEY_ENV, null, null, null);
-	}
+	public static final String CONFIG_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".amap";
+
+	public static final String API_KEY_ENV = "GAODE_AMAP_API_KEY";
+
+	public static final String TOOL_NAME = "gaoDeGetAddressWeather";
 
 }

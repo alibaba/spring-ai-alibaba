@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.alibaba.cloud.ai.toolcalling.alitranslate;
+package com.alibaba.cloud.ai.toolcalling.amp;
 
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallAutoConfiguration;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
@@ -27,28 +26,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.util.StringUtils;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * @author vlsmb
  */
-@SpringBootTest(classes = { AliTranslateAutoConfiguration.class, CommonToolCallAutoConfiguration.class })
-@DisplayName("ALiTranslate Service Test")
-public class AliTranslateTest {
+@SpringBootTest(classes = { AmapAutoConfiguration.class, CommonToolCallAutoConfiguration.class })
+@DisplayName("Amap (Gaode) Search Weather Test")
+public class WeatherSearchServiceTest {
 
 	@Autowired
-	private AliTranslateService aliTranslateService;
+	private WeatherSearchService weatherSearchService;
 
-	private static final Logger log = LoggerFactory.getLogger(AliTranslateTest.class);
+	private static final Logger log = LoggerFactory.getLogger(WeatherSearchServiceTest.class);
 
 	@Test
+	@EnabledIfEnvironmentVariable(named = AmapConstants.API_KEY_ENV, matches = CommonToolCallConstants.NOT_BLANK_REGEX)
 	@DisplayName("Tool-Calling Test")
-	@EnabledIfEnvironmentVariable(named = AliTranslateConstants.ACCESS_KEY_SECRET_ENV,
-			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
-	@EnabledIfEnvironmentVariable(named = AliTranslateConstants.ACCESS_KEY_ID_ENV,
-			matches = CommonToolCallConstants.NOT_BLANK_REGEX)
-	public void testAliTranslate() {
-		AliTranslateService.Response resp = aliTranslateService.apply(new AliTranslateService.Request("你好"));
-		log.info("Ali Translate Service Response: {}", resp);
-		assert resp != null && StringUtils.hasText(resp.translatedTexts());
+	public void testWeatherSearch() {
+		WeatherSearchService.Response resp = weatherSearchService.apply(new WeatherSearchService.Request("Beijing"));
+		assert resp != null && StringUtils.hasText(resp.message());
+		log.info("Weather Search Response: {}", resp.message());
+		assertThat(resp.message()).doesNotContain("Error");
 	}
 
 }

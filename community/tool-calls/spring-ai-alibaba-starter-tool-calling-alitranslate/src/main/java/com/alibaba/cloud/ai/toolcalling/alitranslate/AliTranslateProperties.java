@@ -20,16 +20,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.StringUtils;
 
 /**
- * <p>
  * Aliyun Translation Service Configuration Attributes Class
- * </p>
- * Fields that must be configured:<br>
- * - Aliyun accessKeyId: Set {@link #setAccessKeyId(String)} or the environment variable
- * {@code ALITRANSLATE_ACCESS_KEY_ID}.<br>
- * - Aliyun accessKeySecret: Set {@link #setSecretKey(String)} or the environment variable
- * {@code ALITRANSLATE_ACCESS_KEY_SECRET}.<br>
  *
- * @author yunlong
  * @author Allen Hu
  */
 @ConfigurationProperties(prefix = AliTranslateConstants.CONFIG_PREFIX)
@@ -41,10 +33,6 @@ public class AliTranslateProperties extends CommonToolCallProperties {
 		if (!StringUtils.hasText(this.getAccessKeyId())) {
 			this.setAccessKeyId(System.getenv(accessKeyIdEnv));
 		}
-	}
-
-	public String getAccessKeySecret() {
-		return getSecretKey();
 	}
 
 }
