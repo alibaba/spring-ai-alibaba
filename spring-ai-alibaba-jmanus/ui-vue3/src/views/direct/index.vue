@@ -179,15 +179,42 @@ const handlePlanExecutionRequested = async (payload: { title: string; planData: 
     
     console.log('[Direct] Plan execution API response:', response)
     
-    // 使用返回的 planId，让聊天组件处理正常的消息流程
+    // 使用返回的 planId，直接在聊天中显示执行开始消息，但不触发新的执行
     if (response.planId) {
-      console.log('[Direct] Got planId from response:', response.planId, 'sending message to chat')
-      // 发送用户消息到聊天
-      if (planExecutionRef.value && typeof planExecutionRef.value.sendMessage === 'function') {
-        console.log('[Direct] Calling planExecutionRef.sendMessage with:', payload.title)
-        await planExecutionRef.value.sendMessage(payload.title)
+      console.log('[Direct] Got planId from response:', response.planId, 'adding messages to chat')
+      
+      // 获取chat组件的引用直接添加消息
+      const chatRef = planExecutionRef.value?.getChatRef()
+      if (chatRef) {
+        // 只添加用户消息，不通过sendMessage触发新的执行
+        console.log('[Direct] Adding user message to chat:', payload.title)
+        chatRef.addMessage('user', payload.title)
+        
+        // 添加助手消息表示正在执行
+        console.log('[Direct] Adding assistant message to chat')
+        chatRef.addMessage('assistant', '已收到执行计划请求，正在启动执行流程...', {
+          thinking: '正在初始化计划执行环境...'
+        })
+        
+        // 手动启动计划执行序列和轮询
+        console.log('[Direct] Starting plan execution sequence with planId:', response.planId)
+        const manager = planExecutionRef.value?.getPlanExecutionManager()
+        if (manager) {
+          // 设置活动计划ID
+          manager.state.activePlanId = response.planId
+          console.log('[Direct] Set activePlanId to:', response.planId)
+          
+          // 启动执行序列和轮询
+          if (typeof manager.initiatePlanExecutionSequence === 'function') {
+            manager.initiatePlanExecutionSequence(payload.title, response.planId)
+          } else {
+            console.error('[Direct] initiatePlanExecutionSequence method not available')
+          }
+        } else {
+          console.error('[Direct] Plan execution manager not available')
+        }
       } else {
-        console.error('[Direct] planExecutionRef.value.sendMessage is not available')
+        console.error('[Direct] Chat ref not available')
       }
     } else {
       console.error('[Direct] No planId in response:', response)

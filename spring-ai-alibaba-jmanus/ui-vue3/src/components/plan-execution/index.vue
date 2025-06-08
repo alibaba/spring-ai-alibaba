@@ -276,7 +276,8 @@ defineExpose({
   cleanup,
   sendMessage: handleUserMessageSendRequested,
   getChatRef: () => chatRef.value,
-  getInputRef: () => inputRef.value
+  getInputRef: () => inputRef.value,
+  getPlanExecutionManager: () => planExecutionManager
 })
 </script>
 
