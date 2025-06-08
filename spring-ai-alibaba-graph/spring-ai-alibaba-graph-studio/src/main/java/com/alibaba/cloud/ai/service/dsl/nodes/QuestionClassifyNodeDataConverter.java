@@ -75,7 +75,7 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 				Map<String, Object> modelData = (Map<String, Object>) data.get("model");
 				ObjectMapper objectMapper = new ObjectMapper();
 				objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-				objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.LOWER_CASE);
+				objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 				QuestionClassifierNodeData.ModelConfig modelConfig = new QuestionClassifierNodeData.ModelConfig()
 					.setMode((String) modelData.get("mode"))
 					.setName((String) modelData.get("name"))
@@ -98,7 +98,7 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 					List<Map<String, Object>> classes = (List<Map<String, Object>>) data.get("classes");
 					nodeData.setClasses(classes.stream()
 						.map(item -> new QuestionClassifierNodeData.ClassConfig().setId((String) item.get("id"))
-							.setText((String) item.get("text")))
+							.setText((String) item.get("name")))
 						.toList());
 				}
 

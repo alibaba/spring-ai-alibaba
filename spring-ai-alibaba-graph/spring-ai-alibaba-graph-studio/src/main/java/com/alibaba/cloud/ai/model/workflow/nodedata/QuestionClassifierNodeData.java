@@ -219,6 +219,10 @@ public class QuestionClassifierNodeData extends NodeData {
 
 		private Integer topK;
 
+		private Integer frequencyPenalty;
+
+		private Integer presencePenalty;
+
 		public Integer getMaxTokens() {
 			return maxTokens;
 		}
@@ -228,6 +232,41 @@ public class QuestionClassifierNodeData extends NodeData {
 			return this;
 		}
 
+		public void setRepetitionPenalty(Float repetitionPenalty) {
+			this.repetitionPenalty = repetitionPenalty;
+		}
+
+		public void setResponseFormat(String responseFormat) {
+			this.responseFormat = responseFormat;
+		}
+
+		public void setSeed(Integer seed) {
+			this.seed = seed;
+		}
+
+		public void setStop(List<String> stop) {
+			this.stop = stop;
+		}
+
+		public void setTemperature(Float temperature) {
+			this.temperature = temperature;
+		}
+
+		public void setTopP(Float topP) {
+			this.topP = topP;
+		}
+
+		public void setTopK(Integer topK) {
+			this.topK = topK;
+		}
+
+		public void setFrequencyPenalty(Integer frequencyPenalty) {
+			this.frequencyPenalty = frequencyPenalty;
+		}
+
+		public void setPresencePenalty(Integer presencePenalty) {
+			this.presencePenalty = presencePenalty;
+		}
 	}
 
 	public static class MemoryConfig {

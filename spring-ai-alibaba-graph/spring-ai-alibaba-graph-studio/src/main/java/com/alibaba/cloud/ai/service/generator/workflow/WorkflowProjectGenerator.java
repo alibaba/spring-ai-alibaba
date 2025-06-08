@@ -41,8 +41,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
 
 @Component
 public class WorkflowProjectGenerator implements ProjectGenerator {

@@ -16,9 +16,11 @@
 
 package com.alibaba.cloud.ai.model.workflow.nodedata;
 
+import com.alibaba.cloud.ai.graph.node.HttpNode;
 import com.alibaba.cloud.ai.graph.node.HttpNode.AuthConfig;
 import com.alibaba.cloud.ai.graph.node.HttpNode.HttpRequestNodeBody;
 import com.alibaba.cloud.ai.graph.node.HttpNode.RetryConfig;
+import com.alibaba.cloud.ai.graph.node.HttpNode.TimeoutConfig;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.NodeData;
 import org.springframework.http.HttpMethod;
@@ -54,12 +56,15 @@ public class HttpNodeData extends NodeData {
 	/** retryConfig */
 	private RetryConfig retryConfig = new RetryConfig(3, 1000, true);
 
+	/** TimeoutConfig */
+	private TimeoutConfig timeoutConfig;
+
 	/** outputKey */
 	private String outputKey;
 
 	public HttpNodeData(List<VariableSelector> inputs, List<com.alibaba.cloud.ai.model.Variable> outputs,
-			HttpMethod method, String url, Map<String, String> headers, Map<String, String> queryParams,
-			HttpRequestNodeBody body, AuthConfig authConfig, RetryConfig retryConfig, String outputKey) {
+						HttpMethod method, String url, Map<String, String> headers, Map<String, String> queryParams,
+						HttpRequestNodeBody body, AuthConfig authConfig, RetryConfig retryConfig, TimeoutConfig timeoutConfig, String outputKey) {
 		super(inputs, outputs);
 		this.method = method;
 		this.url = url;
@@ -68,12 +73,13 @@ public class HttpNodeData extends NodeData {
 		this.body = body != null ? body : new HttpRequestNodeBody();
 		this.authConfig = authConfig;
 		this.retryConfig = retryConfig != null ? retryConfig : new RetryConfig(3, 1000, true);
+		this.timeoutConfig = timeoutConfig;
 		this.outputKey = outputKey;
 	}
 
 	public HttpNodeData(List<VariableSelector> inputs, List<com.alibaba.cloud.ai.model.Variable> outputs) {
 		this(inputs, outputs, HttpMethod.GET, null, Collections.emptyMap(), Collections.emptyMap(),
-				new HttpRequestNodeBody(), null, new RetryConfig(3, 1000, true), null);
+				new HttpRequestNodeBody(), null, new RetryConfig(3, 1000, true), new TimeoutConfig(10, 60, 20, 300, 600, 6000), null);
 	}
 
 	public HttpMethod getMethod() {

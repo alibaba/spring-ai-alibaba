@@ -413,9 +413,13 @@ public class HttpNode implements NodeAction {
 				return new HttpRequestNodeBody(BodyType.NONE, null);
 			}
 			if (raw instanceof String) {
+				String text = ((String) raw).trim();
+				if (text.isEmpty()) {
+					return new HttpRequestNodeBody(BodyType.NONE, null);
+				}
 				BodyData bd = new BodyData();
 				bd.setType(BodyType.RAW_TEXT);
-				bd.setValue((String) raw);
+				bd.setValue(text);
 				return new HttpRequestNodeBody(BodyType.RAW_TEXT, List.of(bd));
 			}
             if (raw instanceof Map<?, ?>) {
@@ -436,7 +440,6 @@ public class HttpNode implements NodeAction {
 
                 switch (type) {
                     case NONE:
-                        // “type: none” → empty body
                         return new HttpRequestNodeBody(BodyType.NONE, null);
 
                     case RAW_TEXT:
@@ -667,6 +670,11 @@ public class HttpNode implements NodeAction {
 		public boolean isEnable() {
 			return enable;
 		}
+
+	}
+
+	public record TimeoutConfig(int connect, int read, int write, int maxConnectTimeout, int maxReadTimeout,
+								int maxWriteTimeout) {
 
 	}
 

@@ -16,7 +16,9 @@
 
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
+import com.alibaba.cloud.ai.graph.node.HttpNode;
 import com.alibaba.cloud.ai.graph.node.HttpNode.AuthConfig;
+import com.alibaba.cloud.ai.graph.node.HttpNode.TimeoutConfig;
 import com.alibaba.cloud.ai.graph.node.HttpNode.HttpRequestNodeBody;
 import com.alibaba.cloud.ai.graph.node.HttpNode.RetryConfig;
 import com.alibaba.cloud.ai.model.VariableSelector;
@@ -61,7 +63,6 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 			@SuppressWarnings("unchecked")
 			@Override
 			public HttpNodeData parse(Map<String, Object> data) {
-				// variable_selector -> inputs
 				List<VariableSelector> inputs = Optional.ofNullable((List<String>) data.get("variable_selector"))
 					.filter(list -> list.size() == 2)
 					.map(list -> Collections.singletonList(new VariableSelector(list.get(0), list.get(1))))
@@ -83,7 +84,7 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
                 } else {
                     headers = Collections.emptyMap();
                 }
-                Object paramsObj = data.get("query_params");
+                Object paramsObj = data.get("params");
                 Map<String, String> queryParams;
                 if (paramsObj instanceof Map) {
                     queryParams = (Map<String, String>) paramsObj;
@@ -99,30 +100,56 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 
 				// auth
 				AuthConfig auth = null;
-				if (data.containsKey("auth")) {
-					Map<String, Object> am = (Map<String, Object>) data.get("auth");
-					String type = ((String) am.get("type")).toUpperCase();
-					if ("BASIC".equals(type)) {
-						auth = AuthConfig.basic((String) am.get("username"), (String) am.get("password"));
-					}
-					else if ("BEARER".equals(type)) {
-						auth = AuthConfig.bearer((String) am.get("token"));
-					}
+				if (data.containsKey("authorization")) {
+					Map<String, Object> am = (Map<String, Object>) data.get("authorization");
+					String type = ((String) am.getOrDefault("type", "no-auth")).toLowerCase();
+                    auth = switch (type) {
+                        case "basic" -> AuthConfig.basic((String) am.get("username"), (String) am.get("password"));
+                        case "bearer" -> AuthConfig.bearer((String) am.get("token"));
+                        default -> auth;
+                    };
 				}
 
 				// retry_config
 				Map<String, Object> rcMap = (Map<String, Object>) data.get("retry_config");
 				int maxRetries = rcMap != null && rcMap.get("max_retries") != null
 						? ((Number) rcMap.get("max_retries")).intValue() : 3;
-				long maxRetryInterval = rcMap != null && rcMap.get("max_retry_interval") != null
-						? ((Number) rcMap.get("max_retry_interval")).longValue() : 1000L;
-				boolean enable = rcMap != null && rcMap.get("enable") != null ? (Boolean) rcMap.get("enable") : true;
+				long maxRetryInterval = rcMap != null && rcMap.get("retry_interval") != null
+						? ((Number) rcMap.get("retry_interval")).longValue() : 1000L;
+				boolean enable = rcMap != null && rcMap.get("retry_enabled") != null ? (Boolean) rcMap.get("retry_enabled") : true;
 				RetryConfig retryConfig = new RetryConfig(maxRetries, maxRetryInterval, enable);
+
+				// timeout_config
+				Map<String, Object> timeoutMap = (Map<String, Object>) data.get("timeout");
+				TimeoutConfig timeoutConfig;
+				if (timeoutMap != null) {
+					int connect = timeoutMap.get("connect") != null
+							? ((Number) timeoutMap.get("connect")).intValue()
+							: 10;
+					int read = timeoutMap.get("read") != null
+							? ((Number) timeoutMap.get("read")).intValue()
+							: 60;
+					int write = timeoutMap.get("write") != null
+							? ((Number) timeoutMap.get("write")).intValue()
+							: 20;
+					int maxConnect = timeoutMap.get("max_connect_timeout") != null
+							? ((Number) timeoutMap.get("max_connect_timeout")).intValue()
+							: 300;
+					int maxRead = timeoutMap.get("max_read_timeout") != null
+							? ((Number) timeoutMap.get("max_read_timeout")).intValue()
+							: 600;
+					int maxWrite = timeoutMap.get("max_write_timeout") != null
+							? ((Number) timeoutMap.get("max_write_timeout")).intValue()
+							: 600;
+					timeoutConfig = new TimeoutConfig(connect, read, write, maxConnect, maxRead, maxWrite);
+				} else {
+					timeoutConfig = new TimeoutConfig(10, 60, 20, 300, 600, 6000);
+				}
 
 				// output_key
 				String outputKey = (String) data.get("output_key");
 
-				return new HttpNodeData(inputs, outputs, method, url, headers, queryParams, body, auth, retryConfig,
+				return new HttpNodeData(inputs, outputs, method, url, headers, queryParams, body, auth, retryConfig, timeoutConfig,
 						outputKey);
 			}
 
