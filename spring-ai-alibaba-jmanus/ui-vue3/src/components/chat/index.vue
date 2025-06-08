@@ -1233,16 +1233,17 @@ defineExpose({
   handleSendMessage,
   handlePlanUpdate,
   handlePlanCompleted,
-  handleDialogRoundStart
+  handleDialogRoundStart,
+  addMessage
 })
 </script>
 
 <style lang="less" scoped>
 .chat-container {
-  flex: 1;
+  flex: 1; /* 占据剩余空间 */
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 0; /* 确保可以收缩 */
   overflow: hidden; /* 防止容器溢出 */
 }
 

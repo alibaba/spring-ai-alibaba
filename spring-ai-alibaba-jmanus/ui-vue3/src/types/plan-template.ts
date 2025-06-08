@@ -30,4 +30,5 @@ export interface PlanTemplateEvents {
   jsonContentClear: []
   planTemplateConfigRequested: [payload: { templateId: string; template: PlanTemplate }]
   configTabClosed: []
+  planExecutionRequested: [payload: { title: string; planData: any; params?: string }]
 }

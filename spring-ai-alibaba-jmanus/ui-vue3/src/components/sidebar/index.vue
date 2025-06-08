@@ -587,14 +587,42 @@ const handleExecutePlan = async () => {
   isExecuting.value = true
   
   try {
-    const params = executionParams.value.trim()
-    const response = params 
-      ? await PlanActApiService.executePlan(selectedTemplate.value.id, params)
-      : await PlanActApiService.executePlan(selectedTemplate.value.id)
+    // 解析当前模板的JSON内容来获取计划数据
+    let planData
+    try {
+      planData = JSON.parse(jsonContent.value)
+      // 确保planData包含正确的planTemplateId
+      planData.planTemplateId = selectedTemplate.value.id
+    } catch (e) {
+      // 如果解析失败，使用示例数据
+      planData = {
+        "planTemplateId": selectedTemplate.value.id, // 使用真实的模板ID
+        "planId": selectedTemplate.value.id, // 兼容性
+        "title": selectedTemplate.value.title || "执行计划",
+        "steps": [
+          {"stepRequirement": "[BROWSER_AGENT] 访问百度搜索阿里巴巴的最新股价" },
+          {"stepRequirement": "[DEFAULT_AGENT] 提取和整理搜索结果中的股价信息" },
+          {"stepRequirement": "[TEXT_FILE_AGENT] 创建一个文本文件记录查询结果" },
+          {"stepRequirement": "[DEFAULT_AGENT] 向用户报告查询结果" }
+        ]
+      }
+    }
+
+    // 使用模板标题或计划标题作为用户输入
+    const title = selectedTemplate.value.title || planData.title || '执行计划'
     
-    const query = `Executing plan template: ${selectedTemplate.value.id}`
-    console.log('计划模板执行请求成功:', response)
-    alert(`计划执行成功！计划ID: ${response.planId}`)
+    console.log('[Sidebar] 触发计划执行请求:', { title, planData, planTemplateId: selectedTemplate.value.id })
+    
+    // 发送计划执行事件给聊天组件
+    emit('planExecutionRequested', { 
+      title, 
+      planData, 
+      params: executionParams.value.trim() || undefined 
+    })
+    
+    // 关闭sidebar
+    isCollapsed.value = true
+    
   } catch (error: any) {
     console.error('执行计划出错:', error)
     alert('执行计划失败: ' + error.message)

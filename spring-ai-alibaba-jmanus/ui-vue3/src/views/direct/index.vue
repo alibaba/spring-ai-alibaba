@@ -18,7 +18,10 @@ const isLoading = ref(false)nse");
 -->
 <template>
   <div class="direct-page">
-    <Sidebar ref="sidebarRef" />
+    <Sidebar 
+      ref="sidebarRef" 
+      @planExecutionRequested="handlePlanExecutionRequested"
+    />
     <div class="direct-chat">
       <!-- Left Panel - Chat -->
       <div class="left-panel">
@@ -59,6 +62,7 @@ import { Icon } from '@iconify/vue'
 import Sidebar from '@/components/sidebar/index.vue'
 import RightPanel from '@/components/right-panel/index.vue'
 import PlanExecutionComponent from '@/components/plan-execution/index.vue'
+import { PlanActApiService } from '@/api/plan-act-api-service'
 
 const route = useRoute()
 const router = useRouter()
@@ -67,6 +71,7 @@ const prompt = ref<string>('')
 const planExecutionRef = ref()
 const rightPanelRef = ref()
 const sidebarRef = ref()
+const isExecutingPlan = ref(false)
 
 onMounted(() => {
   // Initialize with prompt from conversation page
@@ -128,6 +133,67 @@ const handlePlanModeClicked = () => {
 const handleConfig = () => {
   router.push('/configs')
 }
+
+const handlePlanExecutionRequested = async (payload: { title: string; planData: any; params?: string }) => {
+  console.log('[DirectView] Plan execution requested:', payload)
+  
+  // 防止重复执行
+  if (isExecutingPlan.value) {
+    console.log('[DirectView] Plan execution already in progress, ignoring request')
+    return
+  }
+  
+  isExecutingPlan.value = true
+  
+  try {
+    // 获取计划模板ID
+    const planTemplateId = payload.planData.planTemplateId || payload.planData.planId
+    
+    if (!planTemplateId) {
+      throw new Error('没有找到计划模板ID')
+    }
+    
+    console.log('[DirectView] Executing plan with templateId:', planTemplateId, 'params:', payload.params)
+    
+    // 调用真实的 API 执行计划
+    let response
+    if (payload.params && payload.params.trim()) {
+      response = await PlanActApiService.executePlan(planTemplateId, payload.params.trim())
+    } else {
+      response = await PlanActApiService.executePlan(planTemplateId)
+    }
+    
+    console.log('[DirectView] Plan execution response:', response)
+    
+    // 使用返回的 planId，让聊天组件处理正常的消息流程
+    if (response.planId) {
+      // 发送用户消息到聊天
+      if (planExecutionRef.value && typeof planExecutionRef.value.sendMessage === 'function') {
+        await planExecutionRef.value.sendMessage(payload.title)
+      }
+    } else {
+      throw new Error('执行计划失败：未返回有效的计划ID')
+    }
+    
+  } catch (error: any) {
+    console.error('[DirectView] Plan execution failed:', error)
+    
+    // 获取chat组件的引用来显示错误
+    const chatRef = planExecutionRef.value?.getChatRef()
+    if (chatRef) {
+      // 先添加用户消息
+      chatRef.addMessage('user', payload.title)
+      // 再添加错误消息
+      chatRef.addMessage('assistant', `执行计划失败: ${error.message || '未知错误'}`, {
+        thinking: undefined
+      })
+    } else {
+      alert(`执行计划失败: ${error.message || '未知错误'}`)
+    }
+  } finally {
+    isExecutingPlan.value = false
+  }
+}
 </script>
 
 <style lang="less" scoped>
@@ -150,7 +216,7 @@ const handleConfig = () => {
   border-right: 1px solid #1a1a1a;
   display: flex;
   flex-direction: column;
-  max-height: 100vh;
+  height: 100vh; /* 使用固定高度 */
   overflow: hidden; /* 防止面板本身溢出 */
 }
 
@@ -162,6 +228,9 @@ const handleConfig = () => {
   gap: 16px;
   background: rgba(255, 255, 255, 0.02);
   flex-shrink: 0; /* 确保头部不会被压缩 */
+  position: sticky; /* 固定在顶部 */
+  top: 0;
+  z-index: 100;
 
   h2 {
     flex: 1;

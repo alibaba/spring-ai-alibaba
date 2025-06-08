@@ -282,7 +282,9 @@ defineExpose({
 .plan-execution-container {
   display: flex;
   flex-direction: column;
+  flex: 1; /* 占据剩余空间 */
   height: 100%;
-  width: 100%;
+  min-height: 0; /* 确保可以收缩 */
+  overflow: hidden; /* 防止溢出 */
 }
 </style>
