@@ -42,12 +42,14 @@ Node.js is a JavaScript runtime that includes npm (Node Package Manager).
   Visit [Node.js official website](https://nodejs.org/) and download the LTS version installer for your operating system.
 - **Linux**: 
   Use your package manager. For Ubuntu/Debian:
+
   ```bash
   sudo apt update
   sudo apt install nodejs npm
   ```
 
 Verify installation:
+
 ```bash
 node -v
 npm -v
@@ -62,6 +64,7 @@ npm install -g pnpm
 ```
 
 Verify installation:
+
 ```bash
 pnpm -v
 ```
@@ -167,6 +170,7 @@ VITE_API_BASE_URL=http://localhost:8080
 ## 📖 Documentation
 
 For detailed documentation, please refer to:
+
 - [JManus Documentation](../README.md)
 - [API Documentation](./docs/api.md)
 - [Configuration Guide](./docs/configuration.md)

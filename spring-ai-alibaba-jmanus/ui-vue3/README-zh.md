@@ -32,13 +32,16 @@ Node.js 是一个 JavaScript 运行环境，它包含了 npm (Node Package Manag
   请访问 [Node.js 官方网站](https://nodejs.org/) 下载并安装适合您操作系统的 LTS (长期支持) 版本。安装程序会自动安装 Node.js 和 npm。
 - **Linux**:
   您可以使用包管理器进行安装。例如，在 Ubuntu/Debian 上：
+
   ```bash
   sudo apt update
   sudo apt install nodejs npm
   ```
+
   对于其他发行版，请参考 Node.js 官方文档的[安装指南](https://nodejs.org/en/download/package-manager)。
 
 安装完成后，您可以通过以下命令验证安装：
+
 ```bash
 node -v
 npm -v
@@ -49,16 +52,19 @@ npm -v
 pnpm 是一个快速、节省磁盘空间的包管理器。我们推荐使用 pnpm 来管理本项目的依赖。
 
 使用 npm全局安装 pnpm：
+
 ```bash
 npm install -g pnpm
 ```
 
 验证 pnpm 安装：
+
 ```bash
 pnpm -v
 ```
 
 为什么使用 pnpm？
+
 - **速度快**：pnpm 在安装依赖时比 npm 和 yarn 更快。
 - **磁盘空间效率高**：pnpm 使用内容可寻址存储来存储所有模块，这意味着项目之间共享相同的依赖版本，而不是在每个项目中都复制一份。
 - **严格的依赖管理**：pnpm 创建一个非扁平化的 `node_modules` 目录，这有助于避免一些潜在的依赖问题。
@@ -100,6 +106,7 @@ VITE_API_BASE_URL=http://localhost:8080
 ## 📖 文档
 
 详细文档请参考：
+
 - [JManus 文档](../README-zh.md)
 - [API 文档](./docs/api.md)
 - [配置指南](./docs/configuration.md)
