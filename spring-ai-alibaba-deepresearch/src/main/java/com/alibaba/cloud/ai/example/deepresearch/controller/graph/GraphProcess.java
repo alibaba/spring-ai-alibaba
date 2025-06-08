@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.example.deepresearch.controller.graph;
 
+import com.alibaba.cloud.ai.example.deepresearch.controller.DeepResearchController;
 import com.alibaba.cloud.ai.example.deepresearch.model.ChatRequest;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.NodeOutput;
@@ -25,6 +26,8 @@ import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.fastjson.JSON;
 import org.bsc.async.AsyncGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.codec.ServerSentEvent;
 import reactor.core.publisher.Sinks;
 
@@ -39,6 +42,8 @@ import java.util.concurrent.Executors;
  */
 
 public class GraphProcess {
+
+	private static final Logger logger = LoggerFactory.getLogger(GraphProcess.class);
 
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -63,7 +68,7 @@ public class GraphProcess {
 		executor.submit(() -> {
 			generator.forEachAsync(output -> {
 				try {
-					System.out.println("output = " + output);
+					logger.info("output = {}", output);
 					if (output instanceof StreamingOutput) {
 						String nodeName = output.node();
 						StreamingOutput streamingOutput = (StreamingOutput) output;
