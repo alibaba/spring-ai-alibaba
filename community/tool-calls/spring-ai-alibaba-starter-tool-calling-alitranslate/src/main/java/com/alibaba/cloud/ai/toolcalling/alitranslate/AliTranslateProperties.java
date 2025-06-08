@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.toolcalling.alitranslate;
 
-import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.StringUtils;
@@ -33,16 +32,12 @@ import org.springframework.util.StringUtils;
  * @author yunlong
  * @author Allen Hu
  */
-@ConfigurationProperties(prefix = AliTranslateProperties.PREFIX)
+@ConfigurationProperties(prefix = AliTranslateConstants.CONFIG_PREFIX)
 public class AliTranslateProperties extends CommonToolCallProperties {
 
-	public static final String PREFIX = CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX + ".alitranslate";
-
-	private String region;
-
 	public AliTranslateProperties() {
-		this.setPropertiesFromEnv(null, "ALITRANSLATE_ACCESS_KEY_SECRET", null, null);
-		String accessKeyIdEnv = "ALITRANSLATE_ACCESS_KEY_ID";
+		this.setPropertiesFromEnv(null, AliTranslateConstants.ACCESS_KEY_SECRET_ENV, null, null);
+		String accessKeyIdEnv = AliTranslateConstants.ACCESS_KEY_ID_ENV;
 		if (!StringUtils.hasText(this.getAccessKeyId())) {
 			this.setAccessKeyId(System.getenv(accessKeyIdEnv));
 		}
@@ -50,23 +45,6 @@ public class AliTranslateProperties extends CommonToolCallProperties {
 
 	public String getAccessKeySecret() {
 		return getSecretKey();
-	}
-
-	/**
-	 * @param accessKeySecret AccessKeySecret
-	 * @deprecated use {@link #setSecretKey(String)} instead
-	 */
-	@Deprecated
-	public void setAccessKeySecret(String accessKeySecret) {
-		this.setSecretKey(accessKeySecret);
-	}
-
-	public String getRegion() {
-		return region;
-	}
-
-	public void setRegion(String region) {
-		this.region = region;
 	}
 
 }
