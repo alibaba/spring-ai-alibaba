@@ -340,7 +340,7 @@ public final class OverAllState implements Serializable {
 	 */
 	public void updateStateBySchema(Map<String, Object> state, Map<String, Object> partialState,
 			Map<String, KeyStrategy> keyStrategies) {
-		updateState(state, partialState, keyStrategies).forEach((s, o) -> data.put(s, o));
+		updateState(updateState(state, partialState, keyStrategies));
 	}
 
 	/**

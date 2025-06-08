@@ -684,8 +684,7 @@ public class CompiledGraph {
 								currentState = OverAllState.updateState(intermediateState, (Map<String, Object>) data,
 										keyStrategyMap);
 
-								overAllState.updateStateBySchema(intermediateState, (Map<String, Object>) data,
-										keyStrategyMap);
+								overAllState.updateState((Map<String, Object>) data);
 							}
 							else {
 								throw new IllegalArgumentException("Embedded generator must return a Map");
@@ -714,7 +713,7 @@ public class CompiledGraph {
 					}
 
 					this.currentState = OverAllState.updateState(currentState, updateState, keyStrategyMap);
-					this.overAllState.updateStateBySchema(currentState, updateState, keyStrategyMap);
+					this.overAllState.updateState(updateState);
 					var nextNodeCommand = nextNodeId(currentNodeId, overAllState, currentState, config);
 					nextNodeId = nextNodeCommand.gotoNode();
 					this.currentState = nextNodeCommand.update();

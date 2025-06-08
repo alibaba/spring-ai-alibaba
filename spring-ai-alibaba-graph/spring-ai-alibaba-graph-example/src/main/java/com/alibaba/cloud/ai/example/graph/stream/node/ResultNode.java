@@ -11,7 +11,7 @@ public class ResultNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		System.out.println("messages = {}" + state.value("messages"));
+		System.out.println("messages = " + state.value("messages").get());
 		return Map.of();
 	}
 
