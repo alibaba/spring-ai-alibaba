@@ -62,7 +62,7 @@ mvn spring-boot:run
 
 ![架构图](https://github.com/user-attachments/assets/4ad14a72-667b-456e-85c1-b05eef8fd414)
 
-
 ## 之前的版本
+
 如果你想要之前的稳定版本，可以在这里找到：
 [之前的稳定版](https://github.com/rainerWJY/Java-Open-Manus/releases)
