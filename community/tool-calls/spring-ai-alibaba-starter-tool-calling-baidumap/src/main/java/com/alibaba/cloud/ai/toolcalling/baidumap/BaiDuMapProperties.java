@@ -18,17 +18,12 @@ package com.alibaba.cloud.ai.toolcalling.baidumap;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import static com.alibaba.cloud.ai.toolcalling.baidumap.BaiDuMapProperties.BaiDuMapPrefix;
-import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
-
 /**
  * @author Carbon
  * @author vlsmb
  */
-@ConfigurationProperties(prefix = BaiDuMapPrefix)
+@ConfigurationProperties(prefix = BaiduMapConstants.CONFIG_PREFIX)
 public class BaiDuMapProperties extends CommonToolCallProperties {
-
-	protected static final String BaiDuMapPrefix = TOOL_CALLING_CONFIG_PREFIX + ".baidu.map";
 
 	/**
 	 * Official Document URL：
@@ -36,7 +31,7 @@ public class BaiDuMapProperties extends CommonToolCallProperties {
 	 */
 	public BaiDuMapProperties() {
 		super("https://api.map.baidu.com/");
-		this.setPropertiesFromEnv("BAIDU_MAP_API_KEY", null, null, null);
+		this.setPropertiesFromEnv(BaiduMapConstants.API_KEY_ENV, null, null, null);
 	}
 
 }

@@ -25,18 +25,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
-import static com.alibaba.cloud.ai.toolcalling.weather.WeatherProperties.WEATHER_PREFIX;
-
 /**
  * @author 北极星
  */
 @Configuration
 @ConditionalOnClass(WeatherService.class)
 @EnableConfigurationProperties(WeatherProperties.class)
-@ConditionalOnProperty(prefix = WEATHER_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = WeatherConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class WeatherAutoConfiguration {
 
-	@Bean
+	@Bean(name = WeatherConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Use api.weather to get weather information.")
 	public WeatherService getWeatherService(WeatherProperties properties, JsonParseTool jsonParseTool) {

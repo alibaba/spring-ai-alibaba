@@ -29,7 +29,8 @@ import org.springframework.util.Assert;
  */
 @Configuration
 @EnableConfigurationProperties({ CrawlerJinaProperties.class, CrawlerFirecrawlProperties.class })
-@ConditionalOnProperty(prefix = CrawlerJinaProperties.JINA_PROPERTIES_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = CrawlerJinaProperties.JINA_PROPERTIES_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class CrawlerAutoConfiguration {
 
 	@Bean

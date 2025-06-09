@@ -37,11 +37,12 @@ import org.springframework.http.MediaType;
  */
 @Configuration
 @ConditionalOnClass(SinaNewsService.class)
-@ConditionalOnProperty(prefix = SinaNewsProperties.SINA_NEWS_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = SinaNewsConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 @EnableConfigurationProperties(SinaNewsProperties.class)
 public class SinaNewsAutoConfiguration {
 
-	@Bean
+	@Bean(name = SinaNewsConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Get the news from the Sina news (获取新浪新闻).")
 	public SinaNewsService getSinaNews(JsonParseTool jsonParseTool, SinaNewsProperties properties) {

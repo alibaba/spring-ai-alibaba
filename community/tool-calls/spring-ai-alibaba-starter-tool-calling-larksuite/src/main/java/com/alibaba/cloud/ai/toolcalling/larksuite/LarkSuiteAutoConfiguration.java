@@ -29,7 +29,8 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @EnableConfigurationProperties({ LarkSuiteProperties.class })
 @ConditionalOnClass({ LarkSuiteProperties.class })
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.larksuite", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.larksuite", name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class LarkSuiteAutoConfiguration {
 
 	@Bean

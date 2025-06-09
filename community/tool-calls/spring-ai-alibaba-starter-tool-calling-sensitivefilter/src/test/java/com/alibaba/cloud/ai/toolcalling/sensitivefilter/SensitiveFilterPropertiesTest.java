@@ -147,8 +147,7 @@ class SensitiveFilterPropertiesTest {
 	@DisplayName("Test configuration prefix constant")
 	void testConfigurationPrefix() {
 		// Verify prefix constant through reflection or direct access
-		assertThat(SensitiveFilterProperties.SENSITIVE_FILTER_PREFIX).contains("toolcalling")
-			.contains("sensitivefilter");
+		assertThat(SensitiveFilterConstants.CONFIG_PREFIX).contains("toolcalling").contains("sensitivefilter");
 	}
 
 	@Test
