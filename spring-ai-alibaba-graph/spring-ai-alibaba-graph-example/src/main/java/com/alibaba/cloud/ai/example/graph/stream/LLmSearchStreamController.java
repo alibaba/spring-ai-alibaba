@@ -72,7 +72,7 @@ public class LLmSearchStreamController {
 	public void init() throws GraphStateException {
 		workflow = new StateGraph(
 				() -> new OverAllState().registerKeyAndStrategy("parallel_result", new AppendStrategy())
-						.registerKeyAndStrategy("messages1", new AppendStrategy())
+					.registerKeyAndStrategy("messages1", new AppendStrategy())
 					.registerKeyAndStrategy("messages", new AppendStrategy()))
 			.addNode("baiduSearchNode", node_async(baiduSearchNode))
 			.addNode("tavilySearchNode", node_async(tavilySearchNode))
