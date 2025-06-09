@@ -24,17 +24,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 
-import static com.alibaba.cloud.ai.toolcalling.googletranslate.GoogleTranslateProperties.GOOGLE_TRANSLATE_PREFIX;
-
 /**
  * @author erasernoob
  */
 @Configuration
 @EnableConfigurationProperties(GoogleTranslateProperties.class)
-@ConditionalOnProperty(prefix = GOOGLE_TRANSLATE_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = GoogleTranslateConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class GoogleTranslateAutoConfiguration {
 
-	@Bean
+	@Bean(name = GoogleTranslateConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Implement natural language translation capabilities.")
 	public GoogleTranslateService googleTranslate(JsonParseTool jsonParseTool, GoogleTranslateProperties properties) {
