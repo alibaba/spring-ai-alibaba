@@ -28,8 +28,6 @@ import org.springframework.http.HttpHeaders;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
-
-import static com.alibaba.cloud.ai.toolcalling.baidusearch.BaiduSearchProperties.BAIDU_SEARCH_PREFIX;
 import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.DEFAULT_USER_AGENTS;
 
 /**
@@ -37,10 +35,11 @@ import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.DE
  **/
 @Configuration
 @EnableConfigurationProperties(BaiduSearchProperties.class)
-@ConditionalOnProperty(prefix = BAIDU_SEARCH_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = BaiduSearchConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class BaiduSearchAutoConfiguration {
 
-	@Bean
+	@Bean(name = BaiduSearchConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Use baidu search engine to query for the latest news.")
 	public BaiduSearchService baiduSearch(JsonParseTool jsonParseTool, BaiduSearchProperties properties) {
