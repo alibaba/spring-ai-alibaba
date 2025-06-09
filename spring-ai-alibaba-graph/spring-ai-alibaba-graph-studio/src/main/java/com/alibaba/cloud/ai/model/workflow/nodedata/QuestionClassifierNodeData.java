@@ -40,6 +40,8 @@ public class QuestionClassifierNodeData extends NodeData {
 
 	private List<ClassConfig> classes;
 
+    private String outputKey;
+
 	public QuestionClassifierNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
 		super(inputs, outputs);
 	}
@@ -70,6 +72,14 @@ public class QuestionClassifierNodeData extends NodeData {
 		this.memoryConfig = memoryConfig;
 		return this;
 	}
+
+    public String getOutputKey() {
+        return outputKey;
+    }
+
+    public void setOutputKey(String outputKey) {
+        this.outputKey = outputKey;
+    }
 
 	public String getInstruction() {
 		return instruction;

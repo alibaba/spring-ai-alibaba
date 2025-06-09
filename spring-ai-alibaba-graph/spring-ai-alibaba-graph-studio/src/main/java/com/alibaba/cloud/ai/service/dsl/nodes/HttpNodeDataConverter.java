@@ -147,9 +147,10 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 				}
 
 				// output_key
-				String outputKey = (String) data.get("output_key");
+                String nodeId = (String) data.get("id");
+				String outputKey = (String) data.getOrDefault("output_key", HttpNodeData.defaultOutputKey(nodeId));
 
-				return new HttpNodeData(inputs, outputs, method, url, headers, queryParams, body, auth, retryConfig, timeoutConfig,
+                return new HttpNodeData(inputs, outputs, method, url, headers, queryParams, body, auth, retryConfig, timeoutConfig,
 						outputKey);
 			}
 

@@ -23,10 +23,16 @@ import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
 public class VariableAggregatorNodeSection implements NodeSection {
+    private final Map<String, String> varNames;
+
+    public VariableAggregatorNodeSection(Map<String, String> varNames) {
+        this.varNames = varNames;
+    }
 
     @Override
     public boolean support(NodeType nodeType) {
@@ -37,9 +43,12 @@ public class VariableAggregatorNodeSection implements NodeSection {
     public String render(Node node, String varName) {
         var data = (VariableAggregatorNodeData) node.getData();
         List<String> inputKeys = data.getVariables().stream()
-                .map(pair -> pair.get(1))
+                .map(pair -> {
+                    String fromNodeId = pair.get(0);
+                    return varNames.getOrDefault(fromNodeId, fromNodeId + "_output");
+                })
                 .toList();
-        String outputKey = "output";
+        String outputKey =  data.getOutputKey();;
 
         String id = node.getId();
         String keysLit = inputKeys.stream()

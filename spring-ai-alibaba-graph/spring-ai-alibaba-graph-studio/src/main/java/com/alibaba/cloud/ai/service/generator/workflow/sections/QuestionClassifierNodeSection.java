@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
 import com.alibaba.cloud.ai.model.workflow.nodedata.QuestionClassifierNodeData;
 import com.alibaba.cloud.ai.service.generator.workflow.NodeSection;
+import com.google.common.base.Strings;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -63,6 +64,11 @@ public class QuestionClassifierNodeSection implements NodeSection {
 				.collect(Collectors.joining(", "));
 			sb.append(String.format("            .categories(List.of(%s))%n", joined));
 		}
+
+        String outputKey = data.getOutputKey();
+        if (!Strings.isNullOrEmpty(outputKey)) {
+            sb.append(String.format("            .outputKey(\"%s\")%n", escape(outputKey)));
+        }
 
 		String instr = data.getInstruction();
 		if (instr != null && !instr.isBlank()) {

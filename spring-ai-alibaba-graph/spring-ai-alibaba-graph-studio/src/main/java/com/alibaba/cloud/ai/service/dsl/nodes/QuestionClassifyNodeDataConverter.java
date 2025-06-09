@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
+import com.alibaba.cloud.ai.model.workflow.nodedata.HttpNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.QuestionClassifierNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
@@ -116,6 +117,11 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 						.setIncludeLastMessage(false);
 					nodeData.setMemoryConfig(memory);
 				}
+
+                // output_key
+                String nodeId = (String) data.get("id");
+                String outputKey = (String) data.getOrDefault("output_key", HttpNodeData.defaultOutputKey(nodeId));
+                nodeData.setOutputKey(outputKey);
 
 				return nodeData;
 			}

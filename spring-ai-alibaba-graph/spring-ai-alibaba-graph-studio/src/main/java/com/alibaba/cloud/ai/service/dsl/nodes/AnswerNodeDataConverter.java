@@ -50,6 +50,8 @@ public class AnswerNodeDataConverter extends AbstractNodeDataConverter<AnswerNod
 			public AnswerNodeData parse(Map<String, Object> data) {
 				AnswerNodeData nd = new AnswerNodeData();
 				nd.setAnswer((String) data.get("answer"));
+                String nodeId = (String) data.get("id");
+                String outputKey = (String) data.getOrDefault("output_key", nodeId + "_output");
 				return nd;
 			}
 

@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.model.workflow.*;
 import com.alibaba.cloud.ai.model.workflow.nodedata.DocumentExtractorNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.HttpNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.LLMNodeData;
+import com.alibaba.cloud.ai.model.workflow.nodedata.QuestionClassifierNodeData;
 import com.alibaba.cloud.ai.model.workflow.nodedata.VariableAggregatorNodeData;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.service.dsl.Serializer;
@@ -157,6 +158,11 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 								.map(k -> new Variable(k, agg.getOutputType()))
 								.stream();
 					}
+                    if (nd instanceof QuestionClassifierNodeData classifier) {
+                        return Optional.ofNullable(classifier.getOutputKey())
+                                .map(k -> new Variable(k, VariableType.STRING.value()))
+                                .stream();
+                    }
 					return Stream.empty();
 					// todo： other node may create overallstate variables
 				})
@@ -201,6 +207,8 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
                 // This node is just a "note", skip it, and the corresponding node will not be generated
                 continue;
             }
+            String nodeId = (String) nodeMap.get("id");
+            nodeDataMap.put("id", nodeId);
 			// determine the type of dify node is supported yet
 			NodeType nodeType = NodeType.fromDifyValue(difyNodeType)
 				.orElseThrow(() -> new NotImplementedException("unsupported node type " + difyNodeType));
