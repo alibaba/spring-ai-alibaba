@@ -29,10 +29,11 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @EnableConfigurationProperties(AmapProperties.class)
-@ConditionalOnProperty(prefix = AmapProperties.AMAP_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = AmapConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class AmapAutoConfiguration {
 
-	@Bean
+	@Bean(name = AmapConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Get weather information according to address from Amap.")
 	public WeatherSearchService gaoDeGetAddressWeather(JsonParseTool jsonParseTool, AmapProperties amapProperties) {

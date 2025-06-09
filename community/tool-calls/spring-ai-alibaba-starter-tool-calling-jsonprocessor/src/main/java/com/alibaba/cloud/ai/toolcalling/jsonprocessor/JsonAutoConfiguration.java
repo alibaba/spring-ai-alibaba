@@ -28,7 +28,8 @@ import org.springframework.context.annotation.Description;
 @Configuration
 @ConditionalOnClass({ JsonInsertService.class, JsonRemoveService.class, JsonReplaceService.class,
 		JsonParseService.class })
-@ConditionalOnProperty(value = "spring.ai.alibaba.toolcalling.jsonprocessor", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(value = "spring.ai.alibaba.toolcalling.jsonprocessor", name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class JsonAutoConfiguration {
 
 	@Bean
