@@ -89,7 +89,7 @@ public class LLmNode implements NodeAction {
 					response -> Map.of("messages", Objects.requireNonNull(response.getResult().getOutput().getText())))
 			.build(flux);
 
-		return Map.of("messages", generator);
+		return Map.of("messages1", generator, "messages", "test");
 	}
 
 }
