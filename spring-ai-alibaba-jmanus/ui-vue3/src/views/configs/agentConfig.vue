@@ -145,39 +145,215 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import Modal from '@/components/modal/index.vue'
 import Flex from '@/components/flex/index.vue'
 
 interface Agent {
-  id: number
+  id: number | string
   name: string
   description: string
   tools: string[]
   prompt: string
+  nextPrompt?: string
 }
 
-const agents = reactive<Agent[]>([
-  {
-    id: 1,
-    name: '通用助手',
-    description: '这是一个通用的智能助手，可以回答问题和执行多种任务...',
-    tools: ['search', 'calculator', 'weather'],
-    prompt: '',
-  },
-  {
-    id: 2,
-    name: '编程专家',
-    description: '专注于解决编程相关问题的AI助手，熟悉多种编程语言和框架...',
-    tools: ['code_analysis', 'git', 'docker'],
-    prompt: '',
-  },
-])
+interface Tool {
+  id: string
+  name: string
+  description: string
+  enabled: boolean
+}
 
-const selectedAgent = ref<Agent | null>(agents?.[0])
+// API 服务类
+class AdminAPI {
+  static AGENT_URL = '/api/agents'
+
+  static async _handleResponse(response: Response) {
+    if (!response.ok) {
+      try {
+        const errorData = await response.json()
+        throw new Error(errorData.message || `API请求失败: ${response.status}`)
+      } catch (e) {
+        throw new Error(`API请求失败: ${response.status} ${response.statusText}`)
+      }
+    }
+    return response
+  }
+
+  static async getAllAgents(): Promise<Agent[]> {
+    try {
+      const response = await fetch(this.AGENT_URL)
+      const result = await this._handleResponse(response)
+      return await result.json()
+    } catch (error) {
+      console.error('获取Agent列表失败:', error)
+      throw error
+    }
+  }
+
+  static async getAgentById(id: string | number): Promise<Agent> {
+    try {
+      const response = await fetch(`${this.AGENT_URL}/${id}`)
+      const result = await this._handleResponse(response)
+      return await result.json()
+    } catch (error) {
+      console.error(`获取Agent[${id}]详情失败:`, error)
+      throw error
+    }
+  }
+
+  static async createAgent(agentConfig: Omit<Agent, 'id'>): Promise<Agent> {
+    try {
+      const response = await fetch(this.AGENT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(agentConfig)
+      })
+      const result = await this._handleResponse(response)
+      return await result.json()
+    } catch (error) {
+      console.error('创建Agent失败:', error)
+      throw error
+    }
+  }
+
+  static async updateAgent(id: string | number, agentConfig: Agent): Promise<Agent> {
+    try {
+      const response = await fetch(`${this.AGENT_URL}/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(agentConfig)
+      })
+      const result = await this._handleResponse(response)
+      return await result.json()
+    } catch (error) {
+      console.error(`更新Agent[${id}]失败:`, error)
+      throw error
+    }
+  }
+
+  static async deleteAgent(id: string | number): Promise<void> {
+    try {
+      const response = await fetch(`${this.AGENT_URL}/${id}`, {
+        method: 'DELETE'
+      })
+      if (response.status === 400) {
+        throw new Error('不能删除默认Agent')
+      }
+      await this._handleResponse(response)
+    } catch (error) {
+      console.error(`删除Agent[${id}]失败:`, error)
+      throw error
+    }
+  }
+
+  static async getAvailableTools(): Promise<Tool[]> {
+    try {
+      const response = await fetch(`${this.AGENT_URL}/tools`)
+      const result = await this._handleResponse(response)
+      return await result.json()
+    } catch (error) {
+      console.error('获取可用工具列表失败:', error)
+      throw error
+    }
+  }
+}
+
+// Agent配置模型类
+class AgentConfigModel {
+  public agents: Agent[] = []
+  public currentAgent: Agent | null = null
+  public availableTools: Tool[] = []
+
+  async loadAgents(): Promise<Agent[]> {
+    try {
+      this.agents = await AdminAPI.getAllAgents()
+      return this.agents
+    } catch (error) {
+      console.error('加载Agent列表失败:', error)
+      throw error
+    }
+  }
+
+  async loadAgentDetails(id: string | number): Promise<Agent> {
+    try {
+      this.currentAgent = await AdminAPI.getAgentById(id)
+      return this.currentAgent
+    } catch (error) {
+      console.error('加载Agent详情失败:', error)
+      throw error
+    }
+  }
+
+  async loadAvailableTools(): Promise<Tool[]> {
+    try {
+      this.availableTools = await AdminAPI.getAvailableTools()
+      return this.availableTools
+    } catch (error) {
+      console.error('加载可用工具列表失败:', error)
+      throw error
+    }
+  }
+
+  async saveAgent(agentData: Agent, isImport = false): Promise<Agent> {
+    try {
+      let result: Agent
+      
+      if (isImport) {
+        const importData = { ...agentData }
+        delete (importData as any).id
+        result = await AdminAPI.createAgent(importData)
+      } else if (agentData.id) {
+        result = await AdminAPI.updateAgent(agentData.id, agentData)
+      } else {
+        result = await AdminAPI.createAgent(agentData)
+      }
+
+      // 更新本地数据
+      if (agentData.id) {
+        const index = this.agents.findIndex(agent => agent.id === agentData.id)
+        if (index !== -1) {
+          this.agents[index] = result
+        }
+      } else {
+        this.agents.push(result)
+      }
+
+      return result
+    } catch (error) {
+      console.error('保存Agent失败:', error)
+      throw error
+    }
+  }
+
+  async deleteAgent(id: string | number): Promise<void> {
+    try {
+      await AdminAPI.deleteAgent(id)
+      this.agents = this.agents.filter(agent => agent.id !== id)
+    } catch (error) {
+      console.error('删除Agent失败:', error)
+      throw error
+    }
+  }
+}
+
+// 创建配置模型实例
+const agentConfigModel = new AgentConfigModel()
+
+// 响应式数据
+const agents = reactive<Agent[]>([])
+const selectedAgent = ref<Agent | null>(null)
+const availableTools = reactive<Tool[]>([])
 const showModal = ref(false)
 const showDeleteModal = ref(false)
+const showToolModal = ref(false)
+const loading = ref(false)
 
 const newAgent = reactive<Omit<Agent, 'id' | 'tools'>>({
   name: '',
@@ -185,9 +361,43 @@ const newAgent = reactive<Omit<Agent, 'id' | 'tools'>>({
   prompt: '',
 })
 
+// 加载数据
+const loadData = async () => {
+  loading.value = true
+  try {
+    // 加载Agent列表
+    const loadedAgents = await agentConfigModel.loadAgents()
+    agents.splice(0, agents.length, ...loadedAgents)
+    
+    // 选中第一个Agent
+    if (loadedAgents.length > 0) {
+      selectedAgent.value = loadedAgents[0]
+      await loadAgentDetails(loadedAgents[0].id)
+    }
+
+    // 加载可用工具
+    const loadedTools = await agentConfigModel.loadAvailableTools()
+    availableTools.splice(0, availableTools.length, ...loadedTools)
+  } catch (error) {
+    console.error('加载数据失败:', error)
+    // 这里可以显示错误提示
+  } finally {
+    loading.value = false
+  }
+}
+
+// 加载Agent详情
+const loadAgentDetails = async (id: string | number) => {
+  try {
+    const agent = await agentConfigModel.loadAgentDetails(id)
+    selectedAgent.value = agent
+  } catch (error) {
+    console.error('加载Agent详情失败:', error)
+  }
+}
+
 // 显示新建Agent弹窗
 const showAddAgentModal = () => {
-  // 重置表单
   newAgent.name = ''
   newAgent.description = ''
   newAgent.prompt = ''
@@ -200,56 +410,123 @@ const showDeleteConfirm = () => {
 }
 
 // 处理新建Agent
-const handleAddAgent = () => {
-  // 创建新Agent
-  const agent: Agent = {
-    id: Date.now(), // 使用时间戳作为临时ID
-    name: newAgent.name,
-    description: newAgent.description,
-    prompt: newAgent.prompt,
-    tools: [], // 初始化为空工具列表
+const handleAddAgent = async () => {
+  try {
+    const agent: Omit<Agent, 'id'> = {
+      name: newAgent.name,
+      description: newAgent.description,
+      prompt: newAgent.prompt,
+      tools: []
+    }
+
+    const createdAgent = await agentConfigModel.saveAgent(agent as Agent)
+    agents.push(createdAgent)
+    selectedAgent.value = createdAgent
+    showModal.value = false
+  } catch (error) {
+    console.error('创建Agent失败:', error)
+    // 这里可以显示错误提示
   }
-
-  // 添加到agents列表
-  agents.push(agent)
-
-  // 选中新创建的agent
-  selectedAgent.value = agent
-
-  // 关闭弹窗
-  showModal.value = false
 }
 
+// 处理添加工具
 const handleAddTool = () => {
-  // TODO: 实现添加工具的逻辑
+  showToolModal.value = true
 }
 
+// 移除工具
 const removeTool = (tool: string) => {
   if (selectedAgent.value) {
     selectedAgent.value.tools = selectedAgent.value.tools.filter(t => t !== tool)
   }
 }
 
-const handleSave = () => {
-  // Mock: 保存成功提示
-  console.log('Agent saved:', selectedAgent.value)
+// 添加工具到Agent
+const addToolToAgent = (toolId: string) => {
+  if (selectedAgent.value && !selectedAgent.value.tools.includes(toolId)) {
+    selectedAgent.value.tools.push(toolId)
+  }
 }
 
-const handleDelete = () => {
-  if (selectedAgent.value) {
+// 保存Agent
+const handleSave = async () => {
+  if (!selectedAgent.value) return
+
+  try {
+    await agentConfigModel.saveAgent(selectedAgent.value)
+    console.log('Agent保存成功')
+    // 这里可以显示成功提示
+  } catch (error) {
+    console.error('保存Agent失败:', error)
+    // 这里可以显示错误提示
+  }
+}
+
+// 删除Agent
+const handleDelete = async () => {
+  if (!selectedAgent.value) return
+
+  try {
+    await agentConfigModel.deleteAgent(selectedAgent.value.id)
+    
     // 从列表中移除
     const index = agents.findIndex(a => a.id === selectedAgent.value!.id)
     if (index !== -1) {
       agents.splice(index, 1)
     }
 
-    // 清除选中状态
-    selectedAgent.value = null
-
-    // 关闭确认弹窗
+    // 清除选中状态或选择其他Agent
+    selectedAgent.value = agents.length > 0 ? agents[0] : null
     showDeleteModal.value = false
+  } catch (error) {
+    console.error('删除Agent失败:', error)
+    // 这里可以显示错误提示
   }
 }
+
+// 导入Agent
+const handleImport = () => {
+  // 创建文件输入
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.json'
+  input.onchange = (event) => {
+    const file = (event.target as HTMLInputElement).files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        try {
+          const agentData = JSON.parse(e.target?.result as string)
+          await agentConfigModel.saveAgent(agentData, true)
+          await loadData() // 重新加载数据
+        } catch (error) {
+          console.error('导入Agent失败:', error)
+        }
+      }
+      reader.readAsText(file)
+    }
+  }
+  input.click()
+}
+
+// 导出Agent
+const handleExport = () => {
+  if (!selectedAgent.value) return
+
+  const dataStr = JSON.stringify(selectedAgent.value, null, 2)
+  const dataBlob = new Blob([dataStr], { type: 'application/json' })
+  const url = URL.createObjectURL(dataBlob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `agent-${selectedAgent.value.name}.json`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+// 组件挂载时加载数据
+onMounted(() => {
+  loadData()
+})
 </script>
 
 <style scoped>
