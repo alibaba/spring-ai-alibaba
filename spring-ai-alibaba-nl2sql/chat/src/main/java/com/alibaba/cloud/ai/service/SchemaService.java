@@ -21,15 +21,18 @@ import com.alibaba.cloud.ai.request.SearchRequest;
 import com.alibaba.cloud.ai.schema.ColumnDTO;
 import com.alibaba.cloud.ai.schema.SchemaDTO;
 import com.alibaba.cloud.ai.schema.TableDTO;
+import com.alibaba.cloud.ai.service.base.BaseSchemaService;
+import com.alibaba.cloud.ai.service.base.BaseVectorStoreService;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import java.lang.reflect.Type;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,20 +41,22 @@ import java.util.stream.Collectors;
 /**
  * Schema 构建服务，支持基于 RAG 的混合查询。
  */
+@ConditionalOnProperty(prefix = "spring.ai.vectorstore.analytic", name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 @Service
-public class SchemaService {
+public class SchemaService extends BaseSchemaService {
 
 	@Autowired
-	private VectorStoreService vectorStoreService;
-
-	@Autowired
-	private DbConfig dbConfig;
-
-	private static final Gson gson = new Gson();
+	public SchemaService(DbConfig dbConfig, Gson gson,
+	                    @Qualifier("vectorStoreService") BaseVectorStoreService vectorStoreService) {
+		super(dbConfig, gson);
+		setVectorStoreService(vectorStoreService);
+	}
 
 	/**
-	 * 混合 RAG 查询接口，根据 query + keywords 搜索并构建 Schema
+	 * 混合 RAG 查询接口，��据 query + keywords 搜索并构建 Schema
 	 */
+	@Override
 	public SchemaDTO mixRag(String query, List<String> keywords) {
 		SchemaDTO schemaDTO = new SchemaDTO();
 		extractDatabaseName(schemaDTO); // 设置数据库名或模式名
@@ -83,39 +88,7 @@ public class SchemaService {
 		return schemaDTO;
 	}
 
-	/**
-	 * 基础 RAG 查询接口
-	 */
-	public SchemaDTO rag(String query) {
-		SchemaDTO schemaDTO = new SchemaDTO();
-		extractDatabaseName(schemaDTO);
 
-		List<Document> tableDocuments = vectorStoreService.getDocuments(query, "table");
-		List<Document> columnDocuments = vectorStoreService.getDocuments(query, "column");
-
-		List<TableDTO> tableList = buildTableListFromDocuments(tableDocuments);
-		attachColumnsToTables(columnDocuments, tableList);
-
-		schemaDTO.setTable(tableList);
-		return schemaDTO;
-	}
-
-	/**
-	 * 提取数据库名称或 schema 名称
-	 */
-	private void extractDatabaseName(SchemaDTO schemaDTO) {
-		String pattern = "/([^/]+)$";
-		if (BizDataSourceTypeEnum.isMysqlDialect(dbConfig.getDialectType())) {
-			Pattern regex = Pattern.compile(pattern);
-			Matcher matcher = regex.matcher(dbConfig.getUrl());
-			if (matcher.find()) {
-				schemaDTO.setName(matcher.group(1));
-			}
-		}
-		else if (BizDataSourceTypeEnum.isPgDialect(dbConfig.getDialectType())) {
-			schemaDTO.setName(dbConfig.getSchema());
-		}
-	}
 
 	/**
 	 * 根据关键词获取所有列文档
@@ -171,53 +144,6 @@ public class SchemaService {
 				break;
 		}
 		return result;
-	}
-
-	/**
-	 * 提取所有外键关系
-	 */
-	private Set<String> extractForeignKeyRelations(List<Document> tableDocuments) {
-		Set<String> result = new HashSet<>();
-
-		for (Document doc : tableDocuments) {
-			String foreignKeyStr = (String) doc.getMetadata().getOrDefault("foreignKey", "");
-			if (StringUtils.isNotBlank(foreignKeyStr)) {
-				Arrays.stream(foreignKeyStr.split("、")).forEach(pair -> {
-					String[] parts = pair.split("=");
-					if (parts.length == 2) {
-						result.add(parts[0].trim());
-						result.add(parts[1].trim());
-					}
-				});
-			}
-		}
-
-		return result;
-	}
-
-	/**
-	 * 从文档中构建表列表
-	 */
-	private List<TableDTO> buildTableListFromDocuments(List<Document> documents) {
-		List<TableDTO> tableList = new ArrayList<>();
-
-		for (Document doc : documents) {
-			TableDTO dto = new TableDTO();
-			Map<String, Object> meta = doc.getMetadata();
-
-			dto.setName((String) meta.get("name"));
-			dto.setDescription((String) meta.get("description"));
-
-			String primaryKeyStr = (String) meta.get("primaryKey");
-			List<String> primaryKeys = new ArrayList<>();
-			if (StringUtils.isNotBlank(primaryKeyStr)) {
-				primaryKeys.add(primaryKeyStr);
-			}
-			dto.setPrimaryKeys(primaryKeys);
-			tableList.add(dto);
-		}
-
-		return tableList;
 	}
 
 	/**
@@ -306,9 +232,7 @@ public class SchemaService {
 
 			String samplesStr = (String) meta.get("samples");
 			if (StringUtils.isNotBlank(samplesStr)) {
-				Type listType = new TypeToken<List<String>>() {
-				}.getType();
-				List<String> samples = gson.fromJson(samplesStr, listType);
+				List<String> samples = gson.fromJson(samplesStr, new TypeToken<List<String>>() {}.getType());
 				columnDTO.setData(samples);
 			}
 
@@ -319,32 +243,4 @@ public class SchemaService {
 				.ifPresent(dto -> dto.getColumn().add(columnDTO));
 		}
 	}
-
-	/**
-	 * 将列文档附加到对应的表中（针对普通 List<Document> 列情况）
-	 */
-	private void attachColumnsToTables(List<Document> columnDocs, List<TableDTO> tableList) {
-		for (Document column : columnDocs) {
-			Map<String, Object> meta = column.getMetadata();
-			ColumnDTO columnDTO = new ColumnDTO();
-			columnDTO.setName((String) meta.get("name"));
-			columnDTO.setDescription((String) meta.get("description"));
-			columnDTO.setType((String) meta.get("type"));
-
-			String samplesStr = (String) meta.get("samples");
-			if (StringUtils.isNotBlank(samplesStr)) {
-				Type listType = new TypeToken<List<String>>() {
-				}.getType();
-				List<String> samples = gson.fromJson(samplesStr, listType);
-				columnDTO.setData(samples);
-			}
-
-			String tableName = (String) meta.get("tableName");
-			tableList.stream()
-				.filter(t -> t.getName().equals(tableName))
-				.findFirst()
-				.ifPresent(dto -> dto.getColumn().add(columnDTO));
-		}
-	}
-
 }
