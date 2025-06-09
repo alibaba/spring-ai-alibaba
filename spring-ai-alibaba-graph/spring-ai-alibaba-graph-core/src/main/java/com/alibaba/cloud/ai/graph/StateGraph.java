@@ -63,70 +63,70 @@ public class StateGraph {
 	public enum Errors {
 
 		/**
-		 * The Invalid node identifier.
+		 * Invalid node identifier.
 		 */
 		invalidNodeIdentifier("END is not a valid node id!"),
 		/**
-		 * The Invalid edge identifier.
+		 * Invalid edge identifier.
 		 */
 		invalidEdgeIdentifier("END is not a valid edge sourceId!"),
 		/**
-		 * The Duplicate node error.
+		 * Duplicate node error.
 		 */
-		duplicateNodeError("node with id: %s already exist!"),
+		duplicateNodeError("node with id: %s already exists!"),
 		/**
-		 * The Duplicate edge error.
+		 * Duplicate edge error.
 		 */
-		duplicateEdgeError("edge with id: %s already exist!"),
+		duplicateEdgeError("edge with id: %s already exists!"),
 		/**
-		 * The Duplicate conditional edge error.
+		 * Duplicate conditional edge error.
 		 */
-		duplicateConditionalEdgeError("conditional edge from '%s' already exist!"),
+		duplicateConditionalEdgeError("conditional edge from '%s' already exists!"),
 		/**
-		 * The Edge mapping is empty.
+		 * Edge mapping is empty.
 		 */
 		edgeMappingIsEmpty("edge mapping is empty!"),
 		/**
-		 * The Missing entry point.
+		 * Missing entry point.
 		 */
 		missingEntryPoint("missing Entry Point"),
 		/**
-		 * The Entry point not exist.
+		 * Entry point does not exist.
 		 */
-		entryPointNotExist("entryPoint: %s doesn't exist!"),
+		entryPointNotExist("entryPoint: %s does not exist!"),
 		/**
-		 * The Finish point not exist.
+		 * Finish point does not exist.
 		 */
-		finishPointNotExist("finishPoint: %s doesn't exist!"),
+		finishPointNotExist("finishPoint: %s does not exist!"),
 		/**
-		 * The Missing node referenced by edge.
+		 * Missing node referenced by edge.
 		 */
 		missingNodeReferencedByEdge("edge sourceId '%s' refers to undefined node!"),
 		/**
-		 * The Missing node in edge mapping.
+		 * Missing node in edge mapping.
 		 */
-		missingNodeInEdgeMapping("edge mapping for sourceId: %s contains a not existent nodeId %s!"),
+		missingNodeInEdgeMapping("edge mapping for sourceId: %s contains a non-existent nodeId %s!"),
 		/**
-		 * The Invalid edge target.
+		 * Invalid edge target.
 		 */
 		invalidEdgeTarget("edge sourceId: %s has an initialized target value!"),
 		/**
-		 * The Duplicate edge target error.
+		 * Duplicate edge target error.
 		 */
 		duplicateEdgeTargetError("edge [%s] has duplicate targets %s!"),
 		/**
-		 * The Unsupported conditional edge on parallel node.
+		 * Unsupported conditional edge on parallel node.
 		 */
 		unsupportedConditionalEdgeOnParallelNode(
-				"parallel node doesn't support conditional branch, but on [%s] a conditional branch on %s have been found!"),
+				"parallel node does not support conditional branch, but on [%s] a conditional branch on %s has been found!"),
 		/**
-		 * The Illegal multiple targets on parallel node.
+		 * Illegal multiple targets on parallel node.
 		 */
 		illegalMultipleTargetsOnParallelNode("parallel node [%s] must have only one target, but %s have been found!"),
 		/**
-		 * The Interruption node not exist.
+		 * Interruption node does not exist.
 		 */
-		interruptionNodeNotExist("node '%s' configured as interruption doesn't exist!");
+		interruptionNodeNotExist("node '%s' configured as interruption does not exist!");
 
 		private final String errorMessage;
 
@@ -140,7 +140,7 @@ public class StateGraph {
 		 * @return a new GraphStateException
 		 */
 		public GraphStateException exception(Object... args) {
-			return new GraphStateException(format(errorMessage, (Object[]) args));
+			return new GraphStateException(String.format(errorMessage, args));
 		}
 
 	}
@@ -151,19 +151,19 @@ public class StateGraph {
 	enum RunnableErrors {
 
 		/**
-		 * The Missing node in edge mapping.
+		 * Missing node in edge mapping.
 		 */
 		missingNodeInEdgeMapping("cannot find edge mapping for id: '%s' in conditional edge with sourceId: '%s' "),
 		/**
-		 * The Missing node.
+		 * Missing node.
 		 */
-		missingNode("node with id: '%s' doesn't exist!"),
+		missingNode("node with id: '%s' does not exist!"),
 		/**
-		 * The Missing edge.
+		 * Missing edge.
 		 */
-		missingEdge("edge with sourceId: '%s' doesn't exist!"),
+		missingEdge("edge with sourceId: '%s' does not exist!"),
 		/**
-		 * Execution error runnable errors.
+		 * Execution error.
 		 */
 		executionError("%s");
 
@@ -179,39 +179,58 @@ public class StateGraph {
 		 * @return a new GraphRunnerException
 		 */
 		GraphRunnerException exception(String... args) {
-			return new GraphRunnerException(format(errorMessage, (Object[]) args));
+			return new GraphRunnerException(String.format(errorMessage, args));
 		}
 
 	}
 
 	/**
-	 * The constant END.
+	 * Constant representing the END of the graph.
 	 */
-	public static String END = "__END__";
+	public static final String END = "__END__";
 
 	/**
-	 * The constant START.
+	 * Constant representing the START of the graph.
 	 */
-	public static String START = "__START__";
+	public static final String START = "__START__";
 
 	/**
-	 * The Nodes.
+	 * Constant representing the ERROR of the graph.
+	 */
+	public static final String ERROR = "__ERROR__";
+
+	/**
+	 * Collection of nodes in the graph.
 	 */
 	final Nodes nodes = new Nodes();
 
 	/**
-	 * The Edges.
+	 * Collection of edges in the graph.
 	 */
 	final Edges edges = new Edges();
 
+	/**
+	 * Factory for creating overall state instances.
+	 */
 	private OverAllStateFactory overAllStateFactory;
 
+	/**
+	 * Factory for providing key strategies.
+	 */
+	private KeyStrategyFactory keyStrategyFactory;
+
+	/**
+	 * Name of the graph.
+	 */
 	private String name;
 
+	/**
+	 * Serializer for the state.
+	 */
 	private final PlainTextStateSerializer stateSerializer;
 
 	/**
-	 * The type Jackson serializer.
+	 * Jackson-based serializer for state.
 	 */
 	static class JacksonSerializer extends JacksonStateSerializer {
 
@@ -233,7 +252,7 @@ public class StateGraph {
 	}
 
 	/**
-	 * The type Gson serializer.
+	 * Gson-based serializer for state.
 	 */
 	static class GsonSerializer extends GsonStateSerializer {
 
@@ -261,7 +280,7 @@ public class StateGraph {
 	}
 
 	/**
-	 * The type Gson serializer 2.
+	 * Alternative Gson-based serializer for state.
 	 */
 	static class GsonSerializer2 extends GsonStateSerializer {
 
@@ -290,11 +309,46 @@ public class StateGraph {
 	}
 
 	/**
-	 * Instantiates a new State graph.
-	 * @param name the name
-	 * @param overAllStateFactory the over all state factory
-	 * @param plainTextStateSerializer the plain text state serializer
+	 * Constructs a StateGraph with the specified name, key strategy factory, and state
+	 * serializer.
+	 * @param name the name of the graph
+	 * @param keyStrategyFactory the factory for providing key strategies
+	 * @param stateSerializer the plain text state serializer to use
 	 */
+	public StateGraph(String name, KeyStrategyFactory keyStrategyFactory, PlainTextStateSerializer stateSerializer) {
+		this.name = name;
+		this.keyStrategyFactory = keyStrategyFactory;
+		this.stateSerializer = stateSerializer;
+	}
+
+	/**
+	 * Constructs a StateGraph with the given key strategy factory and name.
+	 * @param keyStrategyFactory the factory for providing key strategies
+	 * @param name the name of the graph
+	 */
+	public StateGraph(KeyStrategyFactory keyStrategyFactory, String name) {
+		this.keyStrategyFactory = keyStrategyFactory;
+		this.name = name;
+		this.stateSerializer = new JacksonSerializer();
+	}
+
+	/**
+	 * Constructs a StateGraph with the provided key strategy factory.
+	 * @param keyStrategyFactory the factory for providing key strategies
+	 */
+	public StateGraph(KeyStrategyFactory keyStrategyFactory) {
+		this.keyStrategyFactory = keyStrategyFactory;
+		this.stateSerializer = new JacksonSerializer();
+	}
+
+	/**
+	 * Deprecated constructor that initializes a StateGraph with the specified name,
+	 * overall state factory, and state serializer.
+	 * @param name the name of the graph
+	 * @param overAllStateFactory the factory for creating overall state instances
+	 * @param plainTextStateSerializer the plain text state serializer to use
+	 */
+	@Deprecated
 	public StateGraph(String name, OverAllStateFactory overAllStateFactory,
 			PlainTextStateSerializer plainTextStateSerializer) {
 		this.name = name;
@@ -303,10 +357,12 @@ public class StateGraph {
 	}
 
 	/**
-	 * Instantiates a new State graph.
-	 * @param name the name
-	 * @param overAllStateFactory the over all state factory
+	 * Deprecated constructor that initializes a StateGraph with the specified name and
+	 * overall state factory.
+	 * @param name the name of the graph
+	 * @param overAllStateFactory the factory for creating overall state instances
 	 */
+	@Deprecated
 	public StateGraph(String name, OverAllStateFactory overAllStateFactory) {
 		this.name = name;
 		this.overAllStateFactory = overAllStateFactory;
@@ -314,33 +370,38 @@ public class StateGraph {
 	}
 
 	/**
-	 * Instantiates a new State graph.
-	 * @param overAllStateFactory the over all state factory
+	 * Deprecated constructor that initializes a StateGraph with the provided overall
+	 * state factory.
+	 * @param overAllStateFactory the factory for creating overall state instances
 	 */
+	@Deprecated
 	public StateGraph(OverAllStateFactory overAllStateFactory) {
 		this.overAllStateFactory = overAllStateFactory;
 		this.stateSerializer = new JacksonSerializer();
 	}
 
 	/**
-	 * Instantiates a new State graph.
-	 * @param overAllStateFactory the over all state factory
-	 * @param plainTextStateSerializer the plain text state serializer
+	 * Deprecated constructor that initializes a StateGraph with the provided overall
+	 * state factory and state serializer.
+	 * @param overAllStateFactory the factory for creating overall state instances
+	 * @param plainTextStateSerializer the plain text state serializer to use
 	 */
+	@Deprecated
 	public StateGraph(OverAllStateFactory overAllStateFactory, PlainTextStateSerializer plainTextStateSerializer) {
 		this.overAllStateFactory = overAllStateFactory;
 		this.stateSerializer = plainTextStateSerializer;
 	}
 
 	/**
-	 * Instantiates a new State graph.
+	 * Default constructor that initializes a StateGraph with a Gson-based state
+	 * serializer.
 	 */
 	public StateGraph() {
 		this.stateSerializer = new GsonSerializer();
 	}
 
 	/**
-	 * Gets name.
+	 * Gets the name of the graph.
 	 * @return the name
 	 */
 	public String getName() {
@@ -348,7 +409,7 @@ public class StateGraph {
 	}
 
 	/**
-	 * Gets state serializer.
+	 * Gets the state serializer used by this graph.
 	 * @return the state serializer
 	 */
 	public StateSerializer<OverAllState> getStateSerializer() {
@@ -356,7 +417,7 @@ public class StateGraph {
 	}
 
 	/**
-	 * Gets state factory.
+	 * Gets the state factory associated with this graph's state serializer.
 	 * @return the state factory
 	 */
 	public final AgentStateFactory<OverAllState> getStateFactory() {
@@ -364,18 +425,26 @@ public class StateGraph {
 	}
 
 	/**
-	 * Gets over all state factory.
-	 * @return the over all state factory
+	 * Gets the overall state factory.
+	 * @return the overall state factory
 	 */
 	public final OverAllStateFactory getOverAllStateFactory() {
 		return overAllStateFactory;
 	}
 
 	/**
-	 * /** Adds a node to the graph.
+	 * Gets the key strategy factory.
+	 * @return the key strategy factory
+	 */
+	public final KeyStrategyFactory getKeyStrategyFactory() {
+		return keyStrategyFactory;
+	}
+
+	/**
+	 * Adds a node to the graph.
 	 * @param id the identifier of the node
-	 * @param action the action to be performed by the node
-	 * @return the state graph
+	 * @param action the asynchronous node action to be performed by the node
+	 * @return this state graph instance
 	 * @throws GraphStateException if the node identifier is invalid or the node already
 	 * exists
 	 */
@@ -384,10 +453,10 @@ public class StateGraph {
 	}
 
 	/**
-	 * Add node state graph.
+	 * Adds a node to the graph with the specified action and configuration.
 	 * @param id the identifier of the node
 	 * @param actionWithConfig the action to be performed by the node
-	 * @return this state graph
+	 * @return this state graph instance
 	 * @throws GraphStateException if the node identifier is invalid or the node already
 	 * exists
 	 */
@@ -397,10 +466,10 @@ public class StateGraph {
 	}
 
 	/**
-	 * Add node state graph.
+	 * Adds a node to the graph with the specified identifier and node instance.
 	 * @param id the identifier of the node
 	 * @param node the node to be added
-	 * @return this state graph
+	 * @return this state graph instance
 	 * @throws GraphStateException if the node identifier is invalid or the node already
 	 * exists
 	 */
@@ -422,7 +491,8 @@ public class StateGraph {
 
 	/**
 	 * Adds a subgraph to the state graph by creating a node with the specified
-	 * identifier. This implies that Subgraph share the same state with parent graph
+	 * identifier. This implies that the subgraph shares the same state with the parent
+	 * graph.
 	 * @param id the identifier of the node representing the subgraph
 	 * @param subGraph the compiled subgraph to be added
 	 * @return this state graph instance
@@ -442,15 +512,15 @@ public class StateGraph {
 
 		nodes.elements.add(node);
 		return this;
-
 	}
 
 	/**
 	 * Adds a subgraph to the state graph by creating a node with the specified
-	 * identifier. This implies that Subgraph share the same state with parent graph
+	 * identifier. This implies that the subgraph will share the same state with the
+	 * parent graph and will be compiled when the parent is compiled.
 	 * @param id the identifier of the node representing the subgraph
-	 * @param subGraph the subgraph to be added. it will be compiled on compilation of the
-	 * parent
+	 * @param subGraph the subgraph to be added; it will be compiled during compilation of
+	 * the parent
 	 * @return this state graph instance
 	 * @throws GraphStateException if the node identifier is invalid or the node already
 	 * exists
@@ -473,10 +543,10 @@ public class StateGraph {
 	}
 
 	/**
-	 * Adds an edge to the graph.
+	 * Adds an edge to the graph between the specified source and target nodes.
 	 * @param sourceId the identifier of the source node
 	 * @param targetId the identifier of the target node
-	 * @return the state graph
+	 * @return this state graph instance
 	 * @throws GraphStateException if the edge identifier is invalid or the edge already
 	 * exists
 	 */
@@ -484,11 +554,6 @@ public class StateGraph {
 		if (Objects.equals(sourceId, END)) {
 			throw Errors.invalidEdgeIdentifier.exception(END);
 		}
-
-		// if (Objects.equals(sourceId, START)) {
-		// this.entryPoint = new EdgeValue<>(targetId);
-		// return this;
-		// }
 
 		var newEdge = new Edge(sourceId, new EdgeValue(targetId));
 
@@ -506,10 +571,11 @@ public class StateGraph {
 	}
 
 	/**
-	 * Adds conditional edges to the graph.
+	 * Adds conditional edges to the graph based on the provided condition and mappings.
 	 * @param sourceId the identifier of the source node
-	 * @param condition the condition to determine the target node
+	 * @param condition the command action used to determine the target node
 	 * @param mappings the mappings of conditions to target nodes
+	 * @return this state graph instance
 	 * @throws GraphStateException if the edge identifier is invalid, the mappings are
 	 * empty, or the edge already exists
 	 */
@@ -534,10 +600,12 @@ public class StateGraph {
 	}
 
 	/**
-	 * Adds conditional edges to the graph.
+	 * Adds conditional edges to the graph based on the provided edge action condition and
+	 * mappings.
 	 * @param sourceId the identifier of the source node
-	 * @param condition the condition to determine the target node
+	 * @param condition the edge action used to determine the target node
 	 * @param mappings the mappings of conditions to target nodes
+	 * @return this state graph instance
 	 * @throws GraphStateException if the edge identifier is invalid, the mappings are
 	 * empty, or the edge already exists
 	 */
@@ -547,8 +615,8 @@ public class StateGraph {
 	}
 
 	/**
-	 * Validate graph.
-	 * @throws GraphStateException the graph state exception
+	 * Validates the structure of the graph ensuring all connections are valid.
+	 * @throws GraphStateException if there are errors related to the graph state
 	 */
 	void validateGraph() throws GraphStateException {
 		var edgeStart = edges.edgeBySourceId(START).orElseThrow(Errors.missingEntryPoint::exception);
@@ -558,11 +626,10 @@ public class StateGraph {
 		for (Edge edge : edges.elements) {
 			edge.validate(nodes);
 		}
-
 	}
 
 	/**
-	 * Compiles the state graph into a compiled graph.
+	 * Compiles the state graph into a compiled graph using the provided configuration.
 	 * @param config the compile configuration
 	 * @return a compiled graph
 	 * @throws GraphStateException if there are errors related to the graph state
@@ -576,94 +643,91 @@ public class StateGraph {
 	}
 
 	/**
-	 * Compiles the state graph into a compiled graph.
+	 * Compiles the state graph into a compiled graph using a default configuration with
+	 * memory saver.
 	 * @return a compiled graph
 	 * @throws GraphStateException if there are errors related to the graph state
 	 */
 	public CompiledGraph compile() throws GraphStateException {
 		SaverConfig saverConfig = SaverConfig.builder().register(SaverConstant.MEMORY, new MemorySaver()).build();
-		return compile(CompileConfig.builder()
-			.plainTextStateSerializer(new JacksonSerializer())
-			.saverConfig(saverConfig)
-			.build());
+		return compile(CompileConfig.builder().saverConfig(saverConfig).build());
 	}
 
 	/**
 	 * Generates a drawable graph representation of the state graph.
 	 * @param type the type of graph representation to generate
 	 * @param title the title of the graph
-	 * @param printConditionalEdges whether to print conditional edges
+	 * @param printConditionalEdges whether to include conditional edges in the output
 	 * @return a diagram code of the state graph
 	 */
 	public GraphRepresentation getGraph(GraphRepresentation.Type type, String title, boolean printConditionalEdges) {
-
 		String content = type.generator.generate(nodes, edges, title, printConditionalEdges);
 
 		return new GraphRepresentation(type, content);
 	}
 
 	/**
-	 * Generates a drawable graph representation of the state graph.
+	 * Generates a drawable graph representation of the state graph with conditional edges
+	 * included.
 	 * @param type the type of graph representation to generate
 	 * @param title the title of the graph
 	 * @return a diagram code of the state graph
 	 */
 	public GraphRepresentation getGraph(GraphRepresentation.Type type, String title) {
-
 		String content = type.generator.generate(nodes, edges, title, true);
 
 		return new GraphRepresentation(type, content);
 	}
 
 	/**
-	 * Gets graph.
-	 * @param type the type
-	 * @return the graph
+	 * Generates a drawable graph representation of the state graph using the graph's name
+	 * as title.
+	 * @param type the type of graph representation to generate
+	 * @return a diagram code of the state graph
 	 */
 	public GraphRepresentation getGraph(GraphRepresentation.Type type) {
-
 		String content = type.generator.generate(nodes, edges, name, true);
 
 		return new GraphRepresentation(type, content);
 	}
 
 	/**
-	 * The type Nodes.
+	 * Container for nodes in the graph.
 	 */
 	public static class Nodes {
 
 		/**
-		 * The Elements.
+		 * The collection of nodes.
 		 */
 		public final Set<Node> elements;
 
 		/**
-		 * Instantiates a new Nodes.
-		 * @param elements the elements
+		 * Instantiates a new Nodes container with the provided elements.
+		 * @param elements the elements to initialize
 		 */
 		public Nodes(Collection<Node> elements) {
 			this.elements = new LinkedHashSet<>(elements);
 		}
 
 		/**
-		 * Instantiates a new Nodes.
+		 * Instantiates a new empty Nodes container.
 		 */
 		public Nodes() {
 			this.elements = new LinkedHashSet<>();
 		}
 
 		/**
-		 * Any match by id boolean.
-		 * @param id the id
-		 * @return the boolean
+		 * Checks if any node matches the given identifier.
+		 * @param id the identifier to match
+		 * @return true if a matching node is found, false otherwise
 		 */
 		public boolean anyMatchById(String id) {
 			return elements.stream().anyMatch(n -> Objects.equals(n.id(), id));
 		}
 
 		/**
-		 * Only sub state graph nodes list.
-		 * @return the list
+		 * Returns a list of sub-state graph nodes.
+		 * @return a list of sub-state graph nodes
 		 */
 		public List<SubStateGraphNode> onlySubStateGraphNodes() {
 			return elements.stream()
@@ -673,8 +737,8 @@ public class StateGraph {
 		}
 
 		/**
-		 * Except sub state graph nodes list.
-		 * @return the list
+		 * Returns a list of nodes excluding sub-state graph nodes.
+		 * @return a list of nodes excluding sub-state graph nodes
 		 */
 		public List<Node> exceptSubStateGraphNodes() {
 			return elements.stream().filter(n -> !(n instanceof SubStateGraphNode)).toList();
@@ -683,43 +747,43 @@ public class StateGraph {
 	}
 
 	/**
-	 * The type Edges.
+	 * Container for edges in the graph.
 	 */
 	public static class Edges {
 
 		/**
-		 * The Elements.
+		 * The collection of edges.
 		 */
 		public final List<Edge> elements;
 
 		/**
-		 * Instantiates a new Edges.
-		 * @param elements the elements
+		 * Instantiates a new Edges container with the provided elements.
+		 * @param elements the elements to initialize
 		 */
 		public Edges(Collection<Edge> elements) {
 			this.elements = new LinkedList<>(elements);
 		}
 
 		/**
-		 * Instantiates a new Edges.
+		 * Instantiates a new empty Edges container.
 		 */
 		public Edges() {
 			this.elements = new LinkedList<>();
 		}
 
 		/**
-		 * Edge by source id optional.
-		 * @param sourceId the source id
-		 * @return the optional
+		 * Retrieves the first edge matching the specified source identifier.
+		 * @param sourceId the source identifier to match
+		 * @return an optional containing the matched edge, or empty if none found
 		 */
 		public Optional<Edge> edgeBySourceId(String sourceId) {
 			return elements.stream().filter(e -> Objects.equals(e.sourceId(), sourceId)).findFirst();
 		}
 
 		/**
-		 * Edges by target id list.
-		 * @param targetId the target id
-		 * @return the list
+		 * Retrieves a list of edges targeting the specified node identifier.
+		 * @param targetId the target identifier to match
+		 * @return a list of edges targeting the specified identifier
 		 */
 		public List<Edge> edgesByTargetId(String targetId) {
 			return elements.stream().filter(e -> e.anyMatchByTargetId(targetId)).toList();

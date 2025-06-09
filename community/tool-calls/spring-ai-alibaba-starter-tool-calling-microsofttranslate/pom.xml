@@ -54,11 +54,8 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-tool-calling-common</artifactId>
-            <version>${revision}</version>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 
-    <build>
-        <finalName>spring-ai-alibaba-starter-tool-calling-microsofttranslate</finalName>
-    </build>
 </project>
