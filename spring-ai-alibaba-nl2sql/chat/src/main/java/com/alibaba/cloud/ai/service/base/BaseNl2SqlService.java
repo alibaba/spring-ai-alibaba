@@ -8,8 +8,6 @@ import com.alibaba.cloud.ai.dbconnector.bo.ResultSetBO;
 import com.alibaba.cloud.ai.prompt.PromptHelper;
 import com.alibaba.cloud.ai.schema.SchemaDTO;
 import com.alibaba.cloud.ai.service.LlmService;
-import com.alibaba.cloud.ai.service.SchemaService;
-import com.alibaba.cloud.ai.service.VectorStoreService;
 import com.alibaba.cloud.ai.util.DateTimeUtil;
 import com.alibaba.cloud.ai.util.MarkdownParser;
 import com.google.gson.Gson;
