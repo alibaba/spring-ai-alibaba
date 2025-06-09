@@ -22,18 +22,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
-import static com.alibaba.cloud.ai.toolcalling.sensitivefilter.SensitiveFilterProperties.SENSITIVE_FILTER_PREFIX;
-
 /**
  * Configuration properties for sensitive information filter
  *
  * @author Makoto
  */
-@ConfigurationProperties(prefix = SensitiveFilterProperties.SENSITIVE_FILTER_PREFIX)
+@ConfigurationProperties(prefix = SensitiveFilterConstants.CONFIG_PREFIX)
 public class SensitiveFilterProperties extends CommonToolCallProperties {
-
-	protected static final String SENSITIVE_FILTER_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".sensitivefilter";
 
 	private String replacement = "***";
 
