@@ -47,9 +47,8 @@ const isLoading = ref(false)nse");
         </div>
 
         <PlanExecutionComponent 
-          v-if="prompt"
           ref="planExecutionRef"
-          :initial-prompt="prompt" 
+          :initial-prompt="prompt || ''" 
           mode="direct"
           placeholder="向 JTaskPilot 发送消息"
           @plan-update="handlePlanUpdate"
@@ -59,9 +58,6 @@ const isLoading = ref(false)nse");
           @message-sent="handleMessageSent"
           @plan-mode-clicked="handlePlanModeClicked"
         />
-        <div v-else class="loading-prompt">
-          正在加载...
-        </div>
       </div>
 
       <!-- Resizer -->
