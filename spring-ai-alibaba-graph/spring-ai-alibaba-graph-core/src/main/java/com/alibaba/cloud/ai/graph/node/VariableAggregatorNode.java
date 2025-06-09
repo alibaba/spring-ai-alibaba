@@ -26,46 +26,51 @@ import java.util.Objects;
 
 public class VariableAggregatorNode implements NodeAction {
 
-    private final List<String> inputKeys;
-    private final String outputKey;
+	private final List<String> inputKeys;
 
-    private VariableAggregatorNode(List<String> inputKeys, String outputKey) {
-        this.inputKeys = inputKeys;
-        this.outputKey = outputKey;
-    }
+	private final String outputKey;
 
-    @Override
-    public Map<String, Object> apply(OverAllState state) {
-        Map<String, Object> aggregated = new HashMap<>();
-        for (String key : this.inputKeys) {
-            Object value = state.value(key).orElse(null);
-            aggregated.put(key, value);
-        }
-        return Map.of(outputKey, aggregated);
-    }
+	private VariableAggregatorNode(List<String> inputKeys, String outputKey) {
+		this.inputKeys = inputKeys;
+		this.outputKey = outputKey;
+	}
 
-    public static Builder builder() {
-        return new Builder();
-    }
+	@Override
+	public Map<String, Object> apply(OverAllState state) {
+		Map<String, Object> aggregated = new HashMap<>();
+		for (String key : this.inputKeys) {
+			Object value = state.value(key).orElse(null);
+			aggregated.put(key, value);
+		}
+		return Map.of(outputKey, aggregated);
+	}
 
-    public static class Builder {
-        private List<String> inputKeys;
-        private String outputKey;
+	public static Builder builder() {
+		return new Builder();
+	}
 
-        public Builder inputKeys(List<String> inputKeys) {
-            this.inputKeys = inputKeys;
-            return this;
-        }
+	public static class Builder {
 
-        public Builder outputKey(String outputKey) {
-            this.outputKey = outputKey;
-            return this;
-        }
+		private List<String> inputKeys;
 
-        public VariableAggregatorNode build() {
-            Objects.requireNonNull(this.inputKeys, "inputKeys cannot be null");
-            Objects.requireNonNull(this.outputKey, "outputKey cannot be null");
-            return new VariableAggregatorNode(this.inputKeys, this.outputKey);
-        }
-    }
+		private String outputKey;
+
+		public Builder inputKeys(List<String> inputKeys) {
+			this.inputKeys = inputKeys;
+			return this;
+		}
+
+		public Builder outputKey(String outputKey) {
+			this.outputKey = outputKey;
+			return this;
+		}
+
+		public VariableAggregatorNode build() {
+			Objects.requireNonNull(this.inputKeys, "inputKeys cannot be null");
+			Objects.requireNonNull(this.outputKey, "outputKey cannot be null");
+			return new VariableAggregatorNode(this.inputKeys, this.outputKey);
+		}
+
+	}
+
 }

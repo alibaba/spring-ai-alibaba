@@ -118,10 +118,12 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 					nodeData.setMemoryConfig(memory);
 				}
 
-                // output_key
-                String nodeId = (String) data.get("id");
-                String outputKey = (String) data.getOrDefault("output_key", HttpNodeData.defaultOutputKey(nodeId));
-                nodeData.setOutputKey(outputKey);
+				// output_key
+				String nodeId = (String) data.get("id");
+				String outputKey = (String) data.getOrDefault("output_key", HttpNodeData.defaultOutputKey(nodeId));
+				nodeData.setOutputKey(outputKey);
+
+				// input_text_key
 
 				return nodeData;
 			}

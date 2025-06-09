@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.service.generator.workflow.sections;
 
-import com.alibaba.cloud.ai.graph.node.QuestionClassifierNode;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.Node;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
@@ -52,6 +51,9 @@ public class QuestionClassifierNodeSection implements NodeSection {
 			String key = inputs.get(0).getName();
 			sb.append(String.format("            .inputTextKey(\"%s\")%n", escape(key)));
 		}
+		else {
+			sb.append("            .inputTextKey(\"input\")\n");
+		}
 
 		List<String> categoryIds = data.getClasses()
 			.stream()
@@ -65,18 +67,22 @@ public class QuestionClassifierNodeSection implements NodeSection {
 			sb.append(String.format("            .categories(List.of(%s))%n", joined));
 		}
 
-        String outputKey = data.getOutputKey();
-        if (!Strings.isNullOrEmpty(outputKey)) {
-            sb.append(String.format("            .outputKey(\"%s\")%n", escape(outputKey)));
-        }
+		String outputKey = data.getOutputKey();
+		if (!Strings.isNullOrEmpty(outputKey)) {
+			sb.append(String.format("            .outputKey(\"%s\")%n", escape(outputKey)));
+		}
 
 		String instr = data.getInstruction();
 		if (instr != null && !instr.isBlank()) {
 			sb.append(String.format("            .classificationInstructions(List.of(\"%s\"))%n", escape(instr)));
 		}
+		else {
+			sb.append("            .classificationInstructions(List.of(\"请根据输入内容选择对应分类\"))\n");
+		}
 
 		sb.append("            .build();\n");
-		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
+		sb.append(
+				String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 
 		return sb.toString();
 	}

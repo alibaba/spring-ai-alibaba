@@ -30,7 +30,7 @@ public class AnswerNodeData extends NodeData {
 	// a string template
 	private String answer;
 
-    private String outputKey;
+	private String outputKey;
 
 	public AnswerNodeData() {
 		super(Collections.emptyList(), Collections.emptyList());
@@ -49,11 +49,12 @@ public class AnswerNodeData extends NodeData {
 		return this;
 	}
 
-    public String getOutputKey() {
-        return outputKey;
-    }
+	public String getOutputKey() {
+		return outputKey;
+	}
 
-    public void setOutputKey(String outputKey) {
-        this.outputKey = outputKey;
-    }
+	public void setOutputKey(String outputKey) {
+		this.outputKey = outputKey;
+	}
+
 }

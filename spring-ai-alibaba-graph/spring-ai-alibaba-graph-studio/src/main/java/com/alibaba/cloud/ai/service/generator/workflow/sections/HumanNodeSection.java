@@ -60,7 +60,7 @@ public class HumanNodeSection implements NodeSection {
 					+ "java.util.Map.Entry::getKey, java.util.Map.Entry::getValue)); }", keyListCode);
 		}
 		else {
-			// If you don't specify a key to filter, the raw feedback is simply returned
+			// If don't specify a key to filter, the raw feedback is simply returned
 			updateLambda = "state -> state.humanFeedback().data()";
 		}
 
@@ -75,7 +75,8 @@ public class HumanNodeSection implements NodeSection {
 			.append(updateLambda)
 			.append(");\n");
 
-		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id, varName));
+		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%sNode));%n%n", id,
+				varName));
 
 		return sb.toString();
 	}

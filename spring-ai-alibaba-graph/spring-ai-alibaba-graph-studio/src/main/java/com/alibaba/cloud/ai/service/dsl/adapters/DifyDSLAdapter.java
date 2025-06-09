@@ -113,64 +113,64 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 	public Workflow mapToWorkflow(Map<String, Object> data) {
 		Map<String, Object> workflowData = (Map<String, Object>) data.get("workflow");
 		Workflow workflow = new Workflow();
-
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		// map key is snake_case style
 		objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-
 		List<Variable> convVars = new ArrayList<>();
 		if (workflowData.containsKey("conversation_variables")) {
-			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData.get("conversation_variables");
-			convVars = variables.stream()
-					.map(variable -> objectMapper.convertValue(variable, Variable.class))
-					.toList();
+			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData
+				.get("conversation_variables");
+			convVars = variables.stream().map(variable -> objectMapper.convertValue(variable, Variable.class)).toList();
 		}
 
 		if (workflowData.containsKey("environment_variables")) {
 			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData.get("environment_variables");
 			List<Variable> envVars = variables.stream()
-					.map(variable -> objectMapper.convertValue(variable, Variable.class))
-					.collect(Collectors.toList());
+				.map(variable -> objectMapper.convertValue(variable, Variable.class))
+				.collect(Collectors.toList());
 			workflow.setEnvVars(envVars);
 		}
 
 		Graph graph = constructGraph((Map<String, Object>) workflowData.get("graph"));
 		workflow.setGraph(graph);
+		// register overAllState output key
+		List<Variable> extraVars = graph.getNodes().stream().map(Node::getData).flatMap(nd -> {
+			if (nd instanceof DocumentExtractorNodeData) {
+				return Stream.of(DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA);
+			}
+			if (nd instanceof HttpNodeData http) {
+				return Optional.ofNullable(http.getOutputKey())
+					.map(k -> new Variable(k, VariableType.STRING.value()))
+					.stream();
+			}
+			if (nd instanceof LLMNodeData llm) {
+				return Optional.ofNullable(llm.getOutputKey())
+					.map(k -> new Variable(k, VariableType.STRING.value()))
+					.stream();
+			}
+			if (nd instanceof VariableAggregatorNodeData agg) {
+				return Optional.ofNullable(agg.getOutputKey()).map(k -> new Variable(k, agg.getOutputType())).stream();
+			}
+			if (nd instanceof QuestionClassifierNodeData classifier) {
+				Stream<Variable> outputKeyVar = Optional.ofNullable(classifier.getOutputKey())
+					.map(k -> new Variable(k, VariableType.STRING.value()))
+					.stream();
 
-		List<Variable> extraVars = graph.getNodes().stream()
-				.map(Node::getData)
-				.flatMap(nd -> {
-					if (nd instanceof DocumentExtractorNodeData) {
-						return Stream.of(DocumentExtractorNodeData.DEFAULT_OUTPUT_SCHEMA);
-					}
-					if (nd instanceof HttpNodeData http) {
-						return Optional.ofNullable(http.getOutputKey())
-								.map(k -> new Variable(k, VariableType.STRING.value()))
-								.stream();
-					}
-					if (nd instanceof LLMNodeData llm) {
-						return Optional.ofNullable(llm.getOutputKey())
-								.map(k -> new Variable(k, VariableType.STRING.value()))
-								.stream();
-					}
-					if (nd instanceof VariableAggregatorNodeData agg) {
-						return Optional.ofNullable(agg.getOutputKey())
-								.map(k -> new Variable(k, agg.getOutputType()))
-								.stream();
-					}
-                    if (nd instanceof QuestionClassifierNodeData classifier) {
-                        return Optional.ofNullable(classifier.getOutputKey())
-                                .map(k -> new Variable(k, VariableType.STRING.value()))
-                                .stream();
-                    }
-					return Stream.empty();
-					// todo： other node may create overallstate variables
-				})
-				.collect(Collectors.toList());
+				Stream<Variable> inputVars = Optional.ofNullable(classifier.getInputs())
+					.orElse(List.of())
+					.stream()
+					.map(sel -> new Variable(sel.getName(), VariableType.STRING.value()));
 
-		List<Variable> allVars = Stream.concat(convVars.stream(), extraVars.stream())
-				.distinct()
-				.collect(Collectors.toList());
+				return Stream.concat(outputKeyVar, inputVars);
+			}
+			return Stream.empty();
+			// todo： other node may create overallstate variables
+		}).toList();
+
+		List<Variable> allVars = new ArrayList<>(Stream.concat(convVars.stream(), extraVars.stream())
+			.collect(Collectors.toMap(Variable::getName, v -> v, (v1, v2) -> v1))
+			.values());
 
 		workflow.setWorkflowVars(allVars);
 
@@ -203,12 +203,13 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		for (Map<String, Object> nodeMap : nodeMaps) {
 			Map<String, Object> nodeDataMap = (Map<String, Object>) nodeMap.get("data");
 			String difyNodeType = (String) nodeDataMap.get("type");
-            if (difyNodeType == null || difyNodeType.isBlank()) {
-                // This node is just a "note", skip it, and the corresponding node will not be generated
-                continue;
-            }
-            String nodeId = (String) nodeMap.get("id");
-            nodeDataMap.put("id", nodeId);
+			if (difyNodeType == null || difyNodeType.isBlank()) {
+				// This node is just a "note", skip it, and the corresponding node will
+				// not be generated [compatible dify]
+				continue;
+			}
+			String nodeId = (String) nodeMap.get("id");
+			nodeDataMap.put("id", nodeId);
 			// determine the type of dify node is supported yet
 			NodeType nodeType = NodeType.fromDifyValue(difyNodeType)
 				.orElseThrow(() -> new NotImplementedException("unsupported node type " + difyNodeType));

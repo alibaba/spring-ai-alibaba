@@ -54,7 +54,7 @@ public enum NodeType {
 
 	MCP("mcp", "unsupported"),
 
-    VARIABLE_AGGREGATOR("variable-aggregator", "variable-aggregator");
+	VARIABLE_AGGREGATOR("variable-aggregator", "variable-aggregator");
 
 	private String value;
 

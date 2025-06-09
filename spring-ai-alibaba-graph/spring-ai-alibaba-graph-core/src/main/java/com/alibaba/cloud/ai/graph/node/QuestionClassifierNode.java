@@ -82,17 +82,16 @@ public class QuestionClassifierNode implements NodeAction {
 
 	private String inputTextKey;
 
-    private String outputKey;
+	private String outputKey;
 
-
-    public QuestionClassifierNode(ChatClient chatClient, String inputTextKey, List<String> categories,
+	public QuestionClassifierNode(ChatClient chatClient, String inputTextKey, List<String> categories,
 			List<String> classificationInstructions, String outputKey) {
 		this.chatClient = chatClient;
 		this.inputTextKey = inputTextKey;
 		this.categories = categories;
 		this.classificationInstructions = classificationInstructions;
 		this.systemPromptTemplate = new SystemPromptTemplate(CLASSIFIER_PROMPT_TEMPLATE);
-        this.outputKey = outputKey;
+		this.outputKey = outputKey;
 	}
 
 	@Override
@@ -142,7 +141,7 @@ public class QuestionClassifierNode implements NodeAction {
 
 		private List<String> classificationInstructions;
 
-        private String outputKey;
+		private String outputKey;
 
 		public Builder inputTextKey(String input) {
 			this.inputTextKey = input;
@@ -164,13 +163,14 @@ public class QuestionClassifierNode implements NodeAction {
 			return this;
 		}
 
-        public Builder outputKey(String outputKey) {
-            this.outputKey = outputKey;
-            return this;
-        }
+		public Builder outputKey(String outputKey) {
+			this.outputKey = outputKey;
+			return this;
+		}
 
 		public QuestionClassifierNode build() {
-			return new QuestionClassifierNode(chatClient, inputTextKey, categories, classificationInstructions, outputKey);
+			return new QuestionClassifierNode(chatClient, inputTextKey, categories, classificationInstructions,
+					outputKey);
 		}
 
 	}

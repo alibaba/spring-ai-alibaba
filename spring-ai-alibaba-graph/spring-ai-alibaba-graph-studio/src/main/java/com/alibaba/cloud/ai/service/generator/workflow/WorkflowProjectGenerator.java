@@ -38,12 +38,13 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
-
 
 @Component
 public class WorkflowProjectGenerator implements ProjectGenerator {
@@ -93,41 +94,12 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		String nodeSectionStr = renderNodeSections(nodes, varNames);
 		String edgeSectionStr = renderEdgeSections(workflow.getGraph().getEdges(), nodes);
 
-		Map<String, String> graphBuilderModel = Map.of(
-				PACKAGE_NAME, projectDescription.getPackageName(),
-				GRAPH_BUILDER_STATE_SECTION, stateSectionStr,
-				GRAPH_BUILDER_NODE_SECTION, nodeSectionStr,
-				GRAPH_BUILDER_EDGE_SECTION, edgeSectionStr
-		);
+		Map<String, String> graphBuilderModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName(),
+				GRAPH_BUILDER_STATE_SECTION, stateSectionStr, GRAPH_BUILDER_NODE_SECTION, nodeSectionStr,
+				GRAPH_BUILDER_EDGE_SECTION, edgeSectionStr);
 		Map<String, String> graphRunControllerModel = Map.of(PACKAGE_NAME, projectDescription.getPackageName());
-		renderAndWriteTemplates(
-				List.of(GRAPH_BUILDER_TEMPLATE_NAME, GRAPH_RUN_TEMPLATE_NAME),
-				List.of(graphBuilderModel, graphRunControllerModel),
-				projectRoot, projectDescription
-		);
-	}
-
-	private Map<String, String> generateVarNames(List<Node> nodes) {
-		Map<String, Integer> counters = new HashMap<>();
-		Map<String, String> result = new LinkedHashMap<>();
-		for (Node node : nodes) {
-			NodeType type = NodeType.fromValue(node.getType()).orElseThrow();
-			String base = toLowerCamel(type.name().replace('-', ' '));
-			int idx = counters.merge(base, 1, Integer::sum);
-			String varName = base + idx + "Node";
-			result.put(node.getId(), varName);
-		}
-		return result;
-	}
-
-	private String toLowerCamel(String text) {
-		String[] parts = text.split("\\s+");
-		StringBuilder sb = new StringBuilder(parts[0].toLowerCase());
-		for (int i = 1; i < parts.length; i++) {
-			sb.append(Character.toUpperCase(parts[i].charAt(0)))
-					.append(parts[i].substring(1).toLowerCase());
-		}
-		return sb.toString();
+		renderAndWriteTemplates(List.of(GRAPH_BUILDER_TEMPLATE_NAME, GRAPH_RUN_TEMPLATE_NAME),
+				List.of(graphBuilderModel, graphRunControllerModel), projectRoot, projectDescription);
 	}
 
 	private Map<String, String> assignVariableNames(List<Node> nodes) {
@@ -144,12 +116,11 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return varNames;
 	}
 
-
 	private String renderStateSections(List<Variable> overallStateVars) {
 		if (overallStateVars == null || overallStateVars.isEmpty()) {
 			return "";
 		}
-        // todo: update create overAllState by newest saa graph
+		// todo: update create overAllState by newest saa graph
 		return overallStateVars.stream()
 			.map(var -> String.format("            overAllState.registerKeyAndStrategy(\"%s\", (o1, o2) -> o2);%n",
 					var.getName()))
@@ -171,69 +142,90 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return sb.toString();
 	}
 
-    private String renderEdgeSections(List<Edge> edges, List<Node> nodes) {
-        StringBuilder sb = new StringBuilder();
-        Map<String, Node> nodeIdMap = nodes.stream().collect(Collectors.toMap(Node::getId, n -> n));
+	private String renderEdgeSections(List<Edge> edges, List<Node> nodes) {
+		StringBuilder sb = new StringBuilder();
+		Map<String, Node> nodeMap = nodes.stream().collect(Collectors.toMap(Node::getId, n -> n));
 
-        Map<String, Map<String, String>> conditionalGroups = new LinkedHashMap<>();
+		// conditional edge set: sourceId -> List<Edge>
+		Map<String, List<Edge>> conditionalEdgesMap = edges.stream()
+			.filter(e -> e.getSourceHandle() != null && !e.getSourceHandle().equals("source"))
+			.collect(Collectors.groupingBy(Edge::getSource));
 
-        for (Edge edge : edges) {
-            String sourceId = edge.getSource();
-            String targetId = edge.getTarget();
-            String sourceHandle = edge.getSourceHandle();
+		// Set to track rendered edges to avoid duplicates
+		Set<String> renderedEdges = new HashSet<>();
 
-            Node sourceNode = nodeIdMap.get(sourceId);
+		// common edge
+		for (Edge edge : edges) {
+			String sourceId = edge.getSource();
+			String targetId = edge.getTarget();
+			Map<String, Object> data = edge.getData();
+			String sourceType = data != null ? (String) data.get("sourceType") : null;
+			String targetType = data != null ? (String) data.get("targetType") : null;
 
-            if (sourceHandle != null && !"source".equals(sourceHandle)) {
-                String condition = resolveConditionKey(sourceNode.getData(), sourceHandle);
-                conditionalGroups.computeIfAbsent(sourceId, k -> new LinkedHashMap<>()).put(condition, targetId);
-            } else {
-                sb.append(String.format("        stateGraph.addEdge(\"%s\", \"%s\");%n", sourceId, targetId));
-            }
-        }
+			// Skip if already rendered as conditional
+			if (edge.getSourceHandle() != null && !edge.getSourceHandle().equals("source"))
+				continue;
 
-        for (Map.Entry<String, Map<String, String>> entry : conditionalGroups.entrySet()) {
-            String sourceId = entry.getKey();
-            Map<String, String> conditionMap = entry.getValue();
-            String varKey = sourceId + "_output";
+			String key = sourceId + "->" + targetId;
+			if (renderedEdges.contains(key))
+				continue;
+			renderedEdges.add(key);
 
-            sb.append(String.format("""
-                        stateGraph.addConditionalEdges("%s",
-                            edge_async(state -> {
-                                String value = state.value("%s", String.class).orElse("");
-                """, sourceId, varKey));
+			// START and END special handling
+			if ("start".equals(sourceType)) {
+				sb.append(String.format("        stateGraph.addEdge(START, \"%s\");%n", targetId));
+			}
+			else if ("end".equals(targetType)) {
+				sb.append(String.format("        stateGraph.addEdge(\"%s\", END);%n", sourceId));
+			}
+			else {
+				sb.append(String.format("        stateGraph.addEdge(\"%s\", \"%s\");%n", sourceId, targetId));
+			}
+		}
 
-            for (Map.Entry<String, String> cond : conditionMap.entrySet()) {
-                sb.append(String.format("                        if (\"%s\".equals(value)) return \"%s\";%n",
-                        cond.getKey(), cond.getValue()));
-            }
+		// conditional edge（aggregate by sourceId）
+		for (Map.Entry<String, List<Edge>> entry : conditionalEdgesMap.entrySet()) {
+			String sourceId = entry.getKey();
+			List<Edge> condEdges = entry.getValue();
+			Node sourceNode = nodeMap.get(sourceId);
+			NodeData sourceData = sourceNode.getData();
 
-            sb.append("                             return null;\n");
-            sb.append("                         }),\n");
-            sb.append("                         Map.of(");
-            sb.append(conditionMap.entrySet().stream()
-                    .map(e -> String.format("\"%s\", \"%s\"", e.getKey(), e.getValue()))
-                    .collect(Collectors.joining(", ")));
-            sb.append(")\n");
-            sb.append("        );\n");
-        }
+			String mapContent = condEdges.stream()
+				.map(e -> String.format("\"%s\", \"%s\"", resolveConditionKey(sourceData, e.getSourceHandle()),
+						e.getTarget()))
+				.collect(Collectors.joining(", "));
 
-        return sb.toString();
-    }
+			// create edegAction
+			String lambdaContent = condEdges.stream()
+				.map(e -> String.format("            	if (\"%s\".equals(value)) return \"%s\";",
+						resolveConditionKey(sourceData, e.getSourceHandle()), e.getTarget()))
+				.collect(Collectors.joining("\n"));
 
-    private String resolveConditionKey(NodeData data, String handleId) {
-        if (data instanceof QuestionClassifierNodeData classifier) {
-            return classifier.getClasses().stream()
-                    .filter(c -> c.getId().equals(handleId))
-                    .map(QuestionClassifierNodeData.ClassConfig::getText)
-                    .findFirst()
-                    .orElse(handleId);
-        }
-        // todo: extend to other node types that support conditional edges
-        return handleId;
-    }
+			sb.append(String.format(
+					"        stateGraph.addConditionalEdges(\"%s\",%n" + "            edge_async(state -> {%n"
+							+ "                String value = state.value(\"%s_output\", String.class).orElse(\"\");%n"
+							+ "%s%n" + "                return null;%n" + "            }),%n"
+							+ "            Map.of(%s)%n" + "        );%n",
+					sourceId, sourceId, lambdaContent, mapContent));
+		}
 
-    private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, String>> models, Path projectRoot,
+		return sb.toString();
+	}
+
+	private String resolveConditionKey(NodeData data, String handleId) {
+		if (data instanceof QuestionClassifierNodeData classifier) {
+			return classifier.getClasses()
+				.stream()
+				.filter(c -> c.getId().equals(handleId))
+				.map(QuestionClassifierNodeData.ClassConfig::getText)
+				.findFirst()
+				.orElse(handleId);
+		}
+		// todo: extend to other node types that support conditional edges
+		return handleId;
+	}
+
+	private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, String>> models, Path projectRoot,
 			ProjectDescription projectDescription) {
 		Path fileRoot = createDirectory(projectRoot, projectDescription);
 		for (int i = 0; i < templateNames.size(); i++) {

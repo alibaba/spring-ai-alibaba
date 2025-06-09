@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.model.workflow.nodedata;
 
-import com.alibaba.cloud.ai.graph.node.HttpNode;
 import com.alibaba.cloud.ai.graph.node.HttpNode.AuthConfig;
 import com.alibaba.cloud.ai.graph.node.HttpNode.HttpRequestNodeBody;
 import com.alibaba.cloud.ai.graph.node.HttpNode.RetryConfig;
@@ -63,8 +62,9 @@ public class HttpNodeData extends NodeData {
 	private String outputKey;
 
 	public HttpNodeData(List<VariableSelector> inputs, List<com.alibaba.cloud.ai.model.Variable> outputs,
-						HttpMethod method, String url, Map<String, String> headers, Map<String, String> queryParams,
-						HttpRequestNodeBody body, AuthConfig authConfig, RetryConfig retryConfig, TimeoutConfig timeoutConfig, String outputKey) {
+			HttpMethod method, String url, Map<String, String> headers, Map<String, String> queryParams,
+			HttpRequestNodeBody body, AuthConfig authConfig, RetryConfig retryConfig, TimeoutConfig timeoutConfig,
+			String outputKey) {
 		super(inputs, outputs);
 		this.method = method;
 		this.url = url;
@@ -79,7 +79,8 @@ public class HttpNodeData extends NodeData {
 
 	public HttpNodeData(List<VariableSelector> inputs, List<com.alibaba.cloud.ai.model.Variable> outputs) {
 		this(inputs, outputs, HttpMethod.GET, null, Collections.emptyMap(), Collections.emptyMap(),
-				new HttpRequestNodeBody(), null, new RetryConfig(3, 1000, true), new TimeoutConfig(10, 60, 20, 300, 600, 6000), null);
+				new HttpRequestNodeBody(), null, new RetryConfig(3, 1000, true),
+				new TimeoutConfig(10, 60, 20, 300, 600, 6000), null);
 	}
 
 	public HttpMethod getMethod() {

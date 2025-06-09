@@ -62,7 +62,6 @@ public class MCPNodeSection implements NodeSection {
 		Map<String, Object> params = d.getParams();
 		if (params != null) {
 			for (Map.Entry<String, Object> entry : params.entrySet()) {
-				// 如果值是字符串，加引号；否则直接 toString()
 				Object val = entry.getValue();
 				String valLiteral;
 				if (val instanceof String) {
@@ -86,7 +85,8 @@ public class MCPNodeSection implements NodeSection {
 		}
 
 		sb.append("            .build();\n");
-		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
+		sb.append(
+				String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 
 		return sb.toString();
 	}

@@ -59,7 +59,8 @@ public class DocumentExtractorNodeSection implements NodeSection {
 		sb.append(String.format("                .outputKey(\"%s\")%n", escape(outputKey)));
 
 		sb.append("                .build();\n");
-		sb.append(String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
+		sb.append(
+				String.format("        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", id, varName));
 
 		return sb.toString();
 	}

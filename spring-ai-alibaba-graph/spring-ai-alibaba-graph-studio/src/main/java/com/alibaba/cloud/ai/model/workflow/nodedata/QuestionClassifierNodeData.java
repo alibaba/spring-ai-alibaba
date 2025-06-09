@@ -40,7 +40,9 @@ public class QuestionClassifierNodeData extends NodeData {
 
 	private List<ClassConfig> classes;
 
-    private String outputKey;
+	private String outputKey;
+
+	private String inputTextKey;
 
 	public QuestionClassifierNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
 		super(inputs, outputs);
@@ -73,13 +75,22 @@ public class QuestionClassifierNodeData extends NodeData {
 		return this;
 	}
 
-    public String getOutputKey() {
-        return outputKey;
-    }
+	public String getOutputKey() {
+		return outputKey;
+	}
 
-    public void setOutputKey(String outputKey) {
-        this.outputKey = outputKey;
-    }
+	public void setOutputKey(String outputKey) {
+		this.outputKey = outputKey;
+	}
+
+	public String getInputTextKey() {
+		return inputTextKey;
+	}
+
+	public QuestionClassifierNodeData setInputTextKey(String inputTextKey) {
+		this.inputTextKey = inputTextKey;
+		return this;
+	}
 
 	public String getInstruction() {
 		return instruction;
@@ -277,6 +288,7 @@ public class QuestionClassifierNodeData extends NodeData {
 		public void setPresencePenalty(Integer presencePenalty) {
 			this.presencePenalty = presencePenalty;
 		}
+
 	}
 
 	public static class MemoryConfig {

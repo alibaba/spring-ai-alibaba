@@ -28,40 +28,37 @@ import java.util.stream.Collectors;
 
 @Component
 public class VariableAggregatorNodeSection implements NodeSection {
-    private final Map<String, String> varNames;
 
-    public VariableAggregatorNodeSection(Map<String, String> varNames) {
-        this.varNames = varNames;
-    }
+	private final Map<String, String> varNames;
 
-    @Override
-    public boolean support(NodeType nodeType) {
-        return NodeType.AGGREGATOR.equals(nodeType);
-    }
+	public VariableAggregatorNodeSection(Map<String, String> varNames) {
+		this.varNames = varNames;
+	}
 
-    @Override
-    public String render(Node node, String varName) {
-        var data = (VariableAggregatorNodeData) node.getData();
-        List<String> inputKeys = data.getVariables().stream()
-                .map(pair -> {
-                    String fromNodeId = pair.get(0);
-                    return varNames.getOrDefault(fromNodeId, fromNodeId + "_output");
-                })
-                .toList();
-        String outputKey =  data.getOutputKey();;
+	@Override
+	public boolean support(NodeType nodeType) {
+		return NodeType.AGGREGATOR.equals(nodeType);
+	}
 
-        String id = node.getId();
-        String keysLit = inputKeys.stream()
-                .map(k -> "\"" + k + "\"")
-                .collect(Collectors.joining(", "));
-        return String.format(
-                "        // —— VariableAggregatorNode [%s] ——%n" +
-                        "        VariableAggregatorNode %s = VariableAggregatorNode.builder()%n" +
-                        "                .inputKeys(List.of(%s))%n" +
-                        "                .outputKey(\"%s\")%n" +
-                        "                .build();%n" +
-                        "        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n",
-                id, varName, keysLit, outputKey, id, varName
-        );
-    }
+	@Override
+	public String render(Node node, String varName) {
+		var data = (VariableAggregatorNodeData) node.getData();
+		List<String> inputKeys = data.getVariables().stream().map(pair -> {
+			String fromNodeId = pair.get(0);
+			return varNames.getOrDefault(fromNodeId, fromNodeId + "_output");
+		}).toList();
+		String outputKey = data.getOutputKey();
+		;
+
+		String id = node.getId();
+		String keysLit = inputKeys.stream().map(k -> "\"" + k + "\"").collect(Collectors.joining(", "));
+		return String.format(
+				"        // —— VariableAggregatorNode [%s] ——%n"
+						+ "        VariableAggregatorNode %s = VariableAggregatorNode.builder()%n"
+						+ "                .inputKeys(List.of(%s))%n" + "                .outputKey(\"%s\")%n"
+						+ "                .build();%n"
+						+ "        stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n",
+				id, varName, keysLit, outputKey, id, varName);
+	}
+
 }

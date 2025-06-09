@@ -36,7 +36,6 @@ public class AnswerNodeSection implements NodeSection {
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
-		// 8 个空格缩进
 		sb.append("        // —— AnswerNode [").append(id).append("] ——\n");
 		sb.append("        AnswerNode ").append(varName).append(" = AnswerNode.builder()\n");
 

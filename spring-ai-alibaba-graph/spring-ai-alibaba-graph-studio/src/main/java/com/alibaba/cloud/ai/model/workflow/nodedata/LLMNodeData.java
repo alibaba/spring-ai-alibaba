@@ -298,8 +298,6 @@ public class LLMNodeData extends NodeData {
 			return this;
 		}
 
-		// 其余字段可按需添加getter/setter...
-
 	}
 
 	public static class MemoryConfig {
@@ -395,7 +393,6 @@ public class LLMNodeData extends NodeData {
 
 		@Override
 		public String toString() {
-			// 简化 toString，用于 List.of(...) 渲染
 			return String.format("new Message(\"%s\", \"%s\")", role == null ? "" : role.replace("\"", "\\\""),
 					content == null ? "" : content.replace("\"", "\\\""));
 		}

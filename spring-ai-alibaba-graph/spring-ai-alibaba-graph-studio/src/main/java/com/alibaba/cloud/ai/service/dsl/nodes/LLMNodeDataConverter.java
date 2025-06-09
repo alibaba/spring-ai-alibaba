@@ -48,12 +48,10 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 	private enum Converter {
 
 		DIFY(new DialectConverter<>() {
-			// todo: workflow virables
 			@SuppressWarnings("unchecked")
 			@Override
 			public LLMNodeData parse(Map<String, Object> data) {
 				LLMNodeData nd = new LLMNodeData();
-
 				// variable_selector -> inputs
 				List<String> sel = (List<String>) data.get("variable_selector");
 				if (sel != null && sel.size() == 2) {
@@ -83,7 +81,6 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 						if (cpMap.get("max_tokens") != null) {
 							cp.setMaxTokens(((Number) cpMap.get("max_tokens")).intValue());
 						}
-						// … 其他字段可以继续解析 …
 						mc.setCompletionParams(cp);
 					}
 					nd.setModel(mc);

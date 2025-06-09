@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
 import com.alibaba.cloud.ai.dashscope.rerank.DashScopeRerankOptions;
-import com.alibaba.cloud.ai.graph.node.KnowledgeRetrievalNode;
 import com.alibaba.cloud.ai.model.RerankModel;
 import com.alibaba.cloud.ai.model.VariableSelector;
 import com.alibaba.cloud.ai.model.workflow.NodeType;
@@ -25,7 +24,6 @@ import com.alibaba.cloud.ai.model.workflow.nodedata.KnowledgeRetrievalNodeData;
 import com.alibaba.cloud.ai.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +31,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -108,7 +105,6 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 				}
 				// vectorStoreKey & vectorStore
 				nd.setVectorStoreKey((String) data.get("vector_store_key"));
-				// vectorStore instance来自上下文，不在DSL里定义
 				return nd;
 			}
 

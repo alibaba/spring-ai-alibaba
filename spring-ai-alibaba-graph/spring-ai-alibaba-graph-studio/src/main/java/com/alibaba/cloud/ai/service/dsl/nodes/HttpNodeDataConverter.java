@@ -16,7 +16,6 @@
 
 package com.alibaba.cloud.ai.service.dsl.nodes;
 
-import com.alibaba.cloud.ai.graph.node.HttpNode;
 import com.alibaba.cloud.ai.graph.node.HttpNode.AuthConfig;
 import com.alibaba.cloud.ai.graph.node.HttpNode.TimeoutConfig;
 import com.alibaba.cloud.ai.graph.node.HttpNode.HttpRequestNodeBody;
@@ -75,24 +74,28 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 				String url = (String) data.get("url");
 
 				// headers & query_params
-                Object headersObj = data.get("headers");
-                Map<String, String> headers;
-                if (headersObj instanceof Map) {
-                    headers = (Map<String, String>) headersObj;
-                } else if (headersObj instanceof String && headersObj.equals("")) {
-                    headers = Collections.emptyMap();
-                } else {
-                    headers = Collections.emptyMap();
-                }
-                Object paramsObj = data.get("params");
-                Map<String, String> queryParams;
-                if (paramsObj instanceof Map) {
-                    queryParams = (Map<String, String>) paramsObj;
-                } else if (paramsObj instanceof String && paramsObj.equals("")) {
-                    queryParams = Collections.emptyMap();
-                } else {
-                    queryParams = Collections.emptyMap();
-                }
+				Object headersObj = data.get("headers");
+				Map<String, String> headers;
+				if (headersObj instanceof Map) {
+					headers = (Map<String, String>) headersObj;
+				}
+				else if (headersObj instanceof String && headersObj.equals("")) {
+					headers = Collections.emptyMap();
+				}
+				else {
+					headers = Collections.emptyMap();
+				}
+				Object paramsObj = data.get("params");
+				Map<String, String> queryParams;
+				if (paramsObj instanceof Map) {
+					queryParams = (Map<String, String>) paramsObj;
+				}
+				else if (paramsObj instanceof String && paramsObj.equals("")) {
+					queryParams = Collections.emptyMap();
+				}
+				else {
+					queryParams = Collections.emptyMap();
+				}
 
 				// body
 				Object rawBody = data.get("body");
@@ -103,11 +106,11 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 				if (data.containsKey("authorization")) {
 					Map<String, Object> am = (Map<String, Object>) data.get("authorization");
 					String type = ((String) am.getOrDefault("type", "no-auth")).toLowerCase();
-                    auth = switch (type) {
-                        case "basic" -> AuthConfig.basic((String) am.get("username"), (String) am.get("password"));
-                        case "bearer" -> AuthConfig.bearer((String) am.get("token"));
-                        default -> auth;
-                    };
+					auth = switch (type) {
+						case "basic" -> AuthConfig.basic((String) am.get("username"), (String) am.get("password"));
+						case "bearer" -> AuthConfig.bearer((String) am.get("token"));
+						default -> auth;
+					};
 				}
 
 				// retry_config
@@ -116,42 +119,36 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 						? ((Number) rcMap.get("max_retries")).intValue() : 3;
 				long maxRetryInterval = rcMap != null && rcMap.get("retry_interval") != null
 						? ((Number) rcMap.get("retry_interval")).longValue() : 1000L;
-				boolean enable = rcMap != null && rcMap.get("retry_enabled") != null ? (Boolean) rcMap.get("retry_enabled") : true;
+				boolean enable = rcMap != null && rcMap.get("retry_enabled") != null
+						? (Boolean) rcMap.get("retry_enabled") : true;
 				RetryConfig retryConfig = new RetryConfig(maxRetries, maxRetryInterval, enable);
 
 				// timeout_config
 				Map<String, Object> timeoutMap = (Map<String, Object>) data.get("timeout");
 				TimeoutConfig timeoutConfig;
 				if (timeoutMap != null) {
-					int connect = timeoutMap.get("connect") != null
-							? ((Number) timeoutMap.get("connect")).intValue()
+					int connect = timeoutMap.get("connect") != null ? ((Number) timeoutMap.get("connect")).intValue()
 							: 10;
-					int read = timeoutMap.get("read") != null
-							? ((Number) timeoutMap.get("read")).intValue()
-							: 60;
-					int write = timeoutMap.get("write") != null
-							? ((Number) timeoutMap.get("write")).intValue()
-							: 20;
+					int read = timeoutMap.get("read") != null ? ((Number) timeoutMap.get("read")).intValue() : 60;
+					int write = timeoutMap.get("write") != null ? ((Number) timeoutMap.get("write")).intValue() : 20;
 					int maxConnect = timeoutMap.get("max_connect_timeout") != null
-							? ((Number) timeoutMap.get("max_connect_timeout")).intValue()
-							: 300;
+							? ((Number) timeoutMap.get("max_connect_timeout")).intValue() : 300;
 					int maxRead = timeoutMap.get("max_read_timeout") != null
-							? ((Number) timeoutMap.get("max_read_timeout")).intValue()
-							: 600;
+							? ((Number) timeoutMap.get("max_read_timeout")).intValue() : 600;
 					int maxWrite = timeoutMap.get("max_write_timeout") != null
-							? ((Number) timeoutMap.get("max_write_timeout")).intValue()
-							: 600;
+							? ((Number) timeoutMap.get("max_write_timeout")).intValue() : 600;
 					timeoutConfig = new TimeoutConfig(connect, read, write, maxConnect, maxRead, maxWrite);
-				} else {
+				}
+				else {
 					timeoutConfig = new TimeoutConfig(10, 60, 20, 300, 600, 6000);
 				}
 
 				// output_key
-                String nodeId = (String) data.get("id");
+				String nodeId = (String) data.get("id");
 				String outputKey = (String) data.getOrDefault("output_key", HttpNodeData.defaultOutputKey(nodeId));
 
-                return new HttpNodeData(inputs, outputs, method, url, headers, queryParams, body, auth, retryConfig, timeoutConfig,
-						outputKey);
+				return new HttpNodeData(inputs, outputs, method, url, headers, queryParams, body, auth, retryConfig,
+						timeoutConfig, outputKey);
 			}
 
 			@Override
