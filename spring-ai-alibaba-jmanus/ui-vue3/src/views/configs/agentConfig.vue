@@ -1,4 +1,4 @@
-<!-- 
+<!--
  * Copyright 2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,11 +18,11 @@
     <div class="panel-header">
       <h2>Agent配置</h2>
       <div class="panel-actions">
-        <button class="action-btn">
+        <button class="action-btn" @click="handleImport">
           <Icon icon="carbon:upload" />
           导入
         </button>
-        <button class="action-btn">
+        <button class="action-btn" @click="handleExport" :disabled="!selectedAgent">
           <Icon icon="carbon:download" />
           导出
         </button>
@@ -32,23 +32,43 @@
     <div class="agent-layout">
       <!-- Agent列表 -->
       <div class="agent-list">
-        <div
-          v-for="agent in agents"
-          :key="agent.id"
-          class="agent-card"
-          :class="{ active: selectedAgent?.id === agent.id }"
-          @click="selectedAgent = agent"
-        >
-          <div class="agent-card-header">
-            <span class="agent-name">{{ agent.name }}</span>
-            <Icon icon="carbon:chevron-right" />
+        <div class="list-header">
+          <h3>已配置的Agent</h3>
+          <span class="agent-count">({{ agents.length }})</span>
+        </div>
+        
+        <div class="agents-container" v-if="!loading">
+          <div
+            v-for="agent in agents"
+            :key="agent.id"
+            class="agent-card"
+            :class="{ active: selectedAgent?.id === agent.id }"
+            @click="selectAgent(agent)"
+          >
+            <div class="agent-card-header">
+              <span class="agent-name">{{ agent.name }}</span>
+              <Icon icon="carbon:chevron-right" />
+            </div>
+            <p class="agent-desc">{{ agent.description }}</p>
+            <div class="agent-tools" v-if="agent.availableTools && Array.isArray(agent.availableTools) && agent.availableTools.length > 0">
+              <span v-for="tool in agent.availableTools.slice(0, 3)" :key="tool" class="tool-tag">
+                {{ getToolDisplayName(tool) }}
+              </span>
+              <span v-if="agent.availableTools.length > 3" class="tool-more">
+                +{{ agent.availableTools.length - 3 }}
+              </span>
+            </div>
           </div>
-          <p class="agent-desc">{{ agent.description }}</p>
-          <div class="agent-tools">
-            <span v-for="tool in agent.tools" :key="tool" class="tool-tag">
-              {{ tool }}
-            </span>
-          </div>
+        </div>
+
+        <div v-if="loading" class="loading-state">
+          <Icon icon="carbon:loading" class="loading-icon" />
+          加载中...
+        </div>
+
+        <div v-if="!loading && agents.length === 0" class="empty-state">
+          <Icon icon="carbon:bot" class="empty-icon" />
+          <p>暂无Agent配置</p>
         </div>
 
         <button class="add-btn" @click="showAddAgentModal">
@@ -59,39 +79,9 @@
 
       <!-- Agent详情 -->
       <div class="agent-detail" v-if="selectedAgent">
-        <div class="form-item">
-          <label>Agent名称</label>
-          <input type="text" v-model="selectedAgent.name" />
-        </div>
-        <div class="form-item">
-          <label>描述</label>
-          <textarea v-model="selectedAgent.description" rows="3"></textarea>
-        </div>
-        <div class="form-item">
-          <label>提示词配置</label>
-          <textarea
-            v-model="selectedAgent.prompt"
-            rows="6"
-            placeholder="设置Agent执行任务时的提示词"
-          ></textarea>
-        </div>
-
-        <div class="form-item">
-          <label>可用工具</label>
-          <div class="tools-list">
-            <div v-for="tool in selectedAgent.tools" :key="tool" class="tool-item">
-              <span>{{ tool }}</span>
-              <Icon icon="carbon:close" class="remove-tool" @click="removeTool(tool)" />
-            </div>
-          </div>
-          <button class="add-btn" @click="handleAddTool">
-            <Icon icon="carbon:add" />
-            添加工具
-          </button>
-        </div>
-
-        <div class="detail-actions">
-          <Flex justify="space-between" style="width: 100%">
+        <div class="detail-header">
+          <h3>{{ selectedAgent.name }}</h3>
+          <div class="detail-actions">
             <button class="action-btn primary" @click="handleSave">
               <Icon icon="carbon:save" />
               保存
@@ -100,8 +90,73 @@
               <Icon icon="carbon:trash-can" />
               删除
             </button>
-          </Flex>
+          </div>
         </div>
+
+        <div class="form-item">
+          <label>Agent名称 <span class="required">*</span></label>
+          <input 
+            type="text" 
+            v-model="selectedAgent.name" 
+            placeholder="输入Agent名称"
+            required
+          />
+        </div>
+        
+        <div class="form-item">
+          <label>描述 <span class="required">*</span></label>
+          <textarea 
+            v-model="selectedAgent.description" 
+            rows="3"
+            placeholder="描述这个Agent的功能和用途"
+            required
+          ></textarea>
+        </div>
+        
+        <div class="form-item">
+          <label>Agent提示词（人设，要求，以及下一步动作的指导）</label>
+          <textarea
+            v-model="selectedAgent.nextStepPrompt"
+            rows="8"
+            placeholder="设置Agent的人设、要求以及下一步动作的指导..."
+          ></textarea>
+        </div>
+
+        <!-- 工具分配区域 -->
+        <div class="tools-section">
+          <h4>工具配置</h4>
+          
+          <!-- 已分配的工具 -->
+          <div class="assigned-tools">
+            <div class="section-header">
+              <span>已分配工具 ({{ (selectedAgent.availableTools || []).length }})</span>
+              <button class="action-btn small" @click="showToolSelectionModal" v-if="availableTools.length > 0">
+                <Icon icon="carbon:add" />
+                添加/删除工具
+              </button>
+            </div>
+            
+            <div class="tools-grid">
+              <div v-for="toolId in (selectedAgent.availableTools || [])" :key="toolId" class="tool-item assigned">
+                <div class="tool-info">
+                  <span class="tool-name">{{ getToolDisplayName(toolId) }}</span>
+                  <span class="tool-desc">{{ getToolDescription(toolId) }}</span>
+                </div>
+              </div>
+              
+              <div v-if="!selectedAgent.availableTools || selectedAgent.availableTools.length === 0" class="no-tools">
+                <Icon icon="carbon:tool-box" />
+                <span>暂无分配的工具</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 空状态 -->
+      <div v-else class="no-selection">
+        <Icon icon="carbon:bot" class="placeholder-icon" />
+        <p>请选择一个Agent进行配置</p>
       </div>
     </div>
 
@@ -109,290 +164,280 @@
     <Modal v-model="showModal" title="新建Agent" @confirm="handleAddAgent">
       <div class="modal-form">
         <div class="form-item">
-          <label>Agent名称</label>
-          <input type="text" v-model="newAgent.name" placeholder="输入Agent名称" />
+          <label>Agent名称 <span class="required">*</span></label>
+          <input 
+            type="text" 
+            v-model="newAgent.name" 
+            placeholder="输入Agent名称"
+            required 
+          />
         </div>
         <div class="form-item">
-          <label>描述</label>
+          <label>描述 <span class="required">*</span></label>
           <textarea
             v-model="newAgent.description"
             rows="3"
             placeholder="描述这个Agent的功能和用途"
+            required
           ></textarea>
         </div>
         <div class="form-item">
-          <label>提示词配置</label>
+          <label>Agent提示词（人设，要求，以及下一步动作的指导）</label>
           <textarea
-            v-model="newAgent.prompt"
-            rows="6"
-            placeholder="设置Agent执行任务时的提示词"
+            v-model="newAgent.nextStepPrompt"
+            rows="8"
+            placeholder="设置Agent的人设、要求以及下一步动作的指导..."
           ></textarea>
         </div>
       </div>
     </Modal>
 
+    <!-- 工具选择弹窗 -->
+    <ToolSelectionModal
+      v-model="showToolModal"
+      :tools="availableTools"
+      :selected-tool-ids="selectedAgent?.availableTools || []"
+      @confirm="handleToolSelectionConfirm"
+    />
+
     <!-- 删除确认弹窗 -->
     <Modal v-model="showDeleteModal" title="删除确认">
       <div class="delete-confirm">
-        <p>确定要删除 {{ selectedAgent?.name }} 吗？此操作不可恢复。</p>
+        <Icon icon="carbon:warning" class="warning-icon" />
+        <p>确定要删除 <strong>{{ selectedAgent?.name }}</strong> 吗？</p>
+        <p class="warning-text">此操作不可恢复。</p>
       </div>
       <template #footer>
         <button class="cancel-btn" @click="showDeleteModal = false">取消</button>
         <button class="confirm-btn danger" @click="handleDelete">删除</button>
       </template>
     </Modal>
+
+    <!-- 错误提示 -->
+    <div v-if="error" class="error-toast" @click="error = ''">
+      <Icon icon="carbon:error" />
+      {{ error }}
+    </div>
+
+    <!-- 成功提示 -->
+    <div v-if="success" class="success-toast" @click="success = ''">
+      <Icon icon="carbon:checkmark" />
+      {{ success }}
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import Modal from '@/components/modal/index.vue'
-import Flex from '@/components/flex/index.vue'
-
-interface Agent {
-  id: number | string
-  name: string
-  description: string
-  tools: string[]
-  prompt: string
-  nextPrompt?: string
-}
-
-interface Tool {
-  id: string
-  name: string
-  description: string
-  enabled: boolean
-}
-
-// API 服务类
-class AdminAPI {
-  static AGENT_URL = '/api/agents'
-
-  static async _handleResponse(response: Response) {
-    if (!response.ok) {
-      try {
-        const errorData = await response.json()
-        throw new Error(errorData.message || `API请求失败: ${response.status}`)
-      } catch (e) {
-        throw new Error(`API请求失败: ${response.status} ${response.statusText}`)
-      }
-    }
-    return response
-  }
-
-  static async getAllAgents(): Promise<Agent[]> {
-    try {
-      const response = await fetch(this.AGENT_URL)
-      const result = await this._handleResponse(response)
-      return await result.json()
-    } catch (error) {
-      console.error('获取Agent列表失败:', error)
-      throw error
-    }
-  }
-
-  static async getAgentById(id: string | number): Promise<Agent> {
-    try {
-      const response = await fetch(`${this.AGENT_URL}/${id}`)
-      const result = await this._handleResponse(response)
-      return await result.json()
-    } catch (error) {
-      console.error(`获取Agent[${id}]详情失败:`, error)
-      throw error
-    }
-  }
-
-  static async createAgent(agentConfig: Omit<Agent, 'id'>): Promise<Agent> {
-    try {
-      const response = await fetch(this.AGENT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(agentConfig)
-      })
-      const result = await this._handleResponse(response)
-      return await result.json()
-    } catch (error) {
-      console.error('创建Agent失败:', error)
-      throw error
-    }
-  }
-
-  static async updateAgent(id: string | number, agentConfig: Agent): Promise<Agent> {
-    try {
-      const response = await fetch(`${this.AGENT_URL}/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(agentConfig)
-      })
-      const result = await this._handleResponse(response)
-      return await result.json()
-    } catch (error) {
-      console.error(`更新Agent[${id}]失败:`, error)
-      throw error
-    }
-  }
-
-  static async deleteAgent(id: string | number): Promise<void> {
-    try {
-      const response = await fetch(`${this.AGENT_URL}/${id}`, {
-        method: 'DELETE'
-      })
-      if (response.status === 400) {
-        throw new Error('不能删除默认Agent')
-      }
-      await this._handleResponse(response)
-    } catch (error) {
-      console.error(`删除Agent[${id}]失败:`, error)
-      throw error
-    }
-  }
-
-  static async getAvailableTools(): Promise<Tool[]> {
-    try {
-      const response = await fetch(`${this.AGENT_URL}/tools`)
-      const result = await this._handleResponse(response)
-      return await result.json()
-    } catch (error) {
-      console.error('获取可用工具列表失败:', error)
-      throw error
-    }
-  }
-}
-
-// Agent配置模型类
-class AgentConfigModel {
-  public agents: Agent[] = []
-  public currentAgent: Agent | null = null
-  public availableTools: Tool[] = []
-
-  async loadAgents(): Promise<Agent[]> {
-    try {
-      this.agents = await AdminAPI.getAllAgents()
-      return this.agents
-    } catch (error) {
-      console.error('加载Agent列表失败:', error)
-      throw error
-    }
-  }
-
-  async loadAgentDetails(id: string | number): Promise<Agent> {
-    try {
-      this.currentAgent = await AdminAPI.getAgentById(id)
-      return this.currentAgent
-    } catch (error) {
-      console.error('加载Agent详情失败:', error)
-      throw error
-    }
-  }
-
-  async loadAvailableTools(): Promise<Tool[]> {
-    try {
-      this.availableTools = await AdminAPI.getAvailableTools()
-      return this.availableTools
-    } catch (error) {
-      console.error('加载可用工具列表失败:', error)
-      throw error
-    }
-  }
-
-  async saveAgent(agentData: Agent, isImport = false): Promise<Agent> {
-    try {
-      let result: Agent
-      
-      if (isImport) {
-        const importData = { ...agentData }
-        delete (importData as any).id
-        result = await AdminAPI.createAgent(importData)
-      } else if (agentData.id) {
-        result = await AdminAPI.updateAgent(agentData.id, agentData)
-      } else {
-        result = await AdminAPI.createAgent(agentData)
-      }
-
-      // 更新本地数据
-      if (agentData.id) {
-        const index = this.agents.findIndex(agent => agent.id === agentData.id)
-        if (index !== -1) {
-          this.agents[index] = result
-        }
-      } else {
-        this.agents.push(result)
-      }
-
-      return result
-    } catch (error) {
-      console.error('保存Agent失败:', error)
-      throw error
-    }
-  }
-
-  async deleteAgent(id: string | number): Promise<void> {
-    try {
-      await AdminAPI.deleteAgent(id)
-      this.agents = this.agents.filter(agent => agent.id !== id)
-    } catch (error) {
-      console.error('删除Agent失败:', error)
-      throw error
-    }
-  }
-}
-
-// 创建配置模型实例
-const agentConfigModel = new AgentConfigModel()
+import ToolSelectionModal from '@/components/tool-selection-modal/index.vue'
+import { AgentApiService, type Agent, type Tool } from '@/api/agent-api-service'
 
 // 响应式数据
+const loading = ref(false)
+const error = ref('')
+const success = ref('')
 const agents = reactive<Agent[]>([])
 const selectedAgent = ref<Agent | null>(null)
 const availableTools = reactive<Tool[]>([])
 const showModal = ref(false)
 const showDeleteModal = ref(false)
 const showToolModal = ref(false)
-const loading = ref(false)
 
-const newAgent = reactive<Omit<Agent, 'id' | 'tools'>>({
+// 新建Agent表单数据
+const newAgent = reactive<Omit<Agent, 'id' | 'availableTools'>>({
   name: '',
   description: '',
-  prompt: '',
+  nextStepPrompt: ''
 })
+
+// 计算属性
+const unassignedTools = computed(() => {
+  if (!selectedAgent.value || !selectedAgent.value.availableTools || !Array.isArray(selectedAgent.value.availableTools)) {
+    return availableTools
+  }
+  return availableTools.filter(tool => !selectedAgent.value!.availableTools.includes(tool.key))
+})
+
+// 工具显示名称获取
+const getToolDisplayName = (toolId: string): string => {
+  const tool = availableTools.find(t => t.key === toolId)
+  return tool ? tool.name : toolId
+}
+
+// 工具描述获取
+const getToolDescription = (toolId: string): string => {
+  const tool = availableTools.find(t => t.key === toolId)
+  return tool ? tool.description : ''
+}
+
+// 消息提示
+const showMessage = (msg: string, type: 'success' | 'error') => {
+  if (type === 'success') {
+    success.value = msg
+    setTimeout(() => { success.value = '' }, 3000)
+  } else {
+    error.value = msg
+    setTimeout(() => { error.value = '' }, 5000)
+  }
+}
 
 // 加载数据
 const loadData = async () => {
   loading.value = true
   try {
-    // 加载Agent列表
-    const loadedAgents = await agentConfigModel.loadAgents()
-    agents.splice(0, agents.length, ...loadedAgents)
+    // 并行加载Agent列表和可用工具
+    const [loadedAgents, loadedTools] = await Promise.all([
+      AgentApiService.getAllAgents(),
+      AgentApiService.getAvailableTools()
+    ])
+    
+    // 确保每个agent都有availableTools数组
+    const normalizedAgents = loadedAgents.map(agent => ({
+      ...agent,
+      availableTools: Array.isArray(agent.availableTools) ? agent.availableTools : []
+    }))
+    
+    agents.splice(0, agents.length, ...normalizedAgents)
+    availableTools.splice(0, availableTools.length, ...loadedTools)
     
     // 选中第一个Agent
-    if (loadedAgents.length > 0) {
-      selectedAgent.value = loadedAgents[0]
-      await loadAgentDetails(loadedAgents[0].id)
+    if (normalizedAgents.length > 0) {
+      await selectAgent(normalizedAgents[0])
     }
-
-    // 加载可用工具
-    const loadedTools = await agentConfigModel.loadAvailableTools()
-    availableTools.splice(0, availableTools.length, ...loadedTools)
-  } catch (error) {
-    console.error('加载数据失败:', error)
-    // 这里可以显示错误提示
+  } catch (err: any) {
+    console.error('加载数据失败:', err)
+    showMessage('加载数据失败: ' + err.message, 'error')
+    
+    // 提供演示数据作为后备
+    const demoTools = [
+      {
+        key: 'search-web',
+        name: '网络搜索',
+        description: '在互联网上搜索信息',
+        enabled: true,
+        serviceGroup: '搜索服务'
+      },
+      {
+        key: 'search-local',
+        name: '本地搜索',
+        description: '在本地文件中搜索内容',
+        enabled: true,
+        serviceGroup: '搜索服务'
+      },
+      {
+        key: 'file-read',
+        name: '读取文件',
+        description: '读取本地或远程文件内容',
+        enabled: true,
+        serviceGroup: '文件服务'
+      },
+      {
+        key: 'file-write',
+        name: '写入文件',
+        description: '创建或修改文件内容',
+        enabled: true,
+        serviceGroup: '文件服务'
+      },
+      {
+        key: 'file-delete',
+        name: '删除文件',
+        description: '删除指定的文件',
+        enabled: false,
+        serviceGroup: '文件服务'
+      },
+      {
+        key: 'calculator',
+        name: '计算器',
+        description: '执行数学计算',
+        enabled: true,
+        serviceGroup: '计算服务'
+      },
+      {
+        key: 'code-execute',
+        name: '代码执行',
+        description: '执行Python或JavaScript代码',
+        enabled: true,
+        serviceGroup: '计算服务'
+      },
+      {
+        key: 'weather',
+        name: '天气查询',
+        description: '获取指定地区的天气信息',
+        enabled: true,
+        serviceGroup: '信息服务'
+      },
+      {
+        key: 'currency',
+        name: '汇率查询',
+        description: '查询货币汇率信息',
+        enabled: true,
+        serviceGroup: '信息服务'
+      },
+      {
+        key: 'email',
+        name: '发送邮件',
+        description: '发送电子邮件',
+        enabled: false,
+        serviceGroup: '通信服务'
+      },
+      {
+        key: 'sms',
+        name: '发送短信',
+        description: '发送短信消息',
+        enabled: false,
+        serviceGroup: '通信服务'
+      }
+    ]
+    
+    const demoAgents = [
+      {
+        id: 'demo-1',
+        name: '通用助手',
+        description: '一个能够处理各种任务的智能助手',
+        nextStepPrompt: 'You are a helpful assistant that can answer questions and help with various tasks. What would you like me to help you with next?',
+        availableTools: ['search-web', 'calculator', 'weather']
+      },
+      {
+        id: 'demo-2',
+        name: '数据分析师',
+        description: '专门用于数据分析和可视化的Agent',
+        nextStepPrompt: 'You are a data analyst assistant specialized in analyzing data and creating visualizations. Please provide the data you would like me to analyze.',
+        availableTools: ['file-read', 'file-write', 'calculator', 'code-execute']
+      }
+    ]
+    availableTools.splice(0, availableTools.length, ...demoTools)
+    agents.splice(0, agents.length, ...demoAgents)
+    
+    if (demoAgents.length > 0) {
+      selectedAgent.value = demoAgents[0]
+    }
   } finally {
     loading.value = false
   }
 }
 
-// 加载Agent详情
-const loadAgentDetails = async (id: string | number) => {
+// 选择Agent
+const selectAgent = async (agent: Agent) => {
+  if (!agent) return
+  
   try {
-    const agent = await agentConfigModel.loadAgentDetails(id)
-    selectedAgent.value = agent
-  } catch (error) {
-    console.error('加载Agent详情失败:', error)
+    // 加载详细信息
+    const detailedAgent = await AgentApiService.getAgentById(agent.id)
+    // 确保availableTools是数组
+    selectedAgent.value = {
+      ...detailedAgent,
+      availableTools: Array.isArray(detailedAgent.availableTools) ? detailedAgent.availableTools : []
+    }
+  } catch (err: any) {
+    console.error('加载Agent详情失败:', err)
+    showMessage('加载Agent详情失败: ' + err.message, 'error')
+    // 使用基本信息作为后备
+    selectedAgent.value = {
+      ...agent,
+      availableTools: Array.isArray(agent.availableTools) ? agent.availableTools : []
+    }
   }
 }
 
@@ -400,66 +445,89 @@ const loadAgentDetails = async (id: string | number) => {
 const showAddAgentModal = () => {
   newAgent.name = ''
   newAgent.description = ''
-  newAgent.prompt = ''
+  newAgent.nextStepPrompt = ''
   showModal.value = true
 }
 
-// 显示删除确认弹窗
-const showDeleteConfirm = () => {
-  showDeleteModal.value = true
-}
-
-// 处理新建Agent
+// 创建新Agent
 const handleAddAgent = async () => {
+  if (!newAgent.name.trim() || !newAgent.description.trim()) {
+    showMessage('请填写必要的字段', 'error')
+    return
+  }
+
   try {
-    const agent: Omit<Agent, 'id'> = {
-      name: newAgent.name,
-      description: newAgent.description,
-      prompt: newAgent.prompt,
-      tools: []
+    const agentData: Omit<Agent, 'id'> = {
+      name: newAgent.name.trim(),
+      description: newAgent.description.trim(),
+      nextStepPrompt: newAgent.nextStepPrompt?.trim() || '',
+      availableTools: []
     }
 
-    const createdAgent = await agentConfigModel.saveAgent(agent as Agent)
+    const createdAgent = await AgentApiService.createAgent(agentData)
     agents.push(createdAgent)
     selectedAgent.value = createdAgent
     showModal.value = false
-  } catch (error) {
-    console.error('创建Agent失败:', error)
-    // 这里可以显示错误提示
+    showMessage('Agent创建成功', 'success')
+  } catch (err: any) {
+    showMessage('创建Agent失败: ' + err.message, 'error')
   }
 }
 
-// 处理添加工具
-const handleAddTool = () => {
+// 显示工具选择弹窗
+const showToolSelectionModal = () => {
   showToolModal.value = true
 }
 
-// 移除工具
-const removeTool = (tool: string) => {
+// 处理工具选择确认
+const handleToolSelectionConfirm = (selectedToolIds: string[]) => {
   if (selectedAgent.value) {
-    selectedAgent.value.tools = selectedAgent.value.tools.filter(t => t !== tool)
+    selectedAgent.value.availableTools = [...selectedToolIds]
   }
 }
 
-// 添加工具到Agent
-const addToolToAgent = (toolId: string) => {
-  if (selectedAgent.value && !selectedAgent.value.tools.includes(toolId)) {
-    selectedAgent.value.tools.push(toolId)
+// 添加工具
+const addTool = (toolId: string) => {
+  if (selectedAgent.value) {
+    if (!selectedAgent.value.availableTools) {
+      selectedAgent.value.availableTools = []
+    }
+    if (!selectedAgent.value.availableTools.includes(toolId)) {
+      selectedAgent.value.availableTools.push(toolId)
+    }
   }
 }
+
+
 
 // 保存Agent
 const handleSave = async () => {
   if (!selectedAgent.value) return
 
-  try {
-    await agentConfigModel.saveAgent(selectedAgent.value)
-    console.log('Agent保存成功')
-    // 这里可以显示成功提示
-  } catch (error) {
-    console.error('保存Agent失败:', error)
-    // 这里可以显示错误提示
+  if (!selectedAgent.value.name.trim() || !selectedAgent.value.description.trim()) {
+    showMessage('请填写必要的字段', 'error')
+    return
   }
+
+  try {
+    const savedAgent = await AgentApiService.updateAgent(selectedAgent.value.id, selectedAgent.value)
+    
+    // 更新本地列表中的数据
+    const index = agents.findIndex(a => a.id === savedAgent.id)
+    if (index !== -1) {
+      agents[index] = savedAgent
+    }
+    
+    selectedAgent.value = savedAgent
+    showMessage('Agent保存成功', 'success')
+  } catch (err: any) {
+    showMessage('保存Agent失败: ' + err.message, 'error')
+  }
+}
+
+// 显示删除确认
+const showDeleteConfirm = () => {
+  showDeleteModal.value = true
 }
 
 // 删除Agent
@@ -467,7 +535,7 @@ const handleDelete = async () => {
   if (!selectedAgent.value) return
 
   try {
-    await agentConfigModel.deleteAgent(selectedAgent.value.id)
+    await AgentApiService.deleteAgent(selectedAgent.value.id)
     
     // 从列表中移除
     const index = agents.findIndex(a => a.id === selectedAgent.value!.id)
@@ -475,18 +543,17 @@ const handleDelete = async () => {
       agents.splice(index, 1)
     }
 
-    // 清除选中状态或选择其他Agent
+    // 选择其他Agent或清除选中状态
     selectedAgent.value = agents.length > 0 ? agents[0] : null
     showDeleteModal.value = false
-  } catch (error) {
-    console.error('删除Agent失败:', error)
-    // 这里可以显示错误提示
+    showMessage('Agent删除成功', 'success')
+  } catch (err: any) {
+    showMessage('删除Agent失败: ' + err.message, 'error')
   }
 }
 
 // 导入Agent
 const handleImport = () => {
-  // 创建文件输入
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = '.json'
@@ -497,10 +564,19 @@ const handleImport = () => {
       reader.onload = async (e) => {
         try {
           const agentData = JSON.parse(e.target?.result as string)
-          await agentConfigModel.saveAgent(agentData, true)
-          await loadData() // 重新加载数据
-        } catch (error) {
-          console.error('导入Agent失败:', error)
+          // 基本验证
+          if (!agentData.name || !agentData.description) {
+            throw new Error('Agent配置格式不正确：缺少必要字段')
+          }
+          
+          // 移除id字段，让后端分配新的id
+          const { id, ...importData } = agentData
+          const savedAgent = await AgentApiService.createAgent(importData)
+          agents.push(savedAgent)
+          selectedAgent.value = savedAgent
+          showMessage('Agent导入成功', 'success')
+        } catch (err: any) {
+          showMessage('导入Agent失败: ' + err.message, 'error')
         }
       }
       reader.readAsText(file)
@@ -513,14 +589,19 @@ const handleImport = () => {
 const handleExport = () => {
   if (!selectedAgent.value) return
 
-  const dataStr = JSON.stringify(selectedAgent.value, null, 2)
-  const dataBlob = new Blob([dataStr], { type: 'application/json' })
-  const url = URL.createObjectURL(dataBlob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `agent-${selectedAgent.value.name}.json`
-  link.click()
-  URL.revokeObjectURL(url)
+  try {
+    const jsonString = JSON.stringify(selectedAgent.value, null, 2)
+    const dataBlob = new Blob([jsonString], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `agent-${selectedAgent.value.name}-${new Date().toISOString().split('T')[0]}.json`
+    link.click()
+    URL.revokeObjectURL(url)
+    showMessage('Agent导出成功', 'success')
+  } catch (err: any) {
+    showMessage('导出Agent失败: ' + err.message, 'error')
+  }
 }
 
 // 组件挂载时加载数据
@@ -530,11 +611,29 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.config-panel {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
 }
 
 .panel-actions {
@@ -545,10 +644,73 @@ onMounted(() => {
 .agent-layout {
   display: flex;
   gap: 30px;
+  flex: 1;
+  min-height: 0;
 }
 
 .agent-list {
-  width: 300px;
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.list-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.list-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.agent-count {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+}
+
+.agents-container {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  padding: 40px 0;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.empty-tip {
+  font-size: 14px;
+  margin-top: 8px;
 }
 
 .agent-card {
@@ -556,15 +718,18 @@ onMounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   padding: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  
   &:hover {
     background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
   &.active {
     border-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
   }
 }
 
@@ -577,22 +742,63 @@ onMounted(() => {
 
 .agent-name {
   font-weight: 500;
+  font-size: 16px;
 }
 
 .agent-desc {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.7);
   font-size: 14px;
+  line-height: 1.4;
   margin-bottom: 12px;
+}
+
+.agent-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .tool-tag {
   display: inline-block;
   padding: 4px 8px;
-  background: rgba(102, 126, 234, 0.1);
+  background: rgba(102, 126, 234, 0.2);
   border-radius: 4px;
   font-size: 12px;
-  margin-right: 8px;
-  margin-bottom: 8px;
+  color: #a8b3ff;
+}
+
+.tool-more {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.no-tools-indicator {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #fff;
+  }
 }
 
 .agent-detail {
@@ -600,113 +806,209 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
   padding: 24px;
+  overflow-y: auto;
+}
+
+.no-selection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.placeholder-icon {
+  font-size: 64px;
+  margin-bottom: 24px;
+  opacity: 0.3;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail-header h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.form-section {
+  margin-bottom: 32px;
 }
 
 .form-item {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  
   label {
     display: block;
     margin-bottom: 8px;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
   }
 
   input,
   textarea {
     width: 100%;
-    padding: 8px 12px;
+    padding: 12px 16px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
+    border-radius: 8px;
     color: #fff;
-    transition: all 0.3s;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    
+    &:focus {
+      border-color: #667eea;
+      outline: none;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
   }
-
-  input:focus,
-  textarea:focus {
-    border-color: #667eea;
-    outline: none;
+  
+  textarea {
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.5;
   }
 }
 
-.tools-list {
+.required {
+  color: #ff6b6b;
+}
+
+.tools-section {
+  h4 {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.9);
+  }
+}
+
+.section-header {
   display: flex;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  
+  span {
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+  }
+}
+
+.tools-grid {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-  margin-bottom: 12px;
 }
 
 .tool-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
+  justify-content: space-between;
+  padding: 12px 16px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-}
-
-.remove-tool {
-  cursor: pointer;
-  opacity: 0.6;
-  transition: all 0.3s;
-  &:hover {
-    opacity: 1;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  
+  &.assigned {
+    border-color: rgba(102, 126, 234, 0.3);
+    background: rgba(102, 126, 234, 0.1);
   }
 }
 
-.add-btn {
+.tool-info {
+  flex: 1;
+  
+  .tool-name {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  
+  .tool-desc {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.3;
+  }
+}
+
+.no-tools {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  width: 100%;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px dashed rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.8);
-  cursor: pointer;
-  transition: all 0.3s;
-  &:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
+  padding: 40px;
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
 }
 
 .action-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
+  padding: 10px 16px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   color: #fff;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  font-size: 14px;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
   }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
   &.primary {
-    /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
-    color: #ffffff;
-    border-color: rgba(102, 126, 234, 0.2);
+    background: rgba(102, 126, 234, 0.2);
+    border-color: rgba(102, 126, 234, 0.3);
+    color: #a8b3ff;
+    
+    &:hover:not(:disabled) {
+      background: rgba(102, 126, 234, 0.3);
+    }
   }
+  
   &.danger {
     background: rgba(234, 102, 102, 0.1);
-    border: 1px solid rgba(234, 102, 102, 0.2);
-    color: #ea6666;
-    &:hover {
+    border-color: rgba(234, 102, 102, 0.2);
+    color: #ff8a8a;
+    
+    &:hover:not(:disabled) {
       background: rgba(234, 102, 102, 0.2);
     }
   }
+  
+  &.small {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
 }
 
-.detail-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
-}
-
+/* 弹窗样式 */
 .modal-form {
   display: flex;
   flex-direction: column;
@@ -716,34 +1018,85 @@ onMounted(() => {
 .delete-confirm {
   text-align: center;
   padding: 20px 0;
-
+  
   p {
     color: rgba(255, 255, 255, 0.8);
+    margin: 8px 0;
+  }
+  
+  .warning-text {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
   }
 }
 
-.confirm-btn {
-  padding: 8px 16px;
-  &.danger {
-    background: rgba(255, 255, 255, 0.05);
-    /* background: rgba(234, 102, 102, 0.2); */
-    border-color: rgba(234, 102, 102, 0.2);
-    color: #ea6666;
-    border-radius: 6px;
+.warning-icon {
+  font-size: 48px;
+  color: #ffa726;
+  margin-bottom: 16px;
+}
 
+.confirm-btn, .cancel-btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &.danger {
+    background: rgba(234, 102, 102, 0.2);
+    border: 1px solid rgba(234, 102, 102, 0.3);
+    color: #ff8a8a;
+    
     &:hover {
-      background: rgba(234, 102, 102, 0.2);
+      background: rgba(234, 102, 102, 0.3);
     }
   }
 }
 
 .cancel-btn {
-  padding: 8px 16px;
-  /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
-  color: #ffffff;
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  
   &:hover {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* 提示消息 */
+.error-toast, .success-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+}
+
+.error-toast {
+  background: rgba(234, 102, 102, 0.9);
+  border: 1px solid rgba(234, 102, 102, 0.5);
+}
+
+.success-toast {
+  background: rgba(102, 234, 102, 0.9);
+  border: 1px solid rgba(102, 234, 102, 0.5);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 </style>
