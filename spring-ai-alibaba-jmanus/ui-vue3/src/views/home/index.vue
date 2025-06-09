@@ -15,19 +15,15 @@
 -->
 <template>
   <div class="home-page">
-    <Sidebar 
-      @planTemplateConfigRequested="handlePlanTemplateConfigRequested"
-      @newTaskRequested="handleNewTaskRequested"
-    />
-    
-    <!-- Main Home View -->
-    <div v-if="currentView === 'home'" class="conversation">
+    <!-- 简化的 Hello World 主页 -->
+    <div class="welcome-container">
       <!-- Background effects -->
       <div class="background-effects">
         <div class="gradient-orb orb-1"></div>
         <div class="gradient-orb orb-2"></div>
         <div class="gradient-orb orb-3"></div>
       </div>
+      
       <!-- Header -->
       <header class="header">
         <div class="logo-container">
@@ -44,8 +40,8 @@
         <div class="conversation-container">
           <!-- Welcome section -->
           <div class="welcome-section">
-            <h2 class="welcome-title">今天我能帮你构建什么？</h2>
-            <p class="welcome-subtitle">描述您的任务或项目，我将帮助您逐步规划和执行。</p>
+            <h2 class="welcome-title">欢迎使用 JTaskPoilot！</h2>
+            <p class="welcome-subtitle">您的 Java AI 智能助手，帮助您构建和完成各种任务。</p>
           </div>
 
           <!-- Input section -->
@@ -79,92 +75,51 @@
         </div>
       </main>
     </div>
-
-    <!-- Plan Template Configuration View -->
-    <div v-else-if="currentView === 'config'" class="config-view">
-      <div class="config-header-bar">
-        <button class="back-button" @click="handleBackToHome">
-          <Icon icon="carbon:arrow-left" width="20" />
-          <span>返回主页</span>
-        </button>
-        <div class="config-title">计划模板配置</div>
-      </div>
-      <PlanTemplateConfig 
-        :template="selectedTemplate"
-        @configClosed="handleConfigClosed"
-      />
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
-import Sidebar from '@/components/sidebar/index.vue'
 import BlurCard from '@/components/blurCard/index.vue'
-import PlanTemplateConfig from '@/components/plan-template-config/index.vue'
-import type { PlanTemplate } from '@/types/plan-template'
+import { useTaskStore } from '@/stores/task'
 
 const router = useRouter()
+const taskStore = useTaskStore()
 const userInput = ref('')
 const textareaRef = ref<HTMLTextAreaElement>()
-
-// Tab switching state
-const currentView = ref<'home' | 'config'>('home')
-const selectedTemplate = ref<PlanTemplate | null>(null)
 
 const examples = [
   {
     title: '查询股价',
-    description: '获取今天阿里巴巴的最新股价',
+    description: '获取今天阿里巴巴的最新股价（Agent可以使用浏览器工具）',
     icon: 'carbon:chart-line-data',
-    prompt: '查询今天阿里巴巴的股价',
+    prompt: '用浏览器基于百度，查询今天阿里巴巴的股价',
   },
   {
-    title: '预订机票',
-    description: '帮我查找并预订从上海到北京的机票',
-    icon: 'carbon:plane',
-    prompt: '帮忙预定一下从上海到北京的机票',
+    title: '生成一个中篇小说',
+    description: '帮我生成一个中篇小说（Agent可以生成更长的内容）',
+    icon: 'carbon:book',
+    prompt: '请帮我写一个关于时间旅行的中篇小说',
   },
   {
     title: '查询天气',
-    description: '获取北京今天的天气情况',
+    description: '获取北京今天的天气情况（Agent可以使用MCP工具服务）',
     icon: 'carbon:partly-cloudy',
-    prompt: '查询北京今天的天气',
-  },
-  {
-    title: '设置提醒',
-    description: '提醒我明天下午三点开会',
-    icon: 'carbon:alarm',
-    prompt: '提醒我明天下午三点开会',
+    prompt: '用浏览器，基于百度，查询北京今天的天气',
   },
 ]
 
-// Event handlers for tab switching
-const handlePlanTemplateConfigRequested = (payload: { templateId: string; template: PlanTemplate }) => {
-  selectedTemplate.value = payload.template
-  currentView.value = 'config'
-  console.log('[HomePage] 切换到配置视图:', payload.templateId)
-}
-
-const handleNewTaskRequested = () => {
-  selectedTemplate.value = null
-  currentView.value = 'home'
-  console.log('[HomePage] 切换到主页视图')
-}
-
-const handleBackToHome = () => {
-  currentView.value = 'home'
-  selectedTemplate.value = null
-  console.log('[HomePage] 返回主页')
-}
-
-const handleConfigClosed = () => {
-  currentView.value = 'home'
-  selectedTemplate.value = null
-  console.log('[HomePage] 配置页面关闭，返回主页')
-}
+onMounted(() => {
+  console.log('[Home] onMounted called')
+  console.log('[Home] taskStore:', taskStore)
+  console.log('[Home] examples:', examples)
+  
+  // 标记已访问过 home 页面
+  taskStore.markHomeVisited()
+  console.log('[Home] Home visited marked')
+})
 
 const adjustTextareaHeight = () => {
   nextTick(() => {
@@ -176,37 +131,73 @@ const adjustTextareaHeight = () => {
 }
 
 const handleKeydown = (event: KeyboardEvent) => {
+  console.log('[Home] handleKeydown called, key:', event.key)
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
+    console.log('[Home] Enter key pressed, calling handleSend')
     handleSend()
   }
 }
 
 const handleSend = () => {
-  if (!userInput.value.trim()) return
+  console.log('[Home] handleSend called, userInput:', userInput.value)
+  if (!userInput.value.trim()) {
+    console.log('[Home] handleSend aborted - empty input')
+    return
+  }
 
-  // Navigate to direct chat page with the user input
+  const taskContent = userInput.value.trim()
+  console.log('[Home] Setting task to store:', taskContent)
+  
+  // 使用 store 传递任务数据
+  taskStore.setTask(taskContent)
+  console.log('[Home] Task set to store, current task:', taskStore.currentTask)
+  
+  // 导航到 direct 页面
   const chatId = Date.now().toString()
+  console.log('[Home] Navigating to direct page with chatId:', chatId)
+  
   router.push({
     name: 'direct',
     params: { id: chatId },
-    query: { prompt: userInput.value },
+  }).then(() => {
+    console.log('[Home] Navigation to direct page completed')
+  }).catch((error) => {
+    console.error('[Home] Navigation error:', error)
   })
 }
 
 const selectExample = (example: any) => {
-  userInput.value = example.prompt
-  adjustTextareaHeight()
+  console.log('[Home] selectExample called with example:', example)
+  console.log('[Home] Example prompt:', example.prompt)
+  
+  // 直接使用示例的 prompt 发送任务
+  taskStore.setTask(example.prompt)
+  console.log('[Home] Task set to store from example, current task:', taskStore.currentTask)
+  
+  // 导航到 direct 页面
+  const chatId = Date.now().toString()
+  console.log('[Home] Navigating to direct page with chatId:', chatId)
+  
+  router.push({
+    name: 'direct',
+    params: { id: chatId },
+  }).then(() => {
+    console.log('[Home] Navigation to direct page completed (from example)')
+  }).catch((error) => {
+    console.error('[Home] Navigation error (from example):', error)
+  })
 }
 </script>
 
 <style lang="less" scoped>
 .home-page {
   width: 100%;
-  display: flex;
+  height: 100vh;
   position: relative;
 }
-.conversation {
+
+.welcome-container {
   flex: 1;
   height: 100vh;
   background: #0a0a0a;

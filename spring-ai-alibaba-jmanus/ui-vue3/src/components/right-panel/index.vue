@@ -17,8 +17,9 @@
   <div class="right-panel">
     <div class="preview-header">
       <div class="preview-tabs">
+        <!-- 只显示 details 按钮，临时注释掉 chat 和 code 按钮 -->
         <button
-          v-for="tab in previewTabs"
+          v-for="tab in previewTabs.filter(t => t.id === 'details')"
           :key="tab.id"
           class="tab-button"
           :class="{ active: activeTab === tab.id }"
@@ -27,6 +28,19 @@
           <Icon :icon="tab.icon" />
           {{ tab.name }}
         </button>
+        <!-- 临时注释掉 chat 和 code 按钮，但保留所有实现 -->
+        <!-- 
+        <button
+          v-for="tab in previewTabs.filter(t => t.id === 'chat' || t.id === 'code')"
+          :key="tab.id"
+          class="tab-button"
+          :class="{ active: activeTab === tab.id }"
+          @click="activeTab = tab.id"
+        >
+          <Icon :icon="tab.icon" />
+          {{ tab.name }}
+        </button>
+        -->
       </div>
       <div class="preview-actions">
         <button class="action-button" @click="copyCode" v-if="activeTab === 'code'">

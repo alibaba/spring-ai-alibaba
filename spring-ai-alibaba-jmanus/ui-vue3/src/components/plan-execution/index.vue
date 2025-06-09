@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted, defineProps, defineEmits } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, defineProps, defineEmits, watch } from 'vue'
 import ChatContainer from '@/components/chat/index.vue'
 import InputArea from '@/components/input/index.vue'
 import { planExecutionManager } from '@/utils/plan-execution-manager'
@@ -75,9 +75,11 @@ const emit = defineEmits<Emits>()
 const isLoading = ref(false)
 const chatRef = ref()
 const inputRef = ref()
+const hasProcessedInitialPrompt = ref(false) // 标记是否已经处理过初始 prompt
 
 onMounted(() => {
   console.log('[PlanExecutionComponent] Initialized')
+  console.log('[PlanExecutionComponent] props.initialPrompt:', props.initialPrompt)
   
   // 设置 plan execution manager 的事件回调
   planExecutionManager.setEventCallbacks({
@@ -89,11 +91,28 @@ onMounted(() => {
     onChatInputClear: handlePlanManagerInputClear
   })
 
-  // 如果有初始 prompt，自动发送
-  if (props.initialPrompt) {
+  // 如果有初始 prompt，自动发送（只发送一次）
+  if (props.initialPrompt && !hasProcessedInitialPrompt.value) {
+    console.log('[PlanExecutionComponent] Auto-sending initial prompt:', props.initialPrompt)
+    hasProcessedInitialPrompt.value = true
     handleUserMessageSendRequested(props.initialPrompt)
+  } else {
+    console.log('[PlanExecutionComponent] No initial prompt to send or already processed')
   }
 })
+
+// 监听 initialPrompt 的变化
+watch(() => props.initialPrompt, (newPrompt: string, oldPrompt: string) => {
+  console.log('[PlanExecutionComponent] initialPrompt changed from:', oldPrompt, 'to:', newPrompt)
+  // 只有在新的 prompt 不为空，且不同于旧的 prompt，且还没有处理过初始 prompt 时才发送
+  if (newPrompt && newPrompt !== oldPrompt && !hasProcessedInitialPrompt.value) {
+    console.log('[PlanExecutionComponent] Auto-sending new initial prompt:', newPrompt)
+    hasProcessedInitialPrompt.value = true
+    handleUserMessageSendRequested(newPrompt)
+  } else {
+    console.log('[PlanExecutionComponent] Not sending prompt - already processed or invalid conditions')
+  }
+}, { immediate: false })
 
 onUnmounted(() => {
   cleanup()

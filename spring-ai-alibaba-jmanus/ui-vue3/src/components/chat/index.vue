@@ -892,6 +892,9 @@ const handlePlanUpdate = (planDetails: any) => {
   message.steps = formattedSteps
   message.currentStepIndex = planDetails.currentStepIndex !== undefined ? planDetails.currentStepIndex : 0
   
+  // 标记计划是否已完成（用于步骤状态显示）
+  message.planCompleted = planDetails.completed || planDetails.status === 'completed'
+  
   // 更新进度信息
   const progress = calculateProgress(planDetails)
   message.progress = progress.percentage
@@ -958,6 +961,12 @@ const handlePlanUpdate = (planDetails: any) => {
     message.progress = undefined
     message.progressText = undefined
     message.thinking = undefined
+    
+    // 重要：设置 currentStepIndex 为总步骤数，这样所有步骤都会显示为"已完成"
+    if (message.steps && message.steps.length > 0) {
+      message.currentStepIndex = message.steps.length
+      console.log('[ChatComponent] Set currentStepIndex to', message.steps.length, 'to mark all steps as completed')
+    }
     
     // 设置最终响应内容 - 模拟人类对话回复
     let finalResponse = ''
@@ -1219,11 +1228,8 @@ onMounted(() => {
     addScrollListener()
   })
 
-  // 如果有初始提示，进行处理
-  if (props.initialPrompt) {
-    addMessage('user', props.initialPrompt)
-    handleSendMessage(props.initialPrompt)
-  }
+  // 移除自动发送初始提示的逻辑，让 PlanExecutionComponent 统一处理
+  // 这样可以避免重复发送消息
 })
 
 onUnmounted(() => {
