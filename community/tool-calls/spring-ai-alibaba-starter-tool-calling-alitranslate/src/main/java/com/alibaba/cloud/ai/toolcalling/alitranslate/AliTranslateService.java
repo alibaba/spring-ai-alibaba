@@ -45,35 +45,13 @@ public class AliTranslateService
 
 	private final AsyncClient client;
 
-	/**
-	 * version of the api
-	 */
-	public static final String SCENE = "general";
-
-	/**
-	 * FormatType text or html
-	 */
-	public static final String FORM_TYPE = "text";
-
-	/**
-	 * offline doc:
-	 * https://help.aliyun.com/zh/machine-translation/support/supported-languages-and-codes?spm=api-workbench.api_explorer.0.0.37a94eecsclZw9
-	 */
-	public static final String LANGUAGE_CODE_ZH = "zh";
-
-	public static final String LANGUAGE_CODE_EN = "en";
-
 	public AliTranslateService(AliTranslateProperties properties) {
-		assert StringUtils.hasText(properties.getRegion());
-		assert StringUtils.hasText(properties.getAccessKeyId());
-		assert StringUtils.hasText(properties.getAccessKeySecret());
 		StaticCredentialProvider provider = StaticCredentialProvider.create(Credential.builder()
 			.accessKeyId(properties.getAccessKeyId())
-			.accessKeySecret(properties.getAccessKeySecret())
+			.accessKeySecret(properties.getSecretKey())
 			.build());
 
 		this.client = AsyncClient.builder()
-			.region(properties.getRegion()) // Region ID
 			.credentialsProvider(provider)
 			.overrideConfiguration(ClientOverrideConfiguration.create().setEndpointOverride("mt.aliyuncs.com"))
 			.build();
@@ -87,11 +65,11 @@ public class AliTranslateService
 		}
 
 		TranslateGeneralRequest translateGeneralRequest = TranslateGeneralRequest.builder()
-			.formatType(FORM_TYPE)
+			.formatType(AliTranslateConstants.FORM_TYPE)
 			.sourceLanguage(request.sourceLanguage)
 			.targetLanguage(request.targetLanguage)
 			.sourceText(request.text)
-			.scene(SCENE)
+			.scene(AliTranslateConstants.SCENE)
 			.build();
 
 		CompletableFuture<TranslateGeneralResponse> response = client.translateGeneral(translateGeneralRequest);
@@ -145,7 +123,7 @@ public class AliTranslateService
 					value = "targetLanguage") @JsonPropertyDescription("Target language to alitranslate into, default is en") String targetLanguage) {
 
 		public Request(@JsonProperty("text") String text) {
-			this(text, LANGUAGE_CODE_ZH, LANGUAGE_CODE_EN);
+			this(text, AliTranslateConstants.LANGUAGE_CODE_ZH, AliTranslateConstants.LANGUAGE_CODE_EN);
 		}
 	}
 

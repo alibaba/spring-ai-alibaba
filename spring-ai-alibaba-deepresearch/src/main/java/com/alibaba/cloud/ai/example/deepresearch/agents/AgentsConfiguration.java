@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.agents;
 
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
+import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchConstants;
 import com.alibaba.cloud.ai.toolcalling.tavily.TavilySearchProperties;
 import lombok.SneakyThrows;
 import org.springframework.ai.chat.client.ChatClient;
@@ -63,7 +64,8 @@ public class AgentsConfiguration {
 	// }
 
 	@Bean
-	@ConditionalOnProperty(prefix = TavilySearchProperties.PREFIX, name = "enabled", havingValue = "true")
+	@ConditionalOnProperty(prefix = TavilySearchConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
 	public ToolCallbackProvider tavilySearchServiceCallbackProvider(GenericApplicationContext applicationContext) {
 		SpringBeanToolCallbackResolver springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
 			.applicationContext(applicationContext)
