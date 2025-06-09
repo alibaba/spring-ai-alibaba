@@ -19,12 +19,12 @@ package com.alibaba.cloud.ai.toolcalling.time;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-class TimeByTimeZoneIdServiceTest {
+class GetTimeByZoneIdServiceTest {
 
 	@Test
 	void testApply() {
-		TimeByTimeZoneIdService service = new TimeByTimeZoneIdService();
-		String result = service.apply(new TimeByTimeZoneIdService.Request("Asia/Shanghai")).description();
+		GetTimeByZoneIdService service = new GetTimeByZoneIdService();
+		String result = service.apply(new GetTimeByZoneIdService.Request("Asia/Shanghai")).description();
 		assertNotNull(result);
 		assertTrue(result.contains("Asia/Shanghai"));
 		assertTrue(result.matches(".*\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} .+"));

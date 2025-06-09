@@ -30,15 +30,15 @@ import static com.alibaba.cloud.ai.toolcalling.time.TimeProperties.TIME_PREFIX;
  */
 @Configuration
 @EnableConfigurationProperties(TimeProperties.class)
-@ConditionalOnClass({ TimeService.class, TimeByTimeZoneIdService.class })
+@ConditionalOnClass({ TimeService.class, GetTimeByZoneIdService.class })
 @ConditionalOnProperty(prefix = TIME_PREFIX, name = "enabled", havingValue = "true")
 public class TimeAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
 	@Description("Get the time of a specified city.")
-	public TimeByTimeZoneIdService getCityTimeFunction() {
-		return new TimeByTimeZoneIdService();
+	public GetTimeByZoneIdService getCityTimeFunction() {
+		return new GetTimeByZoneIdService();
 	}
 
 }

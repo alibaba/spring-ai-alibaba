@@ -24,10 +24,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
@@ -126,6 +122,17 @@ public class JsonParseTool {
 	}
 
 	/**
+	 * Get the text value of 'fieldName' from the JSON.
+	 * @param json json string
+	 * @param fieldName keyName
+	 */
+	public String getFieldValueAsText(String json, String fieldName) throws JsonProcessingException {
+		JsonNode rootNode = objectMapper.readTree(json);
+		JsonNode fieldNode = rootNode.get(fieldName);
+		return fieldNode.asText();
+	}
+
+	/**
 	 * Get the string value of obj.fieldName1.fileName2... from the JSON.
 	 * @param json json string
 	 * @param fieldNames keyNames
@@ -150,6 +157,48 @@ public class JsonParseTool {
 		}
 		rootNode.put(fieldName, value);
 		return objectMapper.writeValueAsString(rootNode);
+	}
+
+	/**
+	 * Assign 'value' to 'fieldName' in the JSON, then return JsonNode
+	 * @param json json string
+	 * @param fieldName fieldName
+	 * @param value JsonNode value
+	 */
+	public Object setFieldValue(String json, String fieldName, JsonNode value) throws JsonProcessingException {
+		JsonNode jsonNode = objectMapper.readTree(json);
+		if (!(jsonNode instanceof ObjectNode rootNode)) {
+			throw new RuntimeException("no json object string");
+		}
+		return rootNode.set(fieldName, value);
+	}
+
+	/**
+	 * Remove 'fieldName' in the JSON, then return JsonNode
+	 * @param json json string
+	 * @param fieldName fieldName
+	 */
+	public Object removeFieldValue(String json, String fieldName) throws JsonProcessingException {
+		JsonNode jsonNode = objectMapper.readTree(json);
+		if (!(jsonNode instanceof ObjectNode rootNode)) {
+			throw new RuntimeException("no json object string");
+		}
+		return rootNode.remove(fieldName);
+	}
+
+	/**
+	 * Replace 'value' to 'fieldName' in the JSON, then return JsonNode
+	 * @param json json string
+	 * @param fieldName fieldName
+	 * @param value JsonNode value
+	 */
+	public Object replaceFieldValue(String json, String fieldName, JsonNode value) throws JsonProcessingException {
+		JsonNode jsonNode = objectMapper.readTree(json);
+		if (!(jsonNode instanceof ObjectNode rootNode)) {
+			throw new RuntimeException("no json object string");
+		}
+		rootNode.replace(fieldName, value);
+		return jsonNode;
 	}
 
 	/**
@@ -206,71 +255,6 @@ public class JsonParseTool {
 		else {
 			return null;
 		}
-	}
-
-	/**
-	 * Parse string to jsonObject by gson, then return its jsonObject.
-	 * @param content json string
-	 * @return jsonObject JsonObject
-	 */
-	public JsonObject parseString(String content) {
-		JsonElement jsonElement = JsonParser.parseString(content);
-			if (!jsonElement.isJsonObject()) {
-			throw new IllegalArgumentException("Content is not a valid JSON object .");
-		}
-		return jsonElement.getAsJsonObject();
-	}
-
-	/**
-	 * insert field to jsonObject by gson, then return jsonObject.
-	 * @param content json string
-	 * @param field json field
-	 * @param value jsonElement
-	 * @return object jsonObject
-	 */
-	public Object insertField(String content, String field, JsonElement value) {
-		JsonObject jsonObject = parseString(content);
-		Assert.notNull(field, "insert json field can not be null");
-		Assert.notNull(value, "insert json fieldValue can not be null");
-		jsonObject.add(field, value);
-		return jsonObject;
-	}
-
-	/**
-	 * parse field to string by gson, then return string.
-	 * @param content json string
-	 * @param field json field
-	 * @return object field value
-	 */
-	public Object parseField(String content, String field) {
-		JsonObject jsonObject = parseString(content);
-		return jsonObject.get(field).getAsString();
-	}
-
-	/**
-	 * remove field by gson, then return jsonObject.
-	 * @param content json string
-	 * @param field json field
-	 * @return object jsonObject
-	 */
-	public Object removeField(String content, String field) {
-		JsonObject jsonObject = parseString(content);
-		return jsonObject.remove(field);
-	}
-
-	/**
-	 * replace field to jsonObject by gson, then return jsonObject.
-	 * @param content json string
-	 * @param field json field
-	 * @param value jsonObject
-	 * @return object jsonObject
-	 */
-	public Object replaceField(String content, String field, JsonElement value) {
-		JsonObject jsonObject = parseString(content);
-		Assert.notNull(field, "replace json field can not be null");
-		Assert.notNull(value, "replace json fieldValue can not be null");
-		jsonObject.add(field, value);
-		return jsonObject;
 	}
 
 }

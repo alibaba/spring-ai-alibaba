@@ -25,11 +25,11 @@ import java.util.function.Function;
 /**
  * @author chengle
  */
-public class TimeByTimeZoneIdService
-		implements Function<TimeByTimeZoneIdService.Request, TimeByTimeZoneIdService.Response> {
+public class GetTimeByZoneIdService
+		implements Function<GetTimeByZoneIdService.Request, GetTimeByZoneIdService.Response> {
 
 	@Override
-	public TimeByTimeZoneIdService.Response apply(TimeByTimeZoneIdService.Request request) {
+	public GetTimeByZoneIdService.Response apply(GetTimeByZoneIdService.Request request) {
 		String timeZoneId = request.timeZoneId;
 		return new Response(String.format("The current time zone is %s and the current time is " + "%s", timeZoneId,
 				TimeUtils.getTimeByZoneId(timeZoneId)));

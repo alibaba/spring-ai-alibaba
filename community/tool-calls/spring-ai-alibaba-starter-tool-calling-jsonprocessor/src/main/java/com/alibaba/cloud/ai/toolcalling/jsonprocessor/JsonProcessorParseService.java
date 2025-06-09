@@ -18,7 +18,9 @@ package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gson.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 
@@ -29,15 +31,22 @@ public class JsonProcessorParseService implements Function<JsonProcessorParseSer
 
 	private final JsonParseTool jsonParseTool;
 
+	private static final Logger logger = LoggerFactory.getLogger(JsonProcessorParseService.class);
+
 	public JsonProcessorParseService(JsonParseTool jsonParseTool) {
 		this.jsonParseTool = jsonParseTool;
 	}
 
 	@Override
-	public Object apply(JsonParseRequest request) throws JsonParseException {
+	public Object apply(JsonParseRequest request) {
 		String content = request.content;
 		String field = request.field;
-		return jsonParseTool.parseField(content, field);
+		try {
+			return jsonParseTool.getFieldValueAsText(content, field);
+		} catch (JsonProcessingException e) {
+			logger.error("Error occurred while json processing: {}", e.getMessage());
+			throw new RuntimeException(e);
+		}
 	}
 
 	@JsonClassDescription("JsonProcessorParseService request")

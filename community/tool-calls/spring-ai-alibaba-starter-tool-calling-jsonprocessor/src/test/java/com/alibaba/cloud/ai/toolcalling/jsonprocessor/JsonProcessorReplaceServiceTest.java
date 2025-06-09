@@ -17,15 +17,18 @@
 package com.alibaba.cloud.ai.toolcalling.jsonprocessor;
 
 import com.alibaba.cloud.ai.toolcalling.common.JsonParseTool;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.IntNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static com.fasterxml.jackson.databind.node.BooleanNode.TRUE;
 
 /**
  * JsonReplaceService Test Class
@@ -36,9 +39,11 @@ public class JsonProcessorReplaceServiceTest {
 
 	private String jsonContent;
 
+	private ObjectMapper objectMapper;
+
 	@BeforeEach
 	void setUp() {
-		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
+		objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
 				.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 		JsonParseTool jsonParseTool = new JsonParseTool(objectMapper);
 		jsonProcessorReplaceService = new JsonProcessorReplaceService(jsonParseTool);
@@ -47,62 +52,62 @@ public class JsonProcessorReplaceServiceTest {
 
 	@Test
 	void testReplaceStringValue() {
-		JsonElement newValue = new JsonPrimitive("David");
+		JsonNode newValue = new TextNode("David");
 		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent, "name",
 				newValue);
 
-		JsonObject result = (JsonObject) jsonProcessorReplaceService.apply(request);
+		JsonNode result = (JsonNode) jsonProcessorReplaceService.apply(request);
 
-		Assertions.assertEquals("David", result.get("name").getAsString());
-		Assertions.assertEquals(30, result.get("age").getAsInt());
-		Assertions.assertEquals("Beijing", result.get("city").getAsString());
+		Assertions.assertEquals("David", result.get("name").asText());
+		Assertions.assertEquals(30, result.get("age").asInt());
+		Assertions.assertEquals("Beijing", result.get("city").asText());
 	}
 
 	@Test
 	void testReplaceNumberValue() {
-		JsonElement newValue = new JsonPrimitive(40);
+		JsonNode newValue = new IntNode(40);
 		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent, "age",
 				newValue);
 
-		JsonObject result = (JsonObject) jsonProcessorReplaceService.apply(request);
+		JsonNode result = (JsonNode) jsonProcessorReplaceService.apply(request);
 
-		Assertions.assertEquals("John", result.get("name").getAsString());
-		Assertions.assertEquals(40, result.get("age").getAsInt());
-		Assertions.assertEquals("Beijing", result.get("city").getAsString());
+		Assertions.assertEquals("John", result.get("name").asText());
+		Assertions.assertEquals(40, result.get("age").asInt());
+		Assertions.assertEquals("Beijing", result.get("city").asText());
 	}
 
 	@Test
 	void testAddNewField() {
-		JsonElement newValue = new JsonPrimitive(true);
+		JsonNode newValue = TRUE;
 		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent,
 				"isActive", newValue);
 
-		JsonObject result = (JsonObject) jsonProcessorReplaceService.apply(request);
+		JsonNode result = (JsonNode) jsonProcessorReplaceService.apply(request);
 
-		Assertions.assertEquals("John", result.get("name").getAsString());
-		Assertions.assertEquals(30, result.get("age").getAsInt());
-		Assertions.assertEquals("Beijing", result.get("city").getAsString());
-		Assertions.assertTrue(result.get("isActive").getAsBoolean());
+		Assertions.assertEquals("John", result.get("name").asText());
+		Assertions.assertEquals(30, result.get("age").asInt());
+		Assertions.assertEquals("Beijing", result.get("city").asText());
+		Assertions.assertTrue(result.get("isActive").asBoolean());
 	}
 
 	@Test
 	void testReplaceWithJsonObject() {
-		JsonObject addressObject = new JsonObject();
-		addressObject.addProperty("street", "Chang'an Street");
-		addressObject.addProperty("zipCode", "100000");
+		ObjectNode addressObject = objectMapper.createObjectNode();
+		addressObject.put("street", "Chang'an Street");
+		addressObject.put("zipCode", "100000");
 
 		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent,
 				"address", addressObject);
 
-		JsonObject result = (JsonObject) jsonProcessorReplaceService.apply(request);
+		JsonNode result = (JsonNode) jsonProcessorReplaceService.apply(request);
 
-		Assertions.assertEquals("John", result.get("name").getAsString());
-		Assertions.assertEquals("Chang'an Street", result.get("address").getAsJsonObject().get("street").getAsString());
+		Assertions.assertEquals("John", result.get("name").asText());
+		Assertions.assertEquals("Chang'an Street", result.get("address").get("street").asText());
 	}
 
 	@Test
 	void testNullField() {
-		JsonElement newValue = new JsonPrimitive("David");
+		JsonNode newValue = new TextNode("David");
 		JsonProcessorReplaceService.JsonReplaceRequest request = new JsonProcessorReplaceService.JsonReplaceRequest(jsonContent, null,
 				newValue);
 
