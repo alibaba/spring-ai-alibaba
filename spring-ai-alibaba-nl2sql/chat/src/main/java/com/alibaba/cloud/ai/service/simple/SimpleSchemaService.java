@@ -40,10 +40,9 @@ public class SimpleSchemaService extends BaseSchemaService {
 
 	@Autowired
 	public SimpleSchemaService(DbConfig dbConfig, Gson gson,
-	                          @Qualifier("simpleVectorStoreService") BaseVectorStoreService vectorStoreService) {
+			@Qualifier("simpleVectorStoreService") BaseVectorStoreService vectorStoreService) {
 		super(dbConfig, gson);
 		setVectorStoreService(vectorStoreService);
 	}
-	
 
 }

@@ -48,9 +48,8 @@ public class Nl2SqlService extends BaseNl2SqlService {
 
 	@Autowired
 	public Nl2SqlService(@Qualifier("vectorStoreService") BaseVectorStoreService vectorStoreService,
-						 @Qualifier("schemaService") BaseSchemaService schemaService, LlmService aiService,
-						 DbAccessor dbAccessor, DbConfig dbConfig
-						 ) {
+			@Qualifier("schemaService") BaseSchemaService schemaService, LlmService aiService, DbAccessor dbAccessor,
+			DbConfig dbConfig) {
 		super(vectorStoreService, schemaService, aiService, dbAccessor, dbConfig);
 	}
 

@@ -27,93 +27,92 @@ import static com.alibaba.cloud.ai.prompt.PromptHelper.buildMixSelectorPrompt;
 
 public class BaseNl2SqlService {
 
-    protected final BaseVectorStoreService vectorStoreService;
+	protected final BaseVectorStoreService vectorStoreService;
 
-    @Autowired
-    protected final BaseSchemaService schemaService;
+	@Autowired
+	protected final BaseSchemaService schemaService;
 
-    @Autowired
-    public final LlmService aiService;
+	@Autowired
+	public final LlmService aiService;
 
-    @Autowired
-    protected final DbAccessor dbAccessor;
+	@Autowired
+	protected final DbAccessor dbAccessor;
 
-    @Autowired
-    protected final DbConfig dbConfig;
+	@Autowired
+	protected final DbConfig dbConfig;
 
-    public BaseNl2SqlService(BaseVectorStoreService vectorStoreService,
-                             BaseSchemaService schemaService, LlmService aiService,
-                             DbAccessor dbAccessor, DbConfig dbConfig) {
-        this.vectorStoreService = vectorStoreService;
-        this.schemaService = schemaService;
-        this.aiService = aiService;
-        this.dbAccessor = dbAccessor;
-        this.dbConfig = dbConfig;
-    }
+	public BaseNl2SqlService(BaseVectorStoreService vectorStoreService, BaseSchemaService schemaService,
+			LlmService aiService, DbAccessor dbAccessor, DbConfig dbConfig) {
+		this.vectorStoreService = vectorStoreService;
+		this.schemaService = schemaService;
+		this.aiService = aiService;
+		this.dbAccessor = dbAccessor;
+		this.dbConfig = dbConfig;
+	}
 
+	public String nl2sql(String query) throws Exception {
+		List<Document> evidenceDocuments = vectorStoreService.getDocuments(query, "evidence");
+		List<String> evidences = evidenceDocuments.stream().map(Document::getText).collect(Collectors.toList());
+		SchemaDTO schemaDTO = select(query, evidences);
+		return generateSql(evidences, query, schemaDTO);
+	}
 
-    public String nl2sql(String query) throws Exception {
-        List<Document> evidenceDocuments = vectorStoreService.getDocuments(query, "evidence");
-        List<String> evidences = evidenceDocuments.stream().map(Document::getText).collect(Collectors.toList());
-        SchemaDTO schemaDTO = select(query, evidences);
-        return generateSql(evidences, query, schemaDTO);
-    }
+	public String executeSql(String sql) throws Exception {
+		DbQueryParameter param = DbQueryParameter.from(dbConfig).setSql(sql);
+		ResultSetBO resultSet = dbAccessor.executeSqlAndReturnObject(dbConfig, param);
+		return MdTableGenerator.generateTable(resultSet);
+	}
 
-    public String executeSql(String sql) throws Exception {
-        DbQueryParameter param = DbQueryParameter.from(dbConfig).setSql(sql);
-        ResultSetBO resultSet = dbAccessor.executeSqlAndReturnObject(dbConfig, param);
-        return MdTableGenerator.generateTable(resultSet);
-    }
+	public SchemaDTO select(String query, List<String> evidenceList) throws Exception {
+		StringBuilder queryBuilder = new StringBuilder(query);
+		for (String evidence : evidenceList) {
+			queryBuilder.append(evidence).append("。");
+		}
+		query = queryBuilder.toString();
 
-    public SchemaDTO select(String query, List<String> evidenceList) throws Exception {
-        StringBuilder queryBuilder = new StringBuilder(query);
-        for (String evidence : evidenceList) {
-            queryBuilder.append(evidence).append("。");
-        }
-        query = queryBuilder.toString();
+		String prompt = PromptHelper.buildQueryToKeywordsPrompt(query);
+		String content = aiService.call(prompt);
 
-        String prompt = PromptHelper.buildQueryToKeywordsPrompt(query);
-        String content = aiService.call(prompt);
+		List<String> keywords = new Gson().fromJson(content, new TypeToken<List<String>>() {
+		}.getType());
+		SchemaDTO schemaDTO = schemaService.mixRag(query, keywords);
+		return fineSelect(schemaDTO, query, evidenceList);
+	}
 
-        List<String> keywords = new Gson().fromJson(content, new TypeToken<List<String>>() {
-        }.getType());
-        SchemaDTO schemaDTO = schemaService.mixRag(query, keywords);
-        return fineSelect(schemaDTO, query, evidenceList);
-    }
+	public String generateSql(List<String> evidenceList, String query, SchemaDTO schemaDTO) throws Exception {
+		String dateTimeExtractPrompt = PromptHelper.buildDateTimeExtractPrompt(query);
+		String content = aiService.call(dateTimeExtractPrompt);
+		List<String> dateTimeList = new ArrayList<>();
+		LocalDate now = LocalDate.now();
+		List<String> expressionList = new Gson().fromJson(content, new TypeToken<List<String>>() {
+		}.getType());
+		List<String> dateTimeExpressions = DateTimeUtil.buildDateExpressions(expressionList, now);
+		for (String dateTimeExpression : dateTimeExpressions) {
+			if (dateTimeExpression.endsWith("=")) {
+				continue;
+			}
+			dateTimeList.add(dateTimeExpression.replace("=", "指的是"));
+		}
+		expressionList.addAll(dateTimeList);
 
-    public String generateSql(List<String> evidenceList, String query, SchemaDTO schemaDTO) throws Exception {
-        String dateTimeExtractPrompt = PromptHelper.buildDateTimeExtractPrompt(query);
-        String content = aiService.call(dateTimeExtractPrompt);
-        List<String> dateTimeList = new ArrayList<>();
-        LocalDate now = LocalDate.now();
-        List<String> expressionList = new Gson().fromJson(content, new TypeToken<List<String>>() {
-        }.getType());
-        List<String> dateTimeExpressions = DateTimeUtil.buildDateExpressions(expressionList, now);
-        for (String dateTimeExpression : dateTimeExpressions) {
-            if (dateTimeExpression.endsWith("=")) {
-                continue;
-            }
-            dateTimeList.add(dateTimeExpression.replace("=", "指的是"));
-        }
-        expressionList.addAll(dateTimeList);
+		List<String> prompts = PromptHelper.buildMixSqlGeneratorPrompt(query, dbConfig, schemaDTO, evidenceList);
+		return MarkdownParser.extractRawText(aiService.callWithSystemPrompt(prompts.get(0), prompts.get(1))).trim();
+	}
 
-        List<String> prompts = PromptHelper.buildMixSqlGeneratorPrompt(query, dbConfig, schemaDTO, evidenceList);
-        return MarkdownParser.extractRawText(aiService.callWithSystemPrompt(prompts.get(0), prompts.get(1))).trim();
-    }
+	public SchemaDTO fineSelect(SchemaDTO schemaDTO, String query, List<String> evidenceList) {
+		String prompt = buildMixSelectorPrompt(evidenceList, query, schemaDTO);
+		String content = aiService.call(prompt);
 
-    public SchemaDTO fineSelect(SchemaDTO schemaDTO, String query, List<String> evidenceList) {
-        String prompt = buildMixSelectorPrompt(evidenceList, query, schemaDTO);
-        String content = aiService.call(prompt);
+		if (content != null && !content.trim().isEmpty()) {
+			String jsonContent = MarkdownParser.extractText(content);
+			List<String> tableList = new Gson().fromJson(jsonContent, new TypeToken<List<String>>() {
+			}.getType());
 
-        if (content != null && !content.trim().isEmpty()) {
-            String jsonContent = MarkdownParser.extractText(content);
-            List<String> tableList = new Gson().fromJson(jsonContent, new TypeToken<List<String>>() {
-            }.getType());
+			Set<String> selectedTables = tableList.stream().map(String::toLowerCase).collect(Collectors.toSet());
 
-            Set<String> selectedTables = tableList.stream().map(String::toLowerCase).collect(Collectors.toSet());
+			schemaDTO.getTable().removeIf(table -> !selectedTables.contains(table.getName().toLowerCase()));
+		}
+		return schemaDTO;
+	}
 
-            schemaDTO.getTable().removeIf(table -> !selectedTables.contains(table.getName().toLowerCase()));
-        }
-        return schemaDTO;
-    }
 }

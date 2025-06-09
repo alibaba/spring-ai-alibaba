@@ -57,7 +57,7 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 
 	@Autowired
 	public SimpleVectorStoreService(@Value("${spring.ai.dashscope.api-key:default_api_key}") String apiKey, Gson gson,
-                                    DbAccessor dbAccessor, DbConfig dbConfig) {
+			DbAccessor dbAccessor, DbConfig dbConfig) {
 		this.gson = gson;
 		this.dbAccessor = dbAccessor;
 		this.dbConfig = dbConfig;
@@ -196,8 +196,11 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 			else if (deleteRequest.getVectorType() != null && !deleteRequest.getVectorType().isEmpty()) {
 				FilterExpressionBuilder b = new FilterExpressionBuilder();
 				Filter.Expression expression = b.eq("vectorType", "column").build();
-				List<Document> documents = vectorStore.similaritySearch(
-						org.springframework.ai.vectorstore.SearchRequest.builder().topK(Integer.MAX_VALUE).filterExpression(expression).build());
+				List<Document> documents = vectorStore
+					.similaritySearch(org.springframework.ai.vectorstore.SearchRequest.builder()
+						.topK(Integer.MAX_VALUE)
+						.filterExpression(expression)
+						.build());
 				vectorStore.delete(documents.stream().map(Document::getId).toList());
 			}
 			else {
@@ -217,13 +220,12 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 	public List<Document> searchWithVectorType(SearchRequest searchRequestDTO) {
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
 		Filter.Expression expression = b.eq("vectorType", searchRequestDTO.getVectorType()).build();
-		
-		return vectorStore.similaritySearch(
-			org.springframework.ai.vectorstore.SearchRequest.builder()
-					.query(searchRequestDTO.getQuery())
-				.topK(searchRequestDTO.getTopK())
-				.filterExpression(expression)
-				.build());
+
+		return vectorStore.similaritySearch(org.springframework.ai.vectorstore.SearchRequest.builder()
+			.query(searchRequestDTO.getQuery())
+			.topK(searchRequestDTO.getTopK())
+			.filterExpression(expression)
+			.build());
 	}
 
 	/**
@@ -235,12 +237,12 @@ public class SimpleVectorStoreService extends BaseVectorStoreService {
 		// 简化实现，仅作示例
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
 		Filter.Expression expression = b.eq("vectorType", searchRequestDTO.getVectorType()).build();
-		
-		return vectorStore.similaritySearch(
-			org.springframework.ai.vectorstore.SearchRequest.builder()
-					.query(searchRequestDTO.getQuery())
-					.topK(searchRequestDTO.getTopK())
-				.filterExpression(expression)
-				.build());
+
+		return vectorStore.similaritySearch(org.springframework.ai.vectorstore.SearchRequest.builder()
+			.query(searchRequestDTO.getQuery())
+			.topK(searchRequestDTO.getTopK())
+			.filterExpression(expression)
+			.build());
 	}
+
 }

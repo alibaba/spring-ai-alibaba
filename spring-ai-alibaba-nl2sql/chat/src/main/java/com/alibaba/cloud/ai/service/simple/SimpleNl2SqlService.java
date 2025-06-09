@@ -49,9 +49,8 @@ public class SimpleNl2SqlService extends BaseNl2SqlService {
 
 	@Autowired
 	public SimpleNl2SqlService(@Qualifier("simpleVectorStoreService") BaseVectorStoreService vectorStoreService,
-						 @Qualifier("simpleSchemaService") BaseSchemaService schemaService, LlmService aiService,
-						 DbAccessor dbAccessor, DbConfig dbConfig
-	) {
+			@Qualifier("simpleSchemaService") BaseSchemaService schemaService, LlmService aiService,
+			DbAccessor dbAccessor, DbConfig dbConfig) {
 		super(vectorStoreService, schemaService, aiService, dbAccessor, dbConfig);
 	}
 
@@ -66,7 +65,5 @@ public class SimpleNl2SqlService extends BaseNl2SqlService {
 		String s = nl2sql("查找来涉及到大连旅游的文章，取最新的三十篇文章");
 		System.out.println(s);
 	}
-
-
 
 }
