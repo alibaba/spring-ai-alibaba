@@ -49,7 +49,7 @@ public class InteractiveElement {
 	/**
 	 * 快速通过索引查找元素
 	 */
-	private final Map<Integer, InteractiveElement> elementIndex = new HashMap<>();
+	private static final Map<Integer, InteractiveElement> elementIndex = new HashMap<>();
 
 	// 全局索引
 	private final int index;
@@ -73,67 +73,35 @@ public class InteractiveElement {
 	private String outerHtml;
 
 	/**
-	 * 创建主页面中的交互元素
-	 * @param index 全局索引
-	 * @param locator 元素定位器
-	 * @param page 所在页面
-	 */
-	public InteractiveElement(int index, Locator locator, Page page) {
-		this.index = index;
-		this.locator = locator;
-		this.frame = null;
-		this.isInMainPage = true;
-
-		// 获取元素的标签名
-		this.tagName = locator.evaluate("el => el.tagName.toLowerCase()").toString();
-
-		// 尝试获取元素的文本内容
-		try {
-			this.text = locator.innerText();
-		}
-		catch (Exception e) {
-			this.text = "";
-		}
-
-		// 获取HTML结构
-		try {
-			this.outerHtml = locator.evaluate("el => el.outerHTML").toString();
-		}
-		catch (Exception e) {
-			this.outerHtml = "";
-		}
-	}
-
-	/**
-	 * 创建iframe中的交互元素
 	 * @param index 全局索引
 	 * @param locator 元素定位器
 	 * @param frame 所在的iframe
+	 * @param elementMap 元素的其余参数
 	 */
-	public InteractiveElement(int index, Locator locator, Frame frame) {
+	public InteractiveElement(int index, Locator locator, Frame frame, Map<String, Object> elementMap) {
 		this.index = index;
 		this.locator = locator;
 		this.frame = frame;
 		this.isInMainPage = false;
+		this.tagName = (String) elementMap.get("tagName");
+		this.text = (String) elementMap.get("text");
+		this.outerHtml = (String) elementMap.get("outerHtml");
+	}
 
-		// 获取元素的标签名
-		this.tagName = locator.evaluate("el => el.tagName.toLowerCase()").toString();
-
-		// 尝试获取元素的文本内容
-		try {
-			this.text = locator.innerText();
-		}
-		catch (Exception e) {
-			this.text = "";
-		}
-
-		// 获取HTML结构
-		try {
-			this.outerHtml = locator.evaluate("el => el.outerHTML").toString();
-		}
-		catch (Exception e) {
-			this.outerHtml = "";
-		}
+	/**
+	 * 创建主页面中的交互元素
+	 * @param index 全局索引
+	 * @param locator 元素定位器
+	 * @param elementMap 元素的其余参数
+	 */
+	public InteractiveElement(int index, Locator locator, Map<String, Object> elementMap) {
+		this.index = index;
+		this.locator = locator;
+		this.frame = null;
+		this.isInMainPage = true;
+		this.tagName = (String) elementMap.get("tagName");
+		this.text = (String) elementMap.get("text");
+		this.outerHtml = (String) elementMap.get("outerHtml");
 	}
 
 	/**
@@ -242,16 +210,26 @@ public class InteractiveElement {
 	 * 处理主页面中的交互元素
 	 * @param page Page实例
 	 */
+	@SuppressWarnings("unchecked")
 	private void processMainPageElements(Page page) {
 		try {
 			Locator elementLocator = page.locator(INTERACTIVE_ELEMENTS_SELECTOR);
 			int count = elementLocator.count();
-			log.info("找到 {} 个主页面交互元素", count);
-
-			for (int i = 0; i < count; i++) {
-				Locator locator = elementLocator.nth(i);
-				int globalIndex = allElements.size();
-				InteractiveElement element = new InteractiveElement(globalIndex, locator, page);
+			log.info("在iframe中找到 {} 个交互元素", count);
+			List<Map<String, Object>> elementMapList = (List<Map<String, Object>>) elementLocator.evaluateAll("""
+					(elements) => elements.map((element, index) => {
+					    return {
+					        tagName: element.tagName.toLowerCase(),
+					        text: element.innerText,
+					        outerHtml: element.outerHTML,
+					        index: index
+					    };
+					})
+					""");
+			for (Map<String, Object> elementMap : elementMapList) {
+				Integer globalIndex = (Integer) elementMap.get("index");
+				Locator locator = elementLocator.nth(globalIndex);
+				InteractiveElement element = new InteractiveElement(globalIndex, locator, elementMap);
 				allElements.add(element);
 				elementIndex.put(globalIndex, element);
 			}
@@ -277,16 +255,26 @@ public class InteractiveElement {
 	 * 处理单个iframe中的交互元素
 	 * @param frame Frame实例
 	 */
+	@SuppressWarnings("unchecked")
 	private void processFrameElements(Frame frame) {
 		try {
 			Locator elementLocator = frame.locator(INTERACTIVE_ELEMENTS_SELECTOR);
 			int count = elementLocator.count();
 			log.info("在iframe中找到 {} 个交互元素", count);
-
-			for (int i = 0; i < count; i++) {
-				Locator locator = elementLocator.nth(i);
-				int globalIndex = allElements.size();
-				InteractiveElement element = new InteractiveElement(globalIndex, locator, frame);
+			List<Map<String, Object>> elementMapList = (List<Map<String, Object>>) elementLocator.evaluateAll("""
+					(elements) => elements.map((element, index) => {
+					    return {
+					        tagName: element.tagName.toLowerCase(),
+					        text: element.innerText,
+					        outerHtml: element.outerHTML,
+					        index: index
+					    };
+					})
+					""");
+			for (Map<String, Object> elementMap : elementMapList) {
+				Integer globalIndex = (Integer) elementMap.get("index");
+				Locator locator = elementLocator.nth(globalIndex);
+				InteractiveElement element = new InteractiveElement(globalIndex, locator, frame, elementMap);
 				allElements.add(element);
 				elementIndex.put(globalIndex, element);
 			}
