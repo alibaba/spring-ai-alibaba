@@ -15,20 +15,17 @@
  */
 package com.alibaba.cloud.ai.toolcalling.tavily;
 
-import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = TavilySearchProperties.PREFIX)
+@ConfigurationProperties(prefix = TavilySearchConstants.CONFIG_PREFIX)
 public class TavilySearchProperties extends CommonToolCallProperties {
-
-	public static final String PREFIX = CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX + ".tavilysearch";
 
 	public static final String BASE_URL = "https://api.tavily.com/";
 
 	public TavilySearchProperties() {
 		super(BASE_URL);
-		this.setPropertiesFromEnv("TAVILY_SEARCH_API_KEY", null, null, null);
+		this.setPropertiesFromEnv(TavilySearchConstants.API_KEY_ENV, null, null, null);
 	}
 
 }

@@ -20,13 +20,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.test.context.TestPropertySource;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,8 +37,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Makoto
  */
 @SpringJUnitConfig
-@SpringBootTest(classes = { TestApplication.class, SensitiveFilterIntegrationTest.TestConfig.class })
+@SpringBootTest(classes = { TestApplication.class })
 @DisplayName("Sensitive filter integration tests")
+@ActiveProfiles("test")
 class SensitiveFilterIntegrationTest {
 
 	@Autowired
@@ -231,39 +228,6 @@ class SensitiveFilterIntegrationTest {
 		String result = filterFunction.apply(text);
 
 		assertThat(result).isEqualTo("客服热线：[已脱敏]，投诉邮箱：[已脱敏]");
-	}
-
-	@TestConfiguration
-	static class TestConfig {
-
-		@Bean
-		public SensitiveFilterProperties sensitiveFilterProperties() {
-			SensitiveFilterProperties properties = new SensitiveFilterProperties();
-			properties.setReplacement("[已脱敏]");
-			properties.setFilterPhoneNumber(true);
-			properties.setFilterIdCard(true);
-			properties.setFilterBankCard(true);
-			properties.setFilterEmail(true);
-
-			// Configure custom QQ number pattern
-			SensitiveFilterProperties.CustomPattern qqPattern = new SensitiveFilterProperties.CustomPattern();
-			qqPattern.setName("qq");
-			qqPattern.setPattern("QQ[：:]?\\d{5,11}");
-			qqPattern.setReplacement("[QQ号]");
-			qqPattern.setEnabled(true);
-
-			List<SensitiveFilterProperties.CustomPattern> customPatterns = new ArrayList<>();
-			customPatterns.add(qqPattern);
-			properties.setCustomPatterns(customPatterns);
-
-			return properties;
-		}
-
-		@Bean
-		public SensitiveFilterService sensitiveFilterService(SensitiveFilterProperties properties) {
-			return new SensitiveFilterService(properties);
-		}
-
 	}
 
 }
