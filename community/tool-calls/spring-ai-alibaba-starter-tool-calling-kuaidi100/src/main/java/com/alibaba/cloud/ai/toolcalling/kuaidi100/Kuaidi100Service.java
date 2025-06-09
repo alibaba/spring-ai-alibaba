@@ -61,8 +61,8 @@ public class Kuaidi100Service implements Function<Kuaidi100Service.Request, Kuai
 	public Kuaidi100Service.QueryTrackResponse apply(Kuaidi100Service.Request request) {
 		Kuaidi100Service.QueryTrackResponse queryTrackResp;
 		try {
-			String key = kuaidi100Properties.getKey();
-			String customer = kuaidi100Properties.getCustomer();
+			String key = kuaidi100Properties.getApiKey();
+			String customer = kuaidi100Properties.getAppId();
 			String num = request.num();
 			String company = queryCourierCompany(num, key);
 			Assert.hasText(company, "Courier company not found.");
