@@ -33,12 +33,13 @@ import org.springframework.context.annotation.Description;
 
 @Configuration
 @EnableConfigurationProperties(BaiDuMapProperties.class)
-@ConditionalOnProperty(prefix = BaiDuMapProperties.BaiDuMapPrefix, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = BaiduMapConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class BaiDuMapAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(BaiDuMapAutoConfiguration.class);
 
-	@Bean
+	@Bean(name = BaiduMapConstants.TOOL_NAME_GET_ADDRESS)
 	@Description("Search for places using Baidu Maps API "
 			+ "or Get detail information of a address and facility query with baidu map or "
 			+ "Get address information of a place with baidu map or "
@@ -48,7 +49,7 @@ public class BaiDuMapAutoConfiguration {
 		return new BaiduMapSearchInfoService(baiDuMapTools);
 	}
 
-	@Bean
+	@Bean(name = BaiduMapConstants.TOOL_NAME_GET_WEATHER)
 	@Description("Query the weather conditions of a specified location")
 	public BaiDuMapWeatherService baiDuMapGetAddressWeatherInformation(JsonParseTool jsonParseTool,
 			BaiDuMapTools baiDuMapTools) {

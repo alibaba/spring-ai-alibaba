@@ -18,23 +18,16 @@ package com.alibaba.cloud.ai.toolcalling.duckduckgo;
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import java.util.concurrent.ThreadLocalRandom;
-
-import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.DEFAULT_USER_AGENTS;
-import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
-
 /**
  * @author 北极星
  * @author sixiyida
  */
-@ConfigurationProperties(prefix = DuckDuckGoProperties.DUCKDUCKGO_PREFIX)
+@ConfigurationProperties(prefix = DuckDuckGoConstants.CONFIG_PREFIX)
 public class DuckDuckGoProperties extends CommonToolCallProperties {
-
-	protected static final String DUCKDUCKGO_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".duckduckgo";
 
 	public DuckDuckGoProperties() {
 		super("https://serpapi.com/search");
-		this.setPropertiesFromEnv("SERPAPI_KEY", null, null, null);
+		this.setPropertiesFromEnv(DuckDuckGoConstants.API_KEY_ENV, null, null, null);
 	}
 
 }
