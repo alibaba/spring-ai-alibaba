@@ -46,8 +46,8 @@ import java.util.Objects;
 import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 
 /**
- * @Author: XiaoYunTao
- * @Date: 2025/6/7
+ * @author XiaoYunTao
+ * @since 2025/6/7
  */
 public class LlmStreamNode implements NodeAction {
 
