@@ -15,15 +15,11 @@
  */
 package com.alibaba.cloud.ai.toolcalling.toutiaonews;
 
-import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
-
 import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = ToutiaoNewsProperties.TOUTIAO_NEWS_PREFIX)
+@ConfigurationProperties(prefix = ToutiaoNewsConstants.CONFIG_PREFIX)
 public class ToutiaoNewsProperties extends CommonToolCallProperties {
-
-	protected static final String TOUTIAO_NEWS_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".toutiaonews";
 
 	public ToutiaoNewsProperties() {
 		super("https://www.toutiao.com/hot-event/hot-board/?origin=toutiao_pc");

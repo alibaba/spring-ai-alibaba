@@ -31,42 +31,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author XiaoYunTao
  * @since 2024/12/25
  */
-@ConfigurationProperties(prefix = Kuaidi100Properties.PREFIX)
+@ConfigurationProperties(prefix = Kuaidi100Constants.CONFIG_PREFIX)
 public class Kuaidi100Properties extends CommonToolCallProperties {
-
-	public static final String PREFIX = CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX + ".kuaidi100";
 
 	public static final String QUERY_BASE_URL = "https://www.kuaidi100.com/";
 
 	public Kuaidi100Properties() {
 		super(QUERY_BASE_URL);
-		this.setPropertiesFromEnv("KUAIDI100_KEY", null, "KUAIDI100_CUSTOMER", null);
-	}
-
-	/**
-	 * @param key key value
-	 * @deprecated use {@link #setApiKey(String)} instead
-	 */
-	@Deprecated
-	public void setKey(String key) {
-		this.setApiKey(key);
-	}
-
-	/**
-	 * @param customer customer value
-	 * @deprecated use {@link #setAppId(String)} instead
-	 */
-	@Deprecated
-	public void setCustomer(String customer) {
-		this.setAppId(customer);
-	}
-
-	public String getKey() {
-		return getApiKey();
-	}
-
-	public String getCustomer() {
-		return getAppId();
+		this.setPropertiesFromEnv(Kuaidi100Constants.API_KEY_ENV, null, Kuaidi100Constants.APP_ID_ENV, null);
 	}
 
 }
