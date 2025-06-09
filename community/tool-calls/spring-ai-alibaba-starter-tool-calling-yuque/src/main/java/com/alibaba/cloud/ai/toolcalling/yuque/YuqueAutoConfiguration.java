@@ -30,13 +30,13 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author 北极星
  */
 @Configuration
-@ConditionalOnProperty(prefix = YuqueProperties.YUQUE_PREFIX, name = "enabled", havingValue = "true",
+@ConditionalOnProperty(prefix = YuqueConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 @ConditionalOnClass
 @EnableConfigurationProperties(YuqueProperties.class)
 public class YuqueAutoConfiguration {
 
-	@Bean
+	@Bean(name = YuqueConstants.CREATE_DOC_TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Use yuque api to invoke a http request to create a doc.")
 	public YuqueQueryDocService createYuqueDoc(YuqueProperties yuqueProperties, JsonParseTool jsonParseTool) {
@@ -45,7 +45,7 @@ public class YuqueAutoConfiguration {
 			.build(), jsonParseTool);
 	}
 
-	@Bean
+	@Bean(name = YuqueConstants.CREATE_BOOK_TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Use yuque api to invoke a http request to create a book.")
 	public YuqueQueryBookService createYuqueBook(YuqueProperties yuqueProperties, JsonParseTool jsonParseTool) {
@@ -54,7 +54,7 @@ public class YuqueAutoConfiguration {
 			.build(), jsonParseTool);
 	}
 
-	@Bean
+	@Bean(name = YuqueConstants.UPDATE_DOC_TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Use yuque api to invoke a http request to update your doc.")
 	public YuqueUpdateDocService updateDocService(YuqueProperties yuqueProperties, JsonParseTool jsonParseTool) {
@@ -63,7 +63,7 @@ public class YuqueAutoConfiguration {
 			.build(), jsonParseTool);
 	}
 
-	@Bean
+	@Bean(name = YuqueConstants.DELETE_DOC_TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Use yuque api to invoke a http request to delete your doc.")
 	public YuqueDeleteDocService deleteDocService(YuqueProperties yuqueProperties, JsonParseTool jsonParseTool) {

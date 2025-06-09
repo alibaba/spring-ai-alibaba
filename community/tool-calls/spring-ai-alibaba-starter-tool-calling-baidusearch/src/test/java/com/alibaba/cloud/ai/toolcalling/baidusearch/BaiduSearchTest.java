@@ -23,21 +23,21 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.logging.Logger;
 
-@SpringBootTest(classes = {CommonToolCallAutoConfiguration.class, BaiduSearchAutoConfiguration.class})
+@SpringBootTest(classes = { CommonToolCallAutoConfiguration.class, BaiduSearchAutoConfiguration.class })
 @DisplayName("Baidu Search Test")
 public class BaiduSearchTest {
 
-    @Autowired
-    private BaiduSearchService  baiduSearchService;
+	@Autowired
+	private BaiduSearchService baiduSearchService;
 
-    private static final Logger log =  Logger.getLogger(BaiduSearchTest.class.getName());
+	private static final Logger log = Logger.getLogger(BaiduSearchTest.class.getName());
 
-    @Test
-    @DisplayName("Tool-Calling Test")
-    public void testBaiduSearch() {
-        var resp = baiduSearchService.apply(new BaiduSearchService.Request("Spring AI Alibab", 10));
-        assert resp != null && resp.results() != null;
-        log.info("results: " + resp.results());
-    }
+	@Test
+	@DisplayName("Tool-Calling Test")
+	public void testBaiduSearch() {
+		var resp = baiduSearchService.apply(new BaiduSearchService.Request("Spring AI Alibab", 10));
+		assert resp != null && resp.results() != null;
+		log.info("results: " + resp.results());
+	}
 
 }

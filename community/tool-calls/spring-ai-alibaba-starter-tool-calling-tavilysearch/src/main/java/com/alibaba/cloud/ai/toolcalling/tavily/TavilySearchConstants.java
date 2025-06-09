@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.toolcalling.toutiaonews;
+package com.alibaba.cloud.ai.toolcalling.tavily;
 
-import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants;
 
-@ConfigurationProperties(prefix = ToutiaoNewsConstants.CONFIG_PREFIX)
-public class ToutiaoNewsProperties extends CommonToolCallProperties {
+public final class TavilySearchConstants {
 
-	public ToutiaoNewsProperties() {
-		super("https://www.toutiao.com/hot-event/hot-board/?origin=toutiao_pc");
-	}
+	public static final String CONFIG_PREFIX = CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX + ".tavilysearch";
+
+	public static final String TOOL_NAME = "tavilySearch";
+
+	public static final String API_KEY_ENV = "TAVILY_SEARCH_API_KEY";
 
 }

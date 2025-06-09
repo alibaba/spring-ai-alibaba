@@ -24,10 +24,8 @@ import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TO
 /**
  * @author YunLong
  */
-@ConfigurationProperties(prefix = DingTalkProperties.DING_TALK_PREFIX)
+@ConfigurationProperties(prefix = DingTalkConstants.CONFIG_PREFIX)
 public class DingTalkProperties extends CommonToolCallProperties {
-
-	protected static final String DING_TALK_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".dingtalk";
 
 	private String customRobotAccessToken;
 
@@ -37,10 +35,10 @@ public class DingTalkProperties extends CommonToolCallProperties {
 		this.customRobotAccessToken = customRobotAccessToken;
 		this.customRobotSignature = customRobotSignature;
 		if (!StringUtils.hasText(customRobotAccessToken)) {
-			this.customRobotAccessToken = System.getenv("DINGTALK_CUSTOM_ACCESS_TOKEN");
+			this.customRobotAccessToken = System.getenv(DingTalkConstants.ACCESS_TOKEN_ENV);
 		}
 		if (!StringUtils.hasText(customRobotSignature)) {
-			this.customRobotSignature = System.getenv("DINGTALK_CUSTOM_SIGNATURE");
+			this.customRobotSignature = System.getenv(DingTalkConstants.SIGNATURE_ENV);
 		}
 	}
 

@@ -22,7 +22,8 @@ import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TO
  */
 public final class BaiduSearchConstants {
 
-    public static final String CONFIG_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".baidu.search";
+	public static final String CONFIG_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".baidu.search";
 
-    public static final String TOOL_NAME = "baiduSearch";
+	public static final String TOOL_NAME = "baiduSearch";
+
 }

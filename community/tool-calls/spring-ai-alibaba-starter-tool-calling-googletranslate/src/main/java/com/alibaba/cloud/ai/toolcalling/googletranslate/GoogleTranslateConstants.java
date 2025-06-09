@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.toolcalling.toutiaonews;
+package com.alibaba.cloud.ai.toolcalling.googletranslate;
 
-import com.alibaba.cloud.ai.toolcalling.common.CommonToolCallProperties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TOOL_CALLING_CONFIG_PREFIX;
 
-@ConfigurationProperties(prefix = ToutiaoNewsConstants.CONFIG_PREFIX)
-public class ToutiaoNewsProperties extends CommonToolCallProperties {
+public final class GoogleTranslateConstants {
 
-	public ToutiaoNewsProperties() {
-		super("https://www.toutiao.com/hot-event/hot-board/?origin=toutiao_pc");
-	}
+	public static final String CONFIG_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".googletranslate";
+
+	public static final String TOOL_NAME = "googleTranslate";
+
+	public static final String API_KEY_ENV = "GOOGLE_TRANSLATE_APIKEY";
 
 }

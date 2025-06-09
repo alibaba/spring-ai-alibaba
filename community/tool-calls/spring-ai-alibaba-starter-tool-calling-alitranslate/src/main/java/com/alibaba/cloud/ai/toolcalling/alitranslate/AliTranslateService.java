@@ -47,10 +47,10 @@ public class AliTranslateService
 
 	public AliTranslateService(AliTranslateProperties properties) {
 		assert StringUtils.hasText(properties.getAccessKeyId());
-		assert StringUtils.hasText(properties.getAccessKeySecret());
+		assert StringUtils.hasText(properties.getSecretKey());
 		StaticCredentialProvider provider = StaticCredentialProvider.create(Credential.builder()
 			.accessKeyId(properties.getAccessKeyId())
-			.accessKeySecret(properties.getAccessKeySecret())
+			.accessKeySecret(properties.getSecretKey())
 			.build());
 
 		this.client = AsyncClient.builder()
