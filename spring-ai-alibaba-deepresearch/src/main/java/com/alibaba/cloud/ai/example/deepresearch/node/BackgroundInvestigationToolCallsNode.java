@@ -68,10 +68,19 @@ public class BackgroundInvestigationToolCallsNode implements BackgroundInvestiga
 			.call()
 			.content();
 
+		// 使用标准的返回格式
+		// [{ "title": "背景调查结果", "content": "..." }]
+		// 否则会反序列化失败：com/alibaba/cloud/ai/example/deepresearch/serializer/DeepResearchDeserializer.java:49
+		Map<String, String> result = new HashMap<>();
+		result.put("title", "背景调查结果");
+		result.put("content", completion);
+
+		List<Map<String, String>> results = Lists.newArrayList(result);
+
 		logger.info("✅ 调查结果: {}", completion);
 
 		Map<String, Object> resultMap = new HashMap<>();
-		resultMap.put("background_investigation_results", Lists.newArrayList(completion));
+		resultMap.put("background_investigation_results", results);
 		return resultMap;
 	}
 
