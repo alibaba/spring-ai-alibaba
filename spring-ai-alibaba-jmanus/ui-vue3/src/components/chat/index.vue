@@ -298,6 +298,7 @@ interface Message {
   executionId?: string
   steps?: any[]
   currentStepIndex?: number
+  planCompleted?: boolean
   stepActions?: Array<{
     actionDescription: string
     toolParameters: string
