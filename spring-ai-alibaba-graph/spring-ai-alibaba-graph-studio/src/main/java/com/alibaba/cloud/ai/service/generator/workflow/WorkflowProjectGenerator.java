@@ -15,11 +15,11 @@
  */
 package com.alibaba.cloud.ai.service.generator.workflow;
 
-import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.model.App;
 import com.alibaba.cloud.ai.model.AppModeEnum;
 import com.alibaba.cloud.ai.model.Variable;
 import com.alibaba.cloud.ai.model.workflow.*;
+import com.alibaba.cloud.ai.model.workflow.nodedata.QuestionClassifierNodeData;
 import com.alibaba.cloud.ai.service.dsl.DSLAdapter;
 import com.alibaba.cloud.ai.service.generator.GraphProjectDescription;
 import com.alibaba.cloud.ai.service.generator.ProjectGenerator;
@@ -91,7 +91,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 
 		String stateSectionStr = renderStateSections(workflow.getWorkflowVars());
 		String nodeSectionStr = renderNodeSections(nodes, varNames);
-		String edgeSectionStr = renderEdgeSections(workflow.getGraph().getEdges());
+		String edgeSectionStr = renderEdgeSections(workflow.getGraph().getEdges(), nodes);
 
 		Map<String, String> graphBuilderModel = Map.of(
 				PACKAGE_NAME, projectDescription.getPackageName(),
@@ -149,6 +149,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		if (overallStateVars == null || overallStateVars.isEmpty()) {
 			return "";
 		}
+        // todo: update create overAllState by newest saa graph
 		return overallStateVars.stream()
 			.map(var -> String.format("            overAllState.registerKeyAndStrategy(\"%s\", (o1, o2) -> o2);%n",
 					var.getName()))
@@ -170,21 +171,69 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 		return sb.toString();
 	}
 
-	private String renderEdgeSections(List<Edge> edges) {
-		StringBuilder sb = new StringBuilder();
-		for (Edge e : edges) {
-			String srcCode = StateGraph.START.equals(e.getSource())
-					? "START" : "\"" + e.getSource() + "\"";
-			String tgtCode = StateGraph.END.equals(e.getTarget())
-					? "END"   : "\"" + e.getTarget() + "\"";
-			sb.append("        stateGraph.addEdge(")
-					.append(srcCode).append(", ").append(tgtCode).append(");\n");
-		}
-		sb.append("\n");
-		return sb.toString();
-	}
+    private String renderEdgeSections(List<Edge> edges, List<Node> nodes) {
+        StringBuilder sb = new StringBuilder();
+        Map<String, Node> nodeIdMap = nodes.stream().collect(Collectors.toMap(Node::getId, n -> n));
 
-	private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, String>> models, Path projectRoot,
+        Map<String, Map<String, String>> conditionalGroups = new LinkedHashMap<>();
+
+        for (Edge edge : edges) {
+            String sourceId = edge.getSource();
+            String targetId = edge.getTarget();
+            String sourceHandle = edge.getSourceHandle();
+
+            Node sourceNode = nodeIdMap.get(sourceId);
+
+            if (sourceHandle != null && !"source".equals(sourceHandle)) {
+                String condition = resolveConditionKey(sourceNode.getData(), sourceHandle);
+                conditionalGroups.computeIfAbsent(sourceId, k -> new LinkedHashMap<>()).put(condition, targetId);
+            } else {
+                sb.append(String.format("        stateGraph.addEdge(\"%s\", \"%s\");%n", sourceId, targetId));
+            }
+        }
+
+        for (Map.Entry<String, Map<String, String>> entry : conditionalGroups.entrySet()) {
+            String sourceId = entry.getKey();
+            Map<String, String> conditionMap = entry.getValue();
+            String varKey = sourceId + "_output";
+
+            sb.append(String.format("""
+                        stateGraph.addConditionalEdges("%s",
+                            edge_async(state -> {
+                                String value = state.value("%s", String.class).orElse("");
+                """, sourceId, varKey));
+
+            for (Map.Entry<String, String> cond : conditionMap.entrySet()) {
+                sb.append(String.format("                        if (\"%s\".equals(value)) return \"%s\";%n",
+                        cond.getKey(), cond.getValue()));
+            }
+
+            sb.append("                             return null;\n");
+            sb.append("                         }),\n");
+            sb.append("                         Map.of(");
+            sb.append(conditionMap.entrySet().stream()
+                    .map(e -> String.format("\"%s\", \"%s\"", e.getKey(), e.getValue()))
+                    .collect(Collectors.joining(", ")));
+            sb.append(")\n");
+            sb.append("        );\n");
+        }
+
+        return sb.toString();
+    }
+
+    private String resolveConditionKey(NodeData data, String handleId) {
+        if (data instanceof QuestionClassifierNodeData classifier) {
+            return classifier.getClasses().stream()
+                    .filter(c -> c.getId().equals(handleId))
+                    .map(QuestionClassifierNodeData.ClassConfig::getText)
+                    .findFirst()
+                    .orElse(handleId);
+        }
+        // todo: extend to other node types that support conditional edges
+        return handleId;
+    }
+
+    private void renderAndWriteTemplates(List<String> templateNames, List<Map<String, String>> models, Path projectRoot,
 			ProjectDescription projectDescription) {
 		Path fileRoot = createDirectory(projectRoot, projectDescription);
 		for (int i = 0; i < templateNames.size(); i++) {
