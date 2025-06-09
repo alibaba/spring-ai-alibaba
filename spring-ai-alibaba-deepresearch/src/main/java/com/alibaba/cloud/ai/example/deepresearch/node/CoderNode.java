@@ -25,6 +25,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import reactor.core.publisher.Flux;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -72,19 +73,16 @@ public class CoderNode implements NodeAction {
 
 		logger.debug("Coder Node message: {}", messages);
 		// 调用agent
-		String result = coderAgent.prompt()
+		Flux<String> StreamResult = coderAgent.prompt()
 			.options(ToolCallingChatOptions.builder().build())
 			.messages(messages)
-			.call()
+			.stream()
 			.content();
+		String result = StreamResult.reduce((acc, next) -> acc + next).block();
 		unexecutedStep.setExecutionRes(result);
 
 		logger.info("Coder Node result: {}", result);
-		if (result == null) {
-			result = "";
-		}
 		Map<String, Object> updated = new HashMap<>();
-		messages.add(0, new UserMessage(result));
 		updated.put("messages", List.of(new UserMessage(result)));
 		observations.add(result);
 		updated.put("observations", observations);

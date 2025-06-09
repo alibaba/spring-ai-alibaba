@@ -78,10 +78,6 @@ public class ResearcherNode implements NodeAction {
 		unexecutedStep.setExecutionRes(result);
 
 		logger.info("Researcher Node response: {}", result);
-		if (result == null) {
-			result = "";
-		}
-
 		Map<String, Object> updated = new HashMap<>();
 		updated.put("messages", List.of(new UserMessage(result)));
 		observations.add(result);
