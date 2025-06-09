@@ -47,7 +47,7 @@ public class AgentsConfiguration {
 	public ChatClient researchAgent(ChatClient.Builder chatClientBuilder) {
 		return chatClientBuilder.defaultSystem(researcherPrompt.getContentAsString(Charset.defaultCharset()))
 			.defaultToolNames("tavilySearch")
-			// .defaultToolNames("tavilySearch", "firecrawlFunction")
+			// .defaultToolNames("tavilySearch", "firecrawlFunction") todo 待调整
 			.build();
 	}
 
