@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -326,6 +327,23 @@ public final class OverAllState implements Serializable {
 	}
 
 	/**
+	 * Updates the internal state based on a schema-defined strategy.
+	 * <p>
+	 * This method first validates the input state, then updates the partial state
+	 * according to the provided key strategies. The updated state is formed by merging
+	 * the original state and the modified partial state, removing any null values in the
+	 * process. The resulting entries are then used to update the internal data map.
+	 * @param state the base state to update; must not be null
+	 * @param partialState the partial state containing updates; may be null or empty
+	 * @param keyStrategies the mapping of keys to update strategies; used to transform
+	 * values
+	 */
+	public void updateStateBySchema(Map<String, Object> state, Map<String, Object> partialState,
+			Map<String, KeyStrategy> keyStrategies) {
+		updateState(updateState(state, partialState, keyStrategies));
+	}
+
+	/**
 	 * Key verify boolean.
 	 * @return the boolean
 	 */
@@ -504,7 +522,7 @@ public final class OverAllState implements Serializable {
 	/**
 	 * The type Human feedback.
 	 */
-	public static class HumanFeedback {
+	public static class HumanFeedback implements Serializable {
 
 		private Map<String, Object> data;
 

@@ -32,6 +32,7 @@ package com.alibaba.cloud.ai.graph;
  * @author disaster
  * @since 1.0.0.1
  */
+@Deprecated
 @FunctionalInterface
 public interface OverAllStateFactory {
 

@@ -44,6 +44,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -72,11 +73,11 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 
 	private final ApplicationContext applicationContext;
 
+	private final AtomicInteger index = new AtomicInteger(0);
+
 	private Map<String, List<String>> md5ToToolsMap;
 
 	private Map<String, List<McpAsyncClient>> md5ToClientMap;
-
-	private Map<String, Integer> client2CountMap;
 
 	private List<Instance> instances;
 
@@ -110,8 +111,6 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 		md5ToToolsMap = new ConcurrentHashMap<>();
 		md5ToClientMap = new ConcurrentHashMap<>();
 
-		client2CountMap = new ConcurrentHashMap<>();
-
 		for (Instance instance : instances) {
 			updateByAddInstace(instance);
 		}
@@ -132,19 +131,9 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 		if (asynClients.isEmpty()) {
 			throw new IllegalStateException("No McpAsyncClient available");
 		}
-		// 从client2CountMap中挑选value最小的键是哪个
-		String clientInfoName = client2CountMap.entrySet()
-			.stream()
-			.min(Map.Entry.comparingByValue())
-			.map(Map.Entry::getKey)
-			.get();
+		int currentIndex = index.getAndUpdate(index -> (index + 1) % asynClients.size());
 
-		client2CountMap.put(clientInfoName, client2CountMap.get(clientInfoName) + 1);
-		// 从clients中找到clientInfoName对应的client
-		return asynClients.stream()
-			.filter(aysnClient -> aysnClient.getClientInfo().name().equals(clientInfoName))
-			.findFirst()
-			.get();
+		return asynClients.get(currentIndex);
 	}
 
 	public List<McpAsyncClient> getMcpAsyncClientList() {
@@ -235,20 +224,9 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 				asyncClients.addAll(md5ToClientMap.get(md5));
 			}
 		});
-		Set<String> clientInfos = asyncClients.stream()
-			.map(client -> client.getClientInfo().name())
-			.collect(Collectors.toSet());
+		int currentIndex = index.getAndUpdate(index -> (index + 1) % asyncClients.size());
 
-		String minClientInfoName = clientInfos.stream()
-			.min(Comparator.comparingInt(clientInfo -> client2CountMap.getOrDefault(clientInfo, 0)))
-			.get();
-		client2CountMap.put(minClientInfoName, client2CountMap.get(minClientInfoName) + 1);
-
-		McpAsyncClient mcpAsyncClient = asyncClients.stream()
-			.filter(asyncClient -> asyncClient.getClientInfo().name().equals(minClientInfoName))
-			.findFirst()
-			.get();
-		return mcpAsyncClient.callTool(callToolRequest);
+		return asyncClients.get(currentIndex).callTool(callToolRequest);
 	}
 
 	public Mono<McpSchema.ListToolsResult> listTools() {
@@ -423,7 +401,6 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 		assert serverMd5 != null;
 		McpAsyncClient mcpAsyncClient = clientByInstance(instance);
 		md5ToClientMap.computeIfAbsent(serverMd5, k -> new ArrayList<>()).add(mcpAsyncClient);
-		client2CountMap.put(mcpAsyncClient.getClientInfo().name(), 0);
 
 		if (!md5ToToolsMap.containsKey(serverMd5)) {
 			String tools = metadata.get("tools.names");
@@ -447,7 +424,6 @@ public class LoadbalancedMcpAsyncClient implements EventListener {
 				asyncClient.closeGracefully().block();
 				// 安全地移除
 				md5ToClientMap.get(serverMd5).remove(asyncClient);
-				client2CountMap.remove(asyncClient.getClientInfo().name());
 
 				if (md5ToClientMap.get(serverMd5).isEmpty()) {
 					md5ToClientMap.remove(serverMd5);
