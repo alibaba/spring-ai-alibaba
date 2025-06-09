@@ -75,3 +75,9 @@ GitHub:
 - [Allen Hu](https://github.com/big-mouth-cn)
 - [Makoto](https://github.com/zxuexingzhijie)
 - [sixiyida](https://github.com/sixiyida)
+
+
+start -> LLM Stream Node -> OutPut Node -> End
+
+LLM Stream Node -> 前端交互
+LLM Stream Node -> AI模型返回所有数据给到OutPut Node，做进一步处理

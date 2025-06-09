@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.tool.PlannerTool;
+import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -25,9 +26,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,8 +60,13 @@ public class CoordinatorNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("Coordinator talking.");
-		List<Message> messages = TemplateUtil.applyPromptTemplate("coordinator", state);
+		logger.info("coordinator node is running.");
+		List<Message> messages = new ArrayList<>();
+		// 1. 添加消息
+		// 1.1 添加预置提示消息
+		messages.add(TemplateUtil.getMessage("coordinator"));
+		// 1.2 添加用户提问
+		messages.add(new UserMessage(StateUtil.getQuery(state)));
 		logger.debug("Current Coordinator messages: {}", messages);
 
 		// 发起调用并获取完整响应

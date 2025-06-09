@@ -17,9 +17,9 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import org.apache.commons.compress.utils.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -45,13 +45,10 @@ public class ResearcherNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("Researcher Node is running.");
-		Plan currentPlan = state.value("current_plan", Plan.class).get();
-		List<String> observations = state.value("observations", List.class)
-			.map(list -> (List<String>) list)
-			.orElse(Lists.newArrayList());
+		logger.info("researcher node is running.");
+		Plan currentPlan = StateUtil.getPlan(state);
+		List<String> observations = StateUtil.getMessagesByType(state, "observations");
 
-		// todo 研究步骤并行处理
 		Plan.Step unexecutedStep = null;
 		for (Plan.Step step : currentPlan.getSteps()) {
 			if (Plan.StepType.RESEARCH.equals(step.getStepType()) && !StringUtils.hasText(step.getExecutionRes())) {
@@ -71,15 +68,14 @@ public class ResearcherNode implements NodeAction {
 				"IMPORTANT: DO NOT include inline citations in the text. Instead, track all sources and include a References section at the end using link reference format. Include an empty line between each citation for better readability. Use this format for each reference:\n- [Source Title](URL)\n\n- [Another Source](URL)");
 		messages.add(citationMessage);
 
-		logger.debug("Researcher Node messages: {}", messages);
+		logger.debug("researcher Node messages: {}", messages);
 		// 调用agent
 		Flux<String> StreamResult = researchAgent.prompt().messages(messages).stream().content();
 		String result = StreamResult.reduce((acc, next) -> acc + next).block();
 		unexecutedStep.setExecutionRes(result);
 
-		logger.info("Researcher Node response: {}", result);
+		logger.info("researcher Node response: {}", result);
 		Map<String, Object> updated = new HashMap<>();
-		updated.put("messages", List.of(new UserMessage(result)));
 		observations.add(result);
 		updated.put("observations", observations);
 

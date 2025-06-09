@@ -75,22 +75,27 @@ public class DeepResearchConfiguration {
 
 		OverAllStateFactory stateFactory = () -> {
 			OverAllState state = new OverAllState();
+			// 条件边控制：跳转下一个节点
 			state.registerKeyAndStrategy("coordinator_next_node", new ReplaceStrategy());
 			state.registerKeyAndStrategy("planner_next_node", new ReplaceStrategy());
 			state.registerKeyAndStrategy("human_next_node", new ReplaceStrategy());
 			state.registerKeyAndStrategy("research_team_next_node", new ReplaceStrategy());
-
+			// 用户输入
+			state.registerKeyAndStrategy("query", new ReplaceStrategy());
 			state.registerKeyAndStrategy("thread_id", new ReplaceStrategy());
-			state.registerKeyAndStrategy("messages", new ReplaceStrategy());
-			state.registerKeyAndStrategy("output", new ReplaceStrategy());
-			state.registerKeyAndStrategy("background_investigation_results", new ReplaceStrategy());
 			state.registerKeyAndStrategy("enable_background_investigation", new ReplaceStrategy());
-			state.registerKeyAndStrategy("plan_iterations", new ReplaceStrategy());
-			state.registerKeyAndStrategy("max_step_num", new ReplaceStrategy());
-			state.registerKeyAndStrategy("current_plan", new ReplaceStrategy());
 			state.registerKeyAndStrategy("auto_accepted_plan", new ReplaceStrategy());
+			state.registerKeyAndStrategy("max_step_num", new ReplaceStrategy());
+			state.registerKeyAndStrategy("mcp_settings", new ReplaceStrategy());
+
 			state.registerKeyAndStrategy("feed_back", new ReplaceStrategy());
 			state.registerKeyAndStrategy("feed_back_content", new ReplaceStrategy());
+
+			// 节点输出
+			state.registerKeyAndStrategy("background_investigation_results", new ReplaceStrategy());
+			state.registerKeyAndStrategy("output", new ReplaceStrategy());
+			state.registerKeyAndStrategy("plan_iterations", new ReplaceStrategy());
+			state.registerKeyAndStrategy("current_plan", new ReplaceStrategy());
 			state.registerKeyAndStrategy("observations", new ReplaceStrategy());
 			state.registerKeyAndStrategy("final_report", new ReplaceStrategy());
 			return state;
@@ -114,9 +119,9 @@ public class DeepResearchConfiguration {
 			.addConditionalEdges("planner", edge_async(new PlannerDispatcher()),
 					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner", END, END))
 			.addConditionalEdges("human_feedback", edge_async(new HumanFeedbackDispatcher()),
-					Map.of("planner", "planner", "research_team", "research_team", "reporter", "reporter", END, END))
+					Map.of("planner", "planner", "research_team", "research_team", END, END))
 			.addConditionalEdges("research_team", edge_async(new ResearchTeamDispatcher()),
-					Map.of("planner", "planner", "researcher", "researcher", "coder", "coder"))
+					Map.of("reporter", "reporter", "researcher", "researcher", "coder", "coder"))
 			.addEdge("researcher", "research_team")
 			.addEdge("coder", "research_team")
 			.addEdge("reporter", END);

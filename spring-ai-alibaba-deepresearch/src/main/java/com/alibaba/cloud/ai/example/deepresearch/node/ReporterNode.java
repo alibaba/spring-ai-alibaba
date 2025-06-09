@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.model.Plan;
+import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.TemplateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -24,10 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.tool.ToolCallback;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 
 import java.text.MessageFormat;
@@ -54,33 +53,36 @@ public class ReporterNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("Reporter node is running.");
+		logger.info("reporter node is running.");
 		Plan currentPlan = state.value("current_plan", Plan.class)
 			.orElseThrow(() -> new IllegalArgumentException("current_plan is missing"));
-
-		List<Message> messages = TemplateUtil.applyPromptTemplate("reporter", state);
+		// 1. 添加消息
+		List<Message> messages = new ArrayList<>();
+		// 1.1 添加预置提示消息
+		messages.add(TemplateUtil.getMessage("reporter"));
+		// 1.2 研究报告格式消息
 		messages.add(new UserMessage(
 				MessageFormat.format(RESEARCH_FORMAT, currentPlan.getTitle(), currentPlan.getThought())));
-		// 报告的格式
 		messages.add(new UserMessage(REPORT_FORMAT));
-		List<String> observations = state.value("observations", List.class)
-			.map(list -> (List<String>) list)
-			.orElse(Collections.emptyList());
-		for (String observation : observations) {
+		// 1.3 添加观察的消息
+		for (String observation : StateUtil.getMessagesByType(state, "observations")) {
 			messages.add(new UserMessage(observation));
 		}
-		logger.debug("Reporter node is running, messages: {}", messages);
-		// todo 以下待调整
-		String finalContent = chatClient.prompt()
-			.messages(messages.stream()
-				.filter(message -> message.getMetadata() == null || !message.getMetadata().containsKey("tool_call_id"))
-				.toList())
-			.call()
-			.content();
+		// 1.4 添加背景调查的消息
+		String backgroundInvestigationResults = state.value("background_investigation_results", "");
+		if (StringUtils.hasText(backgroundInvestigationResults)) {
+			messages.add(new UserMessage(backgroundInvestigationResults));
+		}
+		// 1.5 添加planner节点返回的信息
+		messages.add(new UserMessage(currentPlan.getThought()));
 
-		logger.info("final report: {}", finalContent);
+		logger.debug("reporter node messages: {}", messages);
+		Flux<String> StreamResult = chatClient.prompt().messages(messages).stream().content();
+		String result = StreamResult.reduce((acc, next) -> acc + next).block();
+
+		logger.info("final report: {}", result);
 		Map<String, Object> resultMap = new HashMap<>();
-		resultMap.put("final_report", finalContent);
+		resultMap.put("final_report", result);
 		return resultMap;
 	}
 
