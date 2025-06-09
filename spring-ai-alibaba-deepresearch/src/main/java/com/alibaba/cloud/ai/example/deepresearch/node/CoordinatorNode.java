@@ -45,13 +45,11 @@ public class CoordinatorNode implements NodeAction {
 
 	private final ChatClient chatClient;
 
+	private final PlannerTool plannerTool;
+
 	public CoordinatorNode(ChatClient.Builder chatClientBuilder) {
-		this.chatClient = chatClientBuilder
-			.defaultOptions(ToolCallingChatOptions.builder()
-				.internalToolExecutionEnabled(false) // 禁用内部工具执行
-				.build())
-			.defaultTools(new PlannerTool())
-			.build();
+		this.chatClient = chatClientBuilder.build();
+		this.plannerTool = new PlannerTool();
 	}
 
 	@Override
@@ -61,7 +59,12 @@ public class CoordinatorNode implements NodeAction {
 		logger.debug("Current Coordinator messages: {}", messages);
 
 		// 发起调用并获取完整响应
-		ChatResponse response = chatClient.prompt().messages(messages).call().chatResponse();
+		ChatResponse response = chatClient.prompt()
+			.options(ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build())
+			.tools(plannerTool)
+			.messages(messages)
+			.call()
+			.chatResponse();
 
 		String nextStep = END;
 		Map<String, Object> updated = new HashMap<>();

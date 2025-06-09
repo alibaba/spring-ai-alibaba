@@ -70,7 +70,7 @@ public class PlannerNode implements NodeAction {
 		.build();
 
 	public PlannerNode(ChatClient.Builder chatClientBuilder, ToolCallback[] toolCallbacks) {
-		this.chatClient = chatClientBuilder
+		this.chatClient = chatClientBuilder.clone()
 			.defaultAdvisors(MessageChatMemoryAdvisor.builder(messageWindowChatMemory).build())
 			.build();
 		this.toolCallbacks = toolCallbacks;
