@@ -97,16 +97,26 @@ public class InteractiveElementRegistry {
 	 * 处理单个iframe中的交互元素
 	 * @param frame Frame实例
 	 */
+	@SuppressWarnings("unchecked")
 	private void processFrameElements(Frame frame) {
 		try {
 			Locator elementLocator = frame.locator(INTERACTIVE_ELEMENTS_SELECTOR);
 			int count = elementLocator.count();
 			log.info("在iframe中找到 {} 个交互元素", count);
-
-			for (int i = 0; i < count; i++) {
-				Locator locator = elementLocator.nth(i);
-				int globalIndex = interactiveElements.size();
-				InteractiveElement element = new InteractiveElement(globalIndex, locator, frame);
+			List<Map<String, Object>> elementMapList = (List<Map<String, Object>>) elementLocator.evaluateAll("""
+					(elements) => elements.map((element, index) => {
+					    return {
+					        tagName: element.tagName.toLowerCase(),
+					        text: element.innerText,
+					        outerHtml: element.outerHTML,
+					        index: index
+					    };
+					})
+					""");
+			for (Map<String, Object> elementMap : elementMapList) {
+				Integer globalIndex = (Integer) elementMap.get("index");
+				Locator locator = elementLocator.nth(globalIndex);
+				InteractiveElement element = new InteractiveElement(globalIndex, locator, frame, elementMap);
 				interactiveElements.add(element);
 				indexToElementMap.put(globalIndex, element);
 			}
