@@ -32,7 +32,7 @@ public class NavigateAction extends BrowserAction {
 	public ToolExecuteResult execute(BrowserRequestVO request) throws Exception {
 		String url = request.getUrl();
 		Integer timeoutMs = getBrowserTimeoutMs();
-		
+
 		if (url == null) {
 			return new ToolExecuteResult("URL is required for 'navigate' action");
 		}

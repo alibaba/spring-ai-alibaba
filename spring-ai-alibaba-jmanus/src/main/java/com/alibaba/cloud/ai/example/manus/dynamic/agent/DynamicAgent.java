@@ -87,7 +87,8 @@ public class DynamicAgent extends ReActAgent {
 		for (ToolCallBackContext toolCallBack : toolCallBackContext.values()) {
 			try {
 				toolCallBack.getFunctionInstance().cleanup(planId);
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				log.error("Error cleaning up tool callback context: {}", e.getMessage(), e);
 			}
 		}
@@ -121,7 +122,8 @@ public class DynamicAgent extends ReActAgent {
 
 		try {
 			return executeWithRetry(3);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error(String.format("🚨 Oops! The %s's thinking process hit a snag: %s", getName(), e.getMessage()), e);
 			thinkActRecord.recordError(e.getMessage());
 			return false;
@@ -149,10 +151,7 @@ public class DynamicAgent extends ReActAgent {
 
 			List<ToolCallback> callbacks = getToolCallList();
 			ChatClient chatClient = llmService.getAgentChatClient();
-			response = chatClient.prompt(userPrompt)
-					.toolCallbacks(callbacks)
-					.call()
-					.chatResponse();
+			response = chatClient.prompt(userPrompt).toolCallbacks(callbacks).call().chatResponse();
 
 			List<ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
 			String responseByLLm = response.getResult().getOutput().getText();
@@ -192,7 +191,7 @@ public class DynamicAgent extends ReActAgent {
 
 			processMemory(toolExecutionResult);
 			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) toolExecutionResult.conversationHistory()
-					.get(toolExecutionResult.conversationHistory().size() - 1);
+				.get(toolExecutionResult.conversationHistory().size() - 1);
 
 			String llmCallResponse = toolResponseMessage.getResponses().get(0).responseData();
 
@@ -220,19 +219,21 @@ public class DynamicAgent extends ReActAgent {
 							// the tool's internal state.
 							// We can now get the updated state string for the LLM.
 
-							UserMessage userMessage = UserMessage.builder().text(
-									"User input received for form: " + formInputTool.getCurrentToolStateString())
-									.build();
-							processUserInputToMemory(userMessage); // Process user input to memory
+							UserMessage userMessage = UserMessage.builder()
+								.text("User input received for form: " + formInputTool.getCurrentToolStateString())
+								.build();
+							processUserInputToMemory(userMessage); // Process user input
+																	// to memory
 							llmCallResponse = formInputTool.getCurrentToolStateString();
 
-						} else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
+						}
+						else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
 							log.warn("Input timeout occurred for FormInputTool for planId: {}", getPlanId());
 							// Handle input timeout
 
-							UserMessage userMessage = UserMessage.builder().text(
-									"Input timeout occurred for form: ")
-									.build();
+							UserMessage userMessage = UserMessage.builder()
+								.text("Input timeout occurred for form: ")
+								.build();
 							processUserInputToMemory(userMessage);
 							userInputService.removeFormInputTool(getPlanId()); // Clean up
 							return new AgentExecResult("Input timeout occurred.", AgentState.IN_PROGRESS); // Or
@@ -250,7 +251,8 @@ public class DynamicAgent extends ReActAgent {
 			}
 
 			return new AgentExecResult(llmCallResponse, AgentState.IN_PROGRESS);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 
 			log.error(e.getMessage());
 
@@ -265,12 +267,12 @@ public class DynamicAgent extends ReActAgent {
 		if (userMessage != null && userMessage.getText() != null) {
 			// Process the user message to update memory
 			String userInput = userMessage.getText();
-			
+
 			if (!StringUtils.isBlank(userInput)) {
 				// 将用户输入添加到内存中
 
 				llmService.getAgentMemory().add(getPlanId(), userMessage);
-				
+
 			}
 		}
 	}
@@ -282,7 +284,7 @@ public class DynamicAgent extends ReActAgent {
 			List<Message> messages = toolExecutionResult.conversationHistory();
 
 			if (!messages.isEmpty()) {
-				
+
 				// 先清空记忆，因为执行结果里有所有的记忆。
 
 				llmService.getAgentMemory().clear(getPlanId()); // 清除当前计划的内存，避免重复添加
@@ -344,7 +346,8 @@ public class DynamicAgent extends ReActAgent {
 		Map<String, ToolCallBackContext> toolCallBackContext = toolCallbackProvider.getToolCallBackContext();
 		if (toolCallBackContext.containsKey(toolKey)) {
 			return toolCallBackContext.get(toolKey);
-		} else {
+		}
+		else {
 			log.warn("Tool callback for {} not found in the map.", toolKey);
 			return null;
 		}
@@ -360,7 +363,8 @@ public class DynamicAgent extends ReActAgent {
 				if (toolCallback != null) {
 					toolCallbacks.add(toolCallback.getToolCallback());
 				}
-			} else {
+			}
+			else {
 				log.warn("Tool callback for {} not found in the map.", toolKey);
 			}
 		}
@@ -438,7 +442,8 @@ public class DynamicAgent extends ReActAgent {
 				// Poll for input state change. In a real scenario, this might involve
 				// a more sophisticated mechanism like a Future or a callback from the UI.
 				TimeUnit.MILLISECONDS.sleep(500); // Check every 500ms
-			} catch (InterruptedException e) {
+			}
+			catch (InterruptedException e) {
 				log.warn("Interrupted while waiting for user input for planId: {}", getPlanId());
 				Thread.currentThread().interrupt();
 				formInputTool.handleInputTimeout(); // Treat interruption as timeout for
@@ -448,7 +453,8 @@ public class DynamicAgent extends ReActAgent {
 		}
 		if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_RECEIVED) {
 			log.info("User input received for planId: {}", getPlanId());
-		} else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
+		}
+		else if (formInputTool.getInputState() == FormInputTool.InputState.INPUT_TIMEOUT) {
 			log.warn("User input timed out for planId: {}", getPlanId());
 		}
 	}

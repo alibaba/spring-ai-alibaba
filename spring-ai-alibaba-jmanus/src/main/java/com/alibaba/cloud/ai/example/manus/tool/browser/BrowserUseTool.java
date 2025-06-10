@@ -312,12 +312,13 @@ public class BrowserUseTool implements ToolCallBiFunctionDef {
 			// 等待页面加载完成，避免在导航过程中获取信息时出现上下文销毁错误
 			try {
 				Integer timeout = getBrowserTimeout();
-				page.waitForLoadState(com.microsoft.playwright.options.LoadState.DOMCONTENTLOADED, 
-					new Page.WaitForLoadStateOptions().setTimeout(timeout * 1000));
-			} catch (Exception loadException) {
+				page.waitForLoadState(com.microsoft.playwright.options.LoadState.DOMCONTENTLOADED,
+						new Page.WaitForLoadStateOptions().setTimeout(timeout * 1000));
+			}
+			catch (Exception loadException) {
 				log.warn("Page load state wait timeout or failed, continuing anyway: {}", loadException.getMessage());
 			}
-			
+
 			// 获取基本信息
 			String currentUrl = page.url();
 			String title = page.title();
