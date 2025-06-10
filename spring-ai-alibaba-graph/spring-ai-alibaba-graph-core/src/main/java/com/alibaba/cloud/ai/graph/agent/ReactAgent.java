@@ -73,9 +73,10 @@ public class ReactAgent {
 
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
-	private ReactAgent(String name,LlmNode llmNode, ToolNode toolNode, int maxIterations, OverAllStateFactory overAllStateFactory,
-			CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc,
-			NodeAction preLlmHook, NodeAction postLlmHook, NodeAction preToolHook, NodeAction postToolHook) throws GraphStateException {
+	private ReactAgent(String name, LlmNode llmNode, ToolNode toolNode, int maxIterations,
+			OverAllStateFactory overAllStateFactory, CompileConfig compileConfig,
+			Function<OverAllState, Boolean> shouldContinueFunc, NodeAction preLlmHook, NodeAction postLlmHook,
+			NodeAction preToolHook, NodeAction postToolHook) throws GraphStateException {
 		this.name = name;
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
@@ -91,7 +92,7 @@ public class ReactAgent {
 	}
 
 	public ReactAgent(LlmNode llmNode, ToolNode toolNode, int maxIterations, OverAllStateFactory overAllStateFactory,
-					  CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc)
+			CompileConfig compileConfig, Function<OverAllState, Boolean> shouldContinueFunc)
 			throws GraphStateException {
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
@@ -211,23 +212,20 @@ public class ReactAgent {
 		}
 
 		if (preLlmHook != null) {
-			graph.addEdge(START, "preLlm")
-				.addEdge("preLlm", "llm");
-		} else {
+			graph.addEdge(START, "preLlm").addEdge("preLlm", "llm");
+		}
+		else {
 			graph.addEdge(START, "llm");
 		}
 
 		if (postLlmHook != null) {
 			graph.addEdge("llm", "postLlm")
-				.addConditionalEdges("postLlm", edge_async(this::think), Map.of(
-					"continue", preToolHook != null ? "preTool" : "tool",
-					"end", END
-				));
-		} else {
-			graph.addConditionalEdges("llm", edge_async(this::think), Map.of(
-				"continue", preToolHook != null ? "preTool" : "tool",
-				"end", END
-			));
+				.addConditionalEdges("postLlm", edge_async(this::think),
+						Map.of("continue", preToolHook != null ? "preTool" : "tool", "end", END));
+		}
+		else {
+			graph.addConditionalEdges("llm", edge_async(this::think),
+					Map.of("continue", preToolHook != null ? "preTool" : "tool", "end", END));
 		}
 
 		// 添加工具相关边
@@ -235,9 +233,9 @@ public class ReactAgent {
 			graph.addEdge("preTool", "tool");
 		}
 		if (postToolHook != null) {
-			graph.addEdge("tool", "postTool")
-				.addEdge("postTool", preLlmHook != null ? "preLlm" : "llm");
-		} else {
+			graph.addEdge("tool", "postTool").addEdge("postTool", preLlmHook != null ? "preLlm" : "llm");
+		}
+		else {
 			graph.addEdge("tool", preLlmHook != null ? "preLlm" : "llm");
 		}
 
@@ -401,16 +399,15 @@ public class ReactAgent {
 		}
 
 		public ReactAgent build() throws GraphStateException {
-			LlmNode llmNode = LlmNode.builder()
-					.chatClient(chatClient)
-					.messagesKey("messages")
-					.build();
+			LlmNode llmNode = LlmNode.builder().chatClient(chatClient).messagesKey("messages").build();
 			ToolNode toolNode = null;
 			if (resolver != null) {
 				toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
-			} else if (tools != null) {
+			}
+			else if (tools != null) {
 				toolNode = ToolNode.builder().toolCallbacks(tools).build();
-			} else {
+			}
+			else {
 				throw new IllegalArgumentException("Either tools or resolver must be provided");
 			}
 
