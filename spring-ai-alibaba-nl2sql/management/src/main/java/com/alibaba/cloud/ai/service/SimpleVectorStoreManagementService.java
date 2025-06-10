@@ -202,7 +202,7 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 	public Boolean deleteDocuments(DeleteRequest deleteRequest) throws Exception {
 		try {
 			if (deleteRequest.getId() != null && !deleteRequest.getId().isEmpty()) {
-				vectorStore.delete(Arrays.asList("comment_count"));
+				vectorStore.delete(Arrays.asList(deleteRequest.getId()));
 			}
 			else if (deleteRequest.getVectorType() != null && !deleteRequest.getVectorType().isEmpty()) {
 				FilterExpressionBuilder b = new FilterExpressionBuilder();
