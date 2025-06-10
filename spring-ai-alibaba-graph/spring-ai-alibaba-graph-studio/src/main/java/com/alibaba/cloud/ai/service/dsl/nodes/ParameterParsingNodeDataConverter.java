@@ -24,6 +24,8 @@ import com.alibaba.cloud.ai.service.dsl.DSLDialectType;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Convert the ParameterParsing node configuration in the Dify DSL to and from the
@@ -39,10 +41,12 @@ public class ParameterParsingNodeDataConverter extends AbstractNodeDataConverter
 
 	@Override
 	protected List<DialectConverter<ParameterParsingNodeData>> getDialectConverters() {
-		return List.of(Converter.DIFY, Converter.CUSTOM).stream().map(Converter::dialectConverter).toList();
+		return Stream.of(ParameterParsingNodeDataConverter.ParameterParsingNodeConverter.values())
+			.map(ParameterParsingNodeDataConverter.ParameterParsingNodeConverter::dialectConverter)
+			.collect(Collectors.toList());
 	}
 
-	private enum Converter {
+	private enum ParameterParsingNodeConverter {
 
 		DIFY(new DialectConverter<>() {
 			@SuppressWarnings("unchecked")
@@ -109,7 +113,7 @@ public class ParameterParsingNodeDataConverter extends AbstractNodeDataConverter
 
 		private final DialectConverter<ParameterParsingNodeData> converter;
 
-		Converter(DialectConverter<ParameterParsingNodeData> converter) {
+		ParameterParsingNodeConverter(DialectConverter<ParameterParsingNodeData> converter) {
 			this.converter = converter;
 		}
 

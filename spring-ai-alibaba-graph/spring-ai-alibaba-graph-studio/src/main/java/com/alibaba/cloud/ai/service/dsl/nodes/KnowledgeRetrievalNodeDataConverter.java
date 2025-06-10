@@ -46,12 +46,12 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 
 	@Override
 	protected List<DialectConverter<KnowledgeRetrievalNodeData>> getDialectConverters() {
-		return Stream.of(Converter.DIFY, Converter.CUSTOM)
-			.map(Converter::dialectConverter)
+		return Stream.of(KnowledgeRetrievalNodeDataConverter.KnowledgeRetrievalNodeConverter.values())
+			.map(KnowledgeRetrievalNodeDataConverter.KnowledgeRetrievalNodeConverter::dialectConverter)
 			.collect(Collectors.toList());
 	}
 
-	private enum Converter {
+	private enum KnowledgeRetrievalNodeConverter {
 
 		DIFY(new DialectConverter<>() {
 			@Override
@@ -175,7 +175,7 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 
 		private final DialectConverter<KnowledgeRetrievalNodeData> converter;
 
-		Converter(DialectConverter<KnowledgeRetrievalNodeData> converter) {
+		KnowledgeRetrievalNodeConverter(DialectConverter<KnowledgeRetrievalNodeData> converter) {
 			this.converter = converter;
 		}
 

@@ -42,12 +42,12 @@ public class MCPNodeDataConverter extends AbstractNodeDataConverter<MCPNodeData>
 
 	@Override
 	protected List<DialectConverter<MCPNodeData>> getDialectConverters() {
-		return Stream.of(Converter.DIFY, Converter.CUSTOM)
-			.map(Converter::dialectConverter)
+		return Stream.of(MCPNodeDataConverter.MCPNodeConverter.values())
+			.map(MCPNodeDataConverter.MCPNodeConverter::dialectConverter)
 			.collect(Collectors.toList());
 	}
 
-	private enum Converter {
+	private enum MCPNodeConverter {
 
 		DIFY(new DialectConverter<>() {
 			@SuppressWarnings("unchecked")
@@ -133,7 +133,7 @@ public class MCPNodeDataConverter extends AbstractNodeDataConverter<MCPNodeData>
 
 		private final DialectConverter<MCPNodeData> converter;
 
-		Converter(DialectConverter<MCPNodeData> converter) {
+		MCPNodeConverter(DialectConverter<MCPNodeData> converter) {
 			this.converter = converter;
 		}
 

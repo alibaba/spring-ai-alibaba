@@ -40,12 +40,12 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 
 	@Override
 	protected List<DialectConverter<LLMNodeData>> getDialectConverters() {
-		return Stream.of(Converter.DIFY, Converter.CUSTOM)
-			.map(Converter::dialectConverter)
+		return Stream.of(LLMNodeDataConverter.LLMNodeConverter.values())
+			.map(LLMNodeDataConverter.LLMNodeConverter::dialectConverter)
 			.collect(Collectors.toList());
 	}
 
-	private enum Converter {
+	private enum LLMNodeConverter {
 
 		DIFY(new DialectConverter<>() {
 			@SuppressWarnings("unchecked")
@@ -291,7 +291,7 @@ public class LLMNodeDataConverter extends AbstractNodeDataConverter<LLMNodeData>
 
 		private final DialectConverter<LLMNodeData> converter;
 
-		Converter(DialectConverter<LLMNodeData> converter) {
+		LLMNodeConverter(DialectConverter<LLMNodeData> converter) {
 			this.converter = converter;
 		}
 

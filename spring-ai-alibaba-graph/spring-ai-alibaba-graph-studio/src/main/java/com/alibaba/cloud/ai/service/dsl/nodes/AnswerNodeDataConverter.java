@@ -38,12 +38,12 @@ public class AnswerNodeDataConverter extends AbstractNodeDataConverter<AnswerNod
 
 	@Override
 	protected List<DialectConverter<AnswerNodeData>> getDialectConverters() {
-		return Stream.of(Converter.DIFY, Converter.CUSTOM)
-			.map(Converter::dialectConverter)
+		return Stream.of(AnswerNodeDataConverter.AnswerNodeConverter.values())
+			.map(AnswerNodeDataConverter.AnswerNodeConverter::dialectConverter)
 			.collect(Collectors.toList());
 	}
 
-	private enum Converter {
+	private enum AnswerNodeConverter {
 
 		DIFY(new DialectConverter<>() {
 			@Override
@@ -52,6 +52,7 @@ public class AnswerNodeDataConverter extends AbstractNodeDataConverter<AnswerNod
 				nd.setAnswer((String) data.get("answer"));
 				String nodeId = (String) data.get("id");
 				String outputKey = (String) data.getOrDefault("output_key", nodeId + "_output");
+				nd.setOutputKey(outputKey);
 				return nd;
 			}
 
@@ -74,7 +75,7 @@ public class AnswerNodeDataConverter extends AbstractNodeDataConverter<AnswerNod
 
 		private final DialectConverter<AnswerNodeData> converter;
 
-		Converter(DialectConverter<AnswerNodeData> converter) {
+		AnswerNodeConverter(DialectConverter<AnswerNodeData> converter) {
 			this.converter = converter;
 		}
 

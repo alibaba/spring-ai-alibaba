@@ -39,12 +39,12 @@ public class HumanNodeDataConverter extends AbstractNodeDataConverter<HumanNodeD
 
 	@Override
 	protected List<DialectConverter<HumanNodeData>> getDialectConverters() {
-		return Stream.of(Converter.DIFY, Converter.CUSTOM)
-			.map(Converter::dialectConverter)
+		return Stream.of(HumanNodeDataConverter.HumanNodeConverter.values())
+			.map(HumanNodeDataConverter.HumanNodeConverter::dialectConverter)
 			.collect(Collectors.toList());
 	}
 
-	private enum Converter {
+	private enum HumanNodeConverter {
 
 		DIFY(new DialectConverter<>() {
 			@SuppressWarnings("unchecked")
@@ -87,7 +87,7 @@ public class HumanNodeDataConverter extends AbstractNodeDataConverter<HumanNodeD
 
 		private final DialectConverter<HumanNodeData> converter;
 
-		Converter(DialectConverter<HumanNodeData> converter) {
+		HumanNodeConverter(DialectConverter<HumanNodeData> converter) {
 			this.converter = converter;
 		}
 

@@ -46,8 +46,8 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 
 	@Override
 	protected List<DialectConverter<HttpNodeData>> getDialectConverters() {
-		return Stream.of(HttpNodeDialectConverter.DIFY, HttpNodeDialectConverter.CUSTOM)
-			.map(HttpNodeDialectConverter::dialectConverter)
+		return Stream.of(HttpNodeDataConverter.HttpNodeDialectConverter.values())
+			.map(HttpNodeDataConverter.HttpNodeDialectConverter::dialectConverter)
 			.collect(Collectors.toList());
 	}
 

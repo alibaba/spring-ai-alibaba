@@ -42,12 +42,12 @@ public class ToolNodeDataConverter extends AbstractNodeDataConverter<ToolNodeDat
 
 	@Override
 	protected List<DialectConverter<ToolNodeData>> getDialectConverters() {
-		return Stream.of(Converter.DIFY, Converter.CUSTOM)
-			.map(Converter::dialectConverter)
+		return Stream.of(ToolNodeDataConverter.ToolNodeConverter.values())
+			.map(ToolNodeDataConverter.ToolNodeConverter::dialectConverter)
 			.collect(Collectors.toList());
 	}
 
-	private enum Converter {
+	private enum ToolNodeConverter {
 
 		DIFY(new DialectConverter<>() {
 			@SuppressWarnings("unchecked")
@@ -109,7 +109,7 @@ public class ToolNodeDataConverter extends AbstractNodeDataConverter<ToolNodeDat
 
 		private final DialectConverter<ToolNodeData> converter;
 
-		Converter(DialectConverter<ToolNodeData> converter) {
+		ToolNodeConverter(DialectConverter<ToolNodeData> converter) {
 			this.converter = converter;
 		}
 

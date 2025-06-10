@@ -44,12 +44,12 @@ public class ListOperatorNodeDataConverter extends AbstractNodeDataConverter<Lis
 
 	@Override
 	protected List<DialectConverter<ListOperatorNodeData>> getDialectConverters() {
-		return Stream.of(Converter.DIFY, Converter.CUSTOM)
-			.map(Converter::dialectConverter)
+		return Stream.of(ListOperatorNodeDataConverter.ListOperatorNodeConverter.values())
+			.map(ListOperatorNodeDataConverter.ListOperatorNodeConverter::dialectConverter)
 			.collect(Collectors.toList());
 	}
 
-	private enum Converter {
+	private enum ListOperatorNodeConverter {
 
 		DIFY(new DialectConverter<>() {
 			@SuppressWarnings("unchecked")
@@ -132,7 +132,7 @@ public class ListOperatorNodeDataConverter extends AbstractNodeDataConverter<Lis
 
 		private final DialectConverter<ListOperatorNodeData> converter;
 
-		Converter(DialectConverter<ListOperatorNodeData> converter) {
+		ListOperatorNodeConverter(DialectConverter<ListOperatorNodeData> converter) {
 			this.converter = converter;
 		}
 
