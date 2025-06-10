@@ -21,14 +21,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * @author 31445
  */
-@ConfigurationProperties(prefix = "spring.ai.alibaba.toolcalling.microsofttranslate")
+@ConfigurationProperties(prefix = MicroSoftTranslateConstants.CONFIG_PREFIX)
 public class MicroSoftTranslateProperties extends CommonToolCallProperties {
 
 	private String region;
 
 	public MicroSoftTranslateProperties() {
 		super("https://api.cognitive.microsofttranslator.com");
-		this.setPropertiesFromEnv("MICROSOFT_TRANSLATE_API_KEY", null, null, null);
+		this.setPropertiesFromEnv(MicroSoftTranslateConstants.API_KEY_ENV, null, null, null);
 	}
 
 	public String getRegion() {

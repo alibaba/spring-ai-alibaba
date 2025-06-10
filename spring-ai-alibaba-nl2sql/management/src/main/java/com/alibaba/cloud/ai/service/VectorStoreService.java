@@ -280,7 +280,10 @@ public class VectorStoreService {
 		Map<String, Object> metadata = Map.of("name", columnInfoBO.getName(), "tableName", tableInfoBO.getName(),
 				"description", Optional.ofNullable(columnInfoBO.getDescription()).orElse(""), "type",
 				columnInfoBO.getType(), "primary", columnInfoBO.isPrimary(), "notnull", columnInfoBO.isNotnull(),
-				"samples", columnInfoBO.getSamples(), "vectorType", "column");
+				"vectorType", "column");
+		if (columnInfoBO.getSamples() != null) {
+			metadata.put("samples", columnInfoBO.getSamples());
+		}
 		return new Document(columnInfoBO.getName(), text, metadata);
 	}
 

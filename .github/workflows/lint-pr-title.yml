@@ -34,27 +34,34 @@ jobs:
           types: |
             fix
             feat
-            reactor
+            refactor
             docs
             chore
             perf
             infra
             revert
             release
+            test
+            style
           scopes: |
             core
             vector-stores
             document-readers
             document-parsers
+            deepresearch
+            docs
             memories
             tool-calls
             graph
-            jManus
+            jmanus
             mcp
             prompt
             studio
-            autoConf
+            autoconf
             ci
+            nl2sql
+          # e.g. feat(core): add new feature
+          # if false: feat: add new feature
           requireScope: true
           disallowScopes: |
             [A-Z]+
@@ -63,5 +70,7 @@ jobs:
             The subject "{subject}" found in the pull request title "{title}"
             didn't match the configured pattern. Please ensure that the subject
             doesn't start with an uppercase character.
-          validateSingleCommit: true
-          validateSingleCommitMatchesPrTitle: true
+          # if true, the PR title must match the commit message
+          validateSingleCommit: false
+          # if true, the PR title must match the single commit message
+          validateSingleCommitMatchesPrTitle: false

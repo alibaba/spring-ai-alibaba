@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.reader.arxiv;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.springframework.ai.document.Document;
 
 import java.util.List;
@@ -27,11 +28,21 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author brianxiadong
  */
+
+@DisabledIf("GithubCI")
 public class ArxivDocumentReaderTest {
 
 	private static final String TEST_QUERY = "cat:cs.AI AND ti:\"artificial intelligence\"";
 
 	private static final int MAX_SIZE = 2;
+
+	/**
+	 * Check if the tests are running in Local. In GitHub CI environment, this test not
+	 * running.
+	 */
+	static boolean GithubCI() {
+		return "true".equals(System.getenv("ENABLE_TEST_CI"));
+	}
 
 	@Test
 	public void testDocumentReader() {

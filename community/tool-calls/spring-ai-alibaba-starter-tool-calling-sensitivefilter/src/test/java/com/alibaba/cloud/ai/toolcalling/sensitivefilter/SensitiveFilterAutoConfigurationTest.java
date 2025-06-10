@@ -39,34 +39,33 @@ class SensitiveFilterAutoConfigurationTest {
 	@Test
 	@DisplayName("Test when enabled, the Bean is created")
 	void testBeanCreatedWhenEnabled() {
-		this.contextRunner.withPropertyValues("spring.ai.alibaba.toolcalling.sensitivefilter.enabled=true")
-			.run(context -> {
-				assertThat(context).hasSingleBean(SensitiveFilterService.class);
-				assertThat(context).hasSingleBean(SensitiveFilterProperties.class);
+		this.contextRunner.withPropertyValues(SensitiveFilterConstants.CONFIG_PREFIX + ".enabled=true").run(context -> {
+			assertThat(context).hasSingleBean(SensitiveFilterService.class);
+			assertThat(context).hasSingleBean(SensitiveFilterProperties.class);
 
-				SensitiveFilterService service = context.getBean(SensitiveFilterService.class);
-				assertThat(service).isNotNull();
+			SensitiveFilterService service = context.getBean(SensitiveFilterService.class);
+			assertThat(service).isNotNull();
 
-				// Test service functionality
-				String result = service.apply("手机号：13912345678");
-				assertThat(result).isEqualTo("手机号：***");
-			});
+			// Test service functionality
+			String result = service.apply("手机号：13912345678");
+			assertThat(result).isEqualTo("手机号：***");
+		});
 	}
 
 	@Test
 	@DisplayName("Test when disabled, the Bean is not created")
 	void testBeanNotCreatedWhenDisabled() {
-		this.contextRunner.withPropertyValues("spring.ai.alibaba.toolcalling.sensitivefilter.enabled=false")
+		this.contextRunner.withPropertyValues(SensitiveFilterConstants.CONFIG_PREFIX + ".enabled=false")
 			.run(context -> {
 				assertThat(context).doesNotHaveBean(SensitiveFilterService.class);
 			});
 	}
 
 	@Test
-	@DisplayName("Test when enabled is not set, the Bean is not created")
+	@DisplayName("Test when enabled is not set, the Bean is created")
 	void testBeanNotCreatedWhenEnabledNotSet() {
 		this.contextRunner.run(context -> {
-			assertThat(context).doesNotHaveBean(SensitiveFilterService.class);
+			assertThat(context).hasSingleBean(SensitiveFilterService.class);
 		});
 	}
 
@@ -74,10 +73,10 @@ class SensitiveFilterAutoConfigurationTest {
 	@DisplayName("Test custom property configuration binding")
 	void testCustomPropertiesBinding() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.alibaba.toolcalling.sensitivefilter.enabled=true",
-					"spring.ai.alibaba.toolcalling.sensitivefilter.replacement=[MASKED]",
-					"spring.ai.alibaba.toolcalling.sensitivefilter.filter-phone-number=false",
-					"spring.ai.alibaba.toolcalling.sensitivefilter.filter-email=false")
+			.withPropertyValues(SensitiveFilterConstants.CONFIG_PREFIX + ".enabled=true",
+					SensitiveFilterConstants.CONFIG_PREFIX + ".replacement=[MASKED]",
+					SensitiveFilterConstants.CONFIG_PREFIX + ".filter-phone-number=false",
+					SensitiveFilterConstants.CONFIG_PREFIX + ".filter-email=false")
 			.run(context -> {
 				assertThat(context).hasSingleBean(SensitiveFilterService.class);
 
@@ -107,7 +106,7 @@ class SensitiveFilterAutoConfigurationTest {
 	@Test
 	@DisplayName("Test custom Bean overrides default configuration")
 	void testCustomBeanOverridesDefault() {
-		this.contextRunner.withPropertyValues("spring.ai.alibaba.toolcalling.sensitivefilter.enabled=true")
+		this.contextRunner.withPropertyValues(SensitiveFilterConstants.CONFIG_PREFIX + ".enabled=true")
 			.withUserConfiguration(CustomSensitiveFilterConfiguration.class)
 			.run(context -> {
 				assertThat(context).hasSingleBean(SensitiveFilterService.class);
@@ -121,11 +120,11 @@ class SensitiveFilterAutoConfigurationTest {
 	@DisplayName("Test complex custom pattern configuration binding")
 	void testCustomPatternsBinding() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.alibaba.toolcalling.sensitivefilter.enabled=true",
-					"spring.ai.alibaba.toolcalling.sensitivefilter.custom-patterns[0].name=qq",
-					"spring.ai.alibaba.toolcalling.sensitivefilter.custom-patterns[0].pattern=QQ[：:]?\\d{5,11}",
-					"spring.ai.alibaba.toolcalling.sensitivefilter.custom-patterns[0].replacement=[QQ号]",
-					"spring.ai.alibaba.toolcalling.sensitivefilter.custom-patterns[0].enabled=true")
+			.withPropertyValues(SensitiveFilterConstants.CONFIG_PREFIX + ".enabled=true",
+					SensitiveFilterConstants.CONFIG_PREFIX + ".custom-patterns[0].name=qq",
+					SensitiveFilterConstants.CONFIG_PREFIX + ".custom-patterns[0].pattern=QQ[：:]?\\d{5,11}",
+					SensitiveFilterConstants.CONFIG_PREFIX + ".custom-patterns[0].replacement=[QQ号]",
+					SensitiveFilterConstants.CONFIG_PREFIX + ".custom-patterns[0].enabled=true")
 			.run(context -> {
 				assertThat(context).hasSingleBean(SensitiveFilterService.class);
 
@@ -150,19 +149,18 @@ class SensitiveFilterAutoConfigurationTest {
 	@Test
 	@DisplayName("Test Bean description information")
 	void testBeanDescription() {
-		this.contextRunner.withPropertyValues("spring.ai.alibaba.toolcalling.sensitivefilter.enabled=true")
-			.run(context -> {
-				assertThat(context).hasSingleBean(SensitiveFilterService.class);
+		this.contextRunner.withPropertyValues(SensitiveFilterConstants.CONFIG_PREFIX + ".enabled=true").run(context -> {
+			assertThat(context).hasSingleBean(SensitiveFilterService.class);
 
-				// Verify Bean definition exists and has correct description
-				String[] beanNames = context.getBeanNamesForType(SensitiveFilterService.class);
-				assertThat(beanNames).hasSize(1);
+			// Verify Bean definition exists and has correct description
+			String[] beanNames = context.getBeanNamesForType(SensitiveFilterService.class);
+			assertThat(beanNames).hasSize(1);
 
-				// We can get BeanDefinition from ApplicationContext to check description
-				// But here we mainly ensure the Bean is created and works correctly
-				SensitiveFilterService service = context.getBean(SensitiveFilterService.class);
-				assertThat(service).isNotNull();
-			});
+			// We can get BeanDefinition from ApplicationContext to check description
+			// But here we mainly ensure the Bean is created and works correctly
+			SensitiveFilterService service = context.getBean(SensitiveFilterService.class);
+			assertThat(service).isNotNull();
+		});
 	}
 
 	/**

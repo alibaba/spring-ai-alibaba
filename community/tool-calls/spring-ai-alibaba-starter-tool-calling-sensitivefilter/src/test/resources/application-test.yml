@@ -14,7 +14,6 @@ spring:
               pattern: "QQ[:：]?\\d{5,11}"
               replacement: "[QQ号]"
               enabled: true
-
 # 日志配置
 logging:
   level:

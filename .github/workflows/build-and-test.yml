@@ -25,6 +25,8 @@ on:
       - main
     paths-ignore:
       - '**.md'
+env:
+  ENABLE_TEST_CI: true
 permissions:
   contents: read
 jobs:

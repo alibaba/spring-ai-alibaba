@@ -23,10 +23,8 @@ import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.TO
 /**
  * @author vlsmb
  */
-@ConfigurationProperties(prefix = BaiduSearchProperties.BAIDU_SEARCH_PREFIX)
+@ConfigurationProperties(prefix = BaiduSearchConstants.CONFIG_PREFIX)
 public class BaiduSearchProperties extends CommonToolCallProperties {
-
-	protected static final String BAIDU_SEARCH_PREFIX = TOOL_CALLING_CONFIG_PREFIX + ".baidu.search";
 
 	public BaiduSearchProperties() {
 		super("https://www.baidu.com/s?wd=");

@@ -43,10 +43,6 @@ public final class BaiDuMapTools {
 		this.baiDuMapProperties = baiDuMapProperties;
 		this.webClientTool = webClientTool;
 		this.jsonParseTool = jsonParseTool;
-
-		if (Objects.isNull(baiDuMapProperties.getApiKey())) {
-			throw new RuntimeException("Please configure your BaiDuMap API key in the application.yml file.");
-		}
 	}
 
 	// Used to retrieve specific property values from JSON.
@@ -67,6 +63,9 @@ public final class BaiDuMapTools {
 	 * @return https://lbs.baidu.com/faq/api?title=webapi/district-search/base
 	 */
 	public Region getRegionInformation(String regionName, Integer depth) {
+		if (Objects.isNull(baiDuMapProperties.getApiKey())) {
+			throw new RuntimeException("Please configure your BaiDuMap API key in the application.yml file.");
+		}
 		String path = "/api_region_search/v1/";
 		MultiValueMap<String, String> params = CommonToolCallUtils.<String, String>multiValueMapBuilder()
 			.add("ak", baiDuMapProperties.getApiKey())
@@ -90,6 +89,9 @@ public final class BaiDuMapTools {
 	 * @return https://lbsyun.baidu.com/faq/api?title=webapi/weather/base
 	 */
 	public String getWeather(String cityCode) {
+		if (Objects.isNull(baiDuMapProperties.getApiKey())) {
+			throw new RuntimeException("Please configure your BaiDuMap API key in the application.yml file.");
+		}
 		String path = "/weather/v1/";
 		MultiValueMap<String, String> params = CommonToolCallUtils.<String, String>multiValueMapBuilder()
 			.add("ak", baiDuMapProperties.getApiKey())
@@ -113,6 +115,9 @@ public final class BaiDuMapTools {
 	 * @return https://lbsyun.baidu.com/faq/api?title=webapi/guide/webservice-placeapi/district
 	 */
 	public String getAddressInformation(String region, String queryPlace, boolean isDetail) {
+		if (Objects.isNull(baiDuMapProperties.getApiKey())) {
+			throw new RuntimeException("Please configure your BaiDuMap API key in the application.yml file.");
+		}
 		String path = "/place/v2/search/";
 		MultiValueMap<String, String> params = CommonToolCallUtils.<String, String>multiValueMapBuilder()
 			.add("ak", baiDuMapProperties.getApiKey())

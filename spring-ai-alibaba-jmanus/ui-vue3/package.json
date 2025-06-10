@@ -30,7 +30,8 @@
     "vue": "^3.3.8",
     "vue-i18n": "^9.8.0",
     "vue-router": "^4.2.5",
-    "vue3-colorpicker": "^2.3.0"
+    "vue3-colorpicker": "^2.3.0",
+    "@ant-design/icons-vue": "^7.0.1"
   },
   "devDependencies": {
     "@rushstack/eslint-patch": "^1.5.1",

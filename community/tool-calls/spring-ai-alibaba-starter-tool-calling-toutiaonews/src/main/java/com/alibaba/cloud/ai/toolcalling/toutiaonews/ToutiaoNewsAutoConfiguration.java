@@ -38,11 +38,12 @@ import org.springframework.http.MediaType;
  */
 @Configuration
 @ConditionalOnClass(ToutiaoNewsSearchHotEventsService.class)
-@ConditionalOnProperty(prefix = ToutiaoNewsProperties.TOUTIAO_NEWS_PREFIX, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = ToutiaoNewsConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 @EnableConfigurationProperties(ToutiaoNewsProperties.class)
 public class ToutiaoNewsAutoConfiguration {
 
-	@Bean
+	@Bean(name = ToutiaoNewsConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Get the news from the toutiao news (获取今日头条新闻).")
 	public ToutiaoNewsSearchHotEventsService getToutiaoNews(JsonParseTool jsonParseTool,

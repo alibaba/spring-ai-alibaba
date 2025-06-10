@@ -31,10 +31,11 @@ import org.springframework.context.annotation.Description;
 
 @Configuration
 @EnableConfigurationProperties(BaiduTranslateProperties.class)
-@ConditionalOnProperty(prefix = BaiduTranslateProperties.BaiDuTranslatePrefix, name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = BaiduTranslateConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class BaiduTranslateAutoConfiguration {
 
-	@Bean
+	@Bean(name = BaiduTranslateConstants.TOOL_NAME)
 	@ConditionalOnMissingBean
 	@Description("Baidu translation function for general text translation")
 	public BaiduTranslateService baiduTranslate(BaiduTranslateProperties properties, JsonParseTool jsonParseTool) {

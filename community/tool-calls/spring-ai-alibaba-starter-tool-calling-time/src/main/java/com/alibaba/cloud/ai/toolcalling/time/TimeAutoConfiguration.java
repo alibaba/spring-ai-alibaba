@@ -27,7 +27,8 @@ import org.springframework.context.annotation.Description;
  */
 @Configuration
 @ConditionalOnClass({ GetCurrentLocalTimeService.class, GetCurrentTimeByTimeZoneIdService.class })
-@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.time", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.toolcalling.time", name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class TimeAutoConfiguration {
 
 	@Bean
