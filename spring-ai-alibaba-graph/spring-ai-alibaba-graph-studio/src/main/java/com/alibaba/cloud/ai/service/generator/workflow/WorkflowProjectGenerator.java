@@ -37,9 +37,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -190,16 +190,18 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			Node sourceNode = nodeMap.get(sourceId);
 			NodeData sourceData = sourceNode.getData();
 
-			String mapContent = condEdges.stream()
-				.map(e -> String.format("\"%s\", \"%s\"", resolveConditionKey(sourceData, e.getSourceHandle()),
-						e.getTarget()))
-				.collect(Collectors.joining(", "));
+            List<String> conditions = new ArrayList<>();
+            List<String> mappings = new ArrayList<>();
 
-			// create edegAction
-			String lambdaContent = condEdges.stream()
-				.map(e -> String.format("            	if (\"%s\".equals(value)) return \"%s\";",
-						resolveConditionKey(sourceData, e.getSourceHandle()), e.getTarget()))
-				.collect(Collectors.joining("\n"));
+            for (Edge e : condEdges) {
+                String conditionKey = resolveConditionKey(sourceData, e.getSourceHandle());
+                String targetId = e.getTarget();
+                conditions.add(String.format("            	if (value.contains(\"%s\")) return \"%s\";", conditionKey, conditionKey));
+                mappings.add(String.format("\"%s\", \"%s\"", conditionKey, targetId));
+            }
+
+            String lambdaContent = String.join("\n", conditions);
+            String mapContent = String.join(", ", mappings);
 
 			sb.append(String.format(
 					"        stateGraph.addConditionalEdges(\"%s\",%n" + "            edge_async(state -> {%n"
