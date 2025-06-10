@@ -283,7 +283,6 @@ import { Icon } from '@iconify/vue'
 import { PlanActApiService } from '@/api/plan-act-api-service'
 import { CommonApiService } from '@/api/common-api-service'
 import { DirectApiService } from '@/api/direct-api-service'
-import { EVENTS } from '@/constants/events'
 import { usePlanExecution } from '@/utils/use-plan-execution'
 
 interface Message {
@@ -1216,14 +1215,6 @@ const eventHandlers = {
 onMounted(() => {
   console.log('[ChatComponent] Mounted, setting up event listeners')
   
-  // 添加事件监听器
-  window.addEventListener(EVENTS.PLAN_UPDATE, eventHandlers.onPlanUpdate as EventListener)
-  window.addEventListener(EVENTS.PLAN_COMPLETED, eventHandlers.onPlanCompleted as EventListener)
-  window.addEventListener(EVENTS.DIALOG_ROUND_START, eventHandlers.onDialogRoundStart as EventListener)
-  window.addEventListener(EVENTS.MESSAGE_UPDATE, eventHandlers.onMessageUpdate as EventListener)
-  window.addEventListener(EVENTS.CHAT_INPUT_UPDATE_STATE, eventHandlers.onChatInputUpdateState as EventListener)
-  window.addEventListener(EVENTS.CHAT_INPUT_CLEAR, eventHandlers.onChatInputClear as EventListener)
-
   // 等待 DOM 更新后添加滚动监听器
   nextTick(() => {
     addScrollListener()
@@ -1238,14 +1229,6 @@ onUnmounted(() => {
   
   // 移除滚动监听器
   removeScrollListener()
-  
-  // 移除事件监听器（使用相同的引用）
-  window.removeEventListener(EVENTS.PLAN_UPDATE, eventHandlers.onPlanUpdate as EventListener)
-  window.removeEventListener(EVENTS.PLAN_COMPLETED, eventHandlers.onPlanCompleted as EventListener)
-  window.removeEventListener(EVENTS.DIALOG_ROUND_START, eventHandlers.onDialogRoundStart as EventListener)
-  window.removeEventListener(EVENTS.MESSAGE_UPDATE, eventHandlers.onMessageUpdate as EventListener)
-  window.removeEventListener(EVENTS.CHAT_INPUT_UPDATE_STATE, eventHandlers.onChatInputUpdateState as EventListener)
-  window.removeEventListener(EVENTS.CHAT_INPUT_CLEAR, eventHandlers.onChatInputClear as EventListener)
   
   // 清理轮询
   if (pollingInterval.value) {

@@ -1,21 +1,8 @@
-<!-- /*
+<!-- 
+  /*
  * Copyright 2025 the original author or authors.
  *
- * Licensed under the Apache License, Version 2.0 (the const messagesRef = const handlePlanExecutionRequested = async (payload: { title: string; planData: any; params?: string }) => {
-  console.log('[Direct] handlePlanExecutionRequested called with payload:', payload)
-  console.log('[Direct] Current isExecutingPlan state:', isExecutingPlan.value)
-  
-  // 防止重复执行
-  if (isExecutingPlan.value) {
-    console.log('[Direct] Plan execution already in progress, ignoring request')
-    return
-  }
-  
-  console.log('[Direct] Starting plan execution process')
-  isExecutingPlan.value = trueement>()
-const inputRef = ref<HTMLTextAreaElement>()
-const currentInput = ref('')
-const isLoading = ref(false)nse");
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -26,7 +13,10 @@ const isLoading = ref(false)nse");
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ */
 -->
+
+
 <template>
   <div class="direct-page">
     <Sidebar 
