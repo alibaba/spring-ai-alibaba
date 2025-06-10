@@ -132,7 +132,7 @@ copy_build_files() {
     log_info "拷贝构建文件到静态资源目录..."
     
     SOURCE_DIR="$PROJECT_ROOT/ui-vue3/ui"
-    TARGET_DIR="$PROJECT_ROOT/src/main/resources/static"
+    TARGET_DIR="$PROJECT_ROOT/src/main/resources/static/"
     
     if [ ! -d "$SOURCE_DIR" ]; then
         log_error "源目录不存在: $SOURCE_DIR"
@@ -140,7 +140,7 @@ copy_build_files() {
     fi
     
     # 拷贝文件
-    cp -r "$SOURCE_DIR"/* "$TARGET_DIR/"
+    cp -r "$SOURCE_DIR" "$TARGET_DIR/"
     
     # 验证拷贝结果
     if [ "$(ls -A $TARGET_DIR)" ]; then

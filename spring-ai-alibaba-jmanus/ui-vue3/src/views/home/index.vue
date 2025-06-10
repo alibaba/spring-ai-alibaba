@@ -95,7 +95,7 @@ const examples = [
     title: '查询股价',
     description: '获取今天阿里巴巴的最新股价（Agent可以使用浏览器工具）',
     icon: 'carbon:chart-line-data',
-    prompt: '用浏览器基于百度，查询今天阿里巴巴的股价',
+    prompt: '用浏览器基于百度，查询今天阿里巴巴的股价，并返回最新股价',
   },
   {
     title: '生成一个中篇小说',
